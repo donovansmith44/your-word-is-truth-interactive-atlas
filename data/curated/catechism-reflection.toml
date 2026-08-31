@@ -1,0 +1,797 @@
+# Reflection questions for Luther's Small Catechism -- CC0, this project's
+# own hand-authored content (like the rest of data/curated/; see LICENSES.md).
+#
+# WHY THIS FILE EXISTS, and how it differs from what was already here:
+# `catechism.toml`'s own `[[part.item]]` entries carry Luther's text; the
+# brain-fuel/catechism mapping (`catechism-mapping.toml`) contributes
+# QUESTION-level PROOF-VERSE groupings -- topical buckets of Scripture with
+# titles like "God Alone as Judge". Those are citations, not prompts: they
+# name which verses bear on an item, and they carry no difficulty and ask
+# the student nothing. This file is the other thing -- questions a teacher
+# actually ASKS OUT LOUD in a lesson, ordered so one item can be taught to
+# any age group in the room.
+#
+# TIERS (`tier`), and what each is for:
+#   child  -- answerable from the item's own words, or from the student's
+#             own life. Concrete. No prior catechesis assumed.
+#   youth  -- application and "why": connects the item to daily life, or to
+#             the shape of Luther's own argument (his "not X, but Y" moves,
+#             his ordering, his insistence on a word).
+#   adult  -- doctrinal precision: law and gospel, the limits of a
+#             commandment, the ground of assurance, tensions held together.
+#
+# ORDERING IS THE CONTRACT. Within an item, file order IS presentation
+# order, easy -> difficult (the same "curated order is the compiled order"
+# rule polities/narratives already follow). Tier must be NON-DECREASING
+# down an item's list -- child before youth before adult, never back up.
+# That is enforced, not merely intended: `validate::run_catechism_reflection`
+# fails the ETL on any item whose tiers regress, so "in order from easy to
+# difficult" is a committed law rather than an authoring habit that quietly
+# rots. Several tiers may repeat (two `child` rows in a row is normal).
+#
+# AUTHORSHIP NOTE (disclosed, not silent): every prompt below is grounded in
+# its own item's `text`/`explanation_heading`/`explanation` as they actually
+# read in `catechism.toml` -- quoting Luther's own wording wherever a prompt
+# turns on it, so a question never asks about a phrase the item does not
+# contain. These are teaching prompts, NOT confessional statements, and they
+# deliberately ask rather than assert: an answer key is not part of V1.
+# `item` must match a `catechism.toml` item id exactly (validated).
+
+[[item]]
+id = "commandment-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should fear, love, and trust in God above all things. What is one thing you love a lot?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to trust someone? Who do you trust to take care of you?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther does not say only 'do not bow to idols' -- he says fear, love, and trust God ABOVE ALL THINGS. How could a good thing (a friendship, a sport, a phone) become a god?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why do you think Luther puts fear first, before love and trust?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "If the First Commandment claims the heart and not merely the hands, can anyone keep it? Where does that drive us?"
+
+[[item]]
+id = "commandment-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What is your name? How does it feel when someone uses your name to be mean?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should call on God's name when we are in trouble. Name one time you could pray."
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "This commandment has a 'not' half and a 'but' half. Why is avoiding bad words not enough?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What is the difference between using God's name and using it in vain?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther lists cursing, swearing, witchcraft, lying, and deceiving by God's name together. What do those five share?"
+
+[[item]]
+id = "commandment-3"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What do we do at church that helps us learn God's Word?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should GLADLY hear God's Word. What does gladly mean?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Notice that Luther does not mention resting, or a particular day of the week. What does he say the day is FOR?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "How could someone sit in church every Sunday and still despise preaching?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Why does Luther define keeping the holy day around the Word rather than around rest?"
+
+[[item]]
+id = "commandment-4"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Name one way you could help at home this week."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What is the difference between obeying right away and obeying slowly?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther includes 'masters' -- teachers, employers, authorities. Why would God attach honor to an office and not only to a person you like?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Honor is more than obedience. What do you still owe a parent you disagree with?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "This is the first commandment with a promise attached. What does it mean that God ties earthly blessing to the honoring of parents?"
+
+[[item]]
+id = "commandment-5"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who is someone you could be kind to today?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should help our neighbor when he is hurt. What could you do if a friend fell down?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther turns 'thou shalt not kill' into 'help and befriend him in every bodily need.' Why is leaving someone alone not enough?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does it mean to harm someone in his body without ever touching him?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "How does this commandment reach both the anger in the heart and the neighbor's bodily needs -- food, shelter, safety?"
+
+[[item]]
+id = "commandment-6"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Why is it good that families love each other?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should be decent in our words. What kind of words are not decent?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says 'in words and deeds.' Why does he include words?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does it mean to honor someone else's marriage?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther frames purity positively -- leading a chaste and decent life, and loving and honoring one's spouse. How does that reframe chastity for married and unmarried alike?"
+
+[[item]]
+id = "commandment-7"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to take something that is not yours?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should help our neighbor keep his things safe. How could you do that?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "'False ware or dealing' means cheating in business. How is cheating a customer the same sin as stealing from him?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does Luther say we should help our neighbor IMPROVE his property, not merely leave it alone?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "What does the Seventh Commandment ask of an employer, a seller, and a borrower?"
+
+[[item]]
+id = "commandment-8"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What is a lie? Why does it hurt?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should speak well of our neighbor. Who could you say something good about?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "'Put the best construction on everything' means assuming the kindest explanation. When is that hardest?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Is it possible to break this commandment by repeating something that is true?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther requires defending the neighbor's reputation, not merely avoiding lies. What does that demand in an age of instant sharing?"
+
+[[item]]
+id = "commandment-9"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to want something that belongs to someone else?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should help our neighbor keep what is his. What would helping look like?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "This commandment names a sin that can be perfectly legal -- getting a thing 'by a show of right.' How can something be lawful and still be sin?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why do you think God gives a commandment about wanting, and not only about doing?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "The Ninth and Tenth Commandments govern desire itself. What does that reveal about where sin actually begins?"
+
+[[item]]
+id = "commandment-10"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Have you ever wanted a friend to like you more than someone else? What did you do?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we should help people do their duty. What is one of your duties?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "This commandment is about drawing people away from where they belong. How does that happen today?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does Luther say we should urge them to STAY?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "How do the Ninth and Tenth Commandments together guard a neighbor's whole household -- his property and his relationships?"
+
+[[item]]
+id = "commandments-close"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "God says He shows mercy. What does mercy mean?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does God promise to those who love Him and keep His commandments?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "This close carries both a threat and a promise. Which do you notice first, and why?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why would God attach a warning AND a blessing to the same commandments?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther says we should dread God's wrath and also love and trust Him. How do those two live together in one heart?"
+
+[[item]]
+id = "creed-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says God gave you your body, your eyes, and your ears. Name one part of you that God made."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who gives you your food and your clothes?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says God STILL preserves all of this. What difference does the word 'still' make?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "The article ends 'without any merit or worthiness in me.' Why does Luther add that?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "If God gives daily bread even to the wicked, what is distinctive about a Christian's confession of creation?"
+
+[[item]]
+id = "creed-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who is Jesus, according to the Creed?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says Jesus has redeemed me -- bought me back. What does it mean to buy something back?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says Christ purchased us 'not with gold or silver, but with His holy, precious blood.' Why make that comparison?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther calls himself 'a lost and condemned creature.' Why start there before speaking of redemption?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Christ redeemed us 'that I may be His own, and live under Him in His kingdom.' What, then, is redemption FOR?"
+
+[[item]]
+id = "creed-3"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who helps us believe in Jesus?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says the Holy Ghost gathers the whole Christian Church. What is the Church?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says 'I cannot by my own reason or strength believe.' Why is that good news rather than bad news?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "How does the Holy Ghost call, gather, enlighten, and sanctify?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther grounds faith itself in the Spirit's work. What does that say about assurance, and about how we evangelize?"
+
+[[item]]
+id = "lords-prayer-intro"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What do you call your father? What does God let us call Him?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we may ask God the way dear children ask their dear father. What would you ask?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why would God want us to pray confidently rather than nervously?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What changes about prayer if God is truly OUR Father and not only my Father?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther says God 'would thereby tenderly urge us to believe.' How does the address itself teach faith before a single request is made?"
+
+[[item]]
+id = "lords-prayer-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does the word 'holy' mean?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says God's name is already holy in itself. So what are we asking for?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "God's name is hallowed among us when His Word is taught in truth and purity AND we live holy lives. Why both?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "How could someone dishonor God's name while teaching about God?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther says he that teaches and lives otherwise than God's Word teaches profanes the name of God among us. What weight does that put on teachers?"
+
+[[item]]
+id = "lords-prayer-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What is a kingdom? Who is the king?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says God's kingdom comes when we believe His holy Word. What helps you believe?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "If God's kingdom comes 'without our prayer, of itself,' why pray for it at all?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does it mean for God's kingdom to come 'unto us also'?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther ties the kingdom to the gift of the Holy Spirit and a godly life 'here in time and yonder in eternity.' How does that shape Christian hope?"
+
+[[item]]
+id = "lords-prayer-3"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Name one thing you know God wants you to do."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says God breaks every evil plan against us. Who protects you?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther names the devil, the world, and our flesh. Why include our own flesh?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What would it look like for God's will to be done on earth as it is in heaven?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther prays that God would 'break and hinder every evil counsel and will.' What does it mean to pray against our own will?"
+
+[[item]]
+id = "lords-prayer-4"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Name three things you need every single day."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who gives us our food?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther's list of daily bread includes house, home, good government, and good friends. Why so broad?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "God gives daily bread even to all wicked men. So what are we actually asking for?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "We pray 'that He would lead us to know it, and to receive our daily bread with thanksgiving.' What does that say about gratitude being the real petition?"
+
+[[item]]
+id = "lords-prayer-5"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to forgive someone?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Is there someone you need to forgive this week?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says we are 'worthy of none of the things for which we pray.' Why pray at all, then?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "This petition ties our being forgiven to our forgiving. How do you understand that?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "We ask God not to look upon our sins nor deny our petitions on account of them. How does grace rather than merit ground this whole prayer?"
+
+[[item]]
+id = "lords-prayer-6"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What is temptation? Name something that tempts you."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who helps you when you want to do something wrong?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says plainly that 'God tempts no one.' What, then, are we asking for?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says that even when assailed we may 'finally overcome and gain the victory.' What does that promise you in a hard week?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Misbelief, despair, and other great shame and vice -- why does Luther name misbelief and despair FIRST?"
+
+[[item]]
+id = "lords-prayer-7"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to be rescued?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says God will graciously take us to Himself into heaven. What do you look forward to?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther calls this petition 'a summary.' A summary of what?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does Luther include evil of 'property and honor,' not only of body and soul?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "The petition ends at our last hour, asking for a blessed end. How does praying for a good death shape the living of a life?"
+
+[[item]]
+id = "lords-prayer-amen"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does the word 'Amen' mean?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says Amen means 'Yea, yea, it shall be so.' Say it together."
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says we should be CERTAIN these petitions are heard. Where does that certainty come from?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does it matter that God Himself has commanded us so to pray?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther grounds assurance in God's command and promise rather than in our feelings. How does that steady a doubting heart?"
+
+[[item]]
+id = "baptism-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Have you ever seen a baptism? What did you see?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says Baptism is not simple water only. What is added to the water?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does Luther insist it is not 'simple water only'?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does God's command have to do with whether Baptism is more than a bath?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Water comprehended in God's command and connected with God's Word -- where else does Scripture attach a promise to a physical sign?"
+
+[[item]]
+id = "baptism-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Name one gift Luther says Baptism gives."
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to be forgiven?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says these gifts come 'to all who believe this.' What is the 'this' that is believed?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Baptism works forgiveness, delivers from death and the devil, and gives eternal salvation. Why list all three?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "How can a past event -- your own baptism -- deliver present help against death and the devil?"
+
+[[item]]
+id = "baptism-3"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Is it the water that does the great things, or something else?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says without God's word the water is simple water. What makes it different?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther names two things: the word of God in and with the water, and faith which trusts it. What does each one do?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why would Luther take such care to say the water itself does not do it?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Titus 3 calls it 'a washing of regeneration.' How does Luther hold the physical sign and the Spirit's work together without collapsing either?"
+
+[[item]]
+id = "baptism-4"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says something happens DAILY, not only once. What word does he use?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to be sorry for doing something wrong?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Who is 'the old Adam,' and why must he be drowned daily rather than once?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does the new man do, according to Luther?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Baptism is a once-for-all event with a daily shape. How does that inform repentance across a whole Christian life?"
+
+[[item]]
+id = "confession-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to say you are sorry?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we hear that our sins are forgiven. Who forgives them?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says Confession embraces two parts. Which part is ours, and which is God's?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Before God we plead guilty of all sins; before the confessor we confess only those we know and feel. Why the difference?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Luther says to receive absolution 'as from God Himself, and in no wise doubt.' What is at stake in that certainty?"
+
+[[item]]
+id = "confession-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What are the words that tell us we are forgiven?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "The confessor ends with 'Depart in peace.' How would that feel to hear?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "The confessor says 'I forgive thee thy sins.' By whose command does he say it?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why is absolution spoken out loud to you rather than only thought or felt?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "'As thou believest, so be it done unto thee.' How do the words of absolution and faith belong together without faith becoming the thing that earns it?"
+
+[[item]]
+id = "altar-1"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What do we eat and drink at the Lord's Supper?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Who started the Lord's Supper?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says the true body and blood are 'under the bread and wine.' Why does he not say instead of the bread and wine?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does it matter that it was instituted by Christ Himself?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "What does Luther's plain reading of the words of institution commit us to, and what does it refuse to explain away?"
+
+[[item]]
+id = "altar-2"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says we receive forgiveness. What else do we receive?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "The words say 'for you.' Who is 'you'?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says 'where there is forgiveness of sins, there is also life and salvation.' Why does the one bring the others?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why does Luther point to the WORDS to explain the benefit?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "How does 'given, and shed for you' turn a general atonement into a gift delivered to a particular person?"
+
+[[item]]
+id = "altar-3"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Is it the eating and drinking that does the great things, or the words?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What do the words say we receive?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther calls the words 'the chief thing in the Sacrament.' Why not the bread and wine?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "What does it mean that 'he that believes these words has what they say and express'?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "Compare this with How Can Water Do Such Great Things. Why does Luther answer the same way in both Sacraments?"
+
+[[item]]
+id = "altar-4"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "What does it mean to be ready for something important?"
+
+  [[item.question]]
+  tier = "child"
+  prompt = "Luther says the one who believes is truly ready. Believes what?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Luther says fasting and bodily preparation is 'a fine outward training' but not what makes you worthy. What does?"
+
+  [[item.question]]
+  tier = "youth"
+  prompt = "Why do the words 'For you' require altogether believing hearts?"
+
+  [[item.question]]
+  tier = "adult"
+  prompt = "How does Luther guard against carelessness and against despair at the same time in approaching the Sacrament?"

@@ -364,4 +364,17 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // New captured value (this test's own eras-less build, NOT
 // atlas-graph-compile's own with-eras root -- those have always differed,
 // per this file's own historical note above): "c011acd48207e016".
-const EXPECTED_VERSION_HEX: &str = "c011acd48207e016";
+// CATECH-V1 (2026-08-31, the lesson surface brought onto this branch):
+// moved deliberately, for ONE reason that touches the graph -- the four
+// Baptism items were renamed from "Part One".."Part Four" to their own
+// catechetical questions ("What Is Baptism?", "What Does Baptism Give or
+// Profit?", ...). Item NAMES are node labels, so relabeling four nodes
+// moves the root. Safe against concord-sc-overlap.toml, which keys on ids
+// rather than names, and the ids did not change.
+//
+// The rest of CATECH-V1 (reflection prompts, song bindings) deliberately
+// does NOT reach the graph at all: those are lesson data served straight
+// off AtlasData by the REST endpoints, never lowered into nodes or rows.
+// A root that moved for them would have meant something was wrong.
+// New captured value: "c1331671009b93da".
+const EXPECTED_VERSION_HEX: &str = "c1331671009b93da";

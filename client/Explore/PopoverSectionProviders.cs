@@ -458,8 +458,8 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 /// change.
 ///
 /// Lists citing items as explorable entries named by the item's own
-/// (curated) display name -- "The First Commandment", "Baptism — Part the
-/// Fourth" -- clicking one pushes a <see cref="CatechismNode"/> (the SAME
+/// (curated) display name -- "The First Commandment", "What Does Baptism
+/// Give or Profit?" -- clicking one pushes a <see cref="CatechismNode"/> (the SAME
 /// drill-in <see cref="IPopoverSectionContext.PushAsync"/> mechanism every
 /// other section-native explorable row already uses). Conditional presence:
 /// a verse/passage citing nothing shows no section at all (no placeholder

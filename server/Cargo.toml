@@ -362,7 +362,11 @@ resolver = "2"
 # empty-part law) and three in atlas-graph's catechism_adapter (a part is
 # a node carrying `curated`; part-level citations do not collapse into the
 # item's own rows; part and item topic ids cannot collide).
-# CURRENT CANONICAL: 995 (970 + 25) across 55 sections.
+# CATECH-V1 (2026-08-31, the lesson surface brought onto this branch):
+# moved to 1005 (980 + 25) across 56 sections. +10 tests, +1 section:
+# atlas-server's own `tests/catechism_v1.rs` (6) is the new section, and
+# `catechism_pdf`'s unit tests (4) join an existing one.
+# CURRENT CANONICAL: 1005 (980 + 25) across 56 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # AQC fixtures REGENERATED this batch (19 files) -- diff is version + count
 # only, no shape drift; `focus-catechismitem` moves 207 -> 225 as the topic

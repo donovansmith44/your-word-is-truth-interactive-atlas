@@ -918,6 +918,115 @@ pub fn run_catechism_parts(
     bail!("catechism part validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
+/// CATECH-V1: validates the curated reflection prompts
+/// (`data/curated/catechism-reflection.toml`) against the full item roster,
+/// AFTER `compile.rs` has merged them onto their items.
+///
+/// Three laws, all of them things a classroom would otherwise discover the
+/// hard way:
+///
+/// 1. **Every prompt lands on a real item.** An `item` id that matches
+///    nothing in `catechism.toml` is a typo that would silently teach
+///    nothing; it fails here rather than vanishing.
+/// 2. **Tier never regresses within an item.** The curated file's own order
+///    IS the presentation order, and the user's requirement is "reflection
+///    questions in order from easy to difficult" -- so `child` may be
+///    followed by `child`/`youth`/`adult`, but `adult` may never be followed
+///    by `youth`. This is the law that makes the ordering claim TRUE rather
+///    than merely intended; without it the file rots the first time someone
+///    appends a question to the end of a list.
+/// 3. **No empty prompt.** A blank prompt renders as a bullet with nothing
+///    to ask.
+///
+/// Items with NO reflection prompts at all are deliberately allowed (not
+/// every item must be lesson-ready on day one) -- `compile.rs` reports the
+/// coverage count in its own report instead, the same "warn on incomplete,
+/// fail on incorrect" split the rest of this module already follows.
+pub fn run_catechism_reflection(parts: &[CatechismPart], curated_ids: &[String]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+
+    let known: HashSet<&str> = parts.iter().flat_map(|p| p.items.iter()).map(|i| i.id.as_str()).collect();
+    let mut seen: HashSet<&str> = HashSet::new();
+    for id in curated_ids {
+        if !known.contains(id.as_str()) {
+            errors.push(format!(
+                "catechism-reflection.toml: item '{id}' does not match any catechism.toml item id"
+            ));
+        }
+        if !seen.insert(id.as_str()) {
+            errors.push(format!("catechism-reflection.toml: item '{id}' appears more than once"));
+        }
+    }
+
+    for part in parts {
+        for item in &part.items {
+            let ctx = format!("catechism item '{}' ({})", item.id, item.name);
+            let mut previous: Option<atlas_core::data::ReflectionTier> = None;
+            for (index, q) in item.reflection.iter().enumerate() {
+                if q.prompt.trim().is_empty() {
+                    errors.push(format!("{ctx}: reflection prompt #{} is empty", index + 1));
+                }
+                if let Some(prev) = previous {
+                    if q.tier < prev {
+                        errors.push(format!(
+                            "{ctx}: reflection prompt #{} is tier '{}' after tier '{}' -- prompts must run easy to difficult (child, youth, adult), never back up",
+                            index + 1,
+                            q.tier.label(),
+                            prev.label()
+                        ));
+                    }
+                }
+                previous = Some(q.tier);
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("catechism reflection validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
+/// CATECH-V1: validates curated song bindings
+/// (`data/curated/catechism-music.toml`). `kind` was already checked at
+/// parse time (a closed enum); what needs the full roster is the item id,
+/// and what needs looking at the value is the url -- a link that is neither
+/// http(s) nor a same-origin path would render a player that silently never
+/// plays, which in a Sunday morning classroom is indistinguishable from the
+/// app being broken. Empty urls never reach here (dropped with a warning by
+/// `curated::parse_catechism_music`, since that file ships as a skeleton).
+pub fn run_catechism_music(parts: &[CatechismPart], bindings: &[(String, atlas_core::data::MediaLink)]) -> Result<()> {
+    let mut errors: Vec<String> = Vec::new();
+    let known: HashSet<&str> = parts.iter().flat_map(|p| p.items.iter()).map(|i| i.id.as_str()).collect();
+
+    for (item_id, link) in bindings {
+        if !known.contains(item_id.as_str()) {
+            errors.push(format!(
+                "catechism-music.toml: '{}' targets item '{item_id}', which does not match any catechism.toml item id",
+                link.title
+            ));
+        }
+        if link.title.trim().is_empty() {
+            errors.push(format!("catechism-music.toml: item '{item_id}' has a song with an empty title"));
+        }
+        let url = link.url.trim();
+        let plausible = url.starts_with("https://") || url.starts_with("http://") || url.starts_with('/');
+        if !plausible {
+            errors.push(format!(
+                "catechism-music.toml: '{}' (item '{item_id}') has url '{}', which is neither an http(s) URL nor a same-origin path",
+                link.title, link.url
+            ));
+        }
+    }
+
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let joined = errors.iter().map(|e| format!("  - {e}")).collect::<Vec<_>>().join("\n");
+    bail!("catechism music validation failed with {} error(s):\n{}", errors.len(), joined);
+}
+
 /// Batch HOTFIX-2 fix-round-1 (review findings I-1, I-3): validates
 /// `atlas_core::merge::MERGE_PAIRS` — the small, hand-curated table of
 /// same-place merges `AtlasData::finish()` applies via

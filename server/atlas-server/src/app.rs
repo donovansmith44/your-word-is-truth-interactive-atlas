@@ -16,7 +16,7 @@ use atlas_core::data::AtlasData;
 use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
-use crate::{contract, graph_handlers, handlers};
+use crate::{catechism_pdf, contract, graph_handlers, handlers};
 
 /// Batch M-A (fix round 1, C1): the two pieces of server state every
 /// handler now draws from -- the pre-existing `AtlasData` (places/events/
@@ -146,7 +146,18 @@ pub fn build_with_sources(
         .route("/api/kretzmann/chapter/{cref}", get(handlers::kretzmann_chapter))
         .route("/api/verse/{vref}", get(handlers::verse))
         .route("/api/xrefs/{sref}", get(handlers::xrefs))
+        // CATECH-V1: the outline route is registered BEFORE the two
+        // parameterized catechism routes purely for readability -- axum
+        // matches a literal segment over a capture regardless of order,
+        // so `/api/catechism` and `/api/catechism/{sref}` cannot collide.
+        .route("/api/catechism", get(handlers::catechism_outline))
+        // CATECH-V1: literal segment, so it cannot collide with
+        // `/api/catechism/{sref}` below.
+        .route("/api/catechism/print", get(catechism_pdf::catechism_print))
         .route("/api/catechism/item/{id}", get(handlers::catechism_item))
+        // PARTS-1: the item-less twin -- a literal segment like
+        // `/print` and `/item`, so it cannot collide with `/{sref}`.
+        .route("/api/catechism/part/{id}", get(handlers::catechism_part))
         .route("/api/catechism/{sref}", get(handlers::catechism_for_span))
         .route("/api/place/{id}", get(handlers::place))
         .route("/api/narratives", get(handlers::narratives))

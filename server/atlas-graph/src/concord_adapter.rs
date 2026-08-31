@@ -309,6 +309,11 @@ mod tests {
                 verses: vec![],
                 ref_note: None,
                 questions: vec![],
+                // CATECH-V1: this adapter reads neither new field -- it maps
+                // Concord SC-overlap rows onto item ids -- so empty lists
+                // are the honest fixture, not a gap.
+                reflection: Vec::new(),
+                media: Vec::new(),
             }],
             questions: vec![],
             curated: true,

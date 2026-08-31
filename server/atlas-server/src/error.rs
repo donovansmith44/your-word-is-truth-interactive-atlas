@@ -39,6 +39,14 @@ impl ApiError {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_ref", message: format!("invalid scripture reference: '{raw}'") }
     }
 
+    /// CATECH-V1: a print request whose own parameters are malformed --
+    /// a missing `item`, or a `scope`/`tier` outside its closed set. Carries
+    /// the expectation in the message rather than a bare 400, since these
+    /// links get bookmarked and hand-edited (`catechism_pdf`'s own header).
+    pub fn bad_request(message: &str) -> Self {
+        Self { status: StatusCode::BAD_REQUEST, code: "bad_request", message: message.to_string() }
+    }
+
     /// A syntactically fine identifier (place id, or a verse ref whose text
     /// this atlas doesn't have) that names no resource that exists.
     pub fn not_found(what: &str) -> Self {

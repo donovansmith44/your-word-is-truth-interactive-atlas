@@ -32,7 +32,8 @@ fn sources_toml_reconciles_1to1_against_licenses_md_per_source_table() {
 #[test]
 fn per_source_table_has_the_expected_row_count() {
     // Belt-and-suspenders: batch-s-brief.md's own finalization block names
-    // 18 sources as of BASE (dcb7278) -- an independent, hardcoded count
+    // 20 sources: 18 as of BASE (dcb7278), plus the two CATECH-V1 curated
+    // files (reflection prompts, song bindings). An independent, hardcoded count
     // (not derived from sources.toml itself) so a bug that accidentally
     // made both sides drift together in the SAME wrong direction still
     // gets caught. This assertion is expected to grow over time as new
@@ -42,9 +43,8 @@ fn per_source_table_has_the_expected_row_count() {
     let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
     assert_eq!(
         doc.sources.len(),
-        18,
-        "data/curated/sources.toml has {} entries, expected 18 (batch-s-brief.md's own finalization \
-         count at BASE dcb7278) -- if a real source was intentionally added/removed, update this \
+        20,
+        "data/curated/sources.toml has {} entries, expected 20 (18 at BASE dcb7278 + 2 from CATECH-V1) -- if a real source was intentionally added/removed, update this \
          expected count in the same commit",
         doc.sources.len()
     );

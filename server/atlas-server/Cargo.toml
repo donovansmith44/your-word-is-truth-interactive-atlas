@@ -45,6 +45,7 @@ tower-http = { version = "0.6", features = ["cors", "fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
+printpdf = { version = "0.12.6", default-features = false }
 
 [dev-dependencies]
 http-body-util = "0.1"
@@ -59,6 +60,16 @@ futures = "0.3"
 # server/Cargo.toml's own STANDING COUNTING PROCEDURE comment and this
 # crate's `benches/queries.rs`).
 criterion = "0.5"
+# CATECH-V1 fix (2026-08-31): the PDF assertions used to byte-search the
+# document for the strings it draws, which worked only because printpdf
+# 0.12.6 wrote content streams UNCOMPRESSED. 0.12.7 Flate-compresses them
+# by default and both assertions went dark -- the documents were correct,
+# the test's assumption about the encoding was not. Parsing the PDF (with
+# the same lopdf printpdf itself builds on) asserts on what the document
+# SAYS, independent of how any version chooses to encode it. Pinning
+# printpdf back to 0.12.6 would have frozen a dependency to keep a test's
+# assumption alive, which is backwards.
+lopdf = "0.44"
 
 [[bench]]
 name = "queries"

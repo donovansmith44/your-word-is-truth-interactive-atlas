@@ -486,6 +486,51 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
 
     validate::run_catechism(&catechism, &data.verses)
         .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism.toml and re-run")?;
+
+    // --- CATECH-V1: reflection prompts + song bindings ----
+    // Both are merged onto the already-validated items, then validated in
+    // their own right -- the same order Batch F2's question merge already
+    // uses (merge first, validate the merged whole), so a cross-file law
+    // like "tiers never regress" gets to see the final list rather than one
+    // file's view of it.
+    let reflection = curated::parse_catechism_reflection(&read(&curated_dir.join("catechism-reflection.toml"))?)?;
+    let reflection_ids: Vec<String> = reflection.iter().map(|(id, _)| id.clone()).collect();
+    let mut reflection_by_item: HashMap<String, Vec<atlas_core::data::ReflectionQuestion>> =
+        reflection.into_iter().collect();
+    for part in &mut catechism {
+        for item in &mut part.items {
+            if let Some(prompts) = reflection_by_item.remove(&item.id) {
+                item.reflection = prompts;
+            }
+        }
+    }
+    validate::run_catechism_reflection(&catechism, &reflection_ids).context(
+        "data/compiled/catechism.json was NOT written; fix data/curated/catechism-reflection.toml and re-run",
+    )?;
+
+    let (music_bindings, music_warnings) =
+        curated::parse_catechism_music(&read(&curated_dir.join("catechism-music.toml"))?)?;
+    validate::run_catechism_music(&catechism, &music_bindings)
+        .context("data/compiled/catechism.json was NOT written; fix data/curated/catechism-music.toml and re-run")?;
+    warnings.extend(music_warnings);
+    let mut media_by_item: HashMap<String, Vec<atlas_core::data::MediaLink>> = HashMap::new();
+    for (item_id, link) in music_bindings {
+        media_by_item.entry(item_id).or_default().push(link);
+    }
+    for part in &mut catechism {
+        for item in &mut part.items {
+            if let Some(links) = media_by_item.remove(&item.id) {
+                item.media = links;
+            }
+        }
+    }
+
+    let catechism_reflection_prompts: usize =
+        catechism.iter().flat_map(|p| p.items.iter()).map(|i| i.reflection.len()).sum();
+    let catechism_reflection_items =
+        catechism.iter().flat_map(|p| p.items.iter()).filter(|i| !i.reflection.is_empty()).count();
+    let catechism_media_links: usize = catechism.iter().flat_map(|p| p.items.iter()).map(|i| i.media.len()).sum();
+
     let catechism_items_count: usize = catechism.iter().map(|p| p.items.len()).sum();
     let catechism_part_questions = part_questions;
     let catechism_noncurated_parts = catechism.iter().filter(|p| !p.curated).count();
@@ -532,6 +577,9 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         catechism_items_reachable,
         catechism_distinct_verses,
         catechism_per_part,
+        catechism_reflection_prompts,
+        catechism_reflection_items,
+        catechism_media_links,
     };
 
     Ok(CompileOutput { data, report, place_history_list, place_name_alias_list })

@@ -905,6 +905,26 @@ pub struct CatechismItem {
     /// with an empty list, no schema migration needed.
     #[serde(default)]
     pub questions: Vec<CatechismQuestion>,
+    /// CATECH-V1: the lesson-facing REFLECTION prompts
+    /// (`data/curated/catechism-reflection.toml`) -- questions a teacher asks
+    /// out loud, in easy-to-difficult order. Distinct from `questions` above
+    /// in kind, not merely in source: those are proof-verse GROUPINGS (a
+    /// title plus the verses it gathers, asking the student nothing), these
+    /// are prompts with a difficulty `tier` and no verses of their own. Kept
+    /// as its own list for exactly the reason `questions` was kept separate
+    /// from `verses` -- two different granularities are not a parallel
+    /// implementation of one concept. Order IS presentation order (the
+    /// curated file's own order), and `validate::run_catechism_reflection`
+    /// pins the non-decreasing-tier law that makes "easy to difficult"
+    /// true rather than merely intended.
+    #[serde(default)]
+    pub reflection: Vec<ReflectionQuestion>,
+    /// CATECH-V1: songs bound to this item
+    /// (`data/curated/catechism-music.toml`). Nothing is redistributed --
+    /// each entry is a link the client hands to a provider embed or to a
+    /// plain `<audio>` element; see that file's own header.
+    #[serde(default)]
+    pub media: Vec<MediaLink>,
 }
 
 fn default_explanation_heading() -> String {
@@ -928,6 +948,94 @@ pub struct CatechismQuestion {
     pub title: String,
     pub verses: Vec<String>,
     pub source: String,
+}
+
+/// CATECH-V1: how hard a reflection prompt is, which doubles as WHO it is
+/// for -- the user's own "Sunday School lesson for any age group" and
+/// "reflection questions in order from easy to difficult" are one axis, not
+/// two, so this is one enum rather than a separate age field and difficulty
+/// field that could disagree with each other.
+///
+/// Ordering is the point: `Child < Youth < Adult` is derived (not
+/// hand-compared anywhere), so the ETL's own non-decreasing check and any
+/// future "show me only the child tier" filter both read the same order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReflectionTier {
+    Child,
+    Youth,
+    Adult,
+}
+
+impl ReflectionTier {
+    /// The wire/curated spelling, and the label the client shows on a chip.
+    pub fn label(self) -> &'static str {
+        match self {
+            ReflectionTier::Child => "child",
+            ReflectionTier::Youth => "youth",
+            ReflectionTier::Adult => "adult",
+        }
+    }
+
+    pub fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "child" => Some(ReflectionTier::Child),
+            "youth" => Some(ReflectionTier::Youth),
+            "adult" => Some(ReflectionTier::Adult),
+            _ => None,
+        }
+    }
+}
+
+/// CATECH-V1: one reflection prompt on a `CatechismItem`. No verses field --
+/// a reflection question is a thing you ASK, and the item's own proof verses
+/// (`CatechismItem::verses`/`questions`) are already the Scripture beside it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReflectionQuestion {
+    pub prompt: String,
+    pub tier: ReflectionTier,
+}
+
+/// CATECH-V1: which player renders a `MediaLink`. Deliberately a closed set
+/// -- an unknown `kind` is an ETL error, never a silently-dead player in a
+/// classroom (`validate::run_catechism_music`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MediaKind {
+    Spotify,
+    Youtube,
+    Mp3,
+}
+
+impl MediaKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            MediaKind::Spotify => "spotify",
+            MediaKind::Youtube => "youtube",
+            MediaKind::Mp3 => "mp3",
+        }
+    }
+
+    pub fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "spotify" => Some(MediaKind::Spotify),
+            "youtube" => Some(MediaKind::Youtube),
+            "mp3" => Some(MediaKind::Mp3),
+            _ => None,
+        }
+    }
+}
+
+/// CATECH-V1: one song bound to a catechism item. `note` is the curator's
+/// own reason for the pairing (why THIS hymn for THIS item) -- shown to the
+/// teacher, not the class.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MediaLink {
+    pub kind: MediaKind,
+    pub title: String,
+    pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 /// Batch F: one chief part of the Small Catechism (`[[part]]` in
@@ -2262,6 +2370,20 @@ pub fn demo_fixture() -> AtlasData {
                 title: "Demo Question".into(),
                 verses: vec!["JOS.6.21".into()],
                 source: "brain-fuel/catechism".into(),
+            }],
+            // CATECH-V1: two prompts at DIFFERENT tiers, in ascending order
+            // -- so a server test can assert both that reflection reaches
+            // the wire at all and that its order survives the trip (a
+            // single-prompt fixture could not tell those two apart).
+            reflection: vec![
+                ReflectionQuestion { prompt: "Demo easy prompt.".into(), tier: ReflectionTier::Child },
+                ReflectionQuestion { prompt: "Demo harder prompt.".into(), tier: ReflectionTier::Adult },
+            ],
+            media: vec![MediaLink {
+                kind: MediaKind::Youtube,
+                title: "Demo Hymn".into(),
+                url: "https://example.invalid/demo".into(),
+                note: None,
             }],
         }],
     }];

@@ -373,7 +373,66 @@ public sealed record CatechismItemDetail(
     string ExplanationHeading,
     string Explanation,
     string? WhereWritten,
+    List<CatechismProofVerseDto> Verses,
+    // CATECH-V1. Trailing + defaulted so every existing positional
+    // construction site (tests, fixtures) stays source-compatible -- the
+    // same convention PlaceDetail.CanonicalName already set here.
+    string PartId = "",
+    List<ReflectionQuestionDto>? Reflection = null,
+    List<MediaLinkDto>? Media = null);
+
+/// CATECH-V1: one reflection prompt. <see cref="Tier"/> is the lowercase
+/// server label (child/youth/adult) -- rendered directly as the chip text,
+/// and used for the tier filter. Kept a string rather than a client enum on
+/// purpose: the server already owns the closed set (an unknown tier there is
+/// an ETL failure), so re-declaring it here would be a second place to
+/// forget to update.
+public sealed record ReflectionQuestionDto(string Prompt, string Tier);
+
+/// CATECH-V1: one song bound to an item. <see cref="Kind"/> is
+/// spotify/youtube/mp3; <see cref="Note"/> is the curator's reason for the
+/// pairing, shown to the teacher.
+public sealed record MediaLinkDto(string Kind, string Title, string Url, string? Note = null);
+
+/// CATECH-V1: `GET /api/catechism` -- the navigable outline behind the
+/// Catechism tab's tree. Names and counts only; opening an item is what
+/// fetches that item (see <see cref="AtlasClient.CatechismItem"/>).
+public sealed record CatechismOutlineDto(List<CatechismOutlinePartDto> Parts);
+
+public sealed record CatechismOutlinePartDto(
+    string Id,
+    string Title,
+    List<CatechismOutlineItemDto> Items,
+    // PARTS-1: false for a part this app materializes rather than one
+    // catechism.toml defines. The tree says so out loud instead of
+    // leaving a teacher to wonder why a chief part has no items.
+    bool Curated = true,
+    // PARTS-1: topical groupings belonging to the PART, not to any item.
+    int QuestionCount = 0);
+
+/// PARTS-1: `GET /api/catechism/part/{id}` -- one chief part and its own
+/// topical groupings, each verse resolved. What the four item-less parts
+/// (Daily Prayers, the Table of Duties, and the two topical sections)
+/// carry INSTEAD of items.
+public sealed record CatechismPartDetail(
+    string Id,
+    string Title,
+    bool Curated,
+    int ItemCount,
+    List<CatechismPartQuestionDto> Questions);
+
+public sealed record CatechismPartQuestionDto(
+    string Title,
+    string Source,
     List<CatechismProofVerseDto> Verses);
+
+public sealed record CatechismOutlineItemDto(
+    string Id,
+    string Name,
+    string ExplanationHeading,
+    int VerseCount,
+    int ReflectionCount,
+    int MediaCount);
 
 public sealed record PlaceDetail(
     string Id,

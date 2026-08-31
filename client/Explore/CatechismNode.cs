@@ -8,8 +8,8 @@ namespace BibleAtlas.Client.Explore;
 /// SMALL CATECHISM" section (<see cref="CatechismSeamSection"/>) or from a
 /// proof verse's own onward navigation is the REVERSE direction (a
 /// <see cref="VerseNode"/>, not this class). <see cref="Title"/> is the
-/// item's own display <c>name</c> (e.g. "The First Commandment", "Baptism —
-/// Part the Fourth") -- known synchronously at construction, the SAME
+/// item's own display <c>name</c> (e.g. "The First Commandment", "What Does
+/// Baptism Give or Profit?") -- known synchronously at construction, the SAME
 /// "never a fetch" discipline every other <see cref="IExplorable"/> node
 /// follows (here, handed in directly by the caller, which already has it
 /// from a <see cref="CatechismRefDto"/> row -- no need to re-derive it from

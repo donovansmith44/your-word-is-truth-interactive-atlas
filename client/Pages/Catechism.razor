@@ -1,0 +1,490 @@
+@* CATECH-V1: the Catechism tab -- a Sunday School lesson surface over the
+   SAME compiled catechism the Reader's own popover section already reads.
+
+   Shape, and why: an outline pane (the six chief parts and their items) on
+   the left, one open item on the right. The outline is the SPINE -- the
+   thing you came from and return to -- so "go back to the spine" is a real
+   control (`Return to the spine`), not a browser-back guess: it restores
+   the part you were reading when you drilled in, which is what a teacher
+   who just chased a proof verse actually wants back.
+
+   Everything on this page is deep-linkable (?item=&tier=&song=), because the
+   resume link ("send it to myself to pick up next week") is just this page's
+   own URL. That is also why state lives in query params rather than in a
+   service: a bookmark you cannot mail is not a bookmark. Mirrors World.razor's
+   own ?from=&to= convention exactly.
+
+   No new abstraction is introduced for the proof verses: an opened item
+   pushes the SAME CatechismNode into the SAME ExplorerPopover the Reader
+   uses, so drilling verse -> place -> event works here identically. *@
+@page "/catechism"
+@using BibleAtlas.Client.Explore
+@inject AtlasClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Catechism — Bible Explorer</PageTitle>
+
+<div class="catechism-page" data-testid="catechism-page">
+
+    <aside class="catechism-spine" data-testid="catechism-spine">
+        <div class="catechism-spine-head">
+            <h1 class="catechism-title">The Small Catechism</h1>
+            @if (_outline is not null)
+            {
+                <p class="catechism-subtitle">
+                    @_outline.Parts.Count chief parts &middot; @TotalItems items &middot; @TotalPrompts reflection questions
+                </p>
+            }
+        </div>
+
+        @if (_outline is null)
+        {
+            <p class="catechism-loading" data-testid="catechism-loading">Loading the catechism&hellip;</p>
+        }
+        else
+        {
+            @foreach (var part in _outline.Parts)
+            {
+                <section class="catechism-part" data-testid="@($"catechism-part--{part.Id}")">
+                    @* PARTS-1: a part with its own topical groupings is
+                       openable in its own right. Four parts have ONLY
+                       those -- without this they would draw as empty
+                       headings, and the Table of Duties' 87 verses would
+                       look like a bug rather than content. *@
+                    @if (part.QuestionCount > 0)
+                    {
+                        <button type="button"
+                                class="catechism-part-title is-openable @(part.Id == OpenPartId ? "is-open" : "")"
+                                data-testid="@($"catechism-part-open--{part.Id}")"
+                                @onclick="() => OpenPart(part.Id)">
+                            <span>@part.Title</span>
+                            <span class="count-chip" title="topical groupings on this part">@part.QuestionCount</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <h2 class="catechism-part-title">@part.Title</h2>
+                    }
+                    @if (!part.Curated)
+                    {
+                        @* Said out loud, never inferred from the id: these
+                           are sections this app materializes so real
+                           content has a home, not parts Luther numbered. *@
+                        <p class="catechism-part-note" data-testid="@($"catechism-part-note--{part.Id}")">
+                            Not one of the six chief parts &mdash; a section this atlas adds so its content has a home.
+                        </p>
+                    }
+                    <ul class="catechism-item-list">
+                        @foreach (var item in part.Items)
+                        {
+                            <li>
+                                <button type="button"
+                                        class="catechism-item-button @(item.Id == OpenItemId ? "is-open" : "")"
+                                        data-testid="@($"catechism-item--{item.Id}")"
+                                        @onclick="() => OpenItem(item.Id, part.Id)">
+                                    <span class="catechism-item-name">@item.Name</span>
+                                    <span class="catechism-item-counts">
+                                        @if (item.ReflectionCount > 0)
+                                        {
+                                            <span class="count-chip" title="reflection questions">@item.ReflectionCount Q</span>
+                                        }
+                                        @if (item.MediaCount > 0)
+                                        {
+                                            <span class="count-chip" title="songs">@item.MediaCount &#9835;</span>
+                                        }
+                                    </span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        }
+    </aside>
+
+    <section class="catechism-stage" data-testid="catechism-stage">
+        @if (OpenPartId is not null && OpenItemId is null)
+        {
+            @if (_part is null)
+            {
+                <p class="catechism-loading">Loading&hellip;</p>
+            }
+            else
+            {
+                <header class="lesson-head">
+                    <div class="lesson-head-text">
+                        <p class="lesson-part">@(_part.Curated ? "Chief part" : "Section")</p>
+                        <h2 class="lesson-name" data-testid="lesson-part-name">@_part.Title</h2>
+                    </div>
+                </header>
+
+                <p class="catechism-part-summary" data-testid="lesson-part-summary">
+                    @_part.Questions.Count topical grouping@(_part.Questions.Count == 1 ? "" : "s")
+                    &middot; @_part.Questions.Sum(q => q.Verses.Count) verses
+                    @if (_part.ItemCount > 0)
+                    {
+                        <text>&middot; @_part.ItemCount item@(_part.ItemCount == 1 ? "" : "s") below</text>
+                    }
+                </p>
+
+                @foreach (var group in _part.Questions)
+                {
+                    <section class="lesson-scriptures" data-testid="@($"part-group--{group.Title}")">
+                        <h3 class="lesson-ask">@group.Title</h3>
+                        <ul class="scripture-list">
+                            @foreach (var v in group.Verses)
+                            {
+                                <li class="scripture-row">
+                                    <button type="button" class="scripture-ref" @onclick="() => OpenVerse(v.Vref)">@v.Vref</button>
+                                    <span class="scripture-text">@v.Text</span>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            }
+        }
+        else if (OpenItemId is null)
+        {
+            <div class="catechism-empty" data-testid="catechism-empty">
+                <p>Pick an item from the spine to begin the lesson.</p>
+                <p class="catechism-empty-hint">
+                    Every item carries Luther's own words, the Scripture behind it, and
+                    reflection questions ordered from easy to difficult.
+                </p>
+            </div>
+        }
+        else if (_item is null)
+        {
+            <p class="catechism-loading">Loading&hellip;</p>
+        }
+        else
+        {
+            <header class="lesson-head">
+                <div class="lesson-head-text">
+                    <p class="lesson-part">@_item.PartTitle</p>
+                    <h2 class="lesson-name" data-testid="lesson-name">@_item.Name</h2>
+                </div>
+                <div class="lesson-head-tools">
+                    @* The spine return. Enabled only when we actually drilled away
+                       from where we started, so it never lies about having somewhere
+                       to go back to. *@
+                    <button type="button" class="lesson-tool" data-testid="return-to-spine"
+                            disabled="@(SpineItemId is null || SpineItemId == OpenItemId)"
+                            @onclick="ReturnToSpine">
+                        &larr; Back to @SpineLabel
+                    </button>
+                    <button type="button" class="lesson-tool" data-testid="mark-spine" @onclick="MarkSpine">
+                        Set as spine
+                    </button>
+                </div>
+            </header>
+
+            @* --- Luther's own text ------------------------------------- *@
+            @if (!string.IsNullOrWhiteSpace(_item.Text))
+            {
+                <blockquote class="lesson-text" data-testid="lesson-text">@_item.Text</blockquote>
+            }
+
+            <div class="lesson-explanation" data-testid="lesson-explanation">
+                <h3 class="lesson-ask">@_item.ExplanationHeading</h3>
+                @foreach (var paragraph in Paragraphs(_item.Explanation))
+                {
+                    <p>@paragraph</p>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_item.WhereWritten))
+            {
+                <div class="lesson-where" data-testid="lesson-where">
+                    <h3 class="lesson-ask">Where is this written?</h3>
+                    <p>@_item.WhereWritten</p>
+                </div>
+            }
+
+            @* --- Songs -------------------------------------------------- *@
+            <CatechismMusic Curated="@(_item.Media ?? new List<MediaLinkDto>())"
+                            AdHocUrl="@SongUrl"
+                            AdHocUrlChanged="@OnSongChanged" />
+
+            @* --- Reflection questions, easy -> difficult ---------------- *@
+            @if (_item.Reflection is { Count: > 0 } prompts)
+            {
+                <section class="lesson-reflection" data-testid="lesson-reflection">
+                    <div class="reflection-head">
+                        <h3 class="lesson-ask">Reflection questions</h3>
+                        <div class="tier-filter" role="group" aria-label="Filter by age group">
+                            @foreach (var tier in TierFilters)
+                            {
+                                <button type="button"
+                                        class="tier-button @(tier.Value == Tier ? "is-active" : "")"
+                                        data-testid="@($"tier-{tier.Value}")"
+                                        @onclick="() => SetTier(tier.Value)">@tier.Label</button>
+                            }
+                        </div>
+                    </div>
+
+                    @{
+                        var visible = prompts.Where(q => Tier == "all" || q.Tier == Tier).ToList();
+                    }
+                    @if (visible.Count == 0)
+                    {
+                        <p class="reflection-none" data-testid="reflection-none">
+                            No @Tier questions on this item yet.
+                        </p>
+                    }
+                    else
+                    {
+                        <ol class="reflection-list">
+                            @foreach (var q in visible)
+                            {
+                                <li class="reflection-item" data-testid="@($"reflection-{q.Tier}")">
+                                    <span class="tier-chip tier-@q.Tier">@q.Tier</span>
+                                    <span class="reflection-prompt">@q.Prompt</span>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </section>
+            }
+
+            @* --- The Scriptures ---------------------------------------- *@
+            @if (_item.Verses.Count > 0)
+            {
+                <section class="lesson-scriptures" data-testid="lesson-scriptures">
+                    <h3 class="lesson-ask">The Scriptures</h3>
+                    <p class="scriptures-count">@_item.Verses.Count verses</p>
+                    <ul class="scripture-list">
+                        @foreach (var v in _item.Verses.Take(_versesShown))
+                        {
+                            <li class="scripture-row">
+                                <button type="button" class="scripture-ref" data-testid="@($"scripture-{v.Vref}")"
+                                        @onclick="() => OpenVerse(v.Vref)">@v.Vref</button>
+                                <span class="scripture-text">@v.Text</span>
+                                @if (!string.IsNullOrWhiteSpace(v.Question))
+                                {
+                                    <span class="scripture-question">@v.Question</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    @if (_item.Verses.Count > _versesShown)
+                    {
+                        <button type="button" class="lesson-tool" data-testid="scriptures-more"
+                                @onclick="() => _versesShown += VersePage">
+                            Show @Math.Min(VersePage, _item.Verses.Count - _versesShown) more
+                        </button>
+                    }
+                </section>
+            }
+
+            <CatechismLessonFooter ItemId="@_item.Id" ItemName="@_item.Name"
+                                   Tier="@Tier" SongUrl="@SongUrl" SpineItemId="@SpineItemId" />
+        }
+    </section>
+</div>
+
+@* Owner directive: a proof verse must PEEK, never navigate. A lesson is a
+   place you are standing -- following a citation to the Reader would throw
+   away the spine, the tier filter, and the song, and the teacher would have
+   to find their way back mid-class. This is the SAME ExplorerPopover on the
+   SAME VerseNode that /read, /concord, and /kretzmann push for the identical
+   vref, so the peek shows the identical VerseDetail (and its cross-references
+   inline) regardless of which page opened it -- a parallel popover
+   implementation would be a defect. *@
+@if (_activeNode is not null)
+{
+    <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover" />
+}
+
+@code {
+    // How many proof verses to show before asking. An item can carry over a
+    // thousand (creed-1 does), and a lesson never needs them all at once --
+    // same reveal discipline PassageList/CatechismList already use, just with
+    // a page size suited to a full-width stage instead of a popover.
+    private const int VersePage = 25;
+
+    // URL IS the lesson position. Read via [SupplyParameterFromQuery] and
+    // written via Nav.GetUriWithQueryParameters -- World.razor's own
+    // convention, and the reason the resume link needs no separate encoding:
+    // the link you copy is literally the state the page restores.
+    [SupplyParameterFromQuery(Name = "item")]
+    public string? ItemQuery { get; set; }
+
+    /// The SPINE: the item this lesson started from, so "back to the spine"
+    /// restores where you were working rather than guessing at browser
+    /// history (which by then is full of proof-verse detours).
+    [SupplyParameterFromQuery(Name = "spine")]
+    public string? SpineQuery { get; set; }
+
+    /// PARTS-1: the open chief PART, when the stage is showing a part
+    /// rather than an item. Mutually exclusive with `item` -- opening
+    /// either clears the other, since the stage shows one thing.
+    [SupplyParameterFromQuery(Name = "part")]
+    public string? PartQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "tier")]
+    public string? TierQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "song")]
+    public string? SongQuery { get; set; }
+
+    /// The peeked node, when a proof verse is open. One at a time, owned by
+    /// this page -- the same field name and lifecycle Concord/Kretzmann use.
+    private IExplorable? _activeNode;
+
+    private CatechismOutlineDto? _outline;
+    private CatechismItemDetail? _item;
+    private CatechismPartDetail? _part;
+    private string? _loadedPartId;
+    private string? _loadedItemId;
+    private int _versesShown = VersePage;
+
+    private string Tier => string.IsNullOrWhiteSpace(TierQuery) ? "all" : TierQuery!;
+    private string? OpenItemId => string.IsNullOrWhiteSpace(ItemQuery) ? null : ItemQuery;
+    private string? OpenPartId => string.IsNullOrWhiteSpace(PartQuery) ? null : PartQuery;
+    private string? SpineItemId => string.IsNullOrWhiteSpace(SpineQuery) ? null : SpineQuery;
+    private string? SongUrl => string.IsNullOrWhiteSpace(SongQuery) ? null : SongQuery;
+
+    private static readonly (string Value, string Label)[] TierFilters =
+    {
+        ("all", "All"), ("child", "Child"), ("youth", "Youth"), ("adult", "Adult"),
+    };
+
+    private int TotalItems => _outline?.Parts.Sum(p => p.Items.Count) ?? 0;
+    private int TotalPrompts => _outline?.Parts.Sum(p => p.Items.Sum(i => i.ReflectionCount)) ?? 0;
+
+    private string SpineLabel
+    {
+        get
+        {
+            if (SpineItemId is null) return "the spine";
+            var name = _outline?.Parts.SelectMany(p => p.Items).FirstOrDefault(i => i.Id == SpineItemId)?.Name;
+            return name ?? "the spine";
+        }
+    }
+
+    protected override async Task OnInitializedAsync() => _outline = await Api.CatechismOutline();
+
+    /// Fires on every query change, which is every navigation this page makes
+    /// -- so opening an item, switching tier, and following a resume link all
+    /// funnel through one load path.
+    protected override async Task OnParametersSetAsync()
+    {
+        // PARTS-1: the part load runs first and independently -- the two
+        // are mutually exclusive on screen, but a stale ?part= alongside a
+        // fresh ?item= must clear rather than linger.
+        var wantedPart = OpenPartId;
+        if (wantedPart is null)
+        {
+            _part = null;
+            _loadedPartId = null;
+        }
+        else if (wantedPart != _loadedPartId)
+        {
+            _loadedPartId = wantedPart;
+            _part = null;
+            try
+            {
+                _part = await Api.CatechismPart(wantedPart);
+            }
+            catch (HttpRequestException)
+            {
+                // Same reasoning as the item fallback below: a stale link
+                // must not blank the page.
+                _loadedPartId = null;
+            }
+        }
+
+        var wanted = OpenItemId;
+        if (wanted is null)
+        {
+            _item = null;
+            _loadedItemId = null;
+            return;
+        }
+        if (wanted == _loadedItemId) return;
+
+        _loadedItemId = wanted;
+        _item = null;
+        _versesShown = VersePage;
+        try
+        {
+            _item = await Api.CatechismItem(wanted);
+        }
+        catch (HttpRequestException)
+        {
+            // A stale or mistyped ?item= in a pasted link must not blank the
+            // page -- fall back to the empty stage, which still shows the
+            // whole spine so the teacher can just pick again.
+            _loadedItemId = null;
+        }
+    }
+
+    private void OpenItem(string itemId, string partId)
+    {
+        // The first item opened in a session becomes the spine: the place you
+        // started from, and the place "back" means.
+        // PARTS-1: opening an item closes any open part -- the stage shows
+        // one thing, and leaving both set would make the URL lie about
+        // what is on screen.
+        Go(itemId, SpineItemId ?? itemId, Tier, SongUrl, null);
+    }
+
+    /// PARTS-1: open a chief part in the stage. Deliberately does NOT touch
+    /// the spine -- the spine is where a LESSON started, and browsing a
+    /// part's topical groupings is a detour, exactly like opening a proof
+    /// verse. "Back to the spine" must still mean what it meant.
+    private void OpenPart(string partId) => Go(null, SpineItemId, Tier, SongUrl, partId);
+
+    private void MarkSpine() => Go(OpenItemId, OpenItemId, Tier, SongUrl, OpenPartId);
+
+    private void ReturnToSpine() => Go(SpineItemId, SpineItemId, Tier, SongUrl, null);
+
+    private void SetTier(string tier) => Go(OpenItemId, SpineItemId, tier, SongUrl, OpenPartId);
+
+    private void OnSongChanged(string? url) => Go(OpenItemId, SpineItemId, Tier, url, OpenPartId);
+
+    private void Go(string? item, string? spine, string tier, string? song, string? part)
+    {
+        var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            // A null value REMOVES the parameter, which is exactly the
+            // behavior wanted for "all tiers" and "no song": the resume link
+            // stays as short as the lesson state actually is.
+            ["item"] = string.IsNullOrWhiteSpace(item) ? null : item,
+            ["part"] = string.IsNullOrWhiteSpace(part) ? null : part,
+            ["spine"] = string.IsNullOrWhiteSpace(spine) ? null : spine,
+            ["tier"] = tier == "all" ? null : tier,
+            ["song"] = string.IsNullOrWhiteSpace(song) ? null : song,
+        });
+        Nav.NavigateTo(uri);
+    }
+
+    /// Peek a proof verse. A PLAIN `VerseNode` -- not the `xrefEntryPoint`
+    /// variant -- because that flag means "arrived here from a verse's own
+    /// cross-reference superscript", which reorders and re-caps the xrefs
+    /// section for that specific entry path. A catechism citation is not
+    /// that; cross-references still render inline and unconditionally, so
+    /// following one from here behaves exactly as it does in the Reader.
+    private void OpenVerse(string vref)
+    {
+        // Idempotent reopen, matching Reader.razor's own guard: clicking the
+        // verse already peeked is a no-op rather than a stack reset.
+        if (_activeNode is VerseNode current && current.Title == vref) return;
+        _activeNode = new VerseNode(vref);
+    }
+
+    /// Onward hops INSIDE the popover (a cross-reference, a place, a person)
+    /// replace the peeked node rather than opening a second popover -- the
+    /// one-abstraction rule every other page here follows.
+    private void OnExploreNode(IExplorable node) => _activeNode = node;
+
+    private void ClosePopover() => _activeNode = null;
+
+    /// catechism.toml stores multi-paragraph explanations with a blank line
+    /// between paragraphs (confession-1, lords-prayer-1, ...). Rendering the
+    /// raw string would collapse them into one wall of text.
+    private static IEnumerable<string> Paragraphs(string text) =>
+        text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim());
+}

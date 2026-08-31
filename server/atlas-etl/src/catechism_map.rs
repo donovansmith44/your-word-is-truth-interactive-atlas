@@ -932,6 +932,8 @@ mod tests {
                     verses: vec![],
                     ref_note: None,
                     questions: vec![],
+                    reflection: vec![],
+                    media: vec![],
                 },
                 atlas_core::data::CatechismItem {
                     id: "item-b".into(),
@@ -943,6 +945,8 @@ mod tests {
                     verses: vec![],
                     ref_note: None,
                     questions: vec![],
+                    reflection: vec![],
+                    media: vec![],
                 },
             ],
             questions: vec![],

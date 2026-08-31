@@ -80,6 +80,16 @@ pub struct Report {
     /// Batch F2: per-part reachability, `(part title, reachable items,
     /// total items)`, in `catechism.toml`'s own part order.
     pub catechism_per_part: Vec<(String, usize, usize)>,
+    /// CATECH-V1: lesson readiness. `catechism_reflection_items` is how many
+    /// items carry at least one reflection prompt -- reported rather than
+    /// enforced, because an item with no prompts yet is incomplete, not
+    /// wrong (`validate::run_catechism_reflection`'s own doc comment).
+    /// `catechism_media_links` counts song bindings that actually resolved
+    /// to a url; the skeleton entries still awaiting one are already
+    /// disclosed individually in `warnings`.
+    pub catechism_reflection_prompts: usize,
+    pub catechism_reflection_items: usize,
+    pub catechism_media_links: usize,
 }
 
 /// Batch B2: per-polity report line -- how many eras it carries, and the
@@ -193,6 +203,12 @@ pub fn write(r: &Report) -> String {
     )
     .unwrap();
     writeln!(s, "  {} distinct verse(s) link into the catechism", r.catechism_distinct_verses).unwrap();
+    writeln!(
+        s,
+        "  {} reflection prompt(s) across {}/{} item(s); {} song(s) bound",
+        r.catechism_reflection_prompts, r.catechism_reflection_items, r.catechism_items, r.catechism_media_links
+    )
+    .unwrap();
     for (title, reachable, total) in &r.catechism_per_part {
         writeln!(s, "    {title}: {reachable}/{total} reachable").unwrap();
     }

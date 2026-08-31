@@ -1256,6 +1256,8 @@ fn catechism_item(id: &str, name: &str, verses: &[&str]) -> atlas_core::data::Ca
         verses: verses.iter().map(|v| v.to_string()).collect(),
         ref_note: None,
         questions: Vec::new(),
+        reflection: Vec::new(),
+        media: Vec::new(),
     }
 }
 
@@ -1424,6 +1426,9 @@ fn report_contains_expected_sections() {
         catechism_items_reachable: 30,
         catechism_distinct_verses: 210,
         catechism_per_part: vec![("The Ten Commandments".to_string(), 11, 11)],
+        catechism_reflection_prompts: 0,
+        catechism_reflection_items: 0,
+        catechism_media_links: 0,
     };
     let text = atlas_etl::report::write(&report);
     assert!(text.contains("66"), "{text}");

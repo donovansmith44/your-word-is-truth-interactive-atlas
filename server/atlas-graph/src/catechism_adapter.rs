@@ -255,6 +255,11 @@ mod tests {
                 verses: vec!["EXO.20.3".into()],
                 ref_note: None,
                 questions: vec![CatechismQuestion { title: "Idolatry".into(), verses: vec!["EXO.20.3".into(), "1CO.10.14".into()], source: "test".into() }],
+                // CATECH-V1: this adapter projects items onto graph nodes and
+                // does not read either new field, so an empty list here is the
+                // honest fixture -- not a gap.
+                reflection: Vec::new(),
+                media: Vec::new(),
             }],
             questions: vec![],
             curated: true,

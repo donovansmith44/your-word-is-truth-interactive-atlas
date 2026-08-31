@@ -6,6 +6,7 @@
 
 pub mod app;
 pub mod aqc_export;
+pub mod catechism_pdf;
 pub mod contract;
 pub mod error;
 pub mod graph_handlers;

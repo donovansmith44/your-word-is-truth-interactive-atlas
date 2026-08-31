@@ -188,6 +188,32 @@ license = "No license file -- used by the project owner's own explicit direction
 link = "https://github.com/brain-fuel/catechism"
 licenses_row_key = "Catechism verse mapping"
 
+# CATECH-V1: the two curated files the lesson surface adds. Both are OURS,
+# and both are in LICENSES.md's per-source table -- so both belong here, or
+# the Credits page silently under-reports what this app is made of (which
+# is exactly what `sources_toml_reconciles_1to1_against_licenses_md_per_source_table`
+# exists to catch, and did).
+
+[[source]]
+id = "catechism-reflection"
+category = "lutheran-texts"
+title = "Catechism Reflection Questions"
+what_it_is = "165 hand-authored teaching prompts across all 33 Small Catechism items, tiered child/youth/adult and ordered easy to difficult."
+what_we_built = "Written for this project and compiled into catechism.json, so a lesson carries its own questions rather than leaving a teacher to invent them at 8am."
+license = "CC0 1.0 Universal (public domain dedication)"
+link = "https://creativecommons.org/publicdomain/zero/1.0/"
+licenses_row_key = "Catechism reflection questions"
+
+[[source]]
+id = "catechism-music"
+category = "lutheran-texts"
+title = "Catechism Song Bindings"
+what_it_is = "A curated pairing of hymns to catechism items -- links and our own note on why each pairing fits. No audio, no recording, and no hymn text is redistributed here."
+what_we_built = "Compiled into catechism.json so a lesson can offer a hymn alongside the item it belongs to; playback is handed to the linked provider at runtime."
+license = "CC0 1.0 Universal as to the CURATION (which hymn pairs with which item)"
+link = "https://creativecommons.org/publicdomain/zero/1.0/"
+licenses_row_key = "Catechism song bindings"
+
 # --- Map & Cartography ---------------------------------------------------
 
 [[source]]

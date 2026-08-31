@@ -229,6 +229,27 @@ public sealed class AtlasClient
     public Task<CatechismItemDetail> CatechismItem(string id) =>
         GetRequired<CatechismItemDetail>($"api/catechism/item/{id}");
 
+    /// CATECH-V1: the whole catechism as a navigable outline (parts, each
+    /// with its items and readiness counts). One fetch per visit to the
+    /// Catechism tab; items are fetched individually as they are opened.
+    public Task<CatechismOutlineDto> CatechismOutline() =>
+        GetRequired<CatechismOutlineDto>("api/catechism");
+
+    /// PARTS-1: one chief part with its own topical groupings, verses
+    /// resolved. The item-less twin of <see cref="CatechismItem"/> -- four
+    /// parts carry real content but no items, so opening a part has to be
+    /// its own fetch rather than a detail of opening an item.
+    public Task<CatechismPartDetail> CatechismPart(string id) =>
+        GetRequired<CatechismPartDetail>($"api/catechism/part/{id}");
+
+    /// CATECH-V1: the resolved API origin, for the ONE case that cannot go
+    /// through this class's own typed fetch helpers -- a link the BROWSER
+    /// must follow itself (the PDF print endpoint, opened in a new tab so
+    /// the browser's own viewer handles it). Everything else should keep
+    /// using the typed methods above; this is deliberately just the base,
+    /// not an escape hatch for ad-hoc request building.
+    public string BaseAddress => _http.BaseAddress?.ToString() ?? "";
+
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");
 

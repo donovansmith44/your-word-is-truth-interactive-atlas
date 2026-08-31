@@ -1,0 +1,110 @@
+# Songs associated with catechism items -- CC0 as to THIS FILE's own curation
+# (which song goes with which item); the recordings themselves are NOT
+# redistributed here and are not this project's to license. See LICENSES.md.
+#
+# WHAT THIS FILE IS: the durable half of "plug in songs." A `[[item]]` entry
+# binds one catechism item id to one or more media links. Nothing is
+# downloaded, proxied, or cached by this repo -- a `spotify` or `youtube`
+# entry is a link the client hands to that provider's own embed player, and
+# an `mp3` entry is a URL the browser's own <audio> element plays. A lesson
+# can also paste a link at runtime (the Catechism tab's own paste box); that
+# ad-hoc link lives only in the page's URL state and is never written here.
+# This file is for the songs you want back next year without re-finding them.
+#
+# `kind` is one of:
+#   spotify  -- an open.spotify.com track/album/playlist URL
+#   youtube  -- a youtube.com/watch or youtu.be URL (YouTube Music links
+#               resolve to the same video ids)
+#   mp3      -- any direct-audio URL the browser can play, including a
+#               same-origin path (e.g. /media/hymns/a-mighty-fortress.mp3)
+#               for your own files served beside the app
+#
+# `item` must match a `catechism.toml` item id exactly, and `kind` must be
+# one of the three above -- both validated by `validate::run_catechism_music`,
+# which fails the ETL rather than letting a typo become a dead player.
+#
+# HYMN CHOICES BELOW: public-domain Lutheran hymnody, chosen for its
+# catechetical fit -- Luther's own catechism hymns where they exist (he wrote
+# one per chief part), which is why the Creed, Lord's Prayer, Baptism, and
+# the Commandments each carry their proper hymn. URLs are deliberately left
+# for you to fill in with the recordings you actually want to use in class:
+# an entry with an empty `url` is skipped by the ETL with a WARNING (not an
+# error), so this file ships as a working skeleton you can complete one
+# hymn at a time without ever breaking a build.
+
+[[item]]
+item = "commandment-1"
+kind = "youtube"
+title = "These Are the Holy Ten Commands (Dies sind die heil'gen Zehn Gebot)"
+url = ""
+note = "Luther's own catechism hymn for the Ten Commandments; one stanza per commandment, so it can be sung across the whole first chief part."
+
+[[item]]
+item = "commandments-close"
+kind = "youtube"
+title = "Salvation unto Us Has Come"
+url = ""
+note = "Pairs with the close's law-and-promise shape: the commandments accuse, and grace answers."
+
+[[item]]
+item = "creed-1"
+kind = "youtube"
+title = "We All Believe in One True God (Wir glauben all an einen Gott)"
+url = ""
+note = "Luther's creedal hymn; stanza one is the First Article."
+
+[[item]]
+item = "creed-2"
+kind = "youtube"
+title = "We All Believe in One True God -- stanza two"
+url = ""
+note = "The Second Article stanza."
+
+[[item]]
+item = "creed-3"
+kind = "youtube"
+title = "We All Believe in One True God -- stanza three"
+url = ""
+note = "The Third Article stanza."
+
+[[item]]
+item = "lords-prayer-intro"
+kind = "youtube"
+title = "Our Father, Thou in Heaven Above (Vater unser im Himmelreich)"
+url = ""
+note = "Luther's Lord's Prayer hymn; the introduction stanza. Later stanzas track the petitions one by one."
+
+[[item]]
+item = "baptism-1"
+kind = "youtube"
+title = "To Jordan Came the Christ, Our Lord (Christ unser Herr zum Jordan kam)"
+url = ""
+note = "Luther's baptismal hymn -- water, Word, and command, which is exactly this item's answer."
+
+[[item]]
+item = "baptism-4"
+kind = "youtube"
+title = "God's Own Child, I Gladly Say It"
+url = ""
+note = "The daily-return-to-baptism shape of this item, in a hymn children pick up quickly."
+
+[[item]]
+item = "confession-1"
+kind = "youtube"
+title = "From Depths of Woe I Cry to Thee (Aus tiefer Not)"
+url = ""
+note = "Luther's Psalm 130 -- confession and the waiting for absolution."
+
+[[item]]
+item = "altar-1"
+kind = "youtube"
+title = "O Lord, We Praise Thee (Gott sei gelobet und gebenedeiet)"
+url = ""
+note = "Luther's communion hymn."
+
+[[item]]
+item = "altar-4"
+kind = "youtube"
+title = "Soul, Adorn Thyself with Gladness (Schmuecke dich, o liebe Seele)"
+url = ""
+note = "Preparation and worthiness -- the faith this item says makes one truly worthy."

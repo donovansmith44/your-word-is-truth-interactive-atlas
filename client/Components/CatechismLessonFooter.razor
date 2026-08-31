@@ -1,0 +1,102 @@
+@* CATECH-V1: the two things you do at the END of a lesson.
+
+   STOP HERE ("I stopped at this spot; send it to me for next week"). This app
+   has no accounts and no server-side user state, so the honest carrier for
+   "where I stopped" is the page's own URL -- which already encodes the open
+   item, the spine, the tier filter, and any pasted song. The button therefore
+   does not invent a persistence layer: it hands you that URL, by clipboard or
+   by an email your own mail client composes. A link is also the one format
+   that still works in a year, on a different device, with no login.
+
+   PRINT ("send the printables home with the kids"). Hits the server's own PDF
+   endpoint with the current scope and filter, so what prints is exactly what
+   the filter is showing -- print the whole part for the class, or just the
+   child-tier questions for the youngest table. *@
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+<footer class="lesson-footer" data-testid="lesson-footer">
+    <div class="lesson-footer-group">
+        <span class="lesson-footer-label">Stopped here?</span>
+        <button type="button" class="lesson-tool" data-testid="copy-resume-link" @onclick="CopyLink">
+            @(_copied ? "Copied" : "Copy resume link")
+        </button>
+        <a class="lesson-tool" data-testid="mail-resume-link" href="@MailtoHref">Email it to me</a>
+    </div>
+
+    <div class="lesson-footer-group">
+        <span class="lesson-footer-label">Print</span>
+        <a class="lesson-tool" data-testid="print-item" href="@PrintHref("item")" target="_blank" rel="noopener">
+            This item
+        </a>
+        <a class="lesson-tool" data-testid="print-part" href="@PrintHref("part")" target="_blank" rel="noopener">
+            Whole part
+        </a>
+        @if (Tier != "all")
+        {
+            <span class="print-filter-note" data-testid="print-filter-note">
+                &mdash; @Tier questions only
+            </span>
+        }
+    </div>
+</footer>
+
+@code {
+    [Parameter, EditorRequired] public string ItemId { get; set; } = "";
+    [Parameter, EditorRequired] public string ItemName { get; set; } = "";
+    [Parameter] public string Tier { get; set; } = "all";
+    [Parameter] public string? SongUrl { get; set; }
+    [Parameter] public string? SpineItemId { get; set; }
+
+    private bool _copied;
+
+    /// The resume link IS the current URL -- no separate encoding, so there is
+    /// exactly one definition of "where I am" and it cannot drift from what
+    /// the page actually restores.
+    private string ResumeUrl => Nav.Uri;
+
+    private string MailtoHref
+    {
+        get
+        {
+            var subject = Uri.EscapeDataString($"Catechism lesson: {ItemName}");
+            var body = Uri.EscapeDataString(
+                $"Pick up here next week:\n\n{ResumeUrl}\n\nItem: {ItemName}\n" +
+                (Tier == "all" ? "" : $"Age group: {Tier}\n"));
+            return $"mailto:?subject={subject}&body={body}";
+        }
+    }
+
+    /// `scope=item` prints this item alone; `scope=part` prints the whole
+    /// chief part (every child item), which is the "all child nodes" half of
+    /// the ask. `tier` carries the filter through, so the printout matches
+    /// what is on screen.
+    private string PrintHref(string scope)
+    {
+        var url = $"{ApiBase}api/catechism/print?scope={scope}&item={Uri.EscapeDataString(ItemId)}";
+        if (Tier != "all") url += $"&tier={Uri.EscapeDataString(Tier)}";
+        return url;
+    }
+
+    /// Same-origin in the published build (ApiBase empty), cross-origin in dev
+    /// -- mirrors AtlasClient's own base-address convention rather than
+    /// re-deriving it, so a printed PDF works in both configurations.
+    [Inject] public AtlasClient Api { get; set; } = default!;
+    private string ApiBase => Api.BaseAddress;
+
+    private async Task CopyLink()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", ResumeUrl);
+            _copied = true;
+        }
+        catch (JSException)
+        {
+            // Clipboard can be denied (insecure origin, permissions). The
+            // mailto link beside this button still works, so failing quietly
+            // here is better than an alert mid-lesson.
+            _copied = false;
+        }
+    }
+}

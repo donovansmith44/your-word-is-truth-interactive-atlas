@@ -1,0 +1,191 @@
+@* CATECH-V1: songs beside the catechism.
+
+   Two sources, deliberately kept distinct rather than merged into one list:
+
+   - CURATED songs (data/curated/catechism-music.toml) are the durable ones --
+     the hymn that belongs with this item every year. They travel with the
+     repo and are the same for every teacher.
+   - An AD-HOC song is whatever you paste mid-lesson. It lives ONLY in the
+     page URL (?song=), which means it costs nothing, survives a reload,
+     and travels inside a resume link -- but is never written to the repo.
+     That is the whole reason it is URL state and not localStorage: a song
+     you picked for THIS lesson should ride along when you mail the lesson
+     to yourself, and should not silently become next year's default.
+
+   Nothing here proxies or downloads audio. Spotify and YouTube get their own
+   embed iframes; an mp3 (including one you serve yourself beside the app)
+   gets a plain <audio> element. A link we cannot classify is still shown as
+   a plain link rather than being dropped -- a teacher who pasted something
+   unusual should see it, not wonder where it went. *@
+
+<section class="lesson-music" data-testid="lesson-music">
+    <h3 class="lesson-ask">Songs</h3>
+
+    @if (Curated.Count > 0)
+    {
+        <ul class="music-list">
+            @foreach (var song in Curated)
+            {
+                <li class="music-row" data-testid="@($"music-curated-{song.Kind}")">
+                    <div class="music-meta">
+                        <span class="music-title">@song.Title</span>
+                        @if (!string.IsNullOrWhiteSpace(song.Note))
+                        {
+                            <span class="music-note">@song.Note</span>
+                        }
+                    </div>
+                    @RenderPlayer(song.Kind, song.Url, song.Title)
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="music-adhoc">
+        <label class="music-adhoc-label" for="song-url">
+            Plug in a song &mdash; Spotify, YouTube, or a link to your own mp3
+        </label>
+        <div class="music-adhoc-row">
+            <input id="song-url" class="music-adhoc-input" data-testid="music-paste"
+                   placeholder="https://open.spotify.com/track/... or https://youtu.be/... or /media/hymn.mp3"
+                   value="@AdHocUrl" @onchange="OnPaste" />
+            @if (!string.IsNullOrWhiteSpace(AdHocUrl))
+            {
+                <button type="button" class="lesson-tool" data-testid="music-clear" @onclick="Clear">Clear</button>
+            }
+        </div>
+        @if (!string.IsNullOrWhiteSpace(AdHocUrl))
+        {
+            <div class="music-adhoc-player" data-testid="music-adhoc-player">
+                @RenderPlayer(Classify(AdHocUrl!), AdHocUrl!, "Pasted song")
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<MediaLinkDto> Curated { get; set; } = Array.Empty<MediaLinkDto>();
+    [Parameter] public string? AdHocUrl { get; set; }
+    [Parameter] public EventCallback<string?> AdHocUrlChanged { get; set; }
+
+    private Task OnPaste(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString()?.Trim();
+        return AdHocUrlChanged.InvokeAsync(string.IsNullOrWhiteSpace(raw) ? null : raw);
+    }
+
+    private Task Clear() => AdHocUrlChanged.InvokeAsync(null);
+
+    /// Which player a pasted link wants. Host-based, not guesswork on the
+    /// path: youtube.com/youtu.be (YouTube Music share links resolve to the
+    /// same video ids), open.spotify.com, else treat it as direct audio if it
+    /// looks like one, else "link".
+    private static string Classify(string url)
+    {
+        var u = url.ToLowerInvariant();
+        if (u.Contains("youtube.com") || u.Contains("youtu.be") || u.Contains("music.youtube.com")) return "youtube";
+        if (u.Contains("open.spotify.com") || u.StartsWith("spotify:")) return "spotify";
+        if (u.EndsWith(".mp3") || u.EndsWith(".m4a") || u.EndsWith(".ogg") || u.EndsWith(".wav")) return "mp3";
+        return "link";
+    }
+
+    private RenderFragment RenderPlayer(string kind, string url, string title) => builder =>
+    {
+        var seq = 0;
+        switch (kind)
+        {
+            case "youtube":
+                var videoId = YouTubeId(url);
+                if (videoId is null) goto default;
+                builder.OpenElement(seq++, "iframe");
+                builder.AddAttribute(seq++, "class", "music-embed music-embed--youtube");
+                builder.AddAttribute(seq++, "src", $"https://www.youtube-nocookie.com/embed/{videoId}");
+                builder.AddAttribute(seq++, "title", title);
+                builder.AddAttribute(seq++, "loading", "lazy");
+                builder.AddAttribute(seq++, "allow", "encrypted-media; picture-in-picture");
+                builder.AddAttribute(seq++, "allowfullscreen", true);
+                builder.CloseElement();
+                break;
+
+            case "spotify":
+                var embed = SpotifyEmbed(url);
+                if (embed is null) goto default;
+                builder.OpenElement(seq++, "iframe");
+                builder.AddAttribute(seq++, "class", "music-embed music-embed--spotify");
+                builder.AddAttribute(seq++, "src", embed);
+                builder.AddAttribute(seq++, "title", title);
+                builder.AddAttribute(seq++, "loading", "lazy");
+                builder.AddAttribute(seq++, "allow", "encrypted-media");
+                builder.CloseElement();
+                break;
+
+            case "mp3":
+                builder.OpenElement(seq++, "audio");
+                builder.AddAttribute(seq++, "class", "music-audio");
+                builder.AddAttribute(seq++, "controls", true);
+                builder.AddAttribute(seq++, "preload", "none");
+                builder.AddAttribute(seq++, "src", url);
+                builder.CloseElement();
+                break;
+
+            default:
+                // Unclassifiable, or a provider URL we could not turn into an
+                // embed: show the link itself rather than nothing.
+                builder.OpenElement(seq++, "a");
+                builder.AddAttribute(seq++, "class", "music-fallback-link");
+                builder.AddAttribute(seq++, "href", url);
+                builder.AddAttribute(seq++, "target", "_blank");
+                builder.AddAttribute(seq++, "rel", "noopener noreferrer");
+                builder.AddContent(seq++, "Open song in a new tab");
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    /// youtu.be/{id}, youtube.com/watch?v={id}, and youtube.com/embed/{id}.
+    /// Returns null (-> plain link) rather than guessing on anything else.
+    private static string? YouTubeId(string url)
+    {
+        try
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            if (uri.Host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
+                var id = uri.AbsolutePath.Trim('/');
+                return id.Length > 0 ? id : null;
+            }
+            // Plain query scan rather than QueryHelpers -- this project's
+            // client does not reference Microsoft.AspNetCore.WebUtilities, and
+            // one parameter does not justify pulling it in.
+            foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var eq = pair.IndexOf('=');
+                if (eq <= 0) continue;
+                if (pair[..eq] == "v" && eq + 1 < pair.Length) return Uri.UnescapeDataString(pair[(eq + 1)..]);
+            }
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 2 && segments[0] == "embed") return segments[1];
+            return null;
+        }
+        catch (UriFormatException) { return null; }
+    }
+
+    /// open.spotify.com/{track|album|playlist|episode}/{id} -> its embed URL.
+    private static string? SpotifyEmbed(string url)
+    {
+        try
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // Spotify localizes share links as /intl-xx/track/{id}; skip that.
+            if (segments.Length >= 1 && segments[0].StartsWith("intl-", StringComparison.OrdinalIgnoreCase))
+            {
+                segments = segments.Skip(1).ToArray();
+            }
+            if (segments.Length < 2) return null;
+            var kind = segments[0];
+            if (kind is not ("track" or "album" or "playlist" or "episode")) return null;
+            return $"https://open.spotify.com/embed/{kind}/{segments[1]}";
+        }
+        catch (UriFormatException) { return null; }
+    }
+}

@@ -18,8 +18,8 @@
 //! only (mirrors the `Place.verse_links`/`Event.verses` "etl-validated"
 //! trust class scene composition relies on).
 
-use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
+use anyhow::{anyhow, bail, Context, Result};
+use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, FulfillmentSeed, Landmark, LandMaskRegion, MediaKind, MediaLink, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, ReflectionQuestion, ReflectionTier, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -851,6 +851,13 @@ pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
                 // from the brain-fuel/catechism mapping + the Deut5 supplement
                 // -- see `merge_catechism_questions` there. Always empty here.
                 questions: Vec::new(),
+                // CATECH-V1: reflection prompts and media are merged in
+                // SEPARATELY by compile.rs, from their own curated files --
+                // the same shape `questions` above already follows, and for
+                // the same reason (this function is a pure parse of
+                // catechism.toml alone). Always empty here.
+                reflection: Vec::new(),
+                media: Vec::new(),
             });
         }
         // PARTS-1: part-level questions are merged in separately by
@@ -901,6 +908,100 @@ pub fn parse_catechism_part_mapping(input: &str) -> Result<Vec<PartMappingRow>> 
         out.push(PartMappingRow { path: r.path, part: r.part, declares_title: r.title });
     }
     Ok(out)
+}
+
+// --- CATECH-V1: catechism-reflection.toml + catechism-music.toml -----------
+
+#[derive(Deserialize)]
+struct ReflectionFileToml {
+    item: Vec<ReflectionItemToml>,
+}
+
+#[derive(Deserialize)]
+struct ReflectionItemToml {
+    id: String,
+    question: Vec<ReflectionQuestionToml>,
+}
+
+#[derive(Deserialize)]
+struct ReflectionQuestionToml {
+    tier: String,
+    prompt: String,
+}
+
+/// Parses `catechism-reflection.toml` into `(item_id, prompts)` pairs, in
+/// file order -- which IS presentation order (easy to difficult), so nothing
+/// here sorts. An unknown `tier` fails HERE (a closed set is the whole point
+/// of the type); the cross-file checks that need the full item roster --
+/// unknown/duplicate item ids, and the non-decreasing-tier law itself -- are
+/// `validate::run_catechism_reflection`'s job, exactly the split
+/// `parse_catechism`/`validate::run_catechism` already use.
+pub fn parse_catechism_reflection(input: &str) -> Result<Vec<(String, Vec<ReflectionQuestion>)>> {
+    let f: ReflectionFileToml = toml::from_str(input)
+        .context("catechism-reflection.toml: invalid TOML or does not match the [[item]]/[[item.question]] schema")?;
+
+    let mut out = Vec::with_capacity(f.item.len());
+    for it in f.item {
+        let mut prompts = Vec::with_capacity(it.question.len());
+        for q in it.question {
+            let tier = ReflectionTier::parse(&q.tier).ok_or_else(|| {
+                anyhow!(
+                    "catechism-reflection.toml: item '{}' has unknown tier '{}' (expected child, youth, or adult)",
+                    it.id,
+                    q.tier
+                )
+            })?;
+            prompts.push(ReflectionQuestion { prompt: q.prompt, tier });
+        }
+        out.push((it.id, prompts));
+    }
+    Ok(out)
+}
+
+#[derive(Deserialize)]
+struct MusicFileToml {
+    #[serde(default)]
+    item: Vec<MusicEntryToml>,
+}
+
+#[derive(Deserialize)]
+struct MusicEntryToml {
+    item: String,
+    kind: String,
+    title: String,
+    url: String,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+/// Parses `catechism-music.toml` into `(item_id, link)` pairs, in file order.
+/// An entry whose `url` is empty is DROPPED here and reported to the caller
+/// as a warning rather than an error -- that file ships as a deliberate
+/// skeleton (a hymn roster with the recordings left to fill in), and a
+/// half-filled skeleton must never fail a build; see its own header. An
+/// unknown `kind` is still a hard error (a typo'd kind would be a dead
+/// player in a classroom, which is the failure this closed set prevents).
+pub fn parse_catechism_music(input: &str) -> Result<(Vec<(String, MediaLink)>, Vec<String>)> {
+    let f: MusicFileToml = toml::from_str(input)
+        .context("catechism-music.toml: invalid TOML or does not match the [[item]] schema")?;
+
+    let mut out = Vec::new();
+    let mut warnings = Vec::new();
+    for e in f.item {
+        let kind = MediaKind::parse(&e.kind).ok_or_else(|| {
+            anyhow!(
+                "catechism-music.toml: item '{}' has unknown kind '{}' (expected spotify, youtube, or mp3)",
+                e.item,
+                e.kind
+            )
+        })?;
+        if e.url.trim().is_empty() {
+            warnings.push(format!("catechism-music.toml: '{}' ({}) has no url yet, skipped", e.title, e.item));
+            continue;
+        }
+        out.push((e.item, MediaLink { kind, title: e.title, url: e.url, note: e.note }));
+    }
+    Ok((out, warnings))
 }
 
 // --- Batch F2: catechism-mapping.toml (requirement 3) + catechism-deut5.toml (requirement 5b) ---

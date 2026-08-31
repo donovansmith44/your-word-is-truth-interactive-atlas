@@ -1398,6 +1398,11 @@ pub struct CatechismItemOut {
     pub id: String,
     pub name: String,
     pub part_title: String,
+    /// CATECH-V1: the id of the chief part this item belongs to, so a client
+    /// that arrived by deep link (rather than by walking the outline) can
+    /// still say WHERE it is without a second fetch. `part_title` above was
+    /// already here for display; this is the addressable half.
+    pub part_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
     pub explanation_heading: String,
@@ -1405,6 +1410,182 @@ pub struct CatechismItemOut {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub where_written: Option<String>,
     pub verses: Vec<CatechismProofVerseOut>,
+    /// CATECH-V1: reflection prompts in curated (easy-to-difficult) order.
+    /// NOT sorted here -- the ETL already pinned the order as a law
+    /// (`validate::run_catechism_reflection`), so re-sorting on the way out
+    /// would be a second, quieter source of truth for the same thing.
+    #[serde(default)]
+    pub reflection: Vec<ReflectionQuestionOut>,
+    /// CATECH-V1: songs bound to this item. Empty is the norm today (the
+    /// curated roster ships with urls left to fill in), and an empty list
+    /// renders no player at all -- the same conditional-presence rule the
+    /// rest of this app follows.
+    #[serde(default)]
+    pub media: Vec<MediaLinkOut>,
+}
+
+/// CATECH-V1: one reflection prompt on the wire. `tier` is the lowercase
+/// label (`child`/`youth`/`adult`) rather than an integer, so a client can
+/// render the chip text directly and a human reading the JSON can see what
+/// it means without a lookup table.
+#[derive(Debug, Serialize)]
+pub struct ReflectionQuestionOut {
+    pub prompt: String,
+    pub tier: String,
+}
+
+/// CATECH-V1: one song binding on the wire.
+#[derive(Debug, Serialize)]
+pub struct MediaLinkOut {
+    pub kind: String,
+    pub title: String,
+    pub url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+/// CATECH-V1: `GET /api/catechism` -- the whole catechism as an outline
+/// (parts, each with its items), which is what the Catechism tab needs to
+/// draw a navigable tree before any item is chosen.
+///
+/// Deliberately LEAN: names and counts only, no explanations, no verses, no
+/// prompts. The tree is the index; opening an item is what fetches that
+/// item. This keeps one page-load cheap even though the full catechism with
+/// every proof verse resolved would be large, and it matches how
+/// `/api/books` already relates to `/api/chapter/{cref}`.
+#[derive(Debug, Serialize)]
+pub struct CatechismOutlineOut {
+    pub parts: Vec<CatechismOutlinePartOut>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CatechismOutlinePartOut {
+    pub id: String,
+    pub title: String,
+    pub items: Vec<CatechismOutlineItemOut>,
+    /// PARTS-1: false for a part this app materializes to give real
+    /// content a home rather than one `catechism.toml` defines -- Daily
+    /// Prayers and the Table of Duties (genuine sections of the Small
+    /// Catechism that Luther never split into numbered items) and the
+    /// brain-fuel repo's own two topical framings. Carried so the tree
+    /// can SAY so rather than leaving a teacher to wonder why a chief
+    /// part has no items.
+    pub curated: bool,
+    /// PARTS-1: how many topical groupings belong to the PART rather than
+    /// to any one item. For the four item-less parts this is the only
+    /// content they have, so a zero here plus zero items means a part
+    /// genuinely has nothing -- which validation now forbids.
+    pub question_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CatechismOutlineItemOut {
+    pub id: String,
+    pub name: String,
+    /// The item's own question heading ("What does this mean?", "What is
+    /// Baptism?") -- carried in the outline because it is often the more
+    /// useful label of the two when scanning a part, and it costs nothing.
+    pub explanation_heading: String,
+    /// Counts, so the tree can show a teacher at a glance what is ready:
+    /// how many proof verses, how many reflection prompts, how many songs.
+    pub verse_count: usize,
+    pub reflection_count: usize,
+    pub media_count: usize,
+}
+
+/// CATECH-V1: the outline handler. Walks the compiled catechism in curated
+/// order -- no sorting, no filtering, no hiding of items that are not yet
+/// lesson-ready (an item with zero prompts still appears, with a zero
+/// count, because a teacher planning a term needs to see the gap).
+pub async fn catechism_outline(State(data): State<Arc<AtlasData>>) -> Json<CatechismOutlineOut> {
+    let parts = data
+        .catechism
+        .iter()
+        .map(|part| CatechismOutlinePartOut {
+            id: part.id.clone(),
+            title: part.title.clone(),
+            curated: part.curated,
+            question_count: part.questions.len(),
+            items: part
+                .items
+                .iter()
+                .map(|item| CatechismOutlineItemOut {
+                    id: item.id.clone(),
+                    name: item.name.clone(),
+                    explanation_heading: item.explanation_heading.clone(),
+                    // Both citation granularities count toward "how much
+                    // Scripture is on this item" -- Luther's own embedded
+                    // refs AND the question-level ones -- because that is
+                    // the number a teacher is actually asking about.
+                    verse_count: item.verses.len() + item.questions.iter().map(|q| q.verses.len()).sum::<usize>(),
+                    reflection_count: item.reflection.len(),
+                    media_count: item.media.len(),
+                })
+                .collect(),
+        })
+        .collect();
+
+    Json(CatechismOutlineOut { parts })
+}
+
+/// PARTS-1: `GET /api/catechism/part/{id}` -- one chief part with its own
+/// topical groupings, each verse resolved to full KJV text.
+///
+/// The item-less twin of `catechism_item`. Four parts carry content but no
+/// items at all, so without this endpoint the Catechism tab would draw
+/// them as empty headings -- the Table of Duties, which cites 87 verses
+/// across 17 groupings, would look like a bug. Same soft-fail policy on an
+/// unresolvable verse (skip, never panic) that `catechism_item` uses, and
+/// the same 404 on an unknown id.
+#[derive(Debug, Serialize)]
+pub struct CatechismPartOut {
+    pub id: String,
+    pub title: String,
+    pub curated: bool,
+    pub item_count: usize,
+    pub questions: Vec<CatechismPartQuestionOut>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CatechismPartQuestionOut {
+    pub title: String,
+    pub source: String,
+    pub verses: Vec<CatechismProofVerseOut>,
+}
+
+pub async fn catechism_part(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<CatechismPartOut>, ApiError> {
+    let part = data.catechism.iter().find(|p| p.id == id).ok_or_else(|| ApiError::not_found("catechism part"))?;
+
+    let questions = part
+        .questions
+        .iter()
+        .map(|q| {
+            // Deduped within the grouping only: the same verse cited by
+            // two DIFFERENT groupings is two real pieces of information
+            // and stays twice, exactly as `catechism_item` treats a verse
+            // cited under two different questions.
+            let mut seen: std::collections::HashSet<&str> = std::collections::HashSet::new();
+            let verses = q
+                .verses
+                .iter()
+                .filter(|v| seen.insert(v.as_str()))
+                .filter_map(|v| {
+                    data.verses
+                        .get(v)
+                        .map(|text| CatechismProofVerseOut { vref: v.clone(), text: text.clone(), question: Some(q.title.clone()) })
+                })
+                .collect();
+            CatechismPartQuestionOut { title: q.title.clone(), source: q.source.clone(), verses }
+        })
+        .collect();
+
+    Ok(Json(CatechismPartOut {
+        id: part.id.clone(),
+        title: part.title.clone(),
+        curated: part.curated,
+        item_count: part.items.len(),
+        questions,
+    }))
 }
 
 /// `GET /api/catechism/item/{id}` (Batch F, "item fetch by id" --
@@ -1457,11 +1638,27 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
         id: item.id.clone(),
         name: item.name.clone(),
         part_title: part.title.clone(),
+        part_id: part.id.clone(),
         text: item.text.clone(),
         explanation_heading: item.explanation_heading.clone(),
         explanation: item.explanation.clone(),
         where_written: item.where_written.clone(),
         verses,
+        reflection: item
+            .reflection
+            .iter()
+            .map(|q| ReflectionQuestionOut { prompt: q.prompt.clone(), tier: q.tier.label().to_string() })
+            .collect(),
+        media: item
+            .media
+            .iter()
+            .map(|m| MediaLinkOut {
+                kind: m.kind.label().to_string(),
+                title: m.title.clone(),
+                url: m.url.clone(),
+                note: m.note.clone(),
+            })
+            .collect(),
     }))
 }
 

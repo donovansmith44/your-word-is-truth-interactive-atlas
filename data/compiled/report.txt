@@ -40,7 +40,17 @@ Cross-reference drops:
   0 targets whose first verse is missing from the compiled KJV text
 
 Warnings:
-  (none)
+  catechism-music.toml: 'These Are the Holy Ten Commands (Dies sind die heil'gen Zehn Gebot)' (commandment-1) has no url yet, skipped
+  catechism-music.toml: 'Salvation unto Us Has Come' (commandments-close) has no url yet, skipped
+  catechism-music.toml: 'We All Believe in One True God (Wir glauben all an einen Gott)' (creed-1) has no url yet, skipped
+  catechism-music.toml: 'We All Believe in One True God -- stanza two' (creed-2) has no url yet, skipped
+  catechism-music.toml: 'We All Believe in One True God -- stanza three' (creed-3) has no url yet, skipped
+  catechism-music.toml: 'Our Father, Thou in Heaven Above (Vater unser im Himmelreich)' (lords-prayer-intro) has no url yet, skipped
+  catechism-music.toml: 'To Jordan Came the Christ, Our Lord (Christ unser Herr zum Jordan kam)' (baptism-1) has no url yet, skipped
+  catechism-music.toml: 'God's Own Child, I Gladly Say It' (baptism-4) has no url yet, skipped
+  catechism-music.toml: 'From Depths of Woe I Cry to Thee (Aus tiefer Not)' (confession-1) has no url yet, skipped
+  catechism-music.toml: 'O Lord, We Praise Thee (Gott sei gelobet und gebenedeiet)' (altar-1) has no url yet, skipped
+  catechism-music.toml: 'Soul, Adorn Thyself with Gladness (Schmuecke dich, o liebe Seele)' (altar-4) has no url yet, skipped
 
 Polities (14 polities, 25 eras, 1139 points total):
   alexander-empire: 1 era(s), 68 points
@@ -69,6 +79,7 @@ Catechism (Batch F, extended Batch F2):
   4 of those part(s) are non-curated (materialized here, not in catechism.toml); 79 part-level question(s)
   33/33 items reachable from >=1 verse (was 6/33 before Batch F2's own repo mapping + Deut5 supplement)
   4828 distinct verse(s) link into the catechism
+  165 reflection prompt(s) across 33/33 item(s); 0 song(s) bound
     The Ten Commandments: 11/11 reachable
     The Creed: 3/3 reachable
     The Lord's Prayer: 9/9 reachable
