@@ -334,4 +334,16 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // (theo-295 absorbed), several events' own witness/verse sets changed --
 // the root moving IS every one of these fixes landing for real. New
 // captured value: "1fa6fd69488d6cd6".
-const EXPECTED_VERSION_HEX: &str = "1fa6fd69488d6cd6";
+//
+// MOVED AGAIN (Batch PLACE-1a, 2026-09-06, place duplicate-lineage merge
+// backlog): `atlas_core::merge::MERGE_PAIRS` gained 15 new curated pairs
+// (the confirmed Theographic `_NNN`-suffixed dual-lineage duplicates,
+// place-alias-investigation.md §3, batch-place1a-report.md has the full
+// 20-row triage) -- 15 fewer place nodes (1373 -> 1358), each absorbed
+// record's own verse_links/events repointed onto its survivor (e.g. the
+// charter case: `ur_1189` "Ur of the Chaldees" folds onto `ur-1`, so
+// `theo-65` "Birth of Abraham" now lands on `ur-1` alongside the curated
+// `ab_ur` event). Real, deliberate place-graph content change -- the root
+// moving IS the fix landing for real. New captured value:
+// "dd104abbf34d68b6".
+const EXPECTED_VERSION_HEX: &str = "dd104abbf34d68b6";

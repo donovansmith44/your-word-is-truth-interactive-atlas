@@ -323,5 +323,39 @@ resolver = "2"
 # `parse_edge_kind`'s own doc comment, `graph_wire.rs:146-149`) are
 # doc/comment-only, no behavior change, no new tests.
 #
-# CURRENT CANONICAL: 971 (947 + 24) across 49 sections.
+# Batch PLACE-1a (2026-09-06, place duplicate-lineage merge backlog -- the
+# TRUE-ALIAS half of the owner's "one name per place" order: 15 confirmed
+# Theographic `_NNN`-suffixed dual-lineage duplicates folded into
+# `atlas_core::merge::MERGE_PAIRS`, the existing Hazor/Kedesh mechanism,
+# per place-alias-investigation.md's own §3/§4(a); 5 of the 20 mechanically-
+# flagged candidates were hand-judged NOT true duplicates and deliberately
+# excluded -- batch-place1a-report.md has the full 20-row triage): moved to
+# 973 (949 + 24) across the SAME 49 sections (no new test file -- both new
+# tests join `merge.rs`'s own already-counted `atlas-core` lib unittests
+# section). Workspace +2: `absorbed_ids_for_reports_the_place1a_charter_case`
+# (the owner's own GEN.11 repro -- ur_1189 folds onto ur-1, chaldea stays
+# separate) and `place1a_excluded_candidates_never_entered_the_table` (pins
+# all 5 exclusions against a future distance-only re-introduction).
+# `atlas-graph-types` unchanged (+0) -- this batch never touched that crate
+# (standing veto honored). AQC corpus unchanged (44/184) -- fixtures
+# regenerated (`cargo run -p atlas-server --bin export_aqc_examples`)
+# against the recompiled artifact but the corpus's own scenario/step
+# STRUCTURE is untouched. Recompile: `data/compiled/graph.bin` moved
+# (places 1373 -> 1358, `atlas_version_root` 2a45127ba3b91af4 ->
+# 82bac0bde5a53ec2, 100,675,741 bytes, 96.01% of the 104,857,600-byte
+# ceiling); `server/atlas-graph/tests/version_root_regression.rs`'s
+# `EXPECTED_VERSION_HEX` re-pinned to "dd104abbf34d68b6";
+# `server/atlas-server/tests/scene_byte_identity.rs`'s all-20 `time_windows()`
+# hashes/lengths re-pinned (shrunk -- fewer duplicate quiet-place entries),
+# its 5 `scripture_refs()` hashes UNCHANGED (none touches an absorbed id).
+# Zero failures across `cargo test --workspace`, `cargo test -p
+# atlas-graph-types`, `dotnet test client.ContractTests` (45/45), `dotnet
+# test client.Tests` (270/270), and the new Playwright regression
+# (`tests/ux/world-same-place.spec.ts`'s `WIRE-2 (PLACE-1a)`, 5/5 in that
+# file). Fail-loud gap disclosed, not built this batch (belongs to
+# PLACE-1b's design per the dispatch instruction): the place-merge machinery
+# has no threshold-gated unlisted-pair sweep/validation comparable to the
+# event side's `EVENT_MERGE_PAIRS`/`EVENT_DISTINCT_PAIRS` law.
+#
+# CURRENT CANONICAL: 973 (949 + 24) across 49 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).

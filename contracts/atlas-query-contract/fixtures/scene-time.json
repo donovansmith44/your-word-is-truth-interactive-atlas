@@ -245,6 +245,9 @@
         "id": "ur-1",
         "lat": 30.962222,
         "lon": 46.104444,
+        "merged_ids": [
+          "ur_1189"
+        ],
         "name": "Ur 1"
       }
     ],
@@ -303,14 +306,10 @@
         "id": "ai-1",
         "lat": 31.916944,
         "lon": 35.261111,
-        "total_events": 1
-      },
-      {
-        "display_name": "Ai",
-        "id": "ai_36",
-        "lat": 31.9166759,
-        "lon": 35.2615767,
-        "total_events": 1
+        "merged_ids": [
+          "ai_36"
+        ],
+        "total_events": 2
       },
       {
         "display_name": "Alexandria",
@@ -338,7 +337,10 @@
         "id": "antioch-2",
         "lat": 38.306111,
         "lon": 31.189167,
-        "total_events": 1
+        "merged_ids": [
+          "antioch_69"
+        ],
+        "total_events": 3
       },
       {
         "display_name": "Antioch (Syria)",
@@ -348,25 +350,14 @@
         "total_events": 6
       },
       {
-        "display_name": "Antioch (Pisidia)",
-        "id": "antioch_69",
-        "lat": 38.30466,
-        "lon": 31.19049,
-        "total_events": 2
-      },
-      {
-        "display_name": "Antipatris",
-        "id": "antipatris_70",
-        "lat": 32.10478,
-        "lon": 34.93078,
-        "total_events": 1
-      },
-      {
         "display_name": "Aphek",
         "id": "aphek-2",
         "lat": 32.105,
         "lon": 34.930417,
-        "total_events": 1
+        "merged_ids": [
+          "antipatris_70"
+        ],
+        "total_events": 2
       },
       {
         "display_name": "Aphek",
@@ -520,28 +511,20 @@
         "id": "bethlehem-1",
         "lat": 31.704306,
         "lon": 35.207639,
-        "total_events": 11
-      },
-      {
-        "display_name": "Bethlehem",
-        "id": "bethlehem_218",
-        "lat": 31.70431,
-        "lon": 35.20746,
-        "total_events": 2
+        "merged_ids": [
+          "bethlehem_218"
+        ],
+        "total_events": 13
       },
       {
         "display_name": "Bethsaida",
         "id": "bethsaida-2",
         "lat": 32.91038,
         "lon": 35.63096,
-        "total_events": 3
-      },
-      {
-        "display_name": "Bethsaida",
-        "id": "bethsaida_231",
-        "lat": 32.91031,
-        "lon": 35.63067,
-        "total_events": 1
+        "merged_ids": [
+          "bethsaida_231"
+        ],
+        "total_events": 4
       },
       {
         "display_name": "Bochim",
@@ -573,9 +556,12 @@
       },
       {
         "display_name": "Calneh",
-        "id": "calneh_269",
-        "lat": 32.127213,
-        "lon": 45.229995,
+        "id": "calneh-1",
+        "lat": 32.126111,
+        "lon": 45.230833,
+        "merged_ids": [
+          "calneh_269"
+        ],
         "total_events": 1
       },
       {
@@ -755,9 +741,12 @@
       },
       {
         "display_name": "Ephraim",
-        "id": "ephraim_401",
-        "lat": 31.95378956,
-        "lon": 35.29913578,
+        "id": "ephraim-2",
+        "lat": 31.954444,
+        "lon": 35.300278,
+        "merged_ids": [
+          "ephraim_401"
+        ],
         "total_events": 1
       },
       {
@@ -1067,18 +1056,21 @@
         "total_events": 2
       },
       {
+        "display_name": "Lod",
+        "id": "lod",
+        "lat": 31.95,
+        "lon": 34.9,
+        "merged_ids": [
+          "lydda_741"
+        ],
+        "total_events": 1
+      },
+      {
         "display_name": "Lycia",
         "id": "lycia",
         "lat": 36.733333,
         "lon": 29.9,
         "total_events": 2
-      },
-      {
-        "display_name": "Lydda",
-        "id": "lydda_741",
-        "lat": 31.950908,
-        "lon": 34.893068,
-        "total_events": 1
       },
       {
         "display_name": "Lystra",
@@ -1221,10 +1213,13 @@
         "total_events": 1
       },
       {
-        "display_name": "Moreh (Shechem)",
-        "id": "moreh_817",
-        "lat": 32.21369123124062,
-        "lon": 35.2817986718367,
+        "display_name": "Moreh",
+        "id": "moreh-1",
+        "lat": 32.213611,
+        "lon": 35.281944,
+        "merged_ids": [
+          "moreh_817"
+        ],
         "total_events": 1
       },
       {
@@ -1274,7 +1269,10 @@
         "id": "mount-of-olives",
         "lat": 31.777946,
         "lon": 35.245686,
-        "total_events": 4
+        "merged_ids": [
+          "olivet_907"
+        ],
+        "total_events": 8
       },
       {
         "display_name": "Mount Sinai",
@@ -1341,13 +1339,6 @@
         "total_events": 1
       },
       {
-        "display_name": "Olivet",
-        "id": "olivet_907",
-        "lat": 31.77809503,
-        "lon": 35.24719761,
-        "total_events": 4
-      },
-      {
         "display_name": "Pamphylia",
         "id": "pamphylia",
         "lat": 37.0,
@@ -1383,13 +1374,6 @@
         "total_events": 3
       },
       {
-        "display_name": "Phenice",
-        "id": "phenice_945",
-        "lat": 35.19888577,
-        "lon": 24.08098202,
-        "total_events": 2
-      },
-      {
         "display_name": "Phenicia",
         "id": "phenicia_944",
         "lat": 33.25,
@@ -1409,6 +1393,16 @@
         "lat": 31.663889,
         "lon": 34.545833,
         "total_events": 1
+      },
+      {
+        "display_name": "Phoenix",
+        "id": "phoenix",
+        "lat": 35.2,
+        "lon": 24.072222,
+        "merged_ids": [
+          "phenice_945"
+        ],
+        "total_events": 2
       },
       {
         "display_name": "Phrygia",
@@ -1495,10 +1489,13 @@
         "total_events": 1
       },
       {
-        "display_name": "Rehoboth",
-        "id": "rehoboth-ir_992",
-        "lat": 36.35941,
-        "lon": 43.152887,
+        "display_name": "Rehoboth-Ir",
+        "id": "rehoboth-ir",
+        "lat": 36.3594,
+        "lon": 43.1528,
+        "merged_ids": [
+          "rehoboth-ir_992"
+        ],
         "total_events": 1
       },
       {
@@ -1681,10 +1678,13 @@
         "total_events": 4
       },
       {
-        "display_name": "Solomon's Portico",
-        "id": "solomons_portico_1109",
-        "lat": 31.777444,
-        "lon": 35.234935,
+        "display_name": "Solomon’s Portico",
+        "id": "solomon-s-portico",
+        "lat": 31.776667,
+        "lon": 35.234167,
+        "merged_ids": [
+          "solomons_portico_1109"
+        ],
         "total_events": 2
       },
       {
@@ -1847,13 +1847,6 @@
         "lat": 33.270833,
         "lon": 35.196111,
         "total_events": 7
-      },
-      {
-        "display_name": "Ur of the Chaldees",
-        "id": "ur_1189",
-        "lat": 30.9625,
-        "lon": 46.103056,
-        "total_events": 1
       },
       {
         "display_name": "Uz",

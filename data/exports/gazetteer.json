@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "atlas_version_root": "2a45127ba3b91af4",
+  "atlas_version_root": "82bac0bde5a53ec2",
   "places": [
     {
       "id": "abana",
@@ -506,14 +506,6 @@
         "EZR.2.28",
         "NEH.7.32"
       ]
-    },
-    {
-      "id": "ai_36",
-      "canonical": "Ai",
-      "aliases": [],
-      "lat": 31.9166759,
-      "lon": 35.2615767,
-      "provenance": "curated-places"
     },
     {
       "id": "aiath",
@@ -1100,22 +1092,6 @@
       "provenance": "curated-places"
     },
     {
-      "id": "antioch_69",
-      "canonical": "Antioch (Pisidia)",
-      "aliases": [],
-      "lat": 38.30466,
-      "lon": 31.19049,
-      "provenance": "curated-places"
-    },
-    {
-      "id": "antipatris_70",
-      "canonical": "Antipatris",
-      "aliases": [],
-      "lat": 32.10478,
-      "lon": 34.93078,
-      "provenance": "curated-places"
-    },
-    {
       "id": "aphek-1",
       "canonical": "Aphek 1",
       "aliases": [],
@@ -1196,14 +1172,6 @@
       "attestations": [
         "ACT.17.1"
       ]
-    },
-    {
-      "id": "appii_forum_427",
-      "canonical": "Appii Forum",
-      "aliases": [],
-      "lat": 41.46801,
-      "lon": 12.99372,
-      "provenance": "curated-places"
     },
     {
       "id": "ar",
@@ -3843,14 +3811,6 @@
       ]
     },
     {
-      "id": "bethlehem_218",
-      "canonical": "Bethlehem",
-      "aliases": [],
-      "lat": 31.70431,
-      "lon": 35.20746,
-      "provenance": "curated-places"
-    },
-    {
       "id": "bethphage",
       "canonical": "Bethphage",
       "aliases": [],
@@ -3889,14 +3849,6 @@
         "MRK.6.45",
         "MRK.8.22"
       ]
-    },
-    {
-      "id": "bethsaida_231",
-      "canonical": "Bethsaida",
-      "aliases": [],
-      "lat": 32.91031,
-      "lon": 35.63067,
-      "provenance": "curated-places"
     },
     {
       "id": "bethuel",
@@ -4252,14 +4204,6 @@
         "AMO.6.2",
         "ISA.10.9"
       ]
-    },
-    {
-      "id": "calneh_269",
-      "canonical": "Calneh",
-      "aliases": [],
-      "lat": 32.127213,
-      "lon": 45.229995,
-      "provenance": "curated-places"
     },
     {
       "id": "cana",
@@ -6987,14 +6931,6 @@
         "NEH.12.39",
         "NEH.8.16"
       ]
-    },
-    {
-      "id": "ephraim_401",
-      "canonical": "Ephraim",
-      "aliases": [],
-      "lat": 31.95378956,
-      "lon": 35.29913578,
-      "provenance": "curated-places"
     },
     {
       "id": "ephrath",
@@ -12979,14 +12915,6 @@
       ]
     },
     {
-      "id": "lydda_741",
-      "canonical": "Lydda",
-      "aliases": [],
-      "lat": 31.950908,
-      "lon": 34.893068,
-      "provenance": "curated-places"
-    },
-    {
       "id": "lydia",
       "canonical": "Lydia",
       "aliases": [],
@@ -14387,14 +14315,6 @@
       ]
     },
     {
-      "id": "moreh_817",
-      "canonical": "Moreh (Shechem)",
-      "aliases": [],
-      "lat": 32.21369123124062,
-      "lon": 35.2817986718367,
-      "provenance": "curated-places"
-    },
-    {
       "id": "moresheth-gath",
       "canonical": "Moresheth-gath",
       "aliases": [],
@@ -15568,14 +15488,6 @@
       "provenance": "curated-places"
     },
     {
-      "id": "olivet_907",
-      "canonical": "Olivet",
-      "aliases": [],
-      "lat": 31.77809503,
-      "lon": 35.24719761,
-      "provenance": "curated-places"
-    },
-    {
       "id": "ono",
       "canonical": "Ono",
       "aliases": [],
@@ -15973,14 +15885,6 @@
       "attestations": [
         "2KI.5.12"
       ]
-    },
-    {
-      "id": "phenice_945",
-      "canonical": "Phenice",
-      "aliases": [],
-      "lat": 35.19888577,
-      "lon": 24.08098202,
-      "provenance": "curated-places"
     },
     {
       "id": "phenicia_944",
@@ -16753,14 +16657,6 @@
       "attestations": [
         "GEN.10.11"
       ]
-    },
-    {
-      "id": "rehoboth-ir_992",
-      "canonical": "Rehoboth",
-      "aliases": [],
-      "lat": 36.35941,
-      "lon": 43.152887,
-      "provenance": "curated-places"
     },
     {
       "id": "rekem",
@@ -18434,14 +18330,6 @@
       ]
     },
     {
-      "id": "solomons_portico_1109",
-      "canonical": "Solomon's Portico",
-      "aliases": [],
-      "lat": 31.777444,
-      "lon": 35.234935,
-      "provenance": "curated-places"
-    },
-    {
       "id": "south-1",
       "canonical": "South 1",
       "aliases": [],
@@ -19782,14 +19670,6 @@
       "aliases": [],
       "lat": 30.962222,
       "lon": 46.104444,
-      "provenance": "curated-places"
-    },
-    {
-      "id": "ur_1189",
-      "canonical": "Ur of the Chaldees",
-      "aliases": [],
-      "lat": 30.9625,
-      "lon": 46.103056,
       "provenance": "curated-places"
     },
     {

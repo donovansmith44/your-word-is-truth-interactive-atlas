@@ -107,27 +107,38 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     // this version_root_regression.rs's own "MOVED AGAIN" log entry has the
     // full list): one fewer event node (theo-295 absorbed) and several
     // events' own witness/verse sets changed again.
+    //
+    // Re-pinned AGAIN, Batch PLACE-1a (2026-09-06, place duplicate-lineage
+    // merge backlog -- 15 new curated MERGE_PAIRS entries, 1373 -> 1358
+    // places): every time window shrinks (fewer duplicate/quiet place
+    // entries -- each absorbed Theographic `_NNN` record's own quiet-place
+    // listing is gone, folded onto its survivor's `merged_ids` instead), but
+    // no scripture_refs() hash below changed (none of GEN.1/JHN.3.16/
+    // PSA.23/EXO.20/REV.22 touches an absorbed id) -- captured via
+    // `cargo test -p atlas-server --test scene_byte_identity -- --nocapture`
+    // against the freshly-regenerated artifact (atlas_version_root
+    // 82bac0bde5a53ec2).
     vec![
-        ("era_primeval", -4004, -2167, 0xa8f319510bae3d3e, 26199),
-        ("era_patriarchs", -2166, -1877, 0x0949165a5dc638b2, 39946),
-        ("era_egypt_exodus", -1876, -1407, 0x85ffe2fce229afb0, 97573),
-        ("era_conquest_judges", -1406, -1051, 0x492f95c775e33a07, 59150),
-        ("era_united_kingdom", -1050, -932, 0x4b4fa5fa73b85978, 51147),
-        ("era_divided_kingdom", -931, -587, 0x2d57785bf229bfa4, 70054),
-        ("era_exile", -586, -539, 0x38ffa4f2c50cd03d, 33771),
-        ("era_return", -538, -6, 0x9ca86bc6b9f3363e, 48767),
-        ("era_gospels", -5, 29, 0x50738fe6fdd1525c, 30105),
-        ("era_early_church", 30, 100, 0x6a5fb80440c087f7, 193225),
-        ("full_span", -4004, 100, 0xa694b281e0a56b76, 446611),
-        ("nt_window_gospels_plus_church", -5, 100, 0x92759b3edd1f714d, 200937),
-        ("degenerate_start_year", -4004, -4004, 0xb82daf83906683f8, 22384),
-        ("degenerate_end_year", 100, 100, 0x1fa6f78060d202e4, 22381),
-        ("degenerate_mid_year", -1000, -1000, 0xba48d7206bc67110, 22385),
-        ("straddle_primeval_patriarchs", -2200, -2100, 0x004aab28d42397f9, 22589),
-        ("straddle_gospels_early_church", 25, 35, 0x71052d2298bbf597, 126697),
-        ("straddle_exile_return", -600, -500, 0x04cca994fc4805db, 58722),
-        ("narrow_conquest", -1407, -1406, 0x551f96c4cd9dd0a2, 24878),
-        ("wide_kingdom_era", -1051, -539, 0x014766f774552bc7, 109719),
+        ("era_primeval", -4004, -2167, 0xca9b04c94063fcc9, 25865),
+        ("era_patriarchs", -2166, -1877, 0x90e4397a6bc5f2a2, 39564),
+        ("era_egypt_exodus", -1876, -1407, 0x82d28704c5dc54ea, 97234),
+        ("era_conquest_judges", -1406, -1051, 0xf17d6af7d9d23067, 58811),
+        ("era_united_kingdom", -1050, -932, 0xfb1c6865bb2046da, 50808),
+        ("era_divided_kingdom", -931, -587, 0x369329afa55bf542, 69715),
+        ("era_exile", -586, -539, 0x8ba65a5156b70b2b, 33432),
+        ("era_return", -538, -6, 0xd8bc4a24cee9d16c, 48428),
+        ("era_gospels", -5, 29, 0xd3011b07179e5581, 29738),
+        ("era_early_church", 30, 100, 0x7737e4c3728e8efc, 192796),
+        ("full_span", -4004, 100, 0xd48560100dd6fe11, 446067),
+        ("nt_window_gospels_plus_church", -5, 100, 0x31a23f3262ee6e0f, 200480),
+        ("degenerate_start_year", -4004, -4004, 0x7960c1059f3251a2, 22045),
+        ("degenerate_end_year", 100, 100, 0xe90bfa9f319fd594, 22042),
+        ("degenerate_mid_year", -1000, -1000, 0xb38bea027803bae8, 22046),
+        ("straddle_primeval_patriarchs", -2200, -2100, 0xd42561ae482b9dee, 22250),
+        ("straddle_gospels_early_church", 25, 35, 0x455ea2f49e8b5c14, 126309),
+        ("straddle_exile_return", -600, -500, 0x56988240d06456d1, 58383),
+        ("narrow_conquest", -1407, -1406, 0x383fff94b30cca3f, 24539),
+        ("wide_kingdom_era", -1051, -539, 0xfedb555c6992f76d, 109380),
     ]
 }
 
