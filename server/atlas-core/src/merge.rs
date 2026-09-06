@@ -63,9 +63,9 @@
 //! ever carries its own `data/curated/place-history.toml` entry, that
 //! history becomes unreachable after the merge (nothing in `AtlasData::places`
 //! keeps the absorbed id any more) -- migrate any such entry onto `survivor`
-//! by hand. Neither of today's two pairs has one (verified against
-//! `data/curated/place-history.toml`), so this is a documented caveat, not
-//! a bug fixed here.
+//! by hand. None of the 17 pairs below (the original 2, plus Batch PLACE-1a's
+//! 15) has one (verified against `data/curated/place-history.toml`), so this
+//! is a documented caveat, not a bug fixed here.
 
 use crate::data::{Event, Place};
 
@@ -127,14 +127,218 @@ pub const MERGE_PAIRS: &[PlaceMerge] = &[
             low-stakes tie-break: kedesh-4 carries more of the chapter's own verse evidence (3 \
             links vs 1) and keeps it, with kedesh-naphtali's own verse_links unioned on.",
     },
+    // Batch PLACE-1a (2026-08-27, place-alias-investigation.md's own §3 systematic sweep --
+    // the 20 confirmed Theographic `_NNN`-suffixed dual-lineage duplicates, mechanically
+    // re-derived against data/exports/gazetteer.json at this module's own 1.0km threshold: 39
+    // total Theographic-synthesized ids, 20 of which sit within 1.0km of an unrelated
+    // OpenBible-lineage sibling; the other 19 have no sibling at all, so they are not a merge
+    // question here). Each of the 15 pairs below was individually hand-verified against raw
+    // theographic-bible-metadata-master/CSV/{Places,Events}.csv, data/curated/events-extra.toml,
+    // and the compiled gazetteer's own verse-attestation lists before being added -- per this
+    // module's own "distance alone cannot tell identity from coincidence" warning above, 5 of
+    // the 20 candidates were judged NOT true duplicates on exactly that basis and are
+    // deliberately EXCLUDED (documented in batch-place1a-report.md, not silently dropped):
+    // `judea_657` (Theographic's own region record, landing in the ~95-member Jerusalem
+    // mega-cluster -- a region/city coincidence, the OTHER half of the owner's ask, out of this
+    // batch's scope); `jericho_634` (its own raw Theographic events -- Bartimaeus healed
+    // "leaving Jericho" MAT.20.29/MRK.10.46/LUK.18.35, Zacchaeus LUK.19.1 -- are unambiguously
+    // NT/Herodian-era, matching curated jericho-2's own verse set exactly, but jericho_634 sits
+    // 197m from jericho-1 -- the OT-era site data/curated/events-extra.toml curates separately --
+    // and 2.1km from jericho-2, past this module's own 1.0km ceiling; merging into the
+    // geographically-nearer-but-wrong-era jericho-1 would misattribute NT events onto the OT
+    // marker, exactly the class of error this module's own header warns proximity cannot
+    // resolve, so it is left unmerged, a genuine gap for PLACE-1b, not this batch's mechanism);
+    // `bethany_186` (its nearest OpenBible neighbor, en-shemesh, is JOS.15.7's unrelated OT
+    // boundary spring -- no shared name-root, no historical rename, plain geocoding-precision
+    // noise); `moab_815` (Theographic's own "Moab" region record -- its real OpenBible-lineage
+    // twins moab-1/moab-2 are 36km/39km away, nowhere near this threshold; its only within-1.0km
+    // neighbor, dibon-1, is a specific Moabite CITY, not a name-form alias of "Moab" the nation);
+    // `galilee_433` (Nazareth is a city IN Galilee, not another name for Galilee itself -- the
+    // same region/city shape as Judea and Chaldea, not a true alias).
+    PlaceMerge {
+        survivor: "ur-1",
+        absorbed: "ur_1189",
+        reason: "The charter case (place-alias-investigation.md §1): ~136m apart, well inside \
+            the 1.0km threshold. ur-1 is OpenBible-lineage, carries the GEN.11.28/GEN.11.31/ \
+            GEN.15.7/NEH.9.7 verse evidence and is the id data/curated/events-extra.toml's ab_ur \
+            already curates by hand. ur_1189 (\"Ur of the Chaldees\") is a Theographic-synthesized \
+            duplicate -- Theographic's own event theo-65 (\"Birth of Abraham\", GEN.11.26-27) -- \
+            created only because Theographic's own name string never case-insensitively matched \
+            OpenBible's disambiguated \"Ur 1\"/\"Ur 2\"; it carries zero verse_links of its own. \
+            NOT the same fact as `chaldea` (a genuinely distinct, 84-verse-attested region \
+            record at the same point) -- chaldea is not a candidate for either table.",
+    },
+    PlaceMerge {
+        survivor: "rehoboth-ir",
+        absorbed: "rehoboth-ir_992",
+        reason: "~8m apart. rehoboth-ir is OpenBible-lineage, carries GEN.10.11 (\"and the city \
+            Rehoboth\" -- the KJV's own bare short-form). rehoboth-ir_992's Theographic kjvName \
+            is the same bare \"Rehoboth\", which never matched OpenBible's fully-qualified \
+            \"Rehoboth-Ir\" slug; carries zero verse_links of its own. Theographic's own event 87 \
+            (GEN.10.8-12, the Nimrod/Shinar city list) lists rehoboth-ir_992 alongside calneh_269 \
+            -- both this batch's pairs -- as two of several distinct cities at one low-precision \
+            Mesopotamian point; assyria/nimrod/nineveh sit at the identical point too but are \
+            genuinely distinct entities, not touched.",
+    },
+    PlaceMerge {
+        survivor: "moreh-1",
+        absorbed: "moreh_817",
+        reason: "~16m apart. moreh-1 is OpenBible-lineage, carries GEN.12.6/DEU.11.30 (\"the \
+            plain of Moreh\"). moreh_817's Theographic kjvName is the bare \"Moreh\", never \
+            matching OpenBible's disambiguated \"Moreh 1\"; carries zero verse_links of its own. \
+            Theographic's own event 71 (Abram's journey into Canaan, GEN.12.1-9) lists moreh_817 \
+            alongside canaan_272/haran_527/shechem_1069/ai_36/bethel_202/negeb_885 as distinct \
+            waypoints -- ai_36 is this batch's own pair too; shechem and the other Shechem-area \
+            features at the same point are genuinely distinct, not touched.",
+    },
+    PlaceMerge {
+        survivor: "bethlehem-1",
+        absorbed: "bethlehem_218",
+        reason: "~17m apart. bethlehem-1 is OpenBible-lineage, carries the full 47-verse \
+            evidence trail (RUT/1SA/2SA/1CH/MIC/MAT/LUK/JHN). bethlehem_218's Theographic \
+            kjvName is the bare \"Bethlehem\", never matching OpenBible's disambiguated \
+            \"Bethlehem 1\"; carries zero verse_links of its own. Theographic's own events \
+            254/256/258 (Luke's nativity, the magi, the massacre of the innocents) all target \
+            bethlehem_218 -- merging repoints all three onto bethlehem-1, consolidating what \
+            would otherwise be a second, unlabeled marker under the Christmas narrative's own \
+            scene, exactly the owner's reported symptom.",
+    },
+    PlaceMerge {
+        survivor: "bethsaida-2",
+        absorbed: "bethsaida_231",
+        reason: "~28m apart. bethsaida-1 and bethsaida-2 are both OpenBible-lineage disambiguation \
+            twins at identical coordinates (32.9104, 35.6310 -- a geo.rs kebab-collision split, \
+            same shape as ur-1/ur-2, itself out of this batch's scope). bethsaida_231's own \
+            Theographic events are 393 (feeding of the five thousand, MAT.14.13) and 403 (the \
+            blind man healed, MRK.8.22) -- bethsaida-2 carries MRK.8.22 and LUK.9.10 (the Luke \
+            parallel of the same feeding), while bethsaida-1 carries only unrelated verses \
+            (JHN.1.44/JHN.12.21/LUK.10.13/MAT.11.21). This matches data/curated/events-extra.toml's \
+            own jm_bethsaida entry, which already curates \"Using bethsaida-2\" by hand for the \
+            identical reason -- bethsaida_231 folds onto the SAME survivor the curated event \
+            already picked, not a fresh tie-break.",
+    },
+    PlaceMerge {
+        survivor: "aphek-2",
+        absorbed: "antipatris_70",
+        reason: "~42m apart. aphek-2 is OpenBible-lineage and already carries ACT.23.31 (the \
+            Antipatris verse) alongside JOS.12.18/1SA.4.1/1SA.29.1 -- OpenBible's own \
+            ancient.jsonl already identifies Herod's Antipatris with the OT battle site of Aphek \
+            (Ras al-'Ain), the standard historical-geography identification. antipatris_70's \
+            Theographic kjvName \"Antipatris\" never case-insensitively matched OpenBible's \
+            \"Aphek 2\"; carries zero verse_links of its own despite ACT.23.31 literally naming \
+            it -- the same synthesize-a-duplicate-then-render-empty defect as ur_1189.",
+    },
+    PlaceMerge {
+        survivor: "ai-1",
+        absorbed: "ai_36",
+        reason: "~53m apart. ai-1 is OpenBible-lineage, carries the full Joshua 7-8 Achan/ \
+            conquest evidence trail (29 verses) and is the id data/curated/events-extra.toml's \
+            cq_ai already curates by hand (\"ai-1 and ai-3 share coords... ai-1's verse_links \
+            carry the whole cited range... Using ai-1\", explicitly distinguishing it from ai-2, \
+            a genuinely distinct Moabite site tied only to JER.49.3, far away and NOT a merge \
+            candidate). ai_36's Theographic kjvName is the bare \"Ai\", never matching OpenBible's \
+            disambiguated \"Ai 1\"; Theographic's own event 71 (GEN.12.8, Abram pitching his tent \
+            \"having Bethel on the west, and Hai on the east\") confirms it is the SAME Ai as \
+            ai-1's own conquest-narrative site, not the distinct Jeremiah one.",
+    },
+    PlaceMerge {
+        survivor: "solomon-s-portico",
+        absorbed: "solomons_portico_1109",
+        reason: "~113m apart (both inside the Jerusalem/Temple-mount low-precision cluster). \
+            solomon-s-portico is OpenBible-lineage, carries JHN.10.23/ACT.3.11/ACT.5.12 -- the \
+            IDENTICAL name, \"Solomon's Portico\", just apostrophe-encoded differently in the two \
+            source pipelines (kebab \"solomon-s-portico\" vs Theographic's underscore-joined \
+            \"solomons_portico_1109\"). Pure encoding-twin, the clearest true-alias shape of the \
+            batch -- not a name-FORM difference at all, the same string. solomons_portico_1109 \
+            carries zero verse_links of its own despite Theographic's own events 311/316 citing \
+            ACT.3.11-17 and ACT.5.12-17 for it.",
+    },
+    PlaceMerge {
+        survivor: "calneh-1",
+        absorbed: "calneh_269",
+        reason: "~146m apart. calneh-1 is OpenBible-lineage, carries GEN.10.10 (the Shinar-city \
+            list). calneh_269's Theographic name is the identical \"Calneh\"; it never matched \
+            OpenBible's disambiguated \"Calneh 1\" and carries zero verse_links of its own. \
+            NOT the same fact as the closer-by-raw-distance `chebar` (84m, a Babylonian-exile \
+            canal in Ezekiel, an entirely different referent that merely shares the same \
+            low-precision Mesopotamian default point) -- chebar is not a candidate for either \
+            table.",
+    },
+    PlaceMerge {
+        survivor: "ephraim-2",
+        absorbed: "ephraim_401",
+        reason: "~130m apart. ephraim-1 and ephraim-2 are OpenBible-lineage disambiguation twins \
+            at identical coordinates. ephraim_401's own Theographic event (435, \"retreat to \
+            Ephraim\", JHN.11.54-57) verse-matches ephraim-2 exactly (JHN.11.54) -- ephraim-1 \
+            carries the unrelated 2SA.13.23 (Absalom's sheep-shearing feast \"beside Ephraim\") \
+            instead. Same verse-level tie-break discipline as the Bethsaida pair above, not raw \
+            attestation count (both twins carry exactly one verse each).",
+    },
+    PlaceMerge {
+        survivor: "mount-of-olives",
+        absorbed: "olivet_907",
+        reason: "~144m apart. mount-of-olives is OpenBible-lineage, carries 14 verses. \"Olivet\" \
+            is the KJV's own alternate name for the same mountain (ACT.1.12, \"the mount called \
+            Olivet\") -- a pure name-form alias, not a different site. olivet_907's Theographic \
+            events (304/305, ACT.1.4-11, the Ascension; 446/447, MRK.11.11-24) carry zero \
+            verse_links of their own on the record despite naming the identical event Acts 1 \
+            itself narrates at the same mountain.",
+    },
+    PlaceMerge {
+        survivor: "antioch-2",
+        absorbed: "antioch_69",
+        reason: "~198m apart. antioch-2 is OpenBible-lineage (38.3061, 31.1892, Pisidian Antioch \
+            in Asia Minor) and is the id data/curated/events-extra.toml's p1_pisidian_antioch \
+            already curates by hand (\"confirmed correct\"). antioch_69's Theographic name \
+            \"Antioch (Pisidia)\" never matched OpenBible's bare \"Antioch 2\"; carries zero \
+            verse_links of its own despite Theographic's own events 338/340/343 (ACT.13-14, \
+            Paul's sermon and the Pisidian mission) targeting it. `pisidia` (the region) sits at \
+            the identical point but is a genuinely distinct entity, not touched.",
+    },
+    PlaceMerge {
+        survivor: "forum-of-appius",
+        absorbed: "appii_forum_427",
+        reason: "~363m apart. forum-of-appius is OpenBible-lineage, carries ACT.28.15. \
+            appii_forum_427 is Theographic's own translation-order rendering of the identical \
+            Latin place-name (Forum Appii / Appii Forum) on Paul's own road from Puteoli to \
+            Rome; it never case-insensitively matched OpenBible's word-order and carries zero \
+            verse_links of its own despite Theographic's own event 384 citing the same ACT.28.11-16.",
+    },
+    PlaceMerge {
+        survivor: "lod",
+        absorbed: "lydda_741",
+        reason: "~662m apart, still well inside the 1.0km threshold. lod is OpenBible-lineage \
+            and already carries ACT.9.32/ACT.9.35/ACT.9.38 (Peter healing Aeneas at Lydda) \
+            alongside its OT references (1CH.8.12/EZR.2.33/NEH.7.37/NEH.11.35) -- \"Lydda\" is \
+            simply the Greek/NT name for the same OT town \"Lod\", and OpenBible's own \
+            ancient.jsonl already folds both eras' verses onto one record. lydda_741's \
+            Theographic name \"Lydda\" never matched OpenBible's OT-era \"Lod\" slug; carries \
+            zero verse_links of its own despite Theographic's own event 328 citing the identical \
+            ACT.9.32-38. NOT the same fact as the closer-by-raw-distance `ge-harashim` (also \
+            nearby, 1CH.4.14's unrelated \"valley of craftsmen\") -- not a candidate for either \
+            table.",
+    },
+    PlaceMerge {
+        survivor: "phoenix",
+        absorbed: "phenice_945",
+        reason: "~806m apart, still well inside the 1.0km threshold. phoenix is OpenBible-lineage \
+            and carries ACT.27.12 (\"the haven of Crete... which lieth toward the south west and \
+            north west\"). \"Phenice\" is simply the KJV's own transliteration of the identical \
+            Cretan harbor's Greek name (rendered \"Phoenix\" in modern usage) -- phenice_945's own \
+            Theographic events (380/381, ACT.27.1-12, Paul's storm-driven voyage) verse-match \
+            phoenix exactly; it carries zero verse_links of its own. NOT the same record as the \
+            separate Theographic `phenicia_944` (\"Phenicia\", the mainland region, ACT.11.19/ \
+            15.3/21.2) -- that id has no OpenBible-lineage sibling within threshold at all and is \
+            therefore not part of this batch.",
+    },
 ];
 
 /// Ids absorbed into `survivor_id`, if any -- for `scene::lit_places`/
 /// `scene::quiet_places`/`compose_scripture_scene`'s mention branch to stamp
 /// onto `ScenePlace::merged_ids`/`QuietPlace::merged_ids` (wire
 /// traceability, per the brief: "note the absorbed record's id in the wire
-/// for traceability"). `MERGE_PAIRS` is small enough (today: 2 entries) that
-/// a linear scan per place costs nothing worth indexing.
+/// for traceability"). `MERGE_PAIRS` is small enough (17 entries as of Batch
+/// PLACE-1a) that a linear scan per place costs nothing worth indexing.
 pub fn absorbed_ids_for(survivor_id: &str) -> Vec<String> {
     MERGE_PAIRS.iter().filter(|m| m.survivor == survivor_id).map(|m| m.absorbed.to_string()).collect()
 }
@@ -355,6 +559,35 @@ mod tests {
     }
 
     #[test]
+    fn absorbed_ids_for_reports_the_place1a_charter_case() {
+        // The owner's own repro (place-alias-investigation.md §1): ur_1189 ("Ur of the
+        // Chaldees") must fold onto ur-1, not remain a second, independently-rendering record.
+        assert_eq!(absorbed_ids_for("ur-1"), vec!["ur_1189".to_string()]);
+        // chaldea is NOT a merge candidate -- a genuinely distinct, separately-attested region,
+        // not a duplicate-lineage record of Ur (place-alias-investigation.md §2.2).
+        assert!(absorbed_ids_for("chaldea").is_empty());
+        assert!(absorbed_ids_for("ur_1189").is_empty(), "the ABSORBED id itself was never a survivor");
+    }
+
+    #[test]
+    fn place1a_excluded_candidates_never_entered_the_table() {
+        // The 5 of 20 mechanically-flagged candidates hand-judged NOT true duplicates
+        // (batch-place1a-report.md's own triage table) -- pinned here so a future curator
+        // cannot silently re-introduce one of these on distance alone. Judea/Galilee are
+        // region/city coincidences (the OTHER half of the owner's ask, a separate batch);
+        // Bethany is unrelated proximity noise; Moab has no true within-threshold twin at all;
+        // Jericho is a real duplicate but of the WRONG survivor by raw distance (its true
+        // semantic partner, jericho-2, sits past the 1.0km ceiling) -- see merge_pairs' own
+        // Batch PLACE-1a comment for the full reasoning on each.
+        for excluded in ["judea_657", "jericho_634", "bethany_186", "moab_815", "galilee_433"] {
+            assert!(
+                MERGE_PAIRS.iter().all(|m| m.survivor != excluded && m.absorbed != excluded),
+                "{excluded} was judged NOT a true duplicate and must stay out of MERGE_PAIRS"
+            );
+        }
+    }
+
+    #[test]
     fn every_curated_pair_is_within_the_same_place_threshold() {
         // Guards the curated table itself (not just apply_place_merges'
         // debug_assert, which only fires in debug builds) against a future
@@ -365,6 +598,37 @@ mod tests {
             ("hazor_545", 33.01746212803129, 35.56813718),
             ("kedesh-4", 32.735, 35.55555),
             ("kedesh-naphtali", 32.735, 35.55555),
+            // Batch PLACE-1a (data/exports/gazetteer.json, verified at dispatch time).
+            ("ur-1", 30.962222, 46.104444),
+            ("ur_1189", 30.9625, 46.103056),
+            ("rehoboth-ir", 36.3594, 43.1528),
+            ("rehoboth-ir_992", 36.35941, 43.152887),
+            ("moreh-1", 32.213611, 35.281944),
+            ("moreh_817", 32.21369123124062, 35.2817986718367),
+            ("bethlehem-1", 31.704306, 35.207639),
+            ("bethlehem_218", 31.70431, 35.20746),
+            ("bethsaida-2", 32.91038, 35.63096),
+            ("bethsaida_231", 32.91031, 35.63067),
+            ("aphek-2", 32.105, 34.930417),
+            ("antipatris_70", 32.10478, 34.93078),
+            ("ai-1", 31.916944, 35.261111),
+            ("ai_36", 31.9166759, 35.2615767),
+            ("solomon-s-portico", 31.776667, 35.234167),
+            ("solomons_portico_1109", 31.777444, 35.234935),
+            ("calneh-1", 32.126111, 45.230833),
+            ("calneh_269", 32.127213, 45.229995),
+            ("ephraim-2", 31.954444, 35.300278),
+            ("ephraim_401", 31.95378956, 35.29913578),
+            ("mount-of-olives", 31.777946, 35.245686),
+            ("olivet_907", 31.77809503, 35.24719761),
+            ("antioch-2", 38.306111, 31.189167),
+            ("antioch_69", 38.30466, 31.19049),
+            ("forum-of-appius", 41.46639, 12.9975),
+            ("appii_forum_427", 41.46801, 12.99372),
+            ("lod", 31.95, 34.9),
+            ("lydda_741", 31.950908, 34.893068),
+            ("phoenix", 35.2, 24.072222),
+            ("phenice_945", 35.19888577, 24.08098202),
         ];
         for pair in MERGE_PAIRS {
             let survivor = known_coords.iter().find(|(id, _, _)| *id == pair.survivor).expect("test table missing survivor coords");

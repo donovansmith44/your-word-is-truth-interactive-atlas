@@ -296,3 +296,44 @@ test('UI-3: nudge direction follows the true bearing between two close places, n
   // dx alongside dy, failing this by a wide margin.
   expect(Math.abs(dy), `nudge (dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}) is not predominantly vertical`).toBeGreaterThan(Math.abs(dx) * 3);
 });
+
+// Batch PLACE-1a -- the owner's own charter case (place-alias-investigation.md
+// §1): "we need to... only display one name of a given place if it's referred
+// to by multiple names." ur-1 (OpenBible-lineage, GEN.11.28/GEN.11.31) and
+// ur_1189 ("Ur of the Chaldees", a Theographic-synthesized duplicate carrying
+// the live theo-65 "Birth of Abraham" event, GEN.11.26-27) are ~136m apart --
+// the same dual-lineage-duplicate shape atlas_core::merge's Hazor/Kedesh pair
+// already fixes, now extended here (server/atlas-core/src/merge.rs's own
+// Batch PLACE-1a MERGE_PAIRS entry). Same WIRE-level technique as WIRE-1
+// above, against the owner's own exact repro scene, GEN.11.
+test('WIRE-2 (PLACE-1a): GEN.11 serves exactly one Ur node, with merge traceability', async () => {
+  const scene = await api.sceneScripture('GEN.11');
+  const ids: string[] = scene.places.map((p: any) => p.id);
+
+  // Exactly one Ur-family id survives; the Theographic-synthesized duplicate
+  // is gone entirely, not merely hidden.
+  const urIds = ids.filter(id => id === 'ur-1' || id === 'ur_1189');
+  expect(urIds, `expected exactly one Ur node, got ${JSON.stringify(urIds)}`).toEqual(['ur-1']);
+
+  const ur = scene.places.find((p: any) => p.id === 'ur-1');
+  expect(ur.merged_ids, 'ur-1 must carry ur_1189 in merged_ids for wire traceability').toEqual(['ur_1189']);
+  // Union of both records' EVENTS: the curated ab_ur event (GEN.11.28/31,
+  // always curated against ur-1 directly) PLUS theo-65 ("Birth of Abraham",
+  // GEN.11.26-27) -- theo-65 was curated ONLY against ur_1189 before this
+  // batch (place-alias-investigation.md §1.3) and shows up here only because
+  // apply_place_merges rewrote its own `places` entry from ur_1189 to ur-1.
+  const urEventIds = ur.events.map((e: any) => e.id).sort();
+  expect(urEventIds).toEqual(['ab_ur', 'theo-65']);
+  const urVerses = ur.events.flatMap((e: any) => e.verse_groups.flatMap((g: any) => g.verses)).sort();
+  expect(urVerses).toEqual(['GEN.11.26', 'GEN.11.27', 'GEN.11.28', 'GEN.11.31']);
+
+  // Chaldea is NOT a same-place pair with Ur -- a genuinely distinct,
+  // separately-attested REGION (84 verses across Genesis-Acts), the OTHER
+  // half of the owner's ask and a deliberately separate batch
+  // (place-alias-investigation.md §2.2/§4(a)). It renders here as its own,
+  // un-merged, dim mention-only place, proving this batch did not blur the
+  // true-alias/region-city boundary.
+  const chaldea = scene.places.find((p: any) => p.id === 'chaldea');
+  expect(chaldea, 'chaldea should be a real, un-merged place in this scene').toBeTruthy();
+  expect(chaldea.merged_ids ?? []).toEqual([]);
+});
