@@ -409,10 +409,24 @@ CAT-SCRIPT-1 (mid-batch owner addendum, verbatim: "When we go to catechism
   the right and keep the font."): ONE reusable component,
   `Components/TitledPassageEntry.razor` (Title/Ref/TitleTestId/RefTestId
   parameters) — a flex header row, title left (`popover-passage-title`,
-  a declared type-scale TOKEN, `--passage-title-size` = `1.15rem`,
+  a declared type-scale TOKEN, `--passage-title-size`,
   `client/wwwroot/css/app.css` `:root` — changing the size app-wide for
   this header is this ONE line, the acceptance test's own knob), ref right
   (`popover-passage-ref-label`, UNCHANGED class/font — "keep the font").
+  Batch UX-2 (CAT-SIZE-COLOR, owner order, verbatim: "the words on the
+  catechism are a little bit too large, and they should be a nicer
+  color"): `--passage-title-size` stepped DOWN one size, `1.15rem` ->
+  `1.05rem` (still the same ONE `:root` line, still app-wide reach,
+  unchanged consumer/knob mechanics); `.popover-passage-title`'s own
+  `color` swapped from the plain `--ink` body color to `--bronze-ink` —
+  this app's own established warm-accent token, ALREADY used one line
+  above the title (`.catechism-section-heading`'s own "THE SMALL
+  CATECHISM" eyebrow, same popover), measured and documented (this
+  token's own `:root` comment) at 7.26:1 on `--parchment` / 7.85:1 on
+  `--parchment-raised` — clears the 7:1 floor on both of this app's two
+  real surfaces (no dark/night theme exists anywhere in this client).
+  The same LUK.12.13-14 / "God Alone as Judge" fixture remains the named,
+  screenshot-judged proof.
   `PassageList.razor`'s own per-entry rendering composes this component
   whenever a block carries a `Caption` (today: `CatechismScripturesSection`
   only — the First Commandment's "God Alone as Judge" / `LUK.12.13-14`
@@ -437,6 +451,87 @@ Hover-window hatch (EVENT-HOVER-HATCH-1, owner order, verbatim: "when I
   constant of its own. Keyboard-reachable (Escape, while focus is inside
   the peek) as well as click, so the "no escape hatch" gap closes for
   pointer AND keyboard users alike.
+
+## Batch UX-2 (owner feedback on live UX-1: CHROME-1b, CAT-SIZE-COLOR, CHROME-UNIFORMITY-1)
+
+CHROME-1b (owner, verbatim: "the dead button is gone when you click on
+  containers, but it's still there on frontiers"): safety-valve STOP, same
+  as CHROME-1 before it — no testid RETIRED, nothing removed. A live diff of
+  every node kind's own popover chrome (the chip-per-Kind trace this
+  batch's own `PopoverChromeRegistry`/`PopoverChromeConformanceTests.cs`
+  below made exhaustive and durable, not a one-off) plus a direct
+  live-exercise of every candidate control (back/save/close on a PUSHED
+  frontier node — `EventNode`, stack depth 2; `popover-chip-map` clicked
+  from a real, well-located event — "Sojourn in Haran; the call of Abram" —
+  genuinely navigated to `/world` and rendered 5 real lit markers; a
+  cosmic/place-less event — "Creation of all things" — correctly renders
+  ZERO lit markers, confirmed via the server's own `/api/scene` response
+  (`"places":[]`), a genuine no-located-witness case, not a client bug)
+  found every rendered control genuinely wired, on every reachable kind.
+  See batch-ux2-report.md for the full trace, the fixtures used, and the
+  live-verified evidence for each control.
+
+CAT-SIZE-COLOR (owner, verbatim: "the words on the catechism are a little
+  bit too large, and they should be a nicer color"): both are the SAME
+  one-line knobs CAT-SCRIPT-1 (Batch UX-1) built. `--passage-title-size`
+  (`client/wwwroot/css/app.css` `:root`) stepped DOWN one size, `1.15rem`
+  -> `1.05rem` — still the ONE type-scale token, still app-wide reach.
+  `.popover-passage-title`'s own `color` swapped from `--ink` to
+  `--bronze-ink` — the SAME warm-accent token this popover's own
+  `.catechism-section-heading` ("THE SCRIPTURES" eyebrow, one line above)
+  already uses, measured (this token's own `:root` comment) at 7.26:1 on
+  `--parchment` / 7.85:1 on `--parchment-raised` — clears the 7:1 floor on
+  both of this app's two real surfaces (no dark/night theme exists
+  anywhere in this client — confirmed, `app.css`'s own header block). The
+  LUK.12.13-14 / "God Alone as Judge" fixture (CAT-SCRIPT-1's own named,
+  screenshot-judged example) remains the proof: before = 18.4px / `rgb(43,
+  33, 23)` (`--ink`); after = 16.8px / `rgb(101, 74, 42)` (`--bronze-ink`),
+  both real `getComputedStyle` reads against the live app. Before/after
+  screenshots in batch-ux2-report.md.
+
+CHROME-UNIFORMITY-1 (the structural answer to the owner's "we're not
+  reusing the structure for our frontiers"): `client/Explore/
+  PopoverChromeRegistry.cs`, ONE declaration site naming every
+  `popover-chip-*` testid each of the 14 concrete `IExplorable` node
+  kinds is allowed to ever emit from its own `ExploreAsync`.
+  `client.Tests/PopoverChromeConformanceTests.cs` scans every real
+  `client/Explore/*Node.cs` file, extracts the chip testids each one's
+  own `ExploreAsync` actually constructs, and FAILS if any of them is not
+  declared for that Kind — a future dead/leftover chip branch (the exact
+  ambiguity CHROME-1/CHROME-1b's own live-tracing had to resolve by hand)
+  is now caught at test time. Planted-violation proof, both synthetic
+  (in-memory, this house's own established style — see
+  `ViewRegistryConformanceTests`/`AsyncMemoConformanceTests`) and against
+  the REAL tree (a throwaway `popover-chip-planted-real-tree-proof` chip
+  added to `VerseNode.cs`, confirmed the suite FAILS loud with the exact
+  offending file/Kind/testid named, then reverted — `git status` clean
+  again afterward, `client.Tests` back to 304/304 green).
+
+  The chrome-per-kind table (every row transcribed from a live source
+  read, batch-ux2-report.md's own diff):
+
+  | Kind | Declared chips (`PopoverChromeRegistry.ByKind`) |
+  |---|---|
+  | Verse | `popover-chip-book`, `popover-chip-context` |
+  | Passage | `popover-chip-book`, `popover-chip-context` |
+  | Chapter | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
+  | Book | `popover-chip-map`, `popover-chip-context`, `popover-chip-book` |
+  | Author | `popover-chip-map` (conditional — needs `WritePlace`+`WriteFrom`/`To`) |
+  | Place | `popover-chip-map` |
+  | TimeAndPlace | `popover-chip-map` |
+  | Event | `popover-chip-map` (conditional — needs `When`) |
+  | PolityDelta | `popover-chip-map` |
+  | Year | `popover-chip-verse-{VREF}` (one per curated supporting verse, PREFIX declaration) + `popover-chip-map` |
+  | Catechism | *(none)* |
+  | Person | *(none)* |
+  | CommentaryItem | *(none)* |
+  | ConcordUnit | *(none)* |
+
+  `popover-breadcrumb-back`/`popover-save-exploration`/`popover-close` are
+  UNIVERSAL (rendered by `ExplorerPopover.razor` itself, conditional on
+  stack depth / storage availability, never on Kind) — out of this
+  registry's scope by design; declaring them once per Kind would be 14
+  identical rows.
 
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,
