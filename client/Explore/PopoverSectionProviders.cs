@@ -427,6 +427,14 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
             builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
+            // XREF-CLAMP-1 (owner order, verbatim: "be sure not to show
+            // more than two verses of each cross ref ... that two-verse
+            // clamp ought to apply to all cross refs visually displayed for
+            // a frontier"): the SAME shared constant EventWitnessesSection/
+            // VerseParallelsSection below use -- see PassageList.razor's
+            // own StandardVerseClamp doc comment for the "one line changes
+            // it everywhere" story.
+            builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
             // A real, live-caught regression (reader.spec.ts READ-3, found by
             // the full pre-existing suite): restores the pre-Batch-F2 click
             // contract -- every xref-item pushes a VerseNode at the target's
@@ -1608,7 +1616,10 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
-            builder.AddAttribute(seq++, "ClampVerses", 2);
+            // XREF-CLAMP-1: re-pointed at the shared constant -- was a
+            // literal `2` (this consumer predates the ruling); see
+            // PassageList.razor's own StandardVerseClamp doc comment.
+            builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
             // M-D1 requirement 3 (span-not-echo, owner live report #4,
             // verbatim: "it also is completely redundant to just show the
             // verses associated with a container in the container's hover
@@ -1797,7 +1808,10 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 builder.OpenComponent<Components.PassageList>(seq++);
                 builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
                 builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
-                builder.AddAttribute(seq++, "ClampVerses", 2);
+                // XREF-CLAMP-1: re-pointed at the shared constant -- was a
+                // literal `2` (this consumer predates the ruling); see
+                // PassageList.razor's own StandardVerseClamp doc comment.
+                builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
                 // Always the full clamped preview (never SpanOnly) -- unlike
                 // EventWitnessesSection's own single-witness case, THIS
                 // section only ever renders when there genuinely IS an

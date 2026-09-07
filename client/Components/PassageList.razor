@@ -86,10 +86,27 @@
             <div class="popover-passage-entry explorable" data-testid="@entry.TestId"
                  tabindex="0" role="button" aria-label="@($"Explore {entry.Block.Span}")"
                  @onclick="@(e => OnEntryClick(e, entry.Block))" @onkeydown="@(e => OnKeyDown(e, entry.Block))">
-                <span class="popover-passage-ref-label">@entry.Block.Span</span>
+                @* CAT-SCRIPT-1 (owner addendum, verbatim: "<TITLE> <Passage
+                   ref> and then verses below ... TITLE ... on the left, in
+                   bigger, more readable letters ... PASSAGE REF on the
+                   right and keep the font"): a captioned entry (today:
+                   CatechismScripturesSection's own question-titled proof
+                   verses -- see TitledPassageEntry.razor's own header
+                   comment) composes the reusable title+ref header row
+                   instead of this file's own former bare ref-label-then-
+                   caption stack. Every OTHER consumer (no Caption --
+                   cross-references, place est/dest, PRIOR/FOLLOWING,
+                   PARALLEL ACCOUNTS/PARALLELS) is byte-for-byte unchanged:
+                   still the bare .popover-passage-ref-label span, same
+                   class, same position. *@
                 @if (entry.Block.Caption is { } caption)
                 {
-                    <span class="popover-passage-caption">@caption</span>
+                    <TitledPassageEntry Title="@caption" Ref="@entry.Block.Span"
+                                         TitleTestId="@($"{entry.TestId}-title")" RefTestId="@($"{entry.TestId}-ref")" />
+                }
+                else
+                {
+                    <span class="popover-passage-ref-label">@entry.Block.Span</span>
                 }
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
                                    TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy" OnExplore="OnExplore">
@@ -149,6 +166,18 @@
                                         <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())"
                                                      Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" /><text> </text>
                                     }
+                                    @* XREF-CLAMP-1 (owner order, verbatim: "a quiet continuation
+                                       mark ... so the clamp is visible as a clamp, not mistaken
+                                       for the whole text"): the SAME truncation idiom the rest
+                                       of this app already reaches for (a bare ellipsis --
+                                       app.css's own "Loading…"/`text-overflow: ellipsis`
+                                       register), decorative only (aria-hidden -- the entry's
+                                       own accessible name, ONE-RULE's own outer explorable
+                                       label, is unaffected by this being present or absent). *@
+                                    @if (clamps)
+                                    {
+                                        <span class="popover-passage-clamp-mark" data-testid="@($"{entry.TestId}-clamp-mark")" aria-hidden="true">&hellip;</span>
+                                    }
                                 }
                                 else
                                 {
@@ -205,6 +234,19 @@
     // Batch N2 requirement 2: when set, caps a PASSAGE entry's own compact
     // text at this many verses -- see this file's own header comment.
     [Parameter] public int? ClampVerses { get; set; }
+
+    // Batch UX-1 (XREF-CLAMP-1, owner order verbatim: "be sure not to show
+    // more than two verses of each cross ref... that two-verse clamp ought
+    // to apply to all cross refs visually displayed for a frontier."
+    // CONTROLLER RULING: clamp = 2): THE ONE named constant every
+    // ClampVerses consumer points at -- changing the clamp app-wide (2->3)
+    // is this ONE line, THE COMPOSABILITY BAR's own standing requirement.
+    // EventWitnessesSection/VerseParallelsSection (PopoverSectionProviders.cs)
+    // already clamped at a literal `2` before this batch; both are
+    // re-pointed at this constant so there is exactly one number to change,
+    // not three literals to hunt down. CrossRefsSection is the newest
+    // consumer (previously unclamped).
+    public const int StandardVerseClamp = 2;
 
     // M-D1 requirement 3 (span-not-echo, owner live report #4): when true,
     // every entry renders its own ref-label span ONLY -- no compact text --

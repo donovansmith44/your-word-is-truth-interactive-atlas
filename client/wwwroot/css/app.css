@@ -135,6 +135,13 @@
     /* type */
     --font-serif: "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
     --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+    /* Batch UX-1 (CAT-SCRIPT-1, owner addendum, verbatim: "TITLE ... in
+       bigger, more readable letters than it is in its current state"): the
+       ONE type-scale token TitledPassageEntry.razor's own title reads --
+       changing it app-wide (every catechism-frontier THE SCRIPTURES title,
+       and any future titled-passage-entry consumer) is this ONE line. */
+    --passage-title-size: 1.15rem;
 }
 
 *, *::before, *::after {
@@ -4825,15 +4832,42 @@ input:focus-visible,
     color: var(--lapis);
 }
 
-/* A question title (Batch F2 requirement 4's own "if cheap, highlight/
-   deep-link the question context") or, for a future provider, any other
-   short per-block label -- quiet italic, never competing with the ref's
-   own mono instrument-readout treatment. */
-.popover-passage-caption {
-    margin-inline-start: .5rem;
+/* Batch UX-1 (CAT-SCRIPT-1): the reusable title+ref header row
+   (TitledPassageEntry.razor) -- a question title (Batch F2 requirement 4's
+   own "if cheap, highlight/deep-link the question context") REPLACES the
+   RETIRED .popover-passage-caption's own quiet-italic-beside-the-ref
+   stacking (the owner's own live report: "in bigger, more readable
+   letters than it is in its current state"). Plain flex row,
+   space-between -- DOM order (title first, ref second in the markup)
+   alone produces the left/right split. */
+.popover-passage-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+/* The TITLE half -- bigger and more readable than the retired italic
+   caption (--passage-title-size, :root above, is the ONE knob for this).
+   Serif (matches this app's own body-copy register, not the ref's mono
+   instrument-readout treatment), regular ink (not --ink-soft) and a
+   heavier weight -- both the owner's own "more readable" ask and enough
+   visual weight to read as a real heading rather than a meta-note. */
+.popover-passage-title {
     font-family: var(--font-serif);
-    font-style: italic;
-    font-size: .78rem;
+    font-size: var(--passage-title-size);
+    font-weight: 600;
+    color: var(--ink);
+    text-align: start;
+}
+
+/* XREF-CLAMP-1 (owner order, verbatim: "a quiet continuation mark"):
+   decorative-only, quiet -- same muted --ink-soft register
+   .popover-arrow-peek-truncated's own comment already establishes for a
+   similar honest "there's more" note beside real content, but unstyled as
+   a phrase (this is one glyph, not a sentence) -- no italic, no margin
+   beyond what the ordinary inline flow already gives it. */
+.popover-passage-clamp-mark {
     color: var(--ink-soft);
 }
 
@@ -5474,8 +5508,10 @@ input:focus-visible,
    ArrowNav.razor's own ComputeTruncatedBy doc comment has the full
    mechanism) -- a quiet, non-interactive note, never styled like a
    button/control (no cursor:pointer, nothing here is clickable), same
-   italic ink-soft register .popover-passage-caption already uses for a
-   similar quiet meta-note beside real content. */
+   italic ink-soft register the RETIRED .popover-passage-caption used to
+   use for a similar quiet meta-note beside real content (Batch UX-1,
+   CAT-SCRIPT-1, replaced that rule with .popover-passage-title -- see
+   this file's own comment there). */
 .popover-arrow-peek-truncated {
     margin: 0;
     font-style: italic;

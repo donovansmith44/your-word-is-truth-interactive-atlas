@@ -1,0 +1,35 @@
+@* Batch UX-1 (CAT-SCRIPT-1, mid-batch owner addendum, verbatim: "When we go
+   to catechism frontiers, and we have THE SCRIPTURES ... i want the
+   structure to be <TITLE> <Passage ref> and then verses below. so on the
+   first commandment, i would want to see God Alone as Judge on the left,
+   in bigger, more readable letters than it is in its current state, and
+   LUK.12.13-14 on the right and keep the font."): the reusable title+ref
+   HEADER ROW for a passage-list entry that carries a caption/title --
+   PassageList.razor's own CatechismScripturesSection consumer is the
+   first user (the First Commandment's "God Alone as Judge" / LUK.12.13-14
+   pairing is the named, screenshot-judged fixture), but this is a
+   standalone component precisely so any OTHER section pairing a title
+   with a passage ref can compose it without a parallel implementation --
+   THE COMPOSABILITY BAR, extended by controller ruling to this header's
+   own type scale (ONE token, --passage-title-size, app.css, below --
+   "changing the clamp should be literally one line of code," the owner's
+   own words, applied here to "changing the title's size").
+
+   TITLE left (bigger/more readable than the old plain-italic caption --
+   see .popover-passage-title's own app.css comment), REF right (KEEPS its
+   existing font/class -- .popover-passage-ref-label, UNCHANGED, "keep the
+   font" per the owner's own words verbatim) -- a plain flex row,
+   space-between, so DOM order (title first, ref second) alone produces
+   the left/right layout with no positioning trick either side needs to
+   know about. *@
+<div class="popover-passage-header">
+    <span class="popover-passage-title" data-testid="@TitleTestId">@Title</span>
+    <span class="popover-passage-ref-label" data-testid="@RefTestId">@Ref</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = default!;
+    [Parameter, EditorRequired] public string Ref { get; set; } = default!;
+    [Parameter, EditorRequired] public string TitleTestId { get; set; } = default!;
+    [Parameter, EditorRequired] public string RefTestId { get; set; } = default!;
+}

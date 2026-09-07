@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -164,20 +165,24 @@ public interface IPopoverSectionProvider
 /// touching >=1 titled EVENT-kind passage), each row explorable, opening a
 /// fresh <see cref="EventNode"/>.
 ///
-/// M-D3/U6, owner verbatim order (progress.md): "Header / Verse (focus) /
-/// Event / Parallels / Small Catechism / cross references LAST." VERSE (and
-/// PASSAGE, where the same provider also applies) sections now render in
-/// EXACTLY this order: the verse's own text
-/// (<see cref="VerseTextSectionProvider"/>, "focus"), "EVENT" membership
-/// (<see cref="VerseEventMembershipSection"/>, Verse-only -- unchanged
-/// scope note below), "PARALLELS" (<see cref="VerseParallelsSection"/>,
-/// NEW this batch -- other witnesses of an event the verse belongs to, a
-/// quick peek without a click into the EVENT node first; see that class's
-/// own doc comment), "THE SMALL CATECHISM"
-/// (<see cref="CatechismSeamSection"/>, now capped to 2 shown + U2's
-/// shared reveal mechanic -- previously unconditional/uncapped), and
-/// cross-references LAST (<see cref="CrossRefsSection"/>, moved from its
-/// former 2nd slot). ("PERSONS" -- <see cref="VersePersonsSection"/> --
+/// UX-1 (FRONTIER-ORDER-1), owner verbatim order (SUPERSEDES the M-D3/U6
+/// order this paragraph used to describe): "Verse, Event, Catechism,
+/// Parallels, then cross references." VERSE (and PASSAGE, where the same
+/// provider also applies) sections now render in EXACTLY this order: the
+/// verse's own text (<see cref="VerseTextSectionProvider"/>, "focus"),
+/// "EVENT" membership (<see cref="VerseEventMembershipSection"/>,
+/// Verse-only -- unchanged scope note below), "THE SMALL CATECHISM"
+/// (<see cref="CatechismSeamSection"/>, capped to 2 shown + U2's shared
+/// reveal mechanic -- MOVED above Parallels this batch), "PARALLELS"
+/// (<see cref="VerseParallelsSection"/> -- other witnesses of an event the
+/// verse belongs to, a quick peek without a click into the EVENT node
+/// first; see that class's own doc comment -- MOVED below Catechism this
+/// batch), and cross-references LAST (<see cref="CrossRefsSection"/>,
+/// unchanged). Realized as an explicit ORDER KEY on each registration (see
+/// the registry's own doc comment immediately below) -- REGISTRY-1's own
+/// "registration order is render order" rule now reads as "Order value is
+/// render order," array position no longer significant. ("PERSONS" --
+/// <see cref="VersePersonsSection"/> --
 /// used to sit here too, between Parallels and Catechism, the controller's
 /// own "Persons then Places" reconciliation; O4, 2026-08-23, owner
 /// live-preview correction, unregistered it -- "remove persons from hover
@@ -200,83 +205,88 @@ public interface IPopoverSectionProvider
 /// </summary>
 public static class PopoverSectionRegistry
 {
-    public static readonly IReadOnlyList<IPopoverSectionProvider> Providers = new IPopoverSectionProvider[]
+    // Batch UX-1 (FRONTIER-ORDER-1, owner order verbatim: "when clicking on
+    // a verse, things should be ordered as such (visually): Verse, Event,
+    // Catechism, Parallels, then cross references"): ordering is now an
+    // explicit ORDER KEY on each registration, not bare array position --
+    // "a section's position changes by editing one registration line," THE
+    // COMPOSABILITY BAR's own standing bar for this knob. `Entries.OrderBy`
+    // is a STABLE sort (LINQ's own documented guarantee), so two entries
+    // sharing an Order value keep resolving in REGISTRATION order --
+    // REGISTRY-1's own pre-existing rule, unchanged for every provider this
+    // batch does not touch. See CONTRACT.md's own FRONTIER-ORDER-1 row for
+    // the full ruled VERSE/PASSAGE sequence (Order 10/20/21/30/40/50) and
+    // the disclosed "Order left unclustered above 50 for future
+    // Place/Catechism-detail/Event/PolityDelta/Person providers" spacing.
+    private static readonly (IPopoverSectionProvider Provider, int Order)[] Entries =
     {
         // M-D3 (U4/B3): CHAPTER's own metadata-and-context card -- a
-        // brand-new node kind (Kind == "Chapter"), so its registration
-        // position doesn't interleave with any VERSE/PASSAGE/PLACE/EVENT/
-        // CATECHISM/PolityDelta/Person provider's own AppliesTo above or
-        // below it; listed first only because it is the FIRST node kind
-        // alphabetically among this file's own section headers, not because
-        // order matters here.
-        new ChapterCardSection(),
-        // M-D3/U6, owner verbatim order (progress.md): "Header / Verse
-        // (focus) / Event / Parallels / Small Catechism / cross references
-        // LAST." Every VERSE/PASSAGE-applicable provider below is now
-        // listed in exactly this order (registration order IS render order
-        // for same-kind providers, REGISTRY-1's own standing rule) --
-        // REPLACES the pre-M-D3 order (xrefs 2nd, catechism 3rd, EVENT
-        // membership appended at the very end). The PLACE/CATECHISM-DETAIL/
-        // EVENT/PolityDelta/Person-card providers interleaved below never
-        // apply to Verse or Passage, so their own position relative to
-        // these six has no effect on VERSE/PASSAGE render order; they stay
-        // where each was originally registered.
-        new VerseTextSectionProvider(),
+        // brand-new node kind (Kind == "Chapter"), so its own Order has no
+        // effect relative to any VERSE/PASSAGE/PLACE/EVENT/CATECHISM/
+        // PolityDelta/Person provider below; listed first only because it
+        // is the FIRST node kind alphabetically among this file's own
+        // section headers, not because order matters here.
+        (new ChapterCardSection(), 0),
+
+        // FRONTIER-ORDER-1's own ruled VERSE/PASSAGE sequence -- Verse
+        // (focus, unconditional whenever the graph has text) / Event
+        // (dated-event membership, then the sibling general-kind Passage
+        // membership row PERI-1's own "dated first, general second" rule
+        // nests under the SAME visual "Event" category) / Catechism
+        // (MOVED above Parallels this batch) / Parallels (MOVED below
+        // Catechism this batch) / cross references LAST. Every OTHER
+        // provider below is Order>=60, so none of them can ever interleave
+        // with this six regardless of where its own registration LINE sits
+        // in this file.
+        (new VerseTextSectionProvider(), 10),
         // Batch T ("events as the narrative nodes"): VERSE-only (a
         // shift-click passage span's own per-verse event membership is
         // genuinely ambiguous in a way a single verse never is -- REGISTRY-1's
         // own standing scope note, unchanged).
-        new VerseEventMembershipSection(),
+        (new VerseEventMembershipSection(), 20),
         // Batch PERI-1 (PRESENTATION CATEGORY LAW): the sibling "PASSAGE"
         // section for this verse's own general-kind (dateless) passages --
-        // registered immediately after EVENT membership so a verse
+        // Order 21 (immediately after EVENT membership's own 20) so a verse
         // touching both kinds renders dated events first, general-kind
-        // passages second (registration order IS render order for
-        // same-kind providers, REGISTRY-1's own standing rule, unchanged).
-        new VersePassageMembershipSection(),
-        // M-D3/U6 (NEW this batch): "PARALLELS" -- other witnesses of an
-        // event the current verse belongs to, a quick peek without a click
-        // into the EVENT node first. Verse OR Passage (first-verse-anchored
-        // for a Passage, the SAME convention VersePersonsSection immediately
-        // below already establishes) -- see VerseParallelsSection's own doc
-        // comment for the full conditional-presence rule.
-        new VerseParallelsSection(),
-        // Batch P: Persons -- the verse's own entry point INTO persons
-        // mentioned at this locus (moved here from its former place far
-        // below, near PersonCardAndMentionsSection -- U6's own "Persons
-        // then Places slot AFTER Parallels BEFORE Catechism" reconciliation;
-        // no VERSE-scoped "Places" section exists anywhere in this codebase
-        // today to also reposition -- in-text place mentions are a
-        // completely different mechanism, Explore/PlaceMentions.cs's own
-        // hover-blink, not a popover section -- so only Persons actually
-        // moves here).
-        //
-        // O4 (owner live-preview correction, 2026-08-23: "remove persons
-        // from hover menus for now") UNREGISTERS VersePersonsSection --
-        // `new VersePersonsSection()` used to sit on the very next line.
-        // The class itself is NOT deleted: the ruling's own words ("removed
-        // for now... machinery retained") are a deliberate, disclosed
-        // exception to dead-code law, distinct from O1's own full removal a
-        // few lines above this file's own history -- see
-        // Explore/PopoverSectionProviders.cs's own VersePersonsSection for
-        // the still-intact class. In-text person mentions (M-D3/U5,
-        // Reader.razor's own verse-mention-person-* spans, PersonNode/
-        // PersonCardAndMentionsSection below) are a DIFFERENT affordance,
-        // not named by the order, and stay fully live -- see
-        // reader-persons.spec.ts's own header comment for how its coverage
-        // moved to that surviving entry path.
-        new CatechismSeamSection(),
+        // passages second, unchanged from the pre-UX-1 registration-order
+        // behavior.
+        (new VersePassageMembershipSection(), 21),
+        // UX-1 (FRONTIER-ORDER-1): "Catechism" now precedes "Parallels" --
+        // the owner's own ruled sequence. Was registered AFTER
+        // VerseParallelsSection pre-this-batch; only the Order value moved,
+        // not the class or its own resolution logic.
+        (new CatechismSeamSection(), 30),
+        // M-D3/U6 (Batch M-D3): "PARALLELS" -- other witnesses of an event
+        // the current verse belongs to, a quick peek without a click into
+        // the EVENT node first. Verse OR Passage (first-verse-anchored for
+        // a Passage, the SAME convention VersePersonsSection used to
+        // establish here) -- see VerseParallelsSection's own doc comment
+        // for the full conditional-presence rule. UX-1: now AFTER
+        // Catechism (Order 40 > 30), the owner's own ruled sequence.
+        (new VerseParallelsSection(), 40),
         // Cross-references LAST among Verse/Passage sections, per the
-        // owner's own explicit ordering -- moved from its former 2nd slot.
-        new CrossRefsSection(),
-        new PlaceDescriptionSection(),
-        new PlaceDatesSection(),
-        new PlaceBlurbSection(),
-        new PlaceEventsSection(),
-        new CatechismTextSection(),
-        new CatechismExplanationSection(),
-        new CatechismWhereWrittenSection(),
-        new CatechismScripturesSection(),
+        // owner's own explicit ordering (unchanged position, still the
+        // highest Order among the six).
+        (new CrossRefsSection(), 50),
+
+        // Batch P: Persons -- O4 (owner live-preview correction,
+        // 2026-08-23: "remove persons from hover menus for now")
+        // UNREGISTERS VersePersonsSection; the class itself is NOT deleted
+        // (a deliberate, disclosed dead-code-law exception) -- see
+        // Explore/PopoverSectionProviders.cs's own VersePersonsSection for
+        // the still-intact class. In-text person mentions (Reader.razor's
+        // own verse-mention-person-* spans, PersonNode/
+        // PersonCardAndMentionsSection below) are a DIFFERENT affordance,
+        // not named by FRONTIER-ORDER-1, and stay fully live.
+
+        (new PlaceDescriptionSection(), 60),
+        (new PlaceDatesSection(), 70),
+        (new PlaceBlurbSection(), 80),
+        (new PlaceEventsSection(), 90),
+        (new CatechismTextSection(), 100),
+        (new CatechismExplanationSection(), 110),
+        (new CatechismWhereWrittenSection(), 120),
+        (new CatechismScripturesSection(), 130),
         // CHRONO-MERGE-1 (owner: "put chronology up top"): EVENT node
         // sections, in order -- Chronology (traversal: the SAME global
         // arrow row TRAV-1/HOTFIX-4 built, now ALSO carrying the
@@ -287,34 +297,36 @@ public static class PopoverSectionRegistry
         // EventDateAndPlacesSection (M-D3/U1); THEN date+place(s)
         // (EventDateAndPlacesSection, now narrative-nav-free -- that
         // class's own CHRONO-MERGE-1 doc paragraph); THEN PARALLEL
-        // ACCOUNTS. Registration order IS render order for same-kind
-        // providers (REGISTRY-1's own standing rule) -- this single
-        // reordering is the WHOLE of "Chronology, always on top."
-        new EventChronologySection(),
-        new EventDateAndPlacesSection(),
-        new EventWitnessesSection(),
+        // ACCOUNTS.
+        (new EventChronologySection(), 140),
+        (new EventDateAndPlacesSection(), 150),
+        (new EventWitnessesSection(), 160),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
-        // sections, in order -- event text, THE SCRIPTURES, grounding note
-        // -- appended at the end, same "later batches append below, never
-        // disturb" convention. None of the three's own AppliesTo overlaps
-        // any earlier provider's (Kind == "PolityDelta" is brand new), so
-        // registration order here is ALSO render order for this node kind.
-        new PolityDeltaEventSection(),
-        new PolityDeltaScripturesSection(),
-        new PolityDeltaGroundingSection(),
+        // sections, in order -- event text, THE SCRIPTURES, grounding note.
+        // None of the three's own AppliesTo overlaps any earlier provider's
+        // (Kind == "PolityDelta" is brand new), so Order here is ALSO
+        // render order for this node kind.
+        (new PolityDeltaEventSection(), 170),
+        (new PolityDeltaScripturesSection(), 180),
+        (new PolityDeltaGroundingSection(), 190),
         // Batch P (the extensibility proof): the PERSON node's own card +
-        // mentioned-in frontier -- appended at the end, same "later batches
-        // append below, never disturb" convention every prior batch's own
-        // new provider already followed. VersePersonsSection itself
-        // (Batch P's OTHER half -- the verse's own entry point INTO
-        // persons) no longer lives here -- M-D3/U6 moved it up to sit
-        // between VerseParallelsSection and CatechismSeamSection, above.
-        new PersonCardAndMentionsSection(),
+        // mentioned-in frontier. VersePersonsSection itself (Batch P's
+        // OTHER half -- the verse's own entry point INTO persons) no
+        // longer lives here -- M-D3/U6 moved it up to Order 30-40's
+        // neighborhood historically; O4 above unregistered it entirely.
+        (new PersonCardAndMentionsSection(), 200),
         // Batch CORP-1b (owner authorization, resolving CORP-1's own
         // disclosed NEEDS_CONTEXT gap): the CommentaryItem node's own real
-        // prose -- appended at the end, same "later batches append below,
-        // never disturb" convention every prior batch's own new provider
-        // already followed.
-        new CommentaryItemProseSection(),
+        // prose -- highest Order, same "later batches append below, never
+        // disturb" convention every prior batch's own new provider already
+        // followed, now expressed as "the largest Order value" instead of
+        // "the last array element."
+        (new CommentaryItemProseSection(), 210),
     };
+
+    // OrderBy is a STABLE sort (documented LINQ guarantee) -- two entries
+    // sharing an Order value resolve in the ARRAY's own declaration order,
+    // preserving REGISTRY-1's pre-existing tie-break rule exactly.
+    public static readonly IReadOnlyList<IPopoverSectionProvider> Providers =
+        Entries.OrderBy(e => e.Order).Select(e => e.Provider).ToArray();
 }
