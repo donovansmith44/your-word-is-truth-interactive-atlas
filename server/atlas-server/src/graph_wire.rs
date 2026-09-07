@@ -139,6 +139,19 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // client change -- the identical pattern every prior node-kind
         // batch (M-B/M-C/P/CORP-1a) added here.
         "CommentaryItem" => Some(AnyNodeId { kind: NodeKind::CommentaryItem, raw: rest.to_string() }),
+        // NODE-1: the identical one-arm round-trip completion for the
+        // 1,255 Bible book/chapter Container nodes this batch newly
+        // authors (`bible_container_adapter.rs`) -- `encode_node_id`'s own
+        // pre-existing generic fallback already produces
+        // "Container:bible-chapter-GEN-1" etc.; this is what makes a
+        // chapter/book node resolve through the existing generic
+        // `/api/node/{id}` endpoint (and `bibex node`/`bibex edges`, which
+        // decode through this same function). Concord's own containers
+        // ("Container:concord-doc-...") become resolvable through this
+        // same arm -- a disclosed side effect, not a second grammar: the
+        // arm is kind-level, exactly like every prior batch's
+        // (M-B/M-C/P/CORP-1a/KRETZ-1).
+        "Container" => Some(AnyNodeId { kind: NodeKind::Container, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -235,6 +248,11 @@ mod tests {
             (NodeKind::Translation, "latin_vulgate", "Translation:latin_vulgate"),
             // Batch KRETZ-1.
             (NodeKind::CommentaryItem, "kretzmann/0.1.0", "CommentaryItem:kretzmann/0.1.0"),
+            // Batch NODE-1: Bible book/chapter containers -- and, through
+            // the same kind-level arm, Concord's own containers.
+            (NodeKind::Container, "bible-book-GEN", "Container:bible-book-GEN"),
+            (NodeKind::Container, "bible-chapter-GEN-1", "Container:bible-chapter-GEN-1"),
+            (NodeKind::Container, "concord-doc-small-catechism", "Container:concord-doc-small-catechism"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

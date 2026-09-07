@@ -680,3 +680,76 @@ fn edges_never_surfaces_an_unresolvable_peoplegroup_neighbor() {
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     assert!(!stdout(&o).contains("PeopleGroup:"), "no PeopleGroup entry should ever reach stdout");
 }
+
+// ---------------------------------------------------------------------
+// Batch NODE-1: books and chapters are nodes (owner charter) -- the CLI
+// is the Rust consumer the brief names; `bibex node`/`bibex edges` on a
+// chapter/book Container id must work through the SAME generic decode
+// (`graph_wire::decode_node_id`'s new "Container" arm) + edge port as
+// every other kind, against the real committed graph.bin.
+// ---------------------------------------------------------------------
+
+#[test]
+fn node_resolves_a_chapter_container_with_members_and_navigation() {
+    let o = run_with_data_dir(&["node", "Container:bible-chapter-JHN-3"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("kind:       Container"), "out: {out}");
+    assert!(out.contains("label:      John 3"), "the reader's own display name (canon::BOOKS + chapter): {out}");
+    assert!(out.contains("contains         36"), "John 3 has 36 verses: {out}");
+    assert!(out.contains("member-of        1"), "a chapter is a member of exactly its book: {out}");
+    assert!(out.contains("follows-in       1"), "prev/next navigation forward: {out}");
+    assert!(out.contains("precedes-in      1"), "prev/next navigation backward: {out}");
+}
+
+#[test]
+fn node_resolves_a_book_container_with_its_chapters() {
+    let o = run_with_data_dir(&["node", "Container:bible-book-GEN"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("kind:       Container"), "out: {out}");
+    assert!(out.contains("label:      Genesis"), "out: {out}");
+    assert!(out.contains("contains         50"), "Genesis has 50 chapters: {out}");
+    assert!(out.contains("follows-in       1"), "Genesis follows-in to Exodus: {out}");
+}
+
+#[test]
+fn edges_walks_chapter_succession_across_the_book_boundary() {
+    // The NODE-1 boundary choice, pinned end to end: GEN.50's own
+    // "next chapter" is EXO.1 (canon order crosses the book seam).
+    let o = run_with_data_dir(&["edges", "Container:bible-chapter-GEN-50", "--kind", "follows-in"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("Container:bible-chapter-EXO-1"), "out: {out}");
+    assert!(out.contains("Exodus 1"), "out: {out}");
+}
+
+#[test]
+fn edges_reaches_a_chapters_verses_and_a_verse_reaches_its_chapter_back() {
+    // The "see it -> use it" loop for the new kind: a chapter's contains
+    // page hands out real text-unit ids...
+    let o = run_with_data_dir(&["edges", "Container:bible-chapter-JHN-3", "--kind", "contains", "--limit", "3"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("text-unit:JHN.3.1"), "out: {out}");
+    assert!(out.contains("more: continue with --cursor 3"), "pagination must work on the new frontier: {out}");
+
+    // ...and a verse's member-of page hands the chapter id back.
+    let o2 = run_with_data_dir(&["edges", "text-unit:JHN.3.16", "--kind", "member-of"]);
+    assert!(o2.status.success(), "stderr: {}", stderr(&o2));
+    let out2 = stdout(&o2);
+    assert!(out2.contains("Container:bible-chapter-JHN-3"), "out: {out2}");
+    assert!(out2.contains("John 3"), "out: {out2}");
+}
+
+#[test]
+fn node_json_on_a_chapter_container_carries_the_same_card_shape() {
+    let (o, v) = run_json(&["node", "Container:bible-chapter-JHN-3"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let v = v.expect("json value");
+    assert_eq!(v["kind"], "Container");
+    assert_eq!(v["label"], "John 3");
+    assert_eq!(v["provenance"], "kjv");
+    let contains = v["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "contains").expect("a contains row");
+    assert_eq!(contains["count"], 36);
+}

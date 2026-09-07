@@ -966,3 +966,67 @@ async fn nodes_uninvolved_in_fulfillment_or_typology_carry_no_such_edge_summary_
         assert!(!summary.contains(&kind.to_string()), "GEN.1.1 must carry no '{kind}' entry (uninvolved in either new relation): {summary:?}");
     }
 }
+
+// ---------------------------------------------------------------------
+// Batch NODE-1: books and chapters are nodes (owner charter, verbatim:
+// "chapters are nodes and their frontier basically is the verses and
+// event containers they contain, as well as previous/next chapter
+// navigation") -- the EXISTING generic node/edges endpoints serve the
+// new Containers with no new endpoint (`graph_wire::decode_node_id`'s
+// one new "Container" arm, the same one-arm pattern every prior
+// node-kind batch added).
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoints() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Container:bible-chapter-JHN-3").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["id"], "Container:bible-chapter-JHN-3");
+    assert_eq!(body["kind"], "Container");
+    assert_eq!(body["label"], "John 3", "the reader's own display name (canon::BOOKS name + chapter)");
+    assert_eq!(body["provenance"], "kjv");
+    let summary = body["edge_summary"].as_array().unwrap();
+    let contains = summary.iter().find(|e| e["kind"] == "contains").expect("a chapter's Members frontier");
+    assert_eq!(contains["count"], 36, "John 3 has 36 verses");
+    assert!(summary.iter().any(|e| e["kind"] == "member-of"), "a chapter is a member of its book: {summary:?}");
+    assert!(summary.iter().any(|e| e["kind"] == "follows-in"), "prev/next navigation forward: {summary:?}");
+    assert!(summary.iter().any(|e| e["kind"] == "precedes-in"), "prev/next navigation backward: {summary:?}");
+
+    // The Members frontier pages verses (target TextUnits, canon order).
+    let (st2, page, _) = get(&app, "/api/node/Container:bible-chapter-JHN-3/edges?kind=contains&limit=2").await;
+    assert_eq!(st2, 200, "{page}");
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0]["node"]["id"], "text-unit:JHN.3.1");
+
+    // Succession ACROSS the book boundary (the NODE-1 boundary choice):
+    // GEN.50's next chapter is EXO.1.
+    let (st3, page3, _) = get(&app, "/api/node/Container:bible-chapter-GEN-50/edges?kind=follows-in").await;
+    assert_eq!(st3, 200, "{page3}");
+    let entries3 = page3["entries"].as_array().unwrap();
+    assert_eq!(entries3.len(), 1);
+    assert_eq!(entries3[0]["node"]["id"], "Container:bible-chapter-EXO-1");
+    assert_eq!(entries3[0]["node"]["label"], "Exodus 1");
+}
+
+#[tokio::test]
+async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
+    let app = real_app();
+
+    let (st, body, _) = get(&app, "/api/node/Container:bible-book-GEN").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["kind"], "Container");
+    assert_eq!(body["label"], "Genesis");
+    let summary = body["edge_summary"].as_array().unwrap();
+    let contains = summary.iter().find(|e| e["kind"] == "contains").expect("a book's Members frontier");
+    assert_eq!(contains["count"], 50, "Genesis has 50 chapters");
+
+    // Inverse membership from the verse end: JHN.3.16 -> John 3.
+    let (st2, page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=member-of").await;
+    assert_eq!(st2, 200, "{page}");
+    let entries = page["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0]["node"]["id"], "Container:bible-chapter-JHN-3");
+}
