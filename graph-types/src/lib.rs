@@ -21,6 +21,7 @@ pub mod chrono;
 pub mod ingest;
 pub mod graph;
 pub mod explore;
+pub mod frontier;
 pub mod present;
 pub mod store;
 

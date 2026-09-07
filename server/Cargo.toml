@@ -357,5 +357,8 @@ resolver = "2"
 # has no threshold-gated unlisted-pair sweep/validation comparable to the
 # event side's `EVENT_MERGE_PAIRS`/`EVENT_DISTINCT_PAIRS` law.
 #
-# CURRENT CANONICAL: 973 (949 + 24) across 49 sections.
+# CURRENT CANONICAL: 976 (949 + 27) across 49 sections.
+# (2026-09-07: +3 in atlas-graph-types from the controller-authored
+# frontier.rs matrix pins -- a mid-EVT-3 controller commit; EVT-3's own
+# close recount expects 976, its BASE gate at 973 was passed pre-commit.)
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
