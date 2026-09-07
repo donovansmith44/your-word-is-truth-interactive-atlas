@@ -5347,6 +5347,81 @@ input:focus-visible,
     background: rgba(44, 74, 112, .08);
 }
 
+/* EVT-3 Ticket 3: FrontierMetadataRow.razor's own Time:/Place: rows -- a
+   quiet small-caps label beside a flex-wrapped row of explorable value
+   chips. The value chip itself reuses .popover-event-place's own
+   bronze-outline-pill treatment verbatim (the SAME register: a small,
+   quiet, explorable fact beside a label) -- one shared look for both the
+   Place: value (a place name) and the Time: value (a date range),
+   composed via the ONE reusable component rather than two near-identical
+   rules. */
+.popover-frontier-metadata-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 0 0 .4rem;
+}
+
+.popover-frontier-metadata-label {
+    flex: none;
+    font-family: var(--font-serif);
+    font-size: .82rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+.popover-frontier-metadata-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.popover-frontier-metadata-value {
+    font-family: var(--font-serif);
+    font-size: .85rem;
+    color: var(--lapis);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .1rem .55rem;
+    cursor: pointer;
+}
+
+.popover-frontier-metadata-value:hover {
+    background: rgba(44, 74, 112, .08);
+}
+
+/* EVT-3 Ticket 2: RefsList.razor's own SET of account refs (under a
+   Chronology arrow) -- a flex-wrapped row of small monospace ref pills,
+   echoing .popover-passage-ref-label's own mono/lapis ref register (the
+   SAME "a ref looks like a ref everywhere" rule), pill-shaped like
+   .popover-frontier-metadata-value immediately above (both are "a small,
+   quiet, explorable fact," just keyed by REF text here instead of a
+   label). */
+.popover-refs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin: .3rem 0 0;
+}
+
+.popover-refs-list-item {
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--lapis);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 4px;
+    padding: .05rem .5rem;
+    cursor: pointer;
+}
+
+.popover-refs-list-item:hover {
+    background: rgba(44, 74, 112, .08);
+}
+
 .popover-event-years {
     flex: none;
     font-family: var(--font-mono);
