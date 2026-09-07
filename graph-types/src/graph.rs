@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use crate::edge::{
-    at, Attests, BiIndex, CatechismLink, CommentsOn, Confesses, Contains, Corresponds, CrossRef,
+    at, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
@@ -31,6 +31,10 @@ pub struct Graph {
     pub contains_concord: Vec<Contains<crate::text::ConcordTag>>,
     pub attests: Vec<Attests>,
     pub succession: Vec<Succession>,
+    /// NODE1-ROWS-1: pairwise canon chapter/book succession steps -- the
+    /// SECOND row implementation of `RelationId::Succession` (see the
+    /// manifest's own note and `CanonSuccession`'s doc comment).
+    pub canon_succession: Vec<CanonSuccession>,
     pub dated_by: Vec<DatedBy>,
     pub located_at: Vec<LocatedAt>,
     pub fulfills: Vec<Fulfills>,
@@ -116,9 +120,20 @@ impl Graph {
 
         for row in &self.contains_bible {
             let c = at(&row.container.erase());
-            for l in &row.content.0 {
-                let tl: TextLocus = l.clone().into();
-                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+            match &row.content {
+                ContainerContent::Loci(set) => {
+                    for l in &set.0 {
+                        let tl: TextLocus = l.clone().into();
+                        pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+                    }
+                }
+                // NODE1-ROWS-1: one child container per row -- book ⊃
+                // chapter is a DECLARED edge lowering here, not a derived
+                // index entry ("we have to declare edges. no special
+                // cases").
+                ContainerContent::Container(child) => {
+                    pairs.entry(R::Contains).or_default().push((c, at(&child.erase()), M::None));
+                }
             }
         }
         // CORP-2a: the Concord sibling of the `contains_bible` loop
@@ -134,9 +149,16 @@ impl Graph {
         // relation or a type-shape change.
         for row in &self.contains_concord {
             let c = at(&row.container.erase());
-            for l in &row.content.0 {
-                let tl: TextLocus = l.clone().into();
-                pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+            match &row.content {
+                ContainerContent::Loci(set) => {
+                    for l in &set.0 {
+                        let tl: TextLocus = l.clone().into();
+                        pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
+                    }
+                }
+                ContainerContent::Container(child) => {
+                    pairs.entry(R::Contains).or_default().push((c, at(&child.erase()), M::None));
+                }
             }
         }
         for row in &self.attests {
@@ -152,6 +174,18 @@ impl Graph {
                     M::Narrative(row.narrative.clone()),
                 ));
             }
+        }
+        // NODE1-ROWS-1: the SECOND row implementation of Succession --
+        // pairwise canon container steps. `M::None` honestly: a canon
+        // step belongs to no narrative (the canon order itself is the
+        // chain; `EdgeMeta::Narrative` is the event-chain reading's own
+        // annotation, not this one's).
+        for row in &self.canon_succession {
+            pairs.entry(R::Succession).or_default().push((
+                at(&row.prior.erase()),
+                at(&row.next.erase()),
+                M::None,
+            ));
         }
         for row in &self.dated_by {
             let e = at(&row.event.erase());
@@ -582,7 +616,7 @@ mod tests {
         let mut content: BTreeSet<Locus<ConcordTag>> = BTreeSet::new();
         content.insert(Locus::whole(p1.clone()));
         content.insert(Locus::whole(p2.clone()));
-        g.contains_concord.push(Contains { container: container_id.clone(), content: LocusSet(content), provenance: ProvenanceId::from("test"), justification: Default::default() });
+        g.contains_concord.push(Contains { container: container_id.clone(), content: ContainerContent::Loci(LocusSet(content)), provenance: ProvenanceId::from("test"), justification: Default::default() });
 
         g.build_indexes();
 
@@ -598,6 +632,71 @@ mod tests {
 
         let from_container_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(p1_node.clone())).expect("the container's own page must list paragraph 1");
         assert_eq!(from_container_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+    }
+
+    /// NODE1-ROWS-1 (the pre-authorized mechanical-mirror exception, the
+    /// same class as `contains_concord`'s/`comments_on`'s own tests): the
+    /// two NEW row implementations lower into the existing indexes both
+    /// ways -- a `ContainerContent::Container` row is one book ⊃ chapter
+    /// edge ("contains"/"member-of"), and a `CanonSuccession` row is one
+    /// canon step ("follows-in"/"precedes-in"), both under the SAME
+    /// content-addressed EdgeId from either end (the bijection witness),
+    /// with `EdgeMeta::None` (a canon step belongs to no narrative).
+    #[test]
+    fn container_child_and_canon_succession_rows_lower_into_the_existing_indexes_both_ways() {
+        let mut g = Graph::default();
+        let book = ContainerNodeId::new("bible-book-GEN");
+        let ch1 = ContainerNodeId::new("bible-chapter-GEN-1");
+        let ch2 = ContainerNodeId::new("bible-chapter-GEN-2");
+        for c in [&book, &ch1, &ch2] {
+            g.nodes.insert(
+                c.erase(),
+                Node { id: c.erase(), payload: NodePayload::Container { title: "t".into() }, provenance: "test".into() },
+            );
+        }
+        g.contains_bible.push(Contains {
+            container: book.clone(),
+            content: ContainerContent::Container(ch1.clone()),
+            provenance: ProvenanceId::from("test"),
+            justification: Default::default(),
+        });
+        g.contains_bible.push(Contains {
+            container: book.clone(),
+            content: ContainerContent::Container(ch2.clone()),
+            provenance: ProvenanceId::from("test"),
+            justification: Default::default(),
+        });
+        g.canon_succession.push(crate::edge::CanonSuccession {
+            prior: ch1.clone(),
+            next: ch2.clone(),
+            provenance: ProvenanceId::from("test"),
+            justification: Default::default(),
+        });
+
+        g.build_indexes();
+
+        // Contains, both directions, one entry per row.
+        let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
+        let page = PositionRef(crate::id::Position::Node(book.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 2, "the book's own forward 'contains' frontier lists both chapter containers");
+        let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
+        let back = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        assert_eq!(back.entries.len(), 1, "a chapter is a member of exactly its book");
+        assert_eq!(back.entries[0].node, crate::id::Position::Node(book.erase()));
+        let fwd_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(ch1.erase())).expect("book page lists chapter 1");
+        assert_eq!(fwd_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+
+        // Succession, both directions, EdgeMeta::None.
+        let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
+        let succ = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
+        assert_eq!(succ.entries.len(), 1);
+        assert_eq!(succ.entries[0].node, crate::id::Position::Node(ch2.erase()));
+        assert_eq!(succ.entries[0].meta, crate::explore::EdgeMeta::None, "a canon step carries no narrative annotation");
+        let precedes = EdgeKind::Directed(RelationId::Succession, Direction::Inverse);
+        let prev = PositionRef(crate::id::Position::Node(ch2.erase())).edges(&g, &EdgeQuery { kind: precedes, cursor: None, limit: 10 });
+        assert_eq!(prev.entries.len(), 1);
+        assert_eq!(prev.entries[0].node, crate::id::Position::Node(ch1.erase()));
+        assert_eq!(prev.entries[0].edge, succ.entries[0].edge);
     }
 
     /// KRETZ-1: the pre-authorized exception's own proof -- `comments_on`

@@ -8,12 +8,20 @@
 //! GEN.50 -> EXO.1, the disclosed boundary choice) -- through the SAME
 //! generic edge port every other relation already rides.
 //!
+//! NODE1-ROWS-1 (fix round 1): every container edge below is a DECLARED
+//! row now (owner: "we have to declare edges. no special cases") --
+//! chapter ⊃ verses (`ContainerContent::Loci`, 1,189 rows), book ⊃
+//! chapter (`ContainerContent::Container`, 1,189 rows, one per child),
+//! and pairwise `CanonSuccession` steps (1,188 chapter + 65 book). This
+//! file also runs the two NODE1-ROWS-1 standing gates over the real
+//! graph: the container-containment FOREST law (acyclicity +
+//! single-parent) and the index≡rows conformance law ("indexes derive
+//! FROM rows, never the reverse").
+//!
 //! Same per-file real-graph construction `frontier_falsifiability.rs` /
 //! `kretzmann_adapter_real_data.rs` already establish (deliberately
 //! duplicated rather than shared -- each `_real_data.rs` file in this
-//! crate builds its own real graph; see those files' own headers), PLUS
-//! the NODE-1 derived-edges step (`add_derived_membership_and_succession`),
-//! since the membership/succession assertions below walk derived entries.
+//! crate builds its own real graph; see those files' own headers).
 
 use std::path::Path;
 
@@ -41,10 +49,12 @@ fn real_graph() -> &'static atlas_graph_types::graph::Graph {
         let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
         let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
         let atlas = real_atlas_data();
-        let (mut graph, ..) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras)
+        // The pipeline's own IndexPass already ran build_indexes +
+        // add_justified_by -- this file deliberately tests the graph
+        // exactly as the pipeline produced it (the index≡rows law below
+        // depends on that).
+        let (graph, ..) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras)
             .expect("the real committed sources must build");
-        graph.build_indexes();
-        atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut graph);
         graph
     })
 }
@@ -66,11 +76,16 @@ const MEMBER_OF: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::
 const FOLLOWS: EdgeKind = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
 const PRECEDES: EdgeKind = EdgeKind::Directed(RelationId::Succession, Direction::Inverse);
 
-/// The real canon's container population, pinned: 66 books + 1,189
-/// chapters, every one a real `Container` node; 1,189 chapter `Contains`
-/// rows carrying 31,102 verse loci (one per KJV verse).
+/// The real canon's DECLARED-ROW population, pinned (NODE1-ROWS-1): 66
+/// books + 1,189 chapters, every one a real `Container` node; 2,378
+/// `Contains` rows -- 1,189 chapter ⊃ verses (`Loci`, 31,102 loci, one
+/// per KJV verse) + 1,189 book ⊃ chapter (`Container`, one per child);
+/// 1,253 `CanonSuccession` rows -- 1,188 chapter steps + 65 book steps.
+/// This is also the ≥1-row falsifiability floor for both new row
+/// families, pinned at their exact real counts.
 #[test]
-fn the_real_canon_mints_66_books_and_1189_chapters_with_31102_verse_loci() {
+fn the_real_canon_declares_every_container_row() {
+    use atlas_graph_types::edge::ContainerContent;
     let g = real_graph();
     let mut books = 0usize;
     let mut chapters = 0usize;
@@ -83,9 +98,47 @@ fn the_real_canon_mints_66_books_and_1189_chapters_with_31102_verse_loci() {
     }
     assert_eq!(books, 66);
     assert_eq!(chapters, 1189);
-    assert_eq!(g.contains_bible.len(), 1189, "one Contains row per chapter");
-    let loci: usize = g.contains_bible.iter().map(|r| r.content.0.len()).sum();
+
+    let mut loci_rows = 0usize;
+    let mut child_rows = 0usize;
+    let mut loci = 0usize;
+    for r in &g.contains_bible {
+        match &r.content {
+            ContainerContent::Loci(set) => {
+                loci_rows += 1;
+                loci += set.0.len();
+            }
+            ContainerContent::Container(_) => child_rows += 1,
+        }
+    }
+    assert_eq!(loci_rows, 1189, "one Loci row per chapter");
     assert_eq!(loci, 31_102, "one verse locus per KJV verse");
+    assert_eq!(child_rows, 1189, "one book ⊃ chapter row per chapter -- an edge per child, never a list");
+    assert_eq!(g.contains_bible.len(), 2378);
+
+    assert_eq!(g.canon_succession.len(), 1253, "1,188 chapter steps + 65 book steps, pairwise");
+}
+
+/// NODE1-ROWS-1 standing gate: the container-containment rows form a
+/// FOREST over the real graph (acyclicity + single-parent) -- the same
+/// law `LawCheckPass` enforces fail-loud at every build, asserted here
+/// against the real committed corpus explicitly.
+#[test]
+fn container_containment_is_a_forest_over_the_real_canon() {
+    let g = real_graph();
+    atlas_graph::law_check::container_containment_is_a_forest(g).expect("the canon's book ⊃ chapter rows must form a forest");
+}
+
+/// NODE1-ROWS-1 standing conformance law: the indexes the real graph
+/// serves are EXACTLY a pure function of its row tables ("indexes derive
+/// FROM rows, never the reverse") -- rebuilt from rows alone, every
+/// relation's fwd/inv entry lists match entry for entry, in order. This
+/// is the law that makes a resurrected post-index merge step (the retired
+/// NODE-1 derived-entry class) fail loudly instead of shipping silently.
+#[test]
+fn served_indexes_are_a_pure_function_of_the_declared_rows() {
+    let g = real_graph();
+    atlas_graph::law_check::indexes_derive_exactly_from_rows(g).expect("indexes must derive exactly from rows");
 }
 
 /// A chapter node resolves like any other node, and its label is the
@@ -124,8 +177,8 @@ fn a_chapter_contains_its_verses_and_a_verse_is_a_member_of_its_chapter() {
     assert_eq!(back, vec![chapter("JHN", 3)]);
 }
 
-/// Book membership, both directions (derived -- see the adapter's doc
-/// comment for why book -> chapter cannot be an authored row).
+/// Book membership, both directions -- DECLARED `ContainerContent::
+/// Container` rows since NODE1-ROWS-1, one per child.
 #[test]
 fn a_book_contains_its_chapters_and_a_chapter_is_a_member_of_its_book() {
     let g = real_graph();

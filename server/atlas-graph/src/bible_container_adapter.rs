@@ -7,15 +7,37 @@
 //! to do is make sure books and chapters are nodes."; "if that's not in
 //! code, it needs to be").
 //!
+//! NODE1-ROWS-1 (fix round 1; owner ruling verbatim: "derived index
+//! entries, not authored edge rows yeah not good. we have to declare
+//! edges. no special cases."): EVERY container edge this adapter is
+//! responsible for is now a DECLARED, artifact-serialized row --
+//!   - chapter ⊃ its verses: one `Contains<BibleTag>` row per chapter,
+//!     `ContainerContent::Loci` (1,189 rows / 31,102 loci over the real
+//!     canon);
+//!   - book ⊃ chapter: one `Contains<BibleTag>` row PER CHILD,
+//!     `ContainerContent::Container` (1,189 rows) -- an edge, not a list
+//!     (owner correction at sign-off: "edges are PAIRWISE rows");
+//!   - previous/next navigation: one `CanonSuccession` row per canon
+//!     step, PAIRWISE -- 1,188 chapter steps (ACROSS book boundaries:
+//!     GEN.50 -> EXO.1, MAL.4 -> MAT.1 -- the reader's own next chapter)
+//!     and 65 book steps.
+//! The original batch's post-index derived-entry merge
+//! (`add_derived_membership_and_succession`) is DELETED: indexes derive
+//! FROM rows in `Graph::build_indexes`, never the reverse (which also
+//! dissolves review findings M-2/M-3 structurally -- there is no merge
+//! left to be non-idempotent and no second derivation step to forget at
+//! a call site). The container-containment rows are gated by
+//! `law_check::container_containment_is_a_forest` (acyclicity +
+//! single-parent, fail-loud at build time) per the owner's recursion
+//! addendum ("are nodes all recursively defined? they should be.").
+//!
 //! Mints one `Container` node per Bible book (66 over the real canon) and
-//! per chapter (1,189), plus the Bible-corpus `Contains<BibleTag>` rows
-//! (chapter ⊃ its verses -- ~31,102 loci over the real canon), following
-//! `concord_adapter.rs`'s own container-minting idiom EXACTLY (the
-//! precedent the NODE-1 brief names): `ContainerNodeId::new` with a
-//! stable, internal, never-displayed raw id; the DISPLAY name is the
-//! node's own `NodePayload::Container.title` -- "names are refs, not
-//! identity" (`kjv_adapter::dot_ref`'s own doc comment names this same
-//! discipline).
+//! per chapter (1,189), following `concord_adapter.rs`'s own
+//! container-minting idiom (the NODE-1 brief's named precedent):
+//! `ContainerNodeId::new` with a stable, internal, never-displayed raw
+//! id; the DISPLAY name is the node's own `NodePayload::Container.title`
+//! -- "names are refs, not identity" (`kjv_adapter::dot_ref`'s own doc
+//! comment names this same discipline).
 //!
 //! NODE IDENTITY: a book container's raw id is `"bible-book-{CODE}"` and a
 //! chapter container's is `"bible-chapter-{CODE}-{chapter}"`, where
@@ -26,22 +48,20 @@
 //! one. TITLES come from `atlas_core::canon::BOOKS[..].name` -- the SAME
 //! table `atlas_core::refs::BookId::name()` reads, i.e. the display name
 //! `ChapterOut.book` already serves the reader (one naming truth, no new
-//! name table).
+//! name table). The decoders below are the STRICT inverse of the minters
+//! (fix round 1, review L-5): only the canonical code decodes -- an
+//! OSIS/full-name alias spelling this adapter can never mint is rejected,
+//! so decode∘encode is a real round trip, not a normalizing parse.
 //!
-//! CONTAINMENT SHAPE, disclosed: `Contains<C>`'s `content` is a
-//! `LocusSet<C>` -- a FLAT set of TEXT loci ("no container-of-containers
-//! nesting in the type", `concord_adapter.rs`'s own TWO-TIER doc comment)
-//! -- so "book ⊃ its chapters" is structurally unrepresentable as an
-//! authored `Contains` row. Chapter ⊃ verses IS authored as rows (the
-//! artifact's own `contains_bible` table, serialized as of NODE-1);
-//! book ⊃ chapter membership and the chapter/book Succession chains are
-//! DERIVED index entries instead -- see
-//! [`add_derived_membership_and_succession`] below and its own doc
-//! comment for the full reasoning.
+//! CANON-ORDER AUTHORITY (fix round 1, review M-6): the order behind
+//! every `CanonSuccession` row -- "what comes after Malachi 4" -- is
+//! `atlas_core::canon::BOOKS`' own array order; see THAT module's doc
+//! comment (added the same fix round) for what the order is and where it
+//! comes from.
 
 use std::collections::BTreeSet;
 
-use atlas_graph_types::edge::Contains;
+use atlas_graph_types::edge::{CanonSuccession, ContainerContent, Contains};
 use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
@@ -49,13 +69,21 @@ use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
 
 use crate::pipeline::BuildCtx;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct BibleContainerStats {
     pub books: usize,
     pub chapters: usize,
-    /// Total verse loci across every chapter `Contains` row (31,102 over
+    /// Total verse loci across the chapter `Contains` rows (31,102 over
     /// the real canon -- one locus per KJV verse).
     pub verse_loci: usize,
+    /// book ⊃ chapter `Contains` rows (`ContainerContent::Container`,
+    /// one per child -- NODE1-ROWS-1).
+    pub book_chapter_rows: usize,
+    /// chapter -> next-chapter `CanonSuccession` rows (canon order,
+    /// across book boundaries).
+    pub chapter_steps: usize,
+    /// book -> next-book `CanonSuccession` rows (canon order).
+    pub book_steps: usize,
 }
 
 /// The Container node id for one Bible book -- see module doc comment for
@@ -71,21 +99,30 @@ pub fn chapter_container_id(code: &str, chapter: u16) -> ContainerNodeId {
     ContainerNodeId::new(format!("bible-chapter-{code}-{chapter}"))
 }
 
+/// The canonical book index for a CANONICAL code, and only that -- an
+/// exact match against `BOOKS[..].code`, deliberately NOT
+/// `canon::resolve_alias` (fix round 1, review L-5: the minters only ever
+/// emit canonical codes, so the decoders must not accept OSIS/full-name
+/// alias spellings -- decode must be encode's strict inverse).
+fn canonical_book_index(code: &str) -> Option<u8> {
+    atlas_core::canon::BOOKS.iter().position(|b| b.code == code).map(|i| i as u8)
+}
+
 /// The inverse of `book_container_id` -- the canonical book index, `None`
 /// for anything not shaped like one of this adapter's own book ids
-/// (mirrors `kjv_adapter::decode_text_unit` exactly: wrong kind or a
-/// malformed/unknown raw string is `None`, never a panic).
+/// (wrong kind, malformed raw, or a non-canonical alias spelling this
+/// adapter never mints), never a panic.
 pub fn decode_book_container(id: &AnyNodeId) -> Option<u8> {
     if id.kind != NodeKind::Container {
         return None;
     }
     let code = id.raw.strip_prefix("bible-book-")?;
-    atlas_core::canon::resolve_alias(code).map(|b| b.0)
+    canonical_book_index(code)
 }
 
 /// The inverse of `chapter_container_id` -- `(canonical book index,
 /// chapter)`, `None` for anything not shaped like one of this adapter's
-/// own chapter ids.
+/// own chapter ids (same strictness note as `decode_book_container`).
 pub fn decode_chapter_container(id: &AnyNodeId) -> Option<(u8, u16)> {
     if id.kind != NodeKind::Container {
         return None;
@@ -95,23 +132,29 @@ pub fn decode_chapter_container(id: &AnyNodeId) -> Option<(u8, u16)> {
     // so the LAST '-' separates code from chapter.
     let (code, chapter) = rest.rsplit_once('-')?;
     let chapter: u16 = chapter.parse().ok()?;
-    let book = atlas_core::canon::resolve_alias(code)?.0;
+    let book = canonical_book_index(code)?;
     Some((book, chapter))
 }
 
 /// Pipeline-facing NORMALIZE entry point: walks `ctx.kjv_canon` into one
-/// Container node per book and per chapter, plus one Bible-corpus
-/// `Contains` row per chapter (its own verses) -- self-contained (reads
-/// only the canon + verse map, no other pass's output), the SAME
+/// Container node per book and per chapter, plus the DECLARED rows
+/// (NODE1-ROWS-1 -- see the module doc comment for the full inventory):
+/// chapter ⊃ verses (`Loci`), book ⊃ chapter (`Container`, one row per
+/// child), and the pairwise `CanonSuccession` steps for chapters (across
+/// book boundaries, canon order) and books. Self-contained (reads only
+/// the canon + verse map, no other pass's output), the SAME
 /// NORMALIZE-eligibility `kjv_adapter::normalize`/`concord_adapter::
 /// normalize` already have. A verse counted by the canon but absent from
 /// the parsed verse map is skipped, never fabricated (the SAME
 /// out-of-canon tolerance `kjv_adapter::ordered_verses_from_canon`
 /// documents); a chapter whose verses are ALL absent still gets its
-/// Container node (the canon structure is real) but no empty `Contains`
-/// row.
+/// Container node, its book ⊃ chapter row, and its succession steps (the
+/// canon structure is real) but no empty `Loci` row.
 pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
     let mut stats = BibleContainerStats::default();
+    let mut all_books: Vec<ContainerNodeId> = Vec::new();
+    let mut all_chapters: Vec<ContainerNodeId> = Vec::new();
+
     for book in &ctx.kjv_canon.books {
         let book_index = atlas_core::canon::resolve_alias(&book.code).map(|id| id.0).ok_or_else(|| {
             anyhow::anyhow!(
@@ -158,135 +201,57 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
             stats.verse_loci += content.len();
             if !content.is_empty() {
                 ctx.graph.contains_bible.push(Contains {
-                    container: chapter_container,
-                    content: LocusSet(content),
+                    container: chapter_container.clone(),
+                    content: ContainerContent::Loci(LocusSet(content)),
                     provenance: ProvenanceId::from("kjv"),
                     justification: Default::default(),
                 });
             }
+
+            // NODE1-ROWS-1: book ⊃ chapter is a DECLARED edge -- one row
+            // per child container, never a list.
+            ctx.graph.contains_bible.push(Contains {
+                container: book_container.clone(),
+                content: ContainerContent::Container(chapter_container.clone()),
+                provenance: ProvenanceId::from("kjv"),
+                justification: Default::default(),
+            });
+            stats.book_chapter_rows += 1;
+
+            all_chapters.push(chapter_container);
         }
+
+        all_books.push(book_container);
     }
+
+    // NODE1-ROWS-1: the pairwise canon steps. Chapter steps run in canon
+    // order ACROSS book boundaries -- GEN.50 -> EXO.1, MAL.4 -> MAT.1 --
+    // because the owner's "previous/next chapter navigation" is the
+    // READER's next chapter, and the reader's next chapter after a
+    // book's last is the next book's first (the reading spine's own
+    // order at chapter granularity). `all_chapters`/`all_books` are
+    // already in canon order (the canon walk above), so `windows(2)` IS
+    // the step list -- no re-sort, no derivation from ids.
+    for w in all_chapters.windows(2) {
+        ctx.graph.canon_succession.push(CanonSuccession {
+            prior: w[0].clone(),
+            next: w[1].clone(),
+            provenance: ProvenanceId::from("kjv"),
+            justification: Default::default(),
+        });
+        stats.chapter_steps += 1;
+    }
+    for w in all_books.windows(2) {
+        ctx.graph.canon_succession.push(CanonSuccession {
+            prior: w[0].clone(),
+            next: w[1].clone(),
+            provenance: ProvenanceId::from("kjv"),
+            justification: Default::default(),
+        });
+        stats.book_steps += 1;
+    }
+
     Ok(stats)
-}
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct DerivedContainerEdges {
-    /// book -> chapter `Contains` entries (forward; "member-of" inverse).
-    pub book_chapter_membership: usize,
-    /// chapter -> next chapter `Succession` entries, canon order, ACROSS
-    /// book boundaries (GEN.50 -> EXO.1 -- see the doc comment below).
-    pub chapter_succession: usize,
-    /// book -> next book `Succession` entries, canon order.
-    pub book_succession: usize,
-}
-
-/// NODE-1's derived container edges -- "previous/next chapter navigation"
-/// (owner's words) made queryable graph edges, plus book ⊃ chapter
-/// membership. A REAL POST-PROCESSING STEP over the already-built graph,
-/// NOT a graph-types change -- the exact `event_world::add_justified_by`
-/// precedent (its own doc comment: "merges ... into `graph.indexes` using
-/// graph-types' own public `entry_id`/`BiIndex` primitives"), and called
-/// at the SAME sites, immediately after it. Must run AFTER
-/// `graph.build_indexes()` (that call REBUILDS `graph.indexes` from the
-/// row tables from scratch, so anything merged in beforehand is wiped).
-///
-/// WHY DERIVED, NOT AUTHORED ROWS (disclosed, the NODE-1 report carries
-/// the full version):
-/// - `Succession`'s row type is `chain: Vec<EventId>` -- event-typed by
-///   construction. A chapter/book chain is structurally unrepresentable
-///   without a graph-types shape change, which NODE-1's own brief forbids
-///   ("graph-types crate UNTOUCHED"). The chapter/book chains are also a
-///   pure, deterministic function of the canon (no curation, no
-///   justification to carry): exactly the "computed relations with no
-///   authored-row counterpart" class `pipeline.rs`'s own DERIVE doc
-///   comment names.
-/// - `Contains`' `content` is a flat `LocusSet` of TEXT loci -- a book
-///   row cannot name its chapter CONTAINERS (see the module doc comment).
-///   Book ⊃ chapter membership is likewise a pure function of the ids.
-///
-/// Both edge families are therefore derived from the graph's OWN
-/// Container nodes (minted by `normalize` above from the committed
-/// canon), so BOTH load paths -- from-sources and from-artifact -- derive
-/// the identical entries from the identical nodes with no second data
-/// source, and content-addressed `entry_id`s keep the result
-/// deterministic across recompiles (the same determinism law every edge
-/// family obeys).
-///
-/// SUCCESSION BOUNDARY CHOICE (the brief orders its disclosure): chapter
-/// chains run in canon order ACROSS book boundaries -- GEN.50's
-/// "follows-in" names EXO.1 -- because the owner's "previous/next chapter
-/// navigation" is the READER's next chapter, and the reader's next
-/// chapter after a book's last is the next book's first (the reading
-/// spine's own order at chapter granularity). Books chain book -> next
-/// book in the same canon order.
-pub fn add_derived_membership_and_succession(graph: &mut atlas_graph_types::graph::Graph) -> DerivedContainerEdges {
-    use atlas_graph_types::edge::{at, BiIndex, RelationId as R};
-    use atlas_graph_types::explore::EdgeMeta as M;
-    use atlas_graph_types::id::Position;
-
-    // Collect this graph's own Bible containers, keyed for canon order.
-    // `graph.nodes` is a BTreeMap but its STRING order is not canon order
-    // ("bible-chapter-GEN-10" < "bible-chapter-GEN-2"), so sort by the
-    // decoded numeric keys.
-    let mut books: Vec<(u8, AnyNodeId)> = Vec::new();
-    let mut chapters: Vec<((u8, u16), AnyNodeId)> = Vec::new();
-    for id in graph.nodes.keys() {
-        if let Some(b) = decode_book_container(id) {
-            books.push((b, id.clone()));
-        } else if let Some(bc) = decode_chapter_container(id) {
-            chapters.push((bc, id.clone()));
-        }
-    }
-    books.sort_by_key(|(b, _)| *b);
-    chapters.sort_by_key(|(bc, _)| *bc);
-
-    let mut contains_pairs: Vec<(Position, Position, M)> = Vec::new();
-    for ((book_index, _), chapter_id) in &chapters {
-        if let Some((_, book_id)) = books.iter().find(|(b, _)| b == book_index) {
-            contains_pairs.push((at(book_id), at(chapter_id), M::None));
-        }
-    }
-
-    let mut succession_pairs: Vec<(Position, Position, M)> = Vec::new();
-    let mut chapter_succession = 0usize;
-    for w in chapters.windows(2) {
-        succession_pairs.push((at(&w[0].1), at(&w[1].1), M::None));
-        chapter_succession += 1;
-    }
-    let mut book_succession = 0usize;
-    for w in books.windows(2) {
-        succession_pairs.push((at(&w[0].1), at(&w[1].1), M::None));
-        book_succession += 1;
-    }
-
-    let out = DerivedContainerEdges {
-        book_chapter_membership: contains_pairs.len(),
-        chapter_succession,
-        book_succession,
-    };
-
-    // Merge into the row-lowered indexes. Every key these entries land on
-    // is a CONTAINER position no row-lowered entry of the same relation +
-    // direction shares (chapter `Contains` rows put chapters in `fwd` and
-    // verses in `inv`; these pairs put books in `fwd` and chapters in
-    // `inv` -- fully disjoint key/direction sets; Succession's row-lowered
-    // keys are all Event positions), so this merge never interleaves with
-    // -- or reorders -- an existing entry list.
-    for (rel, pairs) in [(R::Contains, contains_pairs), (R::Succession, succession_pairs)] {
-        if pairs.is_empty() {
-            continue;
-        }
-        let built = BiIndex::build(rel, &pairs);
-        let target = graph.indexes.entry(rel).or_default();
-        for (k, v) in built.fwd {
-            target.fwd.entry(k).or_default().extend(v);
-        }
-        for (k, v) in built.inv {
-            target.inv.entry(k).or_default().extend(v);
-        }
-    }
-
-    out
 }
 
 #[cfg(test)]
@@ -325,10 +290,12 @@ mod tests {
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         crate::kjv_adapter::normalize(&mut ctx).unwrap();
         let stats = normalize(&mut ctx).unwrap();
-        assert_eq!((stats.books, stats.chapters, stats.verse_loci), (2, 3, 7));
+        assert_eq!(
+            stats,
+            BibleContainerStats { books: 2, chapters: 3, verse_loci: 7, book_chapter_rows: 3, chapter_steps: 2, book_steps: 1 }
+        );
         let mut graph = std::mem::take(&mut ctx.graph);
         graph.build_indexes();
-        add_derived_membership_and_succession(&mut graph);
         graph
     }
 
@@ -346,6 +313,22 @@ mod tests {
         assert_eq!(decode_chapter_container(&AnyNodeId { kind: NodeKind::Container, raw: "bible-chapter-GEN-".into() }), None);
         // Concord's own containers are NOT this adapter's (disjoint grammars).
         assert_eq!(decode_book_container(&AnyNodeId { kind: NodeKind::Container, raw: "concord-doc-small-catechism".into() }), None);
+    }
+
+    /// Fix round 1 (review L-5): the decoders are the STRICT inverse of
+    /// the minters -- alias spellings the minter can never emit (OSIS,
+    /// full name, case variants) are rejected, not normalized.
+    #[test]
+    fn decoders_reject_alias_spellings_the_minter_never_emits() {
+        for raw in ["bible-book-Genesis", "bible-book-Gen", "bible-book-gen"] {
+            assert_eq!(
+                decode_book_container(&AnyNodeId { kind: NodeKind::Container, raw: raw.into() }),
+                None,
+                "{raw} is not a mintable id and must not decode"
+            );
+        }
+        assert_eq!(decode_chapter_container(&AnyNodeId { kind: NodeKind::Container, raw: "bible-chapter-1Sam-12".into() }), None);
+        assert_eq!(decode_chapter_container(&AnyNodeId { kind: NodeKind::Container, raw: "bible-chapter-Genesis-1".into() }), None);
     }
 
     #[test]
@@ -384,8 +367,12 @@ mod tests {
         assert_eq!(back.entries[0].node, Position::Node(chapter_container_id("GEN", 2).erase()));
     }
 
+    /// NODE1-ROWS-1: book membership rides DECLARED `ContainerContent::
+    /// Container` rows (one per child), lowered by `Graph::build_indexes`
+    /// like every other row -- no post-index derivation step exists any
+    /// more.
     #[test]
-    fn book_membership_is_derived_both_directions() {
+    fn book_membership_rows_serve_both_directions() {
         let graph = built_ctx_graph();
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
         let page = PositionRef(Position::Node(book_container_id("GEN").erase()))
@@ -401,8 +388,11 @@ mod tests {
         assert_eq!(back.entries[0].node, Position::Node(book_container_id("GEN").erase()));
     }
 
+    /// NODE1-ROWS-1: succession rides DECLARED pairwise `CanonSuccession`
+    /// rows; the boundary choice (canon order ACROSS book boundaries)
+    /// is now row data, still pinned here.
     #[test]
-    fn chapter_succession_crosses_the_book_boundary_in_canon_order() {
+    fn chapter_succession_rows_cross_the_book_boundary_in_canon_order() {
         let graph = built_ctx_graph();
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
 
@@ -432,7 +422,7 @@ mod tests {
     }
 
     #[test]
-    fn book_succession_chains_in_canon_order() {
+    fn book_succession_rows_chain_in_canon_order() {
         let graph = built_ctx_graph();
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
         let p = PositionRef(Position::Node(book_container_id("GEN").erase()))
@@ -442,41 +432,21 @@ mod tests {
     }
 
     #[test]
-    fn derived_edge_counts_are_reported_honestly() {
-        let canon = tiny_canon();
-        let verses = tiny_verses();
-        let atlas = crate::event_world::empty_atlas();
-        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
-        crate::kjv_adapter::normalize(&mut ctx).unwrap();
-        normalize(&mut ctx).unwrap();
-        let mut graph = std::mem::take(&mut ctx.graph);
-        graph.build_indexes();
-        let derived = add_derived_membership_and_succession(&mut graph);
-        assert_eq!(
-            derived,
-            DerivedContainerEdges { book_chapter_membership: 3, chapter_succession: 2, book_succession: 1 }
-        );
-    }
-
-    #[test]
     fn an_empty_canon_is_a_true_no_op() {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let atlas = crate::event_world::empty_atlas();
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let stats = normalize(&mut ctx).unwrap();
-        assert_eq!((stats.books, stats.chapters, stats.verse_loci), (0, 0, 0));
+        assert_eq!(stats, BibleContainerStats::default());
         assert!(ctx.graph.contains_bible.is_empty());
-        let mut graph = std::mem::take(&mut ctx.graph);
-        graph.build_indexes();
-        let derived = add_derived_membership_and_succession(&mut graph);
-        assert_eq!(derived, DerivedContainerEdges::default());
+        assert!(ctx.graph.canon_succession.is_empty());
     }
 
     #[test]
     fn absent_verses_are_skipped_never_fabricated() {
         // A canon that counts a verse the parsed verse map does not carry
-        // (GEN.1 claims 3 verses; only 2 exist) -- the row holds 2 loci.
+        // (GEN.1 claims 3 verses; only 2 exist) -- the Loci row holds 2.
         let canon = Canon { books: vec![CanonBook { code: "GEN".into(), name: "Genesis".into(), chapters: vec![3] }] };
         let mut verses = HashMap::new();
         verses.insert("GEN.1.1".to_string(), "v1".to_string());
@@ -485,7 +455,17 @@ mod tests {
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let stats = normalize(&mut ctx).unwrap();
         assert_eq!(stats.verse_loci, 2);
-        assert_eq!(ctx.graph.contains_bible.len(), 1);
-        assert_eq!(ctx.graph.contains_bible[0].content.0.len(), 2);
+        // Two rows: the chapter's Loci row (2 loci) + the book ⊃ chapter row.
+        assert_eq!(ctx.graph.contains_bible.len(), 2);
+        let loci_rows: Vec<_> = ctx
+            .graph
+            .contains_bible
+            .iter()
+            .filter_map(|r| match &r.content {
+                ContainerContent::Loci(set) => Some(set.0.len()),
+                ContainerContent::Container(_) => None,
+            })
+            .collect();
+        assert_eq!(loci_rows, vec![2]);
     }
 }

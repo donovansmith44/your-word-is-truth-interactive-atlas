@@ -369,12 +369,11 @@ impl GraphService {
         let (mut graph, stats, event_world_stats, chronology) = artifact::to_service_parts(dump).map_err(|e| anyhow::anyhow!("{e}"))?;
         graph.build_indexes();
         crate::event_world::add_justified_by(&mut graph);
-        // NODE-1: the derived container edges -- paired with
-        // `add_justified_by` at every build_indexes site (see
-        // `bible_container_adapter::add_derived_membership_and_succession`'s
-        // own doc comment), so from-artifact serves the IDENTICAL
-        // book/chapter membership + succession frontier from-sources does.
-        crate::bible_container_adapter::add_derived_membership_and_succession(&mut graph);
+        // NODE1-ROWS-1 (fix round 1): container membership/succession are
+        // artifact-serialized rows now -- `build_indexes` above lowers
+        // them like every other row family; no post-index derivation step
+        // exists any more, so from-artifact and from-sources agree by
+        // construction.
         // RED-1: the KJV sub-verse span table's own sibling file --
         // `<data_dir>/red-letter-spans.json`, the SAME "disclosed
         // convention: same directory every other compiled file already

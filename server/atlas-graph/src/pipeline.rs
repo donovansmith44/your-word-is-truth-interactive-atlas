@@ -445,15 +445,13 @@ impl Pass for IndexPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         ctx.graph.build_indexes();
         ctx.justified_by_count = crate::event_world::add_justified_by(&mut ctx.graph);
-        // NODE-1: the derived container edges (book -> chapter membership;
-        // chapter/book Succession chains) -- the SAME post-index,
-        // public-primitives-only step class `add_justified_by` immediately
-        // above established, and called at every site that calls THAT
-        // (build_indexes rebuilds `graph.indexes` from the row tables from
-        // scratch, so this must re-run after every rebuild). See
-        // `bible_container_adapter::add_derived_membership_and_succession`'s
-        // own doc comment for why these are derived, not authored rows.
-        crate::bible_container_adapter::add_derived_membership_and_succession(&mut ctx.graph);
+        // NODE1-ROWS-1 (fix round 1): the derived container-edge merge
+        // that stood here is GONE -- container membership and canon
+        // succession are DECLARED rows now (`bible_container_adapter::
+        // normalize`), lowered by `build_indexes` above like every other
+        // row family. Indexes derive from rows, never the reverse (the
+        // standing conformance law `law_check::indexes_derive_exactly_
+        // from_rows` pins this).
         Ok(())
     }
 }
@@ -480,6 +478,12 @@ impl Pass for LawCheckPass {
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }
         crate::law_check::every_authored_edge_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
+        // NODE1-ROWS-1 (owner recursion addendum): container containment
+        // must be a FOREST (acyclic, single-parent) -- fail-loud build
+        // failure, never shipped data.
+        crate::law_check::container_containment_is_a_forest(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("NODE1-ROWS-1 container-containment forest law (acyclicity + single-parent)")?;
         // M-D3 (owner ruling R1): the "verified-cache law"
         // (`law_check::payload_years_match_resolved_placements`) RETIRED
         // WITH the `NodePayload::Event.from_year`/`.to_year` fields it

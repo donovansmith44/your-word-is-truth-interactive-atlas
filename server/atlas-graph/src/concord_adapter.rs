@@ -36,7 +36,7 @@
 use std::collections::BTreeSet;
 
 use atlas_etl::concord::{ConcordCorpus, ScOverlapRow};
-use atlas_graph_types::edge::{CatechismLink, Contains};
+use atlas_graph_types::edge::{CatechismLink, ContainerContent, Contains};
 use atlas_graph_types::graph::ReadingSpine;
 use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -157,9 +157,13 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 art_container.erase(),
                 Node { id: art_container.erase(), payload: NodePayload::Container { title: article.title.clone() }, provenance: "concord".to_string() },
             );
+            // NODE1-ROWS-1 (mechanical migration): `Contains.content` is
+            // the `ContainerContent` enum now -- this adapter's rows stay
+            // flat loci, wrapped in `Loci(..)` (the doc/article tiers'
+            // own shape is unchanged; only the type widened).
             ctx.graph.contains_concord.push(Contains {
                 container: art_container,
-                content: LocusSet(art_content),
+                content: ContainerContent::Loci(LocusSet(art_content)),
                 provenance: ProvenanceId::from("concord"),
                 justification: Default::default(),
             });
@@ -172,7 +176,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
         );
         ctx.graph.contains_concord.push(Contains {
             container: doc_container,
-            content: LocusSet(doc_content),
+            content: ContainerContent::Loci(LocusSet(doc_content)),
             provenance: ProvenanceId::from("concord"),
             justification: Default::default(),
         });

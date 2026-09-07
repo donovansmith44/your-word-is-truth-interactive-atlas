@@ -1,3 +1,32 @@
+//! THE CANON-ORDER AUTHORITY (doc added NODE-1 fix round 1, review M-6 --
+//! the order became user-visible navigation and needed its disclosure at
+//! its source).
+//!
+//! `BOOKS` is the 66-book PROTESTANT canon in its traditional order --
+//! the same books, names, and sequence the King James Version itself
+//! prints: Old Testament 39 (Genesis .. Malachi, the Law / History /
+//! Wisdom / Prophets arrangement of the Christian OT, not the Tanakh's
+//! Torah/Nevi'im/Ketuvim order) followed by New Testament 27
+//! (Matthew .. Revelation). No deuterocanon/Apocrypha (excluded
+//! throughout this app -- see e.g. the red-letter adapter's own
+//! Apocrypha-exclusion guard).
+//!
+//! AUTHORITY SCOPE -- the ARRAY POSITION here is this codebase's one
+//! canonical book index (`atlas_core::refs::BookId(u8)` and every
+//! `"bible/{book}.{chapter}.{verse}"` TextUnit id ride it), and, as of
+//! Batch NODE-1, the array ORDER is the reader-facing navigation
+//! authority: "what comes after Malachi 4" is answered by this array
+//! (MAL is index 38, MAT is 39), compiled into the graph's own
+//! `CanonSuccession` rows (chapter -> next chapter across book
+//! boundaries, book -> next book) by
+//! `atlas_graph::bible_container_adapter`. `code` is the canonical
+//! 3-character dot-ref code (`GEN.1.1`), `osis` the OSIS abbreviation
+//! (cross-reference/OSIS sources), `name` the display name the reader
+//! sees (`BookId::name()` / `ChapterOut.book`). Changing the ORDER of
+//! this array is therefore a data-visible, navigation-visible act --
+//! verse ids, the version root, and every canon-succession row would all
+//! move; it is pinned by `atlas-graph`'s own real-data tests.
+
 pub struct BookInfo { pub code: &'static str, pub osis: &'static str, pub name: &'static str }
 
 pub const BOOKS: [BookInfo; 66] = [

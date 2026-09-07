@@ -24,9 +24,9 @@
 //! particular was verified non-decorative here (owner ruling (f): "check
 //! Succession's row count and gate honestly if zero") -- it is NOT zero
 //! (curated-narrative chains, `event_world::populate_nodes_and_direct_
-//! rows`), and NODE-1's own chapter/book prev/next chains are DERIVED
-//! index entries over the same relation (see `bible_container_adapter::
-//! add_derived_membership_and_succession`'s own doc comment).
+//! rows`), and NODE1-ROWS-1 (fix round 1) made the chapter/book prev/next
+//! steps DECLARED `CanonSuccession` rows over the same relation, pinned
+//! per-implementation below.
 
 use std::path::Path;
 
@@ -88,7 +88,10 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
         EdgeKind::Directed(R::Cites, _) => graph.cross_refs.len(),
         EdgeKind::Directed(R::Attests, _) => graph.attests.len(),
         EdgeKind::Directed(R::Mentions, _) => graph.mentions.len(),
-        EdgeKind::Directed(R::Succession, _) => graph.succession.len(),
+        // NODE1-ROWS-1: Succession has TWO row implementations (the
+        // manifest's own note) -- event-narrative chains AND pairwise
+        // canon container steps; the relation's honest row count is both.
+        EdgeKind::Directed(R::Succession, _) => graph.succession.len() + graph.canon_succession.len(),
         EdgeKind::Directed(R::DatedBy, _) => graph.dated_by.len(),
         EdgeKind::Directed(R::LocatedAt, _) => graph.located_at.len(),
         EdgeKind::Directed(R::CommentsOn, _) => graph.comments_on.len(),
@@ -129,15 +132,16 @@ fn every_capability_has_real_rows_in_the_compiled_artifact() {
 
 /// NODE-1 (un-gated per this test's own former TODO(NODE-1) doc comment,
 /// steps 1-3 executed): `Capability::Members` (`Contains`-forward,
-/// Chapter/Book) now has real rows -- `bible_container_adapter::normalize`
+/// Chapter/Book) has real rows -- `bible_container_adapter::normalize`
 /// emits one chapter->verses `Contains<BibleTag>` row per chapter (1,189
-/// over the real canon), and `artifact.rs` serializes `contains_bible`
-/// instead of guarding it empty (FORMAT_VERSION 11).
+/// over the real canon), plus (NODE1-ROWS-1) one book ⊃ chapter
+/// `ContainerContent::Container` row per child (1,189), and `artifact.rs`
+/// serializes `contains_bible` instead of guarding it empty.
 #[test]
 fn members_capability_has_real_bible_contains_rows_since_node_1() {
     let graph = real_graph();
     assert!(
-        graph.contains_bible.len() > 0,
+        !graph.contains_bible.is_empty(),
         "NODE-1's own Bible-corpus Contains rows are missing from the compiled graph -- \
          Capability::Members would be as decorative as the original Parallel cell; re-gate it \
          honestly if this ever regresses to zero"
@@ -148,20 +152,24 @@ fn members_capability_has_real_bible_contains_rows_since_node_1() {
 /// Succession's row count and gate honestly if zero"): it is NOT zero --
 /// curated-narrative chains with real legs produce real rows
 /// (`event_world::populate_nodes_and_direct_rows`), independent of
-/// NODE-1. The CHAPTER/BOOK-specific use of this same relation (prev/next
-/// chapter navigation) landed with NODE-1 as DERIVED index entries, not
-/// rows (`Succession`'s own row type chains `Vec<EventId>` -- see
-/// `bible_container_adapter::add_derived_membership_and_succession`'s doc
-/// comment), so THIS row-level pin still counts only the narrative
-/// chains; the chapter/book chains are covered by
-/// `tests/bible_containers_real_data.rs`'s own edge-level assertions.
+/// NODE-1. NODE1-ROWS-1 (fix round 1) made the CHAPTER/BOOK use of this
+/// same relation row-level falsifiable too: pairwise `CanonSuccession`
+/// rows (the relation's second implementation), pinned separately below
+/// so neither implementation can silently go decorative behind the
+/// other's count.
 #[test]
-fn succession_has_real_rows_today_independent_of_node_1() {
+fn succession_has_real_rows_in_both_of_its_row_implementations() {
     let graph = real_graph();
     assert!(
-        graph.succession.len() > 0,
-        "Succession has zero rows in the real compiled graph -- Capability::Chronology would \
-         be as decorative as the original Parallel cell; gate Chronology honestly if this ever \
-         regresses to zero"
+        !graph.succession.is_empty(),
+        "event-narrative Succession has zero rows in the real compiled graph -- \
+         Capability::Chronology would be as decorative as the original Parallel cell; gate \
+         Chronology honestly if this ever regresses to zero"
+    );
+    assert!(
+        !graph.canon_succession.is_empty(),
+        "canon Succession (chapter/book prev-next steps) has zero rows in the real compiled \
+         graph -- the Chapter/Book Chronology cell would be decorative; gate it honestly if \
+         this ever regresses to zero"
     );
 }

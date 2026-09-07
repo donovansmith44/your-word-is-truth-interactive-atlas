@@ -71,6 +71,19 @@ macro_rules! relations {
 
 relations! {
     directed {
+        // NODE1-ROWS-1 (owner ruling, "we have to declare edges. no
+        // special cases" + sign-off): relations are the INTERFACE; row
+        // structs are the implementations. Two relations here have more
+        // than one row implementation lowering into them:
+        //   Contains   <- `Contains<C>` rows, whose `content` is either
+        //                 flat text loci OR one child container (see
+        //                 `ContainerContent` below) -- containment is
+        //                 edge-carried and genuinely recursive (nodes are
+        //                 atoms; payload nesting is the forbidden second
+        //                 path).
+        //   Succession <- `Succession` rows (curated event-narrative
+        //                 chains) AND `CanonSuccession` rows (pairwise
+        //                 canon chapter/book steps -- see that struct).
         Contains    => "contains" / "member-of",
         Attests     => "attested-in" / "attests",
         Succession  => "follows-in" / "precedes-in",
@@ -157,10 +170,56 @@ pub enum GroundTarget {
 // Authored rows (each carries provenance + justification).
 // ---------------------------------------------------------------------
 
+/// What one `Contains` row holds (NODE1-ROWS-1, owner-signed design):
+/// EITHER a flat set of text loci (the original shape -- a chapter's own
+/// verses, a Concord article's own paragraphs) OR exactly ONE child
+/// container (an edge, not a list -- book ⊃ chapter is one row per
+/// child). The `Container` variant is what makes containment genuinely
+/// recursive and uniform (owner addendum: "are nodes all recursively
+/// defined? they should be." -- recursion is edge-carried; nodes stay
+/// atoms; payload nesting is the forbidden second path). The
+/// container-of-containers graph these rows form is REQUIRED to be a
+/// forest (acyclic, single-parent) -- enforced fail-loud at build time
+/// by `atlas-graph`'s law_check, not assumed here.
+#[derive(Debug)]
+pub enum ContainerContent<C: Corpus> {
+    Loci(LocusSet<C>),
+    Container(ContainerNodeId),
+}
+
+// Manual impl: a derive would wrongly bound C itself (the same reason
+// `Locus`/`LocusSet` carry manual impls).
+impl<C: Corpus> Clone for ContainerContent<C> {
+    fn clone(&self) -> Self {
+        match self {
+            ContainerContent::Loci(l) => ContainerContent::Loci(l.clone()),
+            ContainerContent::Container(c) => ContainerContent::Container(c.clone()),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Contains<C: Corpus> {
     pub container: ContainerNodeId,
-    pub content: LocusSet<C>,
+    pub content: ContainerContent<C>,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
+/// NODE1-ROWS-1 (owner ruling verbatim: "derived index entries, not
+/// authored edge rows yeah not good. we have to declare edges. no
+/// special cases."): one PAIRWISE canon-order succession step between
+/// two containers -- chapter -> next chapter (across book boundaries:
+/// GEN.50 -> EXO.1) or book -> next book. Lowers into the SAME
+/// `RelationId::Succession` the event-narrative `Succession` rows use
+/// (Forward = "follows-in", Inverse = "precedes-in") -- one relation,
+/// two row implementations (the manifest's own note). Deliberately
+/// PAIRWISE, not chain-shaped (owner correction during sign-off: "edges
+/// are PAIRWISE rows"); the event `Succession` struct is untouched.
+#[derive(Clone, Debug)]
+pub struct CanonSuccession {
+    pub prior: ContainerNodeId,
+    pub next: ContainerNodeId,
     pub provenance: ProvenanceId,
     pub justification: Justification,
 }

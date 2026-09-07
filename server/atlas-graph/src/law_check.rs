@@ -162,7 +162,156 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("named_after", "namesake", namesake_id)?;
         check("named_after", "eponym", row.eponym.erase())?;
     }
+    // NODE-1 fix round 1 (review M-1, closing the gap this law's own
+    // growth rule names -- and the SAME gap `contains_concord` had
+    // carried since CORP-2a): every `Contains` row's `container`
+    // endpoint, and (NODE1-ROWS-1) the `Container` child endpoint, must
+    // name real nodes. The `Loci` content is NOT checked here, matching
+    // this law's own disclosed scope for TextLocus-shaped fields (module
+    // doc comment).
+    for row in &graph.contains_bible {
+        check("contains_bible", "container", row.container.erase())?;
+        if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
+            check("contains_bible", "content.container", child.erase())?;
+        }
+    }
+    for row in &graph.contains_concord {
+        check("contains_concord", "container", row.container.erase())?;
+        if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
+            check("contains_concord", "content.container", child.erase())?;
+        }
+    }
+    // NODE1-ROWS-1: the pairwise canon steps -- both endpoints node-typed.
+    for row in &graph.canon_succession {
+        check("canon_succession", "prior", row.prior.erase())?;
+        check("canon_succession", "next", row.next.erase())?;
+    }
 
+    Ok(())
+}
+
+/// NODE1-ROWS-1 (owner recursion addendum: "are nodes all recursively
+/// defined? they should be." -- recursion is edge-carried, and the
+/// container-containment rows must form a FOREST): every container that
+/// appears as a `ContainerContent::Container` CHILD across BOTH corpora's
+/// `Contains` tables has at most ONE parent (single-parent), and
+/// following parents never returns to a visited container (acyclic).
+/// Runs as part of `LawCheckPass` -- a violation is a fail-loud BUILD
+/// failure, never shipped data.
+pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
+    use std::collections::BTreeMap;
+    // Every Container-child row of both corpora, as (relation, parent,
+    // child) borrows off the graph.
+    let mut edges: Vec<(&'static str, &str, &str)> = Vec::new();
+    for row in &graph.contains_bible {
+        if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
+            edges.push(("contains_bible", row.container.0.as_str(), child.0.as_str()));
+        }
+    }
+    for row in &graph.contains_concord {
+        if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
+            edges.push(("contains_concord", row.container.0.as_str(), child.0.as_str()));
+        }
+    }
+
+    // child -> parent (single-parent enforced as the map is built).
+    let mut parent: BTreeMap<&str, &str> = BTreeMap::new();
+    for (relation, container, child) in edges {
+        if let Some(existing) = parent.insert(child, container) {
+            if existing != container {
+                return Err(format!(
+                    "container containment is not single-parent: '{child}' is a Container child of BOTH '{existing}' and '{container}' ({relation})"
+                ));
+            }
+            // The same (parent, child) row twice is a duplicate edge --
+            // also a defect, and cheaper to name here than to let the
+            // index silently double.
+            return Err(format!(
+                "duplicate container-containment row: '{container}' ⊃ '{child}' appears more than once ({relation})"
+            ));
+        }
+    }
+    // Acyclicity: with single-parent already enforced, every walk up the
+    // parent map either terminates at a root or revisits -- a revisit is
+    // a cycle. Each chain is walked once with a local visited set (the
+    // map is small: one entry per child container).
+    for start in parent.keys() {
+        let mut seen: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+        let mut cur: &str = start;
+        seen.insert(cur);
+        while let Some(next) = parent.get(cur) {
+            if !seen.insert(next) {
+                return Err(format!(
+                    "container containment has a CYCLE reachable from '{start}' (revisited '{next}') -- containment must be a forest"
+                ));
+            }
+            cur = next;
+        }
+    }
+    Ok(())
+}
+
+/// NODE1-ROWS-1's standing index≡rows conformance law ("indexes derive
+/// FROM rows, never the reverse"): rebuilding the indexes from THIS
+/// graph's own row tables alone reproduces the indexes the graph is
+/// actually serving, entry for entry, in order. Catches any future step
+/// that writes into `graph.indexes`/`graph.symmetric_indexes` outside
+/// `Graph::build_indexes` + `event_world::add_justified_by` (the one
+/// row-derived post-step) -- the exact class the retired NODE-1
+/// derived-entry merge belonged to. Exercised by
+/// `tests/bible_containers_real_data.rs` over the real committed graph
+/// (a per-build pass would double every build's index cost for a
+/// property that only a code change can break).
+pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
+    use std::collections::BTreeMap;
+    // Clone the row tables + nodes into a fresh graph (indexes are a pure
+    // function of exactly these), rebuild, and compare.
+    let mut fresh = Graph::default();
+    fresh.nodes = graph.nodes.clone();
+    fresh.contains_bible = graph.contains_bible.clone();
+    fresh.contains_concord = graph.contains_concord.clone();
+    fresh.attests = graph.attests.clone();
+    fresh.succession = graph.succession.clone();
+    fresh.canon_succession = graph.canon_succession.clone();
+    fresh.dated_by = graph.dated_by.clone();
+    fresh.located_at = graph.located_at.clone();
+    fresh.fulfills = graph.fulfills.clone();
+    fresh.typology = graph.typology.clone();
+    fresh.named_after = graph.named_after.clone();
+    fresh.catechism = graph.catechism.clone();
+    fresh.comments_on = graph.comments_on.clone();
+    fresh.spoken_by = graph.spoken_by.clone();
+    fresh.spoken_at = graph.spoken_at.clone();
+    fresh.mentions = graph.mentions.clone();
+    fresh.cross_refs = graph.cross_refs.clone();
+    fresh.quotes = graph.quotes.clone();
+    fresh.confesses = graph.confesses.clone();
+    fresh.corresponds_bible = graph.corresponds_bible.clone();
+    fresh.temporal_adjacency = graph.temporal_adjacency.clone();
+    fresh.build_indexes();
+    crate::event_world::add_justified_by(&mut fresh);
+
+    let compare = |name: &str, served: &BTreeMap<atlas_graph_types::id::Position, Vec<(atlas_graph_types::edge::EdgeId, atlas_graph_types::id::Position, atlas_graph_types::explore::EdgeMeta)>>, rebuilt: &BTreeMap<atlas_graph_types::id::Position, Vec<(atlas_graph_types::edge::EdgeId, atlas_graph_types::id::Position, atlas_graph_types::explore::EdgeMeta)>>| -> Result<(), String> {
+        if served != rebuilt {
+            return Err(format!("{name}: the served index diverges from a pure rebuild from rows -- something wrote into the indexes outside build_indexes/add_justified_by"));
+        }
+        Ok(())
+    };
+    for (rel, served) in &graph.indexes {
+        let rebuilt = fresh.indexes.get(rel).ok_or_else(|| format!("served index for {rel:?} has no row-derived counterpart at all"))?;
+        compare(&format!("indexes[{rel:?}].fwd"), &served.fwd, &rebuilt.fwd)?;
+        compare(&format!("indexes[{rel:?}].inv"), &served.inv, &rebuilt.inv)?;
+    }
+    if graph.indexes.len() != fresh.indexes.len() {
+        return Err("the rebuilt graph carries a relation index the served graph lacks".into());
+    }
+    for (rel, served) in &graph.symmetric_indexes {
+        let rebuilt = fresh.symmetric_indexes.get(rel).ok_or_else(|| format!("served symmetric index for {rel:?} has no row-derived counterpart at all"))?;
+        compare(&format!("symmetric_indexes[{rel:?}].fwd"), &served.fwd, &rebuilt.fwd)?;
+    }
+    if graph.symmetric_indexes.len() != fresh.symmetric_indexes.len() {
+        return Err("the rebuilt graph carries a symmetric index the served graph lacks".into());
+    }
     Ok(())
 }
 
@@ -183,6 +332,7 @@ mod tests {
     use super::*;
     use atlas_graph_types::edge::{Justification, LocatedAt};
     use atlas_graph_types::id::{EventId, PlaceId};
+    use atlas_graph_types::node::{Node, NodePayload};
 
     #[test]
     fn green_on_an_empty_graph() {
@@ -421,4 +571,132 @@ mod tests {
     // four `payload_years_match_resolved_placements` cases) are deleted
     // alongside the function itself -- see this file's own retirement note
     // above.
+
+    // -----------------------------------------------------------------
+    // NODE-1 fix round 1: the grown referential checks (review M-1) and
+    // the NODE1-ROWS-1 forest law, red/green pairs (the same discipline
+    // every prior law extension here followed).
+    // -----------------------------------------------------------------
+
+    fn container_node(graph: &mut Graph, raw: &str) -> atlas_graph_types::id::ContainerNodeId {
+        let id = atlas_graph_types::id::ContainerNodeId::new(raw);
+        graph.nodes.insert(
+            id.erase(),
+            Node { id: id.erase(), payload: NodePayload::Container { title: raw.to_string() }, provenance: "test".into() },
+        );
+        id
+    }
+
+    fn child_row(parent: &atlas_graph_types::id::ContainerNodeId, child: &atlas_graph_types::id::ContainerNodeId) -> atlas_graph_types::edge::Contains<atlas_graph_types::text::BibleTag> {
+        atlas_graph_types::edge::Contains {
+            container: parent.clone(),
+            content: atlas_graph_types::edge::ContainerContent::Container(child.clone()),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        }
+    }
+
+    #[test]
+    fn red_when_a_contains_row_names_a_container_with_no_node() {
+        let mut graph = Graph::default();
+        // Neither the container nor the child node exists.
+        graph.contains_bible.push(child_row(&atlas_graph_types::id::ContainerNodeId::new("bible-book-GEN"), &atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-1")));
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling container");
+        assert_eq!(err.relation, "contains_bible");
+        assert_eq!(err.field, "container");
+    }
+
+    #[test]
+    fn red_when_a_container_child_dangles_and_when_a_canon_step_dangles() {
+        let mut graph = Graph::default();
+        let book = container_node(&mut graph, "bible-book-GEN");
+        graph.contains_bible.push(child_row(&book, &atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-99")));
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling child");
+        assert_eq!(err.relation, "contains_bible");
+        assert_eq!(err.field, "content.container");
+
+        let mut graph2 = Graph::default();
+        let ch1 = container_node(&mut graph2, "bible-chapter-GEN-1");
+        graph2.canon_succession.push(atlas_graph_types::edge::CanonSuccession {
+            prior: ch1,
+            next: atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-2"),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        });
+        let err2 = every_authored_edge_resolves(&graph2).expect_err("must catch the dangling next");
+        assert_eq!(err2.relation, "canon_succession");
+        assert_eq!(err2.field, "next");
+    }
+
+    #[test]
+    fn forest_law_green_on_a_real_forest() {
+        let mut graph = Graph::default();
+        let book = container_node(&mut graph, "bible-book-GEN");
+        let ch1 = container_node(&mut graph, "bible-chapter-GEN-1");
+        let ch2 = container_node(&mut graph, "bible-chapter-GEN-2");
+        graph.contains_bible.push(child_row(&book, &ch1));
+        graph.contains_bible.push(child_row(&book, &ch2));
+        assert!(container_containment_is_a_forest(&graph).is_ok());
+    }
+
+    #[test]
+    fn forest_law_red_on_two_parents() {
+        let mut graph = Graph::default();
+        let gen = container_node(&mut graph, "bible-book-GEN");
+        let exo = container_node(&mut graph, "bible-book-EXO");
+        let ch = container_node(&mut graph, "bible-chapter-GEN-1");
+        graph.contains_bible.push(child_row(&gen, &ch));
+        graph.contains_bible.push(child_row(&exo, &ch));
+        let err = container_containment_is_a_forest(&graph).expect_err("two parents must be caught");
+        assert!(err.contains("not single-parent"), "{err}");
+    }
+
+    #[test]
+    fn forest_law_red_on_a_duplicate_row_and_on_a_cycle() {
+        let mut graph = Graph::default();
+        let book = container_node(&mut graph, "bible-book-GEN");
+        let ch = container_node(&mut graph, "bible-chapter-GEN-1");
+        graph.contains_bible.push(child_row(&book, &ch));
+        graph.contains_bible.push(child_row(&book, &ch));
+        let err = container_containment_is_a_forest(&graph).expect_err("a duplicate row must be caught");
+        assert!(err.contains("duplicate"), "{err}");
+
+        let mut graph2 = Graph::default();
+        let a = container_node(&mut graph2, "a");
+        let b = container_node(&mut graph2, "b");
+        let c = container_node(&mut graph2, "c");
+        graph2.contains_bible.push(child_row(&a, &b));
+        graph2.contains_bible.push(child_row(&b, &c));
+        graph2.contains_bible.push(child_row(&c, &a));
+        let err2 = container_containment_is_a_forest(&graph2).expect_err("a cycle must be caught");
+        assert!(err2.contains("CYCLE"), "{err2}");
+    }
+
+    /// NODE1-ROWS-1's index≡rows conformance law, red case: a graph whose
+    /// indexes were tampered with after build (the retired derived-merge
+    /// class) fails; the same graph untampered passes.
+    #[test]
+    fn indexes_derive_exactly_from_rows_catches_a_post_build_write() {
+        let mut graph = Graph::default();
+        let book = container_node(&mut graph, "bible-book-GEN");
+        let ch = container_node(&mut graph, "bible-chapter-GEN-1");
+        graph.contains_bible.push(child_row(&book, &ch));
+        graph.build_indexes();
+        assert!(indexes_derive_exactly_from_rows(&graph).is_ok(), "an untampered graph must pass");
+
+        // Tamper: append one extra entry the rows do not back.
+        use atlas_graph_types::edge::{at, entry_id, RelationId};
+        let s = at(&book.erase());
+        let o = at(&ch.erase());
+        let eid = entry_id(RelationId::Succession, &s, &o);
+        graph
+            .indexes
+            .entry(RelationId::Succession)
+            .or_default()
+            .fwd
+            .entry(s)
+            .or_default()
+            .push((eid, o, atlas_graph_types::explore::EdgeMeta::None));
+        assert!(indexes_derive_exactly_from_rows(&graph).is_err(), "a post-build index write must be caught");
+    }
 }

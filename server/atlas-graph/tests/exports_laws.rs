@@ -78,10 +78,8 @@ fn built() -> Built {
                     .expect("the real committed sources must build");
             graph.build_indexes();
             atlas_graph::event_world::add_justified_by(&mut graph);
-            // NODE-1: paired with add_justified_by at every build_indexes
-            // site, so this harness's graph matches what the pipeline (and
-            // the GraphService below) actually serve.
-            atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut graph);
+            // NODE1-ROWS-1: container edges are declared rows, lowered by
+            // build_indexes above -- no derived-edge step exists any more.
             let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
             let gazetteer = exports::gazetteer_places(&graph);

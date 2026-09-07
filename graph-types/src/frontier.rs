@@ -293,15 +293,16 @@ pub enum Capability {
     /// for today (per the owner's own instruction to check which focus
     /// kinds genuinely have comments-on rows before granting the cell).
     Commentary,
-    /// NEW (owner ruling, `progress.md` 2026-09-07, NODE-1 target state):
-    /// `Contains` forward — "the things this container contains."
-    /// `Chapter`/`Book` get this once NODE-1 lands real `Container` nodes
-    /// and Bible-corpus `Contains` rows (`graph.contains_bible` is
-    /// guarded EMPTY today — `artifact.rs` refuses to ship a nonempty
-    /// `contains_bible` until the artifact format is extended to
-    /// serialize it — so this capability's row-level falsifiability is
-    /// honestly gated pending NODE-1; see
-    /// `atlas-graph/tests/frontier_falsifiability.rs`).
+    /// NEW (owner ruling, `progress.md` 2026-09-07, NODE-1 target state
+    /// — LANDED by NODE-1 + its NODE1-ROWS-1 fix round): `Contains`
+    /// forward — "the things this container contains." `Chapter`/`Book`
+    /// have real `Container` nodes and DECLARED Bible-corpus `Contains`
+    /// rows now (chapter ⊃ verses as `ContainerContent::Loci`; book ⊃
+    /// chapter as `ContainerContent::Container`, one row per child —
+    /// `artifact.rs` serializes `contains_bible` since FORMAT_VERSION
+    /// 11), so this capability's row-level falsifiability is LIVE, no
+    /// longer gated; see
+    /// `atlas-graph/tests/frontier_falsifiability.rs`.
     Members,
 }
 

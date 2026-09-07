@@ -602,16 +602,37 @@ struct DtoTypology {
     justification: DtoJustification,
 }
 
-/// CORP-2a: mirrors `graph_types::edge::Contains<ConcordTag>` -- `content`
-/// (a `LocusSet<ConcordTag>`, i.e. a `BTreeSet<ConcordLocus>`) serializes
-/// as a plain `Vec` (bincode has no native set type; `BTreeSet`'s own
-/// iteration is already deterministic ascending order, so round-tripping
-/// through a `Vec` and back through a set constructor is lossless and
-/// order-independent either way).
+/// NODE1-ROWS-1: mirrors `graph_types::edge::ContainerContent<C>` -- a
+/// `Contains` row's content is EITHER flat loci (the CORP-2a shape:
+/// `LocusSet` serialized as a plain `Vec`; bincode has no native set
+/// type, and `BTreeSet` iteration is already deterministic ascending
+/// order, so `Vec` round-trips losslessly) OR exactly one child
+/// container's raw id (book ⊃ chapter -- an edge, not a list).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+enum DtoContainerContent {
+    Loci(Vec<DtoTextLocus>),
+    Container(String),
+}
+
+/// CORP-2a (content shape widened by NODE1-ROWS-1 -- see
+/// `DtoContainerContent` immediately above): mirrors
+/// `graph_types::edge::Contains<C>`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct DtoContains {
     container: String,
-    content: Vec<DtoTextLocus>,
+    content: DtoContainerContent,
+    provenance: String,
+    justification: DtoJustification,
+}
+
+/// NODE1-ROWS-1: mirrors `graph_types::edge::CanonSuccession` -- one
+/// pairwise canon step (chapter -> next chapter across book boundaries,
+/// or book -> next book), the second row implementation of
+/// `RelationId::Succession` alongside `DtoSuccession`'s event chains.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoCanonSuccession {
+    prior: String,
+    next: String,
     provenance: String,
     justification: DtoJustification,
 }
@@ -719,6 +740,11 @@ pub struct ArtifactDump {
     reading: Vec<(String, Vec<DtoNodeId>)>,
     attests: Vec<DtoAttests>,
     succession: Vec<DtoSuccession>,
+    /// NODE1-ROWS-1: `graph.canon_succession`'s own row table -- the
+    /// pairwise canon chapter/book steps (1,188 + 65 over the real
+    /// canon), the second row implementation of `RelationId::Succession`
+    /// (see `DtoCanonSuccession`'s own doc comment).
+    canon_succession: Vec<DtoCanonSuccession>,
     dated_by: Vec<DtoDatedBy>,
     located_at: Vec<DtoLocatedAt>,
     // M-D3 (owner ruling R2): `named: Vec<DtoNamed>` field retired here --
@@ -733,12 +759,14 @@ pub struct ArtifactDump {
     /// EDGE-1a: `graph.typology`'s own row table -- see `DtoTypology`'s own
     /// doc comment.
     typology: Vec<DtoTypology>,
-    /// NODE-1: `graph.contains_bible`'s own row table (chapter -> its
-    /// verses; ~1,189 rows / ~31,102 loci over the real canon) -- the SAME
+    /// NODE-1: `graph.contains_bible`'s own row table -- the SAME
     /// `DtoContains` shape `contains_concord` below already rides, with
     /// `bible_locus_to_dto` narrowing instead of `concord_locus_to_dto`.
     /// The TWELFTH member of the original guarded set (`dump`'s own doc
     /// comment) to close, on the same schedule as every prior data batch.
+    /// NODE1-ROWS-1: carries BOTH content shapes now -- chapter ⊃ verses
+    /// (`Loci`, 1,189 rows / 31,102 loci over the real canon) and
+    /// book ⊃ chapter (`Container`, 1,189 rows, one per child).
     contains_bible: Vec<DtoContains>,
     /// CORP-2a: `graph.contains_concord`'s own row table -- see
     /// `DtoContains`'s own doc comment. The FIRST populated `Contains<C>`
@@ -930,7 +958,21 @@ pub struct ArtifactDump {
 /// 1,189 chapters), and the root hashes every node's id+payload --
 /// `tests/version_root_regression.rs` re-pinned in the same commit that
 /// rebuilds `data/compiled/graph.bin`.
-const FORMAT_VERSION: u32 = 11;
+///
+/// NODE1-ROWS-1 (2026-09-07, NODE-1 fix round 1 -- owner ruling "we have
+/// to declare edges. no special cases"): bumped 11 -> 12. Triggers,
+/// landed together: `DtoContains.content` retyped `Vec<DtoTextLocus>` ->
+/// `DtoContainerContent { Loci | Container }` (book ⊃ chapter membership
+/// becomes declared rows, one per child), and `ArtifactDump.
+/// canon_succession: Vec<DtoCanonSuccession>` ADDED (the pairwise canon
+/// chapter/book steps -- previously derived index entries, now authored
+/// serialized rows). A genuine wire-shape break both directions --
+/// bincode field COUNT and a field's own encoding changed. VERSION ROOT
+/// DOES NOT MOVE this time (the root hashes node id+payload only; this
+/// round adds/changes ZERO nodes -- verified by
+/// `tests/version_root_regression.rs` staying green un-re-pinned).
+/// `data/compiled/graph.bin` rebuilt in this same commit.
+const FORMAT_VERSION: u32 = 12;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -979,6 +1021,19 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .map(|r: &Succession| DtoSuccession {
             narrative: r.narrative.0.clone(),
             chain: r.chain.iter().map(|e| e.0.clone()).collect(),
+            provenance: r.provenance.clone(),
+            justification: justification_to_dto(&r.justification),
+        })
+        .collect();
+
+    // NODE1-ROWS-1: the pairwise canon steps -- a plain row table like
+    // `succession` immediately above (its second row implementation).
+    let canon_succession = g
+        .canon_succession
+        .iter()
+        .map(|r: &atlas_graph_types::edge::CanonSuccession| DtoCanonSuccession {
+            prior: r.prior.0.clone(),
+            next: r.next.0.clone(),
             provenance: r.provenance.clone(),
             justification: justification_to_dto(&r.justification),
         })
@@ -1051,12 +1106,16 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
     // NODE-1: `graph.contains_bible`'s own row table -- the SAME
     // `DtoContains` shape as `contains_concord` immediately below, with
     // the Bible-corpus locus narrowing (`bible_locus_to_dto`).
+    // NODE1-ROWS-1: both content shapes serialize (Loci AND Container).
     let contains_bible = g
         .contains_bible
         .iter()
         .map(|r: &atlas_graph_types::edge::Contains<atlas_graph_types::text::BibleTag>| DtoContains {
             container: r.container.0.clone(),
-            content: r.content.0.iter().map(bible_locus_to_dto).collect(),
+            content: match &r.content {
+                atlas_graph_types::edge::ContainerContent::Loci(set) => DtoContainerContent::Loci(set.0.iter().map(bible_locus_to_dto).collect()),
+                atlas_graph_types::edge::ContainerContent::Container(child) => DtoContainerContent::Container(child.0.clone()),
+            },
             provenance: r.provenance.clone(),
             justification: justification_to_dto(&r.justification),
         })
@@ -1069,7 +1128,10 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .iter()
         .map(|r: &atlas_graph_types::edge::Contains<atlas_graph_types::text::ConcordTag>| DtoContains {
             container: r.container.0.clone(),
-            content: r.content.0.iter().map(concord_locus_to_dto).collect(),
+            content: match &r.content {
+                atlas_graph_types::edge::ContainerContent::Loci(set) => DtoContainerContent::Loci(set.0.iter().map(concord_locus_to_dto).collect()),
+                atlas_graph_types::edge::ContainerContent::Container(child) => DtoContainerContent::Container(child.0.clone()),
+            },
             provenance: r.provenance.clone(),
             justification: justification_to_dto(&r.justification),
         })
@@ -1194,6 +1256,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
 
     Ok(ArtifactDump {
         format_version: FORMAT_VERSION,
+        canon_succession,
         nodes,
         reading,
         attests,
@@ -1418,6 +1481,17 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         g.succession.push(row);
     }
 
+    // NODE1-ROWS-1: a plain row table, like `succession` above (its
+    // second row implementation -- pairwise canon container steps).
+    for r in d.canon_succession {
+        g.canon_succession.push(atlas_graph_types::edge::CanonSuccession {
+            prior: atlas_graph_types::id::ContainerNodeId::new(r.prior),
+            next: atlas_graph_types::id::ContainerNodeId::new(r.next),
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
     for r in d.dated_by {
         let placement = match r.placement {
             DtoDatePlacement::AnchorBinding { anchor, years, months, days } => DatePlacement::AnchorBinding { anchor: AnchorId::new(anchor), offset: Duration { years, months, days } },
@@ -1468,11 +1542,20 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
     // NODE-1: a plain row table -- the SAME `Vec` -> `BTreeSet`
     // reconstruction as `contains_concord` immediately below, with the
     // Bible-corpus locus narrowing (`dto_to_bible_locus`).
+    // NODE1-ROWS-1: both content shapes reconstruct.
     for r in d.contains_bible {
-        let content: Result<std::collections::BTreeSet<_>, ArtifactError> = r.content.into_iter().map(dto_to_bible_locus).collect();
+        let content = match r.content {
+            DtoContainerContent::Loci(loci) => {
+                let set: Result<std::collections::BTreeSet<_>, ArtifactError> = loci.into_iter().map(dto_to_bible_locus).collect();
+                atlas_graph_types::edge::ContainerContent::Loci(atlas_graph_types::text::LocusSet(set?))
+            }
+            DtoContainerContent::Container(child) => {
+                atlas_graph_types::edge::ContainerContent::Container(atlas_graph_types::id::ContainerNodeId::new(child))
+            }
+        };
         g.contains_bible.push(atlas_graph_types::edge::Contains {
             container: atlas_graph_types::id::ContainerNodeId::new(r.container),
-            content: atlas_graph_types::text::LocusSet(content?),
+            content,
             provenance: r.provenance,
             justification: dto_to_justification(r.justification)?,
         });
@@ -1483,10 +1566,18 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
     // shape); `Vec` -> `BTreeSet` is lossless regardless of the serialized
     // order (`DtoContains`'s own doc comment).
     for r in d.contains_concord {
-        let content: Result<std::collections::BTreeSet<_>, ArtifactError> = r.content.into_iter().map(dto_to_concord_locus).collect();
+        let content = match r.content {
+            DtoContainerContent::Loci(loci) => {
+                let set: Result<std::collections::BTreeSet<_>, ArtifactError> = loci.into_iter().map(dto_to_concord_locus).collect();
+                atlas_graph_types::edge::ContainerContent::Loci(atlas_graph_types::text::LocusSet(set?))
+            }
+            DtoContainerContent::Container(child) => {
+                atlas_graph_types::edge::ContainerContent::Container(atlas_graph_types::id::ContainerNodeId::new(child))
+            }
+        };
         g.contains_concord.push(atlas_graph_types::edge::Contains {
             container: atlas_graph_types::id::ContainerNodeId::new(r.container),
-            content: atlas_graph_types::text::LocusSet(content?),
+            content,
             provenance: r.provenance,
             justification: dto_to_justification(r.justification)?,
         });
@@ -1657,17 +1748,15 @@ mod tests {
         let bytes = encode(&dumped).expect("encode must succeed");
         let decoded = decode(&bytes).expect("decode must succeed");
         let (mut reconstructed, _stats2, _ews2, chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
-        // NODE-1: paired with add_justified_by at every build_indexes
-        // site -- both sides of the admission carry the derived container
-        // edges (see bible_container_adapter's own doc comment).
+        // NODE1-ROWS-1 (fix round 1): container membership/succession are
+        // serialized rows now -- build_indexes lowers them on both sides
+        // of the admission; the former derived-edge pairing is gone.
         reconstructed.build_indexes();
         crate::event_world::add_justified_by(&mut reconstructed);
-        crate::bible_container_adapter::add_derived_membership_and_succession(&mut reconstructed);
 
         let mut original_indexed = original;
         original_indexed.build_indexes();
         crate::event_world::add_justified_by(&mut original_indexed);
-        crate::bible_container_adapter::add_derived_membership_and_succession(&mut original_indexed);
 
         // THE ADMISSION LAW (design §9a: "implementation #2 passes the
         // same law as #1"): the reconstructed graph answers every question
@@ -1989,7 +2078,7 @@ mod tests {
         content.insert(p2);
         g.contains_concord.push(Contains {
             container: ContainerNodeId::new("concord-ac-iv"),
-            content: LocusSet(content),
+            content: atlas_graph_types::edge::ContainerContent::Loci(LocusSet(content)),
             provenance: "concord-adapter".into(),
             justification: Justification { text: Some("Augsburg Confession Article IV, paragraphs 1-2".into()), grounds: Default::default() },
         });
@@ -1997,7 +2086,10 @@ mod tests {
         let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
         let dumped = dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).expect("dump must succeed with a real contains_concord row -- the guard's whole point was to force this extension");
         assert_eq!(dumped.contains_concord.len(), 1);
-        assert_eq!(dumped.contains_concord[0].content.len(), 2);
+        match &dumped.contains_concord[0].content {
+            DtoContainerContent::Loci(loci) => assert_eq!(loci.len(), 2),
+            other => panic!("expected Loci content, got {other:?}"),
+        }
 
         let bytes = encode(&dumped).expect("encode must succeed");
         let decoded = decode(&bytes).expect("decode must succeed");
@@ -2006,9 +2098,13 @@ mod tests {
         assert_eq!(reconstructed.contains_concord.len(), 1, "the row must survive the full round trip, not silently drop");
         let row = &reconstructed.contains_concord[0];
         assert_eq!(row.container.0, "concord-ac-iv");
-        assert_eq!(row.content.0.len(), 2);
-        assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 1 })));
-        assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 2 })));
+        let set = match &row.content {
+            atlas_graph_types::edge::ContainerContent::Loci(set) => &set.0,
+            other => panic!("expected Loci content, got {other:?}"),
+        };
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 1 })));
+        assert!(set.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 2 })));
         assert_eq!(row.justification.text.as_deref(), Some("Augsburg Confession Article IV, paragraphs 1-2"));
     }
 
@@ -2029,7 +2125,7 @@ mod tests {
         content.insert(v2);
         g.contains_bible.push(Contains {
             container: ContainerNodeId::new("bible-chapter-GEN-1"),
-            content: LocusSet(content),
+            content: atlas_graph_types::edge::ContainerContent::Loci(LocusSet(content)),
             provenance: "kjv".into(),
             justification: Justification::default(),
         });
@@ -2037,7 +2133,10 @@ mod tests {
         let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
         let dumped = dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).expect("dump must succeed with a real contains_bible row -- the guard's whole point was to force this extension");
         assert_eq!(dumped.contains_bible.len(), 1);
-        assert_eq!(dumped.contains_bible[0].content.len(), 2);
+        match &dumped.contains_bible[0].content {
+            DtoContainerContent::Loci(loci) => assert_eq!(loci.len(), 2),
+            other => panic!("expected Loci content, got {other:?}"),
+        }
 
         let bytes = encode(&dumped).expect("encode must succeed");
         let decoded = decode(&bytes).expect("decode must succeed");
@@ -2046,9 +2145,59 @@ mod tests {
         assert_eq!(reconstructed.contains_bible.len(), 1, "the row must survive the full round trip, not silently drop");
         let row = &reconstructed.contains_bible[0];
         assert_eq!(row.container.0, "bible-chapter-GEN-1");
-        assert_eq!(row.content.0.len(), 2);
-        assert!(row.content.0.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 1 })));
-        assert!(row.content.0.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 2 })));
+        let set = match &row.content {
+            atlas_graph_types::edge::ContainerContent::Loci(set) => &set.0,
+            other => panic!("expected Loci content, got {other:?}"),
+        };
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 1 })));
+        assert!(set.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 2 })));
+    }
+
+    /// NODE1-ROWS-1: the two NEW row shapes' own round trips, in
+    /// isolation (the same "prove the DTO layer, not the adapter, here"
+    /// discipline as the two tests above): a `ContainerContent::
+    /// Container` book ⊃ chapter row and a pairwise `CanonSuccession`
+    /// step.
+    #[test]
+    fn container_child_and_canon_succession_rows_round_trip_losslessly() {
+        use atlas_graph_types::edge::{CanonSuccession, ContainerContent, Contains};
+        use atlas_graph_types::id::ContainerNodeId;
+
+        let mut g = Graph::default();
+        g.contains_bible.push(Contains::<atlas_graph_types::text::BibleTag> {
+            container: ContainerNodeId::new("bible-book-GEN"),
+            content: ContainerContent::Container(ContainerNodeId::new("bible-chapter-GEN-1")),
+            provenance: "kjv".into(),
+            justification: Justification::default(),
+        });
+        g.canon_succession.push(CanonSuccession {
+            prior: ContainerNodeId::new("bible-chapter-GEN-50"),
+            next: ContainerNodeId::new("bible-chapter-EXO-1"),
+            provenance: "kjv".into(),
+            justification: Justification::default(),
+        });
+
+        let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
+        let dumped = dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).expect("dump must succeed with the two new row shapes");
+        assert_eq!(dumped.canon_succession.len(), 1);
+        match &dumped.contains_bible[0].content {
+            DtoContainerContent::Container(child) => assert_eq!(child, "bible-chapter-GEN-1"),
+            other => panic!("expected Container content, got {other:?}"),
+        }
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, ..) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.contains_bible.len(), 1);
+        match &reconstructed.contains_bible[0].content {
+            ContainerContent::Container(child) => assert_eq!(child.0, "bible-chapter-GEN-1"),
+            other => panic!("expected Container content, got {other:?}"),
+        }
+        assert_eq!(reconstructed.canon_succession.len(), 1, "the canon step must survive the full round trip, not silently drop");
+        assert_eq!(reconstructed.canon_succession[0].prior.0, "bible-chapter-GEN-50");
+        assert_eq!(reconstructed.canon_succession[0].next.0, "bible-chapter-EXO-1");
     }
 
     #[test]
