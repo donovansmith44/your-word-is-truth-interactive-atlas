@@ -468,15 +468,37 @@ mod tests {
 
     proptest! {
         // Property mirror of the three example cases above, at arbitrary
-        // headings: a pair placed EXACTLY at the threshold boundary (in km,
-        // converted to a latitude delta -- a locally-flat approximation,
-        // accurate to well under 1m of threshold-boundary error at this
-        // scale, more than tight enough to stay on the correct side of
-        // strict `<=`/`>` in every generated case) is inside; a pair placed
-        // any positive epsilon beyond it is outside.
+        // headings: a pair placed just inside the threshold (99.9% of it,
+        // converted to a latitude delta) is inside; a pair placed any
+        // positive epsilon beyond it is outside.
+        //
+        // MERGE-BOUNDARY-1 (batch NODE-1, diagnosed from the checked-in
+        // proptest-regressions/merge.txt seed `lat=0.0, lon=0.0,
+        // epsilon_km=0.001`): the property as originally stated used
+        // `km_per_deg_lat = 111.32` -- a WGS84-ellipsoid-flavored constant
+        // -- while `great_circle_km`'s own sphere (EARTH_RADIUS_KM =
+        // 6371.0088) has exactly R*pi/180 = 111.19508 km per degree of
+        // latitude. That is a systematic 0.112% overstatement of the
+        // degrees-per-km conversion (~1.12m of shortfall per km), NOT the
+        // "well under 1m" the original comment claimed -- so for any
+        // epsilon_km < ~0.00112 the "outside" pair actually landed INSIDE
+        // the 1.0km threshold (at the seed: distance 0.9998767km <= 1.0)
+        // and the property failed. This was the PROPERTY stated too
+        // tightly, not a bug in the threshold logic: `great_circle_km` /
+        // `SAME_PLACE_THRESHOLD_KM` are compared directly in production
+        // (`apply_place_merges`' debug_assert and the unit tests above);
+        // 111.32 appeared nowhere outside this test (verified by grep).
+        // The fix uses the sphere's OWN exact conversion, under which a
+        // pure-meridian haversine reduces to exactly R * delta_phi, so
+        // both assertions hold with kilometer-scale margin (0.999km and
+        // 1.0+epsilon km against a 1.0km threshold), no approximation
+        // slack needed. The committed seed re-runs this exact case first,
+        // as the regression witness.
         #[test]
         fn threshold_boundary_property(lat in -60.0f64..60.0, lon in -170.0f64..170.0, epsilon_km in 0.001f64..5.0) {
-            let km_per_deg_lat = 111.32;
+            // `great_circle_km`'s own EARTH_RADIUS_KM, converted: km per
+            // degree of latitude on THAT sphere (R * pi / 180).
+            let km_per_deg_lat = 6371.0088_f64 * std::f64::consts::PI / 180.0;
             let inside_lat = lat + (SAME_PLACE_THRESHOLD_KM * 0.999) / km_per_deg_lat;
             let outside_lat = lat + (SAME_PLACE_THRESHOLD_KM + epsilon_km) / km_per_deg_lat;
 
