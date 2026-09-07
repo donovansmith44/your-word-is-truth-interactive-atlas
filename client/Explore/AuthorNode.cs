@@ -13,7 +13,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class AuthorNode : IExplorable
 {
     private readonly string _bookCode;
-    private VerseDetail? _cachedDetail;
+    private readonly AsyncMemo<VerseDetail> _detail = new();
 
     public AuthorNode(string bookCode) => _bookCode = bookCode;
 
@@ -85,5 +85,17 @@ public sealed class AuthorNode : IExplorable
         return fragment;
     }
 
-    private async Task<VerseDetail> Load(AtlasClient api) => _cachedDetail ??= await api.Verse($"{_bookCode}.1.1");
+    // PERF-3 re-review fix round 2 (Major, new -- found by the re-review's
+    // own grep sweep after this batch's fix round 1 claimed uniform
+    // application and missed this one): this was still the pre-batch
+    // value-memoizing idiom, and IS a live race -- ExplorerPopover.LoadCurrent's
+    // own non-registry fallback path (Author is one of the node kinds with
+    // no section-registry providers) dispatches ExploreAsync and BodyAsync
+    // via ONE Task.WhenAll (ExplorerPopover.razor's own `explorationsTask`/
+    // `bodyTask`), and BOTH independently call Load -- the exact same
+    // synchronous-prefix-then-first-await race this batch's own VerseNode
+    // fix was built around, just reached through the ExploreAsync+BodyAsync
+    // fallback shape instead of the section-registry Task.WhenAll shape.
+    // AsyncMemo-backed now, same fix as every other node in this file.
+    private Task<VerseDetail> Load(AtlasClient api) => _detail.Get(() => api.Verse($"{_bookCode}.1.1"));
 }

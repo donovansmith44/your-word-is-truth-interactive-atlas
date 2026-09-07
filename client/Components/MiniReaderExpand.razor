@@ -205,7 +205,11 @@ else
     private ChapterOut? _chapter;
     private string? _error;
     private bool _scrolledThisExpand;
-    private IJSObjectReference? _readerJs;
+    // PERF-3 re-review fix round 2 (tripwire ruling 3): AsyncMemo-backed,
+    // same "cheap insurance" reasoning as ChapterNode/CompositionSplit's
+    // own migration this round -- this component's single call site
+    // (OnAfterRenderAsync below) never actually raced.
+    private readonly AsyncMemo<IJSObjectReference> _readerJs = new();
 
     // A random, per-component-instance DOM id for the focal row -- see
     // VerseTextSection.razor's own original comment (preserved verbatim in
@@ -256,8 +260,8 @@ else
         _scrolledThisExpand = true;
         try
         {
-            _readerJs ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-            await _readerJs.InvokeVoidAsync("scrollFocalRowIntoView", _focalDomId);
+            var readerJs = await _readerJs.Get(() => JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js").AsTask());
+            await readerJs.InvokeVoidAsync("scrollFocalRowIntoView", _focalDomId);
         }
         catch (Exception)
         {

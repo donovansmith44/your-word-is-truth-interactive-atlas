@@ -44,11 +44,20 @@ public sealed class AtlasClient
     // CatechismSeamSection reads this exactly where CrossRefsSection reads
     // Xrefs, for the SAME PassageNode).
     private readonly LruCache<string, List<CatechismRefDto>> _catechismSpanCache = new(capacity: 24);
-    private List<BookTocEntry>? _booksCache;
-    private List<EraDto>? _erasCache;
-    private List<LandmarkDto>? _landmarksCache;
-    private LandMaskOut? _landMaskCache;
-    private SourcesDocumentOut? _sourcesCache;
+    // PERF-3 re-review fix round 2 (tripwire ruling 3 -- "the class dies
+    // completely, not mostly," applied to every raw `??= await` site in
+    // client/, not just Explore/'s own node types): AsyncMemo-backed, same
+    // dedup + reset-on-fault fix as every Explore/ node this batch touched.
+    // These five ARE reachable from more than one concurrent caller in
+    // practice (several pages/components can independently call Books()/
+    // Eras()/etc. around app startup, before any one of them has resolved)
+    // -- the same race SHAPE this whole batch exists to kill, just scoped
+    // to app-startup rather than a per-click hot path.
+    private readonly Explore.AsyncMemo<List<BookTocEntry>> _booksCache = new();
+    private readonly Explore.AsyncMemo<List<EraDto>> _erasCache = new();
+    private readonly Explore.AsyncMemo<List<LandmarkDto>> _landmarksCache = new();
+    private readonly Explore.AsyncMemo<LandMaskOut> _landMaskCache = new();
+    private readonly Explore.AsyncMemo<SourcesDocumentOut> _sourcesCache = new();
 
     public AtlasClient(HttpClient http)
     {
@@ -100,17 +109,9 @@ public sealed class AtlasClient
         return scene;
     }
 
-    public async Task<List<BookTocEntry>> Books()
-    {
-        _booksCache ??= await GetRequired<List<BookTocEntry>>("api/books");
-        return _booksCache;
-    }
+    public Task<List<BookTocEntry>> Books() => _booksCache.Get(() => GetRequired<List<BookTocEntry>>("api/books"));
 
-    public async Task<List<EraDto>> Eras()
-    {
-        _erasCache ??= await GetRequired<List<EraDto>>("api/eras");
-        return _erasCache;
-    }
+    public Task<List<EraDto>> Eras() => _erasCache.Get(() => GetRequired<List<EraDto>>("api/eras"));
 
     public async Task<ChapterOut> Chapter(string book, int chapter)
     {
@@ -277,29 +278,17 @@ public sealed class AtlasClient
 
     // Curated landmarks never change within a running session -- fetched
     // once and cached forever, same treatment as Books()/Eras() above.
-    public async Task<List<LandmarkDto>> Landmarks()
-    {
-        _landmarksCache ??= await GetRequired<List<LandmarkDto>>("api/landmarks");
-        return _landmarksCache;
-    }
+    public Task<List<LandmarkDto>> Landmarks() => _landmarksCache.Get(() => GetRequired<List<LandmarkDto>>("api/landmarks"));
 
     // Batch R requirement 1: the curated land mask (clip geometry only, no
     // from/to) never changes within a running session either -- same
     // fetch-once-cache-forever treatment as Landmarks() above.
-    public async Task<LandMaskOut> LandMask()
-    {
-        _landMaskCache ??= await GetRequired<LandMaskOut>("api/land-mask");
-        return _landMaskCache;
-    }
+    public Task<LandMaskOut> LandMask() => _landMaskCache.Get(() => GetRequired<LandMaskOut>("api/land-mask"));
 
     // Batch S: the Sources page's own single source of truth -- curated,
     // never changes within a running session, same fetch-once-cache-forever
     // treatment as Landmarks()/LandMask() above.
-    public async Task<SourcesDocumentOut> Sources()
-    {
-        _sourcesCache ??= await GetRequired<SourcesDocumentOut>("api/sources");
-        return _sourcesCache;
-    }
+    public Task<SourcesDocumentOut> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocumentOut>("api/sources"));
 
     // Batch AQC-1 (design spec §2's versioning law): GET /api/contract --
     // the AQC version range this running server supports. No cache -- the

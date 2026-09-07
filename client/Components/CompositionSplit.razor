@@ -372,7 +372,13 @@ else
     // already falls back to.
     private double _widthPx = 704;
     private bool _dividerRestoreAttempted;
-    private IJSObjectReference? _js;
+    // PERF-3 re-review fix round 2 (tripwire ruling 3 -- "the class dies
+    // completely, not mostly"): AsyncMemo-backed like every node in
+    // Explore/, even though this component's own single guarded call site
+    // (`OnAfterRenderAsync`, gated by `_dividerRestoreAttempted`) never
+    // actually raced -- cheap insurance, same reasoning as ChapterNode's
+    // own migration this round.
+    private readonly AsyncMemo<IJSObjectReference> _js = new();
     private Func<string, Task>? _guestQueryHandler;
 
     // Batch CORPREAD-1a (SPLIT-SCROLL-1): the ONE source `.split-view`'s own
@@ -638,15 +644,15 @@ else
             var fraction = ViewArrangementAtom.Value.DividerFraction ?? ViewArrangement.InitialDividerFraction;
             try
             {
-                _js ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+                var js = await _js.Get(() => JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js").AsTask());
 
-                var headerHeight = await _js.InvokeAsync<double>("getElementHeight", ".app-header");
+                var headerHeight = await js.InvokeAsync<double>("getElementHeight", ".app-header");
                 if (headerHeight > 0)
                 {
                     _headerHeightPx = headerHeight;
                 }
 
-                var rect = await _js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+                var rect = await js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
                 if (rect is { Width: > 0 } r)
                 {
                     // Same light sanity floor as the pre-fix-round-1 code

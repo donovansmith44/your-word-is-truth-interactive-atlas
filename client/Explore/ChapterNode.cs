@@ -28,7 +28,7 @@ public sealed class ChapterNode : IExplorable
 {
     private readonly string _book;
     private readonly int _chapter;
-    private ChapterOut? _cached;
+    private readonly AsyncMemo<ChapterOut> _loaded = new();
 
     /// <summary>Position in book ("Chapter N of M") -- Reader.razor's own
     /// already-loaded TOC entry count for this book, passed straight
@@ -93,5 +93,16 @@ public sealed class ChapterNode : IExplorable
         return fragment;
     }
 
-    public async Task<ChapterOut> Load(AtlasClient api) => _cached ??= AlreadyLoaded ?? await api.Chapter(_book, _chapter);
+    // PERF-3 re-review fix round 2: migrated to AsyncMemo alongside its
+    // siblings -- "cheap insurance," the re-review's own words, not a live
+    // bug (this method's only caller today is ChapterCardSection, the sole
+    // registered "Chapter"-kind provider; BodyAsync's own call is the
+    // documented dead fallback above, unreachable while that provider is
+    // registered) -- but the whole point of AsyncMemo is that the old
+    // `??=`-style idiom dies completely in this file, not "mostly."
+    // AlreadyLoaded's own short-circuit (Reader.razor's already-fetched
+    // chapter, reused with zero new fetch) is preserved exactly -- a plain
+    // Task.FromResult wrapping it costs nothing extra and still lets
+    // AsyncMemo cache/dedupe/reset it the same way as a real fetch.
+    public Task<ChapterOut> Load(AtlasClient api) => _loaded.Get(() => AlreadyLoaded is { } already ? Task.FromResult(already) : api.Chapter(_book, _chapter));
 }
