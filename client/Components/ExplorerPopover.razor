@@ -987,7 +987,10 @@
     // the injected singleton (Program.cs, M-D2), never a new instance.
     public IExplorableClient Graph => GraphClient;
 
-    // EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared): the SAME
+    // EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
+    // one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds
+    // instance; fix round 2, Q-1/N-3 -- MapFocusHatch.cs's own doc comment
+    // has the full genuine-conflict reasoning): the SAME
     // "the split IS the atlas" NavigateWorld hand-off an Exploration chip
     // already gives (Activate's own case, below) -- extracted so a section
     // provider can reach it too, via IPopoverSectionContext.NavigateWorldAsync,

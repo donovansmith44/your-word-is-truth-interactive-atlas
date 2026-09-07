@@ -2,7 +2,11 @@ using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
 
-// EVT-3 Ticket 3 (the §5-declared map-focus-at-time hatch): direct,
+// EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
+// one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds instance;
+// fix round 2, Q-1/N-3, a third stale label beyond the review's own
+// two-site count -- MapFocusHatch.cs's doc comment has the full
+// genuine-conflict reasoning): direct,
 // isolated proof of MapFocusHatch.Query's own pure query-building logic --
 // the piece that decides the EXACT {place, window} query string
 // EventDateAndPlacesSection's own Place: row hands to

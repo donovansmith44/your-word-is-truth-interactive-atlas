@@ -49,19 +49,22 @@ public class YearNodeEventTimeTests
     public void DedupeAndOrder_SortsByFromYearFirst_EvenWhenAllShareTheQueriedWindow()
     {
         // Both events legitimately appear in a "query year 31" window, but
-        // the FIRST genuinely started a year earlier -- must sort first,
-        // which pure alphabetical-by-label ("Zeta" < "Alpha" is false, but
-        // "Alpha" < "Zeta" would have hidden the real date signal either
-        // way) cannot honestly promise on its own.
+        // the SECOND genuinely started a year earlier -- must sort first.
+        // Fix round 2 (review N-4): the fixture now DELIBERATELY opposes
+        // the date signal to the label signal ("Alpha" is alphabetically
+        // first but chronologically second) -- the round-1 fixture's own
+        // date order happened to agree with its label order, so the OLD
+        // label-only sort passed it too and the test discriminated
+        // nothing. This one goes RED under any label-first revert.
         var events = new[]
         {
-            Ev("e2", "Zeta event", 31, 31),
-            Ev("e1", "Alpha event", 30, 31),
+            Ev("e1", "Alpha event", 31, 31),
+            Ev("e2", "Beta event", 30, 31),
         };
 
         var ordered = YearNode.DedupeAndOrder(events);
 
-        Assert.Equal(new[] { "e1", "e2" }, ordered.Select(e => e.Id));
+        Assert.Equal(new[] { "e2", "e1" }, ordered.Select(e => e.Id));
     }
 
     [Fact]

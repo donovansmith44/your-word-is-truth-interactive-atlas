@@ -392,6 +392,15 @@ else
     // during that window, upgrading to the FULL, correct set the instant
     // the fetch lands (never a worse-than-before regression, even
     // mid-flight).
+    //
+    // FIX ROUND 2 (N-1): both derivations below now run each group's own
+    // delivered verses through PassageBlockBuilder.BuildCoalescedBlock's
+    // gap-honest run math, so a witness (or group) with a REAL internal
+    // gap (rob_peter_denies's own MRK.14.54 + 66-72) renders the honest
+    // compound ref ("MRK.14.54, 66-72"), never the fabricated envelope
+    // ("MRK.14.54-61") the old first+Count-1 arithmetic produced -- which
+    // both CLAIMED verses belonging to a different event and DROPPED
+    // delivered ones.
     private string? _lastAdjacentId;
     private List<RefsList.RefDescriptor>? _fetchedRefs;
 
@@ -411,11 +420,26 @@ else
         try
         {
             var detail = await Atlas.Event(capturedId);
+            // Fix round 2 (N-1): the canon's chapter lengths, for
+            // versification-aware coalescing (Versification's own doc
+            // comment) -- Atlas.Books() is the app-lifetime-memoized TOC,
+            // effectively free after first touch. A failure here throws
+            // into the same catch below: the fallback derivation stands,
+            // never a wrongly-joined span.
+            var canon = Versification.From(await Atlas.Books());
             if (_lastAdjacentId != capturedId)
             {
                 return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result
             }
-            _fetchedRefs = SelectRefsFromWitnesses(detail.Witnesses);
+            // Fix round 2 (N-5): an EMPTY witness list (never real --
+            // scene::witnesses_for always synthesizes >=1 server-side, but
+            // never assume a network response is well-formed, the SAME
+            // stated policy EventWitnessesSection's own guard follows) must
+            // NOT replace the fallback refs this component is already
+            // correctly showing from Adjacent.VerseGroups -- an empty
+            // _fetchedRefs would win the ?? in RefDescriptors permanently
+            // and silently DELETE the whole refs list.
+            _fetchedRefs = detail.Witnesses.Count > 0 ? SelectRefsFromWitnesses(detail.Witnesses, canon) : null;
             StateHasChanged();
         }
         catch (Exception)
@@ -466,12 +490,17 @@ else
             {
                 continue;
             }
-            var first = g.Verses[0];
-            var (book, chapter, firstNum) = CanonRef.ParseVerse(first);
-            var trueCount = Math.Max(g.Count, g.Verses.Count); // defensive floor -- Count should never be smaller than what actually delivered, but never trust it blindly either
-            var lastNum = firstNum + trueCount - 1;
-            var last = lastNum <= firstNum ? first : $"{book}.{chapter}.{lastNum}";
-            result.Add(new RefsList.RefDescriptor(PassageGrouping.SpanRef(first, last), new VerseNode(first)));
+            // Fix round 2 (N-1): per-group span via the SAME gap-honest run
+            // math as everything else (BuildCoalescedBlock over a one-group
+            // unit; a single (book,chapter) group needs no Canon -- no
+            // chapter boundary can exist inside it). The old inline
+            // first+Count-1 arithmetic fabricated an envelope over any
+            // real gap in the delivered verses (see the field comment
+            // above); Count still corrects the wire-capped tail exactly as
+            // before (PERF-3, "identity never narrows").
+            var verses = g.Verses.Select(v => new PassageListVerse(v, "", g.Count)).ToList();
+            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true));
+            result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
         }
         return result;
     }
@@ -490,18 +519,23 @@ else
     /// exists purely for the SPAN, matching this whole component's own
     /// "no verse contents under prior/following" law (EVENT-ACCOUNTS-1).
     /// A witness with zero verses (never real, defended against) is
-    /// skipped.
-    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitnessDto> witnesses)
+    /// skipped. <paramref name="canon"/> (fix round 2, N-1) is the
+    /// chapter-length lookup versification-aware coalescing needs -- null
+    /// degrades conservatively (no chapter boundary ever joins), same as
+    /// the frontier's own resolver.
+    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitnessDto> witnesses, Versification? canon)
     {
         var result = new List<RefsList.RefDescriptor>();
         foreach (var w in witnesses)
         {
-            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
+            // N-6: the ONE shared flattening (see FlattenWitness's own doc
+            // comment) -- never a second, drift-prone copy of it here.
+            var verses = PassageBlockBuilder.FlattenWitness(w);
             if (verses.Count == 0)
             {
                 continue;
             }
-            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true));
+            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon));
             result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
         }
         return result;

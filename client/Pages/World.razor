@@ -225,9 +225,12 @@
     [Parameter]
     public string? RefQuery { get; set; }
 
-    // EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared -- Explore/MapFocusHatch.cs's
-    // own doc comment has the full "why an additive query param, not a new
-    // ExplorationTarget case" story): non-null exactly when this /world
+    // EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
+    // one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds
+    // instance (fix round 2, Q-1/N-3) -- Explore/MapFocusHatch.cs's
+    // own doc comment has both the full "why an additive query param, not
+    // a new ExplorationTarget case" story and the genuine-conflict
+    // reasoning for why it is not formalized): non-null exactly when this /world
     // visit (standalone OR the split-pane ApplyExternalQuery hand-off
     // below) carries a place id to focus, alongside the time window --
     // read once, in SyncFromQuery/ApplyExternalQuery, and threaded through

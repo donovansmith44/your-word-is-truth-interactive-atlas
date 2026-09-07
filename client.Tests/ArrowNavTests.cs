@@ -22,6 +22,16 @@ public class ArrowNavTests
     private static VerseGroup Group(string book, int chapter, int count, params string[] verses) =>
         new(book, chapter, verses.ToList(), count);
 
+    // Fix round 2 (N-1): the real MAT/MRK chapter lengths
+    // (data/compiled/canon.json) -- what SelectRefsFromWitnesses's own
+    // versification-aware coalescing consults. Only the books these
+    // fixtures touch.
+    private static readonly Versification RealCanon = Versification.From(new[]
+    {
+        new BookTocEntry("MAT", "Matthew", new List<int> { 25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 27, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20 }),
+        new BookTocEntry("MRK", "Mark", new List<int> { 45, 28, 35, 41, 43, 56, 37, 38, 50, 52, 33, 44, 37, 72, 47, 20 }),
+    });
+
     [Fact]
     public void NullGroupsReturnsNoRefs()
     {
@@ -119,6 +129,23 @@ public class ArrowNavTests
         Assert.Empty(ArrowNav.SelectRefs(groups));
     }
 
+    // Fix round 2 (review Critical N-1, the fallback's own share of it):
+    // the REAL rob_peter_denies MRK group shape -- delivered [54, 66-72],
+    // Count=8, a REAL gap (verses 55-61 belong to a DIFFERENT event).
+    // The old first+Count-1 arithmetic rendered the fabricated envelope
+    // "MRK.14.54-61" (claiming another event's verses, dropping the
+    // delivered 62-72); the honest ref is the compound list.
+    [Fact]
+    public void SelectRefs_AGappedGroupRendersTheHonestCompoundRef_NeverAFabricatedEnvelope()
+    {
+        var delivered = new[] { "MRK.14.54" }.Concat(Enumerable.Range(66, 7).Select(n => $"MRK.14.{n}")).ToArray();
+        var groups = new List<VerseGroup> { Group("MRK", 14, 8, delivered) };
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Single(refs);
+        Assert.Equal("MRK.14.54, 66-72", refs[0].Ref);
+        Assert.Equal("MRK.14.54", Assert.IsType<VerseNode>(refs[0].Target).Title);
+    }
+
     // ACCT-SET-MISMATCH-1 (fix round 2, owner bug report, verbatim: "when i
     // see Jesus selects the twelve apostles after a night of prayer,
     // MRK.3.13-19 shows below the button, but when i press it theres a
@@ -140,7 +167,7 @@ public class ArrowNavTests
             new("MRK", new List<VerseGroup> { Group("MRK", 3, 7, "MRK.3.13", "MRK.3.14", "MRK.3.15", "MRK.3.16", "MRK.3.17", "MRK.3.18", "MRK.3.19") }),
         };
 
-        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses, RealCanon);
 
         Assert.Equal(2, refs.Count);
         Assert.Equal("LUK.6.12-16", refs[0].Ref); // LUK first -- the SAME server order `witnesses` was given in, never re-sorted
@@ -165,7 +192,7 @@ public class ArrowNavTests
             }),
         };
 
-        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses, RealCanon);
 
         Assert.Single(refs);
         Assert.Equal("MAT.5.1-7.29", refs[0].Ref);
@@ -180,7 +207,7 @@ public class ArrowNavTests
             new("LUK", new List<VerseGroup> { Group("LUK", 6, 1, "LUK.6.1") }),
         };
 
-        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses, RealCanon);
 
         Assert.Single(refs);
         Assert.Equal("LUK.6.1", refs[0].Ref);

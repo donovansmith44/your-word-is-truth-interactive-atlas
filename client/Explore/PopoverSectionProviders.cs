@@ -1637,19 +1637,44 @@ file static class WitnessUnitsResolver
 {
     public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitnessDto> witnesses)
     {
+        // Fix round 2 (N-1): the canon's own chapter lengths -- what lets
+        // BuildCoalescedBlock join a chapter boundary ONLY where genuinely
+        // contiguous (Versification's own doc comment has the whole story).
+        // api.Books() is the app-lifetime-memoized TOC (AsyncMemo) --
+        // effectively free after first touch anywhere in the app. Fail-soft
+        // to null: coalescing then degrades CONSERVATIVELY (no boundary
+        // ever joins -- honest compound rendering, never a guessed join).
+        // Note this is NOT the P5-retired Books() read (that one fetched
+        // display NAMES for a caption this list no longer renders); this
+        // one feeds span CORRECTNESS, a different fact entirely.
+        Versification? canon = null;
+        try
+        {
+            canon = Versification.From(await api.Books());
+        }
+        catch (Exception)
+        {
+            // conservative degrade, see above
+        }
+
         var units = witnesses.Select(w =>
         {
             // Batch HOTFIX-4 requirement 7: GroupCount carries each
             // VerseGroup's own TRUE total (server-side `take(20)` cap,
             // scene::verse_groups_for) so a truncated witness group shows
             // the "+N more" signal instead of silently ending at 20.
-            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
+            // Fix round 2 (N-6): flattening now lives in ONE place,
+            // PassageBlockBuilder.FlattenWitness -- shared with ArrowNav's
+            // own refs derivation so "one derivation, two render sites"
+            // (ACCT-SET-MISMATCH-1) is structural, not conventional.
+            var verses = PassageBlockBuilder.FlattenWitness(w);
             // ACCT-COALESCE-1: ONE witness (curated as ONE `[[witness]]`
-            // TOML row) is ALWAYS one account, even when its own
-            // VerseGroups span multiple chapters (a storage-syntax
-            // artifact, never separate accounts -- PassageSourceUnit's own
-            // CoalesceAcrossChapters doc comment has the full "why").
-            return new PassageSourceUnit(verses, CoalesceAcrossChapters: true);
+            // TOML row) is ALWAYS one account -- one unit, one block --
+            // though its REF may render as a compound list where the row's
+            // own verse ranges have real gaps (PassageSourceUnit's own
+            // CoalesceAcrossChapters doc comment has the corrected,
+            // fix-round-2 rule).
+            return new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon);
         }).ToList();
 
         // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
@@ -1687,11 +1712,12 @@ file static class WitnessUnitsResolver
                 var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
                 return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
                 // no Caption -- P5, see this class's own doc comment.
-                // ACCT-COALESCE-1: CoalesceAcrossChapters carried through
-                // from `u` (the FIRST construction, immediately above) --
-                // re-wrapping into a fresh PassageSourceUnit here must
-                // never silently drop it either.
-            }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters)).ToList();
+                // ACCT-COALESCE-1: CoalesceAcrossChapters (and, fix round
+                // 2, Canon) carried through from `u` (the FIRST
+                // construction, immediately above) -- re-wrapping into a
+                // fresh PassageSourceUnit here must never silently drop
+                // either.
+            }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters, Canon: u.Canon)).ToList();
     }
 }
 

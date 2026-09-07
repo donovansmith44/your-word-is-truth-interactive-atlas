@@ -74,18 +74,32 @@ public sealed record PassageListVerse(string Vref, string Text, int? GroupCount 
 /// deliberately never coalesce across a chapter boundary (two different
 /// xref targets that happen to land in adjacent chapters are two
 /// different pieces of context). <see cref="Explore.WitnessUnitsResolver"/>
-/// is the ONE place that sets this true -- an event witness's own
-/// multi-VerseGroup shape is ALWAYS one continuous account, by
-/// construction of the curation process itself, never a coincidence of
-/// storage. THE RULE (owner-dictated): "an account = a coalesced
-/// contiguous span per book/narrative locus... never per-storage-row."
-/// Two SEPARATE witness ROWS for the SAME book (a real, curated case --
-/// `psa_014`'s own Psalm 14 + Psalm 53 witnesses, "a second, distinct
-/// psalm recounting the same substance, not a copy of the same
-/// container") are two SEPARATE <see cref="PassageSourceUnit"/>s already
-/// (one per <c>EventWitnessDto</c>) and stay separate under this rule
-/// WITHOUT any gap-detection logic needed -- the curation-level boundary
-/// (one witness row = one account) already IS the correct boundary.
+/// is the ONE place that sets this true.
+///
+/// FIX ROUND 2 (review Critical N-1 -- a FALSE PREMISE corrected): fix
+/// round 1 licensed unconditional first-to-last coalescing on the claim
+/// that a witness's multi-VerseGroup shape "is ALWAYS one continuous
+/// account... never a coincidence of storage." The real corpus refutes
+/// that: 14 of the 35 multi-range curated `[[witness]]` rows
+/// (`data/curated/event-witnesses.toml`) are genuinely NON-contiguous
+/// (e.g. `rob_peter_denies`'s own `["MRK.14.54", "MRK.14.66-72"]`;
+/// `theo-188`'s own `["2KI.1.17", "2KI.8.16-24"]`), and 21 more
+/// `events-extra.toml` verse lists flow through the synthesized-witness
+/// path with real gaps too. THE COMPLETE RULE (the owner's, both halves):
+/// within one account (one witness row), adjacent ranges merge ONLY where
+/// genuinely contiguous -- versification-aware adjacency, chapter
+/// boundaries included (MAT.5.48 -&gt; MAT.6.1 joins because Matthew 5
+/// really has 48 verses, per <see cref="Canon"/>); where a real gap
+/// exists, the account stays ONE account (one block, one unit -- never
+/// fake separate accounts) but its ref renders as the honest COMPOUND
+/// list of its actual ranges (e.g. "MRK.14.54, 66-72") -- never a
+/// fabricated envelope span, never invented or dropped verses.
+/// <see cref="PassageBlockBuilder.BuildCoalescedBlock"/> implements this.
+/// Two SEPARATE witness ROWS for the SAME book (`psa_014`'s own Psalm 14 +
+/// Psalm 53 witnesses, "a second, distinct psalm recounting the same
+/// substance, not a copy of the same container") are two SEPARATE
+/// <see cref="PassageSourceUnit"/>s already (one per <c>EventWitnessDto</c>)
+/// and still never merge -- coalescing remains strictly within-unit.
 /// TODO(FQ-1): the server's own `compose_frontier` (the frontier-query
 /// contract batch) should inherit this coalescing rule at ITS OWN seam
 /// (an event witness's own account span belongs on the wire pre-coalesced,
@@ -93,7 +107,16 @@ public sealed record PassageListVerse(string Vref, string Text, int? GroupCount 
 /// disclosed interim seam per the controller's own fix-round instruction,
 /// not a permanent architectural home.
 /// </param>
-public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null, bool CoalesceAcrossChapters = false);
+/// <param name="Canon">
+/// Fix round 2 (N-1): the chapter-length lookup that decides whether a
+/// chapter-boundary crossing inside a coalesced unit is genuinely
+/// contiguous (see <see cref="Versification"/>'s own doc comment). Only
+/// consulted when <see cref="CoalesceAcrossChapters"/> is true; null (the
+/// default, and the degrade when the books TOC fetch fails) means NO
+/// chapter boundary is ever treated as contiguous -- the honest compound
+/// rendering, never a guessed join.
+/// </param>
+public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null, bool CoalesceAcrossChapters = false, Versification? Canon = null);
 
 /// <summary>
 /// One renderable passage/lone-verse block -- <see cref="PassageList.razor"/>'s
@@ -110,7 +133,17 @@ public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, s
 /// Computed once, by <see cref="PassageBlockBuilder.Build"/>, never by a
 /// per-caller flag.
 /// </param>
-public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption, int TruncatedBy = 0)
+/// <param name="FirstRangeEndVref">
+/// Fix round 2 (N-1, secondary symptom): the TRUE last vref of this
+/// block's own FIRST contiguous range -- set only by
+/// <see cref="PassageBlockBuilder.BuildCoalescedBlock"/> (null for every
+/// grouped block, whose first range IS the whole block). What
+/// <c>PassageList.razor</c>'s own <c>FocalToOf</c> highlights against, so
+/// expanding a gapped account (e.g. "MRK.14.54, 66-72") highlights only
+/// the verses the account's own first range actually contains -- never
+/// straight through a gap into verses that belong to a DIFFERENT event.
+/// </param>
+public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption, int TruncatedBy = 0, string? FirstRangeEndVref = null)
 {
     public bool IsPassage => Verses.Count >= 2;
     public string FirstVref => Verses[0].Vref;
@@ -286,57 +319,85 @@ public static class PassageBlockBuilder
         return blocks;
     }
 
-    /// ACCT-COALESCE-1: builds the ONE block a `CoalesceAcrossChapters`
-    /// unit renders as -- the full first-to-last span over EVERY verse in
-    /// the unit, regardless of chapter. PUBLIC (fix round 2,
-    /// ACCT-SET-MISMATCH-1): reused directly by
-    /// <see cref="Explore.ArrowNav"/>'s own refs-list resolver so the SET
-    /// and ORDER of refs shown under a prior/following button are computed
-    /// by the IDENTICAL coalescing logic the landed frontier's own
-    /// PARALLEL ACCOUNTS list uses -- one function, two render sites,
-    /// never two derivations that could silently disagree. Mirrors
-    /// <c>ArrowNav.ComputeTruncatedBy</c>'s own "flat, no block grouping of
-    /// its own" truncation math (same shape, same reasoning: sum, across
-    /// every DISTINCT (book,chapter) group actually present in this one
-    /// block, how many more verses that group's own server-side Count says
-    /// exist beyond what was delivered) rather than the per-chapter-block
-    /// check immediately above (which assumes one block == one chapter --
-    /// no longer true here by construction).
+    /// Fix round 2 (N-6, review Low): the ONE witness -&gt; verse-list
+    /// flattening both render surfaces share (`WitnessUnitsResolver` for
+    /// the landed frontier's PARALLEL ACCOUNTS, <see cref="Explore.ArrowNav"/>'s
+    /// own `SelectRefsFromWitnesses` for the refs under a prior/following
+    /// button) -- previously the identical one-liner written twice, which
+    /// left ACCT-SET-MISMATCH-1's "one derivation, two render sites"
+    /// guarantee conventional rather than structural (a future filter/sort
+    /// applied to one copy and not the other would silently re-open the
+    /// exact divergence that ticket exists to close). GroupCount carries
+    /// each VerseGroup's own TRUE total (HOTFIX-4's honest truncation
+    /// signal), exactly as both call sites always set it.
+    public static List<PassageListVerse> FlattenWitness(EventWitnessDto witness) =>
+        witness.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
+
+    /// One honest, genuinely-contiguous range of a coalesced account --
+    /// possibly crossing chapter boundaries (only where the canon's own
+    /// chapter lengths prove the crossing contiguous), never crossing a
+    /// real gap. First/Last verse numbers are TRUE extents (cap-corrected),
+    /// not merely delivered ones.
+    private sealed record AccountRange(string Book, int FirstChapter, int FirstVerse, int LastChapter, int LastVerse)
+    {
+        public string FirstVref => $"{Book}.{FirstChapter}.{FirstVerse}";
+        public string LastVref => $"{Book}.{LastChapter}.{LastVerse}";
+    }
+
+    /// A single-chapter contiguous run of a unit's delivered verses, with
+    /// its TRUE end (the wire-cap remainder folded in -- see TrueRunsOf).
+    private sealed record TrueRun(string Book, int Chapter, int FirstVerse, int LastVerse);
+
+    /// ACCT-COALESCE-1 (fix round 2, review Critical N-1 -- the COMPLETE
+    /// rule this time, both halves): builds the ONE block a
+    /// `CoalesceAcrossChapters` unit renders as. One unit (one witness row)
+    /// is always ONE account -- exactly one block -- but its SPAN is now
+    /// derived from the unit's own genuinely-contiguous ranges:
     ///
-    /// FIX ROUND 1 (real, live-caught bug, PERF-3's own "identity never
-    /// narrows" law): the block's own SPAN must reflect the TRUE end of
-    /// whichever chapter it lands in, never merely the last verse the
-    /// server's own 20-verse-per-chapter cap happened to deliver -- the
-    /// Sermon on the Mount's own real MAT witness ends in Matthew 7 (29
-    /// real verses, only 20 delivered on the wire), so
-    /// <c>unit.Verses[^1]</c> alone would silently narrow the account's
-    /// own honest identity to "MAT.5.1-7.20". The LAST distinct
-    /// (book,chapter) group's own TRUE last verse number is computed the
-    /// SAME way <see cref="Explore.ArrowNav.SelectRefs"/> already computes
-    /// an honest span for a single-group case: that chapter's own first
-    /// DELIVERED verse number + its own true Count - 1 (the server's cap
-    /// always keeps the LOWEST-numbered verses, so the FIRST delivered
-    /// verse of any group is always honest; only the LAST can ever be
-    /// short). The unit's own overall FIRST verse needs no such
-    /// correction for the identical reason.
+    ///   1. Delivered verses split into consecutive same-chapter runs
+    ///      (TrueRunsOf), each run's end corrected for the server's own
+    ///      20-verse-per-chapter cap (HOTFIX-4): the cap keeps the
+    ///      LOWEST-numbered verses of a group, so any undelivered
+    ///      remainder continues after the group's own LAST delivered verse
+    ///      -- the same "identity never narrows" (PERF-3) correction fix
+    ///      round 1 made, now applied per-run instead of assuming the
+    ///      whole group is one run (the assumption that produced
+    ///      `rob_peter_denies`'s own false "MRK.14.54-61", a span claiming
+    ///      verses that belong to a DIFFERENT event while dropping the
+    ///      delivered 62-72).
+    ///   2. Runs merge across a chapter boundary ONLY where the canon
+    ///      itself proves contiguity (unit.Canon -- prior run ends at its
+    ///      chapter's own true last verse AND the next starts at verse 1
+    ///      of the very next chapter): the Sermon on the Mount's own
+    ///      MAT.5.48 -&gt; 6.1 -&gt; 7.1 still coalesces to the one honest
+    ///      "MAT.5.1-7.29"; `theo-188`'s own 2KI.1.17 + 8.16-24 never
+    ///      welds into the fictional seven-chapter "2KI.1.17-8.24" again.
+    ///   3. Where a real gap remains, the span renders as the honest
+    ///      COMPOUND list of the account's actual ranges ("MRK.14.54,
+    ///      66-72") -- never a fabricated envelope, never invented or
+    ///      dropped verses. Span and <see cref="PassageBlockData.LastVref"/>
+    ///      agree by construction now: the final range always ends at (or
+    ///      cap-extends past) the last delivered verse.
+    ///
+    /// PUBLIC (ACCT-SET-MISMATCH-1): reused directly by
+    /// <see cref="Explore.ArrowNav"/> so the refs under a prior/following
+    /// button and the landed frontier's own PARALLEL ACCOUNTS are one
+    /// derivation, never two. Truncation stays the flat every-distinct-
+    /// chapter-group sum (mirrors <c>ArrowNav.ComputeTruncatedBy</c>).
     public static PassageBlockData BuildCoalescedBlock(PassageSourceUnit unit)
     {
-        var byGroup = new Dictionary<(string Book, int Chapter), (int Delivered, int? TrueCount, string FirstVref)>();
+        var ranges = StitchRuns(TrueRunsOf(unit.Verses), unit.Canon);
+        var span = AccountSpan(ranges);
+
+        // HOTFIX-4 requirement 7: honest truncation, summed across every
+        // distinct (book,chapter) group actually present in this unit.
+        var byGroup = new Dictionary<(string Book, int Chapter), (int Delivered, int? TrueCount)>();
         foreach (var v in unit.Verses)
         {
             var (book, chapter, _) = CanonRef.ParseVerse(v.Vref);
-            var key = (book, chapter);
-            var existing = byGroup.GetValueOrDefault(key, (0, null, v.Vref));
-            byGroup[key] = (existing.Delivered + 1, v.GroupCount ?? existing.TrueCount, existing.FirstVref);
+            var existing = byGroup.GetValueOrDefault((book, chapter), (0, null));
+            byGroup[(book, chapter)] = (existing.Delivered + 1, v.GroupCount ?? existing.TrueCount);
         }
-
-        var (lastBook, lastChapter, _) = CanonRef.ParseVerse(unit.Verses[^1].Vref);
-        var lastGroup = byGroup[(lastBook, lastChapter)];
-        var (_, _, lastGroupFirstVerseNum) = CanonRef.ParseVerse(lastGroup.FirstVref);
-        var trueLastCount = Math.Max(lastGroup.TrueCount ?? 0, lastGroup.Delivered);
-        var trueLastVref = $"{lastBook}.{lastChapter}.{lastGroupFirstVerseNum + trueLastCount - 1}";
-        var span = PassageGrouping.SpanRef(unit.Verses[0].Vref, trueLastVref);
-
         var truncatedBy = 0;
         foreach (var (_, entry) in byGroup)
         {
@@ -346,6 +407,145 @@ public static class PassageBlockBuilder
             }
         }
 
-        return new PassageBlockData(span, unit.Verses, unit.Caption, truncatedBy);
+        return new PassageBlockData(span, unit.Verses, unit.Caption, truncatedBy, ranges[0].LastVref);
+    }
+
+    /// Step 1 of BuildCoalescedBlock (see its doc comment): the unit's own
+    /// delivered verses as TRUE single-chapter runs, in delivered order.
+    /// Adjacency here is by LIST POSITION within each (book,chapter)
+    /// segment -- the same discipline PassageGrouping.Groups follows -- so
+    /// a gap the server actually delivered around (MRK.14.54 then
+    /// MRK.14.66) is a run boundary, never papered over.
+    private static List<TrueRun> TrueRunsOf(IReadOnlyList<PassageListVerse> verses)
+    {
+        var runs = new List<TrueRun>();
+        var i = 0;
+        while (i < verses.Count)
+        {
+            // One (book, chapter) segment: consecutive list entries sharing book+chapter.
+            var (book, chapter, _) = CanonRef.ParseVerse(verses[i].Vref);
+            int? trueCount = null;
+            var nums = new List<int>();
+            while (i < verses.Count)
+            {
+                var v = CanonRef.ParseVerse(verses[i].Vref);
+                if (v.Book != book || v.Chapter != chapter)
+                {
+                    break;
+                }
+                nums.Add(v.Verse);
+                trueCount = verses[i].GroupCount ?? trueCount;
+                i++;
+            }
+
+            var segmentRuns = new List<(int First, int Last)>();
+            var (runStart, runEnd) = (nums[0], nums[0]);
+            for (var k = 1; k < nums.Count; k++)
+            {
+                if (nums[k] == runEnd + 1)
+                {
+                    runEnd = nums[k];
+                    continue;
+                }
+                segmentRuns.Add((runStart, runEnd));
+                (runStart, runEnd) = (nums[k], nums[k]);
+            }
+            segmentRuns.Add((runStart, runEnd));
+
+            // Wire-cap correction (PERF-3, "identity never narrows"): the
+            // server's own take(20) keeps the LOWEST-numbered verses, so
+            // the undelivered remainder -- if any -- continues after the
+            // segment's own LAST delivered verse. (Where the true shape of
+            // that undelivered tail has further gaps, the wire genuinely
+            // cannot say; continuing the final run is the only honest math
+            // available and matches the delivered-portion evidence.)
+            var undelivered = Math.Max(0, (trueCount ?? nums.Count) - nums.Count);
+            if (undelivered > 0)
+            {
+                var last = segmentRuns[^1];
+                segmentRuns[^1] = (last.First, last.Last + undelivered);
+            }
+
+            runs.AddRange(segmentRuns.Select(r => new TrueRun(book, chapter, r.First, r.Last)));
+        }
+        return runs;
+    }
+
+    /// Step 2 of BuildCoalescedBlock: merge adjacent runs into ranges ONLY
+    /// where genuinely contiguous. A chapter boundary joins iff the canon
+    /// itself says the prior run ends at its chapter's own real last verse
+    /// and the next run opens the very next chapter at verse 1; an unknown
+    /// chapter length (canon null / book or chapter missing) NEVER joins --
+    /// the conservative, honest degrade (Versification's own doc comment).
+    private static List<AccountRange> StitchRuns(List<TrueRun> runs, Versification? canon)
+    {
+        var ranges = new List<AccountRange>();
+        AccountRange? current = null;
+        foreach (var run in runs)
+        {
+            if (current is not null && run.Book == current.Book)
+            {
+                var sameChapterAdjacent = run.Chapter == current.LastChapter && run.FirstVerse == current.LastVerse + 1;
+                var boundaryAdjacent = run.Chapter == current.LastChapter + 1 && run.FirstVerse == 1
+                    && canon?.VersesIn(run.Book, current.LastChapter) == current.LastVerse;
+                if (sameChapterAdjacent || boundaryAdjacent)
+                {
+                    current = current with { LastChapter = run.Chapter, LastVerse = run.LastVerse };
+                    continue;
+                }
+            }
+            if (current is not null)
+            {
+                ranges.Add(current);
+            }
+            current = new AccountRange(run.Book, run.Chapter, run.FirstVerse, run.Chapter, run.LastVerse);
+        }
+        if (current is not null)
+        {
+            ranges.Add(current);
+        }
+        return ranges;
+    }
+
+    /// Step 3 of BuildCoalescedBlock: the honest span text. One range keeps
+    /// the exact shapes PassageGrouping.SpanRef already renders; multiple
+    /// ranges render as a comma-joined compound list in Scripture's own
+    /// conventional abbreviation (each later range drops whatever context
+    /// -- book, then chapter -- it shares with the range before it):
+    /// "MRK.14.54, 66-72"; "2KI.1.17, 8.16-24"; "PSA.96.1-13, 105.1-15,
+    /// 106.1, 47-48". Never an envelope over a gap.
+    private static string AccountSpan(List<AccountRange> ranges)
+    {
+        var sb = new System.Text.StringBuilder();
+        AccountRange? prev = null;
+        foreach (var r in ranges)
+        {
+            if (prev is null)
+            {
+                sb.Append(PassageGrouping.SpanRef(r.FirstVref, r.LastVref));
+            }
+            else
+            {
+                sb.Append(", ");
+                if (r.Book != prev.Book)
+                {
+                    sb.Append(PassageGrouping.SpanRef(r.FirstVref, r.LastVref));
+                }
+                else if (r.FirstChapter != r.LastChapter)
+                {
+                    sb.Append($"{r.FirstChapter}.{r.FirstVerse}-{r.LastChapter}.{r.LastVerse}");
+                }
+                else if (r.FirstChapter == prev.LastChapter)
+                {
+                    sb.Append(r.FirstVerse == r.LastVerse ? $"{r.FirstVerse}" : $"{r.FirstVerse}-{r.LastVerse}");
+                }
+                else
+                {
+                    sb.Append(r.FirstVerse == r.LastVerse ? $"{r.FirstChapter}.{r.FirstVerse}" : $"{r.FirstChapter}.{r.FirstVerse}-{r.LastVerse}");
+                }
+            }
+            prev = r;
+        }
+        return sb.ToString();
     }
 }

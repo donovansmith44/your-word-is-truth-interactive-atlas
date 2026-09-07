@@ -424,10 +424,19 @@
     // (FirstVref/LastVref always same-chapter, by PassageGrouping.Groups's
     // own construction) is unaffected -- this branch is unreachable for
     // them.
+    //
+    // Fix round 2 (N-1, secondary symptom): the highlight bound is the
+    // block's own FIRST CONTIGUOUS RANGE's true end
+    // (PassageBlockData.FirstRangeEndVref, set by BuildCoalescedBlock),
+    // not the whole block's LastVref -- a gapped same-chapter account
+    // (ab_ur's own GEN.11.28 + 31) must highlight only the verses its own
+    // first range actually contains, never straight through the gap into
+    // verses that belong to something else. Null (every grouped block)
+    // falls back to LastVref -- byte-identical behavior for them.
     private static int FocalToOf(PassageBlockData b)
     {
         var first = CanonRef.ParseVerse(b.FirstVref);
-        var last = CanonRef.ParseVerse(b.LastVref);
+        var last = CanonRef.ParseVerse(b.FirstRangeEndVref ?? b.LastVref);
         return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
     }
 
