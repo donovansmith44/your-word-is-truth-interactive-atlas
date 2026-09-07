@@ -5479,6 +5479,59 @@ Notes:
   scrolls deep there -- see NAV-6's own updated comment; window,
   unchanged, in standalone).
 
+  NAV-STUTTER-2 AMENDMENT (2026-09-07, batch NAV-2, correcting the
+  paragraph immediately above -- owner REPEAT report, verbatim: "chapter
+  navigation buttons still stutter and reload on scroll"): "zero position
+  drift... zero DOM mutations... No additional STRUCTURAL fix was needed,"
+  above, is FALSE -- disproven by this batch's own diagnosis, not merely
+  superseded. NAV-STABLE-1's own methodology (rAF-timestamped position
+  sampling) is STRUCTURALLY BLIND to a real, second mechanism: reader.js's
+  watchChapterNavCenter writes `--chapter-nav-top` from a plain main-thread
+  `'scroll'` event handler, which Chromium's compositor thread always
+  scrolls and PAINTS ahead of (general browser architecture, not a bug this
+  app introduced) -- any `requestAnimationFrame` sample runs on the SAME
+  main thread, AFTER the SAME handler, so it can never observe the
+  intermediate, stale-position frame the compositor already painted first.
+  The browser's own official Layout Instability metric
+  (`PerformanceObserver({type:'layout-shift'})`, the same measure Web
+  Vitals' CLS score is built on) proved it concretely: a real, painted,
+  pixel-exact, scroll-delta-sized teleport of `reader-next`/`reader-prev`
+  on EVERY discrete scroll tick, 100% reproduction rate.
+
+  STANDALONE: FIXED. `.reader-page`'s own `contain: layout` (Batch H, needed
+  only for split-view's own pane confinement) is what forced the JS
+  compensation to exist in standalone at all -- it was unconditional before
+  this batch, scoped now to a new `.reader-page-split-scope` marker (added
+  only while `ctx.IsSplitOpen`, host OR guest). Standalone chrome
+  (`reader-prev`/`reader-next`, and incidentally `.passage-chip`/`.toast`,
+  which carried the identical latent bug) now resolves against the TRUE
+  viewport via the compositor -- zero JS, zero possible lag. Measured:
+  standalone CLS from the nav buttons alone dropped from ~0.109 (a real,
+  "needs improvement"-by-Web-Vitals'-own-threshold jitter over one 25-tick
+  scroll session) to ~0, over a controlled swap (the fix reverted, kept the
+  regression test -- FAILED; reapplied -- PASSED).
+
+  SPLIT (host-in-split AND guest-mounted): NOT FIXED, disclosed, OPEN --
+  tracked as NAV-SPLIT-CLS for a future batch. `contain: layout` is still
+  genuinely load-bearing there (LEFT/RIGHT pane confinement), so the same
+  main-thread-vs-compositor lag survives, measured at ~0.05-0.06 CLS
+  (host-in-split) over the identical 25-tick session -- a real, still-open
+  gap, not a hypothetical one. A full fix needs a genuinely separate,
+  non-scrolling containing-block ancestor for the nav markup (moving it
+  outside `.reader-page`'s own subtree while still confining LEFT/RIGHT to
+  the pane) -- real, larger restructuring of the shared
+  `.split-pane-reader`/`.split-pane-host`/`.split-pane-guest` contract four
+  hosts (Reader/Sources/Kretzmann/Concord) all rely on, out of NAV-2's own
+  bounded scope.
+
+  Kretzmann's OWN chapter nav (`.kretzmann-nav-button`) is unaffected by
+  either the original bug or this amendment -- plain in-flow markup, never
+  `position: fixed`, never JS-recomputed at all (Kretzmann.razor's own
+  header comment) -- structurally immune, proven directly by the new
+  `NAV-STUTTER-2` regression test (`tests/ux/reader.spec.ts`), not merely
+  asserted. See `batch-nav2-report.md` for the full instrumentation
+  numbers (all three diagnostic rounds) and the non-vacuity proof.
+
   SPLIT-SCROLL-1 (implemented this batch, owner order verbatim: "when i
   scroll through reader with world open beside world does not remain
   stable and i can scroll past the world window so that its totally out

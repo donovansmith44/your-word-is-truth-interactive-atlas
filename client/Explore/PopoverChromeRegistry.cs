@@ -77,8 +77,15 @@ public static class PopoverChromeRegistry
         // AT MOST the one "Show on /world"/"Show on the map" chip,
         // conditional on the underlying data actually carrying a
         // when/where to bracket (AuthorNode: WritePlace+WriteFrom/To;
-        // EventNode: When; PolityDeltaNode: unconditional, always has a
-        // window by construction) -- never MORE than one chip each.
+        // EventNode: When AND, per HATCH-DELIVERABLE-1 (batch NAV-2,
+        // 2026-09-07, the owner's own §4e law -- "an affordance that opens
+        // something empty is worse than no affordance at all"), at least
+        // one located place witness (Places.Count > 0) -- a bare When with
+        // zero Places (e.g. theo-1, "Creation of all things," a cosmic,
+        // non-geographic event) used to tease an empty /world scene; see
+        // EventNode.ExploreAsync's own header comment for the full trace;
+        // PolityDeltaNode: unconditional, always has a window by
+        // construction) -- never MORE than one chip each.
         ["Author"] = Exact("popover-chip-map"),
         ["Place"] = Exact("popover-chip-map"),
         ["TimeAndPlace"] = Exact("popover-chip-map"),
