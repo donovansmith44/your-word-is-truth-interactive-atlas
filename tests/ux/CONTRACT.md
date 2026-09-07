@@ -533,6 +533,137 @@ CHROME-UNIFORMITY-1 (the structural answer to the owner's "we're not
   registry's scope by design; declaring them once per Kind would be 14
   identical rows.
 
+## Batch EVT-3 (event semantics + the smart frontier, contract-first)
+
+Ticket 1 (the smart-frontier restructure) is IN PROGRESS -- an owner-ordered
+contract-design review found the skeleton (Contracts/Frontier.cs) SOUND-WITH-
+CHANGES; the provider-wiring half is HELD pending a revised contract and is
+NOT documented here yet. Tickets 2 and 3 below are unaffected and land in
+full.
+
+EVENT-ACCOUNTS-1 (owner verbatim: "since the same event can be accounted of
+  in the same place, that means that chronological traversal can return a
+  set of passages with each hop. events are keys that map to sets of
+  Biblical accounts."):
+  - RETIRES EV-1's own "always-visible primary-witness-verse" line (ref +
+    first-verse REAL TEXT, `event-chrono-{prior,following}-event-global-verse`,
+    `.popover-event-nav-verse`) under a Chronology block's own block-mode
+    arrow rows. REPLACED by `RefsList.razor`, ONE reusable component
+    rendering the adjacent event's own SET of account refs -- one per
+    `VerseGroup` (never just the first/"primary" one), NO verse contents
+    anywhere under the arrow. TESTIDS:
+    `{event-chrono-prior-event|event-chrono-following-event}-global-refs`
+    (the wrapper) and `...-refs-{REF}` (one button per ref, e.g.
+    `...-refs-MAT.8.1-4`), `.popover-refs-list`/`.popover-refs-list-item`
+    classes. Each ref's own `Ref` text is the group's HONEST full span
+    (computed from the group's own `Count`, never from however many verses
+    the 20-verse wire cap happened to deliver -- PERF-3's "identity never
+    narrows" law, extended to a refs-only surface); each ref's own click
+    target is a `VerseNode` at the group's own FIRST vref ("where it
+    points," the same identity CrossRefsSection's own `ExploreAsVerse`
+    already establishes for an analogous case) -- a genuine shortcut,
+    DISTINCT from the arrow's own whole-event traversal (`Commit`,
+    unchanged). The dwell peek (PEEK-1/PEEK-TRUNC-1) is COMPLETELY
+    UNCHANGED -- still the one place a hover reveals real passage text;
+    `ArrowNav.SelectPrimaryVerse` is RETIRED, replaced by
+    `ArrowNav.SelectRefs` (`List<RefsList.RefDescriptor>`,
+    `client.Tests/ArrowNavTests.cs`).
+  - RETIRES M-D1 requirement 3's own "SPAN-NOT-ECHO" rule for a
+    single-witness event's own LANDED frontier (`EventWitnessesSection`):
+    owner's later, more specific ruling ("i should see the passage, and it
+    should be explorable like everything else" -- not just ref +
+    read-whole-chapter) supersedes it. `SpanOnly` is gone from that
+    provider's own `PassageList` composition -- a single-witness event now
+    renders its own real, clamped (`StandardVerseClamp`), expandable
+    compact text, IDENTICAL treatment to a multi-witness entry. The
+    "PARALLEL ACCOUNTS" eyebrow heading stays conditional on `multi`
+    (unchanged) -- only the CONTENT underneath is unconditional now.
+  - TESTS: `tests/ux/event-timeline.spec.ts`'s own former `EV-1` describe
+    block is retargeted in place (RED-then-GREEN) onto the refs-list shape;
+    `tests/ux/popover-sections.spec.ts`'s own former `M-D1 req 3` single-
+    witness test is retargeted onto the real-text shape it now supersedes.
+
+EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
+  the 'event' frontier, I want Time: and Place: ... They're both explorable
+  elements. If i click on AD 31 i should see, laid out, chronologically,
+  the events that occurred in that year. If I click on the location, the
+  half screen map thing should pop up and be focused on the location I
+  selected at the time of the event we're looking at. so exploration of
+  places belonging to events is a function of that location and the
+  event's time, and it yields a side effect of the map opening with the
+  appropriate state."):
+  - `FrontierMetadataRow.razor`: ONE reusable component -- a small-caps
+    LABEL beside a caller-composed slot of explorable VALUE chips
+    (`.popover-frontier-metadata-row`/`.popover-frontier-metadata-label`/
+    `.popover-frontier-metadata-values`/`.popover-frontier-metadata-value`).
+    Not Event-only markup -- any kind bearing time/place composes it the
+    same way `EventDateAndPlacesSection` does. `EventDateAndPlacesSection`
+    now composes TWO rows in place of the retired plain `event-date`/
+    `event-places` markup: `event-time` (Label "Time:", one value,
+    `event-time-value`) and `event-place` (Label "Place:", one value PER
+    located place, `event-place-{placeId}` each -- unchanged testid from
+    the pre-EVT-3 shape). Place: is nested inside the `When` branch and
+    conditional on `Places.Count > 0` (NAV-2 law: no located place -> no
+    Place: row AT ALL).
+  - Time: click pushes `new YearNode(when)` -- YearNode's own NEW
+    event-time constructor (additive; the pre-EVT-3 place-date-claim
+    constructor is UNCHANGED, both coexist on the same `Kind == "Year"`).
+    `YearFrontierSection` (a new registry provider, `Kind == "Year"`) is
+    what gives EITHER YearNode mode a real `IPopoverSectionContext` to push
+    explorable rows through -- Chapter and Year are now the ONLY two kinds
+    that moved OFF the BodyAsync fallback path since Batch R (Book/Author/
+    TimeAndPlace remain BodyAsync-only). The event-time body
+    (`YearNode.ResolveChronologyAsync`) fetches `AtlasClient.SceneTime(from,to)`
+    for THAT year (the SAME fetch any ordinary time-windowed /world visit
+    already makes -- zero new endpoints) and lists every distinct dated
+    event across every lit place in it (deduped by id, sorted by label),
+    each row real and explorable (`year-chronology` wrapper,
+    `year-chronology-event-{id}` per row, `.popover-event-row.explorable`)
+    -- pushes a fresh `EventNode` on click, recursion falls out for free
+    (the SAME `AppliesTo`/registry machinery every other Event popover
+    uses).
+  - Place: click invokes the MAP-FOCUS-AT-TIME HATCH -- a §5-declared
+    hatch, ONE named site (`MapFocusHatch.Query(placeId, window)`,
+    `client/Explore/MapFocusHatch.cs`) building an ADDITIVE extension of
+    the EXISTING `ExplorationTarget.NavigateWorld` query shape
+    (`from=X&to=Y&place={id}`, escaped) -- no new `ExplorationTarget` case,
+    no new fetch (the window's own scene, already fetched by every
+    ordinary time-mode navigation, already carries every lit place's real
+    Lat/Lon). Reached via a NEW `IPopoverSectionContext.NavigateWorldAsync(query)`
+    member (`PopoverSections.cs`) -- the SAME "the split IS the atlas"
+    hand-off (`ExplorerPopover`'s own `Activate`/`NavigateWorld` case,
+    extracted into a shared `NavigateWorld` helper both paths call) a
+    chip already gives, reachable from inside a section's own body.
+    `Pages/World.razor` gained an additive `place=` query param
+    (`PlaceQuery`, `[SupplyParameterFromQuery(Name="place")]`) threaded
+    through `EnterTimeMode`/`RunTimeModeEffect`/`DebouncedLoadScene`'s own
+    new optional `focusPlaceId` parameter (every pre-existing call site
+    passes none, byte-for-byte unaffected) -- once that window's own scene
+    loads, the matching `ScenePlace` (by id) is panned to via
+    `MapInterop.PanToPlace`, OVERRIDING the ordinary FitScene-to-everything
+    camera. Deliverability (NAV-2 law) is the CALLER's own job -- the hatch
+    is only ever invoked for a place already present in `EventDetail.Places`
+    (itself only ever populated server-side for a witness located WITHIN
+    the event's own window, HATCH-DELIVERABLE-1's own established
+    guarantee) -- no re-derivation needed.
+  - NAMED FIXTURE ("The Last Visit To Nazareth"): `rob_last_nazareth_visit`
+    (`data/curated/events-extra.toml`) -- real compiled data, `AD 31` /
+    `Nazareth`, TWO real witnesses (MAT.13.54-58, MRK.6.1-6,
+    `data/curated/event-witnesses.toml`) -- verified against the real
+    corpus, not assumed from the owner's own illustrative example alone.
+  - TESTS: `tests/ux/event-timeplace.spec.ts` (new) -- the Nazareth fixture
+    walkthrough (real Time:/Place: values + explorability), Time: ->
+    `year-chronology` (the clicked event's own row present in its own
+    year's layout, itself explorable), Place: -> the map-focus-at-time
+    hatch with BOTH halves of state asserted (the split pane's own
+    `slider-readout` reflects the window; the live `map.js` module's own
+    real camera lat/lng lands on Nazareth's real coordinates -- the SAME
+    `readCamera`/`debugLiveInstanceIds` technique `split-view.spec.ts`
+    already establishes), and the NAV-2 deliverability negative (`theo-1`,
+    Creation -- Time: row present, Place: row absent, zero located places).
+    `client.Tests/MapFocusHatchTests.cs`/`YearNodeEventTimeTests.cs` pin
+    the pure query-building/constructor logic directly.
+
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,
   R1 — top-level tabs alongside Reader/World, on every page's chrome, same `.nav-link`

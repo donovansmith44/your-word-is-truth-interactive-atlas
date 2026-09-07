@@ -225,6 +225,20 @@
     [Parameter]
     public string? RefQuery { get; set; }
 
+    // EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared -- Explore/MapFocusHatch.cs's
+    // own doc comment has the full "why an additive query param, not a new
+    // ExplorationTarget case" story): non-null exactly when this /world
+    // visit (standalone OR the split-pane ApplyExternalQuery hand-off
+    // below) carries a place id to focus, alongside the time window --
+    // read once, in SyncFromQuery/ApplyExternalQuery, and threaded through
+    // EnterTimeMode/DebouncedLoadScene's own optional `focusPlaceId`
+    // parameter to pan the camera AFTER the window's own scene loads
+    // (that scene already carries the place's real Lat/Lon -- no second
+    // fetch).
+    [SupplyParameterFromQuery(Name = "place")]
+    [Parameter]
+    public string? PlaceQuery { get; set; }
+
     // Batch H (split-view study): true exactly when this instance is the
     // embedded ATLAS PANE of a split (always hosted by Reader.razor, per
     // this batch's own design -- see the report's layout section for why
@@ -1190,21 +1204,25 @@
 
     // Batch H: the time-mode counterpart to EnterScriptureMode above -- same
     // ST-2 dispatch-then-effect shape (R3).
-    private Task EnterTimeMode(int from, int to)
+    // EVT-3 Ticket 3: `focusPlaceId` is additive and optional -- every
+    // pre-existing call site (the picker, slider, era-click, mode-chip
+    // return) passes none and is byte-for-byte unaffected; only
+    // SyncFromQuery/ApplyExternalQuery's own `place=` parsing ever sets it.
+    private Task EnterTimeMode(int from, int to, string? focusPlaceId = null)
     {
         TimeWindowAtom.Dispatch(new SetTimeWindow(from, to));
-        return RunTimeModeEffect(from, to);
+        return RunTimeModeEffect(from, to, focusPlaceId);
     }
 
     // Batch ST-2: the actual time-mode EFFECT. Unlike scripture mode, no
     // extra polities call is needed here -- DebouncedLoadScene's own
     // LoadPolitiesFor already unconditionally restores SetPolitiesVisible(true)
     // before its fetch even starts (see that method's own doc comment).
-    private Task RunTimeModeEffect(int from, int to)
+    private Task RunTimeModeEffect(int from, int to, string? focusPlaceId = null)
     {
         SyncTimeWindowProjection();
         SyncViewState();
-        return DebouncedLoadScene(from, to);
+        return DebouncedLoadScene(from, to, focusPlaceId);
     }
 
     // Batch H (view-state round-trip): restores whatever the LAST live
@@ -1342,7 +1360,11 @@
         if (parts.TryGetValue("from", out var fromText) && parts.TryGetValue("to", out var toText)
             && int.TryParse(fromText, out var from) && int.TryParse(toText, out var to))
         {
-            await EnterTimeMode(from, to);
+            // EVT-3 Ticket 3: the map-focus-at-time hatch's own SPLIT-aware
+            // path -- MapFocusHatch.Query's own additive `place=` param,
+            // read here exactly like `from=`/`to=` already are.
+            parts.TryGetValue("place", out var placeId);
+            await EnterTimeMode(from, to, placeId);
         }
     }
 
@@ -1581,7 +1603,11 @@
             return;
         }
 
-        await EnterTimeMode(from, to);
+        // EVT-3 Ticket 3: a standalone `/world?from=&to=&place=` deep link
+        // (the map-focus-at-time hatch's own non-split fallback) honors
+        // PlaceQuery exactly like ApplyExternalQuery's own `place=` parsing
+        // below does.
+        await EnterTimeMode(from, to, PlaceQuery);
     }
 
     // Batch M requirement 3a: true for exactly the duration of an in-
@@ -1791,7 +1817,13 @@
     // coalesces a fast drag's own per-frame window changes (each still lands
     // well under 60ms apart) into one fetch, same coalescing behavior as
     // before, just a shorter wait before it fires.
-    private async Task DebouncedLoadScene(int from, int to)
+    // EVT-3 Ticket 3 (the map-focus-at-time hatch): `focusPlaceId` is
+    // additive/optional -- see EnterTimeMode's own doc comment. When set,
+    // this method pans/focuses the camera on that ONE place AFTER the
+    // window's own scene loads, overriding the ordinary FitScene-to-
+    // everything camera below (a focused Place: click wants the specific
+    // location centered, not the whole window's bounding box).
+    private async Task DebouncedLoadScene(int from, int to, string? focusPlaceId = null)
     {
         await JS.InvokeVoidAsync("performance.mark", "atlas:scene-start");
         _fetchCts?.Cancel();
@@ -1846,6 +1878,27 @@
                 {
                     await _mapInterop.FitScene();
                     _lastFitMode = "time";
+                }
+
+                // EVT-3 Ticket 3: the map-focus-at-time hatch's own actual
+                // camera side effect -- the owner's own words, "exploration
+                // of places belonging to events... yields a side effect of
+                // the map opening with the appropriate state." Looked up
+                // straight off THIS SAME already-fetched `scene` (real
+                // Lat/Lon, no second fetch) -- deliverability (NAV-2 law)
+                // is the CALLER's own job (MapFocusHatch.cs's own doc
+                // comment), so a place genuinely absent from this window's
+                // own scene (a defensive edge case, never reached via the
+                // declared hatch's own real call site) just leaves the
+                // ordinary FitScene camera above untouched -- fail soft,
+                // never an error toast over a cosmetic camera miss.
+                if (focusPlaceId is not null)
+                {
+                    var focusPlace = scene.Places.FirstOrDefault(p => p.Id == focusPlaceId);
+                    if (focusPlace is not null)
+                    {
+                        await _mapInterop.PanToPlace(focusPlace.Lat, focusPlace.Lon);
+                    }
                 }
             }
         }

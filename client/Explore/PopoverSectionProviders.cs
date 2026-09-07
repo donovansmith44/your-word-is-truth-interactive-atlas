@@ -181,6 +181,25 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
 }
 
 /// <summary>
+/// EVT-3 Ticket 3: the thin registry-facing provider for <see cref="YearNode"/>
+/// (Kind == "Year", body-only/core) -- delegates straight through to
+/// <see cref="YearNode.ResolveFrontierAsync"/>, where the actual
+/// mode-branching logic (chronological year layout vs. the pre-EVT-3
+/// place-date-claim body) lives, alongside the state that decides it.
+/// Registering this is what gives EITHER YearNode mode a real
+/// <see cref="IPopoverSectionContext"/> to push explorable rows through --
+/// the retired BodyAsync fallback path's signature never carried one (see
+/// YearNode.cs's own doc comments on both methods for the fuller story).
+/// </summary>
+public sealed class YearFrontierSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Year";
+
+    public Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx) =>
+        node is YearNode year ? year.ResolveFrontierAsync(api, ctx) : Task.FromResult<PopoverSection?>(null);
+}
+
+/// <summary>
 /// Batch R requirement 3(a)/4: the verse/passage's OWN text, with the
 /// expand-into-a-scrollable-mini-reader affordance requirement 4 asks for.
 /// Applies to Verse and Passage nodes; resolves the (book, chapter, focal
@@ -1468,6 +1487,23 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             return null; // conditional presence: nothing this section can honestly show
         }
 
+        // EVT-3 Ticket 3 (owner verbatim, EVENT-TIMEPLACE-1: "At the top,
+        // right below the header of the 'event' frontier, I want Time: and
+        // Place: ... They're both explorable elements."): both rows go
+        // through the SAME reusable FrontierMetadataRow component (the
+        // owner's own composability bar -- "any kind bearing them composes
+        // them," not Event-only markup). Time: click -> that YEAR's own
+        // chronology (YearNode's new event-time constructor,
+        // YearFrontierSection); Place: click -> the map-focus-at-time
+        // hatch (MapFocusHatch.Query, IPopoverSectionContext.NavigateWorldAsync)
+        // -- "exploration of places belonging to events is a function of
+        // that location and the event's time... a side effect of the map
+        // opening with the appropriate state," the owner's own words,
+        // verbatim. Nested INSIDE the `When` branch: Place: is
+        // structurally reachable only when When is too (EventDetail.cs's
+        // own doc comment -- a general-kind passage's own Places is always
+        // empty by construction), so `when` is captured once here for the
+        // Place: row's own map-hatch query, never re-derived.
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -1475,35 +1511,54 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             if (detail.When is { } when)
             {
                 var dateText = YearText.FormatRange(when.FromYear, when.ToYear);
-                builder.OpenElement(seq++, "p");
-                builder.AddAttribute(seq++, "class", "popover-meta event-date-line");
-                builder.AddAttribute(seq++, "data-testid", "event-date");
-                if (detail.RefNote is { } refNote)
+                builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
+                builder.AddAttribute(seq++, "Label", "Time:");
+                builder.AddAttribute(seq++, "TestId", "event-time");
+                builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
                 {
-                    builder.AddAttribute(seq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
-                }
-                builder.AddContent(seq++, dateText);
-                builder.CloseElement();
-            }
+                    var vseq = 0;
+                    valueBuilder.OpenElement(vseq++, "button");
+                    valueBuilder.AddAttribute(vseq++, "type", "button");
+                    valueBuilder.AddAttribute(vseq++, "class", "popover-frontier-metadata-value explorable");
+                    valueBuilder.AddAttribute(vseq++, "data-testid", "event-time-value");
+                    if (detail.RefNote is { } refNote)
+                    {
+                        valueBuilder.AddAttribute(vseq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
+                    }
+                    valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when))));
+                    valueBuilder.AddContent(vseq++, dateText);
+                    valueBuilder.CloseElement();
+                }));
+                builder.CloseComponent();
 
-            if (detail.Places.Count > 0)
-            {
-                builder.OpenElement(seq++, "div");
-                builder.AddAttribute(seq++, "class", "popover-event-places");
-                builder.AddAttribute(seq++, "data-testid", "event-places");
-                foreach (var p in detail.Places)
+                // NAV-2 law (deliverability): no located place -> no
+                // Place: row link AT ALL -- conditional presence, not a
+                // quiet/disabled state (HATCH-DELIVERABLE-1's own §4e
+                // ruling, applied here identically).
+                if (detail.Places.Count > 0)
                 {
-                    var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
-                    var placeName = p.Name;
-                    builder.OpenElement(seq++, "button");
-                    builder.AddAttribute(seq++, "type", "button");
-                    builder.AddAttribute(seq++, "class", "popover-event-place explorable");
-                    builder.AddAttribute(seq++, "data-testid", $"event-place-{placeId}");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new PlaceNode(placeId, placeName))));
-                    builder.AddContent(seq++, placeName);
-                    builder.CloseElement();
+                    builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
+                    builder.AddAttribute(seq++, "Label", "Place:");
+                    builder.AddAttribute(seq++, "TestId", "event-place");
+                    builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
+                    {
+                        var vseq = 0;
+                        foreach (var p in detail.Places)
+                        {
+                            var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                            var placeName = p.Name;
+                            var query = MapFocusHatch.Query(placeId, when);
+                            valueBuilder.OpenElement(vseq++, "button");
+                            valueBuilder.AddAttribute(vseq++, "type", "button");
+                            valueBuilder.AddAttribute(vseq++, "class", "popover-frontier-metadata-value explorable");
+                            valueBuilder.AddAttribute(vseq++, "data-testid", $"event-place-{placeId}");
+                            valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.NavigateWorldAsync(query)));
+                            valueBuilder.AddContent(vseq++, placeName);
+                            valueBuilder.CloseElement();
+                        }
+                    }));
+                    builder.CloseComponent();
                 }
-                builder.CloseElement();
             }
         };
         return new PopoverSection("event-date-places", body);

@@ -987,6 +987,37 @@
     // the injected singleton (Program.cs, M-D2), never a new instance.
     public IExplorableClient Graph => GraphClient;
 
+    // EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared): the SAME
+    // "the split IS the atlas" NavigateWorld hand-off an Exploration chip
+    // already gives (Activate's own case, below) -- extracted so a section
+    // provider can reach it too, via IPopoverSectionContext.NavigateWorldAsync,
+    // without duplicating this branch's own InSplit/OnNavigateWorldInSplit
+    // logic a second time.
+    private async Task NavigateWorld(string query)
+    {
+        await RequestClose();
+        // Batch H: "the split IS the atlas" -- while a split is
+        // showing, a chip that would otherwise open a SECOND full
+        // /world instead hands its exact query (a scripture ref or a
+        // from/to window, unescaped from ExplorationTarget's own
+        // ready-to-append shape) to whichever pane is already
+        // showing the atlas, in place. InSplit false (every
+        // standalone page) keeps today's behavior byte-for-byte.
+        if (InSplit && OnNavigateWorldInSplit.HasDelegate)
+        {
+            await OnNavigateWorldInSplit.InvokeAsync(query);
+        }
+        else
+        {
+            Nav.NavigateTo($"/world?{query}");
+        }
+    }
+
+    // EVT-3 Ticket 3: IPopoverSectionContext's own concrete backing for the
+    // map-focus-at-time hatch -- see that interface member's own doc
+    // comment.
+    public Task NavigateWorldAsync(string query) => NavigateWorld(query);
+
     private async Task Activate(Exploration ex)
     {
         switch (ex.Target)
@@ -997,22 +1028,7 @@
                 break;
 
             case ExplorationTarget.NavigateWorld world:
-                await RequestClose();
-                // Batch H: "the split IS the atlas" -- while a split is
-                // showing, a chip that would otherwise open a SECOND full
-                // /world instead hands its exact query (a scripture ref or a
-                // from/to window, unescaped from ExplorationTarget's own
-                // ready-to-append shape) to whichever pane is already
-                // showing the atlas, in place. InSplit false (every
-                // standalone page) keeps today's behavior byte-for-byte.
-                if (InSplit && OnNavigateWorldInSplit.HasDelegate)
-                {
-                    await OnNavigateWorldInSplit.InvokeAsync(world.Query);
-                }
-                else
-                {
-                    Nav.NavigateTo($"/world?{world.Query}");
-                }
+                await NavigateWorld(world.Query);
                 break;
 
             case ExplorationTarget.NavigateReader reader:

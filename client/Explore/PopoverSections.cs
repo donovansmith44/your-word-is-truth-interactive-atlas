@@ -86,6 +86,26 @@ public interface IPopoverSectionContext
     /// IExplorableClient</c>.
     /// </summary>
     IExplorableClient Graph { get; }
+
+    /// <summary>
+    /// EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared: kind +
+    /// {place, window} params, per the composability rulings): the SAME
+    /// NavigateWorld continuation an <see cref="Exploration"/> chip already
+    /// gives (<c>ExplorerPopover</c>'s own Activate/NavigateWorld case,
+    /// "the split IS the atlas" hand-off included -- see that file's own
+    /// comment), reachable from inside a section's own body instead of
+    /// only from the chips row -- so a Place: row's own explorable value
+    /// (<see cref="Explore.EventDateAndPlacesSection"/>) can invoke the
+    /// SAME §5-declared hatch a chip would, without <c>ExplorerPopover</c>
+    /// growing a bespoke callback per provider (mirrors
+    /// <see cref="PushAsync"/>'s own "one interface method, every provider
+    /// reaches it the same way" shape). <paramref name="query"/> is the
+    /// EXACT same ready-to-append query-string shape
+    /// <see cref="ExplorationTarget.NavigateWorld"/> already carries (see
+    /// <see cref="MapFocusHatch"/> for the ONE declared site that builds a
+    /// {place, window}-carrying query).
+    /// </summary>
+    Task NavigateWorldAsync(string query);
 }
 
 /// <summary>
@@ -149,10 +169,11 @@ public interface IPopoverSectionProvider
 /// comment on why) -- moot for CATECHISM nodes regardless, since
 /// <c>CatechismNode.ExploreAsync</c> offers no chips at all (no geography).
 ///
-/// A node kind no provider here claims at all (Chapter/Book/Author/
-/// TimeAndPlace/Year) falls back to that node's own <c>BodyAsync</c> --
-/// ExplorerPopover's pre-Batch-R rendering path, untouched -- so none of
-/// those five kinds' popovers change shape from this batch.
+/// A node kind no provider here claims at all falls back to that node's
+/// own <c>BodyAsync</c> -- ExplorerPopover's pre-Batch-R rendering path,
+/// untouched. As of Batch M-D3/EVT-3, Chapter and Year both moved OFF this
+/// fallback (ChapterCardSection/YearFrontierSection below) -- Book/Author/
+/// TimeAndPlace are the remaining kinds still reached this way today.
 ///
 /// Batch N ("narratives as first-class graph structure") originally added
 /// two providers to VERSE's own list plus a NarrativeEvent traversal target
@@ -227,6 +248,13 @@ public static class PopoverSectionRegistry
         // is the FIRST node kind alphabetically among this file's own
         // section headers, not because order matters here.
         (new ChapterCardSection(), 0),
+        // EVT-3 Ticket 3: YearNode's own registry-facing body (see
+        // YearFrontierSection's own doc comment) -- a brand-new provider
+        // for a PRE-EXISTING node kind (Kind == "Year", previously
+        // BodyAsync-fallback only), so its own Order has no effect
+        // relative to any other provider below (no other AppliesTo ever
+        // matches Kind == "Year").
+        (new YearFrontierSection(), 5),
 
         // FRONTIER-ORDER-1's own ruled VERSE/PASSAGE sequence -- Verse
         // (focus, unconditional whenever the graph has text) / Event
