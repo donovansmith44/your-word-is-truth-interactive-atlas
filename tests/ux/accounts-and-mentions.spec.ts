@@ -172,7 +172,7 @@ test('ATTEST-1 (L4, owner report 1): Matthew\'s leper is its own event, joined t
   // one of this event's parallel accounts.
   await expect(
     parallels.getByTestId('event-analogues-mat_leper_healed'),
-    'Matthew's leper must not appear inside the PARALLEL ACCOUNTS section -- that WAS the defect'
+    "Matthew's leper must not appear inside the PARALLEL ACCOUNTS section -- that WAS the defect"
   ).toHaveCount(0);
   await expect(parallels.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
   const parallelRefs = await parallels.getByTestId(/^event-witness/).count();
