@@ -419,14 +419,36 @@ else
         }
         try
         {
-            var detail = await Atlas.Event(capturedId);
-            // Fix round 2 (N-1): the canon's chapter lengths, for
-            // versification-aware coalescing (Versification's own doc
-            // comment) -- Atlas.Books() is the app-lifetime-memoized TOC,
-            // effectively free after first touch. A failure here throws
-            // into the same catch below: the fallback derivation stands,
-            // never a wrongly-joined span.
-            var canon = Versification.From(await Atlas.Books());
+            // Fix round 3 (review NEW-3, Low): both fetches START before
+            // either is awaited -- the house's own "independent fetches
+            // never serialize" rule (round 2 had serialized the memoized
+            // Books() behind the Event fetch: one avoidable round trip on
+            // a cold TOC, on the PERF-3 frontier path).
+            var detailTask = Atlas.Event(capturedId);
+            var booksTask = Atlas.Books();
+            var detail = await detailTask;
+            // Fix round 2 (N-1) + round 3 (NEW-3): the canon's chapter
+            // lengths, for versification-aware coalescing (Versification's
+            // own doc comment). A Books() failure now degrades to
+            // Canon: null in ITS OWN catch -- the IDENTICAL conservative
+            // degrade WitnessUnitsResolver applies on the landed frontier
+            // -- instead of aborting to the per-group fallback, which left
+            // the refs under the arrow showing a DIFFERENT shape than the
+            // frontier (per-chapter entries vs one compound account) for
+            // as long as the TOC stayed unreachable: a permanent
+            // violation of ACCT-SET-MISMATCH-1's one-source law, in
+            // exactly the degraded condition where nobody would suspect
+            // it. Both surfaces now disagree with each other in NO canon
+            // outcome.
+            Versification? canon = null;
+            try
+            {
+                canon = Versification.From(await booksTask);
+            }
+            catch (Exception)
+            {
+                // conservative degrade, identical to the frontier's own
+            }
             if (_lastAdjacentId != capturedId)
             {
                 return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result

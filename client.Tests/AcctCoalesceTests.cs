@@ -13,8 +13,10 @@ namespace BibleAtlas.Client.Tests;
 // FIX ROUND 2 (review Critical N-1): the round-1 suite proved only the
 // CONTIGUOUS half of the rule -- every fixture was gapless within its
 // unit, which is exactly why 340/340 green proved nothing about the false
-// spans the real corpus was rendering (14 of 35 multi-range curated
-// witness rows are genuinely NON-contiguous). The fixtures below now
+// spans the real corpus was rendering (15 of 35 multi-range curated
+// witness rows are genuinely NON-contiguous -- corrected from "14" in fix
+// round 3, review NEW-4: the recount adds rob_paschal_meal_begins's own
+// LUK row). The fixtures below now
 // include the review's own worked failure cases, mirroring the REAL
 // curated rows byte-for-byte (data/curated/event-witnesses.toml):
 // rob_peter_denies (gap INSIDE one chapter -- the worst case, where the
@@ -151,8 +153,11 @@ public class AcctCoalesceTests
         // (event-witnesses.toml:2300-2302, ["PSA.96.1-13", "PSA.105.1-15",
         // "PSA.106.1", "PSA.106.47-48"]): the exact psalm fragments
         // 1 Chronicles 16 quotes, an honest curated subset. Round 1
-        // rendered "PSA.96.1-106.48" -- ELEVEN whole psalms welded into
-        // one "account". Wire shape: three VerseGroups -- (PSA,96) 13
+        // rendered "PSA.96.1-106.3" (corrected in fix round 3, review
+        // NEW-4: the round-1 arithmetic was lastGroupFirstVerse + Count -
+        // 1 = 106.3, not the previously-quoted "106.48"; either way a
+        // fabricated envelope welding eleven psalms into one "account").
+        // Wire shape: three VerseGroups -- (PSA,96) 13
         // verses, (PSA,105) 15 verses, (PSA,106) the 3 verses 1/47/48
         // (Count=3 -- the WITNESS's own total in that chapter, never the
         // chapter's).
@@ -294,20 +299,101 @@ public class AcctCoalesceTests
     [Fact]
     public void WireCapRemainder_ExtendsTheLastRunAfterTheGap_NeverTheFirst()
     {
-        // Cap + gap together: a group delivering [54, 66..77] (13 verses)
-        // whose true Count is 19 -- the server's take(20)-ascending cap
+        // Cap + gap together: a group delivering [1, 30..42] (14 verses)
+        // whose true Count is 20 -- the server's take(20)-ascending cap
         // always keeps the LOWEST-numbered verses, so the 6 undelivered
-        // verses continue after the LAST delivered one (78-83), never
-        // after the first run's own 54.
-        var verses = new List<PassageListVerse> { V("MRK.14.54", 19) };
-        verses.AddRange(Enumerable.Range(66, 12).Select(n => V($"MRK.14.{n}", 19)));
+        // verses continue after the LAST delivered one (43-48), never
+        // after the first run's own verse 1. CORRECTED in fix round 3
+        // (review NEW-2): the round-2 version of this fixture extended
+        // past Mark 14's own real end (66-83 in a 72-verse chapter) and
+        // PINNED that invented-verse output as correct -- worse than no
+        // fixture. This one stays within the chapter (48 <= 72); the
+        // clamp itself is asserted by the next test.
+        var verses = new List<PassageListVerse> { V("MRK.14.1", 20) };
+        verses.AddRange(Enumerable.Range(30, 13).Select(n => V($"MRK.14.{n}", 20)));
         var unit = new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: RealCanon);
 
         var blocks = PassageBlockBuilder.Build(new[] { unit });
 
         Assert.Single(blocks);
-        Assert.Equal("MRK.14.54, 66-83", blocks[0].Span);
+        Assert.Equal("MRK.14.1, 30-48", blocks[0].Span);
         Assert.Equal(6, blocks[0].TruncatedBy);
+    }
+
+    [Fact]
+    public void WireCapRemainder_IsClampedToTheChaptersRealEnd_NeverInventingVerses()
+    {
+        // Fix round 3 (review NEW-2, Low -- the ONE remaining step that
+        // could invent verses): a Count that arithmetically overruns the
+        // chapter (only possible when the delivered portion is gapped AND
+        // capped -- zero live cases in the corpus today, per the round-2
+        // review's own 1212-derivation scan) must stop at the chapter's
+        // own real end. Delivered [54, 60..71] (13 verses), Count=19 --
+        // unclamped math says the last run ends at 71 + 6 = 77, but Mark
+        // 14 has 72 verses (RealCanon): the span must end at 72, never
+        // name 73-77. The honest cap disclosure (TruncatedBy) is
+        // unaffected -- the +N-more signal still fires.
+        var verses = new List<PassageListVerse> { V("MRK.14.54", 19) };
+        verses.AddRange(Enumerable.Range(60, 12).Select(n => V($"MRK.14.{n}", 19)));
+        var unit = new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: RealCanon);
+
+        var blocks = PassageBlockBuilder.Build(new[] { unit });
+
+        Assert.Single(blocks);
+        Assert.Equal("MRK.14.54, 60-72", blocks[0].Span);
+        Assert.Equal(6, blocks[0].TruncatedBy);
+    }
+
+    [Fact]
+    public void ExploreSref_IsTheFirstContiguousRun_AlwaysAParserSafeSingleChapterShape()
+    {
+        // Fix round 3 (review NEW-1, Moderate): a coalesced account's own
+        // DISPLAY span can be compound/cross-chapter, but its exploration
+        // sref must be something the server's ScriptureRef::parse accepts
+        // (BOOK.CH.V / BOOK.CH.V1-V2) -- pushing the display span verbatim
+        // 400'd /api/xrefs + /api/catechism and silently deleted the
+        // Cross References / Small Catechism sections for 167 of 1212
+        // real accounts. The exploration sref is the account's own FIRST
+        // contiguous same-chapter run, with ExploreVerseCount bounding
+        // the pushed node's text to that run's delivered verses.
+        var parserSafe = new System.Text.RegularExpressions.Regex(@"^[A-Z0-9]{3}\.\d+\.\d+(-\d+)?$");
+
+        // rob_peter_denies: compound span, one-verse first run.
+        var peter = new List<PassageListVerse> { V("MRK.14.54", 8) };
+        peter.AddRange(Enumerable.Range(66, 7).Select(n => V($"MRK.14.{n}", 8)));
+        var peterBlock = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(peter, CoalesceAcrossChapters: true, Canon: RealCanon));
+        Assert.Equal("MRK.14.54", peterBlock.ExploreSref);
+        Assert.Equal(1, peterBlock.ExploreVerseCount); // -> VerseNode, the run's own cardinality rule
+        Assert.Matches(parserSafe, peterBlock.ExploreSref!);
+
+        // The Sermon: cross-chapter CONTIGUOUS span (also unparseable!) --
+        // explores by its first chapter's own run, true-cap-corrected.
+        var sermon = new List<PassageListVerse>();
+        sermon.AddRange(Enumerable.Range(1, 20).Select(n => V($"MAT.5.{n}", 48))); // capped: 20 of 48 delivered
+        sermon.AddRange(Enumerable.Range(1, 20).Select(n => V($"MAT.6.{n}", 34)));
+        sermon.AddRange(Enumerable.Range(1, 20).Select(n => V($"MAT.7.{n}", 29)));
+        var sermonBlock = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(sermon, CoalesceAcrossChapters: true, Canon: RealCanon));
+        Assert.Equal("MAT.5.1-7.29", sermonBlock.Span);
+        Assert.Equal("MAT.5.1-48", sermonBlock.ExploreSref);
+        Assert.Equal(20, sermonBlock.ExploreVerseCount); // text bounded to chapter 5's own DELIVERED verses
+        Assert.Matches(parserSafe, sermonBlock.ExploreSref!);
+
+        // A single-chapter contiguous account: ExploreSref == Span and the
+        // count covers every verse -- click behavior byte-identical to
+        // before this round.
+        var luk = Enumerable.Range(17, 33).Select(n => V($"LUK.6.{n}", 33)).ToList();
+        var lukBlock = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(luk, CoalesceAcrossChapters: true, Canon: RealCanon));
+        Assert.Equal(lukBlock.Span, lukBlock.ExploreSref);
+        Assert.Equal(lukBlock.Verses.Count, lukBlock.ExploreVerseCount);
+        Assert.Matches(parserSafe, lukBlock.ExploreSref!);
+
+        // theo-188: compound with a one-verse first run in ANOTHER chapter
+        // than the bulk -- still the first run, still parseable.
+        var theo = new List<PassageListVerse> { V("2KI.1.17", 1) };
+        theo.AddRange(Enumerable.Range(16, 9).Select(n => V($"2KI.8.{n}", 9)));
+        var theoBlock = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(theo, CoalesceAcrossChapters: true, Canon: RealCanon));
+        Assert.Equal("2KI.1.17", theoBlock.ExploreSref);
+        Assert.Matches(parserSafe, theoBlock.ExploreSref!);
     }
 
     [Fact]

@@ -80,7 +80,9 @@ public sealed record PassageListVerse(string Vref, string Text, int? GroupCount 
 /// round 1 licensed unconditional first-to-last coalescing on the claim
 /// that a witness's multi-VerseGroup shape "is ALWAYS one continuous
 /// account... never a coincidence of storage." The real corpus refutes
-/// that: 14 of the 35 multi-range curated `[[witness]]` rows
+/// that: 15 of the 35 multi-range curated `[[witness]]` rows (corrected
+/// from "14" in fix round 3, review NEW-4 -- the round-2 reviewer's own
+/// corpus recount adds `rob_paschal_meal_begins`'s LUK row)
 /// (`data/curated/event-witnesses.toml`) are genuinely NON-contiguous
 /// (e.g. `rob_peter_denies`'s own `["MRK.14.54", "MRK.14.66-72"]`;
 /// `theo-188`'s own `["2KI.1.17", "2KI.8.16-24"]`), and 21 more
@@ -143,7 +145,28 @@ public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, s
 /// the verses the account's own first range actually contains -- never
 /// straight through a gap into verses that belong to a DIFFERENT event.
 /// </param>
-public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption, int TruncatedBy = 0, string? FirstRangeEndVref = null)
+/// <param name="ExploreSref">
+/// Fix round 3 (review NEW-1, Moderate): a PARSER-SAFE sref for exploring
+/// this block -- set only by <see cref="PassageBlockBuilder.BuildCoalescedBlock"/>
+/// (null for every grouped block, whose <see cref="Span"/> is already a
+/// parseable single-chapter shape). A coalesced account's own Span can be
+/// a compound ("MRK.14.54, 66-72") or cross-chapter ("MAT.5.1-7.29")
+/// label, and the server's `ScriptureRef::parse` accepts ONLY
+/// `BOOK | BOOK.CH | BOOK.CH.V | BOOK.CH.V1-V2` -- pushing the Span
+/// verbatim as a PassageNode sref made `GET /api/xrefs/{sref}` /
+/// `GET /api/catechism/{sref}` 400 and the Cross References / Small
+/// Catechism sections SILENTLY vanish for 167 of 1212 real accounts
+/// (fail-loud violated; 148 of them were already broken by round 1's
+/// cross-chapter envelopes, undetected until this round's review). This
+/// field carries the account's own FIRST contiguous same-chapter RUN
+/// (e.g. "MAT.5.1-48"; a bare "MRK.14.54" for a one-verse run) --
+/// parseable by construction -- so navigation works while the DISPLAYED
+/// ref stays the honest compound Span. <see cref="ExploreVerseCount"/> is
+/// that run's own delivered-verse count, so the pushed node's text never
+/// claims verses beyond the sref it is keyed by. For a single-chapter
+/// contiguous account this equals Span exactly -- behavior unchanged.
+/// </param>
+public sealed record PassageBlockData(string Span, IReadOnlyList<PassageListVerse> Verses, string? Caption, int TruncatedBy = 0, string? FirstRangeEndVref = null, string? ExploreSref = null, int ExploreVerseCount = 0)
 {
     public bool IsPassage => Verses.Count >= 2;
     public string FirstVref => Verses[0].Vref;
@@ -345,8 +368,11 @@ public static class PassageBlockBuilder
     }
 
     /// A single-chapter contiguous run of a unit's delivered verses, with
-    /// its TRUE end (the wire-cap remainder folded in -- see TrueRunsOf).
-    private sealed record TrueRun(string Book, int Chapter, int FirstVerse, int LastVerse);
+    /// its TRUE end (the wire-cap remainder folded in, canon-clamped -- see
+    /// TrueRunsOf) and its own DELIVERED verse count (fix round 3, NEW-1:
+    /// what bounds the exploration node's text to the verses its sref
+    /// actually names).
+    private sealed record TrueRun(string Book, int Chapter, int FirstVerse, int LastVerse, int Delivered);
 
     /// ACCT-COALESCE-1 (fix round 2, review Critical N-1 -- the COMPLETE
     /// rule this time, both halves): builds the ONE block a
@@ -384,10 +410,32 @@ public static class PassageBlockBuilder
     /// button and the landed frontier's own PARALLEL ACCOUNTS are one
     /// derivation, never two. Truncation stays the flat every-distinct-
     /// chapter-group sum (mirrors <c>ArrowNav.ComputeTruncatedBy</c>).
+    ///
+    /// ORDERING PRECONDITION (fix round 3, NEW-2's doc gap): `unit.Verses`
+    /// is expected in the server's own wire order -- groups sorted by
+    /// (book, chapter), verses ascending within a group
+    /// (`scene::verse_groups_for` sorts before capping, so every live
+    /// caller satisfies this by construction; the one out-of-order curated
+    /// row, `1ki_queen_of_sheba`, is normalized server-side). On
+    /// hypothetically unsorted input the span stays non-fabricating
+    /// (delivered verses only ever start runs) but the wire-cap remainder
+    /// would extend the wrong run -- do not feed this hand-built,
+    /// unsorted lists.
     public static PassageBlockData BuildCoalescedBlock(PassageSourceUnit unit)
     {
-        var ranges = StitchRuns(TrueRunsOf(unit.Verses), unit.Canon);
+        var runs = TrueRunsOf(unit.Verses, unit.Canon);
+        var ranges = StitchRuns(runs, unit.Canon);
         var span = AccountSpan(ranges);
+
+        // Fix round 3 (NEW-1): the parser-safe exploration sref -- the
+        // account's own FIRST contiguous same-chapter run, always a
+        // `BOOK.CH.V` / `BOOK.CH.V1-V2` shape (`ScriptureRef::parse`'s
+        // accepted verse forms), never the compound/cross-chapter display
+        // Span. See PassageBlockData.ExploreSref's own doc comment.
+        var firstRun = runs[0];
+        var exploreSref = PassageGrouping.SpanRef(
+            $"{firstRun.Book}.{firstRun.Chapter}.{firstRun.FirstVerse}",
+            $"{firstRun.Book}.{firstRun.Chapter}.{firstRun.LastVerse}");
 
         // HOTFIX-4 requirement 7: honest truncation, summed across every
         // distinct (book,chapter) group actually present in this unit.
@@ -407,7 +455,7 @@ public static class PassageBlockBuilder
             }
         }
 
-        return new PassageBlockData(span, unit.Verses, unit.Caption, truncatedBy, ranges[0].LastVref);
+        return new PassageBlockData(span, unit.Verses, unit.Caption, truncatedBy, ranges[0].LastVref, exploreSref, firstRun.Delivered);
     }
 
     /// Step 1 of BuildCoalescedBlock (see its doc comment): the unit's own
@@ -416,7 +464,7 @@ public static class PassageBlockBuilder
     /// segment -- the same discipline PassageGrouping.Groups follows -- so
     /// a gap the server actually delivered around (MRK.14.54 then
     /// MRK.14.66) is a run boundary, never papered over.
-    private static List<TrueRun> TrueRunsOf(IReadOnlyList<PassageListVerse> verses)
+    private static List<TrueRun> TrueRunsOf(IReadOnlyList<PassageListVerse> verses, Versification? canon)
     {
         var runs = new List<TrueRun>();
         var i = 0;
@@ -438,35 +486,55 @@ public static class PassageBlockBuilder
                 i++;
             }
 
-            var segmentRuns = new List<(int First, int Last)>();
-            var (runStart, runEnd) = (nums[0], nums[0]);
+            var segmentRuns = new List<(int First, int Last, int Delivered)>();
+            var (runStart, runEnd, runCount) = (nums[0], nums[0], 1);
             for (var k = 1; k < nums.Count; k++)
             {
                 if (nums[k] == runEnd + 1)
                 {
                     runEnd = nums[k];
+                    runCount++;
                     continue;
                 }
-                segmentRuns.Add((runStart, runEnd));
-                (runStart, runEnd) = (nums[k], nums[k]);
+                segmentRuns.Add((runStart, runEnd, runCount));
+                (runStart, runEnd, runCount) = (nums[k], nums[k], 1);
             }
-            segmentRuns.Add((runStart, runEnd));
+            segmentRuns.Add((runStart, runEnd, runCount));
 
             // Wire-cap correction (PERF-3, "identity never narrows"): the
             // server's own take(20) keeps the LOWEST-numbered verses, so
             // the undelivered remainder -- if any -- continues after the
             // segment's own LAST delivered verse. (Where the true shape of
             // that undelivered tail has further gaps, the wire genuinely
-            // cannot say; continuing the final run is the only honest math
-            // available and matches the delivered-portion evidence.)
+            // cannot say; continuing the final run is the best available
+            // math and matches the delivered-portion evidence.)
+            //
+            // Fix round 3 (review NEW-2, Low -- the ONE remaining step
+            // that could invent verses): the extension is now CLAMPED to
+            // the chapter's own real length, with the same Versification
+            // conservatism StitchRuns already applies to boundaries. A
+            // Count that arithmetically overruns the chapter (only
+            // possible when the delivered portion is gapped AND capped --
+            // zero live cases today, per the round-2 review's own
+            // 1212-derivation scan, but the old math would have named
+            // verses that DO NOT EXIST, e.g. "MRK.14.66-83" in a
+            // 72-verse chapter) now stops at the chapter's end. Unknown
+            // canon leaves the extension unclamped -- the pre-existing
+            // disclosed limit, not a new guess. Never clamped below the
+            // last DELIVERED verse: delivered verses are real.
             var undelivered = Math.Max(0, (trueCount ?? nums.Count) - nums.Count);
             if (undelivered > 0)
             {
                 var last = segmentRuns[^1];
-                segmentRuns[^1] = (last.First, last.Last + undelivered);
+                var extendedEnd = last.Last + undelivered;
+                if (canon?.VersesIn(book, chapter) is int chapterLen && extendedEnd > chapterLen)
+                {
+                    extendedEnd = Math.Max(chapterLen, last.Last);
+                }
+                segmentRuns[^1] = (last.First, extendedEnd, last.Delivered);
             }
 
-            runs.AddRange(segmentRuns.Select(r => new TrueRun(book, chapter, r.First, r.Last)));
+            runs.AddRange(segmentRuns.Select(r => new TrueRun(book, chapter, r.First, r.Last, r.Delivered)));
         }
         return runs;
     }

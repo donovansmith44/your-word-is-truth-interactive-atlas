@@ -440,22 +440,48 @@
         return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
     }
 
-    private Task Explore(PassageBlockData block)
+    // Fix round 3 (review NEW-1, Moderate -- silent section loss): the ONE
+    // place a clicked block becomes an explorable node, for BOTH click
+    // paths below. A coalesced account's own Span can be a compound
+    // ("MRK.14.54, 66-72") or cross-chapter ("MAT.5.1-7.29") label that
+    // the server's ScriptureRef::parse REJECTS -- pushing it verbatim as a
+    // PassageNode sref made /api/xrefs/{sref} + /api/catechism/{sref} 400
+    // and the Cross References / Small Catechism sections silently vanish
+    // (167 of 1212 real accounts; PassageBlockData.ExploreSref's doc
+    // comment has the full story). Such a block now explores by its own
+    // FIRST contiguous same-chapter run -- parser-safe by construction --
+    // with the pushed node's text bounded to that run's own delivered
+    // verses (ExploreVerseCount), so the node never claims text beyond
+    // the sref it is keyed by. The DISPLAYED ref stays the honest
+    // compound Span, untouched. Grouped blocks (ExploreSref null) and
+    // single-chapter contiguous accounts (ExploreSref == Span,
+    // ExploreVerseCount == Verses.Count) behave byte-identically to
+    // before. A one-verse run degrades to a VerseNode -- the same
+    // "IsPassage" cardinality rule as ever, applied to the run.
+    private IExplorable ExploreNodeOf(PassageBlockData block)
     {
-        IExplorable node = block.IsPassage && !ExploreAsVerse
+        if (block.ExploreSref is string sref)
+        {
+            var runVerses = block.ExploreVerseCount >= block.Verses.Count
+                ? block.Verses
+                : block.Verses.Take(block.ExploreVerseCount).ToList();
+            return runVerses.Count >= 2 && !ExploreAsVerse
+                ? new PassageNode(sref, string.Join(" ", runVerses.Select(v => v.Text)))
+                : new VerseNode(block.FirstVref);
+        }
+        return block.IsPassage && !ExploreAsVerse
             ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
             : new VerseNode(block.FirstVref);
-        return OnExplore.InvokeAsync(node);
     }
+
+    private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(ExploreNodeOf(block));
 
     // G2-m2: Ctrl/Cmd-click branches to OnToggleSelect instead of OnExplore
     // -- same node, same VerseNode/PassageNode identity choice above, only
     // the destination differs (mirrors VerseLine.razor's own OnRowClick).
     private Task OnEntryClick(MouseEventArgs e, PassageBlockData block)
     {
-        IExplorable node = block.IsPassage && !ExploreAsVerse
-            ? new PassageNode(block.Span, string.Join(" ", block.Verses.Select(v => v.Text)))
-            : new VerseNode(block.FirstVref);
+        var node = ExploreNodeOf(block);
         return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
     }
 
