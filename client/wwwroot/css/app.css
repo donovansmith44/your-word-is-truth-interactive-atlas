@@ -140,8 +140,21 @@
        bigger, more readable letters than it is in its current state"): the
        ONE type-scale token TitledPassageEntry.razor's own title reads --
        changing it app-wide (every catechism-frontier THE SCRIPTURES title,
-       and any future titled-passage-entry consumer) is this ONE line. */
-    --passage-title-size: 1.15rem;
+       and any future titled-passage-entry consumer) is this ONE line.
+       Batch UX-2 (CAT-SIZE-COLOR, owner order, verbatim: "the words on the
+       catechism are a little bit too large"): stepped DOWN one size,
+       1.15rem -> 1.05rem -- the SAME value this popover's own
+       .popover-verse-text (:4749 below) sits one step under, matching
+       this file's own established .05rem scale ladder in this exact
+       neighborhood (.popover-title 1.15/1.2rem > .popover-verse-text
+       1.1rem > .popover-passage-title 1.05rem, this change > .popover-
+       passage-text .95rem > .catechism-section-heading .85rem) -- reads
+       as a genuine, coherent step down, not an arbitrary shrink, and
+       still clears .popover-passage-text's own .95rem body-copy size by
+       a comfortable margin (CAT-SCRIPT-1's own "still a real heading"
+       requirement holds). Still the ONE knob -- unchanged consumer
+       (:4858 below), unchanged app-wide reach. */
+    --passage-title-size: 1.05rem;
 }
 
 *, *::before, *::after {
@@ -4850,14 +4863,33 @@ input:focus-visible,
 /* The TITLE half -- bigger and more readable than the retired italic
    caption (--passage-title-size, :root above, is the ONE knob for this).
    Serif (matches this app's own body-copy register, not the ref's mono
-   instrument-readout treatment), regular ink (not --ink-soft) and a
-   heavier weight -- both the owner's own "more readable" ask and enough
-   visual weight to read as a real heading rather than a meta-note. */
+   instrument-readout treatment), and a heavier weight -- both the owner's
+   own "more readable" ask and enough visual weight to read as a real
+   heading rather than a meta-note.
+   Batch UX-2 (CAT-SIZE-COLOR, owner order, verbatim: "they should be a
+   nicer color"): --ink (plain body ink) swapped for --bronze-ink, this
+   app's own established warm accent for popover heading-register text --
+   NOT a new color, the SAME token .catechism-section-heading (the "THE
+   SMALL CATECHISM" eyebrow directly above this same title, :5015 area)
+   already uses, so the title now reads as a coherent step IN that
+   heading's own warm register rather than a flat-ink outlier beside it.
+   Contrast (this token's own :root comment, line ~47, already measures
+   and documents this): 7.26:1 on --parchment (the Reader column) / 7.85:1
+   on --parchment-raised (every popover's own ground, including this one)
+   -- clears the 7:1 floor on both of this app's two real surfaces (no
+   dark/night theme exists here -- see this file's own header block,
+   line ~60, "confirmed: this app carries no dark/night theme anywhere").
+   --ink-soft was NOT used here -- that token is reserved for genuinely
+   de-emphasized/meta text (.popover-passage-clamp-mark immediately
+   below) and measures under this popover's own established 7:1 floor
+   for heading-weight text (same reasoning .hamburger-empty's own comment,
+   line ~5937, already gives for picking --bronze-ink over --ink-soft
+   elsewhere in this file). */
 .popover-passage-title {
     font-family: var(--font-serif);
     font-size: var(--passage-title-size);
     font-weight: 600;
-    color: var(--ink);
+    color: var(--bronze-ink);
     text-align: start;
 }
 
