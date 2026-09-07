@@ -134,13 +134,16 @@ fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     let file_len = std::fs::metadata(&tmp).map(|m| m.len()).unwrap_or(0);
 
     // THE TIMED LOAD (controller decision 6): read bytes -> decode ->
-    // to_graph -> build_indexes -> add_justified_by -- exactly what
-    // `atlas-server`'s own startup performs when loading from an artifact.
+    // to_graph -> build_indexes -> add_justified_by -> the NODE-1 derived
+    // container edges -- exactly what `atlas-server`'s own startup
+    // performs when loading from an artifact (`GraphService::from_artifact`
+    // runs the same trio in this order).
     let load_start = Instant::now();
     let loaded_dump = atlas_graph::artifact::read_file(&tmp).expect("reading the artifact file must succeed");
     let (mut loaded_graph, _loaded_stats, _loaded_ews, _loaded_chronology) = atlas_graph::artifact::to_service_parts(loaded_dump).expect("to_service_parts must succeed");
     loaded_graph.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut loaded_graph);
+    atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut loaded_graph);
     let load_elapsed = load_start.elapsed();
 
     let _ = std::fs::remove_file(&tmp);

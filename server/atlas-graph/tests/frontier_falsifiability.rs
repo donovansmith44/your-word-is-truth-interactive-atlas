@@ -12,18 +12,21 @@
 //! `real_graph()` pattern `kretzmann_adapter_real_data.rs` already
 //! established.
 //!
-//! ONE capability -- `Members` (`Contains`-forward, the Chapter/Book
-//! NODE-1 target state) -- is gated `#[ignore]` with a `TODO(NODE-1)`:
-//! `graph.contains_bible` is guarded EMPTY by `artifact.rs` today (it
-//! refuses to ship a nonempty `contains_bible` until the artifact format
-//! is extended to serialize it), so this capability's row-level
-//! falsifiability genuinely cannot pass yet -- not a decorative cell, an
-//! honestly-labeled future one. Every other capability's relation was
-//! checked and has real rows in the committed data (see the sweep below);
-//! `Succession` in particular was verified non-decorative here (owner
-//! ruling (f): "check Succession's row count and gate honestly if
-//! zero") -- it is NOT zero (curated-narrative chains,
-//! `event_world::populate_nodes_and_direct_rows`).
+//! Batch NODE-1 UN-GATED the one `#[ignore]` this file shipped with:
+//! `Members` (`Contains`-forward, Chapter/Book) now has real rows --
+//! `bible_container_adapter` mints the 66 book + 1,189 chapter `Container`
+//! nodes and the chapter->verses Bible-corpus `Contains` rows, and
+//! `artifact.rs` serializes `contains_bible` (FORMAT_VERSION 11) -- so
+//! `Members` is folded back into the live sweep below, exactly per the
+//! un-gate instructions the ignored test's own doc comment carried.
+//! Every other capability's relation was checked at FQ-0 and has real
+//! rows in the committed data (see the sweep below); `Succession` in
+//! particular was verified non-decorative here (owner ruling (f): "check
+//! Succession's row count and gate honestly if zero") -- it is NOT zero
+//! (curated-narrative chains, `event_world::populate_nodes_and_direct_
+//! rows`), and NODE-1's own chapter/book prev/next chains are DERIVED
+//! index entries over the same relation (see `bible_container_adapter::
+//! add_derived_membership_and_succession`'s own doc comment).
 
 use std::path::Path;
 
@@ -101,17 +104,15 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
 }
 
 /// THE FALSIFIABILITY TEST (design review B1, owner ruling (f)): every
-/// relation named by any `Capability::edges()` cell -- except `Members`,
-/// gated below -- must have at least one row in the real compiled graph.
+/// relation named by any `Capability::edges()` cell -- `Members`
+/// included, since NODE-1 -- must have at least one row in the real
+/// compiled graph.
 #[test]
-fn every_capability_except_members_has_real_rows_in_the_compiled_artifact() {
+fn every_capability_has_real_rows_in_the_compiled_artifact() {
     use atlas_graph_types::frontier::Capability;
 
     let graph = real_graph();
     for cap in Capability::ALL {
-        if matches!(cap, Capability::Members) {
-            continue; // TODO(NODE-1): see `members_capability_awaits_bible_contains_rows_from_node_1` below.
-        }
         for edge in cap.edges() {
             let n = relation_row_count(graph, edge.kind);
             assert!(
@@ -126,27 +127,20 @@ fn every_capability_except_members_has_real_rows_in_the_compiled_artifact() {
     }
 }
 
-/// TODO(NODE-1): `Capability::Members` (`Contains`-forward, the
-/// Chapter/Book NODE-1 target state -- owner ruling, `progress.md`
-/// 2026-09-07) has zero rows today. `graph.contains_bible` is guarded
-/// EMPTY by `artifact.rs` (it refuses to ship a nonempty `contains_bible`
-/// until the artifact format is extended to serialize it) -- so this
-/// isn't a data gap, it's a load-bearing guard rail this batch must not
-/// route around. When NODE-1 lands real `Container` nodes + Bible-corpus
-/// `Contains` rows: (1) remove the `#[ignore]` below, (2) flip this
-/// assertion from `== 0` to `> 0`, (3) fold `Members` back into
-/// `every_capability_except_members_has_real_rows_in_the_compiled_artifact`
-/// above by deleting its `continue` arm.
+/// NODE-1 (un-gated per this test's own former TODO(NODE-1) doc comment,
+/// steps 1-3 executed): `Capability::Members` (`Contains`-forward,
+/// Chapter/Book) now has real rows -- `bible_container_adapter::normalize`
+/// emits one chapter->verses `Contains<BibleTag>` row per chapter (1,189
+/// over the real canon), and `artifact.rs` serializes `contains_bible`
+/// instead of guarding it empty (FORMAT_VERSION 11).
 #[test]
-#[ignore = "TODO(NODE-1): Members (Contains-forward, Chapter/Book) awaits real Bible-corpus Contains rows; contains_bible is guarded empty until then (artifact.rs)"]
-fn members_capability_awaits_bible_contains_rows_from_node_1() {
+fn members_capability_has_real_bible_contains_rows_since_node_1() {
     let graph = real_graph();
-    assert_eq!(
-        graph.contains_bible.len(),
-        0,
-        "if this fails, something upstream of NODE-1 has started producing Bible-corpus \
-         Contains rows -- un-ignore this test's own header instructions and wire Members back \
-         into the live falsifiability sweep"
+    assert!(
+        graph.contains_bible.len() > 0,
+        "NODE-1's own Bible-corpus Contains rows are missing from the compiled graph -- \
+         Capability::Members would be as decorative as the original Parallel cell; re-gate it \
+         honestly if this ever regresses to zero"
     );
 }
 
@@ -154,12 +148,13 @@ fn members_capability_awaits_bible_contains_rows_from_node_1() {
 /// Succession's row count and gate honestly if zero"): it is NOT zero --
 /// curated-narrative chains with real legs produce real rows
 /// (`event_world::populate_nodes_and_direct_rows`), independent of
-/// NODE-1. `Chronology`'s row-level falsifiability for Verse/Event is
-/// live today; only the CHAPTER/BOOK-specific use of this same relation
-/// (prev/next chapter navigation) awaits NODE-1's own chapter-keyed
-/// chain data -- that narrower claim is not what this relation-level
-/// sweep asserts, and is called out here so the gap is documented, not
-/// silently assumed closed.
+/// NODE-1. The CHAPTER/BOOK-specific use of this same relation (prev/next
+/// chapter navigation) landed with NODE-1 as DERIVED index entries, not
+/// rows (`Succession`'s own row type chains `Vec<EventId>` -- see
+/// `bible_container_adapter::add_derived_membership_and_succession`'s doc
+/// comment), so THIS row-level pin still counts only the narrative
+/// chains; the chapter/book chains are covered by
+/// `tests/bible_containers_real_data.rs`'s own edge-level assertions.
 #[test]
 fn succession_has_real_rows_today_independent_of_node_1() {
     let graph = real_graph();

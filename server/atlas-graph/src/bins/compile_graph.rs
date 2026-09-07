@@ -235,12 +235,19 @@ fn main() -> Result<()> {
         Some(&red_letter_corpus),
     )
     .context("building the independent model graph")?;
+    // NODE-1: `add_derived_membership_and_succession` is paired with
+    // `add_justified_by` at every build_indexes site (that call rebuilds
+    // `graph.indexes` from the row tables from scratch, wiping any derived
+    // entries) -- all three admission rebuilds in this binary get it, so
+    // every compared model carries the identical derived container edges.
     graph_b.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_b);
+    atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut graph_b);
 
     let mut graph_a_indexed = graph_a;
     graph_a_indexed.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_a_indexed);
+    atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut graph_a_indexed);
 
     let admit_start = Instant::now();
     atlas_graph_types::store::assert_answers_match(&graph_a_indexed, &graph_b);
@@ -254,6 +261,7 @@ fn main() -> Result<()> {
     let (mut reconstructed, ..) = atlas_graph::artifact::to_service_parts(redecoded).map_err(|e| anyhow::anyhow!("{e}"))?;
     reconstructed.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut reconstructed);
+    atlas_graph::bible_container_adapter::add_derived_membership_and_succession(&mut reconstructed);
     atlas_graph_types::store::assert_answers_match(&reconstructed, &graph_b);
     println!("atlas-graph-compile: ADMISSION passed for the encoded bytes themselves (round-trip, not just the pre-dump graph)");
 

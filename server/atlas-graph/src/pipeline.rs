@@ -310,6 +310,14 @@ impl Pass for NormalizePass {
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::kjv_adapter::normalize(ctx).context("normalizing the KJV canon/verses into TextUnit nodes")?;
+        // NODE-1: book/chapter Container nodes + the Bible-corpus
+        // `Contains` rows (chapter -> its verses) -- reads only the SAME
+        // canon/verse map kjv_adapter::normalize just walked (no other
+        // pass's output), the SAME NORMALIZE-eligibility reasoning as
+        // every sibling call here. Ordered right after kjv_adapter for
+        // narrative sense (containers over the text units just minted),
+        // not out of data dependency.
+        crate::bible_container_adapter::normalize(ctx).context("normalizing the canon into book/chapter Container nodes + Contains rows")?;
         // CORP-1a: MUST run immediately after kjv_adapter::normalize --
         // this call mutates the very TextUnit nodes the line above just
         // inserted (module doc comment on brainfuel_adapter.rs), a real,
@@ -437,6 +445,15 @@ impl Pass for IndexPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         ctx.graph.build_indexes();
         ctx.justified_by_count = crate::event_world::add_justified_by(&mut ctx.graph);
+        // NODE-1: the derived container edges (book -> chapter membership;
+        // chapter/book Succession chains) -- the SAME post-index,
+        // public-primitives-only step class `add_justified_by` immediately
+        // above established, and called at every site that calls THAT
+        // (build_indexes rebuilds `graph.indexes` from the row tables from
+        // scratch, so this must re-run after every rebuild). See
+        // `bible_container_adapter::add_derived_membership_and_succession`'s
+        // own doc comment for why these are derived, not authored rows.
+        crate::bible_container_adapter::add_derived_membership_and_succession(&mut ctx.graph);
         Ok(())
     }
 }

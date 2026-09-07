@@ -29,6 +29,7 @@
 //! disclosed as a strangler deviation, not a quiet one.
 
 pub mod artifact;
+pub mod bible_container_adapter;
 pub mod brainfuel_adapter;
 pub mod build;
 pub mod catechism_adapter;

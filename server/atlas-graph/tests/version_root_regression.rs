@@ -346,4 +346,12 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // `ab_ur` event). Real, deliberate place-graph content change -- the root
 // moving IS the fix landing for real. New captured value:
 // "dd104abbf34d68b6".
-const EXPECTED_VERSION_HEX: &str = "dd104abbf34d68b6";
+//
+// MOVED AGAIN (Batch NODE-1, 2026-09-07, books and chapters become
+// nodes): `bible_container_adapter` mints 1,255 new Container nodes (66
+// books + 1,189 chapters, owner order "chapters and books are nodes") --
+// the root hashes every node's id+payload, so 1,255 new nodes move it by
+// design. Real, deliberate graph content change -- the root moving IS
+// the owner's ruling landing as data. New captured value:
+// "0f247549951a8f42".
+const EXPECTED_VERSION_HEX: &str = "0f247549951a8f42";

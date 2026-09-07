@@ -28,20 +28,21 @@
 //! round-tripping in isolation (see `tests` below) -- the tradeoff this
 //! batch makes on purpose, documented here rather than silently.
 //!
-//! SCOPE, disclosed: `Graph`'s `contains_bible`/`quotes`/`confesses`/
-//! `corresponds_bible` tables are ALWAYS EMPTY as of this batch (no
-//! adapter populates Bible-Container/Quotes/Confesses/Corresponds rows
-//! anywhere in this codebase -- confirmed by reading every adapter
-//! fresh). `dump` asserts each is empty and returns a loud, named error if
-//! not, rather than silently discarding real data a future batch might
-//! add without updating this module -- "everything fail-loud," not a
-//! silent drop. Batch CORP-2a CLOSES the `contains_concord` member of that
-//! set: `concord_adapter.rs` is the first real caller of `Contains<
+//! SCOPE, disclosed: `Graph`'s `quotes`/`confesses`/`corresponds_bible`
+//! tables are ALWAYS EMPTY as of this batch (no adapter populates
+//! Quotes/Confesses/Corresponds rows anywhere in this codebase --
+//! confirmed by reading every adapter fresh). `dump` asserts each is
+//! empty and returns a loud, named error if not, rather than silently
+//! discarding real data a future batch might add without updating this
+//! module -- "everything fail-loud," not a silent drop. Batch CORP-2a
+//! CLOSED the `contains_concord` member of the original guarded set:
+//! `concord_adapter.rs` was the first real caller of `Contains<
 //! ConcordTag>` in this codebase, so `DtoContains`/`concord_locus_to_dto`
-//! below are real, tested, serialized content now -- not the placeholder
-//! this doc comment (and the crate's own "no real caller yet" note,
-//! previously living where `concord_locus_to_dto` is defined below) used
-//! to describe.
+//! below are real, tested, serialized content -- not the placeholder this
+//! doc comment used to describe. Batch NODE-1 closes `contains_bible` the
+//! same way: `bible_container_adapter.rs` is the first real caller of
+//! `Contains<BibleTag>` (chapter -> its verses), riding the SAME
+//! `DtoContains` shape through `bible_locus_to_dto`.
 
 use std::collections::BTreeMap;
 
@@ -732,10 +733,16 @@ pub struct ArtifactDump {
     /// EDGE-1a: `graph.typology`'s own row table -- see `DtoTypology`'s own
     /// doc comment.
     typology: Vec<DtoTypology>,
+    /// NODE-1: `graph.contains_bible`'s own row table (chapter -> its
+    /// verses; ~1,189 rows / ~31,102 loci over the real canon) -- the SAME
+    /// `DtoContains` shape `contains_concord` below already rides, with
+    /// `bible_locus_to_dto` narrowing instead of `concord_locus_to_dto`.
+    /// The TWELFTH member of the original guarded set (`dump`'s own doc
+    /// comment) to close, on the same schedule as every prior data batch.
+    contains_bible: Vec<DtoContains>,
     /// CORP-2a: `graph.contains_concord`'s own row table -- see
     /// `DtoContains`'s own doc comment. The FIRST populated `Contains<C>`
-    /// table in this codebase (`contains_bible` stays empty/guarded,
-    /// this batch's own scope note above).
+    /// table in this codebase (`contains_bible` above joined it at NODE-1).
     contains_concord: Vec<DtoContains>,
     catechism: Vec<DtoCatechismLink>,
     /// KRETZ-1: `graph.comments_on`'s own row table -- see `DtoCommentsOn`'s
@@ -911,12 +918,24 @@ pub struct ArtifactDump {
 /// of which the root's own hash touches; `tests/version_root_regression.rs`
 /// proves this for the real committed data in the same commit. `data/
 /// compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 10;
+///
+/// NODE-1 (2026-09-07): bumped 10 -> 11. Trigger: `ArtifactDump.
+/// contains_bible: Vec<DtoContains>` ADDED (a new relation table --
+/// `dump`'s own guard forced this the moment `bible_container_adapter`
+/// started emitting real Bible-corpus `Contains` rows, the TWELFTH member
+/// of the original guarded set to close, same schedule as every prior
+/// data batch). A genuine wire-shape break both directions -- bincode
+/// field COUNT changed. VERSION ROOT MOVES this time (unlike RED-1's own
+/// note above): this batch mints 1,255 new Container NODES (66 books +
+/// 1,189 chapters), and the root hashes every node's id+payload --
+/// `tests/version_root_regression.rs` re-pinned in the same commit that
+/// rebuilds `data/compiled/graph.bin`.
+const FORMAT_VERSION: u32 = 11;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty
-/// tables (`contains_bible`/`quotes`/`confesses`/`corresponds_bible`) is
+/// tables (`quotes`/`confesses`/`corresponds_bible`) is
 /// non-empty -- this format does not yet carry them; extending it is a
 /// real, deliberate future act, not something this batch silently punts
 /// by dropping rows. The EDGE-1/PG-1 data batches hit this guard ON
@@ -928,14 +947,16 @@ const FORMAT_VERSION: u32 = 10;
 /// (`contains_concord`); KRETZ-1 (2026-08-25) closed the NINTH
 /// (`comments_on`, alongside CommentaryItem nodes) the same way, on
 /// schedule, the moment `kretzmann_adapter` started emitting real rows;
-/// RED-1 (2026-08-25) closes the TENTH and ELEVENTH (`spoken_by`/
+/// RED-1 (2026-08-25) closed the TENTH and ELEVENTH (`spoken_by`/
 /// `spoken_at`) the same way, the moment `red_letter_adapter` started
-/// emitting real rows -- all are REAL SERIALIZED CONTENT below now, no
-/// longer guarded.
+/// emitting real rows; NODE-1 (2026-09-07) closes the TWELFTH
+/// (`contains_bible`, alongside the book/chapter Container nodes) the
+/// same way, the moment `bible_container_adapter` started emitting real
+/// rows -- all are REAL SERIALIZED CONTENT below now, no longer guarded.
 pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_stats: &EventWorldStats) -> Result<ArtifactDump, ArtifactError> {
-    if !g.contains_bible.is_empty() || !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
+    if !g.quotes.is_empty() || !g.confesses.is_empty() || !g.corresponds_bible.is_empty() {
         return Err(ArtifactError(
-            "the graph carries rows in a relation this artifact format does not yet serialize (contains_bible/quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
+            "the graph carries rows in a relation this artifact format does not yet serialize (quotes/confesses/corresponds) -- extend artifact.rs before shipping this content".into(),
         ));
     }
 
@@ -1024,6 +1045,20 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
             let (type_from, type_to) = bible_range_to_dto(&r.type_passage);
             let (antitype_from, antitype_to) = bible_range_to_dto(&r.antitype_passage);
             DtoTypology { type_from, type_to, antitype_from, antitype_to, note: r.note.clone(), provenance: r.provenance.clone(), justification: justification_to_dto(&r.justification) }
+        })
+        .collect();
+
+    // NODE-1: `graph.contains_bible`'s own row table -- the SAME
+    // `DtoContains` shape as `contains_concord` immediately below, with
+    // the Bible-corpus locus narrowing (`bible_locus_to_dto`).
+    let contains_bible = g
+        .contains_bible
+        .iter()
+        .map(|r: &atlas_graph_types::edge::Contains<atlas_graph_types::text::BibleTag>| DtoContains {
+            container: r.container.0.clone(),
+            content: r.content.0.iter().map(bible_locus_to_dto).collect(),
+            provenance: r.provenance.clone(),
+            justification: justification_to_dto(&r.justification),
         })
         .collect();
 
@@ -1168,6 +1203,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         named_after,
         fulfills,
         typology,
+        contains_bible,
         contains_concord,
         catechism,
         comments_on,
@@ -1429,6 +1465,19 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
         });
     }
 
+    // NODE-1: a plain row table -- the SAME `Vec` -> `BTreeSet`
+    // reconstruction as `contains_concord` immediately below, with the
+    // Bible-corpus locus narrowing (`dto_to_bible_locus`).
+    for r in d.contains_bible {
+        let content: Result<std::collections::BTreeSet<_>, ArtifactError> = r.content.into_iter().map(dto_to_bible_locus).collect();
+        g.contains_bible.push(atlas_graph_types::edge::Contains {
+            container: atlas_graph_types::id::ContainerNodeId::new(r.container),
+            content: atlas_graph_types::text::LocusSet(content?),
+            provenance: r.provenance,
+            justification: dto_to_justification(r.justification)?,
+        });
+    }
+
     // CORP-2a: a plain row table, like `attests`/`located_at` above --
     // `content` reconstructs as a `BTreeSet` (`LocusSet`'s own inner
     // shape); `Vec` -> `BTreeSet` is lossless regardless of the serialized
@@ -1608,12 +1657,17 @@ mod tests {
         let bytes = encode(&dumped).expect("encode must succeed");
         let decoded = decode(&bytes).expect("decode must succeed");
         let (mut reconstructed, _stats2, _ews2, chronology2) = to_service_parts(decoded).expect("to_service_parts must succeed");
+        // NODE-1: paired with add_justified_by at every build_indexes
+        // site -- both sides of the admission carry the derived container
+        // edges (see bible_container_adapter's own doc comment).
         reconstructed.build_indexes();
         crate::event_world::add_justified_by(&mut reconstructed);
+        crate::bible_container_adapter::add_derived_membership_and_succession(&mut reconstructed);
 
         let mut original_indexed = original;
         original_indexed.build_indexes();
         crate::event_world::add_justified_by(&mut original_indexed);
+        crate::bible_container_adapter::add_derived_membership_and_succession(&mut original_indexed);
 
         // THE ADMISSION LAW (design §9a: "implementation #2 passes the
         // same law as #1"): the reconstructed graph answers every question
@@ -1956,6 +2010,45 @@ mod tests {
         assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 1 })));
         assert!(row.content.0.contains(&Locus::<ConcordTag>::whole(ConcordRef { part: 3, article: 4, paragraph: 2 })));
         assert_eq!(row.justification.text.as_deref(), Some("Augsburg Confession Article IV, paragraphs 1-2"));
+    }
+
+    /// NODE-1: the Bible-corpus sibling of
+    /// `contains_concord_round_trips_losslessly_with_a_real_row`
+    /// immediately above -- same shape, `BibleTag` narrowing.
+    #[test]
+    fn contains_bible_round_trips_losslessly_with_a_real_row() {
+        use atlas_graph_types::edge::Contains;
+        use atlas_graph_types::id::ContainerNodeId;
+        use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
+
+        let mut g = Graph::default();
+        let v1 = Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 1 });
+        let v2 = Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 2 });
+        let mut content = std::collections::BTreeSet::new();
+        content.insert(v1);
+        content.insert(v2);
+        g.contains_bible.push(Contains {
+            container: ContainerNodeId::new("bible-chapter-GEN-1"),
+            content: LocusSet(content),
+            provenance: "kjv".into(),
+            justification: Justification::default(),
+        });
+
+        let empty_chrono = Chronology::from_derivation(ChronologyDerivation::default());
+        let dumped = dump(&g, &empty_chrono, &BuildStats::default(), &EventWorldStats::default()).expect("dump must succeed with a real contains_bible row -- the guard's whole point was to force this extension");
+        assert_eq!(dumped.contains_bible.len(), 1);
+        assert_eq!(dumped.contains_bible[0].content.len(), 2);
+
+        let bytes = encode(&dumped).expect("encode must succeed");
+        let decoded = decode(&bytes).expect("decode must succeed");
+        let (reconstructed, ..) = to_service_parts(decoded).expect("to_service_parts must succeed");
+
+        assert_eq!(reconstructed.contains_bible.len(), 1, "the row must survive the full round trip, not silently drop");
+        let row = &reconstructed.contains_bible[0];
+        assert_eq!(row.container.0, "bible-chapter-GEN-1");
+        assert_eq!(row.content.0.len(), 2);
+        assert!(row.content.0.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 1 })));
+        assert!(row.content.0.contains(&Locus::<BibleTag>::whole(VerseRef { book: 0, chapter: 1, verse: 2 })));
     }
 
     #[test]
