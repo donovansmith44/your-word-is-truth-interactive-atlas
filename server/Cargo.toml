@@ -405,20 +405,67 @@ resolver = "2"
 # canonical delta). `atlas-graph-types` unchanged (+0) -- byte-untouched
 # (standing veto/brief law honored). Zero failures in either dual-run
 # command (WORKSPACE_EXIT=0). Section counting note, made explicit while
-# reconciling: a full `--workspace` run prints 54 "test result:" lines
-# today -- 45 with tests, five 0-test unittest stubs (counted, as
-# always), and four 0-test Doc-tests lines (NOT counted, matching the
-# historical arithmetic: PLACE-1a's 49 = its era's 53 lines minus those
-# same 4; 51 now = 49 + FQ-0's falsifiability section + this batch's
-# bible_containers_real_data). batch-node1-report.md has the
+# reconciling (CORRECTED by fix round 1, review L-1 -- the first version
+# of this note omitted the aqc_cucumber term, so its own arithmetic read
+# 45+5=50 against a 51 conclusion): a full `--workspace` run prints 54
+# "test result:" lines today -- 45 with tests plus five 0-test unittest
+# stubs (both counted, as always) plus four 0-test Doc-tests lines (NOT
+# counted) -- AND one section that prints NO "test result:" line at all:
+# aqc_cucumber (harness = false; atlas-server/Cargo.toml's own comment:
+# it "still shows up under `cargo test --workspace` as one more
+# section"). So 51 sections = 45 + 5 + aqc_cucumber = 49 at PLACE-1a +
+# FQ-0's falsifiability section + this batch's
+# bible_containers_real_data. batch-node1-report.md has the
 # digit-by-digit reconciliation of 975 against the 951 base.
 #
-# CURRENT CANONICAL: 1007 (975 + 32) across 51 sections.
+# Superseded by NODE-1 fix round 1 (below): 1007 (975 + 32) across 51
+# sections was the canonical at NODE-1's own close.
+#
+# Batch NODE-1 FIX ROUND 1 (2026-09-07, review findings + the
+# owner-signed NODE1-ROWS-1 redesign -- owner ruling "derived index
+# entries, not authored edge rows yeah not good. we have to declare
+# edges. no special cases."): moved to 1017 (984 + 33) across the SAME
+# 51 sections (no new test file -- every new test lands in an
+# already-counted section). Workspace +9: `atlas-graph`'s own lib
+# unittests +7 (law_check +6 -- the M-1 referential red cases for
+# contains_bible/contains_concord/canon_succession endpoints, plus the
+# NEW container-containment FOREST law's green/two-parents/duplicate/
+# cycle cases and the NEW index=rows conformance law's tamper red case;
+# artifact.rs +1 -- the round trip for both new row shapes; the
+# bible_container_adapter's own module nets 0: +1 alias-rejection test
+# (review L-5), -1 `derived_edge_counts_are_reported_honestly`, retired
+# with the derived merge itself) and `tests/bible_containers_real_data.
+# rs` +2 (the forest gate and the index=rows conformance law, both
+# asserted over the real canon). `atlas-graph-types` 32 -> 33 (+1): the
+# SANCTIONED graph-types change's own lowering test
+# (`container_child_and_canon_succession_rows_lower_into_the_existing_
+# indexes_both_ways`) -- the crate freeze was lifted by owner ruling for
+# exactly this redesign, not a veto breach. Data: `contains_bible` 1,189
+# -> 2,378 rows (1,189 `Loci` carrying the same 31,102 loci + 1,189 NEW
+# book-chapter `Container` rows) and 1,253 NEW `canon_succession` rows
+# (1,188 chapter steps incl. GEN.50->EXO.1 and MAL.4->MAT.1, + 65 book
+# steps); FORMAT_VERSION 11 -> 12; graph.bin 101,133,487 -> 101,320,090
+# bytes (96.63% of the 104,857,600 ceiling, 3,537,510 margin). VERSION
+# ROOT UNMOVED (zero node changes) -- `version_root_regression.rs` green
+# un-re-pinned and `data/exports/*` byte-identical, the no-regression
+# proof at the data layer; the bibex transcript is byte-identical too,
+# content-addressed edge ids included (`entry_id` hashes the same
+# (relation, subject, object) triples the retired derived entries
+# carried). DISCLOSED, not counted as a failure (the standing RED-1-era
+# class, re-observed): `artifact_conformance.rs::serialized_artifact_is_
+# admitted_and_loads_under_the_committed_ceiling` failed ONCE at 4.416s
+# against its 4s wall-clock ceiling in a full-parallel `--workspace` run
+# taken while two `dotnet test` suites ran concurrently; re-run in
+# isolation 3/3 at 3.015s/3.011s/2.976s, and green in the quiet
+# full-workspace recount the 984 above comes from (WORKSPACE_EXIT=0).
+# Machine-contention timing artifact of the harness, not a functional
+# regression -- the same characterization `artifact_conformance.rs`'s own
+# LOAD_CEILING doc comment already carries.
+#
+# CURRENT CANONICAL: 1017 (984 + 33) across 51 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
-# dotnet at NODE-1 close: client.Tests 349/349 | client.ContractTests
-# 45/45 (44 Reqnroll scenarios + CorpusCountTests, the standing parity
-# shape) -- NOTE: taken over the concurrent EVT-3 fix-round agent's own
-# in-flight working tree (client/ files dirty, client.Tests/* untracked
-# additions theirs); 349 supersedes the 304 the NODE-1 brief predicted,
-# per that brief's own "may differ if EVT-3's tickets committed first --
-# take the report's numbers".
+# dotnet at NODE-1 fix round 1 close: client.Tests 351/351 |
+# client.ContractTests 45/45 (44 Reqnroll scenarios + CorpusCountTests,
+# the standing parity shape) -- 351 matches EVT-3 fix round 3's own
+# close exactly (that batch owns the client tree; this round touched
+# zero client files).
