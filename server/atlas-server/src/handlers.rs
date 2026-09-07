@@ -1275,6 +1275,39 @@ pub struct EventDetailOut {
     pub kjv_superscription: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
+    /// ATTEST-1 (L3, "Mentioned in"): the verses that MENTION this event
+    /// without narrating it -- canonical verse ids, ascending. Distinct
+    /// from `witnesses` ON PURPOSE, and that distinction IS the batch: an
+    /// account NARRATES the event and belongs under PARALLEL ACCOUNTS; a
+    /// mention merely REFERENCES it while narrating something else, and
+    /// rendering one as the other is exactly the "fundamental error" the
+    /// owner reported. An event whose whole scriptural basis is mentions
+    /// (the Espousal of Mary) serves an EMPTY `witnesses` and a non-empty
+    /// list here -- a real node with a real frontier, never a fabricated
+    /// parallel-accounts section.
+    ///
+    /// OMITTED (not `[]`) when empty, the same convention every optional
+    /// field above follows -- so an event with no mentions serves
+    /// byte-identically to before this batch.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub mentioned_in: Vec<String>,
+    /// ATTEST-1 (L4, "Similar events"): events joined to this one by an
+    /// `Analogue` row -- "distinct events whose accounts are similar in
+    /// form or content, NEVER two accounts of one event." Deliberately a
+    /// SEPARATE field from `witnesses` rather than a flag on it: the
+    /// owner's own report was that a similar-but-distinct story was being
+    /// rendered as a parallel account, and one field cannot carry two
+    /// claims. Omitted when empty, same convention.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub analogues: Vec<EventAnalogueOut>,
+}
+
+/// ATTEST-1: one end of an `Analogue` -- enough to render and to explore
+/// (`/api/event/{id}` takes this `id` straight back).
+#[derive(Debug, Serialize)]
+pub struct EventAnalogueOut {
+    pub id: String,
+    pub title: String,
 }
 
 /// `GET /api/event/{id}` (Batch T requirement 4): the EVENT node's own rich
@@ -1329,6 +1362,44 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // general-kind passage -- see EventDetailOut's own doc comment.
     let when = window;
 
+    // ATTEST-1: the two new frontier sections, both read straight off the
+    // graph's own indexes through the SAME generic `drain_edges` walk
+    // every other relation in this file uses -- no second path, no
+    // re-derivation from AtlasData.
+    let event_pos = Position::Node(atlas_graph::event_world::event_node_id(&e.id));
+    // (L3) "Mentioned in": `Mentions` INVERSE, event -> the text units
+    // that reference it. Rendered as canonical verse ids so the client
+    // can hand them straight back to `/api/verse/{sref}`; sorted for a
+    // stable reading order (the index's own order is insertion order,
+    // which is curated-file order, not canonical order).
+    let mut mentioned_in: Vec<String> = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
+        .into_iter()
+        .filter_map(|entry| match entry.node {
+            Position::Node(id) => id.raw.strip_prefix("bible/").and_then(|rest| {
+                let mut parts = rest.split('.');
+                let book: u8 = parts.next()?.parse().ok()?;
+                let chapter: u16 = parts.next()?.parse().ok()?;
+                let verse: u16 = parts.next()?.parse().ok()?;
+                let code = atlas_core::refs::BookId(book).code();
+                Some(((book, chapter, verse), format!("{code}.{chapter}.{verse}")))
+            }),
+            Position::Edge(_) => None,
+        })
+        .collect::<std::collections::BTreeMap<_, _>>()
+        .into_values()
+        .collect();
+    mentioned_in.dedup();
+    // (L4) "Similar events": the SYMMETRIC `Analogue` relation, walked
+    // from this end. Titles come from the neighbour's own Event node, so
+    // the client never needs a second fetch just to label the row.
+    let analogues: Vec<EventAnalogueOut> = drain_edges(&snap, &event_pos, EdgeKind::Symmetric(atlas_graph_types::edge::SymRelationId::Analogue))
+        .into_iter()
+        .filter_map(|entry| match entry.node {
+            Position::Node(id) => atlas_graph::legacy::event_from_node(&id, &snap, &graph.chronology.chrono).map(|other| EventAnalogueOut { id: other.id.clone(), title: other.label.clone() }),
+            Position::Edge(_) => None,
+        })
+        .collect();
+
     Ok(Json(EventDetailOut {
         id: e.id.clone(),
         title: e.label.clone(),
@@ -1341,6 +1412,8 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         atlas_section: e.atlas_section.clone(),
         kjv_superscription: e.kjv_superscription.clone(),
         ref_note: e.ref_note.clone(),
+        mentioned_in,
+        analogues,
     }))
 }
 

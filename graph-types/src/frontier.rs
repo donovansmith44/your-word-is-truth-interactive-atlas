@@ -304,6 +304,25 @@ pub enum Capability {
     /// longer gated; see
     /// `atlas-graph/tests/frontier_falsifiability.rs`.
     Members,
+    /// ATTEST-1 (owner ruling, verbatim: "let's call it Analogue; that's
+    /// ok for now."): symmetric `Analogue` — "distinct events whose
+    /// accounts are similar in form or content, NEVER two accounts of one
+    /// event" (`edge::Analogue`'s own doc comment is the law). The
+    /// presentation heading is "Similar Accounts" (owner amendment,
+    /// verbatim: "let's have a 'Similar Accounts' or something similar
+    /// added to the frontier part of the UI where it was getting pulled in
+    /// as a parallel account. Have that section be right below the
+    /// 'Parallel ..' section."), deliberately distinct from `Accounts`'
+    /// own "PARALLEL ACCOUNTS": conflating the two is precisely the defect
+    /// the owner reported ("A leper healed... is given a parallel where
+    /// there shouldn't be from Mat.8.1-4; another leprosy story"). The
+    /// owner also fixed the PLACEMENT -- directly below the parallels, so
+    /// a wrongly-placed row moves down exactly one section rather than
+    /// vanishing from where the reader last saw it; that is presentation
+    /// policy and lives client-side (`PopoverSectionRegistry`, asserted as
+    /// ADJACENCY), not in this matrix. Event-to-Event, so `target` is
+    /// genuinely single-kinded.
+    Analogues,
 }
 
 impl Capability {
@@ -324,6 +343,7 @@ impl Capability {
         Capability::MentionsOf,
         Capability::Commentary,
         Capability::Members,
+        Capability::Analogues,
     ];
 
     /// THE UNITY BRIDGE, executable (design review B3): returns real
@@ -386,6 +406,9 @@ impl Capability {
             }
             Capability::Members => {
                 &[FrontierEdge { kind: EK::Directed(R::Contains, D::Forward), target: Some(G::TextUnit) }]
+            }
+            Capability::Analogues => {
+                &[FrontierEdge { kind: EK::Symmetric(S::Analogue), target: Some(G::Event) }]
             }
         }
     }
@@ -479,7 +502,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         (K::Verse, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Commentary) => true,
         (K::Verse, C::Chronology | C::TimeAndPlace | C::Accounts
-            | C::EventsAt | C::MentionsOf | C::Members) => false,
+            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues) => false,
 
         // Passage — verse-family, minus the verse-only memberships, and
         // minus Commentary (Kretzmann rows are verified Verse-anchored
@@ -489,48 +512,61 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
             | C::CatechismSupport) => true,
         (K::Passage, C::EventMembership | C::PassageMembership
             | C::Chronology | C::TimeAndPlace | C::Accounts | C::Commentary
-            | C::EventsAt | C::MentionsOf | C::Members) => false,
+            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues) => false,
 
         // Event — the owner's calibration row: NO cross references until
         // event-level xref data exists ("we are not yet at the point of
         // being able ot provide lots of cross references for events").
-        (K::Event, C::Chronology | C::TimeAndPlace | C::Accounts) => true,
+        // ATTEST-1 adds two cells to this row, one line each (the
+        // composability bar): `Analogues` (the owner-ratified new
+        // relation — "Similar Accounts", never "Parallel accounts") and
+        // `MentionsOf` (L3's mention-only frontier — "Mentioned in";
+        // the SAME `Mentions`-inverse capability `Person` already
+        // claims, reused from the event end rather than given a second
+        // capability, exactly the `CatechismSupport` precedent).
+        (K::Event, C::Chronology | C::TimeAndPlace | C::Accounts
+            | C::Analogues | C::MentionsOf) => true,
         (K::Event, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Commentary
-            | C::EventsAt | C::MentionsOf | C::Members) => false,
+            | C::EventsAt | C::Members) => false,
 
         // Place — the EventsAt escapee (B5).
         (K::Place, C::EventsAt) => true,
         (K::Place, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Chronology
-            | C::TimeAndPlace | C::Accounts | C::Commentary | C::MentionsOf | C::Members) => false,
+            | C::TimeAndPlace | C::Accounts | C::Commentary | C::MentionsOf | C::Members
+            | C::Analogues) => false,
 
         // Person — the MentionsOf escapee (B5); the card half is
         // `Section::Core(CoreSection::PersonCard)`, not a capability.
         (K::Person, C::MentionsOf) => true,
         (K::Person, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Chronology
-            | C::TimeAndPlace | C::Accounts | C::Commentary | C::EventsAt | C::Members) => false,
+            | C::TimeAndPlace | C::Accounts | C::Commentary | C::EventsAt | C::Members
+            | C::Analogues) => false,
 
         // Catechism — reuses CatechismSupport from the item end (B5's
         // third escapee, see that variant's doc comment).
         (K::Catechism, C::CatechismSupport) => true,
         (K::Catechism, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::Chronology | C::TimeAndPlace
-            | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf | C::Members) => false,
+            | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf | C::Members
+            | C::Analogues) => false,
 
-        // Chapter/Book — NODE-1's target state (owner ruling: "chapters
-        // and books are nodes... their frontier basically is the verses
-        // and event containers they contain, as well as previous/next
-        // chapter navigation"): Members (what this container holds) +
-        // Chronology (prev/next). The POLICY is decided now; the
-        // underlying `Container`/Bible-`Contains` rows land with NODE-1
-        // (see `atlas-graph/tests/frontier_falsifiability.rs`'s
-        // TODO(NODE-1)-gated cells).
+        // Chapter/Book — LANDED (owner ruling: "chapters and books are
+        // nodes... their frontier basically is the verses and event
+        // containers they contain, as well as previous/next chapter
+        // navigation"): Members (what this container holds) + Chronology
+        // (prev/next). NODE-1 + its NODE1-ROWS-1 fix round made both
+        // cells real — 66 book + 1,189 chapter `Container` nodes,
+        // declared `Contains` rows, and pairwise `CanonSuccession`
+        // steps — and `atlas-graph/tests/frontier_falsifiability.rs`
+        // asserts both live, un-gated.
         (K::Chapter | K::Book, C::Members | C::Chronology) => true,
         (K::Chapter | K::Book, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::TimeAndPlace
-            | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf) => false,
+            | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf
+            | C::Analogues) => false,
 
         // Not-yet-earned kinds: every capability opted out. `Author`,
         // `Year`, `TimeAndPlace`, `PolityDelta` are `ParameterizedView`/
@@ -620,6 +656,40 @@ mod tests {
         assert!(allows(FocusKind::Event, Capability::Accounts));
     }
 
+    /// ATTEST-1's two owner-signed additions to the Event row, pinned —
+    /// and pinned as EVENT-ONLY, so a future cell edit that leaks either
+    /// onto another kind shows up here first. `Analogues` is nobody
+    /// else's; `MentionsOf` is shared with `Person` DELIBERATELY (one
+    /// relation, two focus kinds, the `CatechismSupport` precedent) and
+    /// nobody else's.
+    #[test]
+    fn event_implements_analogues_and_mentions_of() {
+        assert!(allows(FocusKind::Event, Capability::Analogues), "the owner-ratified Analogue relation is an Event frontier");
+        assert!(allows(FocusKind::Event, Capability::MentionsOf), "L3: a mention-only event's frontier shows its mentions");
+        for kind in [FocusKind::Verse, FocusKind::Passage, FocusKind::Place, FocusKind::Person,
+                     FocusKind::Catechism, FocusKind::Chapter, FocusKind::Book] {
+            assert!(!allows(kind, Capability::Analogues), "{kind:?} must not claim Analogues -- events are analogous to events");
+        }
+        for kind in [FocusKind::Verse, FocusKind::Passage, FocusKind::Place,
+                     FocusKind::Catechism, FocusKind::Chapter, FocusKind::Book] {
+            assert!(!allows(kind, Capability::MentionsOf), "{kind:?} must not claim MentionsOf");
+        }
+    }
+
+    /// THE ACCOUNT/MENTION SEPARATION, compiled (L1/L4): `Accounts` and
+    /// `Analogues` are DIFFERENT capabilities walking DIFFERENT edges, and
+    /// `MentionsOf` is a third — the type-level statement of the owner's
+    /// own diagnosis that this app had been rendering mentions and
+    /// similar-but-distinct events under one "PARALLEL ACCOUNTS" heading.
+    #[test]
+    fn accounts_analogues_and_mentions_walk_three_different_edges() {
+        use crate::edge::{Direction as D, EdgeKind as EK, RelationId as R, SymRelationId as S};
+        assert_eq!(Capability::Accounts.edges()[0].kind, EK::Directed(R::Attests, D::Inverse));
+        assert_eq!(Capability::Analogues.edges()[0].kind, EK::Symmetric(S::Analogue));
+        assert_eq!(Capability::MentionsOf.edges()[0].kind, EK::Directed(R::Mentions, D::Inverse));
+        assert_eq!(Capability::Analogues.edges()[0].target, Some(crate::id::NodeKind::Event));
+    }
+
     /// Verse always carries its seven (six original + Commentary); never
     /// the event-family three, never the three kind-specific capabilities
     /// that belong to other focus kinds.
@@ -631,7 +701,7 @@ mod tests {
             assert!(allows(FocusKind::Verse, cap), "Verse must allow {cap:?}");
         }
         for cap in [C::Chronology, C::TimeAndPlace, C::Accounts,
-                    C::EventsAt, C::MentionsOf, C::Members] {
+                    C::EventsAt, C::MentionsOf, C::Members, C::Analogues] {
             assert!(!allows(FocusKind::Verse, cap), "Verse must not allow {cap:?}");
         }
     }
@@ -644,13 +714,21 @@ mod tests {
         assert!(allows(FocusKind::Catechism, Capability::CatechismSupport));
         for kind in [FocusKind::Verse, FocusKind::Event, FocusKind::Chapter, FocusKind::Book] {
             assert!(!allows(kind, Capability::EventsAt), "{kind:?} must not claim EventsAt");
+        }
+        // ATTEST-1: `MentionsOf` stopped being a Person-only escapee --
+        // `Event` claims it too now (L3, "Mentioned in"), so the
+        // Person-exclusivity half of this test moved to
+        // `event_implements_analogues_and_mentions_of` above, which pins
+        // the widened truth (Event + Person, nobody else).
+        for kind in [FocusKind::Verse, FocusKind::Chapter, FocusKind::Book] {
             assert!(!allows(kind, Capability::MentionsOf), "{kind:?} must not claim MentionsOf");
         }
     }
 
-    /// NODE-1's target state (owner ruling), pinned now as policy even
-    /// though the underlying rows are TODO(NODE-1) -- see
-    /// `atlas-graph/tests/frontier_falsifiability.rs`.
+    /// NODE-1's landed state (owner ruling), pinned -- the underlying
+    /// `Container`/`Contains`/`CanonSuccession` rows are real and
+    /// `atlas-graph/tests/frontier_falsifiability.rs` asserts them
+    /// un-gated.
     #[test]
     fn chapter_and_book_get_members_and_chronology() {
         for kind in [FocusKind::Chapter, FocusKind::Book] {

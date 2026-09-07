@@ -452,6 +452,13 @@ pub struct EventWorldStats {
     pub attests_rows: usize,
     pub located_at_rows: usize,
     pub dated_by_rows: usize,
+    /// ATTEST-1: `Mentions` rows whose entity is an EVENT (a verse that
+    /// REFERENCES an event without narrating it). Counted APART from
+    /// `attests_rows` deliberately -- keeping accounts and mentions
+    /// separately countable is the whole point of the distinction.
+    pub event_mentions_rows: usize,
+    /// ATTEST-1: curated `Analogue` rows.
+    pub analogue_rows: usize,
 }
 
 /// The four node-id constructors for this batch's own kinds -- mirrors
@@ -697,6 +704,41 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
         let node = anchor_node(a);
         graph.nodes.insert(node.id.clone(), node);
         stats.anchors += 1;
+    }
+
+    // ATTEST-1 (L1/L3): the retyped rows. `compile()` has already stripped
+    // each named verse out of its event's own `verses`/witness lists, so
+    // the Attests loop above never saw it -- this is where the fact lands
+    // instead, as a `Mentions` row pointing at the EVENT. TOTAL CAPTURE:
+    // the curator's own ruling rides along as the row's provenance trail
+    // (the seed's `note`), so a reader can always see WHY a verse became a
+    // mention rather than an account.
+    for m in &atlas.event_mentions {
+        let event_id = EventId::new(m.event_id.clone());
+        for v in &m.verses {
+            let Ok(vid) = atlas_core::refs::VerseId::parse_canonical(v) else { continue };
+            graph.mentions.push(atlas_graph_types::edge::Mentions {
+                locus: atlas_graph_types::text::TextLocus {
+                    at: atlas_graph_types::text::TextRef::Bible(VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse }),
+                    span: None,
+                },
+                entity: atlas_graph_types::edge::MentionedEntity::Event(event_id.clone()),
+                provenance: "attestation-corrections".to_string(),
+            });
+            stats.event_mentions_rows += 1;
+        }
+    }
+
+    // ATTEST-1 (L4): the owner-ratified `Analogue` rows -- distinct events
+    // whose accounts are similar in form or content, NEVER two accounts of
+    // one event. Authored only; no similarity metric mints these.
+    for a in &atlas.event_analogues {
+        graph.analogue.push(atlas_graph_types::edge::Analogue {
+            a: EventId::new(a.a.clone()),
+            b: EventId::new(a.b.clone()),
+            provenance: "attestation-corrections".to_string(),
+        });
+        stats.analogue_rows += 1;
     }
 
     stats

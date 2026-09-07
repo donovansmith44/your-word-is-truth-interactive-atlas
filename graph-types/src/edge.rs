@@ -103,6 +103,10 @@ relations! {
         DerivedFrom => "derived-from" / "derives"
     }
     symmetric {
+        // ATTEST-1 (owner ruling, verbatim: "let's call it Analogue;
+        // that's ok for now."): see the `Analogue` row struct below for
+        // the definition that governs every row.
+        Analogue          => "analogous-to",
         CatechismLink     => "catechism-link",
         Corresponds       => "corresponds-to",
         Parallel          => "parallel",
@@ -391,21 +395,62 @@ pub struct SpokenAt {
 // ---------------------------------------------------------------------
 
 /// PG-1: the attested sense of an in-text mention -- Place, Person,
-/// or PeopleGroup. JDG 1:2 "Judah shall go up" mentions the TRIBE,
-/// not the man; the link points where the data says, never where a
-/// string guesses. (Widened from the retired two-way `PlaceOrPerson`
-/// name -- with three variants the old name stopped being true.)
+/// PeopleGroup, or (ATTEST-1) Event. JDG 1:2 "Judah shall go up"
+/// mentions the TRIBE, not the man; the link points where the data says,
+/// never where a string guesses. (Widened from the retired two-way
+/// `PlaceOrPerson` name -- with three variants the old name stopped
+/// being true; the SAME widening precedent is why `Event` joins here
+/// rather than getting a relation of its own.)
+///
+/// ATTEST-1 `Event` variant (owner order 2, the founding diagnosis: LUK
+/// 1:27 was attested to BOTH the Espousal of Mary and the Annunciation).
+/// THE ACCOUNT/MENTION LAW (L1): an event's `Attests` edges carry ONLY
+/// narrative ACCOUNTS -- a passage that NARRATES the event. A verse that
+/// merely REFERENCES an event while narrating something else is a
+/// `Mentions` row pointing at that event, never an `Attests` row.
+/// Parallel accounts are >= 2 `Attests` groups; mentions NEVER appear
+/// under parallel accounts. An event whose whole scriptural basis is
+/// mentions (the espousal) is still a real node with a real frontier
+/// (L3, total capture) -- its frontier shows its mentions, never a
+/// fabricated "parallel accounts" section.
 #[derive(Clone, Debug)]
 pub enum MentionedEntity {
     Place(PlaceId),
     Person(PersonId),
     PeopleGroup(PeopleGroupId),
+    Event(EventId),
 }
 
 #[derive(Clone, Debug)]
 pub struct Mentions {
     pub locus: TextLocus,
     pub entity: MentionedEntity,
+    pub provenance: ProvenanceId,
+}
+
+/// ATTEST-1 (owner ruling, verbatim: "let's call it Analogue; that's ok
+/// for now.", ratifying the relation after: "A leper healed; a great
+/// popular excitement is given a parallel where there shouldn't be from
+/// Mat.8.1-4; another leprosy story. We need to come up with an idiom
+/// for stories that are very similar in this regard, but distinct
+/// events.").
+///
+/// THE DEFINITION, AND IT IS LAW: distinct events whose accounts are
+/// similar in form or content — NEVER two accounts of one event.
+///
+/// SYMMETRIC by construction (`SymRelationId::Analogue`, label
+/// "analogous-to"): neither end is the original, so there is no second
+/// reading to hold and no direction to get backwards. Two accounts of
+/// ONE event are `Attests` rows on that one event (parallel accounts);
+/// an `Analogue` row is the opposite claim — the events are two, and
+/// saying so is the whole point of the relation. `a == b` is therefore
+/// meaningless and rejected by `atlas-graph`'s own law_check (an event
+/// is not analogous to itself), the same fail-loud discipline the
+/// container-containment forest gate follows.
+#[derive(Clone, Debug)]
+pub struct Analogue {
+    pub a: EventId,
+    pub b: EventId,
     pub provenance: ProvenanceId,
 }
 

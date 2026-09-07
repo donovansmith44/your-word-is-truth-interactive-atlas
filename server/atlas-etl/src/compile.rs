@@ -186,6 +186,57 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
     }
 
+    // ATTEST-1: the account -> mention RETYPE, applied here (after
+    // witnesses are attached, before anything reads the event set) so
+    // there is exactly ONE place in the pipeline where an event's own
+    // attested verse list is settled. Every named verse is stripped from
+    // the event's `verses` AND from every witness row's translations --
+    // `scene::witnesses_for` reads ONLY explicit witness rows once any
+    // exist, so stripping one and not the other would silently keep the
+    // Attests row alive (the exact trap CHRON-1's own fix round S-C1/S-1
+    // fell into from the other direction). Fail-loud on a row that
+    // retypes nothing: a correction that corrects nothing is a stale
+    // correction.
+    let (event_mentions, event_analogues) =
+        curated::parse_attestation_corrections(&read(&curated_dir.join("attestation-corrections.toml"))?)?;
+    // Reuses `event_by_id` above -- the witness loop only ASSIGNED into
+    // `all_events[idx]`, never reordered it, so the index map is still
+    // exact (the same reuse `acts_sections`/`atlas_sections` below make).
+    for m in &event_mentions {
+        let Some(&idx) = event_by_id.get(&m.event_id) else {
+            bail!(
+                "data/curated/attestation-corrections.toml: [[mention]] row names event_id '{}', which does not match any compiled event id",
+                m.event_id
+            );
+        };
+        let strip: HashSet<&str> = m.verses.iter().map(|s| s.as_str()).collect();
+        let e = &mut all_events[idx];
+        let before: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
+        e.verses.retain(|v| !strip.contains(v.as_str()));
+        for w in &mut e.witnesses {
+            for verses in w.translations.values_mut() {
+                verses.retain(|v| !strip.contains(v.as_str()));
+            }
+        }
+        e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
+        let after: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
+        if after == before {
+            bail!(
+                "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event. A correction that corrects nothing is stale; delete the row or fix the ids.",
+                m.event_id
+            );
+        }
+    }
+    for a in &event_analogues {
+        for id in [&a.a, &a.b] {
+            if !event_by_id.contains_key(id) {
+                bail!(
+                    "data/curated/attestation-corrections.toml: [[analogue]] row names event id '{id}', which does not match any compiled event id"
+                );
+            }
+        }
+    }
+
     let acts_sections = curated::parse_acts_sections(&read(&curated_dir.join("acts-sections.toml"))?)?;
     for (event_id, acts_section) in acts_sections {
         match event_by_id.get(&event_id) {
@@ -350,6 +401,15 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // LAW-CHECK time), not here.
     data.fulfillment_seeds = fulfillment_seeds;
     data.typology_seeds = typology_seeds;
+    // ATTEST-1: the retype itself already happened above (on
+    // `all_events`, before `AtlasData` was assembled); these carry the
+    // rows on to `atlas_graph::event_world`, which emits the `Mentions`/
+    // `Analogue` edges. Same "no validate::run-style check of its own"
+    // status as the pair immediately above -- L2's own fail-loud
+    // boundary law (`atlas_graph::law_check::attestation_is_exclusive`)
+    // lives at the GRAPH, run unconditionally at pipeline LAW-CHECK time.
+    data.event_mentions = event_mentions;
+    data.event_analogues = event_analogues;
 
     // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;
@@ -608,6 +668,10 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let event_witnesses_path = curated_dir.join("event-witnesses.toml");
     if !event_witnesses_path.is_file() {
         missing.push(format!("{}", event_witnesses_path.display()));
+    }
+    let attestation_corrections_path = curated_dir.join("attestation-corrections.toml");
+    if !attestation_corrections_path.is_file() {
+        missing.push(format!("{} (Batch ATTEST-1)", attestation_corrections_path.display()));
     }
     let acts_sections_path = curated_dir.join("acts-sections.toml");
     if !acts_sections_path.is_file() {

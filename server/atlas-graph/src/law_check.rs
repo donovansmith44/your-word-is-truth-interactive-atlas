@@ -117,6 +117,9 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
             MentionedEntity::Place(p) => p.erase(),
             MentionedEntity::Person(p) => p.erase(),
             MentionedEntity::PeopleGroup(g) => g.erase(),
+            // ATTEST-1: the widened sense -- a verse that references an
+            // event without narrating it. Same check, one more variant.
+            MentionedEntity::Event(e) => e.erase(),
         };
         check("mentions", "entity", id)?;
     }
@@ -186,6 +189,14 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("canon_succession", "prior", row.prior.erase())?;
         check("canon_succession", "next", row.next.erase())?;
     }
+    // ATTEST-1: the symmetric analogue rows -- both endpoints node-typed
+    // (the SAME class of check `canon_succession` gets immediately above;
+    // this law's own scope grows with every new node-typed authored
+    // relation, per its own module doc comment).
+    for row in &graph.analogue {
+        check("analogue", "a", row.a.erase())?;
+        check("analogue", "b", row.b.erase())?;
+    }
 
     Ok(())
 }
@@ -251,6 +262,184 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
+/// ATTEST-1's L4 companion gate: an `Analogue` row asserts that its two
+/// ends are DISTINCT events (see `edge::Analogue`'s own doc comment, which
+/// is the law: "distinct events whose accounts are similar in form or
+/// content — NEVER two accounts of one event"). A self-loop asserts the
+/// opposite of what the relation means, so it is a fail-loud build
+/// failure, not a silently-tolerated no-op. Duplicate rows for the same
+/// unordered pair are caught here too -- the symmetric index would
+/// silently double the edge, exactly the defect the container-containment
+/// forest gate's own duplicate branch exists to name.
+pub fn analogue_rows_join_two_distinct_events(graph: &Graph) -> Result<(), String> {
+    let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
+    for row in &graph.analogue {
+        let (a, b) = (row.a.0.as_str(), row.b.0.as_str());
+        if a == b {
+            return Err(format!(
+                "analogue row joins '{a}' to ITSELF -- an Analogue asserts two DISTINCT events; two accounts of ONE event are Attests rows on that one event"
+            ));
+        }
+        let key = if a <= b { (a, b) } else { (b, a) };
+        if !seen.insert(key) {
+            return Err(format!(
+                "duplicate analogue row: '{}' <-> '{}' appears more than once (the symmetric index would double the edge)",
+                key.0, key.1
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// ATTEST-1's L2, THE ATTESTATION-EXCLUSIVITY LAW (owner-signed, and
+/// owner-signed FAIL-LOUD -- "the softer warning option was declined"):
+///
+/// > no verse belongs to the `Attests` set of two distinct events.
+///
+/// WHY it is a law and not a lint. The founding diagnosis (owner, verbatim):
+/// "I'm seeing a fundamental error. The Espousal of Mary event has parallel
+/// accounts Mat.1.18 + Luke.1.27, and that's a distinct event from The Angel
+/// Gabriel Announces Jesus'... which has Luk1.26-36; Even worse, the
+/// appearance of Gabriel to Zacharias is BETWEEN the espousal of mary and
+/// the announcement of Gabriel to Mary." LUK.1.27 sat in the `Attests` set
+/// of BOTH `theo-249` and `rob_annunciation_mary`, and because `Attests`
+/// is what the `Parallels` capability walks (verse -> event -> that event's
+/// OTHER witnesses, `frontier.rs`), a shared verse silently fabricates a
+/// parallel between two events that are not parallel at all. The same
+/// shape produced the leper false-parallel the owner reported separately.
+/// `Analogue` and `Mentions` rows are EXEMPT by construction -- they are
+/// not in this table; only `Attests` partitions.
+///
+/// HOW it fails loud without asserting a corpus-wide fix nobody has made
+/// yet. A green law over a corpus with 500+ real collisions would be a
+/// lie, and silently retyping 500+ collisions to make it green would be
+/// exactly the bulk guessing the batch charter forbids. So the law is
+/// stated against a DECLARED inventory, the same shape
+/// `atlas_core::event_merge`'s own `EVENT_MERGE_PAIRS`/
+/// `EVENT_DISTINCT_PAIRS` already use for the sibling duplicate-identity
+/// question:
+///
+///   * an UNDECLARED collision -- any event pair sharing an attestation
+///     that is not in `attestation_pending::PENDING` -- is a BUILD
+///     FAILURE. New data can never introduce a new shared attestation
+///     quietly, which is the property that actually protects a reader.
+///   * a DRIFTED declaration -- a declared pair now sharing a different
+///     number of verses than declared -- is also a build failure. A count
+///     that is merely "close" is a count nobody can trust.
+///
+/// The STALE direction (a declared pair that no longer collides at all)
+/// is checked by `attestation_inventory_has_no_stale_rows` below, NOT
+/// here, and the split is deliberate: this function runs on EVERY graph
+/// build, including the many small synthetic fixtures across this
+/// workspace, and every one of those legitimately collides on nothing, so
+/// checking staleness here would make the entire inventory "stale" against
+/// a three-node test graph. Staleness is a claim about the REAL corpus, so
+/// it is asserted where the real corpus is
+/// (`tests/attestation_exclusivity_real_data.rs`).
+///
+/// The inventory itself is the OWNER'S CURATION QUEUE, compiled: every row
+/// carries the mechanically-derived structural class (`Containment` when
+/// one event's attestation set contains the other's -- the dominant real
+/// shape, a Theographic mega-span such as `theo-443` "Holy Week" or
+/// `theo-217` "Prophecies of Isaiah" against the fine-grained curated
+/// pericopes inside it -- `Overlap` otherwise) and NOTHING ELSE. The
+/// SEMANTIC call (shared-account error / mention misfiled as account /
+/// same event needing a merge / genuine containment wanting an event
+/// containment relation this vocabulary does not yet have) is deliberately
+/// NOT guessed here; it belongs to the owner, and `batch-attest1-report.md`
+/// carries the full table.
+pub fn attestation_is_exclusive(graph: &Graph) -> Result<(), String> {
+    use std::collections::BTreeMap;
+
+    // verse position -> the distinct events attesting it.
+    // `event_world::populate_nodes_and_direct_rows` emits ONE Attests row
+    // per verse (`from == to`, a single-verse range -- see its own
+    // `verse_to_range` doc comment), so the range's own `from` unit IS the
+    // attested verse; no range expansion is needed or would be honest here.
+    let mut by_verse: BTreeMap<(u8, u16, u16), BTreeSet<&str>> = BTreeMap::new();
+    for row in &graph.attests {
+        let v = &row.attestation.from.unit;
+        by_verse.entry((v.book, v.chapter, v.verse)).or_default().insert(row.event.0.as_str());
+    }
+
+    // Observed collisions, folded to unordered event pairs with a count of
+    // the verses they actually share.
+    let mut observed: BTreeMap<(&str, &str), usize> = BTreeMap::new();
+    for events in by_verse.values() {
+        if events.len() < 2 {
+            continue;
+        }
+        let ids: Vec<&str> = events.iter().copied().collect();
+        for i in 0..ids.len() {
+            for j in (i + 1)..ids.len() {
+                *observed.entry((ids[i], ids[j])).or_insert(0) += 1;
+            }
+        }
+    }
+
+    let declared: BTreeMap<(&str, &str), usize> = crate::attestation_pending::PENDING
+        .iter()
+        .map(|p| ((p.a, p.b), p.shared_verses))
+        .collect();
+
+    for (pair, count) in &observed {
+        match declared.get(pair) {
+            None => {
+                return Err(format!(
+                    "ATTESTATION EXCLUSIVITY (L2) VIOLATED: '{}' and '{}' both attest {} shared verse(s), and this pair is NOT in the declared pending inventory. An event's Attests edges carry ONLY narrative accounts: if one side merely REFERENCES the event, author a Mentions row instead; if the two are similar-but-distinct, author an Analogue row; if they are one event, merge them. Silently sharing an attestation fabricates a parallel account.",
+                    pair.0, pair.1, count
+                ));
+            }
+            Some(declared_count) if declared_count != count => {
+                return Err(format!(
+                    "ATTESTATION EXCLUSIVITY (L2) INVENTORY DRIFT: '{}' and '{}' now share {} verse(s), but attestation_pending::PENDING declares {}. Re-pin the row (and record the shrink) rather than letting the inventory drift.",
+                    pair.0, pair.1, count, declared_count
+                ));
+            }
+            Some(_) => {}
+        }
+    }
+    Ok(())
+}
+
+/// L2's other direction, asserted over the REAL corpus only (see
+/// `attestation_is_exclusive`'s own doc comment for why it is not part of
+/// the per-build pass): a DECLARED pair that no longer collides at all is
+/// a failure. The curation queue can only shrink deliberately, with the
+/// shrink recorded -- a queue that keeps resolved entries stops being a
+/// queue, and a resolved entry left in place would also silently license a
+/// future regression to re-introduce the very collision it names.
+pub fn attestation_inventory_has_no_stale_rows(graph: &Graph) -> Result<(), String> {
+    use std::collections::BTreeMap;
+
+    let mut by_verse: BTreeMap<(u8, u16, u16), BTreeSet<&str>> = BTreeMap::new();
+    for row in &graph.attests {
+        let v = &row.attestation.from.unit;
+        by_verse.entry((v.book, v.chapter, v.verse)).or_default().insert(row.event.0.as_str());
+    }
+    let mut observed: BTreeSet<(&str, &str)> = BTreeSet::new();
+    for events in by_verse.values() {
+        if events.len() < 2 {
+            continue;
+        }
+        let ids: Vec<&str> = events.iter().copied().collect();
+        for i in 0..ids.len() {
+            for j in (i + 1)..ids.len() {
+                observed.insert((ids[i], ids[j]));
+            }
+        }
+    }
+    for p in crate::attestation_pending::PENDING {
+        if !observed.contains(&(p.a, p.b)) {
+            return Err(format!(
+                "ATTESTATION EXCLUSIVITY (L2) STALE DECLARATION: '{}' and '{}' are declared as sharing {} verse(s) but no longer collide at all. Delete the row and record the shrink.",
+                p.a, p.b, p.shared_verses
+            ));
+        }
+    }
+    Ok(())
+}
+
 /// NODE1-ROWS-1's standing index≡rows conformance law ("indexes derive
 /// FROM rows, never the reverse"): rebuilding the indexes from THIS
 /// graph's own row tables alone reproduces the indexes the graph is
@@ -258,10 +447,21 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
 /// that writes into `graph.indexes`/`graph.symmetric_indexes` outside
 /// `Graph::build_indexes` + `event_world::add_justified_by` (the one
 /// row-derived post-step) -- the exact class the retired NODE-1
-/// derived-entry merge belonged to. Exercised by
-/// `tests/bible_containers_real_data.rs` over the real committed graph
-/// (a per-build pass would double every build's index cost for a
-/// property that only a code change can break).
+/// derived-entry merge belonged to.
+///
+/// CALL SITES, stated exactly (Batch ATTEST-1, closing NODE-1 review
+/// NEW-1: this comment used to claim coverage the law's single call site
+/// did not deliver). It runs over BOTH paths a real graph can arrive by,
+/// and neither is a per-build pass (that would double every build's index
+/// cost for a property only a code change can break):
+///   * FROM SOURCES -- `tests/bible_containers_real_data.rs`, over the
+///     real committed corpus as `build_graph_from_sources_with_eras`
+///     produces it;
+///   * FROM ARTIFACT -- `tests/artifact_conformance.rs`, over the graph
+///     decoded from real written artifact bytes and indexed by exactly
+///     the sequence `GraphService::from_artifact` runs at server startup.
+/// That second call site is the one NEW-1 found missing; it was the path
+/// nine of the retired derived-merge's own call sites lived on.
 pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
     // Clone the row tables + nodes into a fresh graph (indexes are a pure
@@ -288,6 +488,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.confesses = graph.confesses.clone();
     fresh.corresponds_bible = graph.corresponds_bible.clone();
     fresh.temporal_adjacency = graph.temporal_adjacency.clone();
+    fresh.analogue = graph.analogue.clone();
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 
@@ -670,6 +871,163 @@ mod tests {
         graph2.contains_bible.push(child_row(&c, &a));
         let err2 = container_containment_is_a_forest(&graph2).expect_err("a cycle must be caught");
         assert!(err2.contains("CYCLE"), "{err2}");
+    }
+
+    // -----------------------------------------------------------------
+    // ATTEST-1: the attestation-exclusivity law (L2) and the Analogue
+    // distinctness gate (L4), red/green pairs -- the same per-field
+    // discipline every prior law extension in this file followed.
+    // -----------------------------------------------------------------
+
+    fn event_node(graph: &mut Graph, raw: &str) -> EventId {
+        let id = EventId::new(raw);
+        graph.nodes.insert(
+            id.erase(),
+            Node {
+                id: id.erase(),
+                payload: NodePayload::Event { label: raw.to_string(), kind: "event".into(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None },
+                provenance: "test".into(),
+            },
+        );
+        id
+    }
+
+    fn attests(event: &EventId, book: u8, chapter: u16, verse: u16) -> atlas_graph_types::edge::Attests {
+        use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
+        let l = Locus::whole(VerseRef { book, chapter, verse });
+        atlas_graph_types::edge::Attests {
+            event: event.clone(),
+            attestation: BibleLocusRange::new(l.clone(), l).unwrap(),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        }
+    }
+
+    /// GREEN: two events attesting DIFFERENT verses partition cleanly --
+    /// the law's own happy path, and the shape every corrected pair is
+    /// meant to reach.
+    #[test]
+    fn attestation_exclusivity_green_when_no_verse_is_shared() {
+        let mut graph = Graph::default();
+        let a = event_node(&mut graph, "rob_leper_healed");
+        let b = event_node(&mut graph, "mat_leper_healed");
+        graph.attests.push(attests(&a, 40, 1, 40));
+        graph.attests.push(attests(&b, 39, 8, 1));
+        assert!(attestation_is_exclusive(&graph).is_ok());
+    }
+
+    /// RED: the founding case's own SHAPE -- one verse in two events'
+    /// Attests sets, with the pair undeclared. This is the failure the
+    /// owner reported (LUK.1.27 attested to both the espousal and the
+    /// annunciation), stated as the law that now catches it.
+    #[test]
+    fn attestation_exclusivity_red_on_an_undeclared_shared_verse() {
+        let mut graph = Graph::default();
+        let espousal = event_node(&mut graph, "theo-249");
+        let annunciation = event_node(&mut graph, "rob_annunciation_mary");
+        // LUK 1:27 -- book 41 (Luke), chapter 1, verse 27.
+        graph.attests.push(attests(&espousal, 41, 1, 27));
+        graph.attests.push(attests(&annunciation, 41, 1, 27));
+        let err = attestation_is_exclusive(&graph).expect_err("a shared attestation must fail the build");
+        assert!(err.contains("ATTESTATION EXCLUSIVITY (L2) VIOLATED"), "{err}");
+        assert!(err.contains("theo-249") && err.contains("rob_annunciation_mary"), "the error must name BOTH events: {err}");
+    }
+
+    /// RED: a DECLARED pair that no longer collides is a failure of the
+    /// REAL-corpus half of the law -- the curation queue can only shrink
+    /// deliberately, with the shrink recorded. Uses a real row from the
+    /// shipped inventory so the test cannot rot into asserting nothing.
+    ///
+    /// GREEN half, stated as the complement: the per-build pass
+    /// (`attestation_is_exclusive`) must NOT fail on the same empty graph
+    /// -- every small synthetic fixture in this workspace collides on
+    /// nothing, and treating that as staleness would red every pipeline
+    /// test in the repo. That split is the reason the two functions exist
+    /// separately at all, so it is pinned here rather than only described.
+    #[test]
+    fn stale_declarations_fail_the_real_corpus_law_but_never_the_per_build_pass() {
+        let first = crate::attestation_pending::PENDING.first().expect("the shipped inventory is non-empty -- if it ever empties, L2 is fully satisfied and this module should be deleted with it");
+        // An EMPTY graph collides on nothing, so every declared row is
+        // stale against it by construction.
+        let err = attestation_inventory_has_no_stale_rows(&Graph::default()).expect_err("a declared pair that no longer collides must fail");
+        assert!(err.contains("STALE DECLARATION"), "{err}");
+        assert!(err.contains(first.a), "the error must name the stale pair: {err}");
+
+        assert!(
+            attestation_is_exclusive(&Graph::default()).is_ok(),
+            "the PER-BUILD pass must stay green on a collision-free fixture graph -- otherwise every pipeline test in this workspace reds on an inventory that is about the real corpus, not about them"
+        );
+    }
+
+    /// RED: an inventory whose declared verse count has drifted from the
+    /// truth fails too -- a count that is merely "close" is a count
+    /// nobody can trust.
+    #[test]
+    fn attestation_exclusivity_red_on_inventory_drift() {
+        let row = crate::attestation_pending::PENDING.first().expect("the shipped inventory is non-empty");
+        let mut graph = Graph::default();
+        let a = event_node(&mut graph, row.a);
+        let b = event_node(&mut graph, row.b);
+        // Exactly ONE shared verse -- the real inventory row declares its
+        // own true count, which is never 1 for a real mega-span overlap;
+        // if it ever were, the guard below keeps this test honest.
+        assert_ne!(row.shared_verses, 1, "pick a different row: this test needs a declared count that differs from 1");
+        graph.attests.push(attests(&a, 40, 1, 1));
+        graph.attests.push(attests(&b, 40, 1, 1));
+        let err = attestation_is_exclusive(&graph).expect_err("a drifted count must fail the build");
+        assert!(err.contains("INVENTORY DRIFT"), "{err}");
+    }
+
+    /// L4's companion gate: an Analogue joins two DISTINCT events, once.
+    #[test]
+    fn analogue_gate_green_then_red_on_a_self_loop_and_on_a_duplicate() {
+        use atlas_graph_types::edge::Analogue;
+        let mut graph = Graph::default();
+        let a = event_node(&mut graph, "rob_leper_healed");
+        let b = event_node(&mut graph, "mat_leper_healed");
+        graph.analogue.push(Analogue { a: a.clone(), b: b.clone(), provenance: "test".into() });
+        assert!(analogue_rows_join_two_distinct_events(&graph).is_ok(), "two distinct events is the whole point");
+
+        let mut loops = Graph::default();
+        let s = event_node(&mut loops, "rob_leper_healed");
+        loops.analogue.push(Analogue { a: s.clone(), b: s, provenance: "test".into() });
+        let err = analogue_rows_join_two_distinct_events(&loops).expect_err("a self-loop must be caught");
+        assert!(err.contains("ITSELF"), "{err}");
+
+        // The SAME unordered pair twice, written from opposite ends --
+        // still a duplicate; `entry_id_symmetric` would give both rows the
+        // same id and the index would double the edge.
+        let mut dupes = Graph::default();
+        let x = event_node(&mut dupes, "rob_leper_healed");
+        let y = event_node(&mut dupes, "mat_leper_healed");
+        dupes.analogue.push(Analogue { a: x.clone(), b: y.clone(), provenance: "test".into() });
+        dupes.analogue.push(Analogue { a: y, b: x, provenance: "test".into() });
+        let err2 = analogue_rows_join_two_distinct_events(&dupes).expect_err("a duplicate pair must be caught");
+        assert!(err2.contains("duplicate"), "{err2}");
+    }
+
+    /// The referential half, for both ATTEST-1 endpoints: an `Analogue`
+    /// naming an event with no node, and a `Mentions` row whose widened
+    /// `Event` entity dangles.
+    #[test]
+    fn red_when_an_analogue_or_an_event_mention_names_a_missing_node() {
+        use atlas_graph_types::edge::Analogue;
+        let mut graph = Graph::default();
+        let a = event_node(&mut graph, "rob_leper_healed");
+        graph.analogue.push(Analogue { a, b: EventId::new("nowhere"), provenance: "test".into() });
+        let err = every_authored_edge_resolves(&graph).expect_err("the dangling analogue end must be caught");
+        assert_eq!(err.relation, "analogue");
+        assert_eq!(err.field, "b");
+
+        let mut graph2 = Graph::default();
+        graph2.mentions.push(atlas_graph_types::edge::Mentions {
+            locus: locus(),
+            entity: MentionedEntity::Event(EventId::new("nowhere")),
+            provenance: "test".into(),
+        });
+        let err2 = every_authored_edge_resolves(&graph2).expect_err("the dangling mentions.entity Event must be caught");
+        assert_eq!(err2.relation, "mentions");
+        assert_eq!(err2.field, "entity");
     }
 
     /// NODE1-ROWS-1's index≡rows conformance law, red case: a graph whose

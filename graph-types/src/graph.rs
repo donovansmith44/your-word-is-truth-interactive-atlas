@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use crate::edge::{
-    at, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
+    at, Analogue, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
@@ -57,6 +57,13 @@ pub struct Graph {
     /// (consecutive pairs) -- lives with imported rows because the ETL
     /// authors it, not a human.
     pub temporal_adjacency: Vec<TemporalAdjacency>,
+    /// ATTEST-1: curated `Analogue` rows -- distinct events whose
+    /// accounts are similar in form or content, NEVER two accounts of
+    /// one event (see `edge::Analogue`'s own doc comment, which is the
+    /// law). Authored, not derived: no similarity metric mints these
+    /// (the CHRON-1 verse-jaccard sweep mistaking Matthew's own leper
+    /// for Mark's/Luke's is exactly why).
+    pub analogue: Vec<Analogue>,
 
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -257,6 +264,11 @@ impl Graph {
                 MentionedEntity::Place(p) => at(&p.erase()),
                 MentionedEntity::Person(p) => at(&p.erase()),
                 MentionedEntity::PeopleGroup(g) => at(&g.erase()),
+                // ATTEST-1: a verse that REFERENCES an event without
+                // narrating it (LUK 1:27's "a virgin espoused to a man")
+                // -- the SAME `Mentions` relation, one more attested
+                // sense, lowered the identical way.
+                MentionedEntity::Event(e) => at(&e.erase()),
             };
             pairs.entry(R::Mentions).or_default().push((s, o, M::None));
         }
@@ -337,6 +349,17 @@ impl Graph {
             sym_pairs.entry(S::TemporalAdjacency).or_default().push((
                 at(&row.earlier.erase()),
                 at(&row.later.erase()),
+                M::None,
+            ));
+        }
+        // ATTEST-1: the THIRD inhabited symmetric relation. Neither end
+        // is the original (see `edge::Analogue`), so `build_symmetric`'s
+        // own sort-then-hash entry id is exactly right: querying from `a`
+        // or from `b` returns the other under the SAME EdgeId.
+        for row in &self.analogue {
+            sym_pairs.entry(S::Analogue).or_default().push((
+                at(&row.a.erase()),
+                at(&row.b.erase()),
                 M::None,
             ));
         }
@@ -796,5 +819,71 @@ mod tests {
         let at_back = PositionRef(crate::id::Position::Node(place_id.erase())).edges(&g, &EdgeQuery { kind: inverse_at, cursor: None, limit: 10 });
         assert_eq!(at_back.entries.len(), 1, "the place's own inverse 'site-of-speech' frontier lists the verse back");
         assert_eq!(at_back.entries[0].edge, at_page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
+    }
+
+    /// ATTEST-1's own SANCTIONED contract change, proved at the lowering
+    /// layer (the same discipline NODE1-ROWS-1's own
+    /// `container_child_and_canon_succession_rows_lower_into_the_existing_
+    /// indexes_both_ways` established for its sanctioned change): the new
+    /// SYMMETRIC `Analogue` rows reach the other event from EITHER end
+    /// under the SAME EdgeId, and the widened `MentionedEntity::Event`
+    /// lowers into the SAME `Mentions` relation both ways -- one relation,
+    /// one more attested sense, no second path.
+    #[test]
+    fn analogue_rows_and_event_mentions_lower_into_the_existing_indexes_both_ways() {
+        use crate::edge::{Analogue, Mentions, MentionedEntity, SymRelationId};
+        use crate::id::EventId;
+
+        let mut g = Graph::default();
+        let a = EventId::new("rob_leper_healed");
+        let b = EventId::new("mat_leper_healed");
+        for e in [&a, &b] {
+            g.nodes.insert(
+                e.erase(),
+                Node {
+                    id: e.erase(),
+                    payload: NodePayload::Event { label: e.0.clone(), kind: "event".into(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None },
+                    provenance: "test".into(),
+                },
+            );
+        }
+        let verse_id = crate::id::AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/41.1.27".into() };
+        g.nodes.insert(
+            verse_id.clone(),
+            Node { id: verse_id.clone(), payload: NodePayload::TextUnit { corpus: "bible", renderings: [(TranslationId("kjv".into()), "To a virgin espoused to a man".into())].into_iter().collect() }, provenance: "test".into() },
+        );
+        let espousal = EventId::new("theo-249");
+        g.nodes.insert(
+            espousal.erase(),
+            Node { id: espousal.erase(), payload: NodePayload::Event { label: "Espousal of Mary".into(), kind: "event".into(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None }, provenance: "test".into() },
+        );
+
+        g.analogue.push(Analogue { a: a.clone(), b: b.clone(), provenance: ProvenanceId::from("test") });
+        g.mentions.push(Mentions {
+            locus: TextLocus { at: TextRef::Bible(crate::text::VerseRef { book: 41, chapter: 1, verse: 27 }), span: None },
+            entity: MentionedEntity::Event(espousal.clone()),
+            provenance: ProvenanceId::from("test"),
+        });
+
+        g.build_indexes();
+
+        let sym = EdgeKind::Symmetric(SymRelationId::Analogue);
+        let from_a = PositionRef(crate::id::Position::Node(a.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: None, limit: 10 });
+        assert_eq!(from_a.entries.len(), 1, "the first event's own 'analogous-to' frontier reaches the second");
+        assert_eq!(from_a.entries[0].node, crate::id::Position::Node(b.erase()));
+        let from_b = PositionRef(crate::id::Position::Node(b.erase())).edges(&g, &EdgeQuery { kind: sym, cursor: None, limit: 10 });
+        assert_eq!(from_b.entries.len(), 1, "and the second's reaches the first -- symmetric, no direction to get backwards");
+        assert_eq!(from_b.entries[0].node, crate::id::Position::Node(a.erase()));
+        assert_eq!(from_a.entries[0].edge, from_b.entries[0].edge, "the SAME edge id from either end -- the symmetric bijection witness");
+
+        let fwd = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+        let verse_side = PositionRef(crate::id::Position::Node(verse_id.clone())).edges(&g, &EdgeQuery { kind: fwd, cursor: None, limit: 10 });
+        assert_eq!(verse_side.entries.len(), 1, "the verse's own forward 'mentions' frontier reaches the event");
+        assert_eq!(verse_side.entries[0].node, crate::id::Position::Node(espousal.erase()));
+        let inv = EdgeKind::Directed(RelationId::Mentions, Direction::Inverse);
+        let event_side = PositionRef(crate::id::Position::Node(espousal.erase())).edges(&g, &EdgeQuery { kind: inv, cursor: None, limit: 10 });
+        assert_eq!(event_side.entries.len(), 1, "the EVENT's own inverse 'mentioned-in' frontier lists the verse back -- L3's mention-only frontier");
+        assert_eq!(event_side.entries[0].node, crate::id::Position::Node(verse_id));
+        assert_eq!(event_side.entries[0].edge, verse_side.entries[0].edge, "the SAME edge id, from either end");
     }
 }

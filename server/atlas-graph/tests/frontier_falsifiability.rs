@@ -98,6 +98,12 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
         EdgeKind::Directed(R::Contains, _) => graph.contains_bible.len(),
         EdgeKind::Symmetric(S::CatechismLink) => graph.catechism.len(),
         EdgeKind::Symmetric(S::TemporalAdjacency) => graph.temporal_adjacency.len(),
+        // ATTEST-1: the owner-ratified Analogue relation. Deliberately
+        // NOT gated -- contract-first meant writing the cell before the
+        // rows, but the rows land in the SAME batch, so gating it would
+        // ship a decorative cell for no reason. If this ever goes to zero
+        // the sweep above fails loud, which is the point.
+        EdgeKind::Symmetric(S::Analogue) => graph.analogue.len(),
         other => panic!(
             "frontier_falsifiability.rs's relation_row_count has no mapping for {other:?} -- \
              a new Capability::edges() cell names a relation this sweep doesn't know how to \
@@ -145,6 +151,66 @@ fn members_capability_has_real_bible_contains_rows_since_node_1() {
         "NODE-1's own Bible-corpus Contains rows are missing from the compiled graph -- \
          Capability::Members would be as decorative as the original Parallel cell; re-gate it \
          honestly if this ever regresses to zero"
+    );
+}
+
+/// ATTEST-1's own falsifiability gate (the brief's L4 requirement: ">=1
+/// row after retype"). `Capability::Analogues` names
+/// `SymRelationId::Analogue`; a capability whose relation has zero rows is
+/// exactly the decorative cell design review B1 found and this file
+/// exists to make unshippable. The owner's own charter case
+/// (`rob_leper_healed` <-> `mat_leper_healed`) is that row, and it is
+/// asserted by IDENTITY here, not merely by count -- a future edit that
+/// swapped it for some other pair would leave the count green and the
+/// owner's own reported defect silently unfixed.
+#[test]
+fn analogues_capability_has_the_owners_own_charter_row() {
+    let graph = real_graph();
+    assert!(
+        !graph.analogue.is_empty(),
+        "Capability::Analogues has zero rows in the real compiled graph -- the cell is decorative; \
+         gate it honestly if this ever regresses to zero"
+    );
+    let has_leper_pair = graph.analogue.iter().any(|r| {
+        let (a, b) = (r.a.0.as_str(), r.b.0.as_str());
+        (a == "rob_leper_healed" && b == "mat_leper_healed") || (a == "mat_leper_healed" && b == "rob_leper_healed")
+    });
+    assert!(
+        has_leper_pair,
+        "the owner's own Analogue charter case is missing: \"A leper healed; a great popular \
+         excitement is given a parallel where there shouldn't be from Mat.8.1-4; another leprosy \
+         story.\" rob_leper_healed <-> mat_leper_healed must be an Analogue row"
+    );
+}
+
+/// ATTEST-1's L3 gate: an event whose whole scriptural basis is MENTIONS
+/// is still a real node with a real frontier. `theo-249` ("Espousal of
+/// Mary") is the founding case -- both of its former "parallel accounts"
+/// were retyped, so it must now have ZERO `Attests` rows and a non-empty
+/// set of `Mentions` rows pointing back at it. Asserted over the real
+/// compiled graph, both halves, because either half alone would pass on a
+/// broken shape (zero attests + zero mentions is data loss, not a
+/// mention-only event).
+#[test]
+fn the_espousal_is_a_mention_only_event_with_no_attests_rows() {
+    use atlas_graph_types::edge::MentionedEntity;
+    let graph = real_graph();
+    let attests: Vec<&str> = graph.attests.iter().filter(|r| r.event.0 == "theo-249").map(|r| r.provenance.as_str()).collect();
+    assert!(
+        attests.is_empty(),
+        "theo-249 (Espousal of Mary) still has {} Attests row(s) -- LUK.1.27 and MAT.1.18 both \
+         MENTION the espousal while narrating something else; neither is an account of it",
+        attests.len()
+    );
+    let mentions = graph
+        .mentions
+        .iter()
+        .filter(|r| matches!(&r.entity, MentionedEntity::Event(e) if e.0 == "theo-249"))
+        .count();
+    assert_eq!(
+        mentions, 2,
+        "theo-249 must carry exactly its two retyped mentions (LUK.1.27, MAT.1.18) -- TOTAL \
+         CAPTURE means the facts changed type, not that they were dropped"
     );
 }
 

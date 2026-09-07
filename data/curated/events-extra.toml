@@ -2121,10 +2121,37 @@ label = "A leper healed; great popular excitement"
 from_year = 30
 to_year = 30
 places = ["galilee-1"]
-verses = ["MAT.8.1-4"]
+verses = ["MRK.1.40-45"]
 order_key = 450
 robertson_section = "Robertson (1922) §45, \"A Leper Healed and Much Popular Excitement\""
-ref_note = "Matthew 8:1-4 read directly against the compiled KJV text (Batch CHRON-1: widened from 8:2-4 to include 8:1, the scene-setting 'when he was come down from the mountain, great multitudes followed him' verse -- theo-286's own boundary-verse coverage this event's own theo-286 merge otherwise would have dropped, per the standing coverage-completion law; fix round 1, review finding S-C1/S-1: this top-level field alone does NOT reach the compiled artifact once explicit witness rows exist -- `scene::witnesses_for` returns ONLY those rows -- the real fix is event-witnesses.toml's own MAT witness row, widened alongside this one); Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
+ref_note = "Mark 1:40-45 read directly against the compiled KJV text. Batch ATTEST-1 (owner order 1: 'A leper healed; a great popular excitement is given a parallel where there shouldn't be from Mat.8.1-4; another leprosy story'): this event's own top-level `verses` moved MAT.8.1-4 -> MRK.1.40-45 and its MAT witness row moved to the NEW `mat_leper_healed` event below. Mark's account is the top-level one now because Mark's and Luke's are the two accounts of THIS occasion -- the one during the first tour of Galilee (MRK.1.39, 'he preached in their synagogues throughout all Galilee') whose aftermath gives this event its own title: 'he went out, and began to publish it much, and to blaze abroad the matter, insomuch that Jesus could no more openly enter into the city' (MRK.1.45), 'so much the more went there a fame abroad of him' (LUK.5.15). Matthew's leper is a distinct occasion, joined to this one by an `Analogue` row (data/curated/attestation-corrections.toml), never by a fabricated parallel account. SUPERSEDES the Batch CHRON-1 fix-round-1 note this field used to carry (the MAT.8.2-4 -> MAT.8.1-4 widening): that widening was correct about WHICH verses Matthew's leper pericope spans and wrong only about whose event they belong to -- MAT.8.1 rides to `mat_leper_healed` with the rest of the span, so the coverage-completion law is satisfied there, not lost. Luke's own witness (5:12) names only 'a certain city,' unspecified -- galilee-1 kept as the broad, defensible region"
+
+# Batch ATTEST-1: the OTHER leprosy story (owner order 1, the charter case
+# for the `Analogue` relation). Matthew 8:1-4's own occasion, split off
+# `rob_leper_healed` immediately above -- see
+# data/curated/attestation-corrections.toml's own `[[analogue]]` row for
+# the full KJV ruling on why the two are distinct.
+#
+# WHY THE PLACEMENT IS TEXTUAL, NOT INVENTED: Matthew 8:1 dates itself
+# relative to the Sermon on the Mount -- "When he was come down from the
+# mountain, great multitudes followed him" -- and Matthew's own next
+# pericope is the centurion's servant at Capernaum (MAT.8.5-13), already
+# curated as `rob_centurion_servant` at order_key 550, AD 31. So this event
+# sits between `rob_sermon_on_the_mount` (order_key 540, AD 31) and that
+# one, at order_key 545, in the same year: the position Matthew's own text
+# gives it, not a date this file made up. Place follows the same
+# discipline -- Matthew 8:1-4 names no place, and "the mountain" it comes
+# down from is the Sermon's own, so galilee-1 (`rob_sermon_on_the_mount`'s
+# own place) is the broad, defensible region, never a guessed city.
+[[event]]
+id = "mat_leper_healed"
+label = "A leper healed as Jesus comes down from the mountain"
+from_year = 31
+to_year = 31
+places = ["galilee-1"]
+verses = ["MAT.8.1-4"]
+order_key = 545
+ref_note = "Matthew 8:1-4 read directly against the compiled KJV text: 'When he was come down from the mountain, great multitudes followed him. And, behold, there came a leper and worshipped him, saying, Lord, if thou wilt, thou canst make me clean.' No `robertson_section` field: Robertson's own Harmony (1922) §45 harmonizes Matthew 8:2-4 WITH Mark 1:40-45 and Luke 5:12-16 as ONE section, which is exactly the reading Batch ATTEST-1 was ordered to correct -- claiming §45 for this event would cite Robertson for a distinction Robertson does not make. Left honestly absent rather than invented."
 
 [[event]]
 id = "rob_paralytic_roof"

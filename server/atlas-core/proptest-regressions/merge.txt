@@ -4,4 +4,16 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
+#
+# HONEST LABEL (Batch ATTEST-1, closing NODE-1 review NEW-2): the entry
+# below is the RNG state recorded when MERGE-BOUNDARY-1 first failed, and
+# proptest still replays that state first on every run. It does NOT
+# replay the recorded VALUE TUPLE any more: the comment records a THREE-
+# tuple (lat, lon, epsilon_km), and `threshold_boundary_property` has
+# since gained a fourth generator (`bearing`, review M-4), so the same
+# state now draws different values. Kept as a corpus entry, not as the
+# regression witness. THE witness for that boundary case is the
+# deterministic test `merge::tests::merge_boundary_1_original_witness_
+# replays_exactly`, which exercises the exact original tuple with no RNG
+# involved and fails under the retired 111.32 constant.
 cc 66c358bacb8377dd7d01da304ab7bba1f6c6d0e1c50561bdc2422fe6f3d86c1f # shrinks to lat = 0.0, lon = 0.0, epsilon_km = 0.001

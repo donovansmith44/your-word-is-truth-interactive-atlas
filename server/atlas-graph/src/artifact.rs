@@ -688,6 +688,12 @@ enum DtoMentionedEntity {
     Place(String),
     Person(String),
     PeopleGroup(String),
+    /// ATTEST-1: APPENDED variant (never inserted -- the same discipline
+    /// PG-1's own `PeopleGroup` addition established here; bincode decodes
+    /// enums by index, so appending is benign for reading an OLDER
+    /// artifact but a stale READER handed one of these is not, hence the
+    /// FORMAT_VERSION bump).
+    Event(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -718,6 +724,17 @@ struct DtoCrossRef {
 struct DtoTemporalAdjacency {
     earlier: String,
     later: String,
+    provenance: String,
+}
+
+/// ATTEST-1: mirrors `graph_types::edge::Analogue` -- two event ids and
+/// provenance. No `DtoJustification` field, matching the typed row
+/// (the row's own provenance names the curated file that authored it;
+/// the WHY lives in that file's own `note`, curator-facing).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DtoAnalogue {
+    a: String,
+    b: String,
     provenance: String,
 }
 
@@ -796,6 +813,11 @@ pub struct ArtifactDump {
     /// nothing else needs to ride the artifact for that -- see this
     /// struct's own former `temporal_neighbors` field, retired below.
     temporal_adjacency: Vec<DtoTemporalAdjacency>,
+    /// ATTEST-1: the curated `analogue` row table -- the owner-ratified
+    /// symmetric relation for similar-but-distinct events. A new relation
+    /// table on `ArtifactDump`, so FORMAT_VERSION bumps (this file's own
+    /// convention).
+    analogue: Vec<DtoAnalogue>,
     /// The chronology companion (`event_world::Chronology`) -- NOT
     /// re-derivable from the row tables alone at load time without
     /// `AtlasData` (see `event_world::Chronology::from_derivation`'s own
@@ -972,7 +994,22 @@ pub struct ArtifactDump {
 /// round adds/changes ZERO nodes -- verified by
 /// `tests/version_root_regression.rs` staying green un-re-pinned).
 /// `data/compiled/graph.bin` rebuilt in this same commit.
-const FORMAT_VERSION: u32 = 12;
+///
+/// ATTEST-1 (2026-09-07, accounts vs. mentions + the owner-ratified
+/// `Analogue` relation): bumped 12 -> 13. Triggers, landed together:
+/// `ArtifactDump.analogue: Vec<DtoAnalogue>` ADDED (a new relation table
+/// -- `dump`'s own guard schedule again, the THIRTEENTH member; the
+/// moment `event_world` started emitting real curated `analogue` rows),
+/// and `DtoMentionedEntity::Event(String)` APPENDED (the widened
+/// `MentionedEntity`, so a verse can MENTION an event without attesting
+/// it -- L1). A genuine wire-shape break both directions (bincode field
+/// COUNT changed, and an enum gained a variant a version-12 reader
+/// cannot decode). VERSION ROOT MOVES: this batch mints one new Event
+/// node (`mat_leper_healed`, Matthew's own leper -- see
+/// `data/curated/events-extra.toml`) and the root hashes every node's
+/// id+payload, so `tests/version_root_regression.rs` is re-pinned in
+/// the same commit that rebuilds `data/compiled/graph.bin`.
+const FORMAT_VERSION: u32 = 13;
 
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
@@ -1183,6 +1220,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
                 MentionedEntity::Place(p) => DtoMentionedEntity::Place(p.0.clone()),
                 MentionedEntity::Person(p) => DtoMentionedEntity::Person(p.0.clone()),
                 MentionedEntity::PeopleGroup(g) => DtoMentionedEntity::PeopleGroup(g.0.clone()),
+                MentionedEntity::Event(e) => DtoMentionedEntity::Event(e.0.clone()),
             };
             DtoMentions { locus: (&r.locus).into(), entity, provenance: r.provenance.clone() }
         })
@@ -1210,6 +1248,15 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         .temporal_adjacency
         .iter()
         .map(|r| DtoTemporalAdjacency { earlier: r.earlier.0.clone(), later: r.later.0.clone(), provenance: r.provenance.clone() })
+        .collect();
+
+    // ATTEST-1: the curated analogue rows, in authored (curated-file)
+    // order -- the same plain row-table treatment `temporal_adjacency`
+    // above gets.
+    let analogue = g
+        .analogue
+        .iter()
+        .map(|r| DtoAnalogue { a: r.a.0.clone(), b: r.b.0.clone(), provenance: r.provenance.clone() })
         .collect();
 
     // Iterates `chronology.chrono.order` (a deterministic `Vec<String>`),
@@ -1275,6 +1322,7 @@ pub fn dump(g: &Graph, chronology: &Chronology, stats: &BuildStats, event_world_
         mentions,
         cross_refs,
         temporal_adjacency,
+        analogue,
         chrono_order,
         chrono_placements,
         chrono_years,
@@ -1422,6 +1470,7 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
                                 DtoMentionedEntity::Place(p) => MentionedEntity::Place(PlaceId::new(p)),
                                 DtoMentionedEntity::Person(p) => MentionedEntity::Person(PersonId::new(p)),
                                 DtoMentionedEntity::PeopleGroup(pg) => MentionedEntity::PeopleGroup(PeopleGroupId::new(pg)),
+                                DtoMentionedEntity::Event(e) => MentionedEntity::Event(EventId::new(e)),
                             };
                             Ok(Mentions { locus: r.locus.try_into()?, entity, provenance: r.provenance })
                         })
@@ -1626,6 +1675,12 @@ pub fn to_service_parts(d: ArtifactDump) -> Result<(Graph, BuildStats, EventWorl
     // the chronology companion reconstruction below.
     for r in d.temporal_adjacency {
         g.temporal_adjacency.push(atlas_graph_types::edge::TemporalAdjacency { earlier: EventId::new(r.earlier), later: EventId::new(r.later), provenance: r.provenance });
+    }
+
+    // ATTEST-1: the curated analogue rows, the same plain-row-table
+    // treatment.
+    for r in d.analogue {
+        g.analogue.push(atlas_graph_types::edge::Analogue { a: EventId::new(r.a), b: EventId::new(r.b), provenance: r.provenance });
     }
 
     // The chronology companion (this module's own `ArtifactDump.chrono_*`

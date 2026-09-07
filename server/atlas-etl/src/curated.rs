@@ -366,6 +366,84 @@ pub fn parse_event_witnesses(input: &str) -> Result<Vec<(String, atlas_core::dat
     Ok(out)
 }
 
+// --- Batch ATTEST-1: attestation-corrections.toml (accounts vs mentions,
+// plus the Analogue relation) ---
+
+#[derive(Deserialize)]
+struct AttestationCorrectionsFile {
+    #[serde(default)]
+    mention: Vec<MentionToml>,
+    #[serde(default)]
+    analogue: Vec<AnalogueToml>,
+}
+
+#[derive(Deserialize)]
+struct MentionToml {
+    event_id: String,
+    /// Curator-friendly single-verse-or-range strings, expanded by
+    /// `expand_verse_ref` -- the SAME helper `events-extra.toml`/
+    /// `event-witnesses.toml` already use.
+    verses: Vec<String>,
+    note: String,
+}
+
+#[derive(Deserialize)]
+struct AnalogueToml {
+    a: String,
+    b: String,
+    note: String,
+}
+
+/// Parses `attestation-corrections.toml` (Batch ATTEST-1, the owner's own
+/// two orders: the account/mention distinction and the `Analogue`
+/// relation). ONE file, two FLAT arrays -- `[[mention]]` and
+/// `[[analogue]]` -- each row naming its own event ids explicitly, the
+/// same no-mis-attachment-risk shape `parse_event_witnesses` above
+/// establishes and for the same reason (see that function's own doc
+/// comment).
+///
+/// `[[mention]]` is a RETYPE, not a deletion: `compile()` strips the named
+/// verses out of that event's own `verses`/witness lists so no `Attests`
+/// row is built for them, and hands the row on to
+/// `atlas_graph::event_world`, which emits a `Mentions` row pointing at
+/// the event instead. Total capture -- the fact changes type and keeps its
+/// provenance; nothing is dropped.
+///
+/// Pure and STRUCTURAL only, same split every other curated schema in this
+/// module follows: a malformed file bails immediately; cross-checking each
+/// event id against the real compiled event set is `compile()`'s own job.
+pub fn parse_attestation_corrections(
+    input: &str,
+) -> Result<(Vec<atlas_core::data::EventMentionSeed>, Vec<atlas_core::data::EventAnalogueSeed>)> {
+    let f: AttestationCorrectionsFile = toml::from_str(input)
+        .context("attestation-corrections.toml: invalid TOML or does not match the [[mention]]/[[analogue]] schema")?;
+
+    let mut mentions = Vec::with_capacity(f.mention.len());
+    for m in f.mention {
+        let mut verses = Vec::new();
+        for v in &m.verses {
+            expand_verse_ref(v, &format!("mention row for event '{}'", m.event_id), &mut verses)?;
+        }
+        if verses.is_empty() {
+            bail!(
+                "attestation-corrections.toml: [[mention]] row for event '{}' names no verses -- a retype with nothing to retype is a curation mistake, not an empty no-op",
+                m.event_id
+            );
+        }
+        mentions.push(atlas_core::data::EventMentionSeed { event_id: m.event_id, verses, note: m.note });
+    }
+
+    let mut analogues = Vec::with_capacity(f.analogue.len());
+    for a in f.analogue {
+        if a.a == a.b {
+            bail!("attestation-corrections.toml: [[analogue]] row joins '{}' to itself -- an Analogue asserts two DISTINCT events", a.a);
+        }
+        analogues.push(atlas_core::data::EventAnalogueSeed { a: a.a, b: a.b, note: a.note });
+    }
+
+    Ok((mentions, analogues))
+}
+
 // --- Batch T2: acts-sections.toml (Acts provenance) ---
 
 #[derive(Deserialize)]

@@ -689,7 +689,19 @@ fn chron1_coverage_restorations_actually_reach_witnesses_for() {
     // cap, unrelated to this batch, would make JHN.4.27 structurally
     // unreachable through witnesses_for() regardless of the widening).
     let cases: &[(&str, &str)] = &[
-        ("rob_leper_healed", "MAT.8.1"),
+        // Batch ATTEST-1 (owner order 1): MAT.8.1 is STILL covered, and
+        // still through a real witness row -- the CHRON-1 restoration this
+        // case exists to protect is intact -- but the event it attests
+        // moved `rob_leper_healed` -> `mat_leper_healed`. Matthew's leper
+        // is a DISTINCT occasion from Mark's and Luke's (the false
+        // parallel the owner reported); the two are joined by an
+        // `Analogue` row now. Re-pointing this pin rather than deleting it
+        // is the point: the coverage claim survives the correction.
+        ("mat_leper_healed", "MAT.8.1"),
+        // ... and `rob_leper_healed` keeps its own MRK/LUK accounts, so
+        // the event the CHRON-1 merge produced is still witness-complete.
+        ("rob_leper_healed", "MRK.1.40"),
+        ("rob_leper_healed", "LUK.5.12"),
         ("ab_egypt", "GEN.12.11"),
         ("je_egypt_ruler", "GEN.41.37"),
         ("jm_caesarea_philippi", "MRK.8.27"),

@@ -286,6 +286,44 @@ pub struct TypologySeed {
     pub text: String,
 }
 
+/// ATTEST-1: one CURATED account -> mention retype --
+/// `data/curated/attestation-corrections.toml`'s own `[[mention]]` rows.
+///
+/// THE ACCOUNT/MENTION LAW (L1, owner-diagnosed): an event's `Attests`
+/// edges carry ONLY narrative ACCOUNTS -- a passage that NARRATES the
+/// event. A verse that merely REFERENCES it while narrating something
+/// else is a MENTION. LUK 1:27 ("To a virgin espoused to a man whose
+/// name was Joseph") references the espousal inside Luke's account of
+/// the ANNUNCIATION; it is not an account of the espousal, and carrying
+/// it as one is what put a verse in two events' `Attests` sets and
+/// fabricated a parallel between them.
+///
+/// `verses` are this project's own curator-friendly single-verse-or-range
+/// strings, expanded by `curated::expand_verse_ref` exactly like
+/// `events-extra.toml`'s own `verses` field. `note` is the RULING --
+/// why this verse mentions rather than narrates, written against the KJV
+/// text -- and rides onto the compiled row's provenance trail.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EventMentionSeed {
+    pub event_id: String,
+    /// Canonical verse ids, already expanded.
+    pub verses: Vec<String>,
+    pub note: String,
+}
+
+/// ATTEST-1: one CURATED `Analogue` row --
+/// `data/curated/attestation-corrections.toml`'s own `[[analogue]]` rows.
+/// The owner's own ratified idiom ("let's call it Analogue; that's ok for
+/// now.") for DISTINCT events whose accounts are similar in form or
+/// content -- NEVER two accounts of one event. Symmetric: `a`/`b` name
+/// two ends, not a subject and an object.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EventAnalogueSeed {
+    pub a: String,
+    pub b: String,
+    pub note: String,
+}
+
 /// A datable happening. `places[0]` is the anchor place used for arrow
 /// endpoints; `places` may list more than one place (e.g. a campaign
 /// touching several locations), all of which light up in time mode.
@@ -1152,6 +1190,26 @@ pub struct AtlasData {
     /// 1b). Same treatment as `fulfillment_seeds` immediately above.
     #[serde(skip)]
     pub typology_seeds: Vec<TypologySeed>,
+    /// ATTEST-1: curated ACCOUNT -> MENTION retype rows
+    /// (`data/curated/attestation-corrections.toml`'s own `[[mention]]`
+    /// rows). Same `#[serde(skip)]`-plus-populate-in-`compile()` treatment
+    /// as `typology_seeds` above. Each row names a verse that was being
+    /// carried as an ACCOUNT of an event (an `Attests` row) but which only
+    /// REFERENCES it -- `compile()` removes the verse from that event's own
+    /// `verses`/witness lists (so no `Attests` row is ever built for it)
+    /// and leaves the fact here for `atlas_graph::event_world` to emit as a
+    /// `Mentions` row instead. TOTAL CAPTURE: the fact is RETYPED, never
+    /// deleted.
+    #[serde(skip)]
+    pub event_mentions: Vec<EventMentionSeed>,
+    /// ATTEST-1: curated `Analogue` rows
+    /// (`data/curated/attestation-corrections.toml`'s own `[[analogue]]`
+    /// rows) -- distinct events whose accounts are similar in form or
+    /// content, NEVER two accounts of one event (the owner's own ratified
+    /// idiom). Same treatment as `event_mentions` immediately above;
+    /// `atlas_graph::event_world` is its only reader.
+    #[serde(skip)]
+    pub event_analogues: Vec<EventAnalogueSeed>,
 
     /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]

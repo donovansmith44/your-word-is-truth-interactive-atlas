@@ -1438,12 +1438,23 @@ verses = ["MAT.4.23-25"]
 ref_note = "Matthew 4:23-25 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor)"
 robertson_section = "Robertson (1922) §44"
 
+# Batch ATTEST-1 (owner order 1, the Analogue charter case): this row's
+# `event_id` moved `rob_leper_healed` -> `mat_leper_healed`. It was the
+# FALSE PARALLEL the owner reported -- "A leper healed; a great popular
+# excitement is given a parallel where there shouldn't be from Mat.8.1-4;
+# another leprosy story." The verses themselves are unchanged (MAT.8.1-4,
+# still the full pericope Batch CHRON-1's own fix round widened it to);
+# only the event they attest is corrected, so no coverage is lost -- the
+# two events are joined by an `Analogue` row in
+# data/curated/attestation-corrections.toml instead of by a fabricated
+# parallel account. No `robertson_section`: Robertson's own §45 harmonizes
+# Matthew WITH Mark and Luke as one section, the exact reading this
+# correction reverses; see mat_leper_healed's own `ref_note`.
 [[witness]]
-event_id = "rob_leper_healed"
+event_id = "mat_leper_healed"
 book = "MAT"
 verses = ["MAT.8.1-4"]
-ref_note = "Matthew 8:1-4 read directly against the compiled KJV text -- included here too, explicitly, so this event's own PARALLEL ACCOUNTS section is complete, same pw_bethany precedent (owner's own live-review sweep, 2026-08-21, caught this batch's own systemic gap: an event's own top-level book needs an EXPLICIT witness row too, once ANY other witness exists, or heading_anchors_for silently drops its own anchor). Batch CHRON-1 fix round 1 (review finding S-C1/S-1): widened from MAT.8.2-4 to MAT.8.1-4 -- `scene::witnesses_for` returns ONLY these explicit witness rows once any exist, never falling back to the event's own top-level `verses` field, so widening events-extra.toml's own MAT.8.1-4 alone (this batch's original fix) never actually reached the compiled artifact; this row is the one that does. The widening supersedes Robertson's own §45 title's literal 2-4 span because the theo-286 merge absorbed Theographic's own MAT.8.1 attestation (the leper pericope's own scene-setting verse, \"when he was come down from the mountain, great multitudes followed him\") -- restoring it here, not dropping it, per the standing coverage-completion law."
-robertson_section = "Robertson (1922) §45"
+ref_note = "Matthew 8:1-4 read directly against the compiled KJV text. Matthew's own leper pericope, whole: the scene-setting 'when he was come down from the mountain, great multitudes followed him' (8:1) through the charge to 'shew thyself to the priest' (8:4). This is `mat_leper_healed`'s ONE account -- Matthew is the only evangelist who places a leper's cleansing here, immediately after the Sermon on the Mount and immediately before the centurion's servant (8:5-13) -- so this event has one account and no PARALLEL ACCOUNTS heading, which is the correct and honest rendering rather than the false parallel it used to feed."
 
 [[witness]]
 event_id = "rob_paralytic_roof"

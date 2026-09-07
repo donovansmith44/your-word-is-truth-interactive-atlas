@@ -161,6 +161,28 @@ fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     let admit_start = Instant::now();
     atlas_graph_types::store::assert_answers_match(&loaded_graph, &model_graph);
     println!("M-C ARTIFACT ADMISSION (assert_answers_match, full graph): {:?}", admit_start.elapsed());
+
+    // Batch ATTEST-1, closing NODE-1 review NEW-2's sibling finding
+    // NEW-1 / dispatch L-B: the index≡rows conformance law
+    // (`law_check::indexes_derive_exactly_from_rows`) claims in its own
+    // doc comment to catch "any future step that writes into
+    // graph.indexes/graph.symmetric_indexes outside build_indexes +
+    // add_justified_by" -- but until now it had exactly ONE call site,
+    // `bible_containers_real_data.rs`, over a graph built FROM SOURCES.
+    // The FROM-ARTIFACT production path (`to_service_parts` +
+    // `build_indexes` + `add_justified_by`, the three lines above, and
+    // what `GraphService::from_artifact` does at server startup) was
+    // never subjected to it, so a future post-index derivation added on
+    // that path alone would have left the law green while the server
+    // served index entries with no backing rows.
+    //
+    // EXTENDED, not narrowed (the finding offered both): `loaded_graph`
+    // here IS a graph off the decoded bytes, already built by exactly
+    // the production sequence, so asserting the law over it costs one
+    // extra index rebuild in a test that already pays for two full graph
+    // builds -- and it closes the hole rather than documenting it.
+    atlas_graph::law_check::indexes_derive_exactly_from_rows(&loaded_graph)
+        .expect("the FROM-ARTIFACT graph's indexes must derive exactly from its own rows -- see this call site's own comment (NEW-1/L-B)");
 }
 
 /// A GraphService can be constructed directly from a written artifact file

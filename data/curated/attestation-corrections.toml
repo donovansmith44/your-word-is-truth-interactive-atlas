@@ -1,0 +1,111 @@
+# ACCOUNTS vs. MENTIONS, and the ANALOGUE relation (Batch ATTEST-1).
+#
+# THE OWNER'S TWO ORDERS, verbatim, that this file exists to carry out:
+#
+#   1. "let's call it Analogue; that's ok for now." -- ratifying a new
+#      relation for similar-but-distinct events, after: "A leper healed; a
+#      great popular excitement is given a parallel where there shouldn't
+#      be from Mat.8.1-4; another leprosy story. We need to come up with an
+#      idiom for stories that are very similar in this regard, but distinct
+#      events."
+#
+#   2. "I'm seeing a fundamental error. The Espousal of Mary event has
+#      parallel accounts Mat.1.18 + Luke.1.27, and that's a distinct event
+#      from The Angel Gabriel Announces Jesus'... which has Luk1.26-36;
+#      Even worse, the appearance of Gabriel to Zacharias is BETWEEN the
+#      espousal of mary and the announcement of Gabriel to Mary."
+#
+# THE ACCOUNT/MENTION LAW (L1). An event's `Attests` edges carry ONLY
+# narrative ACCOUNTS -- a passage that NARRATES the event. A verse that
+# merely REFERENCES an event while narrating something else is a MENTION.
+# This matters mechanically, not just editorially: `Attests` is what the
+# frontier's `Parallels` capability walks (verse -> event -> that event's
+# OTHER witnesses), so a verse sitting in two events' `Attests` sets
+# silently fabricates a parallel between two events that are not parallel.
+#
+# TOTAL CAPTURE. Nothing here DELETES a fact. A `[[mention]]` row RETYPES
+# an attestation: `atlas_etl::compile` strips the named verse out of that
+# event's own `verses`/witness lists (so no `Attests` row is built) and
+# `atlas_graph::event_world` emits a `Mentions` row pointing at the same
+# event instead. The verse still reaches the event; it reaches it under
+# the relation that is true.
+#
+# CITATION INTEGRITY. Every ruling below was made against the KJV text
+# read directly (`data/raw/kjv.json`), quoted in the note, per this
+# project's standing citation-integrity rule.
+
+# --------------------------------------------------------------------
+# [[mention]] -- accounts that were only ever mentions
+# --------------------------------------------------------------------
+
+# THE FOUNDING CASE (owner order 2). theo-249 "Espousal of Mary" carried
+# LUK.1.27 and MAT.1.18 as its two "parallel accounts". Neither narrates
+# the espousal; both mention it while narrating something else. With both
+# retyped, the espousal becomes a MENTION-ONLY event (L3) -- still a real
+# node, still placed in the chronology on its Traditional basis, but its
+# frontier shows "Mentioned in", never a fabricated "PARALLEL ACCOUNTS".
+[[mention]]
+event_id = "theo-249"
+verses = ["LUK.1.27"]
+note = """KJV, Luke 1:26-27: "And in the sixth month the angel Gabriel was \
+sent from God unto a city of Galilee, named Nazareth, / To a virgin \
+espoused to a man whose name was Joseph, of the house of David; and the \
+virgin's name was Mary." The espousal appears here as a PREPOSITIONAL \
+PHRASE naming Gabriel's destination -- "to a virgin espoused to a man" -- \
+inside Luke's account of the ANNUNCIATION. The verse narrates the angel's \
+errand, not the betrothal: no parties act, no agreement is made, nothing \
+happens to Mary and Joseph in it. Carrying it as an ACCOUNT of the \
+espousal is what put LUK.1.27 in the Attests set of BOTH theo-249 and \
+rob_annunciation_mary (LUK.1.26-38), which in turn placed a verse from \
+inside the annunciation narrative chronologically BEFORE the appearance \
+of Gabriel to Zacharias (rob_zacharias_vision, LUK.1.5-24) -- the exact \
+out-of-order reading the owner reported. Retyped to a mention."""
+
+[[mention]]
+event_id = "theo-249"
+verses = ["MAT.1.18"]
+note = """KJV, Matthew 1:18: "Now the birth of Jesus Christ was on this \
+wise: When as his mother Mary was espoused to Joseph, before they came \
+together, she was found with child of the Holy Ghost." RULING: MENTION, \
+not account. The verse's own main clause is "the birth of Jesus Christ \
+was on this wise... she was found with child of the Holy Ghost"; the \
+espousal appears in a SUBORDINATE TEMPORAL CLAUSE ("When as his mother \
+Mary was espoused to Joseph") supplying the background against which the \
+discovery is narrated. Matthew narrates the with-child discovery and \
+Joseph's response (1:19-25); he never narrates the betrothal itself -- no \
+occasion, no parties acting, no place, no time. Compare what an account \
+of the espousal would have to contain and Matthew 1:18 contains none of \
+it. Retyped to a mention, which leaves theo-249 mention-only (L3)."""
+
+# --------------------------------------------------------------------
+# [[analogue]] -- distinct events whose accounts are similar
+# --------------------------------------------------------------------
+
+# THE OWNER'S CHARTER CASE for the relation (order 1). See
+# `data/curated/events-extra.toml`'s own `mat_leper_healed` entry for the
+# full split, and `batch-attest1-report.md` for the root cause of the
+# false parallel.
+[[analogue]]
+a = "rob_leper_healed"
+b = "mat_leper_healed"
+note = """The owner's own report: "A leper healed; a great popular \
+excitement is given a parallel where there shouldn't be from Mat.8.1-4; \
+another leprosy story." KJV read directly for all three passages. \
+rob_leper_healed is Mark's and Luke's occasion: Mark 1:40-45 follows the \
+first tour of Galilee (1:39, "he preached in their synagogues throughout \
+all Galilee") and closes with the aftermath this event is TITLED for -- \
+"But he went out, and began to publish it much, and to blaze abroad the \
+matter, insomuch that Jesus could no more openly enter into the city"; \
+Luke 5:12-16 matches ("when he was in a certain city... so much the more \
+went there a fame abroad of him... And he withdrew himself into the \
+wilderness, and prayed"). Matthew 8:1-4 is a DIFFERENT occasion: it opens \
+"When he was come down from the mountain, great multitudes followed him" \
+-- i.e. immediately after the Sermon on the Mount (Matthew 5-7), which in \
+Matthew's own sequence comes AFTER the Galilean preaching tour, and it \
+carries NO publishing-abroad aftermath at all. The two accounts are \
+strikingly similar in form and content (the same request formula, "Lord, \
+if thou wilt, thou canst make me clean"; the same touch and answer, "I \
+will; be thou clean"; the same charge to shew himself to the priest and \
+offer what Moses commanded) -- which is exactly why a verse-overlap \
+metric fused them, and exactly what Analogue is for: similar accounts, \
+distinct events. NEVER two accounts of one event."""

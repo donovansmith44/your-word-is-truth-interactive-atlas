@@ -515,9 +515,26 @@ mod tests {
         // distances up to 6km: the worst |haversine - intended| error of
         // this construction is under 4e-9 km (micrometers), so the real
         // margins are the full ~1m on both sides (0.999km vs 1.0km, and
-        // 1.0km vs 1.0+epsilon with epsilon >= 1m). The checked-in seed
-        // replays its recorded RNG state first, every run, as the
-        // regression witness.
+        // 1.0km vs 1.0+epsilon with epsilon >= 1m).
+        //
+        // ON THE CHECKED-IN SEED, HONESTLY (Batch ATTEST-1, closing the
+        // NODE-1 review's own NEW-2/L-A finding): `proptest-regressions/
+        // merge.txt` still replays its recorded RNG STATE first, every
+        // run, as proptest's convention intends -- but that state no
+        // longer reproduces the original MERGE-BOUNDARY-1 tuple, and the
+        // sentence that stood here calling it "the regression witness"
+        // had stopped being true. The recorded case shrank to a THREE-
+        // tuple (`lat = 0.0, lon = 0.0, epsilon_km = 0.001`); review M-4
+        // then added a FOURTH generator (`bearing`), so replaying the
+        // same RNG state now draws a different value tuple. A regression
+        // test that no longer reproduces its own bug is theatre, so the
+        // replay is RESTORED as a real, deterministic one:
+        // `merge_boundary_1_original_witness_replays_exactly` (below,
+        // outside this `proptest!` block) exercises the exact original
+        // tuple, at every quadrant bearing, with no RNG in the loop at
+        // all -- and it fails under the old 111.32 constant, which is
+        // what makes it a witness. THAT is this property's regression
+        // witness; the seed file is a bonus corpus entry, nothing more.
         #[test]
         fn threshold_boundary_property(lat in -60.0f64..60.0, lon in -170.0f64..170.0, bearing in 0.0f64..std::f64::consts::TAU, epsilon_km in 0.001f64..5.0) {
             // `great_circle_km`'s own EARTH_RADIUS_KM, converted: km per
@@ -535,6 +552,77 @@ mod tests {
 
             prop_assert!(great_circle_km(lat, lon, in_lat, in_lon) <= SAME_PLACE_THRESHOLD_KM);
             prop_assert!(great_circle_km(lat, lon, out_lat, out_lon) > SAME_PLACE_THRESHOLD_KM);
+        }
+    }
+
+    /// MERGE-BOUNDARY-1's ORIGINAL WITNESS, replayed exactly and
+    /// deterministically (Batch ATTEST-1, closing NODE-1 review NEW-2 /
+    /// dispatch L-A: "restore a seed that genuinely replays the original
+    /// boundary case (preferred -- a regression test that no longer
+    /// reproduces its bug is theatre)").
+    ///
+    /// The original shrunk case was `lat = 0.0, lon = 0.0, epsilon_km =
+    /// 0.001` -- a 3-tuple, drawn before the property gained its
+    /// `bearing` generator, so the committed proptest seed cannot replay
+    /// it any more (see the property's own comment above). This test
+    /// replays the tuple ITSELF instead of the RNG state that once
+    /// produced it, which is strictly stronger: no seed file, no
+    /// generator arity, nothing between the recorded boundary case and
+    /// the assertion.
+    ///
+    /// WHY IT IS A REAL WITNESS: with the defect's own constant
+    /// (`km_per_deg_lat = 111.32`, the WGS84-flavored value the property
+    /// used to carry) the "outside" pair at epsilon = 1m lands at
+    /// 0.9998767 km -- INSIDE the 1.0 km threshold -- and the second
+    /// assertion below fails. The first block of this test proves that
+    /// numerically, so the witness is checked, not merely asserted; the
+    /// second block then proves the shipped conversion passes the same
+    /// case at every quadrant bearing (the `bearing` axis M-4 added,
+    /// covered here at its extremes rather than sampled).
+    #[test]
+    fn merge_boundary_1_original_witness_replays_exactly() {
+        const LAT: f64 = 0.0;
+        const LON: f64 = 0.0;
+        const EPSILON_KM: f64 = 0.001;
+
+        let offset = |km_per_deg_lat: f64, bearing: f64, km: f64| -> (f64, f64) {
+            let dlat = km * bearing.cos() / km_per_deg_lat;
+            let lat_mid = LAT + dlat / 2.0;
+            let dlon = km * bearing.sin() / (km_per_deg_lat * lat_mid.to_radians().cos());
+            (LAT + dlat, LON + dlon)
+        };
+
+        // (a) THE BUG, reproduced: the retired WGS84-flavored constant
+        // puts the "outside" pair INSIDE the threshold at this exact
+        // tuple. If this ever stops holding, the witness has stopped
+        // witnessing and this test must be re-derived, not deleted.
+        let bad_km_per_deg_lat = 111.32_f64;
+        let (bad_lat, bad_lon) = offset(bad_km_per_deg_lat, 0.0, SAME_PLACE_THRESHOLD_KM + EPSILON_KM);
+        let bad_d = great_circle_km(LAT, LON, bad_lat, bad_lon);
+        assert!(
+            bad_d <= SAME_PLACE_THRESHOLD_KM,
+            "MERGE-BOUNDARY-1's own defect must still be reproducible from this tuple under the \
+             retired 111.32 constant -- got {bad_d}km, which is already outside the threshold, so \
+             this test is no longer witnessing the bug it claims to"
+        );
+
+        // (b) THE FIX, at the same tuple, at every quadrant bearing: the
+        // sphere's own exact conversion satisfies both halves of the
+        // property.
+        let good_km_per_deg_lat = 6371.0088_f64 * std::f64::consts::PI / 180.0;
+        for quarter in 0..4 {
+            let bearing = std::f64::consts::FRAC_PI_2 * quarter as f64;
+            let (in_lat, in_lon) = offset(good_km_per_deg_lat, bearing, SAME_PLACE_THRESHOLD_KM * 0.999);
+            let (out_lat, out_lon) = offset(good_km_per_deg_lat, bearing, SAME_PLACE_THRESHOLD_KM + EPSILON_KM);
+            assert!(
+                great_circle_km(LAT, LON, in_lat, in_lon) <= SAME_PLACE_THRESHOLD_KM,
+                "bearing {bearing}: the 99.9% pair must be inside the threshold"
+            );
+            assert!(
+                great_circle_km(LAT, LON, out_lat, out_lon) > SAME_PLACE_THRESHOLD_KM,
+                "bearing {bearing}: the +1m pair must be outside the threshold -- this is the exact \
+                 assertion MERGE-BOUNDARY-1 failed"
+            );
         }
     }
 

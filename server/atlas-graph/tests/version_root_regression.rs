@@ -354,4 +354,18 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // design. Real, deliberate graph content change -- the root moving IS
 // the owner's ruling landing as data. New captured value:
 // "0f247549951a8f42".
-const EXPECTED_VERSION_HEX: &str = "0f247549951a8f42";
+//
+// MOVED AGAIN (Batch ATTEST-1, 2026-09-07, accounts vs. mentions + the
+// owner-ratified Analogue relation): ONE new Event node,
+// `mat_leper_healed` -- Matthew's own leper occasion, split off
+// `rob_leper_healed` on the owner's report that MAT.8.1-4 "is given a
+// parallel where there shouldn't be... another leprosy story" -- plus two
+// changed `NodePayload::Event` payloads: `rob_leper_healed`'s own
+// `verses`/`witnesses` no longer carry Matthew, and `theo-249`'s empty as
+// the espousal becomes mention-only (both of its former "parallel
+// accounts" retyped to `Mentions`). The root hashes every node's
+// id+payload, so one new node and two changed payloads move it by design.
+// Real, deliberate graph content change -- the root moving IS the owner's
+// two corrections landing as data. New captured value:
+// "59c6f7dc236f6f23".
+const EXPECTED_VERSION_HEX: &str = "59c6f7dc236f6f23";

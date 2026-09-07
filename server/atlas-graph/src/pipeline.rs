@@ -484,6 +484,18 @@ impl Pass for LawCheckPass {
         crate::law_check::container_containment_is_a_forest(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("NODE1-ROWS-1 container-containment forest law (acyclicity + single-parent)")?;
+        // ATTEST-1 (owner-signed FAIL-LOUD; the softer warning option was
+        // declined). L2: no verse belongs to the `Attests` set of two
+        // distinct events, stated against the declared curation queue in
+        // `attestation_pending` -- an UNDECLARED collision or a STALE
+        // declaration is a build failure. L4's companion gate: an
+        // `Analogue` row joins two DISTINCT events, exactly once.
+        crate::law_check::attestation_is_exclusive(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("ATTEST-1 attestation-exclusivity law (L2)")?;
+        crate::law_check::analogue_rows_join_two_distinct_events(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("ATTEST-1 Analogue distinctness law (L4)")?;
         // M-D3 (owner ruling R1): the "verified-cache law"
         // (`law_check::payload_years_match_resolved_placements`) RETIRED
         // WITH the `NodePayload::Event.from_year`/`.to_year` fields it
