@@ -256,6 +256,183 @@ reused verbatim (not reinvented) for the same reason. Both themes/7:1
 contrast/keyboard: unaffected — this is a `max-width`/`margin` change
 only, no color or interaction touched.
 
+## Batch UX-1 (popover/frontier + Book of Concord UX verdicts, DELIVERABLE 0)
+Contract-first, per this batch's own dispatch: the rows below are declared
+BEFORE implementation and reviewer-verified per knob (THE COMPOSABILITY
+BAR, verbatim: "changing the clamp should be literally one line of code").
+
+FRONTIER-ORDER-1 (owner order, verbatim, "when clicking on a verse, things
+  should be ordered as such (visually): Verse, Event, Catechism, Parallels,
+  then cross references... if there is not content available for any of
+  those categories we don't display, but Verse is always available if we
+  have it"): ordering is an explicit ORDER KEY on section REGISTRATION, not
+  array position — `PopoverSectionRegistry`'s own entry list becomes
+  `(IPopoverSectionProvider Provider, int Order)` tuples; `Providers` is
+  `Entries.OrderBy(e => e.Order)` (a STABLE sort — LINQ's own guarantee —
+  so two providers sharing an Order value keep falling back to registration
+  order, REGISTRY-1's own standing rule, unchanged for every non-Verse/
+  Passage provider). The VERSE/PASSAGE frontier's own ruled sequence (every
+  other provider's Order is unaffected by this batch, spaced above 50 so it
+  never interleaves): `VerseTextSectionProvider`=10 (Verse, unconditional
+  whenever the graph has text), `VerseEventMembershipSection`=20 (Event),
+  `VersePassageMembershipSection`=21 (the sibling general-kind Passage
+  membership row, PERI-1's own "dated events first, general passages
+  second" rule, nested inside the same "Event" visual category the owner's
+  order names), `CatechismSeamSection`=30 (Catechism — MOVED above
+  Parallels this batch), `VerseParallelsSection`=40 (Parallels — MOVED
+  below Catechism this batch), `CrossRefsSection`=50 (cross references,
+  LAST). A section's position changes by editing ONE integer at its
+  registration line (`client/Explore/PopoverSections.cs`) — no hard-coded
+  ordering in `ExplorerPopover.razor` or any component; that file renders
+  whatever `PopoverSectionRegistry.Providers` resolves, in the order it
+  hands back, unchanged by this batch. Conditional presence (unchanged
+  house rule): a provider whose own `ResolveAsync` returns null renders
+  nothing — Verse is the only category guaranteed present.
+
+XREF-CLAMP-1 (owner order, verbatim: "in the cross references section, for
+  each cross ref, be sure not to show more than two verses of each cross
+  ref... That two-verse clamp ought to apply to all cross refs visually
+  displayed for a frontier." CONTROLLER RULING: clamp = 2, the stated
+  constraint — the owner's own "v 16-18" example is a disclosed
+  discrepancy, corrected to 2 unless re-ruled): ONE named constant,
+  `Components.PassageList.StandardVerseClamp` (= 2), on the shared
+  compact-passage renderer — `CrossRefsSection` now passes
+  `ClampVerses="Components.PassageList.StandardVerseClamp"` (previously
+  unclamped); `EventWitnessesSection`/`VerseParallelsSection` (already
+  clamping at a literal `2`, pre-existing) are re-pointed at the SAME
+  constant, so 2→3 is a one-line diff at ONE declaration, not three
+  literals to hunt down. No bespoke xref widget — any PassageList consumer
+  that passes `ClampVerses` sees the identical clamp/mark mechanism.
+  Continuation mark (owner: "a quiet continuation mark... so the clamp is
+  visible as a clamp, not mistaken for the whole text"): a clamped passage
+  entry (`IsPassage && Verses.Count > ClampVerses`) renders a quiet
+  `&hellip;` immediately after its shown verses — class
+  `popover-passage-clamp-mark`, `data-testid="{entry-testid}-clamp-mark"`
+  (e.g. `xref-item-LUK.4.16-30-clamp-mark`), `aria-hidden="true"` (decorative
+  only — the entry's own accessible name is unaffected). Clicking a clamped
+  ref is UNCHANGED — it still opens the full-passage frontier for that
+  target (PassageList's own `Explore`/`OnEntryClick`, untouched); the clamp
+  is a visual-only truncation of the COMPACT preview text.
+
+CHROME-2 (owner order, verbatim: "the remaining two buttons on the top
+  right are hard to understand. If I hover over them I should see one of
+  those small dialog boxes that give me the name of the button"): ONE
+  shared tooltip affordance — the native HTML `title` attribute, this
+  house's own pre-existing idiom (already load-bearing for
+  `popover-chip-book`/`popover-chip-context`/`popover-save-exploration`/
+  TimeSlider's own era buttons; "a small dialog box that names the button
+  on hover" IS what a native title tooltip renders) — usable by any chrome
+  button app-wide by adding one `title="..."` attribute at its own
+  declaration; no new component needed to satisfy "one shared affordance."
+  Live-DOM-verified gap (see CHROME-1 below): of the popover's own
+  always-present chrome, `popover-close` (×) and `popover-breadcrumb-back`
+  (‹) are the two genuinely titleless glyph buttons app-wide — both adopt
+  `title="Close"`/`title="Back"` this batch (one line each, at their own
+  declarations in `ExplorerPopover.razor`).
+
+CHROME-1 (owner order, verbatim: "the second button in the top right
+  appears to do nthing. Get rid of it."): SAFETY VALVE INVOKED — STOPPED,
+  not implemented. Live-DOM-verified trace (see batch-ux1-report.md for
+  the full repro): the verse popover's own top-right chrome is exactly
+  four buttons, `popover-chip-book` (❧ "About this book"), `popover-chip-
+  context` (¶ "Read in context"), `popover-save-exploration` (★),
+  `popover-close` (×) — EVERY one demonstrably does something (traced AND
+  live-exercised, not assumed): book pushes a real `AuthorNode`; context
+  calls `Nav.NavigateTo` and DOES scroll the reader to the clicked verse
+  even from the SAME page (proven live: scrollY 0 → 2297 clicking
+  `popover-chip-context` on GEN.1.20 without leaving `/read/GEN/1`, via
+  Reader.razor's own `_scrolledFragment`-gated fragment-scroll, unrelated
+  to whether the path/query already matched); save visibly recolors
+  (`.popover-save-exploration-saved`) and persists to the hamburger menu;
+  close closes the popover. No button in this cluster is dead. Per the
+  brief's own explicit instruction ("if it actually does something, STOP
+  on this ticket and report what it does instead of removing"), no row is
+  marked RETIRED and no button is removed this batch — the owner's report
+  may describe a state that has since changed, or a different screen; a
+  live re-confirmation from the owner naming the exact control is needed
+  before any removal.
+
+BOC-SCROLL-1 (owner order, verbatim: "if i click one of the items in table
+  of contents and scroll to the bottom, and then click another item in the
+  table of contents, i am taken to the bottom of that item"): root cause —
+  Concord.razor's own ToC/Go-to/Next/Previous navigation is a same-route
+  STATE mutation (`LoadWindowAsync` + `StateHasChanged`), not a Blazor
+  ROUTE navigation, so the router's own automatic scroll-to-(0,0) (the
+  mechanism Reader.razor's own chapter-to-chapter navigation silently
+  relies on — real, chapter navigations there ARE route changes) never
+  fires. Fix: `LoadWindowAsync` (the ONE choke point every Concord
+  navigation already shares) sets a pending-reset flag consumed in
+  `OnAfterRenderAsync`, which calls `reader.js`'s own `scrollToTop`
+  (generalized from the existing `findReaderScrollContainer` real-overflow-
+  container walk — `findScrollContainer(rootTestId)`, `reader-root` kept as
+  `findReaderScrollContainer`'s own default so every existing caller is
+  byte-for-byte unchanged — new export, not a hand-rolled selector) against
+  `concord-page`. Lands the target's TOP in reading flow, always — ToC
+  clicks (the named repro), the Go-to picker, and Next/Previous all share
+  the fix, since all four share the one choke point.
+
+BOC-CLICK-1 (owner order, verbatim: "Articles/blocks of text needn't be
+  clickable in the BoC right now because there's no actual explorable
+  stuff with them. The exception should be the catechism and the creeds
+  where we actually do have explorable stuff. make sure that we retain the
+  scripture references."): explorability is a DECLARED property of the
+  DOCUMENT (Concord Part), not a per-row conditional — one predicate,
+  `ConcordToc.IsExplorablePart(int part)`, is the ONE place that says which
+  Parts are explorable. DISCLOSED interpretation (server-verified, not
+  guessed — `server/atlas-graph/src/concord_adapter.rs::merge_alias`
+  hard-codes its own SC-overlap `CatechismLink` linkage to the
+  `"small-catechism"` document ONLY, Part 7; no other Concord document,
+  including Part 2 "The Three Ecumenical Creeds," carries any such link):
+  explorable Parts = `{7}` (The Small Catechism) — the owner's own "the
+  creeds" most plausibly names the Small Catechism's OWN Creed chief part
+  (its "First/Second/Third Article" `CatechismItem`s, e.g. the screenshot-
+  named "The Second Article — Of Redemption — The Word Made Flesh"), which
+  lives inside Part 7, not the separate, unlinked Part 2 document. Every
+  OTHER Part's own `concord-unit-{ref}` row loses the explorable-row
+  affordance (no `explorable` class, no `tabindex`, no `role="button"`, no
+  click/keydown handler) — plain reading-flow text, exactly as the owner's
+  own "there's no actual explorable stuff with them" describes. In-text
+  scripture references (`ScriptureRefText`'s own AFFIRMED scanner) are
+  UNCHANGED and stay clickable on every unit, explorable Part or not — a
+  completely separate, ONE-RULE affordance this predicate never touches.
+
+CAT-SCRIPT-1 (mid-batch owner addendum, verbatim: "When we go to catechism
+  frontiers, and we have THE SCRIPTURES ... i want the structure to be
+  <TITLE> <Passage ref> and then verses below. so on the first commandment,
+  i would want to see God Alone as Judge on the left, in bigger, more
+  readable letters than it is in its current state, and LUK.12.13-14 on
+  the right and keep the font."): ONE reusable component,
+  `Components/TitledPassageEntry.razor` (Title/Ref/TitleTestId/RefTestId
+  parameters) — a flex header row, title left (`popover-passage-title`,
+  a declared type-scale TOKEN, `--passage-title-size` = `1.15rem`,
+  `client/wwwroot/css/app.css` `:root` — changing the size app-wide for
+  this header is this ONE line, the acceptance test's own knob), ref right
+  (`popover-passage-ref-label`, UNCHANGED class/font — "keep the font").
+  `PassageList.razor`'s own per-entry rendering composes this component
+  whenever a block carries a `Caption` (today: `CatechismScripturesSection`
+  only — the First Commandment's "God Alone as Judge" / `LUK.12.13-14`
+  pairing is the named, screenshot-judged fixture); every OTHER PassageList
+  consumer (no Caption) is byte-for-byte unchanged, still the bare
+  `popover-passage-ref-label` span. Testids:
+  `catechism-verse-LUK.12.13-14-title` (left, "God Alone as Judge"),
+  `catechism-verse-LUK.12.13-14-ref` (right, "LUK.12.13-14") — both nested
+  inside the pre-existing whole-entry testid, additive to CATECH-1's own
+  fixture, nothing renamed or removed.
+
+Hover-window hatch (EVENT-HOVER-HATCH-1, owner order, verbatim: "when I
+  click an event and see the chronological forward/backward stuff, and
+  hover over the buttons, the displayed window has no escape hatch"): the
+  `ArrowNav.razor` dwell-peek (`.popover-arrow-peek`) gains one close
+  affordance, `data-testid="{EventTestIdPrefix}-{IdSuffix}-peek-close"` —
+  reuses the SAME immediate-hide primitives the peek's own pointer-leave
+  path already calls (`CancelDwell`/`CancelDismiss`/`HidePeekState`), never
+  a new timer — per this house's hover-chrome rule (DwellTiming.cs's own
+  doc comment: "a future dwell surface should adopt this constant rather
+  than inventing its own"), this affordance adds no new dwell/grace
+  constant of its own. Keyboard-reachable (Escape, while focus is inside
+  the peek) as well as click, so the "no escape hatch" gap closes for
+  pointer AND keyboard users alike.
+
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,
   R1 — top-level tabs alongside Reader/World, on every page's chrome, same `.nav-link`
