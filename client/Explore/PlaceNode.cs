@@ -31,7 +31,7 @@ public sealed class PlaceNode : IExplorable
     private readonly string _placeName;
     private readonly int? _windowFrom;
     private readonly int? _windowTo;
-    private PlaceDetail? _cached;
+    private readonly AsyncMemo<PlaceDetail> _detail = new();
 
     /// <param name="windowFrom">
     /// Batch R requirement 3 (the PLACE section registry -- established/
@@ -149,7 +149,18 @@ public sealed class PlaceNode : IExplorable
     // (PlaceHistory just forwards the optional `?from=&to=`), so this is a
     // strict superset (adds `History`) of what the old call returned, not a
     // behavior change for `Events`.
-    public async Task<PlaceDetail> DetailAsync(AtlasClient api) => _cached ??= await api.PlaceHistory(_placeId, _windowFrom, _windowTo);
+    //
+    // PERF-3 fix round 1 (found independently while auditing this exact
+    // pattern class -- NOT in the review's own enumerated list, but the
+    // IDENTICAL live-race shape as EventNode.DetailAsync's own Q-3 finding:
+    // FOUR Place-kind section providers -- PlaceDescriptionSection,
+    // PlaceDatesSection, PlaceBlurbSection, PlaceEventsSection -- all call
+    // this method, all apply to every Place-kind node, all run inside the
+    // same ExplorerPopover.LoadCurrent Task.WhenAll dispatch. Opening ANY
+    // place popover fires up to four duplicate, concurrent
+    // `GET /api/place/{id}` requests pre-fix. AsyncMemo-backed now
+    // (Explore/AsyncMemo.cs), same fix as VerseNode/EventNode.DetailAsync.
+    public Task<PlaceDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.PlaceHistory(_placeId, _windowFrom, _windowTo));
 
     private Task<PlaceDetail> Load(AtlasClient api) => DetailAsync(api);
 }

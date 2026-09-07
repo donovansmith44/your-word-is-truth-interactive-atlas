@@ -30,7 +30,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class CatechismNode : IExplorable
 {
     private readonly string _id;
-    private CatechismItemDetail? _cached;
+    private readonly AsyncMemo<CatechismItemDetail> _detail = new();
 
     public CatechismNode(string id, string name)
     {
@@ -55,5 +55,19 @@ public sealed class CatechismNode : IExplorable
     /// providers (mirrors <c>VerseNode.DetailAsync</c>'s own reasoning
     /// exactly), so opening one catechism item's popover is ONE fetch
     /// regardless of how many of its sections end up resolving content.
-    public async Task<CatechismItemDetail> DetailAsync(AtlasClient api) => _cached ??= await api.CatechismItem(_id);
+    ///
+    /// PERF-3 fix round 1 (review Q-4 named this "Minor... not confirmed
+    /// live -- single call site found"; that undercounted it -- CORRECTED
+    /// here): FOUR providers call this
+    /// (CatechismTextSection/CatechismExplanationSection/
+    /// CatechismWhereWrittenSection/CatechismScripturesSection,
+    /// PopoverSectionProviders.cs, all Kind == "Catechism"), all under the
+    /// same ExplorerPopover.LoadCurrent Task.WhenAll dispatch this batch's
+    /// own VerseNode/EventNode/PlaceNode.DetailAsync fixes already
+    /// convicted -- this doc comment's own "shared by every one of this
+    /// node's own four section providers" line, unchanged above, already
+    /// said as much. A LIVE race, the same class as EventNode/PlaceNode,
+    /// not merely a preemptive hardening. AsyncMemo-backed now
+    /// (Explore/AsyncMemo.cs), same fix.
+    public Task<CatechismItemDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.CatechismItem(_id));
 }

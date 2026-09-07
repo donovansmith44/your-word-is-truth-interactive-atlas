@@ -44,8 +44,8 @@ public interface INarrativeAware
 /// </summary>
 public sealed class EventNode : IExplorable, INarrativeAware
 {
-    private EventDetail? _cached;
-    private NarrativeEventPositionsResult? _cachedPositions;
+    private readonly AsyncMemo<EventDetail> _detail = new();
+    private readonly AsyncMemo<NarrativeEventPositionsResult> _positions = new();
 
     // PERI-1 fix round 1 (review S-1a/Q-1a, CRITICAL -- the review's own
     // recommended fix (b)): the FIRST draft of CachedKind (below) forwarded
@@ -105,7 +105,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// saved-trail row "Passage" instead of "Event" for a general-kind
     /// entry.
     /// </summary>
-    public string? CachedKind => _cached?.Kind ?? _knownKind;
+    public string? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
 
     /// <summary>
     /// Requirement 4's own "Explore (map -- the event's place(s)/scene;
@@ -160,7 +160,21 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// Memoized -- shared by every Kind=="Event" section provider (date,
     /// places, witnesses), mirrors <c>PlaceNode.DetailAsync</c>'s own "one
     /// fetch per node instance" reasoning.
-    public async Task<EventDetail> DetailAsync(AtlasClient api) => _cached ??= await api.Event(EventId);
+    ///
+    /// PERF-3 fix round 1 (review Q-3, Major -- LIVE, not hypothetical):
+    /// this method races under the EXACT same ExplorerPopover.LoadCurrent
+    /// Task.WhenAll dispatch this batch's own VerseNode.DetailAsync fix
+    /// convicted -- EventDateAndPlacesSection AND EventWitnessesSection
+    /// both call it, both apply to every Event-kind node, both run inside
+    /// the same WhenAll. Opening any event popover with both a date/places
+    /// section and a witnesses section fired two duplicate, concurrent
+    /// `GET /api/event/{id}` requests -- the review found this live while
+    /// this batch's own original fix (VerseNode-only) shipped it
+    /// unaddressed. AsyncMemo-backed now (Explore/AsyncMemo.cs), same fix
+    /// as VerseNode.DetailAsync -- task-cached (dedupes the race) and
+    /// reset-on-fault (a transient failure self-heals on the next call,
+    /// same as every other AsyncMemo-backed node in this file).
+    public Task<EventDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
 
     /// Batch T requirement 2 (INarrativeAware): PRIOR/FOLLOWING now lives
     /// entirely on THIS node kind (Batch N's own verse-keyed half is
@@ -175,6 +189,14 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// two consumers today (map-focus-sync reads `.Narrative`;
     /// EventDateAndPlacesSection reads `.Narrative`, EventChronologySection
     /// reads `.Timeline` -- TRAV-1, PopoverSectionProviders.cs).
-    public async Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api) =>
-        _cachedPositions ??= await api.NarrativeEventPositions(EventId);
+    // PERF-3 fix round 1: same AsyncMemo fix, disclosed as preemptive --
+    // this method's own two consumers (ExplorerPopover.SyncNarrativeFocusAsync
+    // and EventChronologySection) run SEQUENTIALLY today (SyncNarrativeFocusAsync
+    // is awaited only AFTER LoadCurrent's own Task.WhenAll block, including
+    // EventChronologySection, has fully completed -- ExplorerPopover.razor's
+    // own LoadCurrent), so there is no live race here, unlike DetailAsync
+    // above. Hardened alongside it anyway (same reset-on-fault benefit,
+    // same file, same fix round).
+    public Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api) =>
+        _positions.Get(() => api.NarrativeEventPositions(EventId));
 }

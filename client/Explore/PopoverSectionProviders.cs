@@ -360,9 +360,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // targets (the overwhelming majority) fetch their whole chapter via
         // the existing LRU-cached AtlasClient.Chapter (several targets
         // sharing a chapter cost exactly one fetch); a cross-chapter/book
-        // target (CanonRef.TargetSpan returns null -- rare, see its own doc
-        // comment) falls back to its own first-verse preview text, the
-        // pre-existing behavior for that edge case.
+        // target (CanonRef.TargetSpan returns null -- genuinely
+        // data-starved, no chapter fetch could ever answer this -- see
+        // ResolveUnits's own doc comment) falls back to its own first-verse
+        // preview text, the pre-existing behavior for that edge case.
         //
         // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall,
         // measured live): THE dominant term. `xrefs` here is
@@ -374,64 +375,40 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // own chapter regardless -- confirmed live: GEN.1.1 fired 57
         // concurrent `/api/chapter/*` requests (deduped from 61 xrefs) for
         // content the popover would ever show at most 3 entries of.
-        // Eagerly fetching only the first Cites.InitialClamp (3 -- the MORE
-        // generous of F2's 2-or-3, since the exact cap is decided later, at
-        // RENDER time, off sibling sections this method can't see yet --
-        // see this section's own render fragment doc comment on
-        // OtherContextSectionCount) targets caps the fan-out at the true
-        // display need. A target beyond that position (or one whose chapter
-        // wasn't eagerly fetched, e.g. it shares no chapter with the eager
-        // set) falls through to the SAME cross-chapter/book fallback this
-        // file already had -- `x.Preview`, single first-verse text -- via
-        // the untouched `chapters.TryGetValue` miss path immediately below.
-        // Disclosed trade-off: a "reveal more"-revealed entry beyond the
-        // eager three shows single-line preview text instead of a full
-        // 2-verse clamped passage block (still independently explorable,
-        // ExploreAsVerse unaffected) -- richness of the rarely-revealed
-        // tail, never correctness, is what changes. See
-        // batch-perf3-report.md for the measured before/after.
+        //
+        // Fix round 1 (review S-1/Q-1, CRITICAL, corrected): the FIRST
+        // draft capped the EAGER fetch to the first Cites.InitialClamp (3)
+        // targets and let every target beyond that fall through to the
+        // SAME `x.Preview` single-verse fallback the genuinely-data-starved
+        // (null-Span) case uses -- conflating "no chapter fetch will ever
+        // answer this" with "just wasn't fetched yet," per the review's own
+        // Q-1 finding. That silently NARROWED a beyond-cap multi-verse
+        // target's own identity (GEN.10.15-19 rendered, and was addressed
+        // by Playwright, as "GEN.10.15" -- one verse, losing 4) and dropped
+        // its Places/Persons/WordsOfChrist links entirely -- a real
+        // regression (R-M1/XREF-1-regression, popover-sections.spec.ts),
+        // not a disclosed richness trade-off. CORRECTED: the eager fetch
+        // still resolves only the first InitialClamp (3) targets up front
+        // (same perf win, same request-count cap for the common "open and
+        // never reveal more" case -- Q-5's own finding that 3 >= the
+        // render-time cap (2 or 3) still holds). Every target BEYOND that
+        // position keeps its own full, correct identity always (never
+        // narrowed) -- its REAL text/Places/Persons/WordsOfChrist are
+        // resolved lazily, on first "reveal more"/"all" press
+        // (PassageList's own ResolveRemainingAsync hook, added this fix
+        // round), fetched via the exact SAME ResolveUnits logic, just
+        // deferred to interaction time instead of eager-open time. A
+        // reader who never presses "reveal more" (the overwhelming common
+        // case) pays zero extra requests; one who does gets the genuine,
+        // correctly-identified data, at the cost of one additional
+        // Task.WhenAll batch for the remainder -- exactly the SAME total
+        // network cost the pre-fix code paid eagerly, just deferred behind
+        // real user intent (the lazyProse.js "defer below-fold" precedent,
+        // applied to "defer beyond-cap" instead of "defer below-viewport").
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
-        var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp);
-        var chapterKeys = eagerSpans.Where(s => s.Span is not null).Select(s => (s.Span!.Value.Book, s.Span.Value.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), ChapterOut>();
-        try
-        {
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
-            foreach (var (key, chapter) in chapterKeys.Zip(fetched))
-            {
-                chapters[key] = chapter;
-            }
-        }
-        catch (Exception)
-        {
-            // graceful degrade -- every target below falls back to its own preview text
-        }
-
-        var units = new List<PassageSourceUnit>();
-        foreach (var (x, span) in spans)
-        {
-            if (span is { } s && chapters.TryGetValue((s.Book, s.Chapter), out var chapter))
-            {
-                var verses = new List<PassageListVerse>();
-                for (var v = s.FromVerse; v <= s.ToVerse; v++)
-                {
-                    // M-D4 fix round 1 (R-M1): the whole VerseOut row, not
-                    // just its own .Text -- Places/Persons were already
-                    // sitting in this SAME already-fetched chapter, unread.
-                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
-                    if (cv is not null)
-                    {
-                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
-                    }
-                }
-                if (verses.Count > 0)
-                {
-                    units.Add(new PassageSourceUnit(verses));
-                    continue;
-                }
-            }
-            units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target), x.Preview) }));
-        }
+        var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp).ToList();
+        var lazySpans = spans.Skip(EdgeSectionRegistry.Cites.InitialClamp).ToList();
+        var units = await ResolveUnits(api, eagerSpans);
 
         RenderFragment body = builder =>
         {
@@ -450,6 +427,17 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
+            // Fix round 1 (review S-1/Q-1): `units` above only ever holds the
+            // EAGERLY resolved (first InitialClamp) entries now -- TrueTotal
+            // tells PassageList/RevealControls the REAL total (all `xrefs`,
+            // not just `units.Count`) so "more (N)"/"all (N)" show the
+            // honest count even before the remainder is ever fetched, and
+            // ResolveRemainingAsync is PassageList's own lazy hook (added
+            // this fix round) that resolves `lazySpans` -- SAME ResolveUnits
+            // logic, deferred to the FIRST reveal press -- the instant a
+            // reader actually asks for them, never before, never narrowed.
+            builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
+            builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
             builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
@@ -477,6 +465,71 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
+    }
+
+    // Fix round 1 (review S-1/Q-1): the ONE resolver both the eager (first
+    // InitialClamp) and lazy (reveal-triggered remainder) paths call --
+    // extracted so there is exactly one place that decides "same-chapter
+    // target -> real per-verse text/Places/Persons; genuinely cross-
+    // chapter/book target (CanonRef.TargetSpan is null -- no chapter fetch
+    // could EVER answer this) -> first-verse preview" -- never two
+    // near-duplicate copies that could drift. Fetches every DISTINCT
+    // chapter `targets` touches, concurrently (Task.WhenAll, same
+    // "independent fetches never serialize" house rule the pre-fix-round
+    // code already followed) -- callers control blast radius purely by how
+    // many targets they pass in, not by a second code path.
+    private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRefOut Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
+    {
+        var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
+        var chapters = new Dictionary<(string, int), ChapterOut>();
+        try
+        {
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
+            foreach (var (key, chapter) in chapterKeys.Zip(fetched))
+            {
+                chapters[key] = chapter;
+            }
+        }
+        catch (Exception)
+        {
+            // graceful degrade -- every target below falls back to its own preview text
+        }
+
+        var units = new List<PassageSourceUnit>();
+        foreach (var (x, span) in targets)
+        {
+            if (span is { } s && chapters.TryGetValue((s.Book, s.Chapter), out var chapter))
+            {
+                var verses = new List<PassageListVerse>();
+                for (var v = s.FromVerse; v <= s.ToVerse; v++)
+                {
+                    // M-D4 fix round 1 (R-M1): the whole VerseOut row, not
+                    // just its own .Text -- Places/Persons were already
+                    // sitting in this SAME already-fetched chapter, unread.
+                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
+                    if (cv is not null)
+                    {
+                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
+                    }
+                }
+                if (verses.Count > 0)
+                {
+                    units.Add(new PassageSourceUnit(verses));
+                    continue;
+                }
+            }
+            // Reached only when CanonRef.TargetSpan(x.Target) is genuinely
+            // null (a cross-chapter/cross-book target -- no ChapterOut
+            // fetch could ever answer this, see this method's own doc
+            // comment) or the fetch above failed/came back empty for this
+            // target's own chapter -- the SAME first-verse preview fallback
+            // this file always had for the data-starved case, never used
+            // for "in range but not yet asked for" any more (that case is
+            // simply never in `targets` until the caller actually wants it
+            // resolved).
+            units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target), x.Preview) }));
+        }
+        return units;
     }
 }
 

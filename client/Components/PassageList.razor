@@ -215,9 +215,9 @@
        a double-click gesture on one moving target, so there is no second
        sub-click that could ever land on shifted content. Safe to honor the
        owner's own placement now that the reason to defy it is gone. *@
-    @if (Cap is int cap && _blocks.Count > cap)
+    @if (Cap is int cap && EffectiveTotal > cap)
     {
-        <RevealControls Total="@_blocks.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
+        <RevealControls Total="@EffectiveTotal" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="OnShownChanged"
                          MoreTestId="@MoreTestId" CollapseTestId="@CollapseTestId" RevealNoun="@RevealNoun" />
     }
 }
@@ -230,6 +230,35 @@
     [Parameter] public string CollapseTestId { get; set; } = "passage-list-collapse";
     [Parameter] public string RevealNoun { get; set; } = "entries";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    // PERF-3 fix round 1 (review S-1/Q-1: a beyond-cap entry must NEVER
+    // lose its own real identity -- CrossRefsSection now only eagerly
+    // resolves the first few entries into `Units` for perf; these two
+    // parameters are the lazy-remainder hook that keeps the REST correct
+    // once actually asked for, instead of degrading them). Both null
+    // (every OTHER consumer -- EventWitnessesSection, VerseParallelsSection,
+    // PlaceDatesSection, CatechismScripturesSection -- Units.Count already
+    // IS each of their own true totals, no lazy remainder exists for any
+    // of them) is a complete no-op: EffectiveTotal falls back to
+    // `_blocks.Count` exactly as before, and OnShownChanged never has
+    // anything to resolve. TrueTotal: the list's REAL total entry count,
+    // when it's bigger than `Units.Count` (Units holds only the eagerly
+    // resolved subset) -- so "more (N)"/"all (N)" show the honest count
+    // even before the remainder is ever fetched. ResolveRemainingAsync:
+    // called ONCE, the first time a reveal press needs entries beyond what
+    // `Units` already carries -- resolves the REST with the SAME real
+    // data (text/Places/Persons/WordsOfChrist) `Units` itself carries,
+    // never a degraded stand-in.
+    [Parameter] public int? TrueTotal { get; set; }
+    [Parameter] public Func<Task<IReadOnlyList<PassageSourceUnit>>>? ResolveRemainingAsync { get; set; }
+
+    // Set once ResolveRemainingAsync has actually run (successfully or
+    // not -- a failed lazy fetch still counts as "asked for," fail-soft
+    // like every other lazy fetch in this popover platform, never retried
+    // in a loop). null beforehand; `_blocks` is built from `Units` alone
+    // until this lands, then from `Units` + this, merged.
+    private IReadOnlyList<PassageSourceUnit>? _resolvedRemainder;
+    private bool _resolvingRemainder;
 
     // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "inline
     // cross-references... are NOT wired for this gesture"): the SAME
@@ -317,7 +346,47 @@
 
     protected override void OnParametersSet()
     {
-        _blocks = PassageBlockBuilder.Build(Units);
+        _blocks = PassageBlockBuilder.Build(_resolvedRemainder is null ? Units : Units.Concat(_resolvedRemainder).ToList());
+    }
+
+    // PERF-3 fix round 1: the list's own real total -- TrueTotal when the
+    // caller set one bigger than what it eagerly resolved into Units
+    // (there's a lazy remainder waiting), otherwise _blocks.Count exactly
+    // as before (every consumer that never sets TrueTotal, or sets it
+    // no bigger than Units.Count, is byte-for-byte unaffected).
+    private int EffectiveTotal => Math.Max(_blocks.Count, TrueTotal ?? 0);
+
+    // Intercepts RevealControls' own proposed Shown value: if there's a
+    // lazy remainder this caller hasn't resolved yet, resolve it FIRST
+    // (once -- `_resolvedRemainder is null` guards against a rapid double
+    // click re-firing the fetch while the first one is still in flight,
+    // same "one-shot" discipline lazyProse.js's own IntersectionObserver
+    // callback already documents), fold it into `_blocks`, THEN apply the
+    // proposed Shown -- so the newly-revealed rows are already correct on
+    // the very same render that reveals them, never a stale/incomplete
+    // flash. Every consumer without a lazy remainder (ResolveRemainingAsync
+    // null) skips straight to the plain `_shown = n` this always did.
+    private async Task OnShownChanged(int n)
+    {
+        if (_resolvedRemainder is null && !_resolvingRemainder && ResolveRemainingAsync is not null)
+        {
+            _resolvingRemainder = true;
+            try
+            {
+                _resolvedRemainder = await ResolveRemainingAsync();
+            }
+            catch (Exception)
+            {
+                // Fail-soft, same graceful-degradation policy every other
+                // lazy fetch in this app follows -- an empty remainder
+                // just means the reveal shows only what was already eager,
+                // never a broken/blank section.
+                _resolvedRemainder = Array.Empty<PassageSourceUnit>();
+            }
+            _blocks = PassageBlockBuilder.Build(Units.Concat(_resolvedRemainder).ToList());
+        }
+
+        _shown = n;
     }
 
     private IEnumerable<VisibleEntry> Visible

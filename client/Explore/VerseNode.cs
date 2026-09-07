@@ -19,7 +19,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class VerseNode : IExplorable
 {
     private readonly string _vref;
-    private Task<VerseDetail>? _detailTask;
+    private readonly AsyncMemo<VerseDetail> _detail = new();
 
     /// <summary>
     /// Batch M-D2 (owner's cross-reference superscript directive):
@@ -112,14 +112,12 @@ public sealed class VerseNode : IExplorable
     // `_cached` still null and fires its OWN independent `GET
     // /api/verse/{vref}`. Confirmed live: GEN.1.1 fired SIX concurrent,
     // identical requests to this exact endpoint (see the PHASE 0 waterfall
-    // in batch-perf3-report.md). Fixed by caching the TASK itself,
-    // not the resolved value -- `_detailTask` is assigned SYNCHRONOUSLY
-    // (the `??=` right-hand side, `api.Verse(_vref)`, starts the HTTP call
-    // and returns a pending Task without ever awaiting inside THIS method),
-    // so the second concurrent caller sees a non-null field and awaits the
-    // SAME in-flight task instead of starting a new request -- the
-    // standard async-memoization idiom for a single-threaded runtime
-    // (Blazor WASM has no true parallelism; every synchronous stretch
-    // between awaits is atomic).
-    public Task<VerseDetail> DetailAsync(AtlasClient api) => _detailTask ??= api.Verse(_vref);
+    // in batch-perf3-report.md). Fixed via AsyncMemo&lt;T&gt; (Explore/AsyncMemo.cs)
+    // -- caches the in-flight TASK itself (assigned synchronously, before
+    // any await resolves, so a concurrent caller shares it rather than
+    // starting a new request) AND resets on fault (fix round 1, review
+    // Q-2 -- see AsyncMemo's own doc comment for why a plain task-cache
+    // alone regressed the old "a transient failure self-heals on the next
+    // call" property).
+    public Task<VerseDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.Verse(_vref));
 }

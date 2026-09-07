@@ -22,8 +22,8 @@ public sealed class PassageNode : IExplorable
 {
     private readonly string _sref;
     private readonly string _text;
-    private Task<List<CrossRefOut>>? _xrefsTask;
-    private Task<List<CatechismRefDto>>? _catechismTask;
+    private readonly AsyncMemo<List<CrossRefOut>> _xrefs = new();
+    private readonly AsyncMemo<List<CatechismRefDto>> _catechism = new();
 
     public PassageNode(string sref, string text)
     {
@@ -70,21 +70,27 @@ public sealed class PassageNode : IExplorable
     // two -- the chip would otherwise re-request the exact same data it
     // just used to decide whether to render itself at all.
     //
-    // PERF-3: TASK-memoized, not value-memoized -- see VerseNode.DetailAsync's
-    // own PERF-3 comment for why (a value-memoizing `??= await` races under
-    // ExplorerPopover.LoadCurrent's concurrent Task.WhenAll dispatch; only
-    // ONE provider calls each of these two methods today, so there is no
-    // LIVE duplicate-fetch bug here yet, but the exact same landmine is
-    // primed the moment a second caller is added -- fixed at the source
-    // now, alongside its VerseNode sibling, rather than left as a "fix it
-    // when it actually breaks" trap).
-    public Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _xrefsTask ??= api.Xrefs(_sref);
+    // PERF-3: AsyncMemo-backed (Explore/AsyncMemo.cs), not value-memoized --
+    // see VerseNode.DetailAsync's own PERF-3 comment for why a
+    // value-memoizing `??= await` races under ExplorerPopover.LoadCurrent's
+    // concurrent Task.WhenAll dispatch. DISCLOSED AS PREEMPTIVE (fix round
+    // 1, review Q-2/Q-3): only ONE provider calls each of these two methods
+    // today, so there is no LIVE duplicate-fetch race here (unlike
+    // EventNode.DetailAsync/PlaceNode.DetailAsync, both proven live races
+    // this same fix round -- see their own files) -- the exact same
+    // landmine is primed the moment a second caller is added, so this is
+    // hardened alongside its live-bug siblings rather than left as a "fix
+    // it when it actually breaks" trap. The reset-on-fault half of
+    // AsyncMemo (review Q-2's real finding) benefits this even without a
+    // concurrency race: a transient fetch failure now self-heals on the
+    // next call, same as every other AsyncMemo-backed node in this file.
+    public Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(_sref));
 
     // Batch F: PassageNode's own catechism citation list -- CatechismSeamSection's
     // (Explore/PopoverSectionProviders.cs) exact PassageNode counterpart to
     // XrefsAsync above, same memoize-once-per-instance reasoning (and the
-    // same PERF-3 task-memoization fix).
-    public Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _catechismTask ??= api.Catechism(_sref);
+    // same PERF-3 AsyncMemo fix, same preemptive disclosure).
+    public Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(_sref));
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {
