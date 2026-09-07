@@ -118,27 +118,63 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     // `cargo test -p atlas-server --test scene_byte_identity -- --nocapture`
     // against the freshly-regenerated artifact (atlas_version_root
     // 82bac0bde5a53ec2).
+    //
+    // Re-pinned AGAIN, Batch ATTEST-1 (2026-09-07, accounts vs. mentions +
+    // the Analogue relation). A DELIBERATE data change, and every one of
+    // the 20 deltas below is accounted for -- this file's own law is that
+    // an UNEXPLAINED change is the failure, not a changed hash:
+    //
+    //   * THE THREE WINDOWS CONTAINING AD 31 (era_early_church,
+    //     nt_window_gospels_plus_church, straddle_gospels_early_church)
+    //     each grow by EXACTLY +257 bytes: the one new lit scene event,
+    //     `mat_leper_healed` (Matthew's own leper, split off
+    //     `rob_leper_healed` on the owner's report). Same delta three
+    //     times, because it is the same one event.
+    //   * THE ONE WINDOW CONTAINING -6 (era_return) shrinks by exactly
+    //     -117 bytes: `theo-249` "Espousal of Mary" is still a lit event
+    //     at its unchanged Traditional placement, but its `verse_groups`
+    //     are now EMPTY -- both of its former "parallel accounts" were
+    //     retyped to `Mentions` (L1/L3), and a scene event carries
+    //     accounts, not mentions.
+    //   * `full_span` moves by +140 = +257 - 117, i.e. it contains both
+    //     changes and nothing else. That arithmetic is the cross-check.
+    //   * THE OTHER FIFTEEN WINDOWS keep their byte length EXACTLY and
+    //     change hash only. Cause, verified rather than assumed:
+    //     `scene::quiet_places` carries `total_events`, which is the
+    //     ALL-TIME count for a place (`AtlasData::total_events_for`), not
+    //     a window-scoped one. `mat_leper_healed` is located at
+    //     `galilee-1`, so galilee-1's all-time count increments by one --
+    //     and galilee-1 is a QUIET place in every window that does not
+    //     light it, which is all fifteen. The count's digit width is
+    //     unchanged, hence identical byte lengths.
+    //
+    // No `scripture_refs()` hash below changed (none of GEN.1/JHN.3.16/
+    // PSA.23/EXO.20/REV.22 touches an affected event), which is itself
+    // corroboration: the change is confined to the two events this batch
+    // is about. Captured via `cargo test -p atlas-server --test
+    // scene_byte_identity -- --nocapture` against the freshly-regenerated
+    // artifact (atlas_version_root dfcf6ee4c2a39965).
     vec![
-        ("era_primeval", -4004, -2167, 0xca9b04c94063fcc9, 25865),
-        ("era_patriarchs", -2166, -1877, 0x90e4397a6bc5f2a2, 39564),
-        ("era_egypt_exodus", -1876, -1407, 0x82d28704c5dc54ea, 97234),
-        ("era_conquest_judges", -1406, -1051, 0xf17d6af7d9d23067, 58811),
-        ("era_united_kingdom", -1050, -932, 0xfb1c6865bb2046da, 50808),
-        ("era_divided_kingdom", -931, -587, 0x369329afa55bf542, 69715),
-        ("era_exile", -586, -539, 0x8ba65a5156b70b2b, 33432),
-        ("era_return", -538, -6, 0xd8bc4a24cee9d16c, 48428),
-        ("era_gospels", -5, 29, 0xd3011b07179e5581, 29738),
-        ("era_early_church", 30, 100, 0x7737e4c3728e8efc, 192796),
-        ("full_span", -4004, 100, 0xd48560100dd6fe11, 446067),
-        ("nt_window_gospels_plus_church", -5, 100, 0x31a23f3262ee6e0f, 200480),
-        ("degenerate_start_year", -4004, -4004, 0x7960c1059f3251a2, 22045),
-        ("degenerate_end_year", 100, 100, 0xe90bfa9f319fd594, 22042),
-        ("degenerate_mid_year", -1000, -1000, 0xb38bea027803bae8, 22046),
-        ("straddle_primeval_patriarchs", -2200, -2100, 0xd42561ae482b9dee, 22250),
-        ("straddle_gospels_early_church", 25, 35, 0x455ea2f49e8b5c14, 126309),
-        ("straddle_exile_return", -600, -500, 0x56988240d06456d1, 58383),
-        ("narrow_conquest", -1407, -1406, 0x383fff94b30cca3f, 24539),
-        ("wide_kingdom_era", -1051, -539, 0xfedb555c6992f76d, 109380),
+        ("era_primeval", -4004, -2167, 0xcaec481c2bbb825c, 25865),
+        ("era_patriarchs", -2166, -1877, 0xa8f2caa1a06510e7, 39564),
+        ("era_egypt_exodus", -1876, -1407, 0x3ebff40dfa525b37, 97234),
+        ("era_conquest_judges", -1406, -1051, 0x387ce7a4c9d1ef7a, 58811),
+        ("era_united_kingdom", -1050, -932, 0x0e68de4a1a45fefd, 50808),
+        ("era_divided_kingdom", -931, -587, 0x48503052ad59bc47, 69715),
+        ("era_exile", -586, -539, 0x00de5268b70c5ce6, 33432),
+        ("era_return", -538, -6, 0x8895d755a94ae465, 48311),
+        ("era_gospels", -5, 29, 0xb2f40ef19d08dfae, 29738),
+        ("era_early_church", 30, 100, 0x859fa3121edf1605, 193053),
+        ("full_span", -4004, 100, 0x0b8d471521c92e3e, 446207),
+        ("nt_window_gospels_plus_church", -5, 100, 0xec509378221f5a92, 200737),
+        ("degenerate_start_year", -4004, -4004, 0xfc18a0b14ea99aa1, 22045),
+        ("degenerate_end_year", 100, 100, 0x4a489a51f3597b1f, 22042),
+        ("degenerate_mid_year", -1000, -1000, 0x3ea86f9b1d054393, 22046),
+        ("straddle_primeval_patriarchs", -2200, -2100, 0x4c45540c555cabcd, 22250),
+        ("straddle_gospels_early_church", 25, 35, 0x65e1c210bacb4207, 126566),
+        ("straddle_exile_return", -600, -500, 0x49d7b7bcadfe70f4, 58383),
+        ("narrow_conquest", -1407, -1406, 0x91efbb207b1817f6, 24539),
+        ("wide_kingdom_era", -1051, -539, 0x217ce38441305a3a, 109380),
     ]
 }
 

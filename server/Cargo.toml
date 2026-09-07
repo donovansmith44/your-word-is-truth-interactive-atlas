@@ -413,10 +413,21 @@ resolver = "2"
 # counted) -- AND one section that prints NO "test result:" line at all:
 # aqc_cucumber (harness = false; atlas-server/Cargo.toml's own comment:
 # it "still shows up under `cargo test --workspace` as one more
-# section"). So 51 sections = 45 + 5 + aqc_cucumber = 49 at PLACE-1a +
-# FQ-0's falsifiability section + this batch's
-# bible_containers_real_data. batch-node1-report.md has the
-# digit-by-digit reconciliation of 975 against the 951 base.
+# section"). CORRECTED AGAIN by Batch ATTEST-1 (NODE-1 review NEW-4 /
+# dispatch L-D: L-1's own fix chained two correct sums across a single
+# `=`, so the middle of the sentence read as the wrong equation
+# "45 + 5 + aqc_cucumber = 49"). Stated as two separate equations, each
+# literally true as written:
+#   45 (sections printing a "test result" line with tests)
+#     + 5 (0-test unittest stubs)
+#     + 1 (aqc_cucumber, which prints no line at all)
+#     = 51 sections today.
+# And by the historical route: 49 sections at PLACE-1a
+#     + 1 (FQ-0's frontier_falsifiability)
+#     + 1 (NODE-1's bible_containers_real_data)
+#     = 51.
+# batch-node1-report.md has the digit-by-digit reconciliation of 975
+# against the 951 base.
 #
 # Superseded by NODE-1 fix round 1 (below): 1007 (975 + 32) across 51
 # sections was the canonical at NODE-1's own close.
@@ -462,10 +473,84 @@ resolver = "2"
 # regression -- the same characterization `artifact_conformance.rs`'s own
 # LOAD_CEILING doc comment already carries.
 #
-# CURRENT CANONICAL: 1017 (984 + 33) across 51 sections.
+# Batch ATTEST-1 (2026-09-07, accounts vs. mentions + the owner-ratified
+# `Analogue` relation -- owner orders: "let's call it Analogue; that's ok
+# for now." and "I'm seeing a fundamental error. The Espousal of Mary
+# event has parallel accounts Mat.1.18 + Luke.1.27..."): moved to 1032
+# (996 + 36) across 52 sections. Workspace +12 across +1 section:
+# `atlas-core`'s own `merge.rs` +1 (`merge_boundary_1_original_witness_
+# replays_exactly`, the L-A fix -- the MERGE-BOUNDARY-1 boundary case
+# replayed as a DETERMINISTIC test that first reproduces the retired
+# 111.32 defect numerically, since the committed proptest seed stopped
+# replaying it when the property gained its 4th generator);
+# `atlas-graph`'s own lib unittests +6 (law_check's L2/L4 red-green set:
+# the exclusivity law's green/undeclared-red/drift-red cases, the
+# stale-vs-per-build split pin, the Analogue self-loop/duplicate gate, and
+# the referential red case for the two new node-typed endpoints);
+# `frontier_falsifiability.rs` +2 (the owner's own Analogue charter row
+# asserted BY IDENTITY, not merely by count, and the espousal's
+# mention-only shape); and the ONE new section,
+# `atlas-graph/tests/attestation_exclusivity_real_data.rs` (+4 -- the
+# founding case and the leper split over the real corpus, both standing
+# laws, and the corpus sweep's own pinned totals).
+# `atlas-graph-types` 33 -> 36 (+3): the SANCTIONED contract change's own
+# tests -- `graph.rs`'s `analogue_rows_and_event_mentions_lower_into_the_
+# existing_indexes_both_ways` (the NODE1-ROWS-1 lowering-test precedent)
+# plus `frontier.rs`'s `event_implements_analogues_and_mentions_of` and
+# `accounts_analogues_and_mentions_walk_three_different_edges`. The
+# graph-types freeze was lifted by the owner's sign-off for exactly this
+# contract change, not a veto breach.
+# AQC corpus unchanged (44/184) -- fixtures untouched, the harness=false
+# runner ran clean.
+# Data: FORMAT_VERSION 12 -> 13 (`ArtifactDump.analogue` added,
+# `DtoMentionedEntity::Event` appended); `data/compiled/graph.bin`
+# 101,320,090 -> 101,319,287 bytes (96.63% of the 104,857,600 ceiling,
+# 3,538,313 margin) -- SIZE-NEUTRAL as predicted, because rows changed
+# TYPE rather than multiplying. VERSION ROOT MOVES (one new Event node,
+# `mat_leper_healed`, plus two changed Event payloads):
+# `version_root_regression.rs`'s EXPECTED_VERSION_HEX re-pinned
+# 0f247549951a8f42 -> 59c6f7dc236f6f23, and all 20 of
+# `scene_byte_identity.rs`'s `time_windows()` hashes re-pinned with every
+# delta accounted for individually (+257 x3 for the windows containing AD
+# 31; -117 for the one containing -6; +140 = +257-117 for full_span; the
+# other fifteen byte-length-IDENTICAL, from galilee-1's ALL-TIME
+# quiet-place `total_events` incrementing) -- its 5 `scripture_refs()`
+# hashes UNCHANGED, which is itself corroboration that the change is
+# confined to the two events this batch is about.
+#
+# DISCLOSED, AND NOT THIS BATCH'S (evidenced, not asserted):
+# `atlas-server`'s own `perf_smoke.rs::scene_scripture_chapter_completes_
+# within_smoke_threshold` fails its 50ms gate under `cargo test`
+# (DEBUG) on this machine -- 54.55ms in the close run, then 59.08/53.16/
+# 53.48ms across three ISOLATED re-runs, so it is reliable, not a
+# contention flake. Two independent pieces of evidence exclude this
+# batch: (1) a same-process A/B probe measured compose_scripture_scene
+# (JHN.3) at 54.57ms with this batch's 1,711 events and 55.85ms with
+# `mat_leper_healed` REMOVED (1,710, the pre-batch count) -- the batch
+# delta is -1.285ms, i.e. NEGATIVE and smaller than the 1.164ms
+# same-input drift measured in the same run; (2) the identical test
+# passes 6/6 in `cargo test --release`, and this gate's own documented
+# baseline (BENCHMARKS.md: scripture_chapter JHN.3 = 4.20ms) comes from
+# criterion, which is release. NOTED HONESTLY: NODE-1 recorded this
+# section green in debug at 984/WORKSPACE_EXIT=0, and that could not be
+# reproduced here even with this batch's own event removed -- so the
+# change is in the machine or the environment, not in the data, and the
+# gate is a candidate for its own batch (release-calibrated constant vs.
+# a debug-mode counting command). The 996 figure above therefore counts
+# it as the FAILURE it currently is under the counting command, NOT as
+# a passing test; in release the workspace figure would be 997.
+#
+# CURRENT CANONICAL: 1032 (996 + 36) across 52 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
-# dotnet at NODE-1 fix round 1 close: client.Tests 351/351 |
+# dotnet at Batch ATTEST-1 close: client.Tests 354/354 |
 # client.ContractTests 45/45 (44 Reqnroll scenarios + CorpusCountTests,
-# the standing parity shape) -- 351 matches EVT-3 fix round 3's own
-# close exactly (that batch owns the client tree; this round touched
-# zero client files).
+# the standing parity shape -- unchanged, this batch adds no scenario).
+# client.Tests 351 -> 354 (+3): the owner's placement amendment ("Have
+# that section be right below the 'Parallel ..' section") asserted as
+# ADJACENCY rather than as an Order number --
+# `SimilarAccountsRendersImmediatelyBelowParallelAccounts` (consecutive
+# indices in the real resolved registry),
+# `MentionedInFollowsSimilarAccounts`, and
+# `EveryEventFrontierProviderAddedThisBatchAppearsExactlyOnce`. Measured
+# at 351/351 BEFORE the amendment too, with EVT-3's three untracked held
+# files in the build and untouched.
