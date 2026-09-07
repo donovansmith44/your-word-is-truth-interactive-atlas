@@ -5492,11 +5492,45 @@ input:focus-visible,
     margin-bottom: .4rem;
 }
 
+/* EVENT-HOVER-HATCH-1 (owner order, verbatim: "the displayed window has no
+   escape hatch"): title left, close button right -- the peek's own first
+   flex item (row layout nested inside .popover-arrow-peek's own column
+   flow above), same left/right split TitledPassageEntry.razor's own
+   .popover-passage-header establishes for an unrelated title+ref pairing. */
+.popover-arrow-peek-head {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
 .popover-arrow-peek-title {
     margin: 0;
     font-family: var(--font-serif);
     font-weight: 600;
     color: var(--ink);
+}
+
+/* Same quiet register .popover-close already establishes for the whole
+   popover's own dismiss control, at this smaller peek's own type scale
+   (.popover-arrow-peek's own base font-size, .82rem, is already smaller
+   than the popover chrome's -- 1.1rem here still reads as a real "x"
+   without dominating a box this size). */
+.popover-arrow-peek-close {
+    flex: none;
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    padding: 0 .15rem;
+    cursor: pointer;
+}
+
+.popover-arrow-peek-close:hover {
+    color: var(--ochre-alert);
 }
 
 .popover-arrow-peek-verse {

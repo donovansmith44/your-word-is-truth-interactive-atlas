@@ -72,7 +72,11 @@
     <div class="popover hamburger-panel" data-testid="hamburger-panel" tabindex="-1" @ref="_hamburgerPanelRef" @onkeydown="OnHamburgerKeyDown">
         <div class="popover-head">
             <p class="popover-title" data-testid="popover-title" data-ref="false">Explorations</p>
-            <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="CloseHamburger">&times;</button>
+            @* CHROME-2 (Batch UX-1): the SAME shared `title` tooltip
+               affordance ExplorerPopover.razor's own popover-close adopts
+               -- this is the identical class/testid/glyph pattern, kept
+               consistent. *@
+            <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="CloseHamburger">&times;</button>
         </div>
         @if (SavedExplorations.Items.Count == 0)
         {

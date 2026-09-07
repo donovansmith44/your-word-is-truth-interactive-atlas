@@ -168,8 +168,16 @@
     <div class="popover-head">
         @if (FocusValue.Stack.Count > 1)
         {
+            @* CHROME-2 (owner order, verbatim: "the remaining two buttons
+               on the top right are hard to understand. If I hover over
+               them I should see one of those small dialog boxes that give
+               me the name of the button"): the SAME shared tooltip
+               affordance this popover's own chips/save button already use
+               one line below -- a native `title` attribute, this house's
+               pre-existing idiom (TimeSlider.razor's own era buttons cite
+               the same one) -- adopted here (was aria-label only). *@
             <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
-                    aria-label="Back" @onclick="Back">&lsaquo;</button>
+                    aria-label="Back" title="Back" @onclick="Back">&lsaquo;</button>
         }
         <p class="popover-title" data-testid="popover-title" data-ref="@(IsRefKind(Current.Kind) ? "true" : "false")">@Current.Title</p>
         @* M-D3 (U3', owner: "the buttons... should be right next to the
@@ -206,7 +214,11 @@
                     data-testid="popover-save-exploration" aria-label="Save this exploration" title="Save this exploration"
                     @onclick="SaveExploration">&#9733;</button>
         }
-        <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" @onclick="RequestClose">&times;</button>
+        @* CHROME-2: same fix, same shared `title` affordance -- live-DOM-
+           verified as the one always-present chrome button with no
+           tooltip at all before this batch (CONTRACT.md's own CHROME-2
+           row has the full trace). *@
+        <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="RequestClose">&times;</button>
     </div>
 
     @* Batch R requirement 3: keyed by the CURRENT node's own Title (changes

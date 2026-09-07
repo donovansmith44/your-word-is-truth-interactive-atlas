@@ -277,8 +277,24 @@ else
 @if (_showPeek && Adjacent is not null)
 {
     <div class="popover-arrow-peek @(_peekFlipAbove ? "popover-arrow-peek-above" : null)" style="@PeekStyle"
-         data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")">
-        <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
+         data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")" @onkeydown="OnPeekKeyDown">
+        @* EVENT-HOVER-HATCH-1 (owner order, verbatim: "when I click an
+           event and see the chronological forward/backward stuff, and
+           hover over the buttons, the displayed window has no escape
+           hatch"): one close affordance, reachable by click AND by
+           Escape (OnPeekKeyDown above -- keydown bubbles from any focused
+           descendant, e.g. this button itself or a mention span inside
+           the peek, up to this div). Reuses the SAME immediate-hide
+           primitives the peek's own pointer-leave path already calls
+           (CancelDwell/CancelDismiss/HidePeekState, ClosePeek below) --
+           no new dwell/grace timer, per this house's own hover-chrome
+           discipline (DwellTiming.cs's own doc comment). *@
+        <div class="popover-arrow-peek-head">
+            <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
+            <button type="button" class="popover-arrow-peek-close" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-close")"
+                    aria-label="Close preview" title="Close preview"
+                    @onclick="ClosePeek" @onclick:stopPropagation="true">&times;</button>
+        </div>
         @if (_peekVerses.Count > 0)
         {
             @foreach (var v in _peekVerses.Take(_peekShown))
@@ -727,6 +743,29 @@ else
 
         HidePeekState();
         StateHasChanged();
+    }
+
+    // EVENT-HOVER-HATCH-1: the escape hatch's own click target -- an
+    // ordinary Blazor event handler (Blazor auto-re-renders the component
+    // whose bound event fired, same as OnWrapperPointerDown above; no
+    // explicit StateHasChanged needed here, unlike DelayedDismiss's own
+    // Task.Delay continuation which runs OUTSIDE that render cycle).
+    private void ClosePeek()
+    {
+        CancelDwell();
+        CancelDismiss();
+        HidePeekState();
+    }
+
+    // EVENT-HOVER-HATCH-1: Escape closes the peek from the keyboard too --
+    // fires on this div (keydown bubbles here from any focused descendant,
+    // the close button included).
+    private void OnPeekKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            ClosePeek();
+        }
     }
 
     private void HidePeekState()
