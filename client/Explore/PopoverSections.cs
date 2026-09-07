@@ -331,6 +331,33 @@ public static class PopoverSectionRegistry
         (new EventDateAndPlacesSection(), 135),
         (new EventChronologySection(), 140),
         (new EventWitnessesSection(), 160),
+        // Batch ATTEST-1 (the owner's two orders, plus his own placement
+        // AMENDMENT, verbatim: "let's have a 'Similar Accounts' or
+        // something similar added to the frontier part of the UI where it
+        // was getting pulled in as a parallel account. Have that section be
+        // right below the 'Parallel ..' section.").
+        //
+        // THE PLACEMENT IS LAW, not taste. A row that was WRONGLY rendering
+        // as a parallel account (Matthew's leper under
+        // `rob_leper_healed`'s PARALLEL ACCOUNTS) must move DOWN EXACTLY
+        // ONE SECTION, into a heading that tells the truth -- not vanish
+        // from where the reader last saw it. So SIMILAR ACCOUNTS takes 161,
+        // directly after PARALLEL ACCOUNTS at 160, with nothing permitted
+        // between them; `EventSectionsInReviewedOrder` (PopoverSectionRegistry
+        // tests) asserts the ADJACENCY itself, not merely the number, so a
+        // future provider registered at any value in between fails loud.
+        //
+        // MENTIONED IN follows at 165. It is scriptural basis (for a
+        // mention-only event like the Espousal of Mary it is the ONLY
+        // scriptural section, PARALLEL ACCOUNTS being correctly absent),
+        // but it is not what the owner asked to sit under the parallels --
+        // the analogue is.
+        //
+        // Both are conditionally present through the ordinary "return null
+        // when empty" path -- the smart-frontier law, no new mechanism, and
+        // never an empty section.
+        (new EventAnaloguesSection(), 161),
+        (new EventMentionsSection(), 165),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note.
         // None of the three's own AppliesTo overlaps any earlier provider's

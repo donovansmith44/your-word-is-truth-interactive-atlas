@@ -316,7 +316,36 @@ public sealed record EventDetail(
     // atlas-core/src/data.rs). Wire-only, like its three siblings -- no UI
     // element renders any of the four today.
     string? KjvSuperscription = null,
-    string? RefNote = null);
+    string? RefNote = null,
+    // Batch ATTEST-1 (owner order 2, the account/mention distinction):
+    // canonical verse ids that MENTION this event without narrating it.
+    // Rendered by EventMentionsSection as "Mentioned in" -- deliberately
+    // NOT under Witnesses' own "PARALLEL ACCOUNTS" eyebrow, because a
+    // mention is not an account and rendering one as the other is exactly
+    // the error the owner reported. Nullable-with-null-default because
+    // the server OMITS the key when empty (a `Vec::is_empty` skip, so
+    // every event without mentions serves byte-identically to before this
+    // batch); read it through the MentionedInOrEmpty helper below.
+    List<string>? MentionedIn = null,
+    // Batch ATTEST-1 (owner order 1, "let's call it Analogue; that's ok
+    // for now."): distinct events whose accounts are similar in form or
+    // content -- NEVER two accounts of one event. Rendered by
+    // EventAnaloguesSection as "Similar Accounts", directly below PARALLEL
+    // ACCOUNTS (the owner's own placement amendment). Same omitted-when-empty
+    // convention as MentionedIn.
+    List<EventAnalogueDto>? Analogues = null)
+{
+    /// <summary>Batch ATTEST-1: the omitted-when-empty wire fields, read
+    /// safely. Every consumer goes through these two rather than
+    /// null-checking at each call site.</summary>
+    public IReadOnlyList<string> MentionedInOrEmpty => MentionedIn ?? new List<string>();
+
+    public IReadOnlyList<EventAnalogueDto> AnaloguesOrEmpty => Analogues ?? new List<EventAnalogueDto>();
+}
+
+/// Batch ATTEST-1: one end of an `Analogue` -- id + title, enough to render
+/// an explorable row without a second fetch.
+public sealed record EventAnalogueDto(string Id, string Title);
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 

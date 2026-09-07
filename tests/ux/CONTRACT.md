@@ -6659,3 +6659,102 @@ Notes:
   there, all under this floor, so none of the three are used for this
   page's own body text) and no horizontal overflow from the 1024px
   desktop+tablet floor through ultrawide.
+
+## ATTEST-1 — ACCOUNTS vs. MENTIONS, and the Analogue relation
+
+  OWNER ORDERS (verbatim, both of them, and both about the SAME defect):
+  (1) "A leper healed; a great popular excitement is given a parallel
+  where there shouldn't be from Mat.8.1-4; another leprosy story. We need
+  to come up with an idiom for stories that are very similar in this
+  regard, but distinct events." -> "let's call it Analogue; that's ok for
+  now." (2) "I'm seeing a fundamental error. The Espousal of Mary event
+  has parallel accounts Mat.1.18 + Luke.1.27, and that's a distinct event
+  from The Angel Gabriel Announces Jesus'... which has Luk1.26-36; Even
+  worse, the appearance of Gabriel to Zacharias is BETWEEN the espousal of
+  mary and the announcement of Gabriel to Mary."
+
+  THE ACCOUNT/MENTION LAW (L1, binding): an event's `Attests` edges carry
+  ONLY narrative ACCOUNTS -- a passage that NARRATES the event. A verse
+  that merely REFERENCES an event while narrating something else is a
+  `Mentions` row pointing at that event, never an `Attests` row. This is
+  not editorial tidiness: the verse popover's own EVENT membership and the
+  event popover's own PARALLEL ACCOUNTS both walk `Attests`, so a
+  mention filed as an account renders as a confident, wrong claim, and a
+  verse in two events' `Attests` sets fabricates a parallel between two
+  events that are not parallel.
+
+  L2 (attestation exclusivity), FAIL-LOUD: no verse belongs to the
+  `Attests` set of two distinct events. Enforced at build time by
+  `atlas_graph::law_check::attestation_is_exclusive`, stated against the
+  declared curation queue in `atlas_graph::attestation_pending::PENDING`
+  -- an UNDECLARED collision fails the build, and so does a STALE or
+  DRIFTED declaration. `Analogue`/`Mentions` rows are exempt by
+  construction: only `Attests` partitions.
+
+  L3 (mention-only events): an event whose whole scriptural basis is
+  mentions is still a real node with a real frontier. `theo-249` "Espousal
+  of Mary" is the case: both of its former "parallel accounts" were
+  retyped, so it serves an EMPTY `witnesses` and a populated
+  `mentioned_in`, and the client renders "MENTIONED IN"
+  (`popover-section-event-mentions`, `event-mentioned-in-{vref}`) with NO
+  parallel-accounts section at all. Chronology placement is unchanged
+  (Traditional basis stays) -- the owner's between-ness complaint resolves
+  because LUK.1.27 stops being an account, not because anything moved.
+
+  L4 (Analogue): a SYMMETRIC relation, `analogous-to`, for "distinct
+  events whose accounts are similar in form or content -- NEVER two
+  accounts of one event" (the definition doc-comment on
+  `graph_types::edge::Analogue` is the law). Wire: `EventDetailOut.
+  analogues` (id + title). Client: "SIMILAR ACCOUNTS"
+  (`popover-section-event-analogues`, `event-analogues-{eventId}`), a
+  heading deliberately distinct from PARALLEL ACCOUNTS -- the whole point
+  of the relation is that it says something different.
+
+  PLACEMENT IS LAW (owner amendment, verbatim: "let's have a 'Similar
+  Accounts' or something similar added to the frontier part of the UI
+  where it was getting pulled in as a parallel account. Have that section
+  be right below the 'Parallel ..' section."). SIMILAR ACCOUNTS renders
+  IMMEDIATELY BELOW PARALLEL ACCOUNTS, with nothing permitted between
+  them, so a row that was wrongly appearing as a parallel account moves
+  down exactly ONE section into a heading that tells the truth rather than
+  disappearing from where the reader last saw it. Registered at Order 161
+  (PARALLEL ACCOUNTS is 160), but the BINDING assertion is the ADJACENCY,
+  not the number -- `PopoverSectionRegistryTests.
+  SimilarAccountsRendersImmediatelyBelowParallelAccounts` pins consecutive
+  indices in the real resolved registry, and
+  `accounts-and-mentions.spec.ts` pins the same adjacency in the rendered
+  DOM. A future provider registered at any value between the two fails
+  both.
+
+  WIRE SHAPE: `GET /api/event/{id}` gains `mentioned_in` (canonical verse
+  ids, ascending) and `analogues` (`{id, title}`). BOTH are OMITTED when
+  empty (a `Vec::is_empty` skip, matching every other optional field on
+  that response), so an event with neither serves byte-identically to its
+  pre-ATTEST-1 form. The C# DTO reads them through
+  `EventDetail.MentionedInOrEmpty`/`AnaloguesOrEmpty`.
+
+  SECTION ORDER: PARALLEL ACCOUNTS (160), SIMILAR ACCOUNTS (161, the
+  owner-ordered adjacency above), MENTIONED IN (165). MENTIONED IN is a
+  third, different claim -- scriptural basis, not a relation to another
+  event -- and for a mention-only event it is the ONLY scriptural section,
+  PARALLEL ACCOUNTS being correctly absent.
+
+  DATA: `data/curated/attestation-corrections.toml` carries both the
+  `[[mention]]` retypes and the `[[analogue]]` rows, each with the KJV
+  ruling that justifies it. TOTAL CAPTURE is binding: a retype removes the
+  verse from the event's `verses`/witness lists and re-lands it as a
+  `Mentions` row; no Attests fact is ever simply deleted.
+
+  TESTS (`accounts-and-mentions.spec.ts`): LUK.1.27 offers exactly one
+  event row (the annunciation) and never the espousal; the espousal's own
+  popover, reached through Zacharias's PRIOR chronology arrow (which also
+  pins the owner's between-ness), shows MENTIONED IN with both refs and no
+  parallel-accounts section, and its mentions are explorable; MAT.8.2
+  offers `mat_leper_healed` and never `rob_leper_healed`, Matthew's event
+  shows SIMILAR ACCOUNTS instead of a false parallel -- directly below
+  where PARALLEL ACCOUNTS would sit, adjacency asserted in the rendered
+  DOM -- and walking that row
+  reaches Mark's/Luke's event, which shows its own real PARALLEL ACCOUNTS
+  plus the analogue back (symmetry, live in the DOM); and an untouched
+  event (`pw_bethany`) grows neither new section -- the conditional-
+  presence half of the smart-frontier law.

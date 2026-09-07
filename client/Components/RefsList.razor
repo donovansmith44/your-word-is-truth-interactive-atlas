@@ -30,7 +30,7 @@
     <div class="popover-refs-list" data-testid="@TestIdPrefix">
         @foreach (var d in Refs)
         {
-            <button type="button" class="popover-refs-list-item explorable" data-testid="@($"{TestIdPrefix}-{d.Ref}")"
+            <button type="button" class="popover-refs-list-item explorable" data-testid="@($"{TestIdPrefix}-{d.TestIdSuffix ?? d.Ref}")"
                     @onclick="@(() => OnExplore.InvokeAsync(d.Target))">@d.Ref</button>
         }
     </div>
@@ -41,7 +41,14 @@
     /// a bare "MAT.9.27") paired with the node it opens. The caller decides
     /// the target's own identity (VerseNode vs. PassageNode) -- this
     /// component never re-derives it from the ref string alone.
-    public sealed record RefDescriptor(string Ref, IExplorable Target);
+    /// Batch ATTEST-1: <paramref name="TestIdSuffix"/> defaults to
+    /// <paramref name="Ref"/>, so every pre-existing caller is unchanged
+    /// byte-for-byte. It exists because ATTEST-1's own "SIMILAR ACCOUNTS"
+    /// rows display an event TITLE ("A leper healed; great popular
+    /// excitement") -- fine to read, a poor testid, and one that would
+    /// churn every time a curator improves a label. Those rows pass the
+    /// stable event id instead.
+    public sealed record RefDescriptor(string Ref, IExplorable Target, string? TestIdSuffix = null);
 
     [Parameter, EditorRequired] public IReadOnlyList<RefDescriptor> Refs { get; set; } = Array.Empty<RefDescriptor>();
     [Parameter, EditorRequired] public string TestIdPrefix { get; set; } = default!;

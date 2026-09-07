@@ -1816,6 +1816,160 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 }
 
 /// <summary>
+/// Batch ATTEST-1 (owner order 2, the account/mention distinction; law L3).
+/// An EVENT node's "MENTIONED IN" section: the verses that REFERENCE this
+/// event without narrating it.
+///
+/// WHY IT IS ITS OWN SECTION, and not more rows under
+/// <see cref="EventWitnessesSection"/>'s own "PARALLEL ACCOUNTS": the
+/// owner's report -- "I'm seeing a fundamental error. The Espousal of Mary
+/// event has parallel accounts Mat.1.18 + Luke.1.27, and that's a distinct
+/// event from The Angel Gabriel Announces Jesus'" -- was precisely that
+/// mentions were being rendered as accounts. LUK 1:27 mentions the espousal
+/// inside Luke's account of the ANNUNCIATION; it is not an account of the
+/// espousal. Two claims, two headings.
+///
+/// A MENTION-ONLY event (the espousal, after this batch's retype) therefore
+/// renders THIS section and NO parallel-accounts section at all -- the
+/// smart-frontier law's own biconditional, unchanged: a section shows iff
+/// instances exist for the focus AND the focus kind allows the capability
+/// (<c>allows(Event, MentionsOf)</c>, graph-types/src/frontier.rs).
+///
+/// Refs only, never verse text -- the SAME <c>RefsList</c> component (and
+/// the same owner ruling behind it: "not showing the verse contents, just
+/// the list of refs") <c>ArrowNav</c> already uses for adjacent-event
+/// account refs.
+/// </summary>
+public sealed class EventMentionsSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not EventNode ev)
+        {
+            return null;
+        }
+
+        EventDetail detail;
+        try
+        {
+            detail = await ev.DetailAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var mentions = detail.MentionedInOrEmpty;
+        if (mentions.Count == 0)
+        {
+            return null; // exists(instances, focus) == false -- the smart-frontier law's own left conjunct
+        }
+
+        var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, (IExplorable)new VerseNode(v))).ToList();
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+            builder.AddContent(seq++, "MENTIONED IN");
+            builder.CloseElement();
+
+            builder.OpenComponent<Components.RefsList>(seq++);
+            builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
+            builder.AddAttribute(seq++, "TestIdPrefix", "event-mentioned-in");
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("event-mentions", body);
+    }
+}
+
+/// <summary>
+/// Batch ATTEST-1 (owner order 1, verbatim: "let's call it Analogue; that's
+/// ok for now."; law L4). An EVENT node's "SIMILAR ACCOUNTS" section:
+/// events joined to this one by an <c>Analogue</c> row -- "distinct events
+/// whose accounts are similar in form or content, NEVER two accounts of one
+/// event."
+///
+/// HEADING AND PLACEMENT ARE BOTH THE OWNER'S, verbatim (placement
+/// amendment): "let's have a 'Similar Accounts' or something similar added
+/// to the frontier part of the UI where it was getting pulled in as a
+/// parallel account. Have that section be right below the 'Parallel ..'
+/// section." So the heading is SIMILAR ACCOUNTS -- deliberately not
+/// "parallel" anything, because the owner's report was that a
+/// similar-but-distinct story WAS being shown as a parallel account ("A
+/// leper healed; a great popular excitement is given a parallel where
+/// there shouldn't be from Mat.8.1-4; another leprosy story") -- and it
+/// renders IMMEDIATELY BELOW PARALLEL ACCOUNTS, so the wrongly-placed row
+/// moves down exactly one section into a heading that tells the truth,
+/// rather than disappearing from where the reader last saw it. The
+/// adjacency is registered at Order 161 (PARALLEL ACCOUNTS is 160) and
+/// asserted as ADJACENCY, not as a number, in
+/// <c>PopoverSectionRegistryTests</c>.
+///
+/// Each row is an explorable <see cref="EventNode"/>: the wire carries the
+/// neighbour's id AND title, so pushing it needs no second fetch (the same
+/// "no fetch just to render the header" discipline EventNode's own
+/// constructor already documents).
+/// </summary>
+public sealed class EventAnaloguesSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not EventNode ev)
+        {
+            return null;
+        }
+
+        EventDetail detail;
+        try
+        {
+            detail = await ev.DetailAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var analogues = detail.AnaloguesOrEmpty;
+        if (analogues.Count == 0)
+        {
+            return null; // exists(instances, focus) == false
+        }
+
+        var refs = analogues
+            // Display the TITLE, key the testid off the stable event ID
+            // (RefDescriptor's own `TestIdSuffix`) -- a curator improving a
+            // label must not break a fixture.
+            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, "event"), a.Id))
+            .ToList();
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
+            builder.AddContent(seq++, "SIMILAR ACCOUNTS");
+            builder.CloseElement();
+
+            builder.OpenComponent<Components.RefsList>(seq++);
+            builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
+            builder.AddAttribute(seq++, "TestIdPrefix", "event-analogues");
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("event-analogues", body);
+    }
+}
+
+/// <summary>
 /// M-D3/U6, owner verbatim order (progress.md): "Header / Verse (focus) /
 /// Event / Parallels / Small Catechism / cross references LAST." A VERSE
 /// (or PASSAGE) node's own quick peek at OTHER witnesses of an event it
