@@ -434,6 +434,19 @@ interface IStateLink<A, B> {
 // type on the frontier of the focus node"):
 //   display(section, focus) ⟺ exists(instances, focus)
 //                           ∧ ¬optedOut(focus.Kind, section.Type)
+// THE UNITY RULING (owner verbatim 2026-09-07: "1 and 2 ought to be
+// different expressions of the same thing. the visual frontier is how
+// we navigate the parts of the graph that are both available to us
+// from a focus and not opted out of"): the graph frontier and the
+// visual frontier are ONE thing — visual = graph edges ∩ policy.
+// Compiled as Capability::relations() in graph-types/src/frontier.rs:
+// every capability anchors to relation families from the edge
+// manifest (EventMembership and Accounts = the SAME Attests relation
+// from opposite ends); a capability with no edge family behind it
+// cannot exist (tested). THIS SETTLES §9 Q5's direction: frontier
+// abstractions ARE the relations, filtered — not generated as a
+// separate vocabulary.
+//
 // The per-kind capability MATRIX is the opt-out registry — one
 // declared site, one line per cell (the one-line-knob bar applies:
 // opting a node type in or out of a kind's frontier is a one-line

@@ -12,6 +12,19 @@
 //!   display(section, focus) ⟺ exists(instances, focus)
 //!                            ∧ allows(focus.kind, section.capability)
 //!
+//! THE UNITY RULING (owner verbatim, 2026-09-07): "1 and 2 ought to be
+//! different expressions of the same thing. the visual frontier is how we
+//! navigate the parts of the graph that are both available to us from a
+//! focus and not opted out of." The graph frontier (edges leaving a
+//! focus) and the visual frontier are ONE thing:
+//!
+//!   visual_frontier(focus) = graph_frontier(focus) ∩ allows(focus.kind)
+//!
+//! Compiled below as `Capability::relations()` — every capability anchors
+//! to real relation families from the edge manifest; a capability with no
+//! edge family behind it cannot exist (tested). This also settles spec §9
+//! Q5's direction: frontier abstractions ARE the relations, filtered.
+//!
 //! `allows` below IS the opt-out registry. Rust buys us what no set-based
 //! encoding can: the match is EXHAUSTIVE over both enums — adding a new
 //! `FocusKind` (or a new `Capability`) refuses to compile until every cell
@@ -83,6 +96,32 @@ pub enum Capability {
     Accounts,
 }
 
+impl Capability {
+    /// THE UNITY BRIDGE: the relation families this capability expresses.
+    /// Direction is per-focus mechanical (the frontier walks whatever
+    /// direction leaves the focus) — so this names RELATIONS, not directed
+    /// EdgeKinds. Note EventMembership and Accounts share `Attests`: the
+    /// same edge family seen from the verse end and the event end — the
+    /// owner's "events are keys that map to sets of Biblical accounts" was
+    /// already in the edge vocabulary.
+    pub const fn relations(
+        self,
+    ) -> (&'static [crate::edge::RelationId], &'static [crate::edge::SymRelationId]) {
+        use crate::edge::{RelationId as R, SymRelationId as S};
+        match self {
+            Capability::CrossReferences => (&[R::Cites], &[]),
+            Capability::Parallels => (&[], &[S::Parallel]),
+            Capability::EventMembership => (&[R::Attests], &[]),
+            Capability::PassageMembership => (&[R::Contains], &[]),
+            Capability::Persons => (&[R::Mentions], &[]),
+            Capability::CatechismSupport => (&[], &[S::CatechismLink]),
+            Capability::Chronology => (&[R::Succession], &[S::TemporalAdjacency]),
+            Capability::TimeAndPlace => (&[R::DatedBy, R::LocatedAt], &[]),
+            Capability::Accounts => (&[R::Attests], &[]),
+        }
+    }
+}
+
 /// THE OPT-OUT REGISTRY. `false` = opted out for that kind. Exhaustive
 /// over both enums by construction — the compiler enforces the whole
 /// matrix. One line per row; a cell edit is a one-line diff.
@@ -122,6 +161,22 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    /// THE UNITY LAW: no capability exists without a relation family
+    /// behind it — the visual frontier is the graph frontier filtered,
+    /// never an invented sibling.
+    #[test]
+    fn every_capability_is_edge_backed() {
+        use Capability as C;
+        for cap in [C::CrossReferences, C::Parallels, C::EventMembership,
+                    C::PassageMembership, C::Persons, C::CatechismSupport,
+                    C::Chronology, C::TimeAndPlace, C::Accounts] {
+            let (dir, sym) = cap.relations();
+            assert!(!dir.is_empty() || !sym.is_empty(),
+                "capability {:?} has no relation family behind it", cap);
+        }
+    }
 
     /// The owner's calibration row, pinned: an event frontier does not
     /// implement cross references (until event-level data exists — the
