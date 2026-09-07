@@ -2083,6 +2083,53 @@ test('ACCT-COALESCE-1 fix round 2 (review N-1): rob_peter_denies -- a WITHIN-wit
   await expect(witnessesSection.locator('[data-testid^="event-witness-MRK.14.54-"]')).toHaveCount(0);
 });
 
+test('ACCT-COALESCE-1 fix round 3 (review NEW-1): clicking a coalesced account whose DISPLAY span is unparseable still lands a popover with its Cross References / Small Catechism sections -- never the silent section loss', async ({ page }) => {
+  // NEW-1's own failure scenario, inverted into a live proof: a coalesced
+  // account's display span ("MAT.5.1-7.29", "MRK.14.54, 66-72") is not a
+  // shape ScriptureRef::parse accepts, and round 1/2 pushed it VERBATIM
+  // as the explored PassageNode's sref -- /api/xrefs/{sref} and
+  // /api/catechism/{sref} 400'd and both sections silently vanished for
+  // 167 of 1212 real accounts. The fix explores by the account's own
+  // FIRST contiguous same-chapter run (parser-safe by construction; the
+  // display ref stays the honest compound). Ground truth first, so
+  // neither half can pass vacuously:
+  const compoundProbe = await api.xrefs('MAT.5.1-7.29');
+  expect(compoundProbe.__status, 'the display span itself really is unparseable by the server -- the very thing that made the old behavior silent section loss').toBe(400);
+  const sermonXrefs = await api.xrefs('MAT.5.1-48');
+  const sermonCatechism = await api.catechism('MAT.5.1-48');
+  expect(sermonXrefs.length, 'MAT.5.1-48 must have real cross-references for the section assertion to mean anything').toBeGreaterThan(0);
+  expect(sermonCatechism.length, 'MAT.5.1-48 must have real catechism citations for the section assertion to mean anything').toBeGreaterThan(0);
+  const peterXrefs = await api.xrefs('MRK.14.54');
+  expect(peterXrefs.length, 'MRK.14.54 must have real cross-references for the VerseNode half to mean anything').toBeGreaterThan(0);
+
+  // Pass 1 -- the PassageNode path: the Sermon's MAT account (cross-chapter
+  // contiguous, display span "MAT.5.1-7.29") explores as its first
+  // chapter's own run, "MAT.5.1-48".
+  await page.goto('/read/LUK/6');
+  await page.getByTestId('verse-line-17').click();
+  await page.getByTestId('verse-event-rob_sermon_on_the_mount').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('The Sermon on the Mount');
+  const matEntry = page.getByTestId('event-witness-MAT.5.1-7.29');
+  await expect(matEntry).toBeVisible(); // the DISPLAYED ref stays the honest full span
+  await matEntry.locator('.popover-passage-ref-label').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.5.1-48');
+  await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
+  await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
+
+  // Pass 2 -- the VerseNode path: rob_peter_denies's compound MRK account
+  // has a ONE-verse first run, so it explores as a verse (the run's own
+  // IsPassage cardinality rule) -- and that verse popover carries its own
+  // real cross-references too.
+  await page.goto('/read/MRK/14');
+  await page.getByTestId('verse-line-54').click();
+  await page.getByTestId('verse-event-rob_peter_denies').click();
+  const peterEntry = page.getByTestId('event-witness-MRK.14.54, 66-72');
+  await expect(peterEntry).toBeVisible();
+  await peterEntry.locator('.popover-passage-ref-label').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MRK.14.54');
+  await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
+});
+
 test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL ACCOUNTS" framing (requirement 4, n=1)', async ({ page }) => {
   // Batch T2 (owner's own live-review ruling, 2026-08-21): pw_emmaus,
   // this test's own original n=1 example, is no longer single-witness --

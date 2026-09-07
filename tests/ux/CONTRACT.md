@@ -738,11 +738,16 @@ ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts (sermon
 
   FIX ROUND 2 (re-review Critical N-1 -- the CONTIGUITY half, which round
   1 had omitted on a false premise): a witness row is NOT always one
-  continuous account (14 of the 35 multi-range curated witness rows have
-  real gaps; so do 21 synthesized-witness verse lists), so round 1's
-  unconditional first-to-last envelope shipped false refs on real events
+  continuous account (15 of the 35 multi-range curated witness rows have
+  real gaps -- corrected from "14" in fix round 3, review NEW-4: the
+  recount adds `rob_paschal_meal_begins`'s own LUK row; so do 21
+  synthesized-witness verse lists), so round 1's unconditional
+  first-to-last envelope shipped false refs on real events
   (`theo-188` -> "2KI.1.17-8.24"; `1ch_davids_hymn_of_praise` ->
-  "PSA.96.1-106.48"; `rob_peter_denies` -> "MRK.14.54-61", claiming
+  "PSA.96.1-106.3" -- corrected in fix round 3, NEW-4: the round-1
+  arithmetic yielded 106.3, not the previously-quoted "106.48"; either
+  way eleven psalms welded into one fabricated envelope;
+  `rob_peter_denies` -> "MRK.14.54-61", claiming
   verses that belong to ANOTHER event while dropping delivered ones).
   THE COMPLETE RULE now implemented (`PassageBlockBuilder.BuildCoalescedBlock`):
   within one account, adjacent ranges merge ONLY where genuinely
@@ -773,6 +778,45 @@ ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts (sermon
   TRUNC-1 test retargeted in place for the 1ki_temple_dedication event's
   own now-coalesced 2CH witness (2CH.5.2-7.10 -- genuinely contiguous
   across its chapter boundaries per the canon, so it still coalesces).
+
+  FIX ROUND 3 (re-review of round 2: NEW-1/NEW-2/NEW-3): the account's
+  DISPLAY span and its EXPLORATION sref are now separate facts. NEW-1
+  (Moderate -- silent section loss): a coalesced account's span
+  ("MRK.14.54, 66-72", "MAT.5.1-7.29") is not a shape the server's
+  `ScriptureRef::parse` accepts (`BOOK | BOOK.CH | BOOK.CH.V |
+  BOOK.CH.V1-V2` only), and rounds 1-2 pushed it VERBATIM as the clicked
+  PassageNode's sref -- `/api/xrefs/{sref}` + `/api/catechism/{sref}`
+  400'd and the Cross References / Small Catechism sections silently
+  vanished for 167 of 1212 real accounts (148 already broken by round
+  1's cross-chapter envelopes, undetected until the round-2 review).
+  FIXED: `PassageBlockData.ExploreSref` carries the account's own FIRST
+  contiguous same-chapter run ("MAT.5.1-48"; a bare vref for a one-verse
+  run) -- parser-safe by construction -- and `PassageList.razor`'s one
+  `ExploreNodeOf` seam explores by it, with the pushed node's text
+  bounded to that run's own delivered verses (`ExploreVerseCount`); the
+  DISPLAYED ref stays the honest compound span, and a single-chapter
+  contiguous account (ExploreSref == Span) behaves byte-identically to
+  before. NEW-2: the wire-cap remainder extension -- the one step that
+  could still invent verses -- is now clamped to the chapter's real end
+  (same Versification conservatism as the boundary check; never below
+  the last DELIVERED verse), and the round-2 fixture that PINNED an
+  invented-verse output ("MRK.14.66-83" in a 72-verse chapter) is
+  corrected to assert the clamped result. NEW-3: a `Books()` failure now
+  degrades ArrowNav to `Canon: null` in its own catch -- the IDENTICAL
+  conservative compound the frontier renders -- instead of aborting to
+  the per-group fallback (a permanent set-shape divergence between the
+  two surfaces, violating ACCT-SET-MISMATCH-1's one-source law exactly
+  when degraded); the Event and Books fetches also start before either
+  is awaited (the house's "independent fetches never serialize" rule).
+  TESTS: `AcctCoalesceTests.cs` 16 -> 18 (the corrected
+  extends-after-gap fixture, the new clamp fixture, and the ExploreSref
+  parser-safety fixture over the real rob_peter_denies / Sermon / LUK /
+  theo-188 shapes); `tests/ux/popover-sections.spec.ts`'s new NEW-1 test
+  (wire ground truth first -- the display span really 400s, the
+  exploration sref really has xrefs/catechism -- then both click paths
+  live: the Sermon's compound account lands "MAT.5.1-48" WITH its Cross
+  References and Small Catechism sections, and rob_peter_denies's
+  one-verse-first-run account lands "MRK.14.54" with its own).
 
 HOVER-KILL-1 (owner verbatim: "get rid of the box that comes up when
   hovering over prior/following event buttons"): an OWNER REVERSAL of
