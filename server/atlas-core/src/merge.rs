@@ -467,10 +467,15 @@ mod tests {
     }
 
     proptest! {
-        // Property mirror of the three example cases above, at arbitrary
-        // headings: a pair placed just inside the threshold (99.9% of it,
-        // converted to a latitude delta) is inside; a pair placed any
-        // positive epsilon beyond it is outside.
+        // Property mirror of the three example cases above, at GENUINELY
+        // arbitrary headings (fix round 1, review M-4 -- the previous
+        // form moved only along the meridian, so `lat`/`lon` provably
+        // cancelled out of the haversine and only epsilon was live; this
+        // form generates a bearing and offsets BOTH coordinates, so the
+        // `cos(phi1)cos(phi2)` longitude term of `great_circle_km` is
+        // exercised at every generated case): a pair placed 99.9% of the
+        // threshold apart is inside; a pair placed any positive epsilon
+        // beyond it is outside.
         //
         // MERGE-BOUNDARY-1 (batch NODE-1, diagnosed from the checked-in
         // proptest-regressions/merge.txt seed `lat=0.0, lon=0.0,
@@ -486,24 +491,50 @@ mod tests {
         // and the property failed. This was the PROPERTY stated too
         // tightly, not a bug in the threshold logic: `great_circle_km` /
         // `SAME_PLACE_THRESHOLD_KM` are compared directly in production
-        // (`apply_place_merges`' debug_assert and the unit tests above);
-        // 111.32 appeared nowhere outside this test (verified by grep).
-        // The fix uses the sphere's OWN exact conversion, under which a
-        // pure-meridian haversine reduces to exactly R * delta_phi, so
-        // both assertions hold with kilometer-scale margin (0.999km and
-        // 1.0+epsilon km against a 1.0km threshold), no approximation
-        // slack needed. The committed seed re-runs this exact case first,
-        // as the regression witness.
+        // (`apply_place_merges`' debug_assert and the unit tests above).
+        //
+        // EVIDENCE CORRECTION (fix round 1, review H-1 -- the sentence
+        // that stood here, "111.32 appeared nowhere outside this test
+        // (verified by grep)", was FALSE: the grep was scoped to server/,
+        // and ripgrep prints only "binary file matches" for map.js): the
+        // honest statement is that 111.32 appears nowhere in the SERVER
+        // WORKSPACE outside this test; `client/wwwroot/js/map.js`'s own
+        // `approxKm` (map.js:1730-1731) DOES use 111.32, in an
+        // equirectangular approximation feeding the client-side
+        // LANDMARK_DEDUPE_KM = 5 landmark-vs-lit-place dedupe. That use
+        // is immaterial there (0.112% of 5km = ~5.6m, orders of magnitude
+        // below the approximation's own model error at that scale) and is
+        // entirely outside this module's merge path -- the "property too
+        // tight, not a threshold bug" verdict is unchanged -- but the
+        // evidence text needed to say what was actually checked.
+        //
+        // CONSTRUCTION ACCURACY (why the margins below are honest): the
+        // displacement uses the sphere's own exact km/deg for latitude
+        // and scales longitude by cos(latitude) at the MIDPOINT latitude.
+        // Verified numerically across lat in [-60,60], all bearings, and
+        // distances up to 6km: the worst |haversine - intended| error of
+        // this construction is under 4e-9 km (micrometers), so the real
+        // margins are the full ~1m on both sides (0.999km vs 1.0km, and
+        // 1.0km vs 1.0+epsilon with epsilon >= 1m). The checked-in seed
+        // replays its recorded RNG state first, every run, as the
+        // regression witness.
         #[test]
-        fn threshold_boundary_property(lat in -60.0f64..60.0, lon in -170.0f64..170.0, epsilon_km in 0.001f64..5.0) {
+        fn threshold_boundary_property(lat in -60.0f64..60.0, lon in -170.0f64..170.0, bearing in 0.0f64..std::f64::consts::TAU, epsilon_km in 0.001f64..5.0) {
             // `great_circle_km`'s own EARTH_RADIUS_KM, converted: km per
             // degree of latitude on THAT sphere (R * pi / 180).
             let km_per_deg_lat = 6371.0088_f64 * std::f64::consts::PI / 180.0;
-            let inside_lat = lat + (SAME_PLACE_THRESHOLD_KM * 0.999) / km_per_deg_lat;
-            let outside_lat = lat + (SAME_PLACE_THRESHOLD_KM + epsilon_km) / km_per_deg_lat;
+            let offset = |km: f64| -> (f64, f64) {
+                let dlat = km * bearing.cos() / km_per_deg_lat;
+                let lat_mid = lat + dlat / 2.0;
+                let dlon = km * bearing.sin() / (km_per_deg_lat * lat_mid.to_radians().cos());
+                (lat + dlat, lon + dlon)
+            };
 
-            prop_assert!(great_circle_km(lat, lon, inside_lat, lon) <= SAME_PLACE_THRESHOLD_KM);
-            prop_assert!(great_circle_km(lat, lon, outside_lat, lon) > SAME_PLACE_THRESHOLD_KM);
+            let (in_lat, in_lon) = offset(SAME_PLACE_THRESHOLD_KM * 0.999);
+            let (out_lat, out_lon) = offset(SAME_PLACE_THRESHOLD_KM + epsilon_km);
+
+            prop_assert!(great_circle_km(lat, lon, in_lat, in_lon) <= SAME_PLACE_THRESHOLD_KM);
+            prop_assert!(great_circle_km(lat, lon, out_lat, out_lon) > SAME_PLACE_THRESHOLD_KM);
         }
     }
 
