@@ -8,8 +8,10 @@ authority), §2/§3 (the AQC: schema v0.1.0, Gherkin corpus, both
 harnesses, /api/contract), §4/§4b/§4d (compiled Contracts skeleton +
 state/effect layer + generalized composition), and §5 (hatches incl.
 the follow-release law) are implemented and enforcement-tested on the
-M1 branch. Remaining OPEN: §9 Q2 (map-view kinds) and Q5
-(relations!-generated frontier) — owner-gated, un-pre-empted; §6
+M1 branch. Remaining OPEN: §9 Q2 (map-view kinds) —
+owner-gated, un-pre-empted (Q5 was SETTLED 2026-09-07 by the owner's
+unity ruling: frontier abstractions ARE the relations, filtered — see
+§4e and graph-types/src/frontier.rs); §6
 (map-view consumer contract) unimplemented pending Q2. [ASSUMED]
 markers retain their original meaning where their sections are still
 prose-only. Originally written from the owner's 2026-08-26 brainstorm
