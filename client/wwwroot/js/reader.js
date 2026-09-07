@@ -366,6 +366,51 @@ export function unwatchScroll() {
 // layout fix landed.
 let _navCenterCleanup = null;
 
+// NAV-STUTTER-2 fix round (2026-09-07, owner repeat report: "chapter
+// navigation buttons still stutter and reload on scroll" -- a REPEAT of the
+// report NAV-STABLE-1 (batch-corpread1a-report.md) already investigated and
+// believed closed). Phase-0 diagnosis on the CURRENT layout (this batch's
+// own report has the full instrumentation/numbers) found a SECOND, distinct
+// mechanism NAV-STABLE-1's own rAF-timestamped position-sampling methodology
+// structurally could not see: this function's own `recompute()` runs as a
+// plain main-thread 'scroll' event handler, which Chromium dispatches
+// ASYNCHRONOUSLY relative to the COMPOSITOR's own already-applied,
+// already-PAINTED scroll offset (a general fact about the DOM scroll event,
+// true regardless of how synchronous this handler's own code is -- HOTFIX-3
+// already removed an EXTRA, self-inflicted rAF-deferral, but the INHERENT
+// one-frame compositor-vs-main-thread ordering was never the thing that fix
+// addressed). The browser's own official Layout Instability API
+// (`PerformanceObserver({type:'layout-shift'})`) proved this concretely: a
+// real, PAINTED, exact-scroll-delta-sized teleport of reader-next, on every
+// single discrete scroll input, in BOTH standalone and split -- invisible to
+// requestAnimationFrame-based sampling (this function's writes and any rAF
+// callback both run on the SAME main thread, strictly after the compositor
+// has already painted the intermediate, uncorrected frame).
+//
+// THE FIX (standalone only): app.css's own `.reader-page` no longer carries
+// `contain: layout` unconditionally -- Reader.razor now only adds it
+// (`.reader-page-split-scope`) while `ctx.IsSplitOpen` (host OR guest). When
+// this function's own `findReaderScrollContainer()` finds NO real scroll
+// container, that UNAMBIGUOUSLY means genuinely-standalone (host-in-split
+// always finds `.reader-page` itself; guest-mounted always finds the
+// `.split-pane-guest` ancestor -- see that function's own header) -- and
+// with `contain:layout` no longer in effect there, `.reader-prev`/
+// `.reader-next`'s own `top: var(--chapter-nav-top, 50vh)` CSS fallback
+// resolves against the TRUE VIEWPORT NATIVELY, via the compositor, with NO
+// main-thread JS involved at all -- permanently correct, not a temporary
+// approximation. This function now SKIPS binding its own scroll/resize
+// listener entirely for that case (no write ever happens, hence nothing to
+// lag): the ONE way to structurally eliminate a main-thread-vs-compositor
+// race is to have no main-thread work racing it in the first place.
+//
+// SPLIT (host-in-split and guest-mounted) is UNCHANGED below -- `contain:
+// layout` is still genuinely needed there (LEFT/RIGHT pane confinement,
+// unaffected by this fix), so this function's own JS compensation for `top`,
+// and its own residual one-frame-lag exposure, are NOT fixed by this change;
+// disclosed, not silently narrowed -- see the batch report's own "residual
+// exposure" section for why a full fix there needs a genuinely separate,
+// non-scrolling containing-block ancestor (a real, larger restructuring),
+// out of this ticket's own bounded scope.
 export function watchChapterNavCenter() {
     if (_navCenterCleanup) {
         _navCenterCleanup();
@@ -377,7 +422,14 @@ export function watchChapterNavCenter() {
     }
 
     const container = findReaderScrollContainer();
-    const target = container || window;
+    if (!container) {
+        // Genuinely standalone -- app.css's own `50vh` fallback on
+        // `.reader-prev`/`.reader-next` is now permanently correct (see this
+        // function's own header comment). Nothing to bind; --chapter-nav-top
+        // is deliberately left unset.
+        return;
+    }
+
     const selfScrolls = container === page;
 
     const recompute = () => {
@@ -387,11 +439,11 @@ export function watchChapterNavCenter() {
     };
 
     recompute();
-    target.addEventListener('scroll', recompute, { passive: true });
+    container.addEventListener('scroll', recompute, { passive: true });
     window.addEventListener('resize', recompute);
 
     _navCenterCleanup = () => {
-        target.removeEventListener('scroll', recompute);
+        container.removeEventListener('scroll', recompute);
         window.removeEventListener('resize', recompute);
         _navCenterCleanup = null;
     };

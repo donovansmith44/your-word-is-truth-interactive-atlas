@@ -601,3 +601,113 @@ test('NAV-STABLE-1: reader-prev/reader-next keep DOM identity, GEOMETRY, AND sta
     await expect(page.getByTestId('chapter-head')).not.toHaveText(beforeChapterHead ?? '');
   }
 });
+
+// NAV-STUTTER-2 (owner order, verbatim, a REPEAT of NAV-STABLE-1's own
+// report: "chapter navigation buttons still stutter and reload on scroll").
+// PHASE-0 DIAGNOSIS (this batch's own report has the full instrumentation):
+// NAV-STABLE-1's own methodology above (rAF-timestamped `boundingBox`
+// sampling once per animation frame) is STRUCTURALLY BLIND to this bug --
+// reader.js's own `recompute()` (a plain main-thread 'scroll' handler) and
+// any `requestAnimationFrame` callback (including NAV-STABLE-1's own
+// `next.boundingBox()` calls above) run on the SAME main thread, so a
+// sample taken there always sees the ALREADY-CORRECTED position, never the
+// intermediate frame the COMPOSITOR (a separate thread, which scrolls and
+// paints BEFORE dispatching 'scroll' to the main thread at all -- a general,
+// unavoidable Chromium ordering fact, not a bug in this app's own code)
+// already painted first. The browser's OWN official Layout Instability
+// metric (`PerformanceObserver({type:'layout-shift'})` -- the same API
+// Web Vitals' CLS score is built on) sees exactly what NAV-STABLE-1 cannot:
+// a real, PAINTED, exact-scroll-delta-sized teleport of reader-next on
+// EVERY discrete scroll input, standalone AND split (15/15 and 25/25 ticks
+// respectively in this batch's own live probe, `previousRect`/`currentRect`
+// showing a pixel-exact displacement equal to that tick's own scroll delta).
+//
+// THE FIX (standalone only -- disclosed, not silently narrowed): app.css's
+// `.reader-page` no longer carries `contain: layout` unconditionally --
+// Reader.razor now only adds it (`.reader-page-split-scope`) while
+// `ctx.IsSplitOpen` (host OR guest). Standalone's `position:fixed` chrome
+// therefore resolves against the TRUE viewport, natively, via the
+// compositor -- zero main-thread JS, zero possible one-frame lag.
+// reader.js's own `watchChapterNavCenter` now skips binding its scroll
+// listener entirely there. SPLIT (host-in-split and guest-mounted) is
+// UNCHANGED -- `contain: layout` is still genuinely needed there for
+// LEFT/RIGHT pane confinement, so this residual exposure is NOT fixed by
+// this ticket; this test's own split assertion is a REGRESSION GUARD
+// (documents/pins the STATUS QUO there, not a claim it is fixed) exactly
+// like the standalone assertion is a FIX proof.
+//
+// NON-VACUITY (the house's own "controlled swap" technique): this test was
+// run against the PRE-fix code (revert the `.reader-page`/`reader.js`/
+// Reader.razor edits, keep this test) and FAILED on the standalone
+// assertion (measured CLS ~0.109 there, an order of magnitude over the
+// threshold below) -- see the batch report's own non-vacuity section for
+// the exact before/after numbers. Kretzmann is included for a different
+// reason: its OWN chapter nav (`.kretzmann-nav-button`) is plain, in-flow
+// markup -- never `position: fixed`, never JS-recomputed (Kretzmann.razor's
+// own header comment, "TWO separate, deliberate reasons") -- so it is
+// STRUCTURALLY IMMUNE to this whole bug class; this test proves that
+// directly rather than asserting it by reading the comment.
+test('NAV-STUTTER-2: chapter nav buttons cause no real (browser-measured) layout shift during a scroll session -- standalone, split, and Kretzmann', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+
+  async function measureNavCLS(url: string, wheelPoint: { x: number; y: number }) {
+    await page.goto(url);
+    await expect(page.getByTestId('reader-next').or(page.getByTestId('kretzmann-next'))).toBeVisible();
+    await page.waitForTimeout(300); // let initial layout/font/image settle before measuring
+
+    await page.evaluate(() => {
+      (window as any).__navShifts = [];
+      const po = new PerformanceObserver(list => {
+        for (const e of list.getEntries() as any[]) {
+          if (e.hadRecentInput) continue;
+          const navSource = (e.sources || []).some((s: any) => {
+            const testid = s.node?.getAttribute?.('data-testid');
+            return testid === 'reader-next' || testid === 'reader-prev' || testid === 'kretzmann-next' || testid === 'kretzmann-prev';
+          });
+          if (navSource) (window as any).__navShifts.push(e.value);
+        }
+      });
+      po.observe({ type: 'layout-shift', buffered: true });
+      (window as any).__navObserver = po;
+    });
+
+    await page.mouse.move(wheelPoint.x, wheelPoint.y);
+    for (let i = 0; i < 15; i++) {
+      await page.mouse.wheel(0, 300);
+      await page.waitForTimeout(80);
+    }
+    await page.waitForTimeout(300);
+
+    return page.evaluate(() => {
+      (window as any).__navObserver.disconnect();
+      const shifts: number[] = (window as any).__navShifts;
+      return { totalCLS: shifts.reduce((a, b) => a + b, 0), shiftCount: shifts.length };
+    });
+  }
+
+  // A "real user experiences no measurable jump" bar, not a bare-zero one:
+  // Web Vitals' own published "good" CLS threshold is 0.1 for an ENTIRE
+  // page-load session; this test holds the chapter-nav buttons ALONE, over
+  // one 15-tick scroll burst, to a fifth of that (0.02) -- comfortably
+  // above floating-point/rendering noise (the fixed post-fix runs measured
+  // ~0, see the report) but an order of magnitude under the pre-fix
+  // standalone measurement (~0.109) and the still-uncorrected split
+  // measurement this test also pins (~0.05-0.06) is INTENTIONALLY excluded
+  // from this bar -- split gets its own, looser threshold below.
+  const standalone = await measureNavCLS('/read/MAT/26', { x: 700, y: 450 });
+  expect(standalone.totalCLS, `standalone nav-attributed CLS too high: ${JSON.stringify(standalone)}`).toBeLessThan(0.02);
+
+  // Split (host-in-split): NOT fixed this ticket (disclosed residual
+  // exposure, see this test's own header comment) -- a REGRESSION GUARD,
+  // not a fix proof. Pinned generously above the measured pre-fix value
+  // (~0.052-0.055) so a REAL further regression (e.g. the JS compensation
+  // breaking entirely) still fails this, without this test flaking on the
+  // already-known, disclosed residual jitter.
+  const split = await measureNavCLS('/read/MAT/26?split=world&follow=0', { x: 400, y: 450 });
+  expect(split.totalCLS, `split nav-attributed CLS regressed further than the disclosed baseline: ${JSON.stringify(split)}`).toBeLessThan(0.15);
+
+  // Kretzmann: structurally immune (plain in-flow nav, never fixed/JS-
+  // positioned) -- proves it directly, not just by reading the comment.
+  const kretzmann = await measureNavCLS('/kretzmann', { x: 400, y: 450 });
+  expect(kretzmann.totalCLS, `Kretzmann's own nav should be structurally immune (plain in-flow, never fixed): ${JSON.stringify(kretzmann)}`).toBeLessThan(0.02);
+});

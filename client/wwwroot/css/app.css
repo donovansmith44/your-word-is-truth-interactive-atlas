@@ -293,7 +293,83 @@ input:focus-visible,
    -- visually identical to position:fixed here specifically because
    .world-page is always exactly viewport-sized with overflow:hidden (never
    internally scrolled), so there is no scroll behavior for the two to ever
-   differ over. */
+   differ over.
+
+   NAV-STUTTER-2 fix round (2026-09-07, CORRECTING this comment's own
+   "no-op in standalone" claim, above -- it was never re-verified after
+   Batch R's chapter-nav requirement started needing VERTICAL centering,
+   and was flatly WRONG by then, live-proven two ways: (1) reader.js's own
+   watchChapterNavCenter has ALWAYS had to JS-compensate `top` for
+   standalone too, not just split -- its own header comment already said
+   so ("centers correctly only at scroll position 0... drifts... as soon
+   as it actually scrolled"), it just never occurred to anyone to trace
+   that back to THIS comment's contradicting claim; (2) a live probe
+   (`getBoundingClientRect` before/after a 4000px standalone scroll) proved
+   `.passage-chip` -- which has NO JS compensation, relying on THIS
+   comment's claim being true -- silently sits ~8000px below the viewport
+   at every scroll position in a long chapter, not "pinned... regardless of
+   scroll position" as `.toast`'s own Batch H fix-round-2 comment (below)
+   ALSO separately, wrongly claimed. `contain:layout`'s containing-block
+   substitution is never a no-op merely because the box's WIDTH happens to
+   match the viewport -- it is a no-op only when the box's `position:fixed`
+   descendants' OWN offsets (`top`/`bottom`/etc.) happen to coincide with
+   what the true viewport would have given, which breaks the instant the
+   box's HEIGHT exceeds one viewport and the document scrolls (standalone)
+   or its own `bottom` edge is used at all (`.passage-chip`/`.toast`,
+   never JS-compensated). ROOT CAUSE of NAV-STUTTER-2's own repeat "still
+   stutter[s]... on scroll" report: reader-prev/reader-next's JS
+   compensation (reader.js's watchChapterNavCenter, a plain 'scroll'-event
+   handler) runs on the MAIN THREAD, strictly AFTER the COMPOSITOR has
+   already scrolled and PAINTED the frame (a general, unavoidable Chromium
+   ordering -- 'scroll' is dispatched asynchronously relative to the
+   compositor's own already-applied scroll offset) -- so for one real,
+   PAINTED frame per discrete scroll input, the button visually teleports
+   by the scroll delta before the very next frame's JS correction snaps it
+   back. Confirmed with the browser's own official Layout Instability
+   (`PerformanceObserver({type:'layout-shift'})`) API, not a guess: 15/15
+   and 25/25 discrete wheel ticks each produced ONE `layout-shift` entry
+   attributed to `reader-next`, `previousRect`/`currentRect` showing a
+   pixel-exact displacement equal to that tick's own scroll delta (e.g.
+   dy=300 for a 300px wheel notch) -- invisible to rAF-timestamped position
+   SAMPLING (NAV-STABLE-1's own methodology, and HOTFIX-3's), because a
+   `requestAnimationFrame` callback runs on the SAME main thread, AFTER the
+   SAME 'scroll' handler that already corrected the value, so it can never
+   observe the compositor-painted INTERMEDIATE frame the human eye does.
+   STANDALONE measured worst (CLS≈0.109 over one 25-tick scroll session,
+   "needs improvement" by Web Vitals' own published thresholds), split
+   (host) measured ≈0.052, guest-mounted ≈0.027-and-below.
+
+   THE FIX (standalone only -- see below): `contain: layout` moves OFF the
+   bare `.reader-page` selector onto `.reader-page.reader-page-split-scope`
+   (below, Reader.razor's own new marker class for "ctx.IsSplitOpen", host
+   OR guest) -- applied whenever genuinely split, EITHER role. Standalone's
+   `.reader-page` (IsSplitOpen false, so the marker class is absent) is
+   therefore no longer a `position:fixed` containing block for its
+   descendants AT ALL -- they resolve against the TRUE VIEWPORT, natively,
+   via the COMPOSITOR, with ZERO main-thread JS and hence ZERO possible
+   one-frame lag.
+   reader.js's watchChapterNavCenter (below) now SKIPS binding its scroll
+   listener entirely for standalone (findReaderScrollContainer() returns
+   null there) -- `top: var(--chapter-nav-top, 50vh)`'s own CSS fallback
+   (`.reader-prev`/`.reader-next` below) is no longer a temporary
+   approximation covering the instant before JS's first call; it is now
+   the PERMANENT, always-correct value for standalone, needing no JS
+   ever. `.passage-chip`/`.toast` (their own comments, below) get the
+   SAME fix for free, incidentally closing the real, independently-proven
+   "sits far below the viewport at any real scroll depth in a long
+   chapter" bug those two elements ALSO silently carried in standalone
+   (never noticed -- both are transient/rare UI, and neither had a deep-
+   scroll regression test).
+
+   SPLIT (host-in-split and guest-mounted) is UNCHANGED and still needs
+   `contain:layout` for LEFT/RIGHT pane confinement (the documented,
+   load-bearing reason it exists at all) -- reader.js's own JS compensation
+   for `top` there, and its OWN residual one-frame-lag exposure, are
+   THEREFORE NOT fixed by this change; disclosed, not silently narrowed --
+   see the batch report's own "residual exposure" section for why a full
+   fix there needs a genuinely separate non-scrolling containing-block
+   ancestor (a real, larger restructuring), out of this ticket's own
+   bounded scope. */
 .reader-page {
     min-height: 100vh;
     background: var(--parchment);
@@ -301,6 +377,29 @@ input:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+/* NAV-STUTTER-2 fix round: contain:layout moved HERE from the bare
+   .reader-page rule above -- see that rule's own header comment for the
+   full mechanism/evidence. Applied whenever `ctx.IsSplitOpen` (host-in-split
+   OR guest-mounted) -- NOT keyed off `ctx.HostPaneClassSuffix`/
+   `.split-pane-reader`/`.split-pane-host` the way host-only CSS elsewhere in
+   this file is, because `HostPaneClassSuffix` is DELIBERATELY empty for BOTH
+   "genuinely standalone" and "guest-mounted" (`CompositionSplitContext`'s own
+   `IsSplitOpen &amp;&amp; IsHost &amp;&amp; ...` guard, CompositionSplit.razor's
+   BuildContext) -- those two cases are NOT CSS-distinguishable via class
+   list alone under the existing contract, but they need OPPOSITE treatment
+   here: guest-mounted still needs `.reader-page` to be the containing block
+   (its LEFT/RIGHT confinement to the guest pane's own width still comes from
+   it -- `.split-pane-guest`, its own real scrolling ancestor, declares no
+   contain/transform/filter of its own, per that rule's own comment above),
+   while genuinely-standalone is exactly the ONE case this fix round targets.
+   `.reader-page-split-scope` (Reader.razor's own new marker class, added
+   whenever `ctx.IsSplitOpen`, i.e. host OR guest -- see that file's own
+   `data-testid="reader-root"` div) is the SAME "genuinely split, either
+   role" predicate the NAV-STUTTER-2 fix round's own reader.js change reads
+   via `ctx.IsSplitOpen` on the C# side; this is its CSS-side twin. */
+.reader-page.reader-page-split-scope {
     contain: layout;
 }
 
@@ -2045,7 +2144,21 @@ input:focus-visible,
    ancestor's viewport (not the scrolled content), which is exactly
    `.reader-page` itself here -- no drift, and STANDALONE mode (no
    split-pane-reader ancestor -- window genuinely scrolls, unaffected)
-   keeps `position: fixed` exactly as before, byte-identical. */
+   keeps `position: fixed` exactly as before.
+
+   NAV-STUTTER-2 fix round (2026-09-07) -- CORRECTING "byte-identical,"
+   above: it was never true. `.reader-page`'s OWN `contain: layout`
+   (unconditional at the time this comment was written) was ALSO this
+   element's containing block in standalone, and `.passage-chip` here has
+   NO JS compensation the way reader-prev/-next does -- a live probe
+   (`getBoundingClientRect` on a real passage-chip, before/after a 4000px
+   standalone scroll in a long chapter) found it sitting ~8000px below the
+   viewport at EVERY sampled position, not "unaffected" at all. `.reader-page`'s
+   own header comment (above) has the full mechanism/fix -- `contain:layout`
+   now only applies while genuinely split (`.reader-page-split-scope`), so
+   standalone's `.passage-chip` resolves against the TRUE viewport, closing
+   this incidentally alongside the chapter-nav-button fix this round's own
+   ticket was actually about. */
 .reader-page.split-pane-reader .passage-chip {
     position: sticky;
 }
@@ -4445,11 +4558,22 @@ input:focus-visible,
 /* Batch H fix round 2 (review Minor-1): .world-page-scoped override, NOT a
    change to the shared rule above -- .toast is shared markup between BOTH
    pages, and the two need DIFFERENT positioning behavior. .reader-page
-   routinely grows past 100vh (a long chapter scrolls) and keeps
-   contain:layout (fix round 1's own reasoning: .header-parchment has no
-   z-index/position to conflict with), so its own toast stays
-   position:fixed -- pinned to the actual viewport regardless of scroll
-   position, which is what a reader mid-chapter needs. .world-page is
+   routinely grows past 100vh (a long chapter scrolls); its own toast stays
+   position:fixed.
+
+   NAV-STUTTER-2 fix round (2026-09-07) -- CORRECTING "pinned to the actual
+   viewport regardless of scroll position," above: while `.reader-page`
+   UNCONDITIONALLY kept `contain:layout` (true when this comment was
+   written), that claim was never actually true for standalone -- a real,
+   un-JS-compensated `position:fixed` descendant of a `contain:layout`
+   ancestor resolves against THAT ancestor's own (scrolling-with-the-
+   document) box, not the viewport; `.passage-chip`'s own header comment
+   (above) has the live probe proving the identical mechanism broke IT the
+   same way. `.reader-page` now only keeps `contain:layout` while genuinely
+   split (`.reader-page.reader-page-split-scope`, that rule's own header
+   comment) -- standalone's own `.toast` now correctly resolves against the
+   TRUE viewport, which is what "pinned... regardless of scroll position"
+   was always meant to describe. .world-page is
    ALWAYS exactly one viewport tall (both standalone and the split pane --
    .world-page's own `overflow: hidden`, and .split-pane-atlas's own
    `height: 100vh; overflow: hidden`), so position:absolute against its own

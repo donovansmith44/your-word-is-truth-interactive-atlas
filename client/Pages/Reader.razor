@@ -91,7 +91,20 @@
            `ctx.HostPaneClassSuffix` (computed once by CompositionSplit from
            its own HostPaneClass parameter above), not a hand-written
            ternary. *@
-        <div class="@($"reader-page{ctx.HostPaneClassSuffix}")" data-testid="reader-root">
+        @* NAV-STUTTER-2 fix round (2026-09-07): "reader-page-split-scope" is
+           a NEW marker, added whenever `ctx.IsSplitOpen` (host-in-split OR
+           guest-mounted -- NOT `ctx.HostPaneClassSuffix`, which is
+           deliberately empty for BOTH standalone and guest, per
+           CompositionSplitContext's own BuildContext -- see app.css's own
+           `.reader-page.reader-page-split-scope` rule for the full "why a
+           separate marker" reasoning). Lets app.css apply `contain: layout`
+           ONLY while genuinely split (either role), instead of unconditionally
+           on the bare `.reader-page` class the way it used to -- standalone's
+           own `position:fixed` chrome (reader-prev/-next/passage-chip/toast)
+           now resolves against the TRUE viewport with zero JS/zero one-frame
+           compositor lag; see app.css's own `.reader-page` header comment for
+           the full mechanism/evidence this fix round found. *@
+        <div class="@($"reader-page{ctx.HostPaneClassSuffix}{(ctx.IsSplitOpen ? " reader-page-split-scope" : "")}")" data-testid="reader-root">
         @if (!ctx.IsSplitOpen)
         {
             <button type="button" class="split-open split-open-parchment" data-testid="split-open-reader"
