@@ -396,6 +396,37 @@ interface IStateLink<A, B> {
 // effects against shared atoms, and blank-on-remount when the atom
 // was already converged. Compiled in client/Contracts/State.cs.
 
+// 4e. THE FRONTIER SEGREGATION PRINCIPLE (owner ruling 2026-09-06,
+// verbatim: "every frontier of a node has a set of things that exist
+// in all frontiers as a LAW. however since certain nodes may only
+// have paths to other kinds of nodes on their frontier, it is worth
+// separating out some things into interfaces. for instance, we are
+// not yet at the point of being able ot provide lots of cross
+// references for events (we have it for verses therein, but not
+// really for the event itself yet) therefore an event node's
+// frontier ought not implement the cross references interface. ...
+// This is the principle we need to adhere to.")
+//
+// Two layers, both law:
+// 1. THE COMMON CORE — the set present on EVERY frontier without
+//    exception (chrome, declared hatches, back/trail, the focus
+//    presentation itself). Named exhaustively in the compiled
+//    skeleton when materialized; a frontier missing a core element
+//    is a conformance failure.
+// 2. SEGREGATED CAPABILITY INTERFACES — every non-core section
+//    family (cross references, parallels, chronology, time-and-
+//    place, catechism support, ...) is its OWN interface; a node
+//    kind's frontier implements an interface IFF it can genuinely
+//    provide that content TODAY (an event provides no event-level
+//    cross references yet, so the event frontier does not implement
+//    the cross-references interface — it acquires it the day the
+//    data exists, by implementing it, never by an empty section).
+// Conformance (the corollary): implementing an interface without
+// content-capable provision, or rendering a section whose interface
+// the kind does not implement, both fail standing tests. The
+// compiled interfaces land controller-authored (skeleton-first) with
+// Batch EVT-3's contract groundwork.
+
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
     Focus Focus { get; }                              // descriptor + payload
