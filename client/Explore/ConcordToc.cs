@@ -58,4 +58,36 @@ public static class ConcordToc
     public static string StartRef(int part) => $"BoC {part}.1.1";
 
     public static string TitleOf(int part) => Documents.FirstOrDefault(d => d.Part == part)?.Title ?? $"Part {part}";
+
+    /// <summary>
+    /// Batch UX-1 (BOC-CLICK-1, owner order verbatim: "Articles/blocks of
+    /// text needn't be clickable in the BoC right now because there's no
+    /// actual explorable stuff with them. The exception should be the
+    /// catechism and the creeds where we actually do have explorable
+    /// stuff."): explorability is a DECLARED property of the DOCUMENT
+    /// (Part), not a per-row conditional -- this is the ONE place that
+    /// says which Parts are explorable (<c>Concord.razor</c> reads it, per
+    /// row, never re-deriving the answer).
+    ///
+    /// DISCLOSED, server-verified (not guessed): Part 7 (The Small
+    /// Catechism) is the ONLY Concord document with any real graph-level
+    /// linkage into explorable content --
+    /// <c>server/atlas-graph/src/concord_adapter.rs::merge_alias</c>
+    /// hard-codes the SC-overlap <c>CatechismLink</c> rows to the
+    /// <c>"small-catechism"</c> document specifically; no other document,
+    /// including Part 2 ("The Three Ecumenical Creeds"), carries any such
+    /// link. The owner's own "the creeds" most plausibly names the Small
+    /// Catechism's OWN Creed chief part (its First/Second/Third Article
+    /// <c>CatechismItem</c>s -- e.g. "The Second Article — Of Redemption —
+    /// The Word Made Flesh"), which lives inside Part 7, not the separate,
+    /// unlinked Part 2 document -- so `{7}` alone satisfies the owner's
+    /// own "catechism and creeds" naming without inventing explorability
+    /// for a document that genuinely has none. In-text scripture
+    /// references (<c>ScriptureRefText</c>'s own AFFIRMED scanner) are a
+    /// completely separate, ONE-RULE affordance this predicate never
+    /// touches -- every unit keeps those, explorable Part or not.
+    /// </summary>
+    private static readonly IReadOnlySet<int> ExplorableParts = new HashSet<int> { 7 };
+
+    public static bool IsExplorablePart(int part) => ExplorableParts.Contains(part);
 }

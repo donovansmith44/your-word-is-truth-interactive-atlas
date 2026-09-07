@@ -99,8 +99,15 @@ export function unwatchShiftRelease() {
 // container instead, e.g. Reader mounted under Sources/Kretzmann/Concord;
 // see .split-pane-guest's own app.css comment). Stops at document.body --
 // nothing above that is ever a meaningful scroll boundary for this app.
-function findReaderScrollContainer() {
-    let node = document.querySelector('[data-testid="reader-root"]');
+// Batch UX-1 (BOC-SCROLL-1): generalized by root testid -- the exact same
+// walk findReaderScrollContainer below always did, just no longer hard-
+// bound to "reader-root" so a second reading surface (Concord.razor,
+// "concord-page") can reuse the identical real-overflow-container logic
+// instead of re-deriving its own copy. findReaderScrollContainer itself is
+// now a one-line wrapper so every EXISTING caller (setScrollY/watchScroll/
+// watchChapterNavCenter) is byte-for-byte unchanged.
+function findScrollContainer(rootTestId) {
+    let node = document.querySelector(`[data-testid="${rootTestId}"]`);
     while (node && node !== document.body) {
         const style = getComputedStyle(node);
         if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
@@ -109,6 +116,27 @@ function findReaderScrollContainer() {
         node = node.parentElement;
     }
     return null; // no real overflow container found -- window/document is genuinely the scroller (standalone)
+}
+
+function findReaderScrollContainer() {
+    return findScrollContainer('reader-root');
+}
+
+// Batch UX-1 (BOC-SCROLL-1, owner order verbatim: "if i click one of the
+// items in table of contents and scroll to the bottom, and then click
+// another item in the table of contents, i am taken to the bottom of that
+// item"): a plain reset to the TOP of whichever container
+// findScrollContainer resolves for `rootTestId` -- the same real-overflow-
+// container-or-window fallback setScrollY already established, just
+// always targeting 0 rather than a restored value. Concord.razor is the
+// first (and, today, only) caller, keyed on "concord-page".
+export function scrollToTop(rootTestId) {
+    const container = findScrollContainer(rootTestId);
+    if (container) {
+        container.scrollTop = 0;
+    } else {
+        window.scrollTo(0, 0);
+    }
 }
 
 // Batch H (view-state round-trip). setScrollY is the restore half.

@@ -4,6 +4,7 @@
 @using BibleAtlas.Client.Views
 @inject IExplorableClient Graph
 @inject AtlasClient Atlas
+@inject IJSRuntime JS
 
 @* Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
    read it like the normal BoC. Everything doesn't need to be shown
@@ -178,13 +179,32 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
-                                 tabindex="0" role="button"
-                                 @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
-                                <span class="concord-unit-ref">@unit.Ref</span>
-                                <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
-                                                   OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
-                            </div>
+                            @* BOC-CLICK-1 (owner order, verbatim: "Articles/blocks of text
+                               needn't be clickable in the BoC right now... The exception
+                               should be the catechism and the creeds"): explorability is a
+                               DECLARED property of the document (ConcordToc.IsExplorablePart,
+                               the ONE place this is decided), read per row -- not a per-row
+                               conditional invented here. In-text scripture references
+                               (ScriptureRefText below) are UNCHANGED and stay clickable on
+                               EVERY row regardless. *@
+                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part))
+                            {
+                                <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
+                                     tabindex="0" role="button"
+                                     @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
+                                    <span class="concord-unit-ref">@unit.Ref</span>
+                                    <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                                       OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="concord-unit" data-testid="@($"concord-unit-{Slug(unit.Ref)}")">
+                                    <span class="concord-unit-ref">@unit.Ref</span>
+                                    <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                                       OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
+                                </div>
+                            }
                         }
                     }
 
@@ -232,6 +252,19 @@
     private string? _error;
     private int _requestId;
     private IExplorable? _activeNode;
+
+    // BOC-SCROLL-1 (owner order, verbatim: "if i click one of the items in
+    // table of contents and scroll to the bottom, and then click another
+    // item in the table of contents, i am taken to the bottom of that
+    // item"): every LoadWindowAsync call (ToC click, Go-to jump, Next,
+    // Previous -- the ONE choke point all four already share) sets this,
+    // consumed once loading finishes (OnAfterRenderAsync below) to reset
+    // scroll to the TOP of the reading flow -- this page's own navigation
+    // never triggers a Blazor ROUTE change (unlike Reader.razor's own
+    // chapter-to-chapter links), so the router's automatic scroll-to-(0,0)
+    // never fires here on its own; see reader.js's own scrollToTop doc
+    // comment for the shared mechanism this reuses.
+    private bool _scrollResetPending;
 
     private int? _jumpPart;
     private int? _jumpArticle;
@@ -343,6 +376,7 @@
         _loading = true;
         _error = null;
         _activeNode = null;
+        _scrollResetPending = true; // BOC-SCROLL-1 -- consumed in OnAfterRenderAsync once this window actually renders
         StateHasChanged();
 
         try
@@ -401,6 +435,31 @@
                 _loading = false;
                 StateHasChanged();
             }
+        }
+    }
+
+    // BOC-SCROLL-1: consumes _scrollResetPending once loading genuinely
+    // finished (guards against resetting scroll mid-fetch, while the
+    // "Loading…" placeholder is still showing) -- fail-soft, same
+    // graceful-degradation stance every other JS interop call in this app
+    // takes; a failed reset just leaves scroll wherever it was for that
+    // one navigation, never a crash.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollResetPending || _loading)
+        {
+            return;
+        }
+
+        _scrollResetPending = false;
+        try
+        {
+            var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
+            await readerJs.InvokeVoidAsync("scrollToTop", "concord-page");
+        }
+        catch (Exception)
+        {
+            // Nicety, not load-bearing -- same graceful-degradation stance every other JS interop call in this app takes.
         }
     }
 
