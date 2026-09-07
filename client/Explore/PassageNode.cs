@@ -22,8 +22,8 @@ public sealed class PassageNode : IExplorable
 {
     private readonly string _sref;
     private readonly string _text;
-    private List<CrossRefOut>? _cachedXrefs;
-    private List<CatechismRefDto>? _cachedCatechism;
+    private Task<List<CrossRefOut>>? _xrefsTask;
+    private Task<List<CatechismRefDto>>? _catechismTask;
 
     public PassageNode(string sref, string text)
     {
@@ -69,12 +69,22 @@ public sealed class PassageNode : IExplorable
     // ExplorerPopover's later popover-chip-xrefs click share ONE fetch, not
     // two -- the chip would otherwise re-request the exact same data it
     // just used to decide whether to render itself at all.
-    public async Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _cachedXrefs ??= await api.Xrefs(_sref);
+    //
+    // PERF-3: TASK-memoized, not value-memoized -- see VerseNode.DetailAsync's
+    // own PERF-3 comment for why (a value-memoizing `??= await` races under
+    // ExplorerPopover.LoadCurrent's concurrent Task.WhenAll dispatch; only
+    // ONE provider calls each of these two methods today, so there is no
+    // LIVE duplicate-fetch bug here yet, but the exact same landmine is
+    // primed the moment a second caller is added -- fixed at the source
+    // now, alongside its VerseNode sibling, rather than left as a "fix it
+    // when it actually breaks" trap).
+    public Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _xrefsTask ??= api.Xrefs(_sref);
 
     // Batch F: PassageNode's own catechism citation list -- CatechismSeamSection's
     // (Explore/PopoverSectionProviders.cs) exact PassageNode counterpart to
-    // XrefsAsync above, same memoize-once-per-instance reasoning.
-    public async Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _cachedCatechism ??= await api.Catechism(_sref);
+    // XrefsAsync above, same memoize-once-per-instance reasoning (and the
+    // same PERF-3 task-memoization fix).
+    public Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _catechismTask ??= api.Catechism(_sref);
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

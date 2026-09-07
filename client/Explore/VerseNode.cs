@@ -19,7 +19,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class VerseNode : IExplorable
 {
     private readonly string _vref;
-    private VerseDetail? _cached;
+    private Task<VerseDetail>? _detailTask;
 
     /// <summary>
     /// Batch M-D2 (owner's cross-reference superscript directive):
@@ -96,5 +96,30 @@ public sealed class VerseNode : IExplorable
     // as fresh as a re-fetch would be). Idempotent: the underlying HTTP
     // call only ever happens once per node instance regardless of how many
     // times BodyAsync/this are each called.
-    public async Task<VerseDetail> DetailAsync(AtlasClient api) => _cached ??= await api.Verse(_vref);
+    //
+    // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall,
+    // measured live): that "only ever happens once" claim was FALSE under
+    // the concurrency ExplorerPopover.LoadCurrent actually uses. Six
+    // section providers applicable to a Verse (VerseTextSectionProvider,
+    // CrossRefsSection, CatechismSeamSection, VerseEventMembershipSection,
+    // VersePassageMembershipSection, VerseParallelsSection) each call THIS
+    // method, and LoadCurrent fires all of them via ONE Task.WhenAll --
+    // every provider's own ResolveAsync runs synchronously up to its first
+    // await BEFORE the next provider even starts (Task.WhenAll builds its
+    // task list via a synchronous `.Select(...).ToList()`). A
+    // value-memoizing `_cached ??= await ...` checks the CACHE before the
+    // FIRST call's own await has resolved it -- every one of the six sees
+    // `_cached` still null and fires its OWN independent `GET
+    // /api/verse/{vref}`. Confirmed live: GEN.1.1 fired SIX concurrent,
+    // identical requests to this exact endpoint (see the PHASE 0 waterfall
+    // in batch-perf3-report.md). Fixed by caching the TASK itself,
+    // not the resolved value -- `_detailTask` is assigned SYNCHRONOUSLY
+    // (the `??=` right-hand side, `api.Verse(_vref)`, starts the HTTP call
+    // and returns a pending Task without ever awaiting inside THIS method),
+    // so the second concurrent caller sees a non-null field and awaits the
+    // SAME in-flight task instead of starting a new request -- the
+    // standard async-memoization idiom for a single-threaded runtime
+    // (Blazor WASM has no true parallelism; every synchronous stretch
+    // between awaits is atomic).
+    public Task<VerseDetail> DetailAsync(AtlasClient api) => _detailTask ??= api.Verse(_vref);
 }

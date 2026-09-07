@@ -363,8 +363,36 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // target (CanonRef.TargetSpan returns null -- rare, see its own doc
         // comment) falls back to its own first-verse preview text, the
         // pre-existing behavior for that edge case.
+        //
+        // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall,
+        // measured live): THE dominant term. `xrefs` here is
+        // VerseDetail.CrossRefs -- unlike AtlasClient.Xrefs's own 20-item
+        // server cap, this list is not capped at all (GEN.1.1 carries 61),
+        // yet PassageList only ever shows the first 2-3 of them before
+        // "reveal more" (Cap, read below in the render fragment -- F2's own
+        // 2-vs-3 rule). This method used to eagerly fetch EVERY target's
+        // own chapter regardless -- confirmed live: GEN.1.1 fired 57
+        // concurrent `/api/chapter/*` requests (deduped from 61 xrefs) for
+        // content the popover would ever show at most 3 entries of.
+        // Eagerly fetching only the first Cites.InitialClamp (3 -- the MORE
+        // generous of F2's 2-or-3, since the exact cap is decided later, at
+        // RENDER time, off sibling sections this method can't see yet --
+        // see this section's own render fragment doc comment on
+        // OtherContextSectionCount) targets caps the fan-out at the true
+        // display need. A target beyond that position (or one whose chapter
+        // wasn't eagerly fetched, e.g. it shares no chapter with the eager
+        // set) falls through to the SAME cross-chapter/book fallback this
+        // file already had -- `x.Preview`, single first-verse text -- via
+        // the untouched `chapters.TryGetValue` miss path immediately below.
+        // Disclosed trade-off: a "reveal more"-revealed entry beyond the
+        // eager three shows single-line preview text instead of a full
+        // 2-verse clamped passage block (still independently explorable,
+        // ExploreAsVerse unaffected) -- richness of the rarely-revealed
+        // tail, never correctness, is what changes. See
+        // batch-perf3-report.md for the measured before/after.
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
-        var chapterKeys = spans.Where(s => s.Span is not null).Select(s => (s.Span!.Value.Book, s.Span.Value.Chapter)).Distinct().ToList();
+        var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp);
+        var chapterKeys = eagerSpans.Where(s => s.Span is not null).Select(s => (s.Span!.Value.Book, s.Span.Value.Chapter)).Distinct().ToList();
         var chapters = new Dictionary<(string, int), ChapterOut>();
         try
         {
@@ -1761,28 +1789,34 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
         List<List<PassageSourceUnit>> unitsPerEvent;
         try
         {
-            unitsPerEvent = new List<List<PassageSourceUnit>>();
-            foreach (var (_, others) in qualifying)
-            {
-                var units = await WitnessUnitsResolver.ResolveAsync(api, others);
-                // O5 (owner live-preview correction, 2026-08-23, verbatim:
-                // "parallels has double headers. for instance we have
-                // 1Ki.3.1-15 and 1 kings right below it when focused on
-                // 2ch.1.2. Get rid of the second header"): originally fixed
-                // here with a per-call-site null-out of WitnessUnitsResolver's
-                // own book-name Caption (PassageList.razor's own ref-label,
-                // "1Ki.3.1-15," already carries the book CODE, so spelling
-                // the same book out a second time right below it read as two
-                // headers on one entry, not one). M-D4 fix round 1/P5
-                // (owner: "we're wasting real estate... it's obvious where
-                // they're coming from already") reached the SAME conclusion
-                // for EventWitnessesSection's own "PARALLEL ACCOUNTS" -- once
-                // BOTH consumers agreed no caption belongs on screen, the
-                // null-out moved to the SOURCE (WitnessUnitsResolver's own
-                // doc comment has that history); units arrive already
-                // caption-free here, no per-call-site projection needed.
-                unitsPerEvent.Add(units);
-            }
+            // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall):
+            // was a sequential `foreach` with an `await` inside -- event 2's
+            // own witness chapters never even started fetching until event
+            // 1's had fully resolved, a real "sequential per-item fetch"
+            // (the brief's own named suspect class), independent of the
+            // CrossRefsSection over-fetch immediately above. Every OTHER
+            // multi-item resolve in this file runs concurrently
+            // (Task.WhenAll); this one now does too. Task.WhenAll preserves
+            // input order, so `unitsPerEvent[i]` still lines up with
+            // `qualifying[i]` in the render fragment below.
+            //
+            // O5 (owner live-preview correction, 2026-08-23, verbatim:
+            // "parallels has double headers. for instance we have
+            // 1Ki.3.1-15 and 1 kings right below it when focused on
+            // 2ch.1.2. Get rid of the second header"): originally fixed
+            // here with a per-call-site null-out of WitnessUnitsResolver's
+            // own book-name Caption (PassageList.razor's own ref-label,
+            // "1Ki.3.1-15," already carries the book CODE, so spelling
+            // the same book out a second time right below it read as two
+            // headers on one entry, not one). M-D4 fix round 1/P5
+            // (owner: "we're wasting real estate... it's obvious where
+            // they're coming from already") reached the SAME conclusion
+            // for EventWitnessesSection's own "PARALLEL ACCOUNTS" -- once
+            // BOTH consumers agreed no caption belongs on screen, the
+            // null-out moved to the SOURCE (WitnessUnitsResolver's own
+            // doc comment has that history); units arrive already
+            // caption-free here, no per-call-site projection needed.
+            unitsPerEvent = (await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherWitnesses)))).ToList();
         }
         catch (Exception)
         {
