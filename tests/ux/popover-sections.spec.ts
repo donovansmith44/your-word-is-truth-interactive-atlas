@@ -2001,16 +2001,22 @@ test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL AC
 });
 
 // ---------------------------------------------------------------------
-// M-D1 requirement 3 (SPAN-NOT-ECHO, owner live report #4, verbatim: "it
-// also is completely redundant to just show the verses associated with a
-// container in the container's hover box. we should just see the passage
-// span."): RED before this batch -- a single-witness container's own
-// popover echoed its full verse-list text (clamped-to-2 + expand), the
-// SAME rendering a multi-witness PARALLEL ACCOUNTS entry gets; GREEN after
-// -- a compact span line only, click-to-expand-inline, no default text.
+// EVT-3 Ticket 2 (owner ruling, SUPERSEDES M-D1 requirement 3's own
+// "SPAN-NOT-ECHO" law): M-D1 req 3 (owner live report #4, verbatim: "we
+// should just see the passage span") RETIRED a single-witness event's own
+// compact verse text down to a bare, click-to-expand span. The owner's own
+// LATER, more specific ruling reverses this exact surface (EVENT-ACCOUNTS-1,
+// verbatim: "i should see the passage, and it should be explorable like
+// everything else" -- not just ref + read-whole-chapter): a single-witness
+// event's own landed frontier now shows its real, clamped, explorable
+// compact text -- IDENTICAL treatment to a multi-witness entry's own
+// PARALLEL ACCOUNTS rendering (see EventWitnessesSection.cs's own EVT-3
+// comment for the retirement of `SpanOnly`). RED-then-GREEN, inverted in
+// place: this test used to assert the SPAN-ONLY shape; it now asserts the
+// real-text shape supersedes it.
 // ---------------------------------------------------------------------
 
-test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enumerated own-verse-list echo', async ({ page }) => {
+test('EVT-3: a single-witness event\'s popover now shows its real, clamped compact TEXT -- never a bare span-only echo (M-D1 req 3, superseded)', async ({ page }) => {
   const detail = await api.event('jj_bethel_dream');
   expect(detail.witnesses.length).toBe(1);
 
@@ -2066,12 +2072,14 @@ test('M-D1 req 3: a single-witness event\'s popover shows its SPAN, never an enu
   await expect(entry.locator('.popover-passage-ref-label')).toBeVisible();
   const entryTestId = await entry.getAttribute('data-testid');
 
-  // -- but NOT an enumerated verse-list echo: no compact passage text, no
-  // per-verse superscript numbers, no clamp toggle (nothing to clamp when
-  // nothing renders by default).
-  await expect(entry.locator('.popover-passage-text')).toHaveCount(0);
-  await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(0);
-  await expect(entry.locator('[data-testid^="popover-passage-clamp-"]')).toHaveCount(0);
+  // EVT-3: the owner's own reversal, proven directly -- real compact
+  // passage TEXT now renders by default (per-verse superscript numbers
+  // included), the SAME treatment a multi-witness PARALLEL ACCOUNTS entry
+  // already got. GEN.28.11-19 is 9 verses, well over the 2-verse clamp
+  // (StandardVerseClamp), so the clamp-mark ellipsis is also expected.
+  await expect(entry.locator('.popover-passage-text')).toBeVisible();
+  await expect(entry.locator('.popover-passage-verse-num').first()).toBeVisible();
+  await expect(entry.locator('[data-testid^="clamp-mark-"]')).toHaveCount(1);
 
   // The span click STILL reads the passage inline -- the existing
   // MiniReaderExpand control, reused, not reimplemented (O2: now a

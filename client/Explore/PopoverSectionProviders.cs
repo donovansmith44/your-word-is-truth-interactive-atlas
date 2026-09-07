@@ -1701,22 +1701,19 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             // literal `2` (this consumer predates the ruling); see
             // PassageList.razor's own StandardVerseClamp doc comment.
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            // M-D1 requirement 3 (span-not-echo, owner live report #4,
-            // verbatim: "it also is completely redundant to just show the
-            // verses associated with a container in the container's hover
-            // box. we should just see the passage span."): a SINGLE-witness
-            // container (the overwhelming majority -- every event this
-            // batch does not curate parallel accounts for) shows its own
-            // span line only, never an enumerated verse-list echo -- !multi
-            // is exactly "exactly one witness" here (units.Count <= 1 by
-            // construction once `detail.Witnesses.Count == 0` already
-            // returned null above). A MULTI-witness event's own PARALLEL
-            // ACCOUNTS list is UNCHANGED (every witness keeps its clamped,
-            // expandable preview text -- "PARALLEL ACCOUNTS from OTHER
-            // witnesses keep their clamped expandable passage text," the
-            // requirement's own explicit distinction; the Crucifixion's
-            // four-Gospel case stays exactly as rich as before).
-            builder.AddAttribute(seq++, "SpanOnly", !multi);
+            // EVT-3 Ticket 2 (owner ruling, supersedes M-D1 req 3's own
+            // "span-not-echo" -- verbatim: "i should see the passage, and
+            // it should be explorable like everything else" -- not just ref
+            // + read-whole-chapter): the landed event's own frontier shows
+            // its account PASSAGES, visible text, explorable, ALWAYS --
+            // SpanOnly is gone (was `!multi`; M-D1 req 3's own single-
+            // witness "span only, no text" rule is retired whole here). A
+            // single-witness event now renders exactly like a multi-witness
+            // one's own per-entry text: clamped, expandable preview, never
+            // a bare ref. Only the "PARALLEL ACCOUNTS" EYEBROW stays
+            // conditional on `multi` (a single account genuinely isn't
+            // "parallel" to anything) -- see this method's own `multi`
+            // branch above; the content underneath is unconditional now.
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };

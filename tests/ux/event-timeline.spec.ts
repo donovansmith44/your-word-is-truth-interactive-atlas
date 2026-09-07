@@ -1032,17 +1032,23 @@ test('PEEK-5 (fix round 1, F2): a peek target whose own verse group is server-ca
 });
 
 // ---------------------------------------------------------------------
-// EV-1 (Batch CHRON-1, owner verbatim: "when traversing events, i should
-// be able to see the actual event-mapped verse, rather than just the
-// event title when going through the chronology."): the Chronology
-// block's own block-mode arrow rows now render an ALWAYS-VISIBLE
-// primary-witness-verse line -- ref plus first-verse real text -- never
-// gated behind the dwell peek (PEEK-1, above; that peek is UNCHANGED,
-// still the way to see the full passage on hover). CONTRACT.md's own EV-1
-// note (after CHRONO-MERGE-1) has the full selection/timing/testid rule.
+// EVT-3 Ticket 2 (owner ruling, SUPERSEDES EV-1): the Chronology block's
+// own block-mode arrow rows used to render an ALWAYS-VISIBLE primary-
+// witness-VERSE-TEXT line (EV-1, Batch CHRON-1). RETIRED -- the owner's
+// own later, more specific ruling on this exact surface (UX-2 feedback,
+// 2026-09-06, verbatim: "it does not appear to me that you did what i told
+// you for the chronological thing (not showing the verse contents, just
+// the list of refs)"; EVENT-ACCOUNTS-1's own governing law, "events are
+// keys that map to sets of Biblical accounts... chronological traversal
+// can return a set of passages with each hop"): the row now shows the SET
+// of the adjacent event's own account REFS -- via the shared, reusable
+// RefsList component -- NEVER verse text, gated behind nothing (the dwell
+// peek, PEEK-1 above, is UNCHANGED, still the ONE place a hover reveals
+// real passage text). See ArrowNav.razor's own header comment and
+// CONTRACT.md's own EV-1 note (superseded in place) for the full rule.
 // ---------------------------------------------------------------------
 
-test('EV-1: a Chronology traversal row shows the target event\'s own real verse text immediately, with no hover/dwell needed', async ({ page }) => {
+test('EVT-3/RefsList: a Chronology traversal row shows the target event\'s own SET of account refs immediately, with NO verse contents anywhere outside the dwell peek', async ({ page }) => {
   const positions = await api.narrativeEventPositions('gen_binding_isaac');
   expect(positions.timeline.following, 'gen_binding_isaac must have a real FOLLOWING target for this test to mean anything').toBeTruthy();
 
@@ -1050,36 +1056,52 @@ test('EV-1: a Chronology traversal row shows the target event\'s own real verse 
   const arrow = page.getByTestId('event-chrono-following-event-global');
   await expect(arrow).toBeVisible();
 
-  // No hover/dwell at all -- the whole point of this ticket. The verse
-  // line must already be present the instant the row itself renders.
-  const verseLine = page.getByTestId('event-chrono-following-event-global-verse');
-  await expect(verseLine).toBeVisible();
+  // No hover/dwell at all -- the refs list must already be present the
+  // instant the row itself renders (it needs no fetch, unlike EV-1's own
+  // retired eager verse-text resolve).
+  const refsList = page.getByTestId('event-chrono-following-event-global-refs');
+  await expect(refsList).toBeVisible();
 
-  // Ground truth: the wire's own FIRST verse group's own FIRST verse --
-  // SelectPrimaryVerse's own selection rule (client.Tests/ArrowNavTests.cs
-  // has the pure-logic proof; this is the real end-to-end wire-through-DOM
-  // confirmation).
-  const group = positions.timeline.following.verse_groups[0];
-  const firstVref = group.verses[0];
-  const lastVref = group.verses[group.verses.length - 1];
-  const expectedRef = firstVref === lastVref ? firstVref : `${firstVref.split('.').slice(0, 2).join('.')}.${firstVref.split('.')[2]}-${lastVref.split('.')[2]}`;
-  await expect(verseLine.locator('.popover-event-nav-verse-ref')).toHaveText(expectedRef);
+  // Ground truth: ONE ref per VerseGroup on the wire -- the SET, not just
+  // the first ("primary") one EV-1 used to show alone (ArrowNav.SelectRefs's
+  // own pure-logic proof lives in client.Tests/ArrowNavTests.cs; this is
+  // the real end-to-end wire-through-DOM confirmation).
+  const groups = positions.timeline.following.verse_groups;
+  expect(groups.length).toBeGreaterThan(0);
+  for (const group of groups) {
+    const firstVref = group.verses[0];
+    const lastVref = group.verses[group.verses.length - 1];
+    const expectedRef = firstVref === lastVref ? firstVref : `${firstVref.split('.').slice(0, 2).join('.')}.${firstVref.split('.')[2]}-${lastVref.split('.')[2]}`;
+    await expect(refsList.getByTestId(`event-chrono-following-event-global-refs-${expectedRef}`)).toBeVisible();
+  }
 
-  const chapterOut = await api.chapter(firstVref.split('.').slice(0, 2).join('.'));
-  const firstVerseNum = Number(firstVref.split('.')[2]);
-  const firstVerseText = chapterOut.verses.find((v: any) => v.verse === firstVerseNum).text;
-  await expect(verseLine).toContainText(firstVerseText);
+  // NO verse contents anywhere in the row -- the owner's own words,
+  // verbatim -- never a compact-passage/mention render outside the peek.
+  await expect(refsList.locator('.popover-passage-text')).toHaveCount(0);
+  await expect(refsList.locator('[class*="mention"]')).toHaveCount(0);
 
   // The peek (hover-triggered, unchanged) still exists alongside this --
-  // EV-1 adds visibility, it does not retire the "see the full passage"
-  // affordance.
+  // this ticket does not touch it at all (ArrowNav.razor's own header
+  // comment: "the ONE place a hover reveals real passage text").
   const peek = page.getByTestId('event-chrono-following-event-global-peek');
   await expect(peek).toHaveCount(0); // not yet dwelled
   await arrow.hover({ force: true });
   await expect(peek).toBeVisible({ timeout: 2000 });
 });
 
-test('EV-1: the Inline story-thread leg (a diverging narrative row) stays title-only, unaffected by the block-mode verse line', async ({ page }) => {
+test('EVT-3/RefsList: clicking a ref under a Chronology arrow explores directly to that account\'s own first verse (a genuine shortcut, distinct from the arrow\'s own whole-event traversal)', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('gen_binding_isaac');
+  const group = positions.timeline.following.verse_groups[0];
+  const firstVref = group.verses[0];
+  const lastVref = group.verses[group.verses.length - 1];
+  const expectedRef = firstVref === lastVref ? firstVref : `${firstVref.split('.').slice(0, 2).join('.')}.${firstVref.split('.')[2]}-${lastVref.split('.')[2]}`;
+
+  await openEventPopover(page, 'gen_binding_isaac');
+  await page.getByTestId(`event-chrono-following-event-global-refs-${expectedRef}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(firstVref);
+});
+
+test('EVT-3/RefsList: the Inline story-thread leg (a diverging narrative row) stays title-only, unaffected by the block-mode refs list', async ({ page }) => {
   // pw_jerusalem_entry is CONTRACT.md's own named dual-divergence fixture
   // (passion-week's own prior AND following both differ from the global
   // timeline) -- guaranteed to render at least one story-thread leg.
@@ -1088,10 +1110,10 @@ test('EV-1: the Inline story-thread leg (a diverging narrative row) stays title-
   await expect(storyThread).toBeVisible();
   const leg = storyThread.locator('.popover-story-thread-leg').first();
   await expect(leg).toBeVisible();
-  // No verse-text line anywhere inside an inline leg -- this ticket's own
+  // No refs-list anywhere inside an inline leg -- this ticket's own
   // scoping decision (ArrowNav.razor's own header comment): Inline rows
   // are a running-prose leg reference, never a traversal row of their own.
-  await expect(leg.locator('.popover-event-nav-verse')).toHaveCount(0);
+  await expect(leg.locator('.popover-refs-list')).toHaveCount(0);
 });
 
 // DUP-DEATH REGRESSION (the owner's own original repro, ledgered in

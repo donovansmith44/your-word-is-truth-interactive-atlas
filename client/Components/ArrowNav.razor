@@ -172,31 +172,31 @@
 
    EV-1 (owner, verbatim: "when traversing events, i should be able to see
    the actual event-mapped verse, rather than just the event title when
-   going through the chronology."): block-mode rows (the ordinary
-   Chronology prior/following arrows -- never Inline, the divergence
-   sentence above, which stays title-only, a running-prose leg reference
-   rather than a traversal row of its own) now render the event's own
-   PRIMARY WITNESS VERSE -- ref plus first-verse text, through the ONE
-   render rule (MentionText) -- as an always-visible line beneath the role
-   caption, not gated behind the dwell peek the way verse text used to be
-   exclusively (TRAV-1/PEEK-TRUNC-1 above; that peek still exists,
-   unchanged, for the FULL passage on hover). "Primary" = this event's own
-   FIRST VerseGroup (server-order, the same primary-attestation ordering
-   the peek's own _peekVerses already trusts) -- SelectPrimaryVerse below
-   is the pure selection logic (ref via PassageGrouping.SpanRef, first
-   vref to resolve), covered directly by client.Tests/ArrowNavTests.cs; a
-   RANGE group (e.g. MAT.8.2-4) shows its own SPAN ref ("MAT.8.2-4") but
-   only the FIRST verse's own real text (MAT.8.2's), per the brief's own
-   words -- never all verses inline (that stays the peek's own job).
-   Eager, not dwell-gated (OnParametersSetAsync, the same _lastPlaceId-
-   style identity guard PlaceCard.razor's own OnParametersSetAsync
-   established, keyed on Adjacent?.Id so a re-render with the SAME
-   adjacent event never re-fetches) -- the whole point is visibility
-   without a hover gesture. Chapter fetches are LRU-cached on AtlasClient
-   (_chapterCache), so a later dwell-peek over the identical event's own
-   chapter is a cache hit, not a second network round trip. POPOVER-LAW-1
-   (chrome vs content) is satisfied by construction: this is content the
-   owner explicitly ordered rendered, not chrome pulled in speculatively. *@
+   going through the chronology.") shipped block-mode rows an ALWAYS-
+   VISIBLE primary-witness-verse line -- ref plus first-verse REAL TEXT.
+   RETIRED by EVT-3 Ticket 2 (owner's own later, more specific ruling on
+   this exact surface, UX-2 feedback 2026-09-06, verbatim: "it does not
+   appear to me that you did what i told you for the chronological thing
+   (not showing the verse contents, just the list of refs)" -- and
+   EVENT-ACCOUNTS-1's own governing law, "events are keys that map to SETS
+   of Biblical accounts... chronological traversal can return a set of
+   passages with each hop"): block-mode rows now render the SET of this
+   adjacent event's own account refs -- via the shared, reusable RefsList
+   component (client/Components/RefsList.razor) -- NEVER verse contents,
+   under the arrow. Two differences from EV-1's own retired shape: (1)
+   EVERY VerseGroup contributes its own ref (not just the first -- "a set,"
+   never "the primary one"), and (2) no text at all, anywhere outside the
+   dwell peek (TRAV-1/PEEK-TRUNC-1 above; that peek is UNCHANGED, still the
+   ONE place a hover reveals real passage text). SelectRefs below is the
+   pure selection logic (one ref per group, via PassageGrouping.SpanRef,
+   each paired with a VerseNode target at that group's own first vref),
+   covered directly by client.Tests/ArrowNavTests.cs. Genuinely CHEAPER
+   than EV-1's own eager fetch, not merely different: refs are computed
+   straight off Adjacent.VerseGroups (already on the wire), no network
+   round trip at all -- the dwell peek remains the ONE fetch this
+   component ever makes. POPOVER-LAW-1 (chrome vs content) is satisfied by
+   construction: this is content the owner explicitly ordered rendered,
+   not chrome pulled in speculatively. *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -247,23 +247,17 @@ else
 
     <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
 
-    @* EV-1: the always-visible primary-verse line -- see this file's own
-       header comment for the full "why eager, why first-group-first-verse"
-       story. _primaryVerse is null on the very first render after a fresh
-       Adjacent lands (the fetch is in flight) and stays null if resolution
-       genuinely fails (fail-soft, LoadPrimaryVerseAsync's own try/catch) --
-       either way this renders nothing rather than a loading placeholder,
-       the same "absence is a valid, honest state" precedent MentionText's
-       own header comment already establishes for empty text. *@
-    @if (_primaryVerse is not null)
-    {
-        <p class="popover-event-nav-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-verse")">
-            <span class="popover-event-nav-verse-ref">@_primaryRef</span>
-            <MentionText Text="@_primaryVerse.Text" Places="@(_primaryVerse.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(_primaryVerse.Persons ?? Array.Empty<PersonRefDto>())"
-                WordsOfChrist="@(_primaryVerse.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())" Verse="@CanonRef.ParseVerse(_primaryVerse.Vref).Verse"
-                ClassPrefix="popover-event-nav-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}")" OnExplore="OnExplore" />
-        </p>
-    }
+    @* EVT-3 Ticket 2 (owner ruling, supersedes EV-1 -- see this file's own
+       header comment for the retirement story): the SET of this adjacent
+       event's own account refs, via the shared RefsList component -- NO
+       verse contents, ever, under the arrow (the peek below is the ONE
+       place a dwell can still see real text). Pure/synchronous
+       (RefDescriptors reads straight off Adjacent.VerseGroups, no fetch --
+       genuinely cheaper than EV-1's own eager text fetch, not just
+       different). Conditional presence: Adjacent with zero verse groups
+       (never reached by a real dated event, defended against regardless)
+       renders nothing extra. *@
+    <RefsList Refs="@RefDescriptors" TestIdPrefix="@($"{EventTestIdPrefix}-{IdSuffix}-refs")" OnExplore="OnExplore" />
 }
 
 @* CHRONO-MERGE-1: hoisted out of the block-only `else` above -- the peek
@@ -367,77 +361,43 @@ else
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
-    // EV-1 -- see this file's own header comment for the full story.
-    // _lastAdjacentId gates OnParametersSetAsync's own fetch to ONLY a
-    // genuinely NEW adjacent event (PlaceCard.razor's own _lastPlaceId
-    // precedent, identical shape): every OTHER re-render of this same
-    // instance (a parent StateHasChanged for an unrelated reason -- the
-    // dwell peek opening on the OPPOSITE side, say) must not re-fetch.
-    private string? _lastAdjacentId;
-    private string? _primaryRef;
-    private PassageListVerse? _primaryVerse;
+    // EVT-3 Ticket 2 (supersedes EV-1, retired -- see this file's own
+    // header comment for the retirement story): the refs-list is PURE and
+    // SYNCHRONOUS (no fetch, unlike EV-1's own eager verse-text resolve) --
+    // computed straight off Adjacent.VerseGroups on every render, cheap
+    // enough that no memoization/identity-guard field is worth the
+    // complexity EV-1's own OnParametersSetAsync needed for its fetch.
+    // Inline rows never show it (Adjacent guards it implicitly -- an Inline
+    // leg's own markup branch never reaches the block-mode `else` that
+    // renders <RefsList> at all, this file's own header comment).
+    private List<RefsList.RefDescriptor> RefDescriptors => SelectRefs(Adjacent?.VerseGroups);
 
-    protected override async Task OnParametersSetAsync()
+    /// Pure: this event's own SET of account refs -- one <see cref="RefsList.RefDescriptor"/>
+    /// per <see cref="VerseGroup"/> (EVENT-ACCOUNTS-1, owner verbatim:
+    /// "events are keys that map to sets of Biblical accounts" -- ALL
+    /// groups, never just the first; cardinality 1 is the common,
+    /// perfectly valid single-witness case). Each descriptor's own Ref is
+    /// the group's HONEST full span -- computed from the group's own
+    /// `Count` (the server's own TRUE total for that group, HOTFIX-4),
+    /// never from `Verses[^1]` alone, so a server-capped delivery (the
+    /// 20-verse-per-chapter cap) never silently NARROWS a ref's own
+    /// identity (PERF-3's own "identity never narrows -- clamp is
+    /// visible-text truncation only" ruling, extended to a refs-only
+    /// surface that shows no text to truncate at all). Each descriptor's
+    /// own Target is a VerseNode at the group's own FIRST vref -- "where it
+    /// points," never a fabricated/empty PassageNode (this component holds
+    /// no verse TEXT to construct one honestly with; CrossRefsSection's own
+    /// ExploreAsVerse=true establishes the identical "ref identity, not
+    /// preview span" precedent for the same reason). `null`/empty groups,
+    /// or a group with an empty `Verses` list (never real, defended
+    /// against), contribute nothing. Covered directly by
+    /// client.Tests/ArrowNavTests.cs.
+    public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<VerseGroup>? groups)
     {
-        if (Inline || Adjacent?.Id == _lastAdjacentId)
-        {
-            return; // Inline rows never show a primary verse (this file's own header comment); an unchanged Adjacent needs no re-fetch
-        }
-        // FIX ROUND 1 (review finding I-6): `capturedId` is the id THIS
-        // fetch is resolving for, closed over by value. `_lastAdjacentId`
-        // itself already gated the FETCH (unchanged) -- but the original
-        // code assigned `_primaryVerse` unconditionally after the `await`,
-        // with no re-check that `Adjacent` hadn't already moved on to a
-        // NEWER row while this fetch was in flight (two rapid traversals
-        // could land a stale verse under the newer row's own label). Low
-        // probability (chapter fetches are LRU-cached on AtlasClient) but
-        // a real correctness hole -- this file's own header comment
-        // claimed the change was "identity-guarded on Adjacent?.Id,"
-        // which was only ever true of the READ side; now true of the
-        // WRITE side too.
-        var capturedId = Adjacent?.Id;
-        _lastAdjacentId = capturedId;
-        _primaryRef = null;
-        _primaryVerse = null;
-
-        var (spanRef, firstVref) = SelectPrimaryVerse(Adjacent?.VerseGroups);
-        if (firstVref is null)
-        {
-            return; // no verse groups at all -- genuinely nothing to show (never reached by a real dated event, defensive regardless)
-        }
-        _primaryRef = spanRef;
-        try
-        {
-            var resolved = await VerseTextResolver.ResolveAsync(Atlas, new[] { firstVref });
-            if (_lastAdjacentId != capturedId)
-            {
-                return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result
-            }
-            _primaryVerse = resolved.FirstOrDefault();
-        }
-        catch (Exception)
-        {
-            // fail soft -- same graceful-degradation policy the dwell
-            // peek's own DwellThenPeek already follows for this identical fetch shape
-        }
-    }
-
-    /// Pure: this event's own PRIMARY witness verse -- the first
-    /// `VerseGroup`'s own span ref (<see cref="PassageGrouping.SpanRef"/>,
-    /// e.g. "MAT.8.2-4" for a range or the bare "MAT.8.2" for a lone
-    /// verse) paired with that SAME group's own first vref (the one verse
-    /// whose real text actually gets resolved and shown -- "ranges shown
-    /// as their ref + first-verse text," the brief's own words, verbatim).
-    /// `null` groups (Adjacent absent -- the empty-placeholder side) or an
-    /// empty group list both return (null, null); a group with an empty
-    /// `Verses` list (never real, but defended against rather than
-    /// trusted) is skipped in favor of the next non-empty group, if any.
-    /// Covered directly by client.Tests/ArrowNavTests.cs.
-    public static (string? Ref, string? FirstVref) SelectPrimaryVerse(IReadOnlyList<VerseGroup>? groups)
-    {
+        var result = new List<RefsList.RefDescriptor>();
         if (groups is null)
         {
-            return (null, null);
+            return result;
         }
         foreach (var g in groups)
         {
@@ -446,10 +406,13 @@ else
                 continue;
             }
             var first = g.Verses[0];
-            var last = g.Verses[^1];
-            return (PassageGrouping.SpanRef(first, last), first);
+            var (book, chapter, firstNum) = CanonRef.ParseVerse(first);
+            var trueCount = Math.Max(g.Count, g.Verses.Count); // defensive floor -- Count should never be smaller than what actually delivered, but never trust it blindly either
+            var lastNum = firstNum + trueCount - 1;
+            var last = lastNum <= firstNum ? first : $"{book}.{chapter}.{lastNum}";
+            result.Add(new RefsList.RefDescriptor(PassageGrouping.SpanRef(first, last), new VerseNode(first)));
         }
-        return (null, null);
+        return result;
     }
 
     // CHRONO-MERGE-1: the ONE thing that actually differs about the

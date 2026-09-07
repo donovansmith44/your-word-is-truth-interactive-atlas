@@ -1,0 +1,49 @@
+@* EVT-3 Ticket 2 (owner verbatim, EVENT-ACCOUNTS-1: "events are keys that
+   map to sets of Biblical accounts"; chronological traversal returns a SET
+   of passage refs per hop, cardinality 1 valid): ONE reusable component for
+   rendering a SET of passage refs with NO verse contents -- explorable
+   (click pushes the ref's own node), reusable anywhere a set of passage
+   refs renders (the owner's own composability bar: "make sure all the new
+   bits made for this are composable and reusable").
+
+   Retires ArrowNav.razor's own former EV-1 "always-visible primary-witness-
+   verse line" (ref + first-verse REAL TEXT) -- the owner's later, more
+   specific ruling on the SAME surface (UX-2 feedback, 2026-09-06, verbatim:
+   "it does not appear to me that you did what i told you for the
+   chronological thing (not showing the verse contents, just the list of
+   refs)") supersedes EV-1's own "see the actual event-mapped verse" -- see
+   ArrowNav.razor's own header comment for the fuller retirement story.
+
+   Consumes DESCRIPTORS (<see cref="RefDescriptor"/>) rather than raw ref
+   strings so callers stay fully in charge of what a ref's own click target
+   actually is -- a VerseNode for a lone verse, a PassageNode for a genuine
+   multi-verse span with its own already-known text (PassageList.Explore's
+   own VerseNode/PassageNode identity choice, just pre-decided by the
+   caller here instead of re-derived, since THIS component fetches/holds no
+   verse text at all to re-derive it from). One-line knob: TestIdPrefix is
+   the ONE parameter that changes which surface's own testid grammar a
+   given RefsList instance uses. *@
+@using BibleAtlas.Client.Explore
+
+@if (Refs.Count > 0)
+{
+    <div class="popover-refs-list" data-testid="@TestIdPrefix">
+        @foreach (var d in Refs)
+        {
+            <button type="button" class="popover-refs-list-item explorable" data-testid="@($"{TestIdPrefix}-{d.Ref}")"
+                    @onclick="@(() => OnExplore.InvokeAsync(d.Target))">@d.Ref</button>
+        }
+    </div>
+}
+
+@code {
+    /// One explorable ref -- the display text (a span like "MAT.9.27-34" or
+    /// a bare "MAT.9.27") paired with the node it opens. The caller decides
+    /// the target's own identity (VerseNode vs. PassageNode) -- this
+    /// component never re-derives it from the ref string alone.
+    public sealed record RefDescriptor(string Ref, IExplorable Target);
+
+    [Parameter, EditorRequired] public IReadOnlyList<RefDescriptor> Refs { get; set; } = Array.Empty<RefDescriptor>();
+    [Parameter, EditorRequired] public string TestIdPrefix { get; set; } = default!;
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+}

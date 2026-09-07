@@ -1,103 +1,121 @@
 using BibleAtlas.Client;
 using BibleAtlas.Client.Components;
+using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
 
-// EV-1 (owner, verbatim: "when traversing events, i should be able to see
-// the actual event-mapped verse, rather than just the event title when
-// going through the chronology."): direct, isolated proof of
-// ArrowNav.SelectPrimaryVerse's own pure selection logic -- the piece that
-// decides WHICH verse ref/text a Chronology traversal row's own
-// always-visible verse line resolves and shows. The async fetch/render
-// itself (VerseTextResolver.ResolveAsync, MentionText) is exercised by the
-// Playwright suite instead (tests/ux/event-timeline.spec.ts), the same
-// "pure logic here, real network/render there" split this app's other
-// component-adjacent static helpers already follow (VerseLineTests.cs's
-// own BijectiveBase26, PlaceMentionsTests.cs's own Scan).
+// EVT-3 Ticket 2 (owner ruling, supersedes EV-1 -- ArrowNav.razor's own
+// header comment has the full retirement story: "not showing the verse
+// contents, just the list of refs"; EVENT-ACCOUNTS-1's own governing law,
+// "events are keys that map to sets of Biblical accounts"): direct,
+// isolated proof of ArrowNav.SelectRefs's own pure selection logic -- the
+// piece that decides which refs (and which VerseNode targets) a Chronology
+// traversal row's own RefsList shows. RETARGETED from the retired
+// SelectPrimaryVerse's own single-(ref,vref)-tuple shape onto the new
+// List<RefsList.RefDescriptor> shape -- same "pure logic here, real
+// render/interaction there (tests/ux/event-timeline.spec.ts)" split this
+// app's other component-adjacent static helpers already follow
+// (VerseLineTests.cs's own BijectiveBase26, PlaceMentionsTests.cs's own
+// Scan).
 public class ArrowNavTests
 {
     private static VerseGroup Group(string book, int chapter, int count, params string[] verses) =>
         new(book, chapter, verses.ToList(), count);
 
     [Fact]
-    public void NullGroupsReturnsNoRefAndNoVerse()
+    public void NullGroupsReturnsNoRefs()
     {
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(null);
-        Assert.Null(spanRef);
-        Assert.Null(firstVref);
+        Assert.Empty(ArrowNav.SelectRefs(null));
     }
 
     [Fact]
-    public void EmptyGroupListReturnsNoRefAndNoVerse()
+    public void EmptyGroupListReturnsNoRefs()
     {
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(new List<VerseGroup>());
-        Assert.Null(spanRef);
-        Assert.Null(firstVref);
+        Assert.Empty(ArrowNav.SelectRefs(new List<VerseGroup>()));
     }
 
     // The charter case, verbatim from the leper pair: rob_leper_healed's
-    // own top-level MAT.8.1-4 group (Batch CHRON-1 widened it from 8.2-4
-    // to restore theo-286's own boundary-verse coverage -- see
-    // batch-chron1-report.md) -- a RANGE group shows its own SPAN ref
-    // ("MAT.8.1-4") but resolves only the FIRST verse (MAT.8.1), never
-    // the whole range, per the brief's own words.
+    // own top-level MAT.8.1-4 group -- a RANGE group's own ref is its FULL
+    // span, and its target is a VerseNode at the group's own FIRST vref
+    // ("where it points," never a fabricated PassageNode with no real
+    // text -- this file's own header comment has the "why" story).
     [Fact]
-    public void RangeGroupReturnsSpanRefAndFirstVrefOnly()
+    public void RangeGroupReturnsItsFullSpanAndAVerseNodeAtItsFirstVref()
     {
         var groups = new List<VerseGroup> { Group("MAT", 8, 4, "MAT.8.1", "MAT.8.2", "MAT.8.3", "MAT.8.4") };
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(groups);
-        Assert.Equal("MAT.8.1-4", spanRef);
-        Assert.Equal("MAT.8.1", firstVref);
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Single(refs);
+        Assert.Equal("MAT.8.1-4", refs[0].Ref);
+        var target = Assert.IsType<VerseNode>(refs[0].Target);
+        Assert.Equal("MAT.8.1", target.Title);
     }
 
     [Fact]
     public void LoneVerseGroupReturnsTheBareRefItself()
     {
         var groups = new List<VerseGroup> { Group("JHN", 3, 1, "JHN.3.16") };
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(groups);
-        Assert.Equal("JHN.3.16", spanRef);
-        Assert.Equal("JHN.3.16", firstVref);
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Single(refs);
+        Assert.Equal("JHN.3.16", refs[0].Ref);
+        Assert.Equal("JHN.3.16", Assert.IsType<VerseNode>(refs[0].Target).Title);
     }
 
-    // Multiple witness groups (e.g. an event with MAT + MRK witnesses) --
-    // the FIRST group (server order) is this event's own primary
-    // attestation; later groups are never consulted here at all (they
-    // stay the dwell peek's own job, unchanged).
+    // EVENT-ACCOUNTS-1's own core reversal from the retired SelectPrimaryVerse:
+    // MULTIPLE witness groups (e.g. an event with MAT + MRK witnesses) each
+    // contribute their OWN ref -- the SET, not just the first ("primary")
+    // one SelectPrimaryVerse used to keep alone.
     [Fact]
-    public void MultipleGroupsUsesOnlyTheFirst()
+    public void MultipleGroupsReturnsARefForEachOne()
     {
         var groups = new List<VerseGroup>
         {
             Group("MAT", 8, 3, "MAT.8.2", "MAT.8.3", "MAT.8.4"),
-            Group("MRK", 1, 6, "MRK.1.40", "MRK.1.41"),
+            Group("MRK", 1, 2, "MRK.1.40", "MRK.1.41"),
         };
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(groups);
-        Assert.Equal("MAT.8.2-4", spanRef);
-        Assert.Equal("MAT.8.2", firstVref);
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Equal(2, refs.Count);
+        Assert.Equal("MAT.8.2-4", refs[0].Ref);
+        Assert.Equal("MAT.8.2", Assert.IsType<VerseNode>(refs[0].Target).Title);
+        Assert.Equal("MRK.1.40-41", refs[1].Ref);
+        Assert.Equal("MRK.1.40", Assert.IsType<VerseNode>(refs[1].Target).Title);
+    }
+
+    // PERF-3's own "identity never narrows" ruling, extended here: a
+    // server-capped group (HOTFIX-4's own 20-verse-per-chapter cap --
+    // Count=66 but only 20 real Verses delivered) must still report its
+    // HONEST full span, computed from Count, never truncated to what
+    // merely arrived on the wire.
+    [Fact]
+    public void ACappedGroupReportsItsHonestFullSpanFromCount_NeverTheDeliveredTail()
+    {
+        var deliveredVerses = Enumerable.Range(1, 20).Select(n => $"1KI.8.{n}").ToArray();
+        var groups = new List<VerseGroup> { Group("1KI", 8, 66, deliveredVerses) };
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Single(refs);
+        Assert.Equal("1KI.8.1-66", refs[0].Ref);
+        Assert.Equal("1KI.8.1", Assert.IsType<VerseNode>(refs[0].Target).Title);
     }
 
     // Defensive: a leading group with no verses at all (never real, but
-    // not trusted blindly either -- see this method's own doc comment)
-    // is skipped in favor of the next non-empty one.
+    // not trusted blindly either) is skipped in favor of the next
+    // non-empty one.
     [Fact]
     public void SkipsALeadingEmptyGroupInFavorOfTheNextOne()
     {
         var groups = new List<VerseGroup>
         {
             new("MAT", 8, new List<string>(), 0),
-            Group("LUK", 5, 5, "LUK.5.12", "LUK.5.13"),
+            Group("LUK", 5, 2, "LUK.5.12", "LUK.5.13"),
         };
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(groups);
-        Assert.Equal("LUK.5.12-13", spanRef);
-        Assert.Equal("LUK.5.12", firstVref);
+        var refs = ArrowNav.SelectRefs(groups);
+        Assert.Single(refs);
+        Assert.Equal("LUK.5.12-13", refs[0].Ref);
     }
 
     [Fact]
-    public void EveryGroupEmptyReturnsNoRefAndNoVerse()
+    public void EveryGroupEmptyReturnsNoRefs()
     {
         var groups = new List<VerseGroup> { new("MAT", 8, new List<string>(), 0) };
-        var (spanRef, firstVref) = ArrowNav.SelectPrimaryVerse(groups);
-        Assert.Null(spanRef);
-        Assert.Null(firstVref);
+        Assert.Empty(ArrowNav.SelectRefs(groups));
     }
 }
