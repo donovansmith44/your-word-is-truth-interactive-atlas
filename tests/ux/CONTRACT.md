@@ -307,9 +307,14 @@ XREF-CLAMP-1 (owner order, verbatim: "in the cross references section, for
   visible as a clamp, not mistaken for the whole text"): a clamped passage
   entry (`IsPassage && Verses.Count > ClampVerses`) renders a quiet
   `&hellip;` immediately after its shown verses — class
-  `popover-passage-clamp-mark`, `data-testid="{entry-testid}-clamp-mark"`
-  (e.g. `xref-item-LUK.4.16-30-clamp-mark`), `aria-hidden="true"` (decorative
-  only — the entry's own accessible name is unaffected). Clicking a clamped
+  `popover-passage-clamp-mark`, `data-testid="clamp-mark-{entry-testid}"`
+  (e.g. `clamp-mark-xref-item-LUK.4.16-30`; PREFIXED, not suffixed onto the
+  entry's own testid — a fix-round correction, real and live-caught: a
+  SUFFIXED id silently double-counted under every pre-existing
+  `data-testid^="{entry-prefix}-"`/`getByTestId(/^{entry-prefix}-/)` locator
+  app-wide, w1-4-passages.spec.ts among a dozen+ affected files), `aria-
+  hidden="true"` (decorative only — the entry's own accessible name is
+  unaffected). Clicking a clamped
   ref is UNCHANGED — it still opens the full-passage frontier for that
   target (PassageList's own `Explore`/`OnEntryClick`, untouched); the clamp
   is a visual-only truncation of the COMPACT preview text.

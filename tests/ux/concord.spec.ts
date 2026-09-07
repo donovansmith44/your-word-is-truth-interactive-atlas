@@ -71,18 +71,82 @@ test('CONCORD-3: the part/article/paragraph picker navigates the corpus\'s OWN s
   await expect(page.getByTestId('concord-unit-BoC-7-2-1')).toContainText(realText);
 });
 
-test('CONCORD-4 (ONE-RULE): plain click on a paragraph opens the existing explore/popover, carrying the REAL full paragraph text', async ({ page }) => {
-  const ground = await api.reading('BoC 1.1.1', 1, { corpus: 'concord' });
+// Batch UX-1 (BOC-CLICK-1): this test's own fixture moved from the
+// Preface's own BoC 1.1.1 to the Small Catechism's own BoC 7.2.1 -- Part 1
+// is no longer explorable under this batch's own ruling (ConcordToc.
+// IsExplorablePart), and BoC 7.2.1 (the First Commandment) already IS the
+// established explorable fixture this same file's own CONCORD-3/CONCORD-9d
+// tests use. ONE-RULE itself (plain click opens the existing explore/
+// popover, carrying the real full paragraph text) is otherwise UNCHANGED
+// -- see the new BOC-CLICK-1 test below for explicit coverage of the
+// retired affordance on a non-explorable Part.
+test('CONCORD-4 (ONE-RULE): plain click on an explorable paragraph opens the existing explore/popover, carrying the REAL full paragraph text', async ({ page }) => {
+  const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
   const realText = ground.units[0].text as string;
 
   await page.goto('/concord');
-  await expect(page.getByTestId('concord-unit-BoC-1-1-1')).toBeVisible();
+  await page.getByTestId('concord-toc-part-7').click();
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 7.1.1');
+  await page.getByTestId('concord-picker-part').fill('7');
+  await page.getByTestId('concord-picker-article').fill('2');
+  await page.getByTestId('concord-picker-paragraph').fill('1');
+  await page.getByTestId('concord-picker-go').click();
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 7.2.1');
+  await expect(page.getByTestId('concord-unit-BoC-7-2-1')).toBeVisible();
 
-  await page.getByTestId('concord-unit-BoC-1-1-1').click();
+  await page.getByTestId('concord-unit-BoC-7-2-1').click();
 
-  await expect(page.getByTestId('popover-title')).toContainText('BoC 1.1.1');
+  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
   await expect(page.getByTestId('popover-body')).toContainText(realText);
 });
+
+// ---------------------------------------------------------------------
+// BOC-CLICK-1 (owner order, verbatim: "Articles/blocks of text needn't be
+// clickable in the BoC right now because there's no actual explorable
+// stuff with them. The exception should be the catechism and the creeds
+// where we actually do have explorable stuff. make sure that we retain
+// the scripture references."): explorability is a DECLARED property of
+// the DOCUMENT (ConcordToc.IsExplorablePart) -- see that method's own doc
+// comment for the disclosed "Part 7 only" reasoning.
+// ---------------------------------------------------------------------
+
+test('BOC-CLICK-1: a non-catechism unit (the Preface) loses the explorable-row affordance -- no cursor/hover class, no click', async ({ page }) => {
+  await page.goto('/concord');
+  const row = page.getByTestId('concord-unit-BoC-1-1-1');
+  await expect(row).toBeVisible();
+  await expect(row).not.toHaveClass(/\bexplorable\b/);
+  await expect(row).not.toHaveAttribute('role', 'button');
+  await expect(row).not.toHaveAttribute('tabindex');
+
+  await row.click();
+  // Nothing opens -- the row itself carries no click handler any more.
+  await expect(page.getByTestId('popover-title')).toHaveCount(0);
+});
+
+test('BOC-CLICK-1: a catechism unit (BoC 7.2.1, the First Commandment) keeps the explorable-row affordance', async ({ page }) => {
+  await page.goto('/concord');
+  await page.getByTestId('concord-picker-part').fill('7');
+  await page.getByTestId('concord-picker-article').fill('2');
+  await page.getByTestId('concord-picker-paragraph').fill('1');
+  await page.getByTestId('concord-picker-go').click();
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 7.2.1');
+
+  const row = page.getByTestId('concord-unit-BoC-7-2-1');
+  await expect(row).toBeVisible();
+  await expect(row).toHaveClass(/\bexplorable\b/);
+  await expect(row).toHaveAttribute('role', 'button');
+  await expect(row).toHaveAttribute('tabindex', '0');
+
+  await row.click();
+  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
+});
+
+// "make sure that we retain the scripture references" -- CONCORD-10 below
+// already proves an in-text scripture reference stays clickable inside
+// Part 3's own confession prose; Part 3 is a NON-explorable Part under
+// this batch's own predicate (ExplorableParts = {7}), so that coverage now
+// doubles as this ruling's own "scripture refs unaffected by BOC-CLICK-1"
+// proof -- not duplicated here.
 
 test('CONCORD-5: next/previous page the reading spine', async ({ page }) => {
   await page.goto('/concord');
@@ -299,6 +363,33 @@ test('CONCORD-9b (S-8): every one of the ten TOC entries lands on its own real o
     await expect(page.getByTestId(`concord-part-heading-${doc.part}`)).toContainText(doc.title);
     await expect(page.getByTestId(`concord-unit-${startRef.replace(/ /g, '-').replace(/\./g, '-')}`)).toContainText(realText);
   }
+});
+
+// Batch UX-1 (BOC-SCROLL-1, owner order verbatim: "if i click one of the
+// items in table of contents and scroll to the bottom, and then click
+// another item in the table of contents, i am taken to the bottom of that
+// item"): the exact repro, reproduced then proven fixed -- click a ToC
+// item, scroll to the bottom, click ANOTHER ToC item, land at the TOP.
+test('BOC-SCROLL-1: clicking a second ToC item after scrolling to the bottom of the first lands at the TOP, not the bottom', async ({ page }) => {
+  await page.goto('/concord');
+  await page.getByTestId('concord-toc-part-3').click(); // The Augsburg Confession
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 3.1.1');
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const scrolledY = await page.evaluate(() => window.scrollY);
+  expect(scrolledY).toBeGreaterThan(200); // genuinely scrolled down, not a no-op on a short page
+
+  await page.getByTestId('concord-toc-part-5').click(); // The Smalcald Articles -- a DIFFERENT document
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 5.1.1');
+
+  await expect(async () => {
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeLessThan(10);
+  }).toPass({ timeout: 3000 });
+
+  // Landed in reading flow at the TOP -- the new document's own part
+  // heading is genuinely visible (in the viewport), not scrolled past.
+  await expect(page.getByTestId('concord-part-heading-5')).toBeInViewport();
 });
 
 // Ticket C, "same mechanism as ticket K -- do not fork the scanner."

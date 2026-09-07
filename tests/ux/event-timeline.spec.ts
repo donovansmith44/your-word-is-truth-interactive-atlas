@@ -586,7 +586,12 @@ test('PEEK-1: a quick pointer pass over a Chronology arrow produces NO peek; a d
   // PEEK-TRUNC-1: the peek header is the target's own FULL title too.
   await expect(page.getByTestId('event-chrono-following-event-global-peek-title')).toHaveText(followingDetail.title);
 
-  // No close button of any kind on the peek (decision 4/5: "NO x needed").
+  // Decision 4/5's own "NO x needed" (a plain sustained departure already
+  // dismisses it, proven a few lines below) never used the SHARED
+  // popover-close testid to begin with -- that stays true. Batch UX-1
+  // (EVENT-HOVER-HATCH-1) adds a DEDICATED close affordance instead (its
+  // own testid, `{prefix}-peek-close`, never popover-close) -- see that
+  // ticket's own test below for the escape-hatch coverage itself.
   await expect(peek.getByTestId('popover-close')).toHaveCount(0);
 
   // PEEK-TRUNC-1: pointer-leave no longer dismisses on the SAME tick --
@@ -603,6 +608,55 @@ test('PEEK-1: a quick pointer pass over a Chronology arrow produces NO peek; a d
   // whatever dwell state the arrow was last in.
   await arrow.click();
   await expect(page.getByTestId('popover-title')).toHaveText(followingDetail.title);
+});
+
+// ---------------------------------------------------------------------
+// EVENT-HOVER-HATCH-1 (owner order, verbatim: "when I click an event and
+// see the chronological forward/backward stuff, and hover over the
+// buttons, the displayed window has no escape hatch"). A close
+// affordance, reachable by click AND by Escape, closes the peek WITHOUT
+// waiting for the ordinary pointer-leave grace period.
+// ---------------------------------------------------------------------
+
+test('EVENT-HOVER-HATCH-1: the dwell-peek carries a close affordance -- click closes it immediately, without waiting for pointer-leave', async ({ page }) => {
+  await openEventPopover(page, 'gen_binding_isaac');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const closeBtn = peek.getByTestId('event-chrono-following-event-global-peek-close');
+  await expect(closeBtn).toBeVisible();
+  await expect(closeBtn).toHaveAttribute('title', 'Close preview');
+
+  await closeBtn.click();
+  // Closes IMMEDIATELY -- no toHaveCount(0)'s own default 5s auto-retry
+  // needed the way a plain departure requires (PEEK-1's own grace-period
+  // wait, above); a tight explicit timeout proves this is instant, not
+  // merely eventual.
+  await expect(peek).toHaveCount(0, { timeout: 200 });
+
+  // The pointer never actually left the arrow -- re-hovering after a
+  // click-close still starts a fresh dwell correctly (the close affordance
+  // didn't leave the timer machinery in a broken state).
+  await page.mouse.move(2, 2);
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+});
+
+test('EVENT-HOVER-HATCH-1: Escape closes the peek from the keyboard too', async ({ page }) => {
+  await openEventPopover(page, 'gen_binding_isaac');
+  const arrow = page.getByTestId('event-chrono-following-event-global');
+  const peek = page.getByTestId('event-chrono-following-event-global-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const closeBtn = peek.getByTestId('event-chrono-following-event-global-peek-close');
+  await closeBtn.focus();
+  await page.keyboard.press('Escape');
+  await expect(peek).toHaveCount(0, { timeout: 200 });
 });
 
 test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the story-thread line\'s own INLINE leg (df_adullam, David\'s Flight from Saul) -- one shared component, not a parallel implementation', async ({ page }) => {

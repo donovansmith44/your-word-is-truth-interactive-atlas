@@ -149,6 +149,115 @@ test('CATECH-1: a verse with zero catechism citations shows no catechism section
 });
 
 // ---------------------------------------------------------------------
+// FRONTIER-ORDER-1 (owner order, verbatim: "when clicking on a verse,
+// things should be ordered as such (visually): Verse, Event, Catechism,
+// Parallels, then cross references. Obviously if there is not content
+// available for any of those categories we don't display, but Verse is
+// always available if we have it."). MAT.26.28 (the Words of Institution)
+// is the named, live-verified fixture: it genuinely carries all five
+// categories at once (confirmed live against the real compiled data).
+// ---------------------------------------------------------------------
+
+test('FRONTIER-ORDER-1: a content-rich verse (MAT.26.28) shows every category in the owner\'s own ruled order', async ({ page }) => {
+  await page.goto('/read/MAT/26');
+  await page.getByTestId('verse-line-28').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.28');
+  // Settle-wait, same reasoning as REGISTRY-1's own comment above: every
+  // section resolves together in one batch, and this last-in-order section
+  // (xrefs, per the owner's own ruling) is the direct, retrying proxy for
+  // "the whole batch landed."
+  await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
+
+  const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
+  expect(sectionIds).toEqual([
+    'popover-section-verse-text',
+    'popover-section-event-membership',
+    'popover-section-catechism',
+    'popover-section-parallels',
+    'popover-section-xrefs',
+  ]);
+});
+
+// The general conditional-presence half of the owner's own words ("if
+// there is not content available for any of those categories we don't
+// display, but Verse is always available"): a verse with none of the
+// other four categories shows Verse alone.
+test('FRONTIER-ORDER-1: a verse with no other category present shows Verse alone (conditional presence; Verse always present)', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerse(toc, d =>
+    d.cross_refs.length === 0 && d.catechism.length === 0 && (d.events?.length ?? 0) === 0);
+  test.skip(!found, 'no sampled verse had zero of every other category');
+  if (!found) return;
+  const v = parseVerse(found.vref);
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(found.vref);
+
+  await expect(page.getByTestId('popover-section-verse-text')).toBeVisible();
+  await expect(page.getByTestId('popover-section-event-membership')).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-passage-membership')).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-catechism')).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-parallels')).toHaveCount(0);
+  await expect(page.getByTestId('popover-section-xrefs')).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------
+// CHROME-1/CHROME-2 (owner order, verbatim: "the second button in the top
+// right appears to do nthing. Get rid of it" / "the remaining two buttons
+// on the top right are hard to understand"). CHROME-1's SAFETY VALVE was
+// invoked -- STOPPED, not implemented (batch-ux1-report.md has the full
+// live trace: every one of the four chrome buttons genuinely does
+// something). This section pins that disclosure as a real regression
+// test (all four still present, none silently dropped) and delivers
+// CHROME-2's tooltip fix.
+// ---------------------------------------------------------------------
+
+test('CHROME-1 (STOPPED, not implemented): the verse popover\'s own four top-right chrome buttons are all still present', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  await page.getByTestId('verse-line-3').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.3');
+
+  await expect(page.getByTestId('popover-chip-book')).toBeVisible();
+  await expect(page.getByTestId('popover-chip-context')).toBeVisible();
+  await expect(page.getByTestId('popover-save-exploration')).toBeVisible();
+  await expect(page.getByTestId('popover-close')).toBeVisible();
+});
+
+// The owner's own named candidate ("Read in context") -- traced AND
+// live-exercised (not assumed) as genuinely functional: it re-scrolls the
+// Reader to the clicked verse, even without leaving the current page.
+test('CHROME-1 trace: "Read in context" genuinely scrolls the reader to the clicked verse, even from the same page', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  await page.getByTestId('verse-line-20').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.20');
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(async () => {
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  }).toPass({ timeout: 3000 });
+
+  await page.getByTestId('popover-chip-context').click();
+
+  await expect(async () => {
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeGreaterThan(500); // genuinely scrolled back down to GEN.1.20
+  }).toPass({ timeout: 3000 });
+  await expect(page.getByTestId('verse-line-20')).toBeInViewport();
+});
+
+test('CHROME-2: popover-close and popover-breadcrumb-back both show a native tooltip naming the button', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  await page.getByTestId('verse-line-3').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.3');
+  await expect(page.getByTestId('popover-close')).toHaveAttribute('title', 'Close');
+
+  // Drill in (About this book) so the breadcrumb-back button exists too.
+  await page.getByTestId('popover-chip-book').click();
+  await expect(page.getByTestId('popover-breadcrumb-back')).toHaveAttribute('title', 'Back');
+});
+
+// ---------------------------------------------------------------------
 // READER-1: expand -> lazy chapter fetch -> scrollable mini-reader ->
 // focal verse visible + highlighted; collapse restores the compact view.
 // ---------------------------------------------------------------------
@@ -1049,6 +1158,31 @@ test('CATECH-1/6-ARCH: a verse reachable only via the repo mapping shows a quest
   const godAloneEntry = scriptures.getByTestId('catechism-verse-LUK.12.13-14');
   await expect(godAloneEntry).toBeVisible();
   await expect(godAloneEntry).toContainText('God Alone as Judge');
+
+  // CAT-SCRIPT-1 (mid-batch owner addendum, verbatim: "<TITLE> <Passage
+  // ref> and then verses below ... God Alone as Judge on the left ...
+  // LUK.12.13-14 on the right"): the reusable title+ref header row --
+  // title testid LEFT, ref testid RIGHT, verses rendered below both.
+  const title = godAloneEntry.getByTestId('catechism-verse-LUK.12.13-14-title');
+  const ref = godAloneEntry.getByTestId('catechism-verse-LUK.12.13-14-ref');
+  await expect(title).toHaveText('God Alone as Judge');
+  await expect(ref).toHaveText('LUK.12.13-14');
+  const titleBox = await title.boundingBox();
+  const refBox = await ref.boundingBox();
+  expect(titleBox).toBeTruthy();
+  expect(refBox).toBeTruthy();
+  expect(titleBox!.x).toBeLessThan(refBox!.x); // title LEFT, ref RIGHT
+
+  // Verses render below the header row (both are above every
+  // .popover-passage-verse-num row in this same entry).
+  const firstVerseBox = await godAloneEntry.locator('.popover-passage-verse-num').first().boundingBox();
+  expect(firstVerseBox).toBeTruthy();
+  expect(titleBox!.y).toBeLessThan(firstVerseBox!.y);
+  expect(refBox!.y).toBeLessThan(firstVerseBox!.y);
+
+  // "keep the font" -- the ref keeps its own pre-existing mono/lapis
+  // register, UNCHANGED by this ticket.
+  await expect(ref).toHaveClass(/\bpopover-passage-ref-label\b/);
 });
 
 // M-D4 fix round 1, P2 (owner order, verbatim: "the down/double down thing
@@ -1375,6 +1509,79 @@ test('XREF-1/regression: a cross-reference to a same-chapter multi-verse target 
   // "REV.8.3-5"), which this exact-text assertion would reject.
   await first.click();
   await expect(page.getByTestId('popover-title')).toHaveText(found.targetHead);
+});
+
+// ---------------------------------------------------------------------
+// XREF-CLAMP-1 (owner order, verbatim: "in the cross references section,
+// for each cross ref, be sure not to show more than two verses of each
+// cross ref ... if I click on the cross ref i should get the frontier for
+// that passage how i do now, but i should only see [the first verses]
+// visually. That two-verse clamp ought to apply to all cross refs
+// visually displayed for a frontier." CONTROLLER RULING: clamp = 2). The
+// owner's own named fixture, verbatim: MRK.6.1 -> LUK.4.16-30 (a real,
+// curated 14-vote cross-reference spanning 15 verses -- confirmed live
+// against GET /api/verse/MRK.6.1).
+// ---------------------------------------------------------------------
+
+test('XREF-CLAMP-1: a cross-reference to a 15-verse target (MRK.6.1 -> LUK.4.16-30) shows exactly 2 verses, a continuation mark, and still opens the full frontier on click', async ({ page }) => {
+  await page.goto('/read/MRK/6');
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MRK.6.1');
+
+  const entry = page.getByTestId('xref-item-LUK.4.16-30');
+  await expect(entry).toBeVisible();
+
+  // Exactly 2 verses of the clamped compact preview -- not the whole
+  // 15-verse target.
+  await expect(entry.locator('.popover-passage-verse-num')).toHaveCount(2);
+
+  // The quiet continuation mark -- visible, decorative (aria-hidden), and
+  // it does not itself carry any accessible text that would confuse the
+  // entry's own "Explore LUK.4.16-30" aria-label.
+  const mark = entry.getByTestId('clamp-mark-xref-item-LUK.4.16-30');
+  await expect(mark).toBeVisible();
+  await expect(mark).toHaveAttribute('aria-hidden', 'true');
+
+  // Clicking still opens the full-passage frontier for that target --
+  // CrossRefsSection's own pre-existing ExploreAsVerse=true contract
+  // (XREF-1/regression above), UNCHANGED by the clamp: a VerseNode at the
+  // target's own first verse, not merely the 2 clamped verses.
+  await entry.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('LUK.4.16');
+  // The frontier genuinely reaches past the clamp -- verse 4:20 (well
+  // beyond the 2-verse clamp) is reachable via the mini-reader's own
+  // "Read the whole chapter" expand, proving the click target is the real
+  // passage, not just the 2 clamped verses re-rendered under a new title.
+  await page.getByTestId('popover-verse-expand').click();
+  await expect(page.getByTestId('popover-reader-verse-20')).toBeVisible();
+});
+
+test('XREF-CLAMP-1: a cross-reference target at or under the 2-verse clamp shows no continuation mark', async ({ page }) => {
+  const toc = await loadToc();
+  const found = await findVerse(toc, d => d.cross_refs.some((x: any) => {
+    const m = /^([A-Z0-9]{2,3})\.(\d+)\.(\d+)(?:-(\d+))?$/.exec(x.target);
+    if (!m) return false;
+    const from = Number(m[3]);
+    const to = m[4] ? Number(m[4]) : from;
+    return (to - from + 1) <= 2;
+  }));
+  test.skip(!found, 'no sampled verse had a cross-reference target at or under the 2-verse clamp');
+  if (!found) return;
+  const { vref, detail } = found;
+  const v = parseVerse(vref);
+  const target = detail.cross_refs.find((x: any) => {
+    const m = /^([A-Z0-9]{2,3})\.(\d+)\.(\d+)(?:-(\d+))?$/.exec(x.target);
+    if (!m) return false;
+    const from = Number(m[3]);
+    const to = m[4] ? Number(m[4]) : from;
+    return (to - from + 1) <= 2;
+  }).target;
+
+  await page.goto(`/read/${v.book}/${v.chapter}`);
+  await page.getByTestId(`verse-line-${v.verse}`).click();
+  const entry = page.getByTestId(`xref-item-${target}`);
+  await expect(entry).toBeVisible();
+  await expect(entry.locator('[data-testid^="clamp-mark-"]')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------

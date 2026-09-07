@@ -174,9 +174,18 @@
                                        register), decorative only (aria-hidden -- the entry's
                                        own accessible name, ONE-RULE's own outer explorable
                                        label, is unaffected by this being present or absent). *@
+                                    @* Fix round (real, live-caught bug -- a full-suite run
+                                       exposed it, not guessed): the testid is PREFIXED with
+                                       "clamp-mark-", never SUFFIXED onto entry.TestId --
+                                       every existing "starts with {entry-prefix}-" locator
+                                       app-wide (getByTestId(/^xref-item-/), [data-testid^=
+                                       "event-witness-"], [data-testid^="verse-parallel-"],
+                                       reused by w1-4-passages.spec.ts among others) would
+                                       otherwise silently double-count this mark alongside
+                                       the real entry it decorates. *@
                                     @if (clamps)
                                     {
-                                        <span class="popover-passage-clamp-mark" data-testid="@($"{entry.TestId}-clamp-mark")" aria-hidden="true">&hellip;</span>
+                                        <span class="popover-passage-clamp-mark" data-testid="@($"clamp-mark-{entry.TestId}")" aria-hidden="true">&hellip;</span>
                                     }
                                 }
                                 else
