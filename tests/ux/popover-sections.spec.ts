@@ -257,6 +257,54 @@ test('CHROME-2: popover-close and popover-breadcrumb-back both show a native too
   await expect(page.getByTestId('popover-breadcrumb-back')).toHaveAttribute('title', 'Back');
 });
 
+// HATCH-DELIVERABLE-1 (from the CHROME-1b safety-valve mystery this batch's
+// own dispatch names: "the owner's §4e law applied to hatches" -- an
+// affordance whose target has genuinely nothing to show is worse than no
+// affordance at all): "popover-chip-map" renders ONLY when the map scene it
+// would open has real content -- for EventNodes, at least one located place
+// witness (EventDetail.Places) in the event's own window. theo-1 ("Creation
+// of all things," GEN.1.1's own primary heading anchor) is the real,
+// already-CHROME-1b-traced no-located-places fixture (`GET /api/event/theo-1`
+// -> `"places":[]` -- a cosmic, non-geographic event; CHROME-1b's own live
+// trace confirmed the resulting /world scene rendered zero lit markers,
+// server-truthfully, not a client bug) -- the chip must not tease it.
+// ab_haran ("Sojourn in Haran; the call of Abram," GEN.11.31's own primary
+// heading anchor, is_continuation:false) is the real, well-located sibling
+// (`"places":[{"id":"haran","name":"Haran"}]`) -- the chip must still show.
+test('HATCH-DELIVERABLE-1: EventNode\'s map chip is absent for a no-located-places event (Creation) and present for a located one (Haran)', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  const creationHeading = page.getByTestId('pericope-heading-theo-1');
+  await expect(creationHeading).toBeVisible();
+  await creationHeading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Creation of all things');
+  await expect(page.getByTestId('popover-chip-map')).toHaveCount(0);
+  // The empty-scene tease is dead: not merely absent from chrome, but there
+  // is no map-navigating control anywhere in this popover to click at all
+  // (the chip's own accessible name, not its visible glyph -- ExplorerPopover
+  // renders every chip as a bare crosshair icon, "Show on the map" lives in
+  // its title/aria-label only).
+  await expect(page.getByRole('button', { name: 'Show on the map' })).toHaveCount(0);
+  await page.getByTestId('popover-close').click();
+
+  await page.goto('/read/GEN/11');
+  const haranHeading = page.getByTestId('pericope-heading-ab_haran');
+  await expect(haranHeading).toBeVisible();
+  await haranHeading.click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Sojourn in Haran; the call of Abram');
+  await expect(page.getByTestId('popover-chip-map')).toBeVisible();
+  await expect(page.getByTestId('popover-chip-map')).toHaveAttribute('aria-label', 'Show on the map');
+
+  // The chip genuinely works, end to end -- not just present -- for the
+  // located case (CHROME-1b's own live trace already proved this for a
+  // DIFFERENT located event; re-proven here for the SAME fixture this test
+  // pins as "must show").
+  await page.getByTestId('popover-chip-map').click();
+  await expect(page).toHaveURL(/\/world\?from=-2092&to=-2091/);
+  await expect(async () => {
+    expect(await page.getByTestId(/^marker-/).count()).toBeGreaterThan(0);
+  }).toPass({ timeout: 5000 });
+});
+
 // ---------------------------------------------------------------------
 // READER-1: expand -> lazy chapter fetch -> scrollable mini-reader ->
 // focal verse visible + highlighted; collapse restores the compact view.

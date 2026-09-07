@@ -57,6 +57,23 @@ public sealed class ChapterNode : IExplorable
     public string Title => $"{_book}.{_chapter}";
     public string Kind => "Chapter";
 
+    // HATCH-DELIVERABLE-1 (2026-09-07, deliverability audit -- see
+    // EventNode.ExploreAsync's own header comment for the law this fix
+    // round applies): "popover-chip-map" below is UNCONDITIONAL, unlike
+    // EventNode's (now Places-gated) or AuthorNode's (already WritePlace-
+    // gated) own map chips -- the resulting `/world?ref=...` scene resolves
+    // server-side against this BOOK's own WritePlace (BookMetaDto), which
+    // AuthorNode.ExploreAsync already proves can be absent for a real book
+    // (its own `meta.WritePlace is null` guard). DISCLOSED, NOT FIXED this
+    // round: checking it here would need this SAME BookMeta fetch
+    // (`api.Verse($"{_book}.1.1")`, AuthorNode's own `Load`) that
+    // ChapterNode.ExploreAsync does not otherwise make (it is synchronous
+    // today) -- the ticket's own instruction is explicit ("disclose any
+    // chip where deliverability can't be known client-side without extra
+    // fetches -- do NOT add fetches for this"). A future ticket that
+    // threads BookMeta through ChapterNode/BookNode (or resolves this
+    // server-side, mirroring `/api/scene`'s own emptiness) can close this;
+    // not built here.
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         IReadOnlyList<Exploration> list = new[]

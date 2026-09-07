@@ -20,6 +20,21 @@ public sealed class AuthorNode : IExplorable
     public string Title => _bookCode;
     public string Kind => "Author";
 
+    // HATCH-DELIVERABLE-1 (2026-09-07, deliverability audit -- see
+    // EventNode.ExploreAsync's own header comment for the law): the guard
+    // below already gates on WritePlace/WriteFrom/WriteTo all being present
+    // -- a genuine, existing deliverability check, not merely a display
+    // one. DISCLOSED, narrower residual than EventNode's own fixed case:
+    // the chip's own query (`from={from}&to={to}`) is a bare TIME window,
+    // not `place={WritePlace}` -- it does not GUARANTEE the resulting
+    // `/world` scene shows THIS write-place specifically (only that SOME
+    // window exists), and confirming that would need a `/api/scene` probe
+    // this method does not otherwise make. Not fixed this round, per the
+    // ticket's own "do NOT add fetches for this" instruction -- the
+    // existing three-field guard is the cheap, honest check already
+    // available without one, and materially narrows the gap EventNode had
+    // (a bare `When` with zero Places guard at all) even if it does not
+    // close it completely.
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var meta = (await Load(api)).BookMeta;

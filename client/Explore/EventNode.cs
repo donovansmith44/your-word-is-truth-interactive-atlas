@@ -123,6 +123,25 @@ public sealed class EventNode : IExplorable, INarrativeAware
     /// <see cref="EventDetail"/>'s own doc comment) and, by construction,
     /// no places either -- there is no map scene to bracket, so this chip
     /// is simply absent (empty list, no error) for a general-kind passage.
+    ///
+    /// HATCH-DELIVERABLE-1 (2026-09-07, the owner's own §4e law -- "an
+    /// affordance that opens something empty is worse than no affordance at
+    /// all" -- applied to hatches, from the CHROME-1b safety-valve mystery
+    /// this ticket's own brief names): `detail.When` alone is NOT sufficient
+    /// -- GEN.1.1's own "Creation of all things" event has a real `When`
+    /// (`-4004..-4004`, a defensible date) but ZERO located places
+    /// (`EventDetail.Places`, empty -- a cosmic, non-geographic event, per
+    /// that field's own doc comment: "an ordinary possibly-empty list").
+    /// CHROME-1b's own live trace (batch-ux2-report.md) clicked this exact
+    /// chip and confirmed the resulting `/world` scene renders ZERO lit
+    /// markers, server-truthfully (`GET /api/scene?from=-4010&to=-3990`
+    /// returns `"places":[]` -- not a client bug, not a timing race). The
+    /// data needed is ALREADY on this same, already-fetched `EventDetail`
+    /// (no new fetch) -- `Places` is exactly "at least one located place
+    /// witness in the event's window," the ticket's own words. A
+    /// well-located event (GEN.12's own "Sojourn in Haran," 5 places) is
+    /// unaffected -- `Places.Count > 0` there, chip renders exactly as
+    /// before.
     /// </summary>
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
@@ -136,7 +155,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
             return Array.Empty<Exploration>();
         }
 
-        if (detail.When is not { } when)
+        if (detail.When is not { } when || detail.Places.Count == 0)
         {
             return Array.Empty<Exploration>();
         }

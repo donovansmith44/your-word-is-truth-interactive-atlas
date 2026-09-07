@@ -12,6 +12,12 @@ public sealed class BookNode : IExplorable
     public string Title => _bookCode;
     public string Kind => "Book";
 
+    // HATCH-DELIVERABLE-1 (2026-09-07): the SAME disclosed, not-fixed-this-
+    // round gap as ChapterNode.ExploreAsync's own identical chip -- see that
+    // file's own header comment for the full reasoning (BookMeta.WritePlace
+    // can be absent, checking it here would need a new fetch this method
+    // does not otherwise make, disclosed per the ticket's own instruction
+    // rather than adding one).
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         IReadOnlyList<Exploration> list = new[]
