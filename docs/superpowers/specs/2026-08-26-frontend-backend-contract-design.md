@@ -412,9 +412,13 @@ interface IStateLink<A, B> {
 // Two layers, both law:
 // 1. THE COMMON CORE — the set present on EVERY frontier without
 //    exception (chrome, declared hatches, back/trail, the focus
-//    presentation itself). Named exhaustively in the compiled
-//    skeleton when materialized; a frontier missing a core element
-//    is a conformance failure.
+//    presentation itself). COMPILED (Batch FQ-0, design review B5):
+//    `CoreSection` + `Section { Core(CoreSection), Capability(Capability) }`
+//    in graph-types/src/frontier.rs — a frontier section is EITHER
+//    core or a governed capability, never both, never neither, so
+//    `allows() == false` stops being ambiguous between "opted out"
+//    and "core, not governed here." A frontier missing a core
+//    element is a conformance failure.
 // 2. SEGREGATED CAPABILITY INTERFACES — every non-core section
 //    family (cross references, parallels, chronology, time-and-
 //    place, catechism support, ...) is its OWN interface; a node
@@ -441,13 +445,62 @@ interface IStateLink<A, B> {
 // we navigate the parts of the graph that are both available to us
 // from a focus and not opted out of"): the graph frontier and the
 // visual frontier are ONE thing — visual = graph edges ∩ policy.
-// Compiled as Capability::relations() in graph-types/src/frontier.rs:
-// every capability anchors to relation families from the edge
-// manifest (EventMembership and Accounts = the SAME Attests relation
-// from opposite ends); a capability with no edge family behind it
-// cannot exist (tested). THIS SETTLES §9 Q5's direction: frontier
-// abstractions ARE the relations, filtered — not generated as a
-// separate vocabulary.
+// Compiled as Capability::edges() in graph-types/src/frontier.rs
+// (Batch FQ-0 revision, superseding the earlier Capability::
+// relations(): edges() returns a real, DIRECTED EdgeKind — relation
+// PLUS direction, the exact shape the crate's own frontier walker
+// (Holdings::step) and Graph's own indexes are keyed by, so a
+// capability composes straight into a graph walk with no re-derived
+// direction); every capability anchors to a real edge (EventMembership
+// and Accounts = the SAME Attests relation, opposite directions, IN
+// THE TYPE); a capability with no edges behind it cannot exist
+// (tested in graph-types), and a capability whose named relation has
+// zero rows in the compiled artifact cannot exist either (tested in
+// server/atlas-graph, which can load the artifact — the design
+// review's B1 falsifiability test, closed against the original
+// `Parallel` cell: zero producers, zero consumers anywhere in the
+// repo). THIS SETTLES §9 Q5's direction: frontier abstractions ARE
+// the relations, filtered — not generated as a separate vocabulary.
+//
+// THREE ESCAPEE CAPABILITIES (design review B5, owner-ratified
+// 2026-09-07): sections the pre-FQ-0 matrix wrongly parked under a
+// blanket "body-only kinds" catch-all, despite being real, paginated,
+// edge-walking frontiers — EventsAt (LocatedAt-inverse, Place →
+// events located there — "Jerusalem alone: 236 located-at events");
+// MentionsOf (Mentions-inverse, Person → mentioning text units —
+// "David at 896 mentions," genuinely server-paginated); and
+// Commentary (CommentsOn-inverse, Verse → commentary items —
+// verified live only for Verse, since every real `comments_on` row
+// in the compiled graph is Verse-anchored). A fourth escapee,
+// CatechismScripturesSection, was NOT given a new capability — it
+// reuses CatechismSupport (CatechismLink is symmetric, walked from
+// either end: Verse claims it from the verse end, Catechism from the
+// item end).
+//
+// ONE NEW CAPABILITY, Members (Contains-forward, "the things this
+// container contains"), compiled for the NODE-1 target state (owner
+// ruling 2026-09-07: "chapters and books are nodes... their frontier
+// basically is the verses and event containers they contain, as well
+// as previous/next chapter navigation"): Chapter/Book get
+// Members + Chronology (prev/next). The POLICY is decided now; the
+// underlying Container nodes and Bible-corpus Contains rows land with
+// Batch NODE-1 — until then this capability's row-level
+// falsifiability is honestly `#[ignore]`-gated with a TODO(NODE-1) in
+// atlas-graph/tests/frontier_falsifiability.rs, not silently assumed
+// closed.
+//
+// THE ARCHITECTURE PIVOT (owner verbatim 2026-09-07: "if we're
+// implementing things twice in rust and c# then the front end is not
+// doing its job properly. the front end is basically a query engine +
+// presentation over a graph."): the mirror/parity language this
+// section previously carried ("the C# client mirrors this module; a
+// parity test holds the mirror to it") is RETIRED. The smart-frontier
+// law evaluates SERVER-SIDE (`compose_frontier` in server/atlas-graph,
+// behind GET /api/focus/{id} — FocusQuery, Batch FQ-1, not yet built);
+// the client becomes a presenter of the wire's already-composed
+// frontier, and the C# matrix/parity-test/marker-interface trio this
+// section originally anticipated is deleted rather than maintained,
+// not generated.
 //
 // The per-kind capability MATRIX is the opt-out registry — one
 // declared site, one line per cell (the one-line-knob bar applies:
