@@ -592,19 +592,30 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
   places belonging to events is a function of that location and the
   event's time, and it yields a side effect of the map opening with the
   appropriate state."):
-  - `FrontierMetadataRow.razor`: ONE reusable component -- a small-caps
-    LABEL beside a caller-composed slot of explorable VALUE chips
-    (`.popover-frontier-metadata-row`/`.popover-frontier-metadata-label`/
+  - `FrontierMetadataRow.razor`: ONE reusable component -- an OPTIONAL
+    small-caps LABEL beside a caller-composed slot of explorable VALUE
+    chips (`.popover-frontier-metadata-row`/`.popover-frontier-metadata-label`/
     `.popover-frontier-metadata-values`/`.popover-frontier-metadata-value`).
     Not Event-only markup -- any kind bearing time/place composes it the
-    same way `EventDateAndPlacesSection` does. `EventDateAndPlacesSection`
-    now composes TWO rows in place of the retired plain `event-date`/
-    `event-places` markup: `event-time` (Label "Time:", one value,
-    `event-time-value`) and `event-place` (Label "Place:", one value PER
-    located place, `event-place-{placeId}` each -- unchanged testid from
-    the pre-EVT-3 shape). Place: is nested inside the `When` branch and
-    conditional on `Places.Count > 0` (NAV-2 law: no located place -> no
-    Place: row AT ALL).
+    same way `EventDateAndPlacesSection` does.
+    EVT-META-TOP-1 (fix round 2, owner verbatim: "time + place block should
+    be moved to the top, right below the event header. we don't need to
+    have TIME: and PLACE:. just put the actual values; AD 31 and Galilee
+    for The Sermon on the Mount." Amended: "have the time and place next to
+    each other; not stacked."): `EventDateAndPlacesSection` now composes
+    exactly ONE row (`event-time`, Label OMITTED -- bare values only, no
+    "Time:"/"Place:" text anywhere) whose own ChildContent holds the time
+    value (`event-time-value`) THEN every place value
+    (`event-place-{placeId}` each, unchanged testid from the pre-fix-round
+    shape) as SIBLINGS in the SAME flex row -- "next to each other," never
+    two stacked rows. The former separate `event-place` wrapper testid is
+    RETIRED (both values now live under `event-time`'s own wrapper).
+    Places are nested inside the `When` branch and conditional on
+    `Places.Count > 0` (NAV-2 law: no located place -> no Place: value AT
+    ALL). Registry ORDER also moved (`PopoverSections.cs`): this provider
+    is now Order 135, BEFORE `EventChronologySection` (140) -- "right below
+    the event header" means FIRST among Event sections, superseding
+    CHRONO-MERGE-1's own "Chronology, always on top" ruling.
   - Time: click pushes `new YearNode(when)` -- YearNode's own NEW
     event-time constructor (additive; the pre-EVT-3 place-date-claim
     constructor is UNCHANGED, both coexist on the same `Kind == "Year"`).
@@ -622,9 +633,9 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
     -- pushes a fresh `EventNode` on click, recursion falls out for free
     (the SAME `AppliesTo`/registry machinery every other Event popover
     uses).
-  - Place: click invokes the MAP-FOCUS-AT-TIME HATCH -- a §5-declared
-    hatch, ONE named site (`MapFocusHatch.Query(placeId, window)`,
-    `client/Explore/MapFocusHatch.cs`) building an ADDITIVE extension of
+  - Place: click invokes the MAP-FOCUS-AT-TIME HATCH -- ONE named site
+    (`MapFocusHatch.Query(placeId, window)`, `client/Explore/MapFocusHatch.cs`)
+    building an ADDITIVE extension of
     the EXISTING `ExplorationTarget.NavigateWorld` query shape
     (`from=X&to=Y&place={id}`, escaped) -- no new `ExplorationTarget` case,
     no new fetch (the window's own scene, already fetched by every
@@ -646,6 +657,23 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
     (itself only ever populated server-side for a witness located WITHIN
     the event's own window, HATCH-DELIVERABLE-1's own established
     guarantee) -- no re-derivation needed.
+  - TERMINOLOGY (fix round 1, Q-1, review finding -- labels corrected, not
+    the design): this hatch is a "declared, one-named-site" pattern, NOT
+    an instance of this codebase's own FORMAL `IEscapeHatch`/`HatchKinds`/
+    `ViewRegistrySetup`/`ViewRegistryConformanceTests` machinery
+    (`EnterSplitHatch.cs`/`ToggleFollowHatch.cs`'s own shape) -- every
+    prior "§5-declared" label on it is corrected. GENUINE CONFLICT, not
+    mere inconvenience: every real `IEscapeHatch` is built EXACTLY ONCE,
+    at `ViewRegistrySetup.Build()` time, over DI singletons alone --
+    `Invoke()` is parameterless, identical on every call for a given
+    (view, kind). `MapFocusHatch.Query`'s own `{place, window}` is EVENT
+    DATA that varies per popover-section invocation, never a fixed
+    per-view fact resolvable at registry-build time -- formalizing it
+    would need either a breaking, controller-routed `IEscapeHatch.Invoke()`
+    signature change (rippling across every existing hatch) or ambient
+    mutable state (exactly what the registry's own "buildable once,
+    nothing instance-specific" principle rules out). See
+    `MapFocusHatch.cs`'s own doc comment for the full reasoning.
   - NAMED FIXTURE ("The Last Visit To Nazareth"): `rob_last_nazareth_visit`
     (`data/curated/events-extra.toml`) -- real compiled data, `AD 31` /
     `Nazareth`, TWO real witnesses (MAT.13.54-58, MRK.6.1-6,
@@ -662,7 +690,105 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
     already establishes), and the NAV-2 deliverability negative (`theo-1`,
     Creation -- Time: row present, Place: row absent, zero located places).
     `client.Tests/MapFocusHatchTests.cs`/`YearNodeEventTimeTests.cs` pin
-    the pure query-building/constructor logic directly.
+    the pure query-building/constructor logic directly. Fix round 2
+    (EVT-META-TOP-1) adds: the Sermon-on-the-Mount fixture ("AD 31" /
+    "Galilee," the owner's own second named example), a geometry check
+    that Time/Place render on the SAME line (not stacked), and a
+    section-order check (`popover-section-event-date-places` before
+    `popover-section-event-chronology`); the Nazareth walkthrough and the
+    NAV-2 negative are both updated in place for the single-row shape (no
+    more separate `event-place` wrapper testid).
+
+### Batch EVT-3 fix round 2 (owner review of the live build)
+
+ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts (sermon
+  on the mount in particular), accounts from the same book + chapter are
+  listed. makes no sense."): DIAGNOSIS -- one curated `[[witness]]` row
+  (ONE account, EVENT-ACCOUNTS-1) is stored on the wire as one `VerseGroup`
+  PER CHAPTER it spans (a storage-syntax artifact, `data/curated/
+  event-witnesses.toml`'s own Sermon comment: "written as 3 same-chapter
+  ranges... not spanning a chapter boundary in one string") --
+  `PassageBlockBuilder` used to render each chapter as its own separate
+  "PARALLEL ACCOUNTS" entry. FIXED: `PassageSourceUnit.CoalesceAcrossChapters`
+  (`Explore/PassageBlock.cs`, additive, default `false` -- every OTHER
+  consumer, cross-references/THE SCRIPTURES/place est-dest, unaffected),
+  set `true` by `WitnessUnitsResolver` (`EventWitnessesSection`/
+  `VerseParallelsSection`'s shared resolver). `PassageBlockBuilder.BuildCoalescedBlock`
+  (now `public`) builds ONE block per witness, span computed via
+  `PassageGrouping.SpanRef`'s new cross-chapter branch (`MAT.5.1-7.29`,
+  never the same-chapter shape's `MAT.5.1-29`), with the block's own
+  TRUE last verse honestly computed from that chapter's own `Count`
+  (PERF-3's "identity never narrows" law -- a real, live-caught bug in the
+  FIRST fix-round draft: Matthew 7 alone is 29 real verses, 20 delivered on
+  the wire, so `Verses[^1]` alone would have silently narrowed the span to
+  `MAT.5.1-7.20`). Truncation is summed across EVERY distinct chapter the
+  coalesced block spans (mirrors `ArrowNav.ComputeTruncatedBy`'s own "flat,
+  no block grouping" math), not just the block's own last chapter.
+  `PassageList.razor`'s own `FocalToOf` gained a cross-chapter branch too
+  (`int.MaxValue` when the block's last vref lands in a DIFFERENT chapter
+  than its first -- `MiniReaderExpand` can only ever fetch/highlight ONE
+  chapter, so expanding a coalesced entry opens its own FIRST chapter in
+  full). NON-CONTIGUOUS COUNTEREXAMPLE (never coalesces): `psa_014`
+  (Psalm 14 + Psalm 53, TWO separate curated witness rows, same book) --
+  proven WITHOUT any gap-detection logic, since coalescing is strictly
+  WITHIN one witness/unit, never across units. TESTS:
+  `client.Tests/AcctCoalesceTests.cs` (7 tests, incl. the wire-cap
+  narrowing regression); `tests/ux/popover-sections.spec.ts`'s own
+  ACCT-COALESCE-1 tests (Sermon fixture + psa_014 counterexample);
+  `tests/ux/event-timeline.spec.ts`'s own TRUNC-1 test retargeted in place
+  for the 1ki_temple_dedication event's own now-coalesced 2CH witness.
+
+HOVER-KILL-1 (owner verbatim: "get rid of the box that comes up when
+  hovering over prior/following event buttons"): an OWNER REVERSAL of
+  UX-1/PEEK-1's own dwell-hover verse peek, scoped to the Chronology
+  block's own BLOCK-mode PRIOR/FOLLOWING arrows ONLY -- the Inline
+  story-thread leg (a DIFFERENT surface) keeps its own peek, UNCHANGED
+  (`ArrowNav.razor`'s own `OnPointerEnter` now returns immediately when
+  `!Inline`, before ever starting the dwell timer -- the WHOLE
+  dwell/peek/placement/truncation machinery below that gate is untouched
+  code, still real, just unreachable from a block-mode arrow). TESTS
+  (`tests/ux/event-timeline.spec.ts`): the former `PEEK-1`,
+  `EVENT-HOVER-HATCH-1` (x2), `PEEK-2`, `PEEK-3`, `PEEK-3b`, `PEEK-4`,
+  `PEEK-5` tests are RETIRED WHOLE (their own fixture, a block-mode arrow,
+  can never trigger a peek again); a new `HOVER-KILL-1` test proves the
+  ruling positively (a sustained dwell past the OLD trigger delay still
+  shows nothing; click still commits); `PEEK-1/CHRONO-MERGE-1` (the Inline
+  leg test) is the surviving proof the mechanism itself is not removed;
+  `TITLE-2` is trimmed (its own unrelated two-line-clamp/grid-alignment
+  contract stays live; only its trailing peek-header paragraph is
+  removed).
+
+ACCT-SET-MISMATCH-1 (owner bug report, verbatim: "when i see Jesus selects
+  the twelve apostles after a night of prayer, MRK.3.13-19 shows below the
+  button, but when i press it theres a parallel from LUKE. So the mapping
+  between the passages below the button and what's actually there when
+  you navigate doesnt work." Amended: "make sure that the verses being
+  shown below the buttons are shown in the same order in which they
+  appear once you traverse."): DIAGNOSIS -- `Adjacent.VerseGroups` (the
+  narrative/timeline wire shape, `to_scene_event` server-side, the SAME
+  derivation a map ARROW uses) is not guaranteed to carry every one of an
+  event's own witnesses; `rob_twelve_apostles` is a real, live-confirmed
+  instance (two curated witnesses, LUK.6.12-16 + MRK.3.13-19, but the
+  narrative endpoint's own VerseGroups carried only the Mark one) -- a
+  genuine data-source mismatch between the refs-list's own (narrower)
+  source and the landed frontier's own `EventDetail.Witnesses` (the SAME
+  root-cause FAMILY as ACCT-COALESCE-1: two different derivations of "this
+  event's own accounts," never reconciled). FIXED: `ArrowNav` now eagerly
+  fetches the adjacent event's own FULL `EventDetail` (`OnParametersSetAsync`,
+  the SAME EV-1-precedent identity guard keyed on `Adjacent?.Id`) and
+  derives refs via the NEW `ArrowNav.SelectRefsFromWitnesses` -- ONE ref
+  per witness, coalesced via the IDENTICAL `PassageBlockBuilder.BuildCoalescedBlock`
+  `EventWitnessesSection` uses, in `Witnesses`' own SERVER ORDER (never
+  re-sorted) -- so SET and ORDER both match the landed frontier by
+  construction. `SelectRefs(VerseGroups)` (the OLD derivation) is demoted
+  to a FALLBACK, used only until the fetch resolves or if it fails --
+  never a regression even mid-flight. TESTS:
+  `client.Tests/ArrowNavTests.cs` (3 new tests: witness order, cross-chapter
+  coalescing via the new path, empty-witness skip);
+  `tests/ux/event-timeline.spec.ts`'s own `ACCT-SET-MISMATCH-1` test --
+  the real `rob_twelve_apostles` fixture, asserting the refs-list's own
+  set+order under the arrow equals the landed PARALLEL ACCOUNTS frontier's
+  own set+order exactly.
 
 ## data-testid inventory
 Header: `nav-reader`, `nav-world`, `nav-kretzmann`, `nav-concord` (batch-corp1-brief.md,

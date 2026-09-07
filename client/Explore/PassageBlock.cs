@@ -58,7 +58,42 @@ public sealed record PassageListVerse(string Vref, string Text, int? GroupCount 
 /// <see cref="Caption"/> (e.g. a catechism question's own title) renders on
 /// every block this unit produces, when present.
 /// </summary>
-public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null);
+/// <param name="CoalesceAcrossChapters">
+/// ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts
+/// (sermon on the mount in particular), accounts from the same book +
+/// chapter are listed. makes no sense."): DIAGNOSIS -- an event WITNESS
+/// (one curated `[[witness]]` TOML row = ONE account, per
+/// EVENT-ACCOUNTS-1's own "events are keys that map to sets of Biblical
+/// accounts") is stored on the wire as one <see cref="VerseGroup"/> PER
+/// CHAPTER it spans (`data/curated/event-witnesses.toml`'s own Sermon-on-
+/// the-Mount comment: "written as 3 same-chapter ranges, this project's
+/// own curator-friendly range syntax not spanning a chapter boundary in
+/// one string" -- a STORAGE artifact, not three separate accounts). The
+/// pre-existing default (false, every other consumer -- cross-references,
+/// THE SCRIPTURES, place est/dest) is CORRECT there: those units
+/// deliberately never coalesce across a chapter boundary (two different
+/// xref targets that happen to land in adjacent chapters are two
+/// different pieces of context). <see cref="Explore.WitnessUnitsResolver"/>
+/// is the ONE place that sets this true -- an event witness's own
+/// multi-VerseGroup shape is ALWAYS one continuous account, by
+/// construction of the curation process itself, never a coincidence of
+/// storage. THE RULE (owner-dictated): "an account = a coalesced
+/// contiguous span per book/narrative locus... never per-storage-row."
+/// Two SEPARATE witness ROWS for the SAME book (a real, curated case --
+/// `psa_014`'s own Psalm 14 + Psalm 53 witnesses, "a second, distinct
+/// psalm recounting the same substance, not a copy of the same
+/// container") are two SEPARATE <see cref="PassageSourceUnit"/>s already
+/// (one per <c>EventWitnessDto</c>) and stay separate under this rule
+/// WITHOUT any gap-detection logic needed -- the curation-level boundary
+/// (one witness row = one account) already IS the correct boundary.
+/// TODO(FQ-1): the server's own `compose_frontier` (the frontier-query
+/// contract batch) should inherit this coalescing rule at ITS OWN seam
+/// (an event witness's own account span belongs on the wire pre-coalesced,
+/// not re-derived client-side) -- this client-side fix is the honest,
+/// disclosed interim seam per the controller's own fix-round instruction,
+/// not a permanent architectural home.
+/// </param>
+public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null, bool CoalesceAcrossChapters = false);
 
 /// <summary>
 /// One renderable passage/lone-verse block -- <see cref="PassageList.razor"/>'s
@@ -183,6 +218,19 @@ public static class PassageBlockBuilder
                 continue;
             }
 
+            // ACCT-COALESCE-1: a unit that opts in renders as EXACTLY ONE
+            // block spanning its own full first-to-last range, regardless
+            // of how many chapters it crosses -- bypasses
+            // PassageGrouping.Groups entirely (that method's own
+            // same-chapter-only adjacency rule is exactly what this unit
+            // needs to NOT apply). See PassageSourceUnit.CoalesceAcrossChapters's
+            // own doc comment for the full "why" story.
+            if (unit.CoalesceAcrossChapters)
+            {
+                blocks.Add(BuildCoalescedBlock(unit));
+                continue;
+            }
+
             var vrefs = unit.Verses.Select(v => v.Vref).ToList();
             var unitBlocks = new List<PassageBlockData>();
             foreach (var run in PassageGrouping.Groups(vrefs))
@@ -236,5 +284,68 @@ public static class PassageBlockBuilder
         }
 
         return blocks;
+    }
+
+    /// ACCT-COALESCE-1: builds the ONE block a `CoalesceAcrossChapters`
+    /// unit renders as -- the full first-to-last span over EVERY verse in
+    /// the unit, regardless of chapter. PUBLIC (fix round 2,
+    /// ACCT-SET-MISMATCH-1): reused directly by
+    /// <see cref="Explore.ArrowNav"/>'s own refs-list resolver so the SET
+    /// and ORDER of refs shown under a prior/following button are computed
+    /// by the IDENTICAL coalescing logic the landed frontier's own
+    /// PARALLEL ACCOUNTS list uses -- one function, two render sites,
+    /// never two derivations that could silently disagree. Mirrors
+    /// <c>ArrowNav.ComputeTruncatedBy</c>'s own "flat, no block grouping of
+    /// its own" truncation math (same shape, same reasoning: sum, across
+    /// every DISTINCT (book,chapter) group actually present in this one
+    /// block, how many more verses that group's own server-side Count says
+    /// exist beyond what was delivered) rather than the per-chapter-block
+    /// check immediately above (which assumes one block == one chapter --
+    /// no longer true here by construction).
+    ///
+    /// FIX ROUND 1 (real, live-caught bug, PERF-3's own "identity never
+    /// narrows" law): the block's own SPAN must reflect the TRUE end of
+    /// whichever chapter it lands in, never merely the last verse the
+    /// server's own 20-verse-per-chapter cap happened to deliver -- the
+    /// Sermon on the Mount's own real MAT witness ends in Matthew 7 (29
+    /// real verses, only 20 delivered on the wire), so
+    /// <c>unit.Verses[^1]</c> alone would silently narrow the account's
+    /// own honest identity to "MAT.5.1-7.20". The LAST distinct
+    /// (book,chapter) group's own TRUE last verse number is computed the
+    /// SAME way <see cref="Explore.ArrowNav.SelectRefs"/> already computes
+    /// an honest span for a single-group case: that chapter's own first
+    /// DELIVERED verse number + its own true Count - 1 (the server's cap
+    /// always keeps the LOWEST-numbered verses, so the FIRST delivered
+    /// verse of any group is always honest; only the LAST can ever be
+    /// short). The unit's own overall FIRST verse needs no such
+    /// correction for the identical reason.
+    public static PassageBlockData BuildCoalescedBlock(PassageSourceUnit unit)
+    {
+        var byGroup = new Dictionary<(string Book, int Chapter), (int Delivered, int? TrueCount, string FirstVref)>();
+        foreach (var v in unit.Verses)
+        {
+            var (book, chapter, _) = CanonRef.ParseVerse(v.Vref);
+            var key = (book, chapter);
+            var existing = byGroup.GetValueOrDefault(key, (0, null, v.Vref));
+            byGroup[key] = (existing.Delivered + 1, v.GroupCount ?? existing.TrueCount, existing.FirstVref);
+        }
+
+        var (lastBook, lastChapter, _) = CanonRef.ParseVerse(unit.Verses[^1].Vref);
+        var lastGroup = byGroup[(lastBook, lastChapter)];
+        var (_, _, lastGroupFirstVerseNum) = CanonRef.ParseVerse(lastGroup.FirstVref);
+        var trueLastCount = Math.Max(lastGroup.TrueCount ?? 0, lastGroup.Delivered);
+        var trueLastVref = $"{lastBook}.{lastChapter}.{lastGroupFirstVerseNum + trueLastCount - 1}";
+        var span = PassageGrouping.SpanRef(unit.Verses[0].Vref, trueLastVref);
+
+        var truncatedBy = 0;
+        foreach (var (_, entry) in byGroup)
+        {
+            if (entry.TrueCount is int trueCount && trueCount > entry.Delivered)
+            {
+                truncatedBy += trueCount - entry.Delivered;
+            }
+        }
+
+        return new PassageBlockData(span, unit.Verses, unit.Caption, truncatedBy);
     }
 }

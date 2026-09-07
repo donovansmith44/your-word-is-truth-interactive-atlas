@@ -361,23 +361,84 @@ else
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
-    // EVT-3 Ticket 2 (supersedes EV-1, retired -- see this file's own
-    // header comment for the retirement story): the refs-list is PURE and
-    // SYNCHRONOUS (no fetch, unlike EV-1's own eager verse-text resolve) --
-    // computed straight off Adjacent.VerseGroups on every render, cheap
-    // enough that no memoization/identity-guard field is worth the
-    // complexity EV-1's own OnParametersSetAsync needed for its fetch.
-    // Inline rows never show it (Adjacent guards it implicitly -- an Inline
-    // leg's own markup branch never reaches the block-mode `else` that
-    // renders <RefsList> at all, this file's own header comment).
-    private List<RefsList.RefDescriptor> RefDescriptors => SelectRefs(Adjacent?.VerseGroups);
+    // ACCT-SET-MISMATCH-1 (fix round 2, owner bug report, verbatim: "when
+    // i see Jesus selects the twelve apostles after a night of prayer,
+    // MRK.3.13-19 shows below the button, but when i press it theres a
+    // parallel from LUKE. So the mapping between the passages below the
+    // button and what's actually there when you navigate doesnt work" --
+    // plus the amendment: "make sure that the verses being shown below the
+    // buttons are shown in the same order in which they appear once you
+    // traverse"). DIAGNOSIS: `Adjacent.VerseGroups` (the narrative/timeline
+    // wire shape, `to_scene_event` server-side -- the SAME derivation a
+    // map ARROW uses) is NOT guaranteed to carry every one of an event's
+    // own witnesses -- `rob_twelve_apostles` is a real, live-confirmed
+    // instance: TWO curated witnesses (LUK.6.12-16, MRK.3.13-19,
+    // data/curated/event-witnesses.toml), but the narrative endpoint's own
+    // VerseGroups carried only the Mark one. `EventWitnessesSection`'s own
+    // PARALLEL ACCOUNTS list (the landed frontier), by contrast, reads the
+    // FULL `EventDetail.Witnesses` (`GET /api/event/{id}`) -- two different
+    // derivations of "this event's own accounts," never reconciled,
+    // exactly what let the owner's own repro diverge. FIXED: eagerly (not
+    // dwell-gated -- the SAME EV-1-precedent identity guard, keyed on
+    // Adjacent?.Id, that OnParametersSetAsync below already establishes)
+    // fetches the adjacent event's own FULL EventDetail and derives refs
+    // from `.Witnesses` via `SelectRefsFromWitnesses` below -- the
+    // IDENTICAL `PassageBlockBuilder.BuildCoalescedBlock` coalescing
+    // `EventWitnessesSection` itself uses, in `Witnesses`' own SERVER
+    // ORDER (never re-sorted), so SET and ORDER both match the landed
+    // frontier by construction, not by convention. `_fetchedRefs` is null
+    // until that fetch resolves (or if it fails) -- `RefDescriptors` falls
+    // back to the narrower `Adjacent.VerseGroups`-derived `SelectRefs`
+    // during that window, upgrading to the FULL, correct set the instant
+    // the fetch lands (never a worse-than-before regression, even
+    // mid-flight).
+    private string? _lastAdjacentId;
+    private List<RefsList.RefDescriptor>? _fetchedRefs;
 
-    /// Pure: this event's own SET of account refs -- one <see cref="RefsList.RefDescriptor"/>
-    /// per <see cref="VerseGroup"/> (EVENT-ACCOUNTS-1, owner verbatim:
-    /// "events are keys that map to sets of Biblical accounts" -- ALL
-    /// groups, never just the first; cardinality 1 is the common,
-    /// perfectly valid single-witness case). Each descriptor's own Ref is
-    /// the group's HONEST full span -- computed from the group's own
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Inline || Adjacent?.Id == _lastAdjacentId)
+        {
+            return; // Inline rows never render RefsList at all (this file's own header comment); an unchanged Adjacent needs no re-fetch
+        }
+        var capturedId = Adjacent?.Id;
+        _lastAdjacentId = capturedId;
+        _fetchedRefs = null;
+        if (capturedId is null)
+        {
+            return;
+        }
+        try
+        {
+            var detail = await Atlas.Event(capturedId);
+            if (_lastAdjacentId != capturedId)
+            {
+                return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result
+            }
+            _fetchedRefs = SelectRefsFromWitnesses(detail.Witnesses);
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            // fail soft -- RefDescriptors below falls back to Adjacent.VerseGroups, same graceful-degradation policy every other lazy fetch in this app follows
+        }
+    }
+
+    private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? SelectRefs(Adjacent?.VerseGroups);
+
+    /// Pure: this event's own SET of account refs, computed FLATLY off
+    /// `Adjacent.VerseGroups` -- one <see cref="RefsList.RefDescriptor"/>
+    /// per <see cref="VerseGroup"/>, never coalesced across chapters
+    /// (`Adjacent.VerseGroups` carries no per-witness grouping to coalesce
+    /// WITHIN -- see <see cref="SelectRefsFromWitnesses"/> below for the
+    /// witness-aware, coalescing version). FIX ROUND 2 (ACCT-SET-MISMATCH-1):
+    /// demoted from the PRIMARY path to the FALLBACK -- `Adjacent.VerseGroups`
+    /// is not guaranteed to carry every one of an event's own witnesses
+    /// (this method's own doc comment used to claim "the set," which
+    /// turned out false; `RefDescriptors`'s own doc comment above has the
+    /// full diagnosis) -- used only until `OnParametersSetAsync`'s own
+    /// fetch resolves, or if it fails outright. Each descriptor's own Ref
+    /// is the group's HONEST full span -- computed from the group's own
     /// `Count` (the server's own TRUE total for that group, HOTFIX-4),
     /// never from `Verses[^1]` alone, so a server-capped delivery (the
     /// 20-verse-per-chapter cap) never silently NARROWS a ref's own
@@ -411,6 +472,37 @@ else
             var lastNum = firstNum + trueCount - 1;
             var last = lastNum <= firstNum ? first : $"{book}.{chapter}.{lastNum}";
             result.Add(new RefsList.RefDescriptor(PassageGrouping.SpanRef(first, last), new VerseNode(first)));
+        }
+        return result;
+    }
+
+    /// ACCT-SET-MISMATCH-1: the CORRECT, witness-aware refs derivation --
+    /// one <see cref="RefsList.RefDescriptor"/> PER WITNESS (never per
+    /// VerseGroup -- a witness spanning multiple chapters coalesces into
+    /// ONE ref, the IDENTICAL <see cref="PassageBlockBuilder.BuildCoalescedBlock"/>
+    /// logic <c>WitnessUnitsResolver</c> uses for the landed frontier's own
+    /// PARALLEL ACCOUNTS list, ACCT-COALESCE-1), in `witnesses`' own
+    /// SERVER ORDER (never re-sorted) -- so the SET and the ORDER shown
+    /// under a prior/following button are, by construction, the SAME ones
+    /// the landed frontier will show, never two independently-derived
+    /// opinions that could silently diverge. No verse TEXT is resolved
+    /// here (`PassageListVerse`'s own `Text` stays empty) -- this method
+    /// exists purely for the SPAN, matching this whole component's own
+    /// "no verse contents under prior/following" law (EVENT-ACCOUNTS-1).
+    /// A witness with zero verses (never real, defended against) is
+    /// skipped.
+    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitnessDto> witnesses)
+    {
+        var result = new List<RefsList.RefDescriptor>();
+        foreach (var w in witnesses)
+        {
+            var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
+            if (verses.Count == 0)
+            {
+                continue;
+            }
+            var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true));
+            result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
         }
         return result;
     }
@@ -599,6 +691,24 @@ else
 
     private void OnPointerEnter()
     {
+        // HOVER-KILL-1 (fix round 2, owner verbatim: "get rid of the box
+        // that comes up when hovering over prior/following event
+        // buttons"): an OWNER REVERSAL of UX-1's own hover-preview, scoped
+        // to BLOCK-mode arrows ONLY -- "these buttons" names the Chronology
+        // block's own PRIOR/FOLLOWING buttons, not the story-thread line's
+        // own Inline legs (a different surface, per the coordinator's own
+        // "don't rip the mechanism out of other surfaces that use it"
+        // instruction; PEEK-1/CHRONO-MERGE-1's own test, unchanged, keeps
+        // proving Inline's peek still works). The dwell/peek MACHINERY
+        // itself (DwellThenPeek, ScheduleDismiss, the whole
+        // PEEK-TRUNC-1 corridor) is left completely intact below -- only
+        // its OWN block-mode entry point is gated off here, never called
+        // for `!Inline`.
+        if (!Inline)
+        {
+            return;
+        }
+
         if (Adjacent is null)
         {
             return; // the empty-placeholder side (this narrative/direction has no neighbor) -- nothing to peek at

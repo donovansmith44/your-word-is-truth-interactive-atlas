@@ -37,4 +37,65 @@ public class YearNodeEventTimeTests
         Assert.Equal("Established c. 1003 BC", node.Title);
         Assert.Equal("Year", node.Kind);
     }
+
+    // Q-2 fix round 1 (review finding, Low): direct, isolated proof of
+    // YearNode.DedupeAndOrder -- the pure logic extracted from
+    // ResolveChronologyAsync so the ordering fix (When.FromYear, then
+    // ToYear, then label -- was label-only) is testable without a fetch.
+    private static SceneEvent Ev(string id, string label, int fromYear, int toYear) =>
+        new(id, label, new TimeRangeDto(fromYear, toYear), new List<VerseGroup>());
+
+    [Fact]
+    public void DedupeAndOrder_SortsByFromYearFirst_EvenWhenAllShareTheQueriedWindow()
+    {
+        // Both events legitimately appear in a "query year 31" window, but
+        // the FIRST genuinely started a year earlier -- must sort first,
+        // which pure alphabetical-by-label ("Zeta" < "Alpha" is false, but
+        // "Alpha" < "Zeta" would have hidden the real date signal either
+        // way) cannot honestly promise on its own.
+        var events = new[]
+        {
+            Ev("e2", "Zeta event", 31, 31),
+            Ev("e1", "Alpha event", 30, 31),
+        };
+
+        var ordered = YearNode.DedupeAndOrder(events);
+
+        Assert.Equal(new[] { "e1", "e2" }, ordered.Select(e => e.Id));
+    }
+
+    [Fact]
+    public void DedupeAndOrder_TiesOnIdenticalWhenFallBackToLabelOrdinal()
+    {
+        // The honest limit, disclosed: two events dated to the EXACT same
+        // window carry no wire signal finer than the year itself -- the
+        // label tiebreak is what remains, unchanged from before this fix.
+        var events = new[]
+        {
+            Ev("e2", "Zeta event", 31, 31),
+            Ev("e1", "Alpha event", 31, 31),
+        };
+
+        var ordered = YearNode.DedupeAndOrder(events);
+
+        Assert.Equal(new[] { "e1", "e2" }, ordered.Select(e => e.Id));
+    }
+
+    [Fact]
+    public void DedupeAndOrder_DedupesByIdAcrossMultiplePlaces_FirstOccurrenceWins()
+    {
+        // An event attested at more than one place in the same window
+        // (rare, real) is ONE row, never one per place -- server order
+        // (first occurrence) wins.
+        var events = new[]
+        {
+            Ev("e1", "Sojourn event", 31, 31),
+            Ev("e1", "Sojourn event", 31, 31), // same event, a second located place
+        };
+
+        var ordered = YearNode.DedupeAndOrder(events);
+
+        Assert.Single(ordered);
+        Assert.Equal("e1", ordered[0].Id);
+    }
 }

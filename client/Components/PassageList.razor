@@ -407,7 +407,29 @@
     private static string BookOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Book;
     private static int ChapterOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Chapter;
     private static int FocalFromOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Verse;
-    private static int FocalToOf(PassageBlockData b) => CanonRef.ParseVerse(b.LastVref).Verse;
+
+    // ACCT-COALESCE-1: a coalesced witness account (PassageSourceUnit.CoalesceAcrossChapters,
+    // Explore/PassageBlock.cs) can genuinely span multiple chapters (e.g.
+    // MAT.5.1-7.29) -- MiniReaderExpand below only ever fetches/highlights
+    // ONE chapter (Book/ChapterOf above, always the block's own FIRST
+    // chapter), so a LastVref belonging to a DIFFERENT chapter than
+    // ChapterOf's own would name a verse NUMBER that has no honest meaning
+    // against the fetched (first) chapter. Left unbounded (int.MaxValue)
+    // instead -- MiniReaderExpand's own focal check (`v.Verse >=
+    // FocalFromVerse && v.Verse <= FocalToVerse`) already clips to
+    // whichever verses the fetched chapter genuinely has, so this degrades
+    // HONESTLY to "highlighted from where the account begins through the
+    // end of the chapter it begins in" -- never an out-of-range verse
+    // number silently attributed to the wrong chapter. Every OTHER block
+    // (FirstVref/LastVref always same-chapter, by PassageGrouping.Groups's
+    // own construction) is unaffected -- this branch is unreachable for
+    // them.
+    private static int FocalToOf(PassageBlockData b)
+    {
+        var first = CanonRef.ParseVerse(b.FirstVref);
+        var last = CanonRef.ParseVerse(b.LastVref);
+        return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
+    }
 
     private Task Explore(PassageBlockData block)
     {

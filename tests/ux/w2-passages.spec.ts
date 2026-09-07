@@ -32,14 +32,20 @@ test('req 1b OWNER ACCEPTANCE CASE: the temple dedication expands to per-account
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();
   await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
-  // One PassageList block per witness's own contiguous chapter span, not
-  // one per book (PassageBlockBuilder splits a unit's own verses into MORE
-  // blocks on a chapter boundary, per batch-t2-report.md) -- 1 Kings 8 is
-  // one chapter (1 block); the 2 Chronicles witness spans three chapters,
-  // 5-7 (3 blocks): 4 total, confirming both accounts are genuinely
-  // reachable, each of Chronicles' own three chapters independently.
+  // ACCT-COALESCE-1 (fix round 2, owner bug report -- "in parallel
+  // accounts... accounts from the same book + chapter are listed. makes
+  // no sense"): SUPERSEDES this test's own former shape ("PassageBlockBuilder
+  // splits a unit's own verses into MORE blocks on a chapter boundary...
+  // 4 total") -- that WAS the bug. ONE PassageList block per WITNESS ROW
+  // now, never one per chapter it happens to span: 1 Kings 8 is one
+  // chapter (1 entry); the 2 Chronicles witness spans three chapters,
+  // 5-7, but is ONE curated witness row and coalesces into ONE entry --
+  // 2 total, confirming both accounts are genuinely reachable, each as
+  // its own single, honest account.
   const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
-  await expect(entries).toHaveCount(4);
+  await expect(entries).toHaveCount(2);
+  await expect(witnessesSection.getByTestId('event-witness-1KI.8.1-66')).toBeVisible();
+  await expect(witnessesSection.locator('[data-testid^="event-witness-2CH."]')).toHaveCount(1);
 
   // The reader heading itself also anchors correctly in 2 Chronicles 5
   // (its own, separate witness-book heading -- the SAME event, a second

@@ -166,10 +166,25 @@ public sealed class YearNode : IExplorable
     /// fact, not a filter this method applies itself). An event attested at
     /// more than one place in this same window (rare, but real) is
     /// deduped by id (first occurrence wins, server order) -- one row per
-    /// event, never one per place. Sorted by label (ordinal) for a stable,
-    /// deterministic order -- the wire carries no finer-grained
-    /// within-year sequencing than the year itself (every SceneEvent here
-    /// shares this SAME window by construction). Conditional presence:
+    /// event, never one per place.
+    ///
+    /// ORDERING (fix round 1, Q-2, review finding): sorted by each event's
+    /// own <c>When.FromYear</c>, then <c>When.ToYear</c>, THEN label
+    /// (ordinal) as the final, stable tiebreak -- genuinely chronological
+    /// wherever the wire CAN distinguish two events (an event dated "AD
+    /// 30-31" sorts before one dated "AD 31" alone, even though both
+    /// legitimately appear in this SAME year-31 window) -- the prior
+    /// revision sorted by label alone, which this fix round's own review
+    /// correctly flagged as reading stronger than "chronologically"
+    /// actually promised. HONEST LIMIT, disclosed rather than hidden: two
+    /// events sharing the IDENTICAL `When` range (the common case for a
+    /// single-year window, e.g. two events both dated exactly "AD 31")
+    /// carry no wire signal finer than the year itself to order them BY --
+    /// `SceneEvent` has no day/month/sequence field at all -- so those
+    /// still fall back to the alphabetical tiebreak, same as before. This
+    /// is a REAL improvement over pure-alphabetical, not a full fix to
+    /// true intra-year sequencing (that would need a server-side ordering
+    /// field, forbidden by the zero-server-changes mandate). Conditional presence:
     /// absent (no section at all) when this window's own scene has zero
     /// located, dated events -- an honestly rare case (the very event whose
     /// own Time: row was clicked is itself very likely IN this list,
@@ -187,12 +202,7 @@ public sealed class YearNode : IExplorable
             return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
         }
 
-        var events = scene.Places
-            .SelectMany(p => p.Events)
-            .GroupBy(e => e.Id)
-            .Select(g => g.First())
-            .OrderBy(e => e.Label, StringComparer.Ordinal)
-            .ToList();
+        var events = DedupeAndOrder(scene.Places.SelectMany(p => p.Events));
 
         if (events.Count == 0)
         {
@@ -221,4 +231,24 @@ public sealed class YearNode : IExplorable
         };
         return new PopoverSection("year-chronology", body);
     }
+
+    /// <summary>
+    /// Pure: dedupes an event-time window's own events by id (first
+    /// occurrence wins, server order -- an event attested at more than one
+    /// place in the SAME window is one row, never one per place) and
+    /// orders them by <c>When.FromYear</c>, then <c>When.ToYear</c>, then
+    /// label (ordinal) as the final tiebreak. See
+    /// <see cref="ResolveChronologyAsync"/>'s own doc comment for the full
+    /// "why this ordering, and its honest limit" story (fix round 1, Q-2).
+    /// Extracted as pure logic (no fetch) so it is directly, cheaply unit
+    /// testable -- client.Tests/YearNodeEventTimeTests.cs.
+    /// </summary>
+    public static List<SceneEvent> DedupeAndOrder(IEnumerable<SceneEvent> events) =>
+        events
+            .GroupBy(e => e.Id)
+            .Select(g => g.First())
+            .OrderBy(e => e.When.FromYear)
+            .ThenBy(e => e.When.ToYear)
+            .ThenBy(e => e.Label, StringComparer.Ordinal)
+            .ToList();
 }

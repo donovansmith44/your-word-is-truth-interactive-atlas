@@ -118,4 +118,71 @@ public class ArrowNavTests
         var groups = new List<VerseGroup> { new("MAT", 8, new List<string>(), 0) };
         Assert.Empty(ArrowNav.SelectRefs(groups));
     }
+
+    // ACCT-SET-MISMATCH-1 (fix round 2, owner bug report, verbatim: "when i
+    // see Jesus selects the twelve apostles after a night of prayer,
+    // MRK.3.13-19 shows below the button, but when i press it theres a
+    // parallel from LUKE. So the mapping between the passages below the
+    // button and what's actually there when you navigate doesnt work"):
+    // direct, isolated proof of ArrowNav.SelectRefsFromWitnesses -- the
+    // CORRECT, witness-aware derivation (fixes the mismatch: refs now come
+    // from the SAME EventDetail.Witnesses the landed frontier's own
+    // PARALLEL ACCOUNTS list reads, not the narrower Adjacent.VerseGroups).
+    // Fixture mirrors the REAL rob_twelve_apostles data
+    // (data/curated/event-witnesses.toml): a LUK witness (LUK.6.12-16) and
+    // a MRK witness (MRK.3.13-19).
+    [Fact]
+    public void SelectRefsFromWitnesses_OneRefPerWitness_InServerOrder()
+    {
+        var witnesses = new List<EventWitnessDto>
+        {
+            new("LUK", new List<VerseGroup> { Group("LUK", 6, 5, "LUK.6.12", "LUK.6.13", "LUK.6.14", "LUK.6.15", "LUK.6.16") }),
+            new("MRK", new List<VerseGroup> { Group("MRK", 3, 7, "MRK.3.13", "MRK.3.14", "MRK.3.15", "MRK.3.16", "MRK.3.17", "MRK.3.18", "MRK.3.19") }),
+        };
+
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+
+        Assert.Equal(2, refs.Count);
+        Assert.Equal("LUK.6.12-16", refs[0].Ref); // LUK first -- the SAME server order `witnesses` was given in, never re-sorted
+        Assert.Equal("LUK.6.12", Assert.IsType<VerseNode>(refs[0].Target).Title);
+        Assert.Equal("MRK.3.13-19", refs[1].Ref);
+        Assert.Equal("MRK.3.13", Assert.IsType<VerseNode>(refs[1].Target).Title);
+    }
+
+    [Fact]
+    public void SelectRefsFromWitnesses_CoalescesAMultiChapterWitness_LikeTheLandedFrontierDoes()
+    {
+        // Proves this derivation is the IDENTICAL coalescing
+        // WitnessUnitsResolver uses (ACCT-COALESCE-1) -- a witness spanning
+        // multiple chapters becomes ONE ref, never one per chapter.
+        var witnesses = new List<EventWitnessDto>
+        {
+            new("MAT", new List<VerseGroup>
+            {
+                Group("MAT", 5, 48, Enumerable.Range(1, 48).Select(n => $"MAT.5.{n}").ToArray()),
+                Group("MAT", 6, 34, Enumerable.Range(1, 34).Select(n => $"MAT.6.{n}").ToArray()),
+                Group("MAT", 7, 29, Enumerable.Range(1, 29).Select(n => $"MAT.7.{n}").ToArray()),
+            }),
+        };
+
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+
+        Assert.Single(refs);
+        Assert.Equal("MAT.5.1-7.29", refs[0].Ref);
+    }
+
+    [Fact]
+    public void SelectRefsFromWitnesses_SkipsAWitnessWithNoVerses()
+    {
+        var witnesses = new List<EventWitnessDto>
+        {
+            new("MAT", new List<VerseGroup>()),
+            new("LUK", new List<VerseGroup> { Group("LUK", 6, 1, "LUK.6.1") }),
+        };
+
+        var refs = ArrowNav.SelectRefsFromWitnesses(witnesses);
+
+        Assert.Single(refs);
+        Assert.Equal("LUK.6.1", refs[0].Ref);
+    }
 }

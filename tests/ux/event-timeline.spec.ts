@@ -428,7 +428,7 @@ test('AFFORDANCE-1: a dated event\'s own reader heading and verse EVENT-membersh
 // to timeline/Chronology traversal -- untouched by TRAV-1.
 // ---------------------------------------------------------------------
 
-test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more affordance and it opens the full chapter (RED before this batch: nothing signaled); an under-cap witness group shows the ordinary wording (conditional presence)', async ({ page }) => {
+test('TRUNC-1/ACCT-COALESCE-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more affordance and opens the full chapter; the 2CH witness (fix round 1) coalesces its own 3 chapters into ONE account, disclosing truncation summed across every chapter it spans', async ({ page }) => {
   const detail = await api.event('1ki_temple_dedication');
   const kingsWitness = detail.witnesses.find((w: any) => w.book === '1KI');
   const chroniclesWitness = detail.witnesses.find((w: any) => w.book === '2CH');
@@ -483,64 +483,83 @@ test('TRUNC-1: the temple-dedication popover\'s 1KI.8 witness shows the +46-more
   await expect(page.getByTestId(/^popover-reader-verse-/).first()).toBeVisible();
   await expect(page.getByTestId(/^popover-reader-verse-/)).toHaveCount(chapter.verses.length);
 
-  // Pass 2: reader on 1 Kings -- 2 Chronicles 5's own witness entry is now
-  // the DIFFERENT chapter, so ITS OWN affordance is testable instead (an
-  // UNDER-cap group, only 13 of the witness's own verses in that chapter --
-  // well under 20 -- shows the ordinary wording, no truncation affordance
-  // at all, conditional presence -- its own deterministic span is
-  // 2CH.5.2-14, 13 verses from the witness's own start, none capped).
-  const chroniclesCh5 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 5);
-  expect(chroniclesCh5.count, '2 Chronicles 5 (within this witness) is under the cap').toBeLessThan(20);
-  expect(chroniclesCh5.count).toBe(chroniclesCh5.verses.length);
+  // Pass 2: reader on 1 Kings -- the 2 Chronicles witness entry is now the
+  // DIFFERENT chapter, so ITS OWN affordance is testable instead.
+  //
+  // ACCT-COALESCE-1 (fix round 1, owner bug report -- "in parallel
+  // accounts... accounts from the same book + chapter are listed. makes
+  // no sense"): this witness's own 3 VerseGroups (2CH.5/6/7, ONE curated
+  // witness row) now COALESCE into a single account, span "2CH.5.2-7.10"
+  // -- never 3 separate same-book entries. Truncation is summed across
+  // EVERY distinct chapter the coalesced block spans (chapter 5: 13
+  // verses, under cap; chapter 6: 42 real, capped at 20, 22 missing;
+  // chapter 7: 10 verses, under cap) -- 22 total, disclosed on the ONE
+  // entry's own expand affordance (PassageBlockBuilder.BuildCoalescedBlock's
+  // own "sum across every group" math, mirroring ArrowNav.ComputeTruncatedBy).
+  const ch5 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 5);
+  const ch6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
+  const ch7 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 7);
+  expect(ch5.count, '2 Chronicles 5 (within this witness) is under the cap').toBeLessThan(20);
+  expect(ch6.count, '2 Chronicles 6 is genuinely over the cap -- the SAME honest signal fires for a MIDDLE chapter of the coalesced span, not just the owner\'s own named 1 Kings case').toBeGreaterThan(20);
+  expect(ch7.count, '2 Chronicles 7 (within this witness) is under the cap').toBeLessThan(20);
+  const coalescedMissing = (ch5.count - ch5.verses.length) + (ch6.count - ch6.verses.length) + (ch7.count - ch7.verses.length);
+  expect(coalescedMissing).toBe(ch6.count - ch6.verses.length); // only ch6 contributes, but summed generically, not hardcoded to "only ch6 matters"
 
   await page.goto(`/read/${kingsV.book}/${kingsV.chapter}`);
   await page.getByTestId(`verse-line-${kingsV.verse}`).focus();
   await page.keyboard.press('Enter');
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
-  const chroniclesExpand = page.getByTestId('popover-verse-expand-event-witness-2CH.5.2-14');
-  await expect(chroniclesExpand).toHaveAttribute('title', 'Read the whole chapter');
 
-  // 2 Chronicles 6 (fully inside this same witness's own 5:2-7:10 span) is
-  // ALSO over the cap (42 true verses) -- the SAME honest signal fires a
-  // second time in this one popover, not just for the owner's own named
-  // 1 Kings case. O2: no more `data-truncated` marker to count directly --
-  // a truncated entry's own title CONTAINS "more — read the chapter"
-  // (untruncated ones read exactly "Read the whole chapter", no "more"
-  // substring), the same distinguishing signal one layer over. M-D4 fix
-  // round 1, P2: `.popover-reveal-link` is the new shared class every
-  // more/all/less button in the redesigned RevealControls.razor carries
-  // (the old `.popover-reveal-more` arrow-glyph class, and its own
-  // always-paired `.popover-reveal-more-all` sibling this comment used to
-  // have to deliberately exclude, are both gone) -- no double-counting
-  // risk to guard against here anymore, since MiniReaderExpand's own
-  // binary Default=0/Total=1/Step=1 case never renders a same-titled
-  // "all" sibling at all (RevealControls.razor's own ShowAll rule omits
-  // "all" whenever it would coincide with "more" -- see that file's own
-  // header comment), so a single class selector is now sufficient.
-  const chroniclesCh6 = chroniclesWitness.verse_groups.find((g: any) => g.chapter === 6);
-  const chroniclesCh6Missing = chroniclesCh6.count - chroniclesCh6.verses.length;
-  expect(chroniclesCh6Missing).toBeGreaterThan(0);
-  await expect(page.locator('.popover-reveal-link[title*="more — read the chapter"]')).toHaveCount(2);
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(2); // ONE per witness ROW (1KI + 2CH), never one per chapter
+
+  // Resolve the coalesced entry's own real span directly off the DOM
+  // (never reconstruct PassageGrouping.SpanRef's own formatting logic by
+  // hand in the test -- popover-sections.spec.ts's own established
+  // discipline) rather than guessing the testid.
+  const allTestIds = await entries.evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+  const chroniclesEntryTestId = allTestIds.find((id) => id?.startsWith('event-witness-2CH.'));
+  expect(chroniclesEntryTestId, 'exactly one coalesced 2CH account entry must exist').toBeTruthy();
+  const chroniclesEntry = witnessesSection.getByTestId(chroniclesEntryTestId!);
+  const chroniclesExpandBtn = chroniclesEntry.getByTestId(`popover-verse-expand-${chroniclesEntryTestId}`);
+  await expect(chroniclesExpandBtn).toHaveAttribute('title', `+${coalescedMissing} more — read the chapter`);
+
+  // Expanding opens the coalesced entry's own FIRST chapter (2 Chronicles
+  // 5, MiniReaderExpand's own one-chapter-at-a-time limit -- PassageList.razor's
+  // own FocalToOf comment has the "why" story) in full.
+  await chroniclesExpandBtn.click();
+  const chapter5 = await api.chapter('2CH.5');
+  await expect(chroniclesEntry.locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(chapter5.verses.length);
 });
 
 // ---------------------------------------------------------------------
-// PEEK-1 (TRAV-1, controller decision 4, owner verbatim: "also over the
-// narrative/event arrows, you'll get a quick hover box of the verses if
-// you hover over the arrows (not super sensitive, so some delay so that
-// you're not accidentally getting hover boxes all the time)"): dwell-hover
-// verse peek on traversal arrows, BOTH the narrative nav and the
-// Chronology block (CHRONO-1), via the shared `Components.ArrowNav`.
-// RESPEC'D BY PEEK-TRUNC-1 (below, CONTRACT.md's own note has the full
-// story): the peek's own CONTENT (one verse + reveal controls, not an
-// unbounded PassageList) and DISMISS grammar (a short grace-period
-// corridor, not an instant hide) both changed; the two tests immediately
-// below still pin the UNCHANGED dwell-IN half of this contract (tickle
-// test, DwellTiming.PeekDelayMs, click always commits) and are updated
-// only where PEEK-TRUNC-1 genuinely changed what they must assert.
+// HOVER-KILL-1 (fix round 2, owner verbatim: "get rid of the box that
+// comes up when hovering over prior/following event buttons"): an OWNER
+// REVERSAL of UX-1/PEEK-1's own dwell-hover verse peek, scoped to the
+// Chronology block's own BLOCK-mode PRIOR/FOLLOWING buttons specifically
+// -- "these buttons" names them, not the story-thread line's own Inline
+// legs (a DIFFERENT surface the SAME peek mechanism still lives on,
+// untouched -- see "PEEK-1/CHRONO-MERGE-1," below, the surviving proof
+// the underlying mechanism is not removed, only gated off block-mode's
+// own entry point, `Components.ArrowNav.OnPointerEnter`). RETIRED WHOLE
+// (not rewritten, per this house's own CHRONO-MERGE-1 retirement
+// precedent -- their own fixture, a block-mode arrow, can no longer ever
+// trigger a peek, so PEEK-2 through PEEK-5's own detailed content/
+// placement/truncation assertions and both EVENT-HOVER-HATCH-1 close/
+// escape tests have nothing left to exercise on this surface; the
+// mechanism they proved is unchanged code, still real, just no longer
+// reachable from a block-mode arrow): the former `PEEK-1`,
+// `EVENT-HOVER-HATCH-1` (x2), `PEEK-2`, `PEEK-3`, `PEEK-3b`, `PEEK-4`,
+// `PEEK-5` tests (all targeting `event-chrono-{prior,following}-event-global`)
+// are gone; `TITLE-2` (below) is TRIMMED, not retired -- its own two-line-
+// clamp/grid-alignment assertions are unrelated to the peek and stay
+// live, only its trailing "peek header carries the full name" paragraph
+// is removed.
 // ---------------------------------------------------------------------
 
-test('PEEK-1: a quick pointer pass over a Chronology arrow produces NO peek; a dwell past the delay reveals the target event\'s own verse text; pointer-leave (eventually) dismisses it; click still commits the traversal', async ({ page }) => {
+test('HOVER-KILL-1: hovering a Chronology block PRIOR/FOLLOWING button never shows a peek, however long the dwell; click still commits the traversal', async ({ page }) => {
   const positions = await api.narrativeEventPositions('gen_binding_isaac');
   expect(positions.timeline.following, 'gen_binding_isaac must have a real FOLLOWING target for this test to mean anything').toBeTruthy();
   const followingDetail = await api.event(positions.timeline.following.id);
@@ -550,116 +569,25 @@ test('PEEK-1: a quick pointer pass over a Chronology arrow produces NO peek; a d
   await expect(arrow).toBeVisible();
   const peek = page.getByTestId('event-chrono-following-event-global-peek');
 
-  // The tickle test: a quick, un-lingering hover must show NOTHING --
-  // asserted immediately, no wait, matching the owner's own "not
-  // accidentally getting hover boxes all the time."
+  // A quick, un-lingering hover shows nothing (unchanged baseline).
   await arrow.hover({ force: true });
   await expect(peek).toHaveCount(0);
 
-  // Move away immediately (before the dwell delay could ever elapse) --
-  // the arrow itself must still be perfectly usable (this hover produced
-  // no side effect that could linger and interfere with the dwell test
-  // below).
-  await page.mouse.move(2, 2);
+  // A genuine, SUSTAINED dwell -- comfortably past DwellTiming.PeekDelayMs
+  // (375ms), the exact window PEEK-1 used to require for the box to
+  // appear -- must STILL show nothing: the owner's own reversal, proven
+  // by waiting through the window that used to trigger it and finding no
+  // peek regardless.
+  await page.waitForTimeout(600);
   await expect(peek).toHaveCount(0);
 
-  // A genuine DWELL: hover again and wait comfortably past
-  // DwellTiming.PeekDelayMs (375ms) -- the peek must appear, carrying the
-  // target event's own real verse text (never the arrow's own name-only
-  // label a second time -- P4's own "no verse text in the arrow itself"
-  // law stays true; the text lives ONLY in this peek).
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-  // Ground truth for the peek's own content is the WIRE's own
-  // `timeline.following.verse_groups` (exactly what ArrowNav resolves via
-  // VerseTextResolver.ResolveGroupsAsync) -- never re-derived from
-  // `witnesses` (a DIFFERENT, per-witness breakdown that need not start at
-  // the identical verse). PEEK-TRUNC-1: the peek shows exactly ONE verse
-  // by default -- the FIRST one -- so this is still exactly what must
-  // render, unconditionally (PEEK-2, below, covers the multi-verse
-  // more/all/less mechanics this single-verse case never exercises).
-  const firstVref = positions.timeline.following.verse_groups[0].verses[0];
-  const chapterOut = await api.chapter(firstVref.split('.').slice(0, 2).join('.'));
-  const firstVerseNum = Number(firstVref.split('.')[2]);
-  const firstVerseText = chapterOut.verses.find((v: any) => v.verse === firstVerseNum).text;
-  await expect(peek).toContainText(firstVerseText);
-  // PEEK-TRUNC-1: the peek header is the target's own FULL title too.
-  await expect(page.getByTestId('event-chrono-following-event-global-peek-title')).toHaveText(followingDetail.title);
-
-  // Decision 4/5's own "NO x needed" (a plain sustained departure already
-  // dismisses it, proven a few lines below) never used the SHARED
-  // popover-close testid to begin with -- that stays true. Batch UX-1
-  // (EVENT-HOVER-HATCH-1) adds a DEDICATED close affordance instead (its
-  // own testid, `{prefix}-peek-close`, never popover-close) -- see that
-  // ticket's own test below for the escape-hatch coverage itself.
-  await expect(peek.getByTestId('popover-close')).toHaveCount(0);
-
-  // PEEK-TRUNC-1: pointer-leave no longer dismisses on the SAME tick --
-  // a short grace-period corridor (1000ms) now tolerates a genuine
-  // transit into the box (PEEK-4 covers that side explicitly) -- but a
-  // real, sustained departure like this one (mouse parked at a point far
-  // from both the arrow and the box, never returning) still dismisses the
-  // whole peek on its own once that window elapses; toHaveCount(0)'s own
-  // auto-retry (Playwright's default 5s) comfortably covers the wait.
-  await page.mouse.move(2, 2);
-  await expect(peek).toHaveCount(0);
-
-  // Click still commits exactly as before, completely independent of
-  // whatever dwell state the arrow was last in.
+  // Click still commits exactly as before -- HOVER-KILL-1 touches only
+  // the hover affordance, never the click one.
   await arrow.click();
   await expect(page.getByTestId('popover-title')).toHaveText(followingDetail.title);
 });
 
-// ---------------------------------------------------------------------
-// EVENT-HOVER-HATCH-1 (owner order, verbatim: "when I click an event and
-// see the chronological forward/backward stuff, and hover over the
-// buttons, the displayed window has no escape hatch"). A close
-// affordance, reachable by click AND by Escape, closes the peek WITHOUT
-// waiting for the ordinary pointer-leave grace period.
-// ---------------------------------------------------------------------
-
-test('EVENT-HOVER-HATCH-1: the dwell-peek carries a close affordance -- click closes it immediately, without waiting for pointer-leave', async ({ page }) => {
-  await openEventPopover(page, 'gen_binding_isaac');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  const closeBtn = peek.getByTestId('event-chrono-following-event-global-peek-close');
-  await expect(closeBtn).toBeVisible();
-  await expect(closeBtn).toHaveAttribute('title', 'Close preview');
-
-  await closeBtn.click();
-  // Closes IMMEDIATELY -- no toHaveCount(0)'s own default 5s auto-retry
-  // needed the way a plain departure requires (PEEK-1's own grace-period
-  // wait, above); a tight explicit timeout proves this is instant, not
-  // merely eventual.
-  await expect(peek).toHaveCount(0, { timeout: 200 });
-
-  // The pointer never actually left the arrow -- re-hovering after a
-  // click-close still starts a fresh dwell correctly (the close affordance
-  // didn't leave the timer machinery in a broken state).
-  await page.mouse.move(2, 2);
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-});
-
-test('EVENT-HOVER-HATCH-1: Escape closes the peek from the keyboard too', async ({ page }) => {
-  await openEventPopover(page, 'gen_binding_isaac');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  const closeBtn = peek.getByTestId('event-chrono-following-event-global-peek-close');
-  await closeBtn.focus();
-  await page.keyboard.press('Escape');
-  await expect(peek).toHaveCount(0, { timeout: 200 });
-});
-
-test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the story-thread line\'s own INLINE leg (df_adullam, David\'s Flight from Saul) -- one shared component, not a parallel implementation', async ({ page }) => {
+test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the story-thread line\'s own INLINE leg (df_adullam, David\'s Flight from Saul) -- one shared component, not a parallel implementation, HOVER-KILL-1\'s own surviving proof the mechanism is not removed', async ({ page }) => {
   // RESPEC'D from the pre-CHRONO-MERGE-1 "narrative-nav arrow" fixture
   // this test used (pw_gethsemane/passion-week) -- that whole affordance
   // is retired; the SAME "second consumer of the shared peek" proof this
@@ -691,222 +619,11 @@ test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the 
   await expect(peek).toHaveCount(0);
 });
 
-// ---------------------------------------------------------------------
-// PEEK-TRUNC-1 (owner defect report, 2026-08-24, verbatim: "menus
-// appearing on hover from arrow hover are getting cut off. needs to be
-// truncated to an expandable menu limit one verse."): CONTRACT.md's own
-// PEEK-TRUNC-1 note has the full, binding contract this batch adds on top
-// of PEEK-1 (above) -- content (one verse + house reveal controls),
-// dismiss (a grace-period corridor), and placement (viewport-aware
-// above/below flip).
-// ---------------------------------------------------------------------
-
-test('PEEK-2: dwelling an arrow whose target resolves multiple verses shows exactly one by default plus more(n)/all(N); more/less operate inside the box; a real departure still dismisses the whole peek', async ({ page }) => {
-  // gen_death_of_sarah (GEN.23, 20 verses, short-titled) -- gen_binding_isaac's
-  // own GLOBAL-timeline FOLLOWING. CHRONO-MERGE-1: PEEK-4's own header
-  // comment (below) has the full "why this fixture, not rob_dedication_feast"
-  // story -- that former fixture's 77-character title left its own peek
-  // content taller than the room the Chronology block's new (registration-
-  // order-moved) position gives a "following" arrow here, a real,
-  // live-caught fragility this test inherited from a shared root cause,
-  // not two unrelated coincidences. Total is derived from the LIVE wire
-  // (never hardcoded), the SAME `verse_groups` shape PEEK-1's own test
-  // above reads its ground truth from.
-  const positions = await api.narrativeEventPositions('gen_binding_isaac');
-  expect(positions.timeline.following?.id, 'gen_binding_isaac must have a real global-timeline FOLLOWING for this test to mean anything').toBe('gen_death_of_sarah');
-  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
-  expect(total, 'this test needs a target with enough verses for more/all/less to mean anything').toBeGreaterThan(3);
-
-  await openEventPopover(page, 'gen_binding_isaac');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  // Exactly ONE verse by default -- never the old unbounded list.
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(1);
-  const moreLink = page.getByTestId('event-chrono-following-event-global-peek-more');
-  const allLink = page.getByTestId('event-chrono-following-event-global-peek-more-all');
-  await expect(moreLink).toHaveText('more (2)');
-  await expect(allLink).toHaveText(`all (${total})`);
-
-  // `more` operates INSIDE the box -- the peek must not itself vanish as
-  // a side effect of this click (a real, live-caught risk class: an
-  // earlier design might treat any click near the peek as "the pointer
-  // did something, tear it down").
-  await moreLink.click({ force: true });
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(3); // Default 1 + Step 2, RevealControls' own arithmetic
-  await expect(peek, 'clicking more inside the box must not itself dismiss the peek').toBeVisible();
-
-  // `less` is the SAME house one-op-undo mechanic every other
-  // RevealControls consumer gets -- steps back toward (never below) the
-  // one-verse floor.
-  const lessLink = page.getByTestId('event-chrono-following-event-global-peek-collapse');
-  await lessLink.click({ force: true });
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(1);
-
-  // A real, sustained departure (away from both the arrow and the box)
-  // still dismisses the WHOLE peek -- the grace corridor (PEEK-4) only
-  // ever tolerates a transit INTO the box, never a genuine goodbye.
-  await page.mouse.move(2, 2);
-  await expect(peek).toHaveCount(0);
-});
-
-test('PEEK-3: dwelling an arrow near the bottom viewport edge never clips the peek -- its own rendered bounding rect stays fully inside the viewport', async ({ page }) => {
-  // A short viewport (real device proportions, just not much vertical
-  // room) plus scrolling the popover's own internal overflow-y:auto
-  // content so the arrow sits at the very bottom of what's scrolled into
-  // view -- deterministically recreates "the arrow is near the bottom
-  // screen edge" regardless of exactly how tall this event's own popover
-  // content happens to be, or exactly where in section-registry order the
-  // Chronology block falls.
-  await page.setViewportSize({ width: 1280, height: 480 });
-
-  await openEventPopover(page, 'gen_binding_isaac');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  await arrow.evaluate((el: HTMLElement) => el.scrollIntoView({ block: 'end' }));
-  await expect(arrow).toBeVisible();
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  // The very first render of a fresh peek lands at its un-measured
-  // default (below, unbounded -- app.css's own `var(--peek-max-height,
-  // none)` fallback, ArrowNav.razor's own header comment) for one
-  // instant, THEN OnAfterRenderAsync's own reader.js measurement lands
-  // and (if needed) flips/caps it -- poll rather than assert once,
-  // matching the SAME "measurement is a real async round trip" allowance
-  // ExplorerPopover's own verse-anchoring tests already need.
-  await expect.poll(async () => {
-    const box = await peek.boundingBox();
-    return box === null ? null : box.y >= 0 && box.y + box.height <= 480;
-  }, { timeout: 2000 }).toBe(true);
-
-  const box = await peek.boundingBox();
-  expect(box, 'the peek must have a real, measurable box').not.toBeNull();
-  expect(box!.y, 'the peek\'s own top edge must never be clipped above the viewport').toBeGreaterThanOrEqual(0);
-  expect(box!.y + box!.height, 'the peek\'s own bottom edge must never be clipped below the viewport').toBeLessThanOrEqual(480);
-});
-
-test('PEEK-3b (fix round 1, F1): expanding a many-verse peek via `all` stays fully contained within the POPOVER, not just the viewport -- the internal scrollbar engages instead of spilling past the popover\'s own edge', async ({ page }) => {
-  // F1's own real bug (reviewer live-repro): the default one-verse peek
-  // was fine, but the peek's true clipping boundary is the enclosing
-  // .popover (position:fixed, its own max-height:calc(100vh - 4rem) --
-  // routinely SHORTER than the viewport even at a perfectly ordinary
-  // window size), not the viewport itself -- budgeting against
-  // window.innerHeight silently over-estimated real room, so an EXPANDED
-  // peek (more/all clicked after the initial flip/cap decision already
-  // landed) could spill past the popover's own bottom edge with its own
-  // internal overflow-y:auto scrollbar never engaging (its budget had
-  // come from the wrong frame). PEEK-3 above only ever exercises the
-  // one-verse default, which was never tall enough to expose this -- this
-  // test is the one that actually reaches the reviewer's own repro path.
-  // CHRONO-MERGE-1: this fixture's own narrative and timeline positions
-  // are byte-identical live -- the Chronology block's own global arrow
-  // reaches the identical target the retired narrative-nav arrow used to.
-  const positions = await api.narrativeEventPositions('rob_crippled_woman_sabbath');
-  expect(positions.timeline.following?.id, 'rob_crippled_woman_sabbath must have a real global-timeline FOLLOWING for this test to mean anything').toBe('rob_dedication_feast');
-  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
-
-  // Same short-viewport-plus-scroll-to-bottom technique PEEK-3 already
-  // establishes -- deterministically minimizes the room available below
-  // the arrow, regardless of exactly how tall this event's own popover
-  // content happens to be.
-  await page.setViewportSize({ width: 1280, height: 480 });
-
-  await openEventPopover(page, 'rob_crippled_woman_sabbath');
-  const popover = page.getByTestId('popover');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  await arrow.evaluate((el: HTMLElement) => el.scrollIntoView({ block: 'end' }));
-  await expect(arrow).toBeVisible();
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  const allLink = page.getByTestId('event-chrono-following-event-global-peek-more-all');
-  await allLink.click({ force: true });
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(total);
-
-  // Poll rather than assert once -- PEEK-3's own comment on why a fresh
-  // measurement is a real async round trip applies identically here.
-  await expect.poll(async () => {
-    const peekBox = await peek.boundingBox();
-    const popoverBox = await popover.boundingBox();
-    if (!peekBox || !popoverBox) {
-      return null;
-    }
-    return peekBox.y >= popoverBox.y && peekBox.y + peekBox.height <= popoverBox.y + popoverBox.height;
-  }, { timeout: 2000 }).toBe(true);
-
-  const peekBox = await peek.boundingBox();
-  const popoverBox = await popover.boundingBox();
-  expect(peekBox, 'the peek must have a real, measurable box').not.toBeNull();
-  expect(popoverBox, 'the popover must have a real, measurable box').not.toBeNull();
-  expect(peekBox!.y, 'the peek\'s own top edge must never be clipped above the popover').toBeGreaterThanOrEqual(popoverBox!.y);
-  expect(peekBox!.y + peekBox!.height, 'the peek\'s own bottom edge must never spill past the popover\'s own bottom edge').toBeLessThanOrEqual(popoverBox!.y + popoverBox!.height);
-
-  // "Never an off-screen spill" degrades to a REAL internal scroll, not
-  // merely "happened to fit" -- the expanded content must have actually
-  // needed it.
-  const scrollEngaged = await peek.evaluate((el) => el.scrollHeight > el.clientHeight);
-  expect(scrollEngaged, `expanding to all ${total} verses must overflow the available room and engage the peek's own internal scrollbar`).toBe(true);
-});
-
-test('PEEK-4: moving the pointer from the arrow, across the gap, into the box does not dismiss the peek -- the reveal control inside remains genuinely clickable', async ({ page }) => {
-  // gen_binding_isaac (CHRONO-MERGE-1: this fixture's own registration-order
-  // move -- Chronology is now the FIRST section, EVENT-1's own doc comment
-  // has the story -- shortens the room available below a "following" arrow
-  // for events with a long-titled target and/or heavy preceding-section
-  // content; rob_crippled_woman_sabbath -> rob_dedication_feast, this
-  // test's own former fixture, has BOTH a 77-character title AND real
-  // witnesses ahead of it in the popover, which together left the peek's
-  // own default one-verse content taller than the room this specific
-  // event now gets, so its own `more` control fell below the peek's own
-  // internal-scroll fold -- genuinely correct per F1's own "never spill,
-  // degrade to internal scroll" contract, just not what THIS test, whose
-  // own raw mouse gestures never scroll (unlike `.click()`, PEEK-2's own
-  // technique), can reach without first scrolling. gen_binding_isaac's own
-  // FOLLOWING (gen_death_of_sarah, short-titled, no preceding witnesses)
-  // comfortably fits instead -- confirmed live, not merely asserted.
-  const positions = await api.narrativeEventPositions('gen_binding_isaac');
-  const total: number = positions.timeline.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
-  expect(total, 'this test needs a target with enough verses for more/all/less to mean anything').toBeGreaterThan(3);
-
-  await openEventPopover(page, 'gen_binding_isaac');
-  const arrow = page.getByTestId('event-chrono-following-event-global');
-  const peek = page.getByTestId('event-chrono-following-event-global-peek');
-  const moreBtn = page.getByTestId('event-chrono-following-event-global-peek-more');
-
-  const arrowBox = await arrow.boundingBox();
-  expect(arrowBox, 'the arrow must have a real box for this gesture to mean anything').not.toBeNull();
-  await page.mouse.move(arrowBox!.x + arrowBox!.width / 2, arrowBox!.y + arrowBox!.height / 2);
-  await expect(peek).toBeVisible({ timeout: 2000 });
-  await expect(moreBtn, 'the target resolves well over one verse -- more must be offered').toBeVisible();
-
-  const moreBox = await moreBtn.boundingBox();
-  expect(moreBox).not.toBeNull();
-
-  // A real, MULTI-STEP transit -- never a teleport -- from the arrow's
-  // own center, across the small visual gap between the wrapper and the
-  // peek (app.css's own .4rem margin), to the "more" control itself. If
-  // PEEK-TRUNC-1's own grace-period corridor were missing or broken, the
-  // transient pointerleave the wrapper fires mid-gap (ArrowNav.razor's
-  // own header comment has the full "why a transient leave/enter pair
-  // fires here" story) would hide the whole peek partway through this
-  // move, before it ever reaches the button.
-  await page.mouse.move(moreBox!.x + moreBox!.width / 2, moreBox!.y + moreBox!.height / 2, { steps: 12 });
-  await expect(peek, 'the peek must survive the transit through the gap').toBeVisible();
-
-  // Genuinely clickable, not just "still technically in the DOM" --
-  // proves this is a real, interactive arrival.
-  await page.mouse.down();
-  await page.mouse.up();
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(3); // Default 1 + Step 2
-  await expect(peek, 'clicking more inside the box must not itself dismiss the peek').toBeVisible();
-});
+// PEEK-TRUNC-1's own former PEEK-2/PEEK-3/PEEK-3b/PEEK-4 tests (content/
+// placement/transit-corridor behavior on a BLOCK-mode arrow's own peek)
+// are RETIRED WHOLE by HOVER-KILL-1, above -- their own fixture can no
+// longer ever trigger a peek at all. See that section's own header
+// comment for the full retirement citation.
 
 // ---------------------------------------------------------------------
 // TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
@@ -915,7 +632,7 @@ test('PEEK-4: moving the pointer from the arrow, across the gap, into the box do
 // CONTRACT.md's own TITLE-WRAP-1 note has the full, binding contract.
 // ---------------------------------------------------------------------
 
-test('TITLE-2: a long event name renders via the two-line clamp (never a single-line ellipsis) and the fixed grid holds; the peek header always carries the full name', async ({ page }) => {
+test('TITLE-2: a long event name renders via the two-line clamp (never a single-line ellipsis) and the fixed grid holds', async ({ page }) => {
   // rob_elijah_puzzle's own PRIOR (rob_transfiguration, "The
   // Transfiguration", 19 chars) and FOLLOWING (rob_demoniac_boy, "Jesus
   // heals a demoniac boy the disciples could not heal", 57 chars) are real
@@ -971,65 +688,17 @@ test('TITLE-2: a long event name renders via the two-line clamp (never a single-
   expect(longRoleBox).not.toBeNull();
   expect(Math.abs(shortRoleBox!.y - longRoleBox!.y), 'the PRIOR/FOLLOWING role captions must not shift out of alignment').toBeLessThanOrEqual(3);
 
-  // The peek header always carries the FULL name -- "the complete name is
-  // one dwell away, always" -- dwelling the LONG-named arrow specifically,
-  // since that is the case a bare button label could never fully show.
-  const longArrow = page.getByTestId('event-chrono-following-event-global');
-  await longArrow.hover({ force: true });
-  const peekTitle = page.getByTestId('event-chrono-following-event-global-peek-title');
-  await expect(peekTitle).toBeVisible({ timeout: 2000 });
-  await expect(peekTitle).toHaveText(longLabel);
+  // HOVER-KILL-1 (fix round 2): this test's own former trailing paragraph
+  // ("the peek header always carries the full name," dwelling the
+  // long-named arrow) is REMOVED, not merely modified -- a block-mode
+  // arrow's own peek is gone entirely now; see that section's own header
+  // comment. Everything above (the clamp/grid-alignment contract itself)
+  // is unrelated to the peek and stays fully live.
 });
 
-// ---------------------------------------------------------------------
-// PEEK-5 (fix round 1, F2 -- reviewer finding: the server's own 20-verse-
-// per-chapter cap, HOTFIX-4's own GroupCount honesty mechanism, was
-// silently dropped once the peek stopped rendering through PassageList/
-// PassageBlockBuilder, the only other place in this app that turns
-// GroupCount into a disclosure). CONTRACT.md's own PEEK-TRUNC-1 note has
-// the full, current, binding contract for this note.
-// ---------------------------------------------------------------------
-
-test('PEEK-5 (fix round 1, F2): a peek target whose own verse group is server-capped honestly discloses the truth -- "+N more" the peek can never reveal via more/all, RevealControls\' own count staying honest about what it actually holds', async ({ page }) => {
-  // 1ki_temple_furnishings (1KI.7.13-32 delivered, 20 of a true 39) is
-  // 1ki_temple_dedication's own real PRIOR neighbor on the global
-  // timeline -- ground truth confirmed live against the wire, never
-  // hardcoded: this is the SAME server-side 20-verse-per-chapter cap
-  // (scene::verse_groups_for's own take(20)) TRUNC-1 (above) already
-  // proves for 1ki_temple_dedication's own WITNESS list; this test proves
-  // the identical cap also reaches this event when it is instead
-  // resolved as someone else's ADJACENT peek target.
-  const positions = await api.narrativeEventPositions('1ki_temple_dedication');
-  expect(positions.timeline.prior?.id, '1ki_temple_dedication must have 1ki_temple_furnishings as its real PRIOR neighbor for this test to mean anything').toBe('1ki_temple_furnishings');
-  const group = positions.timeline.prior.verse_groups[0];
-  const missing = group.count - group.verses.length;
-  expect(missing, 'this test needs a genuinely server-capped group').toBeGreaterThan(0);
-
-  await openEventPopover(page, '1ki_temple_dedication');
-  const arrow = page.getByTestId('event-chrono-prior-event-global');
-  const peek = page.getByTestId('event-chrono-prior-event-global-peek');
-
-  await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
-
-  // The disclosure itself -- present as a standing fact about this
-  // chapter, not gated on how much of the delivered 20 is currently
-  // revealed.
-  const truncatedNote = page.getByTestId('event-chrono-prior-event-global-peek-truncated');
-  await expect(truncatedNote).toBeVisible();
-  await expect(truncatedNote).toHaveText(`+${missing} more (this chapter's own display cap)`);
-
-  // RevealControls' own "all" stays honest about what THIS peek actually
-  // holds (the delivered 20, never inflated to the true 39 it can never
-  // actually reveal) -- clicking it surfaces every delivered verse, no
-  // more, and the disclosure survives alongside it, not replaced by it.
-  const allLink = page.getByTestId('event-chrono-prior-event-global-peek-more-all');
-  await expect(allLink).toHaveText(`all (${group.verses.length})`);
-  await allLink.click({ force: true });
-  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(group.verses.length);
-  await expect(page.getByTestId(`event-chrono-prior-event-global-peek-verse-${group.verses[group.verses.length - 1]}`)).toBeVisible();
-  await expect(truncatedNote).toBeVisible();
-});
+// PEEK-5 (the server-capped-group truncation disclosure on a BLOCK-mode
+// arrow's own peek) is RETIRED WHOLE by HOVER-KILL-1, above, same
+// citation as PEEK-2/3/3b/4.
 
 // ---------------------------------------------------------------------
 // EVT-3 Ticket 2 (owner ruling, SUPERSEDES EV-1): the Chronology block's
@@ -1056,9 +725,14 @@ test('EVT-3/RefsList: a Chronology traversal row shows the target event\'s own S
   const arrow = page.getByTestId('event-chrono-following-event-global');
   await expect(arrow).toBeVisible();
 
-  // No hover/dwell at all -- the refs list must already be present the
-  // instant the row itself renders (it needs no fetch, unlike EV-1's own
-  // retired eager verse-text resolve).
+  // No hover/dwell needed -- the refs list renders immediately off the
+  // (possibly still-fallback) Adjacent.VerseGroups, then upgrades in
+  // place once ACCT-SET-MISMATCH-1's own eager EventDetail fetch resolves
+  // (ArrowNav.razor's own RefDescriptors doc comment) -- Playwright's
+  // auto-retrying `toBeVisible`/`getByTestId` below tolerate either
+  // timing; gen_binding_isaac's own FOLLOWING (gen_death_of_sarah) is a
+  // real single-implicit-witness event (no curated parallel account), so
+  // BOTH derivations converge on the identical single ref regardless.
   const refsList = page.getByTestId('event-chrono-following-event-global-refs');
   await expect(refsList).toBeVisible();
 
@@ -1080,13 +754,14 @@ test('EVT-3/RefsList: a Chronology traversal row shows the target event\'s own S
   await expect(refsList.locator('.popover-passage-text')).toHaveCount(0);
   await expect(refsList.locator('[class*="mention"]')).toHaveCount(0);
 
-  // The peek (hover-triggered, unchanged) still exists alongside this --
-  // this ticket does not touch it at all (ArrowNav.razor's own header
-  // comment: "the ONE place a hover reveals real passage text").
+  // HOVER-KILL-1 (fix round 2): the peek is GONE for block-mode arrows --
+  // superseding this test's own former "the peek still exists alongside
+  // this" assertion. Hovering, even a sustained dwell, must show nothing.
   const peek = page.getByTestId('event-chrono-following-event-global-peek');
-  await expect(peek).toHaveCount(0); // not yet dwelled
+  await expect(peek).toHaveCount(0);
   await arrow.hover({ force: true });
-  await expect(peek).toBeVisible({ timeout: 2000 });
+  await page.waitForTimeout(600);
+  await expect(peek).toHaveCount(0);
 });
 
 test('EVT-3/RefsList: clicking a ref under a Chronology arrow explores directly to that account\'s own first verse (a genuine shortcut, distinct from the arrow\'s own whole-event traversal)', async ({ page }) => {
@@ -1099,6 +774,41 @@ test('EVT-3/RefsList: clicking a ref under a Chronology arrow explores directly 
   await openEventPopover(page, 'gen_binding_isaac');
   await page.getByTestId(`event-chrono-following-event-global-refs-${expectedRef}`).click();
   await expect(page.getByTestId('popover-title')).toHaveText(firstVref);
+});
+
+test('ACCT-SET-MISMATCH-1: rob_twelve_apostles -- the refs shown under the Chronology arrow pointing at it match the SAME SET and ORDER as its own landed PARALLEL ACCOUNTS frontier (the owner\'s own repro: MRK-only under the button, but a real LUKE parallel once landed)', async ({ page }) => {
+  const detail = await api.event('rob_twelve_apostles');
+  expect(detail.witnesses.length, 'ground truth: rob_twelve_apostles must have 2+ real witnesses (LUK + MRK) for this test to mean anything -- the owner\'s own named repro').toBeGreaterThan(1);
+
+  const positions = await api.narrativeEventPositions('rob_twelve_apostles');
+  const neighbor = positions.timeline.prior ?? positions.timeline.following;
+  expect(neighbor, 'rob_twelve_apostles needs a real timeline neighbor to open an arrow pointing at it').toBeTruthy();
+  const direction = positions.timeline.prior ? 'following' : 'prior'; // opening the NEIGHBOR, the arrow pointing BACK at rob_twelve_apostles is the opposite direction
+
+  await openEventPopover(page, neighbor.id);
+  const arrow = page.getByTestId(`event-chrono-${direction}-event-global`);
+  await expect(arrow).toBeVisible();
+  const refsList = page.getByTestId(`event-chrono-${direction}-event-global-refs`);
+
+  // Wait for the CORRECT (fetched, witness-derived) refs to land -- not
+  // merely the narrower Adjacent.VerseGroups fallback (which is exactly
+  // the owner's own bug: MRK-only, missing the LUK parallel).
+  const refButtons = refsList.locator('[data-testid^="event-chrono-' + direction + '-event-global-refs-"]');
+  await expect.poll(() => refButtons.count()).toBe(detail.witnesses.length);
+  const refTexts = await refButtons.allTextContents();
+
+  // Land on the event and confirm the SAME set+order on the PARALLEL
+  // ACCOUNTS frontier -- ONE source (EventDetail.Witnesses, coalesced),
+  // rendered two ways, never two independent derivations.
+  await arrow.click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  await expect(witnessesSection).toBeVisible();
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(detail.witnesses.length);
+  const entryTexts = await entries.locator('.popover-passage-ref-label').allTextContents();
+
+  expect(entryTexts, 'the landed frontier\'s own account refs must match the SET the button showed').toEqual(refTexts);
 });
 
 test('EVT-3/RefsList: the Inline story-thread leg (a diverging narrative row) stays title-only, unaffected by the block-mode refs list', async ({ page }) => {

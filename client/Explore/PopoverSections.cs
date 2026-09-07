@@ -88,15 +88,18 @@ public interface IPopoverSectionContext
     IExplorableClient Graph { get; }
 
     /// <summary>
-    /// EVT-3 Ticket 3 (the map-focus-at-time hatch, §5-declared: kind +
-    /// {place, window} params, per the composability rulings): the SAME
-    /// NavigateWorld continuation an <see cref="Exploration"/> chip already
-    /// gives (<c>ExplorerPopover</c>'s own Activate/NavigateWorld case,
-    /// "the split IS the atlas" hand-off included -- see that file's own
+    /// EVT-3 Ticket 3 (the map-focus-at-time hatch: kind + {place, window}
+    /// params, per the composability rulings -- fix round 1, Q-1: NOT an
+    /// instance of this codebase's own formal <see cref="Contracts.IEscapeHatch"/>
+    /// machinery, see <see cref="MapFocusHatch"/>'s own doc comment for the
+    /// genuine design conflict that rules that out): the SAME NavigateWorld
+    /// continuation an <see cref="Exploration"/> chip already gives
+    /// (<c>ExplorerPopover</c>'s own Activate/NavigateWorld case, "the
+    /// split IS the atlas" hand-off included -- see that file's own
     /// comment), reachable from inside a section's own body instead of
     /// only from the chips row -- so a Place: row's own explorable value
     /// (<see cref="Explore.EventDateAndPlacesSection"/>) can invoke the
-    /// SAME §5-declared hatch a chip would, without <c>ExplorerPopover</c>
+    /// SAME hatch a chip would, without <c>ExplorerPopover</c>
     /// growing a bespoke callback per provider (mirrors
     /// <see cref="PushAsync"/>'s own "one interface method, every provider
     /// reaches it the same way" shape). <paramref name="query"/> is the
@@ -315,19 +318,18 @@ public static class PopoverSectionRegistry
         (new CatechismExplanationSection(), 110),
         (new CatechismWhereWrittenSection(), 120),
         (new CatechismScripturesSection(), 130),
-        // CHRONO-MERGE-1 (owner: "put chronology up top"): EVENT node
-        // sections, in order -- Chronology (traversal: the SAME global
-        // arrow row TRAV-1/HOTFIX-4 built, now ALSO carrying the
-        // divergence-only story-thread line that survives of the retired
-        // narrative nav -- EventChronologySection's own doc comment has
-        // the full story) FIRST, occupying the top position the narrative
-        // nav used to hold when it rendered inside
-        // EventDateAndPlacesSection (M-D3/U1); THEN date+place(s)
-        // (EventDateAndPlacesSection, now narrative-nav-free -- that
-        // class's own CHRONO-MERGE-1 doc paragraph); THEN PARALLEL
-        // ACCOUNTS.
+        // EVT-META-TOP-1 (fix round 2, owner verbatim: "time + place block
+        // should be moved to the top, right below the event header"):
+        // SUPERSEDES CHRONO-MERGE-1's own "put chronology up top" ordering
+        // -- EVENT node sections now run: date+place(s) FIRST
+        // (EventDateAndPlacesSection, the bare Time:/Place: values,
+        // EVT-META-TOP-1's own "right below the header"); THEN Chronology
+        // (traversal: the SAME global arrow row TRAV-1/HOTFIX-4 built, now
+        // ALSO carrying the divergence-only story-thread line that
+        // survives of the retired narrative nav -- EventChronologySection's
+        // own doc comment has the full story); THEN PARALLEL ACCOUNTS.
+        (new EventDateAndPlacesSection(), 135),
         (new EventChronologySection(), 140),
-        (new EventDateAndPlacesSection(), 150),
         (new EventWitnessesSection(), 160),
         // Batch M ("the DAG grows a node type"): PolityDelta's own three
         // sections, in order -- event text, THE SCRIPTURES, grounding note.

@@ -1,19 +1,33 @@
 @* EVT-3 Ticket 3 (owner verbatim, EVENT-TIMEPLACE-1: "At the top, right
    below the header of the 'event' frontier, I want Time: and Place: ...
    They're both explorable elements."): ONE reusable frontier-metadata row
-   -- a small-caps LABEL ("Time:"/"Place:") beside one or more explorable
-   VALUE chips the caller composes. Reusable anywhere a frontier carries
+   -- an OPTIONAL small-caps LABEL beside one or more explorable VALUE
+   chips the caller composes. Reusable anywhere a frontier carries
    time/place facts (the owner's own composability bar: "any kind bearing
    them composes them") -- NOT Event-only markup; any future capability-bearing
    kind (IHasTimeAndPlace) reaches this the same way
-   EventDateAndPlacesSection does, never a second hand-rolled row. *@
+   EventDateAndPlacesSection does, never a second hand-rolled row.
+
+   EVT-META-TOP-1 (fix round 2, owner verbatim: "we don't need to have
+   TIME: and PLACE:. just put the actual values; AD 31 and Galilee...");
+   amended verbatim: "have the time and place next to each other; not
+   stacked."): `Label` is now OPTIONAL (`null` renders no label span at
+   all -- bare values only) -- STILL a genuinely reusable knob, not
+   deleted: a future consumer that DOES want a label can still supply one.
+   EventDateAndPlacesSection now composes exactly ONE row (Label omitted)
+   whose own ChildContent holds BOTH the time value AND every place value
+   as sibling chips in the SAME flex row -- "next to each other" falls out
+   of that composition directly, not a second layout mode here. *@
 <div class="popover-frontier-metadata-row" data-testid="@TestId">
-    <span class="popover-frontier-metadata-label">@Label</span>
+    @if (Label is not null)
+    {
+        <span class="popover-frontier-metadata-label">@Label</span>
+    }
     <span class="popover-frontier-metadata-values">@ChildContent</span>
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Label { get; set; } = default!;
+    [Parameter] public string? Label { get; set; }
     [Parameter, EditorRequired] public string TestId { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 }

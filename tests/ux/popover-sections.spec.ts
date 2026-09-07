@@ -1970,6 +1970,80 @@ test('EVENT-1/PASSAGE-1: the Crucifixion event shows 4 witness passages under "P
   }
 });
 
+// ---------------------------------------------------------------------
+// ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts
+// (sermon on the mount in particular), accounts from the same book +
+// chapter are listed. makes no sense."): an event witness (one curated
+// `[[witness]]` row) is ONE account even when its own VerseGroups span
+// multiple chapters (a storage-syntax artifact, per event-witnesses.toml's
+// own Sermon comment: "written as 3 same-chapter ranges... not spanning a
+// chapter boundary in one string") -- PassageBlockBuilder used to render
+// each chapter as its own separate "PARALLEL ACCOUNTS" entry. Fixed:
+// PassageSourceUnit.CoalesceAcrossChapters (Explore/PassageBlock.cs),
+// set true by WitnessUnitsResolver. See client.Tests/AcctCoalesceTests.cs
+// for the pure-logic proof; these are the real end-to-end wire-through-DOM
+// confirmations against the real compiled data.
+// ---------------------------------------------------------------------
+
+test('ACCT-COALESCE-1: the Sermon on the Mount shows exactly 2 PARALLEL ACCOUNTS (MAT.5.1-7.29 coalesced, LUK.6.17-49) -- never 3+ same-book entries split per chapter', async ({ page }) => {
+  const detail = await api.event('rob_sermon_on_the_mount');
+  expect(detail.witnesses.length, 'ground truth: exactly 2 witness ROWS (MAT, LUK) for this fixture to mean anything').toBe(2);
+  const matWitness = detail.witnesses.find((w: any) => w.book === 'MAT');
+  expect(matWitness.verse_groups.length, 'the MAT witness must genuinely span 3 chapters on the wire (the bug\'s own real shape) for this test to mean anything').toBe(3);
+  expect(matWitness.verse_groups.map((g: any) => g.chapter)).toEqual([5, 6, 7]);
+
+  await page.goto('/read/LUK/6');
+  await page.getByTestId('verse-line-17').click();
+  await page.getByTestId('verse-event-rob_sermon_on_the_mount').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('The Sermon on the Mount');
+
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  await expect(witnessesSection).toBeVisible();
+  await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
+
+  // Exactly TWO account entries -- one per WITNESS ROW, not one per
+  // chapter (which would be 4: MAT.5, MAT.6, MAT.7, LUK.6).
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(2);
+
+  // The MAT account's own ref-label reads the FULL coalesced span,
+  // crossing all three chapters in one entry.
+  await expect(witnessesSection.getByTestId('event-witness-MAT.5.1-7.29')).toBeVisible();
+  await expect(witnessesSection.getByTestId('event-witness-LUK.6.17-49')).toBeVisible();
+
+  // The coalesced MAT entry's own expand affordance still opens its FIRST
+  // chapter (MAT 5) in full -- MiniReaderExpand's own one-chapter-at-a-time
+  // limit, honestly degraded (PassageList.razor's own FocalToOf comment).
+  const matEntry = witnessesSection.getByTestId('event-witness-MAT.5.1-7.29');
+  const matExpand = matEntry.getByTestId('popover-verse-expand-event-witness-MAT.5.1-7.29');
+  await expect(matExpand).toBeVisible();
+  await matExpand.click();
+  const chapter5 = await api.chapter('MAT.5');
+  await expect(matEntry.locator('[data-testid^="popover-reader-verse-"]')).toHaveCount(chapter5.verses.length);
+});
+
+test('ACCT-COALESCE-1 counterexample: psa_014 (Psalm 14 + Psalm 53, two SEPARATE witness rows, same book) stays TWO accounts -- genuinely non-contiguous, must never coalesce', async ({ page }) => {
+  const detail = await api.event('psa_014');
+  expect(detail.witnesses.length).toBe(2);
+  expect(detail.witnesses.map((w: any) => w.book)).toEqual(['PSA', 'PSA']);
+
+  await page.goto('/read/PSA/14');
+  await page.getByTestId('verse-line-1').click();
+  await page.getByTestId('verse-event-psa_014').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  await expect(witnessesSection).toBeVisible();
+
+  // Two genuinely separate accounts -- NOT coalesced into one PSA.14.1-53.6
+  // span, since they came from two SEPARATE witness rows (curation-level
+  // boundary), not one continuous account split by storage syntax.
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(2);
+  await expect(witnessesSection.getByTestId('event-witness-PSA.14.1-7')).toBeVisible();
+  await expect(witnessesSection.getByTestId('event-witness-PSA.53.1-6')).toBeVisible();
+});
+
 test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL ACCOUNTS" framing (requirement 4, n=1)', async ({ page }) => {
   // Batch T2 (owner's own live-review ruling, 2026-08-21): pw_emmaus,
   // this test's own original n=1 example, is no longer single-witness --

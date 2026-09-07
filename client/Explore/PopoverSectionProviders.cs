@@ -1487,23 +1487,36 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             return null; // conditional presence: nothing this section can honestly show
         }
 
-        // EVT-3 Ticket 3 (owner verbatim, EVENT-TIMEPLACE-1: "At the top,
-        // right below the header of the 'event' frontier, I want Time: and
-        // Place: ... They're both explorable elements."): both rows go
-        // through the SAME reusable FrontierMetadataRow component (the
-        // owner's own composability bar -- "any kind bearing them composes
-        // them," not Event-only markup). Time: click -> that YEAR's own
-        // chronology (YearNode's new event-time constructor,
-        // YearFrontierSection); Place: click -> the map-focus-at-time
-        // hatch (MapFocusHatch.Query, IPopoverSectionContext.NavigateWorldAsync)
-        // -- "exploration of places belonging to events is a function of
-        // that location and the event's time... a side effect of the map
-        // opening with the appropriate state," the owner's own words,
-        // verbatim. Nested INSIDE the `When` branch: Place: is
-        // structurally reachable only when When is too (EventDetail.cs's
-        // own doc comment -- a general-kind passage's own Places is always
-        // empty by construction), so `when` is captured once here for the
-        // Place: row's own map-hatch query, never re-derived.
+        // EVT-3 Ticket 3 / EVT-META-TOP-1 (fix round 2, owner verbatim:
+        // "time + place block should be moved to the top, right below the
+        // event header. we don't need to have TIME: and PLACE:. just put
+        // the actual values; AD 31 and Galilee for The Sermon on the
+        // Mount." Amended verbatim: "have the time and place next to each
+        // other; not stacked."): ONE reusable FrontierMetadataRow, Label
+        // OMITTED (bare values only), whose own ChildContent holds the
+        // time value chip THEN every place value chip as SIBLINGS in the
+        // SAME flex row -- "next to each other" falls out of that single
+        // composition, never a second stacked row. TestId stays "event-time"
+        // (the row's own established wrapper id; the individual value
+        // testids -- event-time-value/event-place-{id} -- are unchanged,
+        // so existing per-value assertions keep working). Time: click ->
+        // that YEAR's own chronology (YearNode's new event-time
+        // constructor, YearFrontierSection); Place: click -> the
+        // map-focus-at-time hatch (MapFocusHatch.Query,
+        // IPopoverSectionContext.NavigateWorldAsync) -- "exploration of
+        // places belonging to events is a function of that location and
+        // the event's time... a side effect of the map opening with the
+        // appropriate state," the owner's own words, verbatim. Places are
+        // nested INSIDE the `When` branch: Place: is structurally
+        // reachable only when When is too (EventDetail.cs's own doc
+        // comment -- a general-kind passage's own Places is always empty
+        // by construction), so `when` is captured once here for the
+        // Place: chip's own map-hatch query, never re-derived. Ordering
+        // (registry): this provider's own Order moved ABOVE
+        // EventChronologySection's -- "right below the event header" means
+        // FIRST among Event sections now, not second (CHRONO-MERGE-1's own
+        // "Chronology, always on top" is superseded by this later, more
+        // specific ruling -- see PopoverSections.cs's own registry comment).
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -1512,7 +1525,6 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             {
                 var dateText = YearText.FormatRange(when.FromYear, when.ToYear);
                 builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
-                builder.AddAttribute(seq++, "Label", "Time:");
                 builder.AddAttribute(seq++, "TestId", "event-time");
                 builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
                 {
@@ -1528,37 +1540,28 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when))));
                     valueBuilder.AddContent(vseq++, dateText);
                     valueBuilder.CloseElement();
+
+                    // NAV-2 law (deliverability): no located place -> no
+                    // Place: value AT ALL -- conditional presence, not a
+                    // quiet/disabled state (HATCH-DELIVERABLE-1's own §4e
+                    // ruling, applied here identically). Rendered as
+                    // SIBLINGS of the time chip immediately above, inside
+                    // this SAME ChildContent -- "next to each other."
+                    foreach (var p in detail.Places)
+                    {
+                        var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                        var placeName = p.Name;
+                        var query = MapFocusHatch.Query(placeId, when);
+                        valueBuilder.OpenElement(vseq++, "button");
+                        valueBuilder.AddAttribute(vseq++, "type", "button");
+                        valueBuilder.AddAttribute(vseq++, "class", "popover-frontier-metadata-value explorable");
+                        valueBuilder.AddAttribute(vseq++, "data-testid", $"event-place-{placeId}");
+                        valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.NavigateWorldAsync(query)));
+                        valueBuilder.AddContent(vseq++, placeName);
+                        valueBuilder.CloseElement();
+                    }
                 }));
                 builder.CloseComponent();
-
-                // NAV-2 law (deliverability): no located place -> no
-                // Place: row link AT ALL -- conditional presence, not a
-                // quiet/disabled state (HATCH-DELIVERABLE-1's own §4e
-                // ruling, applied here identically).
-                if (detail.Places.Count > 0)
-                {
-                    builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
-                    builder.AddAttribute(seq++, "Label", "Place:");
-                    builder.AddAttribute(seq++, "TestId", "event-place");
-                    builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
-                    {
-                        var vseq = 0;
-                        foreach (var p in detail.Places)
-                        {
-                            var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
-                            var placeName = p.Name;
-                            var query = MapFocusHatch.Query(placeId, when);
-                            valueBuilder.OpenElement(vseq++, "button");
-                            valueBuilder.AddAttribute(vseq++, "type", "button");
-                            valueBuilder.AddAttribute(vseq++, "class", "popover-frontier-metadata-value explorable");
-                            valueBuilder.AddAttribute(vseq++, "data-testid", $"event-place-{placeId}");
-                            valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.NavigateWorldAsync(query)));
-                            valueBuilder.AddContent(vseq++, placeName);
-                            valueBuilder.CloseElement();
-                        }
-                    }));
-                    builder.CloseComponent();
-                }
             }
         };
         return new PopoverSection("event-date-places", body);
@@ -1641,7 +1644,12 @@ file static class WitnessUnitsResolver
             // scene::verse_groups_for) so a truncated witness group shows
             // the "+N more" signal instead of silently ending at 20.
             var verses = w.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
-            return new PassageSourceUnit(verses);
+            // ACCT-COALESCE-1: ONE witness (curated as ONE `[[witness]]`
+            // TOML row) is ALWAYS one account, even when its own
+            // VerseGroups span multiple chapters (a storage-syntax
+            // artifact, never separate accounts -- PassageSourceUnit's own
+            // CoalesceAcrossChapters doc comment has the full "why").
+            return new PassageSourceUnit(verses, CoalesceAcrossChapters: true);
         }).ToList();
 
         // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
@@ -1678,7 +1686,12 @@ file static class WitnessUnitsResolver
             {
                 var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
                 return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
-            }).ToList())).ToList(); // no Caption -- P5, see this class's own doc comment
+                // no Caption -- P5, see this class's own doc comment.
+                // ACCT-COALESCE-1: CoalesceAcrossChapters carried through
+                // from `u` (the FIRST construction, immediately above) --
+                // re-wrapping into a fresh PassageSourceUnit here must
+                // never silently drop it either.
+            }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters)).ToList();
     }
 }
 

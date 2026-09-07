@@ -63,8 +63,18 @@ public static class PassageGrouping
 
     /// The single ref label for a passage/lone-verse block (span form, e.g.
     /// `GEN.12.1-4`, or a bare `GEN.12.1` for a lone verse). `first`/`last`
-    /// are always same book+chapter by construction (`Groups` only ever
-    /// runs within one book+chapter at a time).
+    /// are same book+chapter by construction for EVERY caller reached via
+    /// `Groups` (which never crosses a chapter boundary) -- the
+    /// same-chapter branch below is unchanged, byte-for-byte, for all of
+    /// them.
+    ///
+    /// ACCT-COALESCE-1: `PassageBlockBuilder.BuildCoalescedBlock` is the
+    /// ONE caller that can genuinely hand this a cross-chapter span (an
+    /// event witness account coalesced across chapters, e.g. Sermon-on-
+    /// the-Mount's own MAT.5.1-7.29) -- the added branch names BOTH
+    /// endpoints' own chapters (`MAT.5.1-7.29`, never the same-chapter
+    /// shape's misleading `MAT.5.1-29`, which would silently attribute the
+    /// last verse's own number to the WRONG chapter).
     public static string SpanRef(string firstVref, string lastVref)
     {
         var first = CanonRef.ParseVerse(firstVref);
@@ -73,6 +83,8 @@ public static class PassageGrouping
             return firstVref;
         }
         var last = CanonRef.ParseVerse(lastVref);
-        return $"{first.Book}.{first.Chapter}.{first.Verse}-{last.Verse}";
+        return first.Chapter == last.Chapter
+            ? $"{first.Book}.{first.Chapter}.{first.Verse}-{last.Verse}"
+            : $"{first.Book}.{first.Chapter}.{first.Verse}-{last.Chapter}.{last.Verse}";
     }
 }

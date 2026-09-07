@@ -1,15 +1,44 @@
 namespace BibleAtlas.Client.Explore;
 
 /// <summary>
-/// EVT-3 Ticket 3 (the §5-declared map-focus-at-time hatch -- owner
-/// verbatim, EVENT-TIMEPLACE-1: "exploration of places belonging to events
-/// is a function of that location and the event's time, and it yields a
-/// side effect of the map opening with the appropriate state"): THE ONE
-/// named site that builds a map-focus-at-time query -- carrying
-/// {place, window} -- so any surface bearing a (place id, time window)
-/// pair composes it the SAME way (the owner's own composability bar,
-/// "make sure all the new bits made for this are composable and
-/// reusable"), never a one-off inline string built per call site.
+/// EVT-3 Ticket 3 (the map-focus-at-time hatch -- owner verbatim,
+/// EVENT-TIMEPLACE-1: "exploration of places belonging to events is a
+/// function of that location and the event's time, and it yields a side
+/// effect of the map opening with the appropriate state"): THE ONE named
+/// site that builds a map-focus-at-time query -- carrying {place, window}
+/// -- so any surface bearing a (place id, time window) pair composes it
+/// the SAME way (the owner's own composability bar, "make sure all the
+/// new bits made for this are composable and reusable"), never a one-off
+/// inline string built per call site.
+///
+/// TERMINOLOGY (fix round 1, Q-1, review finding -- corrected labeling,
+/// not a design change): this is a "declared, one-named-site" pattern in
+/// the SAME spirit as design spec §5's own escape-hatch law, but it is
+/// NOT an instance of this codebase's own FORMAL <see cref="Contracts.IEscapeHatch"/>
+/// machinery (<c>HatchKinds</c>/<c>ViewRegistrySetup.Build</c>/
+/// <c>ViewRegistryConformanceTests</c> -- see <c>EnterSplitHatch.cs</c>/
+/// <c>ToggleFollowHatch.cs</c>) and this doc comment no longer claims that
+/// it is. THE GENUINE CONFLICT (why NOT formalized, not merely undone
+/// because it was inconvenient): every real <c>IEscapeHatch</c> in this
+/// app is constructed EXACTLY ONCE, at <c>ViewRegistrySetup.Build()</c>
+/// (registry-build) time, closing ONLY over DI-singleton services --
+/// <c>Invoke()</c> is PARAMETERLESS and does the identical thing on every
+/// call for a given (view, kind) pair (<c>EnterSplitHatch</c>'s own doc
+/// comment, verbatim: "every one of OpenSplit/OpenReadBesideMap/the new
+/// Sources hatch turns out to need nothing instance-specific at all, so a
+/// hatch can be constructed ONCE"). <c>MapFocusHatch.Query</c> is the
+/// opposite shape BY NECESSITY -- its own {place, window} pair is EVENT
+/// DATA, varying per popover-section invocation (Nazareth/AD 31 today,
+/// any other located event tomorrow), never a fixed per-VIEW fact
+/// resolvable at registry-build time. Forcing it into `IEscapeHatch`
+/// would require either (a) a breaking, controller-routed signature
+/// change to the compiled `IEscapeHatch.Invoke()` contract itself,
+/// rippling across every existing hatch, or (b) smuggling the current
+/// {place, window} through hidden AMBIENT MUTABLE STATE set just before
+/// `Invoke()` -- exactly the kind of implicit, non-instance-specific
+/// state the registry's own "buildable once, nothing instance-specific"
+/// design principle exists to rule out. Neither is proportionate to a
+/// terminology finding; the correct fix is the label, not the wiring.
 ///
 /// Realized as an ADDITIVE extension of the EXISTING, already-wired
 /// <see cref="ExplorationTarget.NavigateWorld"/> shape (the SAME

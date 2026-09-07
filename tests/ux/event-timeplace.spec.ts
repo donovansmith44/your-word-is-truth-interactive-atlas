@@ -59,15 +59,58 @@ test('EVT-3/NAZARETH FIXTURE: the named fixture\'s own real values are AD 31 / N
   await openEventPopover(page, 'rob_last_nazareth_visit');
   await expect(page.getByTestId('popover-section-event-date-places')).toBeVisible();
 
-  const timeRow = page.getByTestId('event-time');
-  await expect(timeRow).toBeVisible();
-  await expect(timeRow.getByTestId('event-time-value')).toHaveText('AD 31');
-  expect(await timeRow.getByTestId('event-time-value').evaluate(el => (el as HTMLElement).matches('.explorable'))).toBe(true);
+  // EVT-META-TOP-1 (fix round 2, owner verbatim: "we don't need to have
+  // TIME: and PLACE:. just put the actual values; AD 31 and Galilee for
+  // The Sermon on the Mount." Amended: "have the time and place next to
+  // each other; not stacked."): ONE row (`event-time`), bare values only
+  // -- no "Time:"/"Place:" label text anywhere in it -- the time value and
+  // every place value as siblings, "next to each other."
+  const row = page.getByTestId('event-time');
+  await expect(row).toBeVisible();
+  await expect(row).not.toContainText('Time:');
+  await expect(row).not.toContainText('Place:');
 
-  const placeRow = page.getByTestId('event-place');
-  await expect(placeRow).toBeVisible();
-  await expect(placeRow.getByTestId('event-place-nazareth')).toHaveText('Nazareth');
-  expect(await placeRow.getByTestId('event-place-nazareth').evaluate(el => (el as HTMLElement).matches('.explorable'))).toBe(true);
+  const timeValue = row.getByTestId('event-time-value');
+  await expect(timeValue).toHaveText('AD 31');
+  expect(await timeValue.evaluate(el => (el as HTMLElement).matches('.explorable'))).toBe(true);
+
+  const placeValue = row.getByTestId('event-place-nazareth');
+  await expect(placeValue).toHaveText('Nazareth');
+  expect(await placeValue.evaluate(el => (el as HTMLElement).matches('.explorable'))).toBe(true);
+
+  // "Next to each other; not stacked" -- both values sit on the SAME
+  // horizontal line (a real geometry check, not just "same parent
+  // element"): their own bounding boxes' vertical centers must coincide.
+  const timeBox = await timeValue.boundingBox();
+  const placeBox = await placeValue.boundingBox();
+  expect(timeBox).not.toBeNull();
+  expect(placeBox).not.toBeNull();
+  expect(Math.abs((timeBox!.y + timeBox!.height / 2) - (placeBox!.y + placeBox!.height / 2)), 'Time and Place values must render on the SAME line, not stacked').toBeLessThanOrEqual(3);
+});
+
+test('EVT-META-TOP-1: The Sermon on the Mount\'s own real Time:/Place: values are "AD 31" and "Galilee" -- the owner\'s own second named example', async ({ page }) => {
+  const detail = await api.event('rob_sermon_on_the_mount');
+  expect(detail.when.from_year).toBe(31);
+  expect(detail.when.to_year).toBe(31);
+  expect(detail.places.length).toBe(1);
+  expect(detail.places[0].name).toBe('Galilee');
+
+  await openEventPopover(page, 'rob_sermon_on_the_mount');
+  const row = page.getByTestId('event-time');
+  await expect(row.getByTestId('event-time-value')).toHaveText('AD 31');
+  await expect(row.getByTestId(`event-place-${detail.places[0].id}`)).toHaveText('Galilee');
+});
+
+test('EVT-META-TOP-1: the time/place row renders FIRST among Event sections, right below the header -- ABOVE Chronology now (supersedes CHRONO-MERGE-1\'s own "Chronology always on top")', async ({ page }) => {
+  await openEventPopover(page, 'rob_last_nazareth_visit');
+  const sectionOrder = await page.locator('[data-testid^="popover-section-"]').evaluateAll(
+    (els) => els.map((el) => el.getAttribute('data-testid')),
+  );
+  const dateplacesIdx = sectionOrder.indexOf('popover-section-event-date-places');
+  const chronologyIdx = sectionOrder.indexOf('popover-section-event-chronology');
+  expect(dateplacesIdx).toBeGreaterThanOrEqual(0);
+  expect(chronologyIdx).toBeGreaterThanOrEqual(0);
+  expect(dateplacesIdx, 'the time/place section must render BEFORE Chronology now').toBeLessThan(chronologyIdx);
 });
 
 test('EVT-3/Time: clicking "AD 31" lays out that year\'s events chronologically, each explorable', async ({ page }) => {
@@ -137,5 +180,10 @@ test('EVT-3/NAV-2 deliverability: an event with no located place (Creation) show
 
   await openEventPopover(page, 'theo-1');
   await expect(page.getByTestId('event-time')).toBeVisible();
-  await expect(page.getByTestId('event-place')).toHaveCount(0);
+  await expect(page.getByTestId('event-time-value')).toBeVisible();
+  // EVT-META-TOP-1: Time: and Place: are now siblings inside the SAME
+  // `event-time` row (no separate `event-place` wrapper testid exists any
+  // more) -- deliverability is proven by the ABSENCE of any
+  // `event-place-{id}` value chip at all.
+  await expect(page.locator('[data-testid^="event-place-"]')).toHaveCount(0);
 });
