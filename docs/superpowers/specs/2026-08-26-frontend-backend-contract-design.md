@@ -426,6 +426,21 @@ interface IStateLink<A, B> {
 // the kind does not implement, both fail standing tests. The
 // compiled interfaces land controller-authored (skeleton-first) with
 // Batch EVT-3's contract groundwork.
+//
+// THE SMART-FRONTIER RULE (owner ruling 2026-09-07, verbatim:
+// "frontiers need to be smart. I.e., they display instances of
+// types of nodes on the frontier iff both: 1) they exist for the
+// focus node and 2) we have not opted out of displaying that node
+// type on the frontier of the focus node"):
+//   display(section, focus) ⟺ exists(instances, focus)
+//                           ∧ ¬optedOut(focus.Kind, section.Type)
+// The per-kind capability MATRIX is the opt-out registry — one
+// declared site, one line per cell (the one-line-knob bar applies:
+// opting a node type in or out of a kind's frontier is a one-line
+// edit). Existence is the runtime gate (no empty sections ever —
+// the FRONTIER-ORDER hidden-when-empty rule and the NAV-2 hatch-
+// deliverability gate are instances of the same law). BOTH gates
+// are conformance-tested.
 
 // The focus component — the owner's named construct.
 interface IFocusComponent : IViewComponent {
