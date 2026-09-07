@@ -22,11 +22,15 @@ namespace BibleAtlas.Client.Contracts;
 // member changes route through the controller.
 // ============================================================================
 
-/// <summary>THE node-kind vocabulary — one enum (owner: "use our node type
+/// <summary>THE focus-kind vocabulary (renamed from NodeKind per the
+/// owner's reuse challenge — the GRAPH's NodeKind lives in the Rust types
+/// crate (id.rs) and is a different vocabulary; graph-types/src/frontier.rs
+/// is the cross-language authority this file mirrors, incl. the
+/// FocusKind→graph-NodeKind bridge). THE vocabulary — one enum (owner: "use our node type
 /// enums rather than strings"). The compiler now catches a typo'd kind in
 /// any matrix cell; a misspelled string would have silently opted a kind
 /// out.</summary>
-public enum NodeKind
+public enum FocusKind
 {
     Verse,
     Passage,
@@ -48,27 +52,27 @@ public enum NodeKind
 /// stringly-typed today; every kind-string switch in the codebase migrates
 /// through here over time. An unknown string throws loud (fail-loud law) —
 /// never a guess, never a default.</summary>
-public static class NodeKinds
+public static class FocusKinds
 {
-    public static NodeKind Parse(string kind) => kind switch
+    public static FocusKind Parse(string kind) => kind switch
     {
-        "Verse" => NodeKind.Verse,
-        "Passage" => NodeKind.Passage,
-        "Chapter" => NodeKind.Chapter,
-        "Book" => NodeKind.Book,
-        "Author" => NodeKind.Author,
-        "Place" => NodeKind.Place,
-        "Person" => NodeKind.Person,
-        "Event" => NodeKind.Event,
-        "Catechism" => NodeKind.Catechism,
-        "Year" => NodeKind.Year,
-        "TimeAndPlace" => NodeKind.TimeAndPlace,
-        "PolityDelta" => NodeKind.PolityDelta,
-        "CommentaryItem" => NodeKind.CommentaryItem,
-        "ConcordUnit" => NodeKind.ConcordUnit,
+        "Verse" => FocusKind.Verse,
+        "Passage" => FocusKind.Passage,
+        "Chapter" => FocusKind.Chapter,
+        "Book" => FocusKind.Book,
+        "Author" => FocusKind.Author,
+        "Place" => FocusKind.Place,
+        "Person" => FocusKind.Person,
+        "Event" => FocusKind.Event,
+        "Catechism" => FocusKind.Catechism,
+        "Year" => FocusKind.Year,
+        "TimeAndPlace" => FocusKind.TimeAndPlace,
+        "PolityDelta" => FocusKind.PolityDelta,
+        "CommentaryItem" => FocusKind.CommentaryItem,
+        "ConcordUnit" => FocusKind.ConcordUnit,
         _ => throw new NotSupportedException(
             $"Unknown node kind '{kind}' — a new IExplorable kind must be " +
-            "added to NodeKind/NodeKinds.Parse (Contracts, controller-routed) " +
+            "added to FocusKind/FocusKinds.Parse (Contracts, controller-routed) " +
             "before it can traverse the frontier contract."),
     };
 }
@@ -101,33 +105,33 @@ public interface IHasAccounts { }
 // are core focus-presentation, not matrix entries.
 public static class FrontierMatrix
 {
-    public static readonly IReadOnlySet<NodeKind> CrossReferences =
-        new HashSet<NodeKind> { NodeKind.Verse, NodeKind.Passage };
+    public static readonly IReadOnlySet<FocusKind> CrossReferences =
+        new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
     // Event deliberately absent from CrossReferences — the owner's
     // calibration row ("we are not yet at the point of being able ot
     // provide lots of cross references for events").
 
-    public static readonly IReadOnlySet<NodeKind> Parallels =
-        new HashSet<NodeKind> { NodeKind.Verse, NodeKind.Passage };
+    public static readonly IReadOnlySet<FocusKind> Parallels =
+        new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
 
-    public static readonly IReadOnlySet<NodeKind> EventMembership =
-        new HashSet<NodeKind> { NodeKind.Verse };
+    public static readonly IReadOnlySet<FocusKind> EventMembership =
+        new HashSet<FocusKind> { FocusKind.Verse };
 
-    public static readonly IReadOnlySet<NodeKind> PassageMembership =
-        new HashSet<NodeKind> { NodeKind.Verse };
+    public static readonly IReadOnlySet<FocusKind> PassageMembership =
+        new HashSet<FocusKind> { FocusKind.Verse };
 
-    public static readonly IReadOnlySet<NodeKind> Persons =
-        new HashSet<NodeKind> { NodeKind.Verse, NodeKind.Passage };
+    public static readonly IReadOnlySet<FocusKind> Persons =
+        new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
 
-    public static readonly IReadOnlySet<NodeKind> CatechismSupport =
-        new HashSet<NodeKind> { NodeKind.Verse, NodeKind.Passage };
+    public static readonly IReadOnlySet<FocusKind> CatechismSupport =
+        new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
 
-    public static readonly IReadOnlySet<NodeKind> Chronology =
-        new HashSet<NodeKind> { NodeKind.Event };
+    public static readonly IReadOnlySet<FocusKind> Chronology =
+        new HashSet<FocusKind> { FocusKind.Event };
 
-    public static readonly IReadOnlySet<NodeKind> TimeAndPlace =
-        new HashSet<NodeKind> { NodeKind.Event };
+    public static readonly IReadOnlySet<FocusKind> TimeAndPlace =
+        new HashSet<FocusKind> { FocusKind.Event };
 
-    public static readonly IReadOnlySet<NodeKind> Accounts =
-        new HashSet<NodeKind> { NodeKind.Event };
+    public static readonly IReadOnlySet<FocusKind> Accounts =
+        new HashSet<FocusKind> { FocusKind.Event };
 }

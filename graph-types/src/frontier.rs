@@ -14,13 +14,20 @@
 //!
 //! `allows` below IS the opt-out registry. Rust buys us what no set-based
 //! encoding can: the match is EXHAUSTIVE over both enums — adding a new
-//! `NodeKind` (or a new `Capability`) refuses to compile until every cell
+//! `FocusKind` (or a new `Capability`) refuses to compile until every cell
 //! of the new row/column is an explicit decision. A cell edit is a
 //! one-line change (the owner's standing acceptance bar).
 
-/// THE node-kind vocabulary — one enum, every explorable kind.
+/// THE focus-kind vocabulary — every EXPLORABLE kind the frontier serves.
+/// NOT the graph's own `crate::id::NodeKind` (owner challenge 2026-09-07:
+/// "we should just be reusing stuff that exists" — the answer: the graph
+/// vocabulary has no Verse/Passage/Chapter/Book, which are LEVELS of
+/// TextUnit/Container per id.rs's own doc, and Year/TimeAndPlace/
+/// PolityDelta are client-synthesized views; the two vocabularies are
+/// genuinely distinct, and the honest reuse is the type-checked BRIDGE
+/// below, not a merged enum and not a colliding name).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum NodeKind {
+pub enum FocusKind {
     Verse,
     Passage,
     Chapter,
@@ -35,6 +42,25 @@ pub enum NodeKind {
     PolityDelta,
     CommentaryItem,
     ConcordUnit,
+}
+
+impl FocusKind {
+    /// The type-checked bridge to the graph's own vocabulary
+    /// (`crate::id::NodeKind`) — reuse, made explicit. `None` = a
+    /// client-synthesized view with no single graph node kind behind it.
+    pub const fn graph_kind(self) -> Option<crate::id::NodeKind> {
+        use crate::id::NodeKind as G;
+        Some(match self {
+            FocusKind::Verse | FocusKind::Passage | FocusKind::ConcordUnit => G::TextUnit,
+            FocusKind::Chapter | FocusKind::Book | FocusKind::Author => G::Container,
+            FocusKind::Place => G::Place,
+            FocusKind::Person => G::Person,
+            FocusKind::Event => G::Event,
+            FocusKind::Catechism => G::CatechismItem,
+            FocusKind::CommentaryItem => G::CommentaryItem,
+            FocusKind::Year | FocusKind::TimeAndPlace | FocusKind::PolityDelta => return None,
+        })
+    }
 }
 
 /// The segregated capability families (spec §4e) — one per non-core
@@ -60,9 +86,9 @@ pub enum Capability {
 /// THE OPT-OUT REGISTRY. `false` = opted out for that kind. Exhaustive
 /// over both enums by construction — the compiler enforces the whole
 /// matrix. One line per row; a cell edit is a one-line diff.
-pub const fn allows(kind: NodeKind, cap: Capability) -> bool {
+pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
     use Capability as C;
-    use NodeKind as K;
+    use FocusKind as K;
     match (kind, cap) {
         // Verse — the richest frontier.
         (K::Verse, C::CrossReferences | C::Parallels | C::EventMembership
@@ -102,15 +128,15 @@ mod tests {
     /// day it does, this test is UPDATED alongside the one-line cell).
     #[test]
     fn event_has_no_cross_references() {
-        assert!(!allows(NodeKind::Event, Capability::CrossReferences));
+        assert!(!allows(FocusKind::Event, Capability::CrossReferences));
     }
 
     /// EVT-3's three event capabilities, pinned.
     #[test]
     fn event_implements_chronology_time_and_place_accounts() {
-        assert!(allows(NodeKind::Event, Capability::Chronology));
-        assert!(allows(NodeKind::Event, Capability::TimeAndPlace));
-        assert!(allows(NodeKind::Event, Capability::Accounts));
+        assert!(allows(FocusKind::Event, Capability::Chronology));
+        assert!(allows(FocusKind::Event, Capability::TimeAndPlace));
+        assert!(allows(FocusKind::Event, Capability::Accounts));
     }
 
     /// Verse always carries its six; never the event-family three.
@@ -119,10 +145,10 @@ mod tests {
         use Capability as C;
         for cap in [C::CrossReferences, C::Parallels, C::EventMembership,
                     C::PassageMembership, C::Persons, C::CatechismSupport] {
-            assert!(allows(NodeKind::Verse, cap));
+            assert!(allows(FocusKind::Verse, cap));
         }
         for cap in [C::Chronology, C::TimeAndPlace, C::Accounts] {
-            assert!(!allows(NodeKind::Verse, cap));
+            assert!(!allows(FocusKind::Verse, cap));
         }
     }
 }
