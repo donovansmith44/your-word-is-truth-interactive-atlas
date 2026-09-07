@@ -662,7 +662,11 @@ EVENT-TIMEPLACE-1 (owner verbatim: "At the top, right below the header of
     an instance of this codebase's own FORMAL `IEscapeHatch`/`HatchKinds`/
     `ViewRegistrySetup`/`ViewRegistryConformanceTests` machinery
     (`EnterSplitHatch.cs`/`ToggleFollowHatch.cs`'s own shape) -- every
-    prior "§5-declared" label on it is corrected. GENUINE CONFLICT, not
+    prior "§5-declared" label on it is corrected (COMPLETED in fix round
+    2, re-review N-3: round 1's sweep missed `ExplorerPopover.razor`,
+    `World.razor`, and `MapFocusHatchTests.cs`, so this claim was briefly
+    false; a repo-wide grep now confirms zero survivors outside this
+    note's own history). GENUINE CONFLICT, not
     mere inconvenience: every real `IEscapeHatch` is built EXACTLY ONCE,
     at `ViewRegistrySetup.Build()` time, over DI singletons alone --
     `Invoke()` is parameterless, identical on every call for a given
@@ -728,15 +732,47 @@ ACCT-COALESCE-1 (owner bug report, verbatim: "in parallel accounts (sermon
   (`int.MaxValue` when the block's last vref lands in a DIFFERENT chapter
   than its first -- `MiniReaderExpand` can only ever fetch/highlight ONE
   chapter, so expanding a coalesced entry opens its own FIRST chapter in
-  full). NON-CONTIGUOUS COUNTEREXAMPLE (never coalesces): `psa_014`
+  full). ACROSS-UNIT COUNTEREXAMPLE (never coalesces): `psa_014`
   (Psalm 14 + Psalm 53, TWO separate curated witness rows, same book) --
-  proven WITHOUT any gap-detection logic, since coalescing is strictly
-  WITHIN one witness/unit, never across units. TESTS:
-  `client.Tests/AcctCoalesceTests.cs` (7 tests, incl. the wire-cap
-  narrowing regression); `tests/ux/popover-sections.spec.ts`'s own
-  ACCT-COALESCE-1 tests (Sermon fixture + psa_014 counterexample);
-  `tests/ux/event-timeline.spec.ts`'s own TRUNC-1 test retargeted in place
-  for the 1ki_temple_dedication event's own now-coalesced 2CH witness.
+  coalescing is strictly WITHIN one witness/unit, never across units.
+
+  FIX ROUND 2 (re-review Critical N-1 -- the CONTIGUITY half, which round
+  1 had omitted on a false premise): a witness row is NOT always one
+  continuous account (14 of the 35 multi-range curated witness rows have
+  real gaps; so do 21 synthesized-witness verse lists), so round 1's
+  unconditional first-to-last envelope shipped false refs on real events
+  (`theo-188` -> "2KI.1.17-8.24"; `1ch_davids_hymn_of_praise` ->
+  "PSA.96.1-106.48"; `rob_peter_denies` -> "MRK.14.54-61", claiming
+  verses that belong to ANOTHER event while dropping delivered ones).
+  THE COMPLETE RULE now implemented (`PassageBlockBuilder.BuildCoalescedBlock`):
+  within one account, adjacent ranges merge ONLY where genuinely
+  contiguous -- versification-aware adjacency, chapter boundaries
+  included (`Explore/Versification.cs`, wrapping the app-lifetime-memoized
+  `GET /api/books` chapter lengths; an unknown length NEVER joins --
+  conservative, honest degrade); where a real gap exists the account
+  stays ONE account whose ref renders the honest COMPOUND list of its
+  actual ranges ("MRK.14.54, 66-72") -- never a fabricated envelope,
+  never invented or dropped verses, never fake separate accounts; Span
+  and LastVref agree by construction. Both render surfaces (frontier
+  accounts + the refs under prior/following buttons, incl. ArrowNav's own
+  `SelectRefs` fallback) inherit through the one shared derivation.
+  `MiniReaderExpand`'s focal highlight is bounded by the FIRST contiguous
+  range (`PassageBlockData.FirstRangeEndVref`) -- never straight through
+  a gap. TESTS: `client.Tests/AcctCoalesceTests.cs` (16 tests -- the
+  round-1 set, its count previously misstated as 7 here, was 8; round 2
+  adds the real-corpus non-contiguous fixtures rob_peter_denies /
+  theo-188 / 1ch_davids_hymn_of_praise / 2ki_hezekiah_babylonian_embassy
+  / ab_ur, the boundary-only-joins-when-complete negative, the
+  missing-canon conservative degrade, and the cap-remainder-after-gap
+  case; the Sermon fixture still proves genuine cross-chapter contiguity
+  STILL coalesces to one "MAT.5.1-7.29");
+  `client.Tests/ArrowNavTests.cs`'s gapped-fallback test;
+  `tests/ux/popover-sections.spec.ts`'s own ACCT-COALESCE-1 tests
+  (Sermon fixture + psa_014 counterexample + the new rob_peter_denies
+  within-witness-gap test); `tests/ux/event-timeline.spec.ts`'s own
+  TRUNC-1 test retargeted in place for the 1ki_temple_dedication event's
+  own now-coalesced 2CH witness (2CH.5.2-7.10 -- genuinely contiguous
+  across its chapter boundaries per the canon, so it still coalesces).
 
 HOVER-KILL-1 (owner verbatim: "get rid of the box that comes up when
   hovering over prior/following event buttons"): an OWNER REVERSAL of
@@ -747,16 +783,23 @@ HOVER-KILL-1 (owner verbatim: "get rid of the box that comes up when
   `!Inline`, before ever starting the dwell timer -- the WHOLE
   dwell/peek/placement/truncation machinery below that gate is untouched
   code, still real, just unreachable from a block-mode arrow). TESTS
-  (`tests/ux/event-timeline.spec.ts`): the former `PEEK-1`,
-  `EVENT-HOVER-HATCH-1` (x2), `PEEK-2`, `PEEK-3`, `PEEK-3b`, `PEEK-4`,
-  `PEEK-5` tests are RETIRED WHOLE (their own fixture, a block-mode arrow,
-  can never trigger a peek again); a new `HOVER-KILL-1` test proves the
-  ruling positively (a sustained dwell past the OLD trigger delay still
-  shows nothing; click still commits); `PEEK-1/CHRONO-MERGE-1` (the Inline
-  leg test) is the surviving proof the mechanism itself is not removed;
-  `TITLE-2` is trimmed (its own unrelated two-line-clamp/grid-alignment
-  contract stays live; only its trailing peek-header paragraph is
-  removed).
+  (`tests/ux/event-timeline.spec.ts`): a new `HOVER-KILL-1` test proves
+  the ruling positively (a sustained dwell past the OLD trigger delay
+  still shows nothing; click still commits); `PEEK-1/CHRONO-MERGE-1` (the
+  Inline leg test) is the surviving proof the mechanism itself is not
+  removed; `TITLE-2` is trimmed (its own unrelated two-line-clamp/
+  grid-alignment contract stays live; only its trailing peek-header
+  paragraph is removed). FIX ROUND 2 (re-review Moderate N-2 -- round 1
+  had retired all eight peek tests whole, deleting coverage of shared
+  machinery still LIVE on the Inline leg): `EVENT-HOVER-HATCH-1` (x2, an
+  explicit owner order that had dropped to zero coverage) and `PEEK-3b`
+  (the prior reviewer's live-repro popover-containment contract) are
+  RETARGETED to the Inline story-thread leg (df_adullam), the same
+  precedent PEEK-1's own retarget set; `PEEK-2` (its `all`-click half now
+  exercised by the retargeted PEEK-3b), `PEEK-3` (subsumed by PEEK-3b's
+  strictly tighter popover bound), `PEEK-4` and `PEEK-5` (each needs a
+  fixture property no current Inline leg exhibits on demand) stay
+  retired, with the reasons recorded in the spec's own section header.
 
 ACCT-SET-MISMATCH-1 (owner bug report, verbatim: "when i see Jesus selects
   the twelve apostles after a night of prayer, MRK.3.13-19 shows below the

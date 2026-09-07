@@ -2044,6 +2044,45 @@ test('ACCT-COALESCE-1 counterexample: psa_014 (Psalm 14 + Psalm 53, two SEPARATE
   await expect(witnessesSection.getByTestId('event-witness-PSA.53.1-6')).toBeVisible();
 });
 
+test('ACCT-COALESCE-1 fix round 2 (review N-1): rob_peter_denies -- a WITHIN-witness gap renders the honest compound ref ("MRK.14.54, 66-72"), never the fabricated envelope ("MRK.14.54-61") and never fake per-range accounts', async ({ page }) => {
+  // The review's own sharpest live counterexample: the MRK witness row is
+  // ["MRK.14.54", "MRK.14.66-72"] (data/curated/event-witnesses.toml) --
+  // ONE account with a REAL gap, because verses 55-61 belong to a
+  // DIFFERENT event (rob_tried_by_caiaphas, inside the house while Peter
+  // is in the courtyard below). Ground truth at the wire level first: one
+  // (MRK,14) verse group, 8 delivered verses, Count=8 -- the gap is
+  // GENUINELY on the wire, so this test cannot pass vacuously.
+  const detail = await api.event('rob_peter_denies');
+  const mrkWitness = detail.witnesses.find((w: any) => w.book === 'MRK');
+  expect(mrkWitness, 'the curated MRK witness must exist').toBeTruthy();
+  const mrkGroup = mrkWitness.verse_groups.find((g: any) => g.chapter === 14);
+  expect(mrkGroup.count, 'the witness has 8 verses in MRK 14 (54 + 66-72)').toBe(8);
+  expect(mrkGroup.verses).toContain('MRK.14.54');
+  expect(mrkGroup.verses).toContain('MRK.14.66');
+  expect(mrkGroup.verses, 'verse 55 belongs to ANOTHER event -- the gap is real').not.toContain('MRK.14.55');
+
+  await page.goto('/read/MRK/14');
+  await page.getByTestId('verse-line-54').click();
+  await page.getByTestId('verse-event-rob_peter_denies').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
+
+  const witnessesSection = page.getByTestId('popover-section-event-witnesses');
+  await expect(witnessesSection).toBeVisible();
+
+  // ONE entry per witness ROW -- a gapped witness stays ONE account
+  // (never split into fake per-range accounts)...
+  const entries = witnessesSection.locator('[data-testid^="event-witness-"]');
+  await expect(entries).toHaveCount(detail.witnesses.length);
+
+  // ...whose ref is the honest COMPOUND list of its real ranges. The old
+  // envelope "MRK.14.54-61" both claimed another event's verses (55-61)
+  // and dropped delivered ones (62-72) -- under this project's inerrancy
+  // law, the worst class of bug.
+  await expect(witnessesSection.getByTestId('event-witness-MRK.14.54, 66-72')).toBeVisible();
+  await expect(witnessesSection.getByTestId('event-witness-MRK.14.54-61')).toHaveCount(0);
+  await expect(witnessesSection.locator('[data-testid^="event-witness-MRK.14.54-"]')).toHaveCount(0);
+});
+
 test('EVENT-1: a single-witness event shows the one passage with no "PARALLEL ACCOUNTS" framing (requirement 4, n=1)', async ({ page }) => {
   // Batch T2 (owner's own live-review ruling, 2026-08-21): pw_emmaus,
   // this test's own original n=1 example, is no longer single-witness --

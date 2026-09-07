@@ -466,17 +466,27 @@ test('TRUNC-1/ACCT-COALESCE-1: the temple-dedication popover\'s 1KI.8 witness sh
   await expect(page.getByTestId('popover-title')).toHaveText(detail.title);
   await expect(page.getByTestId('popover-section-event-witnesses')).toBeVisible();
 
-  // The truncated 1 Kings 8 entry specifically (the cap keeps the LOWEST-
-  // numbered 20 of 66, so its own delivered span is deterministically
-  // 1KI.8.1-20): quiet "+46 more — read the chapter" affordance. O2
-  // (2026-08-23) retired the old text-button (and its own `data-truncated`
-  // marker) in favor of RevealControls' shared down/double-down arrow pair
-  // -- the identical truncation-aware wording now lives in the button's own
-  // title/aria-label (RevealControls' MoreLabel override, MiniReaderExpand.razor's
-  // own O2 comment) rather than its visible text (an icon glyph now), still
-  // wired to the SAME MiniReaderExpand control, no parallel affordance --
-  // clicking it opens the real, full chapter.
-  const kingsExpand = page.getByTestId('popover-verse-expand-event-witness-1KI.8.1-20');
+  // The truncated 1 Kings 8 entry specifically: quiet "+46 more — read
+  // the chapter" affordance. O2 (2026-08-23) retired the old text-button
+  // (and its own `data-truncated` marker) in favor of RevealControls'
+  // shared down/double-down arrow pair -- the identical truncation-aware
+  // wording now lives in the button's own title/aria-label (RevealControls'
+  // MoreLabel override, MiniReaderExpand.razor's own O2 comment) rather
+  // than its visible text (an icon glyph now), still wired to the SAME
+  // MiniReaderExpand control, no parallel affordance -- clicking it opens
+  // the real, full chapter.
+  //
+  // FIX ROUND 2: this locator was the standing "pre-existing TRUNC-1
+  // noise" both prior reports disclosed -- it still expected the
+  // PRE-coalesce delivered-tail span ("1KI.8.1-20"), which
+  // ACCT-COALESCE-1's own PERF-3 correction (fix round 1) had already,
+  // correctly, replaced with the honest full span computed from the
+  // group's true Count ("1KI.8.1-66": the cap keeps the lowest-numbered
+  // 20 of 66, delivered contiguously from verse 1, so the true span end
+  // IS the count). Resolved off the wire's own ground truth rather than
+  // hardcoded, the same discipline as the 2CH half below.
+  const kingsSpan = `1KI.8.1-${kingsGroup.count}`;
+  const kingsExpand = page.getByTestId(`popover-verse-expand-event-witness-${kingsSpan}`);
   await expect(kingsExpand).toHaveAttribute('title', `+${missing} more — read the chapter`);
   await kingsExpand.click();
   const chapter = await api.chapter('1KI.8');
@@ -550,13 +560,29 @@ test('TRUNC-1/ACCT-COALESCE-1: the temple-dedication popover\'s 1KI.8 witness sh
 // placement/truncation assertions and both EVENT-HOVER-HATCH-1 close/
 // escape tests have nothing left to exercise on this surface; the
 // mechanism they proved is unchanged code, still real, just no longer
-// reachable from a block-mode arrow): the former `PEEK-1`,
-// `EVENT-HOVER-HATCH-1` (x2), `PEEK-2`, `PEEK-3`, `PEEK-3b`, `PEEK-4`,
-// `PEEK-5` tests (all targeting `event-chrono-{prior,following}-event-global`)
-// are gone; `TITLE-2` (below) is TRIMMED, not retired -- its own two-line-
-// clamp/grid-alignment assertions are unrelated to the peek and stay
-// live, only its trailing "peek header carries the full name" paragraph
-// is removed.
+// reachable from a block-mode arrow): `TITLE-2` (below) is TRIMMED, not
+// retired -- its own two-line-clamp/grid-alignment assertions are
+// unrelated to the peek and stay live, only its trailing "peek header
+// carries the full name" paragraph is removed.
+//
+// FIX ROUND 2 (review Moderate N-2 -- retiring a test whole because its
+// FIXTURE died had deleted coverage of machinery still LIVE on the
+// Inline surface): `EVENT-HOVER-HATCH-1` (x2 -- an explicit owner order,
+// "the displayed window has no escape hatch", which had dropped to ZERO
+// coverage anywhere) and `PEEK-3b` (a prior reviewer's own live-repro
+// popover-containment contract) are RETARGETED to the Inline
+// story-thread leg below -- the house's own PEEK-1 retarget precedent,
+// not a re-retirement. Still retired whole, with reasons: `PEEK-2`
+// (more/all mechanics inside the peek -- its `all`-click half is now
+// exercised by the retargeted PEEK-3b on the same Inline peek); `PEEK-3`
+// (viewport containment -- strictly subsumed by the retargeted PEEK-3b's
+// tighter popover-containment bound on the same surface); `PEEK-4` (the
+// arrow-to-box transit corridor) and `PEEK-5` (the server-cap truncation
+// note) stay retired: each needs a fixture property no current Inline
+// leg exhibits on demand (a stable pointer corridor under the
+// story-line's own inline layout; an adjacent event whose own chapter
+// exceeds the 20-verse wire cap) -- disclosed here rather than silently
+// dropped.
 // ---------------------------------------------------------------------
 
 test('HOVER-KILL-1: hovering a Chronology block PRIOR/FOLLOWING button never shows a peek, however long the dwell; click still commits the traversal', async ({ page }) => {
@@ -619,11 +645,112 @@ test('PEEK-1/CHRONO-MERGE-1: the SAME dwell-hover peek works identically on the 
   await expect(peek).toHaveCount(0);
 });
 
-// PEEK-TRUNC-1's own former PEEK-2/PEEK-3/PEEK-3b/PEEK-4 tests (content/
-// placement/transit-corridor behavior on a BLOCK-mode arrow's own peek)
-// are RETIRED WHOLE by HOVER-KILL-1, above -- their own fixture can no
-// longer ever trigger a peek at all. See that section's own header
-// comment for the full retirement citation.
+// EVENT-HOVER-HATCH-1 (owner order, verbatim: "...the displayed window
+// has no escape hatch") -- RETARGETED to the Inline story-thread leg (fix
+// round 2, review N-2): the close affordance is shared, hoisted markup
+// (ArrowNav.razor) still fully live on this surface; retiring both tests
+// with the block-mode fixture had left an explicit owner order with zero
+// coverage anywhere. Same df_adullam fixture as PEEK-1 above.
+
+test('EVENT-HOVER-HATCH-1 (Inline): the story-thread leg\'s dwell-peek carries a close affordance -- click closes it immediately, without waiting for pointer-leave', async ({ page }) => {
+  const positions = await api.narrativeEventPositions('df_adullam');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'david-flight');
+  expect(narrativePos?.following?.id, 'df_adullam must have a real diverging following leg for this test to mean anything').toBe('df_keilah');
+
+  await openEventPopover(page, 'df_adullam');
+  const arrow = page.getByTestId('event-story-thread-following-event-david-flight');
+  const peek = page.getByTestId('event-story-thread-following-event-david-flight-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const closeBtn = peek.getByTestId('event-story-thread-following-event-david-flight-peek-close');
+  await expect(closeBtn).toBeVisible();
+  await expect(closeBtn).toHaveAttribute('title', 'Close preview');
+
+  await closeBtn.click();
+  // Closes IMMEDIATELY -- no toHaveCount(0)'s own default 5s auto-retry
+  // needed the way a plain departure requires (PEEK-1's own grace-period
+  // wait, above); a tight explicit timeout proves this is instant, not
+  // merely eventual.
+  await expect(peek).toHaveCount(0, { timeout: 200 });
+
+  // The pointer never actually left the arrow -- re-hovering after a
+  // click-close still starts a fresh dwell correctly (the close affordance
+  // didn't leave the timer machinery in a broken state).
+  await page.mouse.move(2, 2);
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+});
+
+test('EVENT-HOVER-HATCH-1 (Inline): Escape closes the story-thread leg\'s peek from the keyboard too', async ({ page }) => {
+  await openEventPopover(page, 'df_adullam');
+  const arrow = page.getByTestId('event-story-thread-following-event-david-flight');
+  const peek = page.getByTestId('event-story-thread-following-event-david-flight-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const closeBtn = peek.getByTestId('event-story-thread-following-event-david-flight-peek-close');
+  await closeBtn.focus();
+  await page.keyboard.press('Escape');
+  await expect(peek).toHaveCount(0, { timeout: 200 });
+});
+
+test('PEEK-3b (Inline): expanding the story-thread leg\'s many-verse peek via `all` stays fully contained within the POPOVER -- the internal scrollbar engages instead of spilling past the popover\'s own edge', async ({ page }) => {
+  // RETARGETED (fix round 2, review N-2) from the retired block-mode
+  // fixture -- the measurement/flip/cap machinery this test proves
+  // (ArrowNav's own OnAfterRenderAsync budget against the enclosing
+  // .popover, the reviewer's own original live-repro) is shared code,
+  // still fully live on the Inline leg.
+  const positions = await api.narrativeEventPositions('df_adullam');
+  const narrativePos = positions.narrative.find((p: any) => p.narrative_id === 'david-flight');
+  expect(narrativePos?.following?.id).toBe('df_keilah');
+  const total: number = narrativePos.following.verse_groups.reduce((n: number, g: any) => n + g.verses.length, 0);
+  expect(total, 'df_keilah must resolve MULTIPLE verses for `all` to exist at all').toBeGreaterThan(1);
+
+  // Same short-viewport technique the retired test established --
+  // deterministically minimizes the room available below the arrow.
+  await page.setViewportSize({ width: 1280, height: 480 });
+
+  await openEventPopover(page, 'df_adullam');
+  const popover = page.getByTestId('popover');
+  const arrow = page.getByTestId('event-story-thread-following-event-david-flight');
+  await arrow.evaluate((el: HTMLElement) => el.scrollIntoView({ block: 'end' }));
+  await expect(arrow).toBeVisible();
+  const peek = page.getByTestId('event-story-thread-following-event-david-flight-peek');
+
+  await arrow.hover({ force: true });
+  await expect(peek).toBeVisible({ timeout: 2000 });
+
+  const allLink = page.getByTestId('event-story-thread-following-event-david-flight-peek-more-all');
+  await allLink.click({ force: true });
+  await expect(peek.locator('.popover-arrow-peek-verse')).toHaveCount(total);
+
+  // Poll rather than assert once -- a fresh measurement is a real async
+  // round trip (the retired PEEK-3's own reasoning, carried over).
+  await expect.poll(async () => {
+    const peekBox = await peek.boundingBox();
+    const popoverBox = await popover.boundingBox();
+    if (!peekBox || !popoverBox) {
+      return null;
+    }
+    return peekBox.y >= popoverBox.y && peekBox.y + peekBox.height <= popoverBox.y + popoverBox.height;
+  }, { timeout: 2000 }).toBe(true);
+
+  const peekBox = await peek.boundingBox();
+  const popoverBox = await popover.boundingBox();
+  expect(peekBox, 'the peek must have a real, measurable box').not.toBeNull();
+  expect(popoverBox, 'the popover must have a real, measurable box').not.toBeNull();
+  expect(peekBox!.y, 'the peek\'s own top edge must never be clipped above the popover').toBeGreaterThanOrEqual(popoverBox!.y);
+  expect(peekBox!.y + peekBox!.height, 'the peek\'s own bottom edge must never spill past the popover\'s own bottom edge').toBeLessThanOrEqual(popoverBox!.y + popoverBox!.height);
+
+  // "Never an off-screen spill" degrades to a REAL internal scroll, not
+  // merely "happened to fit" -- the expanded content must have actually
+  // needed it at this deliberately short viewport.
+  const scrollEngaged = await peek.evaluate((el) => el.scrollHeight > el.clientHeight);
+  expect(scrollEngaged, `expanding to all ${total} verses must overflow the available room and engage the peek's own internal scrollbar`).toBe(true);
+});
 
 // ---------------------------------------------------------------------
 // TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
