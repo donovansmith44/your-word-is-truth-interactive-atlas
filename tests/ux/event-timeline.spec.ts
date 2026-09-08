@@ -962,9 +962,37 @@ test('EVT-3/RefsList: the Inline story-thread leg (a diverging narrative row) st
 // sources? we should have one absolute source of truth") fixes this at
 // the data layer (server/atlas-core/src/event_merge.rs); this test proves
 // it end to end, through the real popover a reader actually sees.
-test('EV-1/dup-death regression: MAT.8.3\'s own popover shows exactly ONE event (the leper pair, rob_leper_healed/theo-286, is merged)', async ({ page }) => {
+//
+// BATCH ATTEST-1 (2026-09-07) RE-POINTED THIS TEST. The distinction
+// matters, so it is written out rather than silently patched:
+//
+//   THE INVARIANT IS UNCHANGED and is still the whole point -- MAT.8.3
+//   cites exactly ONE event, never two independently-dated opinions
+//   about one pericope. CHRON-1's merge still stands; theo-286 is still
+//   absorbed.
+//
+//   WHAT CHANGED IS *WHICH* EVENT, on the owner's own report: "A leper
+//   healed; a great popular excitement is given a parallel where there
+//   shouldn't be from Mat.8.1-4; another leprosy story." Matthew 8:1-4
+//   dates its own occasion "when he was come down from the mountain"
+//   (after the Sermon on the Mount); Mark 1:40-45 and Luke 5:12-16 sit
+//   in the first Galilean tour and close with the publishing-abroad
+//   aftermath rob_leper_healed is TITLED for. MAT.8.3 now cites
+//   mat_leper_healed, and the two events are joined by an Analogue row
+//   instead of by a fabricated parallel account.
+//
+//   CONSEQUENTLY THE PARALLELS SECTION IS NOW ABSENT HERE, and that
+//   absence IS the owner's fix landing: VerseParallelsSection shows a
+//   verse's event's OTHER witnesses, and Matthew's leper has none (one
+//   account, its own). Mark's and Luke's are no longer offered as
+//   parallels of Matthew's occasion, which is precisely what was
+//   reported as wrong. The similar-but-distinct relationship stays
+//   reachable one click away under SIMILAR ACCOUNTS on the event itself
+//   -- asserted positively in accounts-and-mentions.spec.ts, so it is
+//   not merely asserted absent here.
+test('EV-1/dup-death regression: MAT.8.3 cites exactly ONE event -- after ATTEST-1 that event is mat_leper_healed, with no false Mark/Luke parallel', async ({ page }) => {
   const verseOut = await api.verse('MAT.8.3');
-  expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['rob_leper_healed']);
+  expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['mat_leper_healed']);
 
   await page.goto('/read/MAT/8');
   await page.getByTestId('verse-line-3').click();
@@ -973,16 +1001,19 @@ test('EV-1/dup-death regression: MAT.8.3\'s own popover shows exactly ONE event 
   const eventSection = page.getByTestId('popover-section-event-membership');
   await expect(eventSection).toBeVisible();
   await expect(eventSection.getByTestId('event-section-heading')).toHaveText('EVENT');
-  await expect(eventSection.getByTestId('verse-event-rob_leper_healed')).toBeVisible();
-  // No second, independently-dated event card for the same pericope.
+  await expect(eventSection.getByTestId('verse-event-mat_leper_healed')).toBeVisible();
+  // The ORIGINAL invariant, unchanged: no second, independently-dated
+  // event card for the same pericope.
   await expect(eventSection.locator('[data-testid^="verse-event-"]')).toHaveCount(1);
+  // ... and specifically not the OTHER leprosy event, which is a distinct
+  // occasion, not another account of this one.
+  await expect(eventSection.getByTestId('verse-event-rob_leper_healed')).toHaveCount(0);
 
-  // The PARALLELS section (this verse's own OTHER witnesses, Mark/Luke)
-  // still shows exactly one event group -- the plain "PARALLELS" heading,
-  // never the multi-event "PARALLELS — {label}" variant that a live
-  // duplicate would have produced.
-  const parallels = page.getByTestId('popover-section-parallels');
-  await expect(parallels).toBeVisible();
-  await expect(parallels.getByTestId('event-section-heading')).toHaveCount(1);
-  await expect(parallels.getByTestId('event-section-heading')).toHaveText('PARALLELS');
+  // ATTEST-1: no PARALLELS section at all here. Matthew's leper has
+  // exactly one account -- its own -- so there is no OTHER witness to
+  // preview, and Mark's/Luke's must NOT be offered as parallels of it.
+  await expect(
+    page.getByTestId('popover-section-parallels'),
+    "Mark/Luke must no longer be offered as parallel accounts of Matthew 8:1-4 -- that WAS the parallel where there shouldn't be one"
+  ).toHaveCount(0);
 });
