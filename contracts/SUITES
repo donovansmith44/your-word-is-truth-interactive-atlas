@@ -35,6 +35,31 @@
 # gate FAILS on any suite it finds that this file does not list. Adding a suite
 # without registering it is therefore impossible to do quietly, which is the
 # property the literal array lacked.
+#
+# THIS FILE IS A CACHE, NOT AN AUTHORITY (fix round 2, review C-NEW-2).
+#
+# The paragraph above closed "a suite cannot be ADDED quietly" and left "a suite
+# cannot be EXEMPTED quietly" wide open. The reviewer changed one word on the
+# atlas-edge row -- contract-runner -> aqc-dual -- and the full gate printed
+# PASSED with map-generator's fixture violated AND a plain @target planted: the
+# suite simply vanished from every list. The registry had become the literal
+# bash array it replaced, still ungated.
+#
+# `contract-gate.sh` now DERIVES what it can and re-checks these rows against
+# the derivation on every run:
+#
+#   * a directory containing RECEIVED.md MUST be registered `contract-runner`.
+#     Another repo's expectations of us are executed here or the gate fails.
+#     There is no registration that exempts them, the same way there is no
+#     @target that disarms them.
+#   * `aqc-dual` is accepted ONLY for a suite containing `Scenario Outline`, a
+#     construct `Gherkin/Parse.hs` does not implement. "The vendored parser
+#     cannot read this corpus" is a fact about the corpus, checkable every run;
+#     "some other harness owns this" was only ever a claim in a file.
+#
+# Editing a row below therefore cannot exempt anything on its own. If you find
+# yourself wanting to, the honest move is the one RECEIVED.md names: break,
+# report, and coordinate on both sides.
 
 contracts/atlas-graph-contract   contract-runner
 contracts/atlas-edge             contract-runner
