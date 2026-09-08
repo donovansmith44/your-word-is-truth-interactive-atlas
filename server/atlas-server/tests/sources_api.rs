@@ -88,3 +88,40 @@ async fn api_sources_defaults_to_empty_when_build_called_without_sources() {
     assert_eq!(body["categories"].as_array().unwrap().len(), 0);
     assert_eq!(body["sources"].as_array().unwrap().len(), 0);
 }
+
+#[tokio::test]
+async fn get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_against() {
+    // Batch PROV-1: the "?" affordance resolves a provenance id CLIENT-SIDE
+    // against this already-fetched document -- no new fetch per popover
+    // (the sub-100ms frontier law). That only works if the table actually
+    // rides this response, so this asserts the shape a browser receives,
+    // independently of the Rust types on either side.
+    let data = demo_fixture();
+    let graph = minimal_graph(&data);
+    let sources = Arc::new(real_sources_document());
+    let expected = sources.provenances.len();
+
+    let app = atlas_server::app::build_with_sources(Arc::new(data), graph, sources, None);
+    let (status, body) = get(&app, "/api/sources").await;
+    assert_eq!(status, StatusCode::OK);
+
+    let rows = body["provenances"].as_array().expect("GET /api/sources must carry a 'provenances' array");
+    assert_eq!(rows.len(), expected, "provenance row count must match data/curated/sources.toml");
+    assert!(!rows.is_empty(), "every piece of data needs a source -- an empty table serves none of them");
+
+    let source_ids: std::collections::HashSet<&str> =
+        body["sources"].as_array().unwrap().iter().filter_map(|s| s["id"].as_str()).collect();
+    for row in rows {
+        for field in ["id", "source", "confidence"] {
+            assert!(
+                row.get(field).and_then(|v| v.as_str()).is_some_and(|s| !s.is_empty()),
+                "provenance row {row} is missing a non-empty '{field}'"
+            );
+        }
+        // The join must hold ON THE WIRE, not merely in the Rust types: a
+        // dangling `source` here is a "?" that renders "Unrecognized
+        // source" at the reader.
+        let source = row["source"].as_str().unwrap();
+        assert!(source_ids.contains(source), "provenance row {row} names source '{source}', which this same response does not carry");
+    }
+}

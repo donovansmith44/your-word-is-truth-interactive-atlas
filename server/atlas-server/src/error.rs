@@ -72,6 +72,19 @@ impl ApiError {
     pub fn bad_corpus(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_corpus", message: format!("unknown corpus: '{raw}' (expected 'bible' or 'concord')") }
     }
+
+    /// Batch PROV-1: a server-side invariant this API cannot serve around
+    /// -- today, exactly one caller: a node whose text rendered but which
+    /// carries no provenance to attribute it to. THE FAIL-LOUD LAW is why
+    /// this exists rather than a `.unwrap_or_default()`: an unattributed
+    /// row must never reach a reader as a blank affordance or a guessed
+    /// label ("never a silent blank and never a fabricated label"), and a
+    /// 500 naming the id is the smallest honest answer. Distinct from
+    /// `not_found` on purpose -- the resource DOES exist; this project's
+    /// own data about it is incomplete, which is our bug, not the caller's.
+    pub fn internal(message: &str) -> Self {
+        Self { status: StatusCode::INTERNAL_SERVER_ERROR, code: "internal", message: message.to_string() }
+    }
 }
 
 #[derive(Serialize)]

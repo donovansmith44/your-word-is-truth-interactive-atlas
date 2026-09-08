@@ -1030,3 +1030,132 @@ async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0]["node"]["id"], "Container:bible-chapter-JHN-3");
 }
+
+// -----------------------------------------------------------------------
+// Batch PROV-1: the wire's own provenance additions, over the REAL graph.
+//
+// Owner order 1, verbatim: "one thing we definitely need for EVERY PIECE OF
+// DATA is the source from which it came. openbible, etc."
+//
+// The additions are additive-only (the words_of_christ precedent) -- no
+// pre-existing field on any of these responses moved or changed shape --
+// and every one is asserted here against the real committed corpus, not a
+// fixture, because "which source" is a fact about the real data or it is
+// nothing.
+// -----------------------------------------------------------------------
+
+#[tokio::test]
+async fn verse_detail_carries_its_own_text_provenance_and_its_sections_sources() {
+    let app = real_app();
+    let (st, body, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    assert_eq!(st, StatusCode::OK);
+
+    // The FOCUS CARD's own attribution: the TextUnit node the text was
+    // rendered from. Asserted by VALUE, not merely present -- a present-
+    // but-wrong provenance is the failure this batch exists to prevent.
+    assert_eq!(body["provenance"], "kjv", "a verse's text is the King James Version's, and must say so");
+
+    // The owner's own headline case. `cross_refs_provenance` is a LIST so a
+    // second cross-reference corpus would start being named rather than
+    // silently hidden behind the first.
+    assert_eq!(
+        body["cross_refs_provenance"].as_array().expect("cross_refs_provenance must be an array"),
+        &vec![serde_json::json!("openbible.info-cross-references")],
+        "'sourced from openbible.com' -- the owner's own example, at the section he named it about"
+    );
+
+    // Every EVENT-membership row carries the source of the event it names.
+    let events = body["events"].as_array().expect("events array");
+    assert!(!events.is_empty(), "GEN.1.1 must belong to at least one event for this assertion to mean anything");
+    for e in events {
+        let p = e["provenance"].as_str().unwrap_or("");
+        assert!(
+            p == "theographic" || p == "curated",
+            "every event-membership row must name its event's own source ('theographic' | 'curated'), got '{p}' for {}",
+            e["id"]
+        );
+    }
+}
+
+#[tokio::test]
+async fn event_detail_carries_its_own_provenance_and_its_sections_own_sources() {
+    let app = real_app();
+
+    // AN IMPORTED EVENT.
+    let (st, body, _h) = get(&app, "/api/event/theo-249").await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(body["provenance"], "theographic");
+    // The Espousal of Mary is mention-only (ATTEST-1's founding case): no
+    // accounts, so no accounts-attribution either -- OMITTED, not an empty
+    // array, the same conditional-presence convention `mentioned_in` and
+    // `analogues` already follow.
+    assert!(body.get("witnesses_provenance").is_none(), "an event with no accounts must not carry an accounts attribution");
+    assert_eq!(
+        body["mentions_provenance"].as_array().expect("a mention-only event must attribute its mentions"),
+        &vec![serde_json::json!("attestation-corrections")],
+        "the retyped mentions are ATTEST-1's own hand-authored corrections, and must report as such"
+    );
+
+    // TOTAL-CAPTURE HONESTY: a hand-authored event says so. This is the row
+    // that was wearing an imported source's clothes before ATTEST-1, and
+    // this field is what makes that impossible to repeat unnoticed.
+    let (st, body, _h) = get(&app, "/api/event/mat_leper_healed").await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(body["provenance"], "curated", "a hand-authored event must never report as Theographic");
+
+    // An Analogue row is a curatorial CLAIM about two events, so it carries
+    // its OWN provenance -- not either end's node provenance.
+    let analogues = body["analogues"].as_array().expect("analogues array");
+    assert_eq!(analogues.len(), 1);
+    assert_eq!(analogues[0]["provenance"], "attestation-corrections");
+}
+
+#[tokio::test]
+async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
+    // The HTTP-surface mirror of `atlas-graph/tests/provenance_registry_
+    // real_data.rs`'s artifact-wide law: the same claim, spot-checked over
+    // exactly what a browser is handed, so a wire field carrying an
+    // un-curated id fails even if it never reached the artifact sweep.
+    let registry: atlas_core::sources::SourcesDocument = {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/sources.json");
+        serde_json::from_str(&std::fs::read_to_string(&path).expect("sources.json must exist")).expect("sources.json must parse")
+    };
+
+    let app = real_app();
+    let (_st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    let (_st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
+
+    let mut served: Vec<String> = Vec::new();
+    let mut push = |v: &serde_json::Value| {
+        if let Some(s) = v.as_str() {
+            served.push(s.to_string());
+        }
+        if let Some(a) = v.as_array() {
+            served.extend(a.iter().filter_map(|x| x.as_str().map(str::to_string)));
+        }
+    };
+    push(&verse["provenance"]);
+    push(&verse["cross_refs_provenance"]);
+    push(&verse["catechism_provenance"]);
+    for e in verse["events"].as_array().into_iter().flatten() {
+        push(&e["provenance"]);
+    }
+    push(&event["provenance"]);
+    push(&event["witnesses_provenance"]);
+    push(&event["mentions_provenance"]);
+    for a in event["analogues"].as_array().into_iter().flatten() {
+        push(&a["provenance"]);
+    }
+
+    assert!(served.len() > 4, "the wire must actually be carrying provenance for this test to mean anything (got {served:?})");
+    for id in &served {
+        let kind = atlas_core::sources::split_provenance_id(id).0;
+        let row = registry.provenances.iter().find(|p| p.id == kind);
+        let row = row.unwrap_or_else(|| panic!("wire provenance id '{id}' resolves to no registry row"));
+        assert!(
+            registry.sources.iter().any(|s| s.id == row.source),
+            "wire provenance id '{id}' names source '{}', which does not exist",
+            row.source
+        );
+    }
+}

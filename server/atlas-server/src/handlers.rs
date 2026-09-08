@@ -695,6 +695,20 @@ pub struct VerseEventOut {
     /// non-traversable styling to a general-kind row BEFORE the click, no
     /// second fetch needed to find out.
     pub kind: String,
+    /// Batch PROV-1 (owner order 1): THIS ROW's own source -- the
+    /// provenance id of the Event NODE this membership row points at, read
+    /// straight off `Node::provenance` (`event_world::event_provenance`:
+    /// `"theographic"` for an imported event, `"curated"` for one this
+    /// project authored). Additive-only, the `words_of_christ` precedent --
+    /// every field above serves byte-identically to before this batch.
+    ///
+    /// Deliberately the TARGET NODE's provenance, not the `Attests` row's:
+    /// this row answers "which event is this verse part of," and the honest
+    /// attribution for THAT claim is whoever says the event exists. The
+    /// `Attests` rows' own (genuinely multi-source) provenance is served
+    /// where it is actually rendered -- `EventDetailOut::
+    /// witnesses_provenance`, on the PARALLEL ACCOUNTS section.
+    pub provenance: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -755,6 +769,31 @@ pub struct VerseDetailOut {
     /// CLIENT side (no section at all when empty), matching every other
     /// "always an array" field in this app's own wire.
     pub catechism: Vec<CatechismRefOut>,
+    /// Batch PROV-1 (owner order 1, "the source from which it came"): THIS
+    /// VERSE's own source -- the provenance id of the `TextUnit` node
+    /// `text` above was rendered from, read straight off `Node::provenance`
+    /// (`kjv_adapter`: `"kjv"`). The focus card's own attribution: the
+    /// affordance beside a verse says "The King James Version" because THIS
+    /// field said `kjv`, never because a client-side default assumed it.
+    pub provenance: String,
+    /// Batch PROV-1: every distinct provenance id behind the CROSS
+    /// REFERENCES section -- the owner's own headline case ("sourced from
+    /// openbible.com"). A LIST, not a string, deliberately: the day a
+    /// second cross-reference corpus lands, this section starts naming
+    /// both instead of quietly continuing to name the first. It is the
+    /// `cross_refs` FAMILY's own distinct set (`ProvenanceIndex::
+    /// by_family`), which is a true statement about every individual row
+    /// exactly while the family is single-sourced -- pinned as such by
+    /// `atlas-graph/tests/provenance_registry_real_data.rs`, and honest
+    /// either way, since a family that gained a second source would serve
+    /// both here rather than pick one.
+    ///
+    /// Always present, possibly empty (a verse with no cross references),
+    /// same "always an array" convention as `cross_refs` itself.
+    pub cross_refs_provenance: Vec<String>,
+    /// Batch PROV-1: the same, for THE SMALL CATECHISM section -- the
+    /// `catechism` family's own distinct provenance set.
+    pub catechism_provenance: Vec<String>,
     // Batch T requirement 3 ("verse popover: event membership replaces
     // prev/next"): Batch N's own `narrative_positions` field (chronological
     // PRIOR/FOLLOWING, verse-keyed) is RETIRED here, cleanly -- verse-level
@@ -908,6 +947,16 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let snap = graph.snapshot();
     let text_id = atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
     let text = window::render(&snap, &text_id).ok_or_else(|| ApiError::not_found("verse"))?;
+    // Batch PROV-1: the verse's own attribution, off the SAME node
+    // `window::render` just read. `window::render` returning `Some` means
+    // the node exists, so this lookup cannot legitimately miss -- but it is
+    // written fail-loud rather than defaulted: an unattributed verse is a
+    // 500 naming the id, never a silent blank at the reader (the fail-loud
+    // law -- "never a silent blank and never a fabricated label").
+    let provenance = snap
+        .node(&text_id)
+        .map(|n| n.provenance)
+        .ok_or_else(|| ApiError::internal(&format!("verse {canonical} rendered text with no node to attribute it to")))?;
 
     let book_meta = data.books_meta.iter().find(|b| b.book == vid.book.code()).cloned().unwrap_or_else(|| BookMeta {
         book: vid.book.code().to_string(),
@@ -941,9 +990,28 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let events: Vec<VerseEventOut> = attesting_events
         .into_iter()
         .map(|e| {
+            // Batch PROV-1: this row's own attribution -- the Event NODE's
+            // provenance, off the same snapshot. An event whose node has
+            // gone missing between the edge walk and here is not reachable
+            // (the walk produced the id FROM the node table), but the
+            // fallback stays honest rather than inventing a source: an
+            // empty string is what `ProvenanceResolver` renders as a LOUD
+            // unresolved notice, never as a plausible-looking label.
+            let node_provenance = snap
+                .node(&atlas_graph::event_world::event_node_id(&e.id))
+                .map(|n| n.provenance)
+                .unwrap_or_default();
             let se = to_scene_event(&e);
             let when = if e.kind == "event" { Some(se.when) } else { None };
-            VerseEventOut { id: se.id, label: se.label, when, verse_groups: se.verse_groups, places: e.places.clone(), kind: e.kind.clone() }
+            VerseEventOut {
+                id: se.id,
+                label: se.label,
+                when,
+                verse_groups: se.verse_groups,
+                places: e.places.clone(),
+                kind: e.kind.clone(),
+                provenance: node_provenance,
+            }
         })
         .collect();
 
@@ -996,6 +1064,12 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         events,
         cross_refs,
         catechism,
+        provenance,
+        // Batch PROV-1: the two section-level attributions, straight off
+        // the load-time companion index -- no scan, no fetch, nothing added
+        // to the per-request path (the sub-100ms frontier law binds here).
+        cross_refs_provenance: graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS),
+        catechism_provenance: graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM),
     }))
 }
 
@@ -1300,6 +1374,34 @@ pub struct EventDetailOut {
     /// claims. Omitted when empty, same convention.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub analogues: Vec<EventAnalogueOut>,
+    /// Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event
+    /// node's `provenance`, off `Node::provenance`
+    /// (`event_world::event_provenance`: `"theographic"` for an imported
+    /// event, `"curated"` for one this project authored). The focus card's
+    /// own attribution, and the TOTAL-CAPTURE HONESTY case in one field: a
+    /// hand-authored event says `curated`, which resolves to the registry's
+    /// own "Our Own Curated Work" category, and therefore cannot silently
+    /// wear Theographic's clothes at the reader.
+    pub provenance: String,
+    /// Batch PROV-1: every distinct provenance id behind THIS EVENT's
+    /// PARALLEL ACCOUNTS section -- the `Attests` rows for this event
+    /// specifically, not the family average. A list because the family is
+    /// genuinely multi-source in the real corpus (`event-witnesses` for the
+    /// imported bulk, `attestation-corrections` for ATTEST-1's own repaired
+    /// rows), and THE LEPER LESSON is exactly that collapsing those to one
+    /// value is how a hand-repaired row ends up attributed to an importer.
+    ///
+    /// Omitted (not `[]`) when empty -- an event with no accounts (the
+    /// Espousal of Mary) renders no PARALLEL ACCOUNTS section at all, so it
+    /// needs no attribution for one; same convention as `mentioned_in`
+    /// above, so such an event serves byte-identically to before this
+    /// batch but for the two unconditional fields.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub witnesses_provenance: Vec<String>,
+    /// Batch PROV-1: the same, for the "Mentioned in" section -- the
+    /// `Mentions` rows naming THIS event.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub mentions_provenance: Vec<String>,
 }
 
 /// ATTEST-1: one end of an `Analogue` -- enough to render and to explore
@@ -1308,6 +1410,13 @@ pub struct EventDetailOut {
 pub struct EventAnalogueOut {
     pub id: String,
     pub title: String,
+    /// Batch PROV-1: genuinely PER-ROW -- the `Analogue` row joining these
+    /// two events carries its own provenance, and this is that value, not
+    /// either end's node provenance and not the family's. An `Analogue` is
+    /// a curatorial CLAIM about two events ("similar in form or content,
+    /// never two accounts of one event"); attributing it to whoever
+    /// supplied the events would name the wrong asserter.
+    pub provenance: String,
 }
 
 /// `GET /api/event/{id}` (Batch T requirement 4): the EVENT node's own rich
@@ -1395,7 +1504,18 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let analogues: Vec<EventAnalogueOut> = drain_edges(&snap, &event_pos, EdgeKind::Symmetric(atlas_graph_types::edge::SymRelationId::Analogue))
         .into_iter()
         .filter_map(|entry| match entry.node {
-            Position::Node(id) => atlas_graph::legacy::event_from_node(&id, &snap, &graph.chronology.chrono).map(|other| EventAnalogueOut { id: other.id.clone(), title: other.label.clone() }),
+            Position::Node(id) => atlas_graph::legacy::event_from_node(&id, &snap, &graph.chronology.chrono).map(|other| {
+                // Batch PROV-1: THIS ROW's own provenance, looked up by the
+                // pair it joins. `analogue_for_pair` is symmetric (both
+                // orderings are stored), so walking the relation from
+                // either end resolves the same single row. `unwrap_or_default`
+                // is unreachable for a pair we just WALKED an Analogue edge
+                // to reach; it stays an honest empty (which the client
+                // renders as a LOUD unresolved notice) rather than a
+                // fabricated label.
+                let provenance = graph.provenance.analogue_for_pair(&e.id, &other.id).unwrap_or_default().to_string();
+                EventAnalogueOut { id: other.id.clone(), title: other.label.clone(), provenance }
+            }),
             Position::Edge(_) => None,
         })
         .collect();
@@ -1414,6 +1534,18 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         ref_note: e.ref_note.clone(),
         mentioned_in,
         analogues,
+        // Batch PROV-1: the event's own node provenance. `event_from_node`
+        // above already proved the node exists (it reconstructed `e` from
+        // it), so this second read cannot legitimately miss -- fail-loud
+        // rather than defaulted, same reasoning as `handlers::verse`.
+        provenance: snap
+            .node(&atlas_graph::event_world::event_node_id(&e.id))
+            .map(|n| n.provenance)
+            .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
+        // Both straight off the load-time companion index -- no scan, no
+        // fetch, nothing added to the per-request path.
+        witnesses_provenance: graph.provenance.attests_for_event(&e.id),
+        mentions_provenance: graph.provenance.event_mentions_for_event(&e.id),
     }))
 }
 
