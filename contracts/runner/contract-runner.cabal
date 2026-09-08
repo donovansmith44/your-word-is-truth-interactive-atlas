@@ -1,0 +1,60 @@
+cabal-version:      3.0
+name:               contract-runner
+version:            0.1.0
+build-type:         Simple
+
+-- VENDORED from the owner's map-generator repo (contracts/runner), by
+-- owner order CDC-1.3: "thou shalt steal the haskell gherkin parser that
+-- i built last night". This is the ATLAS's copy of that executor. What
+-- diverges from upstream, and why, is recorded in VENDOR.md next to this
+-- file -- read it before editing anything under src/Gherkin, src/Pattern,
+-- src/Check, src/Vocab or src/Run, which are byte-identical to upstream
+-- and are meant to stay that way so improvements can travel both ways.
+--
+-- QuickCheck and hspec are deliberately NOT dependencies here: upstream's
+-- generative half (Prop.hs's real generators) and its own hspec spec are
+-- map-generator's, written against map-generator's query vocabulary, and
+-- carrying them would be a fork with no consumer on this side. See
+-- VENDOR.md's "what we did not take".
+
+common warnings
+    ghc-options: -Wall -Wincomplete-patterns
+    default-extensions: OverloadedStrings
+
+library
+    import:           warnings
+    hs-source-dirs:   src
+    exposed-modules:  Gherkin.Ast
+                      Gherkin.Parse
+                      Gherkin.Render
+                      Capture
+                      Pattern
+                      World
+                      Proj
+                      Steps
+                      Run
+                      Check
+                      Vocab
+                      Prop
+    build-depends:    base >=4.17 && <5,
+                      text,
+                      containers,
+                      bytestring,
+                      megaparsec >=9,
+                      aeson >=2,
+                      aeson-pretty,
+                      http-client,
+                      http-types,
+                      directory,
+                      filepath,
+                      vector
+    default-language: GHC2021
+
+executable contract-runner
+    import:           warnings
+    hs-source-dirs:   app
+    main-is:          Main.hs
+    build-depends:    base, contract-runner, text, optparse-applicative,
+                      directory, filepath, containers, http-client,
+                      bytestring, aeson
+    default-language: GHC2021
