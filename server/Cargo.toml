@@ -805,6 +805,15 @@ resolver = "2"
 # written here so a future reader does not mistake a re-measured figure
 # for a regression.
 #
+# ONE TIMING CAVEAT ON THE COUNT, disclosed rather than hoped: batch CDC-1
+# landed two more commits (`fedb8e0`, `14323d5`) after the counted
+# workspace run, and one of them edits `atlas-server/tests/contract_pact.rs`.
+# Re-run at HEAD to check the count did not move under it:
+# `cargo test -p atlas-server --test contract_pact` = 3 passed, 0 failed --
+# the same 3 the counted run recorded, and `git diff fedb8e0 14323d5 --
+# server/atlas-server/tests/contract_pact.rs | grep "^[+-].*#\["` is empty,
+# so no test attribute was added or removed. 1021 stands at HEAD.
+#
 # CURRENT CANONICAL: 1057 (1021 + 36) across 55 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # dotnet at PROV-1 fix round 1: client.Tests 385/385 (381 -> 385, +4:
