@@ -34,17 +34,26 @@
 # Under-declaring is the lie this refuses to co-sign.
 set -uo pipefail
 
-base="${1:-origin/main}"
+requested="${1:-origin/main}"
+base="$requested"
 if ! git rev-parse --verify --quiet "$base" >/dev/null; then
   # A first-push branch has no upstream to diff against. Fall back to the
   # merge-base with the default branch; if THAT is missing too, say so and
   # fail -- a semver gate that cannot see a diff must not report success,
   # because "no diff visible" and "no diff exists" are different facts.
+  #
+  # `$requested` rather than `$1`: under `set -u` an unset `$1` is itself a
+  # fatal error, so quoting the argument directly turned the helpful
+  # diagnostic below into "line 46: $1: unbound variable" on exactly the
+  # invocation that needed the diagnostic most -- a bare
+  # `scripts/contract-semver-gate.sh` in a worktree with no `origin/main`,
+  # which is this repo's own situation.
   if git rev-parse --verify --quiet main >/dev/null; then
     base="$(git merge-base HEAD main)"
   else
-    echo "contract-semver-gate: cannot resolve a base to diff against ('$1' and 'main' both missing)." >&2
-    echo "  Pass one explicitly: scripts/contract-semver-gate.sh <ref>" >&2
+    echo "contract-semver-gate: cannot resolve a base to diff against ('$requested' and 'main' are both missing here)." >&2
+    echo "  Pass one explicitly, e.g.:  scripts/contract-semver-gate.sh <ref>" >&2
+    echo "  or via the gate:            scripts/contract-gate.sh --base <ref>" >&2
     exit 1
   fi
 fi
