@@ -47,9 +47,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use atlas_core::data::AtlasData;
-use atlas_core::sources::SourcesDocument;
-use atlas_graph::GraphService;
 use atlas_graph_types::edge::{RelationId, SymRelationId};
 use atlas_graph_types::id::NodeKind;
 use axum::body::Body;
@@ -67,74 +64,26 @@ fn repo_root() -> PathBuf {
 /// compile, shared across every call site" discipline
 /// `tests/aqc_cucumber.rs::app` already established.
 ///
-/// PACT FIDELITY, and the trap this function walks around: a recorder that
-/// assembles the app DIFFERENTLY from production records the wrong
-/// evidence, and does so silently. The first draft here called
-/// `app::build(..., None)`, which supplies `SourcesDocument::default()` --
-/// so `GET /api/sources` recorded `{"categories":[],"provenances":[],
-/// "sources":[]}` while the real server, which loads
-/// `data/compiled/sources.json` and calls `build_with_sources`
-/// (`src/main.rs:196-201`), serves 5 categories, 18 sources and 26
-/// provenances. The suite would have gone green against an empty registry.
-/// It was caught because the projection demanded an array and got an
-/// object, which is luck; the structural answer is to build the app the
-/// way `main.rs` builds it, which is what this now does.
+/// PACT FIDELITY: a recorder that assembles the app DIFFERENTLY from
+/// production records the wrong evidence, and does so silently. CDC-1 did
+/// exactly that twice, and both times the contract suite stayed GREEN.
+///
+/// **This function is one line, and that is the fix** (fix round 1, review
+/// C-3). It used to hand-copy `src/main.rs`'s default startup path;
+/// `main.rs` and this recorder now call the SAME constructor and reach the
+/// Router through the SAME door, so there is no second copy to drift from.
+/// Divergence is not *detected*, it is unrepresentable. See
+/// `atlas_server::load`'s header for the two bugs that motivated it.
+///
+/// `static_dir: None` is the one deliberate difference and it cannot reach
+/// an `/api` handler -- it only mounts the published client's static files.
 fn app() -> axum::Router {
     static ROUTER: OnceLock<axum::Router> = OnceLock::new();
     ROUTER
         .get_or_init(|| {
-            let data_dir = repo_root().join("data");
-            let compiled_dir = data_dir.join("compiled");
-
-            // THE DEFAULT PATH, not the dev fallback. `src/main.rs` has
-            // two: `--build-from-raw` (compile the ETL in memory) and the
-            // default (load `graph.bin`, then reconstruct the five retiring
-            // AtlasData fields from the already-loaded graph and
-            // `.finish()` the derived indexes). The real server runs the
-            // DEFAULT, so that is what a pact must record.
-            //
-            // The first draft here replicated the dev fallback instead, and
-            // the difference was not cosmetic: without `.finish()`, the
-            // derived index `verse_to_catechism` is empty, so
-            // `GET /api/catechism/{sref}` answered `[]` FOR EVERY
-            // REFERENCE. A scenario blessed against that would have been a
-            // law satisfiable by its own failure mode -- green forever,
-            // including against a server whose catechism lookup was
-            // entirely broken. This is the same class of bug as the empty
-            // `SourcesDocument` below, and the same lesson: a recorder that
-            // assembles the app differently from production records the
-            // wrong evidence, silently.
-            //
-            // It is also several times faster (an artifact load, not an ETL
-            // compile), which matters for a gate meant to run pre-push.
-            let graph = GraphService::from_artifact(&compiled_dir.join("graph.bin"))
-                .expect("data/compiled/graph.bin must load -- run atlas-graph-compile first");
-            let mut data = AtlasData::load(&compiled_dir).expect("data/compiled must load");
-            let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-            data.events = overlay.events;
-            data.places = overlay.places;
-            data.narratives = overlay.narratives;
-            data.verses = overlay.verses;
-            let data: AtlasData = data.finish();
-
-            // Exactly what src/main.rs does, for exactly its reason.
-            let sources_path = compiled_dir.join("sources.json");
-            let sources_json = std::fs::read_to_string(&sources_path).unwrap_or_else(|e| {
-                panic!("reading {} ({e}) -- run `cargo run -p atlas-etl --bin gen_sources` from server/ first", sources_path.display())
-            });
-            let sources: SourcesDocument = serde_json::from_str(&sources_json)
-                .unwrap_or_else(|e| panic!("parsing {}: {e}", sources_path.display()));
-            assert!(
-                !sources.sources.is_empty(),
-                "the recorded pact must reflect the REAL provider: an empty source registry means this recorder is assembling the app differently from src/main.rs"
-            );
-
-            atlas_server::app::build_with_sources(
-                std::sync::Arc::new(data),
-                std::sync::Arc::new(graph),
-                std::sync::Arc::new(sources),
-                None,
-            )
+            atlas_server::load::load_from_data_dir(&repo_root().join("data/compiled"))
+                .expect("data/compiled must load exactly as the server loads it")
+                .into_router(None)
         })
         .clone()
 }
@@ -478,6 +427,75 @@ fn first_differing_key(old: &Value, new: &Value) -> String {
         }
     }
     "the pact differs only in formatting".to_string()
+}
+
+/// THE FIDELITY REGRESSION TEST (fix round 1, review C-3).
+///
+/// Sharing `atlas_server::load` with `main.rs` makes an assembly divergence
+/// unrepresentable, which is the real fix. This is the belt to that braces:
+/// a law that fails if the assembled app is HOLLOW on any of the three
+/// surfaces whose emptiness has actually bitten this project.
+///
+/// Why it earns its place even after the structural fix: `load.rs` is one
+/// function, but it is still a function someone can edit. Dropping
+/// `.finish()` from it, or handing back a default `SourcesDocument`, would
+/// once again make whole endpoints answer with 200 and nothing in them --
+/// and every fixture would re-bless cleanly to the hollow answers, because a
+/// projection over an empty array is a perfectly well-formed empty array.
+/// That is precisely how fidelity bug 2 stayed green.
+///
+/// Each assertion below names a surface that was ACTUALLY dark at some point
+/// in this batch, not a hypothetical:
+///
+///   * `/api/sources` -> empty registry (fidelity bug 1, caught by luck)
+///   * `/api/catechism/{sref}` -> `[]` for EVERY reference (fidelity bug 2,
+///     which shipped green and was found only incidentally)
+///   * `/api/xrefs/{sref}` -> the other derived-index surface of the same
+///     class, included because it would fail the same way and had no guard
+///
+/// Falsifiability, verified rather than assumed: reverting `app()` to the
+/// pre-fix hand-rolled assembly (no `.finish()`) makes the catechism
+/// assertion fail, and building with `SourcesDocument::default()` makes the
+/// sources assertion fail.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_assembled_app_is_not_hollow_on_any_derived_index() {
+    async fn body(path: &str) -> Value {
+        let response = app()
+            .oneshot(Request::builder().uri(path).body(Body::empty()).expect("a request must build"))
+            .await
+            .expect("the router must answer");
+        let bytes = response.into_body().collect().await.expect("a body must collect").to_bytes();
+        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("{path} must answer JSON: {e}"))
+    }
+
+    let sources = body("/api/sources").await;
+    let n_sources = sources["sources"].as_array().map(Vec::len).unwrap_or(0);
+    let n_provenances = sources["provenances"].as_array().map(Vec::len).unwrap_or(0);
+    assert!(
+        n_sources > 0 && n_provenances > 0,
+        "/api/sources answered with an EMPTY registry ({n_sources} sources, {n_provenances} provenances).\n  \
+         This is fidelity bug 1: the app was assembled with a default SourcesDocument instead of data/compiled/sources.json.\n  \
+         The recorded pact would have pinned the empty answer and the contract suite would have gone green over it."
+    );
+
+    // MAT.28.19 is the most-cited verse in the compiled catechism. The point
+    // is not the exact count -- it is that a derived index which is empty
+    // answers 200 with `[]` and looks perfectly healthy.
+    let catechism = body("/api/catechism/MAT.28.19").await;
+    let n_items = catechism.as_array().map(Vec::len).unwrap_or(0);
+    assert!(
+        n_items > 0,
+        "/api/catechism/MAT.28.19 answered with NO items.\n  \
+         This is fidelity bug 2: AtlasData::finish() did not run, so verse_to_catechism is empty and EVERY reference answers [].\n  \
+         The endpoint is dark and the response is a valid, blessable, permanently-green empty array."
+    );
+
+    let xrefs = body("/api/xrefs/JHN.3.16").await;
+    let n_xrefs = xrefs.as_array().map(Vec::len).unwrap_or(0);
+    assert!(
+        n_xrefs > 0,
+        "/api/xrefs/JHN.3.16 answered with NO cross-references -- the same hollow-index class as the two bugs above."
+    );
 }
 
 /// The key-extraction rule is the one place two languages have to agree

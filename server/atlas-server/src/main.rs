@@ -10,8 +10,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::AtlasData;
-use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
 struct Args {
@@ -136,18 +134,14 @@ async fn main() -> Result<()> {
             .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
         (graph, data)
     } else {
-        let artifact_path = args.data_dir.join("graph.bin");
-        let graph = GraphService::from_artifact(&artifact_path)
-            .with_context(|| format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display()))?;
-        let mut data = AtlasData::load(&args.data_dir)
-            .with_context(|| format!("loading compiled data from {}", args.data_dir.display()))?;
-        let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-        data.events = overlay.events;
-        data.places = overlay.places;
-        data.narratives = overlay.narratives;
-        data.verses = overlay.verses;
-        let data = data.finish();
-        (graph, data)
+        // CDC-1 fix round 1 (review C-3): this sequence used to be written
+        // out here and hand-copied into the contract-pact recorder. It now
+        // lives in `atlas_server::load`, which the recorder calls too, so
+        // the recorded evidence the contract gate runs against cannot drift
+        // from what this binary actually serves. See that module's header
+        // for the two fidelity bugs that made it necessary -- both of which
+        // produced a GREEN contract suite over a wrong provider.
+        atlas_server::load::load_graph_and_data(&args.data_dir)?
     };
     let data = Arc::new(data);
     let load_elapsed = load_start.elapsed();
@@ -193,14 +187,18 @@ async fn main() -> Result<()> {
     // serve stale/absent data" discipline this binary already applies to
     // `graph.bin`/the compiled JSON files above -- run `cargo run -p
     // atlas-etl --bin gen_sources` (from `server/`) to (re)generate it.
-    let sources_path = args.data_dir.join("sources.json");
-    let sources_json = std::fs::read_to_string(&sources_path)
-        .with_context(|| format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display()))?;
-    let sources: SourcesDocument = serde_json::from_str(&sources_json).with_context(|| format!("parsing {}", sources_path.display()))?;
-    println!("atlas-server: {} source categories, {} sources loaded from {}", sources.categories.len(), sources.sources.len(), sources_path.display());
-    let sources = Arc::new(sources);
+    // CDC-1 fix round 1 (review C-3): read through `atlas_server::load`,
+    // the same call the pact recorder makes -- a recorder that built with
+    // `SourcesDocument::default()` recorded an EMPTY registry while this
+    // binary served 18 sources, and the contract suite went green over it.
+    let sources = atlas_server::load::load_sources(&args.data_dir)?;
+    println!("atlas-server: {} source categories, {} sources loaded from {}", sources.categories.len(), sources.sources.len(), args.data_dir.join("sources.json").display());
 
-    let app = atlas_server::app::build_with_sources(data, graph, sources, args.static_dir);
+    // The ONE door to a serving Router (`LoadedAtlas::into_router`), taken
+    // by both startup branches and by the recorder. A new `AppState`
+    // ingredient cannot be wired in here while quietly missing there.
+    let app = atlas_server::load::LoadedAtlas { data, graph, sources: Arc::new(sources) }
+        .into_router(args.static_dir);
 
     let addr = format!("0.0.0.0:{}", args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.with_context(|| format!("binding {addr}"))?;
