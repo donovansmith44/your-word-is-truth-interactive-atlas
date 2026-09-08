@@ -40,7 +40,7 @@ import qualified Vocab
 data Source = Live String | Replay FilePath
 
 data Cmd
-  = CmdRun { cSource :: Source, cDir :: FilePath, cBless :: Bool }
+  = CmdRun { cSource :: Source, cDir :: FilePath, cBless :: Bool, cExports :: Maybe FilePath }
   | CmdCheck FilePath
   | CmdVocab { vDir :: FilePath, vWrite :: Bool }
 
@@ -55,7 +55,9 @@ cmd :: Parser Cmd
 cmd = hsubparser
   (  command "run"   (info (CmdRun <$> sourceP
                                    <*> argument str (metavar "DIR")
-                                   <*> switch (long "bless"))
+                                   <*> switch (long "bless")
+                                   <*> optional (strOption (long "exports" <> metavar "DIR"
+                                         <> help "directory of published exports (data/exports)")))
                        (progDesc "execute a contract directory against a server or a recorded pact"))
   <> command "check" (info (CmdCheck <$> argument str (metavar "DIR"))
                        (progDesc "totality: every step matches exactly one definition"))
@@ -79,22 +81,39 @@ featureFiles dir = do
 -- becoming a confusing per-step failure later. A malformed pact is a
 -- broken gate, and a broken gate must say so before it reports on
 -- anything.
+-- The pact is a DIRECTORY of fragments, one per crate that owns a
+-- transport (`http.json` from atlas-server, `cli.json` from atlas-cli),
+-- merged here. One recorder per transport-owning crate is a smaller rule
+-- than one recorder reaching across crate boundaries, and merging is the
+-- cheap half of it.
 loadPact :: FilePath -> IO (Map.Map T.Text PactEntry)
-loadPact path = do
-  ok <- doesFileExist path
-  if not ok
-    then die' ("no recorded pact at " <> T.pack path
-               <> "\n  Generate it with: cargo test -p atlas-server --test contract_pact")
-    else do
+loadPact dir = do
+  isDir <- doesDirectoryExist dir
+  fragments <-
+    if isDir
+      then do
+        names <- listDirectory dir
+        pure [ dir </> n | n <- names, takeExtension n == ".json" ]
+      else do
+        isFile <- doesFileExist dir
+        pure [ dir | isFile ]
+  case fragments of
+    [] -> die' ("no recorded pact at " <> T.pack dir
+                <> "\n  Generate it with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-server --test contract_pact\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-cli --test contract_pact_cli")
+    fs -> do
+      maps <- mapM loadFragment fs
+      let merged = Map.unions maps
+      if Map.null merged
+        then die' ("the recorded pact at " <> T.pack dir <> " carries no entries")
+        else pure merged
+  where
+    loadFragment path = do
       raw <- BS.readFile path
       case eitherDecodeStrict raw of
-        Left e -> die' ("the recorded pact at " <> T.pack path <> " is not JSON: " <> T.pack e)
+        Left e -> die' ("the recorded pact fragment " <> T.pack path <> " is not JSON: " <> T.pack e)
         Right v -> case parseEither parser v of
-          Left e -> die' ("the recorded pact at " <> T.pack path <> " is malformed: " <> T.pack e)
-          Right m
-            | Map.null m -> die' ("the recorded pact at " <> T.pack path <> " carries no entries")
-            | otherwise  -> pure m
-  where
+          Left e -> die' ("the recorded pact fragment " <> T.pack path <> " is malformed: " <> T.pack e)
+          Right m -> pure m
     die' msg = TIO.putStrLn msg >> exitFailure
     parser :: Value -> AT.Parser (Map.Map T.Text PactEntry)
     parser = withObject "pact" $ \o -> do
@@ -117,8 +136,8 @@ main = do
   hSetEncoding stderr utf8
   c <- execParser (info (cmd <**> helper) fullDesc)
   case c of
-    CmdRun src dir bless -> do
-      w <- worldFor src dir bless
+    CmdRun src dir bless exports -> do
+      w <- worldFor src dir bless exports
       files <- featureFiles dir
       results <- runFeatureFiles allSteps w files
       TIO.putStrLn (reportTable results)
@@ -129,13 +148,13 @@ main = do
     CmdCheck dir -> Check.checkDir allSteps dir
     CmdVocab dir wr -> Vocab.vocabDir allSteps dir wr
   where
-    worldFor (Live base) dir bless = do
+    worldFor (Live base) dir bless ex = do
       mgr <- newManager defaultManagerSettings
       let b = T.pack base
-      pure (World b (httpTransport mgr b) (dir </> "fixtures") Map.empty bless
-                   (httpTransportRaw mgr b) (httpTransportProbe mgr b))
-    worldFor (Replay pactPath) dir bless = do
+      pure (World b (exportsFirst ex (httpTransport mgr b)) (dir </> "fixtures") Map.empty bless
+                   (exportsFirstRaw ex (httpTransportRaw mgr b)) (httpTransportProbe mgr b))
+    worldFor (Replay pactPath) dir bless ex = do
       pact <- loadPact pactPath
-      pure (World (T.pack ("replay:" <> pactPath)) (replayTransport pact)
+      pure (World (T.pack ("replay:" <> pactPath)) (exportsFirst ex (replayTransport pact))
                   (dir </> "fixtures") Map.empty bless
-                  (replayTransportRaw pact) (replayTransportProbe pact))
+                  (exportsFirstRaw ex (replayTransportRaw pact)) (replayTransportProbe pact))

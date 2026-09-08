@@ -1,0 +1,134 @@
+{
+    "categories": [
+        {
+            "id": "scripture",
+            "label": "Scripture & Text"
+        },
+        {
+            "id": "narrative-history",
+            "label": "Historical & Narrative Sources"
+        },
+        {
+            "id": "lutheran-texts",
+            "label": "Lutheran Confessional Texts"
+        },
+        {
+            "id": "map",
+            "label": "Map & Cartography"
+        },
+        {
+            "id": "our-work",
+            "label": "Our Own Curated Work"
+        }
+    ],
+    "sources": [
+        {
+            "category": "scripture",
+            "id": "kjv-text",
+            "license": "Public domain",
+            "title": "The King James Version"
+        },
+        {
+            "category": "scripture",
+            "id": "openbible-geocoding",
+            "license": "CC-BY 4.0",
+            "title": "OpenBible.info Geocoding"
+        },
+        {
+            "category": "scripture",
+            "id": "openbible-xrefs",
+            "license": "Free to use with credit",
+            "title": "OpenBible.info Cross-References"
+        },
+        {
+            "category": "scripture",
+            "id": "red-letter",
+            "license": "Public domain",
+            "title": "KJV Red-Letter Markup"
+        },
+        {
+            "category": "scripture",
+            "id": "brainfuel-bible",
+            "license": "Public domain",
+            "title": "brain-fuel/bible Parallel Editions"
+        },
+        {
+            "category": "narrative-history",
+            "id": "theographic",
+            "license": "CC BY-SA 4.0",
+            "title": "Theographic Bible Metadata"
+        },
+        {
+            "category": "narrative-history",
+            "id": "robertson-harmony",
+            "license": "Public domain",
+            "title": "Robertson's Harmony of the Gospels"
+        },
+        {
+            "category": "narrative-history",
+            "id": "crockett-harmony",
+            "license": "Public domain",
+            "title": "Crockett's Harmony of Samuel, Kings, and Chronicles"
+        },
+        {
+            "category": "narrative-history",
+            "id": "ussher-annals",
+            "license": "Public domain",
+            "title": "Ussher's Annals of the World"
+        },
+        {
+            "category": "narrative-history",
+            "id": "easton-dictionary",
+            "license": "Public domain (carried in the vendored Theographic bundle, itself CC BY-SA 4.0)",
+            "title": "Easton's Bible Dictionary"
+        },
+        {
+            "category": "narrative-history",
+            "id": "kretzmann-commentary",
+            "license": "Public domain",
+            "title": "Kretzmann's Popular Commentary of the Bible"
+        },
+        {
+            "category": "lutheran-texts",
+            "id": "small-catechism",
+            "license": "Public domain (published 1921, USA)",
+            "title": "Luther's Small Catechism"
+        },
+        {
+            "category": "lutheran-texts",
+            "id": "book-of-concord",
+            "license": "Public domain (published 1921, USA)",
+            "title": "The Book of Concord"
+        },
+        {
+            "category": "lutheran-texts",
+            "id": "catechism-mapping",
+            "license": "No license file -- used by the project owner's own explicit direction",
+            "title": "Catechism Verse Mapping"
+        },
+        {
+            "category": "map",
+            "id": "esri-tiles",
+            "license": "Esri terms of use",
+            "title": "Esri World Shaded Relief"
+        },
+        {
+            "category": "map",
+            "id": "carto-tiles",
+            "license": "Carto terms of use",
+            "title": "Carto Basemap Tiles"
+        },
+        {
+            "category": "map",
+            "id": "leaflet",
+            "license": "BSD-2-Clause",
+            "title": "Leaflet"
+        },
+        {
+            "category": "our-work",
+            "id": "our-curated-work",
+            "license": "CC0 1.0 Universal",
+            "title": "Our Own Curated Work"
+        }
+    ]
+}

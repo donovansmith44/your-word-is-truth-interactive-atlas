@@ -1,0 +1,48 @@
+{
+  "entries": {
+    "bibex edges Place:hazor-1 --kind site-of": {
+      "body": {
+        "entries": [
+          {
+            "edge": "LocatedAt:548e223fe158b5b2",
+            "node": {
+              "id": "Event:cq_hazor",
+              "kind": "Event",
+              "label": "Hazor is defeated and burned"
+            }
+          },
+          {
+            "edge": "LocatedAt:641c637161ca0461",
+            "node": {
+              "id": "Event:theo-138",
+              "kind": "Event",
+              "label": "Subjugation by Jabin"
+            }
+          }
+        ],
+        "kind": "site-of",
+        "next": null
+      },
+      "status": 200
+    },
+    "bibex node Place:hazor-1": {
+      "body": {
+        "edge_summary": [
+          {
+            "count": 2,
+            "kind": "site-of"
+          },
+          {
+            "count": 11,
+            "kind": "mentioned-in"
+          }
+        ],
+        "id": "Place:hazor-1",
+        "kind": "Place",
+        "label": "Hazor 1",
+        "provenance": "curated-places"
+      },
+      "status": 200
+    }
+  }
+}

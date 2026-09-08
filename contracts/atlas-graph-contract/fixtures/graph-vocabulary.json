@@ -1,0 +1,127 @@
+{
+    "node_kinds": [
+        "TextUnit",
+        "Container",
+        "Event",
+        "Narrative",
+        "Place",
+        "Person",
+        "Anchor",
+        "Era",
+        "Polity",
+        "CatechismItem",
+        "Source",
+        "Translation",
+        "PeopleGroup",
+        "CommentaryItem"
+    ],
+    "relations": [
+        {
+            "forward": "contains",
+            "inverse": "member-of",
+            "name": "Contains"
+        },
+        {
+            "forward": "attested-in",
+            "inverse": "attests",
+            "name": "Attests"
+        },
+        {
+            "forward": "follows-in",
+            "inverse": "precedes-in",
+            "name": "Succession"
+        },
+        {
+            "forward": "dated-by",
+            "inverse": "dates",
+            "name": "DatedBy"
+        },
+        {
+            "forward": "located-at",
+            "inverse": "site-of",
+            "name": "LocatedAt"
+        },
+        {
+            "forward": "mentions",
+            "inverse": "mentioned-in",
+            "name": "Mentions"
+        },
+        {
+            "forward": "cites",
+            "inverse": "cited-by",
+            "name": "Cites"
+        },
+        {
+            "forward": "quotes",
+            "inverse": "quoted-by",
+            "name": "Quotes"
+        },
+        {
+            "forward": "confesses",
+            "inverse": "confessed-in",
+            "name": "Confesses"
+        },
+        {
+            "forward": "fulfilled-in",
+            "inverse": "fulfills",
+            "name": "Fulfillment"
+        },
+        {
+            "forward": "prefigures",
+            "inverse": "prefigured-by",
+            "name": "Typology"
+        },
+        {
+            "forward": "named-after",
+            "inverse": "namesake-of",
+            "name": "NamedAfter"
+        },
+        {
+            "forward": "justified-by",
+            "inverse": "justifies",
+            "name": "JustifiedBy"
+        },
+        {
+            "forward": "comments-on",
+            "inverse": "commented-on-by",
+            "name": "CommentsOn"
+        },
+        {
+            "forward": "spoken-by",
+            "inverse": "speech-of",
+            "name": "SpokenBy"
+        },
+        {
+            "forward": "spoken-at",
+            "inverse": "site-of-speech",
+            "name": "SpokenAt"
+        },
+        {
+            "forward": "derived-from",
+            "inverse": "derives",
+            "name": "DerivedFrom"
+        }
+    ],
+    "symmetric": [
+        {
+            "label": "analogous-to",
+            "name": "Analogue"
+        },
+        {
+            "label": "catechism-link",
+            "name": "CatechismLink"
+        },
+        {
+            "label": "corresponds-to",
+            "name": "Corresponds"
+        },
+        {
+            "label": "parallel",
+            "name": "Parallel"
+        },
+        {
+            "label": "temporal-adjacency",
+            "name": "TemporalAdjacency"
+        }
+    ]
+}

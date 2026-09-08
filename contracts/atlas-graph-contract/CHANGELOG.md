@@ -1,0 +1,53 @@
+# Atlas Graph Contract — CHANGELOG
+
+**A suite IS a version.** Not a file that happens to carry a number: the
+set of promises in `graph/` and `transport/`, together with the fixtures
+that give them values, is the versioned unit, and this file is where each
+version says what it changed and why the bump is the size it is.
+
+## What the bump classes mean here
+
+Semver for a contract suite is stated from the point of view of a
+**consumer of the promises** — another system that declares "I am written
+against atlas-graph-contract 1.4" and binds to what that version
+guarantees. It is *not* stated from the point of view of the provider
+being tested; the provider newly failing is the normal, intended result of
+a MINOR bump.
+
+| Class | Means | Examples in this suite |
+|---|---|---|
+| **PATCH** | Expectations clarified. The set of providers that conform is **unchanged**. | Preamble prose; comments; a regenerated `Vocabulary:` table; a fixture reformatted with an identical parsed value. |
+| **MINOR** | Expectations **added**. New guarantees; a consumer written against an earlier version still gets everything it relied on. | A new scenario; a new feature file; a projection gaining a field; a new transport suite. |
+| **MAJOR** | An existing expectation **changed or removed**. A consumer that relied on a promise may no longer have it. | Deleting a scenario or a feature file; removing a field from a projection; re-blessing a fixture to a **different value**; adding `@target` to a scenario that was green (a guarantee withdrawn). |
+
+The bump is **derived from the diff, not asserted by the author**.
+`scripts/contract-semver-gate.sh` computes the class the diff requires and
+fails when the declared bump is smaller. Declaring a bigger bump than the
+diff needs is always allowed — over-declaring is a judgement call, and
+under-declaring is a lie the gate refuses to co-sign.
+
+`@target` deserves its own line, because it is the one place a suite could
+quietly lose teeth: a `@target` scenario runs and is reported **red in
+every run**, but does not fail the gate. That is disclosure, not an escape
+hatch — and adding one to a previously-green scenario is classified
+**MAJOR**, because withdrawing a guarantee is exactly what it is.
+
+---
+
+- **0.1.0** (Batch CDC-1) — Initial suite. The graph-primary expectations
+  (`graph/`: the declared `kind_tags!`/`relations!` vocabulary; node
+  identity; edge-family pages with the bijection witness; the gazetteer
+  pinned row by row as the C3 coordinate authority; C6's one-root law
+  across the three published exports) and the transport expectations
+  (`transport/`: the HTTP surfaces the Blazor client consumes that no
+  other suite owns; bibex asserted to agree with the wire through the
+  graph's own projections). Fifteen scenarios, one of them `@target`.
+
+  Zero behaviour change to any endpoint, any handler, or any artifact:
+  this version records what the server already serves and what consumers
+  already read. The one red it declares is disclosed rather than silenced
+  — `bibex --json node` carries no atlas version root while
+  `GET /api/node/{id}` does, so a CLI consumer cannot implement the C6
+  stale-pin. Fixing that is a one-field change in `atlas-cli`, which this
+  batch does not own; when it lands, the `@target` tag comes off and that
+  is a **MINOR** bump (a guarantee gained, not changed).

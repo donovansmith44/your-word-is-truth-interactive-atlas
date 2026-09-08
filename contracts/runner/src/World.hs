@@ -189,6 +189,45 @@ replayTransportRaw pact key = pure $ case Map.lookup key pact of
       (Nothing, Just v)  -> Right (BL.toStrict (encode v))
       (Nothing, Nothing) -> Left ("pact entry '" <> key <> "' has no body at all")
 
+-- ==================== COMMITTED ARTIFACTS ====================
+--
+-- An `export <name>` juncture is answered by READING THE COMMITTED FILE,
+-- not from the pact.
+--
+-- The pact exists to freeze evidence that is otherwise only obtainable
+-- from a running server. A published export is already a committed file
+-- that every reviewer sees in the diff, so recording it into the pact as
+-- well would store the same bytes twice and make the pact churn on every
+-- recompile for no added guarantee. Measured, not assumed: the three
+-- exports were 741 KB of the pact's 791 KB.
+--
+-- This composes IN FRONT of whichever transport a run is using, so the
+-- exports answer identically in live mode and replay mode -- there is one
+-- answer to "what does the gazetteer say", not two that could disagree.
+exportsFirst :: Maybe FilePath
+             -> (Text -> IO (Either Text (ByteString, Value)))
+             -> Text -> IO (Either Text (ByteString, Value))
+exportsFirst mdir inner key = case T.stripPrefix "export " key of
+  Nothing -> inner key
+  Just name -> case mdir of
+    Nothing -> pure (Left ("this run was given no --exports directory, so it cannot answer '"
+                           <> key <> "' -- pass --exports data/exports"))
+    Just dir -> do
+      let path = dir <> "/" <> T.unpack (T.strip name) <> ".json"
+      raw <- BS.readFile path
+      pure $ case eitherDecodeStrict raw of
+        Right v -> Right (raw, v)
+        Left e  -> Left ("the published export " <> T.pack path <> " is not JSON: " <> T.pack e)
+
+exportsFirstRaw :: Maybe FilePath
+                -> (Text -> IO (Either Text ByteString))
+                -> Text -> IO (Either Text ByteString)
+exportsFirstRaw mdir inner key = case T.stripPrefix "export " key of
+  Nothing -> inner key
+  Just name -> case mdir of
+    Nothing -> pure (Left ("this run was given no --exports directory, so it cannot answer '" <> key <> "'"))
+    Just dir -> Right <$> BS.readFile (dir <> "/" <> T.unpack (T.strip name) <> ".json")
+
 replayTransportProbe :: Map Text PactEntry -> Text -> IO (Either Text (Int, ByteString))
 replayTransportProbe pact key = pure $ case Map.lookup key pact of
   Nothing -> Left (replayMiss key)

@@ -1,0 +1,7028 @@
+{
+  "cli_keys": [
+    "bibex edges Place:hazor-1 --kind site-of",
+    "bibex node Place:hazor-1"
+  ],
+  "entries": {
+    "GET /api/catechism/MAT.28.19": {
+      "body": [],
+      "status": 200
+    },
+    "GET /api/contract": {
+      "body": {
+        "max_version": "0.1.0",
+        "min_version": "0.1.0"
+      },
+      "status": 200
+    },
+    "GET /api/eras": {
+      "body": [
+        {
+          "from_year": -4004,
+          "id": "primeval",
+          "name": "Primeval",
+          "to_year": -2167
+        },
+        {
+          "from_year": -2166,
+          "id": "patriarchs",
+          "name": "Patriarchs",
+          "to_year": -1877
+        },
+        {
+          "from_year": -1876,
+          "id": "egypt-exodus",
+          "name": "Egypt & Exodus",
+          "to_year": -1407
+        },
+        {
+          "from_year": -1406,
+          "id": "conquest-judges",
+          "name": "Conquest & Judges",
+          "to_year": -1051
+        },
+        {
+          "from_year": -1050,
+          "id": "united-kingdom",
+          "name": "United Kingdom",
+          "to_year": -932
+        },
+        {
+          "from_year": -931,
+          "id": "divided-kingdom",
+          "name": "Divided Kingdom",
+          "to_year": -587
+        },
+        {
+          "from_year": -586,
+          "id": "exile",
+          "name": "Exile",
+          "to_year": -539
+        },
+        {
+          "from_year": -538,
+          "id": "return",
+          "name": "Return & Second Temple",
+          "to_year": -6
+        },
+        {
+          "from_year": -5,
+          "id": "gospels",
+          "name": "Gospels",
+          "to_year": 29
+        },
+        {
+          "from_year": 30,
+          "id": "early-church",
+          "name": "Early Church",
+          "to_year": 100
+        }
+      ],
+      "status": 200
+    },
+    "GET /api/event/ab_haran": {
+      "body": {
+        "id": "ab_haran",
+        "kind": "event",
+        "places": [
+          {
+            "id": "haran",
+            "name": "Haran"
+          }
+        ],
+        "provenance": "curated",
+        "title": "Sojourn in Haran; the call of Abram",
+        "when": {
+          "from_year": -2092,
+          "to_year": -2091
+        },
+        "witnesses": [
+          {
+            "book": "GEN",
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 11,
+                "count": 1,
+                "verses": [
+                  "GEN.11.31"
+                ]
+              },
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 2,
+                "verses": [
+                  "GEN.12.1",
+                  "GEN.12.4"
+                ]
+              }
+            ]
+          }
+        ],
+        "witnesses_provenance": [
+          "event-witnesses"
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/land-mask": {
+      "body": {
+        "rings": [
+          [
+            [
+              36.6,
+              36.2
+            ],
+            [
+              35.9,
+              35.9
+            ],
+            [
+              34.9,
+              35.9
+            ],
+            [
+              33.9,
+              35.5
+            ],
+            [
+              33.27,
+              35.2
+            ],
+            [
+              32.9,
+              35.05
+            ],
+            [
+              32.8,
+              34.98
+            ],
+            [
+              32.3,
+              34.85
+            ],
+            [
+              32.05,
+              34.75
+            ],
+            [
+              31.5,
+              34.45
+            ],
+            [
+              31.13,
+              33.8
+            ],
+            [
+              31.25,
+              32.3
+            ],
+            [
+              31.5,
+              31.8
+            ],
+            [
+              31.55,
+              31.3
+            ],
+            [
+              31.45,
+              30.8
+            ],
+            [
+              31.4,
+              30.4
+            ],
+            [
+              31.25,
+              29.95
+            ],
+            [
+              31.05,
+              29.3
+            ],
+            [
+              30.95,
+              28.5
+            ],
+            [
+              31.1,
+              27.4
+            ],
+            [
+              29.5,
+              27.0
+            ],
+            [
+              27.5,
+              28.0
+            ],
+            [
+              25.5,
+              29.0
+            ],
+            [
+              23.5,
+              30.5
+            ],
+            [
+              22.0,
+              31.5
+            ],
+            [
+              20.0,
+              33.0
+            ],
+            [
+              18.3,
+              35.5
+            ],
+            [
+              19.0,
+              37.3
+            ],
+            [
+              21.0,
+              36.9
+            ],
+            [
+              23.0,
+              35.5
+            ],
+            [
+              24.5,
+              34.9
+            ],
+            [
+              26.0,
+              34.0
+            ],
+            [
+              27.7,
+              33.9
+            ],
+            [
+              28.9,
+              33.0
+            ],
+            [
+              29.9,
+              32.5
+            ],
+            [
+              30.0,
+              34.0
+            ],
+            [
+              30.5,
+              35.0
+            ],
+            [
+              31.5,
+              35.9
+            ],
+            [
+              32.5,
+              36.3
+            ],
+            [
+              33.5,
+              36.6
+            ],
+            [
+              34.8,
+              37.0
+            ],
+            [
+              35.5,
+              37.5
+            ],
+            [
+              36.5,
+              38.0
+            ],
+            [
+              37.5,
+              39.5
+            ],
+            [
+              38.5,
+              40.5
+            ],
+            [
+              39.5,
+              41.5
+            ],
+            [
+              40.3,
+              39.5
+            ],
+            [
+              41.0,
+              36.0
+            ],
+            [
+              41.2,
+              33.0
+            ],
+            [
+              41.0,
+              30.0
+            ],
+            [
+              40.3,
+              27.5
+            ],
+            [
+              39.0,
+              27.0
+            ],
+            [
+              37.0,
+              27.5
+            ],
+            [
+              36.9,
+              30.7
+            ],
+            [
+              36.8,
+              32.5
+            ],
+            [
+              36.8,
+              34.6
+            ],
+            [
+              36.6,
+              36.2
+            ]
+          ],
+          [
+            [
+              37.5,
+              40.5
+            ],
+            [
+              35.0,
+              40.0
+            ],
+            [
+              33.0,
+              41.5
+            ],
+            [
+              30.5,
+              43.5
+            ],
+            [
+              29.0,
+              45.0
+            ],
+            [
+              29.5,
+              47.5
+            ],
+            [
+              30.0,
+              48.3
+            ],
+            [
+              29.0,
+              49.5
+            ],
+            [
+              28.0,
+              51.0
+            ],
+            [
+              27.0,
+              53.0
+            ],
+            [
+              26.5,
+              55.0
+            ],
+            [
+              27.0,
+              56.3
+            ],
+            [
+              29.0,
+              57.0
+            ],
+            [
+              32.0,
+              56.0
+            ],
+            [
+              35.0,
+              53.0
+            ],
+            [
+              37.5,
+              51.0
+            ],
+            [
+              39.0,
+              47.0
+            ],
+            [
+              39.2,
+              43.0
+            ],
+            [
+              37.5,
+              40.5
+            ]
+          ],
+          [
+            [
+              40.0,
+              44.0
+            ],
+            [
+              41.5,
+              50.0
+            ],
+            [
+              41.5,
+              58.0
+            ],
+            [
+              40.0,
+              65.0
+            ],
+            [
+              38.0,
+              69.0
+            ],
+            [
+              34.0,
+              69.5
+            ],
+            [
+              30.0,
+              68.5
+            ],
+            [
+              26.5,
+              66.0
+            ],
+            [
+              24.0,
+              61.0
+            ],
+            [
+              23.0,
+              57.0
+            ],
+            [
+              24.5,
+              55.5
+            ],
+            [
+              27.5,
+              54.0
+            ],
+            [
+              30.0,
+              52.0
+            ],
+            [
+              34.0,
+              46.0
+            ],
+            [
+              38.0,
+              43.5
+            ],
+            [
+              40.0,
+              44.0
+            ]
+          ],
+          [
+            [
+              41.0,
+              24.0
+            ],
+            [
+              43.0,
+              23.0
+            ],
+            [
+              45.0,
+              19.0
+            ],
+            [
+              46.5,
+              14.0
+            ],
+            [
+              47.6,
+              8.0
+            ],
+            [
+              47.5,
+              2.5
+            ],
+            [
+              46.0,
+              -1.5
+            ],
+            [
+              43.5,
+              -3.8
+            ],
+            [
+              40.0,
+              -6.5
+            ],
+            [
+              37.0,
+              -6.0
+            ],
+            [
+              36.2,
+              -5.4
+            ],
+            [
+              36.0,
+              -2.0
+            ],
+            [
+              43.0,
+              3.0
+            ],
+            [
+              44.0,
+              8.0
+            ],
+            [
+              41.5,
+              12.5
+            ],
+            [
+              40.5,
+              17.5
+            ],
+            [
+              39.0,
+              20.0
+            ],
+            [
+              38.0,
+              23.5
+            ],
+            [
+              40.5,
+              23.0
+            ],
+            [
+              41.0,
+              24.0
+            ]
+          ],
+          [
+            [
+              31.1,
+              25.0
+            ],
+            [
+              32.3,
+              20.0
+            ],
+            [
+              33.0,
+              13.0
+            ],
+            [
+              37.3,
+              10.0
+            ],
+            [
+              36.8,
+              5.0
+            ],
+            [
+              35.7,
+              -1.0
+            ],
+            [
+              35.2,
+              -5.9
+            ],
+            [
+              31.5,
+              -9.5
+            ],
+            [
+              29.0,
+              -9.0
+            ],
+            [
+              29.5,
+              -2.0
+            ],
+            [
+              32.0,
+              5.0
+            ],
+            [
+              32.0,
+              20.0
+            ],
+            [
+              31.1,
+              25.0
+            ]
+          ],
+          [
+            [
+              35.7,
+              32.9
+            ],
+            [
+              35.3,
+              32.35
+            ],
+            [
+              34.85,
+              32.5
+            ],
+            [
+              34.75,
+              33.4
+            ],
+            [
+              34.9,
+              34.0
+            ],
+            [
+              35.0,
+              34.4
+            ],
+            [
+              35.35,
+              34.55
+            ],
+            [
+              35.65,
+              34.0
+            ],
+            [
+              35.7,
+              33.4
+            ],
+            [
+              35.7,
+              32.9
+            ]
+          ]
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/landmarks": {
+      "body": [
+        {
+          "kind": "water",
+          "lat": 31.761389,
+          "lon": 35.558333,
+          "name": "Jordan River",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 31.804819,
+          "lon": 34.17035,
+          "name": "The Great Sea",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 32.818906,
+          "lon": 35.590033,
+          "name": "Sea of Galilee",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 31.5,
+          "lon": 35.5,
+          "name": "Dead Sea",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 19.0,
+          "lon": 39.5,
+          "name": "Red Sea",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 31.4653,
+          "lon": 30.3667,
+          "name": "Nile",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 31.0043,
+          "lon": 47.442,
+          "name": "Euphrates",
+          "size": null
+        },
+        {
+          "kind": "water",
+          "lat": 31.0043,
+          "lon": 47.4421,
+          "name": "Tigris",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 28.539722,
+          "lon": 33.973333,
+          "name": "Mount Sinai",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 28.58771,
+          "lon": 33.921682,
+          "name": "Mount Horeb",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 32.6725,
+          "lon": 35.023333,
+          "name": "Mount Carmel",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 39.702761,
+          "lon": 44.300381,
+          "name": "Mount Ararat",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 31.777946,
+          "lon": 35.245686,
+          "name": "Mount of Olives",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 33.4,
+          "lon": 35.85,
+          "name": "Mount Hermon",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 32.433889,
+          "lon": 35.414444,
+          "name": "Mount Gilboa",
+          "size": null
+        },
+        {
+          "kind": "mountain",
+          "lat": 31.766667,
+          "lon": 35.75,
+          "name": "Mount Nebo",
+          "size": null
+        },
+        {
+          "kind": "region",
+          "lat": 29.5,
+          "lon": 34.0,
+          "name": "Wilderness of Sinai",
+          "size": null
+        },
+        {
+          "kind": "region",
+          "lat": 30.416944,
+          "lon": 35.151389,
+          "name": "Arabah",
+          "size": null
+        },
+        {
+          "kind": "region",
+          "lat": 31.244722,
+          "lon": 34.840833,
+          "name": "Negev",
+          "size": null
+        },
+        {
+          "kind": "region",
+          "lat": 23.0,
+          "lon": 45.0,
+          "name": "Arabia",
+          "size": "lg"
+        },
+        {
+          "kind": "region",
+          "lat": 36.864444,
+          "lon": 39.032778,
+          "name": "Mesopotamia",
+          "size": "lg"
+        },
+        {
+          "kind": "region",
+          "lat": 39.0,
+          "lon": 35.0,
+          "name": "Asia Minor",
+          "size": "lg"
+        },
+        {
+          "kind": "region",
+          "lat": 34.8065,
+          "lon": 48.516247,
+          "name": "Persia",
+          "size": "lg"
+        },
+        {
+          "kind": "region",
+          "lat": 30.1,
+          "lon": 34.9,
+          "name": "Wilderness of Paran",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 29.0,
+          "lon": 33.3,
+          "name": "Wilderness of Sin",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 35.0,
+          "lon": 33.0,
+          "name": "Cyprus",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 35.309722,
+          "lon": 24.893333,
+          "name": "Crete",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 16.935139,
+          "lon": 33.75075,
+          "name": "Ethiopia",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 32.820946,
+          "lon": 21.851229,
+          "name": "Libya",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 41.6,
+          "lon": 22.54,
+          "name": "Macedonia",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 11.595,
+          "lon": 43.148056,
+          "name": "Punt",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 44.94278,
+          "lon": 34.12056,
+          "name": "Ashkenaz",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 37.271944,
+          "lon": -6.944167,
+          "name": "Tarshish",
+          "size": "md"
+        },
+        {
+          "kind": "region",
+          "lat": 23.9944,
+          "lon": 67.4308,
+          "name": "India",
+          "size": "md"
+        }
+      ],
+      "status": 200
+    },
+    "GET /api/narratives": {
+      "body": [
+        {
+          "color": "#D97706",
+          "id": "abraham-migration",
+          "legs": [
+            "ab_ur",
+            "ab_haran",
+            "ab_shechem",
+            "ab_bethel",
+            "ab_egypt",
+            "ab_hebron"
+          ],
+          "name": "Abraham's Migration"
+        },
+        {
+          "color": "#7C3AED",
+          "id": "conquest",
+          "legs": [
+            "cq_shittim",
+            "cq_gilgal",
+            "cq_jericho",
+            "cq_ai",
+            "cq_gibeon",
+            "cq_hazor",
+            "cq_shiloh"
+          ],
+          "name": "The Conquest of Canaan"
+        },
+        {
+          "color": "#2563EB",
+          "id": "david-flight",
+          "legs": [
+            "df_ramah",
+            "df_nob",
+            "df_gath",
+            "df_adullam",
+            "df_keilah",
+            "df_ziph",
+            "df_en_gedi",
+            "df_ziklag",
+            "df_hebron"
+          ],
+          "name": "David's Flight from Saul"
+        },
+        {
+          "color": "#0D9488",
+          "id": "elijah",
+          "legs": [
+            "el_tishbe",
+            "el_cherith",
+            "el_zarephath",
+            "el_carmel",
+            "el_jezreel",
+            "el_beersheba",
+            "el_horeb",
+            "el_abel_meholah"
+          ],
+          "name": "Elijah"
+        },
+        {
+          "color": "#64748B",
+          "id": "exile",
+          "legs": [
+            "exl_jerusalem",
+            "exl_riblah",
+            "exl_babylon",
+            "jer_jeremiah_stays_with_gedaliah",
+            "jer_the_assassination_of_gedaliah",
+            "exl_tahpanhes"
+          ],
+          "name": "The Exile to Babylon"
+        },
+        {
+          "color": "#DC2626",
+          "id": "exodus",
+          "legs": [
+            "ex_rameses",
+            "ex_succoth",
+            "ex_red_sea",
+            "ex_marah",
+            "ex_elim",
+            "ex_rephidim",
+            "ex_sinai",
+            "ex_kadesh",
+            "ex_moab",
+            "ex_jordan"
+          ],
+          "name": "The Exodus"
+        },
+        {
+          "color": "#A16207",
+          "id": "jacob-journeys",
+          "legs": [
+            "jj_beersheba",
+            "jj_bethel_dream",
+            "jj_haran",
+            "jj_mahanaim",
+            "jj_peniel",
+            "jj_shechem",
+            "jj_bethel_return",
+            "jj_hebron"
+          ],
+          "name": "Jacob's Journeys"
+        },
+        {
+          "color": "#DB2777",
+          "id": "jesus-ministry",
+          "legs": [
+            "rob_zacharias_vision",
+            "rob_annunciation_mary",
+            "rob_elizabeth_greets_mary",
+            "rob_magnificat",
+            "rob_baptist_birth",
+            "rob_joseph_annunciation",
+            "jm_bethlehem",
+            "rob_shepherds",
+            "rob_circumcision",
+            "rob_presentation",
+            "rob_magi",
+            "jm_egypt",
+            "rob_slaughter_innocents",
+            "jm_nazareth",
+            "rob_boy_in_temple",
+            "rob_john_preaching",
+            "rob_john_specimen",
+            "rob_john_messiah_picture",
+            "jm_jordan",
+            "rob_temptation",
+            "rob_sanhedrin_testimony",
+            "rob_john_identifies_jesus",
+            "rob_first_disciples",
+            "jm_cana",
+            "rob_capernaum_sojourn",
+            "jm_temple_cleansing",
+            "rob_nicodemus",
+            "rob_parallel_ministry",
+            "jm_sychar",
+            "rob_galilee_arrival",
+            "rob_cana_nobleman",
+            "rob_nazareth_rejection",
+            "jm_capernaum",
+            "rob_four_fishers",
+            "rob_capernaum_demoniac",
+            "rob_peters_mother_in_law",
+            "rob_first_galilee_tour",
+            "rob_leper_healed",
+            "rob_paralytic_roof",
+            "rob_call_of_matthew",
+            "rob_fasting_parables",
+            "rob_jerusalem_feast_healing",
+            "rob_grain_sabbath",
+            "rob_withered_hand",
+            "rob_multitudes_by_sea",
+            "rob_twelve_apostles",
+            "rob_sermon_on_the_mount",
+            "rob_centurion_servant",
+            "rob_widow_of_nain",
+            "rob_message_from_baptist",
+            "rob_woes_on_cities",
+            "rob_sinful_woman",
+            "rob_second_galilee_tour",
+            "rob_beelzebub_accusation",
+            "rob_sign_demanded",
+            "rob_mother_brethren",
+            "rob_first_parable_group",
+            "rob_stills_tempest",
+            "rob_gadarene_demoniac",
+            "rob_jairus_daughter",
+            "rob_two_blind_men",
+            "rob_last_nazareth_visit",
+            "rob_third_tour_sending_twelve",
+            "rob_herod_fears",
+            "jm_bethsaida",
+            "rob_prevents_kingship",
+            "rob_walks_on_water",
+            "rob_gennesaret_reception",
+            "rob_bread_of_life",
+            "rob_defilement_controversy",
+            "rob_syrophoenician_woman",
+            "rob_deaf_mute_feeding_4000",
+            "rob_dalmanutha_sign",
+            "rob_bethsaida_blind_man",
+            "jm_caesarea_philippi",
+            "rob_foretells_death_1",
+            "rob_coming_of_son_of_man",
+            "rob_transfiguration",
+            "rob_elijah_puzzle",
+            "rob_demoniac_boy",
+            "rob_foretells_death_2",
+            "rob_temple_tax",
+            "rob_who_is_greatest",
+            "rob_johns_zeal_rebuked",
+            "rob_forgiving_a_brother",
+            "rob_cost_of_discipleship_1",
+            "rob_brothers_counsel_him",
+            "rob_through_samaria",
+            "rob_tabernacles_feast",
+            "rob_adulterous_woman",
+            "rob_light_of_the_world",
+            "rob_pharisees_stone_attempt",
+            "rob_man_born_blind",
+            "rob_good_shepherd",
+            "rob_mission_of_seventy",
+            "rob_good_samaritan",
+            "rob_martha_and_mary",
+            "rob_prayer_model_again",
+            "rob_beelzebub_again",
+            "rob_pharisees_denounced_breakfast",
+            "rob_hypocrisy_covetousness",
+            "rob_repent_or_perish",
+            "rob_crippled_woman_sabbath",
+            "rob_dedication_feast",
+            "rob_withdrawal_beyond_jordan",
+            "rob_teaching_in_perea",
+            "rob_pharisee_dinner_parables",
+            "rob_cost_of_discipleship_2",
+            "rob_lost_sheep_coin_son",
+            "rob_stewardship_parables",
+            "rob_lazarus_raised",
+            "rob_lazarus_effect",
+            "rob_last_journey_begins",
+            "rob_prayer_parables",
+            "rob_teaching_on_divorce",
+            "rob_christ_and_children",
+            "rob_rich_young_ruler",
+            "rob_foretells_death_3",
+            "rob_blind_bartimaeus",
+            "jm_jericho",
+            "rob_parable_of_pounds",
+            "jm_bethany"
+          ],
+          "name": "Jesus' Ministry"
+        },
+        {
+          "color": "#65A30D",
+          "id": "joseph-to-egypt",
+          "legs": [
+            "je_hebron",
+            "je_dothan",
+            "je_egypt_sold",
+            "je_egypt_ruler",
+            "je_beersheba",
+            "je_goshen"
+          ],
+          "name": "Joseph's Journey to Egypt"
+        },
+        {
+          "color": "#9F1239",
+          "id": "passion-week",
+          "legs": [
+            "rob_arrives_at_bethany",
+            "pw_bethany",
+            "pw_jerusalem_entry",
+            "pw_temple_cleansing",
+            "rob_fig_tree_withered",
+            "rob_authority_challenged",
+            "rob_tribute_to_caesar",
+            "rob_sadducees_resurrection",
+            "rob_great_commandment",
+            "rob_davids_son",
+            "rob_woes_on_scribes",
+            "rob_widows_mite",
+            "rob_olivet_discourse",
+            "rob_predicts_crucifixion_timing",
+            "rob_judas_bargains",
+            "rob_passover_preparation",
+            "rob_paschal_meal_begins",
+            "rob_foot_washing",
+            "rob_judas_pointed_out",
+            "rob_warns_against_desertion",
+            "rob_lords_supper",
+            "rob_farewell_discourse",
+            "rob_discourse_to_gethsemane",
+            "rob_intercessory_prayer",
+            "pw_gethsemane",
+            "rob_before_annas",
+            "rob_tried_by_caiaphas",
+            "rob_peter_denies",
+            "rob_formally_condemned",
+            "rob_judas_suicide",
+            "rob_before_pilate_1",
+            "rob_before_herod",
+            "rob_before_pilate_2",
+            "rob_soldiers_mock",
+            "rob_way_to_golgotha",
+            "pw_golgotha",
+            "rob_death_phenomena",
+            "rob_burial",
+            "rob_watch_of_women",
+            "pw_jerusalem_resurrection",
+            "rob_appears_to_mary_magdalene",
+            "rob_guard_reports",
+            "pw_emmaus",
+            "rob_appears_thomas_absent",
+            "rob_appears_thomas_convinced",
+            "rob_appears_seven_galilee",
+            "pw_galilee",
+            "rob_final_commission",
+            "pw_mount_of_olives"
+          ],
+          "name": "Passion Week"
+        },
+        {
+          "color": "#16A34A",
+          "id": "paul-first-journey",
+          "legs": [
+            "p1_antioch",
+            "p1_seleucia",
+            "p1_salamis",
+            "p1_paphos",
+            "p1_perga",
+            "p1_pisidian_antioch",
+            "p1_iconium",
+            "p1_lystra",
+            "p1_derbe",
+            "p1_return"
+          ],
+          "name": "Paul's First Journey"
+        },
+        {
+          "color": "#4338CA",
+          "id": "paul-rome-voyage",
+          "legs": [
+            "pr_caesarea",
+            "pr_sidon",
+            "pr_myra",
+            "pr_fair_havens",
+            "pr_malta",
+            "pr_syracuse",
+            "pr_rhegium",
+            "pr_puteoli",
+            "pr_rome"
+          ],
+          "name": "Paul's Voyage to Rome"
+        },
+        {
+          "color": "#0891B2",
+          "id": "return",
+          "legs": [
+            "ret_babylon",
+            "ezr_altar_and_foundation",
+            "ret_jerusalem_temple",
+            "ret_susa",
+            "ret_jerusalem_wall"
+          ],
+          "name": "The Return from Exile"
+        }
+      ],
+      "status": 200
+    },
+    "GET /api/node/Event:ab_ur": {
+      "body": {
+        "edge_summary": [
+          {
+            "count": 2,
+            "kind": "attested-in"
+          },
+          {
+            "count": 1,
+            "kind": "follows-in"
+          },
+          {
+            "count": 1,
+            "kind": "dated-by"
+          },
+          {
+            "count": 1,
+            "kind": "dates"
+          },
+          {
+            "count": 1,
+            "kind": "located-at"
+          },
+          {
+            "count": 2,
+            "kind": "temporal-adjacency"
+          }
+        ],
+        "id": "Event:ab_ur",
+        "kind": "Event",
+        "label": "Terah's family leaves Ur",
+        "provenance": "curated",
+        "version": "dfcf6ee4c2a39965"
+      },
+      "status": 200
+    },
+    "GET /api/node/Place:hazor-1": {
+      "body": {
+        "description": "A stronghold of the Canaanites in the mountains north of Lake Merom ([Josh. 11:1-5](/josh#Josh.11.1)). Jabin the king with his allied tribes here encountered Joshua in a great battle. Joshua gained a signal victory, which virtually completed his conquest of Canaan (11:10-13). This city was, however, afterwards rebuilt by the Canaanites, and was ruled by a king with the same hereditary name of Jabin. His army, under a noted leader of the name of Sisera, swept down upon the south, aiming at the complete subjugation of the country. This powerful army was met by the Israelites under Barak, who went forth by the advice of the prophetess Deborah. The result was one of the most remarkable victories for Israel recorded in the Old Testament ([Josh. 19:36](/josh#Josh.19.36); [Judg. 4:2](/judg#Judg.4.2); [1 Sam. 12:9](/1sam#1Sam.12.9)). The city of Hazor was taken and occupied by the Israelites. It was fortified by Solomon to defend the entrance into the kingdom from Syria and Assyria. When Tiglath-pileser, the Assyrian king, invaded the land, this was one of the first cities he captured, carrying its inhabitants captive into Assyria ([2 Kings 15:29](/2kgs#2Kgs.15.29)). It has been identified with Khurbet Harrah, 2 1/2 miles south-east of Kedesh.",
+        "edge_summary": [
+          {
+            "count": 2,
+            "kind": "site-of"
+          },
+          {
+            "count": 11,
+            "kind": "mentioned-in"
+          }
+        ],
+        "id": "Place:hazor-1",
+        "kind": "Place",
+        "label": "Hazor 1",
+        "provenance": "curated-places",
+        "version": "dfcf6ee4c2a39965"
+      },
+      "status": 200
+    },
+    "GET /api/node/Place:hazor-1/edges?kind=site-of": {
+      "body": {
+        "entries": [
+          {
+            "edge": "LocatedAt:548e223fe158b5b2",
+            "node": {
+              "id": "Event:cq_hazor",
+              "kind": "Event",
+              "label": "Hazor is defeated and burned"
+            }
+          },
+          {
+            "edge": "LocatedAt:641c637161ca0461",
+            "node": {
+              "id": "Event:theo-138",
+              "kind": "Event",
+              "label": "Subjugation by Jabin"
+            }
+          }
+        ],
+        "kind": "site-of",
+        "next": null,
+        "version": "dfcf6ee4c2a39965"
+      },
+      "status": 200
+    },
+    "GET /api/polities?from=-4004&to=2000": {
+      "body": {
+        "polities": [
+          {
+            "color_key": 3,
+            "fall": {
+              "event": "Alexander dies; his empire divides among four successor kingdoms",
+              "ref_note": "Daniel 8:8,22 (KJV, verified against the compiled text) -- the he-goat's great horn 'broken,' replaced by 'four notable ones toward the four winds of heaven' (v.8), self-interpreted a few verses later as 'four kingdoms shall stand up out of the nation' (v.22); traditionally dated to Alexander's 323 BC death -- see this era's own rise-transition for the same vision's earlier verses",
+              "verses": [
+                "DAN.8.8",
+                "DAN.8.22"
+              ]
+            },
+            "from": -335,
+            "id": "alexander-empire",
+            "name": "Empire of Alexander the Great",
+            "rings": [
+              [
+                [
+                  41.3,
+                  29.0
+                ],
+                [
+                  41.6,
+                  32.0
+                ],
+                [
+                  41.5,
+                  35.0
+                ],
+                [
+                  41.0,
+                  38.0
+                ],
+                [
+                  40.3,
+                  41.0
+                ],
+                [
+                  41.0,
+                  44.0
+                ],
+                [
+                  40.0,
+                  47.0
+                ],
+                [
+                  38.5,
+                  49.0
+                ],
+                [
+                  37.0,
+                  52.0
+                ],
+                [
+                  36.5,
+                  55.0
+                ],
+                [
+                  36.0,
+                  58.0
+                ],
+                [
+                  35.5,
+                  61.0
+                ],
+                [
+                  35.0,
+                  64.0
+                ],
+                [
+                  34.5,
+                  67.0
+                ],
+                [
+                  33.5,
+                  68.5
+                ],
+                [
+                  31.0,
+                  68.5
+                ],
+                [
+                  28.5,
+                  68.0
+                ],
+                [
+                  26.5,
+                  67.0
+                ],
+                [
+                  25.0,
+                  64.0
+                ],
+                [
+                  25.5,
+                  60.0
+                ],
+                [
+                  26.0,
+                  56.5
+                ],
+                [
+                  26.5,
+                  52.0
+                ],
+                [
+                  27.0,
+                  49.5
+                ],
+                [
+                  26.0,
+                  48.5
+                ],
+                [
+                  24.5,
+                  47.5
+                ],
+                [
+                  23.0,
+                  46.5
+                ],
+                [
+                  22.0,
+                  44.0
+                ],
+                [
+                  22.5,
+                  41.0
+                ],
+                [
+                  24.0,
+                  38.5
+                ],
+                [
+                  26.0,
+                  36.5
+                ],
+                [
+                  28.0,
+                  34.7
+                ],
+                [
+                  29.5,
+                  32.6
+                ],
+                [
+                  29.0,
+                  31.0
+                ],
+                [
+                  27.5,
+                  30.0
+                ],
+                [
+                  25.5,
+                  29.5
+                ],
+                [
+                  24.0,
+                  28.0
+                ],
+                [
+                  23.5,
+                  25.0
+                ],
+                [
+                  24.5,
+                  22.0
+                ],
+                [
+                  26.5,
+                  21.0
+                ],
+                [
+                  29.0,
+                  20.8
+                ],
+                [
+                  31.0,
+                  20.9
+                ],
+                [
+                  32.2,
+                  22.5
+                ],
+                [
+                  32.7,
+                  25.0
+                ],
+                [
+                  31.8,
+                  28.0
+                ],
+                [
+                  31.5,
+                  30.5
+                ],
+                [
+                  31.4,
+                  32.3
+                ],
+                [
+                  31.9,
+                  34.5
+                ],
+                [
+                  33.0,
+                  35.2
+                ],
+                [
+                  34.5,
+                  35.9
+                ],
+                [
+                  36.0,
+                  36.2
+                ],
+                [
+                  36.8,
+                  33.0
+                ],
+                [
+                  37.5,
+                  30.0
+                ],
+                [
+                  38.5,
+                  28.0
+                ],
+                [
+                  40.0,
+                  27.0
+                ],
+                [
+                  41.3,
+                  29.0
+                ]
+              ],
+              [
+                [
+                  42.0,
+                  21.0
+                ],
+                [
+                  41.0,
+                  23.5
+                ],
+                [
+                  39.5,
+                  24.0
+                ],
+                [
+                  38.0,
+                  23.5
+                ],
+                [
+                  37.0,
+                  22.5
+                ],
+                [
+                  36.5,
+                  24.0
+                ],
+                [
+                  36.0,
+                  27.0
+                ],
+                [
+                  36.8,
+                  28.5
+                ],
+                [
+                  38.0,
+                  28.0
+                ],
+                [
+                  39.5,
+                  27.0
+                ],
+                [
+                  40.5,
+                  25.5
+                ],
+                [
+                  41.5,
+                  23.0
+                ],
+                [
+                  42.0,
+                  21.0
+                ]
+              ]
+            ],
+            "to": -323,
+            "transition": {
+              "event": "Alexander the Great conquers the Achaemenid Persian Empire",
+              "ref_note": "Daniel 8:5,20-21 (KJV, verified against the compiled text) -- the he-goat 'from the west' (v.5), self-interpreted in the text as Grecia overthrowing Media-Persia (vv.20-21); traditionally dated 334-330 BC -- see egypt.toml's own mirrored transition for the same conquest's reach into Egypt",
+              "verses": [
+                "DAN.8.5",
+                "DAN.8.20",
+                "DAN.8.21"
+              ]
+            }
+          },
+          {
+            "color_key": 12,
+            "from": -1900,
+            "id": "assyria",
+            "name": "Assyria",
+            "rings": [
+              [
+                [
+                  36.8,
+                  42.3
+                ],
+                [
+                  36.95,
+                  42.65
+                ],
+                [
+                  37.0,
+                  43.0
+                ],
+                [
+                  37.0,
+                  43.4
+                ],
+                [
+                  37.0,
+                  43.8
+                ],
+                [
+                  36.9,
+                  44.05
+                ],
+                [
+                  36.8,
+                  44.3
+                ],
+                [
+                  36.6,
+                  44.4
+                ],
+                [
+                  36.4,
+                  44.5
+                ],
+                [
+                  36.2,
+                  44.45
+                ],
+                [
+                  36.0,
+                  44.4
+                ],
+                [
+                  35.8,
+                  44.25
+                ],
+                [
+                  35.6,
+                  44.1
+                ],
+                [
+                  35.4,
+                  43.9
+                ],
+                [
+                  35.2,
+                  43.7
+                ],
+                [
+                  35.05,
+                  43.5
+                ],
+                [
+                  34.9,
+                  43.3
+                ],
+                [
+                  34.8,
+                  43.05
+                ],
+                [
+                  34.7,
+                  42.8
+                ],
+                [
+                  34.7,
+                  42.55
+                ],
+                [
+                  34.7,
+                  42.3
+                ],
+                [
+                  34.85,
+                  42.1
+                ],
+                [
+                  35.0,
+                  41.9
+                ],
+                [
+                  35.2,
+                  41.8
+                ],
+                [
+                  35.4,
+                  41.7
+                ],
+                [
+                  35.6,
+                  41.75
+                ],
+                [
+                  35.8,
+                  41.8
+                ],
+                [
+                  36.0,
+                  41.9
+                ],
+                [
+                  36.2,
+                  42.0
+                ],
+                [
+                  36.4,
+                  42.05
+                ],
+                [
+                  36.6,
+                  42.1
+                ],
+                [
+                  36.7,
+                  42.2
+                ],
+                [
+                  36.8,
+                  42.3
+                ]
+              ]
+            ],
+            "to": -912
+          },
+          {
+            "color_key": 12,
+            "fall": {
+              "event": "The Medes and Neo-Babylonians destroy Nineveh",
+              "ref_note": "Nahum 3:18-19 (KJV, verified against the compiled text) -- the whole book of Nahum is a prophecy of Nineveh's own destruction, traditionally dated 612 BC; these closing verses address the king of Assyria's own ruin directly",
+              "verses": [
+                "NAM.3.18",
+                "NAM.3.19"
+              ]
+            },
+            "from": -911,
+            "id": "assyria",
+            "name": "Neo-Assyrian Empire",
+            "rings": [
+              [
+                [
+                  37.2,
+                  35.8
+                ],
+                [
+                  37.4,
+                  36.9
+                ],
+                [
+                  37.5,
+                  38.0
+                ],
+                [
+                  37.4,
+                  39.0
+                ],
+                [
+                  37.3,
+                  40.0
+                ],
+                [
+                  37.05,
+                  41.0
+                ],
+                [
+                  36.8,
+                  42.0
+                ],
+                [
+                  36.5,
+                  43.0
+                ],
+                [
+                  36.2,
+                  44.0
+                ],
+                [
+                  35.85,
+                  44.75
+                ],
+                [
+                  35.5,
+                  45.5
+                ],
+                [
+                  35.0,
+                  46.0
+                ],
+                [
+                  34.5,
+                  46.5
+                ],
+                [
+                  34.0,
+                  46.9
+                ],
+                [
+                  33.5,
+                  47.3
+                ],
+                [
+                  33.0,
+                  47.55
+                ],
+                [
+                  32.5,
+                  47.8
+                ],
+                [
+                  32.0,
+                  47.9
+                ],
+                [
+                  31.5,
+                  48.0
+                ],
+                [
+                  31.05,
+                  47.95
+                ],
+                [
+                  30.6,
+                  47.9
+                ],
+                [
+                  30.45,
+                  47.45
+                ],
+                [
+                  30.3,
+                  47.0
+                ],
+                [
+                  30.2,
+                  46.25
+                ],
+                [
+                  30.1,
+                  45.5
+                ],
+                [
+                  30.05,
+                  44.75
+                ],
+                [
+                  30.0,
+                  44.0
+                ],
+                [
+                  29.9,
+                  43.0
+                ],
+                [
+                  29.8,
+                  42.0
+                ],
+                [
+                  29.65,
+                  41.0
+                ],
+                [
+                  29.5,
+                  40.0
+                ],
+                [
+                  29.4,
+                  39.0
+                ],
+                [
+                  29.3,
+                  38.0
+                ],
+                [
+                  29.4,
+                  37.0
+                ],
+                [
+                  29.5,
+                  36.0
+                ],
+                [
+                  29.75,
+                  35.5
+                ],
+                [
+                  30.0,
+                  35.0
+                ],
+                [
+                  30.4,
+                  34.8
+                ],
+                [
+                  30.8,
+                  34.6
+                ],
+                [
+                  31.15,
+                  34.5
+                ],
+                [
+                  31.5,
+                  34.4
+                ],
+                [
+                  31.85,
+                  34.65
+                ],
+                [
+                  32.2,
+                  34.9
+                ],
+                [
+                  32.6,
+                  35.05
+                ],
+                [
+                  33.0,
+                  35.2
+                ],
+                [
+                  33.45,
+                  35.4
+                ],
+                [
+                  33.9,
+                  35.6
+                ],
+                [
+                  34.25,
+                  35.75
+                ],
+                [
+                  34.6,
+                  35.9
+                ],
+                [
+                  34.95,
+                  35.9
+                ],
+                [
+                  35.3,
+                  35.9
+                ],
+                [
+                  35.65,
+                  36.05
+                ],
+                [
+                  36.0,
+                  36.2
+                ],
+                [
+                  36.3,
+                  36.4
+                ],
+                [
+                  36.6,
+                  36.6
+                ],
+                [
+                  36.8,
+                  36.45
+                ],
+                [
+                  37.0,
+                  36.3
+                ],
+                [
+                  37.1,
+                  36.05
+                ],
+                [
+                  37.2,
+                  35.8
+                ]
+              ]
+            ],
+            "to": -609,
+            "transition": {
+              "event": "The Neo-Assyrian resurgence begins under Adad-nirari II",
+              "ref_note": "general Assyriological knowledge (the 10th-9th century BC resurgence that becomes the Neo-Assyrian Empire); no specific source consulted this session; not scripture-narrated at this specific boundary -- the KJV text's own Assyria narrative picks up later, once the empire already presses on Israel (e.g. 2 Kings 15:19)",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 7,
+            "from": -2100,
+            "id": "babylon",
+            "name": "Babylonia",
+            "rings": [
+              [
+                [
+                  34.6,
+                  40.9
+                ],
+                [
+                  34.3,
+                  41.8
+                ],
+                [
+                  34.0,
+                  42.6
+                ],
+                [
+                  33.7,
+                  43.3
+                ],
+                [
+                  33.4,
+                  43.9
+                ],
+                [
+                  33.1,
+                  44.3
+                ],
+                [
+                  32.8,
+                  44.5
+                ],
+                [
+                  32.5,
+                  44.6
+                ],
+                [
+                  32.2,
+                  44.9
+                ],
+                [
+                  31.8,
+                  45.2
+                ],
+                [
+                  31.4,
+                  45.5
+                ],
+                [
+                  31.0,
+                  45.8
+                ],
+                [
+                  30.7,
+                  46.0
+                ],
+                [
+                  30.4,
+                  46.3
+                ],
+                [
+                  30.25,
+                  46.4
+                ],
+                [
+                  30.1,
+                  46.5
+                ],
+                [
+                  29.95,
+                  46.3
+                ],
+                [
+                  29.9,
+                  46.1
+                ],
+                [
+                  29.85,
+                  45.8
+                ],
+                [
+                  29.8,
+                  45.5
+                ],
+                [
+                  29.85,
+                  45.15
+                ],
+                [
+                  29.9,
+                  44.8
+                ],
+                [
+                  30.05,
+                  44.45
+                ],
+                [
+                  30.2,
+                  44.1
+                ],
+                [
+                  30.4,
+                  43.75
+                ],
+                [
+                  30.6,
+                  43.4
+                ],
+                [
+                  31.0,
+                  42.8
+                ],
+                [
+                  31.5,
+                  42.3
+                ],
+                [
+                  32.0,
+                  41.9
+                ],
+                [
+                  32.5,
+                  41.6
+                ],
+                [
+                  33.0,
+                  41.4
+                ],
+                [
+                  33.5,
+                  41.2
+                ],
+                [
+                  34.0,
+                  41.0
+                ],
+                [
+                  34.6,
+                  40.9
+                ]
+              ]
+            ],
+            "to": -1156
+          },
+          {
+            "color_key": 7,
+            "fall": {
+              "event": "Babylon falls; Belshazzar is slain in the night",
+              "ref_note": "Daniel 5:30-31 (KJV, verified against the compiled text) -- 'In that night was Belshazzar the king of the Chaldeans slain... And Darius the Median took the kingdom,' traditionally dated 539 BC -- see persia.toml's own mirrored rise-transition",
+              "verses": [
+                "DAN.5.30",
+                "DAN.5.31"
+              ]
+            },
+            "from": -626,
+            "id": "babylon",
+            "name": "Neo-Babylonian Empire",
+            "rings": [
+              [
+                [
+                  36.5,
+                  43.3
+                ],
+                [
+                  36.6,
+                  42.0
+                ],
+                [
+                  36.5,
+                  40.5
+                ],
+                [
+                  36.2,
+                  39.0
+                ],
+                [
+                  36.2,
+                  37.1
+                ],
+                [
+                  35.9,
+                  36.2
+                ],
+                [
+                  35.5,
+                  35.9
+                ],
+                [
+                  35.0,
+                  35.9
+                ],
+                [
+                  34.5,
+                  35.9
+                ],
+                [
+                  34.0,
+                  35.8
+                ],
+                [
+                  33.5,
+                  35.5
+                ],
+                [
+                  33.0,
+                  35.3
+                ],
+                [
+                  32.5,
+                  35.0
+                ],
+                [
+                  32.0,
+                  34.8
+                ],
+                [
+                  31.5,
+                  34.45
+                ],
+                [
+                  31.0,
+                  34.2
+                ],
+                [
+                  30.5,
+                  34.0
+                ],
+                [
+                  30.0,
+                  34.5
+                ],
+                [
+                  29.8,
+                  35.5
+                ],
+                [
+                  29.9,
+                  37.0
+                ],
+                [
+                  30.0,
+                  39.0
+                ],
+                [
+                  30.0,
+                  41.0
+                ],
+                [
+                  30.05,
+                  43.0
+                ],
+                [
+                  30.1,
+                  44.5
+                ],
+                [
+                  30.1,
+                  46.5
+                ],
+                [
+                  30.4,
+                  46.3
+                ],
+                [
+                  30.7,
+                  46.0
+                ],
+                [
+                  31.0,
+                  45.8
+                ],
+                [
+                  31.4,
+                  45.5
+                ],
+                [
+                  31.8,
+                  45.2
+                ],
+                [
+                  32.2,
+                  44.9
+                ],
+                [
+                  32.5,
+                  44.6
+                ],
+                [
+                  32.8,
+                  44.5
+                ],
+                [
+                  33.1,
+                  44.3
+                ],
+                [
+                  33.4,
+                  43.9
+                ],
+                [
+                  33.7,
+                  43.3
+                ],
+                [
+                  34.0,
+                  42.6
+                ],
+                [
+                  34.3,
+                  41.8
+                ],
+                [
+                  34.6,
+                  40.9
+                ],
+                [
+                  34.9,
+                  41.5
+                ],
+                [
+                  35.3,
+                  42.0
+                ],
+                [
+                  35.7,
+                  42.5
+                ],
+                [
+                  36.1,
+                  42.9
+                ],
+                [
+                  36.5,
+                  43.3
+                ]
+              ]
+            ],
+            "to": -539,
+            "transition": {
+              "event": "Nabopolassar revolts against Assyria, founding the Neo-Babylonian dynasty",
+              "ref_note": "general historical knowledge (Nabopolassar's own 626 BC revolt, allied with the Medes, that leads to Nineveh's fall -- see assyria.toml's own fall); no specific source consulted this session; Nabopolassar himself is not named in the KJV text",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 9,
+            "from": -4004,
+            "id": "egypt",
+            "name": "Egypt",
+            "rings": [
+              [
+                [
+                  31.35,
+                  29.9
+                ],
+                [
+                  31.55,
+                  30.35
+                ],
+                [
+                  31.55,
+                  30.9
+                ],
+                [
+                  31.5,
+                  31.4
+                ],
+                [
+                  31.5,
+                  31.9
+                ],
+                [
+                  31.45,
+                  32.25
+                ],
+                [
+                  31.3,
+                  32.35
+                ],
+                [
+                  31.0,
+                  32.15
+                ],
+                [
+                  30.6,
+                  32.1
+                ],
+                [
+                  30.2,
+                  32.35
+                ],
+                [
+                  29.8,
+                  32.55
+                ],
+                [
+                  29.6,
+                  32.4
+                ],
+                [
+                  29.5,
+                  31.9
+                ],
+                [
+                  29.2,
+                  31.4
+                ],
+                [
+                  28.9,
+                  30.95
+                ],
+                [
+                  28.5,
+                  30.85
+                ],
+                [
+                  28.0,
+                  30.75
+                ],
+                [
+                  27.5,
+                  30.65
+                ],
+                [
+                  27.0,
+                  30.85
+                ],
+                [
+                  26.5,
+                  31.2
+                ],
+                [
+                  26.0,
+                  31.8
+                ],
+                [
+                  25.6,
+                  32.3
+                ],
+                [
+                  25.2,
+                  32.55
+                ],
+                [
+                  24.7,
+                  32.85
+                ],
+                [
+                  24.3,
+                  32.9
+                ],
+                [
+                  24.02,
+                  32.87
+                ],
+                [
+                  24.0,
+                  32.6
+                ],
+                [
+                  24.4,
+                  32.4
+                ],
+                [
+                  24.9,
+                  32.15
+                ],
+                [
+                  25.4,
+                  31.85
+                ],
+                [
+                  25.9,
+                  31.4
+                ],
+                [
+                  26.4,
+                  30.9
+                ],
+                [
+                  26.9,
+                  30.55
+                ],
+                [
+                  27.4,
+                  30.35
+                ],
+                [
+                  27.9,
+                  30.35
+                ],
+                [
+                  28.4,
+                  30.5
+                ],
+                [
+                  28.9,
+                  30.55
+                ],
+                [
+                  29.4,
+                  30.6
+                ],
+                [
+                  29.9,
+                  30.65
+                ],
+                [
+                  30.3,
+                  30.5
+                ],
+                [
+                  30.7,
+                  30.15
+                ],
+                [
+                  31.0,
+                  29.95
+                ],
+                [
+                  31.35,
+                  29.9
+                ]
+              ]
+            ],
+            "to": -1550
+          },
+          {
+            "color_key": 9,
+            "from": -1549,
+            "id": "egypt",
+            "name": "Egypt",
+            "rings": [
+              [
+                [
+                  35.6,
+                  35.8
+                ],
+                [
+                  35.3,
+                  35.9
+                ],
+                [
+                  34.8,
+                  35.85
+                ],
+                [
+                  34.2,
+                  35.6
+                ],
+                [
+                  33.6,
+                  35.35
+                ],
+                [
+                  33.0,
+                  35.15
+                ],
+                [
+                  32.4,
+                  34.9
+                ],
+                [
+                  31.8,
+                  34.5
+                ],
+                [
+                  31.5,
+                  33.9
+                ],
+                [
+                  31.5,
+                  33.2
+                ],
+                [
+                  31.5,
+                  32.6
+                ],
+                [
+                  31.45,
+                  32.2
+                ],
+                [
+                  31.3,
+                  32.35
+                ],
+                [
+                  31.0,
+                  32.15
+                ],
+                [
+                  30.6,
+                  32.1
+                ],
+                [
+                  30.2,
+                  32.35
+                ],
+                [
+                  29.8,
+                  32.55
+                ],
+                [
+                  29.6,
+                  32.4
+                ],
+                [
+                  29.5,
+                  31.9
+                ],
+                [
+                  29.2,
+                  31.4
+                ],
+                [
+                  28.9,
+                  30.95
+                ],
+                [
+                  28.0,
+                  31.0
+                ],
+                [
+                  27.0,
+                  31.1
+                ],
+                [
+                  26.0,
+                  31.5
+                ],
+                [
+                  25.0,
+                  32.0
+                ],
+                [
+                  24.0,
+                  32.6
+                ],
+                [
+                  23.2,
+                  32.75
+                ],
+                [
+                  22.4,
+                  32.85
+                ],
+                [
+                  21.6,
+                  32.9
+                ],
+                [
+                  20.8,
+                  32.85
+                ],
+                [
+                  20.2,
+                  32.6
+                ],
+                [
+                  19.2,
+                  32.3
+                ],
+                [
+                  18.6,
+                  31.9
+                ],
+                [
+                  19.2,
+                  31.5
+                ],
+                [
+                  20.3,
+                  31.6
+                ],
+                [
+                  21.0,
+                  31.3
+                ],
+                [
+                  21.8,
+                  31.1
+                ],
+                [
+                  22.6,
+                  31.0
+                ],
+                [
+                  23.4,
+                  31.0
+                ],
+                [
+                  24.2,
+                  30.9
+                ],
+                [
+                  24.9,
+                  30.8
+                ],
+                [
+                  25.7,
+                  30.55
+                ],
+                [
+                  26.5,
+                  30.4
+                ],
+                [
+                  27.3,
+                  30.2
+                ],
+                [
+                  28.1,
+                  30.2
+                ],
+                [
+                  28.9,
+                  30.4
+                ],
+                [
+                  29.6,
+                  30.5
+                ],
+                [
+                  30.2,
+                  30.5
+                ],
+                [
+                  30.7,
+                  30.15
+                ],
+                [
+                  31.0,
+                  29.95
+                ],
+                [
+                  31.35,
+                  29.9
+                ],
+                [
+                  31.5,
+                  30.35
+                ],
+                [
+                  35.6,
+                  35.8
+                ]
+              ]
+            ],
+            "to": -1069,
+            "transition": {
+              "event": "The Hyksos are expelled; the New Kingdom and the Egyptian Empire begin",
+              "ref_note": "general Egyptological knowledge (Ahmose I's expulsion of the Hyksos, founding the 18th Dynasty); no specific source consulted this session; not otherwise scripture-narrated at this specific boundary",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 9,
+            "from": -1068,
+            "id": "egypt",
+            "name": "Egypt",
+            "rings": [
+              [
+                [
+                  31.35,
+                  29.9
+                ],
+                [
+                  31.55,
+                  30.35
+                ],
+                [
+                  31.55,
+                  30.9
+                ],
+                [
+                  31.5,
+                  31.4
+                ],
+                [
+                  31.5,
+                  31.9
+                ],
+                [
+                  31.45,
+                  32.25
+                ],
+                [
+                  31.3,
+                  32.35
+                ],
+                [
+                  31.0,
+                  32.15
+                ],
+                [
+                  30.6,
+                  32.1
+                ],
+                [
+                  30.2,
+                  32.35
+                ],
+                [
+                  29.8,
+                  32.55
+                ],
+                [
+                  29.6,
+                  32.4
+                ],
+                [
+                  29.5,
+                  31.9
+                ],
+                [
+                  29.2,
+                  31.4
+                ],
+                [
+                  28.9,
+                  30.95
+                ],
+                [
+                  28.5,
+                  30.85
+                ],
+                [
+                  28.0,
+                  30.75
+                ],
+                [
+                  27.5,
+                  30.65
+                ],
+                [
+                  27.0,
+                  30.85
+                ],
+                [
+                  26.5,
+                  31.2
+                ],
+                [
+                  26.0,
+                  31.8
+                ],
+                [
+                  25.6,
+                  32.3
+                ],
+                [
+                  25.2,
+                  32.55
+                ],
+                [
+                  24.7,
+                  32.85
+                ],
+                [
+                  24.3,
+                  32.9
+                ],
+                [
+                  24.02,
+                  32.87
+                ],
+                [
+                  24.0,
+                  32.6
+                ],
+                [
+                  24.4,
+                  32.4
+                ],
+                [
+                  24.9,
+                  32.15
+                ],
+                [
+                  25.4,
+                  31.85
+                ],
+                [
+                  25.9,
+                  31.4
+                ],
+                [
+                  26.4,
+                  30.9
+                ],
+                [
+                  26.9,
+                  30.55
+                ],
+                [
+                  27.4,
+                  30.35
+                ],
+                [
+                  27.9,
+                  30.35
+                ],
+                [
+                  28.4,
+                  30.5
+                ],
+                [
+                  28.9,
+                  30.55
+                ],
+                [
+                  29.4,
+                  30.6
+                ],
+                [
+                  29.9,
+                  30.65
+                ],
+                [
+                  30.3,
+                  30.5
+                ],
+                [
+                  30.7,
+                  30.15
+                ],
+                [
+                  31.0,
+                  29.95
+                ],
+                [
+                  31.35,
+                  29.9
+                ]
+              ]
+            ],
+            "to": -332,
+            "transition": {
+              "event": "The New Kingdom collapses; Egypt contracts back to the Nile valley",
+              "ref_note": "general Egyptological knowledge (the Late Bronze Age Collapse; Ramesses XI's own weak final reign ending the Empire); no specific source consulted this session; not otherwise scripture-narrated",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 9,
+            "fall": {
+              "event": "Rome annexes Egypt after Actium; Cleopatra dies",
+              "ref_note": "general Roman/Ptolemaic history (Battle of Actium and its aftermath, 31-30 BC); no specific source consulted this session; not scripture-narrated -- this era predates the Gospel narrative entirely",
+              "verses": []
+            },
+            "from": -331,
+            "id": "egypt",
+            "name": "Ptolemaic Egypt",
+            "rings": [
+              [
+                [
+                  31.35,
+                  29.9
+                ],
+                [
+                  31.55,
+                  30.35
+                ],
+                [
+                  31.55,
+                  30.9
+                ],
+                [
+                  31.5,
+                  31.4
+                ],
+                [
+                  31.5,
+                  31.9
+                ],
+                [
+                  31.45,
+                  32.25
+                ],
+                [
+                  31.6,
+                  32.9
+                ],
+                [
+                  31.9,
+                  33.6
+                ],
+                [
+                  32.1,
+                  34.3
+                ],
+                [
+                  31.9,
+                  34.45
+                ],
+                [
+                  31.5,
+                  34.5
+                ],
+                [
+                  31.3,
+                  34.4
+                ],
+                [
+                  31.0,
+                  34.35
+                ],
+                [
+                  30.6,
+                  34.25
+                ],
+                [
+                  30.3,
+                  33.9
+                ],
+                [
+                  30.0,
+                  33.6
+                ],
+                [
+                  29.8,
+                  33.0
+                ],
+                [
+                  29.7,
+                  32.6
+                ],
+                [
+                  29.5,
+                  31.9
+                ],
+                [
+                  29.2,
+                  31.4
+                ],
+                [
+                  28.9,
+                  30.95
+                ],
+                [
+                  28.5,
+                  30.85
+                ],
+                [
+                  28.0,
+                  30.75
+                ],
+                [
+                  27.5,
+                  30.65
+                ],
+                [
+                  27.0,
+                  30.85
+                ],
+                [
+                  26.5,
+                  31.2
+                ],
+                [
+                  26.0,
+                  31.8
+                ],
+                [
+                  25.6,
+                  32.3
+                ],
+                [
+                  25.2,
+                  32.55
+                ],
+                [
+                  24.7,
+                  32.85
+                ],
+                [
+                  24.3,
+                  32.9
+                ],
+                [
+                  24.02,
+                  32.87
+                ],
+                [
+                  24.0,
+                  32.6
+                ],
+                [
+                  24.4,
+                  32.4
+                ],
+                [
+                  24.9,
+                  32.15
+                ],
+                [
+                  25.4,
+                  31.85
+                ],
+                [
+                  25.9,
+                  31.4
+                ],
+                [
+                  26.4,
+                  30.9
+                ],
+                [
+                  26.9,
+                  30.55
+                ],
+                [
+                  27.4,
+                  30.35
+                ],
+                [
+                  27.9,
+                  30.35
+                ],
+                [
+                  28.4,
+                  30.5
+                ],
+                [
+                  28.9,
+                  30.55
+                ],
+                [
+                  29.4,
+                  30.6
+                ],
+                [
+                  29.9,
+                  30.65
+                ],
+                [
+                  30.3,
+                  30.5
+                ],
+                [
+                  30.7,
+                  30.15
+                ],
+                [
+                  31.0,
+                  29.95
+                ],
+                [
+                  31.35,
+                  29.9
+                ]
+              ],
+              [
+                [
+                  32.7,
+                  24.9
+                ],
+                [
+                  32.85,
+                  24.0
+                ],
+                [
+                  32.9,
+                  23.2
+                ],
+                [
+                  32.85,
+                  22.4
+                ],
+                [
+                  32.6,
+                  21.7
+                ],
+                [
+                  32.1,
+                  21.1
+                ],
+                [
+                  31.5,
+                  20.8
+                ],
+                [
+                  30.9,
+                  20.9
+                ],
+                [
+                  30.5,
+                  21.4
+                ],
+                [
+                  30.3,
+                  22.1
+                ],
+                [
+                  30.2,
+                  22.9
+                ],
+                [
+                  30.2,
+                  23.7
+                ],
+                [
+                  30.3,
+                  24.4
+                ],
+                [
+                  30.6,
+                  25.0
+                ],
+                [
+                  31.0,
+                  25.3
+                ],
+                [
+                  31.5,
+                  25.4
+                ],
+                [
+                  32.0,
+                  25.3
+                ],
+                [
+                  32.4,
+                  25.1
+                ],
+                [
+                  32.7,
+                  24.9
+                ]
+              ]
+            ],
+            "to": -30,
+            "transition": {
+              "event": "Alexander the Great conquers Egypt, ending Persian rule",
+              "ref_note": "Daniel 8:20-21 (KJV, verified against the compiled text) -- Daniel's own vision, self-interpreted in the text as Media-Persia (the ram) overthrown by Grecia (the goat); Egypt was a Persian satrapy at the time (persia.toml), so this same prophecy applies here as it does to Persia's own fall/alexander-empire.toml's own rise",
+              "verses": [
+                "DAN.8.20",
+                "DAN.8.21"
+              ]
+            }
+          },
+          {
+            "color_key": 15,
+            "from": -4004,
+            "id": "elam",
+            "name": "Elam",
+            "rings": [
+              [
+                [
+                  33.5,
+                  47.0
+                ],
+                [
+                  33.4,
+                  47.4
+                ],
+                [
+                  33.3,
+                  47.8
+                ],
+                [
+                  33.15,
+                  48.1
+                ],
+                [
+                  33.0,
+                  48.4
+                ],
+                [
+                  32.8,
+                  48.65
+                ],
+                [
+                  32.6,
+                  48.9
+                ],
+                [
+                  32.4,
+                  49.1
+                ],
+                [
+                  32.2,
+                  49.3
+                ],
+                [
+                  31.95,
+                  49.4
+                ],
+                [
+                  31.7,
+                  49.5
+                ],
+                [
+                  31.45,
+                  49.55
+                ],
+                [
+                  31.2,
+                  49.6
+                ],
+                [
+                  30.95,
+                  49.55
+                ],
+                [
+                  30.7,
+                  49.5
+                ],
+                [
+                  30.5,
+                  49.35
+                ],
+                [
+                  30.3,
+                  49.2
+                ],
+                [
+                  30.15,
+                  48.95
+                ],
+                [
+                  30.0,
+                  48.7
+                ],
+                [
+                  29.9,
+                  48.4
+                ],
+                [
+                  29.8,
+                  48.1
+                ],
+                [
+                  29.75,
+                  47.8
+                ],
+                [
+                  29.7,
+                  47.5
+                ],
+                [
+                  29.75,
+                  47.2
+                ],
+                [
+                  29.8,
+                  46.9
+                ],
+                [
+                  29.95,
+                  46.7
+                ],
+                [
+                  30.1,
+                  46.5
+                ],
+                [
+                  30.3,
+                  46.4
+                ],
+                [
+                  30.5,
+                  46.3
+                ],
+                [
+                  30.75,
+                  46.25
+                ],
+                [
+                  31.0,
+                  46.2
+                ],
+                [
+                  31.25,
+                  46.25
+                ],
+                [
+                  31.5,
+                  46.3
+                ],
+                [
+                  31.75,
+                  46.4
+                ],
+                [
+                  32.0,
+                  46.5
+                ],
+                [
+                  32.25,
+                  46.55
+                ],
+                [
+                  32.5,
+                  46.6
+                ],
+                [
+                  32.75,
+                  46.65
+                ],
+                [
+                  33.0,
+                  46.7
+                ],
+                [
+                  33.25,
+                  46.85
+                ],
+                [
+                  33.5,
+                  47.0
+                ]
+              ]
+            ],
+            "to": -539
+          },
+          {
+            "color_key": 14,
+            "from": -1600,
+            "id": "hittites",
+            "name": "Hittite Empire",
+            "rings": [
+              [
+                [
+                  41.3,
+                  29.0
+                ],
+                [
+                  41.5,
+                  30.0
+                ],
+                [
+                  41.6,
+                  31.2
+                ],
+                [
+                  41.55,
+                  32.3
+                ],
+                [
+                  41.4,
+                  33.3
+                ],
+                [
+                  41.3,
+                  34.4
+                ],
+                [
+                  41.2,
+                  35.5
+                ],
+                [
+                  41.0,
+                  36.6
+                ],
+                [
+                  40.6,
+                  37.6
+                ],
+                [
+                  40.2,
+                  38.4
+                ],
+                [
+                  39.6,
+                  39.2
+                ],
+                [
+                  39.0,
+                  39.8
+                ],
+                [
+                  38.3,
+                  39.6
+                ],
+                [
+                  37.7,
+                  39.0
+                ],
+                [
+                  37.2,
+                  38.3
+                ],
+                [
+                  36.8,
+                  37.6
+                ],
+                [
+                  36.4,
+                  37.0
+                ],
+                [
+                  36.0,
+                  36.3
+                ],
+                [
+                  35.8,
+                  35.6
+                ],
+                [
+                  35.9,
+                  35.0
+                ],
+                [
+                  36.3,
+                  34.6
+                ],
+                [
+                  36.7,
+                  34.2
+                ],
+                [
+                  37.0,
+                  33.5
+                ],
+                [
+                  37.0,
+                  32.6
+                ],
+                [
+                  36.8,
+                  31.8
+                ],
+                [
+                  36.7,
+                  30.9
+                ],
+                [
+                  36.9,
+                  30.0
+                ],
+                [
+                  37.4,
+                  29.2
+                ],
+                [
+                  38.1,
+                  28.3
+                ],
+                [
+                  38.9,
+                  27.7
+                ],
+                [
+                  39.7,
+                  27.6
+                ],
+                [
+                  40.4,
+                  27.9
+                ],
+                [
+                  41.0,
+                  28.4
+                ],
+                [
+                  41.3,
+                  29.0
+                ]
+              ]
+            ],
+            "to": -1180
+          },
+          {
+            "color_key": 0,
+            "from": -1050,
+            "id": "israel",
+            "name": "Kingdom of Israel (United Monarchy)",
+            "rings": [
+              [
+                [
+                  32.83,
+                  34.95
+                ],
+                [
+                  32.95,
+                  35.0
+                ],
+                [
+                  33.05,
+                  35.1
+                ],
+                [
+                  33.15,
+                  35.3
+                ],
+                [
+                  33.25,
+                  35.5
+                ],
+                [
+                  33.25,
+                  35.65
+                ],
+                [
+                  33.15,
+                  35.8
+                ],
+                [
+                  33.1,
+                  35.9
+                ],
+                [
+                  32.9,
+                  35.85
+                ],
+                [
+                  32.7,
+                  35.8
+                ],
+                [
+                  32.5,
+                  35.78
+                ],
+                [
+                  32.3,
+                  35.75
+                ],
+                [
+                  32.1,
+                  35.82
+                ],
+                [
+                  31.95,
+                  35.9
+                ],
+                [
+                  31.75,
+                  35.85
+                ],
+                [
+                  31.55,
+                  35.8
+                ],
+                [
+                  31.3,
+                  35.75
+                ],
+                [
+                  31.05,
+                  35.65
+                ],
+                [
+                  30.85,
+                  35.55
+                ],
+                [
+                  30.6,
+                  35.5
+                ],
+                [
+                  30.5,
+                  35.2
+                ],
+                [
+                  30.6,
+                  34.95
+                ],
+                [
+                  30.85,
+                  34.8
+                ],
+                [
+                  31.05,
+                  34.7
+                ],
+                [
+                  31.25,
+                  34.6
+                ],
+                [
+                  31.5,
+                  34.55
+                ],
+                [
+                  31.75,
+                  34.5
+                ],
+                [
+                  31.95,
+                  34.55
+                ],
+                [
+                  32.05,
+                  34.75
+                ],
+                [
+                  32.2,
+                  34.8
+                ],
+                [
+                  32.4,
+                  34.85
+                ],
+                [
+                  32.6,
+                  34.9
+                ],
+                [
+                  32.75,
+                  34.9
+                ],
+                [
+                  32.83,
+                  34.95
+                ]
+              ]
+            ],
+            "to": -931,
+            "transition": {
+              "event": "David is anointed king over all Israel",
+              "ref_note": "2 Samuel 5:1,3 (KJV, verified against the compiled text) -- all the tribes come to David at Hebron and anoint him king over Israel, the moment this era's own name (\"United Monarchy\") describes",
+              "verses": [
+                "2SA.5.1",
+                "2SA.5.3"
+              ]
+            }
+          },
+          {
+            "color_key": 0,
+            "fall": {
+              "event": "Assyria carries Israel captive",
+              "ref_note": "2 Kings 17:6,23 (KJV, verified against the compiled text) -- fall of Samaria and the deportation to Assyria, traditionally dated 722 BC",
+              "verses": [
+                "2KI.17.6",
+                "2KI.17.23"
+              ]
+            },
+            "from": -930,
+            "id": "israel",
+            "name": "Kingdom of Israel",
+            "rings": [
+              [
+                [
+                  32.83,
+                  34.95
+                ],
+                [
+                  32.92,
+                  35.0
+                ],
+                [
+                  33.0,
+                  35.05
+                ],
+                [
+                  33.08,
+                  35.17
+                ],
+                [
+                  33.15,
+                  35.3
+                ],
+                [
+                  33.2,
+                  35.4
+                ],
+                [
+                  33.25,
+                  35.5
+                ],
+                [
+                  33.22,
+                  35.58
+                ],
+                [
+                  33.2,
+                  35.65
+                ],
+                [
+                  33.12,
+                  35.75
+                ],
+                [
+                  33.05,
+                  35.85
+                ],
+                [
+                  32.95,
+                  35.82
+                ],
+                [
+                  32.85,
+                  35.8
+                ],
+                [
+                  32.72,
+                  35.77
+                ],
+                [
+                  32.6,
+                  35.75
+                ],
+                [
+                  32.47,
+                  35.76
+                ],
+                [
+                  32.35,
+                  35.78
+                ],
+                [
+                  32.22,
+                  35.74
+                ],
+                [
+                  32.1,
+                  35.7
+                ],
+                [
+                  32.02,
+                  35.57
+                ],
+                [
+                  31.95,
+                  35.45
+                ],
+                [
+                  31.92,
+                  35.37
+                ],
+                [
+                  31.9,
+                  35.3
+                ],
+                [
+                  31.91,
+                  35.22
+                ],
+                [
+                  31.93,
+                  35.15
+                ],
+                [
+                  31.84,
+                  35.07
+                ],
+                [
+                  31.75,
+                  35.0
+                ],
+                [
+                  31.67,
+                  34.92
+                ],
+                [
+                  31.6,
+                  34.85
+                ],
+                [
+                  31.65,
+                  34.72
+                ],
+                [
+                  31.7,
+                  34.6
+                ],
+                [
+                  31.8,
+                  34.57
+                ],
+                [
+                  31.9,
+                  34.55
+                ],
+                [
+                  32.0,
+                  34.62
+                ],
+                [
+                  32.1,
+                  34.7
+                ],
+                [
+                  32.2,
+                  34.72
+                ],
+                [
+                  32.3,
+                  34.75
+                ],
+                [
+                  32.4,
+                  34.77
+                ],
+                [
+                  32.5,
+                  34.8
+                ],
+                [
+                  32.57,
+                  34.82
+                ],
+                [
+                  32.65,
+                  34.85
+                ],
+                [
+                  32.74,
+                  34.9
+                ],
+                [
+                  32.83,
+                  34.95
+                ]
+              ]
+            ],
+            "to": -722,
+            "transition": {
+              "event": "The kingdom divides; Jeroboam is made king over Israel",
+              "ref_note": "1 Kings 12:16,20 (KJV, verified against the compiled text) -- Israel rejects Rehoboam ('to your tents, O Israel') and makes Jeroboam king; Judah alone follows the house of David (see judah.toml's own mirrored transition)",
+              "verses": [
+                "1KI.12.16",
+                "1KI.12.20"
+              ]
+            }
+          },
+          {
+            "color_key": 13,
+            "from": -930,
+            "id": "judah",
+            "name": "Kingdom of Judah",
+            "rings": [
+              [
+                [
+                  31.93,
+                  35.22
+                ],
+                [
+                  31.89,
+                  35.29
+                ],
+                [
+                  31.85,
+                  35.35
+                ],
+                [
+                  31.78,
+                  35.4
+                ],
+                [
+                  31.7,
+                  35.45
+                ],
+                [
+                  31.6,
+                  35.48
+                ],
+                [
+                  31.5,
+                  35.5
+                ],
+                [
+                  31.4,
+                  35.48
+                ],
+                [
+                  31.3,
+                  35.45
+                ],
+                [
+                  31.2,
+                  35.4
+                ],
+                [
+                  31.1,
+                  35.35
+                ],
+                [
+                  31.02,
+                  35.25
+                ],
+                [
+                  30.95,
+                  35.15
+                ],
+                [
+                  30.9,
+                  35.05
+                ],
+                [
+                  30.85,
+                  34.95
+                ],
+                [
+                  30.87,
+                  34.85
+                ],
+                [
+                  30.9,
+                  34.75
+                ],
+                [
+                  30.97,
+                  34.67
+                ],
+                [
+                  31.05,
+                  34.6
+                ],
+                [
+                  31.15,
+                  34.57
+                ],
+                [
+                  31.25,
+                  34.55
+                ],
+                [
+                  31.32,
+                  34.57
+                ],
+                [
+                  31.4,
+                  34.6
+                ],
+                [
+                  31.47,
+                  34.67
+                ],
+                [
+                  31.55,
+                  34.75
+                ],
+                [
+                  31.6,
+                  34.8
+                ],
+                [
+                  31.65,
+                  34.85
+                ],
+                [
+                  31.67,
+                  34.9
+                ],
+                [
+                  31.7,
+                  34.95
+                ],
+                [
+                  31.72,
+                  34.97
+                ],
+                [
+                  31.75,
+                  35.0
+                ],
+                [
+                  31.8,
+                  35.05
+                ],
+                [
+                  31.85,
+                  35.1
+                ],
+                [
+                  31.89,
+                  35.16
+                ],
+                [
+                  31.93,
+                  35.22
+                ]
+              ]
+            ],
+            "to": -587,
+            "transition": {
+              "event": "The kingdom divides; Judah alone follows the house of David",
+              "ref_note": "1 Kings 12:16,19 (KJV, verified against the compiled text) -- Israel rejects Rehoboam and rebels 'against the house of David unto this day'; Judah (this polity) is what remains loyal to it -- see israel.toml's own mirrored transition",
+              "verses": [
+                "1KI.12.16",
+                "1KI.12.19"
+              ]
+            }
+          },
+          {
+            "color_key": 13,
+            "from": -538,
+            "id": "judah",
+            "name": "Yehud",
+            "rings": [
+              [
+                [
+                  31.95,
+                  35.15
+                ],
+                [
+                  31.93,
+                  35.18
+                ],
+                [
+                  31.92,
+                  35.2
+                ],
+                [
+                  31.88,
+                  35.25
+                ],
+                [
+                  31.83,
+                  35.28
+                ],
+                [
+                  31.78,
+                  35.3
+                ],
+                [
+                  31.73,
+                  35.29
+                ],
+                [
+                  31.68,
+                  35.27
+                ],
+                [
+                  31.64,
+                  35.23
+                ],
+                [
+                  31.6,
+                  35.18
+                ],
+                [
+                  31.57,
+                  35.12
+                ],
+                [
+                  31.55,
+                  35.05
+                ],
+                [
+                  31.54,
+                  34.98
+                ],
+                [
+                  31.55,
+                  34.92
+                ],
+                [
+                  31.58,
+                  34.87
+                ],
+                [
+                  31.62,
+                  34.83
+                ],
+                [
+                  31.67,
+                  34.8
+                ],
+                [
+                  31.72,
+                  34.79
+                ],
+                [
+                  31.77,
+                  34.81
+                ],
+                [
+                  31.82,
+                  34.85
+                ],
+                [
+                  31.86,
+                  34.9
+                ],
+                [
+                  31.89,
+                  34.95
+                ],
+                [
+                  31.91,
+                  35.0
+                ],
+                [
+                  31.93,
+                  35.05
+                ],
+                [
+                  31.94,
+                  35.1
+                ],
+                [
+                  31.945,
+                  35.13
+                ],
+                [
+                  31.95,
+                  35.15
+                ]
+              ]
+            ],
+            "to": -333,
+            "transition": {
+              "event": "Cyrus decrees the return from exile and the rebuilding of the temple",
+              "ref_note": "Ezra 1:1-3 (KJV, verified against the compiled text) -- Cyrus's own proclamation, traditionally dated 538 BC; the destruction that precedes this gap is Judah's OWN previous era's own end (2 Kings 25, not separately cited here since it falls chronologically inside the gap between these two eras, not at either one's own boundary)",
+              "verses": [
+                "EZR.1.1",
+                "EZR.1.2",
+                "EZR.1.3"
+              ]
+            }
+          },
+          {
+            "color_key": 13,
+            "from": -164,
+            "id": "judah",
+            "name": "Hasmonean Judea",
+            "rings": [
+              [
+                [
+                  33.05,
+                  35.55
+                ],
+                [
+                  32.98,
+                  35.58
+                ],
+                [
+                  32.85,
+                  35.6
+                ],
+                [
+                  32.72,
+                  35.62
+                ],
+                [
+                  32.6,
+                  35.65
+                ],
+                [
+                  32.45,
+                  35.68
+                ],
+                [
+                  32.3,
+                  35.7
+                ],
+                [
+                  32.15,
+                  35.65
+                ],
+                [
+                  32.0,
+                  35.6
+                ],
+                [
+                  31.88,
+                  35.55
+                ],
+                [
+                  31.75,
+                  35.5
+                ],
+                [
+                  31.62,
+                  35.5
+                ],
+                [
+                  31.5,
+                  35.5
+                ],
+                [
+                  31.4,
+                  35.45
+                ],
+                [
+                  31.3,
+                  35.4
+                ],
+                [
+                  31.2,
+                  35.3
+                ],
+                [
+                  31.1,
+                  35.2
+                ],
+                [
+                  31.05,
+                  35.08
+                ],
+                [
+                  31.0,
+                  34.95
+                ],
+                [
+                  31.02,
+                  34.85
+                ],
+                [
+                  31.05,
+                  34.75
+                ],
+                [
+                  31.12,
+                  34.67
+                ],
+                [
+                  31.2,
+                  34.6
+                ],
+                [
+                  31.3,
+                  34.57
+                ],
+                [
+                  31.4,
+                  34.55
+                ],
+                [
+                  31.5,
+                  34.57
+                ],
+                [
+                  31.6,
+                  34.6
+                ],
+                [
+                  31.68,
+                  34.65
+                ],
+                [
+                  31.75,
+                  34.7
+                ],
+                [
+                  31.82,
+                  34.72
+                ],
+                [
+                  31.9,
+                  34.75
+                ],
+                [
+                  31.97,
+                  34.8
+                ],
+                [
+                  32.05,
+                  34.85
+                ],
+                [
+                  32.12,
+                  34.87
+                ],
+                [
+                  32.2,
+                  34.9
+                ],
+                [
+                  32.3,
+                  34.92
+                ],
+                [
+                  32.4,
+                  34.95
+                ],
+                [
+                  32.5,
+                  34.96
+                ],
+                [
+                  32.6,
+                  34.98
+                ],
+                [
+                  32.7,
+                  35.04
+                ],
+                [
+                  32.8,
+                  35.1
+                ],
+                [
+                  32.87,
+                  35.2
+                ],
+                [
+                  32.95,
+                  35.3
+                ],
+                [
+                  33.0,
+                  35.42
+                ],
+                [
+                  33.05,
+                  35.55
+                ]
+              ]
+            ],
+            "to": -63,
+            "transition": {
+              "event": "The Maccabean Revolt overthrows Seleucid rule in Judea",
+              "ref_note": "the revolt itself (167-160 BC) is narrated in 1 Maccabees, outside the KJV's 66-book canon -- not otherwise cited here; Daniel 11:31 (KJV, verified against the compiled text) is the prophecy traditionally read as depicting Antiochus IV's own desecration of the temple, the revolt's proximate trigger -- a prophetic application, not a narrative citation, disclosed as such",
+              "verses": [
+                "DAN.11.31"
+              ]
+            }
+          },
+          {
+            "color_key": 13,
+            "fall": {
+              "event": "Herod the Great dies; his kingdom is partitioned among his sons",
+              "ref_note": "Matthew 2:19 (KJV, verified against the compiled text) -- 'when Herod was dead'; the partition itself (Matthew 2:22's own Archelaus reigning 'in the room of his father Herod') is general history/Josephus for the specific three-way split, traditionally dated 4 BC",
+              "verses": [
+                "MAT.2.19"
+              ]
+            },
+            "from": -39,
+            "id": "judah",
+            "name": "Herodian Kingdom of Judea",
+            "rings": [
+              [
+                [
+                  33.15,
+                  35.85
+                ],
+                [
+                  33.05,
+                  36.3
+                ],
+                [
+                  32.75,
+                  36.5
+                ],
+                [
+                  32.5,
+                  36.35
+                ],
+                [
+                  32.4,
+                  36.0
+                ],
+                [
+                  32.45,
+                  35.75
+                ],
+                [
+                  33.1,
+                  35.7
+                ],
+                [
+                  33.05,
+                  35.55
+                ],
+                [
+                  32.95,
+                  35.58
+                ],
+                [
+                  32.85,
+                  35.6
+                ],
+                [
+                  32.72,
+                  35.62
+                ],
+                [
+                  32.6,
+                  35.65
+                ],
+                [
+                  32.45,
+                  35.7
+                ],
+                [
+                  32.3,
+                  35.75
+                ],
+                [
+                  32.15,
+                  35.7
+                ],
+                [
+                  32.0,
+                  35.65
+                ],
+                [
+                  31.88,
+                  35.58
+                ],
+                [
+                  31.75,
+                  35.5
+                ],
+                [
+                  31.62,
+                  35.5
+                ],
+                [
+                  31.5,
+                  35.5
+                ],
+                [
+                  31.4,
+                  35.45
+                ],
+                [
+                  31.3,
+                  35.4
+                ],
+                [
+                  31.2,
+                  35.3
+                ],
+                [
+                  31.1,
+                  35.2
+                ],
+                [
+                  31.05,
+                  35.08
+                ],
+                [
+                  31.0,
+                  34.95
+                ],
+                [
+                  31.02,
+                  34.85
+                ],
+                [
+                  31.05,
+                  34.75
+                ],
+                [
+                  31.12,
+                  34.67
+                ],
+                [
+                  31.2,
+                  34.6
+                ],
+                [
+                  31.3,
+                  34.57
+                ],
+                [
+                  31.4,
+                  34.55
+                ],
+                [
+                  31.5,
+                  34.57
+                ],
+                [
+                  31.6,
+                  34.6
+                ],
+                [
+                  31.68,
+                  34.65
+                ],
+                [
+                  31.75,
+                  34.7
+                ],
+                [
+                  31.82,
+                  34.72
+                ],
+                [
+                  31.9,
+                  34.75
+                ],
+                [
+                  31.97,
+                  34.8
+                ],
+                [
+                  32.05,
+                  34.85
+                ],
+                [
+                  32.12,
+                  34.87
+                ],
+                [
+                  32.2,
+                  34.9
+                ],
+                [
+                  32.3,
+                  34.92
+                ],
+                [
+                  32.4,
+                  34.95
+                ],
+                [
+                  32.5,
+                  34.96
+                ],
+                [
+                  32.6,
+                  34.98
+                ],
+                [
+                  32.7,
+                  35.04
+                ],
+                [
+                  32.8,
+                  35.1
+                ],
+                [
+                  32.87,
+                  35.2
+                ],
+                [
+                  32.95,
+                  35.3
+                ],
+                [
+                  33.0,
+                  35.4
+                ],
+                [
+                  33.05,
+                  35.5
+                ],
+                [
+                  33.1,
+                  35.65
+                ],
+                [
+                  33.15,
+                  35.85
+                ]
+              ]
+            ],
+            "to": -4,
+            "transition": {
+              "event": "Rome installs Herod the Great as king of Judea",
+              "ref_note": "Josephus (Antiquities 14/Jewish War 1), general history -- not narrated in the KJV text, which first names Herod near his own death (Matthew 2); no verse cited rather than an invented one",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 6,
+            "from": -140,
+            "id": "parthian-empire",
+            "name": "Parthian Empire",
+            "rings": [
+              [
+                [
+                  37.0,
+                  38.3
+                ],
+                [
+                  36.0,
+                  40.5
+                ],
+                [
+                  35.0,
+                  42.5
+                ],
+                [
+                  34.0,
+                  44.0
+                ],
+                [
+                  33.0,
+                  45.0
+                ],
+                [
+                  32.0,
+                  46.0
+                ],
+                [
+                  31.0,
+                  46.8
+                ],
+                [
+                  30.0,
+                  47.3
+                ],
+                [
+                  29.5,
+                  47.6
+                ],
+                [
+                  28.5,
+                  49.0
+                ],
+                [
+                  27.5,
+                  51.0
+                ],
+                [
+                  26.5,
+                  53.5
+                ],
+                [
+                  25.7,
+                  56.0
+                ],
+                [
+                  25.3,
+                  59.0
+                ],
+                [
+                  26.0,
+                  62.0
+                ],
+                [
+                  27.5,
+                  64.5
+                ],
+                [
+                  29.5,
+                  66.5
+                ],
+                [
+                  31.5,
+                  67.5
+                ],
+                [
+                  33.5,
+                  67.3
+                ],
+                [
+                  35.0,
+                  66.0
+                ],
+                [
+                  36.5,
+                  63.0
+                ],
+                [
+                  38.0,
+                  60.0
+                ],
+                [
+                  39.0,
+                  57.0
+                ],
+                [
+                  39.2,
+                  54.0
+                ],
+                [
+                  38.5,
+                  51.0
+                ],
+                [
+                  37.5,
+                  48.5
+                ],
+                [
+                  36.5,
+                  46.0
+                ],
+                [
+                  35.5,
+                  43.5
+                ],
+                [
+                  36.2,
+                  41.5
+                ],
+                [
+                  37.0,
+                  38.3
+                ]
+              ]
+            ],
+            "to": 100
+          },
+          {
+            "color_key": 4,
+            "from": -539,
+            "id": "persia",
+            "name": "Achaemenid Persian Empire",
+            "rings": [
+              [
+                [
+                  40.5,
+                  26.5
+                ],
+                [
+                  41.3,
+                  29.0
+                ],
+                [
+                  41.6,
+                  32.0
+                ],
+                [
+                  41.5,
+                  35.0
+                ],
+                [
+                  41.0,
+                  38.0
+                ],
+                [
+                  40.3,
+                  41.0
+                ],
+                [
+                  41.0,
+                  44.0
+                ],
+                [
+                  40.0,
+                  47.0
+                ],
+                [
+                  38.5,
+                  49.0
+                ],
+                [
+                  37.0,
+                  52.0
+                ],
+                [
+                  36.5,
+                  55.0
+                ],
+                [
+                  36.0,
+                  58.0
+                ],
+                [
+                  35.5,
+                  61.0
+                ],
+                [
+                  35.0,
+                  64.0
+                ],
+                [
+                  34.5,
+                  67.0
+                ],
+                [
+                  33.5,
+                  68.5
+                ],
+                [
+                  31.0,
+                  68.5
+                ],
+                [
+                  28.5,
+                  68.0
+                ],
+                [
+                  26.5,
+                  67.0
+                ],
+                [
+                  25.0,
+                  64.0
+                ],
+                [
+                  25.5,
+                  60.0
+                ],
+                [
+                  26.0,
+                  56.5
+                ],
+                [
+                  26.5,
+                  52.0
+                ],
+                [
+                  27.0,
+                  49.5
+                ],
+                [
+                  26.0,
+                  48.5
+                ],
+                [
+                  24.5,
+                  47.5
+                ],
+                [
+                  23.0,
+                  46.5
+                ],
+                [
+                  22.0,
+                  44.0
+                ],
+                [
+                  22.5,
+                  41.0
+                ],
+                [
+                  24.0,
+                  38.5
+                ],
+                [
+                  26.0,
+                  36.5
+                ],
+                [
+                  28.0,
+                  34.7
+                ],
+                [
+                  29.5,
+                  32.6
+                ],
+                [
+                  29.0,
+                  31.0
+                ],
+                [
+                  27.5,
+                  30.0
+                ],
+                [
+                  25.5,
+                  29.5
+                ],
+                [
+                  24.0,
+                  28.0
+                ],
+                [
+                  23.5,
+                  25.0
+                ],
+                [
+                  24.5,
+                  22.0
+                ],
+                [
+                  26.5,
+                  21.0
+                ],
+                [
+                  29.0,
+                  20.8
+                ],
+                [
+                  31.0,
+                  20.9
+                ],
+                [
+                  32.2,
+                  22.5
+                ],
+                [
+                  32.7,
+                  25.0
+                ],
+                [
+                  31.8,
+                  28.0
+                ],
+                [
+                  31.5,
+                  30.5
+                ],
+                [
+                  31.4,
+                  32.3
+                ],
+                [
+                  31.9,
+                  34.5
+                ],
+                [
+                  33.0,
+                  35.2
+                ],
+                [
+                  34.5,
+                  35.9
+                ],
+                [
+                  36.0,
+                  36.2
+                ],
+                [
+                  37.5,
+                  29.5
+                ],
+                [
+                  38.5,
+                  27.5
+                ],
+                [
+                  40.5,
+                  26.5
+                ]
+              ]
+            ],
+            "to": -331,
+            "transition": {
+              "event": "Cyrus conquers Babylon, founding the Achaemenid Persian Empire",
+              "ref_note": "Isaiah 44:28, 45:1 (KJV, verified against the compiled text) -- Isaiah names Cyrus by name as the Lord's own 'anointed,' generations before his reign; the conquest itself is narrated in Daniel 5 (see babylon.toml's own mirrored fall-transition), traditionally dated 539 BC",
+              "verses": [
+                "ISA.44.28",
+                "ISA.45.1"
+              ]
+            }
+          },
+          {
+            "color_key": 1,
+            "fall": {
+              "event": "Nebuchadnezzar besieges Tyre; Neo-Babylonian then Persian rule absorbs the coast",
+              "ref_note": "Ezekiel 26:3-4,7 (KJV, verified against the compiled text) -- the Lord's own oracle against Tyre, naming 'Nebuchadrezzar king of Babylon' directly (v.7); the historical thirteen-year siege and the coast's later absorption into Persian control are general history beyond what these verses themselves narrate",
+              "verses": [
+                "EZK.26.3",
+                "EZK.26.4",
+                "EZK.26.7"
+              ]
+            },
+            "from": -1200,
+            "id": "phoenicia",
+            "name": "Phoenicia",
+            "rings": [
+              [
+                [
+                  34.85,
+                  35.9
+                ],
+                [
+                  34.72,
+                  35.92
+                ],
+                [
+                  34.6,
+                  35.95
+                ],
+                [
+                  34.47,
+                  35.85
+                ],
+                [
+                  34.35,
+                  35.75
+                ],
+                [
+                  34.22,
+                  35.7
+                ],
+                [
+                  34.1,
+                  35.65
+                ],
+                [
+                  33.97,
+                  35.58
+                ],
+                [
+                  33.85,
+                  35.5
+                ],
+                [
+                  33.72,
+                  35.45
+                ],
+                [
+                  33.6,
+                  35.4
+                ],
+                [
+                  33.47,
+                  35.31
+                ],
+                [
+                  33.35,
+                  35.22
+                ],
+                [
+                  33.22,
+                  35.17
+                ],
+                [
+                  33.1,
+                  35.12
+                ],
+                [
+                  33.02,
+                  35.1
+                ],
+                [
+                  32.95,
+                  35.08
+                ],
+                [
+                  32.95,
+                  35.12
+                ],
+                [
+                  32.98,
+                  35.16
+                ],
+                [
+                  33.05,
+                  35.18
+                ],
+                [
+                  33.1,
+                  35.2
+                ],
+                [
+                  33.22,
+                  35.25
+                ],
+                [
+                  33.35,
+                  35.3
+                ],
+                [
+                  33.47,
+                  35.39
+                ],
+                [
+                  33.6,
+                  35.48
+                ],
+                [
+                  33.72,
+                  35.54
+                ],
+                [
+                  33.85,
+                  35.6
+                ],
+                [
+                  33.97,
+                  35.68
+                ],
+                [
+                  34.1,
+                  35.75
+                ],
+                [
+                  34.22,
+                  35.8
+                ],
+                [
+                  34.35,
+                  35.85
+                ],
+                [
+                  34.47,
+                  35.95
+                ],
+                [
+                  34.6,
+                  36.05
+                ],
+                [
+                  34.72,
+                  35.98
+                ],
+                [
+                  34.85,
+                  35.9
+                ]
+              ]
+            ],
+            "to": -539
+          },
+          {
+            "color_key": 2,
+            "from": -200,
+            "id": "roman-empire",
+            "name": "Roman Republic",
+            "rings": [
+              [
+                [
+                  40.0,
+                  0.5
+                ],
+                [
+                  41.5,
+                  2.5
+                ],
+                [
+                  43.0,
+                  3.5
+                ],
+                [
+                  43.5,
+                  5.0
+                ],
+                [
+                  44.2,
+                  7.5
+                ],
+                [
+                  45.0,
+                  8.8
+                ],
+                [
+                  45.4,
+                  9.5
+                ],
+                [
+                  44.5,
+                  11.0
+                ],
+                [
+                  43.7,
+                  12.3
+                ],
+                [
+                  42.8,
+                  12.6
+                ],
+                [
+                  41.9,
+                  12.5
+                ],
+                [
+                  41.0,
+                  13.5
+                ],
+                [
+                  40.85,
+                  14.25
+                ],
+                [
+                  40.0,
+                  15.3
+                ],
+                [
+                  39.0,
+                  16.3
+                ],
+                [
+                  38.2,
+                  15.9
+                ],
+                [
+                  38.5,
+                  18.0
+                ],
+                [
+                  39.0,
+                  19.0
+                ],
+                [
+                  39.5,
+                  20.0
+                ],
+                [
+                  38.5,
+                  21.0
+                ],
+                [
+                  37.5,
+                  22.0
+                ],
+                [
+                  37.0,
+                  23.0
+                ],
+                [
+                  38.0,
+                  23.7
+                ],
+                [
+                  39.0,
+                  23.0
+                ],
+                [
+                  40.0,
+                  22.5
+                ],
+                [
+                  41.0,
+                  22.3
+                ],
+                [
+                  41.3,
+                  24.0
+                ],
+                [
+                  41.0,
+                  26.0
+                ],
+                [
+                  40.5,
+                  26.8
+                ],
+                [
+                  39.5,
+                  26.5
+                ],
+                [
+                  38.0,
+                  27.0
+                ],
+                [
+                  37.0,
+                  27.5
+                ],
+                [
+                  36.5,
+                  28.5
+                ],
+                [
+                  36.3,
+                  30.0
+                ],
+                [
+                  36.5,
+                  32.0
+                ],
+                [
+                  35.8,
+                  35.9
+                ],
+                [
+                  33.0,
+                  35.2
+                ],
+                [
+                  31.9,
+                  34.5
+                ],
+                [
+                  31.0,
+                  33.5
+                ],
+                [
+                  30.5,
+                  32.0
+                ],
+                [
+                  31.0,
+                  30.0
+                ],
+                [
+                  31.5,
+                  28.0
+                ],
+                [
+                  32.0,
+                  25.0
+                ],
+                [
+                  32.5,
+                  22.0
+                ],
+                [
+                  32.8,
+                  20.0
+                ],
+                [
+                  33.0,
+                  17.0
+                ],
+                [
+                  33.5,
+                  14.0
+                ],
+                [
+                  34.0,
+                  11.5
+                ],
+                [
+                  36.8,
+                  10.2
+                ],
+                [
+                  37.2,
+                  9.0
+                ],
+                [
+                  37.0,
+                  7.0
+                ],
+                [
+                  36.7,
+                  4.5
+                ],
+                [
+                  36.5,
+                  2.0
+                ],
+                [
+                  36.7,
+                  0.0
+                ],
+                [
+                  37.5,
+                  -2.0
+                ],
+                [
+                  38.5,
+                  -1.0
+                ],
+                [
+                  39.5,
+                  0.0
+                ],
+                [
+                  40.0,
+                  0.5
+                ]
+              ]
+            ],
+            "to": -31
+          },
+          {
+            "color_key": 2,
+            "from": -30,
+            "id": "roman-empire",
+            "name": "Roman Empire",
+            "rings": [
+              [
+                [
+                  40.0,
+                  0.5
+                ],
+                [
+                  42.5,
+                  2.5
+                ],
+                [
+                  44.5,
+                  5.0
+                ],
+                [
+                  46.5,
+                  7.0
+                ],
+                [
+                  47.6,
+                  9.0
+                ],
+                [
+                  46.5,
+                  10.0
+                ],
+                [
+                  45.4,
+                  9.5
+                ],
+                [
+                  44.5,
+                  11.0
+                ],
+                [
+                  43.7,
+                  12.3
+                ],
+                [
+                  42.8,
+                  12.6
+                ],
+                [
+                  41.9,
+                  12.5
+                ],
+                [
+                  41.0,
+                  13.5
+                ],
+                [
+                  40.85,
+                  14.25
+                ],
+                [
+                  40.0,
+                  15.3
+                ],
+                [
+                  39.0,
+                  16.3
+                ],
+                [
+                  38.2,
+                  15.9
+                ],
+                [
+                  38.5,
+                  18.0
+                ],
+                [
+                  39.0,
+                  19.0
+                ],
+                [
+                  39.5,
+                  20.0
+                ],
+                [
+                  38.5,
+                  21.0
+                ],
+                [
+                  37.5,
+                  22.0
+                ],
+                [
+                  37.0,
+                  23.0
+                ],
+                [
+                  38.0,
+                  23.7
+                ],
+                [
+                  39.0,
+                  23.0
+                ],
+                [
+                  40.0,
+                  22.5
+                ],
+                [
+                  41.0,
+                  22.3
+                ],
+                [
+                  41.3,
+                  24.0
+                ],
+                [
+                  41.5,
+                  26.0
+                ],
+                [
+                  41.2,
+                  28.5
+                ],
+                [
+                  40.5,
+                  29.5
+                ],
+                [
+                  39.5,
+                  30.5
+                ],
+                [
+                  38.5,
+                  31.5
+                ],
+                [
+                  37.5,
+                  32.5
+                ],
+                [
+                  36.8,
+                  33.5
+                ],
+                [
+                  36.5,
+                  35.5
+                ],
+                [
+                  36.2,
+                  37.1
+                ],
+                [
+                  36.5,
+                  38.5
+                ],
+                [
+                  35.0,
+                  39.5
+                ],
+                [
+                  33.5,
+                  39.0
+                ],
+                [
+                  33.0,
+                  37.0
+                ],
+                [
+                  33.0,
+                  35.9
+                ],
+                [
+                  33.0,
+                  35.2
+                ],
+                [
+                  31.9,
+                  34.5
+                ],
+                [
+                  31.5,
+                  34.4
+                ],
+                [
+                  31.5,
+                  32.9
+                ],
+                [
+                  31.45,
+                  32.25
+                ],
+                [
+                  31.35,
+                  29.9
+                ],
+                [
+                  31.0,
+                  29.95
+                ],
+                [
+                  30.7,
+                  30.15
+                ],
+                [
+                  30.3,
+                  30.5
+                ],
+                [
+                  29.9,
+                  30.65
+                ],
+                [
+                  28.9,
+                  30.55
+                ],
+                [
+                  27.9,
+                  30.35
+                ],
+                [
+                  26.9,
+                  30.55
+                ],
+                [
+                  25.9,
+                  31.4
+                ],
+                [
+                  24.9,
+                  32.15
+                ],
+                [
+                  24.3,
+                  32.9
+                ],
+                [
+                  25.5,
+                  29.0
+                ],
+                [
+                  27.0,
+                  25.5
+                ],
+                [
+                  29.0,
+                  22.0
+                ],
+                [
+                  31.0,
+                  20.8
+                ],
+                [
+                  32.3,
+                  21.0
+                ],
+                [
+                  33.0,
+                  19.0
+                ],
+                [
+                  33.5,
+                  16.0
+                ],
+                [
+                  34.0,
+                  13.0
+                ],
+                [
+                  34.0,
+                  11.5
+                ],
+                [
+                  36.8,
+                  10.2
+                ],
+                [
+                  37.2,
+                  9.0
+                ],
+                [
+                  36.7,
+                  4.5
+                ],
+                [
+                  36.7,
+                  0.0
+                ],
+                [
+                  37.5,
+                  -2.0
+                ],
+                [
+                  38.5,
+                  -1.0
+                ],
+                [
+                  39.5,
+                  0.0
+                ],
+                [
+                  40.0,
+                  0.5
+                ]
+              ]
+            ],
+            "to": 100,
+            "transition": {
+              "event": "Octavian defeats Antony and Cleopatra at Actium; the Senate names him Augustus",
+              "ref_note": "Actium (31 BC) and the Senate's own grant of the Augustus title (27 BC) are general Roman history -- not narrated or prophesied anywhere in the KJV text at this specific boundary; no verse cited rather than one (Luke 2:1's own later, unrelated census reference) that would risk reading as though it narrated this event under a THE SCRIPTURES heading",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 5,
+            "from": -301,
+            "id": "seleucid-empire",
+            "name": "Seleucid Empire",
+            "rings": [
+              [
+                [
+                  39.0,
+                  27.0
+                ],
+                [
+                  40.0,
+                  26.8
+                ],
+                [
+                  41.3,
+                  29.0
+                ],
+                [
+                  41.6,
+                  32.0
+                ],
+                [
+                  41.5,
+                  35.0
+                ],
+                [
+                  41.0,
+                  38.0
+                ],
+                [
+                  40.3,
+                  41.0
+                ],
+                [
+                  41.0,
+                  44.0
+                ],
+                [
+                  40.0,
+                  47.0
+                ],
+                [
+                  38.5,
+                  49.0
+                ],
+                [
+                  37.0,
+                  52.0
+                ],
+                [
+                  36.5,
+                  55.0
+                ],
+                [
+                  36.0,
+                  58.0
+                ],
+                [
+                  35.5,
+                  61.0
+                ],
+                [
+                  35.0,
+                  64.0
+                ],
+                [
+                  34.5,
+                  67.0
+                ],
+                [
+                  33.5,
+                  68.5
+                ],
+                [
+                  31.0,
+                  68.5
+                ],
+                [
+                  28.5,
+                  68.0
+                ],
+                [
+                  26.5,
+                  67.0
+                ],
+                [
+                  25.0,
+                  64.0
+                ],
+                [
+                  25.5,
+                  60.0
+                ],
+                [
+                  26.0,
+                  56.5
+                ],
+                [
+                  26.5,
+                  52.0
+                ],
+                [
+                  27.0,
+                  49.5
+                ],
+                [
+                  26.0,
+                  48.5
+                ],
+                [
+                  24.5,
+                  47.5
+                ],
+                [
+                  25.5,
+                  45.0
+                ],
+                [
+                  27.0,
+                  43.0
+                ],
+                [
+                  29.0,
+                  41.0
+                ],
+                [
+                  30.5,
+                  39.0
+                ],
+                [
+                  32.0,
+                  37.5
+                ],
+                [
+                  33.5,
+                  36.5
+                ],
+                [
+                  34.5,
+                  36.0
+                ],
+                [
+                  36.0,
+                  36.2
+                ],
+                [
+                  37.5,
+                  32.0
+                ],
+                [
+                  38.0,
+                  29.0
+                ],
+                [
+                  39.0,
+                  27.0
+                ]
+              ]
+            ],
+            "to": -150
+          },
+          {
+            "color_key": 5,
+            "fall": {
+              "event": "Pompey annexes Syria as a Roman province, ending Seleucid rule",
+              "ref_note": "general Roman/Hellenistic historical knowledge (Pompey's own 64/63 BC settlement of the East); no specific source consulted this session; 1 Maccabees, the fullest narrative source for the Seleucid decline, is outside the KJV's 66-book canon",
+              "verses": []
+            },
+            "from": -149,
+            "id": "seleucid-empire",
+            "name": "Seleucid Empire (rump)",
+            "rings": [
+              [
+                [
+                  36.8,
+                  35.9
+                ],
+                [
+                  36.9,
+                  36.05
+                ],
+                [
+                  36.95,
+                  36.2
+                ],
+                [
+                  37.0,
+                  36.35
+                ],
+                [
+                  37.0,
+                  36.5
+                ],
+                [
+                  36.98,
+                  36.68
+                ],
+                [
+                  36.97,
+                  36.85
+                ],
+                [
+                  36.93,
+                  37.02
+                ],
+                [
+                  36.9,
+                  37.2
+                ],
+                [
+                  36.81,
+                  37.31
+                ],
+                [
+                  36.72,
+                  37.42
+                ],
+                [
+                  36.61,
+                  37.51
+                ],
+                [
+                  36.5,
+                  37.6
+                ],
+                [
+                  36.38,
+                  37.53
+                ],
+                [
+                  36.27,
+                  37.47
+                ],
+                [
+                  36.13,
+                  37.38
+                ],
+                [
+                  36.0,
+                  37.3
+                ],
+                [
+                  35.9,
+                  37.17
+                ],
+                [
+                  35.8,
+                  37.05
+                ],
+                [
+                  35.7,
+                  36.92
+                ],
+                [
+                  35.6,
+                  36.8
+                ],
+                [
+                  35.52,
+                  36.67
+                ],
+                [
+                  35.45,
+                  36.55
+                ],
+                [
+                  35.37,
+                  36.42
+                ],
+                [
+                  35.3,
+                  36.3
+                ],
+                [
+                  35.27,
+                  36.2
+                ],
+                [
+                  35.25,
+                  36.1
+                ],
+                [
+                  35.22,
+                  36.0
+                ],
+                [
+                  35.2,
+                  35.9
+                ],
+                [
+                  35.26,
+                  35.84
+                ],
+                [
+                  35.32,
+                  35.78
+                ],
+                [
+                  35.41,
+                  35.74
+                ],
+                [
+                  35.5,
+                  35.7
+                ],
+                [
+                  35.61,
+                  35.71
+                ],
+                [
+                  35.72,
+                  35.72
+                ],
+                [
+                  35.86,
+                  35.73
+                ],
+                [
+                  36.0,
+                  35.75
+                ],
+                [
+                  36.1,
+                  35.76
+                ],
+                [
+                  36.2,
+                  35.77
+                ],
+                [
+                  36.3,
+                  35.78
+                ],
+                [
+                  36.4,
+                  35.8
+                ],
+                [
+                  36.5,
+                  35.82
+                ],
+                [
+                  36.6,
+                  35.85
+                ],
+                [
+                  36.7,
+                  35.87
+                ],
+                [
+                  36.8,
+                  35.9
+                ]
+              ]
+            ],
+            "to": -64,
+            "transition": {
+              "event": "Parthian and Armenian conquests reduce the Seleucid realm to a rump state",
+              "ref_note": "general Hellenistic-era historical knowledge (Parthia's own mid-2nd-century BC eastward conquests under Mithridates I; Tigranes of Armenia's own later inroads); no specific source consulted this session; not scripture-narrated",
+              "verses": []
+            }
+          },
+          {
+            "color_key": 8,
+            "from": -4004,
+            "id": "sumer",
+            "name": "Sumer",
+            "rings": [
+              [
+                [
+                  32.5,
+                  44.3
+                ],
+                [
+                  32.35,
+                  44.45
+                ],
+                [
+                  32.2,
+                  44.6
+                ],
+                [
+                  32.05,
+                  44.75
+                ],
+                [
+                  31.9,
+                  44.9
+                ],
+                [
+                  31.75,
+                  45.05
+                ],
+                [
+                  31.6,
+                  45.2
+                ],
+                [
+                  31.45,
+                  45.35
+                ],
+                [
+                  31.3,
+                  45.5
+                ],
+                [
+                  31.15,
+                  45.65
+                ],
+                [
+                  31.0,
+                  45.8
+                ],
+                [
+                  30.85,
+                  45.95
+                ],
+                [
+                  30.7,
+                  46.1
+                ],
+                [
+                  30.55,
+                  46.25
+                ],
+                [
+                  30.4,
+                  46.4
+                ],
+                [
+                  30.25,
+                  46.5
+                ],
+                [
+                  30.1,
+                  46.6
+                ],
+                [
+                  29.98,
+                  46.5
+                ],
+                [
+                  29.85,
+                  46.4
+                ],
+                [
+                  29.78,
+                  46.2
+                ],
+                [
+                  29.7,
+                  46.0
+                ],
+                [
+                  29.65,
+                  45.75
+                ],
+                [
+                  29.6,
+                  45.5
+                ],
+                [
+                  29.57,
+                  45.25
+                ],
+                [
+                  29.55,
+                  45.0
+                ],
+                [
+                  29.57,
+                  44.75
+                ],
+                [
+                  29.6,
+                  44.5
+                ],
+                [
+                  29.7,
+                  44.3
+                ],
+                [
+                  29.8,
+                  44.1
+                ],
+                [
+                  29.95,
+                  44.0
+                ],
+                [
+                  30.1,
+                  43.9
+                ],
+                [
+                  30.25,
+                  43.87
+                ],
+                [
+                  30.4,
+                  43.85
+                ],
+                [
+                  30.55,
+                  43.87
+                ],
+                [
+                  30.7,
+                  43.9
+                ],
+                [
+                  30.85,
+                  43.95
+                ],
+                [
+                  31.0,
+                  44.0
+                ],
+                [
+                  31.15,
+                  44.02
+                ],
+                [
+                  31.3,
+                  44.05
+                ],
+                [
+                  31.45,
+                  44.07
+                ],
+                [
+                  31.6,
+                  44.1
+                ],
+                [
+                  31.75,
+                  44.12
+                ],
+                [
+                  31.9,
+                  44.15
+                ],
+                [
+                  32.05,
+                  44.17
+                ],
+                [
+                  32.2,
+                  44.2
+                ],
+                [
+                  32.35,
+                  44.25
+                ],
+                [
+                  32.5,
+                  44.3
+                ]
+              ]
+            ],
+            "to": -2004
+          }
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/sources": {
+      "body": {
+        "categories": [
+          {
+            "id": "scripture",
+            "label": "Scripture & Text"
+          },
+          {
+            "id": "narrative-history",
+            "label": "Historical & Narrative Sources"
+          },
+          {
+            "id": "lutheran-texts",
+            "label": "Lutheran Confessional Texts"
+          },
+          {
+            "id": "map",
+            "label": "Map & Cartography"
+          },
+          {
+            "id": "our-work",
+            "label": "Our Own Curated Work"
+          }
+        ],
+        "provenances": [
+          {
+            "confidence": "CanonicalText",
+            "id": "kjv",
+            "locator": "verses-kjv.json / canon.json",
+            "source": "kjv-text"
+          },
+          {
+            "confidence": "Imported",
+            "id": "openbible.info-cross-references",
+            "locator": "cross_references.txt",
+            "source": "openbible-xrefs"
+          },
+          {
+            "confidence": "Imported",
+            "id": "theographic-geocoding",
+            "locator": "verse-to-place links",
+            "source": "openbible-geocoding"
+          },
+          {
+            "confidence": "Imported",
+            "id": "red-letter",
+            "locator": null,
+            "source": "red-letter"
+          },
+          {
+            "confidence": "Imported",
+            "id": "brainfuel",
+            "locator": null,
+            "source": "brainfuel-bible"
+          },
+          {
+            "confidence": "Imported",
+            "id": "theographic",
+            "locator": null,
+            "source": "theographic"
+          },
+          {
+            "confidence": "Imported",
+            "id": "theographic-people",
+            "locator": "people",
+            "source": "theographic"
+          },
+          {
+            "confidence": "Imported",
+            "id": "theographic-people-groups",
+            "locator": "people groups",
+            "source": "theographic"
+          },
+          {
+            "confidence": "Curated",
+            "id": "theographic-people-reclassified",
+            "locator": "people-group reclassification list",
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Imported",
+            "id": "kretzmann",
+            "locator": null,
+            "source": "kretzmann-commentary"
+          },
+          {
+            "confidence": "Imported",
+            "id": "concord",
+            "locator": null,
+            "source": "book-of-concord"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-catechism",
+            "locator": null,
+            "source": "catechism-mapping"
+          },
+          {
+            "confidence": "Derived",
+            "id": "concord-sc-overlap",
+            "locator": "Small Catechism / Book of Concord overlap",
+            "source": "catechism-mapping"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-places",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-narratives",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-eras",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-polities",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-fulfillment",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-typology",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-people-groups",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-named-after",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "chronology-anchors",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "attestation-corrections",
+            "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "event-witnesses",
+            "locator": "curated event witness lists",
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Derived",
+            "id": "chronology-derivation",
+            "locator": "compiled from temporal_order",
+            "source": "our-curated-work"
+          }
+        ],
+        "sources": [
+          {
+            "category": "scripture",
+            "id": "kjv-text",
+            "license": "Public domain",
+            "licenses_row_key": "KJV text",
+            "link": "https://github.com/scrollmapper/bible_databases",
+            "title": "The King James Version",
+            "what_it_is": "The King James Version of the Holy Bible -- the canonical English text this app reads, cites, and builds every other layer around.",
+            "what_we_built": "Compiled into verses-kjv.json and canon.json: the book/chapter/verse structure and the verse text itself, obtained via the scrollmapper/bible_databases project. Every other translation this app carries rides alongside this text; none ever replaces it."
+          },
+          {
+            "category": "scripture",
+            "id": "openbible-geocoding",
+            "license": "CC-BY 4.0",
+            "licenses_row_key": "OpenBible.info geocoding",
+            "link": "https://github.com/openbibleinfo/Bible-Geocoding-Data",
+            "title": "OpenBible.info Geocoding",
+            "what_it_is": "Place-coordinate data for the locations named throughout Scripture, from OpenBible.info's Bible-Geocoding-Data project.",
+            "what_we_built": "Compiled into places.json, giving mapped places their coordinates on the World page."
+          },
+          {
+            "category": "scripture",
+            "id": "openbible-xrefs",
+            "license": "Free to use with credit",
+            "licenses_row_key": "OpenBible.info cross-references",
+            "link": "https://www.openbible.info/labs/cross-references/",
+            "title": "OpenBible.info Cross-References",
+            "what_it_is": "A cross-reference dataset connecting related passages across the whole Bible.",
+            "what_we_built": "Compiled into cross-refs.json, powering the reader's own cross-reference lookups."
+          },
+          {
+            "category": "scripture",
+            "id": "red-letter",
+            "license": "Public domain",
+            "licenses_row_key": "KJV red-letter",
+            "link": "https://github.com/seven1m/open-bibles",
+            "title": "KJV Red-Letter Markup",
+            "what_it_is": "A words-of-Christ annotation layer tracing back to Louis Klopsch's 1901 red-letter edition, obtained through eBible.org's own public-domain KJV OSIS distribution (via the seven1m/open-bibles collection).",
+            "what_we_built": "Compiled into SpokenBy/SpokenAt graph edges and data/compiled/red-letter-spans.json, which color Christ's own words wherever verse text renders in the reader. An annotation over our own KJV text, never a change to it."
+          },
+          {
+            "category": "scripture",
+            "id": "brainfuel-bible",
+            "license": "Public domain",
+            "licenses_row_key": "brain-fuel/bible parallel editions",
+            "link": "https://github.com/brain-fuel/bible",
+            "title": "brain-fuel/bible Parallel Editions",
+            "what_it_is": "Six further public-domain Bible editions: the Clementine Vulgate, the Westminster Leningrad Codex, the Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), and the Greek Textus Receptus.",
+            "what_we_built": "Compiled as additional translation layers in the graph, alongside -- never replacing -- this app's own canonical KJV text."
+          },
+          {
+            "category": "narrative-history",
+            "id": "theographic",
+            "license": "CC BY-SA 4.0",
+            "licenses_row_key": "Theographic Bible Metadata",
+            "link": "https://github.com/robertrouse/theographic-bible-metadata",
+            "title": "Theographic Bible Metadata",
+            "what_it_is": "A rich, hand-built dataset of biblical people, places, and events with dates, by Robert Rouse.",
+            "what_we_built": "Compiled into events.json and much of places.json -- the great majority of this app's dated, narrative content rests on this dataset."
+          },
+          {
+            "category": "narrative-history",
+            "id": "robertson-harmony",
+            "license": "Public domain",
+            "licenses_row_key": "A.T. Robertson",
+            "link": "https://www.gutenberg.org/ebooks/36264",
+            "title": "Robertson's Harmony of the Gospels",
+            "what_it_is": "A.T. Robertson's A Harmony of the Gospels for Students of the Life of Christ (1922), which orders and groups the four Gospels' own parallel accounts.",
+            "what_we_built": "Robertson's own section numbers, titles, and groupings guided event-witnesses.toml's parallel-witness groupings and Passion Week's own chronological order. Every displayed event title and verse citation is this project's own, provenance-tagged (robertson_section) back to the section that grounded it."
+          },
+          {
+            "category": "narrative-history",
+            "id": "crockett-harmony",
+            "license": "Public domain",
+            "licenses_row_key": "William Day Crockett",
+            "link": "https://www.swartzentrover.com/cotor/E-Books/christ/Crockett/HSKC_AO.htm",
+            "title": "Crockett's Harmony of Samuel, Kings, and Chronicles",
+            "what_it_is": "William Day Crockett's A Harmony of the Books of Samuel, Kings and Chronicles (1897).",
+            "what_we_built": "Crockett's own section groupings guided the parallel-witness rows connecting Samuel, Kings, and Chronicles (and their related passages). Every displayed event title and verse citation is this project's own."
+          },
+          {
+            "category": "narrative-history",
+            "id": "ussher-annals",
+            "license": "Public domain",
+            "licenses_row_key": "James Ussher",
+            "link": "https://archive.org/details/james-usher-annals-of-the-world",
+            "title": "Ussher's Annals of the World",
+            "what_it_is": "James Ussher's The Annals of the World (1658), a chronology of biblical and ancient history.",
+            "what_we_built": "Two of its own paragraph-numbered entries grounded two chronology-anchors.toml year values: Ezra's return, and the completion of Nehemiah's wall."
+          },
+          {
+            "category": "narrative-history",
+            "id": "easton-dictionary",
+            "license": "Public domain (carried in the vendored Theographic bundle, itself CC BY-SA 4.0)",
+            "licenses_row_key": "M. G. Easton",
+            "link": "https://github.com/robertrouse/theographic-bible-metadata",
+            "title": "Easton's Bible Dictionary",
+            "what_it_is": "M. G. Easton's Bible Dictionary (1897), describing who and what the people and places of Scripture are.",
+            "what_we_built": "Its own entries fill the description shown on Place, Person, and PeopleGroup cards throughout the app, delivered via the already-vendored Theographic bundle."
+          },
+          {
+            "category": "narrative-history",
+            "id": "kretzmann-commentary",
+            "license": "Public domain",
+            "licenses_row_key": "Paul E. Kretzmann",
+            "link": "https://kretzmanncommentary.org",
+            "title": "Kretzmann's Popular Commentary of the Bible",
+            "what_it_is": "Paul E. Kretzmann's Popular Commentary of the Bible (Concordia Publishing House, 1921-1924) -- verse-by-verse commentary across the whole Bible.",
+            "what_we_built": "Kretzmann's own commentary prose (never the KJV text his own commentary quotes) is compiled into verse-anchored commentary entries throughout the reader. A tentative date-mining pass over that same prose also surfaces the B.C./A.D. years Kretzmann mentions (data/exports/kretzmann-chronology.json, honestly marked tentative-extraction -- a future curatorial pass, not this app's chronology of record, adjudicates real placements from it)."
+          },
+          {
+            "category": "lutheran-texts",
+            "id": "small-catechism",
+            "license": "Public domain (published 1921, USA)",
+            "licenses_row_key": "Luther's Small Catechism",
+            "link": "https://en.wikisource.org/wiki/Index:Concordia_Triglotta.pdf",
+            "title": "Luther's Small Catechism",
+            "what_it_is": "Martin Luther's Small Catechism -- the Ten Commandments, the Creed, the Lord's Prayer, and the Sacraments -- in the 1921 Bente-Dau English translation (Triglot Concordia / Concordia Triglotta).",
+            "what_we_built": "Compiled into catechism.json, in Luther's own words, with verse links drawn from Luther's own citations and from the mapping below."
+          },
+          {
+            "category": "lutheran-texts",
+            "id": "book-of-concord",
+            "license": "Public domain (published 1921, USA)",
+            "licenses_row_key": "The Book of Concord",
+            "link": "https://bookofconcord.org",
+            "title": "The Book of Concord",
+            "what_it_is": "The Lutheran church's confessional writings, in the same 1921 Bente-Dau translation as the Small Catechism above.",
+            "what_we_built": "Compiled into the graph as a second full reading corpus alongside Scripture, paragraph by paragraph."
+          },
+          {
+            "category": "lutheran-texts",
+            "id": "catechism-mapping",
+            "license": "No license file -- used by the project owner's own explicit direction",
+            "licenses_row_key": "Catechism verse mapping",
+            "link": "https://github.com/brain-fuel/catechism",
+            "title": "Catechism Verse Mapping",
+            "what_it_is": "A mapping of Scripture references to Small Catechism questions, from the brain-fuel/catechism project, used here by the project owner's own direction.",
+            "what_we_built": "Compiled into catechism.json's own per-question verse links, connecting the Catechism to Scripture throughout the reader."
+          },
+          {
+            "category": "map",
+            "id": "esri-tiles",
+            "license": "Esri terms of use",
+            "licenses_row_key": "World_Shaded_Relief",
+            "link": "https://www.esri.com",
+            "title": "Esri World Shaded Relief",
+            "what_it_is": "The label-free, light-terrain basemap tiles behind the World page's map -- relief, coastlines, and water tone, with every label of our own drawn on top.",
+            "what_we_built": "Fetched live by the browser from Esri's own servers at runtime -- never stored or redistributed by this app -- attributed on the map itself and here, verbatim: \"Copyright:(c) 2014 Esri\"."
+          },
+          {
+            "category": "map",
+            "id": "carto-tiles",
+            "license": "Carto terms of use",
+            "licenses_row_key": "Carto basemap tiles",
+            "link": "https://carto.com/basemaps",
+            "title": "Carto Basemap Tiles",
+            "what_it_is": "A fallback set of basemap tiles, used only if the Esri tile service is unreachable.",
+            "what_we_built": "Fetched live by the browser at runtime, the same as Esri above -- never stored or redistributed by this app."
+          },
+          {
+            "category": "map",
+            "id": "leaflet",
+            "license": "BSD-2-Clause",
+            "licenses_row_key": "Leaflet",
+            "link": "https://leafletjs.com",
+            "title": "Leaflet",
+            "what_it_is": "The open-source JavaScript map library that renders the World page.",
+            "what_we_built": "Vendored and committed at client/wwwroot/vendor/leaflet/ (v1.9.4, upstream copyright banner retained), so a fresh clone runs without any fetch step."
+          },
+          {
+            "category": "our-work",
+            "id": "our-curated-work",
+            "license": "CC0 1.0 Universal",
+            "licenses_row_key": "All curated data",
+            "link": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "title": "Our Own Curated Work",
+            "what_it_is": "Everything this project authored directly: the historical polity borders, the coastline land mask, biblical landmarks, narrative threads, eras, and the titles, sectioning, and aliases that connect it all together.",
+            "what_we_built": "Hand-authored under data/curated/ and compiled into narratives.json, eras.json, books-meta.json, landmarks.json, polities.json, and land-mask.json. Every displayed event title is this project's own phrasing, provenance-tagged (robertson_section, acts_section, kjv_superscription, theographic, atlas_section) back to whichever source above grounded it, so the mapping stays auditable."
+          }
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/xrefs/JHN.3.16": {
+      "body": [
+        {
+          "preview": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "ROM.5.8",
+          "votes": 981
+        },
+        {
+          "preview": "In this was manifested the love of God toward us, because that God sent his only begotten Son into the world, that we might live through him.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "1JN.4.9-10",
+          "votes": 695
+        },
+        {
+          "preview": "He that spared not his own Son, but delivered him up for us all, how shall he not with him also freely give us all things?",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "ROM.8.32",
+          "votes": 507
+        },
+        {
+          "preview": "That whosoever believeth in him should not perish, but have eternal life.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.3.15",
+          "votes": 497
+        },
+        {
+          "preview": "Jesus said unto her, I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live:",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.11.25-26",
+          "votes": 455
+        },
+        {
+          "preview": "And this is the will of him that sent me, that every one which seeth the Son, and believeth on him, may have everlasting life: and I will raise him up at the last day.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.6.40",
+          "votes": 396
+        },
+        {
+          "preview": "He that believeth on the Son hath everlasting life: and he that believeth not the Son shall not see life; but the wrath of God abideth on him.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.3.36",
+          "votes": 374
+        },
+        {
+          "preview": "We love him, because he first loved us.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "1JN.4.19",
+          "votes": 349
+        },
+        {
+          "preview": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.10.28",
+          "votes": 317
+        },
+        {
+          "preview": "This is a faithful saying, and worthy of all acceptation, that Christ Jesus came into the world to save sinners; of whom I am chief.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "1TI.1.15-16",
+          "votes": 286
+        },
+        {
+          "preview": "For if, when we were enemies, we were reconciled to God by the death of his Son, much more, being reconciled, we shall be saved by his life.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "ROM.5.10",
+          "votes": 262
+        },
+        {
+          "preview": "The next day John seeth Jesus coming unto him, and saith, Behold the Lamb of God, which taketh away the sin of the world.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.1.29",
+          "votes": 237
+        },
+        {
+          "preview": "Now our Lord Jesus Christ himself, and God, even our Father, which hath loved us, and hath given us everlasting consolation and good hope through grace,",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "2TH.2.16",
+          "votes": 224
+        },
+        {
+          "preview": "To wit, that God was in Christ, reconciling the world unto himself, not imputing their trespasses unto them; and hath committed unto us the word of reconciliation.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "2CO.5.19-21",
+          "votes": 212
+        },
+        {
+          "preview": "But God, who is rich in mercy, for his great love wherewith he loved us,",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "EPH.2.4",
+          "votes": 202
+        },
+        {
+          "preview": "But go ye and learn what that meaneth, I will have mercy, and not sacrifice: for I am not come to call the righteous, but sinners to repentance.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "MAT.9.13",
+          "votes": 186
+        },
+        {
+          "preview": "And from Jesus Christ, who is the faithful witness, and the first begotten of the dead, and the prince of the kings of the earth. Unto him that loved us, and washed us from our sins in his own blood,",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "REV.1.5",
+          "votes": 171
+        },
+        {
+          "preview": "And he said, Lay not thine hand upon the lad, neither do thou any thing unto him: for now I know that thou fearest God, seeing thou hast not withheld thy son, thine only son from me.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "GEN.22.12",
+          "votes": 164
+        },
+        {
+          "preview": "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "JHN.1.14",
+          "votes": 164
+        },
+        {
+          "preview": "But after that the kindness and love of God our Saviour toward man appeared,",
+          "provenance": [
+            "openbible.info-cross-references"
+          ],
+          "target": "TIT.3.4",
+          "votes": 160
+        }
+      ],
+      "status": 200
+    },
+    "graph vocabulary": {
+      "body": {
+        "node_kinds": [
+          "TextUnit",
+          "Container",
+          "Event",
+          "Narrative",
+          "Place",
+          "Person",
+          "Anchor",
+          "Era",
+          "Polity",
+          "CatechismItem",
+          "Source",
+          "Translation",
+          "PeopleGroup",
+          "CommentaryItem"
+        ],
+        "relations": [
+          {
+            "forward": "contains",
+            "inverse": "member-of",
+            "name": "Contains"
+          },
+          {
+            "forward": "attested-in",
+            "inverse": "attests",
+            "name": "Attests"
+          },
+          {
+            "forward": "follows-in",
+            "inverse": "precedes-in",
+            "name": "Succession"
+          },
+          {
+            "forward": "dated-by",
+            "inverse": "dates",
+            "name": "DatedBy"
+          },
+          {
+            "forward": "located-at",
+            "inverse": "site-of",
+            "name": "LocatedAt"
+          },
+          {
+            "forward": "mentions",
+            "inverse": "mentioned-in",
+            "name": "Mentions"
+          },
+          {
+            "forward": "cites",
+            "inverse": "cited-by",
+            "name": "Cites"
+          },
+          {
+            "forward": "quotes",
+            "inverse": "quoted-by",
+            "name": "Quotes"
+          },
+          {
+            "forward": "confesses",
+            "inverse": "confessed-in",
+            "name": "Confesses"
+          },
+          {
+            "forward": "fulfilled-in",
+            "inverse": "fulfills",
+            "name": "Fulfillment"
+          },
+          {
+            "forward": "prefigures",
+            "inverse": "prefigured-by",
+            "name": "Typology"
+          },
+          {
+            "forward": "named-after",
+            "inverse": "namesake-of",
+            "name": "NamedAfter"
+          },
+          {
+            "forward": "justified-by",
+            "inverse": "justifies",
+            "name": "JustifiedBy"
+          },
+          {
+            "forward": "comments-on",
+            "inverse": "commented-on-by",
+            "name": "CommentsOn"
+          },
+          {
+            "forward": "spoken-by",
+            "inverse": "speech-of",
+            "name": "SpokenBy"
+          },
+          {
+            "forward": "spoken-at",
+            "inverse": "site-of-speech",
+            "name": "SpokenAt"
+          },
+          {
+            "forward": "derived-from",
+            "inverse": "derives",
+            "name": "DerivedFrom"
+          }
+        ],
+        "symmetric": [
+          {
+            "label": "analogous-to",
+            "name": "Analogue"
+          },
+          {
+            "label": "catechism-link",
+            "name": "CatechismLink"
+          },
+          {
+            "label": "corresponds-to",
+            "name": "Corresponds"
+          },
+          {
+            "label": "parallel",
+            "name": "Parallel"
+          },
+          {
+            "label": "temporal-adjacency",
+            "name": "TemporalAdjacency"
+          }
+        ]
+      },
+      "status": 200
+    }
+  }
+}

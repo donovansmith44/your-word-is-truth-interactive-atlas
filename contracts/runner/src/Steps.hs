@@ -30,7 +30,6 @@ import Data.List (nub, sort)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 import Capture
@@ -46,15 +45,26 @@ import World
 -- with a `Described` universe is a free-form value; a capture with an
 -- `Enumerated` universe cannot be typo'd without a did-you-mean.
 
+-- A path starts with '/' and CONTAINS NO WHITESPACE. The second half is
+-- load-bearing, not decoration: without it, `capRest @UrlPath` happily
+-- accepts "/api/node/Place:hazor-1 as wire" as a path, so the plain
+-- `I GET {path}` definition genuinely MATCHES a line that the binding
+-- overload also matches -- two true matches, which `check`'s totality law
+-- is fatal about and `Run` refuses to execute. Found by running `check`,
+-- not by reading the list. A URL cannot contain a raw space anyway, so
+-- the rule that dissolves the ambiguity is also just true.
 newtype UrlPath = UrlPath Text deriving (Eq, Show)
 instance FromCapture UrlPath where
   capName _ = "path"
-  universe _ = Described "an absolute API path, e.g. /api/eras or /api/node/Place:ur_1189"
+  universe _ = Described "an absolute API path with no spaces, e.g. /api/eras or /api/node/Place:hazor-1"
   renderCap (UrlPath p) = p
   parseCap t =
     let s = T.strip t
-    in if "/" `T.isPrefixOf` s then Right (UrlPath s)
-       else Left ("'" <> s <> "' is not an API path -- a path starts with '/', e.g. /api/eras")
+    in if not ("/" `T.isPrefixOf` s)
+         then Left ("'" <> s <> "' is not an API path -- a path starts with '/', e.g. /api/eras")
+       else if T.any (`elem` (" \t" :: String)) s
+         then Left ("'" <> s <> "' is not an API path -- a path contains no spaces; if you meant to bind this answer, write it as `... as <name>`")
+       else Right (UrlPath s)
 
 newtype BindName = BindName Text deriving (Eq, Show)
 instance FromCapture BindName where
@@ -77,13 +87,30 @@ instance FromCapture FieldName where
     in if not (T.null s) && not (T.any (== '"') s) then Right (FieldName s)
        else Left "a field name is a bare JSON key, without quotes"
 
+-- bibex arguments legitimately contain spaces ("edges Place:hazor-1
+-- --kind site-of"), so the whitespace rule that disambiguates 'UrlPath'
+-- is not available here. The narrower rule that IS true: an argument list
+-- may not END in " as <bare name>", because that suffix is how a step
+-- binds its answer. Without this, `I run bibex {arguments}` and
+-- `I run bibex {arguments} as {name}` both truly match a binding line --
+-- the same ambiguity, in the one shape where the general fix does not
+-- apply. Also found by `check`.
 newtype ArgLine = ArgLine Text deriving (Eq, Show)
 instance FromCapture ArgLine where
   capName _ = "arguments"
-  universe _ = Described "the arguments bibex is invoked with, e.g. kinds"
+  universe _ = Described "the arguments bibex is invoked with, e.g. node Place:hazor-1"
   renderCap (ArgLine a) = a
-  parseCap t = let s = T.strip t in
-    if T.null s then Left "bibex needs at least one argument" else Right (ArgLine s)
+  parseCap t =
+    let s = T.strip t
+    in if T.null s then Left "bibex needs at least one argument"
+       else case T.breakOn " as " s of
+         (_, rest) | not (T.null rest), isBindingTail (T.drop 4 rest) ->
+           Left ("bibex arguments may not end in ' as " <> T.drop 4 rest
+                 <> "' -- that suffix binds the answer under a name, so write the binding form instead")
+         _ -> Right (ArgLine s)
+    where
+      isBindingTail x = not (T.null x)
+        && T.all (\c -> c == '-' || c == '_' || c `elem` ['a'..'z'] || c `elem` ['A'..'Z'] || c `elem` ['0'..'9']) x
 
 -- The three C2/C3 export artifacts, by name. Enumerated on purpose: these
 -- are published files with published consumers (map-generator vendors two
@@ -104,15 +131,14 @@ instance FromCapture ExportName where
               <> didYouMean exportNames s
               <> "\n  Exports are: " <> T.intercalate ", " exportNames)
 
-newtype StatusCode = StatusCode Int deriving (Eq, Show)
-instance FromCapture StatusCode where
-  capName _ = "status"
-  universe _ = Ranged "400" "599" "the refusal a malformed request must get"
-  renderCap (StatusCode c) = T.pack (show c)
-  parseCap t = case reads (T.unpack (T.strip t)) of
-    [(c, "")] | c >= 400 && c < 600 -> Right (StatusCode c)
-    [(c, "")] -> Left ("HTTP " <> T.pack (show (c :: Int)) <> " is not a refusal -- this step states a law about a REFUSAL, and a 2xx would satisfy it vacuously")
-    _ -> Left ("'" <> T.strip t <> "' is not an HTTP status code")
+-- NOTE ON WHAT IS DELIBERATELY ABSENT: there is no refusal step here, and
+-- no status-code capture. The atlas already has a contract suite that owns
+-- the query language and its error taxonomy -- `contracts/atlas-query-
+-- contract`, whose scene-query.feature pins `bad_window`/`bad_ref` and
+-- whose traversal.feature pins `bad_kind`, both by CODE and not merely by
+-- status. Restating those here would be the second, weaker path this
+-- project's discipline forbids. The division is stated in full in
+-- contracts/atlas-graph-contract/README.md.
 
 -- ===================== HELPERS =====================
 
@@ -213,27 +239,43 @@ lookupKey k v = case collectKey k v of
   (x : _) -> Just x
   []      -> Nothing
 
--- The shared body of the two vocabulary laws. Quantified over EVERY
--- occurrence of the field anywhere in the answer, at any depth, because
--- the same promise has to hold for a kind on a card, a kind on an edge
--- page entry, and a kind nested in a summary row -- three shapes, one
--- vocabulary.
-checkVocabField :: Text -> (GraphVocab -> [Text]) -> Text -> World -> IO (Either Text World)
-checkVocabField what pick fieldName w = do
+-- THE VOCABULARY LAW. Quantified over EVERY occurrence of the field
+-- anywhere in the answer, at any depth, because the same promise has to
+-- hold for a kind on a card, a kind on an edge-page entry, and a kind
+-- nested in a summary row -- three shapes, one vocabulary. That is the
+-- point: the law is stated once, over the graph, and every transport
+-- inherits it without restating anything.
+--
+-- WHAT IT CHECKS, precisely, and what it does NOT -- because a law whose
+-- reach is overstated is worse than a narrow one:
+--
+-- The atlas's wire uses the SAME key name, "kind", for TWO disjoint
+-- vocabularies. On a node card, `kind` is a node kind ("Place") while
+-- `edge_summary[].kind` is an edge family ("site-of"); on an edge page
+-- the top-level `kind` is a family while `entries[].node.kind` is a node
+-- kind. So this law checks membership in the UNION of the two declared
+-- sets. It CATCHES an undeclared term appearing anywhere on any transport
+-- -- a family label no `relations!` row declares, a misspelled node kind,
+-- a hand-written string that drifted from the macros. It does NOT catch a
+-- node kind appearing in a slot where a family belongs; that would need a
+-- shape-aware law, and a shape-aware law is exactly the per-transport
+-- vocabulary the addendum forbids. Stated here rather than discovered
+-- later.
+checkVocabField :: Text -> World -> IO (Either Text World)
+checkVocabField fieldName w = do
   gv <- readVocab w
   pure $ do
     vocab <- gv
     actual <- boundValue "_last" w
     let found = [ s | String s <- collectKey fieldName actual ]
-        declared = pick vocab
+        declared = sort (nub (gvKinds vocab ++ gvFamilies vocab))
         strays = nub [ s | s <- found, s `notElem` declared ]
     if null found
       then Left ("no \"" <> fieldName <> "\" field anywhere in this answer -- this law would pass vacuously, so it fails instead")
       else if null strays then Right w
       else Left (T.pack (show (length strays)) <> " value(s) of \"" <> fieldName
-                 <> "\" are not a declared " <> what <> ": "
-                 <> T.intercalate ", " (map (\s -> "'" <> s <> "'") strays)
-                 <> "\n  declared " <> what <> "s are: " <> T.intercalate ", " declared)
+                 <> "\" are declared nowhere in graph-types' kind_tags!/relations! manifests: "
+                 <> T.intercalate ", " (map (\s -> "'" <> s <> "'") strays))
 
 -- ===================== THE STEPS =====================
 
@@ -259,16 +301,22 @@ allSteps =
   , mkStep When (lit "I read the graph's declared vocabulary") $
       \() w -> fetchInto "_last" vocabKey w
 
-    -- bibex's stdout is a contract too (the transcript idiom already
-    -- treats it as one). It is not JSON, so it rides the raw transport and
-    -- binds under its own name -- a `Then` about the graph's projection
-    -- cannot be pointed at it by accident.
+    -- bibex is a transport over the same graph, and its CONTRACT surface is
+    -- `--json` (its own Cargo.toml says so: "BIBEX-1 (--json flag,
+    -- contract-first)"). So it rides the ordinary JSON transport and binds
+    -- like any other answer -- which is the whole point, because it is what
+    -- lets a scenario ask whether the CLI and the wire agree about the same
+    -- node WITHOUT either of them getting its own vocabulary.
+    --
+    -- bibex's HUMAN-READABLE stdout is a contract too, and it is not
+    -- covered here: `server/atlas-cli/tests/cli.rs` already pins it as a
+    -- transcript, which is the right tool for prose. Recorded in the
+    -- juncture inventory as covered-elsewhere rather than left unsaid.
+  , mkStep When (lit "I run bibex " *> ((,) <$> capUntil @ArgLine " as " <*> capRest @BindName)) $
+      \(ArgLine args, BindName n) w -> fetchInto n ("bibex " <> args) w
+
   , mkStep When (lit "I run bibex " *> capRest @ArgLine) $
-      \(ArgLine args) w -> do
-        r <- transportRaw w ("bibex " <> args)
-        pure $ case r of
-          Left e -> Left e
-          Right bs -> Right w { bound = Map.insert "_out" (bs, String (TE.decodeUtf8 bs)) (bound w) }
+      \(ArgLine args) w -> fetchInto "_last" ("bibex " <> args) w
 
   -- ---------------- THE PRIMARY LAW: the consumed projection ------------
   -- Deliberately the SAME phrasing map-generator's atlas-edge suite uses,
@@ -303,37 +351,14 @@ allSteps =
                    <> maybe "(no leaf difference found)" id (firstDiff va vb))
 
   -- ---------------- VOCABULARY: the graph's declared families ----------
-  , mkStep Then (lit "every \"" *> capUntil @FieldName "\" in the answer names a declared node kind") $
-      \(FieldName f) w -> checkVocabField "node kind" gvKinds f w
-
-  , mkStep Then (lit "every \"" *> capUntil @FieldName "\" in the answer names a declared edge family") $
-      \(FieldName f) w -> checkVocabField "edge family" gvFamilies f w
+  , mkStep Then (lit "every \"" *> capUntil @FieldName "\" in the answer names a term the graph declares") $
+      \(FieldName f) w -> checkVocabField f w
 
   -- ---------------- WHOLE-ANSWER AND REFUSAL LAWS ----------------------
   , mkStep Then (lit "the response equals fixture " *> capRest @FixtureRef) $
       \(FixtureRef f) w -> case boundValue "_last" w of
         Left e -> pure (Left e)
         Right v -> settleAgainstFixture "the response" f v w
-
-  , mkStep Then (lit "the response is the empty list") $
-      \() w -> pure $ do
-        v <- boundValue "_last" w
-        case v of
-          Array a | null a -> Right w
-          _ -> Left ("expected the empty list, got " <> bounded v)
-
-    -- A refusal is a promise too, and it is the one promise the ordinary
-    -- transports structurally cannot check (they turn a non-2xx into a
-    -- transport failure). This one goes through the probe.
-  , mkStep Then (lit "GET " *> ((,) <$> capUntil @UrlPath " is refused with " <*> capRest @StatusCode)) $
-      \(UrlPath path, StatusCode code) w -> do
-        r <- transportProbe w ("GET " <> path)
-        pure $ case r of
-          Left e -> Left e
-          Right (got, _)
-            | got == code -> Right w
-            | otherwise -> Left ("expected HTTP " <> T.pack (show code) <> " from " <> path
-                                 <> ", got HTTP " <> T.pack (show got))
 
   -- ---------------- C6: one root, everywhere ---------------------------
   -- Every artifact and every answer that carries the atlas version root
@@ -351,32 +376,8 @@ allSteps =
         else Left ("version-root drift: " <> a <> " declares " <> ra
                    <> " but " <> b <> " declares " <> rb
                    <> " -- one of these was compiled against a different graph")
-
-  -- ---------------- bibex's stdout -------------------------------------
-  , mkStep Then (lit "the output equals fixture " *> capRest @FixtureRef) $
-      \(FixtureRef f) w -> do
-        let path = fixturePath w f ".txt"
-        case Map.lookup "_out" (bound w) of
-          Nothing -> pure (Left "no bibex output yet -- this law reads the last CLI run, and this scenario has not made one")
-          Just (bs, _)
-            | blessMode w -> BS.writeFile path bs >> pure (Right w)
-            | otherwise -> do
-                ok <- doesFileExist path
-                if not ok then pure (Left ("no fixture " <> f <> " at " <> T.pack path))
-                else do
-                  expected <- BS.readFile path
-                  pure $ if normalize expected == normalize bs then Right w
-                         else Left ("bibex output differs from fixture " <> f
-                                    <> "\n  --- expected ---\n" <> clip (TE.decodeUtf8 expected)
-                                    <> "\n  --- actual ---\n" <> clip (TE.decodeUtf8 bs))
   ]
   where
-    -- Line endings are a checkout property on Windows, not a contract
-    -- property: a fixture that fails because git handed it CRLF would be a
-    -- gate that cries wolf, and a gate that cries wolf gets disabled.
-    -- Trailing whitespace per line, likewise. Nothing else is normalized.
-    normalize = BS.filter (/= 13)
-    clip t = let s = T.strip t in if T.length s > 400 then T.take 400 s <> "..." else s
     rootOf who v = case lookupKey "root" v of
       Just (String s) -> Right s
       _ -> Left (who <> " declares no atlas version root (no `atlas_version_root` and no `version` field)")

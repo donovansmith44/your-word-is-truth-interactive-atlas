@@ -1,0 +1,16 @@
+{
+    "edge_summary": [
+        {
+            "count": 2,
+            "kind": "site-of"
+        },
+        {
+            "count": 11,
+            "kind": "mentioned-in"
+        }
+    ],
+    "id": "Place:hazor-1",
+    "kind": "Place",
+    "label": "Hazor 1",
+    "provenance": "curated-places"
+}

@@ -180,7 +180,6 @@ projections = Map.fromList
         , field1 "kind" Keep
         , field1 "label" Keep
         , field1 "provenance" Keep
-        , field1 "version" Keep
         , field1 "edge_summary" (Each (Fields [ field1 "kind" Keep, field1 "count" Keep ]))
         ]
     )
@@ -196,32 +195,35 @@ projections = Map.fromList
             , field1 "node" (Fields [ field1 "id" Keep, field1 "kind" Keep, field1 "label" Keep ])
             ]))
         , field1 "next" Keep
-        , field1 "version" Keep
         ]
     )
-  , ( "place"
-      -- A Place node as the gazetteer publishes it: identity and
-      -- coordinates. C3 names the atlas the coordinate authority, so this
-      -- projection is the shape of that authority on any transport.
+  , ( "gazetteer"
+      -- THE COORDINATE AUTHORITY, whole. Contract C3 states it -- "atlas
+      -- Place nodes are the coordinate authority; a place moving in the
+      -- atlas moves every border built through it (one fact, one home)" --
+      -- and map-generator vendors this exact artifact and builds geometry
+      -- through it.
+      --
+      -- Pinned ROW BY ROW, all 1,358 of them, all coordinates, for the
+      -- same reason map-generator pins our whole polity book: a silently
+      -- moved place fails here before it can move a pixel of anyone's. It
+      -- is a large fixture and that is the correct size for the promise --
+      -- the alternative, a count or a spot check, is satisfiable by its
+      -- own failure mode.
+      --
+      -- This is also the projection that makes an id DELETION visible.
+      -- PLACE-1a absorbed 15 ids; against a consumer pinned to the older
+      -- book that is 15 dangling references, and this fixture is where a
+      -- future one shows up as a diff rather than as someone else's
+      -- broken build.
     , Fields
-        [ field1 "id" Keep
-        , field1 "name" Keep
-        , field1 "lat" Keep
-        , field1 "lon" Keep
-        ]
-    )
-  , ( "scene"
-      -- The graph resolved into a window: the mode it was asked in, the
-      -- window it resolved to, and each lit place BY ITS NODE ID. The id
-      -- is the load-bearing field (MAPS-1 O-1: "the map is not a picture
-      -- of the graph; it is a view onto node identity"), so it is pinned
-      -- along with the true coordinates it must not overwrite.
-    , Fields
-        [ field1 "mode" Keep
-        , field1 "window" Keep
-        , field1 "places" (Each (Fields
-            [ field1 "id" Keep, field1 "lat" Keep, field1 "lon" Keep
-            , field1 "name" Keep, field1 "brightness" Keep ]))
+        [ field1 "places" (Each (Fields
+            [ field1 "id" Keep
+            , fieldAlt "name" ["name", "canonical"] Keep
+            , field1 "lat" Keep
+            , field1 "lon" Keep
+            , field1 "provenance" Keep
+            ]))
         ]
     )
   , ( "version-root"
@@ -232,28 +234,49 @@ projections = Map.fromList
       -- so the "same root everywhere" law is one comparison, not five.
     , Fields [ fieldAlt "root" ["atlas_version_root", "version"] Keep ]
     )
-  , ( "export-header"
-      -- What every C2/C3 export declares before its payload: which format
-      -- it is in, and which atlas root it was compiled against. This is
-      -- exactly the pair map-generator's C6 stale-pin compares, which is
-      -- why it is a projection and not prose.
-    , Fields
-        [ field1 "format_version" Keep
-        , field1 "atlas_version_root" Keep
-        ]
+  , ( "export-format"
+      -- The half of an export's header that is a STABLE promise: which
+      -- format it is in. A consumer pins this and refuses an artifact it
+      -- does not understand (map-generator does exactly that).
+      --
+      -- `atlas_version_root` is deliberately NOT here. It changes on every
+      -- recompile, so pinning it in a fixture would mean re-blessing this
+      -- as a matter of routine -- and a check that is re-blessed as
+      -- routine stops being read. The root gets the law it actually
+      -- deserves instead: the `version-root` projection plus the
+      -- "declare the same atlas version root" step, which compares two
+      -- artifacts to each other and therefore fires only when they
+      -- genuinely disagree.
+    , Fields [ field1 "format_version" Keep ]
     )
   , ( "contract"
       -- The AQC version range this server advertises.
     , Fields [ field1 "min_version" Keep, field1 "max_version" Keep ]
     )
   , ( "sources"
-      -- The source registry as PROV-1 left it: every source a provenance
-      -- string can resolve to, with the license it ships under. A
-      -- provenance affordance that names a source this list does not carry
-      -- is a dangling reference, and this is the list that makes that
-      -- statement checkable from outside the server.
-    , Each (Fields
-        [ field1 "id" Keep, field1 "title" Keep, field1 "license" Keep ])
+      -- The source registry: every source a provenance string can resolve
+      -- to, with the licence it ships under. A provenance affordance that
+      -- names a source this list does not carry is a dangling reference,
+      -- and this is the list that makes that statement checkable from
+      -- outside the server. `license` is consumed by LICENSES.md drift
+      -- checking and by anything that decides what we may redistribute, so
+      -- it is a consumed field, not decoration.
+      --
+      -- The document's `provenances` table is deliberately NOT projected
+      -- here yet. It is PROV-1's own surface and PROV-1's fix round is in
+      -- flight as this lands; pinning a table another batch is actively
+      -- editing would produce a red that says nothing about either batch.
+      -- Recorded in CDC-1's juncture inventory as covered-next rather than
+      -- left unsaid.
+    , Fields
+        [ field1 "sources" (Each (Fields
+            [ field1 "id" Keep
+            , field1 "category" Keep
+            , field1 "title" Keep
+            , field1 "license" Keep
+            ]))
+        , field1 "categories" (Each (Fields [ field1 "id" Keep, field1 "label" Keep ]))
+        ]
     )
   , ( "xref-list"
       -- Cross-references out of one scripture span, as the client's
