@@ -45,21 +45,47 @@
 # suite simply vanished from every list. The registry had become the literal
 # bash array it replaced, still ungated.
 #
-# `contract-gate.sh` now DERIVES what it can and re-checks these rows against
-# the derivation on every run:
+# WHAT ROUND 2 CLAIMED HERE, AND WHY IT WAS FALSE (fix round 3, review C-R2-2).
 #
-#   * a directory containing RECEIVED.md MUST be registered `contract-runner`.
-#     Another repo's expectations of us are executed here or the gate fails.
-#     There is no registration that exempts them, the same way there is no
-#     @target that disarms them.
-#   * `aqc-dual` is accepted ONLY for a suite containing `Scenario Outline`, a
-#     construct `Gherkin/Parse.hs` does not implement. "The vendored parser
-#     cannot read this corpus" is a fact about the corpus, checkable every run;
-#     "some other harness owns this" was only ever a claim in a file.
+# The version of this header shipped in round 2 said: "Editing a row below
+# therefore cannot exempt anything on its own." It could. The reviewer changed
+# `contracts/atlas-graph-contract  contract-runner` to
+# `contract-runner-consumer` -- a word with NO derivation guarding it at all --
+# and the graph-primary suite, the owner's ruled #1 juncture, left four legs
+# with a real break planted in a published export. `-> aqc-dual` plus a
+# three-line NOTES.md containing the words "Scenario Outline" did the same,
+# because the derivation was `grep -r` over EVERY FILE in the directory.
 #
-# Editing a row below therefore cannot exempt anything on its own. If you find
-# yourself wanting to, the honest move is the one RECEIVED.md names: break,
-# report, and coordinate on both sides.
+# A false reassurance in a header is worse than silence: a reviewer who reads it
+# stops checking. So this one states only what is true today, and each clause
+# names the mechanism that makes it true.
+#
+#   1. THE GATE READS THIS FILE FROM GIT, NOT FROM DISK. contract-gate.sh
+#      materialises contracts/ from HEAD and reads the registry out of THAT.
+#      Editing the working copy changes nothing whatsoever.
+#   2. A ROW MAY ONLY GET STRONGER. contract-semver-gate.sh compares the
+#      registry at the base against the registry at HEAD and refuses any row
+#      whose harness weakens: contract-runner (executed) > contract-runner-
+#      consumer (parsed only) > aqc-dual (run elsewhere) > unregistered. A
+#      committed downgrade is a hard failure, not a bump class.
+#   3. THE GATE DOES NOT ASK THIS FILE WHAT MUST EXIST. The set of expectations
+#      is derived from the committed corpus, and every one must appear in the
+#      executor's own results. A row that removes a suite from the run produces
+#      MISSING COVERAGE for each of its scenarios; it does not shorten a list.
+#   4. `aqc-dual` is accepted only where the vendored parser GENUINELY CANNOT
+#      READ the corpus -- tested by running `contract-runner tags` against the
+#      committed suite and requiring it to FAIL. A parse failure is a fact no
+#      adjacent NOTES.md can manufacture. Such a suite is outside the coverage
+#      reconciliation (its own two harnesses execute it), so its committed
+#      scenario COUNT is ratcheted instead: it may not fall.
+#   5. A directory carrying RECEIVED.md at HEAD MUST be registered
+#      contract-runner, and the marker itself is ratcheted -- a suite that had
+#      one at the base must still have one at HEAD. Round 2 guarded on the
+#      DIRECTORY's existence, so `rm RECEIVED.md` passed while switching off
+#      every received-suite protection at once (review C-R2-1).
+#
+# If you find yourself wanting to weaken a row, the honest move is the one
+# RECEIVED.md names: break, report, and coordinate on both sides.
 
 contracts/atlas-graph-contract   contract-runner
 contracts/atlas-edge             contract-runner
