@@ -172,6 +172,41 @@ fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
     );
 }
 
+/// Every `pub provenance:` FIELD DECLARATION in graph-types' own source
+/// text, counted per file, over the WHOLE `graph-types/src` directory.
+///
+/// FIX ROUND 1 (review L-2): this used to read three NAMED files
+/// (`edge.rs`, `chrono.rs`, `node.rs`) with three exact-string needles. A
+/// provenance-bearing row family declared in any of the crate's other 11
+/// source files -- or spelled with a different path to the same type --
+/// left all three counts unchanged, so the guard passed and the new family
+/// escaped attribution silently: the exact hole the guard exists to close.
+/// It now walks the directory and matches the FIELD, not a file plus a
+/// verbatim type path.
+fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
+    let types_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../graph-types/src");
+    let mut out: BTreeMap<String, usize> = BTreeMap::new();
+    let entries = std::fs::read_dir(&types_dir).unwrap_or_else(|e| panic!("{} must be readable: {e}", types_dir.display()));
+    for entry in entries {
+        let path = entry.expect("a readable directory entry").path();
+        // The crate is a flat module directory today; a subdirectory
+        // appearing here would be a NEW place declarations could hide, so
+        // it fails loudly rather than being skipped.
+        assert!(path.is_file(), "graph-types/src gained a subdirectory ({}) -- this guard walks one level; widen it", path.display());
+        if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+            continue;
+        }
+        let src = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{} must be readable: {e}", path.display()));
+        // The FIELD, however its type is spelled: `ProvenanceId`,
+        // `crate::ingest::ProvenanceId`, or any future path to it.
+        let n = src.lines().filter(|l| l.trim().starts_with("pub provenance:") && l.trim().ends_with(',')).count();
+        if n > 0 {
+            out.insert(path.file_name().expect("a named file").to_string_lossy().into_owned(), n);
+        }
+    }
+    out
+}
+
 /// THE COMPLETENESS GUARD. `provenance_by_family` above is hand-written
 /// (graph-types is contract-frozen; adding a reflective accessor there is
 /// not this batch's authorization), so a NEW provenance-bearing row family
@@ -182,40 +217,73 @@ fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
 /// families swept above.
 #[test]
 fn the_sweep_covers_every_provenance_bearing_row_family() {
-    let types_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../graph-types/src");
-    let count_decls = |file: &str, needle: &str| -> usize {
-        let src = std::fs::read_to_string(types_dir.join(file)).unwrap_or_else(|e| panic!("graph-types/src/{file} must be readable: {e}"));
-        src.lines().filter(|l| l.trim() == needle).count()
-    };
+    let per_file = provenance_field_decls_per_file();
 
-    let edge_decls = count_decls("edge.rs", "pub provenance: ProvenanceId,");
-    let chrono_decls = count_decls("chrono.rs", "pub provenance: crate::ingest::ProvenanceId,");
-    let node_decls = count_decls("node.rs", "pub provenance: ProvenanceId,");
+    // WHERE the declarations live, pinned by IDENTITY (fix round 1, review
+    // L-2) -- so a provenance field appearing in a file that had none, or a
+    // file dropping out entirely, fails HERE with its own name in the
+    // message rather than passing three unchanged per-file counts.
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 19), ("node.rs", 2)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    assert_eq!(
+        per_file, expected,
+        "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
+         provenance_by_family() AND to ProvenanceIndex::build(), then re-pin here."
+    );
 
-    // edge.rs declares 19 provenance-bearing ROW structs; chrono.rs
-    // declares the 20th (`DatedBy`).
-    assert_eq!(edge_decls, 19, "graph-types/src/edge.rs's provenance-bearing row structs changed ({edge_decls} now, 19 pinned) -- add the new family to provenance_by_family() above, then re-pin here");
-    assert_eq!(chrono_decls, 1, "graph-types/src/chrono.rs's provenance-bearing row structs changed ({chrono_decls} now, 1 pinned) -- same fix");
+    let node_decls = per_file["node.rs"];
     // node.rs's two are `Node.provenance` (the storage) and
     // `Card.provenance` (a PROJECTION of it -- `node::card()` copies the
-    // node's own value; it stores nothing new), so only ONE of the two is
-    // a source of ids, and the sweep's own "nodes" family is it.
+    // node's own value; it stores nothing new). NEITHER is a row family:
+    // the sweep's own "nodes" family covers the storage one and the
+    // projection is not a second source of ids.
     assert_eq!(node_decls, 2, "graph-types/src/node.rs's provenance fields changed ({node_decls} now, 2 pinned: Node + the Card projection)");
 
+    let total_decls: usize = per_file.values().sum();
+    let row_structs = total_decls - node_decls;
     let families = provenance_by_family(real_graph());
     // The two `Contains<C>` vectors (`contains_bible`, `contains_concord`)
     // share ONE struct declaration, so the vector count is one more than
     // the struct count. Stated as one equation, literally true as written:
-    //   20 (declared row structs: 19 edge.rs + 1 chrono.rs)
+    //   22 (every `pub provenance:` field in graph-types/src)
+    //     - 2 (node.rs's storage field and its Card projection: not rows)
+    //     = 20 declared ROW structs
     //     + 1 (the second `Contains<C>` vector)
     //     + 1 (the `nodes` map)
     //     = 22 swept families.
     assert_eq!(
         families.len(),
-        edge_decls + chrono_decls + 1 + 1,
-        "provenance_by_family() sweeps {} families; the contract declares {edge_decls} + {chrono_decls} row structs \
-         (+1 for the second Contains<C> vector, +1 for nodes). A family is missing from the sweep.",
+        row_structs + 1 + 1,
+        "provenance_by_family() sweeps {} families; graph-types/src declares {total_decls} provenance fields, \
+         {row_structs} of them row structs (+1 for the second Contains<C> vector, +1 for nodes). \
+         A family is missing from the sweep.",
         families.len()
+    );
+}
+
+/// FIX ROUND 1 (review L-3): THE TWO SWEEPS, RECONCILED AGAINST EACH OTHER.
+///
+/// `ProvenanceIndex::build` (the RUNTIME index the wire reads) and
+/// `provenance_by_family` (the TEST sweep the completeness guard checks)
+/// were two independent hand-maintained lists of the same 22 families with
+/// nothing tying them together. The guard above only ever checked the
+/// test's copy, so a family added to the test sweep but not to the runtime
+/// index would leave `ProvenanceIndex::by_family` silently returning `[]`
+/// for it -- an honest-looking empty that means "no rows" everywhere else
+/// in this codebase, which is the worst possible way for a drift to
+/// present.
+///
+/// One assertion removes the drift: the two family key sets must be equal.
+/// The guard above then binds BOTH lists, because they are now one claim.
+#[test]
+fn the_runtime_index_and_the_test_sweep_name_exactly_the_same_families() {
+    let g = real_graph();
+    let swept: Vec<&str> = provenance_by_family(g).keys().copied().collect();
+    let indexed: Vec<&str> = atlas_graph::provenance::ProvenanceIndex::build(g).families();
+    assert_eq!(
+        swept, indexed,
+        "ProvenanceIndex::build (server/atlas-graph/src/provenance.rs) and provenance_by_family (this file) \
+         have drifted apart. A family missing from the INDEX serves an empty attribution to the wire; a family \
+         missing from the SWEEP escapes the resolution law. Add it to both."
     );
 }
 

@@ -62,9 +62,21 @@
 //!     concord-sc-overlap}`), and that is exactly why this returns a SET
 //!     and never a single id -- the affordance renders every entry, so a
 //!     multi-sourced section names all of its sources instead of quietly
-//!     picking one. `is_single_sourced` lets a caller ask rather than
-//!     assume, and `the_per_family_provenance_map_of_the_real_artifact_
+//!     picking one, and `the_per_family_provenance_map_of_the_real_artifact_
 //!     is_pinned` pins both answers.
+//!
+//! FIX ROUND 1 (review L-4): `is_single_sourced(&self, name) -> bool` used
+//! to live here, and this paragraph used to present it as the thing "a
+//! caller asks instead of assuming." No caller asked -- its only callers
+//! were this file's own unit tests -- and the composability bar this batch
+//! quotes is "reusable, but never speculative," so it is GONE rather than
+//! narrated. It was also the wrong shape for the design: the whole point of
+//! `by_family` returning a SET is that a caller never has to decide whether
+//! collapsing is safe, and a predicate whose only use is to authorize the
+//! collapse is an invitation to the leper failure mode. The fact it stated
+//! is still checked, just where facts belong -- as set EQUALITIES in
+//! `the_per_family_provenance_map_of_the_real_artifact_is_pinned` and in
+//! this module's own tests.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -165,14 +177,21 @@ impl ProvenanceIndex {
         self.by_family.get(name).map(|s| s.iter().cloned().collect()).unwrap_or_default()
     }
 
-    /// True exactly when every row of `name` carries the SAME provenance
-    /// id -- the precondition under which serving the family value for an
-    /// individual row is a true statement about that row and not an
-    /// average. Callers that serve a family value are expected to say
-    /// which side of this they are on; the standing real-data law pins the
-    /// answer for the two families the wire actually cites.
-    pub fn is_single_sourced(&self, name: &str) -> bool {
-        self.by_family.get(name).is_some_and(|s| s.len() == 1)
+    /// Every family name this index actually swept, sorted.
+    ///
+    /// FIX ROUND 1 (review L-3): this exists for ONE caller and says so --
+    /// `the_runtime_index_and_the_test_sweep_name_exactly_the_same_families`
+    /// in `atlas-graph/tests/provenance_registry_real_data.rs`. `build`
+    /// above and that file's `provenance_by_family` are two hand-written
+    /// lists of the same 22 families, and the completeness guard only
+    /// checked the test's copy; a family present in the sweep but missing
+    /// HERE would make `by_family` return `[]` for it, which reads
+    /// everywhere else as the honest "this table has no rows." This
+    /// accessor is what lets the two be asserted equal instead of merely
+    /// intended equal. It is introspection over what was already built --
+    /// it computes nothing and it is not a wire surface.
+    pub fn families(&self) -> Vec<&'static str> {
+        self.by_family.keys().copied().collect()
     }
 
     /// The distinct provenance of the `Attests` rows for ONE event -- the
@@ -242,9 +261,11 @@ mod tests {
         assert_eq!(ix.attests_for_event("e2"), vec!["event-witnesses".to_string()]);
         // An event with no accounts renders no affordance, not a blank one.
         assert!(ix.attests_for_event("e3").is_empty());
-        // ...and in THIS fixture the family view is multi-sourced, so a
-        // caller may not serve it as though it were one thing.
-        assert!(!ix.is_single_sourced(family::ATTESTS));
+        // ...and in THIS fixture the family view is multi-sourced, which
+        // the SET itself says (fix round 1, review L-4: this used to ask a
+        // now-deleted `is_single_sourced` predicate; the equality is the
+        // stronger statement anyway -- it names WHICH two).
+        assert_eq!(ix.by_family(family::ATTESTS), vec!["attestation-corrections".to_string(), "event-witnesses".to_string()]);
     }
 
     #[test]
@@ -274,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn a_single_sourced_family_is_reported_as_such_and_an_unknown_family_is_empty() {
+    fn a_familys_distinct_set_is_exactly_its_rows_and_an_unknown_family_is_empty() {
         let mut g = Graph::default();
         g.cross_refs.push(atlas_graph_types::edge::CrossRef {
             from: locus(),
@@ -285,9 +306,7 @@ mod tests {
             provenance: "openbible.info-cross-references".into(),
         });
         let ix = ProvenanceIndex::build(&g);
-        assert!(ix.is_single_sourced(family::CROSS_REFS));
         assert_eq!(ix.by_family(family::CROSS_REFS), vec!["openbible.info-cross-references".to_string()]);
-        assert!(!ix.is_single_sourced("no-such-family"));
         assert!(ix.by_family("no-such-family").is_empty());
     }
 }
