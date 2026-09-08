@@ -5418,9 +5418,17 @@ input:focus-visible,
    That is the whole reason ProvenanceAffordance.razor is not a §5
    escape hatch (see that file's own header): a reader cannot get stuck
    in something that never covers anything. ------------------------- */
+/* `display: inline` (not inline-flex/inline-block) is deliberate and was
+   measured, not guessed: the wrapper holds an INLINE button and a BLOCK
+   panel, and under inline-flex the two became flex siblings -- the open
+   panel sat BESIDE its own "?" instead of below it, and the "?" visibly
+   jumped out of the heading it belongs to (caught in this batch's own
+   report screenshots, before/after). Plain `inline` keeps the button in
+   the heading's own text flow and lets the block panel split the inline
+   box, which is exactly the "opens downward, in normal flow" behavior
+   ProvenanceAffordance.razor's own header describes. */
 .popover-provenance {
-    display: inline-flex;
-    align-items: baseline;
+    display: inline;
     margin-left: .4rem;
 }
 
@@ -5464,8 +5472,18 @@ input:focus-visible,
     outline-offset: 2px;
 }
 
+/* The panel is a child of the section EYEBROW (a
+   .catechism-section-heading <p>, small-caps + letterspaced), so it must
+   RESET both or it inherits them -- caught in this batch's own screenshots,
+   where the cross-references panel rendered entirely in small caps while
+   the identical panel under the verse text (not inside a heading) rendered
+   normally. The confidence line below re-opts INTO small caps on purpose;
+   nothing else does. */
 .popover-provenance-panel {
     display: block;
+    font-variant-caps: normal;
+    letter-spacing: normal;
+    text-transform: none;
     margin: .35rem 0 .5rem;
     padding: .45rem .6rem;
     background: var(--parchment-raised);
