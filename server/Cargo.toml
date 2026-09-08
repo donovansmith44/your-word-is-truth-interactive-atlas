@@ -180,7 +180,7 @@ resolver = "2"
 # scenario-count parity check, and the five-hand-kept-version-copies
 # cross-check; Q-6) -- +5 tests, and 2 new scenarios/8 new steps inside
 # the ALREADY-counted `aqc_cucumber.rs` section (Q-4's malformed-
-# advertisement law) -- CURRENT CANONICAL: 912 (888 + 24) across 47
+# advertisement law) -- SUPERSEDED, CANONICAL AS OF THAT BATCH: 912 (888 + 24) across 47
 # sections.
 #
 # STANDING COUNTING PROCEDURE ADDENDUM -- THE COUNTING LAW (Batch AQC-1
@@ -700,7 +700,9 @@ resolver = "2"
 # environmental gate resolving in the passing direction; it is disclosed
 # here rather than silently absorbed into the delta.
 #
-# CURRENT CANONICAL: 1050 (1014 + 36) across 53 sections.
+# SUPERSEDED (see the PROV-1 FIX ROUND 1 block below for the standing
+# figure) -- CURRENT CANONICAL AT THE PROV-1 CLOSE: 1050 (1014 + 36)
+# across 53 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # dotnet at Batch PROV-1 close: client.Tests 381/381 |
 # client.ContractTests 45/45 (unchanged -- this batch adds no scenario).
@@ -814,7 +816,9 @@ resolver = "2"
 # server/atlas-server/tests/contract_pact.rs | grep "^[+-].*#\["` is empty,
 # so no test attribute was added or removed. 1021 stands at HEAD.
 #
-# CURRENT CANONICAL: 1057 (1021 + 36) across 55 sections.
+# SUPERSEDED (see the PROV-1 FIX ROUND 2 block below for the standing
+# figure) -- CANONICAL AT PROV-1 FIX ROUND 1: 1057 (1021 + 36) across
+# 55 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # dotnet at PROV-1 fix round 1: client.Tests 385/385 (381 -> 385, +4:
 # ProvenanceResolverTests gains five and loses one -- the blank id kept
@@ -865,6 +869,94 @@ resolver = "2"
 # reader-xref-superscripts 9/9, tests 223-248 in the run above. The
 # eleven do not survive; the earlier tally was a measurement of a tree
 # that never existed as a commit.
+#
+# ---------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------
+# Batch PROV-1 FIX ROUND 2 (2026-09-08, the re-review's 2 Moderate + 4
+# Low): moved to 1059 (1023 + 36) across 55 sections.
+# `atlas-graph-types` UNCHANGED at 36 for the third round running.
+#
+# THIS FIX ROUND ADDED NO RUST TEST OF ITS OWN, and its whole workspace
+# delta belongs to someone else. Its two Moderates were a false CLAIM
+# (M-NEW-1: "attributed per row", where one family set is cloned onto
+# every element and per-row is not available at that call site at all --
+# `atlas_core::data::CrossRef` carries `target` and `votes` only) and a
+# fixture that could not fail (M-NEW-2). The work was comments, one
+# rewritten Playwright fixture, and one strengthened assertion INSIDE an
+# existing test. `git diff e1dff46^ HEAD -- atlas-server/src/handlers.rs`
+# filtered to non-comment lines is EMPTY.
+#
+# Workspace 1021 -> 1023, and none of the +2 net is this batch's:
+#   +1 BATCH CDC-1's `758616a`, a fourth test in `contract_pact.rs`
+#      (the re-review predicted exactly this: "the workspace figure at
+#      current HEAD would be 1022, not 1021")
+#   +1 `graph_conformance` flipping FAIL -> PASS (60s ceiling)
+#   +1 `perf_smoke::scene_scripture_chapter` flipping FAIL -> PASS
+#   -1 `artifact_conformance::serialized_artifact_is_admitted_and_loads_
+#      under_the_committed_ceiling` flipping PASS -> FAIL (4s ceiling)
+#   = +2 net, 1021 -> 1023.
+# SECTIONS UNCHANGED at 55. CDC-1's fix round added no new test binary.
+#
+# ALL THREE WALL-CLOCK GATES MOVED IN ONE RUN, in both directions, on
+# code whose measured paths nobody touched. That is the L-7 sentence this
+# block already carries, now demonstrated rather than predicted: two gates
+# that were red at PROV-1 fix round 1 went green, and a third that was
+# green went red, with no source change on any of their paths.
+#
+# THE ONE FAILURE, ATTRIBUTED WITH EVIDENCE (and it is not this batch's):
+# `artifact_conformance` measured `M-C ARTIFACT LOAD: 100108146 bytes,
+# load time 4.9027337s (ceiling 4s)` in the counted run.
+#   1. ISOLATED RE-RUN, same code, quiet machine: 2 passed / 0 failed,
+#      `load time 2.1466189s` -- 47% UNDER the ceiling where the counted
+#      run was 22% over. A 2.3x spread on identical bytes.
+#   2. `grep -c "provenance" atlas-graph/tests/artifact_conformance.rs`
+#      returns 0: the test does not touch this batch's subject.
+#   3. This fix round's entire server-side diff is COMMENT-ONLY
+#      (verified by filtering the diff to non-comment lines: empty).
+#   4. This is the SAME gate PROV-1's own close records aborting the
+#      plain `--workspace` run at 4.0170328s. It has been inside its own
+#      noise band on this machine for three batches.
+# The gate was NOT loosened and the failure is counted as the failure it
+# is.
+#
+# THE COUNTED RUN IS THE THIRD CAPTURE, AND THE FIRST TWO WERE DISCARDED
+# -- recorded because keeping a convenient number is exactly what this
+# milestone's review chain exists to catch. Capture 1 showed every
+# atlas-server test binary TWICE with identical binary hashes, 8
+# `Doc-tests` headers where every other run has 4, and output truncated
+# mid-word: 58 sections / 1037 passed / 0 failed. Counting it would have
+# inflated the canonical by 14 tests and 4 sections that do not exist.
+# Capture 2 (clean, no duplication through 50 sections) was killed before
+# it finished and is not a measurement either. Capture 3 is this one: 54
+# binary sections, 4 Doc-tests headers, no duplicate binary, run to
+# completion.
+#
+# DATA: `data/compiled/graph.bin` still BYTE-IDENTICAL at 101,319,287
+# bytes; this fix round changed no file under data/ at all.
+#
+# CURRENT CANONICAL: 1059 (1023 + 36) across 55 sections.
+# AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
+# dotnet at PROV-1 fix round 2: client.Tests 386/386 (385 -> 386, +1:
+# review L-NEW-3's `EveryFlavourOfBlankIsTheSameFactAndSaysSoExactlyOnce`,
+# which pins null/""/whitespace/tab to ONE loud entry rather than four);
+# client.ContractTests 45/45, unchanged. Both build with 0 warnings.
+# Playwright at PROV-1 fix round 2: 442 passed / 1 failed / 3 skipped of
+# 446 (22.0m, --workers=1; 8080/8090 never touched). The single failure is
+# `world-quiet-places.spec.ts`'s density smoke, the standing pre-existing
+# one this milestone already documents; BORDERS-7, red in the previous
+# round and acquitted there on mechanism, PASSED here.
+#
+# THIS RUN IS ALSO THE BROWSER-LEVEL EVIDENCE FOR BATCH CDC-1's SERVER
+# REFACTOR, at the controller's instruction. CDC-1's `758616a` introduced
+# `atlas_server::load` and re-pointed `main.rs`'s default branch at it, and
+# CDC-1 did not run Playwright. This suite was built and served from HEAD
+# WITH that refactor in it: `main.rs:144/194/200` call
+# `atlas_server::load::{load_graph_and_data, load_sources, LoadedAtlas}`,
+# and the release binary (04:54) postdates `load.rs`/`main.rs` (04:16).
+# 442 browser tests passed against a server assembled entirely through the
+# new path, and the one failure is a world-map density check that never
+# reaches the assembly path. No failure in this run traces to it.
 #
 # ---------------------------------------------------------------------
 # Superseded, for the record: 1032 (996 + 36) across 52 sections was the
