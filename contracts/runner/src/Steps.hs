@@ -360,6 +360,34 @@ allSteps =
         Left e -> pure (Left e)
         Right v -> settleAgainstFixture "the response" f v w
 
+  -- ---------------- REFERENTIAL INTEGRITY, ACROSS REPOS ----------------
+  -- Contract C3 makes the atlas the coordinate authority, and
+  -- map-generator's own law 12(c) requires every survey waypoint to
+  -- resolve to a live atlas place. This is that law stated from OUR side,
+  -- as a consumer expectation of THEIR map API: a marker they draw names
+  -- a place, and a place they name must be one our gazetteer actually
+  -- carries.
+  --
+  -- It is the law that PLACE-1a would have tripped: 15 place ids were
+  -- absorbed into their survivors, and any drawn marker still naming one
+  -- of them is a dangling reference to a place that no longer exists.
+  , mkStep Then (lit "every place " *> ((,) <$> capUntil @BindName " draws is a place "
+                                            <*> capUntil @BindName " carries")) $
+      \(BindName a, BindName b) w -> pure $ do
+        va <- boundValue a w
+        vb <- boundValue b w
+        let drawn   = nub [ s | String s <- collectKey "place" va ]
+            carried = [ s | String s <- collectKey "id" vb ]
+            missing = [ s | s <- drawn, s `notElem` carried ]
+        if null drawn
+          then Left (a <> " draws no places at all -- this law would pass vacuously, so it fails instead")
+        else if null carried
+          then Left (b <> " carries no place ids at all -- refusing to check membership against an empty gazetteer")
+        else if null missing then Right w
+        else Left (T.pack (show (length missing)) <> " place(s) drawn by " <> a
+                   <> " are not in " <> b <> ": "
+                   <> T.intercalate ", " (map (\s -> "'" <> s <> "'") (take 15 missing)))
+
   -- ---------------- C6: one root, everywhere ---------------------------
   -- Every artifact and every answer that carries the atlas version root
   -- must carry the SAME one. Stated over two bound answers rather than

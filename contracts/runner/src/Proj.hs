@@ -232,7 +232,14 @@ projections = Map.fromList
       -- one-field projection over several differently-shaped carriers --
       -- `atlas_version_root` on an export, `version` on a wire answer --
       -- so the "same root everywhere" law is one comparison, not five.
-    , Fields [ fieldAlt "root" ["atlas_version_root", "version"] Keep ]
+      -- `graphPin` is in the list because map-generator's own
+      -- /api/contract publishes the atlas root it compiled against under
+      -- that name (contracts/map-api/meta/contract.feature masks it as
+      -- sixteen hex characters). Including it is what makes the C6
+      -- stale-pin an EXECUTABLE cross-repo law rather than prose: their
+      -- contract answer and our gazetteer can be asked, in one step,
+      -- whether they were built from the same graph.
+    , Fields [ fieldAlt "root" ["atlas_version_root", "version", "graphPin"] Keep ]
     )
   , ( "export-format"
       -- The half of an export's header that is a STABLE promise: which
