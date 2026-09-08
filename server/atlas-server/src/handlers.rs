@@ -705,9 +705,14 @@ pub struct VerseEventOut {
     /// Deliberately the TARGET NODE's provenance, not the `Attests` row's:
     /// this row answers "which event is this verse part of," and the honest
     /// attribution for THAT claim is whoever says the event exists. The
-    /// `Attests` rows' own (genuinely multi-source) provenance is served
-    /// where it is actually rendered -- `EventDetailOut::
-    /// witnesses_provenance`, on the PARALLEL ACCOUNTS section.
+    /// `Attests` rows' own provenance is served where it is actually
+    /// rendered -- `EventDetailOut::witnesses_provenance`, on the PARALLEL
+    /// ACCOUNTS section.
+    ///
+    /// This field IS the genuinely mixed one: a verse belonging to both an
+    /// imported event and a hand-authored one names BOTH sources on its own
+    /// section heading, which is the total-capture-honesty case at the
+    /// verse frontier.
     pub provenance: String,
 }
 
@@ -1385,11 +1390,17 @@ pub struct EventDetailOut {
     pub provenance: String,
     /// Batch PROV-1: every distinct provenance id behind THIS EVENT's
     /// PARALLEL ACCOUNTS section -- the `Attests` rows for this event
-    /// specifically, not the family average. A list because the family is
-    /// genuinely multi-source in the real corpus (`event-witnesses` for the
-    /// imported bulk, `attestation-corrections` for ATTEST-1's own repaired
-    /// rows), and THE LEPER LESSON is exactly that collapsing those to one
-    /// value is how a hand-repaired row ends up attributed to an importer.
+    /// specifically, not the family average.
+    ///
+    /// A list, and per-EVENT rather than per-family, even though the real
+    /// `attests` table is single-sourced TODAY (`{event-witnesses}`,
+    /// measured by `the_per_family_provenance_map_of_the_real_artifact_
+    /// is_pinned`; ATTEST-1's `attestation-corrections` rows land on
+    /// `mentions`/`analogue`, not here -- an earlier version of this
+    /// comment said otherwise and was wrong). Per-event is what keeps this
+    /// TRUE if a second source ever lands in the table: a family average
+    /// would start lying the moment it did, and THE LEPER LESSON is exactly
+    /// that a hand-authored row must never be attributed to an importer.
     ///
     /// Omitted (not `[]`) when empty -- an event with no accounts (the
     /// Espousal of Mary) renders no PARALLEL ACCOUNTS section at all, so it

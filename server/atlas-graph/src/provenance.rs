@@ -33,20 +33,38 @@
 //! not interchangeable:
 //!   * PER-ROW / PER-SUBJECT (`attests_by_event`, `analogue_by_pair`,
 //!     `event_mentions_by_event`) -- the exact rows behind one rendered
-//!     section of one node's frontier. `attests` is genuinely MULTI-SOURCE
-//!     in the real corpus (`event-witnesses` for the imported bulk,
-//!     `attestation-corrections` for ATTEST-1's own hand-repaired rows),
-//!     and the leper lesson is precisely that a hand-authored row must not
-//!     wear an imported source's clothes -- so this half must never
-//!     collapse to a family average.
-//!   * PER-FAMILY (`by_family`) -- the complete distinct provenance set of
-//!     a whole row table. Used ONLY where the family is genuinely
-//!     single-sourced (`cross_refs`, `catechism`), where "every row of
-//!     this table says X" and "this row says X" are the same sentence.
-//!     `is_single_sourced` is how a caller checks that rather than
-//!     assuming it, and the served value is the whole set either way, so a
-//!     family that GAINS a second source starts telling the truth about it
-//!     instead of quietly picking one.
+//!     section of one node's frontier.
+//!
+//!     CORRECTED (this batch's own error, kept visible rather than quietly
+//!     rewritten): the first version of this paragraph asserted that
+//!     `attests` is multi-source in the real corpus. IT IS NOT --
+//!     `the_per_family_provenance_map_of_the_real_artifact_is_pinned`
+//!     measures it as `{event-witnesses}` alone; ATTEST-1's own
+//!     `attestation-corrections` rows land on `mentions` and `analogue`,
+//!     not on `attests` (`event_world.rs`'s own two ATTEST-1 loops). The
+//!     claim was inferred from reading the adapter instead of measured.
+//!
+//!     The per-subject shape still stands, on the honest ground rather
+//!     than the invented one: `mentions` IS genuinely multi-source (five
+//!     kinds, `attestation-corrections` among four Theographic ones), the
+//!     EVENT-membership rows mix `theographic` and `curated` per row, and
+//!     a family that is single-sourced TODAY is not guaranteed to stay so
+//!     -- `attests_for_event` keeps telling the truth either way, where a
+//!     family average would start lying the moment a second source
+//!     appeared. That is the leper lesson generalized: a hand-authored row
+//!     must never be able to wear an imported source's clothes.
+//!   * PER-FAMILY (`by_family`) -- the complete distinct provenance SET of
+//!     a whole row table, served where no smaller honest key exists
+//!     (`cross_refs`, `catechism`). Measured, not assumed: `cross_refs` is
+//!     single-sourced (`{openbible.info-cross-references}`) so "every row
+//!     of this table says X" and "this row says X" are the same sentence
+//!     there; `catechism` is NOT (`{curated-catechism,
+//!     concord-sc-overlap}`), and that is exactly why this returns a SET
+//!     and never a single id -- the affordance renders every entry, so a
+//!     multi-sourced section names all of its sources instead of quietly
+//!     picking one. `is_single_sourced` lets a caller ask rather than
+//!     assume, and `the_per_family_provenance_map_of_the_real_artifact_
+//!     is_pinned` pins both answers.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -201,10 +219,17 @@ mod tests {
         .expect("from <= to")
     }
 
-    /// THE LEPER LESSON, as a unit test: an event whose accounts come from
-    /// TWO sources must report both, never one. Collapsing this to a
-    /// single value is exactly how a hand-repaired row ends up wearing an
-    /// imported source's clothes.
+    /// THE LEPER LESSON, as a unit test over a SYNTHETIC graph: an event
+    /// whose accounts come from TWO sources must report both, never one.
+    /// Collapsing this to a single value is exactly how a hand-repaired row
+    /// ends up wearing an imported source's clothes.
+    ///
+    /// The fixture is synthetic ON PURPOSE, and the distinction matters:
+    /// the REAL `attests` table is single-sourced today
+    /// (`the_per_family_provenance_map_of_the_real_artifact_is_pinned`
+    /// measures `{event-witnesses}`), so this is the behavior the index
+    /// must have IF a second source ever lands there -- not a description
+    /// of the corpus. See this module's own header for the correction.
     #[test]
     fn an_events_accounts_report_every_source_behind_them_not_just_one() {
         let mut g = Graph::default();
@@ -217,8 +242,8 @@ mod tests {
         assert_eq!(ix.attests_for_event("e2"), vec!["event-witnesses".to_string()]);
         // An event with no accounts renders no affordance, not a blank one.
         assert!(ix.attests_for_event("e3").is_empty());
-        // ...and the FAMILY view is genuinely multi-sourced, so a caller
-        // may not serve it as though it were one thing.
+        // ...and in THIS fixture the family view is multi-sourced, so a
+        // caller may not serve it as though it were one thing.
         assert!(!ix.is_single_sourced(family::ATTESTS));
     }
 

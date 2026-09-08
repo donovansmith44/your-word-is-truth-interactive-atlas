@@ -109,9 +109,10 @@ public static class ProvenanceResolver
     /// <summary>
     /// Resolves a whole section's worth of ids, in the order given,
     /// de-duplicated by id. A section legitimately drawing on two sources
-    /// (the real <c>attests</c> family does) shows BOTH -- collapsing them
-    /// to one is exactly the leper failure mode this affordance exists to
-    /// make visible.
+    /// shows BOTH -- THE SMALL CATECHISM really does
+    /// (<c>curated-catechism</c> + <c>concord-sc-overlap</c>, measured and
+    /// pinned server-side) -- because collapsing them to one is exactly the
+    /// leper failure mode this affordance exists to make visible.
     /// </summary>
     public static IReadOnlyList<ResolvedProvenance> ResolveAll(SourcesDocumentOut? doc, IEnumerable<string>? ids) =>
         (ids ?? Enumerable.Empty<string>())

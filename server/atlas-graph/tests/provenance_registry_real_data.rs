@@ -279,3 +279,102 @@ const PINNED_INVENTORY: &[&str] = &[
     "theographic-people-groups",
     "theographic-people-reclassified",
 ];
+
+/// THE PER-FAMILY MAP, PINNED -- which row families are genuinely
+/// multi-sourced and which are not.
+///
+/// THIS TEST EXISTS BECAUSE THIS BATCH GOT IT WRONG. The first draft of
+/// `provenance.rs` (and of three doc comments, and of three commit
+/// messages) asserted that `attests` carries both `event-witnesses` and
+/// `attestation-corrections` in the real corpus. It does not: ATTEST-1's
+/// corrections land on `mentions` and `analogue`, and `attests` is
+/// single-sourced. The claim was inferred from reading the adapter rather
+/// than measured, which is the exact failure the house rule about grep
+/// results names. So the fact is code now, not prose -- a future reader
+/// deciding whether a section may safely serve a family value has a
+/// checked answer instead of a plausible sentence.
+///
+/// It also pins the three EMPTY families honestly (`quotes`,
+/// `confesses`, `corresponds_bible` have zero rows in the artifact) --
+/// an empty set here is a real fact about the corpus, not a sweep bug.
+#[test]
+fn the_per_family_provenance_map_of_the_real_artifact_is_pinned() {
+    let actual: BTreeMap<&'static str, Vec<String>> = provenance_by_family(real_graph())
+        .into_iter()
+        .map(|(fam, set)| (fam, set.iter().map(|id| kind_of(id).to_string()).collect::<BTreeSet<_>>().into_iter().collect()))
+        .collect();
+
+    let expected: BTreeMap<&'static str, Vec<String>> = PINNED_FAMILIES
+        .iter()
+        .map(|(fam, kinds)| (*fam, kinds.iter().map(|k| k.to_string()).collect()))
+        .collect();
+
+    assert_eq!(actual, expected, "the artifact's per-family provenance map changed");
+
+    // The two claims the WIRE actually leans on, stated as assertions
+    // rather than left implicit in the table above: `cross_refs` and
+    // `catechism` are the only two families `handlers::verse` serves as a
+    // FAMILY value, and `by_family` is a true statement about an
+    // individual row exactly while the family is single-sourced.
+    // `cross_refs` is; `catechism` is NOT -- and that is fine, because the
+    // wire carries the whole SET and the affordance renders every entry.
+    // What must never happen is a family value collapsing to one id.
+    assert_eq!(actual["cross_refs"], vec!["openbible.info-cross-references".to_string()]);
+    assert_eq!(actual["catechism"], vec!["concord-sc-overlap".to_string(), "curated-catechism".to_string()]);
+}
+
+/// Every provenance-bearing family of the committed artifact, with the
+/// distinct provenance KINDS it carries. Sorted both ways.
+const PINNED_FAMILIES: &[(&str, &[&str])] = &[
+    ("analogue", &["attestation-corrections"]),
+    ("attests", &["event-witnesses"]),
+    ("canon_succession", &["kjv"]),
+    ("catechism", &["concord-sc-overlap", "curated-catechism"]),
+    ("comments_on", &["kretzmann"]),
+    ("confesses", &[]),
+    ("contains_bible", &["kjv"]),
+    ("contains_concord", &["concord"]),
+    ("corresponds_bible", &[]),
+    ("cross_refs", &["openbible.info-cross-references"]),
+    ("dated_by", &["chronology-derivation"]),
+    ("fulfills", &["curated-fulfillment"]),
+    ("located_at", &["curated", "theographic"]),
+    (
+        "mentions",
+        &[
+            "attestation-corrections",
+            "theographic-geocoding",
+            "theographic-people",
+            "theographic-people-groups",
+            "theographic-people-reclassified",
+        ],
+    ),
+    ("named_after", &["curated-named-after"]),
+    (
+        "nodes",
+        &[
+            "brainfuel",
+            "chronology-anchors",
+            "concord",
+            "curated",
+            "curated-catechism",
+            "curated-eras",
+            "curated-narratives",
+            "curated-people-groups",
+            "curated-places",
+            "curated-polities",
+            "kjv",
+            "kretzmann",
+            "theographic",
+            "theographic-people",
+            "theographic-people-groups",
+            "theographic-people-reclassified",
+        ],
+    ),
+    ("quotes", &[]),
+    ("spoken_at", &["event-witnesses"]),
+    ("spoken_by", &["red-letter"]),
+    ("succession", &["curated-narratives"]),
+    ("temporal_adjacency", &["chronology-derivation"]),
+    ("typology", &["curated-typology"]),
+];

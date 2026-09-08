@@ -379,11 +379,23 @@ internal static class FrontierProvenance
 
     /// <summary>A section eyebrow with its own "?" beside it -- the SAME
     /// <c>.catechism-section-heading</c> small-caps treatment every section
-    /// heading in this file already uses, with the affordance as its last
-    /// child so the two share a baseline and the "?" can never drift away
-    /// from the heading it explains. Returns the next sequence number, the
-    /// same convention <see cref="CatechismSectionRendering.TitledParagraphs"/>
-    /// follows with its <c>ref int seq</c>.</summary>
+    /// heading in this file already uses. Returns the next sequence number,
+    /// the same convention <see cref="CatechismSectionRendering.TitledParagraphs"/>
+    /// follows with its <c>ref int seq</c>.
+    ///
+    /// <para>THE AFFORDANCE IS A SIBLING OF THE HEADING, NOT A CHILD OF IT,
+    /// and that is a correctness requirement rather than a layout
+    /// preference. The first version of this helper nested the "?" inside
+    /// the heading <c>&lt;p&gt;</c>; nine EXISTING Playwright assertions of
+    /// the form <c>expect(heading).toHaveText('SIMILAR ACCOUNTS')</c>
+    /// immediately went red with <c>"SIMILAR ACCOUNTS?"</c>, because
+    /// <c>textContent</c> is what <c>toHaveText</c> reads and the button's
+    /// own glyph is a text node. A section heading's accessible/text
+    /// content must be the heading, full stop -- for a screen reader
+    /// exactly as much as for a fixture. The <c>.popover-section-head</c>
+    /// wrapper (app.css) is what puts the two back on one line: the heading
+    /// goes <c>display: inline</c> inside it, so the "?" flows beside the
+    /// text and the block panel still breaks below.</para></summary>
     internal static int Heading(
         RenderTreeBuilder builder,
         int seq,
@@ -394,10 +406,13 @@ internal static class FrontierProvenance
         string provenanceTestId,
         string buttonLabel)
     {
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "popover-section-head");
         builder.OpenElement(seq++, "p");
         builder.AddAttribute(seq++, "class", "catechism-section-heading");
         builder.AddAttribute(seq++, "data-testid", headingTestId);
         builder.AddContent(seq++, text);
+        builder.CloseElement();
         seq = Affordance(builder, seq, provenance, sources, provenanceTestId, buttonLabel, Components.ProvenanceAffordance.HeaderRegister);
         builder.CloseElement();
         return seq;
@@ -2024,13 +2039,15 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             var seq = 0;
             if (multi)
             {
-                // Batch PROV-1, THE LEPER LESSON made visible: this event's
-                // OWN Attests rows, not the family's. The real corpus has
-                // both `event-witnesses` (imported bulk) and
-                // `attestation-corrections` (ATTEST-1's hand-repaired rows),
-                // and an event carrying both shows BOTH here -- the whole
-                // point being that a hand-authored row must never wear an
-                // imported source's clothes.
+                // Batch PROV-1: this event's OWN Attests rows, not the
+                // family's. `attests` is single-sourced in the corpus TODAY
+                // (measured -- `the_per_family_provenance_map_of_the_real_
+                // artifact_is_pinned`; an earlier version of this comment
+                // claimed otherwise and was wrong), so per-event costs
+                // nothing today and is what keeps this TRUE the moment a
+                // second source lands there. THE LEPER LESSON is that a
+                // hand-authored row must never wear an imported source's
+                // clothes, and a family average is how that happens.
                 seq = FrontierProvenance.Heading(
                     builder, seq, "PARALLEL ACCOUNTS", "event-section-heading",
                     detail.WitnessesProvenanceOrEmpty, registry, "event-witnesses-provenance",

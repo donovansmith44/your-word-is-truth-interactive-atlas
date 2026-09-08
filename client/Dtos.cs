@@ -375,11 +375,13 @@ public sealed record EventDetail(
     // Batch PROV-1: every distinct provenance id behind THIS EVENT's
     // PARALLEL ACCOUNTS and "Mentioned in" sections -- the Attests /
     // Mentions rows for THIS event, never a family average. Multi-valued
-    // because `attests` is genuinely multi-source in the real corpus
-    // (event-witnesses + attestation-corrections), and THE LEPER LESSON is
-    // that collapsing those is how a hand-repaired row gets attributed to
-    // an importer. Omitted-when-empty on the wire; read via the
-    // *OrEmpty helpers below.
+    // and per-EVENT because `mentions` genuinely IS multi-source in the
+    // real corpus (five kinds, ATTEST-1's own attestation-corrections among
+    // four Theographic ones) and because `attests`, single-sourced today,
+    // is not guaranteed to stay so -- a family average would start lying
+    // the moment a second source landed. THE LEPER LESSON: a hand-authored
+    // row must never be attributed to an importer. Omitted-when-empty on
+    // the wire; read via the *OrEmpty helpers below.
     List<string>? WitnessesProvenance = null,
     List<string>? MentionsProvenance = null)
 {

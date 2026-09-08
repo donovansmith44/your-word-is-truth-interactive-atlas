@@ -567,7 +567,165 @@ resolver = "2"
 # it as the FAILURE it currently is under the counting command, NOT as
 # a passing test; in release the workspace figure would be 997.
 #
-# CURRENT CANONICAL: 1032 (996 + 36) across 52 sections.
+# Batch PROV-1 (2026-09-07/08, provenance on the frontier -- the owner's
+# two orders verbatim: "one thing we definitely need for EVERY PIECE OF
+# DATA is the source from which it came. openbible, etc." and "add a ?
+# button on our frontier interface that gives provenance (i.e., sourced
+# from openbible.com) or whatever"): moved to 1050 (1014 + 36) across 53
+# sections. `atlas-graph-types` UNCHANGED at 36 -- byte-untouched, the
+# standing veto honored (this batch needed no contract change; see the
+# NOT-A-CONTRACT-CHANGE note below, which is the whole reason the
+# companion-index shape exists).
+#
+# Workspace 997 -> 1014. Stated as one equation, literally true as written:
+#   +19 NEW tests (itemized immediately below)
+#     -2 (`perf_smoke.rs`'s TWO timing gates, which flipped PASS -> FAIL
+#         under the counting command between this batch's own BASE run and
+#         its close run on this machine, and are counted as the failures
+#         they now are, NOT as passing tests -- see the DISCLOSED block
+#         below for the evidence that the cause is environmental)
+#     = +17 net, 997 -> 1014.
+# THE +19, itemized:
+# `atlas-core`'s own lib unittests +2 (220 -> 222: `sources::tests`, the
+# id-grammar red/green pair for `split_provenance_id` -- a bare id, the
+# dotted `openbible.info-cross-references` which must NOT split, and the
+# multi-segment `kretzmann/jeremiah/1` locator which must split at the
+# FIRST slash only); `atlas-etl`'s `tests/sources_validate.rs` +3 (3 -> 6:
+# the join table's structural soundness, the compiled artifact actually
+# carrying it, and a four-case red battery -- dangling source,
+# off-vocabulary confidence, duplicate id, blank locator);
+# `atlas-graph`'s own lib unittests +4 (178 -> 182: `provenance.rs`'s own
+# `ProvenanceIndex` unit tests -- per-event multi-source reporting, the
+# symmetric Analogue lookup from either end, the event-mentions filter,
+# and the single-sourced-family/unknown-family pair); `atlas-server`'s
+# `tests/graph_api.rs` +3 (41 -> 44: the verse's three additions asserted
+# BY VALUE over the REAL corpus, the imported/curated event pair incl. the
+# omitted-when-empty accounts attribution, and the HTTP-surface mirror of
+# the artifact-wide resolution law) and `tests/sources_api.rs` +1 (2 -> 3:
+# the join table rides GET /api/sources, with its source join asserted on
+# the wire rather than only in the Rust types); and the ONE new section,
+# `atlas-graph/tests/provenance_registry_real_data.rs` (+6 -- THE
+# RESOLUTION LAW: every distinct provenance kind in data/compiled/graph.bin
+# resolves to exactly one registry row; every declared row is inhabited by
+# the artifact; the sweep's own completeness reconciled against
+# graph-types' `pub provenance:` declaration count; the 26-kind inventory
+# pinned BY IDENTITY; the per-family provenance map pinned; and the
+# Confidence vocabulary reconciled across the two crates).
+# That is 2 + 3 + 4 + 3 + 1 + 6 = 19 new tests; 19 - 2 = the +17 above.
+#
+# Sections 52 -> 53: the ONE new file above. Counted the same way as
+# always -- a full `--workspace` run now prints 52 "test result" lines from
+# test BINARIES (47 with tests plus five 0-test unittest stubs; four
+# Doc-tests lines are NOT counted) plus aqc_cucumber, which prints no line
+# at all. Two separate equations, each literally true as written:
+#   47 (binary sections printing a "test result" line with tests)
+#     + 5 (0-test unittest stubs)
+#     + 1 (aqc_cucumber, harness = false, prints no line)
+#     = 53 sections today.
+# And by the historical route: 52 sections at ATTEST-1
+#     + 1 (PROV-1's provenance_registry_real_data)
+#     = 53.
+# AQC corpus unchanged (44/184) -- fixtures untouched; the harness=false
+# runner printed "44 scenarios (44 passed) / 184 steps (184 passed)" in the
+# close run.
+#
+# DATA: `data/compiled/graph.bin` is BYTE-IDENTICAL at 101,319,287 bytes
+# (96.63% of the 104,857,600 ceiling, 3,538,313 margin) -- `git diff
+# --stat 47dc68c HEAD -- data/` touches exactly two files,
+# `data/curated/sources.toml` (+203) and `data/compiled/sources.json`
+# (+158), and neither is in the graph pipeline (see `atlas_core::sources`'s
+# own module header: this data has nothing to do with the Explorable
+# Graph, and `gen_sources` never reads data/raw). VERSION ROOT UNMOVED;
+# `version_root_regression.rs` green un-re-pinned.
+#
+# NOT A CONTRACT CHANGE, and that shaped the batch: the SERVED graph
+# cannot answer "what is this ROW's provenance" at all. `build_indexes`
+# lowers rows into `BiIndex` entries carrying `(EdgeId, Position,
+# EdgeMeta)`; `EdgeMeta` is `None|Narrative|Votes`; `MemSnapshot`'s own
+# `graph` field is private; `GraphQuery` exposes node/derive/edge_summary/
+# edges/reading_window and nothing else. Widening `EdgeMeta` would be a
+# graph-types change (standing veto, no authorization here) AND a String
+# on every one of ~344k `cites` index entries, against a committed
+# sub-100ms frontier law. `atlas-graph/src/provenance.rs` is the companion
+# index that answers it instead -- one pre-store scan, the same class as
+# `bible_position`/`era_ids`/`narrative_legs`/`temporal_neighbors`.
+#
+# COUNTING-COMMAND NOTE (disclosed, not silent): the close run used
+# `cargo test --workspace --no-fail-fast`. Plain `cargo test --workspace`
+# was run FIRST and aborted at 17 sections when `artifact_conformance.rs::
+# serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling`
+# hit 4.0170328s against its 4s wall-clock ceiling -- the SAME
+# machine-contention timing artifact NODE-1's own block already records
+# for this exact test, and it passed in the `--no-fail-fast` run the 1014
+# above comes from. `--no-fail-fast` changes WHICH RESULTS ARE PRINTED,
+# never which tests run or how they behave, so the sum is the same sum the
+# standing procedure asks for; it was needed only because a failing target
+# otherwise hides every later section's line.
+#
+# DISCLOSED, AND NOT THIS BATCH'S (evidenced, not asserted):
+# `atlas-server`'s `perf_smoke.rs` failed TWO wall-clock gates in the
+# close run -- `scene_scripture_chapter_completes_within_smoke_threshold`
+# (84.34ms vs its 50ms gate) and
+# `scene_time_full_span_completes_within_smoke_threshold` (88.40ms vs its
+# 75ms gate). Both are timing gates over `atlas_core::scene::
+# compose_scripture_scene`/`compose_time_scene`.
+# THE MEASURED WINDOW EXCLUDES THIS BATCH BY CONSTRUCTION: `median_of(7,
+# || compose_*(&data, ...))` times ONLY those two pure `atlas_core`
+# functions over `&AtlasData`; the `GraphService` this batch actually
+# extended is built OUTSIDE the timer and its handle is discarded
+# (`let (data, _graph) = real_data_and_graph()`). And the path is
+# untouched: `git diff --name-only 47dc68c HEAD -- server/atlas-core/`
+# lists exactly ONE file, `src/sources.rs`, while `grep -c "sources"
+# server/atlas-core/src/scene.rs` returns 0 -- the module the measured
+# functions live in does not reference the module this batch changed.
+# ISOLATED RE-RUNS (debug, quiet machine, 3x): 6/6 green, then 52.77ms,
+# then 50.0126ms -- i.e. the JHN.3 gate now sits ON its own 50ms threshold
+# on this machine, failing by as little as 12.6 MICROseconds, exactly the
+# environmental condition ATTEST-1's own block records;
+# `scene_time_full_span` passed all three isolated runs, so its 88.40ms in
+# the full run is contention alone. RELEASE: `cargo test --release -p
+# atlas-server --test perf_smoke` = 6 passed, 0 failed. NOTED HONESTLY:
+# this batch's own BASE run recorded perf_smoke 6/6 green in debug (997,
+# not the 996 the block above records), so the machine moved between BASE
+# and close, not the code. The 1014 figure therefore counts both as the
+# FAILURES they currently are under the counting command, NOT as passing
+# tests; in release the workspace figure would be 1016.
+#
+# BASE RE-CONFIRMATION NOTE (the honest mismatch): this batch re-measured
+# BASE `47dc68c` before touching anything and got workspace 997, not the
+# 996 the ATTEST-1 block above records -- the difference being that the
+# perf_smoke JHN.3 gate PASSED in debug in that run ("test
+# scene_scripture_chapter_completes_within_smoke_threshold ... ok"). Zero
+# failures in that BASE run's 51 test-binary sections. The +1 is the same
+# environmental gate resolving in the passing direction; it is disclosed
+# here rather than silently absorbed into the delta.
+#
+# CURRENT CANONICAL: 1050 (1014 + 36) across 53 sections.
+# AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
+# dotnet at Batch PROV-1 close: client.Tests 381/381 |
+# client.ContractTests 45/45 (unchanged -- this batch adds no scenario).
+# client.Tests 354 -> 381 (+27): ProvenanceResolverTests (16 -- the id
+# grammar incl. the dotted-id case that would break the owner's own
+# headline source, and the four fail-loud cases no real document can
+# produce while the server-side law holds), ProvenanceRegistryConformance
+# Tests (9 -- the REAL committed sources.json read through this app's own
+# Wire snake_case policy, the class of bug CatechismProofVerseDto.Vref's
+# own doc comment records this project shipping once), and
+# PopoverSectionRegistryTests +2 (the event "?" sits immediately above the
+# time/place block, asserted as ADJACENCY over the real resolved registry).
+# Playwright at PROV-1 close: 437 passed / 2 failed / 3 skipped of 442
+# (435 + 7, this batch's own tests/ux/provenance.spec.ts, 7/7 green). The
+# two failures are `world-quiet-places.spec.ts`'s density smoke (the
+# standing pre-existing one, still failing in ISOLATION here, and this
+# batch adds and removes zero places) and `world-map.spec.ts`'s WORLD-10b
+# landmark zoom-tiering, which passed 7 of 8 isolated re-runs and whose
+# page renders no PROV-1 DOM at all (the test mocks `/api/scene` to zero
+# places and drives Leaflet's own wheel zoom) -- `git diff 47dc68c HEAD --
+# client/wwwroot/css/app.css | grep "^+"` adds 16 selector lines, every one
+# `.popover-*`, and zero lines mentioning landmark/marker/place-label.
+#
+# Superseded, for the record: 1032 (996 + 36) across 52 sections was the
+# canonical this block carried into Batch PROV-1.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # dotnet at Batch ATTEST-1 close: client.Tests 354/354 |
 # client.ContractTests 45/45 (44 Reqnroll scenarios + CorpusCountTests,

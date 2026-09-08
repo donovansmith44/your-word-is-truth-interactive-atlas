@@ -5393,6 +5393,31 @@ input:focus-visible,
     background: rgba(44, 74, 112, .08);
 }
 
+/* Batch PROV-1: the wrapper that puts a section eyebrow and its own "?"
+   on one line WITHOUT nesting the button inside the heading element.
+
+   The nesting is what this rule exists to avoid, and the reason is
+   correctness, not looks: a heading's textContent must be the heading.
+   Nesting the button put its "?" glyph into it, and nine existing
+   Playwright assertions of the form
+   `expect(heading).toHaveText('SIMILAR ACCOUNTS')` went red with
+   "SIMILAR ACCOUNTS?" -- a screen reader would have read the same thing.
+
+   So the heading and the affordance are SIBLINGS, and the heading goes
+   `display: inline` HERE ONLY (a descendant selector -- every other
+   .catechism-section-heading in the app is untouched), which lets the "?"
+   flow beside the text while the block panel still breaks below it. The
+   heading's own bottom margin moves to this wrapper so spacing is
+   unchanged from a section without an affordance. */
+.popover-section-head {
+    margin: 0 0 .3rem;
+}
+
+    .popover-section-head > .catechism-section-heading {
+        display: inline;
+        margin: 0;
+    }
+
 /* ------------------------------------------------------------------
    Batch PROV-1: ProvenanceAffordance.razor -- the "?" that names a
    frontier surface's own source (owner order 2, verbatim: "add a ?
