@@ -349,10 +349,19 @@ test('PROV-1 (the resolution law, at the wire): every provenance id this app ser
     ...(event.witnesses_provenance ?? []),
     ...(event.mentions_provenance ?? []),
     ...(event.analogues ?? []).map((a: any) => a.provenance),
-  ].filter((id) => id !== undefined && id !== '');
+  ];
 
-  expect(served.length, 'the wire must actually be carrying provenance for this test to mean anything').toBeGreaterThan(4);
-  for (const id of served) {
+  // FIX ROUND 1 (review H-1): this used to `.filter((id) => id !== undefined
+  // && id !== '')` -- one of the places the review correctly names as
+  // "nothing fails" for a blank provenance. The blank is now the LOUDEST
+  // case rather than a filtered one, on both sides of the wire.
+  expect(
+    served.filter((id) => id === ''),
+    'no provenance field the wire serves may be blank -- see handlers.rs, where all four are ApiError::internal now'
+  ).toEqual([]);
+  const present = served.filter((id) => id !== undefined && id !== '');
+  expect(present.length, 'the wire must actually be carrying provenance for this test to mean anything').toBeGreaterThan(4);
+  for (const id of present) {
     const source = registry.get(kindOf(id));
     expect(source, `provenance id '${id}' resolves to no registry row`).toBeTruthy();
     expect(sourceIds.has(source), `provenance id '${id}' names source '${source}', which does not exist`).toBe(true);

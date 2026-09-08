@@ -368,6 +368,18 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 /// <c>tests/ux/provenance.spec.ts</c> asserts the single request by counting
 /// it rather than by trusting this paragraph.</para>
 ///
+/// <para>FIX ROUND 1 (review M-4): the paragraph below was RIGHT about the
+/// two failures being different and WRONG about the rendering telling them
+/// apart. <c>RegistryOrNull</c> returning null made <c>Resolve</c> report
+/// every id as <c>Unresolved</c>, so one dropped <c>/api/sources</c>
+/// rendered <c>Unrecognized source "kjv". Please report it.</c> -- in the
+/// loudest register in the panel, on EVERY affordance on the popover -- for
+/// data that is perfectly well-formed and perfectly well registered.
+/// <c>ProvenanceStatus</c> now has a third state,
+/// <c>RegistryUnavailable</c>, which says the SOURCE LIST could not be
+/// loaded and leaves the corpus out of it. The split below is real; it just
+/// had to reach the DOM.</para>
+///
 /// <para>Fail-soft on the FETCH, fail-loud on the RESOLUTION -- the two are
 /// different failures and are treated differently on purpose. A registry
 /// that could not be fetched must not take a whole frontier section down
