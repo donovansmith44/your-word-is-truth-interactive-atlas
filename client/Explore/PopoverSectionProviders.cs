@@ -386,8 +386,8 @@ internal static class FrontierProvenance
     /// <para>THE AFFORDANCE IS A SIBLING OF THE HEADING, NOT A CHILD OF IT,
     /// and that is a correctness requirement rather than a layout
     /// preference. The first version of this helper nested the "?" inside
-    /// the heading <c>&lt;p&gt;</c>; nine EXISTING Playwright assertions of
-    /// the form <c>expect(heading).toHaveText('SIMILAR ACCOUNTS')</c>
+    /// the heading <c>&lt;p&gt;</c>; EXISTING Playwright assertions of the
+    /// form <c>expect(heading).toHaveText('SIMILAR ACCOUNTS')</c>
     /// immediately went red with <c>"SIMILAR ACCOUNTS?"</c>, because
     /// <c>textContent</c> is what <c>toHaveText</c> reads and the button's
     /// own glyph is a text node. A section heading's accessible/text
@@ -395,7 +395,23 @@ internal static class FrontierProvenance
     /// exactly as much as for a fixture. The <c>.popover-section-head</c>
     /// wrapper (app.css) is what puts the two back on one line: the heading
     /// goes <c>display: inline</c> inside it, so the "?" flows beside the
-    /// text and the block panel still breaks below.</para></summary>
+    /// text and the block panel still breaks below.</para>
+    ///
+    /// <para>FIX ROUND 1 (review M-1) -- THE BLAST RADIUS, RE-MEASURED. This
+    /// comment said "nine". Grepped again at the moment of writing this
+    /// sentence -- <c>toHaveText</c> against the five heading strings the
+    /// affordance mounts on (SIMILAR ACCOUNTS / PARALLEL ACCOUNTS / EVENT /
+    /// PASSAGE / THE SMALL CATECHISM) across <c>tests/</c> -- it is
+    /// <b>16 assertions in 7 spec files</b>: <c>accounts-and-mentions</c> 2
+    /// (:167, :176), <c>event-timeline</c> 1 (:1003),
+    /// <c>popover-sections</c> 7 (:974, :1688, :1810, :1834, :1889, :2002,
+    /// :2271), <c>w1-passages</c> 1, <c>w2-passages</c> 2,
+    /// <c>w3-passages</c> 1, <c>w4-passages</c> 2. Ten of the sixteen sat
+    /// inside the range of the run that was stopped to fix this; six sat
+    /// past its stopping point. "Nine" was an eyeball count of one
+    /// interrupted run's red list that missed
+    /// <c>accounts-and-mentions.spec.ts:176</c> -- an unmeasured number
+    /// inside the paragraph that existed to own an unmeasured number.</para></summary>
     internal static int Heading(
         RenderTreeBuilder builder,
         int seq,
@@ -447,9 +463,24 @@ internal static class FrontierProvenance
     /// heading: the heading then names every source ACTUALLY behind the
     /// rows shown -- never a family average, and never just the first row's
     /// (the leper lesson: two sources under one heading must both be
-    /// visible).</summary>
+    /// visible).
+    ///
+    /// <para>FIX ROUND 1 (review H-1, HIGH): the
+    /// <c>.Where(p =&gt; !string.IsNullOrWhiteSpace(p))</c> that used to
+    /// live here is GONE. It was the third of four filters that between
+    /// them turned a blank row provenance into NO AFFORDANCE AT ALL -- the
+    /// review's own failure scenario: an <c>Analogue</c> row whose pair key
+    /// stops matching the walked edge, the wire serving <c>""</c>, and
+    /// SIMILAR ACCOUNTS rendering a curatorial claim about two events with
+    /// no attribution and no sign that attribution was missing. A blank now
+    /// survives into the panel and shouts.</para>
+    ///
+    /// <para>ZERO ROWS still yields zero ids, and the component still
+    /// renders nothing for an empty list -- conditional presence, unchanged.
+    /// That is the distinction worth keeping: "no attribution section here"
+    /// and "an attribution we cannot read" are different facts.</para></summary>
     internal static IReadOnlyList<string> Distinct(IEnumerable<string> rowProvenances) =>
-        rowProvenances.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
+        rowProvenances.Select(p => p ?? "").Distinct().ToList();
 }
 
 /// <summary>
@@ -500,16 +531,19 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     {
         List<CrossRefOut> xrefs;
         // Batch PROV-1: the owner's own headline case ("sourced from
-        // openbible.com"). VERSE-ONLY, and that is a disclosed, honest gap
-        // rather than an oversight: a VerseNode reads `VerseDetail`, which
-        // carries `CrossRefsProvenance`; a PassageNode reads
-        // `GET /api/xrefs/{sref}`, whose response is a bare
-        // `Vec<CrossRefOut>` array with no envelope to hang an additive
-        // field on -- turning it into an object would be a WIRE SHAPE
-        // change, which this batch's own additive-only rule forbids. A
-        // passage's cross-references therefore render with no "?" at all
-        // (conditional presence, the component's own rule) rather than with
-        // a guessed one.
+        // openbible.com").
+        //
+        // FIX ROUND 1 (review M-3): NO LONGER VERSE-ONLY, and the reason
+        // the gap was disclosed with was FALSE. It said a PassageNode reads
+        // `GET /api/xrefs/{sref}`, "a bare `Vec<CrossRefOut>` array with no
+        // envelope to hang an additive field on." The array was never where
+        // the field goes: `CrossRefOut` is a struct, and this batch had
+        // already added an element-level `provenance` to two other arrays
+        // (`VerseEventOut`, `EventAnalogueOut`). Every cross-reference row
+        // now carries its own, on BOTH endpoints, and the response shape is
+        // byte-identical -- so a PASSAGE node (the most common way to
+        // arrive somewhere other than a verse: a cross-reference target
+        // span) gets the same "?" the verse one node earlier had.
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
         try
         {
@@ -524,6 +558,9 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 }
                 case PassageNode p:
                     xrefs = await p.XrefsAsync(api); // memoized -- its own dedicated cache
+                    // The rows' OWN attribution, deduped the same way every
+                    // other row-backed heading in this file does it.
+                    xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.ProvenanceOrEmpty));
                     break;
                 default:
                     xrefs = new List<CrossRefOut>();
@@ -758,11 +795,11 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         List<CatechismRefDto> items;
-        // Batch PROV-1: VERSE-ONLY, the identical disclosed gap
-        // CrossRefsSection carries and for the identical reason -- a
-        // PassageNode reads `GET /api/catechism/{sref}`, a bare array with
-        // no envelope to hang an additive field on. A passage's catechism
-        // rows render with no "?" rather than with a guessed one.
+        // Batch PROV-1, FIX ROUND 1 (review M-3): NO LONGER VERSE-ONLY --
+        // the identical gap CrossRefsSection carried, closed the identical
+        // way and for the identical (measured) reason. `catechism_for_span`
+        // needed one extra `State<Arc<GraphService>>` extractor, which six
+        // handlers in that file already take.
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
         try
         {
@@ -777,6 +814,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
                 }
                 case PassageNode p:
                     items = await p.CatechismAsync(api); // memoized -- its own dedicated cache, mirrors XrefsAsync
+                    catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.ProvenanceOrEmpty));
                     break;
                 default:
                     items = new List<CatechismRefDto>();
@@ -1599,10 +1637,18 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
 /// able to wear an imported source's clothes. An imported one says
 /// Theographic, and the two cannot look alike.</para>
 ///
-/// <para>Renders NOTHING when the event carries no provenance at all
-/// (impossible against the real artifact, where the resolution law holds,
-/// but honest rather than fabricated if it ever were) -- the component's
-/// own empty-list rule, no extra guard here.</para>
+/// <para>FIX ROUND 1 (review H-1, HIGH): this used to say "renders NOTHING
+/// when the event carries no provenance at all," implemented as an explicit
+/// <c>if (string.IsNullOrEmpty(detail.Provenance)) return null;</c>. That
+/// was the FOURTH of the four sites that turned a blank provenance into
+/// silence, and it is the worst of them, because -- as the paragraph above
+/// says -- an event's SOURCE is never conditional: the node exists, so
+/// somebody asserted it. Rendering nothing there meant an event popover
+/// with no "?" at all, indistinguishable from a page that simply had not
+/// loaded, for exactly the case a reader most needs told. The event is now
+/// ALWAYS attributed, and a blank arriving anyway (which the server can no
+/// longer produce -- <c>handlers::event</c> 500s instead) renders the loud
+/// notice.</para>
 /// </summary>
 public sealed class EventProvenanceSection : IPopoverSectionProvider
 {
@@ -1625,10 +1671,10 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
             return null; // fail soft, same policy as every sibling Event section
         }
 
-        if (string.IsNullOrEmpty(detail.Provenance))
-        {
-            return null; // conditional presence -- no claim to attribute, so no affordance
-        }
+        // FIX ROUND 1 (review H-1): the `if (string.IsNullOrEmpty(...))
+        // return null;` that stood here is GONE -- see this class's own doc
+        // comment. An event ALWAYS has an asserter, so it always gets a "?",
+        // and a blank one shouts rather than disappearing.
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
         RenderFragment body = builder =>

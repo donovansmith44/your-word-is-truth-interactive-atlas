@@ -182,10 +182,143 @@ test('PROV-1 (NO FETCH WATERFALL): every "?" on a popover shares ONE /api/source
   await page.getByTestId('verse-text-provenance-button').click();
   await expect(page.getByTestId('verse-text-provenance-panel')).toBeVisible();
 
+  // FIX ROUND 1 (review L-5): EXACTLY one, not "at most one". The old bound
+  // (`toBeLessThanOrEqual(1)`) also passed on ZERO -- a regression in which
+  // the client stopped requesting /api/sources entirely would have been
+  // green here, while every panel rendered the fail-soft notice instead of a
+  // source. The test asserted panel VISIBILITY but not panel CONTENTS, so
+  // nothing else caught it either. Both halves are tightened.
   expect(
     sourceRequests.length,
-    `/api/sources must be fetched at most once per app session (AsyncMemo), was ${sourceRequests.length}`
-  ).toBeLessThanOrEqual(1);
+    `/api/sources must be fetched EXACTLY once per app session (AsyncMemo), was ${sourceRequests.length}`
+  ).toBe(1);
+  // ...and the panels must actually have been RESOLVED by that one fetch.
+  await expect(
+    page.getByTestId('verse-text-provenance-panel'),
+    'one fetch is only the right number if it actually resolved the ids'
+  ).toContainText('Sourced from The King James Version');
+});
+
+// =====================================================================
+// FIX ROUND 1 -- the review's own findings, as fixtures.
+// =====================================================================
+
+test('PROV-1 fix round 1 (H-1, NEVER A SILENT BLANK): a blank or unregistered provenance renders a LOUD notice, never nothing', async ({ page }) => {
+  // THE TEST THAT WOULD HAVE CAUGHT H-1. Three source comments and the
+  // batch report asserted that an unresolvable provenance renders a LOUD
+  // notice. It did not: four client sites filtered whitespace ids out
+  // BEFORE resolution, so a missing provenance rendered as NO "?" AT ALL --
+  // a curatorial claim with no attribution and no sign that attribution was
+  // missing, which is the silent blank the brief forbids and exactly how
+  // the ATTEST-1 leper row hid.
+  //
+  // The wire can no longer produce a blank (both `unwrap_or_default()`
+  // sites are `ApiError::internal` now), so this fixture INJECTS one --
+  // which is the only way to drive a path the real corpus cannot reach, and
+  // the reason the dead code went unnoticed for a whole batch.
+  await page.route('**/api/verse/GEN.1.1', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.provenance = ''; // A BLANK: the H-1 case exactly.
+    body.cross_refs_provenance = ['no-such-source-2026']; // An id no registry row claims.
+    await route.fulfill({ response, json: body });
+  });
+
+  await openVersePopover(page, 'GEN.1.1');
+
+  // THE BLANK. Before this fix, this button did not exist at all.
+  const blank = page.getByTestId('verse-text-provenance-button');
+  await expect(blank, 'a blank provenance must still mount a "?" -- silence is the failure mode').toBeVisible();
+  await blank.click();
+  await expect(page.getByTestId('verse-text-provenance-unresolved')).toContainText('no source at all');
+
+  // THE UNREGISTERED ID, named out loud so it can actually be fixed.
+  await page.getByTestId('xrefs-provenance-button').click();
+  await expect(page.getByTestId('xrefs-provenance-unresolved')).toContainText('no-such-source-2026');
+});
+
+test('PROV-1 fix round 1 (M-4): a registry fetch failure blames the SOURCE LIST, never the data', async ({ page }) => {
+  // Before this fix, one failed /api/sources rendered
+  //   Unrecognized source "kjv". Please report it.
+  // in the loudest register in the panel, on EVERY affordance on the
+  // popover, for data whose provenance is perfectly well-formed and
+  // perfectly well registered -- asking the reader to report a bug that
+  // does not exist. The two failures are genuinely different and now say so.
+  await page.route('**/api/sources', (route) => route.abort());
+
+  await openVersePopover(page, 'GEN.1.1');
+  await page.getByTestId('verse-text-provenance-button').click();
+
+  const panel = page.getByTestId('verse-text-provenance-panel');
+  await expect(panel).toContainText('The source list could not be loaded');
+  // The id is still named -- it is the one true thing left to say.
+  await expect(panel).toContainText('kjv');
+  await expect(
+    page.getByTestId('verse-text-provenance-unresolved'),
+    'an infrastructure fault must NOT wear the data fault\'s clothes'
+  ).toHaveCount(0);
+});
+
+test('PROV-1 fix round 1 (M-3): a PASSAGE node\'s cross-references and catechism carry their own "?"', async ({ page }) => {
+  // THE DISCLOSED GAP, CLOSED -- and its stated cause was false. The batch
+  // said /api/xrefs and /api/catechism "are bare JSON arrays with no
+  // envelope to hang an additive field on." The array was never where the
+  // field goes: both ELEMENT types are structs, and this batch had already
+  // added an element-level `provenance` to two other arrays. A reader
+  // landing on a cross-reference target span -- the most common way to
+  // arrive somewhere other than a verse -- used to see a full
+  // cross-references list with no "?" while the identical list one node
+  // earlier had one.
+  const xrefs = await api.xrefs('MAT.26.26-28');
+  expect(xrefs.length, 'MAT.26.26-28 must carry cross references for this fixture to mean anything').toBeGreaterThan(0);
+  expect(xrefs[0].provenance, 'the WIRE must carry it, not merely the client render it').toEqual([
+    'openbible.info-cross-references',
+  ]);
+  const cat = await api.catechism('MAT.26.26-28');
+  expect(cat.length, 'MAT.26.26-28 must cite catechism items for this fixture to mean anything').toBeGreaterThan(0);
+  // The genuinely MULTI-sourced family: BOTH sources, never collapsed.
+  expect(cat[0].provenance).toEqual(['concord-sc-overlap', 'curated-catechism']);
+
+  await page.goto('/read/MAT/26');
+  await page.getByTestId('verse-num-26').click();
+  await page.keyboard.down('Shift');
+  await page.getByTestId('verse-num-28').click();
+  await page.keyboard.up('Shift');
+  await page.getByTestId('passage-chip').click();
+  await expect(page.getByTestId('popover-title')).toHaveText('MAT.26.26-28');
+
+  await page.getByTestId('xrefs-provenance-button').click();
+  await expect(page.getByTestId('xrefs-provenance-panel')).toContainText('Sourced from OpenBible.info Cross-References');
+
+  await page.getByTestId('catechism-provenance-button').click();
+  const catPanel = page.getByTestId('catechism-provenance-panel');
+  await expect(catPanel).toContainText('Sourced from');
+  // Two entries, because the family really is two-sourced.
+  await expect(catPanel.locator('[data-testid^="catechism-provenance-entry-"]')).toHaveCount(2);
+});
+
+test('PROV-1 fix round 1 (L-6): the 44x44 touch target does not swallow clicks meant for the text above it', async ({ page }) => {
+  // The pressable area is a transparent 44x44 ::before centred on a mark
+  // one-third that size, and the button carries
+  // @onclick:stopPropagation="true". On the verse focus card the overlay
+  // therefore extends well above and below the glyph, over the verse text.
+  // Nothing tested that a click landing in that band reaches the text
+  // instead of toggling the panel; the four report screenshots cannot show
+  // it. This is the assertion, driven by geometry rather than by eye.
+  await openVersePopover(page, 'GEN.1.1');
+  const button = page.getByTestId('verse-text-provenance-button');
+  await expect(button).toBeVisible();
+  const box = await button.boundingBox();
+  expect(box, 'the affordance must be laid out for this measurement to mean anything').not.toBeNull();
+
+  // 15px above the top of the visible mark -- inside the 44px overlay's own
+  // upward reach (44 vs a ~16px mark leaves ~14px of overhang each way),
+  // and over the verse text the reader is trying to click.
+  await page.mouse.click(box!.x + box!.width / 2, box!.y - 15);
+  await expect(
+    page.getByTestId('verse-text-provenance-panel'),
+    'a click above the mark belongs to whatever is under it, not to the "?"'
+  ).toHaveCount(0);
 });
 
 test('PROV-1 (the resolution law, at the wire): every provenance id this app serves resolves to a registry source', async () => {

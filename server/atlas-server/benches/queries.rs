@@ -156,7 +156,11 @@ fn bench_handlers(c: &mut Criterion) {
         b.iter(|| rt.block_on(handlers::narrative_event_positions(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });
     group.bench_function("catechism_for_span", |b| {
-        b.iter(|| rt.block_on(handlers::catechism_for_span(State(data.clone()), AxPath("EXO.20.3".to_string()))))
+        // PROV-1 fix round 1 (review M-3): second extractor, carrying the
+        // catechism family's own provenance -- one `BTreeMap` lookup off the
+        // load-time companion index, which is why the call SHAPE is the only
+        // thing that moved here.
+        b.iter(|| rt.block_on(handlers::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
     });
     group.bench_function("catechism_item", |b| {
         b.iter(|| rt.block_on(handlers::catechism_item(State(data.clone()), AxPath("commandment-1".to_string()))))

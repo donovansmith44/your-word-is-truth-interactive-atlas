@@ -1110,6 +1110,125 @@ async fn event_detail_carries_its_own_provenance_and_its_sections_own_sources() 
     assert_eq!(analogues[0]["provenance"], "attestation-corrections");
 }
 
+/// PROV-1 FIX ROUND 1 -- THE TEST THAT WOULD HAVE CAUGHT H-1.
+///
+/// Three source comments and the batch report asserted "never a silent
+/// blank": that a provenance the server could not resolve rode the wire as
+/// `""` and the client shouted about it. Both halves were false -- the
+/// server's two `unwrap_or_default()` fallbacks made the blank, and four
+/// client sites filtered it into silence before it could be rendered.
+///
+/// The server half is now impossible rather than merely unlikely: all four
+/// PROV-1 string fields end in `ApiError::internal` instead of a default,
+/// and this sweeps every provenance the wire serves -- including the two
+/// bare-array endpoints M-3 added -- for a blank. It fails LOUDLY on ""
+/// where the previous law (`every_provenance_id_the_wire_serves_resolves_
+/// to_a_registry_source`, below) would too, but this one also covers the
+/// LIST fields and the array endpoints, and it names emptiness as the
+/// specific fault rather than as an unresolvable id.
+#[tokio::test]
+async fn no_provenance_field_the_wire_serves_is_ever_blank() {
+    let app = real_app();
+
+    let mut checked = 0usize;
+    let mut check = |label: &str, v: &serde_json::Value| {
+        if let Some(s) = v.as_str() {
+            assert!(!s.trim().is_empty(), "{label} rode the wire as a BLANK provenance -- the silent blank requirement 3 forbids");
+            checked += 1;
+        }
+        for x in v.as_array().into_iter().flatten() {
+            let s = x.as_str().unwrap_or_else(|| panic!("{label} must be a list of strings"));
+            assert!(!s.trim().is_empty(), "{label} carries a BLANK provenance id in its list");
+            checked += 1;
+        }
+    };
+
+    let (st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
+    assert_eq!(st, StatusCode::OK);
+    check("verse.provenance", &verse["provenance"]);
+    check("verse.cross_refs_provenance", &verse["cross_refs_provenance"]);
+    check("verse.catechism_provenance", &verse["catechism_provenance"]);
+    for e in verse["events"].as_array().into_iter().flatten() {
+        check("verse.events[].provenance", &e["provenance"]);
+    }
+    for c in verse["cross_refs"].as_array().into_iter().flatten() {
+        check("verse.cross_refs[].provenance", &c["provenance"]);
+    }
+    for c in verse["catechism"].as_array().into_iter().flatten() {
+        check("verse.catechism[].provenance", &c["provenance"]);
+    }
+
+    let (st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
+    assert_eq!(st, StatusCode::OK);
+    check("event.provenance", &event["provenance"]);
+    check("event.witnesses_provenance", &event["witnesses_provenance"]);
+    check("event.mentions_provenance", &event["mentions_provenance"]);
+    for a in event["analogues"].as_array().into_iter().flatten() {
+        check("event.analogues[].provenance", &a["provenance"]);
+    }
+
+    let (st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3").await;
+    assert_eq!(st, StatusCode::OK);
+    for x in xrefs.as_array().into_iter().flatten() {
+        check("xrefs[].provenance", &x["provenance"]);
+    }
+    let (st, cat, _h) = get(&app, "/api/catechism/MAT.28.19").await;
+    assert_eq!(st, StatusCode::OK);
+    for c in cat.as_array().into_iter().flatten() {
+        check("catechism[].provenance", &c["provenance"]);
+    }
+
+    assert!(checked > 12, "the sweep must actually have found provenance fields to check (found {checked})");
+}
+
+/// PROV-1 FIX ROUND 1 (review M-3): the PASSAGE scope gap, CLOSED.
+///
+/// The batch disclosed that a PASSAGE node's cross-references and catechism
+/// rows get no "?" because "[the endpoints] are bare JSON arrays with no
+/// envelope to hang an additive field on." The review measured that reason
+/// false: the array is not where the field goes -- both ELEMENT types are
+/// structs, and this batch had already added an element-level `provenance`
+/// to two other arrays. Both halves ship now. This is the wire half.
+#[tokio::test]
+async fn the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_question_mark_too() {
+    let app = real_app();
+
+    // A PASSAGE span -- the shape a reader lands on from a cross-reference
+    // target, which is the most common way to arrive somewhere other than a
+    // verse, and the case that had no attribution at all.
+    let (st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3-4").await;
+    assert_eq!(st, StatusCode::OK);
+    let xrefs = xrefs.as_array().expect("xrefs must be an array -- the wire SHAPE is unchanged, only the element grew");
+    assert!(!xrefs.is_empty(), "EXO.20.3-4 must carry cross references for this assertion to mean anything");
+    for x in xrefs {
+        assert_eq!(
+            x["provenance"].as_array().expect("every cross-reference row carries its own attribution"),
+            &vec![serde_json::json!("openbible.info-cross-references")],
+            "the owner's own headline source, now on a PASSAGE's rows too"
+        );
+    }
+
+    // THE CATECHISM HALF IS ASSERTED ELSEWHERE, AND THE REASON IS MEASURED,
+    // NOT ASSUMED. This harness's `AtlasData` comes from
+    // `atlas_etl::compile(data/raw, data/curated)`, and that output carries
+    // ZERO catechism items: `GET /api/catechism/MAT.28.19` (the CATECH-1
+    // Baptism institution verse, which has citing items in the shipped
+    // artifact) returns `[]` here, as does `/api/verse/MAT.28.19`'s own
+    // `catechism` array -- printed and read, not guessed. Every catechism
+    // assertion in this file would therefore be VACUOUS. The non-vacuous
+    // ones live where real rows exist: `api.rs::catechism_span_and_item_
+    // endpoints` (the demo fixture, which has citing items) proves the
+    // element carries the field, and `tests/ux/provenance.spec.ts` proves
+    // the VALUE against the shipped artifact through a real browser.
+    //
+    // What IS assertable here is that the endpoint still serves an array
+    // with the second extractor wired in -- i.e. that the route did not
+    // break on the new `State<Arc<GraphService>>`.
+    let (st, cat, _h) = get(&app, "/api/catechism/MAT.28.19-20").await;
+    assert_eq!(st, StatusCode::OK, "the catechism route must still resolve with its second extractor");
+    assert!(cat.is_array(), "catechism must still be an ARRAY -- the wire shape is unchanged, only the element grew");
+}
+
 #[tokio::test]
 async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     // The HTTP-surface mirror of `atlas-graph/tests/provenance_registry_
@@ -1124,6 +1243,10 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     let app = real_app();
     let (_st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
     let (_st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
+    // FIX ROUND 1 (review M-3): the two bare-array endpoints now carry
+    // provenance too, so the wire law sweeps them as well.
+    let (_st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3-4").await;
+    let (_st, catechism, _h) = get(&app, "/api/catechism/MAT.28.19-20").await;
 
     let mut served: Vec<String> = Vec::new();
     let mut push = |v: &serde_json::Value| {
@@ -1146,6 +1269,12 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     for a in event["analogues"].as_array().into_iter().flatten() {
         push(&a["provenance"]);
     }
+    for x in xrefs.as_array().into_iter().flatten() {
+        push(&x["provenance"]);
+    }
+    for c in catechism.as_array().into_iter().flatten() {
+        push(&c["provenance"]);
+    }
 
     assert!(served.len() > 4, "the wire must actually be carrying provenance for this test to mean anything (got {served:?})");
     for id in &served {
@@ -1159,3 +1288,4 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
         );
     }
 }
+

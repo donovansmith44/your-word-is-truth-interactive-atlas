@@ -61,13 +61,42 @@
             <span class="popover-provenance-panel" id="@_panelId" role="note" data-testid="@PanelTestId">
                 @foreach (var p in _resolved)
                 {
-                    @if (!p.IsResolved)
+                    @if (p.Status == Explore.ProvenanceStatus.RegistryUnavailable)
+                    {
+                        @* FIX ROUND 1 (review M-4): AN INFRASTRUCTURE FAULT,
+                           SAID AS ONE. /api/sources did not load, so nothing
+                           has been learned about this data -- it is not
+                           "unrecognized," it is unchecked. Before this, one
+                           dropped request rendered the red "Unrecognized
+                           source" accusation on EVERY affordance on the
+                           popover, telling the reader the atlas had
+                           unattributed data and asking them to report a bug
+                           that did not exist. The id is still named, because
+                           it is the one true thing we can say. *@
+                        <span class="popover-provenance-unavailable" data-testid="@UnavailableTestId">
+                            The source list could not be loaded, so this cannot be named right now.
+                            Its source id is &quot;@p.Id&quot;.
+                        </span>
+                    }
+                    else if (p.Status == Explore.ProvenanceStatus.Unresolved)
                     {
                         @* THE FAIL-LOUD LAW, visibly. Never a silent blank,
                            never a fabricated label -- the offending id is
-                           named so it can actually be fixed. *@
+                           named so it can actually be fixed. A BLANK id
+                           reaches here too (fix round 1, review H-1): the
+                           four filters that used to drop it before
+                           resolution are gone, so "we were handed nothing to
+                           attribute this with" now SHOUTS instead of
+                           rendering as no "?" at all. *@
                         <span class="popover-provenance-error" data-testid="@UnresolvedTestId">
-                            Unrecognized source &quot;@p.Id&quot;. Please report it.
+                            @if (string.IsNullOrWhiteSpace(p.Id))
+                            {
+                                @:This item was served with no source at all. Please report it.
+                            }
+                            else
+                            {
+                                @:Unrecognized source "@p.Id". Please report it.
+                            }
                         </span>
                     }
                     else
@@ -116,7 +145,15 @@
     /// this affordance exists to make visible. An empty or null list renders NOTHING at all -- not an
     /// empty button, not a placeholder -- which is the same "return null
     /// when empty" conditional-presence discipline every section provider
-    /// in this app already follows.</summary>
+    /// in this app already follows.
+    ///
+    /// <para>FIX ROUND 1 (review H-1): an empty LIST and a list holding a
+    /// BLANK ID are different facts and now look different. Empty list =
+    /// this surface has no attribution to make (honest absence). A blank id
+    /// in the list = something claimed an attribution and handed over
+    /// nothing, which renders the LOUD notice. The blank used to be
+    /// filtered out here and in three other places, making them
+    /// indistinguishable and the "never a silent blank" law false.</para></summary>
     [Parameter, EditorRequired] public IReadOnlyList<string>? Provenance { get; set; }
 
     /// <summary>KNOB 2 -- IDENTITY. The stable test/CSS hook, exactly like
@@ -148,9 +185,13 @@
     /// provider -- has already awaited <c>AtlasClient.Sources()</c>, which
     /// is <see cref="AsyncMemo{T}"/>-backed, so the whole app shares ONE
     /// fetch and this component can never start a second one (the sub-100ms
-    /// frontier law). Null (the document not resolved yet) resolves every
-    /// id as unresolved, which is the honest answer: we genuinely cannot
-    /// name it yet.</summary>
+    /// frontier law). Null means the registry is not available -- either it
+    /// has not resolved yet or its fetch failed -- and FIX ROUND 1 (review
+    /// M-4) is that this no longer resolves every id as "unrecognized". It
+    /// resolves them as <c>RegistryUnavailable</c>, which says the SOURCE
+    /// LIST could not be loaded instead of accusing perfectly
+    /// well-registered data of having no source on every affordance on the
+    /// popover.</summary>
     [Parameter] public SourcesDocumentOut? Sources { get; set; }
 
     public const string HeaderRegister = "header";
@@ -168,6 +209,7 @@
     private string ButtonTestId => TestId + "-button";
     private string PanelTestId => TestId + "-panel";
     private string UnresolvedTestId => TestId + "-unresolved";
+    private string UnavailableTestId => TestId + "-unavailable";
     private string EntryTestId(ResolvedProvenance p) => TestId + "-entry-" + p.Id;
     private string ConfidenceTestId(ResolvedProvenance p) => TestId + "-confidence-" + p.Id;
     private string LocatorTestId(ResolvedProvenance p) => TestId + "-locator-" + p.Id;
@@ -180,7 +222,19 @@
         // law it cites). `_ids` is deduped the same way ResolveAll dedupes,
         // so the render gate and the rendered list can never disagree about
         // whether there is anything to say.
-        _ids = (Provenance ?? Array.Empty<string>()).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        //
+        // FIX ROUND 1 (review H-1, HIGH): the `.Where(id =>
+        // !string.IsNullOrWhiteSpace(id))` that used to sit here is GONE.
+        // It, plus the identical filter in ResolveAll, plus two more in
+        // PopoverSectionProviders, made an empty provenance render as NO "?"
+        // AT ALL -- while this file's own comments claimed it rendered a
+        // loud notice. THE GATE BELOW IS UNCHANGED and is where the honest
+        // distinction lives: an empty LIST is still nothing at all
+        // (conditional presence -- there is no attribution section here),
+        // but a list containing a blank id is one entry, so the button
+        // renders and the panel shouts. "Nothing to say" and "something
+        // illegible to say" must not look the same.
+        _ids = (Provenance ?? Array.Empty<string>()).Select(id => id ?? "").Distinct().ToList();
         _resolved = ProvenanceResolver.ResolveAll(Sources, _ids);
     }
 

@@ -5398,10 +5398,16 @@ input:focus-visible,
 
    The nesting is what this rule exists to avoid, and the reason is
    correctness, not looks: a heading's textContent must be the heading.
-   Nesting the button put its "?" glyph into it, and nine existing
-   Playwright assertions of the form
+   Nesting the button put its "?" glyph into it, and existing Playwright
+   assertions of the form
    `expect(heading).toHaveText('SIMILAR ACCOUNTS')` went red with
    "SIMILAR ACCOUNTS?" -- a screen reader would have read the same thing.
+
+   FIX ROUND 1 (review M-1): this comment said "nine". Re-grepped at the
+   moment of writing: 16 such assertions across 7 spec files
+   (accounts-and-mentions 2, event-timeline 1, popover-sections 7, and
+   w1/w2/w3/w4-passages 1/2/1/2). FrontierProvenance.Heading's own doc
+   comment carries the line numbers.
 
    So the heading and the affordance are SIBLINGS, and the heading goes
    `display: inline` HERE ONLY (a descendant selector -- every other
@@ -5567,6 +5573,22 @@ input:focus-visible,
     font-family: var(--font-mono);
     font-size: .74rem;
     color: #8A2A2A;
+}
+
+/* FIX ROUND 1 (review M-4): AN INFRASTRUCTURE FAULT IS NOT A DATA FAULT,
+   and must not wear its clothes. When /api/sources itself fails to load,
+   nothing has been learned about the data -- so this reads as a quiet
+   "we cannot check right now" rather than as the red accusation above.
+   It is deliberately NOT --font-mono and NOT #8A2A2A: the loud register
+   is reserved for "this piece of data has no source," which is a real
+   bug in OUR corpus, and diluting it with transient network noise would
+   train the eye to skip it. Same --ink-soft body register as the rest of
+   the panel, italic so it reads as an aside about the panel itself. */
+.popover-provenance-unavailable {
+    display: block;
+    font-size: .76rem;
+    font-style: italic;
+    color: var(--ink-soft);
 }
 
 /* KNOB 4's "row" register -- inline in a list row / under a focus card,

@@ -721,6 +721,29 @@ pub struct CrossRefOut {
     pub target: String,
     pub votes: i32,
     pub preview: String,
+    /// PROV-1 FIX ROUND 1 (review M-3): this row's own attribution, so a
+    /// PASSAGE node's CROSS REFERENCES section gets a "?" like a verse's.
+    ///
+    /// THE ORIGINAL DISCLOSURE GAVE A FALSE REASON and the review was right
+    /// to say so: `GET /api/xrefs/{sref}` returns a bare `Vec<CrossRefOut>`,
+    /// but the array was never where the field goes -- the ELEMENT is a
+    /// struct with room for an additive field, which is precisely the move
+    /// this batch already made twice (`VerseEventOut.provenance`,
+    /// `EventAnalogueOut.provenance`). No existing field moves; the response
+    /// stays an array.
+    ///
+    /// A SET (`Vec<String>`), never one collapsed id, and that is measured
+    /// rather than stylistic: `atlas_core::xrefs::aggregate_span_xrefs`
+    /// UNIONS the `cites` rows of every member verse of the span and sums
+    /// their votes, so one `CrossRefOut` is an aggregate of several
+    /// underlying rows and there is no single row to attribute it to. The
+    /// honest key is the `cross_refs` family's own distinct set -- the
+    /// identical value `VerseDetailOut.cross_refs_provenance` already
+    /// carries, pinned as `{openbible.info-cross-references}` by
+    /// `the_per_family_provenance_map_of_the_real_artifact_is_pinned`. A
+    /// second source landing in `cites` would surface on every row instead
+    /// of hiding behind the first, which is the leper lesson in a type.
+    pub provenance: Vec<String>,
 }
 
 /// Batch F ("the small catechism"), extended Batch F2 (question-level
@@ -742,11 +765,28 @@ pub struct CatechismRefOut {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub question: Option<String>,
+    /// PROV-1 FIX ROUND 1 (review M-3): the `catechism` family's own
+    /// distinct provenance set, so a PASSAGE node's THE SMALL CATECHISM
+    /// section gets a "?" like a verse's. Same additive element-level move
+    /// and same set-not-single-id reasoning as `CrossRefOut.provenance` --
+    /// see that field's doc comment.
+    ///
+    /// The review judged deferring this half defensible because
+    /// `catechism_for_span` took only `State<Arc<AtlasData>>`. Measured, it
+    /// is not: `AppState` implements `FromRef` for `Arc<GraphService>` too,
+    /// and six handlers in this file already take BOTH extractors
+    /// (`handlers::verse` among them). So the second half was one extractor
+    /// away, not a larger change, and it ships here.
+    ///
+    /// This family is the genuinely MULTI-sourced one --
+    /// `{concord-sc-overlap, curated-catechism}`, pinned -- which is exactly
+    /// why the field is a `Vec` on both endpoints.
+    pub provenance: Vec<String>,
 }
 
-impl From<atlas_core::catechism::CatechismRef> for CatechismRefOut {
-    fn from(c: atlas_core::catechism::CatechismRef) -> Self {
-        CatechismRefOut { id: c.id, name: c.name, question: c.question }
+impl CatechismRefOut {
+    fn from_ref(c: atlas_core::catechism::CatechismRef, provenance: &[String]) -> Self {
+        CatechismRefOut { id: c.id, name: c.name, question: c.question, provenance: provenance.to_vec() }
     }
 }
 
@@ -958,9 +998,17 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // written fail-loud rather than defaulted: an unattributed verse is a
     // 500 naming the id, never a silent blank at the reader (the fail-loud
     // law -- "never a silent blank and never a fabricated label").
+    //
+    // FIX ROUND 1 (review H-1): the node-absence guard was already here, but
+    // a node carrying a BLANK provenance string slipped through it. The
+    // `filter` closes that, so "no PROV-1 wire field is ever empty" is one
+    // uniform rule across all four of them rather than three-quarters of one
+    // -- `graph_api.rs::no_provenance_field_the_wire_serves_is_ever_blank`
+    // is the standing assertion of it.
     let provenance = snap
         .node(&text_id)
         .map(|n| n.provenance)
+        .filter(|p| !p.trim().is_empty())
         .ok_or_else(|| ApiError::internal(&format!("verse {canonical} rendered text with no node to attribute it to")))?;
 
     let book_meta = data.books_meta.iter().find(|b| b.book == vid.book.code()).cloned().unwrap_or_else(|| BookMeta {
@@ -996,19 +1044,31 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .into_iter()
         .map(|e| {
             // Batch PROV-1: this row's own attribution -- the Event NODE's
-            // provenance, off the same snapshot. An event whose node has
-            // gone missing between the edge walk and here is not reachable
-            // (the walk produced the id FROM the node table), but the
-            // fallback stays honest rather than inventing a source: an
-            // empty string is what `ProvenanceResolver` renders as a LOUD
-            // unresolved notice, never as a plausible-looking label.
+            // provenance, off the same snapshot.
+            //
+            // FIX ROUND 1 (review H-1, HIGH). This read used to end in
+            // `.unwrap_or_default()`, and three comments (here, at
+            // `EventAnalogueOut` below, and in `client/Dtos.cs`) justified
+            // the empty string on the ground that the client renders it as
+            // a LOUD unresolved notice. THAT WAS FALSE: every client path
+            // to `ProvenanceResolver.Resolve` filtered whitespace ids out
+            // FIRST, so a blank provenance rendered as no "?" at all --
+            // the exact silent blank requirement 3 forbids, and exactly how
+            // the ATTEST-1 leper row hid in the first place. Both halves
+            // are fixed: the client no longer filters an id it was HANDED
+            // (a blank one now renders the loud notice), and the wire can
+            // no longer emit the blank at all. `ApiError::internal` is the
+            // same answer `handlers::event` already gives for the event's
+            // own node provenance -- the resource exists, our data about it
+            // is incomplete, which is our bug and not the caller's.
             let node_provenance = snap
                 .node(&atlas_graph::event_world::event_node_id(&e.id))
                 .map(|n| n.provenance)
-                .unwrap_or_default();
+                .filter(|p| !p.trim().is_empty())
+                .ok_or_else(|| ApiError::internal(&format!("event {} has no provenance to attribute this membership row to", e.id)))?;
             let se = to_scene_event(&e);
             let when = if e.kind == "event" { Some(se.when) } else { None };
-            VerseEventOut {
+            Ok(VerseEventOut {
                 id: se.id,
                 label: se.label,
                 when,
@@ -1016,9 +1076,9 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                 places: e.places.clone(),
                 kind: e.kind.clone(),
                 provenance: node_provenance,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, ApiError>>()?;
 
     // M-C2 (requirement 2): `graph.cross_refs_by_from` (the graph's own
     // `cites` rows, dot-ref keyed, `target` = each row's own
@@ -1031,6 +1091,12 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // migration pass left behind. Same fail-soft behavior as before (a
     // missing preview skips the row, per this endpoint's own "ruling 4"
     // doc comment above): only the DATA SOURCE moved.
+    // PROV-1 FIX ROUND 1 (review M-3): the family set, read ONCE off the
+    // load-time companion index and cloned per row -- so the rows INSIDE
+    // `VerseDetailOut` are attributed per row, not only per section, and the
+    // two endpoints that serve `CrossRefOut` say the identical thing about
+    // the identical rows.
+    let cross_refs_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
     let cross_refs: Vec<CrossRefOut> = graph
         .cross_refs_by_from
         .get(&canonical)
@@ -1041,7 +1107,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
             let first = first_verse_of_target(&cr.target)?;
             let key = format!("{}.{}.{}", first.book.code(), first.chapter, first.verse);
             let preview = graph.verse_text.get(&key)?;
-            Some(CrossRefOut { target: cr.target.clone(), votes: cr.votes, preview: preview.clone() })
+            Some(CrossRefOut { target: cr.target.clone(), votes: cr.votes, preview: preview.clone(), provenance: cross_refs_provenance.clone() })
         })
         .collect();
 
@@ -1049,8 +1115,12 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // passage, called here with a single-verse span -- see
     // `VerseDetailOut.catechism`'s own doc comment for why this is folded
     // into the already-shared verse-detail fetch rather than a second call.
-    let catechism: Vec<CatechismRefOut> =
-        data.catechism_items_for_span(&ScriptureRef::Verse(vid)).into_iter().map(CatechismRefOut::from).collect();
+    let catechism_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
+    let catechism: Vec<CatechismRefOut> = data
+        .catechism_items_for_span(&ScriptureRef::Verse(vid))
+        .into_iter()
+        .map(|c| CatechismRefOut::from_ref(c, &catechism_provenance))
+        .collect();
 
     // Batch RED-1: the SAME per-verse lookup `handlers::chapter` uses, off
     // the precomputed `graph.red_letter_spans` companion.
@@ -1073,8 +1143,13 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         // Batch PROV-1: the two section-level attributions, straight off
         // the load-time companion index -- no scan, no fetch, nothing added
         // to the per-request path (the sub-100ms frontier law binds here).
-        cross_refs_provenance: graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS),
-        catechism_provenance: graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM),
+        // FIX ROUND 1: the same two values now also ride each `cross_refs`/
+        // `catechism` ELEMENT (review M-3), which is what lets a PASSAGE
+        // node -- served by the bare-array endpoints -- carry a "?" too.
+        // These section fields stay for the wire-compatibility they always
+        // had; nothing about them moved.
+        cross_refs_provenance,
+        catechism_provenance,
     }))
 }
 
@@ -1519,17 +1594,29 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                 // Batch PROV-1: THIS ROW's own provenance, looked up by the
                 // pair it joins. `analogue_for_pair` is symmetric (both
                 // orderings are stored), so walking the relation from
-                // either end resolves the same single row. `unwrap_or_default`
-                // is unreachable for a pair we just WALKED an Analogue edge
-                // to reach; it stays an honest empty (which the client
-                // renders as a LOUD unresolved notice) rather than a
-                // fabricated label.
-                let provenance = graph.provenance.analogue_for_pair(&e.id, &other.id).unwrap_or_default().to_string();
-                EventAnalogueOut { id: other.id.clone(), title: other.label.clone(), provenance }
+                // either end resolves the same single row.
+                //
+                // FIX ROUND 1 (review H-1, HIGH): this used to be
+                // `.unwrap_or_default()`, defended by the same false claim
+                // corrected at `VerseEventOut` above -- the client filtered
+                // the blank into silence rather than shouting about it. The
+                // miss IS unreachable for a pair we just WALKED an Analogue
+                // edge to reach, which is exactly why a 500 costs nothing
+                // and makes the fail-loud claim TRUE. The failure it now
+                // catches is the real one the review named: an id
+                // normalization or `EventId` alias change that leaves the
+                // walked edge and the row key disagreeing.
+                let provenance = graph
+                    .provenance
+                    .analogue_for_pair(&e.id, &other.id)
+                    .filter(|p| !p.trim().is_empty())
+                    .ok_or_else(|| ApiError::internal(&format!("analogue row {} <-> {} has no provenance to attribute it to", e.id, other.id)))?
+                    .to_string();
+                Ok(EventAnalogueOut { id: other.id.clone(), title: other.label.clone(), provenance })
             }),
             Position::Edge(_) => None,
         })
-        .collect();
+        .collect::<Result<Vec<_>, ApiError>>()?;
 
     Ok(Json(EventDetailOut {
         id: e.id.clone(),
@@ -1549,9 +1636,13 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         // above already proved the node exists (it reconstructed `e` from
         // it), so this second read cannot legitimately miss -- fail-loud
         // rather than defaulted, same reasoning as `handlers::verse`.
+        // FIX ROUND 1 (review H-1): `.filter` added for the same reason as
+        // `handlers::verse`'s -- a node whose provenance is a blank string
+        // used to pass the absence guard and reach the wire as "".
         provenance: snap
             .node(&atlas_graph::event_world::event_node_id(&e.id))
             .map(|n| n.provenance)
+            .filter(|p| !p.trim().is_empty())
             .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
         // Both straight off the load-time companion index -- no scan, no
         // fetch, nothing added to the per-request path.
@@ -1572,8 +1663,17 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
 /// `atlas_core::catechism::items_for_span`, reached here via
 /// `AtlasData::catechism_items_for_span` -- this handler is pure
 /// response-shape assembly, same as every other handler in this file.
+///
+/// PROV-1 FIX ROUND 1 (review M-3): now takes `State<Arc<GraphService>>`
+/// too, purely to attribute each row. That is the SECOND extractor the
+/// review thought would make this half "a genuinely larger change" -- it is
+/// not: `AppState` already implements `FromRef<AppState>` for
+/// `Arc<GraphService>`, and six handlers in this file already take both.
+/// The aggregation itself is untouched; `AtlasData` is still where the
+/// business logic lives.
 pub async fn catechism_for_span(
     State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Path(sref): Path<String>,
 ) -> Result<Json<Vec<CatechismRefOut>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {
@@ -1581,7 +1681,8 @@ pub async fn catechism_for_span(
         _ => return Err(ApiError::bad_ref(&sref)),
     };
 
-    let out = data.catechism_items_for_span(&span).into_iter().map(CatechismRefOut::from).collect();
+    let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
+    let out = data.catechism_items_for_span(&span).into_iter().map(|c| CatechismRefOut::from_ref(c, &provenance)).collect();
     Ok(Json(out))
 }
 
@@ -1730,7 +1831,14 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<Stri
     };
 
     let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &graph.verse_text);
-    let out = aggregated.into_iter().map(|x| CrossRefOut { target: x.target, votes: x.votes, preview: x.preview }).collect();
+    // PROV-1 FIX ROUND 1 (review M-3): one read off the load-time companion
+    // index, cloned per row -- no scan, no fetch. See
+    // `CrossRefOut.provenance` for why the value is the family SET.
+    let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
+    let out = aggregated
+        .into_iter()
+        .map(|x| CrossRefOut { target: x.target, votes: x.votes, preview: x.preview, provenance: provenance.clone() })
+        .collect();
     Ok(Json(out))
 }
 

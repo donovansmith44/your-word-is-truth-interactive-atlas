@@ -191,8 +191,17 @@ public sealed record VerseEventDto(string Id, string Label, TimeRangeDto? When, 
     // ProvenanceResolver; rendered by the "?" affordance on the row.
     // Non-nullable with a "" default because the server always sends it
     // (an unconditional field, never omitted) -- the default exists only
-    // so a hand-built test fixture need not restate it, and "" is what
-    // ProvenanceResolver renders as a LOUD unresolved notice.
+    // so a hand-built test fixture need not restate it.
+    //
+    // FIX ROUND 1 (review H-1, HIGH): this comment used to end "and "" is
+    // what ProvenanceResolver renders as a LOUD unresolved notice." THAT
+    // WAS FALSE when written -- four client sites filtered whitespace ids
+    // out before resolution, so a blank rendered as no "?" at all. It is
+    // TRUE now, and true twice over: the filters are gone (a blank id
+    // handed to the affordance renders the loud notice), and the server
+    // no longer emits a blank in the first place -- handlers::verse's
+    // membership-row read is an ApiError::internal, not an
+    // unwrap_or_default.
     string Provenance = "");
 
 /// <summary>
@@ -409,7 +418,21 @@ public sealed record EventAnalogueDto(string Id, string Title, string Provenance
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
-public sealed record CrossRefOut(string Target, int Votes, string Preview);
+/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> is this
+/// row's own attribution, the `cross_refs` family's distinct SET -- so a
+/// PASSAGE node, which reads <c>GET /api/xrefs/{sref}</c> (a bare array)
+/// rather than <c>VerseDetail.CrossRefsProvenance</c>, gets a "?" too. The
+/// batch disclosed that gap with a FALSE reason ("no envelope to hang an
+/// additive field on"): the array was never where the field goes -- the
+/// ELEMENT is a record, and the response is still an array. Nullable with a
+/// null default so a hand-built fixture need not restate it; an ABSENT list
+/// means "no attribution section here" and renders nothing, which is not
+/// the same fact as a blank id in a present list (see
+/// ProvenanceResolver.ResolveAll's own fix-round note).
+public sealed record CrossRefOut(string Target, int Votes, string Preview, List<string>? Provenance = null)
+{
+    public IReadOnlyList<string> ProvenanceOrEmpty => Provenance ?? new List<string>();
+}
 
 /// Batch F: one catechism item citing a verse/span -- id + display name
 /// (no preview text, unlike <see cref="CrossRefOut"/>: requirement 4's own
@@ -426,7 +449,16 @@ public sealed record CrossRefOut(string Target, int Votes, string Preview);
 /// plus the bare embedded citation) -- see
 /// <c>CatechismSeamSection</c>'s own doc comment for how the client
 /// disambiguates their testids.
-public sealed record CatechismRefDto(string Id, string Name, string? Question = null);
+///
+/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> carries
+/// the `catechism` family's own distinct set -- the genuinely MULTI-sourced
+/// one (`concord-sc-overlap` + `curated-catechism`, measured and pinned),
+/// which is why it is a list and never one collapsed id. Same element-level
+/// additive move as <see cref="CrossRefOut.Provenance"/>; see that comment.
+public sealed record CatechismRefDto(string Id, string Name, string? Question = null, List<string>? Provenance = null)
+{
+    public IReadOnlyList<string> ProvenanceOrEmpty => Provenance ?? new List<string>();
+}
 
 /// Batch F: one resolved proof verse -- <see cref="AtlasClient.CatechismItem"/>'s
 /// own <see cref="CatechismItemDetail.Verses"/> entries, each carrying its

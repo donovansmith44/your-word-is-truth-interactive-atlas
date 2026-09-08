@@ -64,9 +64,28 @@ public static class ProvenanceResolver
     /// Never throws, never returns null: an id with no registry row comes
     /// back as <see cref="ResolvedProvenance.Unresolved"/> carrying the id
     /// itself, so the affordance can say exactly what it could not name.
+    ///
+    /// <para>FIX ROUND 1 (review M-4): a NULL document is no longer the same
+    /// answer as an unregistered id. They are different failures and the
+    /// reader must be told which one happened. `null` means the REGISTRY
+    /// could not be loaded -- an infrastructure fault about US, transient
+    /// (<see cref="AsyncMemo{T}"/> resets on fault, so the next fetch
+    /// self-heals) and no evidence whatsoever about the data. Rendering it
+    /// as <c>Unrecognized source "kjv". Please report it.</c> accused
+    /// perfectly well-registered data of having no source, on EVERY
+    /// affordance on the popover, and asked the reader to report a bug that
+    /// does not exist. It now resolves to
+    /// <see cref="ResolvedProvenance.RegistryUnavailable"/>, which says so.
+    /// An id the registry genuinely does not contain keeps the loud
+    /// notice -- that one IS a piece of data with no source.</para>
     /// </summary>
     public static ResolvedProvenance Resolve(SourcesDocumentOut? doc, string id)
     {
+        if (doc is null)
+        {
+            return ResolvedProvenance.RegistryUnavailable(id ?? "");
+        }
+
         if (string.IsNullOrWhiteSpace(id))
         {
             return ResolvedProvenance.Unresolved(id ?? "");
@@ -78,13 +97,13 @@ public static class ProvenanceResolver
         // asks for the row and the source SEPARATELY rather than assuming
         // the join holds, because a dangling `source` must surface as
         // unresolved here rather than as a NullReferenceException.
-        var row = doc?.ProvenancesOrEmpty.FirstOrDefault(p => p.Id == kind);
+        var row = doc.ProvenancesOrEmpty.FirstOrDefault(p => p.Id == kind);
         if (row is null)
         {
             return ResolvedProvenance.Unresolved(id);
         }
 
-        var source = doc!.Sources.FirstOrDefault(s => s.Id == row.Source);
+        var source = doc.Sources.FirstOrDefault(s => s.Id == row.Source);
         if (source is null)
         {
             return ResolvedProvenance.Unresolved(id);
@@ -113,10 +132,31 @@ public static class ProvenanceResolver
     /// (<c>curated-catechism</c> + <c>concord-sc-overlap</c>, measured and
     /// pinned server-side) -- because collapsing them to one is exactly the
     /// leper failure mode this affordance exists to make visible.
+    ///
+    /// <para>FIX ROUND 1 (review H-1, HIGH): THE BLANK FILTER IS GONE, and
+    /// its removal is the point of the fix. This method used to
+    /// <c>.Where(id =&gt; !string.IsNullOrWhiteSpace(id))</c> before
+    /// resolving, as did three other call sites; between them they made
+    /// <see cref="Resolve"/>'s own blank-id branch DEAD CODE from the UI's
+    /// perspective, while three source comments and the batch report
+    /// asserted that a blank provenance renders as a LOUD notice. It did
+    /// not. It rendered as NOTHING -- a curatorial claim with no
+    /// attribution and no sign that attribution was missing, which is the
+    /// silent blank the brief forbids and precisely how the ATTEST-1 leper
+    /// row hid.</para>
+    ///
+    /// <para>THE DISTINCTION THAT SURVIVES, because it is a real one: an
+    /// EMPTY LIST still renders nothing at all (conditional presence -- the
+    /// surface has no provenance section, which is honest: a Passage's
+    /// cross-refs before M-3, an event with no accounts). A list CONTAINING
+    /// a blank id renders the loud notice, because something claimed to
+    /// have an attribution and handed over nothing. "Nothing to say" and
+    /// "something illegible to say" are not the same fact and no longer
+    /// look the same.</para>
     /// </summary>
     public static IReadOnlyList<ResolvedProvenance> ResolveAll(SourcesDocumentOut? doc, IEnumerable<string>? ids) =>
         (ids ?? Enumerable.Empty<string>())
-            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id ?? "")
             .Distinct()
             .Select(id => Resolve(doc, id))
             .ToList();
@@ -151,9 +191,13 @@ public static class ProvenanceResolver
 /// locator when one exists -- plus the confidence and the category label
 /// ("Our Own Curated Work") that carry the total-capture honesty claim.
 ///
-/// <see cref="IsResolved"/> false is the fail-loud case: every display
-/// field is empty and <see cref="Id"/> holds the id that could not be
-/// named, so the affordance says so out loud instead of rendering blank.
+/// <see cref="ProvenanceStatus.Unresolved"/> is the fail-loud case: every
+/// display field is empty and <see cref="Id"/> holds the id that could not
+/// be named, so the affordance says so out loud instead of rendering blank.
+///
+/// <para>FIX ROUND 1 (review M-4): there are now THREE states, not two,
+/// because there were always three failures and only two renderings. See
+/// <see cref="ProvenanceStatus"/>.</para>
 /// </summary>
 public sealed record ResolvedProvenance(
     string Id,
@@ -163,10 +207,49 @@ public sealed record ResolvedProvenance(
     string? Link,
     string? CategoryLabel,
     string Confidence,
-    string? Locator)
+    string? Locator,
+    ProvenanceStatus Status = ProvenanceStatus.Resolved)
 {
-    public bool IsResolved => Title.Length > 0;
+    public bool IsResolved => Status == ProvenanceStatus.Resolved;
 
+    /// <summary>A DATA fault: this id is not in the registry (or its row
+    /// names a source that is not). The atlas is serving something it
+    /// cannot attribute, which is worth shouting about.</summary>
     public static ResolvedProvenance Unresolved(string id) =>
-        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: "", Locator: null);
+        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: "", Locator: null,
+            Status: ProvenanceStatus.Unresolved);
+
+    /// <summary>An INFRASTRUCTURE fault: the registry itself could not be
+    /// loaded, so nothing can be resolved and nothing about the DATA has
+    /// been learned. Transient (AsyncMemo resets on fault). Says so instead
+    /// of accusing the corpus.</summary>
+    public static ResolvedProvenance RegistryUnavailable(string id) =>
+        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: "", Locator: null,
+            Status: ProvenanceStatus.RegistryUnavailable);
+}
+
+/// <summary>
+/// Batch PROV-1 FIX ROUND 1 (review M-4): why an affordance could not name
+/// a source. THREE outcomes, because a reader who is owed the truth is owed
+/// a DIFFERENT truth in each case:
+///
+/// <list type="bullet">
+/// <item><see cref="Resolved"/> -- it was named.</item>
+/// <item><see cref="Unresolved"/> -- the registry loaded and does not
+/// contain this id (or its row dangles). A piece of data with no source:
+/// OUR data bug, and the loud red notice names the id so it can be
+/// fixed.</item>
+/// <item><see cref="RegistryUnavailable"/> -- the registry did not load at
+/// all (<c>/api/sources</c> failed, or has not resolved yet). Nothing has
+/// been learned about the data. Before this fix both non-Resolved cases
+/// rendered the same accusation, so one dropped request made every "?" on
+/// the popover tell the reader the atlas had unattributed data and ask them
+/// to report a bug that did not exist.</item>
+/// </list>
+/// </summary>
+public enum ProvenanceStatus
+{
+    Resolved,
+    Unresolved,
+    RegistryUnavailable,
 }

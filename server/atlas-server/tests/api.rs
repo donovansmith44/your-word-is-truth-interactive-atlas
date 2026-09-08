@@ -912,6 +912,15 @@ async fn catechism_span_and_item_endpoints() {
     assert_eq!(items.len(), 1, "{body}");
     assert_eq!(items[0]["id"], "demo-item-1");
     assert_eq!(items[0]["name"], "Demo Catechism Item");
+    // PROV-1 FIX ROUND 1 (review M-3): every catechism row now carries its
+    // own attribution, so a PASSAGE node's THE SMALL CATECHISM section can
+    // mount a "?" -- the gap the batch disclosed with a false reason ("a
+    // bare array with no envelope to hang an additive field on"; the
+    // ELEMENT is a struct, and the array shape never moved). This fixture's
+    // graph has no `catechism` rows of its own, so the honest value here is
+    // the empty set -- an absence, not a guess. The non-empty VALUE is
+    // asserted against the shipped artifact in tests/ux/provenance.spec.ts.
+    assert!(items[0]["provenance"].is_array(), "a catechism row must carry its own provenance field: {body}");
 
     // Passage span aggregation: JOS.6.20-21 unions member verses 20 (cites
     // demo-item-1 at the ITEM level, no question) and 21 (cites demo-item-1

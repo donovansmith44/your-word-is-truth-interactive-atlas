@@ -126,17 +126,85 @@ public class ProvenanceResolverTests
     [Fact]
     public void AnEmptyIdIsUnresolvedRatherThanMatchingSomeArbitraryRow()
     {
-        Assert.False(ProvenanceResolver.Resolve(Registry(), "").IsResolved);
+        var r = ProvenanceResolver.Resolve(Registry(), "");
+        Assert.False(r.IsResolved);
+        // FIX ROUND 1 (review H-1): and it is a DATA fault, not an
+        // infrastructure one -- the registry loaded fine; what arrived was
+        // nothing to look up.
+        Assert.Equal(ProvenanceStatus.Unresolved, r.Status);
+    }
+
+    // ---- H-1: THE LOUD PATH IS LIVE, NOT DEAD CODE ----------------------
+    // The batch asserted, in three source comments and in its report, that
+    // an empty provenance renders as a LOUD unresolved notice. It did not:
+    // ProvenanceAffordance, ResolveAll, FrontierProvenance.Distinct and
+    // EventProvenanceSection each filtered whitespace ids out BEFORE
+    // resolution, so Resolve's blank branch was unreachable from the UI and
+    // a missing provenance rendered as no "?" at all -- a curatorial claim
+    // with no attribution and no sign that attribution was missing.
+    //
+    // These two tests are what would have caught it: they assert on
+    // ResolveAll (the collection entry point every call site goes through),
+    // not on Resolve (the branch that was already green while dead).
+
+    [Fact]
+    public void ResolveAllKeepsABlankIdAsALoudUnresolvedEntryInsteadOfFilteringItIntoSilence()
+    {
+        var all = ProvenanceResolver.ResolveAll(Registry(), new[] { "" });
+
+        Assert.Single(all);
+        Assert.False(all[0].IsResolved);
+        Assert.Equal(ProvenanceStatus.Unresolved, all[0].Status);
     }
 
     [Fact]
-    public void ANullRegistryResolvesNothingRatherThanThrowing()
+    public void AnEmptyListStillSaysNothingBecauseNoAttributionSectionIsNotTheSameFactAsAnIllegibleOne()
     {
-        // The document not being fetched yet is a real state (the affordance
-        // can render before Sources() resolves). "We cannot name it yet" is
-        // the honest answer, and it must not be an exception.
+        // The distinction the fix preserves. Zero ids = this surface has no
+        // attribution to make (honest absence; the component renders
+        // nothing). One blank id = something claimed an attribution and
+        // handed over nothing (loud). Collapsing the two is what made the
+        // silent blank possible.
+        Assert.Empty(ProvenanceResolver.ResolveAll(Registry(), Array.Empty<string>()));
+        Assert.Single(ProvenanceResolver.ResolveAll(Registry(), new[] { "   " }));
+    }
+
+    // ---- M-4: AN INFRASTRUCTURE FAULT IS NOT A DATA FAULT ---------------
+
+    [Fact]
+    public void ANullRegistryReportsThatTheRegistryIsUnavailableRatherThanAccusingTheData()
+    {
+        // Before this fix, `/api/sources` failing rendered
+        // `Unrecognized source "kjv". Please report it.` -- in the loudest
+        // register in the panel, on EVERY affordance on the popover -- for
+        // data whose provenance is perfectly well-formed and perfectly well
+        // registered. The reader was told the atlas had unattributed data
+        // and asked to report a bug that did not exist.
         var r = ProvenanceResolver.Resolve(null, "kjv");
+
         Assert.False(r.IsResolved);
+        Assert.Equal(ProvenanceStatus.RegistryUnavailable, r.Status);
+        // The id survives, because it is the one true thing we can still say.
+        Assert.Equal("kjv", r.Id);
+    }
+
+    [Fact]
+    public void TheTwoFailuresAreDistinguishableBecauseTheyAreDifferentFailures()
+    {
+        var infrastructure = ProvenanceResolver.Resolve(null, "kjv");
+        var data = ProvenanceResolver.Resolve(Registry(), "no-such-provenance");
+
+        Assert.NotEqual(infrastructure.Status, data.Status);
+        // ...and both are still NOT resolved, so neither can render a
+        // fabricated label.
+        Assert.False(infrastructure.IsResolved);
+        Assert.False(data.IsResolved);
+    }
+
+    [Fact]
+    public void AResolvedEntryReportsResolvedStatusSoTheThreeStatesStayTotal()
+    {
+        Assert.Equal(ProvenanceStatus.Resolved, ProvenanceResolver.Resolve(Registry(), "kjv").Status);
     }
 
     // ---- SECTION-LEVEL RESOLUTION (the leper lesson) --------------------
@@ -154,13 +222,20 @@ public class ProvenanceResolverTests
     }
 
     [Fact]
-    public void ResolveAllDedupesByIdAndDropsBlanksButPreservesOrder()
+    public void ResolveAllDedupesByIdAndPreservesOrderAndNoLongerDropsBlanks()
     {
+        // FIX ROUND 1 (review H-1): this test used to be named
+        // "...AndDropsBlanks" and asserted 2 entries for this input --
+        // it PINNED the silent blank as correct behavior. Dedup and order
+        // are unchanged; the two blanks now dedupe to ONE loud entry
+        // instead of vanishing.
         var all = ProvenanceResolver.ResolveAll(Registry(), new[] { "curated", "", "kjv", "curated", "  " });
 
-        Assert.Equal(2, all.Count);
+        Assert.Equal(4, all.Count);
         Assert.Equal("Our Own Curated Work", all[0].Title);
-        Assert.Equal("The King James Version", all[1].Title);
+        Assert.Equal(ProvenanceStatus.Unresolved, all[1].Status);
+        Assert.Equal("The King James Version", all[2].Title);
+        Assert.Equal(ProvenanceStatus.Unresolved, all[3].Status);
     }
 
     [Fact]
