@@ -38,8 +38,11 @@
    HOVER-KILL-1 retired hover boxes on event buttons for exactly the reason
    that binds again here -- the owner reads on touch devices, where "hover"
    is a tap that fires once and then cannot be dismissed. The hit target is
-   a touch-friendly 44px minimum (app.css's own .popover-provenance-button
-   rule), for the same reason. *@
+   a touch-friendly 44x24 (app.css's own .popover-provenance-button rule),
+   for the same reason. FIX ROUND 1 (review L-6): that rule used to read
+   44x44, and the vertical half of it was measured stealing clicks from the
+   verse text beneath -- provenance.spec.ts's own L-6 fixture failed against
+   it. app.css carries the measurement and the bounded trade. *@
 
 @if (_ids.Count > 0)
 {

@@ -263,9 +263,26 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                     // shift-click span the reader assembled), which no
                     // single wire field attributes -- honest absence, not a
                     // guess.
-                    textProvenance = string.IsNullOrEmpty(vDetail.Provenance)
-                        ? Array.Empty<string>()
-                        : new[] { vDetail.Provenance };
+                    // FIX ROUND 1 (review H-1, HIGH) -- A FIFTH SITE, FOUND
+                    // BY THE FIX'S OWN TEST AND NOT BY THE REVIEW. The
+                    // review named four filters that turned a blank
+                    // provenance into silence; this ternary was a fifth,
+                    // here on the VERSE FOCUS CARD -- the most-read surface
+                    // in the app. `VerseDetail.Provenance` is an
+                    // UNCONDITIONAL wire field on a VerseNode (the server
+                    // always sends it, and since this fix round it 500s
+                    // rather than sending a blank), so there is no honest
+                    // reason to drop it: a blank arriving here means the
+                    // text we just rendered has no attribution, which is
+                    // exactly what a reader must be told. The affordance is
+                    // now unconditional for a verse.
+                    //
+                    // The PassageNode case below still contributes NOTHING,
+                    // and that is a different fact, not the same one: a
+                    // shift-click span's text is assembled by the reader and
+                    // no single wire field attributes it, so there is no
+                    // attribution section to render -- honest absence.
+                    textProvenance = new[] { vDetail.Provenance ?? "" };
                 }
                 catch (Exception)
                 {

@@ -5436,9 +5436,12 @@ input:focus-visible,
    IS asking never hunts for it.
 
    TOUCH-FRIENDLY WITHOUT BEING BIG: the visible circle is 1.15rem, but
-   the PRESSABLE area is 44x44 (the standing minimum) via a transparent
-   ::before overlay, so the mark stays typographically small while the
-   target stays thumb-sized -- the mobile direction is standing, and
+   the PRESSABLE area is 44x24 (fix round 1, review L-6 -- it was 44x44,
+   and the vertical half of that demonstrably stole clicks from the
+   verse text; see the ::before rule below for the measurement and the
+   trade) via a transparent ::before overlay, so the mark stays
+   typographically small while the target stays pressable -- the mobile
+   direction is standing, and
    HOVER-KILL-1 already established that this app's affordances must
    work on a device with no hover at all. Nothing here has a :hover-only
    behavior; :hover is decoration over a click affordance that works
@@ -5481,15 +5484,34 @@ input:focus-visible,
     cursor: pointer;
 }
 
-/* The 44x44 touch target, centered on the 1.15rem mark -- invisible,
-   and deliberately NOT a size change to the mark itself. */
+/* The touch target, centered on the 1.15rem mark -- invisible, and
+   deliberately NOT a size change to the mark itself.
+
+   FIX ROUND 1 (review L-6), AND THE NUMBER CHANGED BECAUSE THE OLD ONE
+   WAS MEASURED AND FOUND GUILTY. This was 44x44. On a ~18px mark that
+   is ~13px of invisible overhang in every direction, and the button
+   carries @onclick:stopPropagation="true", so a click landing in the
+   band above the mark toggled the panel INSTEAD of reaching the verse
+   text under it. Not theoretical: provenance.spec.ts's own L-6 fixture
+   clicks 15px above the mark and FAILED against the 44x44 rule
+   (`Received: 1` -- the panel opened), then passed against this one.
+
+   44 x 24: full width on the axis where the overhang lands in empty
+   space beside the mark, and 24 CSS px tall -- WCAG 2.2 SC 2.5.8's own
+   minimum, and about 3px of vertical overhang instead of 13, which
+   stays inside the line's own leading in both registers. Growing the
+   target on the vertical axis instead would mean the button OWNING that
+   space (padding, a taller line box) rather than borrowing it from its
+   neighbours, which is a layout change to six section eyebrows and is
+   not something this fix round can verify by eye. Stated as the bounded
+   trade it is rather than left as a "44x44" claim the DOM disproves. */
 .popover-provenance-button::before {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
     width: 44px;
-    height: 44px;
+    height: 24px;
     transform: translate(-50%, -50%);
 }
 

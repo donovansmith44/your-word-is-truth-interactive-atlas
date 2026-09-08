@@ -297,23 +297,25 @@ test('PROV-1 fix round 1 (M-3): a PASSAGE node\'s cross-references and catechism
   await expect(catPanel.locator('[data-testid^="catechism-provenance-entry-"]')).toHaveCount(2);
 });
 
-test('PROV-1 fix round 1 (L-6): the 44x44 touch target does not swallow clicks meant for the text above it', async ({ page }) => {
-  // The pressable area is a transparent 44x44 ::before centred on a mark
-  // one-third that size, and the button carries
-  // @onclick:stopPropagation="true". On the verse focus card the overlay
-  // therefore extends well above and below the glyph, over the verse text.
-  // Nothing tested that a click landing in that band reaches the text
-  // instead of toggling the panel; the four report screenshots cannot show
-  // it. This is the assertion, driven by geometry rather than by eye.
+test('PROV-1 fix round 1 (L-6): the invisible touch target does not swallow clicks meant for the text above it', async ({ page }) => {
+  // THIS FIXTURE FOUND A REAL DEFECT, not a theoretical one. The pressable
+  // area WAS a transparent 44x44 ::before centred on a ~16px mark, and the
+  // button carries @onclick:stopPropagation="true", so the overlay extended
+  // ~13px above and below the glyph, over the verse text. Run against that
+  // rule this assertion failed with `Received: 1` -- the panel opened and
+  // the click never reached the text. Nothing else tested it, and the four
+  // report screenshots could not show it. app.css's ::before is now 44x24,
+  // and carries the measurement and the bounded trade in its own comment.
   await openVersePopover(page, 'GEN.1.1');
   const button = page.getByTestId('verse-text-provenance-button');
   await expect(button).toBeVisible();
   const box = await button.boundingBox();
   expect(box, 'the affordance must be laid out for this measurement to mean anything').not.toBeNull();
 
-  // 15px above the top of the visible mark -- inside the 44px overlay's own
-  // upward reach (44 vs a ~16px mark leaves ~14px of overhang each way),
-  // and over the verse text the reader is trying to click.
+  // 15px above the top of the visible mark. Inside the OLD 44px overlay's
+  // upward reach (~13px of overhang from a ~16px mark, plus the mark's own
+  // half-height), and outside the new 24px one's (~3px). Over the verse
+  // text the reader is trying to click, either way.
   await page.mouse.click(box!.x + box!.width / 2, box!.y - 15);
   await expect(
     page.getByTestId('verse-text-provenance-panel'),
