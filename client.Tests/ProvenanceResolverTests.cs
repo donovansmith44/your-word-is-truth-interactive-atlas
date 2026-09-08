@@ -226,16 +226,40 @@ public class ProvenanceResolverTests
     {
         // FIX ROUND 1 (review H-1): this test used to be named
         // "...AndDropsBlanks" and asserted 2 entries for this input --
-        // it PINNED the silent blank as correct behavior. Dedup and order
-        // are unchanged; the two blanks now dedupe to ONE loud entry
-        // instead of vanishing.
+        // it PINNED the silent blank as correct behavior.
+        //
+        // FIX ROUND 2 (review L-NEW-3): the comment then said "the two
+        // blanks now dedupe to ONE loud entry" while the assertions below
+        // said 4, with all[1] AND all[3] both Unresolved -- the comment
+        // contradicted its own test, and the behaviour it described was the
+        // better one. `""` and `"  "` are different strings but the same
+        // fact, and rendering "This item was served with no source at all"
+        // TWICE, identically, is noise. ResolveAll now normalises every
+        // flavour of blank to `""` BEFORE Distinct, so the sentence is true
+        // and the assertions match it. Still not a filter: the blank
+        // survives, still opens the button, still shouts -- once.
         var all = ProvenanceResolver.ResolveAll(Registry(), new[] { "curated", "", "kjv", "curated", "  " });
 
-        Assert.Equal(4, all.Count);
+        Assert.Equal(3, all.Count);
         Assert.Equal("Our Own Curated Work", all[0].Title);
         Assert.Equal(ProvenanceStatus.Unresolved, all[1].Status);
         Assert.Equal("The King James Version", all[2].Title);
-        Assert.Equal(ProvenanceStatus.Unresolved, all[3].Status);
+    }
+
+    [Fact]
+    public void EveryFlavourOfBlankIsTheSameFactAndSaysSoExactlyOnce()
+    {
+        // FIX ROUND 2 (review L-NEW-3), stated as its own law rather than as
+        // a side effect of the dedupe test above: null, "", "   " and "\t"
+        // all mean "we were handed nothing to attribute this with", so a
+        // section handed all four renders ONE loud notice, not four.
+        var all = ProvenanceResolver.ResolveAll(Registry(), new string[] { null!, "", "   ", "\t" });
+
+        Assert.Single(all);
+        Assert.Equal(ProvenanceStatus.Unresolved, all[0].Status);
+        Assert.Equal("", all[0].Id);
+        // ...and it is still LOUD, not filtered -- the H-1 law is unmoved.
+        Assert.False(all[0].IsResolved);
     }
 
     [Fact]

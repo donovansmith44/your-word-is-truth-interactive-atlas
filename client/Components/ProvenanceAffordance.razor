@@ -42,7 +42,14 @@
    for the same reason. FIX ROUND 1 (review L-6): that rule used to read
    44x44, and the vertical half of it was measured stealing clicks from the
    verse text beneath -- provenance.spec.ts's own L-6 fixture failed against
-   it. app.css carries the measurement and the bounded trade. *@
+   it. FIX ROUND 2 (review M-NEW-2): the overhang figures were re-measured
+   in the browser -- on the ROW register's own 16px mark a 44px overlay
+   reaches 14px above the mark's TOP EDGE and 22px above its CENTRE, a 24px
+   one 4px and 12px -- and the fixture was re-aimed at the mark's CENTRE so
+   that it discriminates by 4-6px instead of by 1px, then proven RED against
+   a restored 44px rule. app.css carries the full measurement, the WCAG
+   reading (SC 2.5.8 AA at 24x24, not SC 2.5.5 AAA at 44x44) and the bounded
+   trade. *@
 
 @if (_ids.Count > 0)
 {
@@ -237,7 +244,11 @@
         // but a list containing a blank id is one entry, so the button
         // renders and the panel shouts. "Nothing to say" and "something
         // illegible to say" must not look the same.
-        _ids = (Provenance ?? Array.Empty<string>()).Select(id => id ?? "").Distinct().ToList();
+        // FIX ROUND 2 (review L-NEW-3): NormalizeId, not `?? ""`, so "" and
+        // "  " -- different strings, same fact -- collapse to ONE loud entry
+        // instead of two identical notices. Still not a filter: the blank
+        // survives and still opens the button.
+        _ids = (Provenance ?? Array.Empty<string>()).Select(Explore.ProvenanceResolver.NormalizeId).Distinct().ToList();
         _resolved = ProvenanceResolver.ResolveAll(Sources, _ids);
     }
 

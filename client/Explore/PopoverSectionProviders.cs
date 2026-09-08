@@ -509,7 +509,7 @@ internal static class FrontierProvenance
     /// That is the distinction worth keeping: "no attribution section here"
     /// and "an attribution we cannot read" are different facts.</para></summary>
     internal static IReadOnlyList<string> Distinct(IEnumerable<string> rowProvenances) =>
-        rowProvenances.Select(p => p ?? "").Distinct().ToList();
+        rowProvenances.Select(ProvenanceResolver.NormalizeId).Distinct().ToList();
 }
 
 /// <summary>
@@ -587,8 +587,13 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 }
                 case PassageNode p:
                     xrefs = await p.XrefsAsync(api); // memoized -- its own dedicated cache
-                    // The rows' OWN attribution, deduped the same way every
-                    // other row-backed heading in this file does it.
+                    // The SECTION's attribution, which the wire carries on
+                    // each element because /api/xrefs is a bare array (fix
+                    // round 2, review M-NEW-1: every element carries the
+                    // identical set -- this is not per-row data). Deduped
+                    // the same way every other row-backed heading in this
+                    // file does it, which collapses those identical copies
+                    // back to the one value they always were.
                     xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.ProvenanceOrEmpty));
                     break;
                 default:

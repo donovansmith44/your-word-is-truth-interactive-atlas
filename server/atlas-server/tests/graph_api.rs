@@ -1131,54 +1131,96 @@ async fn no_provenance_field_the_wire_serves_is_ever_blank() {
     let app = real_app();
 
     let mut checked = 0usize;
-    let mut check = |label: &str, v: &serde_json::Value| {
+    // FIX ROUND 2 (review L-NEW-1): a SECOND counter, because the first one
+    // could not see the hole. `checked` counts blank-freeness, and an EMPTY
+    // list is trivially blank-free -- so `provenance: []` on a section that
+    // has rows passed this sweep while the client rendered it as no "?" at
+    // all (`ProvenanceAffordance.razor`'s honest-absence branch). That is
+    // H-1's exact failure mode one type-level up: the law was "no blank
+    // STRING", never "no unattributed POPULATED SECTION". `populated`
+    // counts the second kind of assertion so it cannot itself go vacuous.
+    let mut populated = 0usize;
+    let mut check = |label: &str, v: &serde_json::Value, require_non_empty: bool| {
         if let Some(s) = v.as_str() {
             assert!(!s.trim().is_empty(), "{label} rode the wire as a BLANK provenance -- the silent blank requirement 3 forbids");
             checked += 1;
         }
-        for x in v.as_array().into_iter().flatten() {
-            let s = x.as_str().unwrap_or_else(|| panic!("{label} must be a list of strings"));
-            assert!(!s.trim().is_empty(), "{label} carries a BLANK provenance id in its list");
-            checked += 1;
+        if let Some(a) = v.as_array() {
+            if require_non_empty {
+                assert!(
+                    !a.is_empty(),
+                    "{label} is EMPTY on a section that HAS rows -- the client renders an empty list as no affordance at all, \
+                     so this is the silent blank again, one type-level up: rows on screen with nothing naming their source"
+                );
+                populated += 1;
+            }
+            for x in a {
+                let s = x.as_str().unwrap_or_else(|| panic!("{label} must be a list of strings"));
+                assert!(!s.trim().is_empty(), "{label} carries a BLANK provenance id in its list");
+                checked += 1;
+            }
         }
     };
+    // "Does this section actually have rows?" -- the precondition that turns
+    // a blank-freeness check into an attribution check.
+    let has_rows = |v: &serde_json::Value| v.as_array().is_some_and(|a| !a.is_empty());
 
     let (st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
     assert_eq!(st, StatusCode::OK);
-    check("verse.provenance", &verse["provenance"]);
-    check("verse.cross_refs_provenance", &verse["cross_refs_provenance"]);
-    check("verse.catechism_provenance", &verse["catechism_provenance"]);
+    check("verse.provenance", &verse["provenance"], false);
+    check("verse.cross_refs_provenance", &verse["cross_refs_provenance"], has_rows(&verse["cross_refs"]));
+    check("verse.catechism_provenance", &verse["catechism_provenance"], has_rows(&verse["catechism"]));
     for e in verse["events"].as_array().into_iter().flatten() {
-        check("verse.events[].provenance", &e["provenance"]);
+        check("verse.events[].provenance", &e["provenance"], false);
     }
+    // Each ROW that exists must name a source: the row is on screen, so its
+    // section's "?" must have something to say.
     for c in verse["cross_refs"].as_array().into_iter().flatten() {
-        check("verse.cross_refs[].provenance", &c["provenance"]);
+        check("verse.cross_refs[].provenance", &c["provenance"], true);
     }
     for c in verse["catechism"].as_array().into_iter().flatten() {
-        check("verse.catechism[].provenance", &c["provenance"]);
+        check("verse.catechism[].provenance", &c["provenance"], true);
     }
 
     let (st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
     assert_eq!(st, StatusCode::OK);
-    check("event.provenance", &event["provenance"]);
-    check("event.witnesses_provenance", &event["witnesses_provenance"]);
-    check("event.mentions_provenance", &event["mentions_provenance"]);
+    check("event.provenance", &event["provenance"], false);
+    // `witnesses_provenance`/`mentions_provenance` are omitted (not empty)
+    // when the index has no rows -- conditional presence -- so "present"
+    // already implies "populated"; requiring non-empty here is the same law.
+    check("event.witnesses_provenance", &event["witnesses_provenance"], event.get("witnesses_provenance").is_some());
+    check("event.mentions_provenance", &event["mentions_provenance"], event.get("mentions_provenance").is_some());
     for a in event["analogues"].as_array().into_iter().flatten() {
-        check("event.analogues[].provenance", &a["provenance"]);
+        check("event.analogues[].provenance", &a["provenance"], false);
     }
 
     let (st, xrefs, _h) = get(&app, "/api/xrefs/EXO.20.3").await;
     assert_eq!(st, StatusCode::OK);
+    assert!(has_rows(&xrefs), "EXO.20.3 must carry cross references for this sweep to reach the bare-array endpoint at all");
     for x in xrefs.as_array().into_iter().flatten() {
-        check("xrefs[].provenance", &x["provenance"]);
+        check("xrefs[].provenance", &x["provenance"], true);
     }
+    // NOTE (fix round 2, and measured rather than assumed): this harness's
+    // `AtlasData` comes from `atlas_etl::compile`, whose `.finish()` builds
+    // `verse_to_catechism` BEFORE `data.catechism` is attached, so every
+    // catechism span lookup here returns `[]` -- the items exist, the
+    // derived index does not. So this loop is EMPTY here by construction and
+    // asserts nothing; the populated catechism case is held by
+    // `tests/ux/provenance.spec.ts`'s M-3 fixture against the shipped
+    // artifact. Said here so the emptiness reads as a known harness limit
+    // rather than as coverage.
     let (st, cat, _h) = get(&app, "/api/catechism/MAT.28.19").await;
     assert_eq!(st, StatusCode::OK);
     for c in cat.as_array().into_iter().flatten() {
-        check("catechism[].provenance", &c["provenance"]);
+        check("catechism[].provenance", &c["provenance"], true);
     }
 
     assert!(checked > 12, "the sweep must actually have found provenance fields to check (found {checked})");
+    assert!(
+        populated > 3,
+        "the POPULATED-SECTION half of this sweep must actually have fired (fired {populated} times) -- \
+         if it ever reaches zero, this test is back to proving only that no string is blank"
+    );
 }
 
 /// PROV-1 FIX ROUND 1 (review M-3): the PASSAGE scope gap, CLOSED.
@@ -1209,17 +1251,27 @@ async fn the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_quest
     }
 
     // THE CATECHISM HALF IS ASSERTED ELSEWHERE, AND THE REASON IS MEASURED,
-    // NOT ASSUMED. This harness's `AtlasData` comes from
-    // `atlas_etl::compile(data/raw, data/curated)`, and that output carries
-    // ZERO catechism items: `GET /api/catechism/MAT.28.19` (the CATECH-1
-    // Baptism institution verse, which has citing items in the shipped
-    // artifact) returns `[]` here, as does `/api/verse/MAT.28.19`'s own
-    // `catechism` array -- printed and read, not guessed. Every catechism
-    // assertion in this file would therefore be VACUOUS. The non-vacuous
-    // ones live where real rows exist: `api.rs::catechism_span_and_item_
-    // endpoints` (the demo fixture, which has citing items) proves the
-    // element carries the field, and `tests/ux/provenance.spec.ts` proves
-    // the VALUE against the shipped artifact through a real browser.
+    // NOT ASSUMED. `GET /api/catechism/MAT.28.19` (the CATECH-1 Baptism
+    // institution verse, which has citing items in the shipped artifact)
+    // returns `[]` in this harness, as does `/api/verse/MAT.28.19`'s own
+    // `catechism` array -- printed and read, not guessed.
+    //
+    // FIX ROUND 2: the round-1 version of this comment said the compile
+    // output "carries ZERO catechism items." THAT IS THE WRONG CAUSE, and
+    // the re-review found the right one; re-read here to confirm it rather
+    // than copied. The ITEMS are present -- `compile.rs` assigns
+    // `data.catechism = catechism` -- but it does so at :543, AFTER `:381`
+    // has already called `AtlasData::new(...).finish()`, and `finish()` is
+    // what builds the derived `verse_to_catechism` span index. So the items
+    // exist and the LOOKUP is empty. The observable claim was right; the
+    // stated cause was not.
+    //
+    // Either way every catechism assertion in this file would be VACUOUS.
+    // The non-vacuous ones live where real rows exist:
+    // `api.rs::catechism_span_and_item_endpoints` (the demo fixture, which
+    // has citing items) proves the element carries the field, and
+    // `tests/ux/provenance.spec.ts` proves the VALUE against the shipped
+    // artifact through a real browser.
     //
     // What IS assertable here is that the endpoint still serves an array
     // with the second extractor wired in -- i.e. that the route did not

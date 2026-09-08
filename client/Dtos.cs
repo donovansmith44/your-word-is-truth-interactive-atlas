@@ -418,8 +418,14 @@ public sealed record EventAnalogueDto(string Id, string Title, string Provenance
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
-/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> is this
-/// row's own attribution, the `cross_refs` family's distinct SET -- so a
+/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> is the
+/// attribution for the CROSS REFERENCES section this row belongs to -- the
+/// `cross_refs` family's distinct SET, SECTION-level, carried on the element
+/// because the endpoint is a bare array with no envelope (fix round 2,
+/// review M-NEW-1: NOT per-row, and never to be described as per-row; every
+/// element of one response carries the identical set, and the server cannot
+/// supply per-row values here at all -- see `CrossRefOut.provenance`'s own
+/// doc comment in handlers.rs). So a
 /// PASSAGE node, which reads <c>GET /api/xrefs/{sref}</c> (a bare array)
 /// rather than <c>VerseDetail.CrossRefsProvenance</c>, gets a "?" too. The
 /// batch disclosed that gap with a FALSE reason ("no envelope to hang an
@@ -454,7 +460,10 @@ public sealed record CrossRefOut(string Target, int Votes, string Preview, List<
 /// the `catechism` family's own distinct set -- the genuinely MULTI-sourced
 /// one (`concord-sc-overlap` + `curated-catechism`, measured and pinned),
 /// which is why it is a list and never one collapsed id. Same element-level
-/// additive move as <see cref="CrossRefOut.Provenance"/>; see that comment.
+/// additive move as <see cref="CrossRefOut.Provenance"/>, and the same
+/// SECTION-level granularity: carried on the element for transport, identical
+/// across every element of one response, never per-row (fix round 2, review
+/// M-NEW-1).
 public sealed record CatechismRefDto(string Id, string Name, string? Question = null, List<string>? Provenance = null)
 {
     public IReadOnlyList<string> ProvenanceOrEmpty => Provenance ?? new List<string>();

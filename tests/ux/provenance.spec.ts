@@ -297,29 +297,56 @@ test('PROV-1 fix round 1 (M-3): a PASSAGE node\'s cross-references and catechism
   await expect(catPanel.locator('[data-testid^="catechism-provenance-entry-"]')).toHaveCount(2);
 });
 
+// THE OVERLAY'S COMMITTED HEIGHT, and the click offset that discriminates
+// against it. Both are CONSTANTS on purpose (fix round 2, review M-NEW-2):
+// deriving the click point from the live CSS would make this fixture move
+// with the very rule it exists to pin, which is the vacuity trap this
+// project keeps finding. See the test below for the arithmetic and for the
+// red/green run that proved it discriminates.
+const PROVENANCE_TARGET_MAX_HEIGHT_PX = 24;
+const CLICK_ABOVE_CENTRE_PX = 18;
+
 test('PROV-1 fix round 1 (L-6): the invisible touch target does not swallow clicks meant for the text above it', async ({ page }) => {
-  // THIS FIXTURE FOUND A REAL DEFECT, not a theoretical one. The pressable
-  // area WAS a transparent 44x44 ::before centred on a ~16px mark, and the
-  // button carries @onclick:stopPropagation="true", so the overlay extended
-  // ~13px above and below the glyph, over the verse text. Run against that
-  // rule this assertion failed with `Received: 1` -- the panel opened and
-  // the click never reached the text. Nothing else tested it, and the four
-  // report screenshots could not show it. app.css's ::before is now 44x24,
-  // and carries the measurement and the bounded trade in its own comment.
+  // FIX ROUND 2 (review M-NEW-2) -- THIS FIXTURE DID NOT GUARD THE FIX, and
+  // the review's arithmetic is right. It used to click `box.y - 15`, i.e.
+  // 15px above the button's TOP EDGE (`boundingBox().y` is the top, not the
+  // centre). The ::before is `top:50%; translate(-50%,-50%)`, so on this
+  // surface -- `verse-text-provenance` is the ROW register, a 1rem/16px
+  // border box (app.css `.popover-provenance--row .popover-provenance-button`,
+  // and `*,*::before,*::after{box-sizing:border-box}`) -- a 44px overlay
+  // reached only 44/2 - 16/2 = 14px above that top edge. The old click sat
+  // 1px OUTSIDE the 44x44 rule it was supposed to indict, and 11px outside
+  // the 24px one, so REVERTING height:24px to 44px would have left it green.
+  // A one-pixel margin is not a regression guard.
+  //
+  // Two independent guards now, one structural and one behavioural, and
+  // both were run RED against a restored `height: 44px` before this text was
+  // written -- see the report's fix round 2 section for the two runs.
   await openVersePopover(page, 'GEN.1.1');
   const button = page.getByTestId('verse-text-provenance-button');
   await expect(button).toBeVisible();
   const box = await button.boundingBox();
   expect(box, 'the affordance must be laid out for this measurement to mean anything').not.toBeNull();
 
-  // 15px above the top of the visible mark. Inside the OLD 44px overlay's
-  // upward reach (~13px of overhang from a ~16px mark, plus the mark's own
-  // half-height), and outside the new 24px one's (~3px). Over the verse
-  // text the reader is trying to click, either way.
-  await page.mouse.click(box!.x + box!.width / 2, box!.y - 15);
+  // GUARD 1 (structural): the declared overlay itself. Restoring 44x44 --
+  // which a future batch may well reach for, since 44 is the AAA target --
+  // fails HERE, deterministically, with no geometry to reason about.
+  const overlayHeight = await button.evaluate((el) => parseFloat(getComputedStyle(el, '::before').height));
+  expect(
+    overlayHeight,
+    `the invisible touch target may not grow taller than ${PROVENANCE_TARGET_MAX_HEIGHT_PX}px: at 44px it demonstrably swallows clicks meant for the verse text above it (see app.css's own rule for the bounded trade, and the owner still owns the "make the button OWN the vertical space" alternative)`
+  ).toBeLessThanOrEqual(PROVENANCE_TARGET_MAX_HEIGHT_PX);
+
+  // GUARD 2 (behavioural): the swallowing itself, measured from the mark's
+  // CENTRE, which is the point the overlay is actually centred on. 18px
+  // above centre is INSIDE a 44px overlay's 22px half-reach (by 4px) and
+  // OUTSIDE a 24px overlay's 12px half-reach (by 6px) -- it discriminates
+  // in both directions with a real margin, rather than by 1px.
+  const centreY = box!.y + box!.height / 2;
+  await page.mouse.click(box!.x + box!.width / 2, centreY - CLICK_ABOVE_CENTRE_PX);
   await expect(
     page.getByTestId('verse-text-provenance-panel'),
-    'a click above the mark belongs to whatever is under it, not to the "?"'
+    `a click ${CLICK_ABOVE_CENTRE_PX}px above the mark's centre belongs to whatever is under it, not to the "?"`
   ).toHaveCount(0);
 });
 

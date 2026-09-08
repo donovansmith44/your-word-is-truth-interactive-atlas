@@ -177,12 +177,21 @@ fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
 ///
 /// FIX ROUND 1 (review L-2): this used to read three NAMED files
 /// (`edge.rs`, `chrono.rs`, `node.rs`) with three exact-string needles. A
-/// provenance-bearing row family declared in any of the crate's other 11
+/// provenance-bearing row family declared in any of the crate's other 10
 /// source files -- or spelled with a different path to the same type --
 /// left all three counts unchanged, so the guard passed and the new family
 /// escaped attribution silently: the exact hole the guard exists to close.
 /// It now walks the directory and matches the FIELD, not a file plus a
 /// verbatim type path.
+///
+/// (FIX ROUND 2, review L-NEW-4: that figure read "11". Re-measured at the
+/// moment of writing: `graph-types/src` holds 13 `.rs` files -- chrono,
+/// edge, explore, frontier, graph, id, ingest, lib, node, present, store,
+/// tests, text -- of which 3 carry declarations, so the others number 10.
+/// The original review said "the crate has 14 files", also wrong, and round
+/// 1 adapted the wrong number instead of re-running it: a count asserted in
+/// prose inside the very fix whose lesson was "walk it, don't name it".
+/// The guard below reads the directory; this sentence is only narration.)
 fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
     let types_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../graph-types/src");
     let mut out: BTreeMap<String, usize> = BTreeMap::new();

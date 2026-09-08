@@ -5438,10 +5438,11 @@ input:focus-visible,
    TOUCH-FRIENDLY WITHOUT BEING BIG: the visible circle is 1.15rem, but
    the PRESSABLE area is 44x24 (fix round 1, review L-6 -- it was 44x44,
    and the vertical half of that demonstrably stole clicks from the
-   verse text; see the ::before rule below for the measurement and the
-   trade) via a transparent ::before overlay, so the mark stays
-   typographically small while the target stays pressable -- the mobile
-   direction is standing, and
+   verse text; fix round 2, review M-NEW-2, re-measured the overhang in
+   the browser and pinned the rule with a fixture proven red against a
+   restored 44px -- see the ::before rule below) via a transparent
+   ::before overlay, so the mark stays typographically small while the
+   target stays pressable -- the mobile direction is standing, and
    HOVER-KILL-1 already established that this app's affordances must
    work on a device with no hover at all. Nothing here has a :hover-only
    behavior; :hover is decoration over a click affordance that works
@@ -5484,27 +5485,46 @@ input:focus-visible,
     cursor: pointer;
 }
 
-/* The touch target, centered on the 1.15rem mark -- invisible, and
-   deliberately NOT a size change to the mark itself.
+/* The touch target, centered on the mark -- invisible, and deliberately
+   NOT a size change to the mark itself.
 
    FIX ROUND 1 (review L-6), AND THE NUMBER CHANGED BECAUSE THE OLD ONE
-   WAS MEASURED AND FOUND GUILTY. This was 44x44. On a ~18px mark that
-   is ~13px of invisible overhang in every direction, and the button
-   carries @onclick:stopPropagation="true", so a click landing in the
+   WAS MEASURED AND FOUND GUILTY. This was 44x44, and the button carries
+   @onclick:stopPropagation="true", so a click landing in the invisible
    band above the mark toggled the panel INSTEAD of reaching the verse
-   text under it. Not theoretical: provenance.spec.ts's own L-6 fixture
-   clicks 15px above the mark and FAILED against the 44x44 rule
-   (`Received: 1` -- the panel opened), then passed against this one.
+   text under it.
 
-   44 x 24: full width on the axis where the overhang lands in empty
-   space beside the mark, and 24 CSS px tall -- WCAG 2.2 SC 2.5.8's own
-   minimum, and about 3px of vertical overhang instead of 13, which
-   stays inside the line's own leading in both registers. Growing the
-   target on the vertical axis instead would mean the button OWNING that
-   space (padding, a taller line box) rather than borrowing it from its
-   neighbours, which is a layout change to six section eyebrows and is
-   not something this fix round can verify by eye. Stated as the bounded
-   trade it is rather than left as a "44x44" claim the DOM disproves. */
+   FIX ROUND 2 (review M-NEW-2) -- THE OVERHANG ARITHMETIC, RE-MEASURED
+   IN THE BROWSER rather than inferred, because the round-1 version of
+   this comment quoted one register's figures against the other's mark.
+   Read off the live DOM (getBoundingClientRect + getComputedStyle on
+   ::before; root font-size 16px, box-sizing: border-box):
+     ROW register (.popover-provenance--row -- the verse focus card, the
+       surface that actually has text above it): mark = 16x16 border
+       box. A 44px overlay reaches 14px above the mark's TOP EDGE and
+       22px above its CENTRE; a 24px overlay, 4px and 12px.
+     HEADER register (a section eyebrow): mark = 1.15rem = 18.4px. A
+       44px overlay reaches 12.8px above the top edge; a 24px one, 2.8px.
+   So the vertical overhang drops from 14px to 4px where it mattered.
+   The round-1 figures ("~13px", "~3px") were the HEADER register's,
+   quoted against the ROW register's mark; both are stated separately now.
+
+   44 x 24: full width on the axis whose overhang lands in empty space
+   beside the mark, and 24 CSS px tall. WCAG 2.2 SC 2.5.8 (Target Size
+   (Minimum), AA) asks for 24x24 and this meets it on BOTH axes; 44x44
+   is SC 2.5.5 (Enhanced, AAA). This is a deliberate step from an
+   AAA-equivalent target down to an AA one, taken because the AAA one
+   was stealing clicks. Growing it back vertically would mean the button
+   OWNING that space (padding, a taller line box) rather than borrowing
+   it from its neighbours -- a layout change across six section eyebrows
+   that belongs to the owner, not to a fix round that cannot verify it
+   by eye.
+
+   THE GUARD: provenance.spec.ts's L-6 fixture pins this rule twice --
+   structurally (the computed ::before height may not exceed 24px) and
+   behaviourally (a click 18px above the mark's centre must not open the
+   panel). BOTH were run RED against a restored `height: 44px` and green
+   against this one before this comment was written. */
 .popover-provenance-button::before {
     content: "";
     position: absolute;

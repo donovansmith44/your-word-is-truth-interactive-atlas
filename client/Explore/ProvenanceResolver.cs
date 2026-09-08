@@ -153,13 +153,32 @@ public static class ProvenanceResolver
     /// have an attribution and handed over nothing. "Nothing to say" and
     /// "something illegible to say" are not the same fact and no longer
     /// look the same.</para>
+    ///
+    /// <para>FIX ROUND 2 (review L-NEW-3): blanks are NORMALISED before
+    /// <c>Distinct</c>, not merely null-coalesced. <c>""</c> and <c>"  "</c>
+    /// are different strings but the same fact -- "we were handed nothing to
+    /// attribute this with" -- and before this they deduped to two entries
+    /// and rendered the identical "no source at all" notice TWICE. This is a
+    /// normalisation, NOT a return of the filter H-1 removed: every blank
+    /// still survives as an entry and still shouts, there is just one of it.
+    /// Zero ids in, zero out; any number of blanks in, exactly one loud
+    /// entry out.</para>
     /// </summary>
     public static IReadOnlyList<ResolvedProvenance> ResolveAll(SourcesDocumentOut? doc, IEnumerable<string>? ids) =>
         (ids ?? Enumerable.Empty<string>())
-            .Select(id => id ?? "")
+            .Select(NormalizeId)
             .Distinct()
             .Select(id => Resolve(doc, id))
             .ToList();
+
+    /// <summary>
+    /// One provenance id, in the form every surface de-duplicates on. Each
+    /// flavour of "blank" (null, <c>""</c>, whitespace) becomes the SAME
+    /// empty string, so a section handed several of them says "no source at
+    /// all" once rather than once per flavour. Fix round 2, review L-NEW-3.
+    /// Deliberately NOT a filter -- see <see cref="ResolveAll"/> on H-1.
+    /// </summary>
+    public static string NormalizeId(string? id) => string.IsNullOrWhiteSpace(id) ? "" : id;
 
     /// <summary>
     /// Batch PROV-1, the CONFIDENCE-DISPLAY rule (brief: "Confidence is

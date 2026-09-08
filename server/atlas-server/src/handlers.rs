@@ -721,8 +721,23 @@ pub struct CrossRefOut {
     pub target: String,
     pub votes: i32,
     pub preview: String,
-    /// PROV-1 FIX ROUND 1 (review M-3): this row's own attribution, so a
-    /// PASSAGE node's CROSS REFERENCES section gets a "?" like a verse's.
+    /// PROV-1 FIX ROUND 1 (review M-3): the attribution for the CROSS
+    /// REFERENCES section these rows belong to, so a PASSAGE node's section
+    /// gets a "?" like a verse's.
+    ///
+    /// GRANULARITY, SAID ONCE AND PLAINLY (fix round 2, review M-NEW-1):
+    /// this is a SECTION-level value carried on the ELEMENT because the
+    /// endpoint is a bare array with no envelope to hang it on. Every
+    /// element of one response receives the identical set. It is NOT
+    /// per-row attribution and must never be described as such -- a
+    /// comment in `handlers::verse` did describe it that way and was
+    /// corrected. Per-row is not available here to be had:
+    /// `graph.cross_refs_by_from` holds `atlas_core::data::CrossRef`, which
+    /// carries `target` and `votes` only; the graph-types row that does
+    /// carry `provenance` has it projected away before this call site sees
+    /// it. Widening the companion index to keep it is a contract-shaped
+    /// decision this batch refused, and nothing here should imply it
+    /// already happened.
     ///
     /// THE ORIGINAL DISCLOSURE GAVE A FALSE REASON and the review was right
     /// to say so: `GET /api/xrefs/{sref}` returns a bare `Vec<CrossRefOut>`,
@@ -781,6 +796,12 @@ pub struct CatechismRefOut {
     /// This family is the genuinely MULTI-sourced one --
     /// `{concord-sc-overlap, curated-catechism}`, pinned -- which is exactly
     /// why the field is a `Vec` on both endpoints.
+    ///
+    /// GRANULARITY (fix round 2, review M-NEW-1): SECTION-level, carried on
+    /// the element because the endpoint is a bare array. Every element of
+    /// one response receives the identical set. Not per-row, and not to be
+    /// described as per-row -- see `CrossRefOut.provenance` for the full
+    /// statement and for why per-row is unavailable at these call sites.
     pub provenance: Vec<String>,
 }
 
@@ -1092,10 +1113,29 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // missing preview skips the row, per this endpoint's own "ruling 4"
     // doc comment above): only the DATA SOURCE moved.
     // PROV-1 FIX ROUND 1 (review M-3): the family set, read ONCE off the
-    // load-time companion index and cloned per row -- so the rows INSIDE
-    // `VerseDetailOut` are attributed per row, not only per section, and the
-    // two endpoints that serve `CrossRefOut` say the identical thing about
-    // the identical rows.
+    // load-time companion index and cloned onto each element, so the two
+    // endpoints that serve `CrossRefOut` say the identical thing about the
+    // identical rows and a PASSAGE node (served by the bare-array endpoint,
+    // which has no envelope) can carry a "?" at all.
+    //
+    // FIX ROUND 2 (review M-NEW-1) -- THE GRANULARITY, STATED CORRECTLY.
+    // This comment used to end "so the rows INSIDE `VerseDetailOut` are
+    // attributed per row, not only per section." THAT WAS FALSE, and the
+    // field's own DTO doc comment (`CrossRefOut.provenance`) had it right
+    // all along: this is SECTION-level attribution DUPLICATED onto each
+    // element for transport, not per-row attribution.
+    //
+    // And per-row is not available here to be had. Measured, not assumed:
+    // `graph.cross_refs_by_from` is `HashMap<String,
+    // Vec<atlas_core::data::CrossRef>>` (`service.rs`), and
+    // `atlas_core::data::CrossRef` (`data.rs`) carries `target` and `votes`
+    // and NOTHING ELSE -- the graph-types row that does carry
+    // `provenance: ProvenanceId` (`edge.rs`) has it projected away before it
+    // reaches this map. Serving the family set is the honest available
+    // answer; claiming it is per-row is not. Getting real per-row values
+    // would mean widening the companion index, which is the contract-shaped
+    // decision this batch deliberately refused, and it must not be implied
+    // to have already happened.
     let cross_refs_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
     let cross_refs: Vec<CrossRefOut> = graph
         .cross_refs_by_from
