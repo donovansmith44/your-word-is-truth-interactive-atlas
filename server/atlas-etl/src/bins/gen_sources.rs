@@ -53,9 +53,15 @@ fn main() -> Result<()> {
     fs::write(&compiled_path, json).with_context(|| format!("writing {}", compiled_path.display()))?;
 
     println!(
-        "gen_sources: wrote {} categories, {} sources to {} (validated 1:1 against LICENSES.md's per-source table)",
+        "gen_sources: wrote {} categories, {} sources, {} provenance rows to {} (validated 1:1 against LICENSES.md's per-source table)",
         doc.categories.len(),
         doc.sources.len(),
+        // Batch PROV-1: the provenance join table rides the SAME
+        // parse/validate/write path -- no second binary, no second file.
+        // Whether every row is INHABITED by the real artifact (and every
+        // carried id declared) is checked where the graph is actually
+        // loaded: atlas-graph/tests/provenance_registry_real_data.rs.
+        doc.provenances.len(),
         compiled_path.display()
     );
     Ok(())

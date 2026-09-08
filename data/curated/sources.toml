@@ -231,3 +231,206 @@ what_we_built = "Hand-authored under data/curated/ and compiled into narratives.
 license = "CC0 1.0 Universal"
 link = "https://creativecommons.org/publicdomain/zero/1.0/"
 licenses_row_key = "All curated data"
+
+# ==========================================================================
+# THE PROVENANCE JOIN TABLE (Batch PROV-1)
+#
+# Owner order, verbatim: "one thing we definitely need for EVERY PIECE OF
+# DATA is the source from which it came. openbible, etc."
+#
+# Every node and every authored/imported ROW of the compiled graph carries a
+# `ProvenanceId` -- an INGEST fact naming which pipeline stage asserted it
+# ("kjv", "theographic", "curated-eras", ...). Every [[source]] above is a
+# PUBLICATION fact naming a corpus a reader is being cited to. The two
+# vocabularies are genuinely different and always were: several ingest ids
+# legitimately map to ONE source (every hand-authored `curated-*` id is this
+# project's own work), and rewriting the graph to carry publication ids
+# instead would erase that distinction. So the mapping is DECLARED here,
+# curated, rather than guessed by string munging at the UI.
+#
+# THE ID GRAMMAR: an id is `kind` or `kind/locator`, split at the FIRST
+# slash. The `id` below is the KIND; the remainder of a real row's id is
+# THAT ROW's own locator -- exactly the {source, locator} shape
+# `atlas_graph_types::ingest::Provenance` has declared since the ingest
+# vocabulary was written. Kretzmann's adapter mints one id per commentary
+# unit ("kretzmann/jeremiah/1"), so an exact-match-only table would need
+# tens of thousands of rows to state one true fact. One row states it.
+#
+# `confidence` is spelled exactly as `atlas_graph_types::ingest::Confidence`
+# spells its own variants -- CanonicalText | Curated | Imported | Derived.
+# CanonicalText is reserved for the norming norm: an adapter cannot claim
+# canonical standing for extrabiblical text (that enum's own doc comment is
+# the law), so the KJV text carries it and nothing else does.
+#
+# CHECKED IN BOTH DIRECTIONS, fail-loud:
+#   * `atlas_etl::sources::validate_structure` -- unique ids, every `source`
+#     names a real [[source]], every `confidence` is in the vocabulary.
+#   * `atlas-graph/tests/provenance_registry_real_data.rs` -- every distinct
+#     provenance id in the REAL compiled artifact resolves to exactly one
+#     row here, AND every row here is inhabited by the real artifact. A new
+#     source entering the corpus un-curated fails the build; a row left
+#     behind by a retired adapter fails it too.
+# ==========================================================================
+
+# --- Scripture & Text -----------------------------------------------------
+
+[[provenance]]
+id = "kjv"
+source = "kjv-text"
+confidence = "CanonicalText"
+locator = "verses-kjv.json / canon.json"
+
+[[provenance]]
+id = "openbible.info-cross-references"
+source = "openbible-xrefs"
+confidence = "Imported"
+locator = "cross_references.txt"
+
+[[provenance]]
+id = "theographic-geocoding"
+source = "openbible-geocoding"
+confidence = "Imported"
+locator = "verse-to-place links"
+
+[[provenance]]
+id = "red-letter"
+source = "red-letter"
+confidence = "Imported"
+
+[[provenance]]
+id = "brainfuel"
+source = "brainfuel-bible"
+confidence = "Imported"
+
+# --- Historical & Narrative Sources ---------------------------------------
+
+[[provenance]]
+id = "theographic"
+source = "theographic"
+confidence = "Imported"
+
+[[provenance]]
+id = "theographic-people"
+source = "theographic"
+confidence = "Imported"
+locator = "people"
+
+[[provenance]]
+id = "theographic-people-groups"
+source = "theographic"
+confidence = "Imported"
+locator = "people groups"
+
+# The nine Gen-10 gentilics this project RECLASSIFIED from person to
+# people-group (PG-1a decision 1c). The underlying entity is Theographic's;
+# the reclassification is ours, and Curated is what says so.
+[[provenance]]
+id = "theographic-people-reclassified"
+source = "our-curated-work"
+confidence = "Curated"
+locator = "people-group reclassification list"
+
+[[provenance]]
+id = "kretzmann"
+source = "kretzmann-commentary"
+confidence = "Imported"
+
+# --- Lutheran Confessional Texts ------------------------------------------
+
+[[provenance]]
+id = "concord"
+source = "book-of-concord"
+confidence = "Imported"
+
+[[provenance]]
+id = "curated-catechism"
+source = "catechism-mapping"
+confidence = "Curated"
+
+# The Small Catechism's own overlap inside the Book of Concord -- catechism
+# links this project derived from the Concord corpus's own structure rather
+# than hand-authoring one at a time.
+[[provenance]]
+id = "concord-sc-overlap"
+source = "catechism-mapping"
+confidence = "Derived"
+locator = "Small Catechism / Book of Concord overlap"
+
+# --- Our Own Curated Work -------------------------------------------------
+# TOTAL-CAPTURE HONESTY (the ATTEST-1 leper lesson): a hand-authored row
+# must say so. Every id below resolves to "Our Own Curated Work", so a row
+# this project wrote can never wear an imported source's clothes at the
+# reader.
+
+[[provenance]]
+id = "curated"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-places"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-narratives"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-eras"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-polities"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-fulfillment"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-typology"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-people-groups"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "curated-named-after"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "chronology-anchors"
+source = "our-curated-work"
+confidence = "Curated"
+
+# The accounts-vs-mentions repairs and the Analogue rows (ATTEST-1, owner
+# ruling). Hand-authored corrections over imported attestations -- Curated,
+# emphatically, because THIS is the id whose honesty the leper case turned
+# on: a repaired row must not report as `event-witnesses`.
+[[provenance]]
+id = "attestation-corrections"
+source = "our-curated-work"
+confidence = "Curated"
+
+[[provenance]]
+id = "event-witnesses"
+source = "our-curated-work"
+confidence = "Curated"
+locator = "curated event witness lists"
+
+# Machine-derived at compile time from the curated chronology -- nobody
+# asserted these rows directly, and Derived is what says so.
+[[provenance]]
+id = "chronology-derivation"
+source = "our-curated-work"
+confidence = "Derived"
+locator = "compiled from temporal_order"

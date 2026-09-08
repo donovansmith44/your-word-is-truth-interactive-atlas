@@ -12,7 +12,7 @@
 //! `data/exports/` stay byte-untouched by anything this batch adds.
 
 use anyhow::{anyhow, bail, Context, Result};
-use atlas_core::sources::{SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument, CONFIDENCE_VOCABULARY};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -20,20 +20,26 @@ use std::collections::HashSet;
 struct SourcesFile {
     category: Vec<SourceCategory>,
     source: Vec<SourceEntry>,
+    /// Batch PROV-1: the `[[provenance]]` join table -- see
+    /// [`atlas_core::sources::ProvenanceEntry`]. `#[serde(default)]`
+    /// mirrors the compiled shape's own default exactly, so this parser
+    /// still reads a `sources.toml` written before this batch.
+    #[serde(default)]
+    provenance: Vec<ProvenanceEntry>,
 }
 
-/// Parses `data/curated/sources.toml`'s `[[category]]`/`[[source]]`
-/// arrays. Purely structural (TOML shape + field types) -- see
-/// [`validate_structure`] for the cross-reference checks (unique ids,
-/// every source's own category is declared) and
-/// [`validate_against_licenses`] for the LICENSES.md reconciliation;
-/// kept separate so a caller that only needs the parsed data can run
-/// exactly the checks it needs, the same discipline `curated::parse_*`
-/// uses throughout this crate.
+/// Parses `data/curated/sources.toml`'s `[[category]]`/`[[source]]`/
+/// `[[provenance]]` arrays. Purely structural (TOML shape + field types)
+/// -- see [`validate_structure`] for the cross-reference checks (unique
+/// ids, every source's own category is declared, every provenance row's
+/// own source/confidence are real) and [`validate_against_licenses`] for
+/// the LICENSES.md reconciliation; kept separate so a caller that only
+/// needs the parsed data can run exactly the checks it needs, the same
+/// discipline `curated::parse_*` uses throughout this crate.
 pub fn parse_sources(input: &str) -> Result<SourcesDocument> {
-    let f: SourcesFile =
-        toml::from_str(input).context("sources.toml: invalid TOML or does not match the [[category]]/[[source]] schema")?;
-    Ok(SourcesDocument { categories: f.category, sources: f.source })
+    let f: SourcesFile = toml::from_str(input)
+        .context("sources.toml: invalid TOML or does not match the [[category]]/[[source]]/[[provenance]] schema")?;
+    Ok(SourcesDocument { categories: f.category, sources: f.source, provenances: f.provenance })
 }
 
 /// Structural cross-checks: no duplicate category/source ids, every
@@ -62,6 +68,35 @@ pub fn validate_structure(doc: &SourcesDocument) -> Result<()> {
         }
         if s.licenses_row_key.trim().is_empty() {
             errors.push(format!("source '{}' has an empty licenses_row_key", s.id));
+        }
+    }
+
+    // Batch PROV-1: the same "declared, not merely inferred" discipline,
+    // applied to the provenance join table -- a duplicate id would make
+    // resolution ambiguous, an unknown `source` would resolve to nothing
+    // at the UI (the fail-loud law's own silent-blank failure mode), and
+    // an off-vocabulary `confidence` would render a label no
+    // `ingest::Confidence` variant backs. Whether every id is INHABITED by
+    // the real artifact (and every carried id declared here) is the other
+    // half of the law, asserted over the compiled graph itself by
+    // `atlas-graph/tests/provenance_registry_real_data.rs` -- this crate
+    // never loads the graph, so it checks exactly what it can see.
+    let mut prov_ids: HashSet<&str> = HashSet::new();
+    for p in &doc.provenances {
+        if !prov_ids.insert(p.id.as_str()) {
+            errors.push(format!("duplicate provenance id '{}'", p.id));
+        }
+        if !source_ids.contains(p.source.as_str()) {
+            errors.push(format!("provenance '{}' names undeclared source '{}'", p.id, p.source));
+        }
+        if !CONFIDENCE_VOCABULARY.contains(&p.confidence.as_str()) {
+            errors.push(format!(
+                "provenance '{}' has confidence '{}', which is not one of {CONFIDENCE_VOCABULARY:?}",
+                p.id, p.confidence
+            ));
+        }
+        if p.locator.as_deref().is_some_and(|l| l.trim().is_empty()) {
+            errors.push(format!("provenance '{}' has an empty locator -- omit the key instead", p.id));
         }
     }
 

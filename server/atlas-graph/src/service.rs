@@ -212,6 +212,18 @@ pub struct GraphService {
     /// -- same "only ever `.get()`'d by key" reasoning as `cross_refs_by_
     /// from`/`verse_text`/`persons_by_verse` above.
     pub red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
+    /// Batch PROV-1 (owner order 1, "one thing we definitely need for
+    /// EVERY PIECE OF DATA is the source from which it came"): the SAME
+    /// "companion the generic port doesn't model" class as
+    /// `narrative_legs`/`temporal_neighbors` above, built once here from
+    /// the raw, pre-store `graph` exactly the way they are. It exists
+    /// because the served graph genuinely cannot answer this: rows carry
+    /// `ProvenanceId`, `BiIndex`/`EdgeMeta` do not, and `MemSnapshot`'s
+    /// own `graph` field is private -- see `crate::provenance`'s own module
+    /// header for the full constraint, and for why widening `EdgeMeta`
+    /// (a frozen-contract change, and a string on every one of ~344k
+    /// `cites` index entries) is the wrong shape for it.
+    pub provenance: crate::provenance::ProvenanceIndex,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -578,6 +590,11 @@ impl GraphService {
         // version, not just the latest) is what would make a future
         // republish safe for any reader still holding an older snapshot,
         // without this crate needing to do anything extra to earn that.
+        // Batch PROV-1: the LAST pre-store scan -- `graph` moves into the
+        // store on the very next line, and this index is the only way any
+        // handler afterward can read a ROW's provenance at all (see
+        // `crate::provenance`'s own module header).
+        let provenance = crate::provenance::ProvenanceIndex::build(&graph);
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
@@ -606,6 +623,7 @@ impl GraphService {
             persons_by_verse,
             temporal_neighbors,
             red_letter_spans,
+            provenance,
         }
     }
 

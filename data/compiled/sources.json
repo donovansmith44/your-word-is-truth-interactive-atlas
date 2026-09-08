@@ -202,5 +202,163 @@
       "link": "https://creativecommons.org/publicdomain/zero/1.0/",
       "licenses_row_key": "All curated data"
     }
+  ],
+  "provenances": [
+    {
+      "id": "kjv",
+      "source": "kjv-text",
+      "confidence": "CanonicalText",
+      "locator": "verses-kjv.json / canon.json"
+    },
+    {
+      "id": "openbible.info-cross-references",
+      "source": "openbible-xrefs",
+      "confidence": "Imported",
+      "locator": "cross_references.txt"
+    },
+    {
+      "id": "theographic-geocoding",
+      "source": "openbible-geocoding",
+      "confidence": "Imported",
+      "locator": "verse-to-place links"
+    },
+    {
+      "id": "red-letter",
+      "source": "red-letter",
+      "confidence": "Imported",
+      "locator": null
+    },
+    {
+      "id": "brainfuel",
+      "source": "brainfuel-bible",
+      "confidence": "Imported",
+      "locator": null
+    },
+    {
+      "id": "theographic",
+      "source": "theographic",
+      "confidence": "Imported",
+      "locator": null
+    },
+    {
+      "id": "theographic-people",
+      "source": "theographic",
+      "confidence": "Imported",
+      "locator": "people"
+    },
+    {
+      "id": "theographic-people-groups",
+      "source": "theographic",
+      "confidence": "Imported",
+      "locator": "people groups"
+    },
+    {
+      "id": "theographic-people-reclassified",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "people-group reclassification list"
+    },
+    {
+      "id": "kretzmann",
+      "source": "kretzmann-commentary",
+      "confidence": "Imported",
+      "locator": null
+    },
+    {
+      "id": "concord",
+      "source": "book-of-concord",
+      "confidence": "Imported",
+      "locator": null
+    },
+    {
+      "id": "curated-catechism",
+      "source": "catechism-mapping",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "concord-sc-overlap",
+      "source": "catechism-mapping",
+      "confidence": "Derived",
+      "locator": "Small Catechism / Book of Concord overlap"
+    },
+    {
+      "id": "curated",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-places",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-narratives",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-eras",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-polities",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-fulfillment",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-typology",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-people-groups",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "curated-named-after",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "chronology-anchors",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "attestation-corrections",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": null
+    },
+    {
+      "id": "event-witnesses",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "curated event witness lists"
+    },
+    {
+      "id": "chronology-derivation",
+      "source": "our-curated-work",
+      "confidence": "Derived",
+      "locator": "compiled from temporal_order"
+    }
   ]
 }

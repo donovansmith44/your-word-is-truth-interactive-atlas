@@ -51,6 +51,10 @@ pub mod person_adapter;
 pub mod pipeline;
 pub mod place_adapter;
 pub mod polity_adapter;
+/// Batch PROV-1: the per-surface provenance companion index -- see that
+/// module's own header for why this is a companion index and NOT an
+/// `EdgeMeta` widening.
+pub mod provenance;
 pub mod red_letter_adapter;
 pub mod red_letter_spans;
 pub mod service;
