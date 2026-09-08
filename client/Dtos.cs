@@ -183,7 +183,17 @@ public sealed record VerseEventDto(string Id, string Label, TimeRangeDto? When, 
     // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): "event" | "general"
     // -- lets VerseEventMembershipSection apply the quiet, non-traversable
     // styling to a general-kind row before the click.
-    string Kind);
+    string Kind,
+    // Batch PROV-1 (owner order 1, "the source from which it came"): THIS
+    // ROW's own source -- the provenance id of the Event NODE this
+    // membership row points at ("theographic" | "curated"). Resolved
+    // against the already-fetched /api/sources document by
+    // ProvenanceResolver; rendered by the "?" affordance on the row.
+    // Non-nullable with a "" default because the server always sends it
+    // (an unconditional field, never omitted) -- the default exists only
+    // so a hand-built test fixture need not restate it, and "" is what
+    // ProvenanceResolver renders as a LOUD unresolved notice.
+    string Provenance = "");
 
 /// <summary>
 /// <c>GET /api/verse/{vref}</c>.
@@ -209,7 +219,28 @@ public sealed record VerseDetail(
     // shares this ALREADY-fetched verse-detail response (server:
     // handlers::verse's own doc comment) rather than a second round trip,
     // "one fetch, not four." Always present, possibly empty.
-    List<CatechismRefDto> Catechism);
+    List<CatechismRefDto> Catechism,
+    // Batch PROV-1: THIS VERSE's own source -- the provenance id of the
+    // TextUnit node Text was rendered from ("kjv"). The focus card's own
+    // attribution; VerseTextSectionProvider hands it to the "?" affordance.
+    string Provenance = "",
+    // Batch PROV-1: every distinct provenance id behind the CROSS
+    // REFERENCES section (the owner's own headline case, "sourced from
+    // openbible.com") and behind THE SMALL CATECHISM section. Lists, not
+    // strings -- see handlers::VerseDetailOut's own doc comments for why a
+    // section that gains a second source must start naming both.
+    List<string>? CrossRefsProvenance = null,
+    List<string>? CatechismProvenance = null)
+{
+    /// <summary>Batch PROV-1: the two section-level attributions, read
+    /// safely -- every consumer goes through these rather than
+    /// null-checking at each call site (the same shape
+    /// <see cref="EventDetail.MentionedInOrEmpty"/> already established for
+    /// an omitted-when-empty wire list).</summary>
+    public IReadOnlyList<string> CrossRefsProvenanceOrEmpty => CrossRefsProvenance ?? new List<string>();
+
+    public IReadOnlyList<string> CatechismProvenanceOrEmpty => CatechismProvenance ?? new List<string>();
+}
 
 /// Batch N: one (narrative, event) position a verse or event touches --
 /// mirrors <c>atlas_core::narrative::NarrativePosition</c> exactly. Shared
@@ -333,7 +364,24 @@ public sealed record EventDetail(
     // EventAnaloguesSection as "Similar Accounts", directly below PARALLEL
     // ACCOUNTS (the owner's own placement amendment). Same omitted-when-empty
     // convention as MentionedIn.
-    List<EventAnalogueDto>? Analogues = null)
+    List<EventAnalogueDto>? Analogues = null,
+    // Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event
+    // node's provenance ("theographic" for an imported event, "curated"
+    // for one this project authored). The focus card's own attribution,
+    // and the TOTAL-CAPTURE HONESTY case in one field: a hand-authored
+    // event resolves to "Our Own Curated Work" and therefore cannot
+    // silently wear Theographic's clothes at the reader.
+    string Provenance = "",
+    // Batch PROV-1: every distinct provenance id behind THIS EVENT's
+    // PARALLEL ACCOUNTS and "Mentioned in" sections -- the Attests /
+    // Mentions rows for THIS event, never a family average. Multi-valued
+    // because `attests` is genuinely multi-source in the real corpus
+    // (event-witnesses + attestation-corrections), and THE LEPER LESSON is
+    // that collapsing those is how a hand-repaired row gets attributed to
+    // an importer. Omitted-when-empty on the wire; read via the
+    // *OrEmpty helpers below.
+    List<string>? WitnessesProvenance = null,
+    List<string>? MentionsProvenance = null)
 {
     /// <summary>Batch ATTEST-1: the omitted-when-empty wire fields, read
     /// safely. Every consumer goes through these two rather than
@@ -341,11 +389,21 @@ public sealed record EventDetail(
     public IReadOnlyList<string> MentionedInOrEmpty => MentionedIn ?? new List<string>();
 
     public IReadOnlyList<EventAnalogueDto> AnaloguesOrEmpty => Analogues ?? new List<EventAnalogueDto>();
+
+    /// <summary>Batch PROV-1: the two section-level attributions, read
+    /// safely -- same shape as the two ATTEST-1 helpers above.</summary>
+    public IReadOnlyList<string> WitnessesProvenanceOrEmpty => WitnessesProvenance ?? new List<string>();
+
+    public IReadOnlyList<string> MentionsProvenanceOrEmpty => MentionsProvenance ?? new List<string>();
 }
 
 /// Batch ATTEST-1: one end of an `Analogue` -- id + title, enough to render
 /// an explorable row without a second fetch.
-public sealed record EventAnalogueDto(string Id, string Title);
+/// Batch PROV-1: plus the joining row's OWN provenance -- genuinely
+/// per-row, not either end's node provenance and not the family's. An
+/// Analogue is a curatorial CLAIM about two events; attributing it to
+/// whoever supplied the events would name the wrong asserter.
+public sealed record EventAnalogueDto(string Id, string Title, string Provenance = "");
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
@@ -506,7 +564,31 @@ public sealed record LandMaskOut(JsonElement Rings);
 /// single source of truth, mirroring <c>atlas_core::sources::
 /// SourcesDocument</c> field for field. The Sources page renders this
 /// directly -- no hardcoded duplicate prose anywhere in this client.
-public sealed record SourcesDocumentOut(List<SourceCategoryDto> Categories, List<SourceEntryDto> Sources);
+/// Batch PROV-1: <see cref="Provenances"/> is the join table between a
+/// provenance id as the graph carries it and the <see cref="SourceEntryDto"/>
+/// that names/describes/licenses it -- see
+/// <c>atlas_core::sources::ProvenanceEntry</c> (server) for why the two
+/// vocabularies are genuinely different and the mapping is declared rather
+/// than guessed. Nullable-with-null-default only so a hand-built test
+/// fixture need not restate it; the real endpoint always sends the array.
+public sealed record SourcesDocumentOut(
+    List<SourceCategoryDto> Categories,
+    List<SourceEntryDto> Sources,
+    List<ProvenanceEntryDto>? Provenances = null)
+{
+    public IReadOnlyList<ProvenanceEntryDto> ProvenancesOrEmpty => Provenances ?? new List<ProvenanceEntryDto>();
+}
+
+/// Batch PROV-1: one row of the provenance join table -- mirrors
+/// <c>atlas_core::sources::ProvenanceEntry</c> field for field.
+/// <see cref="Id"/> is the registry KEY (the provenance id up to its first
+/// '/', see <see cref="Explore.ProvenanceResolver"/>), <see cref="Source"/>
+/// names a <see cref="SourceEntryDto.Id"/>, <see cref="Confidence"/> is
+/// spelled as <c>atlas_graph_types::ingest::Confidence</c>'s own variant
+/// ("CanonicalText" | "Curated" | "Imported" | "Derived"), and
+/// <see cref="Locator"/> is what inside the source this id draws on, when
+/// the registry can say so honestly.
+public sealed record ProvenanceEntryDto(string Id, string Source, string Confidence, string? Locator = null);
 
 public sealed record SourceCategoryDto(string Id, string Label);
 

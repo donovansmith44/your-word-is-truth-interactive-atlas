@@ -5393,6 +5393,151 @@ input:focus-visible,
     background: rgba(44, 74, 112, .08);
 }
 
+/* ------------------------------------------------------------------
+   Batch PROV-1: ProvenanceAffordance.razor -- the "?" that names a
+   frontier surface's own source (owner order 2, verbatim: "add a ?
+   button on our frontier interface that gives provenance (i.e., sourced
+   from openbible.com) or whatever").
+
+   UNOBTRUSIVE BY DESIGN: a small bronze-outlined circle riding the
+   baseline of a section eyebrow, quiet enough that a reader who is not
+   asking never notices it, and always in the same place so a reader who
+   IS asking never hunts for it.
+
+   TOUCH-FRIENDLY WITHOUT BEING BIG: the visible circle is 1.15rem, but
+   the PRESSABLE area is 44x44 (the standing minimum) via a transparent
+   ::before overlay, so the mark stays typographically small while the
+   target stays thumb-sized -- the mobile direction is standing, and
+   HOVER-KILL-1 already established that this app's affordances must
+   work on a device with no hover at all. Nothing here has a :hover-only
+   behavior; :hover is decoration over a click affordance that works
+   identically without it.
+
+   INLINE, NEVER OVERLAID: .popover-provenance-panel is `display: block`
+   in normal flow -- no position: absolute/fixed anywhere in this block.
+   That is the whole reason ProvenanceAffordance.razor is not a §5
+   escape hatch (see that file's own header): a reader cannot get stuck
+   in something that never covers anything. ------------------------- */
+.popover-provenance {
+    display: inline-flex;
+    align-items: baseline;
+    margin-left: .4rem;
+}
+
+.popover-provenance-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    padding: 0;
+    font-family: var(--font-serif);
+    font-size: .72rem;
+    line-height: 1;
+    color: var(--bronze-ink);
+    background: none;
+    border: 1px solid var(--bronze);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* The 44x44 touch target, centered on the 1.15rem mark -- invisible,
+   and deliberately NOT a size change to the mark itself. */
+.popover-provenance-button::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+}
+
+.popover-provenance-button:hover,
+.popover-provenance-button.is-open {
+    background: rgba(138, 107, 61, .12);
+}
+
+.popover-provenance-button:focus-visible {
+    outline: 2px solid var(--lapis);
+    outline-offset: 2px;
+}
+
+.popover-provenance-panel {
+    display: block;
+    margin: .35rem 0 .5rem;
+    padding: .45rem .6rem;
+    background: var(--parchment-raised);
+    border-left: 2px solid var(--bronze);
+    border-radius: 3px;
+    font-family: var(--font-serif);
+    font-size: .8rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+}
+
+.popover-provenance-entry {
+    display: block;
+}
+
+    .popover-provenance-entry + .popover-provenance-entry {
+        margin-top: .45rem;
+        padding-top: .45rem;
+        border-top: 1px solid rgba(138, 107, 61, .25);
+    }
+
+/* "Sourced from OpenBible" -- the owner's own register, and the one line
+   a reader is actually here for, so it carries the darker --bronze-ink
+   (7.85:1 on --parchment-raised, this popover's own documented floor)
+   while everything under it stays --ink-soft. */
+.popover-provenance-title {
+    display: block;
+    color: var(--bronze-ink);
+}
+
+.popover-provenance-what,
+.popover-provenance-locator,
+.popover-provenance-license {
+    display: block;
+    font-size: .76rem;
+}
+
+/* Shown ONLY when confidence is not the obvious default (see
+   ProvenanceResolver.ConfidenceNote) -- so it must read as a CLAIM, not
+   as more metadata: small caps, letterspaced, the same eyebrow register
+   .catechism-section-heading uses, one step quieter. */
+.popover-provenance-confidence {
+    display: block;
+    margin-top: .15rem;
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .74rem;
+    color: var(--bronze-ink);
+}
+
+/* THE FAIL-LOUD LAW, visibly: an unresolved provenance id is never a
+   blank and never a guessed label. Deliberately the loudest thing in
+   this block. */
+.popover-provenance-error {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    color: #8A2A2A;
+}
+
+/* KNOB 4's "row" register -- inline in a list row / under a focus card,
+   one step smaller and tighter than the section-eyebrow default. */
+.popover-provenance--row {
+    margin-left: 0;
+}
+
+    .popover-provenance--row .popover-provenance-button {
+        width: 1rem;
+        height: 1rem;
+        font-size: .66rem;
+    }
+
 /* EVT-3 Ticket 2: RefsList.razor's own SET of account refs (under a
    Chronology arrow) -- a flex-wrapped row of small monospace ref pills,
    echoing .popover-passage-ref-label's own mono/lapis ref register (the

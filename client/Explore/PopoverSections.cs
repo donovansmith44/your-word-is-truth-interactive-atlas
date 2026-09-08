@@ -328,6 +328,15 @@ public static class PopoverSectionRegistry
         // ALSO carrying the divergence-only story-thread line that
         // survives of the retired narrative nav -- EventChronologySection's
         // own doc comment has the full story); THEN PARALLEL ACCOUNTS.
+        // Batch PROV-1 (owner order 1 + order 2, applied to the EVENT
+        // focus card): Order 134 -- immediately ABOVE
+        // EventDateAndPlacesSection's 135, so the event's own "?" sits
+        // directly under the event header, one line above the time/place
+        // block EVT-META-TOP-1 put there. See EventProvenanceSection's own
+        // doc comment for why it is its own provider rather than a rider on
+        // a neighbouring one (every neighbour is conditional; an event's
+        // SOURCE is not).
+        (new EventProvenanceSection(), 134),
         (new EventDateAndPlacesSection(), 135),
         (new EventChronologySection(), 140),
         (new EventWitnessesSection(), 160),

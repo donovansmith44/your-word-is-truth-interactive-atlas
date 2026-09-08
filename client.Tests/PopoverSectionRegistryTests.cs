@@ -109,4 +109,29 @@ public class PopoverSectionRegistryTests
         Assert.Single(providers, p => p is EventAnaloguesSection);
         Assert.Single(providers, p => p is EventMentionsSection);
     }
+
+    // Batch PROV-1 (owner order 2, "add a ? button on our frontier
+    // interface"): the EVENT's own "?" sits DIRECTLY under the event
+    // header, one line above the time/place block EVT-META-TOP-1 put
+    // there ("time + place block should be moved to the top, right below
+    // the event header"). Asserted as ADJACENCY over the real resolved
+    // registry, the same discipline SimilarAccountsRendersImmediatelyBelow
+    // ParallelAccounts above uses -- so a future provider registered at
+    // any Order value between 134 and 135 fails loud rather than quietly
+    // pushing the attribution away from the title it attributes.
+    [Fact]
+    public void EventProvenanceRendersImmediatelyAboveTheEventsTimeAndPlaceBlock()
+    {
+        var provenance = IndexOfProvider<EventProvenanceSection>();
+        var timePlace = IndexOfProvider<EventDateAndPlacesSection>();
+        Assert.True(provenance >= 0, "the EVENT's own provenance affordance (EventProvenanceSection) must be registered");
+        Assert.True(timePlace >= 0, "EventDateAndPlacesSection must be registered");
+        Assert.Equal(provenance + 1, timePlace);
+    }
+
+    [Fact]
+    public void TheEventProvenanceProviderIsRegisteredExactlyOnce()
+    {
+        Assert.Single(PopoverSectionRegistry.Providers, p => p is EventProvenanceSection);
+    }
 }

@@ -243,6 +243,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
         string book;
         int chapter, focalFrom, focalTo;
         string compactText;
+        IReadOnlyList<string> textProvenance = Array.Empty<string>();
 
         switch (node)
         {
@@ -253,7 +254,18 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 focalFrom = focalTo = vVerse;
                 try
                 {
-                    compactText = (await v.DetailAsync(api)).Text; // memoized -- CrossRefsSection shares this exact fetch, never a second one
+                    var vDetail = await v.DetailAsync(api); // memoized -- CrossRefsSection shares this exact fetch, never a second one
+                    compactText = vDetail.Text;
+                    // Batch PROV-1: THE FOCUS CARD's own attribution -- "the
+                    // source from which it came" for the very text being
+                    // read ("kjv" -> The King James Version). A PassageNode
+                    // gets none: its text comes from PassageNode.Text (a
+                    // shift-click span the reader assembled), which no
+                    // single wire field attributes -- honest absence, not a
+                    // guess.
+                    textProvenance = string.IsNullOrEmpty(vDetail.Provenance)
+                        ? Array.Empty<string>()
+                        : new[] { vDetail.Provenance };
                 }
                 catch (Exception)
                 {
@@ -293,20 +305,136 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             focalVerses = new List<VerseOut>();
         }
 
+        var registry = await FrontierProvenance.RegistryOrNull(api);
+
         RenderFragment fragment = builder =>
         {
-            builder.OpenComponent<Components.VerseTextSection>(0);
-            builder.AddAttribute(1, "Book", book);
-            builder.AddAttribute(2, "Chapter", chapter);
-            builder.AddAttribute(3, "FocalFromVerse", focalFrom);
-            builder.AddAttribute(4, "FocalToVerse", focalTo);
-            builder.AddAttribute(5, "CompactText", compactText);
-            builder.AddAttribute(6, "FocalVerses", (IReadOnlyList<VerseOut>)focalVerses);
-            builder.AddAttribute(7, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            var seq = 0;
+            builder.OpenComponent<Components.VerseTextSection>(seq++);
+            builder.AddAttribute(seq++, "Book", book);
+            builder.AddAttribute(seq++, "Chapter", chapter);
+            builder.AddAttribute(seq++, "FocalFromVerse", focalFrom);
+            builder.AddAttribute(seq++, "FocalToVerse", focalTo);
+            builder.AddAttribute(seq++, "CompactText", compactText);
+            builder.AddAttribute(seq++, "FocalVerses", (IReadOnlyList<VerseOut>)focalVerses);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
+
+            // Batch PROV-1: BELOW the text, not above it -- the verse is
+            // the subject, its attribution is a footnote to it, and the
+            // "row" register is the quieter of the component's two (see
+            // ProvenanceAffordance.Register). Renders nothing at all for a
+            // Passage, where textProvenance is empty.
+            seq = FrontierProvenance.Affordance(
+                builder, seq, textProvenance, registry, "verse-text-provenance",
+                "Source for this verse's text", Components.ProvenanceAffordance.RowRegister);
         };
         return new PopoverSection("verse-text", fragment);
     }
+}
+
+/// <summary>
+/// Batch PROV-1 (owner order 2: "add a ? button on our frontier interface
+/// that gives provenance"): the ONE place a frontier section mounts the "?"
+/// affordance. Every call site below goes through these two helpers rather
+/// than hand-rolling a component call, so the eyebrow-plus-"?" shape is one
+/// implementation, not nine near-identical copies that could drift -- the
+/// same reason <see cref="CatechismSectionRendering"/> exists for titled
+/// paragraphs.
+///
+/// <para>NO NEW FETCH. <see cref="RegistryOrNull"/> reads
+/// <c>AtlasClient.Sources()</c>, which is <see cref="AsyncMemo{T}"/>-backed
+/// (see <c>AtlasClient._sourcesCache</c>): the first section to ask starts
+/// ONE request; every other section on this popover, every later popover,
+/// and the Sources page itself await that same task. The sub-100ms frontier
+/// law is why this is not a per-popover fetch, and
+/// <c>tests/ux/provenance.spec.ts</c> asserts the single request by counting
+/// it rather than by trusting this paragraph.</para>
+///
+/// <para>Fail-soft on the FETCH, fail-loud on the RESOLUTION -- the two are
+/// different failures and are treated differently on purpose. A registry
+/// that could not be fetched must not take a whole frontier section down
+/// with it (the graceful-degradation policy every lazy fetch in this file
+/// follows), so <see cref="RegistryOrNull"/> returns null and the section
+/// still renders its real content. An id the registry does NOT contain is
+/// the other thing entirely -- a piece of data with no source -- and
+/// <c>ProvenanceAffordance</c> says so out loud, naming the id.</para>
+/// </summary>
+internal static class FrontierProvenance
+{
+    /// <summary>The already-memoized registry, or null if it could not be
+    /// fetched at all -- see this class's own doc comment for why those two
+    /// failures are handled differently.</summary>
+    internal static async Task<SourcesDocumentOut?> RegistryOrNull(AtlasClient api)
+    {
+        try
+        {
+            return await api.Sources();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>A section eyebrow with its own "?" beside it -- the SAME
+    /// <c>.catechism-section-heading</c> small-caps treatment every section
+    /// heading in this file already uses, with the affordance as its last
+    /// child so the two share a baseline and the "?" can never drift away
+    /// from the heading it explains. Returns the next sequence number, the
+    /// same convention <see cref="CatechismSectionRendering.TitledParagraphs"/>
+    /// follows with its <c>ref int seq</c>.</summary>
+    internal static int Heading(
+        RenderTreeBuilder builder,
+        int seq,
+        string text,
+        string headingTestId,
+        IReadOnlyList<string>? provenance,
+        SourcesDocumentOut? sources,
+        string provenanceTestId,
+        string buttonLabel)
+    {
+        builder.OpenElement(seq++, "p");
+        builder.AddAttribute(seq++, "class", "catechism-section-heading");
+        builder.AddAttribute(seq++, "data-testid", headingTestId);
+        builder.AddContent(seq++, text);
+        seq = Affordance(builder, seq, provenance, sources, provenanceTestId, buttonLabel, Components.ProvenanceAffordance.HeaderRegister);
+        builder.CloseElement();
+        return seq;
+    }
+
+    /// <summary>The affordance on its own, for a surface that is not a
+    /// section eyebrow (a focus card). Conditional presence is the
+    /// component's own job -- an empty id list renders nothing at all, so a
+    /// caller never has to guard the call.</summary>
+    internal static int Affordance(
+        RenderTreeBuilder builder,
+        int seq,
+        IReadOnlyList<string>? provenance,
+        SourcesDocumentOut? sources,
+        string testId,
+        string buttonLabel,
+        string register)
+    {
+        builder.OpenComponent<Components.ProvenanceAffordance>(seq++);
+        builder.AddAttribute(seq++, "Provenance", provenance);
+        builder.AddAttribute(seq++, "TestId", testId);
+        builder.AddAttribute(seq++, "ButtonLabel", buttonLabel);
+        builder.AddAttribute(seq++, "Register", register);
+        builder.AddAttribute(seq++, "Sources", sources);
+        builder.CloseComponent();
+        return seq;
+    }
+
+    /// <summary>The distinct provenance ids of a set of ROWS, in first-seen
+    /// order. Used where the wire carries provenance per row (an Analogue
+    /// row, an event-membership row) and the affordance sits on the section
+    /// heading: the heading then names every source ACTUALLY behind the
+    /// rows shown -- never a family average, and never just the first row's
+    /// (the leper lesson: two sources under one heading must both be
+    /// visible).</summary>
+    internal static IReadOnlyList<string> Distinct(IEnumerable<string> rowProvenances) =>
+        rowProvenances.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
 }
 
 /// <summary>
@@ -356,14 +484,36 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         List<CrossRefOut> xrefs;
+        // Batch PROV-1: the owner's own headline case ("sourced from
+        // openbible.com"). VERSE-ONLY, and that is a disclosed, honest gap
+        // rather than an oversight: a VerseNode reads `VerseDetail`, which
+        // carries `CrossRefsProvenance`; a PassageNode reads
+        // `GET /api/xrefs/{sref}`, whose response is a bare
+        // `Vec<CrossRefOut>` array with no envelope to hang an additive
+        // field on -- turning it into an object would be a WIRE SHAPE
+        // change, which this batch's own additive-only rule forbids. A
+        // passage's cross-references therefore render with no "?" at all
+        // (conditional presence, the component's own rule) rather than with
+        // a guessed one.
+        IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
         try
         {
-            xrefs = node switch
+            switch (node)
             {
-                VerseNode v => (await v.DetailAsync(api)).CrossRefs, // memoized -- shares VerseTextSectionProvider's own fetch
-                PassageNode p => await p.XrefsAsync(api), // memoized -- its own dedicated cache
-                _ => new List<CrossRefOut>(),
-            };
+                case VerseNode v:
+                {
+                    var detail = await v.DetailAsync(api); // memoized -- shares VerseTextSectionProvider's own fetch
+                    xrefs = detail.CrossRefs;
+                    xrefProvenance = detail.CrossRefsProvenanceOrEmpty;
+                    break;
+                }
+                case PassageNode p:
+                    xrefs = await p.XrefsAsync(api); // memoized -- its own dedicated cache
+                    break;
+                default:
+                    xrefs = new List<CrossRefOut>();
+                    break;
+            }
         }
         catch (Exception)
         {
@@ -428,6 +578,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp).ToList();
         var lazySpans = spans.Skip(EdgeSectionRegistry.Cites.InitialClamp).ToList();
         var units = await ResolveUnits(api, eagerSpans);
+        var registry = await FrontierProvenance.RegistryOrNull(api);
 
         RenderFragment body = builder =>
         {
@@ -438,11 +589,9 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             // SAME shared small-caps eyebrow every other section title in
             // this popover platform uses (THE SMALL CATECHISM/EVENT/
             // PARALLEL ACCOUNTS/PARALLELS precedent), not a new one.
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading");
-            builder.AddAttribute(seq++, "data-testid", "xrefs-section-heading");
-            builder.AddContent(seq++, "Cross References");
-            builder.CloseElement();
+            seq = FrontierProvenance.Heading(
+                builder, seq, "Cross References", "xrefs-section-heading",
+                xrefProvenance, registry, "xrefs-provenance", "Sources for these cross references");
 
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
@@ -594,14 +743,30 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         List<CatechismRefDto> items;
+        // Batch PROV-1: VERSE-ONLY, the identical disclosed gap
+        // CrossRefsSection carries and for the identical reason -- a
+        // PassageNode reads `GET /api/catechism/{sref}`, a bare array with
+        // no envelope to hang an additive field on. A passage's catechism
+        // rows render with no "?" rather than with a guessed one.
+        IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
         try
         {
-            items = node switch
+            switch (node)
             {
-                VerseNode v => (await v.DetailAsync(api)).Catechism, // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
-                PassageNode p => await p.CatechismAsync(api), // memoized -- its own dedicated cache, mirrors XrefsAsync
-                _ => new List<CatechismRefDto>(),
-            };
+                case VerseNode v:
+                {
+                    var detail = await v.DetailAsync(api); // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
+                    items = detail.Catechism;
+                    catechismProvenance = detail.CatechismProvenanceOrEmpty;
+                    break;
+                }
+                case PassageNode p:
+                    items = await p.CatechismAsync(api); // memoized -- its own dedicated cache, mirrors XrefsAsync
+                    break;
+                default:
+                    items = new List<CatechismRefDto>();
+                    break;
+            }
         }
         catch (Exception)
         {
@@ -613,14 +778,14 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             return null;
         }
 
+        var registry = await FrontierProvenance.RegistryOrNull(api);
+
         RenderFragment body = builder =>
         {
             var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading");
-            builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
-            builder.AddContent(seq++, "THE SMALL CATECHISM");
-            builder.CloseElement();
+            seq = FrontierProvenance.Heading(
+                builder, seq, "THE SMALL CATECHISM", "catechism-section-heading",
+                catechismProvenance, registry, "catechism-provenance", "Sources for this catechism mapping");
 
             // M-D3 (U2/U6, owner: "Catechism defaults to 2 shown + U2
             // mechanics"): CatechismList.razor owns the actual rendering +
@@ -1300,7 +1465,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        return new PopoverSection("event-membership", RenderRows("event", dated, ctx));
+        return new PopoverSection("event-membership", RenderRows("event", dated, ctx, await FrontierProvenance.RegistryOrNull(api)));
     }
 
     /// Shared by <see cref="VersePassageMembershipSection"/> below -- ONE
@@ -1309,14 +1474,23 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
     /// heading text and the PopoverSection's own testid differ, both
     /// derived from <paramref name="kind"/> via
     /// <see cref="EventMembershipHeading"/> above).
-    internal static RenderFragment RenderRows(string kind, IReadOnlyList<VerseEventDto> events, IPopoverSectionContext ctx) => builder =>
+    internal static RenderFragment RenderRows(string kind, IReadOnlyList<VerseEventDto> events, IPopoverSectionContext ctx, SourcesDocumentOut? registry) => builder =>
     {
         var seq = 0;
-        builder.OpenElement(seq++, "p");
-        builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
-        builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-        builder.AddContent(seq++, EventMembershipHeading.For(kind));
-        builder.CloseElement();
+        // Batch PROV-1: PER-ROW provenance (each row's own Event NODE says
+        // "theographic" or "curated"), gathered to the one heading that
+        // covers them. A verse belonging to both an imported event and a
+        // hand-authored one names BOTH sources here -- TOTAL-CAPTURE
+        // HONESTY: our own curated work must say so, and cannot hide inside
+        // a Theographic-looking list.
+        seq = FrontierProvenance.Heading(
+            builder, seq,
+            EventMembershipHeading.For(kind),
+            "event-section-heading", // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
+            FrontierProvenance.Distinct(events.Select(e => e.Provenance)),
+            registry,
+            "event-membership-provenance-" + kind,
+            "Sources for these " + kind + " rows");
 
         foreach (var e in events)
         {
@@ -1381,7 +1555,74 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows("general", general, ctx));
+        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows("general", general, ctx, await FrontierProvenance.RegistryOrNull(api)));
+    }
+}
+
+/// <summary>
+/// Batch PROV-1 (owner order 1, "one thing we definitely need for EVERY
+/// PIECE OF DATA is the source from which it came", applied to an EVENT
+/// node's own focus card): the "?" for the EVENT ITSELF -- not for any one
+/// of its sections, but for the claim that this event exists at all.
+///
+/// <para>ITS OWN PROVIDER, and that is the point. Every other candidate
+/// home for it is CONDITIONAL: <see cref="EventDateAndPlacesSection"/>
+/// returns null for an undated, placeless event; <see cref="EventWitnessesSection"/>
+/// returns null when there are fewer than two accounts; the Espousal of
+/// Mary (ATTEST-1's founding case) has neither. An event's SOURCE is not
+/// conditional on any of that -- the node exists, so somebody asserted it,
+/// so the reader can always ask who. Registered at Order 134, immediately
+/// above <see cref="EventDateAndPlacesSection"/>'s 135, which puts it
+/// directly under the event header -- the same "right below the event
+/// header" placement EVT-META-TOP-1 won for the time/place block, one line
+/// higher.</para>
+///
+/// <para>TOTAL-CAPTURE HONESTY lives here (brief requirement 4, and the
+/// ATTEST-1 leper lesson): a hand-authored event's node provenance is
+/// literally <c>"curated"</c>, which the registry maps to "Our Own Curated
+/// Work" -- so this affordance is exactly where a curated row stops being
+/// able to wear an imported source's clothes. An imported one says
+/// Theographic, and the two cannot look alike.</para>
+///
+/// <para>Renders NOTHING when the event carries no provenance at all
+/// (impossible against the real artifact, where the resolution law holds,
+/// but honest rather than fabricated if it ever were) -- the component's
+/// own empty-list rule, no extra guard here.</para>
+/// </summary>
+public sealed class EventProvenanceSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Event";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not EventNode ev)
+        {
+            return null;
+        }
+
+        EventDetail detail;
+        try
+        {
+            detail = await ev.DetailAsync(api); // memoized -- the SAME fetch EventDateAndPlacesSection/EventWitnessesSection share, never a second one
+        }
+        catch (Exception)
+        {
+            return null; // fail soft, same policy as every sibling Event section
+        }
+
+        if (string.IsNullOrEmpty(detail.Provenance))
+        {
+            return null; // conditional presence -- no claim to attribute, so no affordance
+        }
+
+        var registry = await FrontierProvenance.RegistryOrNull(api);
+        RenderFragment body = builder =>
+        {
+            FrontierProvenance.Affordance(
+                builder, 0, new[] { detail.Provenance }, registry, "event-provenance",
+                "Source for this event", Components.ProvenanceAffordance.RowRegister);
+        };
+        return new PopoverSection("event-provenance", body);
     }
 }
 
@@ -1444,6 +1685,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
 /// NAME (inside the button, unchanged) is the only per-event text left;
 /// <see cref="Components.ArrowNav"/>'s own doc comment has the rest.
 /// </summary>
+
 /// <summary>
 /// CHRONO-MERGE-1 (owner NOD 2026-08-24: "put chronology up top... nix the
 /// narrative thing from hover menu"; POPOVER-LAW-1's own first
@@ -1775,17 +2017,24 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         }
 
         var multi = units.Count > 1;
+        var registry = await FrontierProvenance.RegistryOrNull(api);
 
         RenderFragment body = builder =>
         {
             var seq = 0;
             if (multi)
             {
-                builder.OpenElement(seq++, "p");
-                builder.AddAttribute(seq++, "class", "catechism-section-heading");
-                builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-                builder.AddContent(seq++, "PARALLEL ACCOUNTS");
-                builder.CloseElement();
+                // Batch PROV-1, THE LEPER LESSON made visible: this event's
+                // OWN Attests rows, not the family's. The real corpus has
+                // both `event-witnesses` (imported bulk) and
+                // `attestation-corrections` (ATTEST-1's hand-repaired rows),
+                // and an event carrying both shows BOTH here -- the whole
+                // point being that a hand-authored row must never wear an
+                // imported source's clothes.
+                seq = FrontierProvenance.Heading(
+                    builder, seq, "PARALLEL ACCOUNTS", "event-section-heading",
+                    detail.WitnessesProvenanceOrEmpty, registry, "event-witnesses-provenance",
+                    "Sources for these parallel accounts");
             }
 
             builder.OpenComponent<Components.PassageList>(seq++);
@@ -1869,14 +2118,15 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
 
         var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, (IExplorable)new VerseNode(v))).ToList();
 
+        var registry = await FrontierProvenance.RegistryOrNull(api);
+
         RenderFragment body = builder =>
         {
             var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading");
-            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-            builder.AddContent(seq++, "MENTIONED IN");
-            builder.CloseElement();
+            seq = FrontierProvenance.Heading(
+                builder, seq, "MENTIONED IN", "event-section-heading",
+                detail.MentionsProvenanceOrEmpty, registry, "event-mentions-provenance",
+                "Sources for these mentions");
 
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);
@@ -1950,14 +2200,20 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, "event"), a.Id))
             .ToList();
 
+        var registry = await FrontierProvenance.RegistryOrNull(api);
+        // Batch PROV-1: PER-ROW provenance, gathered to the heading -- an
+        // `Analogue` row carries its own asserter (a curatorial CLAIM about
+        // two events, not a fact about either), so the heading names every
+        // source actually behind the rows shown, never a family average.
+        var analogueProvenance = FrontierProvenance.Distinct(analogues.Select(a => a.Provenance));
+
         RenderFragment body = builder =>
         {
             var seq = 0;
-            builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading");
-            builder.AddAttribute(seq++, "data-testid", "event-section-heading");
-            builder.AddContent(seq++, "SIMILAR ACCOUNTS");
-            builder.CloseElement();
+            seq = FrontierProvenance.Heading(
+                builder, seq, "SIMILAR ACCOUNTS", "event-section-heading",
+                analogueProvenance, registry, "event-analogues-provenance",
+                "Sources for these similar accounts");
 
             builder.OpenComponent<Components.RefsList>(seq++);
             builder.AddAttribute(seq++, "Refs", (IReadOnlyList<Components.RefsList.RefDescriptor>)refs);

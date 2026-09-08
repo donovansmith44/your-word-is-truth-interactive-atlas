@@ -1,0 +1,197 @@
+@* Batch PROV-1, owner order 2 verbatim: "add a ? button on our frontier
+   interface that gives provenance (i.e., sourced from openbible.com) or
+   whatever."
+
+   ONE small component, parameterized by the provenance it explains, usable
+   on ANY frontier section and on the focus card itself -- the composability
+   bar ("make sure all the new bits made for this are composable and
+   reusable"), the same bar FrontierMetadataRow.razor already answers for
+   time/place. It is NOT event-only markup, NOT section-only markup, and
+   knows nothing about which surface mounted it: it takes a list of
+   provenance ids plus a label, and renders what the registry says about
+   them. THE KNOB TABLE is in batch-prov1-report.md; each parameter carries
+   its own reason at the bottom of this file.
+
+   NOT AN OVERLAY, ON PURPOSE (the §5 escape-hatch question, answered rather
+   than labelled -- EVT-3's Q-1 lesson is that a label without the machinery
+   is a finding, and the converse trap is inventing machinery to justify a
+   label). This is an INLINE DISCLOSURE: the panel renders in normal flow
+   directly beneath its own button, inside the section that owns it, and
+   pushes the popover's subsequent content down. Nothing floats, nothing is
+   positioned over anything, there is no focus trap, no backdrop and no
+   scroll lock -- so §5's escape-hatch law, which governs surfaces a reader
+   can get STUCK in, does not bind here, and saying so plainly is more
+   honest than ceremonially registering an IEscapeHatch whose Invoke()
+   could not carry this panel's parameters anyway. MapFocusHatch.cs's own
+   header documents that exact conflict: every real IEscapeHatch in this app
+   is constructed ONCE at ViewRegistrySetup.Build() time over DI singletons
+   with a PARAMETERLESS Invoke(), and this panel's content is per-surface
+   DATA varying per invocation -- the same shape that ruled MapFocusHatch
+   out of the formal machinery.
+
+   ESC still closes it and the button keeps focus -- not because a hatch
+   contract demands it, but because a keyboard user must be able to undo any
+   toggle they made.
+
+   HOVER-KILL-1 IS LAW HERE. This opens on CLICK / ENTER / SPACE and on
+   nothing else; there is no hover handler anywhere in this file.
+   HOVER-KILL-1 retired hover boxes on event buttons for exactly the reason
+   that binds again here -- the owner reads on touch devices, where "hover"
+   is a tap that fires once and then cannot be dismissed. The hit target is
+   a touch-friendly 44px minimum (app.css's own .popover-provenance-button
+   rule), for the same reason. *@
+
+@if (_ids.Count > 0)
+{
+    <span class="@RootClass" data-testid="@TestId">
+        <button type="button"
+                class="popover-provenance-button@(_open ? " is-open" : "")"
+                data-testid="@ButtonTestId"
+                aria-expanded="@(_open ? "true" : "false")"
+                aria-controls="@_panelId"
+                aria-label="@ButtonLabel"
+                title="@ButtonLabel"
+                @onclick="Toggle"
+                @onclick:stopPropagation="true"
+                @onkeydown="OnKeyDown"
+                @onkeydown:stopPropagation="true">?</button>
+
+        @if (_open)
+        {
+            <span class="popover-provenance-panel" id="@_panelId" role="note" data-testid="@PanelTestId">
+                @foreach (var p in _resolved)
+                {
+                    @if (!p.IsResolved)
+                    {
+                        @* THE FAIL-LOUD LAW, visibly. Never a silent blank,
+                           never a fabricated label -- the offending id is
+                           named so it can actually be fixed. *@
+                        <span class="popover-provenance-error" data-testid="@UnresolvedTestId">
+                            Unrecognized source &quot;@p.Id&quot;. Please report it.
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="popover-provenance-entry" data-testid="@EntryTestId(p)">
+                            <span class="popover-provenance-title">Sourced from @p.Title</span>
+                            <span class="popover-provenance-what">@p.WhatItIs</span>
+                            @if (ProvenanceResolver.ConfidenceNote(p.Confidence) is { } note)
+                            {
+                                @* Shown only when it is NOT the obvious
+                                   default -- a CanonicalText claim and a
+                                   Derived claim must not look alike. See
+                                   ProvenanceResolver.ConfidenceNote for the
+                                   rule and why "Imported" is the silent
+                                   one. *@
+                                <span class="popover-provenance-confidence" data-testid="@ConfidenceTestId(p)">@note</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(p.Locator))
+                            {
+                                <span class="popover-provenance-locator" data-testid="@LocatorTestId(p)">Locator: @p.Locator</span>
+                            }
+                            <span class="popover-provenance-license">License: @p.License</span>
+                        </span>
+                    }
+                }
+            </span>
+        }
+    </span>
+}
+
+@code {
+    // ---------------------------------------------------------------
+    // THE KNOBS. Four presentation/behavior knobs plus one data
+    // dependency, and every one is genuinely varied by a live call site
+    // today -- no knob is here "for later" (the composability bar cuts
+    // both ways: reusable, but never speculative).
+    // ---------------------------------------------------------------
+
+    /// <summary>KNOB 1 -- WHAT IT EXPLAINS. The provenance ids behind this
+    /// surface, in order. ONE id for a node or a single row; SEVERAL for a
+    /// section genuinely drawing on several sources (the real `attests`
+    /// family does), and all of them render, because collapsing them is
+    /// precisely the leper failure mode this affordance exists to make
+    /// visible. An empty or null list renders NOTHING at all -- not an
+    /// empty button, not a placeholder -- which is the same "return null
+    /// when empty" conditional-presence discipline every section provider
+    /// in this app already follows.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<string>? Provenance { get; set; }
+
+    /// <summary>KNOB 2 -- IDENTITY. The stable test/CSS hook, exactly like
+    /// <c>FrontierMetadataRow.TestId</c>. Button and panel derive theirs
+    /// from it ("{TestId}-button", "{TestId}-panel"), so a fixture never
+    /// has to guess a second name.</summary>
+    [Parameter, EditorRequired] public string TestId { get; set; } = default!;
+
+    /// <summary>KNOB 3 -- THE ACCESSIBLE NAME. "?" means nothing to a
+    /// screen reader (or to a touch user with no hover), so every call site
+    /// says what THIS "?" is about: "Sources for cross references",
+    /// "Source for this event". Required rather than defaulted on purpose
+    /// -- one generic default would be silently wrong on most surfaces, and
+    /// a WRONG accessible name is worse than a missing one.</summary>
+    [Parameter, EditorRequired] public string ButtonLabel { get; set; } = default!;
+
+    /// <summary>KNOB 4 -- REGISTER. "header" (the default) sits on a
+    /// section eyebrow beside a small-caps heading; "row" sits inline in a
+    /// list row, one step smaller and tighter. A pure presentation knob
+    /// with two live values today (see app.css's own
+    /// <c>.popover-provenance--row</c> modifier). An unrecognized value
+    /// falls back to the header register rather than throwing: a styling
+    /// mistake is not a reason to break a reader's page.</summary>
+    [Parameter] public string Register { get; set; } = HeaderRegister;
+
+    /// <summary>THE DATA DEPENDENCY (not a knob). The already-fetched
+    /// registry, PASSED IN rather than injected, which is what keeps this
+    /// component pure and synchronously renderable: the caller -- a section
+    /// provider -- has already awaited <c>AtlasClient.Sources()</c>, which
+    /// is <see cref="AsyncMemo{T}"/>-backed, so the whole app shares ONE
+    /// fetch and this component can never start a second one (the sub-100ms
+    /// frontier law). Null (the document not resolved yet) resolves every
+    /// id as unresolved, which is the honest answer: we genuinely cannot
+    /// name it yet.</summary>
+    [Parameter] public SourcesDocumentOut? Sources { get; set; }
+
+    public const string HeaderRegister = "header";
+    public const string RowRegister = "row";
+
+    private bool _open;
+    private readonly string _panelId = "prov-" + Guid.NewGuid().ToString("N")[..8];
+    private IReadOnlyList<string> _ids = Array.Empty<string>();
+    private IReadOnlyList<ResolvedProvenance> _resolved = Array.Empty<ResolvedProvenance>();
+
+    private string RootClass => Register == RowRegister
+        ? "popover-provenance popover-provenance--row"
+        : "popover-provenance";
+
+    private string ButtonTestId => TestId + "-button";
+    private string PanelTestId => TestId + "-panel";
+    private string UnresolvedTestId => TestId + "-unresolved";
+    private string EntryTestId(ResolvedProvenance p) => TestId + "-entry-" + p.Id;
+    private string ConfidenceTestId(ResolvedProvenance p) => TestId + "-confidence-" + p.Id;
+    private string LocatorTestId(ResolvedProvenance p) => TestId + "-locator-" + p.Id;
+
+    protected override void OnParametersSet()
+    {
+        // Resolution is a pure in-memory join over an ALREADY-fetched
+        // document -- no fetch here, by construction (see
+        // ProvenanceResolver's own doc comment and the sub-100ms frontier
+        // law it cites). `_ids` is deduped the same way ResolveAll dedupes,
+        // so the render gate and the rendered list can never disagree about
+        // whether there is anything to say.
+        _ids = (Provenance ?? Array.Empty<string>()).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        _resolved = ProvenanceResolver.ResolveAll(Sources, _ids);
+    }
+
+    private void Toggle() => _open = !_open;
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        // Enter/Space are already what a native <button> does; only Escape
+        // needs handling, so a keyboard user can undo the toggle without
+        // hunting for the button again.
+        if (e.Key == "Escape")
+        {
+            _open = false;
+        }
+    }
+}
