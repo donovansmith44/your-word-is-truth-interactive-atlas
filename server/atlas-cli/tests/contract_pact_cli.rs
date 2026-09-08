@@ -125,9 +125,14 @@ fn render(v: &Value) -> String {
 
 /// Same law as the HTTP recorder's: regenerate from the real binary
 /// against the real graph, and fail on any difference from the committed
-/// copy. `ATLAS_BLESS_PACT=1` re-records -- a re-record switch, not a gate
-/// escape hatch: it changes what the evidence says, never whether the gate
-/// runs.
+/// copy.
+///
+/// `ATLAS_BLESS_PACT=1` RE-RECORDS **AND THEN FAILS** (fix round 1, review
+/// C-1). It used to write and `return`, so the test passed unconditionally
+/// and any shell with the variable already exported turned this leg of the
+/// contract gate green forever while rewriting the evidence under it.
+/// Blessing is now incapable of producing a passing test -- see the HTTP
+/// recorder's own note for the full reasoning.
 #[test]
 fn the_recorded_cli_pact_still_matches_the_real_binary() {
     let rendered = render(&build_pact());
@@ -137,8 +142,13 @@ fn the_recorded_cli_pact_still_matches_the_real_binary() {
         std::fs::create_dir_all(path.parent().expect("the pact has a parent directory"))
             .expect("the pact directory must be creatable");
         std::fs::write(&path, &rendered).expect("the pact must be writable");
-        eprintln!("ATLAS_BLESS_PACT=1: re-recorded {} ({} bytes)", path.display(), rendered.len());
-        return;
+        panic!(
+            "ATLAS_BLESS_PACT=1: RE-RECORDED {} ({} bytes) -- failing on purpose.\n  \
+             Blessing rewrites the evidence, so it must never be able to report a passing gate.\n  \
+             Review the diff, then re-run WITHOUT ATLAS_BLESS_PACT to verify against it.",
+            path.display(),
+            rendered.len()
+        );
     }
 
     let committed = std::fs::read_to_string(&path).unwrap_or_else(|_| {

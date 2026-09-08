@@ -58,14 +58,35 @@ if ! git rev-parse --verify --quiet "$base" >/dev/null; then
   fi
 fi
 
-# Every suite that carries its own VERSION. contracts/atlas-edge is
-# deliberately NOT here: it is map-generator's suite, versioned by
-# map-generator's own contracts/VERSION, and a change to it is a cross-repo
-# negotiation rather than a bump we may declare on their behalf.
-suites=(contracts/atlas-graph-contract contracts/map-api-consumer)
+# THE SUITES WE VERSION, enumerated from BOTH SIDES of the diff.
+#
+# Fix round 1, review H-2: this used to be a literal array walked with
+# `[ -d "$suite" ] || continue`, which ran BEFORE the diff was consulted --
+# so deleting an entire suite directory made it vanish from the loop and
+# the gate exited 0 with no bump demanded. Deleting a suite is the most
+# MAJOR thing that can happen to it, and it was the one change that
+# classified as nothing at all.
+#
+# So: a suite is any directory that carries a VERSION file EITHER now OR at
+# the base. One present then and absent now is a deletion, and deletion is
+# MAJOR by definition.
+#
+# `contracts/atlas-edge` is deliberately still excluded -- it is
+# map-generator's suite, versioned by map-generator's own contracts/VERSION,
+# and a bump there is a cross-repo negotiation, not a number we may declare
+# on their behalf. What guards THAT directory is `contract-gate.sh`'s leg 0,
+# which forbids `@target` in any received suite outright (review C-2); it is
+# not left unguarded merely because it is unversioned.
+list_versioned_suites() {
+  # now
+  find contracts -mindepth 1 -maxdepth 3 -name VERSION -not -path 'contracts/runner/*' -printf '%h\n' 2>/dev/null
+  # at the base
+  git ls-tree -r --name-only "$base" -- contracts 2>/dev/null \
+    | grep -E '/VERSION$' | sed 's|/VERSION$||'
+}
+mapfile -t suites < <(list_versioned_suites | sort -u)
 
 rank() { case "$1" in none) echo 0;; patch) echo 1;; minor) echo 2;; major) echo 3;; esac; }
-name() { case "$1" in 0) echo none;; 1) echo patch;; 2) echo minor;; 3) echo major;; esac; }
 
 # A step or scenario line -- the lines that ARE the expectations. Prose,
 # comments and Vocabulary rows are deliberately excluded: changing them
@@ -75,10 +96,24 @@ expectation_line='^[+-][[:space:]]*(Scenario:|Given |When |Then |And |But |@)'
 failed=0
 
 for suite in "${suites[@]}"; do
-  [ -d "$suite" ] || continue
+  [ -z "$suite" ] && continue
 
   # --- what the diff requires -------------------------------------------
   required=none
+
+  # DELETION FIRST, before any `-d` test could skip the suite entirely.
+  if [ ! -d "$suite" ]; then
+    if git rev-parse --verify --quiet "$base:$suite" >/dev/null 2>&1 \
+       || git ls-tree -r --name-only "$base" -- "$suite" 2>/dev/null | grep -q .; then
+      echo "contract-semver-gate: $suite" >&2
+      echo "  the entire suite was DELETED. That is the most MAJOR change a suite can" >&2
+      echo "  undergo, and there is no VERSION left to declare it in." >&2
+      echo "  Deleting a published contract suite is a cross-consumer break: say so in a" >&2
+      echo "  CHANGELOG that survives the deletion, or keep the suite." >&2
+      failed=1
+    fi
+    continue
+  fi
 
   status="$(git diff --name-status "$base"..HEAD -- "$suite" || true)"
   [ -z "$status" ] && continue
@@ -122,8 +157,26 @@ except Exception:
 
   # Expectation lines removed or changed -> MAJOR; only added -> MINOR.
   diffbody="$(git diff -U0 "$base"..HEAD -- "$suite" || true)"
-  removed="$(printf '%s\n' "$diffbody" | grep -E "^-" | grep -E "$expectation_line" || true)"
+  removed_all="$(printf '%s\n' "$diffbody" | grep -E "^-" | grep -E "$expectation_line" || true)"
   added="$(printf '%s\n' "$diffbody" | grep -E "^\+" | grep -E "$expectation_line" || true)"
+
+  # `@target` is the one line whose two directions mean OPPOSITE things, so
+  # it is classified on its own before the general rules see it.
+  #
+  # REMOVING it is a guarantee GAINED: the scenario was already running and
+  # already printed red every time; taking the tag off makes it start
+  # failing the gate, which is strictly more promise, not less. Fix round 1,
+  # review M-3: the general "an expectation line was removed" branch caught
+  # `-  @target` and demanded MAJOR, which contradicted this batch's own
+  # shipped CHANGELOG (it promises MINOR for exactly this, once bibex gains
+  # its version field). It failed in the safe direction, but a classifier
+  # that tells you MAJOR when the documented answer is MINOR is a classifier
+  # people learn to distrust.
+  removed="$(printf '%s\n' "$removed_all" | grep -vE '^-[[:space:]]*@target([[:space:]]|$)' || true)"
+  if printf '%s\n' "$removed_all" | grep -qE '^-[[:space:]]*@target([[:space:]]|$)'; then
+    echo "  MINOR: @target was removed -- a scenario that only reported is now enforced"
+    [ "$(rank "$required")" -lt "$(rank minor)" ] && required=minor
+  fi
 
   if [ -n "$removed" ]; then
     echo "  MAJOR: an existing expectation line was removed or changed:"
@@ -131,10 +184,11 @@ except Exception:
     required=major
   fi
 
-  # @target added to a scenario is a guarantee WITHDRAWN, even though it is
-  # an added line. Checked explicitly, because the additive-looking shape is
-  # exactly how a suite would smuggle a loss of coverage past a gate that
-  # only counted additions.
+  # ADDING it is a guarantee WITHDRAWN, even though it is an added line.
+  # Checked explicitly, because the additive-looking shape is exactly how a
+  # suite would smuggle a loss of coverage past a gate that only counted
+  # additions. (On a RECEIVED suite it is not a bump class at all -- it is
+  # forbidden outright; see contract-gate.sh's leg 0.)
   if printf '%s\n' "$added" | grep -qE '^\+[[:space:]]*@target'; then
     echo "  MAJOR: @target was added -- a scenario's guarantee is being withdrawn"
     required=major

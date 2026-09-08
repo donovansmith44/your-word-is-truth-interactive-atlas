@@ -365,13 +365,27 @@ fn render(v: &Value) -> String {
 /// Regenerate the pact from the live graph and compare it to the committed
 /// copy, byte for byte.
 ///
-/// `ATLAS_BLESS_PACT=1` re-records instead of comparing. That is a
-/// RE-RECORD switch, not a gate escape hatch, and the distinction is the
-/// whole point: it changes what the evidence SAYS, it does not change
-/// whether the gate RUNS. After blessing, the pact is a committed file
-/// that a reviewer reads in the diff, and every expectation still executes
-/// against it. `--bless` on map-generator's own runner is the same idea
-/// and the same precedent.
+/// # `ATLAS_BLESS_PACT=1` RE-RECORDS **AND THEN FAILS** (fix round 1, C-1)
+///
+/// Last round this branch wrote the file and `return`ed, so the test passed
+/// unconditionally. The review found the consequence: any shell that
+/// already exports the variable -- a leftover from a legitimate re-record,
+/// a line in a profile, a CI variable -- makes leg 3 of the contract gate
+/// pass forever while silently rewriting the evidence underneath it. The
+/// defence offered was that this is "a re-record switch, not an escape
+/// hatch"; that was a claim about how people would behave, not about what
+/// the code does, and the brief's rule is that an escape hatch on a gate is
+/// the gate's death.
+///
+/// So blessing is now **incapable of producing a green test**. It writes
+/// the pact and panics. A re-record therefore requires a human to read the
+/// diff and re-run without the variable, which is exactly the workflow the
+/// old comment merely *described*.
+///
+/// This closes the bypass at the source. `scripts/contract-gate.sh` closes
+/// it twice more -- it strips the variable from leg 3's environment, and it
+/// asserts afterwards that `contracts/pacts` is unchanged in the working
+/// tree, which catches every present and future re-record path in one line.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_recorded_pact_still_matches_the_live_graph() {
     let pact = build_pact().await;
@@ -382,8 +396,13 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
         std::fs::create_dir_all(path.parent().expect("the pact has a parent directory"))
             .expect("the pact directory must be creatable");
         std::fs::write(&path, &rendered).expect("the pact must be writable");
-        eprintln!("ATLAS_BLESS_PACT=1: re-recorded {} ({} bytes)", path.display(), rendered.len());
-        return;
+        panic!(
+            "ATLAS_BLESS_PACT=1: RE-RECORDED {} ({} bytes) -- failing on purpose.\n  \
+             Blessing rewrites the evidence, so it must never be able to report a passing gate.\n  \
+             Review the diff, then re-run WITHOUT ATLAS_BLESS_PACT to verify against it.",
+            path.display(),
+            rendered.len()
+        );
     }
 
     let committed = std::fs::read_to_string(&path).unwrap_or_else(|_| {

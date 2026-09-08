@@ -1,39 +1,53 @@
 #!/usr/bin/env bash
-# THE CONTRACT GATE (batch CDC-1).
+# THE CONTRACT GATE (batch CDC-1; hardened in fix round 1).
 #
 # Owner order 2: "we will get to a point where we cannot push or do
 # anything if our contracts don't agree. that is target shape."
 #
-# THERE IS NO ADVISORY MODE AND NO SKIP FLAG, by construction: this script
-# reads no environment variable that can weaken it and takes no --allow
-# argument. Every leg is required. Project history is the reason -- every
-# "temporarily allow" in this repo became permanent.
+# ---------------------------------------------------------------------
+# WHAT THE FIRST ROUND GOT WRONG, recorded here because the header is
+# where the false claim lived
+# ---------------------------------------------------------------------
+# This script used to assert it "reads no environment variable that can
+# weaken it" -- six lines above `CARGO="${CARGO:-...}"`. The review
+# demonstrated `CARGO=/usr/bin/true bash scripts/contract-gate.sh` printing
+# CONTRACT GATE: PASSED with leg 3 never executing a line of Rust. `CABAL`
+# was the same hole one level up, and an inherited `ATLAS_BLESS_PACT=1` was
+# a third: both recorders wrote the pact and returned green.
 #
-# The one switch that exists nearby, ATLAS_BLESS_PACT=1, is a RE-RECORD
-# switch on the recorders, not an escape hatch on this gate: it changes
-# what the evidence SAYS (and leaves that change in a committed file for a
-# reviewer to read in the diff), never whether the gate RUNS.
+# That claim is not repeated here. What is claimed now is only what
+# `scripts/gate-selftest.sh` ATTEMPTS and fails to do -- every bypass is
+# shipped as a test that tries to lie to the gate and asserts the gate
+# refuses.
 #
-# WHY IT IS FAST ENOUGH TO RUN PRE-PUSH. Legs 1, 2 and 4 are the whole
-# corpus and take well under a second: they need no server and no database,
-# because the expectations execute against a recorded pact. Leg 3 is the
-# expensive one -- it recompiles the ETL and rebuilds the real graph -- and
-# it is the leg that makes leg 4 mean anything, so it is not optional. Run
-# `scripts/contract-gate.sh --fast` to run legs 1, 2, 4 and 5 alone while
-# iterating on expectations; that is NOT a weakened gate, because --fast
-# refuses to be the last word (see below) and the full gate is what a push
-# runs.
+# The four defences, in order of how much they carry:
+#   1. leg 3 runs with ATLAS_BLESS_PACT stripped from its environment, and
+#      the recorders themselves now FAIL when blessed (a bless can never be
+#      a green test);
+#   2. after leg 3, `git diff --quiet -- contracts/pacts` -- if the evidence
+#      moved while the gate ran, the gate failed, whatever wrote it. One
+#      line that catches every present and future re-record path;
+#   3. the toolchains are VERIFIED, not accepted: `cargo --version` must say
+#      cargo, `cabal --version` must say cabal;
+#   4. suites are DETECTED from the filesystem and CLASSIFIED by
+#      contracts/SUITES, and an unregistered suite is a hard failure -- so a
+#      new, renamed or received suite cannot silently escape legs 0, 1, 2
+#      and 4 the way contracts/atlas-edge once did.
+#
+# There is no --allow, no advisory mode and no skip flag. `--fast` skips
+# only leg 3 and EXITS 3, never 0: it reports success for what it ran and
+# failure for what it did not, so it is usable while iterating and unusable
+# as a final answer.
 #
 # Usage:
 #   scripts/contract-gate.sh              full gate (what pre-push runs)
 #   scripts/contract-gate.sh --fast       skip the recorders while iterating
-#   scripts/contract-gate.sh --base REF   semver base (default origin/main)
+#   scripts/contract-gate.sh --base REF   semver base (default: auto)
 set -uo pipefail
 cd "$(dirname "$0")/.."
-ROOT="$PWD"
 
 FAST=0
-BASE="origin/main"
+BASE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --fast) FAST=1; shift;;
@@ -42,19 +56,41 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
-CABAL="${CABAL:-$HOME/.local/bin/cabal}"
-
 fail=0
 step() { printf '\n=== %s ===\n' "$1"; }
 check() { if [ "$1" -ne 0 ]; then echo "FAILED: $2" >&2; fail=1; fi; }
 
-# Our suites, plus the one we received. atlas-edge is map-generator's
-# expectations OF US; running it here is the entire point of CDC-1 (see
-# contracts/atlas-edge/RECEIVED.md).
-OURS="contracts/atlas-graph-contract"
-THEIRS="contracts/atlas-edge"
-CONSUMER="contracts/map-api-consumer"
+# ---------------------------------------------------------------------
+# TOOLCHAIN: verified, not accepted (review C-1)
+# ---------------------------------------------------------------------
+# Honouring $CARGO/$CABAL is genuinely useful (a rustup shim, a pinned
+# cabal), so the fix is not to stop reading them -- it is to stop trusting
+# them. A tool that does not identify itself as the tool it claims to be
+# cannot run a leg of this gate.
+CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
+CABAL="${CABAL:-$HOME/.local/bin/cabal}"
+
+verify_tool() {
+  local bin="$1" want="$2" out
+  if ! out="$("$bin" --version 2>/dev/null)"; then
+    echo "FAILED: $want at '$bin' could not be executed." >&2
+    echo "  A gate cannot be run by a tool that does not exist." >&2
+    return 1
+  fi
+  case "$out" in
+    "$want"*) return 0;;
+    *)
+      echo "FAILED: '$bin' does not identify itself as $want." >&2
+      echo "  It said: $(printf '%s' "$out" | head -1)" >&2
+      echo "  Refusing to run a gate leg through a substituted toolchain." >&2
+      return 1;;
+  esac
+}
+
+step "toolchain"
+verify_tool "$CARGO" cargo || exit 1
+verify_tool "$CABAL" cabal || exit 1
+echo "cargo and cabal verified"
 
 step "building the contract runner"
 ( cd contracts/runner && "$CABAL" build all >/dev/null 2>&1 )
@@ -66,66 +102,200 @@ if [ -z "${RUNNER:-}" ] || [ ! -x "$RUNNER" ]; then
 fi
 
 # ---------------------------------------------------------------------
-# LEG 1 -- TOTALITY. Every step in every suite matches exactly one
-# definition. Catches an orphan step (an expectation nobody executes,
-# which reads as coverage and is not) and an ambiguous one (two
-# definitions racing, which makes a suite's meaning depend on list order).
+# SUITES: DETECTED from the filesystem, CLASSIFIED by contracts/SUITES
+# (review C-2)
 # ---------------------------------------------------------------------
-step "leg 1/5: totality (check)"
-for d in "$OURS" "$THEIRS" "$CONSUMER"; do
-  [ -d "$d" ] || continue
+# A literal array is how `contracts/atlas-edge` came to be excluded from
+# every tag check. So detection is the filesystem's job -- a suite is the
+# nearest ancestor of a .feature file carrying VERSION or RECEIVED.md -- and
+# nothing can escape it.
+#
+# But the filesystem cannot say WHICH executor owns a suite, and the first
+# version of this loop happily pointed the Haskell runner at the AQC corpus
+# (whose steps live in two other harnesses) and produced a wall of reds for
+# a perfectly healthy suite. `scripts/gate-selftest.sh` caught that on its
+# first run. So classification lives in `contracts/SUITES`, and an
+# unregistered suite is a HARD FAILURE: adding one without declaring who
+# runs it cannot be done quietly, which is the property the literal array
+# lacked.
+REGISTRY="contracts/SUITES"
+[ -f "$REGISTRY" ] || { echo "FAILED: no $REGISTRY -- the gate cannot tell which harness owns which suite" >&2; exit 1; }
+
+harness_of() { # <dir>
+  awk -v want="$1" '$1 !~ /^#/ && NF>=2 && $1==want {print $2; found=1} END{if(!found) print ""}' "$REGISTRY" | head -1
+}
+
+suite_root() {
+  local d="$1"
+  while [ -n "$d" ] && [ "$d" != "." ] && [ "$d" != "contracts" ]; do
+    if [ -f "$d/VERSION" ] || [ -f "$d/RECEIVED.md" ]; then printf '%s\n' "$d"; return; fi
+    d="$(dirname "$d")"
+  done
+  printf '%s\n' "$1"
+}
+
+ROOTS=()
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  r="$(suite_root "$(dirname "$f")")"
+  case " ${ROOTS[*]:-} " in *" $r "*) ;; *) ROOTS+=("$r");; esac
+done < <(find contracts -name '*.feature' -not -path 'contracts/runner/*' 2>/dev/null | sort)
+
+if [ "${#ROOTS[@]}" -eq 0 ]; then
+  echo "FAILED: no contract suites found under contracts/ -- an empty corpus is a broken gate, not a passing one" >&2
+  exit 1
+fi
+
+# Suites this gate's own executor runs. Anything unregistered stops the gate.
+RUN_ROOTS=()      # we are the provider: legs 0,1,2,4
+CHECK_ROOTS=()    # we are the consumer: legs 0,1,2 only
+for d in "${ROOTS[@]}"; do
+  h="$(harness_of "$d")"
+  case "$h" in
+    contract-runner)          RUN_ROOTS+=("$d"); CHECK_ROOTS+=("$d");;
+    contract-runner-consumer) CHECK_ROOTS+=("$d");;
+    aqc-dual)                 ;;  # run by its own two harnesses, not here
+    "")
+      echo "FAILED: the suite $d is not registered in $REGISTRY." >&2
+      echo "  Every suite must declare which harness runs it, so a new one cannot" >&2
+      echo "  silently escape the gate the way contracts/atlas-edge once did." >&2
+      fail=1;;
+    *)
+      echo "FAILED: the suite $d declares unknown harness '$h' in $REGISTRY." >&2
+      fail=1;;
+  esac
+done
+# A registered suite whose directory has vanished is a deletion; the semver
+# gate classifies the versioned ones, but say it here too so a deletion is
+# never merely a shorter list.
+while read -r rdir rharness; do
+  case "$rdir" in ''|\#*) continue;; esac
+  [ -n "${rharness:-}" ] || continue
+  if [ ! -d "$rdir" ]; then
+    echo "FAILED: $REGISTRY lists $rdir, which does not exist." >&2
+    echo "  Deleting a contract suite is a cross-consumer break, not a tidy-up." >&2
+    fail=1
+  fi
+done < <(grep -vE '^[[:space:]]*(#|$)' "$REGISTRY")
+
+echo "suites (executed): ${RUN_ROOTS[*]:-none}"
+echo "suites (checked only): ${CHECK_ROOTS[*]:-none}"
+
+# ---------------------------------------------------------------------
+# LEG 0 -- A RECEIVED SUITE MAY NOT BE DISARMED (review C-2)
+# ---------------------------------------------------------------------
+# `@target` is a legitimate disclosure mechanism for OUR OWN suites: the
+# scenario runs, is printed red every time, and does not fail the gate. On
+# a suite we RECEIVED it is something else -- a one-line way to withdraw
+# another repo's guarantee, in a directory whose own RECEIVED.md says the
+# rule is "break, report, and coordinate; editing one of these files to
+# make our build green would be forging the other side's signature".
+#
+# The review demonstrated it: plant a real violation of map-generator's own
+# fixture, add `@target` above the scenario, and legs 1, 2, 4 and 5 all go
+# green with their expectation of us broken. Leg 5 never looks at
+# atlas-edge (correctly -- we do not declare their version), so nothing
+# objected.
+#
+# There is no bump class for this. It is simply forbidden.
+step "leg 0/6: received suites carry no @target"
+disarmed=0
+for d in "${CHECK_ROOTS[@]:-}"; do
+  [ -z "$d" ] && continue
+  [ -f "$d/RECEIVED.md" ] || continue
+  hits="$(grep -rnE '^[[:space:]]*@target([[:space:]]|$)' "$d" || true)"
+  if [ -n "$hits" ]; then
+    echo "FAILED: @target found in the RECEIVED suite $d -- we may not withdraw another repo's guarantee:" >&2
+    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+    echo "  If their expectation of us is genuinely wrong: break, report, and coordinate a bump on BOTH sides." >&2
+    fail=1; disarmed=1
+  fi
+done
+[ "$disarmed" -eq 0 ] && echo "no received suite is disarmed"
+
+step "leg 1/6: totality (check)"
+for d in "${CHECK_ROOTS[@]:-}"; do
+  [ -z "$d" ] && continue
   "$RUNNER" check "$d"; check $? "totality: $d"
 done
 
-# ---------------------------------------------------------------------
-# LEG 2 -- VOCABULARY DRIFT. Every Vocabulary: table still describes the
-# runner's actual parameter space. Catches a feature file that documents a
-# vocabulary the code no longer has.
-# ---------------------------------------------------------------------
-step "leg 2/5: vocabulary drift (vocab)"
-for d in "$OURS" "$THEIRS" "$CONSUMER"; do
-  [ -d "$d" ] || continue
+step "leg 2/6: vocabulary drift (vocab)"
+for d in "${CHECK_ROOTS[@]:-}"; do
+  [ -z "$d" ] && continue
   "$RUNNER" vocab "$d"; check $? "vocabulary drift: $d"
 done
 
 # ---------------------------------------------------------------------
-# LEG 3 -- PROVIDER DRIFT. Regenerate the pact from the REAL committed
-# graph, through the REAL Router and the REAL bibex binary, and fail on a
-# one-byte difference. This is what makes leg 4 evidence rather than
-# self-agreement: without it, a pact checked against a pact proves nothing.
+# LEG 3 -- PROVIDER DRIFT.
 # ---------------------------------------------------------------------
 if [ "$FAST" -eq 0 ]; then
-  step "leg 3/5: provider drift (the recorders)"
-  ( cd server && "$CARGO" test -p atlas-server --test contract_pact -- --nocapture >/dev/null )
+  step "leg 3/6: provider drift (the recorders)"
+  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-server --test contract_pact >/dev/null )
   check $? "provider drift: the HTTP pact no longer matches the live graph"
-  ( cd server && "$CARGO" test -p atlas-cli --test contract_pact_cli >/dev/null )
+  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-cli --test contract_pact_cli >/dev/null )
   check $? "provider drift: the CLI pact no longer matches the real bibex binary"
+
+  # THE LOAD-BEARING ONE. Whatever wrote it, however it was triggered: if
+  # the evidence moved while the gate was running, the gate did not pass.
+  if ! git diff --quiet -- contracts/pacts; then
+    echo "FAILED: contracts/pacts was MODIFIED during this gate run." >&2
+    git diff --stat -- contracts/pacts | sed 's/^/    /' >&2
+    echo "  The gate verifies evidence; it must never be the thing that rewrites it." >&2
+    echo "  If this was a deliberate re-record, commit it and re-run against the committed pact." >&2
+    fail=1
+  fi
 else
-  step "leg 3/5: SKIPPED (--fast)"
+  step "leg 3/6: SKIPPED (--fast)"
 fi
 
 # ---------------------------------------------------------------------
-# LEG 4 -- EXPECTATION DRIFT. Execute every published expectation, ours
-# and theirs, against the pact.
+# LEG 4 -- EXPECTATION DRIFT.
 # ---------------------------------------------------------------------
-step "leg 4/5: expectations (run --replay)"
-for d in "$OURS" "$THEIRS"; do
-  [ -d "$d" ] || continue
+# Only suites we PROVIDE are executed. `contracts/map-api-consumer` is OUR
+# expectations of map-generator's API: we are not its provider and its
+# server is not ours to start, so it is held to legs 0, 1, 2 and 5 only.
+step "leg 4/6: expectations (run --replay)"
+for d in "${RUN_ROOTS[@]:-}"; do
+  [ -z "$d" ] && continue
   "$RUNNER" run --replay contracts/pacts --exports data/exports "$d"
   check $? "expectations: $d"
 done
-# contracts/map-api-consumer is OUR expectations of map-generator's API. We
-# cannot run it -- we are not its provider and its server is not ours to
-# start. It is published for THEM to run against their own server, and it
-# is held to legs 1, 2 and 5 here so that what we ship them is at least
-# total, self-describing and versioned.
 
 # ---------------------------------------------------------------------
-# LEG 5 -- VERSION NEGOTIATION. The declared bump must be at least what
-# the diff requires.
+# LEG 5 -- VERSION NEGOTIATION.
 # ---------------------------------------------------------------------
-step "leg 5/5: semver"
-bash scripts/contract-semver-gate.sh "$BASE"; check $? "contract semver gate"
+# Base resolution (review M-1): the recommended pre-push hook used to fail
+# 100% of the time, because it defaulted to origin/main and neither
+# origin/main nor main resolves in this worktree. A gate that never passes
+# is a gate someone uninstalls, so the chain is tried in order and only a
+# total failure is fatal.
+step "leg 5/6: semver"
+resolve_base() {
+  local b out
+  for b in "$BASE" "@{upstream}" origin/main origin/master main master; do
+    [ -z "$b" ] && continue
+    git rev-parse --verify --quiet "$b" >/dev/null 2>&1 || continue
+    case "$b" in
+      main|master|origin/main|origin/master)
+        out="$(git merge-base HEAD "$b" 2>/dev/null)" && [ -n "$out" ] && { printf '%s\n' "$out"; return 0; };;
+      *)
+        out="$(git rev-parse "$b" 2>/dev/null)" && [ -n "$out" ] && { printf '%s\n' "$out"; return 0; };;
+    esac
+  done
+  # Last resort: the previous commit. Weaker than a branch point, but it
+  # still classifies the diff it can see, and it is the difference between
+  # a hook that runs and a hook that gets uninstalled.
+  out="$(git rev-parse --verify --quiet HEAD~1)" && [ -n "$out" ] && { printf '%s\n' "$out"; return 0; }
+  return 1
+}
+RESOLVED="$(resolve_base || true)"
+if [ -z "${RESOLVED:-}" ]; then
+  echo "FAILED: no base commit could be resolved for the semver gate (not even HEAD~1)." >&2
+  fail=1
+else
+  echo "semver base: $RESOLVED"
+  bash scripts/contract-semver-gate.sh "$RESOLVED"; check $? "contract semver gate"
+fi
 
 printf '\n'
 if [ "$fail" -ne 0 ]; then
@@ -133,11 +303,7 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 if [ "$FAST" -eq 1 ]; then
-  # --fast must not be able to masquerade as a passing gate. It reports
-  # success for what it ran and a non-zero status for what it did not, so
-  # it is usable while iterating and unusable as a final answer -- which is
-  # the difference between a convenience and an escape hatch.
-  echo "CONTRACT GATE (--fast): legs 1, 2, 4, 5 passed; leg 3 NOT RUN."
+  echo "CONTRACT GATE (--fast): legs 0, 1, 2, 4, 5 passed; leg 3 NOT RUN."
   echo "  Run without --fast before pushing." >&2
   exit 3
 fi

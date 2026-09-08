@@ -1,0 +1,42 @@
+# THE SUITE REGISTRY — every contract suite in this repo, and who runs it.
+#
+# Format:  <directory>  <harness>
+#
+# Harnesses:
+#   contract-runner           the vendored Haskell Gherkin executor. We are the
+#                             PROVIDER: legs 0, 1, 2 and 4 all apply, so its
+#                             expectations are executed against the recorded pact.
+#   contract-runner-consumer  the same executor, but we are the CONSUMER: these
+#                             are our expectations of somebody else's API, which
+#                             they run against their own server. Held to totality,
+#                             vocabulary and semver here; never executed here,
+#                             because we are not the provider and their server is
+#                             not ours to start.
+#   aqc-dual                  the Atlas Query Contract's own dual harness --
+#                             Rust `cucumber` in-process (server/atlas-server/
+#                             tests/aqc_cucumber.rs) AND C# Reqnroll
+#                             (client.ContractTests). NOT executed by the Haskell
+#                             runner: its steps are defined in those two harnesses,
+#                             and its corpus uses Gherkin constructs (Scenario
+#                             Outline) the vendored parser does not implement.
+#
+# WHY THIS FILE EXISTS (fix round 1, review C-2).
+#
+# The gate used to name its suites in a literal bash array, which is how
+# `contracts/atlas-edge` came to be excluded from every tag check -- a one-line
+# `@target` could disarm map-generator's expectations of us and nothing objected.
+# The fix was to enumerate from the filesystem so nothing could escape. But the
+# filesystem alone cannot say WHICH executor owns a suite, and pointing the
+# Haskell runner at the AQC corpus produces a wall of "undefined step" reds for a
+# suite that is perfectly healthy under its own harness -- caught by
+# scripts/gate-selftest.sh on its first run, not by inspection.
+#
+# So detection stays with the filesystem and classification lives here, and the
+# gate FAILS on any suite it finds that this file does not list. Adding a suite
+# without registering it is therefore impossible to do quietly, which is the
+# property the literal array lacked.
+
+contracts/atlas-graph-contract   contract-runner
+contracts/atlas-edge             contract-runner
+contracts/map-api-consumer       contract-runner-consumer
+contracts/atlas-query-contract   aqc-dual
