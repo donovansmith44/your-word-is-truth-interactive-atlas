@@ -311,8 +311,20 @@ async fn record_http(path: &str) -> Value {
 /// from a running server. An export is already a committed artifact that
 /// every reviewer sees in the diff, so recording it would store the same
 /// bytes twice and churn the pact on every recompile for no added
-/// guarantee. Measured, not assumed: the three exports were 741 KB of an
-/// otherwise 50 KB pact.
+/// guarantee.
+///
+/// Measured on disk, with the method stated so the numbers can be checked:
+/// the three published exports are 428,479 + 689,530 + 17,290 = **1,135,299
+/// bytes (1,109 KiB)**, against a committed `http.json` of **175,656 bytes
+/// (172 KiB)**. Recording them would multiply the pact several-fold and
+/// churn all of it on every recompile.
+///
+/// (Fix round 1, review L-1a. The earlier version of this sentence said
+/// "741 KB of an otherwise 50 KB pact". Those came from a compact
+/// `json.dumps` of the entries while the pact itself is pretty-printed, so
+/// they corresponded to nothing anybody could measure on disk -- the
+/// argument was right and the numbers were not comparable. The claim was
+/// the problem, not the conclusion.)
 ///
 /// What is still owed here is that the artifact the corpus NAMES actually
 /// exists and parses, so a feature file cannot name an export into being.

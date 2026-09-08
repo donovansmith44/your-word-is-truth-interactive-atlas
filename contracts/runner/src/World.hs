@@ -198,8 +198,14 @@ replayTransportRaw pact key = pure $ case Map.lookup key pact of
 -- from a running server. A published export is already a committed file
 -- that every reviewer sees in the diff, so recording it into the pact as
 -- well would store the same bytes twice and make the pact churn on every
--- recompile for no added guarantee. Measured, not assumed: the three
--- exports were 741 KB of the pact's 791 KB.
+-- recompile for no added guarantee. Measured on disk: the three published
+-- exports are 1,135,299 bytes (1,109 KiB) against a committed http.json of
+-- 175,656 bytes (172 KiB).
+--
+-- (Fix round 1, review L-1a: this used to read "741 KB of the pact's
+-- 791 KB", numbers taken from a compact render of the entries while the
+-- pact is pretty-printed -- not comparable to anything on disk. The
+-- conclusion was right; the measurement was not one.)
 --
 -- This composes IN FRONT of whichever transport a run is using, so the
 -- exports answer identically in live mode and replay mode -- there is one
