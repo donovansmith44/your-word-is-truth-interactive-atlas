@@ -724,6 +724,140 @@ resolver = "2"
 # client/wwwroot/css/app.css | grep "^+"` adds 16 selector lines, every one
 # `.popover-*`, and zero lines mentioning landmark/marker/place-label.
 #
+#
+# ---------------------------------------------------------------------
+# Batch PROV-1 FIX ROUND 1 (2026-09-08, the review's 1 High + 4 Moderate
+# + 7 Low): moved to 1057 (1021 + 36) across 55 sections.
+# `atlas-graph-types` STILL UNCHANGED at 36 -- byte-untouched again.
+#
+# Workspace 1014 -> 1021. Stated as one equation, literally true as
+# written, and it is NOT all this batch's:
+#   +3 THIS FIX ROUND (provenance_registry_real_data 6 -> 7, the
+#      runtime-index/test-sweep reconciliation, review L-3; graph_api
+#      44 -> 46, the never-a-blank wire sweep for review H-1 and the
+#      bare-array attribution for review M-3)
+#   +4 BATCH CDC-1, concurrent in this same worktree and NOT this
+#      batch's to claim: `atlas-server/tests/contract_pact.rs` (3) and
+#      `atlas-cli/tests/contract_pact_cli.rs` (1), two ENTIRELY NEW test
+#      files, which are also the whole of the 53 -> 55 section move
+#   +1 `perf_smoke::scene_time_full_span_completes_within_smoke_threshold`
+#      flipping FAIL -> PASS (the environmental gate resolving the other
+#      way; the PROV-1 block above counted it as the failure it then was)
+#   -1 `graph_conformance::the_full_real_graph_is_admitted_...` flipping
+#      PASS -> FAIL on its 60s wall-clock ceiling (DISCLOSED below)
+#   = +7 net, 1014 -> 1021.
+# `atlas-graph`'s own lib unittests are UNCHANGED at 182: review L-4
+# deleted `ProvenanceIndex::is_single_sourced` and its two assertions
+# became set EQUALITIES inside the same tests, so no test count moved.
+#
+# Sections 53 -> 55, and both are CDC-1's: 54 test-BINARY sections print
+# a "test result" line (49 with tests + 5 zero-test unittest stubs; the
+# four Doc-tests lines print and are NOT counted, per the standing rule)
+# plus aqc_cucumber (harness = false, prints no line) = 55.
+# AQC corpus UNCHANGED at 44 scenarios (44 passed) / 184 steps (184
+# passed), read off this run's own harness=false summary.
+#
+# DATA: `data/compiled/graph.bin` still BYTE-IDENTICAL at 101,319,287
+# bytes -- `git log -- data/compiled/graph.bin` still names `3e7e294`,
+# two commits BEFORE this milestone's BASE, as its last touch. This fix
+# round changed no file under data/ at all.
+#
+# DISCLOSED, AND NOT THIS FIX ROUND'S (evidenced, not asserted):
+# `graph_conformance.rs::the_full_real_graph_is_admitted_the_in_memory_
+# store_answers_match_the_model_exactly` failed its 60s ceiling at
+# 119.8801803s in the counted run. It PASSED in the PROV-1 close run, so
+# it is guilty until proven innocent, and three pieces of evidence
+# acquit this fix round:
+#   1. THE MEASURED PATH IS BYTE-IDENTICAL TO THE PROV-1 CLOSE. The
+#      timer wraps exactly `assert_answers_match(&snapshot, &model)`.
+#      `graph-types` is byte-untouched, and `git diff --name-only
+#      912cbc0 HEAD -- server/atlas-graph/src` lists exactly ONE file,
+#      `provenance.rs`, whose whole diff is deleting an uncalled method
+#      (`is_single_sourced`) and adding an accessor (`families()`) whose
+#      only caller is a test. Neither is on any query path.
+#   2. `grep -c "provenance" server/atlas-server/tests/graph_conformance.rs`
+#      returns 0. The test does not touch this batch's subject at all.
+#   3. ISOLATED RE-RUNS: 2 passed / 2 failed over four measurements
+#      (isolated plain runs green twice, section wall time 163.64s and
+#      160.84s; an isolated `--nocapture` run red at 178.4832036s with a
+#      367.10s section time -- 2.2x the green runs, on the same code).
+# THE HONEST READING, and it is the same sentence perf_smoke already
+# gets: this ceiling is now INSIDE ITS OWN NOISE BAND on this machine,
+# spanning under-60s to 178s across four samples of identical code. It
+# is a real candidate for its own batch alongside the JHN.3 gate. The
+# gate was NOT loosened and the failure is counted as the failure it is.
+#
+# STILL DISCLOSED, unchanged: `perf_smoke::scene_scripture_chapter_
+# completes_within_smoke_threshold` (the JHN.3 gate) failed again. Its
+# sibling `scene_time_full_span` passed this time, which is the same
+# environmental gate the block above already documents moving in both
+# directions between runs.
+#
+# L-7 (the review's own finding, answered here rather than only in the
+# report): THE COUNTED RUN IS ONE SAMPLE OF A CONTENTION-SENSITIVE SUITE.
+# `artifact_conformance`'s 4s ceiling, `perf_smoke`'s 50ms/75ms gates and
+# now `graph_conformance`'s 60s ceiling are all wall-clock gates on a
+# loaded developer machine, and all three have been observed resolving
+# BOTH ways on identical code. "1057 across 55 sections" is a measurement
+# on this machine on this day, not a property of the code; a re-run may
+# legitimately produce 1058/1 or 1056/3 without a line of source
+# changing. That is a fact about the counting procedure, and it is
+# written here so a future reader does not mistake a re-measured figure
+# for a regression.
+#
+# CURRENT CANONICAL: 1057 (1021 + 36) across 55 sections.
+# AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
+# dotnet at PROV-1 fix round 1: client.Tests 385/385 (381 -> 385, +4:
+# ProvenanceResolverTests gains five and loses one -- the blank id kept
+# as a LOUD entry instead of filtered into silence (review H-1), the
+# empty-list-versus-blank-id distinction that survives it, and three for
+# review M-4's third `ProvenanceStatus` state; the one dropped is
+# `ANullRegistryResolvesNothingRatherThanThrowing`, replaced by the two
+# that distinguish the infrastructure fault from the data fault. One
+# more, `ResolveAllDedupesByIdAndDropsBlanks...`, was renamed and
+# INVERTED: it had pinned the silent blank as correct behavior).
+# client.ContractTests 45/45, unchanged -- no scenario added.
+# Playwright at PROV-1 fix round 1: 441 passed / 2 failed / 3 skipped
+# of 446 (20.4m, --workers=1, release API on :8000 and client on :5000;
+# 8080/8090 -- the owner's live app -- never touched, verified by
+# Get-NetTCPConnection before and after). 446 = 442 (PROV-1 close) + 4.
+# `tests/ux/provenance.spec.ts` 7 -> 11 tests (review H-1's injected
+# blank/unregistered fixture, M-4's aborted /api/sources, M-3's PASSAGE
+# node, and L-6's click-through geometry), all 11 green.
+#
+# THE TWO PLAYWRIGHT FAILURES, ATTRIBUTED WITH EVIDENCE:
+#  1. `world-quiet-places.spec.ts:211 density smoke` -- the standing
+#     pre-existing failure this milestone already documents; this fix
+#     round adds and removes zero places.
+#  2. `world-borders.spec.ts:208 BORDERS-7` -- NEW relative to the
+#     PROV-1 close, so guilty until proven innocent. Acquitted on three
+#     measurements: (a) ISOLATED RE-RUNS `--repeat-each=5` on this exact
+#     tree = 4 passed / 1 failed, i.e. intermittent, not deterministic;
+#     (b) the test never opens a popover -- it `goto`s /world and waits
+#     for `.landmark-label` VISIBILITY, and `grep -ci
+#     "popover\|provenance"` over its body returns 0, so no PROV-1 DOM
+#     exists on that page; (c) `git diff 912cbc0 HEAD --
+#     client/wwwroot/css/app.css | grep "^+"` adds exactly ONE selector,
+#     `.popover-provenance-unavailable`, and ZERO lines mentioning
+#     landmark/marker/place-label/quiet-dot -- the diff touches no
+#     `landmark` line at all. Same visibility-race class as the WORLD-10b
+#     flake this milestone already records (WORLD-10b itself PASSED in
+#     this run).
+#
+# ONE MORE THING SETTLED HERE, because it was raised as a possible
+# regression of this batch's: batch CDC-1's own Playwright run reported
+# 429/15/2 of 446, with ELEVEN failures clustering on `verse-xref-marker`
+# -- the reader surfaces fed by `CrossRefOut`, the DTO review M-3 changed.
+# That run executed against a MID-FLIGHT tree (this batch had uncommitted
+# edits to client/Explore/PopoverSectionProviders.cs while Playwright
+# built the client from it). Re-run here on the settled, fully committed
+# tree WITH the M-3 change landed: all three `verse-xref-marker` specs are
+# GREEN -- reader-recursion 4/4, reader-xref-anchoring 8/8,
+# reader-xref-superscripts 9/9, tests 223-248 in the run above. The
+# eleven do not survive; the earlier tally was a measurement of a tree
+# that never existed as a commit.
+#
+# ---------------------------------------------------------------------
 # Superseded, for the record: 1032 (996 + 36) across 52 sections was the
 # canonical this block carried into Batch PROV-1.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
