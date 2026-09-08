@@ -75,7 +75,9 @@ pub enum Class {
     Overlap,
 }
 
-use Class::{Containment, Overlap};
+// (The generated rows below name their class fully qualified as
+// `Class::Containment` / `Class::Overlap`, so no `use Class::{..}` import
+// is needed -- ATTEST-1 left one behind and it warned on every build.)
 type P = Pending;
 
 // GENERATED from the real corpus (see this module's doc comment). Sorted

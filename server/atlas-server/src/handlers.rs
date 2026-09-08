@@ -1291,7 +1291,7 @@ pub struct EventDetailOut {
     /// byte-identically to before this batch.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mentioned_in: Vec<String>,
-    /// ATTEST-1 (L4, "Similar events"): events joined to this one by an
+    /// ATTEST-1 (L4, "Similar Accounts"): events joined to this one by an
     /// `Analogue` row -- "distinct events whose accounts are similar in
     /// form or content, NEVER two accounts of one event." Deliberately a
     /// SEPARATE field from `witnesses` rather than a flag on it: the
@@ -1389,7 +1389,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .into_values()
         .collect();
     mentioned_in.dedup();
-    // (L4) "Similar events": the SYMMETRIC `Analogue` relation, walked
+    // (L4) "Similar Accounts": the SYMMETRIC `Analogue` relation, walked
     // from this end. Titles come from the neighbour's own Event node, so
     // the client never needs a second fetch just to label the row.
     let analogues: Vec<EventAnalogueOut> = drain_edges(&snap, &event_pos, EdgeKind::Symmetric(atlas_graph_types::edge::SymRelationId::Analogue))

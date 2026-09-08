@@ -220,9 +220,20 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
         e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
         let after: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
+        // KNOWN LIMIT of this guard (ATTEST-1 fix round 1, review finding
+        // L-6): the match above is EXACT STRING equality against the stored
+        // `verses`/translation entries, which may themselves be RANGE
+        // strings (`LUK.1.26-38`). A `[[mention]]` verse that lives INSIDE a
+        // range is therefore not stripped. `after == before` catches that
+        // for a single-verse row, but a MULTI-verse row where one verse
+        // matches exactly and another sits inside a range would apply
+        // PARTIALLY and pass here. Both of today's rows are single exact
+        // verses, so this is latent only; the next author adding a row that
+        // targets a verse inside a range must split the range first (or
+        // teach this loop to expand ranges) rather than trust this bail.
         if after == before {
             bail!(
-                "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event. A correction that corrects nothing is stale; delete the row or fix the ids.",
+                "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids.",
                 m.event_id
             );
         }

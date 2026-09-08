@@ -107,7 +107,6 @@ test('ATTEST-1 (L3, owner report 2): the Espousal of Mary is a MENTION-ONLY even
     page.getByTestId('popover-section-event-witnesses'),
     'a mention-only event must never fabricate a PARALLEL ACCOUNTS section'
   ).toHaveCount(0);
-  await expect(page.getByTestId('popover-section-event-witness')).toHaveCount(0);
 
   // A mention is explorable like everything else: clicking one opens the
   // verse it names.
@@ -176,7 +175,7 @@ test('ATTEST-1 (L4, owner report 1): Matthew\'s leper is its own event, joined t
   ).toHaveCount(0);
   await expect(parallels.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');
   const parallelRefs = await parallels.getByTestId(/^event-witness/).count();
-  expect(parallelRefs, 'the parallel-accounts section still renders Mark and Luke, and only them').toBeGreaterThan(0);
+  expect(parallelRefs, 'the parallel-accounts section still renders its real accounts -- that they are Mark and Luke AND ONLY THEM is asserted at the wire above (:124-128), not by this count').toBeGreaterThan(0);
 
   // (c) the two sections are ADJACENT, in that order -- the wrongly-placed
   // row moved down exactly ONE section, it did not disappear from where the

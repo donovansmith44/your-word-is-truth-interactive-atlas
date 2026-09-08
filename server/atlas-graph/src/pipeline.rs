@@ -487,8 +487,13 @@ impl Pass for LawCheckPass {
         // ATTEST-1 (owner-signed FAIL-LOUD; the softer warning option was
         // declined). L2: no verse belongs to the `Attests` set of two
         // distinct events, stated against the declared curation queue in
-        // `attestation_pending` -- an UNDECLARED collision or a STALE
-        // declaration is a build failure. L4's companion gate: an
+        // `attestation_pending` -- an UNDECLARED collision, or a DRIFTED
+        // shared-verse count on an already-declared pair, is a build
+        // failure. (The STALE direction is deliberately NOT in this pass:
+        // it runs over synthetic fixtures too, against which every declared
+        // row would read stale -- see `law_check.rs`'s note above
+        // `attestation_inventory_has_no_stale_rows`, which carries that
+        // direction over the real corpus instead.) L4's companion gate: an
         // `Analogue` row joins two DISTINCT events, exactly once.
         crate::law_check::attestation_is_exclusive(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))

@@ -343,8 +343,10 @@ public static class PopoverSectionRegistry
         // ONE SECTION, into a heading that tells the truth -- not vanish
         // from where the reader last saw it. So SIMILAR ACCOUNTS takes 161,
         // directly after PARALLEL ACCOUNTS at 160, with nothing permitted
-        // between them; `EventSectionsInReviewedOrder` (PopoverSectionRegistry
-        // tests) asserts the ADJACENCY itself, not merely the number, so a
+        // between them;
+        // `PopoverSectionRegistryTests.SimilarAccountsRendersImmediatelyBelowParallelAccounts`
+        // asserts the ADJACENCY itself over the order-resolved
+        // `PopoverSectionRegistry.Providers`, not merely the number, so a
         // future provider registered at any value in between fails loud.
         //
         // MENTIONED IN follows at 165. It is scriptural basis (for a

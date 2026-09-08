@@ -337,6 +337,15 @@ pub fn analogue_rows_join_two_distinct_events(graph: &Graph) -> Result<(), Strin
 /// it is asserted where the real corpus is
 /// (`tests/attestation_exclusivity_real_data.rs`).
 ///
+/// KNOWN LIMIT, stated so nobody has to rediscover it (ATTEST-1 fix round
+/// 1, review finding L-2): a declared row pins the shared-verse COUNT, not
+/// the shared-verse SET. A future change that removes one shared verse
+/// between an already-declared pair and adds a different one leaves the
+/// count unchanged and passes here silently. That is tolerable only because
+/// the pair is already queued for an owner ruling either way; if the queue
+/// ever outlives that assumption, the row should carry a hash of the shared
+/// verse set rather than its cardinality.
+///
 /// The inventory itself is the OWNER'S CURATION QUEUE, compiled: every row
 /// carries the mechanically-derived structural class (`Containment` when
 /// one event's attestation set contains the other's -- the dominant real

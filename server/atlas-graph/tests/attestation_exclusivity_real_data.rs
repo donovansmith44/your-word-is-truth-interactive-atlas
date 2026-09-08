@@ -203,10 +203,33 @@ fn the_corpus_sweep_totals_are_pinned() {
     assert_eq!(keys.len(), before, "attestation_pending::PENDING contains a duplicate pair");
     assert!(PENDING.iter().all(|p| p.a < p.b), "every row must be stored with its ends in lexicographic order -- law_check folds observed collisions the same way");
 
-    // The two pairs THIS batch resolved must be ABSENT: resolving a pair
-    // means deleting its row, and a queue that keeps resolved entries stops
-    // being a queue.
-    for resolved in [("rob_annunciation_mary", "theo-249"), ("mat_leper_healed", "rob_leper_healed")] {
+    // The pairs THIS batch resolved must be ABSENT: resolving a pair means
+    // deleting its row, and a queue that keeps resolved entries stops being
+    // a queue. Absence here is also the regression pin that says "this was
+    // resolved, do not re-create it" -- without the row, a future re-attest
+    // would come back as a NEW undeclared collision, which reds, but the
+    // resolution itself would be recorded nowhere.
+    //
+    // TWO of these were genuine L2 collisions at BASE (`62e49e6`'s
+    // `data/exports/chronology.json`, checked directly): LUK.1.27 sat in
+    // both `theo-249`'s and `rob_annunciation_mary`'s `Attests` sets, and
+    // MAT.1.18 sat in both `theo-249`'s and `rob_joseph_annunciation`'s.
+    // Both are retyped to `Mentions` on `theo-249` (L1), leaving the
+    // espousal mention-only (L3).
+    //
+    // The THIRD, `mat_leper_healed`/`rob_leper_healed`, was never an L2
+    // collision -- MAT.8.1-4 attested exactly one event at BASE
+    // (`rob_leper_healed`). It was a FALSE PARALLEL INSIDE one event, and
+    // the split that fixed it is what makes the pair possible at all. It is
+    // pinned absent here for the forward direction: the two leprosy events
+    // are joined by an `Analogue` row and must NEVER come to share an
+    // attestation, which would re-fabricate the parallel the owner reported.
+    // (ATTEST-1 fix round 1, review finding M-3.)
+    for resolved in [
+        ("rob_annunciation_mary", "theo-249"),
+        ("rob_joseph_annunciation", "theo-249"),
+        ("mat_leper_healed", "rob_leper_healed"),
+    ] {
         assert!(
             !PENDING.iter().any(|p| (p.a, p.b) == resolved),
             "{resolved:?} was resolved by this batch and must not be in the pending queue"
