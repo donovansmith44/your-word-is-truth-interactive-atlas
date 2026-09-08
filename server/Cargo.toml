@@ -477,7 +477,19 @@ resolver = "2"
 # `Analogue` relation -- owner orders: "let's call it Analogue; that's ok
 # for now." and "I'm seeing a fundamental error. The Espousal of Mary
 # event has parallel accounts Mat.1.18 + Luke.1.27..."): moved to 1032
-# (996 + 36) across 52 sections. Workspace +12 across +1 section:
+# (996 + 36) across 52 sections. Workspace +12 across +1 section, stated
+# as an equation that is literally true as written (the same L-D
+# discipline this batch applied two blocks above, and which fix round 1
+# had to re-apply HERE -- review finding M-2 -- because the first version
+# of this block headed "+12" over four rows summing to 13):
+#   +13 NEW tests (itemized immediately below)
+#     -1 (`perf_smoke.rs::scene_scripture_chapter_completes_within_smoke_
+#         threshold`, which flipped PASS -> FAIL under the counting
+#         command on this machine and is counted as the failure it now
+#         is, NOT as a passing test -- see the DISCLOSED block below for
+#         the evidence that the cause is environmental)
+#     = +12 net, 984 -> 996.
+# THE +13, itemized:
 # `atlas-core`'s own `merge.rs` +1 (`merge_boundary_1_original_witness_
 # replays_exactly`, the L-A fix -- the MERGE-BOUNDARY-1 boundary case
 # replayed as a DETERMINISTIC test that first reproduces the retired
@@ -493,6 +505,7 @@ resolver = "2"
 # `atlas-graph/tests/attestation_exclusivity_real_data.rs` (+4 -- the
 # founding case and the leper split over the real corpus, both standing
 # laws, and the corpus sweep's own pinned totals).
+# That is 1 + 6 + 2 + 4 = 13 new tests; 13 - 1 = the +12 above.
 # `atlas-graph-types` 33 -> 36 (+3): the SANCTIONED contract change's own
 # tests -- `graph.rs`'s `analogue_rows_and_event_mentions_lower_into_the_
 # existing_indexes_both_ways` (the NODE1-ROWS-1 lowering-test precedent)
@@ -517,6 +530,20 @@ resolver = "2"
 # quiet-place `total_events` incrementing) -- its 5 `scripture_refs()`
 # hashes UNCHANGED, which is itself corroboration that the change is
 # confined to the two events this batch is about.
+# ONE MORE DATA DELTA, accounted for by fix round 1 (review M-4, the one
+# delta this batch had originally left unstated): `data/compiled/report.
+# txt` moves places 1373 -> 1358 and events 1710 -> 1711 in `3e7e294`.
+# The EVENTS line is this batch's own new `mat_leper_healed`. The PLACES
+# line is NOT this batch: `data/exports/gazetteer.json` already served
+# 1358 places at BASE `62e49e6` and its place payload is BYTE-IDENTICAL
+# at close (only `atlas_version_root` moved), so no place was added or
+# removed here. `report.txt` had simply been STALE since PLACE-1a: it was
+# last regenerated at `99dea70` (CHRON-1 fix round 1), an ancestor of
+# `67bd433`/`0b29bf1` (PLACE-1a, "fold 15 confirmed Theographic
+# dual-lineage duplicates into MERGE_PAIRS" -- 1373 - 15 = 1358), which
+# recompiled the gazetteer but not this report. Regenerating it here
+# corrected the stale line. This is why "this batch adds and removes zero
+# places" (the density-smoke exoneration) stands unaffected.
 #
 # DISCLOSED, AND NOT THIS BATCH'S (evidenced, not asserted):
 # `atlas-server`'s own `perf_smoke.rs::scene_scripture_chapter_completes_
