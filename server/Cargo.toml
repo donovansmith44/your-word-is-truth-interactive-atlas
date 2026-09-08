@@ -935,6 +935,12 @@ resolver = "2"
 # DATA: `data/compiled/graph.bin` still BYTE-IDENTICAL at 101,319,287
 # bytes; this fix round changed no file under data/ at all.
 #
+# ONE TIMING CHECK ON THE COUNT, same as fix round 1's: batch CDC-1 landed
+# `8babc67` after the counted run. Checked rather than assumed --
+# `git show --name-only 8babc67 | grep '\.rs$'` returns NOTHING (it touches
+# .gitattributes, Haskell, a cabal file and three shell scripts), so no Rust
+# test exists that the counted run did not execute. 1023 stands at HEAD.
+#
 # CURRENT CANONICAL: 1059 (1023 + 36) across 55 sections.
 # AQC corpus: 44 scenarios / 184 steps (harness=false; NOT in the canonical sum).
 # dotnet at PROV-1 fix round 2: client.Tests 386/386 (385 -> 386, +1:
