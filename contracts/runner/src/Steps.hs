@@ -205,9 +205,23 @@ loadJsonFixture w f = do
 -- than the case is worth today (no atlas expectation needs an empty
 -- answer). If one ever does, the honest move is to upstream the tag
 -- plumbing, not to weaken this rule locally.
+-- WHAT COUNTS AS EMPTY (widened in fix round 2, review L-NEW-2).
+--
+-- The first version treated only `[]` and `{}` as empty, which is narrower
+-- than "vacuous": `null`, `""` and `[{}]` all pin nothing and all sailed
+-- past both refusals. H-1's stated law is "a law that cannot fail is not a
+-- law", and a fixture pinned to `null`, or to a list of empty objects,
+-- cannot fail either. Same species as every Critical this round -- a guard
+-- shaped to the example instead of to the property.
+--
+-- Recursive on containers, so `[{}]`, `[[], []]` and `{"a": null}` are all
+-- refused. Numbers and booleans are deliberately NOT empty: `0` and `false`
+-- are real pinned values a provider can get wrong.
 emptyProjection :: Value -> Bool
-emptyProjection (Array a)  = null a
-emptyProjection (Object o) = KM.null o
+emptyProjection Null       = True
+emptyProjection (String s) = T.null (T.strip s)
+emptyProjection (Array a)  = all emptyProjection a
+emptyProjection (Object o) = all emptyProjection (KM.elems o)
 emptyProjection _          = False
 
 settleAgainstFixture :: Text -> Text -> Value -> World -> IO (Either Text World)

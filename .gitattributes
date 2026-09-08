@@ -1,0 +1,27 @@
+# CDC-1 fix round 2, review M-NEW-6.
+#
+# `core.autocrlf` is `true` in this repo, and the contract gate's leg 3
+# compares one artifact BYTE FOR BYTE: `contracts/pacts/*.json` is written by
+# the Rust recorder in LF and read back with `read_to_string` and `==`
+# (server/atlas-server/tests/contract_pact.rs). Without the line below, a
+# plain `git checkout --`, a `git stash pop`, or a branch switch hands the
+# recorder the CRLF form -- 182,802 bytes where it wrote 175,656 -- and leg 3
+# fails with "the provider drifted from the recorded pact".
+#
+# That diagnostic names a cause that did not happen, and the remedy the gate
+# itself prints is a re-record. Running it "fixes" the gate and trains the
+# developer that leg 3's red means "re-record" -- the exact instinct this
+# whole design exists to prevent. Worse, the re-record is byte-identical to
+# the LF original, so the diff they are told to review is EMPTY: the most
+# confidence-destroying possible outcome for the leg the gate's authority
+# rests on.
+#
+# The reviewer hit this by accident while restoring after a probe, which is
+# the most convincing way to find it.
+#
+# The fixtures are here for the same reason: the Haskell runner writes them
+# with LF and the runner compares parsed JSON, but the semver classifier
+# grades them by exact bytes first (`same` vs `wider` vs `changed` is decided
+# on parsed values, but `git diff` deciding WHETHER to grade them is not).
+contracts/pacts/*.json      text eol=lf
+contracts/*/fixtures/*.json text eol=lf

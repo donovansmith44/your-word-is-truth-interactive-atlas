@@ -35,6 +35,7 @@ library
                       Run
                       Check
                       Vocab
+                      Tags
                       Prop
     build-depends:    base >=4.17 && <5,
                       text,

@@ -20,19 +20,28 @@
 # shipped as a test that tries to lie to the gate and asserts the gate
 # refuses.
 #
-# The four defences, in order of how much they carry:
-#   1. leg 3 runs with ATLAS_BLESS_PACT stripped from its environment, and
-#      the recorders themselves now FAIL when blessed (a bless can never be
-#      a green test);
-#   2. after leg 3, `git diff --quiet -- contracts/pacts` -- if the evidence
-#      moved while the gate ran, the gate failed, whatever wrote it. One
-#      line that catches every present and future re-record path;
-#   3. the toolchains are VERIFIED, not accepted: `cargo --version` must say
-#      cargo, `cabal --version` must say cabal;
-#   4. suites are DETECTED from the filesystem and CLASSIFIED by
-#      contracts/SUITES, and an unregistered suite is a hard failure -- so a
-#      new, renamed or received suite cannot silently escape legs 0, 1, 2
-#      and 4 the way contracts/atlas-edge once did.
+# FIX ROUND 2 found three more, all one species: A GUARD NARROWER THAN THE
+# THING IT GUARDS. A line-anchored `@target` regex against a parser that
+# reads tags word-by-word; a registry that *classifies* against a filesystem
+# that *detects*; a tool's self-description against a tool's identity; and a
+# fingerprint that failed OPEN when its hasher was missing. The rule this
+# file now follows is: guard the PROPERTY, not the spelling -- and where a
+# guard must parse something, use the parser the consumer uses.
+#
+# The defences, in order of how much they carry:
+#   1. leg 3 runs with ATLAS_BLESS_PACT stripped, and the recorders
+#      themselves FAIL when blessed (a bless can never be a green test);
+#   2. leg 3 must PROVE IT RAN -- `test result: ok. N passed`, N >= 1, from
+#      each recorder. A tool that does no work cannot pass, whatever it
+#      calls itself, which is what a `--version` check never gave us;
+#   3. a before/after fingerprint of contracts/pacts, FAIL-CLOSED: a missing
+#      hasher or an empty fingerprint is a failure, not a silent pass;
+#   4. leg 0 and the semver classifier ask `contract-runner tags` -- the
+#      vendored parser -- which scenarios carry @target. No regex;
+#   5. suites are DETECTED from the filesystem and the registry is a CACHE OF
+#      A DERIVATION the gate re-checks: RECEIVED.md implies contract-runner,
+#      and aqc-dual is only permitted where the parser genuinely cannot read
+#      the corpus. A one-word registry edit can no longer exempt a suite.
 #
 # There is no --allow, no advisory mode and no skip flag. `--fast` skips
 # only leg 3 and EXITS 3, never 0: it reports success for what it ran and
@@ -61,12 +70,25 @@ step() { printf '\n=== %s ===\n' "$1"; }
 check() { if [ "$1" -ne 0 ]; then echo "FAILED: $2" >&2; fail=1; fi; }
 
 # ---------------------------------------------------------------------
-# TOOLCHAIN: verified, not accepted (review C-1)
+# TOOLCHAIN: a greeting is not an identity (fix round 2, review H-NEW-1)
 # ---------------------------------------------------------------------
-# Honouring $CARGO/$CABAL is genuinely useful (a rustup shim, a pinned
-# cabal), so the fix is not to stop reading them -- it is to stop trusting
-# them. A tool that does not identify itself as the tool it claims to be
-# cannot run a leg of this gate.
+# Fix round 1 answered `CARGO=/usr/bin/true` by requiring `$CARGO --version`
+# to begin with the word "cargo". That is a statement the tool makes about
+# ITSELF, and the reviewer wrote a three-line shim that makes it:
+#
+#     #!/bin/sh
+#     if [ "$1" = "--version" ]; then echo "cargo 1.97.1 (...)"; exit 0; fi
+#     exit 0
+#
+# -> CONTRACT GATE: PASSED, with leg 3 executing no Rust at all.
+#
+# The name check stays as a cheap early diagnostic, but it is no longer what
+# the gate rests on. What the gate rests on is EVIDENCE THAT THE LEG RAN:
+# leg 3 captures its output and requires `test result: ok. N passed` with
+# N >= 1 from each recorder. A tool that does no work cannot produce that,
+# whatever it calls itself -- and this also catches the accidental cases the
+# reviewer rightly weighted (a wrapper that swallows a subcommand, or fails
+# to propagate an exit code), which no amount of `--version` checking would.
 CARGO="${CARGO:-$HOME/.cargo/bin/cargo}"
 CABAL="${CABAL:-$HOME/.local/bin/cabal}"
 
@@ -87,10 +109,27 @@ verify_tool() {
   esac
 }
 
+# A recorder must PROVE it ran. `cargo test` printing nothing, or printing a
+# summary with zero tests, is not a pass -- it is a leg that did not happen.
+require_test_evidence() { # <label> <logfile>
+  local label="$1" log="$2" n
+  n="$(grep -oE '^test result: ok\. [0-9]+ passed' "$log" 2>/dev/null \
+       | grep -oE '[0-9]+' | awk '{s+=$1} END{print s+0}')"
+  if [ "${n:-0}" -lt 1 ]; then
+    echo "FAILED: $label produced no evidence that it ran." >&2
+    echo "  Expected 'test result: ok. N passed' with N >= 1; found none." >&2
+    echo "  A leg that runs nothing writes nothing, and must never read as a pass." >&2
+    sed 's/^/    /' "$log" | tail -15 >&2
+    return 1
+  fi
+  echo "  $label: $n test(s) passed"
+  return 0
+}
+
 step "toolchain"
 verify_tool "$CARGO" cargo || exit 1
 verify_tool "$CABAL" cabal || exit 1
-echo "cargo and cabal verified"
+echo "cargo and cabal name-check passed (leg 3 additionally requires proof of work)"
 
 step "building the contract runner"
 ( cd contracts/runner && "$CABAL" build all >/dev/null 2>&1 )
@@ -146,11 +185,54 @@ if [ "${#ROOTS[@]}" -eq 0 ]; then
   exit 1
 fi
 
-# Suites this gate's own executor runs. Anything unregistered stops the gate.
+# ---------------------------------------------------------------------
+# THE REGISTRY IS A CACHE OF A DERIVATION, NOT AN ASSERTION THE GATE OBEYS
+# (fix round 2, review C-NEW-2)
+# ---------------------------------------------------------------------
+# Fix round 1 replaced a literal bash array with this registry file and
+# called C-2 closed. It was not: the reviewer changed ONE WORD --
+# `contracts/atlas-edge  contract-runner` to `aqc-dual` -- and the full gate
+# printed PASSED with map-generator's fixture violated AND a plain `@target`
+# planted, because `aqc-dual` means "some other harness runs this" and no leg
+# looks at a suite it has been told is not its business. The array had simply
+# become a line in a file, still ungated.
+#
+# The property that mattered was never "suites are enumerated from the
+# filesystem". It was "a suite we RECEIVED cannot be silently exempted" --
+# and that is derivable from the suites themselves, so the gate derives it
+# and treats the registry as a cache it re-checks:
+#
+#   * RECEIVED.md present  =>  harness MUST be contract-runner. Another
+#     repo's expectations of us are executed here or the gate fails. There is
+#     no registration that exempts them, the same way there is no @target
+#     that disarms them.
+#   * aqc-dual is permitted ONLY where the vendored parser genuinely cannot
+#     run the suite -- i.e. it uses `Scenario Outline`, which
+#     `Gherkin/Parse.hs` does not implement. That is a fact about the corpus,
+#     checkable on every run, not a claim in a file.
+#
+# So the plausible-sounding commit the reviewer imagined ("atlas-edge runs in
+# map-generator's CI, not ours") now fails on the next line.
 RUN_ROOTS=()      # we are the provider: legs 0,1,2,4
 CHECK_ROOTS=()    # we are the consumer: legs 0,1,2 only
 for d in "${ROOTS[@]}"; do
   h="$(harness_of "$d")"
+
+  # --- the derivation, checked before the declaration is honoured ---
+  if [ -f "$d/RECEIVED.md" ] && [ "$h" != "contract-runner" ]; then
+    echo "FAILED: $d carries RECEIVED.md but is registered '$h' in $REGISTRY." >&2
+    echo "  A suite we received is another repo's expectations OF US. It is executed" >&2
+    echo "  here or the gate fails; there is no registration that exempts it." >&2
+    fail=1
+    h=contract-runner   # gate it anyway, so this run still executes it
+  fi
+  if [ "$h" = "aqc-dual" ] && ! grep -rq 'Scenario Outline' "$d" 2>/dev/null; then
+    echo "FAILED: $d is registered 'aqc-dual' but contains no 'Scenario Outline'." >&2
+    echo "  aqc-dual exists for corpora the vendored Gherkin parser cannot read." >&2
+    echo "  A suite it CAN read must be run by it, not excused from it." >&2
+    fail=1
+  fi
+
   case "$h" in
     contract-runner)          RUN_ROOTS+=("$d"); CHECK_ROOTS+=("$d");;
     contract-runner-consumer) CHECK_ROOTS+=("$d");;
@@ -198,15 +280,28 @@ echo "suites (checked only): ${CHECK_ROOTS[*]:-none}"
 # objected.
 #
 # There is no bump class for this. It is simply forbidden.
+#
+# THE GUARD ASKS THE PARSER, NOT grep (fix round 2, review C-NEW-1). This
+# used to be `grep -rnE '^[[:space:]]*@target([[:space:]]|$)'`, anchored at
+# the start of a line -- while `Gherkin/Parse.hs:27` makes EVERY
+# whitespace-separated word on a tag line a tag, and `Run.hs`'s `isTarget`
+# tests membership, not position. So `  @wip @target` disarmed a received
+# suite while the grep saw nothing, and the reviewer got CONTRACT GATE:
+# PASSED with map-generator's own fixture violated.
+#
+# A cleverer regex would only move the goalposts to the next form nobody has
+# typed yet. `contract-runner tags --forbid` calls the same `parseFeature`
+# the executor calls, so the guard is exactly as wide as the thing it
+# guards -- and an unparseable file fails it too, rather than reading as
+# "no forbidden tags here".
 step "leg 0/6: received suites carry no @target"
 disarmed=0
 for d in "${CHECK_ROOTS[@]:-}"; do
   [ -z "$d" ] && continue
   [ -f "$d/RECEIVED.md" ] || continue
-  hits="$(grep -rnE '^[[:space:]]*@target([[:space:]]|$)' "$d" || true)"
-  if [ -n "$hits" ]; then
-    echo "FAILED: @target found in the RECEIVED suite $d -- we may not withdraw another repo's guarantee:" >&2
-    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+  if ! hits="$("$RUNNER" tags "$d" --forbid target 2>&1)"; then
+    echo "FAILED: the RECEIVED suite $d is disarmed or unparseable -- we may not withdraw another repo's guarantee:" >&2
+    printf '%s\n' "$hits" | grep -E 'FORBIDDEN|^tags:' | sed 's/^/    /' >&2
     echo "  If their expectation of us is genuinely wrong: break, report, and coordinate a bump on BOTH sides." >&2
     fail=1; disarmed=1
   fi
@@ -241,23 +336,53 @@ if [ "$FAST" -eq 0 ]; then
   # legitimate re-record. The self-test caught that immediately (A3b went
   # red for the wrong reason). Hashing the files either side answers the
   # question actually being asked, and needs no clean tree.
+  # FAIL-CLOSED (fix round 2, review M-NEW-2). Every failure mode of the old
+  # pipeline -- no sha256sum (stock macOS ships `shasum`), no find, no xargs,
+  # no contracts/pacts -- yielded the EMPTY STRING on both sides, and empty
+  # equals empty, so "the evidence did not move" was the answer whenever the
+  # check could not run at all. Both `2>/dev/null`s guaranteed the failure
+  # was silent. A check that is off cannot be a check that passes.
   pact_fingerprint() {
     find contracts/pacts -type f -name '*.json' -print0 2>/dev/null \
-      | sort -z | xargs -0 sha256sum 2>/dev/null | sha256sum
+      | sort -z | xargs -0 "$HASHER" | "$HASHER"
   }
-  before="$(pact_fingerprint)"
-
-  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-server --test contract_pact >/dev/null )
-  check $? "provider drift: the HTTP pact no longer matches the live graph"
-  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-cli --test contract_pact_cli >/dev/null )
-  check $? "provider drift: the CLI pact no longer matches the real bibex binary"
-
-  after="$(pact_fingerprint)"
-  if [ "$before" != "$after" ]; then
-    echo "FAILED: contracts/pacts was REWRITTEN while this gate was running." >&2
-    echo "  The gate verifies evidence; it must never be the thing that produces it." >&2
-    echo "  Re-record deliberately, review the diff, then run the gate against it." >&2
+  HASHER=""
+  for h in sha256sum shasum sha1sum md5sum; do
+    if command -v "$h" >/dev/null 2>&1; then HASHER="$h"; break; fi
+  done
+  if [ -z "$HASHER" ]; then
+    echo "FAILED: no hashing tool (sha256sum/shasum/sha1sum/md5sum) is available." >&2
+    echo "  The pact fingerprint is what proves the gate did not rewrite its own" >&2
+    echo "  evidence; without it the check would silently be off." >&2
     fail=1
+  fi
+  before=""
+  if [ -n "$HASHER" ]; then
+    before="$(pact_fingerprint)"
+    if [ -z "$before" ]; then
+      echo "FAILED: could not fingerprint contracts/pacts (empty result from $HASHER)." >&2
+      fail=1
+    fi
+  fi
+
+  http_log="$(mktemp)"; cli_log="$(mktemp)"
+  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-server --test contract_pact ) >"$http_log" 2>&1
+  check $? "provider drift: the HTTP pact no longer matches the live graph"
+  require_test_evidence "leg 3 (HTTP recorder)" "$http_log" || fail=1
+
+  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-cli --test contract_pact_cli ) >"$cli_log" 2>&1
+  check $? "provider drift: the CLI pact no longer matches the real bibex binary"
+  require_test_evidence "leg 3 (CLI recorder)" "$cli_log" || fail=1
+  rm -f "$http_log" "$cli_log"
+
+  if [ -n "$HASHER" ] && [ -n "$before" ]; then
+    after="$(pact_fingerprint)"
+    if [ -z "$after" ] || [ "$before" != "$after" ]; then
+      echo "FAILED: contracts/pacts was REWRITTEN while this gate was running (or could not be re-read)." >&2
+      echo "  The gate verifies evidence; it must never be the thing that produces it." >&2
+      echo "  Re-record deliberately, review the diff, then run the gate against it." >&2
+      fail=1
+    fi
   fi
 else
   step "leg 3/6: SKIPPED (--fast)"
@@ -309,7 +434,7 @@ if [ -z "${RESOLVED:-}" ]; then
   fail=1
 else
   echo "semver base: $RESOLVED"
-  bash scripts/contract-semver-gate.sh "$RESOLVED"; check $? "contract semver gate"
+  bash scripts/contract-semver-gate.sh --runner "$RUNNER" "$RESOLVED"; check $? "contract semver gate"
 fi
 
 printf '\n'

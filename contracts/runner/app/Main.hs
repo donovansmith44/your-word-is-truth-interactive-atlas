@@ -36,6 +36,7 @@ import Steps (allSteps)
 import World
 import qualified Check
 import qualified Vocab
+import qualified Tags
 
 data Source = Live String | Replay FilePath
 
@@ -43,6 +44,12 @@ data Cmd
   = CmdRun { cSource :: Source, cDir :: FilePath, cBless :: Bool, cExports :: Maybe FilePath }
   | CmdCheck FilePath
   | CmdVocab { vDir :: FilePath, vWrite :: Bool }
+  -- Fix round 2 (review C-NEW-1): the tag oracle. The shell guards used to
+  -- grep for `@target` anchored at the start of a line, while the parser
+  -- reads every whitespace-separated word on a tag line -- so `  @wip
+  -- @target` disarmed a received suite and both guards saw nothing. A guard
+  -- that has to parse a format must use that format's parser.
+  | CmdTags { tDir :: FilePath, tForbid :: [String] }
 
 sourceP :: Parser Source
 sourceP =
@@ -64,6 +71,10 @@ cmd = hsubparser
   <> command "vocab" (info (CmdVocab <$> argument str (metavar "DIR")
                                      <*> switch (long "write"))
                        (progDesc "verify (or --write) Vocabulary blocks against the types"))
+  <> command "tags"  (info (CmdTags <$> argument str (metavar "DIR")
+                                    <*> many (strOption (long "forbid" <> metavar "TAG"
+                                          <> help "exit non-zero if this tag appears anywhere")))
+                       (progDesc "report every scenario's tags, as the PARSER reads them"))
   )
 
 featureFiles :: FilePath -> IO [FilePath]
@@ -147,6 +158,7 @@ main = do
            >> exitFailure
     CmdCheck dir -> Check.checkDir allSteps dir
     CmdVocab dir wr -> Vocab.vocabDir allSteps dir wr
+    CmdTags dir forbid -> Tags.tagsCmd dir (map T.pack forbid)
   where
     worldFor (Live base) dir bless ex = do
       mgr <- newManager defaultManagerSettings

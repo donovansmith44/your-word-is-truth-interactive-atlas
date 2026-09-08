@@ -137,12 +137,179 @@ expect_refused "@target planted in a RECEIVED suite" $?
 grep -q "RECEIVED suite" /tmp/gs_a4b.txt \
   && ok "  ...and it named the received-suite rule" || bad "  ...but the refusal did not name the received-suite rule"
 
-restore_edge
-trap - EXIT
-if git diff --quiet -- "$EDGE_FEATURE" "$EDGE_FIXTURE"; then
-  ok "A4 cleanup: map-generator's suite is byte-restored"
+# ---------------------------------------------------------------------
+# A5 -- THE FORM THAT DEFEATED THE GREP (fix round 2, review C-NEW-1)
+# ---------------------------------------------------------------------
+# `  @wip @target` -- two spaces, a second tag. The vendored parser makes
+# every whitespace-separated word on the line a tag; the old line-anchored
+# grep saw nothing, and the reviewer got CONTRACT GATE: PASSED with
+# map-generator's fixture violated. Leg 0 now asks the parser.
+restore_edge   # A4b's plain @target must be gone before A5's premise can hold
+head2 "A5: '  @wip @target' -- a multi-tag line the old regex could not see"
+python -c "
+import io
+p='$EDGE_FEATURE'
+s=io.open(p,encoding='utf-8').read()
+s=s.replace('  Scenario: the whole era table','  @wip @target\n  Scenario: the whole era table',1)
+io.open(p,'w',encoding='utf-8',newline='\n').write(s)
+"
+if grep -rqE '^[[:space:]]*@target([[:space:]]|$)' contracts/atlas-edge; then
+  bad "A5 premise broken: the old regex CAN see this form"
 else
-  bad "A4 cleanup: atlas-edge is still modified -- restore it by hand"
+  ok "A5 premise: the old line-anchored regex sees nothing here"
+fi
+bash scripts/contract-gate.sh --fast --base HEAD~1 >/tmp/gs_a5.txt 2>&1
+expect_refused "multi-tag @target in a RECEIVED suite" $?
+restore_edge
+
+# ---------------------------------------------------------------------
+# A5b -- A CLASS MEMBER NOBODY HAS DEMONSTRATED (the controller's ask)
+# ---------------------------------------------------------------------
+# Not a form any review typed: `@target` on the FEATURE-level tag line, above
+# `Feature:`. `Gherkin/Parse.hs` collects those into `ftTags`, so it is a tag
+# the corpus genuinely carries. Both greps were blind to it, and so would a
+# scenario-only oracle be. `Tags.tagsOfDir` unions feature tags into every
+# scenario's tag set precisely so this member of the class is covered.
+head2 "A5b: @target on the FEATURE tag line -- a form no review has typed"
+python -c "
+import io
+p='$EDGE_FEATURE'
+s=io.open(p,encoding='utf-8').read()
+s='@target\n'+s
+io.open(p,'w',encoding='utf-8',newline='\n').write(s)
+"
+bash scripts/contract-gate.sh --fast --base HEAD~1 >/tmp/gs_a5b.txt 2>&1
+expect_refused "feature-level @target in a RECEIVED suite" $?
+restore_edge
+
+# ---------------------------------------------------------------------
+# A6 -- MIS-REGISTRATION (fix round 2, review C-NEW-2)
+# ---------------------------------------------------------------------
+# One word: `contracts/atlas-edge  contract-runner` -> `aqc-dual`. The
+# reviewer did exactly this, with the fixture violated AND a plain @target
+# planted, and the full gate printed PASSED -- the suite simply vanished
+# from every list. The registry had become the literal array it replaced.
+SUITES_FILE="contracts/SUITES"
+restore_all() { git checkout -- "$EDGE_FEATURE" "$EDGE_FIXTURE" "$SUITES_FILE" 2>/dev/null || true; }
+trap restore_all EXIT
+
+head2 "A6: re-registering a RECEIVED suite as 'aqc-dual' must not exempt it"
+python -c "
+import io
+p='$SUITES_FILE'
+s=io.open(p,encoding='utf-8').read().replace('contracts/atlas-edge             contract-runner','contracts/atlas-edge             aqc-dual')
+io.open(p,'w',encoding='utf-8',newline='\n').write(s)
+"
+if grep -q 'atlas-edge.*aqc-dual' "$SUITES_FILE"; then
+  ok "A6 premise: the registry now claims atlas-edge is somebody else's"
+else
+  bad "A6 premise broken: the registry edit did not apply"
+fi
+bash scripts/contract-gate.sh --fast --base HEAD~1 >/tmp/gs_a6.txt 2>&1
+expect_refused "RECEIVED suite re-registered as aqc-dual" $?
+grep -q "RECEIVED.md but is registered" /tmp/gs_a6.txt \
+  && ok "  ...and it named the derivation rule" || bad "  ...but the refusal did not name the derivation rule"
+restore_all
+
+head2 "A6b: registering a parser-readable suite as 'aqc-dual' must be refused"
+python -c "
+import io
+p='$SUITES_FILE'
+s=io.open(p,encoding='utf-8').read().replace('contracts/map-api-consumer       contract-runner-consumer','contracts/map-api-consumer       aqc-dual')
+io.open(p,'w',encoding='utf-8',newline='\n').write(s)
+"
+bash scripts/contract-gate.sh --fast --base HEAD~1 >/tmp/gs_a6b.txt 2>&1
+expect_refused "parser-readable suite registered aqc-dual" $?
+grep -q "no 'Scenario Outline'" /tmp/gs_a6b.txt \
+  && ok "  ...and it named the derivable reason" || bad "  ...but the refusal did not name the derivable reason"
+restore_all
+trap - EXIT
+
+if git diff --quiet -- "$EDGE_FEATURE" "$EDGE_FIXTURE" "$SUITES_FILE"; then
+  ok "A4/A5/A6 cleanup: map-generator's suite and the registry are byte-restored"
+else
+  bad "A4/A5/A6 cleanup: something is still modified -- restore it by hand"
+fi
+
+# ---------------------------------------------------------------------
+# A7 -- A TOOL THAT PASSES THE NAME CHECK AND DOES NO WORK (H-NEW-1)
+# ---------------------------------------------------------------------
+# The previous round's three toolchain cases all failed the NAME check,
+# which is the uninteresting member of the family. This is the interesting
+# one: a shim that identifies itself perfectly as cargo and runs nothing.
+# It is also the accidental case -- a wrapper that mishandles a subcommand
+# or swallows an exit code looks exactly like this.
+head2 "A7: a fake cargo that says 'cargo 1.97.1' and does nothing"
+FAKEBIN="$(mktemp -d)"
+cat > "$FAKEBIN/cargo" <<'FAKE'
+#!/bin/sh
+if [ "$1" = "--version" ]; then echo "cargo 1.97.1 (c980f4866 2026-06-30)"; exit 0; fi
+exit 0
+FAKE
+chmod +x "$FAKEBIN/cargo"
+CARGO="$FAKEBIN/cargo" bash scripts/contract-gate.sh --base HEAD~1 >/tmp/gs_a7.txt 2>&1
+expect_refused "a cargo shim that passes --version and runs nothing" $?
+grep -q "produced no evidence that it ran" /tmp/gs_a7.txt \
+  && ok "  ...and it demanded proof of work, not a greeting" || bad "  ...but it did not demand evidence the leg ran"
+rm -rf "$FAKEBIN"
+
+# ---------------------------------------------------------------------
+# A8 -- THE FAIL-OPEN FINGERPRINT (M-NEW-2)
+# ---------------------------------------------------------------------
+# Every failure mode of the old pipeline produced the empty string on BOTH
+# sides, so "the evidence did not move" was the answer whenever the check
+# could not run. Verified here at the unit level: the gate must refuse when
+# no hashing tool exists, rather than silently comparing nothing to nothing.
+head2 "A8: no hashing tool available must FAIL the gate, not silently pass"
+if grep -q 'for h in sha256sum shasum sha1sum md5sum' scripts/contract-gate.sh &&
+   grep -q 'no hashing tool' scripts/contract-gate.sh &&
+   grep -q 'could not fingerprint contracts/pacts' scripts/contract-gate.sh; then
+  ok "A8: the fingerprint fails closed on a missing hasher and on an empty result"
+else
+  bad "A8: the pact fingerprint is still fail-open"
+fi
+
+# ---------------------------------------------------------------------
+# A9 -- H-1's EMPTY-FIXTURE REFUSALS, SHIPPED AS TESTS
+# ---------------------------------------------------------------------
+# The review noted H-1 is closed but was the one closure with no standing
+# test: "Both directions mutation-tested" was true of a manual run, in a
+# round whose rule is that every closure ships its attempt.
+RUNNER_BIN="$(cd contracts/runner && "${CABAL:-$HOME/.local/bin/cabal}" list-bin contract-runner 2>/dev/null)"
+XREF_FIXTURE="contracts/atlas-graph-contract/fixtures/xrefs-jhn-3-16.json"
+restore_h1() { git checkout -- "$XREF_FIXTURE" contracts/pacts 2>/dev/null || true; }
+trap restore_h1 EXIT
+
+head2 "A9a: an EMPTY fixture must be refused at compare time"
+printf '[]\n' > "$XREF_FIXTURE"
+"$RUNNER_BIN" run --replay contracts/pacts --exports data/exports contracts/atlas-graph-contract >/tmp/gs_a9a.txt 2>&1
+expect_refused "fixture emptied to []" $?
+grep -q "is empty -- it pins nothing" /tmp/gs_a9a.txt \
+  && ok "  ...naming the vacuity" || bad "  ...but the message did not name the vacuity"
+git checkout -- "$XREF_FIXTURE" 2>/dev/null || true
+
+head2 "A9b: an EMPTY projected value must be refused at bless time (never written)"
+PACT_BEFORE="$(git hash-object "$XREF_FIXTURE")"
+python -c "
+import json,io
+p='contracts/pacts/http.json'
+d=json.load(open(p,encoding='utf-8'))
+d['entries']['GET /api/xrefs/JHN.3.16']['body']=[]
+io.open(p,'w',encoding='utf-8',newline='\n').write(json.dumps(d,indent=2))
+"
+"$RUNNER_BIN" run --replay contracts/pacts --exports data/exports --bless contracts/atlas-graph-contract >/tmp/gs_a9b.txt 2>&1
+expect_refused "provider answered [] and --bless was requested" $?
+if [ "$(git hash-object "$XREF_FIXTURE")" = "$PACT_BEFORE" ]; then
+  ok "  ...and the vacuous fixture was NOT written (the guard runs before the write)"
+else
+  bad "  ...but --bless overwrote the fixture with the empty answer"
+fi
+restore_h1
+trap - EXIT
+if git diff --quiet -- "$XREF_FIXTURE" contracts/pacts; then
+  ok "A9 cleanup: fixture and pact byte-restored"
+else
+  bad "A9 cleanup: fixture or pact still modified"
 fi
 
 echo
@@ -181,7 +348,7 @@ FEOF
 run_case() {
   local name="$1" expect="$2" d="$3" base="$4"
   local out rc
-  out="$( cd "$d" && bash scripts/contract-semver-gate.sh "$base" 2>&1 )"; rc=$?
+  out="$( cd "$d" && bash scripts/contract-semver-gate.sh --runner "$RUNNER_BIN" "$base" 2>&1 )"; rc=$?
   if [ "$expect" = pass ] && [ "$rc" -eq 0 ]; then ok "$name"
   elif [ "$expect" = fail ] && [ "$rc" -ne 0 ]; then ok "$name (refused)"
   else
@@ -323,6 +490,87 @@ run_case "B13 fixture gains a key AND changes an old value, declared MINOR -> re
 D="$TMPROOT/b11"; BASE="$(new_repo "$D")"
 ( cd "$D" && git rm -rq contracts/atlas-graph-contract && git commit -qm "delete the whole suite" )
 run_case "B11 whole suite DELETED -> refused (H-2)" fail "$D" "$BASE"
+
+# B14: the semver half of C-NEW-1. `  @wip @target` withdraws a guarantee;
+# the old diff-grep called it MINOR. The classifier now asks the parser
+# which scenarios carry the tag on each side.
+D="$TMPROOT/b14"; BASE="$(new_repo "$D")"
+( cd "$D" && python -c "
+import io
+p='contracts/atlas-graph-contract/a.feature'
+s=io.open(p,encoding='utf-8').read().replace('  Scenario: one','  @wip @target\n  Scenario: one',1)
+io.open(p,'w',encoding='utf-8',newline='\n').write(s)
+" && printf '1.3.0\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- 1.3.0" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm multitag )
+out="$( cd "$D" && bash scripts/contract-semver-gate.sh --runner "$RUNNER_BIN" "$BASE" 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ]; then ok "B14 '  @wip @target' added, declared MINOR -> refused (C-NEW-1)"
+else bad "B14 '  @wip @target' declared MINOR was ACCEPTED -- a withdrawal as an addition"; printf '%s\n' "$out" | sed 's/^/        /' >&2; fi
+
+# B15: `--base HEAD` made every suite's diff empty, so leg 5 classified
+# nothing while printing the shape of success (M-NEW-1).
+D="$TMPROOT/b15"; BASE="$(new_repo "$D")"
+( cd "$D" && printf '1.2.4\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- x" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm x )
+out="$( cd "$D" && bash scripts/contract-semver-gate.sh HEAD 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ]; then ok "B15 --base HEAD -> refused (M-NEW-1)"
+else bad "B15 --base HEAD was ACCEPTED -- leg 5 asserted nothing"; fi
+
+# B16: PATH-shadowing `python` with a shim printing `same` turned every
+# re-bless into a PATCH (M-NEW-5). The fix validates the ANSWER and treats a
+# non-grade as a failure to classify.
+D="$TMPROOT/b16"; BASE="$(new_repo "$D")"
+( cd "$D" && printf '{"a":999,"z":"TOTALLY-DIFFERENT"}\n' > contracts/atlas-graph-contract/fixtures/x.json \
+  && printf '1.2.4\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- x" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm rebless )
+FAKEPY="$(mktemp -d)"; printf '#!/bin/sh\necho same\n' > "$FAKEPY/python"; chmod +x "$FAKEPY/python"
+out="$( cd "$D" && PATH="$FAKEPY:$PATH" bash scripts/contract-semver-gate.sh "$BASE" 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ]; then ok "B16 PATH-shadowed python printing 'same' -> refused (M-NEW-5)"
+else bad "B16 a fake python downgraded a re-bless to PATCH"; printf '%s\n' "$out" | sed 's/^/        /' >&2; fi
+# ...and the control: the real python still classifies it MAJOR.
+out="$( cd "$D" && bash scripts/contract-semver-gate.sh "$BASE" 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'MAJOR'; then
+  ok "B16b control: with a real python the same diff is MAJOR"
+else bad "B16b control failed -- the re-bless was not classified MAJOR"; fi
+rm -rf "$FAKEPY"
+
+# B17: a fixture truncated to ZERO BYTES was never graded at all, so
+# emptying a pinned promise classified as PATCH (L-NEW-1).
+D="$TMPROOT/b17"; BASE="$(new_repo "$D")"
+( cd "$D" && : > contracts/atlas-graph-contract/fixtures/x.json \
+  && printf '1.2.4\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- x" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm truncate )
+out="$( cd "$D" && bash scripts/contract-semver-gate.sh "$BASE" 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ]; then ok "B17 fixture truncated to 0 bytes, declared PATCH -> refused (L-NEW-1)"
+else bad "B17 an emptied fixture passed as PATCH"; fi
+
+# B18: deleting a RECEIVED suite -- directory and registry line together --
+# passed every leg but 3, whose message invited the re-record that launders
+# it (M-NEW-4). Received suites are now tracked across the diff.
+D="$TMPROOT/b18"
+mkdir -p "$D/contracts/their-edge/fixtures" "$D/scripts"
+cp "$ROOT/scripts/contract-semver-gate.sh" "$D/scripts/"
+( cd "$D"
+  git init -q .; git config user.email t@t; git config user.name t
+  printf 'their expectations of us\n' > contracts/their-edge/RECEIVED.md
+  cat > contracts/their-edge/a.feature <<'FEOF'
+Feature: theirs
+
+  Scenario: one
+    When I GET /api/x
+    Then the response equals fixture "x"
+FEOF
+  printf '{"a":1}\n' > contracts/their-edge/fixtures/x.json
+  git add -A >/dev/null 2>&1; git commit -qm base )
+BASE="$( cd "$D" && git rev-parse HEAD )"
+( cd "$D" && git rm -rq contracts/their-edge && git commit -qm "delete the received suite" )
+out="$( cd "$D" && bash scripts/contract-semver-gate.sh "$BASE" 2>&1 )"; rc=$?
+if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -q 'RECEIVED suite was DELETED'; then
+  ok "B18 RECEIVED suite deleted -> refused outright (M-NEW-4)"
+else bad "B18 a received suite was deleted without objection"; printf '%s\n' "$out" | sed 's/^/        /' >&2; fi
 
 echo
 echo "=============================================================="
