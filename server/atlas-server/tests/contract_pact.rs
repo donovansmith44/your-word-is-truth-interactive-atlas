@@ -84,15 +84,41 @@ fn app() -> axum::Router {
     ROUTER
         .get_or_init(|| {
             let data_dir = repo_root().join("data");
-            let raw_dir = data_dir.join("raw");
-            let compiled = atlas_etl::compile::compile(&raw_dir, &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first");
-            let data: AtlasData = compiled.data;
-            let graph = GraphService::build(&raw_dir, &data)
-                .expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
+            let compiled_dir = data_dir.join("compiled");
+
+            // THE DEFAULT PATH, not the dev fallback. `src/main.rs` has
+            // two: `--build-from-raw` (compile the ETL in memory) and the
+            // default (load `graph.bin`, then reconstruct the five retiring
+            // AtlasData fields from the already-loaded graph and
+            // `.finish()` the derived indexes). The real server runs the
+            // DEFAULT, so that is what a pact must record.
+            //
+            // The first draft here replicated the dev fallback instead, and
+            // the difference was not cosmetic: without `.finish()`, the
+            // derived index `verse_to_catechism` is empty, so
+            // `GET /api/catechism/{sref}` answered `[]` FOR EVERY
+            // REFERENCE. A scenario blessed against that would have been a
+            // law satisfiable by its own failure mode -- green forever,
+            // including against a server whose catechism lookup was
+            // entirely broken. This is the same class of bug as the empty
+            // `SourcesDocument` below, and the same lesson: a recorder that
+            // assembles the app differently from production records the
+            // wrong evidence, silently.
+            //
+            // It is also several times faster (an artifact load, not an ETL
+            // compile), which matters for a gate meant to run pre-push.
+            let graph = GraphService::from_artifact(&compiled_dir.join("graph.bin"))
+                .expect("data/compiled/graph.bin must load -- run atlas-graph-compile first");
+            let mut data = AtlasData::load(&compiled_dir).expect("data/compiled must load");
+            let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
+            data.events = overlay.events;
+            data.places = overlay.places;
+            data.narratives = overlay.narratives;
+            data.verses = overlay.verses;
+            let data: AtlasData = data.finish();
 
             // Exactly what src/main.rs does, for exactly its reason.
-            let sources_path = data_dir.join("compiled/sources.json");
+            let sources_path = compiled_dir.join("sources.json");
             let sources_json = std::fs::read_to_string(&sources_path).unwrap_or_else(|e| {
                 panic!("reading {} ({e}) -- run `cargo run -p atlas-etl --bin gen_sources` from server/ first", sources_path.display())
             });
@@ -249,14 +275,35 @@ fn request_key(line: &str) -> Option<String> {
     None
 }
 
+/// The suites for which THE ATLAS IS THE PROVIDER, and therefore the only
+/// suites this recorder may answer.
+///
+/// This list is not tidiness -- it is a correctness boundary, and leaving
+/// it out was a real bug the gate caught on its first full run. Two suites
+/// can name the same path and mean different servers:
+/// `contracts/map-api-consumer` is the atlas speaking as a CONSUMER of
+/// map-generator's API, and its `When I GET /api/scene` addresses
+/// map-generator's scene endpoint. Scanning the whole `contracts/` tree
+/// made this recorder answer that key with OUR `/api/scene` -- recording
+/// one provider's answer under another provider's question, silently, in a
+/// pact that would have looked perfectly well-formed.
+///
+/// So the rule is stated positively: record only where we are the
+/// provider. `atlas-edge` qualifies (it is map-generator's expectations OF
+/// US); `map-api-consumer` does not, and is run by map-generator against
+/// its own server.
+const PROVIDED_SUITES: &[&str] = &["atlas-graph-contract", "atlas-edge"];
+
 fn corpus_request_keys() -> Vec<String> {
     let contracts = repo_root().join("contracts");
     let mut files = Vec::new();
-    feature_files(&contracts, &mut files);
+    for suite in PROVIDED_SUITES {
+        feature_files(&contracts.join(suite), &mut files);
+    }
     files.sort();
     assert!(
         !files.is_empty(),
-        "no .feature files under {} -- the recorder derives its work from the corpus, so an empty corpus is a broken gate, not an empty one",
+        "no .feature files under {} for any of {PROVIDED_SUITES:?} -- the recorder derives its work from the corpus, so an empty corpus is a broken gate, not an empty one",
         contracts.display()
     );
 

@@ -5,7 +5,124 @@
   ],
   "entries": {
     "GET /api/catechism/MAT.28.19": {
-      "body": [],
+      "body": [
+        {
+          "id": "commandment-1",
+          "name": "The First Commandment",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "God the Holy Trinity"
+        },
+        {
+          "id": "commandment-2",
+          "name": "The Second Commandment",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Proclaiming God's Name"
+        },
+        {
+          "id": "commandment-2",
+          "name": "The Second Commandment",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Acting in God's Name"
+        },
+        {
+          "id": "commandment-3",
+          "name": "The Third Commandment",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "The Means of Grace"
+        },
+        {
+          "id": "creed-3",
+          "name": "The Third Article — Of Sanctification",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Sent to Witness and Proclaim"
+        },
+        {
+          "id": "baptism-1",
+          "name": "Baptism — Part One",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ]
+        },
+        {
+          "id": "baptism-1",
+          "name": "Baptism — Part One",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Baptizing in the Triune Name"
+        },
+        {
+          "id": "baptism-1",
+          "name": "Baptism — Part One",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Baptizing and Teaching"
+        },
+        {
+          "id": "baptism-1",
+          "name": "Baptism — Part One",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Households Baptized"
+        },
+        {
+          "id": "baptism-1",
+          "name": "Baptism — Part One",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Baptized Without Delay"
+        },
+        {
+          "id": "baptism-4",
+          "name": "Baptism — Part Four",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Living Daily in Our Baptism"
+        },
+        {
+          "id": "confession-2",
+          "name": "The Absolution",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Gathered in His Name"
+        },
+        {
+          "id": "altar-4",
+          "name": "Who Receives the Sacrament Worthily",
+          "provenance": [
+            "concord-sc-overlap",
+            "curated-catechism"
+          ],
+          "question": "Preparing to Receive Him"
+        }
+      ],
       "status": 200
     },
     "GET /api/contract": {
