@@ -36,10 +36,31 @@
 -- consults 'scTags', a tag that the corpus can carry is a tag a future
 -- runner change could honour. A guard that ignores it would be narrower
 -- than the format again.
+--
+-- # Why the fields are ESCAPED (fix round 3, review H-R2-4)
+--
+-- This module was asked correctly and then its answer was RE-LEXED by a
+-- second, narrower parser in the shell:
+--
+-- >   awk -F'\t' '{n=split($3,a,","); ...}'
+--
+-- A scenario NAME may contain a tab (@Gherkin.Parse@'s @Scenario: @ handler
+-- takes the whole stripped remainder of the line), which shifts the tag
+-- column from @$3@ to @$4@ and makes @\@target@ invisible to the semver
+-- classifier. The reviewer named a scenario @alpha\<TAB\>beta gamma@ and
+-- withdrew a guarantee under a MINOR bump.
+--
+-- Emitting a delimiter inside a delimited field is the producer's bug, not
+-- the consumer's. So every field is percent-escaped here: after this, a
+-- literal tab CANNOT occur inside a field, one output line is exactly one
+-- scenario, and @-F'\\t'@ is a total parse rather than a guess. The shell
+-- consumes the structure it was given instead of re-deriving it.
 module Tags
   ( ScenarioTags (..)
   , tagsOfDir
   , tagsCmd
+  , escField
+  , renderRow
   ) where
 
 import Data.List (nub, sort)
@@ -59,6 +80,33 @@ data ScenarioTags = ScenarioTags
   , stScenario :: Text
   , stTags     :: [Text]
   } deriving (Eq, Show)
+
+-- | Percent-escape the four characters that could otherwise be mistaken for
+-- structure by a line/tab reader: @%@ itself (so the escaping is
+-- invertible), TAB, LF and CR.
+--
+-- CR is escaped for a reason this project has already been bitten by: the
+-- runner emits a trailing CR on Windows, and the previous round's shell
+-- consumer happened to strip it. "Happened to" is not a guarantee, and a CR
+-- inside a scenario NAME would not have been stripped at all.
+escField :: Text -> Text
+escField =
+  T.concatMap $ \c -> case c of
+    '%'  -> "%25"
+    '\t' -> "%09"
+    '\n' -> "%0A"
+    '\r' -> "%0D"
+    _    -> T.singleton c
+
+-- | One scenario, one line, three tab-separated ESCAPED fields:
+-- @file\\tscenario\\ttag,tag@. Exported so every consumer of this runner's
+-- machine output (leg 0, the semver classifier, the coverage
+-- reconciliation) shares one definition of the row shape.
+renderRow :: ScenarioTags -> Text
+renderRow row =
+  escField (T.pack (stFile row)) <> "\t"
+    <> escField (stScenario row) <> "\t"
+    <> T.intercalate "," (map escField (stTags row))
 
 featureFilesIn :: FilePath -> IO [FilePath]
 featureFilesIn dir = do
@@ -116,14 +164,11 @@ tagsCmd dir forbidden = do
   case r of
     Left e -> TIO.putStrLn ("tags: " <> e) >> exitFailure
     Right rows -> do
-      mapM_ (TIO.putStrLn . render) rows
+      mapM_ (TIO.putStrLn . renderRow) rows
       let offending = [ (row, t) | row <- rows, t <- stTags row, t `elem` forbidden ]
       if null offending then exitSuccess
       else do
         mapM_ (\(row, t) -> TIO.putStrLn
-                ("FORBIDDEN TAG @" <> t <> " on scenario '" <> stScenario row
-                 <> "' in " <> T.pack (stFile row))) offending
+                ("FORBIDDEN TAG @" <> t <> " on scenario '" <> escField (stScenario row)
+                 <> "' in " <> escField (T.pack (stFile row)))) offending
         exitFailure
-  where
-    render row = T.pack (stFile row) <> "\t" <> stScenario row <> "\t"
-                 <> T.intercalate "," (stTags row)

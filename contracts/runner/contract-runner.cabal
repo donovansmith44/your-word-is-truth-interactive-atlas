@@ -36,6 +36,7 @@ library
                       Check
                       Vocab
                       Tags
+                      Grade
                       Prop
     build-depends:    base >=4.17 && <5,
                       text,
