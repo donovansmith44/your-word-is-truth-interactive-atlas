@@ -257,18 +257,68 @@ fn request_key(line: &str) -> Option<String> {
 /// provider. `atlas-edge` qualifies (it is map-generator's expectations OF
 /// US); `map-api-consumer` does not, and is run by map-generator against
 /// its own server.
-const PROVIDED_SUITES: &[&str] = &["atlas-graph-contract", "atlas-edge"];
+/// DERIVED, not written down (fix round 3, review M-R2-4).
+///
+/// This used to be `const PROVIDED_SUITES: &[&str] = &["atlas-graph-contract",
+/// "atlas-edge"]` -- a literal array, which is the exact shape that produced
+/// C-2 in round 1 (a suite excluded from every tag check) and C-NEW-2 in
+/// round 2 (a suite excluded by one registry word). Leg 3 turned out to be
+/// the strongest single defence in the gate -- it is what refused three of
+/// the round-2 probes when nothing else did -- and its scope was a
+/// hardcoded list. A second received suite added tomorrow would be detected
+/// by the gate, classified by the registry, executed by leg 4, and
+/// **silently uncovered here**, so hiding its corpus would move no pact and
+/// none of leg 3's objections would fire.
+///
+/// So the scope is read from `contracts/SUITES`: every row registered
+/// `contract-runner` is a suite for which WE are the provider, which is the
+/// same fact the gate derives. An unreadable or empty registry is a broken
+/// recorder, not an empty one, and says so.
+fn provided_suites() -> Vec<String> {
+    let registry = repo_root().join("contracts/SUITES");
+    let text = std::fs::read_to_string(&registry).unwrap_or_else(|e| {
+        panic!(
+            "cannot read {}: {e}\n  The recorder derives WHICH suites it provides from the registry; \
+             without it, it would have to guess, and a hardcoded guess is what review M-R2-4 is about.",
+            registry.display()
+        )
+    });
+    let mut suites: Vec<String> = Vec::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let mut parts = line.split_whitespace();
+        let (Some(dir), Some(harness)) = (parts.next(), parts.next()) else {
+            continue;
+        };
+        if harness != "contract-runner" {
+            continue;
+        }
+        suites.push(dir.strip_prefix("contracts/").unwrap_or(dir).to_string());
+    }
+    suites.sort();
+    assert!(
+        !suites.is_empty(),
+        "no suite in {} is registered 'contract-runner', so this recorder would answer nothing. \
+         A recorder with no scope is a broken gate, not a passing one.",
+        registry.display()
+    );
+    suites
+}
 
 fn corpus_request_keys() -> Vec<String> {
     let contracts = repo_root().join("contracts");
+    let provided = provided_suites();
     let mut files = Vec::new();
-    for suite in PROVIDED_SUITES {
+    for suite in &provided {
         feature_files(&contracts.join(suite), &mut files);
     }
     files.sort();
     assert!(
         !files.is_empty(),
-        "no .feature files under {} for any of {PROVIDED_SUITES:?} -- the recorder derives its work from the corpus, so an empty corpus is a broken gate, not an empty one",
+        "no .feature files under {} for any of {provided:?} -- the recorder derives its work from the corpus, so an empty corpus is a broken gate, not an empty one",
         contracts.display()
     );
 
@@ -421,6 +471,47 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
     let path = pact_path();
 
     if std::env::var("ATLAS_BLESS_PACT").as_deref() == Ok("1") {
+        // A SHRINKING JUNCTURE SET IS NOT BLESSABLE (fix round 3, C-R2-3).
+        //
+        // This is the laundering path the round-2 review walked end to end.
+        // Rename a received suite's `.feature` files away: the corpus
+        // shrinks, so `corpus_request_keys()` shrinks, so the pact this test
+        // builds shrinks -- and the test fails with "the provider drifted
+        // from the recorded pact", whose remedy the gate PRINTS and this
+        // file PRINTED: re-record with ATLAS_BLESS_PACT=1. Following our own
+        // instructions took contracts/pacts/http.json from 175,656 bytes to
+        // 34,257 -- 80% of the recorded evidence gone -- and turned the
+        // whole gate green.
+        //
+        // The message named the wrong event and prescribed the wrong cure.
+        // Losing a juncture is not drift; it is a corpus that stopped
+        // asking. So blessing refuses BEFORE it writes, and there is no
+        // variable that makes it write anyway: the fix for a missing
+        // juncture is to put the question back, or to remove it deliberately
+        // in a diff a human reads.
+        if let Ok(committed) = std::fs::read_to_string(&path) {
+            if let Ok(old) = serde_json::from_str::<Value>(&committed) {
+                let empty = Map::new();
+                let o = old.get("entries").and_then(Value::as_object).unwrap_or(&empty);
+                let n = pact.get("entries").and_then(Value::as_object).unwrap_or(&empty);
+                let lost: Vec<&String> = o.keys().filter(|k| !n.contains_key(*k)).collect();
+                if !lost.is_empty() {
+                    panic!(
+                        "REFUSING TO RE-RECORD: the committed pact answers {} juncture(s) this run \
+                         does not ask about.\n  first lost: {:?}\n\
+                         \n  The recorder derives its questions from the .feature corpus, so a corpus \
+                         that shrank -- renamed, moved, emptied, or resolved away in a merge -- makes \
+                         this test look like provider drift. It is not drift. Re-recording here would \
+                         write a SMALLER pact and turn the gate green over expectations nobody is \
+                         asking any more.\n  \
+                         Restore the corpus, or remove those expectations deliberately: the semver \
+                         gate classifies a removal MAJOR, and on a RECEIVED suite refuses it outright.",
+                        lost.len(),
+                        lost.iter().take(3).collect::<Vec<_>>()
+                    );
+                }
+            }
+        }
         std::fs::create_dir_all(path.parent().expect("the pact has a parent directory"))
             .expect("the pact directory must be creatable");
         std::fs::write(&path, &rendered).expect("the pact must be writable");
@@ -461,6 +552,22 @@ fn first_differing_key(old: &Value, new: &Value) -> String {
     let empty = Map::new();
     let o = old.get("entries").and_then(Value::as_object).unwrap_or(&empty);
     let n = new.get("entries").and_then(Value::as_object).unwrap_or(&empty);
+    // LOST JUNCTURES FIRST, and named as what they are (fix round 3,
+    // C-R2-3). This loop used to iterate only the NEW keys, so a corpus
+    // that stopped asking four questions produced the generic "the provider
+    // drifted" headline and the re-record remedy underneath it -- the exact
+    // sentence the reviewer followed to shrink the pact by 80% and turn the
+    // gate green. A missing question is not a drifting answer, and the two
+    // must not share a message.
+    for k in o.keys() {
+        if !n.contains_key(k) {
+            return format!(
+                "the corpus STOPPED ASKING about juncture '{k}' (it is in the committed pact and not \
+                 in this run).\n  That is a shrinking corpus, not provider drift: do NOT re-record. \
+                 Restore the .feature file, or remove the expectation deliberately"
+            );
+        }
+    }
     for (k, nv) in n {
         match o.get(k) {
             None => return format!("new juncture recorded: '{k}'"),

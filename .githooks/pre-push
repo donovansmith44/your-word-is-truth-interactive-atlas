@@ -39,8 +39,49 @@ if [ ! -x scripts/contract-gate.sh ] && [ ! -f scripts/contract-gate.sh ]; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------
+# GATE THE COMMITS BEING PUSHED, NOT WHATEVER HEAD HAPPENS TO BE (L-R2-4)
+# ---------------------------------------------------------------------
+# git hands a pre-push hook `<local ref> <local sha> <remote ref> <remote
+# sha>` on STDIN, one line per ref. This hook read none of it and always
+# gated HEAD against `@{upstream}` -- so `git push origin some-other-branch`
+# or `git push origin HEAD~5:main` was gated against commits that are not
+# the ones being pushed. Harmless in a one-branch workflow, and exactly the
+# kind of scope gap that stops being harmless the day someone pushes a
+# second branch.
+#
+# The REMOTE sha is the right semver base: it is what the receiving end
+# already has, so `remote..local` is precisely the set of commits this push
+# publishes. An all-zero remote sha means the ref is new over there, and
+# then there is no base on the remote side to diff against -- fall through
+# to the gate's own resolution chain and let it say what it resolved.
+#
+# Guarded on `[ -t 0 ]` so that running this file by hand -- which is how
+# every review of it has been done -- does not sit waiting on a terminal
+# read. When git invokes it, stdin is a pipe.
+REMOTE_BASE=""
+if [ ! -t 0 ]; then
+  while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ -z "${local_sha:-}" ] && continue
+    case "$local_sha" in *[!0]*) ;; *) continue;; esac    # deleting a ref: nothing to gate
+    case "${remote_sha:-}" in
+      ''|*[!0-9a-f]*) continue;;
+      *[!0]*)
+        if git rev-parse --verify --quiet "$remote_sha" >/dev/null 2>&1; then
+          REMOTE_BASE="$remote_sha"
+          echo "pre-push: gating against the remote's current $remote_sha"
+          break
+        fi;;
+    esac
+  done
+fi
+
 echo "pre-push: running the contract gate..."
-bash scripts/contract-gate.sh
+if [ -n "$REMOTE_BASE" ]; then
+  bash scripts/contract-gate.sh --base "$REMOTE_BASE"
+else
+  bash scripts/contract-gate.sh
+fi
 rc=$?
 
 if [ "$rc" -ne 0 ]; then
