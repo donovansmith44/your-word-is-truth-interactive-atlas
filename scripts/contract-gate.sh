@@ -230,18 +230,33 @@ done
 # ---------------------------------------------------------------------
 if [ "$FAST" -eq 0 ]; then
   step "leg 3/6: provider drift (the recorders)"
+
+  # THE LOAD-BEARING CHECK, and it is a BEFORE/AFTER comparison rather than
+  # `git diff`. Whatever wrote the pact, and however it was triggered: if
+  # the evidence moved WHILE THE GATE RAN, the gate did not pass.
+  #
+  # `git diff --quiet -- contracts/pacts` was the first attempt and it is
+  # subtly wrong -- it cannot tell "rewritten during this run" from "already
+  # uncommitted", so it failed the gate for anyone mid-way through a
+  # legitimate re-record. The self-test caught that immediately (A3b went
+  # red for the wrong reason). Hashing the files either side answers the
+  # question actually being asked, and needs no clean tree.
+  pact_fingerprint() {
+    find contracts/pacts -type f -name '*.json' -print0 2>/dev/null \
+      | sort -z | xargs -0 sha256sum 2>/dev/null | sha256sum
+  }
+  before="$(pact_fingerprint)"
+
   ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-server --test contract_pact >/dev/null )
   check $? "provider drift: the HTTP pact no longer matches the live graph"
   ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-cli --test contract_pact_cli >/dev/null )
   check $? "provider drift: the CLI pact no longer matches the real bibex binary"
 
-  # THE LOAD-BEARING ONE. Whatever wrote it, however it was triggered: if
-  # the evidence moved while the gate was running, the gate did not pass.
-  if ! git diff --quiet -- contracts/pacts; then
-    echo "FAILED: contracts/pacts was MODIFIED during this gate run." >&2
-    git diff --stat -- contracts/pacts | sed 's/^/    /' >&2
-    echo "  The gate verifies evidence; it must never be the thing that rewrites it." >&2
-    echo "  If this was a deliberate re-record, commit it and re-run against the committed pact." >&2
+  after="$(pact_fingerprint)"
+  if [ "$before" != "$after" ]; then
+    echo "FAILED: contracts/pacts was REWRITTEN while this gate was running." >&2
+    echo "  The gate verifies evidence; it must never be the thing that produces it." >&2
+    echo "  Re-record deliberately, review the diff, then run the gate against it." >&2
     fail=1
   fi
 else

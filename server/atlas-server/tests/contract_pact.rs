@@ -145,7 +145,23 @@ fn graph_vocabulary() -> Value {
         .map(|s| json!({ "name": format!("{s:?}"), "label": s.label() }))
         .collect();
 
-    json!({ "node_kinds": node_kinds, "relations": relations, "symmetric": symmetric })
+    // THE ARTIFACT FORMAT WALL (fix round 1, review M-5).
+    //
+    // `artifact::load` refuses any graph.bin whose format_version is not
+    // exactly this number, so a bump refuses every holder of an older
+    // artifact outright -- the sharpest break this repo can make, and the
+    // one the gate could not see. Published here, from the same constant
+    // `load` enforces, so a 13 -> 14 bump now moves the vocabulary fixture
+    // and the semver gate classifies it MAJOR like any other removed
+    // guarantee.
+    let artifact_format_version = atlas_graph::artifact::artifact_format_version();
+
+    json!({
+        "artifact_format_version": artifact_format_version,
+        "node_kinds": node_kinds,
+        "relations": relations,
+        "symmetric": symmetric,
+    })
 }
 
 // ---------------------------------------------------------------------

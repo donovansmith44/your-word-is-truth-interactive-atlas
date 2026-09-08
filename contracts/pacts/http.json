@@ -7013,6 +7013,7 @@
     },
     "graph vocabulary": {
       "body": {
+        "artifact_format_version": 13,
         "node_kinds": [
           "TextUnit",
           "Container",

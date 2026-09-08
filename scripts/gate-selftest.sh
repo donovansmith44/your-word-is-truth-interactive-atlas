@@ -84,13 +84,17 @@ grep -q "failing on purpose" /tmp/gs_a3a.txt \
   && ok "  ...and it said it re-recorded and failed on purpose" || bad "  ...but the failure did not explain itself"
 
 head2 "A3b: the gate strips the variable, so an inherited one cannot bless mid-run"
+# Fingerprint either side of the run rather than asking git, for the same
+# reason the gate does: "rewritten during this run" is the question, and a
+# working tree that is merely dirty (mid-re-record) is not an answer to it.
+pact_fp() { find contracts/pacts -type f -name '*.json' -print0 2>/dev/null | sort -z | xargs -0 sha256sum 2>/dev/null | sha256sum; }
+fp_before="$(pact_fp)"
 ATLAS_BLESS_PACT=1 bash scripts/contract-gate.sh --base HEAD~1 >/tmp/gs_a3b.txt 2>&1
 expect_ok "gate still PASSES with ATLAS_BLESS_PACT=1 exported (stripped for leg 3)" $?
-if git diff --quiet -- contracts/pacts; then
-  ok "  ...and contracts/pacts is unchanged (the evidence was not rewritten)"
+if [ "$fp_before" = "$(pact_fp)" ]; then
+  ok "  ...and contracts/pacts is byte-unchanged (the evidence was not rewritten)"
 else
-  bad "  ...but contracts/pacts was MODIFIED during the run"
-  git checkout -- contracts/pacts 2>/dev/null || true
+  bad "  ...but contracts/pacts was REWRITTEN during the run"
 fi
 
 # ---------------------------------------------------------------------
@@ -291,6 +295,27 @@ io.open(p,'w',encoding='utf-8',newline='\n').write(s)
   && echo "- 1.3.0" >> contracts/atlas-graph-contract/CHANGELOG.md \
   && git add -A >/dev/null 2>&1 && git commit -qm untarget )
 run_case "B10 @target REMOVED, declared MINOR -> accepted (M-3)" pass "$D" "$BASE"
+
+# B12: a fixture that gains a KEY while every previously pinned value stays
+# put is a promise WIDENED, not changed -> MINOR. Without this grade,
+# "a projection gaining a field" (which the suite's CHANGELOG documents as
+# MINOR) classified MAJOR -- the same self-contradiction as M-3.
+D="$TMPROOT/b12"; BASE="$(new_repo "$D")"
+( cd "$D" && printf '{\n  "a": 1,\n  "b": 2\n}\n' > contracts/atlas-graph-contract/fixtures/x.json \
+  && printf '1.3.0\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- 1.3.0" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm widen )
+run_case "B12 fixture WIDENED (new key, old values intact), declared MINOR -> accepted" pass "$D" "$BASE"
+
+# B13: ...but changing one of the values it already pinned, even while
+# adding a key, is still MAJOR. The widening grade must not become a way to
+# smuggle a re-bless past the gate.
+D="$TMPROOT/b13"; BASE="$(new_repo "$D")"
+( cd "$D" && printf '{\n  "a": 99,\n  "b": 2\n}\n' > contracts/atlas-graph-contract/fixtures/x.json \
+  && printf '1.3.0\n' > contracts/atlas-graph-contract/VERSION \
+  && echo "- 1.3.0" >> contracts/atlas-graph-contract/CHANGELOG.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm widen-and-change )
+run_case "B13 fixture gains a key AND changes an old value, declared MINOR -> refused" fail "$D" "$BASE"
 
 # B11: deleting an ENTIRE SUITE is the most MAJOR thing possible, and used
 # to classify as nothing at all because `[ -d ]` skipped it before the diff

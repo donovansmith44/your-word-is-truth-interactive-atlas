@@ -10,15 +10,35 @@
 -- and may not change a consumed one without someone going red.
 --
 -- THE REGISTRY BELOW is the atlas's, and it is organised by the addendum's
--- rule rather than by endpoint. A projection is named for the GRAPH thing
--- it projects -- @place@, @event@, @node-card@, @edge-page@, @vocabulary@
--- -- never for the route that happens to carry it. Transports then
--- inherit: @transport\/http.feature@ asserts that @GET \/api\/place\/{id}@
--- carries the @place@ projection, and the day a second transport serves
--- the same node it reuses the same projection name and the same fixture
--- rather than growing a second vocabulary for the same promise. That is
--- the addendum's "a consumer that adds a transport must not need a new
--- contract vocabulary", made structural: there is nowhere else to put it.
+-- rule rather than by endpoint: a projection is named for the thing it
+-- projects, never for the route that happens to carry it. Transports then
+-- inherit -- the day a second carrier serves the same thing it reuses the
+-- same projection name and the same fixture rather than growing a second
+-- vocabulary for one promise. That is the addendum's "a consumer that adds
+-- a transport must not need a new contract vocabulary", and it is checked
+-- rather than claimed: @transport\/cli.feature@ asks whether bibex and the
+-- HTTP wire project to the SAME value through @node-card@ and
+-- @edge-page@, with no fixture on either side.
+--
+-- HOW HONESTLY THAT HOLDS, entry by entry (fix round 1, review M-6, which
+-- caught this paragraph describing a @place@ projection that does not
+-- exist and an assertion in @transport\/http.feature@ that was never
+-- written -- in the file the header calls the proof the ruling was
+-- honoured):
+--
+--   * GRAPH THINGS, in the full sense: @vocabulary@, @node-card@,
+--     @edge-page@, @gazetteer@, @version-root@. These name nodes, edge
+--     families, the declared manifests and the artifact root.
+--   * PAYLOAD PROJECTIONS, named after an answer rather than a graph
+--     thing: @contract@, @sources@, @xref-list@, @catechism-list@,
+--     @export-format@. They are still transport-agnostic -- a second
+--     carrier for cross-references would reuse @xref-list@ -- so the
+--     addendum's test still passes, but the banner below claims more
+--     tidiness than these five deliver, and saying so is cheaper than
+--     pretending otherwise.
+--
+-- There is NO @place@ projection. @GET \/api\/place\/{id}@ is juncture
+-- T-14 in the batch report's inventory, listed as uncovered.
 --
 -- The six CARTOGRAPHIC entries at the bottom (@eras@, @event@,
 -- @land-mask@, @landmarks@, @narratives@, @polities@) are NOT ours to
@@ -161,7 +181,13 @@ projections = Map.fromList
       -- transport, is drawn from this set, and `every "kind" ... names a
       -- declared node kind` is checked against exactly this.
     , Fields
-        [ field1 "node_kinds" Keep
+        [ -- The artifact format wall (fix round 1, review M-5).
+          -- `artifact::load` refuses any graph.bin whose format_version is
+          -- not exactly this, so a bump refuses every holder of an older
+          -- artifact -- the sharpest break available here, and previously
+          -- invisible to all five gate legs.
+          field1 "artifact_format_version" Keep
+        , field1 "node_kinds" Keep
         , field1 "relations" (Each (Fields
             [ field1 "name" Keep, field1 "forward" Keep, field1 "inverse" Keep ]))
         , field1 "symmetric" (Each (Fields

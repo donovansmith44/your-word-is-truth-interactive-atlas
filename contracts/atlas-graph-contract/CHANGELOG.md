@@ -34,6 +34,25 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.2.0** (Batch CDC-1, fix round 1) — **MINOR: one guarantee added.** The
+  graph's declared vocabulary now also pins `artifact_format_version`, read
+  from the same private constant `atlas_graph::artifact::load` enforces
+  (13 today). That constant is the sharpest break this repo can make — an
+  artifact at any other version is refused outright, so every holder of an
+  older `graph.bin` is turned away — and until now no expectation named it,
+  so a 13 → 14 bump passed all five gate legs. Review finding M-5.
+
+  Classified MINOR by the gate itself, not by assertion: the fixture is a
+  strict widening (every previously pinned value unchanged, one key added),
+  which is the grade added this round so that "a projection gaining a
+  field" stops classifying as MAJOR and contradicting the table below.
+
+  Also this round, and deliberately NOT bumps to this suite because they
+  change the runner rather than any promise: an empty projection is now
+  refused at bless and compare time (review H-1 — this suite twice shipped a
+  green scenario pinning `[]`), and `@target` is forbidden outright in any
+  received suite (review C-2).
+
 - **0.1.0** (Batch CDC-1) — Initial suite. The graph-primary expectations
   (`graph/`: the declared `kind_tags!`/`relations!` vocabulary; node
   identity; edge-family pages with the bijection witness; the gazetteer

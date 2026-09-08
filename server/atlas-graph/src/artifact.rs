@@ -1011,6 +1011,25 @@ pub struct ArtifactDump {
 /// the same commit that rebuilds `data/compiled/graph.bin`.
 const FORMAT_VERSION: u32 = 13;
 
+/// The artifact format this build reads and writes, published so a CONSUMER
+/// can pin it.
+///
+/// CDC-1 fix round 1 (review M-5). `load` refuses any artifact whose
+/// `format_version` is not exactly this constant, which makes a bump the
+/// sharpest break available in this repo: every holder of an older
+/// `graph.bin` is refused outright, and the atlas is the provider of that
+/// artifact to its own server, to bibex, and (through the exports built
+/// beside it) to map-generator. It was the one hard version wall the
+/// contract gate could not see -- a 13 -> 14 bump passed all five legs --
+/// so the contract suite now pins it.
+///
+/// A function over the private constant rather than a second `pub const`,
+/// so the number keeps exactly one definition site: what `load` enforces is
+/// what the suite pins, by construction.
+pub fn artifact_format_version() -> u32 {
+    FORMAT_VERSION
+}
+
 /// Dumps a built `Graph`'s own row/node tables (NOT the derived indexes --
 /// see this module's own doc comment) plus the chronology companion and
 /// startup stats. Errors loudly if any of the currently-always-empty

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# PRE-PUSH: the contract gate.
+#
+# Owner order 2: "we will get to a point where we cannot push or do anything
+# if our contracts don't agree. that is target shape." This is the hook that
+# makes "cannot push" literal.
+#
+# INSTALLING IT IS ONE COMMAND, and it is the OWNER'S to run -- a batch does
+# not reconfigure someone's local git:
+#
+#     git config core.hooksPath .githooks
+#
+# To take it off again: `git config --unset core.hooksPath`.
+#
+# Why a tracked hook plus one config line, rather than writing into
+# .git/hooks: .git/hooks is untracked, so a hook installed there is invisible
+# to review, unversioned, and silently absent in every other clone and
+# worktree. This file is reviewed, versioned and shared; only the decision to
+# arm it is local.
+#
+# Why no CI workflow ships alongside it: this repo has no CI to extend (no
+# .github/workflows at all), and the gate needs GHC + cabal + the Rust
+# toolchain + the committed graph artifact. Inventing a workflow that cannot
+# run would be a green checkmark with nothing behind it, which is the exact
+# failure mode this batch exists to remove. Recorded as an open item in the
+# batch report rather than papered over.
+#
+# There is no bypass here on purpose. `git push --no-verify` exists and will
+# skip this, and that is git's escape hatch rather than one this project
+# built: it is visible in the reflog, it is a deliberate act by a person, and
+# it cannot be inherited from an environment variable or a stale shell.
+set -uo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 1
+
+if [ ! -x scripts/contract-gate.sh ] && [ ! -f scripts/contract-gate.sh ]; then
+  echo "pre-push: scripts/contract-gate.sh is missing -- refusing to push a repo whose gate has been removed." >&2
+  exit 1
+fi
+
+echo "pre-push: running the contract gate..."
+bash scripts/contract-gate.sh
+rc=$?
+
+if [ "$rc" -ne 0 ]; then
+  echo >&2
+  echo "pre-push: CONTRACT GATE FAILED (exit $rc) -- push refused." >&2
+  echo "  Fix the contract disagreement, or -- if a change is deliberate -- bump the" >&2
+  echo "  affected suite's VERSION and add a CHANGELOG entry; the semver gate derives" >&2
+  echo "  the required bump from the diff and refuses one that is too small." >&2
+  exit 1
+fi
+
+echo "pre-push: contract gate passed."
+exit 0

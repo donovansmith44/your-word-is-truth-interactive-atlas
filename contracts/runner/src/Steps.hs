@@ -23,6 +23,7 @@
 module Steps (allSteps) where
 
 import Data.Aeson (Value (..), eitherDecodeStrict)
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
@@ -173,12 +174,49 @@ loadJsonFixture w f = do
       Right v -> Right v
       Left e  -> Left ("fixture " <> f <> " is not JSON: " <> T.pack e)
 
--- Compare a projected value against its fixture, or (in --bless mode)
--- write it. Bless writes the PROJECTED value, not the raw response -- the
--- fixture pins what a consumer consumes, not everything the provider
--- happens to send.
+-- AN EMPTY PROJECTION IS REFUSED, on both sides of the comparison.
+--
+-- Fix round 1, review H-1. This module's own header says "A LAW THAT
+-- CANNOT FAIL IS NOT A LAW", and three of the four laws below already
+-- refuse to pass on nothing -- `checkVocabField` refuses a response with no
+-- such field, the cross-repo place law refuses an empty draw set AND an
+-- empty gazetteer, `readVocab` refuses an empty vocabulary. The fixture law
+-- was the exception, and it compared happily against `[]`.
+--
+-- That is not hypothetical: it is CDC-1's own defects 4 and 5. A catechism
+-- scenario was blessed to `[]`, which made it satisfiable by its own
+-- failure mode; the "fix" re-pointed it at a better-cited verse and was
+-- STILL vacuous, because a recorder fidelity bug had the endpoint answering
+-- `[]` for every reference. Two rounds of a green law asserting nothing.
+-- The countermeasure shipped last time was a comment explaining the verse
+-- choice, which would have stopped neither.
+--
+-- So: an empty array or empty object is refused at BLESS time (it never
+-- becomes a fixture) and at COMPARE time (an existing one cannot keep
+-- passing). A law is allowed to pin a small answer; it is not allowed to
+-- pin no answer.
+--
+-- WHAT THIS COSTS, stated rather than discovered: a genuinely-empty answer
+-- is now unpinnable by this step. The reviewer suggested an
+-- `@empty-is-the-promise` tag as the escape, and that is the right shape --
+-- but a step cannot see its scenario's tags without plumbing them through
+-- `World`, and `Run.hs` is one of the seven files vendored BYTE-IDENTICAL
+-- from map-generator. Forking it to widen a step signature would cost more
+-- than the case is worth today (no atlas expectation needs an empty
+-- answer). If one ever does, the honest move is to upstream the tag
+-- plumbing, not to weaken this rule locally.
+emptyProjection :: Value -> Bool
+emptyProjection (Array a)  = null a
+emptyProjection (Object o) = KM.null o
+emptyProjection _          = False
+
 settleAgainstFixture :: Text -> Text -> Value -> World -> IO (Either Text World)
 settleAgainstFixture label f got w
+  | emptyProjection got =
+      pure (Left (label <> " projected to an EMPTY value, and an empty fixture is a law that cannot fail.\n    "
+                  <> "This exact shape has twice been a green scenario asserting nothing in this suite.\n    "
+                  <> "Point the scenario at an input that has something to be wrong about, or fix the provider "
+                  <> "-- an endpoint answering empty for every input looks identical to this."))
   | blessMode w = do
       BS.writeFile (fixturePath w f ".json") (BL.toStrict (encodePretty got))
       pure (Right w)
@@ -187,6 +225,9 @@ settleAgainstFixture label f got w
       pure $ case fx of
         Left e -> Left e
         Right expected
+          | emptyProjection expected ->
+              Left ("fixture " <> f <> " is empty -- it pins nothing and cannot fail. "
+                    <> "Re-point the scenario at a non-empty case and re-bless.")
           | got == expected -> Right w
           | otherwise -> Left (label <> " differs from fixture " <> f <> ": "
                                <> maybe "(no leaf difference found)" id (firstDiff expected got))

@@ -127,9 +127,25 @@ for suite in "${suites[@]}"; do
     required=major
   fi
 
-  # A fixture whose VALUE moved is a re-blessed promise. Compare parsed
-  # JSON, not bytes, so a pure reformat stays PATCH -- that distinction is
-  # the whole reason this gate classifies instead of counting.
+  # A fixture is classified by comparing PARSED JSON, in three grades:
+  #
+  #   same           -> PATCH  a pure reformat pins exactly what it pinned.
+  #                            This is the distinction that makes this a
+  #                            classifier rather than a counter.
+  #   strict superset-> MINOR  every key the old fixture pinned is still
+  #                            pinned to the SAME value, and new keys were
+  #                            added. Nothing a consumer relied on moved;
+  #                            the fixture simply promises more. Adding
+  #                            `artifact_format_version` to the vocabulary
+  #                            projection is exactly this.
+  #   anything else  -> MAJOR  a value a consumer relied on was re-blessed,
+  #                            or a pinned key disappeared.
+  #
+  # The middle grade is fix round 1's own addition. Without it, "a
+  # projection gaining a field" -- which this suite's CHANGELOG documents as
+  # MINOR -- classified as MAJOR, which is the same self-contradiction the
+  # review flagged as M-3 for `@target`. A classifier that disagrees with
+  # its own published scheme teaches people to route around it.
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     case "$f" in */fixtures/*.json) ;; *) continue ;; esac
@@ -137,21 +153,33 @@ for suite in "${suites[@]}"; do
     new="$(cat "$f" 2>/dev/null || true)"
     if [ -n "$old" ] && [ -n "$new" ]; then
       if command -v python >/dev/null 2>&1; then
-        same=$(python -c "
+        grade=$(python -c "
 import json,sys
+def widened(a,b):
+    # b keeps every promise a made, and may add keys.
+    if isinstance(a,dict) and isinstance(b,dict):
+        return all(k in b and widened(a[k],b[k]) for k in a)
+    if isinstance(a,list) and isinstance(b,list):
+        return len(a)==len(b) and all(widened(x,y) for x,y in zip(a,b))
+    return a==b
 try:
     a=json.loads(sys.argv[1]); b=json.loads(sys.argv[2])
-    print('1' if a==b else '0')
+    print('same' if a==b else ('wider' if widened(a,b) else 'changed'))
 except Exception:
-    print('0')
+    print('changed')
 " "$old" "$new")
       else
-        same=0
+        grade=changed
       fi
-      if [ "$same" != "1" ]; then
-        echo "  MAJOR: $f was re-blessed to a different value"
-        required=major
-      fi
+      case "$grade" in
+        same) ;;
+        wider)
+          echo "  MINOR: $f pins additional fields; every previously pinned value is unchanged"
+          [ "$(rank "$required")" -lt "$(rank minor)" ] && required=minor;;
+        *)
+          echo "  MAJOR: $f was re-blessed to a different value"
+          required=major;;
+      esac
     fi
   done < <(printf '%s\n' "$status" | awk '$1=="M"{print $2}')
 
