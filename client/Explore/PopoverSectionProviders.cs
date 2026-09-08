@@ -282,7 +282,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                     // shift-click span's text is assembled by the reader and
                     // no single wire field attributes it, so there is no
                     // attribution section to render -- honest absence.
-                    textProvenance = new[] { vDetail.Provenance ?? "" };
+                    textProvenance = new[] { ProvenanceResolver.NormalizeId(vDetail.Provenance) };
                 }
                 catch (Exception)
                 {
@@ -1714,7 +1714,7 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             FrontierProvenance.Affordance(
-                builder, 0, new[] { detail.Provenance }, registry, "event-provenance",
+                builder, 0, new[] { ProvenanceResolver.NormalizeId(detail.Provenance) }, registry, "event-provenance",
                 "Source for this event", Components.ProvenanceAffordance.RowRegister);
         };
         return new PopoverSection("event-provenance", body);
