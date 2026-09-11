@@ -1,0 +1,7 @@
+contracts/runner/testdata/oracle/a.feature	plain, no tags	featurelevel
+contracts/runner/testdata/oracle/a.feature	a plain target	featurelevel,target
+contracts/runner/testdata/oracle/a.feature	the multi-tag form that defeated the regex	featurelevel,target,wip
+contracts/runner/testdata/oracle/a.feature	target last on a crowded line	a,b,c,featurelevel,target
+contracts/runner/testdata/oracle/a.feature	the control -- one word, not two tags	featurelevel,wip@target
+contracts/runner/testdata/oracle/b.feature	alpha%09beta gamma	target
+contracts/runner/testdata/oracle/b.feature	a name with a percent %2525 in it	

@@ -265,8 +265,19 @@ fi
 # gate grades commits. If the tree disagrees with HEAD on any path the gate
 # grades, the run is reporting on a document nobody will receive.
 #
-# Scoped to the paths the gate actually grades, so unrelated work in
-# progress does not block a push about contracts.
+# WHICH PATHS ARE "GRADED", stated once and completely. Round 3's first
+# draft listed only `contracts/` and `data/exports/` -- and left the same
+# hole one layer out, because LEG 3 COMPILES THE RECORDERS FROM `server/`.
+# An uncommitted change there can make the pact match when the committed
+# source would not, which is H-R2-3's species exactly: the gate reporting on
+# a document nobody will receive. `graph-types/` is in for the same reason
+# (the recorders link it, and it is the shared vocabulary every projection
+# is stated in).
+#
+# Yes, this means a push is refused while any of these is uncommitted. That
+# is the intended reading of owner order 2, not a side effect: a pre-push
+# gate grades commits, and "I will commit it in a moment" is not a fact the
+# receiving repository can act on.
 #
 # UNTRACKED FILES COUNT (found by this round's own probe A9e, which nobody
 # had run). `git diff --name-only HEAD` reports only TRACKED paths, so a
@@ -276,17 +287,19 @@ fi
 # agrees with HEAD", said the tree agreed. A leg that announces a positive
 # result it did not establish is the exact species this round exists to
 # remove, so the second half is `git ls-files --others`.
+GRADED_PATHS=(contracts data/exports server graph-types)
 step "leg 7/8: the working tree agrees with HEAD on every graded path"
-drift="$(git diff --name-only HEAD -- contracts data/exports 2>/dev/null)"
-untracked="$(git ls-files --others --exclude-standard -- contracts data/exports 2>/dev/null)"
+drift="$(git diff --name-only HEAD -- "${GRADED_PATHS[@]}" 2>/dev/null)"
+untracked="$(git ls-files --others --exclude-standard -- "${GRADED_PATHS[@]}" 2>/dev/null)"
 if [ -n "$drift" ] || [ -n "$untracked" ]; then
   echo "FAILED: these graded paths differ from HEAD, so the gate would grade something else:" >&2
   [ -n "$drift" ] && printf '%s\n' "$drift" | sed 's/^/    modified:  /' >&2
   [ -n "$untracked" ] && printf '%s\n' "$untracked" | sed 's/^/    untracked: /' >&2
   echo "  A pre-push gate grades what will be pushed. Commit these, or restore them." >&2
+  echo "  Graded paths: ${GRADED_PATHS[*]}" >&2
   fail=1
 else
-  echo "contracts/ and data/exports/ are byte-identical to HEAD (no modifications, no untracked files)"
+  echo "${GRADED_PATHS[*]} are byte-identical to HEAD (no modifications, no untracked files)"
 fi
 
 # =====================================================================

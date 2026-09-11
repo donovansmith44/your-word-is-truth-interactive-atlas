@@ -906,6 +906,89 @@ D="$TMPROOT/b27"; BASE="$(new_repo "$D")"
 run_case "B27 NEW-CLASS: the whole suite directory RENAMED -> refused" fail "$D" "$BASE" "entire suite was DELETED"
 
 echo
+echo "================ C. THE ORACLE ITSELF (golden vectors) ================"
+# The gate's whole design is "derive everything from committed content", and
+# every derivation runs through ONE binary the gate builds from source IN
+# THIS REPOSITORY. That is the largest residual this round did not remove: a
+# commit that weakens Gherkin/Parse.hs, Tags.hs or Grade.hs weakens every
+# derivation at once, and deriving-from-git cannot help, because git is
+# exactly where such a change would live.
+#
+# It cannot be removed. It can be made LOUD. These cases pin the oracle's
+# byte-exact answer on a corpus containing every form that has ever defeated
+# a guard in this project, so weakening it requires editing the golden file
+# in the same commit -- and "the parser no longer sees @target in
+# '@wip @target', and here is the updated expected output" is a diff nobody
+# skims past.
+ORACLE="contracts/runner/testdata/oracle"
+
+head2 "C1: the tag oracle's answer is byte-identical to the committed golden"
+got="$(mktemp)"
+"$RUNNER_BIN" tags "$ORACLE" 2>/dev/null | tr -d '\r' | sed 's|\\|/|g' > "$got"
+if diff -u "$ORACLE/EXPECTED.tags" "$got" > "$(lg c1diff)" 2>&1; then
+  ok "C1 the oracle answers exactly as committed ($(awk 'END{print NR}' "$got") rows)"
+else
+  bad "C1 THE ORACLE MOVED -- the gate's whole trusted base answers differently:"
+  sed 's/^/        /' "$(lg c1diff)" | head -20 >&2
+fi
+
+# ...and the properties, asserted structurally rather than by restating the
+# golden. A golden file alone is a ratchet and not a specification: it would
+# happily pin a WRONG answer. These say what the answer must MEAN.
+head2 "C2: the properties the golden is supposed to encode"
+tags_of() { # <scenario name> -> its tag list, field 3, no re-lexing
+  awk -F'\t' -v n="$1" '$2==n {print $3}' "$got"
+}
+[ "$(tags_of 'the multi-tag form that defeated the regex')" = "featurelevel,target,wip" ] \
+  && ok "C2a '  @wip @target' yields BOTH tags (C-NEW-1)" \
+  || bad "C2a the multi-tag form does not yield @target: '$(tags_of 'the multi-tag form that defeated the regex')'"
+[ "$(tags_of 'the control -- one word, not two tags')" = "featurelevel,wip@target" ] \
+  && ok "C2b '  @wip@target' is ONE tag, not two -- the oracle is exactly as wide as Run.hs" \
+  || bad "C2b the control form was mis-lexed: '$(tags_of 'the control -- one word, not two tags')'"
+[ "$(tags_of 'alpha%09beta gamma')" = "target" ] \
+  && ok "C2c a TAB inside a scenario NAME leaves the tag list in field 3 (H-R2-4)" \
+  || bad "C2c the tab-named scenario's tags are not in field 3: '$(tags_of 'alpha%09beta gamma')'"
+[ "$(tags_of 'a name with a percent %2525 in it')" = "" ] \
+  && ok "C2d a literal % is escaped invertibly (%25 -> %2525), so no name can forge another" \
+  || bad "C2d percent escaping is not invertible"
+awk -F'\t' '$1 ~ /a\.feature$/ && $3 !~ /(^|,)featurelevel(,|$)/ {n++} END{exit (n+0)>0}' "$got" \
+  && ok "C2e a FEATURE-level tag reaches every scenario in its file (the safe over-approximation)" \
+  || bad "C2e a feature-level tag did not reach every scenario"
+"$RUNNER_BIN" tags "$ORACLE" --forbid target >/dev/null 2>&1 \
+  && bad "C2f --forbid target exited 0 on a corpus that plainly carries @target" \
+  || ok "C2f --forbid target exits non-zero on this corpus (leg 0 uses the exit code)"
+
+head2 "C3: the fixture grader's own vectors"
+gv() { # <old json> <new json>
+  local o n; o="$(mktemp)"; n="$(mktemp)"
+  printf '%s' "$1" > "$o"; printf '%s' "$2" > "$n"
+  "$RUNNER_BIN" grade "$o" "$n" 2>/dev/null | tr -d '\r'
+  rm -f "$o" "$n"
+}
+grade_is() { # <desc> <expected> <old> <new>
+  local g; g="$(gv "$3" "$4")"
+  [ "$g" = "$2" ] && ok "C3 $1 -> $2" || bad "C3 $1 -> got '$g', expected '$2'"
+}
+grade_is "identical"                     same    '{"a":1}'            '{"a":1}'
+grade_is "reformatted, same parsed value" same   '{"a":1}'            '{ "a" : 1 }'
+grade_is "a key added, old values intact" wider  '{"a":1}'            '{"a":1,"b":2}'
+grade_is "a value re-blessed"            changed '{"a":1}'            '{"a":2}'
+grade_is "a key REMOVED"                 changed '{"a":1,"b":2}'      '{"a":1}'
+grade_is "widened AND a value changed"   changed '{"a":1}'            '{"a":9,"b":2}'
+grade_is "a nested key added"            wider   '{"a":{"b":1}}'      '{"a":{"b":1,"c":2}}'
+grade_is "a nested value changed"        changed '{"a":{"b":1}}'      '{"a":{"b":9}}'
+grade_is "an array element appended"     changed '[1,2]'              '[1,2,3]'
+grade_is "an array element changed"      changed '[1,2]'              '[1,9]'
+grade_is "an object added inside an array" wider '[{"a":1}]'          '[{"a":1,"b":2}]'
+grade_is "not JSON at all"               unreadable '{"a":1}'         'not json'
+# The shape that matters most: `same` is a VALID answer, which is why round
+# 2's answer-shape validation could not work and why calibration was tried
+# instead. What makes this trustworthy is not a quiz -- it is that the
+# grader is compiled from source in the diff, and these vectors pin it.
+grade_is "empty object vs empty object"  same    '{}'                 '{}'
+grade_is "empty object widened"          wider   '{}'                 '{"a":1}'
+
+echo
 echo "=============================================================="
 echo "gate self-test: $pass passed, $failn failed"
 [ "$failn" -eq 0 ] || exit 1
