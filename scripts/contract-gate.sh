@@ -631,10 +631,25 @@ step "leg 6/8: coverage -- every committed expectation executed"
 cov_missing="$(mktemp)"; TMPDIRS+=("$cov_missing")
 cov_unknown="$(mktemp)"; TMPDIRS+=("$cov_unknown")
 
+# A MULTISET, NOT A SET -- `sort`, never `sort -u`.
+#
+# This was `sort -u` in the first draft, and it was a green lie I found in
+# my own design while writing the report's "can this still be beaten"
+# section. Two scenarios may legitimately share a name in one file (the
+# parser allows it; `Run.hs` executes both). Deduplicating collapses them to
+# ONE key on both sides, so deleting one of the pair reconciles perfectly:
+# inventory 1, results 1, nothing missing. The semver gate's expectation
+# ratchet had the same `sort -u` and would have missed the removal too, so
+# on a RECEIVED suite an expectation could have been dropped with no
+# objection anywhere.
+#
+# Plain `sort` plus `comm` compares MULTISETS: two in the inventory and one
+# in the results leaves exactly one surplus row, and `comm` reports it.
+# Cardinality is part of the coverage claim, not an implementation detail.
 inv_keys="$(mktemp)"; TMPDIRS+=("$inv_keys")
 res_keys="$(mktemp)"; TMPDIRS+=("$res_keys")
-awk -F'\t' 'NF>=2 {print $1 "\t" $2}' "$INV" | sort -u > "$inv_keys"
-awk -F'\t' 'NF>=3 {print $1 "\t" $2}' "$RESULTS" | sort -u > "$res_keys"
+awk -F'\t' 'NF>=2 {print $1 "\t" $2}' "$INV" | sort > "$inv_keys"
+awk -F'\t' 'NF>=3 {print $1 "\t" $2}' "$RESULTS" | sort > "$res_keys"
 
 # Only the suites we EXECUTE are reconciled per scenario. Consumer suites
 # are not ours to run (their provider is somebody else's server) and are
@@ -650,17 +665,16 @@ in_run_scope() { # <key path>
   return 1
 }
 
+inv_scope="$(mktemp)"; TMPDIRS+=("$inv_scope")
 while IFS= read -r k; do
   [ -z "$k" ] && continue
-  in_run_scope "${k%%$'\t'*}" || continue
-  grep -Fqx "$k" "$res_keys" || printf '%s\n' "$k" >> "$cov_missing"
-done < "$inv_keys"
-while IFS= read -r k; do
-  [ -z "$k" ] && continue
-  grep -Fqx "$k" "$inv_keys" || printf '%s\n' "$k" >> "$cov_unknown"
-done < "$res_keys"
+  in_run_scope "${k%%$'\t'*}" && printf '%s\n' "$k"
+done < "$inv_keys" | sort > "$inv_scope"
 
-n_expected="$(while IFS= read -r k; do [ -z "$k" ] && continue; in_run_scope "${k%%$'\t'*}" && printf 'x\n'; done < "$inv_keys" | count_stdin)"
+comm -23 "$inv_scope" "$res_keys" > "$cov_missing"
+comm -13 "$inv_scope" "$res_keys" > "$cov_unknown"
+
+n_expected="$(count_lines "$inv_scope")"
 n_missing="$(count_lines "$cov_missing")"
 n_unknown="$(count_lines "$cov_unknown")"
 n_failed="$(awk -F'\t' '$3=="failed" || $3=="skipped"' "$RESULTS" | count_stdin)"

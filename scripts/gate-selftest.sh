@@ -426,6 +426,29 @@ expect_refused "a scenario renamed in the working tree" $?
 because "" "$L" "MISSING COVERAGE"
 restore_all
 
+head2 "A9f: NEW-CLASS -- one of TWO identically-named scenarios deleted"
+# The coverage side of the same hole B26b covers for the ratchet. Two
+# scenarios in one file may share a name; `sort -u` collapsed them, so
+# deleting one reconciled perfectly (inventory 1, results 1, nothing
+# missing). Planted in the working tree here: add a duplicate name to HEAD's
+# corpus is impossible without committing, so instead the SECOND of a pair
+# is what we remove -- which means first making a pair exist in HEAD's
+# inventory is not possible either. What IS testable in the working tree is
+# the mirror: the corpus gains a duplicate name that HEAD does not have, so
+# the results carry two rows where the inventory carries one.
+python -c "
+import io
+p='$EDGE_FEATURE'
+s=io.open(p,encoding='utf-8').read()
+i=s.index('  Scenario: the whole era table')
+j=s.index('\n', s.index('fixture', i))
+io.open(p,'w',encoding='utf-8',newline='\n').write(s + '\n' + s[i:j+1])
+"
+L="$(lg a9f)"; bash scripts/contract-gate.sh --fast --base "$BASEREF" >"$L" 2>&1
+expect_refused "a duplicate-named scenario added in the working tree" $?
+because "" "$L" "executed that are not in HEAD"
+restore_all
+
 head2 "A9e: NEW-CLASS -- an UNCOMMITTED .feature file added to a received suite"
 # The other direction: an expectation that exists on disk and not in HEAD.
 # A gate that graded the working tree would happily execute it and count it
@@ -896,6 +919,53 @@ out="$( cd "$D" && bash scripts/contract-semver-gate.sh "$BASE" 2>&1 )"; rc=$?
 if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -qF 'is required'; then
   ok "B26 no --runner -> refused outright, not classified without an oracle"
 else bad "B26 the semver gate ran without an oracle"; printf '%s\n' "$out" | sed 's/^/        /' >&2; fi
+
+# B26b / B26c: NEW-CLASS -- TWO SCENARIOS WITH THE SAME NAME, one removed.
+#
+# This is the hole I found in my own design, and these are the cases that
+# would have caught it. Both sides were deduplicated with `sort -u`, so a
+# duplicate-named pair collapsed to one row on each side and removing one of
+# them compared EQUAL: nothing missing, nothing to classify, no objection on
+# a received suite. The comparison is a multiset now.
+new_dup_repo() { # <dir> -> base sha
+  local d="$1"
+  mkdir -p "$d/contracts/their-edge/fixtures" "$d/scripts"
+  cp "$ROOT/scripts/contract-semver-gate.sh" "$d/scripts/"
+  ( cd "$d"
+    git init -q .; git config user.email t@t; git config user.name t
+    printf 'their expectations of us\n' > contracts/their-edge/RECEIVED.md
+    printf 'contracts/their-edge  contract-runner\n' > contracts/SUITES
+    cat > contracts/their-edge/a.feature <<'FEOF'
+Feature: theirs
+
+  Scenario: the same name twice
+    When I GET /api/x
+    Then the response equals fixture "x"
+
+  Scenario: the same name twice
+    When I GET /api/y
+    Then the response equals fixture "y"
+FEOF
+    printf '{"a":1}\n' > contracts/their-edge/fixtures/x.json
+    git add -A >/dev/null 2>&1; git commit -qm base
+    git rev-parse HEAD )
+}
+D="$TMPROOT/b26b"; BASE="$(new_dup_repo "$D")"
+( cd "$D" && python -c "
+import io
+p='contracts/their-edge/a.feature'
+s=io.open(p,encoding='utf-8').read()
+i=s.rindex('  Scenario: the same name twice')
+io.open(p,'w',encoding='utf-8',newline='\n').write(s[:i])
+" && git add -A >/dev/null 2>&1 && git commit -qm "drop one of the identically-named pair" )
+run_case "B26b NEW-CLASS: one of TWO identically-named scenarios removed -> refused" fail "$D" "$BASE" "are GONE from a RECEIVED suite"
+
+# ...and the control, so B26b cannot pass because the gate simply hates this
+# repo: leaving both in place must classify cleanly.
+D="$TMPROOT/b26c"; BASE="$(new_dup_repo "$D")"
+( cd "$D" && printf 'a note\n' > contracts/their-edge/NOTES.md \
+  && git add -A >/dev/null 2>&1 && git commit -qm "an unrelated change" )
+run_case "B26c control: both identically-named scenarios kept -> accepted" pass "$D" "$BASE"
 
 # B27: NEW-CLASS -- a suite RENAMED wholesale (directory moved). The VERSION
 # moves with it, so `list_versioned_suites` sees a deletion and an addition.

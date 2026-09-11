@@ -176,6 +176,24 @@ fi
 # claiming to normalise structure.
 norm_rows() { tr -d '\r' | awk -F'\t' -v OFS='\t' 'NF>=2 { gsub(/\\/, "/", $1); print }'; }
 
+# A MULTISET, NOT A SET -- `sort`, never `sort -u`.
+#
+# Found in my own design while writing round 3's "can this still be beaten"
+# section, and it was a real hole. Two scenarios may legitimately share a
+# name inside one file: `Gherkin/Parse.hs` allows it and `Run.hs` executes
+# both. Deduplicating collapses them to ONE row on each side, so removing
+# one of the pair compares EQUAL and the ratchet says nothing -- which on a
+# RECEIVED suite means another repo's expectation dropped with no objection
+# anywhere, the very event C-R2-3 is about. The coverage reconciliation in
+# contract-gate.sh had the identical `sort -u` and would have missed it too.
+#
+# `comm` over plain-sorted rows compares CARDINALITY as well as membership:
+# two at the base and one at HEAD leaves exactly one surplus row. Cardinality
+# is part of the claim, not an implementation detail.
+#
+# (`dirs_with` and `list_versioned_suites` keep `sort -u` on purpose --
+# a directory either is or is not a suite, and it cannot be there twice.)
+#
 # `<tree> <suite>` -> `path\tscenario` per scenario, sorted. Empty (rc 0) if
 # the suite does not exist in that tree; rc 1 if it exists and cannot be
 # read, which is a refusal to classify rather than an empty answer.
@@ -183,7 +201,7 @@ inventory_of() { # <tree> <suite>
   local tree="$1" suite="$2"
   [ -d "$tree/$suite" ] || return 0
   ( cd "$tree" && "$RUNNER" tags "$suite" 2>/dev/null ) \
-    | norm_rows | awk -F'\t' -v OFS='\t' '{print $1, $2}' | sort -u
+    | norm_rows | awk -F'\t' -v OFS='\t' '{print $1, $2}' | sort
 }
 
 # The same rows, but only those carrying <tag>. Consumed STRUCTURALLY: the
@@ -195,7 +213,7 @@ tagged_of() { # <tree> <suite> <tag>
   ( cd "$tree" && "$RUNNER" tags "$suite" 2>/dev/null ) \
     | norm_rows \
     | awk -F'\t' -v t="$tag" '{n=split($3,a,","); for(i=1;i<=n;i++) if(a[i]==t) {print $2; break}}' \
-    | sort -u
+    | sort
 }
 
 dirs_with() { # <tree> <marker filename>
