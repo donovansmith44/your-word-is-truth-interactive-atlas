@@ -201,21 +201,16 @@ if [ -z "${HEADSHA:-}" ]; then
   echo "FAILED: this is not a git repository with a HEAD, so nothing can be derived from committed content." >&2
   exit 1
 fi
-HEADTREE="$(mktemp -d)"; TMPDIRS+=("$HEADTREE")
-if ! git archive "$HEADSHA" -- contracts 2>/dev/null | tar -x -C "$HEADTREE" 2>/dev/null; then
-  echo "FAILED: could not materialise contracts/ from HEAD ($HEADSHA)." >&2
-  echo "  The gate grades committed content. If it cannot read committed content," >&2
-  echo "  it has nothing to say and must not say PASSED." >&2
-  exit 1
-fi
-if [ ! -d "$HEADTREE/contracts" ]; then
-  echo "FAILED: HEAD carries no contracts/ directory at all." >&2
-  exit 1
-fi
-
 # ---------------------------------------------------------------------
 # LEG 8 -- FILE MODES, and the symlink question, settled
 # ---------------------------------------------------------------------
+# BEFORE the archive, deliberately. A symlink entry makes `git archive |
+# tar -x` fail on Windows, so auditing after materialising produced a
+# refusal with the WRONG REASON ("could not materialise contracts/ from
+# HEAD"). Fail-closed, so never a green lie -- but a message that names the
+# wrong event is precisely how C-R2-3 happened, and my own self-test (B25)
+# caught this only because it asserts WHY the gate refused.
+#
 # The round-2 reviewer's symlink probe was INCONCLUSIVE: MSYS `ln -s`
 # deep-copies rather than links, so the attack could not be run on this
 # platform and was honestly reported as unproven rather than closed.
@@ -228,8 +223,7 @@ fi
 # differ from what a checkout produces. Neither is a thing a contract corpus
 # has any use for, so both are refused outright, by mode, from the object
 # database. `git update-index --add --cacheinfo 120000,<sha>,<path>` creates
-# one on Windows without a filesystem symlink, which is how the self-test
-# exercises this (B22).
+# one on Windows with no filesystem symlink at all.
 step "leg 8/8: committed file modes under contracts/"
 badmodes="$(git ls-tree -r "$HEADSHA" -- contracts 2>/dev/null \
             | awk '$1 != "100644" && $1 != "100755" { print "    " $1 " " $4 }')"
@@ -238,9 +232,21 @@ if [ -n "$badmodes" ]; then
   printf '%s\n' "$badmodes" >&2
   echo "  A symlink (120000) or a gitlink (160000) in a contract corpus is a way to" >&2
   echo "  make what the gate reads differ from what a consumer checks out." >&2
-  fail=1
-else
-  echo "every committed entry under contracts/ is a regular file (no symlinks, no gitlinks)"
+  echo "CONTRACT GATE: FAILED" >&2
+  exit 1
+fi
+echo "every committed entry under contracts/ is a regular file (no symlinks, no gitlinks)"
+
+HEADTREE="$(mktemp -d)"; TMPDIRS+=("$HEADTREE")
+if ! git archive "$HEADSHA" -- contracts 2>/dev/null | tar -x -C "$HEADTREE" 2>/dev/null; then
+  echo "FAILED: could not materialise contracts/ from HEAD ($HEADSHA)." >&2
+  echo "  The gate grades committed content. If it cannot read committed content," >&2
+  echo "  it has nothing to say and must not say PASSED." >&2
+  exit 1
+fi
+if [ ! -d "$HEADTREE/contracts" ]; then
+  echo "FAILED: HEAD carries no contracts/ directory at all." >&2
+  exit 1
 fi
 
 # ---------------------------------------------------------------------
@@ -261,15 +267,26 @@ fi
 #
 # Scoped to the paths the gate actually grades, so unrelated work in
 # progress does not block a push about contracts.
+#
+# UNTRACKED FILES COUNT (found by this round's own probe A9e, which nobody
+# had run). `git diff --name-only HEAD` reports only TRACKED paths, so a
+# brand-new `contracts/atlas-edge/SOMETHING.feature` sitting in the working
+# tree was invisible to this leg entirely -- the coverage reconciliation
+# caught it as an UNKNOWN scenario, but leg 7, whose whole job is "the tree
+# agrees with HEAD", said the tree agreed. A leg that announces a positive
+# result it did not establish is the exact species this round exists to
+# remove, so the second half is `git ls-files --others`.
 step "leg 7/8: the working tree agrees with HEAD on every graded path"
 drift="$(git diff --name-only HEAD -- contracts data/exports 2>/dev/null)"
-if [ -n "$drift" ]; then
+untracked="$(git ls-files --others --exclude-standard -- contracts data/exports 2>/dev/null)"
+if [ -n "$drift" ] || [ -n "$untracked" ]; then
   echo "FAILED: these graded paths differ from HEAD, so the gate would grade something else:" >&2
-  printf '%s\n' "$drift" | sed 's/^/    /' >&2
+  [ -n "$drift" ] && printf '%s\n' "$drift" | sed 's/^/    modified:  /' >&2
+  [ -n "$untracked" ] && printf '%s\n' "$untracked" | sed 's/^/    untracked: /' >&2
   echo "  A pre-push gate grades what will be pushed. Commit these, or restore them." >&2
   fail=1
 else
-  echo "contracts/ and data/exports/ are byte-identical to HEAD"
+  echo "contracts/ and data/exports/ are byte-identical to HEAD (no modifications, no untracked files)"
 fi
 
 # =====================================================================

@@ -112,20 +112,68 @@ TMPDIRS=()
 cleanup() { for d in "${TMPDIRS[@]:-}"; do [ -n "$d" ] && rm -rf "$d"; done; }
 trap cleanup EXIT
 
+# ---------------------------------------------------------------------
+# FILE MODES -- the symlink question, settled from the object database
+# ---------------------------------------------------------------------
+# FIRST, before anything is materialised, and this ordering is a finding in
+# its own right. A symlink entry makes `git archive | tar -x` FAIL on
+# Windows, so running this check after the trees were built produced a
+# refusal carrying the WRONG REASON ("could not materialise contracts/ from
+# HEAD"). Fail-closed, so no green lie -- but a message that names the wrong
+# event is exactly how C-R2-3 happened: the reviewer followed a remedy
+# printed for a condition that was not the real one, and the remedy shrank
+# the pact by 80%. My own self-test (B25) caught this, and it caught it
+# because the case asserts WHY the gate refused, not merely that it did.
+#
+# The round-2 reviewer's symlink probe was INCONCLUSIVE: MSYS `ln -s`
+# deep-copies rather than links, so the attack could not be run on this
+# platform and was honestly reported as unproven rather than closed.
+#
+# It does not need the filesystem to cooperate in either direction. git
+# records the mode: a symlink is a `120000` blob whose CONTENT is a path and
+# a submodule is a `160000` gitlink, and `git update-index --add --cacheinfo
+# 120000,<sha>,<path>` creates one on Windows with no filesystem symlink at
+# all. Either would let a `.feature` file point somewhere an inventory does
+# not follow, or make `git archive`'s output differ from a checkout's.
+# Neither has any use in a contract corpus, so both are refused by MODE, on
+# BOTH committed trees.
+audit_modes() { # <ref> <label>
+  local bad
+  bad="$(git ls-tree -r "$1" -- contracts 2>/dev/null \
+         | awk '$1 != "100644" && $1 != "100755" { print "    " $1 " " $4 }')"
+  [ -z "$bad" ] && return 0
+  echo "contract-semver-gate: contracts/ at $2 contains entries that are not regular files:" >&2
+  printf '%s\n' "$bad" >&2
+  echo "  A symlink (120000) or a gitlink (160000) in a contract corpus is a way to make" >&2
+  echo "  what the gate reads differ from what a consumer checks out." >&2
+  return 1
+}
+audit_modes HEAD "HEAD" || exit 1
+audit_modes "$base" "the base" || exit 1
+
 # =====================================================================
 # TWO TREES, BOTH FROM GIT
 # =====================================================================
 # Everything below reads these. Not the working tree -- ever. This is the
-# single change that closes H-R2-3 and it is also what makes the three
+# single change that closes H-R2-3 and it is also what makes the four
 # ratchets expressible at all: a ratchet needs two committed states.
 BASETREE="$(mktemp -d)"; TMPDIRS+=("$BASETREE")
 HEADTREE="$(mktemp -d)"; TMPDIRS+=("$HEADTREE")
 git archive "$base" -- contracts 2>/dev/null | tar -x -C "$BASETREE" 2>/dev/null || true
 if ! git archive HEAD -- contracts 2>/dev/null | tar -x -C "$HEADTREE" 2>/dev/null; then
   echo "contract-semver-gate: could not materialise contracts/ from HEAD." >&2
+  echo "  This gate grades committed content. If it cannot read committed content," >&2
+  echo "  it has nothing to say, and must not say it is fine." >&2
   exit 1
 fi
 
+# Machine output from the runner is consumed STRUCTURALLY: every field is
+# percent-escaped by `Tags.escField`, so a tab cannot occur inside one and
+# `-F'\t'` is a total parse (review H-R2-4). The only lexing here is
+# stripping the CR a Windows text handle appends, and folding the `\` the
+# Windows runtime emits IN THE PATH FIELD ONLY -- a blanket fold would
+# rewrite a backslash inside a scenario NAME, which is editing data while
+# claiming to normalise structure.
 norm_rows() { tr -d '\r' | awk -F'\t' -v OFS='\t' 'NF>=2 { gsub(/\\/, "/", $1); print }'; }
 
 # `<tree> <suite>` -> `path\tscenario` per scenario, sorted. Empty (rc 0) if
