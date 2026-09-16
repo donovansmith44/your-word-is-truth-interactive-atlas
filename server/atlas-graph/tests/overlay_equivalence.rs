@@ -26,6 +26,28 @@
 //! each comparison is a sorted-by-id `assert_eq!` over the whole
 //! collection -- no new infrastructure, per the review's own "right-sized"
 //! confirmation.
+//!
+//! KNOWN DIFFERENCE (OVERLAY-1 Task 1, controller-ruled): compile-from-
+//! sources and the overlay AGREE on the whole-collection, sorted-by-id
+//! comparisons above, but DISAGREE on the events' own post-`finish()`
+//! ORDER -- `AtlasData::finish()`'s `events.sort_by_key(|e| e.when.
+//! from_year)` (`data.rs:1533`) is a stable sort with no secondary key, so
+//! ties (same `from_year`, the overwhelming majority of the 1,711 real
+//! events) keep whichever pre-sort insertion order each path started
+//! with, and the two paths' insertion orders are unrelated (graph
+//! traversal vs. raw/curated file parse order). Measured: 1,364 of 1,711
+//! positions differ once both paths are pushed through `finish()` (full
+//! verbatim capture: `.superpowers/sdd/2026-09-16-overlay1/
+//! task-1-event-order-diff.txt`). This is a real, ledgered finding about
+//! `finish()` itself, queued as its own future owner batch -- NOT fixed
+//! here (no secondary sort key added; no production code touched beyond
+//! the one stale-comment correction in `legacy.rs`), because fixing it
+//! would change served order and the 25 hashes `scene_byte_identity.rs`
+//! pinned. For OVERLAY-1, the OVERLAY path's order is authoritative (the
+//! 25 hashes were pinned against it) -- so the order property this file
+//! proves below is DETERMINISM of the overlay path across independent
+//! builds, the exact property Task 4's graph-backed `SceneSource` must
+//! reproduce, not agreement with compile-from-sources order.
 
 use std::path::Path;
 
@@ -134,4 +156,142 @@ fn every_reconstructed_verse_text_equals_the_real_compiled_kjv_text_exactly() {
         }
     }
     assert!(mismatches.is_empty(), "verse text mismatches:\n{}", mismatches.join("\n"));
+}
+
+// --- OVERLAY-1 Task 1 additions -----------------------------------------
+//
+// The four tests above compare the two paths SORTED BY ID, before
+// `finish()` -- collection-level equivalence only. Two increments this
+// batch needs, both because Task 4 must reproduce them without the
+// overlay:
+//
+//   (a) ORDER: each event's `places` vector equal IN ORDER (`places[0]` is
+//       the anchor place -- legacy.rs:52-58, load-bearing for
+//       `scene::build_arrows` endpoints and `handlers::event`), checked
+//       compile-vs-overlay, sorted by id (pre-`finish()`, matching the
+//       four tests above); and the OVERLAY path's own post-`finish()`
+//       event order (`data.rs:1533`, `events.sort_by_key(|e| e.when.
+//       from_year)`, stable) -- exactly what `scene.rs`'s time-mode
+//       composition iterates `d.events` in -- checked for DETERMINISM
+//       across two independent overlay builds, NOT against compile-from-
+//       sources order (see this file's own module-doc "KNOWN DIFFERENCE"
+//       paragraph above: that comparison is a real, ledgered disagreement,
+//       queued as an owner batch, not something this test asserts).
+//   (b) POST-`finish()` AGGREGATES: the derived indexes `scene::
+//       quiet_places` reads -- `event_bearing_place_ids()` and
+//       `total_events_for(id)` for every place (`data.rs:1823,1833`) --
+//       must agree between the two paths. These only exist after
+//       `finish()` runs, so both paths below are built as full, finished
+//       `AtlasData` (unlike `real_overlay()`/`expected()` above, which
+//       compare pre-`finish()`).
+
+/// Full `AtlasData`, overlay-sourced and finished -- byte-for-byte the
+/// server's own real default startup call sequence (`atlas-server/src/
+/// load.rs`'s `load_graph_and_data`: `GraphService::from_artifact` ->
+/// `AtlasData::load` -> `atlas_data_overlay` -> assign the four retiring
+/// fields -> `finish()`). Not cached, same reasoning as `real_overlay()`
+/// above (cheap; this file's own tests already pay for a fresh load each).
+fn finished_overlay_atlas_data() -> AtlasData {
+    let graph = GraphService::from_artifact(&data_dir().join("compiled/graph.bin")).expect("the real committed data/compiled/graph.bin must load");
+    let mut data = AtlasData::load(&data_dir().join("compiled")).expect("data/compiled sidecars must load (canon.json, books-meta.json, etc.)");
+    let overlay = atlas_data_overlay(&graph);
+    data.events = overlay.events;
+    data.places = overlay.places;
+    data.narratives = overlay.narratives;
+    data.verses = overlay.verses;
+    data.finish()
+}
+
+/// Full `AtlasData`, compiled-from-sources and finished -- the same
+/// independent reference `expected()` above caches (pre-`finish()`),
+/// cloned and finished fresh here so this helper's own `finish()`-derived
+/// indexes never leak into `expected()`'s cached copy, which the four
+/// tests above deliberately compare pre-`finish()`.
+fn finished_sources_atlas_data() -> AtlasData {
+    expected().clone().finish()
+}
+
+/// Step 1(a), first half, named explicitly: `places[0]` is the event's
+/// ANCHOR place. This is already implicitly proven by
+/// `every_reconstructed_event_equals_compiles_own_real_event_field_for_field`
+/// above (`Event`'s derived `PartialEq` compares `places: Vec<String>`
+/// element-wise, in order, as part of the whole-struct comparison) -- this
+/// test asserts it on its own, with an anchor-specific failure message, so
+/// a real anchor-order regression is never buried in a generic whole-event
+/// diff.
+#[test]
+fn overlay_and_compiled_events_agree_on_places_vector_order_including_anchor() {
+    let mut want = expected().events.clone();
+    let mut got = real_overlay().events;
+    want.sort_by(|a, b| a.id.cmp(&b.id));
+    got.sort_by(|a, b| a.id.cmp(&b.id));
+    assert_eq!(got.len(), want.len(), "event count");
+    for (g, w) in got.iter().zip(&want) {
+        assert_eq!(g.id, w.id, "sorted-by-id iteration must line up");
+        assert_eq!(
+            g.places, w.places,
+            "event {}'s places vector must match IN ORDER -- places[0] is the anchor place (legacy.rs:52-58), load-bearing for scene::build_arrows endpoints and handlers::event",
+            g.id
+        );
+    }
+}
+
+/// Step 1(a), second half -- RESHAPED per the controller's ruling on this
+/// file's own module-doc "KNOWN DIFFERENCE" paragraph above: compile-vs-
+/// overlay post-`finish()` event order is a real, ledgered disagreement
+/// (queued as an owner batch, not fixed here), so this test does NOT
+/// compare compile-from-sources order against the overlay. Instead it
+/// proves the property OVERLAY-1 actually needs: the OVERLAY path's own
+/// post-`finish()` event order (and each event's `places` order,
+/// `places[0]` the anchor) is DETERMINISTIC across two INDEPENDENT builds
+/// (two full `GraphService::from_artifact` + `AtlasData::load` + overlay +
+/// `finish()` sequences -- not a clone of one build) -- exactly the
+/// property Task 4's graph-backed `SceneSource` must reproduce, since the
+/// 25 `scene_byte_identity.rs` hashes were pinned against this path's own
+/// order.
+#[test]
+fn overlay_path_event_order_and_places_order_are_deterministic_across_independent_builds() {
+    let a = finished_overlay_atlas_data();
+    let b = finished_overlay_atlas_data();
+    let a_order: Vec<&str> = a.events.iter().map(|e| e.id.as_str()).collect();
+    let b_order: Vec<&str> = b.events.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(
+        a_order, b_order,
+        "two independent builds of the overlay path must produce IDENTICAL finish()-derived event order -- this is the order Task 4's graph-backed source must reproduce"
+    );
+    assert_eq!(a.events.len(), b.events.len(), "event count must match across independent overlay builds");
+    for (x, y) in a.events.iter().zip(&b.events) {
+        assert_eq!(x.id, y.id, "event order differs at {} vs {}", x.id, y.id);
+        assert_eq!(
+            x.places, y.places,
+            "event {}'s places vector (places[0] = anchor) must be identical in order across independent overlay builds",
+            x.id
+        );
+    }
+}
+
+/// Step 1(b): the `finish()`-derived indexes `scene::quiet_places` reads
+/// (`event_bearing_place_ids()` and `total_events_for(id)` -- data.rs:1823,
+/// 1833) must agree between the two paths for EVERY place, since Task 4
+/// must reproduce them without the overlay.
+#[test]
+fn overlay_and_compiled_agree_on_event_bearing_place_ids_and_totals_after_finish() {
+    let overlay = finished_overlay_atlas_data();
+    let sources = finished_sources_atlas_data();
+
+    let mut overlay_ids: Vec<&String> = overlay.event_bearing_place_ids().iter().collect();
+    let mut sources_ids: Vec<&String> = sources.event_bearing_place_ids().iter().collect();
+    overlay_ids.sort();
+    sources_ids.sort();
+    assert_eq!(overlay_ids, sources_ids, "event_bearing_place_ids() must be the identical set on both paths");
+
+    let mut mismatches: Vec<String> = Vec::new();
+    for id in &sources_ids {
+        let want = sources.total_events_for(id);
+        let got = overlay.total_events_for(id);
+        if got != want {
+            mismatches.push(format!("{id}: overlay total_events_for={got} sources total_events_for={want}"));
+        }
+    }
+    assert!(mismatches.is_empty(), "total_events_for(id) mismatches:\n{}", mismatches.join("\n"));
 }

@@ -212,21 +212,22 @@ pub struct LegacyAtlasFields {
 /// after `GraphService::from_artifact` -- never per-request, never on the
 /// `--build-from-raw` dev-fallback path (which has no graph yet to
 /// reconstruct FROM; it builds `AtlasData` from raw+curated sources
-/// directly, via `atlas_etl::compile::compile`). DISCLOSED GAP (found
-/// while landing the M-C2 FIX above, not new to it): no dedicated test
-/// file independently checks this function's own output against real
-/// `atlas_etl::compile::compile` data end to end -- the only verification
-/// on record is the manual live-curl comparison this batch's own commit
-/// messages describe (both startup paths served identical results on a
-/// real scratch-port server). Its own composed pieces (`event_from_node`/
-/// `place_from_node`/`narrative_from_node`/`verses_from_graph`) each have
-/// real unit coverage individually; the WHOLE-function, both-paths-agree
-/// property does not. Fast: an in-memory
-/// pass over the graph's own `event_ids`/`place_ids`/`narrative_ids`
-/// companions (thousands of entries, no file I/O) plus one walk of the
-/// reading spine -- this is what keeps the artifact LOAD-TIME ceiling
-/// (<=3s, a committed law) meaningful for the server's own real total
-/// startup, not just the graph's own isolated load step.
+/// directly, via `atlas_etl::compile::compile`). GAP CLOSED (OVERLAY-1
+/// Task 1): `server/atlas-graph/tests/overlay_equivalence.rs` now
+/// independently checks this function's own output against real
+/// `atlas_etl::compile::compile` data end to end -- both whole-collection
+/// (events/places/narratives/verses, sorted by id), order-sensitive
+/// (`places[0]` anchor order; the post-`finish()` event order), and
+/// post-`finish()` aggregate (`event_bearing_place_ids()`/
+/// `total_events_for(id)` for every place) -- superseding the manual
+/// live-curl comparison this batch's own earlier commit messages
+/// described. Its own composed pieces (`event_from_node`/
+/// `place_from_node`/`narrative_from_node`/`verses_from_graph`) each also
+/// have real unit coverage individually. NOT Fast: db1-plan.md §3.4
+/// measured this pass (plus the artifact load it follows) as the boot's
+/// DOMINANT cost, ~751 MiB peak resident on real committed data -- an
+/// in-memory walk over thousands of graph entries plus the full ~31,102-
+/// verse reading spine, not the cheap step this comment used to claim.
 pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasFields {
     let snap = gs.snapshot();
 
