@@ -393,3 +393,145 @@ amount on any other (only places actually involved in a curated merge carry
 it at all) while destroying a disclosed debugging aid -- not made. The
 209,737-byte NT window stays above the brief's own <=60KB ideal; every byte
 above that is disclosed here as load-bearing, not overlooked.
+
+## OVERLAY-1: resident memory
+
+**The drop is small -- say so first.** Peak resident memory fell from a
+757.8 MiB baseline mean to a 755.0 MiB mean after the whole batch (Tasks
+1-5, `atlas_data_overlay` retired, `/api/scene` composing from
+`GraphSceneSource`): a 2.8 MiB (0.4%) drop, inside this same machine's own
+established run-to-run noise band (15.1 MiB spread across baseline's own 3
+runs). Spec §8's OVERLAY-1 gate reads "peak RSS before/after ... must fall
+materially below 751 MiB." It did not. This is a finding about the spec's
+own assumption, not a number to massage: see "The arithmetic" below for
+why.
+
+**Method** (identical to Task 1 and Task 2, so the three rows below are one
+comparison, not three): `scripts/measure-rss.ps1` -- `Start-Process
+-PassThru`, `PeakWorkingSet64` sampled every 20 ms, over the real `bibex`
+CLI's default load path (`GraphService::from_artifact` + `AtlasData::load`
++, at baseline only, `atlas_data_overlay` + `.finish()`), release build:
+
+```
+cd server; cargo build --release -p atlas-cli
+powershell -File ..\scripts\measure-rss.ps1 .\target\release\bibex.exe node Place:jerusalem --data-dir ..\data\compiled
+```
+
+Machine-noise caveat (unchanged from Task 1): each run's `EXIT_CODE` line
+comes back blank (`Start-Process -PassThru`'s `.ExitCode` does not populate
+after polling `HasExited`, a PowerShell quirk, not a measurement failure);
+every run's redirected stdout (`$env:TEMP\measure-rss.out`) was checked and
+contains `bibex`'s real, successful `node Place:jerusalem` card output
+(id/kind/label/provenance/edges) each time, confirming the process ran its
+real workload to completion before being sampled. This machine had the
+owner's own idle `atlas-server` release process listening on port 8080
+throughout every measurement below (all three tasks); left untouched, not
+part of any sample.
+
+### Three RSS samples (PEAK_WORKING_SET_MIB), all three stages, one method
+
+| Stage | Run 1 | Run 2 | Run 3 | Mean | Spread | Cold start |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline (Task 1, pre-OVERLAY-1: overlay + two KJV copies present) | 767.6 | 752.5 | 753.4 | 757.8 | 15.1 | 1.404 s |
+| After Task 2 ("one KJV in memory": `verse_text`/`AtlasData.verses` deleted) | 756.7 | 753.5 | 750.5 | 753.6 | 6.2 | 1.339 s |
+| After Task 5 (overlay retired; scene composes from `GraphSceneSource`) -- measured this task, HEAD `ee7f274` | 753.8 | 752.8 | 758.5 | 755.0 | 5.7 | 1.312 s |
+
+Cold wall time, all three stages, same command form:
+
+```
+$mc = Measure-Command { & .\target\release\bibex.exe node Place:jerusalem --data-dir ..\data\compiled | Out-Null }
+```
+
+taken once per stage, immediately after that stage's three RSS runs (same
+session, same freshly-rebuilt release binary -- not a true first-ever
+invocation, but the same "first invocation after this stage's own release
+build" definition Task 1 used).
+
+The server's own startup line, one release run on an unused port
+(`--port 8091`, separate `CARGO_TARGET_DIR` so the build did not touch the
+locked, already-running port-8080 binary; stopped immediately after,
+port-8080 process left untouched throughout):
+
+```
+atlas-graph: artifact load complete in 1.0417802s
+atlas-graph: 31102 KJV text units, 343558 cites edges (1241 negative-vote rows dropped, disclosed), graph version dfcf6ee4c2a39965
+```
+
+### The arithmetic
+
+- Baseline -> after Task 2: **-4.2 MiB**. Two retired whole-spine
+  `HashMap<String, String>` copies of the KJV text (~31,102 short-to-medium
+  verse strings each) -- a few MiB of `String` payload plus hash-map bucket
+  overhead per copy, not a fraction of the artifact's own ~100 MiB.
+- After Task 2 -> after Task 5 (this task's measurement): **+1.4 MiB**,
+  i.e. statistically flat, inside the noise band both other stages already
+  established (5.7-15.1 MiB spread across 3 runs at every stage). Retiring
+  `atlas_data_overlay` removed a one-time-computed aggregate over already-
+  live graph node references (1,358 places, 1,711 events -- pointers and
+  small `Vec`s, not a second copy of anything large); there was never a
+  large redundant allocation there to remove.
+- Baseline -> after Task 5 (the batch total): **-2.8 MiB (0.4%)**.
+- **What remains, and why it is not touched by this batch**: the
+  ~751-758 MiB resident at every stage is dominated by the in-memory
+  `Graph` that `GraphService::from_artifact` builds from `graph.bin`
+  (101,319,287 bytes on disk, a ~7.8x on-disk-to-resident ratio db1-plan.md
+  and `legacy.rs` both document) --
+  - **~92k graph nodes** (places, events, verses/TextUnits, persons,
+    provenance entries, etc., each with its own heap allocation);
+  - **the `BiIndex` edge index**, ~1.2M edge-index entries (forward +
+    reverse adjacency over every edge family);
+  - **344k cross-refs**: 343,558 `cites` edges, per this run's own server
+    startup line above (1,241 negative-vote rows already dropped);
+  - **31,102 KJV `TextUnit` nodes**: the *one* remaining copy of the verse
+    text, which Task 2 deliberately kept (that is the point of "one KJV in
+    memory" -- zero copies was never the target, one was).
+  None of these four is `atlas_data_overlay`, and OVERLAY-1's five tasks
+  touch none of them: the overlay was a small derived-aggregate layer
+  computed once at load *on top of* this already-resident graph, not a
+  second copy of the graph itself. Per spec §6.3, the compiler/ETL is
+  explicitly kept holding the whole in-memory `Graph` (a deliberate, not an
+  accidental, design decision) -- so on the ETL side this cost is
+  permanent by design. On the SERVING side, only DB-4 (SQLite sections
+  opened and queried directly, `graph.bin` "no longer read") can plausibly
+  cut into this number; DB-2/DB-3 add a second backend alongside the first
+  and would not be expected to reduce resident memory either.
+
+**Plain statement on the spec's own expectation.** Spec §8's OVERLAY-1 row
+sets the gate: peak RSS before/after, "reported -- must fall materially
+below 751 MiB." Measured before/after (757.8 -> 755.0 MiB mean, a 2.8 MiB /
+0.4% drop, smaller than this machine's own established per-stage noise
+band), it did not fall materially below 751 MiB, and the reported
+Task-1-baseline mean (757.8 MiB) was already above 751 MiB before any
+OVERLAY-1 work started. This is not this batch's execution falling short:
+the overlay was never the majority of resident memory, so removing it was
+never going to produce a material drop, regardless of how it was removed.
+The gate's assumption -- that `atlas_data_overlay` was a large redundant
+allocation -- does not hold against the measurements above; that is the
+finding, stated plainly rather than massaged, for whoever plans DB-4 (the
+batch that genuinely can move this number, by no longer deserializing the
+whole `graph.bin` blob into one process's memory at boot).
+
+### perf_smoke gates 3-5, now measuring over `GraphSceneSource` (Task 5)
+
+CONTENTION-1 (above) runs these three gates -- `scene_time_full_span`,
+`scene_time_nt_window`, `scene_scripture_chapter` -- serialized via
+`scripts/timing-gates.sh` (debug build, `--test-threads=1`, one process per
+gate), the same method its own ten-run acceptance used. Task 5 changed
+their SUBJECT (composing over `GraphSceneSource`, the port-backed source,
+instead of an overlaid `AtlasData`) without touching any threshold; the
+composed bytes are unchanged (`scene_byte_identity.rs`, 25 pinned hashes).
+
+| Gate | Task 5's own single measurement | CONTENTION-1's ten-run spread (n=10) | Ceiling |
+|---|---:|---:|---:|
+| `scene_time_full_span` | 23.2 ms | 23.4-41.2 ms | 75 ms |
+| `scene_time_nt_window` | 11.8 ms | 11.8-15.8 ms | 75 ms |
+| `scene_scripture_chapter` | 26.0 ms | 26.2-36.7 ms | 50 ms |
+
+Reproduced this task, one more single sample each (debug build, same
+`timing-gates.sh`-style invocation, `cargo test -p atlas-server --test
+perf_smoke -- --ignored --exact <name> --test-threads=1 --nocapture`):
+22.9297 ms / 11.5472 ms / 25.5281 ms -- all three inside (the middle one
+marginally below the low end of) CONTENTION-1's own ten-run spread, i.e.
+ordinary single-sample noise, not a regression signal (a single run is not
+a re-acceptance of CONTENTION-1's ten-run gate; it corroborates Task 5's
+number).
