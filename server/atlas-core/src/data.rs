@@ -2451,6 +2451,12 @@ mod heading_collision_tests {
         let events = vec![bare_leg(), rich_leg()];
         let narratives = vec![narrative_for("bare_leg")];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+        // NOTE: this predicate unions `w.translations.values()` (every
+        // translation) where the real rule this test stands in for reads
+        // only `crate::translation::DEFAULT_TRANSLATION`. Inert here: this
+        // fixture is KJV-only (`bare_leg`/`rich_leg`'s witnesses carry no
+        // other translation key), so unioning over all translations and
+        // reading DEFAULT_TRANSLATION alone agree on this data.
         let mut ids: Vec<String> = data
             .events
             .iter()

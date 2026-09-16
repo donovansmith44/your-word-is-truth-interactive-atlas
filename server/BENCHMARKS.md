@@ -466,10 +466,23 @@ atlas-graph: 31102 KJV text units, 343558 cites edges (1241 negative-vote rows d
 - After Task 2 -> after Task 5 (this task's measurement): **+1.4 MiB**,
   i.e. statistically flat, inside the noise band both other stages already
   established (5.7-15.1 MiB spread across 3 runs at every stage). Retiring
-  `atlas_data_overlay` removed a one-time-computed aggregate over already-
-  live graph node references (1,358 places, 1,711 events -- pointers and
-  small `Vec`s, not a second copy of anything large); there was never a
-  large redundant allocation there to remove.
+  `atlas_data_overlay` did not remove a small derived aggregate -- the
+  overlay built OWNED `Event`/`Place`/`Narrative` values, and
+  `GraphSceneSource` now holds an identical owned copy of the same shape
+  (its `build()` runs the same three `*_from_node` builders the overlay
+  did; see that struct's own module doc, which says plainly it
+  "MATERIALISES ... ONCE ... exactly the way the boot-time overlay did").
+  The materialisation was RELOCATED, byte-for-byte the same collections,
+  not removed -- which is why this number is flat rather than dropping.
+  What the batch actually freed: the two KJV `HashMap`s (Task 2, already
+  counted in the bullet above) and the runtime
+  `verse_heading`/`heading_anchor_collisions`/`event_index`/`place_index`
+  webs `AtlasData::finish()` no longer derives over populated vecs (it now
+  runs those derivations over the permanently-empty serving-path copies).
+  What it added: a second copy of `place_history`/`place_name_aliases`
+  (`GraphSceneSource::build` clones both sidecar maps -- small, ~18 KB on
+  disk). Freed and added roughly cancel, inside this machine's own noise
+  band.
 - Baseline -> after Task 5 (the batch total): **-2.8 MiB (0.4%)**.
 - **What remains, and why it is not touched by this batch**: the
   ~751-758 MiB resident at every stage is dominated by the in-memory

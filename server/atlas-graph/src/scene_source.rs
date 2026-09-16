@@ -37,8 +37,10 @@
 //!     and, for places, `handlers::chapter`'s place-mention half plus
 //!     `bibex verse`'s PLACES section. Both are INHERENT methods, not
 //!     `SceneSource` methods -- the trait stays at the ten reads the
-//!     composer makes, so DB-4's "swap this file, never touch `scene.rs`"
-//!     promise is unaffected. They are built from the materialised
+//!     composer makes, so whatever DB-4 decides about the trait's own
+//!     borrowed-vs-owned returns (see this module's closing section) is
+//!     independent of these two INHERENT methods. They are built from the
+//!     materialised
 //!     collections in exactly the passes `finish()` used, so their
 //!     per-verse ORDER is identical (see each field's own doc comment),
 //!     and the regression pins that used to live beside those `AtlasData`
@@ -50,13 +52,18 @@
 //!     files, legitimately not graph nodes (survey §3, "NOT available").
 //!
 //! AND WHY IT IS SHAPED THIS WAY: it is an explicit, single-purpose object
-//! the DB-4 batch replaces with SQL WITHOUT touching `scene.rs` again --
-//! `events_in_window` (a linear filter over the 1,711 materialised events
-//! today) becomes an `event_date` range seek, and `total_events_for` /
-//! `event_bearing_place_ids` (a whole-collection counting pass today)
-//! become a `GROUP BY` over `located_at`. The trait seam Task 3 cut is
-//! what makes that a swap of this file rather than a rewrite of the
-//! composer.
+//! the DB-4 batch can replace with SQL -- `events_in_window` (a linear
+//! filter over the 1,711 materialised events today) becomes an `event_date`
+//! range seek, and `total_events_for` / `event_bearing_place_ids` (a
+//! whole-collection counting pass today) become a `GROUP BY` over
+//! `located_at`. But that swap is not free of `scene.rs`: the
+//! `SceneSource` trait returns BORROWS (`Vec<&Event>`, `&[Place]`,
+//! `&[Narrative]`, `&HashSet<String>`), so a SQL-backed implementation must
+//! either (a) keep a materialised cache behind the trait the same shape as
+//! this file's -- memory does not move, only the source of truth does -- or
+//! (b) widen the trait to owned returns, which touches `scene.rs`'s own
+//! `kept: Vec<&Event>` plumbing once. This module does not resolve that
+//! fork; DB-2's plan is what decides it.
 //!
 //! THE ORDER LAW (why this file is so particular about sequence): the 25
 //! scene responses `atlas-server/tests/scene_byte_identity.rs` pins were
@@ -302,9 +309,10 @@ impl GraphSceneSource {
 /// Every method mirrors the exact `AtlasData` read `scene.rs` makes, per
 /// `SceneSource`'s own per-method doc comments.
 impl SceneSource for GraphSceneSource {
-    /// A linear filter over the materialised events today -- DB-4 replaces
-    /// this body with an `event_date` range seek, without `scene.rs`
-    /// changing. Order is the `events` vec's own order, which is
+    /// A linear filter over the materialised events today -- DB-4 can
+    /// replace this body with an `event_date` range seek (see this module's
+    /// own doc comment for the borrowed-return fork that decision still
+    /// has to resolve). Order is the `events` vec's own order, which is
     /// `finish()`'s post-sort order.
     fn events_in_window(&self, w: &TimeRange) -> Vec<&Event> {
         self.events.iter().filter(|e| e.when.intersects(w)).collect()

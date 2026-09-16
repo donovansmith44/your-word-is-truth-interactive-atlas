@@ -151,6 +151,13 @@ async fn main() -> Result<()> {
         // That is accepted: `--build-from-raw` exists to run without a
         // compiled artifact at all, and it already pays a full raw+curated
         // compile to get there.
+        //
+        // Also disclosed: this `graph.scene_source(&data)` call composes
+        // the scene from `GraphSceneSource`'s served (overlay/BTreeMap-id)
+        // event order, not `compile()`'s own post-`finish()` order -- so
+        // `--build-from-raw` now AGREES with the default artifact path's
+        // event order for the first time (Task 1 measured the two orders
+        // differing in 1,364 of 1,711 positions). No gate pins this path.
         graph.scene_source(&data);
         (graph, data)
     } else {

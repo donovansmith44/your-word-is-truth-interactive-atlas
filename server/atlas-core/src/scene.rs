@@ -1,5 +1,5 @@
-//! Scene composition: turns an `AtlasData` plus a time window or scripture
-//! reference into the wire-level `Scene` the client renders.
+//! Scene composition: turns a `&dyn SceneSource` plus a time window or
+//! scripture reference into the wire-level `Scene` the client renders.
 
 use std::collections::{HashMap, HashSet};
 
