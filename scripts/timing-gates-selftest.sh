@@ -59,5 +59,13 @@ mk_tree "$tmp/t6" < "$tmp/names"
 printf '#[ignore = "%s"]\nfn %s() {}\n' "$REASON" "$(sed -n '1p' "$tmp/names")" >> "$tmp/t6/src/gates.rs"
 expect_refused env TIMING_GATES_TREE="$tmp/t6" bash "$GATES" check
 
+# 7. ATTEMPT: the SAME-LINE bypass (fix round 1, Task 3 review) -- share
+#    `#[ignore]` on the same line as another attribute, with no reason
+#    string at all, so a regex anchored to "line STARTS WITH #[ignore"
+#    never sees it. `check` must match #[ignore anywhere on a line.
+mk_tree "$tmp/t7" < "$tmp/names"
+printf '#[test] #[ignore]\nfn quietly_disabled_same_line() {}\n' >> "$tmp/t7/src/gates.rs"
+expect_refused env TIMING_GATES_TREE="$tmp/t7" bash "$GATES" check
+
 echo "timing-gates selftest: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

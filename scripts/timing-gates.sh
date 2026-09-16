@@ -38,9 +38,25 @@ names_in_tree() {
     | grep -oE '(^|[-:])fn [A-Za-z0-9_]+' | sed -E 's/^.*fn //' | sort
 }
 
-# Any #[ignore attribute at all (bare, or with a different reason).
+# Any #[ignore attribute at all (bare, with a different reason, sharing a
+# line with another attribute e.g. `#[test] #[ignore]`, or nested inside a
+# `#[cfg_attr(COND, ignore)]`). Fix round 1 (Task 3 review): the previous
+# `^\s*#\[ignore` anchor only matched an #[ignore] that opened its own
+# line, so `#[test] #[ignore]` on one line -- a real, quiet un-gate --
+# reconciled clean. The attribute may now appear ANYWHERE on a line
+# (`#\[[^]]*\bignore\b` matches the word "ignore" inside any `#[...]`
+# bracket, cfg_attr's nested parens included), which in turn now also
+# matches this file's own `//!` doc-comment mentions of `#[ignore]` (the
+# CONTENTION-1 paragraphs this same batch added to the three gated test
+# files) -- so doc-comment lines (content, after grep's `file:NN:`
+# prefix, starting with `//`) are dropped before the reason-string filter
+# runs. cfg_attr-based ignoring is caught by the same pattern; there is
+# no known legitimate `#[ignore]`/`cfg_attr(..., ignore)` anywhere under
+# server/ today (verified: only the eight gated attributes and doc-prose
+# mentions exist), so this is not narrowed further.
 foreign_ignores() {
-  grep -rn --include='*.rs' --exclude-dir=target -E '^\s*#\[ignore' "$TREE" 2>/dev/null \
+  grep -rn --include='*.rs' --exclude-dir=target -E '#\[[^]]*\bignore\b' "$TREE" 2>/dev/null \
+    | grep -vE '^[^:]*:[0-9]+:[[:space:]]*//' \
     | grep -vF "#[ignore = \"$REASON\"]" || true
 }
 
