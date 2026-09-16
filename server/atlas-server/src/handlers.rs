@@ -1326,6 +1326,28 @@ pub async fn narrative_event_positions(
             _ => None,
         })
         .collect();
+    // THE ONE PRESENTATION SOURCE for this whole handler (OVERLAY-1-HOTFIX-1).
+    //
+    // `atlas_core::narrative::adjacent_event` -- the shared builder that turns
+    // an event id into {label, places, verse_groups} for every `prior`,
+    // `following` and `timeline.*` below -- used to take `&AtlasData` and
+    // resolve through `AtlasData.events`. OVERLAY-1 Task 5 left that vec
+    // permanently EMPTY on every serving path (the boot-time overlay that
+    // filled it is gone), so all three fields came back blank for every event
+    // in the real atlas, while `tests/api.rs`'s fixture test -- whose
+    // `demo_fixture()` hand-fills `events` -- stayed green. Three Playwright
+    // specs were the only gate that caught it.
+    //
+    // It takes the SceneSource now, and this is the same object
+    // `handlers::scene_time`/`scene_scripture` compose the map from
+    // (materialised from the port with `finish()`'s merges and sort replayed),
+    // so an adjacent event's own label/places/verse_groups are LITERALLY the
+    // map arrow endpoint's own -- the ONE-GRAPH property
+    // `atlas_core::narrative`'s own header states, now true by construction on
+    // the serving path too. `tests/no_legacy_event_reads.rs` is the standing
+    // law that no serving handler goes back to `AtlasData.events`.
+    let src = graph.scene_source(&data);
+
     // A narrative whose `legs` names exactly ONE event (a real, if rare,
     // shape -- e.g. `demo_fixture()`'s own "patriarchs-demo") produces NO
     // `Succession` row pair at all: `chain.windows(2)` on a one-element
@@ -1344,7 +1366,7 @@ pub async fn narrative_event_positions(
     // `legacy::narrative_from_node` (and post-`apply_event_merges`, so a leg
     // naming an absorbed event is already repointed) -- the exact content
     // and order the deleted `AtlasData.narratives` carried.
-    for n in graph.scene_source(&data).narrative_list() {
+    for n in src.narrative_list() {
         if n.legs.len() == 1 && n.legs[0] == id {
             narrative_ids.insert(NarrativeId::new(n.id.clone()));
         }
@@ -1374,8 +1396,8 @@ pub async fn narrative_event_positions(
                 narrative_name,
                 event_id: id.clone(),
                 event_label: event_label.clone(),
-                prior: prior.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
-                following: following.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid)).map(Into::into),
+                prior: prior.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)).map(Into::into),
+                following: following.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)).map(Into::into),
             }
         })
         .collect();
@@ -1394,8 +1416,8 @@ pub async fn narrative_event_positions(
     // row either, hence absent from `temporal_neighbors` exactly like it
     // was absent from the old `timeline_index`.
     let timeline = graph.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
-        prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
-        following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(&data, pid)).map(Into::into),
+        prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
+        following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
     });
 
     Ok(Json(NarrativeEventPositionsOut { narrative, timeline }))

@@ -1406,3 +1406,142 @@ async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_sourc
         "and not ALL of them, which the hebron assertion above already proves"
     );
 }
+
+
+// ---------------------------------------------------------------------------
+// OVERLAY-1-HOTFIX-1: narrative adjacency on the REAL ARTIFACT-LOAD path
+// ---------------------------------------------------------------------------
+
+/// The app assembled EXACTLY the way a running server assembles it -- the
+/// serialized artifact plus a SIDECAR-ONLY `AtlasData` whose
+/// `events`/`places`/`narratives` are empty (`AtlasData::load` has not read
+/// those three files since M-C2, and OVERLAY-1 Task 5 deleted the boot-time
+/// overlay that used to re-fill them).
+///
+/// This is NOT `real_app()` above: that one builds its `AtlasData` from
+/// `atlas_etl::compile::compile`, which DOES hand-fill all three collections,
+/// so a test written over it cannot see the difference between "the handler
+/// reads the graph" and "the handler reads `AtlasData.events`" -- exactly the
+/// blind spot that let OVERLAY-1-HOTFIX-1's regression ship. Calling
+/// `load::load_graph_and_data` (THE one assembly path) rather than
+/// re-spelling it here is what keeps this builder honest as that path moves.
+fn artifact_app() -> axum::Router {
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    let (graph, data) = atlas_server::load::load_graph_and_data(&compiled)
+        .expect("data/compiled/{graph.bin,*.json} must exist -- run atlas-graph-compile first");
+    assert!(
+        data.events.is_empty() && data.places.is_empty() && data.narratives.is_empty(),
+        "this builder's whole point is the REAL serving shape: AtlasData's events/places/narratives must be EMPTY here"
+    );
+    atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
+}
+
+/// OVERLAY-1-HOTFIX-1 (the regression this hotfix exists for).
+///
+/// `GET /api/narrative/event/{id}` returned membership + label but NO
+/// `prior`, NO `following` and an empty `timeline` for EVERY event on the
+/// real serving path, because `atlas_core::narrative::adjacent_event` --
+/// the shared presentation builder (id -> label/places/verse_groups) -- still
+/// resolved its event through `AtlasData::event_by_id`, i.e. through the
+/// `AtlasData.events` vec that OVERLAY-1 Task 5 left permanently empty on
+/// every serving path. `tests/api.rs::narrative_event_positions_endpoint`
+/// could not see it: `demo_fixture()` hand-fills `events`.
+///
+/// Three Playwright specs were the only thing that caught it
+/// (`world-narrative-focus.spec.ts` EVENT-1, `world-pin.spec.ts` TRAVERSAL-1
+/// and TRAVERSAL-2). This test is the cheap, fast gate that should have.
+///
+/// The expected values are the PRE-CUTOVER server's own verbatim response
+/// (be98ccf, run on port 8091 against this same `data/compiled` -- quoted in
+/// `.superpowers/sdd/2026-09-16-overlay1/playwright-diagnosis.md`), not a
+/// guess: `ex_succoth`'s narrative neighbours are `ex_rameses` and
+/// `ex_red_sea`, and its `timeline` neighbours are the same two.
+#[tokio::test]
+async fn narrative_event_positions_has_adjacency_on_the_real_artifact_path() {
+    let app = artifact_app();
+
+    // The chain this test walks, confirmed from the wire rather than assumed.
+    let (st, narratives, _) = get(&app, "/api/narratives").await;
+    assert_eq!(st, 200);
+    let exodus = narratives
+        .as_array()
+        .expect("/api/narratives serves an array")
+        .iter()
+        .find(|n| n["id"] == "exodus")
+        .expect("the compiled atlas carries the 'exodus' narrative");
+    let legs: Vec<&str> = exodus["legs"].as_array().expect("legs").iter().map(|l| l.as_str().unwrap()).collect();
+    println!("exodus legs = {legs:?}");
+    assert!(legs.len() >= 3, "this test needs a mid-chain leg, a head and a tail: {legs:?}");
+    assert_eq!(legs[0], "ex_rameses");
+    assert_eq!(legs[1], "ex_succoth");
+    assert_eq!(legs[2], "ex_red_sea");
+
+    // --- the mid-chain leg: BOTH halves fully populated ---------------------
+    let (st, body, _) = get(&app, "/api/narrative/event/ex_succoth").await;
+    assert_eq!(st, 200);
+    println!("ex_succoth = {}", serde_json::to_string(&body).unwrap());
+
+    let row = body["narrative"]
+        .as_array()
+        .expect("narrative array")
+        .iter()
+        .find(|r| r["narrative_id"] == "exodus")
+        .expect("ex_succoth is an exodus leg");
+    assert_eq!(row["event_label"], "First camp at Succoth");
+
+    for (half, expected_id, expected_label) in
+        [("prior", "ex_rameses", "Israel departs Rameses"), ("following", "ex_red_sea", "Crossing the Red Sea")]
+    {
+        let adj = &row[half];
+        assert!(
+            !adj.is_null(),
+            "ex_succoth is MID-CHAIN -- its `{half}` must be present; absent here is the OVERLAY-1 regression (AtlasData.events is empty on this path): {body}"
+        );
+        assert_eq!(adj["id"], expected_id, "{body}");
+        assert_eq!(adj["label"], expected_label, "{body}");
+        assert!(
+            adj["places"].as_array().is_some_and(|p| !p.is_empty()),
+            "`{half}.places` must be non-empty -- the client's traversal buttons are built from places[0]: {adj}"
+        );
+        assert!(
+            adj["verse_groups"].as_array().is_some_and(|g| !g.is_empty()),
+            "`{half}.verse_groups` must be populated -- the popover renders its passage list from it: {adj}"
+        );
+    }
+
+    // --- the GLOBAL chronological half (EVENT-1's own arrows) ---------------
+    let timeline = &body["timeline"];
+    assert!(!timeline.is_null(), "a dated event must carry a timeline position: {body}");
+    for half in ["prior", "following"] {
+        let adj = &timeline[half];
+        assert!(!adj.is_null(), "`timeline.{half}` must be populated -- an empty timeline object IS the regression: {body}");
+        assert!(adj["id"].as_str().is_some_and(|s| !s.is_empty()), "{adj}");
+        assert!(adj["label"].as_str().is_some_and(|s| !s.is_empty()), "{adj}");
+        assert!(adj["verse_groups"].as_array().is_some(), "{adj}");
+    }
+    // Same two neighbours as the narrative half here (the pre-cutover
+    // server's own verbatim answer for this id).
+    assert_eq!(timeline["prior"]["id"], "ex_rameses", "{body}");
+    assert_eq!(timeline["following"]["id"], "ex_red_sea", "{body}");
+
+    // --- CONDITIONAL PRESENCE: a true chain head has no `prior` -------------
+    // Without this half the test would pass on an "everything always has
+    // both neighbours" bug, and TRAVERSAL-1's own final assertion
+    // (`card-prev-event-exodus` -> count 0 at the head) would be unguarded.
+    let (st, head, _) = get(&app, &format!("/api/narrative/event/{}", legs[0])).await;
+    assert_eq!(st, 200);
+    let head_row = head["narrative"].as_array().unwrap().iter().find(|r| r["narrative_id"] == "exodus").unwrap();
+    assert!(head_row["prior"].is_null(), "{} is exodus's first leg -- no narrative `prior`: {head}", legs[0]);
+    assert_eq!(head_row["following"]["id"], legs[1], "{head}");
+    // ...but it IS mid-stream on the GLOBAL timeline, which is a different
+    // order entirely (the pre-cutover server answered `num_reuben_gad_settle`).
+    assert!(!head["timeline"]["prior"].is_null(), "the global timeline is not the narrative chain: {head}");
+
+    // --- ...and a true chain tail has no `following` ------------------------
+    let tail = legs.last().unwrap();
+    let (st, tail_body, _) = get(&app, &format!("/api/narrative/event/{tail}")).await;
+    assert_eq!(st, 200);
+    let tail_row = tail_body["narrative"].as_array().unwrap().iter().find(|r| r["narrative_id"] == "exodus").unwrap();
+    assert!(tail_row["following"].is_null(), "{tail} is exodus's last leg -- no narrative `following`: {tail_body}");
+    assert_eq!(tail_row["prior"]["id"], legs[legs.len() - 2], "{tail_body}");
+}

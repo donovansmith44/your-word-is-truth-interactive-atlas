@@ -20,9 +20,22 @@
 //! (deleted alongside it; recoverable from git history at the commit
 //! immediately preceding this one).
 //!
+//! OVERLAY-1-HOTFIX-1: `adjacent_event` no longer takes `&AtlasData` at
+//! all -- it takes `&dyn SceneSource`. It had to: OVERLAY-1 Task 5 stopped
+//! filling `AtlasData.events` on every SERVING path (the boot-time overlay
+//! that used to is deleted), so the handler's `prior`/`following`/`timeline`
+//! silently went blank for every real event while the `demo_fixture()`-based
+//! test stayed green. Taking the source rather than the data makes the
+//! regression UNREPRESENTABLE at compile level: this function cannot reach
+//! an emptied collection because it can no longer name one. `AtlasData`'s
+//! own `SceneSource` impl is what keeps every fixture caller working
+//! unchanged (`&d as &dyn SceneSource`), and the serving path passes
+//! `GraphService::scene_source`, the port-materialised source the map itself
+//! composes from.
+//!
 //! ONE-GRAPH property (the user's own words: "we have one graph
-//! representing narratives"): the ONLY input this module reads is
-//! `AtlasData::narratives`/`AtlasData::events` -- the exact same data
+//! representing narratives"): the ONLY input this module reads is its
+//! `SceneSource`'s own events/narratives -- the exact same data
 //! `scene::build_arrows` walks to build the map's own `SceneArrow`s, and
 //! `adjacent_event` below builds each adjacent event's `verse_groups` via
 //! `scene::to_scene_event`, the SAME function `scene::lit_places`/
@@ -36,6 +49,7 @@
 //! argument).
 
 use crate::data::AtlasData;
+use crate::scene_source::SceneSource;
 use crate::wire::VerseGroup;
 
 /// One event ADJACENT to the position being described (the PRIOR or the
@@ -68,6 +82,15 @@ pub struct NarrativeAdjacentEvent {
 /// `filter_map(|id| d.event_by_id(id))` already takes for the identical
 /// input).
 ///
+/// OVERLAY-1-HOTFIX-1: takes `&dyn SceneSource` (was `&AtlasData`) -- see
+/// this module's own header for why the old signature was the regression.
+/// Behaviour is otherwise unchanged: `event_by_id` is a `SceneSource` trait
+/// method already, `AtlasData` implements it with the very same lookup, and
+/// `GraphSceneSource` implements it over the port-materialised events with
+/// `finish()`'s merges and sort replayed -- which is exactly what the
+/// deleted overlay used to copy into `AtlasData.events`, so the
+/// label/places/verse_groups on the wire are byte-identical to pre-cutover.
+///
 /// Batch M-B: made `pub` (was private) so `atlas_server::handlers::
 /// narrative_event_positions`'s own graph-view re-implementation can reuse
 /// this EXACT presentation builder (id -> label/places/verse_groups) rather
@@ -79,8 +102,8 @@ pub struct NarrativeAdjacentEvent {
 /// untouched beyond this visibility widening (a safe, non-breaking change:
 /// every existing caller/test in this file keeps compiling and passing
 /// unmodified).
-pub fn adjacent_event(d: &AtlasData, event_id: &str) -> Option<NarrativeAdjacentEvent> {
-    let e = d.event_by_id(event_id)?;
+pub fn adjacent_event(src: &dyn SceneSource, event_id: &str) -> Option<NarrativeAdjacentEvent> {
+    let e = src.event_by_id(event_id)?;
     let se = crate::scene::to_scene_event(e); // SAME function every other "event's own verses on the wire" case uses
     Some(NarrativeAdjacentEvent { id: se.id, label: se.label, places: e.places.clone(), verse_groups: se.verse_groups })
 }
@@ -121,8 +144,8 @@ pub struct TimelinePosition {
 /// time... arbitrarily far, until the end of the graph."
 pub fn global_timeline_position(d: &AtlasData, event_id: &str) -> Option<TimelinePosition> {
     let idx = d.timeline_position(event_id)?;
-    let prior = idx.checked_sub(1).and_then(|i| d.timeline_event_at(i)).and_then(|e| adjacent_event(d, &e.id));
-    let following = d.timeline_event_at(idx + 1).and_then(|e| adjacent_event(d, &e.id));
+    let prior = idx.checked_sub(1).and_then(|i| d.timeline_event_at(i)).and_then(|e| adjacent_event(d as &dyn SceneSource, &e.id));
+    let following = d.timeline_event_at(idx + 1).and_then(|e| adjacent_event(d as &dyn SceneSource, &e.id));
     Some(TimelinePosition { prior, following })
 }
 
@@ -305,7 +328,7 @@ mod tests {
         // the live handler does: e3 is conquest's own leg immediately
         // following e2 (Jericho besieged) -- its own verse_groups via
         // `adjacent_event` directly, no narrative-position wrapper.
-        let e3_via_narrative = &adjacent_event(&d, "e3").expect("e3 is a real event").verse_groups;
+        let e3_via_narrative = &adjacent_event(&d as &dyn SceneSource, "e3").expect("e3 is a real event").verse_groups;
 
         // (b) the map's own source: e3's window is -1405 alone; the
         // resulting scene's own "jericho" place carries e3 among its
