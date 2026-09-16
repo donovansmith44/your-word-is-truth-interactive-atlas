@@ -197,7 +197,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
     let mut failures = Vec::new();
     for (label, from, to, expected_hash, expected_len) in time_windows() {
         let w = TimeRange::new(from, to).unwrap();
-        let scene = compose_time_scene(&data, w);
+        let scene = compose_time_scene(&*data, w);
         let bytes = serde_json::to_vec(&scene).unwrap();
         let hash = fnv1a(&bytes);
         println!("{label} -> hash {hash:#018x} ({} bytes)", bytes.len());
@@ -214,7 +214,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
 
     for (label, sref, expected_hash, expected_len) in scripture_refs() {
         let r = ScriptureRef::parse(sref).unwrap();
-        let scene = compose_scripture_scene(&data, &r);
+        let scene = compose_scripture_scene(&*data, &r);
         let bytes = serde_json::to_vec(&scene).unwrap();
         let hash = fnv1a(&bytes);
         println!("{label} -> hash {hash:#018x} ({} bytes)", bytes.len());

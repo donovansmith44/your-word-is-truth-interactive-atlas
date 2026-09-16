@@ -3,9 +3,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::data::{AtlasData, Event};
+use crate::data::Event;
 use crate::history::{resolve_display_name, resolve_existence};
 use crate::refs::{ScriptureRef, VerseId};
+use crate::scene_source::SceneSource;
 use crate::time::TimeRange;
 use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
 
@@ -13,8 +14,8 @@ use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneNarrative, Sce
 /// all of its places; arrows connect each narrative's kept legs in order.
 /// Batch E2: every OTHER event-bearing place ("cities in our graph") goes
 /// quiet rather than vanishing -- see `quiet_places` below.
-pub fn compose_time_scene(d: &AtlasData, w: TimeRange) -> Scene {
-    let kept: Vec<&Event> = d.events.iter().filter(|e| e.when.intersects(&w)).collect();
+pub fn compose_time_scene(d: &dyn SceneSource, w: TimeRange) -> Scene {
+    let kept: Vec<&Event> = d.events_in_window(&w);
     let places = lit_places(d, &kept, None, Some(w)); // group kept events by ALL their places
     let quiet = quiet_places(d, &places, w);
     let arrows = build_arrows(d, &w, None);
@@ -27,12 +28,8 @@ pub fn compose_time_scene(d: &AtlasData, w: TimeRange) -> Scene {
 /// `verse_links` alone match `r` (get a single synthetic `mention-*`
 /// pseudo-event; see below). A place lit via both keeps only its real,
 /// ref-matching events — the pseudo-event never appears alongside real ones.
-pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
-    let kept: Vec<&Event> = d
-        .events
-        .iter()
-        .filter(|e| e.verses.iter().any(|v| ref_contains(r, &VerseId::parse_canonical(v).expect("etl-validated verse id"))))
-        .collect();
+pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
+    let kept: Vec<&Event> = d.events_matching_ref(r);
     // `name_window: None` -- scripture mode never resolves a curated period
     // name (see `history::resolve_display_name`'s own doc comment for why:
     // a place here is lit by its geocoded verse links, whose KJV text
@@ -41,7 +38,7 @@ pub fn compose_scripture_scene(d: &AtlasData, r: &ScriptureRef) -> Scene {
     let mut places = lit_places(d, &kept, Some(r), None);
     let event_lit: HashSet<String> = places.iter().map(|p| p.id.clone()).collect();
 
-    for place in &d.places {
+    for place in d.places() {
         if event_lit.contains(&place.id) {
             continue;
         }
@@ -112,9 +109,9 @@ pub fn ref_contains(r: &ScriptureRef, v: &VerseId) -> bool {
 /// instead (`w` is then unused). Consecutive kept legs at the same anchor
 /// place are skipped (the chain passes through); `order` still increments
 /// for every consecutive pair so orders stay stable across skips.
-fn build_arrows(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<SceneArrow> {
+fn build_arrows(d: &dyn SceneSource, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<SceneArrow> {
     let mut out = Vec::new();
-    for n in &d.narratives {
+    for n in d.narratives() {
         let kept: Vec<&Event> = n
             .legs
             .iter()
@@ -155,7 +152,7 @@ fn build_arrows(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>) -> Vec<S
 /// for time mode, `None` for scripture mode — see `compose_scripture_scene`'s
 /// own call site comment for why) — a SEPARATE concept from `r`, which only
 /// controls verse-cap prioritization.
-fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_window: Option<TimeRange>) -> Vec<ScenePlace> {
+fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, name_window: Option<TimeRange>) -> Vec<ScenePlace> {
     let mut by_place: HashMap<&str, Vec<&Event>> = HashMap::new();
     for e in kept {
         for pid in &e.places {
@@ -208,7 +205,7 @@ fn lit_places(d: &AtlasData, kept: &[&Event], r: Option<&ScriptureRef>, name_win
 /// name never contradicts itself between the lit and quiet sides for one
 /// window). Sorted by id, same determinism `lit_places` already gives its
 /// own list.
-fn quiet_places(d: &AtlasData, lit: &[ScenePlace], window: TimeRange) -> Vec<QuietPlace> {
+fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> Vec<QuietPlace> {
     let lit_ids: HashSet<&str> = lit.iter().map(|p| p.id.as_str()).collect();
     let mut out: Vec<QuietPlace> = d
         .event_bearing_place_ids()
@@ -373,10 +370,10 @@ fn verse_groups_for(verses: &[String], r: Option<&ScriptureRef>) -> Vec<VerseGro
 /// event with no arrow endpoint at all, so counting via arrows would
 /// undercount). This needs the same `(w, r)` filter `build_arrows` used,
 /// which is why it takes them too rather than only `(d, arrows)`.
-fn legend(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>, arrows: &[SceneArrow]) -> Vec<SceneNarrative> {
+fn legend(d: &dyn SceneSource, w: &TimeRange, r: Option<&ScriptureRef>, arrows: &[SceneArrow]) -> Vec<SceneNarrative> {
     let active: HashSet<&str> = arrows.iter().map(|a| a.narrative.as_str()).collect();
     let mut out: Vec<SceneNarrative> = d
-        .narratives
+        .narratives()
         .iter()
         .filter(|n| active.contains(n.id.as_str()))
         .map(|n| {
@@ -399,7 +396,7 @@ fn legend(d: &AtlasData, w: &TimeRange, r: Option<&ScriptureRef>, arrows: &[Scen
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::{Canon, Narrative, Place};
+    use crate::data::{AtlasData, Canon, Narrative, Place};
     use crate::time::next_year;
     use proptest::prelude::*;
     use std::collections::{HashMap, HashSet};

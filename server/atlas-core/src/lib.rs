@@ -9,6 +9,7 @@ pub mod narrative;
 pub mod nt_calibration;
 pub mod refs;
 pub mod scene;
+pub mod scene_source;
 pub mod sources;
 pub mod time;
 pub mod translation;

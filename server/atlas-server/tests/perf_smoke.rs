@@ -94,7 +94,7 @@ fn scene_time_full_span_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let w = TimeRange::new(-4004, 100).unwrap();
     let elapsed = median_of(7, || {
-        let _ = compose_time_scene(&data, w);
+        let _ = compose_time_scene(&*data, w);
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_time_full_span_completes_within_smoke_threshold", 75);
     assert!(elapsed < Duration::from_millis(75), "compose_time_scene(full span) took {elapsed:?}, over the 75ms smoke gate (baseline ~8ms HTTP / sub-ms pure-compute -- see BENCHMARKS.md)");
@@ -106,7 +106,7 @@ fn scene_time_nt_window_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let w = TimeRange::new(-5, 100).unwrap();
     let elapsed = median_of(7, || {
-        let _ = compose_time_scene(&data, w);
+        let _ = compose_time_scene(&*data, w);
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_time_nt_window_completes_within_smoke_threshold", 75);
     assert!(elapsed < Duration::from_millis(75), "compose_time_scene(NT window) took {elapsed:?}, over the 75ms smoke gate (baseline ~4-5ms HTTP -- see BENCHMARKS.md)");
@@ -118,7 +118,7 @@ fn scene_scripture_chapter_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let r = ScriptureRef::parse("JHN.3").unwrap();
     let elapsed = median_of(7, || {
-        let _ = compose_scripture_scene(&data, &r);
+        let _ = compose_scripture_scene(&*data, &r);
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_scripture_chapter_completes_within_smoke_threshold", 50);
     assert!(elapsed < Duration::from_millis(50), "compose_scripture_scene(JHN.3) took {elapsed:?}, over the 50ms smoke gate");

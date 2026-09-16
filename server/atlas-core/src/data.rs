@@ -2024,6 +2024,59 @@ impl AtlasData {
     }
 }
 
+/// OVERLAY-1 Task 3: `AtlasData` implements the seam `atlas_core::scene`
+/// composes against by delegating straight to its own existing
+/// fields/methods -- no behaviour change, no new derivation. Every method
+/// here mirrors the exact `d.*` read `scene.rs` used to make directly.
+impl crate::scene_source::SceneSource for AtlasData {
+    fn events_in_window(&self, w: &TimeRange) -> Vec<&Event> {
+        self.events.iter().filter(|e| e.when.intersects(w)).collect()
+    }
+
+    fn events_matching_ref(&self, r: &crate::refs::ScriptureRef) -> Vec<&Event> {
+        self.events
+            .iter()
+            .filter(|e| {
+                e.verses
+                    .iter()
+                    .any(|v| crate::scene::ref_contains(r, &crate::refs::VerseId::parse_canonical(v).expect("etl-validated verse id")))
+            })
+            .collect()
+    }
+
+    fn places(&self) -> &[Place] {
+        &self.places
+    }
+
+    fn narratives(&self) -> &[Narrative] {
+        &self.narratives
+    }
+
+    fn event_by_id(&self, id: &str) -> Option<&Event> {
+        AtlasData::event_by_id(self, id)
+    }
+
+    fn place_by_id(&self, id: &str) -> Option<&Place> {
+        AtlasData::place_by_id(self, id)
+    }
+
+    fn place_history_for(&self, id: &str) -> Option<&PlaceHistory> {
+        AtlasData::place_history_for(self, id)
+    }
+
+    fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
+        AtlasData::place_name_alias_for(self, id)
+    }
+
+    fn event_bearing_place_ids(&self) -> &HashSet<String> {
+        AtlasData::event_bearing_place_ids(self)
+    }
+
+    fn total_events_for(&self, id: &str) -> u32 {
+        AtlasData::total_events_for(self, id)
+    }
+}
+
 /// Maps a signed calendar year (never zero) onto a contiguous integer line
 /// with the zero-year gap removed: `..., -2, -1, 1, 2, ...` becomes
 /// `..., -2, -1, 0, 1, ...` (AD years shift down by one; BC years are

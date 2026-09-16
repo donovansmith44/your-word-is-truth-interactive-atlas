@@ -103,11 +103,11 @@ fn bench_scene_pure(c: &mut Criterion) {
     ];
     for (label, from, to) in windows {
         let w = TimeRange::new(*from, *to).unwrap();
-        group.bench_function(*label, |b| b.iter(|| compose_time_scene(black_box(&data), black_box(w))));
+        group.bench_function(*label, |b| b.iter(|| compose_time_scene(black_box(&*data), black_box(w))));
     }
 
     let chapter_ref = ScriptureRef::parse("JHN.3").unwrap();
-    group.bench_function("scripture_chapter", |b| b.iter(|| compose_scripture_scene(black_box(&data), black_box(&chapter_ref))));
+    group.bench_function("scripture_chapter", |b| b.iter(|| compose_scripture_scene(black_box(&*data), black_box(&chapter_ref))));
 
     group.finish();
 }

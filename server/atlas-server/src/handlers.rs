@@ -49,7 +49,7 @@ pub async fn scene_time(
     let from = parse_year(&params, "from")?;
     let to = parse_year(&params, "to")?;
     let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
-    Ok(Json(compose_time_scene(&data, window)))
+    Ok(Json(compose_time_scene(&*data, window)))
 }
 
 /// `GET /api/scene/scripture?ref=`.
@@ -72,7 +72,7 @@ pub async fn scene_scripture(
 ) -> Result<Json<Scene>, ApiError> {
     let raw = params.get("ref").map(String::as_str).unwrap_or("");
     let r = ScriptureRef::parse(raw).map_err(|_| ApiError::bad_ref(raw))?;
-    Ok(Json(compose_scripture_scene(&data, &r)))
+    Ok(Json(compose_scripture_scene(&*data, &r)))
 }
 
 pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
