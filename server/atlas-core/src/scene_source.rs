@@ -12,6 +12,14 @@
 //! functions taking already-fetched `Option<&PlaceHistory>`/
 //! `Option<&PlaceNameAlias>`) are NOT part of this trait -- `scene.rs` calls
 //! them directly, unchanged.
+//!
+//! Ten methods total (not eleven -- an earlier commit message/report for
+//! this task miscounted, see task-3-report.md's Correction section). The
+//! survey's own "eleven distinct `d.*` reads" tally counted `d.events` twice
+//! (once per predicate: `when.intersects` for time mode, a verse-ref match
+//! for scripture mode) among nine other named reads; this trait consolidates
+//! that pair into two methods, `events_in_window`/`events_matching_ref`,
+//! rather than reproducing the eleven-item tally as eleven methods.
 
 use std::collections::HashSet;
 
