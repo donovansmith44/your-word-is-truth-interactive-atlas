@@ -1,0 +1,2018 @@
+{
+  "area": "server/atlas-graph (src)",
+  "title": "atlas-graph src -- building and serving the Explorable Graph",
+  "kind": "crate",
+  "language": "rust",
+  "overview": {
+    "l1": "This is the workshop that turns the project's raw material -- the King James text, cross-references, places, people, events, Luther's Small Catechism, the Book of Concord, Kretzmann's commentary -- into ONE connected graph the server can answer questions from. Think of it as a factory: 17 separate 'adapter' stations each take one source and mint typed nodes (a verse, a place, an event...) and typed edges (this verse cites that one, this event happened at that place). A pipeline runs the stations in a fixed order, checks the result against a set of hard rules ('laws'), then either serves it live or freezes it into one file (graph.bin) the server loads in under three seconds. If this crate vanished, there would be no graph at all -- no verse cards, no map borders, no cross-reference popovers.",
+    "l2": "atlas-graph is a Rust **crate** (a compiled library, `Cargo.toml` names it `atlas-graph`) with one binary attached (`bins/compile_graph.rs`). Its job is defined by a six-stage **compiler pipeline** (`pipeline.rs`): NORMALIZE (mint nodes from raw sources), MERGE/ALIAS (cross legacy-vocabulary boundaries into typed edges), RESOLVE (pick each event's date), DERIVE (compute edges nobody authored, like 'what came right before this in time'), INDEX (build the fast lookup tables), LAW-CHECK (run the fail-loud checks). Each of roughly 17 'adapter' modules -- one per source -- follows the SAME two-phase shape: `normalize()` builds nodes, `merge_alias()` builds edges that cross into another adapter's node space. `service.rs`'s `GraphService` is the one long-lived handle the HTTP server holds; it wraps the owner-approved storage **trait** (`GraphQuery`, defined in the sibling `graph-types` crate) plus a dozen small companion indexes (a **HashMap** or **BTreeMap** each) for lookups the generic trait can't answer cheaply. `artifact.rs` is the bincode-serialized freeze-dried form of a built graph -- a hand-written mirror of every row/node table, versioned, so the server can boot from a file instead of re-parsing everything. Nearly every public function returns a `Result` and propagates failure with `?` -- a build that can't prove itself correct refuses to produce a server at all.",
+    "l3": "Two crates cooperate: `graph-types` (sibling crate, pure types + the `GraphQuery`/`GraphStore` port, content-addressed ids, owner-approved and extend-only) and this crate (`atlas-graph`), which is the pragmatic M-A/M-C materialization -- it builds the graph IN MEMORY at startup or compile time from the same raw sources `atlas-etl` reads, and owns NO competing storage trait (fix round 1, C1). The pipeline contract (`pipeline.rs::pipeline()`) is DATA -- `Vec<Box<dyn Pass>>` -- not a hardcoded call chain; `pipeline_tests::a_pass_removed_from_the_list_never_runs` proves a backed-out pass genuinely stops running. Two build paths converge on one `Graph`: from-sources (`build.rs`, real raw bytes, KJV fidelity law runs) and from-artifact (`artifact.rs::to_service_parts`, no raw bytes, fidelity already proven at compile time -- 'proof at the boundary, once'). `law_check.rs` is the generic cross-adapter referential-integrity law plus several adapter-specific fail-loud laws (attestation exclusivity, container forest, grounding laws); `fidelity.rs` is the KJV boundary law specifically, using a deliberately independent JSON reader (fix round 1, I2) so a shared parsing bug can't make both sides of the check agree falsely. `service.rs::GraphService::assemble` is the one place every companion index gets built, right before the graph is moved into the `MemStore`/`MemSnapshot` (owner-approved storage, implementation #1). `bins/compile_graph.rs` is the standalone binary that builds the graph TWICE from independent code paths and asserts they answer identically (`assert_answers_match`) before writing `graph.bin` and the map-system's own JSON exports -- the 'admission' step that makes the artifact provably equivalent to the in-memory build, not merely hoped to be."
+  },
+  "reading_order": [
+    "server/atlas-graph/Cargo.toml",
+    "server/atlas-graph/src/lib.rs",
+    "server/atlas-graph/src/pipeline.rs",
+    "server/atlas-graph/src/build.rs",
+    "server/atlas-graph/src/kjv_adapter.rs",
+    "server/atlas-graph/src/xref_adapter.rs",
+    "server/atlas-graph/src/bible_container_adapter.rs",
+    "server/atlas-graph/src/event_world.rs",
+    "server/atlas-graph/src/era_adapter.rs",
+    "server/atlas-graph/src/polity_adapter.rs",
+    "server/atlas-graph/src/place_adapter.rs",
+    "server/atlas-graph/src/person_adapter.rs",
+    "server/atlas-graph/src/peoples_adapter.rs",
+    "server/atlas-graph/src/catechism_adapter.rs",
+    "server/atlas-graph/src/concord_adapter.rs",
+    "server/atlas-graph/src/kretzmann_adapter.rs",
+    "server/atlas-graph/src/brainfuel_adapter.rs",
+    "server/atlas-graph/src/red_letter_adapter.rs",
+    "server/atlas-graph/src/red_letter_spans.rs",
+    "server/atlas-graph/src/fulfillment_adapter.rs",
+    "server/atlas-graph/src/description_adapter.rs",
+    "server/atlas-graph/src/attestation_pending.rs",
+    "server/atlas-graph/src/law_check.rs",
+    "server/atlas-graph/src/fidelity.rs",
+    "server/atlas-graph/src/heading.rs",
+    "server/atlas-graph/src/window.rs",
+    "server/atlas-graph/src/provenance.rs",
+    "server/atlas-graph/src/service.rs",
+    "server/atlas-graph/src/artifact.rs",
+    "server/atlas-graph/src/legacy.rs",
+    "server/atlas-graph/src/exports.rs",
+    "server/atlas-graph/src/bins/compile_graph.rs"
+  ],
+  "groups": [
+    {
+      "name": "Entry point & orchestration",
+      "paths": [
+        "server/atlas-graph/Cargo.toml",
+        "server/atlas-graph/src/lib.rs",
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/build.rs"
+      ],
+      "note": "What the crate depends on, what it exports, and the ordered six-stage contract every build runs through."
+    },
+    {
+      "name": "Core text adapters (the KJV skeleton)",
+      "paths": [
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "server/atlas-graph/src/xref_adapter.rs",
+        "server/atlas-graph/src/bible_container_adapter.rs"
+      ],
+      "note": "Build the one-node-per-verse skeleton, its cross-references, and its book/chapter containers -- everything else hangs off this."
+    },
+    {
+      "name": "Event world & chronology",
+      "paths": [
+        "server/atlas-graph/src/event_world.rs",
+        "server/atlas-graph/src/era_adapter.rs",
+        "server/atlas-graph/src/polity_adapter.rs"
+      ],
+      "note": "Events, narratives, anchors, dating, eras, and kingdoms -- the curated-data half of the graph, all sourced from AtlasData."
+    },
+    {
+      "name": "Entity adapters (the extensibility proof)",
+      "paths": [
+        "server/atlas-graph/src/place_adapter.rs",
+        "server/atlas-graph/src/person_adapter.rs",
+        "server/atlas-graph/src/peoples_adapter.rs",
+        "server/atlas-graph/src/catechism_adapter.rs",
+        "server/atlas-graph/src/fulfillment_adapter.rs",
+        "server/atlas-graph/src/description_adapter.rs"
+      ],
+      "note": "Each shows the same normalize/merge_alias shape working on a new kind of thing, proving the design generalizes without new machinery."
+    },
+    {
+      "name": "Secondary corpora adapters",
+      "paths": [
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/kretzmann_adapter.rs",
+        "server/atlas-graph/src/brainfuel_adapter.rs",
+        "server/atlas-graph/src/red_letter_adapter.rs",
+        "server/atlas-graph/src/red_letter_spans.rs"
+      ],
+      "note": "The Book of Concord, Kretzmann's commentary, multilingual renderings, and red-letter (words-of-Christ) data -- later, larger corpora riding the same adapter pattern."
+    },
+    {
+      "name": "Laws and curation data",
+      "paths": [
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/fidelity.rs",
+        "server/atlas-graph/src/attestation_pending.rs"
+      ],
+      "note": "The fail-loud checks a build must pass, plus the one hand-curated exception list a law is stated against."
+    },
+    {
+      "name": "Serving support (companions & queries)",
+      "paths": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/window.rs",
+        "server/atlas-graph/src/heading.rs",
+        "server/atlas-graph/src/provenance.rs",
+        "server/atlas-graph/src/legacy.rs"
+      ],
+      "note": "What GraphService actually holds in memory and the query helpers built on top of the generic storage trait."
+    },
+    {
+      "name": "Artifact & exports (compile-time outputs)",
+      "paths": [
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/exports.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs"
+      ],
+      "note": "Freezing a built graph to disk (graph.bin), the two small JSON files the separate map project consumes, and the binary that produces both with a self-check."
+    }
+  ],
+  "files": [
+    {
+      "path": "server/atlas-graph/Cargo.toml",
+      "lines": 51,
+      "role": "the crate's dependency manifest and its one compiled binary declaration",
+      "l1": "This file is the crate's parts list: which other pieces of the project it needs (the shared types crate, the ETL parser crate, a fast binary encoder called bincode) and one extra instruction that says 'also build a separate program called atlas-graph-compile from this file over here.' Nothing runs from this file itself -- it's what Rust's build tool (Cargo) reads before compiling anything, the equivalent of a recipe's ingredient list before you start cooking.",
+      "l2": "This is a **Cargo-toml** manifest, the Rust equivalent of a `package.json` or `.csproj`. The `[dependencies]` section names other crates this one links against: `atlas-graph-types` (the shared, pure types crate), `atlas-core`, and -- notably -- a RUNTIME dependency on `atlas-etl`, the ETL binary's own crate, reused here for its raw-source parsers rather than duplicating them. `serde`/`bincode` are the serialization stack `artifact.rs` uses to freeze a graph to disk. The `[[bin]]` section is unusual: it points at `src/bins/compile_graph.rs` (note the plural 'bins') instead of Cargo's normal auto-discovered `src/bin/*.rs`, because this repo's root `.gitignore` has a broad rule for the Blazor client's own build output directories that would silently exclude a file living at the conventional path.",
+      "l3": "`[package]` pins `edition = \"2021\"`. `[[bin]] name = \"atlas-graph-compile\" path = \"src/bins/compile_graph.rs\"` is declared explicitly (M-C, controller decision 4) rather than relying on Cargo's `src/bin/` auto-discovery, because the repo's own root `.gitignore` carries a broad `**/bin/` rule for the Blazor client's `bin/` build-output directories that would otherwise silently exclude this real source file. `[dependencies]` on `atlas-etl` is a disclosed strangler deviation (controller ruling 2) that reverses the pre-M-A convention 'atlas-server never depends on atlas-etl (build-time-only)' -- retires at M-C when the parallel compiled JSON artifacts are deleted. `serde_json` is used directly (not just transitively) by `fidelity.rs`'s own independent KJV-JSON reader, deliberately never the typed `atlas_etl::kjv::RawKjv` shape, so the fidelity law shares no parsing code with the adapter path it checks. `bincode = \"1\"` is the artifact's own compact binary codec, chosen over reusing `serde_json` a second time because the load-time ceiling (<=3s, a committed law) rules out per-byte text parsing over the ~344k-row cites table. `[dev-dependencies] proptest = \"1\"` backs property-based tests somewhere in this crate's test suite (not in `src/`, per this writer's assigned scope).",
+      "key_items": [
+        {
+          "name": "[[bin]] atlas-graph-compile",
+          "kind": "module",
+          "what": "declares the compile binary at src/bins/compile_graph.rs, outside Cargo's auto-discovered src/bin/",
+          "line": 7
+        },
+        {
+          "name": "atlas-etl dependency",
+          "kind": "module",
+          "what": "disclosed strangler-pattern runtime dependency on the ETL crate's raw-source parsers",
+          "line": 20
+        },
+        {
+          "name": "bincode dependency",
+          "kind": "module",
+          "what": "the compact binary codec artifact.rs uses to serialize graph.bin under the 3s load ceiling",
+          "line": 42
+        }
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": [
+        "Cargo-toml",
+        "workspace",
+        "build-script"
+      ],
+      "tests": "no dedicated tests found (a manifest has no runnable behavior of its own)"
+    },
+    {
+      "path": "server/atlas-graph/src/lib.rs",
+      "lines": 80,
+      "role": "the crate's front door -- declares every module and re-exports the public API",
+      "l1": "This is the table of contents for the whole workshop: it lists every adapter module that exists (one line per source: KJV, cross-references, places, events, catechism, Concord, Kretzmann...) and picks out the handful of things another part of the project -- mainly the web server -- is actually allowed to use directly: the finished GraphService, the build statistics, and one small helper that turns a graph's version stamp into a web-friendly hex string. If a module isn't listed here, nothing outside this crate can see it at all.",
+      "l2": "`lib.rs` is the **crate** root -- every `pub mod name;` line makes a source file (or folder) a real, navigable **module** of the compiled library. The doc comment at the top explains the crate's own place in the design: it is the pragmatic M-A materialization on top of the pure `graph-types` crate, which defines the storage **trait** (`GraphQuery`) this crate deliberately does not compete with. The `pub use` lines at the bottom are the crate's real public surface -- `BuildStats`, `Chronology`, `GraphService`, `WindowDir`, and the compiler pipeline entry points -- everything else (all ~30 adapter modules) is reachable only via its full path (`atlas_graph::kjv_adapter::...`), which is how a caller can tell 'core API' from 'internal adapter' at a glance.",
+      "l3": "`pub fn version_hex(v: atlas_graph_types::store::GraphVersion) -> String` (line 78) formats a `GraphVersion`'s inner integer as fixed-width lowercase hex via `format!(\"{:016x}\", v.0.0)` -- chosen as a free function here rather than a `Display` impl added to `graph-types` itself, since this batch deliberately touches no `graph-types` source file (the owner-approved-crate discipline). The module doc comment (lines 1-29) is the crate's own architectural summary: `window.rs` is generic over `&dyn GraphQuery` only; `service::GraphService` is a thin adapter-side wrapper around the owner's own `MemStore`/`MemSnapshot`; `fidelity` is the KJV adapter's fail-loud boundary law, enforced automatically inside `GraphService::from_sources`/`build`. Every module is declared `pub`, so visibility is uniform -- the crate relies on documentation and convention, not `pub(crate)` walls, to signal 'internal adapter' vs 'core API' (the `pub use` re-export list at lines 64-69 is the actual signal).",
+      "key_items": [
+        {
+          "name": "version_hex",
+          "kind": "fn",
+          "what": "formats a GraphVersion as fixed-width lowercase hex for ETag-style comparisons",
+          "line": 78
+        },
+        {
+          "name": "pub use build::BuildStats",
+          "kind": "type",
+          "what": "re-exports the startup-log-friendly build counters as crate-level API",
+          "line": 64
+        },
+        {
+          "name": "pub use service::GraphService",
+          "kind": "type",
+          "what": "re-exports the one built-graph handle the server holds",
+          "line": 68
+        },
+        {
+          "name": "pub use pipeline::{pipeline as compiler_pipeline, BuildCtx, Pass}",
+          "kind": "type",
+          "what": "re-exports the six-stage compiler pipeline contract",
+          "line": 67
+        }
+      ],
+      "depends_on": [
+        "graph-types/src/store.rs"
+      ],
+      "used_by": [
+        "server/atlas-server/src/main.rs",
+        "server/atlas-server/src/load.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs"
+      ],
+      "concepts": [
+        "crate",
+        "module",
+        "visibility",
+        "type-alias",
+        "doc-comment"
+      ],
+      "tests": "no dedicated tests found (this file only declares modules and re-exports; behavior is tested where it is defined)"
+    },
+    {
+      "path": "server/atlas-graph/src/pipeline.rs",
+      "lines": 625,
+      "role": "the ordered six-stage compiler contract every graph build runs through",
+      "l1": "Building the graph isn't one big function -- it's six clearly-named steps run in a fixed order: first mint the basic nodes (NORMALIZE), then connect legacy naming across sources (MERGE/ALIAS), then decide each event's date (RESOLVE), then compute facts nobody directly stated like 'what happened right before this' (DERIVE), then build the fast lookup tables (INDEX), then run every safety check (LAW-CHECK). This file is where that order lives, spelled out as an actual list you could delete an entry from -- and if you did, that step would genuinely stop running, proven by a test in this same file.",
+      "l2": "The centerpiece is `pub trait Pass { fn name(&self) -> &'static str; fn run(&self, ctx: &mut BuildCtx) -> Result<()>; }` -- a **trait**, i.e. an interface every stage implements. `pub fn pipeline() -> Vec<Box<dyn Pass>>` returns the six stages as DATA, a `Vec` of **`Box`**-wrapped trait objects (a `Box` is a heap-allocated pointer; `dyn Pass` means 'some type implementing Pass, decided at runtime'), not a hardcoded function-call chain. `pub fn run_pipeline(ctx: &mut BuildCtx, passes: &[Box<dyn Pass>]) -> Result<()>` walks that list with the **`?`-operator**, naming which pass failed via `.with_context(...)` (the `anyhow` crate's error-context helper) if one does. `BuildCtx<'a>` is a big **struct** carrying every raw input (canon, verses, xrefs, eras, and four **`Option<&T>`** fields for optional big corpora -- brainfuel, concord, kretzmann, red_letter, each defaulting to 'absent = honestly empty, never a placeholder') plus the in-progress `Graph` every pass mutates. Six private structs (`NormalizePass`, `MergeAliasPass`, ...) each implement `Pass`, calling out to the ~15 adapter modules' own `normalize`/`merge_alias`/etc. functions in a fixed, commented order.",
+      "l3": "The pipeline is proven live, not just documented: `pipeline_tests::a_pass_removed_from_the_list_never_runs` (line 587) filters `law_check` out of the returned `Vec` and shows the resulting graph never had its fidelity gate run at all -- demonstrating the list is genuine control flow. `BuildCtx::new`/`with_eras`/`with_eras_and_brainfuel`/`...and_concord`/`...and_kretzmann`/`...and_red_letter` is a telescoping constructor chain (each delegates to the next with one more optional corpus, `None` by default), the crate's own convention for adding a new optional data source without breaking existing callers. `LawCheckPass::run` (line 460) is the single place seven separate laws are invoked in sequence: KJV fidelity (conditional on real source bytes, `fidelity::check_kjv_fidelity`), referential integrity (`law_check::every_authored_edge_resolves`), the container-containment forest law, the ATTEST-1 attestation-exclusivity and Analogue-distinctness laws, and two adapter-specific fidelity laws (`person_adapter::check_person_fidelity`, `peoples_adapter::check_peoples_fidelity`) plus their grounding laws. `NormalizePass::run` (line 306) documents WHY each adapter call is NORMALIZE-eligible (self-contained, no other pass's output needed) and calls out real in-stage ORDERING dependencies (e.g. `brainfuel_adapter::normalize` must run immediately after `kjv_adapter::normalize` because it mutates the just-inserted TextUnit nodes rather than creating new ones). The version-root regression proof (`tests/version_root_regression.rs`, cited in the module doc comment) is what makes 'this restructuring is behavior-identical to the pre-pipeline call chain' a checked claim, not an assertion.",
+      "key_items": [
+        {
+          "name": "Pass",
+          "kind": "trait",
+          "what": "a named, total compiler stage: name() for error attribution, run() to execute it",
+          "line": 301
+        },
+        {
+          "name": "BuildCtx",
+          "kind": "struct",
+          "what": "everything a pass reads/writes: typed raw inputs, the in-progress Graph, running stats",
+          "line": 88
+        },
+        {
+          "name": "pipeline",
+          "kind": "fn",
+          "what": "the ONE place the six-stage order is declared, as a Vec<Box<dyn Pass>>",
+          "line": 549
+        },
+        {
+          "name": "run_pipeline",
+          "kind": "fn",
+          "what": "runs every pass in a given list, in order, naming which one failed on error",
+          "line": 565
+        },
+        {
+          "name": "NormalizePass",
+          "kind": "struct",
+          "what": "stage 1: mints nodes + directly-authored rows from every adapter that needs no other pass's output",
+          "line": 306
+        },
+        {
+          "name": "LawCheckPass",
+          "kind": "struct",
+          "what": "stage 6: runs KJV fidelity plus six other fail-loud cross-adapter and adapter-specific laws",
+          "line": 459
+        },
+        {
+          "name": "BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter",
+          "kind": "fn",
+          "what": "the richest BuildCtx constructor real startup and the compile binary actually call",
+          "line": 264
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/fidelity.rs",
+        "server/atlas-graph/src/description_adapter.rs",
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/catechism_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/lib.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs"
+      ],
+      "concepts": [
+        "trait",
+        "struct",
+        "Box",
+        "Vec",
+        "Option",
+        "Result",
+        "?-operator",
+        "anyhow",
+        "lifetime",
+        "closure",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod pipeline_tests: the_six_named_stages_run_in_the_documented_order, a_pass_removed_from_the_list_never_runs, a_failing_pass_names_itself_in_the_error, full_pipeline_over_a_trivial_fixture_is_green."
+    },
+    {
+      "path": "server/atlas-graph/src/build.rs",
+      "lines": 284,
+      "role": "the public entry points that assemble raw sources into a built Graph",
+      "l1": "This is the function you actually call to get a graph: hand it the raw KJV JSON text, the raw cross-reference file, and the project's curated data, and it hands back a finished, checked graph plus some counting statistics (how many verses, how many cross-references). It comes in several versions that each accept one more optional extra data source (multilingual editions, the Book of Concord, Kretzmann's commentary, red-letter data) -- callers who don't have those extras just get an honestly empty result for that part, never a guess.",
+      "l2": "`build_graph_from_sources` and its five progressively richer siblings (`..._with_eras`, `..._with_eras_and_brainfuel`, and so on) are the crate's main public **`fn`** entry points, each returning `anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)>` -- a **tuple** wrapped in `Result` (Rust's 'this might fail' type, unwrapped safely with the **`?`-operator**). Each richer variant takes one more **`Option<&T>`** parameter for an optional corpus and simply delegates to the next with `None`, so every EXISTING caller's behavior stays byte-identical when a new data source is added -- a deliberate, disclosed pattern repeated five times in this file. `BuildStats` is a small **struct** (`#[derive(Debug, Clone, Default, Serialize, Deserialize)]`) carrying verse/cross-reference counts, useful both for startup logging and as something a test can assert against directly. Under the hood, every variant funnels into `run_pipeline_build_with_brainfuel`, which builds a `pipeline::BuildCtx` and calls `pipeline::run_pipeline` -- this file is the friendly public wrapper; `pipeline.rs` is where the real work happens.",
+      "l3": "`build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter` (line 131) is the richest raw-source entry point: it parses `kjv_json` via `atlas_etl::kjv::parse`, then applies Tetragrammaton case restoration (`atlas_etl::brainfuel::restore_kjv_case`, batch KJV-CASE) when a real brainfuel corpus is supplied -- a `match` on `brainfuel: Option<&BrainFuelCorpus>` binds either the restored verse map or the unrestored one to the SAME `&HashMap<String,String>` binding via a `let` outside the match arms (a real-if-subtle **ownership/borrowing** pattern: `restored_verses` must be declared before the `match` so its lifetime outlives the borrow). `build_graph_from_canon_and_verses` (line 177) is the test-fixture path: it takes an already-parsed `(Canon, verses)` pair with NO raw source bytes, so the pipeline's LAW-CHECK stage skips the KJV fidelity law entirely (`kjv_json_source: None`) since there is nothing independent left to re-derive 'expected' from. The `#[cfg(test)] mod tests` block proves the whole assembly end-to-end over a tiny fixture: `builds_one_text_unit_per_verse_in_canon_order` checks node/spine counts, and `cites_row_is_queryable_through_the_generic_explorable_machinery` walks a cross-reference edge through the port's own `Explorable`/`EdgeQuery` machinery, not a raw field reach -- a real end-to-end proof that this crate's adapters and graph-types' generic query layer agree.",
+      "key_items": [
+        {
+          "name": "BuildStats",
+          "kind": "struct",
+          "what": "startup-log-friendly counts: kjv_verses, cites_rows, cites_dropped_negative_votes",
+          "line": 27
+        },
+        {
+          "name": "build_graph_from_sources",
+          "kind": "fn",
+          "what": "the simplest public entry point: KJV + xrefs + AtlasData -> a built Graph",
+          "line": 45
+        },
+        {
+          "name": "build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter",
+          "kind": "fn",
+          "what": "the richest raw-source entry point real startup and the compile binary use",
+          "line": 131
+        },
+        {
+          "name": "build_graph_from_canon_and_verses",
+          "kind": "fn",
+          "what": "test-fixture path building from an already-parsed Canon+verses pair, skipping the fidelity law",
+          "line": 177
+        },
+        {
+          "name": "run_pipeline_build_with_brainfuel",
+          "kind": "fn",
+          "what": "the private funnel every public entry point delegates to: builds a BuildCtx and runs the pipeline",
+          "line": 213
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "server/atlas-graph/src/concord_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "Result",
+        "Option",
+        "?-operator",
+        "match",
+        "ownership",
+        "borrowing",
+        "HashMap",
+        "derive",
+        "anyhow",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: builds_one_text_unit_per_verse_in_canon_order, cites_row_is_queryable_through_the_generic_explorable_machinery."
+    },
+    {
+      "path": "server/atlas-graph/src/kjv_adapter.rs",
+      "lines": 162,
+      "role": "turns raw KJV JSON into one TextUnit node per verse, in reading order",
+      "l1": "This is the file that turns the actual King James Bible text into the graph's most basic building block: one 'verse card' node for each of the 31,102 verses, laid out in the order you'd actually read them (Genesis 1:1, then 1:2, ... through Revelation). Every other part of the graph -- cross-references, place mentions, event witnesses -- ultimately points back to a node this file created. If this file broke, there would be no verse text anywhere in the app at all.",
+      "l2": "This adapter reuses `atlas_etl::kjv::parse` (the same JSON parser the separate ETL tool uses) rather than writing its own -- it only adds the walk into this crate's own typed node/id shapes on top. `verse_node_id(book, chapter, verse) -> AnyNodeId` is the ONE place a verse's internal id format (`\"bible/{book}.{chapter}.{verse}\"`) is decided; `decode_text_unit` is its exact inverse, returning **`Option<(u8,u16,u16)>`** rather than panicking on anything not shaped right. `verse_node` builds the actual `Node` **struct** with a `LayerMap` (a **`HashMap`**-like type keyed by translation) holding the KJV text under the key `\"kjv\"` -- other translations join the SAME map later without changing this node's shape. `normalize(ctx: &mut BuildCtx)` is the function the compiler pipeline actually calls: it walks the canon, inserts one node per verse, and records the whole sequence as the 'bible' reading **spine** (an ordered `Vec` of node ids) so later code can ask 'what comes after this verse' cheaply.",
+      "l3": "`book_index` (`kjv_adapter.rs:81`, inside `ordered_verses_from_canon`) is resolved via `atlas_core::canon::resolve_alias` on each book's own `code`, deliberately NOT the book's local position in `canon.books` -- because `atlas_etl::kjv::parse` re-densifies its own output to that subset's 0-based index, so a PARTIAL fixture (not all 66 books present) would otherwise silently produce wrong ids. This is exactly the bug this crate's own test suite caught before the fix. A verse the canon counts but the verse map lacks is skipped, never fabricated (mirrors `handlers::chapter`'s own tolerance). The chosen `\"bible/{book}.{chapter}.{verse}\"` format is not arbitrary -- it is EXACTLY what `graph_types::graph::Graph::build_indexes`'s own private `text_node` helper produces from a `TextRef::Bible(VerseRef)`, so the `cites` BiIndex (built independently from `TextLocus` endpoints) resolves to the identical node ids this adapter inserts. `KJV_TRANSLATION`/`BIBLE_CORPUS` are the two constants nearly every other adapter and `window.rs`/`heading.rs`/`legacy.rs` import to stay in sync with this file's own naming.",
+      "key_items": [
+        {
+          "name": "BIBLE_CORPUS",
+          "kind": "const",
+          "what": "the corpus id \"bible\" every other module reads to find the KJV reading spine",
+          "line": 32
+        },
+        {
+          "name": "KJV_TRANSLATION",
+          "kind": "const",
+          "what": "the translation-layer key \"kjv\" a verse's canonical rendering is stored under",
+          "line": 33
+        },
+        {
+          "name": "read_kjv_ordered",
+          "kind": "fn",
+          "what": "reuses atlas_etl::kjv::parse then re-walks the Canon into ordered KjvVerse rows",
+          "line": 64
+        },
+        {
+          "name": "ordered_verses_from_canon",
+          "kind": "fn",
+          "what": "the shared canon walk both real parsing and test fixtures use, keyed by resolved book code",
+          "line": 78
+        },
+        {
+          "name": "verse_node_id",
+          "kind": "fn",
+          "what": "the ONE place a verse's internal node-id format is decided",
+          "line": 99
+        },
+        {
+          "name": "decode_text_unit",
+          "kind": "fn",
+          "what": "the strict inverse of verse_node_id, returning None rather than panicking",
+          "line": 106
+        },
+        {
+          "name": "dot_ref",
+          "kind": "fn",
+          "what": "the human-legible citation form of a verse position (e.g. JHN.3.16)",
+          "line": 125
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "the pipeline-facing NORMALIZE entry point: mints every verse node + the bible reading spine",
+          "line": 136
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/xref_adapter.rs",
+        "server/atlas-graph/src/bible_container_adapter.rs",
+        "server/atlas-graph/src/fidelity.rs",
+        "server/atlas-graph/src/window.rs",
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/legacy.rs",
+        "server/atlas-graph/src/heading.rs",
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "Option",
+        "HashMap",
+        "match",
+        "doc-comment",
+        "content-hash"
+      ],
+      "tests": "in-file #[cfg(test)] coverage is minimal here; the real end-to-end proof lives in build.rs's own tests (builds_one_text_unit_per_verse_in_canon_order) and fidelity.rs's boundary law."
+    },
+    {
+      "path": "server/atlas-graph/src/xref_adapter.rs",
+      "lines": 304,
+      "role": "turns openbible.info's raw cross-reference TSV into cites edges",
+      "l1": "This is the file behind the little 'see also' links under a verse -- it reads openbible.info's giant spreadsheet of cross-references and turns each row into a real edge between two verses in the graph. It also makes an honest, disclosed call about vote counts: a handful of rows (about 1 in 300) carry a negative vote, which the graph's own number type can't represent, so those rows are quietly dropped and counted rather than corrupted into a wrong positive number.",
+      "l2": "`read_xrefs_ordered` reuses `atlas_etl::xrefs::parse` + `atlas_etl::xrefs::filter_missing_first_verse` verbatim -- the same parsing pipeline the separate ETL tool runs -- then lowers each surviving row into an `XrefRow` **struct** (`from`, `to`, `to_last`, `target_display`, `votes`). A cross-reference TARGET can be a verse RANGE (`\"COL.1.16-19\"`), not just a single verse; `target_span` (a private helper duplicating a small three-branch parse already duplicated twice elsewhere in this codebase, disclosed as a deliberate choice) extracts the range's first AND last verse so `to_last` can carry the honest full span even though the graph's own edge endpoint (`to`) is always the first verse. `graph_types::edge::CrossRef.votes` is `u32` (unsigned), so any row with a negative vote (about 0.36% of the real committed data) is DROPPED at this boundary -- never clamped to zero, never made positive -- and counted in `XrefAdapterStats.dropped_negative_votes` rather than silently vanishing.",
+      "l3": "`normalize(ctx: &mut BuildCtx)` (line 147) must run AFTER `kjv_adapter::normalize` within the same NORMALIZE pass (enforced by call ORDER in `pipeline.rs`, not by the type system): it rebuilds a dot-ref-keyed verse-text **`HashMap`** by walking the JUST-normalized graph nodes rather than reusing `ctx.kjv_verses` directly, so 'first verse of target exists' checks run against the SAME filtered, canon-walked set the KJV adapter actually inserted (never a stray key from the raw input that no chapter/verse slot reached). `target_span` handles three real citation shapes from the raw TSV: a single verse, a same-chapter range (compresses to `\"COL.1.16-19\"`), and a cross-chapter/book range (stays as `\"MAT.5.3-MAT.6.2\"`, never compressed) -- `DtoCrossRef.target_display` in `artifact.rs` carries this EXACT string, never a re-synthesized one. Deterministic order is a real property: rows are iterated by sorted `from` key, then each `from`'s own votes-descending order (inherited from `atlas_etl::xrefs::parse`'s own per-from sort), which matters because `Graph::build_indexes`'s BiIndex preserves row-insertion order for its forward listing.",
+      "key_items": [
+        {
+          "name": "XrefRow",
+          "kind": "struct",
+          "what": "one cites-ready row: from, to (first verse), to_last (real last verse), target_display, votes",
+          "line": 44
+        },
+        {
+          "name": "XrefAdapterStats",
+          "kind": "struct",
+          "what": "counts dropped_negative_votes -- disclosed decision 2's own accounting",
+          "line": 52
+        },
+        {
+          "name": "target_span",
+          "kind": "fn",
+          "what": "parses a cross-ref target string into its (first, last) verse endpoints across all three citation shapes",
+          "line": 70
+        },
+        {
+          "name": "read_xrefs_ordered",
+          "kind": "fn",
+          "what": "reuses atlas_etl's parser and filter, then lowers surviving rows into XrefRow, dropping negative votes",
+          "line": 98
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "pipeline-facing NORMALIZE entry point: parses ctx.xrefs_tsv into cites rows against the just-built verse text",
+          "line": 147
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "HashMap",
+        "Option",
+        "Result",
+        "?-operator",
+        "match",
+        "sort-determinism",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: self_reference_and_unparseable_target_are_dropped_upstream, range_target_resolves_to_its_first_verse, cross_chapter_range_target_carries_its_own_full_to_last_and_display_string, negative_votes_are_dropped_and_counted_disclosed_decision_2, positive_votes_cast_losslessly."
+    },
+    {
+      "path": "server/atlas-graph/src/bible_container_adapter.rs",
+      "lines": 471,
+      "role": "mints book and chapter nodes, plus their containment and next/previous edges",
+      "l1": "This file makes books and chapters real, first-class things in the graph, not just implicit groupings of verses. Every one of the 66 books and 1,189 chapters gets its own node ('Genesis', 'Genesis 2', ...), a declared edge saying which verses (or which chapters) it contains, and a declared 'what comes next' edge -- so the reader's next-chapter button, and any future exploration of 'what book is this chapter in', both come from real, checkable graph edges instead of a hidden convention.",
+      "l2": "Every container is a `NodePayload::Container { title }` node, given a stable internal id via `book_container_id`/`chapter_container_id` (e.g. `\"bible-book-GEN\"`, `\"bible-chapter-GEN-1\"`) built from the book's CANONICAL code only -- never a source alias -- so `decode_book_container`/`decode_chapter_container` can be the STRICT **inverse** of the minting functions (an OSIS or full-name spelling the minter never produces correctly returns `None`, never a normalized guess). `normalize` builds THREE kinds of edge rows per chapter: a `Contains` row holding the chapter's own verse loci (a **`BTreeSet`** wrapped in `LocusSet`), a second `Contains` row saying 'this book contains this chapter' (one row PER CHILD, never a list -- 'edges are pairwise rows'), and pairwise `CanonSuccession` rows for chapter-to-next-chapter and book-to-next-book navigation, built from a plain `.windows(2)` walk over the already-canon-ordered `Vec` of chapter/book ids.",
+      "l3": "The owner's own recursion addendum ('are nodes all recursively defined? they should be') is why `law_check::container_containment_is_a_forest` exists as a companion fail-loud check: this adapter's own rows are what that law validates (acyclic, single-parent). Chapter-to-next-chapter navigation runs ACROSS book boundaries deliberately (GEN.50 -> EXO.1, MAL.4 -> MAT.1) because the reader's 'next chapter' genuinely is the next book's first chapter when a book ends -- this is stated as row DATA now, not code logic, per the owner's fix-round-1 ruling ('we have to declare edges. no special cases'). `canonical_book_index` matches `BOOKS[..].code` EXACTLY, deliberately not `canon::resolve_alias` -- the decoders must reject alias spellings the minters could never have produced, proven by `decoders_reject_alias_spellings_the_minter_never_emits`. A chapter whose verses are ALL absent from the source still gets its Container node, its book-membership row, and its succession steps (the canon structure is real even if the text is missing) but authors no empty `Loci` row -- proven by `absent_verses_are_skipped_never_fabricated`. The original batch's post-index derived-entry merge is GONE: indexes derive from these declared rows via `Graph::build_indexes` alone, never a second derivation step (NODE1-ROWS-1, fix round 1).",
+      "key_items": [
+        {
+          "name": "book_container_id",
+          "kind": "fn",
+          "what": "the Container node id for one Bible book, e.g. \"bible-book-GEN\"",
+          "line": 92
+        },
+        {
+          "name": "chapter_container_id",
+          "kind": "fn",
+          "what": "the Container node id for one Bible chapter, e.g. \"bible-chapter-GEN-1\"",
+          "line": 98
+        },
+        {
+          "name": "decode_book_container",
+          "kind": "fn",
+          "what": "strict inverse of book_container_id; None for anything the minter never produced",
+          "line": 115
+        },
+        {
+          "name": "decode_chapter_container",
+          "kind": "fn",
+          "what": "strict inverse of chapter_container_id, same rejection discipline",
+          "line": 126
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "mints book/chapter Container nodes plus their Contains and CanonSuccession rows",
+          "line": 153
+        },
+        {
+          "name": "BibleContainerStats",
+          "kind": "struct",
+          "what": "counts books/chapters/verse_loci/book_chapter_rows/chapter_steps/book_steps",
+          "line": 73
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "iterator",
+        "sort-determinism",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: container_ids_round_trip_through_their_decoders, decoders_reject_alias_spellings_the_minter_never_emits, chapter_contains_rows_reach_their_verses_through_the_generic_port, book_membership_rows_serve_both_directions, chapter_succession_rows_cross_the_book_boundary_in_canon_order, book_succession_rows_chain_in_canon_order, an_empty_canon_is_a_true_no_op, absent_verses_are_skipped_never_fabricated. Also covered by law_check.rs's own container_containment_is_a_forest tests."
+    },
+    {
+      "path": "server/atlas-graph/src/event_world.rs",
+      "lines": 1301,
+      "role": "events, narratives, anchors, dating, and 'what happened next in time'",
+      "l1": "This is the biggest single adapter, and it's where the story-layer of the Bible lives: historical events (the Exodus, the Fall of Jerusalem), the narratives that chain them into a sequence (a journey, a prophet's ministry), the anchors that give real calendar years to a handful of them, and the machinery that figures out every OTHER event's approximate date relative to those anchors. It also computes the 'timeline order' -- which event came before which -- which is what powers the map's time slider and any 'what happened right before this' feature.",
+      "l2": "Unlike the KJV adapter, this one does NOT re-parse a raw file independently -- it reads the ALREADY-BUILT `atlas_core::data::AtlasData` (events, narratives, places, chronology anchors), the same struct every other pre-existing handler in the server reads from, itself already the product of the ETL tool's own curated-TOML + Theographic-import pipeline. `derive_chronology` computes a `ChronologyDerivation`: the reconstructed global `order` (a plain `Vec<String>` of dated event ids), each event's chosen `DatePlacement` (**enum**: anchor-bound, sequence-after-another-event, or a same-narrative predecessor), and a `ResolvedPlacement` per event. `populate`/`normalize`/`resolve`/`derive` are the four pipeline-facing entry points matching the compiler's NORMALIZE/RESOLVE/DERIVE stages. `add_justified_by` is a post-processing **fn** that wires a `justified-by` edge from any authored row (DatedBy, Fulfills, Typology, NamedAfter) to the scripture verse or anchor that grounds it, making 'why does the graph say this' an explorable frontier rather than a hidden fact.",
+      "l3": "`timeline_order` (line 142) reproduces `AtlasData::finish`'s own two-stage stable sort EXACTLY -- `(from_year, order_key, original array position)` -- proven, not assumed, by `tests/timeline_equivalence.rs`. `choose_placement` (line 203) implements a four-tier preference order salvaged conceptually from a parked module's own form classification, but rewritten to resolve PLACEMENTS from already-known years (never the reverse, which would need recursion): anchor binding first, then a same-narrative predecessor, then the global-timeline predecessor, then a degenerate anchor-relative fallback that only fires on a minimal test fixture with no real anchor table. `SeqKey` is assigned DIRECTLY from the reconstructed timeline POSITION (`i as u32`), never by summing `SequenceAfter` spacing -- an exact, not approximate, ordering key, because `ResolvedDate.to` is deliberately collapsed to equal `.from` for every event (M-D3, owner ruling R1: chronology now lives solely in `dated_by` placements, not a payload mirror). `SourceEventMeta` carries the genuine curated `to_year`/`order_key` SEPARATELY from `resolved`, because `resolved.seq` is a faithful ordering SUBSTITUTE, not the same literal value `legacy::event_from_node` must reproduce exactly for the `/api/event/{id}` wire (`overlay_equivalence.rs`'s own real-data discovery). `populate_temporal_adjacency` (line 803) is TRAV-1's own DERIVE-stage output: one `TemporalAdjacency` row per consecutive pair via `chrono.order.windows(2)`, replacing a former index-arithmetic-only representation of the identical fact. `add_justified_by` (line 891) is a REAL post-processing step over the already-built graph -- it must run AFTER `Graph::build_indexes()`, since it mirrors that function's own PRIVATE (subject, object) pairing logic for each of four relations to compute the identical `EdgeId` a client would already see.",
+      "key_items": [
+        {
+          "name": "PlacedChronology",
+          "kind": "struct",
+          "what": "one event's chosen DatePlacement plus the justification carried on its DatedBy row",
+          "line": 57
+        },
+        {
+          "name": "ChronologyDerivation",
+          "kind": "struct",
+          "what": "the full derivation: timeline order, placements, resolved dates, source metadata",
+          "line": 117
+        },
+        {
+          "name": "SourceEventMeta",
+          "kind": "struct",
+          "what": "genuine curated to_year/order_key, kept separate from the resolved timeline position",
+          "line": 105
+        },
+        {
+          "name": "derive_chronology",
+          "kind": "fn",
+          "what": "the full derivation: reconstructs timeline order, chooses each placement, resolves it",
+          "line": 321
+        },
+        {
+          "name": "Chronology",
+          "kind": "struct",
+          "what": "the built-graph-facing wrapper around a ChronologyDerivation, GraphService's own companion",
+          "line": 396
+        },
+        {
+          "name": "populate_nodes_and_direct_rows",
+          "kind": "fn",
+          "what": "NORMALIZE-shaped half: Event/Narrative/Anchor/Place nodes plus attests/located_at/succession rows",
+          "line": 637
+        },
+        {
+          "name": "populate_dated_by",
+          "kind": "fn",
+          "what": "RESOLVE-shaped half: lowers the chronology derivation's placements into dated_by rows",
+          "line": 767
+        },
+        {
+          "name": "populate_temporal_adjacency",
+          "kind": "fn",
+          "what": "DERIVE-shaped half: one TemporalAdjacency row per consecutive pair in the timeline",
+          "line": 803
+        },
+        {
+          "name": "add_justified_by",
+          "kind": "fn",
+          "what": "post-processing pass wiring justified-by edges from grounded rows to their scripture/anchor/source grounds",
+          "line": 891
+        },
+        {
+          "name": "empty_atlas",
+          "kind": "fn",
+          "what": "a trivial event-world-empty AtlasData fixture shared across this crate's own tests",
+          "line": 991
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/exports.rs",
+        "server/atlas-graph/src/legacy.rs",
+        "server/atlas-graph/src/heading.rs",
+        "server/atlas-graph/src/red_letter_adapter.rs"
+      ],
+      "concepts": [
+        "struct",
+        "enum",
+        "HashMap",
+        "BTreeSet",
+        "Option",
+        "match",
+        "closure",
+        "iterator",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "large in-file #[cfg(test)] mod tests covering timeline ordering, order_key tie-breaking, and placement choice; cross-file coverage in tests/timeline_equivalence.rs, tests/chronology_laws.rs, tests/determinism.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/era_adapter.rs",
+      "lines": 82,
+      "role": "one node per curated historical era, for the map's era selector",
+      "l1": "This tiny file adds one node for each named era of Bible history -- Patriarchs, Exodus & Wilderness, and so on -- each carrying its own start and end year. It's what would feed a dropdown or timeline selector on the map. It builds no connections to anything else; a time range is the whole point of an era node.",
+      "l2": "`normalize(ctx: &mut BuildCtx) -> EraAdapterStats` walks `ctx.eras` (a pre-parsed **slice**, `&[atlas_core::data::Era]`, NOT read off `AtlasData` the way every other adapter's source is -- see `pipeline::BuildCtx::eras`'s own doc comment) and inserts one `NodePayload::Era { label, from_year, to_year }` node per entry, keyed by the curated era's own stable string id (e.g. `\"patriarchs\"`). `era_node_id` is the ONE function that builds an `EraId` and **erases** it to the generic `AnyNodeId` shape every node table uses.",
+      "l3": "No relation rows are authored here at all -- the design's own edge-kind table names no era-targeting relation beyond `DatedBy`'s `EraOnly` placement form, which `event_world::choose_placement`'s own doc comment discloses as UNREACHABLE over real data (only a minimal test fixture with an empty anchor table hits it). `ctx.eras` defaults to an empty slice for every caller that doesn't supply real eras (most test fixtures via `BuildCtx::new`), which is a lawful, honest 'no eras this build,' not a placeholder -- `service.rs`'s own `era_ids` companion then sorts by `from_year` to reproduce the curated TOML's original chronological file order.",
+      "key_items": [
+        {
+          "name": "era_node_id",
+          "kind": "fn",
+          "what": "builds an EraId from a curated era's own stable string id, erased to AnyNodeId",
+          "line": 24
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "pipeline-facing NORMALIZE entry point: one Era node per curated era, no relation rows",
+          "line": 42
+        },
+        {
+          "name": "EraAdapterStats",
+          "kind": "struct",
+          "what": "counts eras normalized",
+          "line": 19
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "slice",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: one_node_per_curated_era_carrying_its_own_range."
+    },
+    {
+      "path": "server/atlas-graph/src/polity_adapter.rs",
+      "lines": 150,
+      "role": "one node per kingdom, carrying every era of its own border/name history",
+      "l1": "This file builds the graph's kingdoms -- Egypt, Israel, and so on -- as single nodes, each one holding its ENTIRE history as payload: every era it went through, each with its own name, date range, and border shape (the actual polygon coordinates the map draws). This is a deliberate design choice: rather than one node per (kingdom, era) pair, one kingdom stays one node whose data changes over time, because its identity and color never do.",
+      "l2": "`polity_node` builds a `NodePayload::Polity { label, color_key, eras: Vec<PolityEraPayload> }` -- the `eras` field is a **`Vec`** of a nested **struct** carrying `rings: Vec<Vec<(f64,f64)>>` (the raw polygon coordinates, potentially multiple rings for islands/holes) plus optional `transition`/`fall` delta payloads describing how the kingdom entered or left that era. The polity's own DISPLAY label is always its MOST RECENT era's name (e.g. 'Ptolemaic Egypt' once that era is current), computed in `polity_node` via `.last()` on the eras `Vec`. `normalize` is a straightforward one-node-per-polity loop over `ctx.atlas.polities`; there is no MERGE/ALIAS half because border data is modeled entirely as payload, per the design's own rule: 'polities: border data as node payloads, not new relation kinds.'",
+      "l3": "Modeling each era as a SEPARATE node was explicitly rejected (module doc comment): it would either duplicate the polity's own identity (`id`/`color_key`) across multiple nodes or require inventing a new relation just to tie them back together, exactly the shape the design rule forbids. `delta_payload` converts `atlas_core::data::PolityDelta` (event/verses/ref_note) into the graph-types `PolityDeltaPayload` one-for-one -- a small, pure `From`-style conversion with no logic of its own. The structurally-impossible empty-eras case falls back to the bare polity id as its label (never panics), though every real curated polity file is validated ETL-side to carry at least one era. `NodePayload::Polity` and its nested payloads are consumed almost entirely by the separate map project, via the artifact's own `DtoPolityEra`/`DtoPolityDelta` mirrors in `artifact.rs`.",
+      "key_items": [
+        {
+          "name": "polity_node_id",
+          "kind": "fn",
+          "what": "builds a PolityId from the curated polity's own stable id, erased to AnyNodeId",
+          "line": 30
+        },
+        {
+          "name": "polity_node",
+          "kind": "fn",
+          "what": "builds the Polity node carrying every era's border/delta payload, labeled by its latest era",
+          "line": 38
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "pipeline-facing NORMALIZE entry point: one node per curated polity",
+          "line": 66
+        },
+        {
+          "name": "PolityAdapterStats",
+          "kind": "struct",
+          "what": "counts polities and their total eras",
+          "line": 25
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "Vec",
+        "Option",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: polity_node_carries_every_era_with_border_and_delta_payload."
+    },
+    {
+      "path": "server/atlas-graph/src/place_adapter.rs",
+      "lines": 135,
+      "role": "turns a place's verse links into Mentions edges",
+      "l1": "Places themselves (Jerusalem, Hebron, ...) are built elsewhere; this small file's only job is the connective tissue -- turning each place's list of 'verses that mention me' (already resolved by an earlier data-processing step) into real graph edges. It's the first of several 'MERGE/ALIAS' adapters that cross a legacy naming boundary into a typed edge, a pattern several later files copy almost line for line.",
+      "l2": "`merge_alias(ctx: &mut BuildCtx) -> PlaceAdapterStats` loops `ctx.atlas.places`, and for each place's `verse_links` (already-resolved canonical verse ids) builds a `Mentions { locus, entity: MentionedEntity::Place(id), provenance }` row -- an unparseable verse ref is skipped via **`if-let`/`else`**, never a panic. This file used to ALSO build a `Named` row per place carrying a KJV alias, but that relation was retired whole by an owner ruling (M-D3, R2): a place's aliases already ride its own node payload as plain strings, with no separate node to point at, so a second row saying the identical fact was 'the second, weaker path' the crate's own discipline forbids.",
+      "l3": "The node-building half (lat/lon + the KJV alias payload) deliberately does NOT live here -- it lives with `event_world::place_node`, since it needs no other pass's output and is NORMALIZE-eligible; this file exists ONLY for the row-building half that crosses a legacy-vocabulary boundary (design doc §7's own 'event and place merge tables become assertion-level rules' framing). Merge tables themselves are already folded into `atlas.places` upstream by the ETL tool (`atlas_core::merge::apply_place_merges`), so there is no separate id-alias table for this adapter to surface as graph rows -- reading the already-merged `atlas.places` correctly satisfies 'incl. merge tables' by construction, not by extra code here.",
+      "key_items": [
+        {
+          "name": "merge_alias",
+          "kind": "fn",
+          "what": "pipeline-facing MERGE/ALIAS entry point: one Mentions row per resolved place verse link",
+          "line": 64
+        },
+        {
+          "name": "PlaceAdapterStats",
+          "kind": "struct",
+          "what": "counts mentions_rows built",
+          "line": 52
+        },
+        {
+          "name": "verse_locus",
+          "kind": "fn",
+          "what": "parses a canonical verse-ref string into a TextLocus, returning None on failure",
+          "line": 57
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "Option",
+        "if-let",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: mentions_rows_built_one_per_verse_link, an_unparseable_verse_link_is_skipped_not_panicked_on."
+    },
+    {
+      "path": "server/atlas-graph/src/person_adapter.rs",
+      "lines": 472,
+      "role": "the extensibility proof: people become graph nodes with zero new machinery",
+      "l1": "This file's whole purpose is to demonstrate that adding a brand-new kind of thing to the graph -- here, biblical PEOPLE (Moses, Aaron, ...) -- costs nothing new: it reuses the exact same two-step pattern place_adapter.rs already established (build nodes, then build the 'mentioned in' edges). It also includes its own boundary check -- a self-contained proof that every person in the source data becomes exactly one node, and that every one of their attested verses becomes exactly one edge, with nothing silently dropped.",
+      "l2": "`normalize` builds one `NodePayload::Person { label, gender, birth_year, death_year, also_called, description }` node per Theographic person record, SKIPPING nine records the curated data marks as 'reclassified' (Gen-10 gentilic collectives Theographic misfiled as persons -- `peoples_adapter.reclassified_person_slugs` is the ONE shared **`BTreeSet`** both this file and `peoples_adapter.rs` read, so a record can never become both a Person node AND a PeopleGroup node). `merge_alias` mirrors `place_adapter`'s own mentions half almost exactly. `check_person_fidelity(atlas, graph) -> Result<(), PersonFidelityViolation>` is the boundary law: a bijection check (source-record count minus reclassified count must equal Person-node count, id-exact) plus a mentions-completeness check (every person's resolved `verse_links` count must equal its actual `mentions` row count) -- fail-loud on the FIRST violation found, named precisely.",
+      "l3": "The module doc comment discloses a real, deliberate scope boundary: the raw source carries `father`/`mother`/`children`/`siblings`/`partners`/`birthPlace`/`deathPlace` foreign keys, NONE of which `atlas_etl::people::parse_people` reads or this adapter surfaces -- a genealogy relation or a Person-to-Place edge would be a NEW RELATION KIND (a `graph-types` change needing owner approval), correctly out of this batch's own card+mentions scope, and explicitly ledgered rather than silently omitted. `check_person_fidelity`'s own referential-integrity half is deliberately NOT reimplemented -- `law_check::every_authored_edge_resolves` already checks `mentions.entity` for both `MentionedEntity` variants, so this adapter's own referential integrity comes free from the existing generic law, proven in-file by `referential_integrity_of_person_mentions_rows_is_already_covered_by_the_generic_law`. The `also_called` field rides the node PAYLOAD (never a new relation), the SAME 'payload, not a new relation kind' shape Place's KJV aliases and Polity's border data already use.",
+      "key_items": [
+        {
+          "name": "PROVENANCE",
+          "kind": "const",
+          "what": "\"theographic-people\", the one provenance tag every Person node and mentions row carries",
+          "line": 75
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "one Person node per source record, excluding the nine reclassified slugs",
+          "line": 119
+        },
+        {
+          "name": "merge_alias",
+          "kind": "fn",
+          "what": "Person.verse_links -> Mentions rows, mirroring place_adapter's own shape",
+          "line": 147
+        },
+        {
+          "name": "check_person_fidelity",
+          "kind": "fn",
+          "what": "the boundary law: bijection + mentions-completeness, fail-loud on first violation",
+          "line": 193
+        },
+        {
+          "name": "PersonFidelityViolation",
+          "kind": "struct",
+          "what": "the named error type check_person_fidelity returns",
+          "line": 169
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/peoples_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "match",
+        "if-let",
+        "error-handling",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: normalize_builds_one_node_per_person_with_the_widened_payload, merge_alias_builds_one_mentions_row_per_verse_link_in_source_order, fidelity_is_green_when_normalize_and_merge_alias_both_ran_cleanly, fidelity_catches_a_missing_person_node_bijection_violation, fidelity_catches_an_extra_person_node_bijection_violation, fidelity_catches_a_mentions_completeness_violation, plus PG-1a reclassified-slug exclusion tests."
+    },
+    {
+      "path": "server/atlas-graph/src/peoples_adapter.rs",
+      "lines": 940,
+      "role": "people-group nodes from three sources, plus curated eponymy (who a nation is named after)",
+      "l1": "This is the file that answers 'who are the Ammonites?' -- it builds one node per people-group (tribe, nation, or clan), pulled from three different places: Theographic's own list, a small hand-curated list of nations the source lacked, and nine records Theographic mistakenly filed as individual people that are really collective names. It also builds 'named after' edges, connecting a people-group to the person Scripture says they're named for (Ammonites after Ben-ammi, e.g.), each backed by a real Bible verse.",
+      "l2": "`normalize` mints PeopleGroup nodes from three sources in sequence: (a) Theographic's own `peopleGroups.json` records, (b) six curated nation seeds hardcoded in curated TOML, (c) nine RECLASSIFIED person records (same raw slug, different `NodeKind` -- `AnyNodeId`'s own `{kind, raw}` shape makes the two distinct node-store keys even though the string is identical). It then builds `NamedAfter` rows from `ctx.atlas.named_after_seeds`, but ONLY when the named eponym resolves to a REAL Person node already in the graph -- checked against the GRAPH itself, not the raw source list, since `person_adapter::normalize` already ran earlier in the SAME pass. `merge_alias` builds `Mentions(PeopleGroup)` rows for the reclassified nine's own verse links, PLUS (a PG-1B rider) any Theographic group whose own `verse_links` happen to be non-empty (general code, not a hardcoded two-group special case) -- curated nation seeds (source b) never carry per-locus data and build no mentions at all.",
+      "l3": "`reclassified_person_slugs(atlas)` (line 100) is the ONE shared **`BTreeSet<String>`** view both this file and `person_adapter.rs` read, guaranteeing the partition of `atlas.people` between 'becomes a Person node' and 'becomes a PeopleGroup node' can never drift out of sync between the two call sites -- a kind is a fact, never a choice a client makes at read time. `check_peoples_fidelity` is the boundary law: bijection across all three sources plus a TOTAL-count check (catching a stray/duplicate insert the three per-source loops alone would miss) plus mentions-completeness for both the reclassified subset AND the PG-1B Theographic-verse-carrying subset. `every_named_after_row_has_a_scripture_ground` is a separate, adapter-specific grounding law: every `NamedAfter` row's justification must carry at least one `Ground::Scripture` -- 'the distinction labeled but not actually grounded' is exactly the failure mode this exists to prevent. `ground_range`/`ground_locus` are `pub(crate)` -- `fulfillment_adapter.rs` reuses this exact verse-ref parser for its OWN curated ranges rather than duplicating `VerseId::parse_canonical` a third time, a deliberate, disclosed sharing decision (unlike two OTHER, genuinely independent parser copies elsewhere in this workspace).",
+      "key_items": [
+        {
+          "name": "reclassified_person_slugs",
+          "kind": "fn",
+          "what": "the ONE shared view both this file and person_adapter.rs read for the Person/PeopleGroup partition",
+          "line": 100
+        },
+        {
+          "name": "ground_range",
+          "kind": "fn",
+          "what": "pub(crate) parser for a curated {from, to?} ground row into a BibleLocusRange, reused by fulfillment_adapter.rs",
+          "line": 130
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "PeopleGroup nodes from all three sources plus the curated NamedAfter rows",
+          "line": 161
+        },
+        {
+          "name": "merge_alias",
+          "kind": "fn",
+          "what": "PeopleGroup Mentions rows for the reclassified nine and any verse-carrying Theographic group",
+          "line": 272
+        },
+        {
+          "name": "check_peoples_fidelity",
+          "kind": "fn",
+          "what": "the boundary law: bijection across three sources, total count, and mentions completeness",
+          "line": 324
+        },
+        {
+          "name": "every_named_after_row_has_a_scripture_ground",
+          "kind": "fn",
+          "what": "grounding law: every NamedAfter row must carry >=1 Ground::Scripture",
+          "line": 434
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/person_adapter.rs",
+        "server/atlas-graph/src/fulfillment_adapter.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "match",
+        "error-handling",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "large in-file #[cfg(test)] mod tests covering all three normalize sources, merge_alias for reclassified and PG-1B groups, NamedAfter row construction/omission, and the fidelity + grounding laws."
+    },
+    {
+      "path": "server/atlas-graph/src/catechism_adapter.rs",
+      "lines": 187,
+      "role": "Small Catechism items and their symmetric links to Bible verses",
+      "l1": "This file builds one node per item of Luther's Small Catechism (the First Commandment, etc.) and links each to whatever verses ground it -- two different curated files cite verses for a catechism item (once at the item level, once per topical question), and this file merges both into ONE clean, deduplicated connection per verse, so a verse cited twice under different questions doesn't produce two identical links.",
+      "l2": "`normalize` builds one `NodePayload::CatechismItem { label }` node per item across every part of the catechism. `merge_alias` lowers BOTH citation shapes -- `CatechismItem.verses` (embedded, no question context) and each `CatechismQuestion.verses` (Batch F2's own per-topic mapping) -- into `CatechismLink` rows, deduped by `(locus, item)` via a **`BTreeSet`** of already-seen pairs, so the SAME verse cited twice under the item and a question collapses to ONE graph row. The row is deliberately FLAT and SYMMETRIC (design's own edge-kind table): it carries no memory of WHICH question a citation came from -- the richer, question-aware view stays on the existing bespoke `/api/catechism/item/{id}` endpoint, which reads `AtlasData.catechism` directly and never loses that distinction.",
+      "l3": "This is the crate's clearest example of the 'legacy vocabulary maps at the boundary' rule (design doc §7): two curated citation shapes intentionally collapse into one relation, with the loss (which question) disclosed rather than silently accepted as harmless. `catechism_link_is_queryable_symmetrically_through_the_generic_port` proves the SYMMETRIC relation shape end-to-end: querying from either the item's own frontier OR a linked verse's own frontier returns the SAME `EdgeId` (the bijection witness every symmetric relation in this crate is expected to satisfy). `catechism_item_node_id` is the one function every OTHER file that needs to reference a catechism item (notably `concord_adapter.rs`'s own SC-overlap alignment) calls, rather than hand-building the `AnyNodeId`.",
+      "key_items": [
+        {
+          "name": "catechism_item_node_id",
+          "kind": "fn",
+          "what": "builds a CatechismItemId from the curated item's own stable id, erased to AnyNodeId",
+          "line": 43
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "one node per catechism item, across every part",
+          "line": 55
+        },
+        {
+          "name": "merge_alias",
+          "kind": "fn",
+          "what": "lowers both item-level and question-level citation shapes into deduped CatechismLink rows",
+          "line": 74
+        },
+        {
+          "name": "CatechismAdapterStats",
+          "kind": "struct",
+          "what": "counts items and link_rows",
+          "line": 38
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/concord_adapter.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: one_node_per_item_labeled_by_its_own_name, item_and_question_citations_dedupe_to_one_row_per_locus, catechism_link_is_queryable_symmetrically_through_the_generic_port."
+    },
+    {
+      "path": "server/atlas-graph/src/fulfillment_adapter.rs",
+      "lines": 330,
+      "role": "prophecy-fulfillment and Christ-typology edges from two curated seed files",
+      "l1": "This file adds two kinds of theological connection between passages: 'this prophecy was fulfilled here' (Isaiah's virgin-birth prophecy fulfilled in Matthew, e.g.) and 'this Old Testament figure prefigures Christ' (the brasen serpent prefiguring Jesus being lifted up). Both come from small, hand-verified curated lists -- nothing here guesses a connection; every row's own text is a real KJV quote proving the link.",
+      "l2": "`normalize` walks two curated seed lists (`ctx.atlas.fulfillment_seeds`, `ctx.atlas.typology_seeds`) and builds one `Fulfills`/`Typology` row each, via `crate::peoples_adapter::ground_range` (a shared parser, not duplicated). Every row's own `Justification.grounds` is ALWAYS exactly one `Ground::Scripture` pointing at the fulfillment/antitype passage ITSELF -- Scripture self-attests these claims (the same 'the fulfillment passage IS its own ground' convention this adapter shares with several siblings). A curated row whose locus fails to parse is SKIPPED, not fatal, and named in `FulfillmentAdapterStats.{fulfillment,typology}_omitted` -- disclosed, never expected to fire over real data, but a curated-TOML typo must fail loud via the omission list rather than silently corrupting a row.",
+      "l3": "`every_fulfillment_row_has_a_scripture_ground`/`every_typology_row_has_a_scripture_ground` are FRESH checks over the BUILT graph's own row tables, independent of how `normalize` constructed them -- the same 'check the built graph, don't just trust the adapter' discipline `peoples_adapter.rs`'s own grounding law follows. This is one relation SIMPLER than `peoples_adapter`'s own NamedAfter half: there is no eponym-existence conditional to check, since every row here is pure Scripture text-to-text with nothing to look up against an already-built node set -- which is exactly why this adapter is NORMALIZE-eligible rather than MERGE/ALIAS-eligible. A real, curated case (`a_fulfillment_and_a_typology_row_can_share_the_same_locus_pair`) proves the SAME verse pair (Exodus 12:46 / John 19:36, the Passover lamb) can legitimately appear in BOTH tables at once -- 'fulfilled-in' and 'prefigures' are different claims, not mutually exclusive ones.",
+      "key_items": [
+        {
+          "name": "PROVENANCE_FULFILLMENT",
+          "kind": "const",
+          "what": "\"curated-fulfillment\", the provenance tag every Fulfills row carries",
+          "line": 48
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "builds fulfills/typology rows from two curated seed lists, self-attesting Scripture grounds",
+          "line": 76
+        },
+        {
+          "name": "every_fulfillment_row_has_a_scripture_ground",
+          "kind": "fn",
+          "what": "grounding law over graph.fulfills's own table",
+          "line": 129
+        },
+        {
+          "name": "every_typology_row_has_a_scripture_ground",
+          "kind": "fn",
+          "what": "grounding law over graph.typology's own table",
+          "line": 145
+        },
+        {
+          "name": "FulfillmentAdapterStats",
+          "kind": "struct",
+          "what": "counts rows built plus every omitted curated row, with its own reason",
+          "line": 51
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/peoples_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "match",
+        "error-handling",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: normalize_builds_one_fulfills_row_per_curated_seed, normalize_omits_a_fulfillment_row_with_an_unparseable_locus, normalize_builds_one_typology_row_per_curated_seed, normalize_omits_a_typology_row_with_an_inverted_range, a_fulfillment_and_a_typology_row_can_share_the_same_locus_pair, plus grounding-law green/red pairs."
+    },
+    {
+      "path": "server/atlas-graph/src/description_adapter.rs",
+      "lines": 487,
+      "role": "fills a description on Place/Person/PeopleGroup nodes from Easton's Bible Dictionary",
+      "l1": "This file adds real, sourced descriptions to places, people, and people-groups -- pulling from Easton's 1897 Bible Dictionary through a careful three-tier matching process, and refusing to guess when two dictionary entries could plausibly mean the same thing but disagree. Nothing here writes new prose: every filled description is a byte-for-byte copy of one whole dictionary entry, never trimmed, combined, or rewritten.",
+      "l2": "`fill_descriptions` mutates every already-normalized Place/Person/PeopleGroup node's `description` field in place, trying tiers in a fixed TRUST ORDER: for a Person, (a) the person's OWN pre-resolved dictText, then (b) Theographic's own attested slug match, then (c) an exact case-insensitive dictionary-lookup match against the node's own label; Place tries only (b) then (c); PeopleGroup tries only (c). `collision_checked` is the key safety mechanism: it builds a `key -> text` **`HashMap`** but DROPS any key that maps to more than one DISTINCT text entirely, so ambiguity resolves to `None`, never an arbitrary pick -- identical-text repeats under the same key are harmless and kept.",
+      "l3": "Runs in MERGE/ALIAS, not a new pipeline stage (module doc comment's own 'WHY MERGE/ALIAS' explanation): Easton's is exactly the 'legacy-vocabulary boundary crossing' MERGE/ALIAS is defined for, and this pass needs its target nodes to already exist, which only NORMALIZE guarantees. A real, disclosed collision in the committed data illustrates the design: 'Ammon' and 'Ammonite' both attest the SAME Theographic match slug with DIFFERING text, so tier (b) backs off for that target -- but tier (c) independently resolves it anyway, since the place's canonical name is literally 'Ammon,' an exact match against that entry's own dict_lookup -- an EMERGENT correctness property of running the two tiers independently, proven by `ambiguous_matchslugs_target_backs_off_tier_b_but_tier_c_can_still_resolve_it`, not special-cased in code. `non_described_node_kinds_are_left_untouched` guards a real, easy-to-reintroduce bug class: matching on a catch-all `_ =>` arm for STATS purposes (rather than skipping entirely) would silently inflate `place_total` et al. for unrelated node kinds like Era or Anchor.",
+      "key_items": [
+        {
+          "name": "DescriptionStats",
+          "kind": "struct",
+          "what": "per-kind, per-tier fill counts (person_tier_a/b/c, place_tier_b/c, people_group_tier_c)",
+          "line": 70
+        },
+        {
+          "name": "collision_checked",
+          "kind": "fn",
+          "what": "builds a key->text map, dropping any key with >1 distinct text -- ambiguity means None",
+          "line": 111
+        },
+        {
+          "name": "build_lexicon",
+          "kind": "fn",
+          "what": "builds the three-tier EastonLexicon from the raw parsed entries",
+          "line": 132
+        },
+        {
+          "name": "fill_descriptions",
+          "kind": "fn",
+          "what": "pipeline-facing MERGE/ALIAS entry point: fills description on every Place/Person/PeopleGroup node",
+          "line": 149
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "concepts": [
+        "struct",
+        "HashMap",
+        "Option",
+        "match",
+        "closure",
+        "iterator",
+        "unit-test"
+      ],
+      "tests": "extensive in-file #[cfg(test)] mod tests covering all three tiers, priority ordering, ambiguity backoff at both the matchSlugs and dict_lookup levels, byte-identical (never rebuilt) text, and the non-described-kind exclusion; cross-file real-data coverage in tests/description_real_data.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/concord_adapter.rs",
+      "lines": 477,
+      "role": "the Book of Concord corpus: one TextUnit per paragraph, containers, and its own reading spine",
+      "l1": "This file adds a second whole book to the graph -- the Book of Concord, the Lutheran confessional documents -- as its own reading corpus, separate from the Bible: one node per paragraph, grouped into document and article containers, all in a stable reading order. It also connects the Small Catechism's commandments to the matching paragraphs of the fuller Concord text, via a small curated alignment file.",
+      "l2": "This adapter mirrors `kjv_adapter.rs`'s own 'TextUnit + reading spine' shape for NORMALIZE, and `catechism_adapter.rs`'s own 'curated cross-reference -> symmetric relation rows' shape for MERGE/ALIAS. `normalize` walks `ConcordCorpus` (already parsed HTML) into one TextUnit node per paragraph (id format `\"concord/{part}.{article}.{paragraph}\"`, deliberately matching what graph-types' own private node-id builder would produce), a `Contains` container row PER DOCUMENT and PER ARTICLE (two-tier containment: a document's own content is the union of all its articles' paragraphs), and the \"concord\" reading spine in canonical document order. `merge_alias` lowers the curated SC-overlap alignment (`ctx.concord.sc_overlap`) into `CatechismLink` rows, defensively skipping (never panicking on) a row whose item or paragraph doesn't resolve to a real node in THIS build -- important because a caller can supply a real Concord bundle over a PARTIAL `AtlasData` fixture that has no matching catechism data at all.",
+      "l3": "`ConcordBundle { corpus, sc_overlap }` bundles the parsed corpus and the curated alignment into ONE optional `BuildCtx` field, mirroring `brainfuel: Option<&BrainFuelCorpus>`'s own 'absent == an honestly empty build' precedent -- deliberately NOT two independently-optional fields, which could disagree about whether Concord data is present at all. `CONCORD_TRANSLATION = \"bente-dau\"` is a distinct translation-layer key from `kjv_adapter::KJV_TRANSLATION`, on purpose -- this is NOT the King James Version. `merge_alias` looks up the small-catechism document's own `part` number from the PARSED corpus rather than hardcoding it, so if the vendored/parsed shape ever renumbers parts, this adapter still targets the right document. `merge_alias_skips_and_counts_sc_overlap_rows_over_an_empty_atlas_never_panics_or_dangles` is a real, live-caught regression test: `GraphService::build` threads a real Concord bundle unconditionally whenever `data/raw/concord/` exists on disk, independent of what the caller's own `AtlasData` carries, so a test scoped to something else entirely must never hard-fail just because the SC-overlap table's curated item ids don't resolve in that fixture.",
+      "key_items": [
+        {
+          "name": "CONCORD_CORPUS",
+          "kind": "const",
+          "what": "the corpus id \"concord\" for the second reading spine",
+          "line": 48
+        },
+        {
+          "name": "CONCORD_TRANSLATION",
+          "kind": "const",
+          "what": "the canonical rendering layer key \"bente-dau\" for the whole Concord corpus",
+          "line": 53
+        },
+        {
+          "name": "ConcordBundle",
+          "kind": "struct",
+          "what": "bundles the parsed corpus + curated SC-overlap alignment as one optional BuildCtx field",
+          "line": 61
+        },
+        {
+          "name": "text_unit_id",
+          "kind": "fn",
+          "what": "the TextUnit node id for one Concord paragraph position",
+          "line": 84
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "mints paragraph TextUnits + document/article containers + the concord reading spine",
+          "line": 124
+        },
+        {
+          "name": "merge_alias",
+          "kind": "fn",
+          "what": "lowers the curated SC-overlap alignment into CatechismLink rows, skipping unresolvable ones",
+          "line": 201
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/catechism_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/service.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "if-let",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: normalize_builds_one_text_unit_per_paragraph_in_canonical_spine_order, normalize_renders_the_canonical_bente_dau_layer_verbatim, normalize_builds_document_and_article_containers_queryable_through_the_generic_port, merge_alias_builds_sc_overlap_catechism_links_queryable_symmetrically, merge_alias_skips_and_counts_sc_overlap_rows_over_an_empty_atlas_never_panics_or_dangles, absent_concord_bundle_is_a_true_no_op."
+    },
+    {
+      "path": "server/atlas-graph/src/kretzmann_adapter.rs",
+      "lines": 334,
+      "role": "Kretzmann's Popular Commentary as one annotation node per unit, indexed to its verse range",
+      "l1": "This file brings in a large historical Bible commentary (Kretzmann's Popular Commentary, 1921-1924) as its own kind of node -- one 'CommentaryItem' per commented-on passage, each pointing back to the exact verse range it discusses. It also has a fast, server-side helper that gathers every commentary item for a whole chapter in one pass, replacing what used to be one network request PER VERSE from the client.",
+      "l2": "`normalize` builds ONE `Source` node for the whole commentary work, then one `CommentaryItem` node (payload: `work`, `heading`, `text`) and one `CommentsOn` row per parsed unit, grounded in the unit's OWN verse range (`scripture_ground`, the same self-attesting convention `fulfillment_adapter.rs` established). A unit whose `verse_from > verse_to` is dropped and counted, never fatal. `chapter_commentary(query, book_index, chapter, verse_count) -> Vec<ChapterCommentaryRow>` is a newer addition (KRETZ-SCALE-1): for every verse of a chapter it drains the `commented-on-by` inverse edge index once, server-side, replacing a client-side fan-out that used to issue up to 176 concurrent HTTP calls for a chapter like Psalm 119.",
+      "l3": "A `CommentaryItem`'s own node id IS `KretzUnit.id` verbatim (`\"kretzmann/{book}.{chapter}.{ordinal}\"`) -- internal and never displayed; the card view reads the separate `heading` payload field instead. `ordinal_of` extracts the id's own trailing `.'-separated segment as document order, mirroring a retired client-side `OrdinalOf` helper exactly, including its same fallback to 0 on anything unparseable rather than panicking mid-request. A DOCUMENTED, not-yet-fixed gap (KRETZ-m2) is disclosed in the doc comment and pinned by a real-data test: a multi-verse-spanning unit (a chapter or pericope introduction) appears in `chapter_commentary`'s own listing ONLY at its own first verse, because `comments_on` is indexed at a range's first verse only and `GraphQuery` has no way to recover a row's full range from an edge query alone -- fine for a chapter LISTING, but a future 'commentary applicable to this exact verse' lookup must not assume this grouping is exhaustive for multi-verse units.",
+      "key_items": [
+        {
+          "name": "KRETZMANN_SOURCE_ID",
+          "kind": "const",
+          "what": "\"kretzmann-popular-commentary\", the one Source node id for the whole work",
+          "line": 42
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "one Source node, one CommentaryItem node and one CommentsOn row per parsed unit",
+          "line": 80
+        },
+        {
+          "name": "ChapterCommentaryRow",
+          "kind": "struct",
+          "what": "one row of the chapter-scoped commentary listing: verse, item_id, heading",
+          "line": 134
+        },
+        {
+          "name": "chapter_commentary",
+          "kind": "fn",
+          "what": "gathers every real commentary item for a whole chapter in one in-process pass, not one call per verse",
+          "line": 180
+        },
+        {
+          "name": "ordinal_of",
+          "kind": "fn",
+          "what": "extracts a CommentaryItem id's own document-order ordinal from its trailing segment",
+          "line": 220
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/exports.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "Option",
+        "if-let",
+        "match",
+        "closure",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: normalize_builds_one_source_node_and_one_commentary_item_per_unit, comments_on_rows_carry_the_units_own_verse_range_and_self_grounding, absent_kretzmann_bundle_is_a_true_no_op; the KRETZ-m2 multi-verse-spanning gap is pinned in tests/kretzmann_adapter_real_data.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/brainfuel_adapter.rs",
+      "lines": 208,
+      "role": "merges six multilingual editions' text onto the already-built KJV verse nodes",
+      "l1": "This file adds other-language Bible text (Latin Vulgate, Hebrew Masoretic, Douay-Rheims, and three more) onto the SAME verse nodes the KJV adapter already built, rather than creating a whole second set of verse nodes -- one verse position, many renderings. It also creates one small 'Translation' node per edition, so a rendering's own language label points to something real in the graph.",
+      "l2": "`normalize` MUST run in NORMALIZE, immediately after `kjv_adapter::normalize` (a real, disclosed in-stage ordering dependency, enforced by call order in `pipeline.rs`) because it MUTATES the just-inserted TextUnit nodes rather than creating new ones. For each of the six ingested editions it inserts one `NodePayload::Translation { label }` node, then for every row of the brain-fuel corpus it looks up the matching TextUnit by `verse_node_id` and merges each edition's own rendering into that node's `LayerMap`. A row with no matching TextUnit is counted in `rows_with_no_matching_text_unit` (asserted `0` over real data by a real-data test), never a panic. `ctx.brainfuel: Option<&BrainFuelCorpus>` being `None` is a true no-op -- every fixture that doesn't wire real multilingual data simply gets no extra renderings, the same discipline every other optional-corpus adapter follows.",
+      "l3": "A rendering's `TranslationId` and its Translation node's `AnyNodeId.raw` deliberately share ONE string space (both are exactly `atlas_etl::brainfuel::EDITIONS`'s own slugs, e.g. `\"latin_vulgate\"`) -- no separate mapping table exists between 'which translation the payload says' and 'which node identifies that translation.' No KJV `Translation` node is authored here (module doc comment: searched exhaustively for a pre-existing pattern to follow and found none -- KJV is the pre-existing canonical layer, not 'ingested' by this batch), a disclosed scoping decision proven by `authors_one_translation_node_per_ingested_edition_resolving_the_translation_id`'s own explicit assertion that no `kjv` Translation node exists. `EDITION_LABELS` carries each edition's display name verbatim from the source repo's own `editions.json`, a provenance-respecting choice -- this app did not invent these names.",
+      "key_items": [
+        {
+          "name": "EDITION_LABELS",
+          "kind": "const",
+          "what": "the six (slug, display-label) pairs for every ingested multilingual edition",
+          "line": 46
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "mints Translation nodes and merges each edition's rendering onto its matching KJV TextUnit node",
+          "line": 73
+        },
+        {
+          "name": "BrainFuelAdapterStats",
+          "kind": "struct",
+          "what": "counts translation_nodes, renderings_merged, and rows_with_no_matching_text_unit",
+          "line": 55
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/build.rs"
+      ],
+      "concepts": [
+        "struct",
+        "Option",
+        "if-let",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: none_brainfuel_is_a_true_no_op, merges_renderings_onto_the_existing_kjv_text_unit_node, authors_one_translation_node_per_ingested_edition_resolving_the_translation_id, a_row_with_no_matching_text_unit_is_counted_not_panicked."
+    },
+    {
+      "path": "server/atlas-graph/src/red_letter_adapter.rs",
+      "lines": 482,
+      "role": "which verses are Jesus's own words, and (derived) where he was standing when he said them",
+      "l1": "This file colors in the 'red letters' -- the verses where Jesus is speaking -- as real graph edges, grouped into contiguous speech ranges rather than one edge per verse. It then goes one step further and DERIVES where each of those speeches likely happened, by checking which already-known events cover that exact range and where THOSE events were located -- an honest inference, never a guess, and disclosed as necessarily partial.",
+      "l2": "`normalize` builds one `SpokenBy` row per MAXIMAL CONTIGUOUS RANGE of Jesus's own speech (never one row per verse -- discourse shape stays honest to the table), speaker always `jesus_905` (a real, disclosed disambiguation: TWO Theographic records are both named 'Jesus'; `jesus_905` is verified by content -- surname 'Christ', a 1,831-verse count, an Easton's 'Christ' link -- to be the right one). It THEN derives `SpokenAt` rows: for each SpokenBy range, every event whose reconstructed attested SPAN fully CONTAINS that range and which carries a `LocatedAt` row contributes a candidate place, deduplicated by DISTINCT PLACE across all contributing events (so two events resolving to the same mountain produce one row, not two). This adapter MUST run AFTER `event_world::normalize` within the same NORMALIZE pass, since it reads `ctx.graph.attests`/`ctx.graph.located_at` -- a real cross-adapter coupling no sibling adapter has.",
+      "l3": "A defensive guard (line 157) checks for a real Jesus Person node BEFORE authoring any rows at all: if absent (never true of a real compile, but true of one degraded test fixture that vendors red-letter data without people data), this adapter authors ZERO rows rather than letting the generic referential-integrity law catch a dangling reference downstream -- a worse failure mode. An event's own 'attested SPAN' is deliberately RECONSTRUCTED here (min/max across every one of its own single-verse `Attests` rows), never read off any ONE row directly, because `event_world::populate_nodes_and_direct_rows` emits ONE Attests row PER WITNESSED VERSE (not per group) -- so a multi-verse event's attestation is the UNION of many rows. `Confidence::Derived` is the CONCEPTUAL grounding for a SpokenAt row (red1-scouting.md's own words), but as of this batch NO row in this codebase's graph carries a wired `Confidence` FIELD at all -- disclosed rather than hidden: confidence rides the descriptive provenance string/justification text instead, a real, deliberate engineering call documented at the top of the file, not a silent deviation from the design memo.",
+      "key_items": [
+        {
+          "name": "JESUS_PERSON_ID",
+          "kind": "const",
+          "what": "\"jesus_905\", the disambiguated Theographic person id for Jesus Christ",
+          "line": 82
+        },
+        {
+          "name": "normalize",
+          "kind": "fn",
+          "what": "builds SpokenBy rows per contiguous speech range, then derives SpokenAt place rows",
+          "line": 131
+        },
+        {
+          "name": "chapter_verse_count",
+          "kind": "fn",
+          "what": "resolves a chapter's own verse count by canon CODE, not positional index",
+          "line": 111
+        },
+        {
+          "name": "RedLetterAdapterStats",
+          "kind": "struct",
+          "what": "counts spoken_by/spoken_at rows plus the coverage denominator/numerator",
+          "line": 86
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/service.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeMap",
+        "BTreeSet",
+        "Option",
+        "if-let",
+        "closure",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: absent_red_letter_bundle_is_a_true_no_op, no_jesus_person_node_means_no_rows_at_all_never_a_dangling_reference, normalize_builds_one_spoken_by_row_per_maximal_contiguous_range, spoken_at_derives_a_place_when_the_range_falls_inside_a_located_events_attested_range, spoken_at_is_honestly_empty_when_no_located_event_contains_the_range, spoken_at_dedupes_two_events_that_resolve_to_the_same_place_into_one_row, spoken_by_and_spoken_at_rows_lower_into_the_directed_index_both_ways."
+    },
+    {
+      "path": "server/atlas-graph/src/red_letter_spans.rs",
+      "lines": 165,
+      "role": "the compiled sub-verse red-letter span table (char offsets, not the graph artifact)",
+      "l1": "Where the previous file marks WHICH verses Jesus speaks, this small file marks exactly WHICH CHARACTERS within a verse's text are his words -- so a UI can bold or color just the right substring, not the whole verse. It's stored as its own small compiled file next to graph.bin, not inside the graph artifact itself, because it depends on the exact rendered text in a way the graph's own content-addressed rows don't.",
+      "l2": "`spans_by_dot_ref` builds a `BTreeMap<String, Vec<(usize, usize)>>` from a dot-ref citation (e.g. `\"MAT.4.19\"`) to a list of `(start, end)` character spans, computed once at compile time. `char_offset(s, byte_offset)` is the one function doing real conversion work: Rust's own string slicing uses UTF-8 BYTE offsets, but the client is a C#/Blazor app whose `string` indexing counts UTF-16 CODE UNITS -- identical to bytes only for pure ASCII text. Since every character in this app's compiled KJV text stays within the Basic Multilingual Plane (no astral/surrogate-pair characters), one Unicode scalar equals one UTF-16 code unit here always, so converting byte offsets to CHAR COUNTS at this exact boundary is what keeps a client-side `Text.Substring` call correct even on a verse containing a non-ASCII character (an en dash in a compound Hebrew name, e.g.).",
+      "l3": "`write_file`/`read_file` round-trip a small `RedLetterSpansFile { format_version, spans }` **struct** through pretty-printed JSON (not bincode -- this table is small and human-inspectable, unlike `graph.bin`), with `read_file` returning `Ok(None)` (not an error) when the file simply doesn't exist -- the SAME graceful-absence treatment `service.rs`'s own `load_kretzmann`/`load_concord`/`load_brainfuel` already establish, versus `Err` when the file exists but carries a stale `format_version`. A verse whose alignment fully failed (`spans` empty) is excluded from this map ENTIRELY, honestly -- it still belongs to the SpokenBy verse SET (the other file), it just contributes no sub-verse row here, a real, small, disclosed residual counted in the batch's own compile-time report. `char_offset` is `O(n)` in the byte offset's own position, which the doc comment explicitly accepts as fine: called at most a handful of times per verse, over verse-length strings, once, at compile time -- not a hot path.",
+      "key_items": [
+        {
+          "name": "FORMAT_VERSION",
+          "kind": "const",
+          "what": "the compiled span-table's own format version, independent of graph.bin's FORMAT_VERSION",
+          "line": 38
+        },
+        {
+          "name": "char_offset",
+          "kind": "fn",
+          "what": "converts a UTF-8 byte offset to a Unicode-scalar (char) offset for client-side UTF-16 alignment",
+          "line": 55
+        },
+        {
+          "name": "spans_by_dot_ref",
+          "kind": "fn",
+          "what": "builds the dot-ref -> char-span map straight off a parsed RedLetterCorpus",
+          "line": 68
+        },
+        {
+          "name": "write_file",
+          "kind": "fn",
+          "what": "serializes the span table to pretty-printed JSON",
+          "line": 82
+        },
+        {
+          "name": "read_file",
+          "kind": "fn",
+          "what": "reads the span table, returning None (not an error) when the file is simply absent",
+          "line": 93
+        }
+      ],
+      "depends_on": [],
+      "used_by": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeMap",
+        "Option",
+        "Result",
+        "error-handling",
+        "serde",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: char_offset_matches_byte_offset_for_pure_ascii, char_offset_diverges_from_byte_offset_after_a_multibyte_character, spans_by_dot_ref_excludes_verses_with_zero_aligned_spans, write_then_read_round_trips_losslessly, read_file_returns_none_for_a_missing_file_not_an_error."
+    },
+    {
+      "path": "server/atlas-graph/src/law_check.rs",
+      "lines": 1069,
+      "role": "the generic cross-adapter safety checks every build must pass, fail-loud",
+      "l1": "This file is the graph's own quality inspector. After every adapter has run, this file checks things like: does every edge actually point at something real (no edge to a place that doesn't exist)? Do chapters and books form a clean family tree with no loops or two-parent chapters? Does any one verse get credited as an eyewitness account of two DIFFERENT events at once (a real bug the owner personally caught and demanded a hard, unbendable rule against)? If any of these fail, the whole build refuses to finish -- broken data never quietly ships.",
+      "l2": "`every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReference>` is the crate's main generic law: it walks every relation table the adapters authored and checks each NODE-typed endpoint against `graph.nodes` (a **`BTreeMap`**'s own `.contains_key`), returning a precisely-named `DanglingReference` (which relation, which field, which missing id) on the FIRST failure -- it does not collect every violation, it fails fast. `container_containment_is_a_forest` walks every book/chapter containment edge and checks single-parent (via a **`BTreeMap<child, parent>`**, catching a duplicate insert as a defect too) plus acyclicity (a walk-up-to-root loop with a local `seen` **`BTreeSet`**). `attestation_is_exclusive` is the OWNER-SIGNED, deliberately FAIL-LOUD law that no verse belongs to two different events' eyewitness sets, checked against a hand-curated `attestation_pending::PENDING` inventory (an UNDECLARED collision or a DRIFTED declared count both fail the build; a STALE declaration is checked separately, only over the real corpus, by a sibling function).",
+      "l3": "The module's own doc comment discloses its EXACT scope boundary: TextLocus-typed endpoints (a row's own verse-range fields) are deliberately NOT checked here, because resolving a locus to its TextUnit node id requires a PRIVATE graph-types helper this crate can't call, and every adapter that emits such a row already derives the locus directly from a real, just-built TextUnit id -- a second, weaker re-check would catch nothing the adapters' own construction doesn't already guarantee by shape. `attestation_is_exclusive` (line 360) has an extensive doc comment recounting the ORIGINAL BUG it exists to prevent, verbatim from the owner's own diagnosis: LUK.1.27 sat in the Attests set of BOTH the Espousal of Mary and the Annunciation, silently fabricating a false parallel through the app's own 'Parallels' feature -- 'the softer warning option was declined.' `indexes_derive_exactly_from_rows` (line 474) is a standing conformance law: it rebuilds `Graph.indexes`/`symmetric_indexes` from a FRESH clone of the row tables alone and compares entry-for-entry against the served copy, catching any future code that writes into the served index outside `Graph::build_indexes`+`add_justified_by` -- run over BOTH the from-sources AND from-artifact paths in cross-file tests, never as a per-build pass (it would double every build's index cost for a property only a code change can break). A retirement note (line 528) records that a former 'verified-cache law' was DELETED alongside the payload fields it policed (M-D3, owner ruling R1) -- deletion as the stronger fix when a law has nothing left to guard.",
+      "key_items": [
+        {
+          "name": "DanglingReference",
+          "kind": "struct",
+          "what": "the named error every referential-integrity violation returns: relation, field, missing id",
+          "line": 38
+        },
+        {
+          "name": "every_authored_edge_resolves",
+          "kind": "fn",
+          "what": "the generic law: every node-typed endpoint of every authored row must resolve to a real node",
+          "line": 55
+        },
+        {
+          "name": "container_containment_is_a_forest",
+          "kind": "fn",
+          "what": "book/chapter containment must be acyclic and single-parent",
+          "line": 212
+        },
+        {
+          "name": "analogue_rows_join_two_distinct_events",
+          "kind": "fn",
+          "what": "an Analogue row must join two DISTINCT events, exactly once, never a self-loop or duplicate",
+          "line": 274
+        },
+        {
+          "name": "attestation_is_exclusive",
+          "kind": "fn",
+          "what": "owner-signed fail-loud law: no verse belongs to the Attests set of two distinct events, checked against a declared inventory",
+          "line": 360
+        },
+        {
+          "name": "attestation_inventory_has_no_stale_rows",
+          "kind": "fn",
+          "what": "the real-corpus-only complement: a declared pair that no longer collides must be removed from the queue",
+          "line": 421
+        },
+        {
+          "name": "indexes_derive_exactly_from_rows",
+          "kind": "fn",
+          "what": "standing law: rebuilding indexes from rows alone reproduces the served graph's indexes exactly",
+          "line": 474
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/attestation_pending.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/bible_container_adapter.rs",
+        "server/atlas-graph/src/peoples_adapter.rs",
+        "server/atlas-graph/src/person_adapter.rs",
+        "server/atlas-graph/src/red_letter_adapter.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeSet",
+        "BTreeMap",
+        "error-handling",
+        "Debug-Display",
+        "match",
+        "unit-test"
+      ],
+      "tests": "extensive in-file #[cfg(test)] mod tests: red/green pairs for every relation's referential-integrity check, the container-forest law (single-parent, duplicate, cycle), and the ATTEST-1 attestation-exclusivity and Analogue-distinctness laws, including a founding-case regression test naming LUK.1.27 by real event id."
+    },
+    {
+      "path": "server/atlas-graph/src/fidelity.rs",
+      "lines": 468,
+      "role": "the KJV boundary law: proves the built graph matches the source text byte-for-byte",
+      "l1": "This file is the graph's promise that the Bible text it serves is EXACTLY the Bible text it was given -- not one letter different, not one verse missing or duplicated, and in the right order. It re-reads the raw source file completely independently (using its own separate code, not the same parser the graph was built with) so that a bug shared by both sides can't quietly cancel out and hide a real mistake.",
+      "l2": "`check_kjv_fidelity(source_kjv_json, built, brainfuel) -> Result<(), FidelityViolation>` checks two things: BIJECTION (every source verse maps to exactly one TextUnit node, with matching text, and no EXTRA node claims to be a verse the source doesn't have) and RECONSTRUCTION (walking the whole reading spine in order reproduces the source text byte-for-byte). The private `independent_reader` **module** is the key design choice: it re-parses raw JSON via `serde_json::Value` field access (`.get(\"books\")`, `.as_array()`) rather than any typed **`derive(Deserialize)`** struct shared with the real adapter's parser, and re-implements book-name normalization from scratch -- SAME problem, wholly separate code, so a bug in one path is not mechanically replicated in the other.",
+      "l3": "The doc comment (fix round 1, I2) discloses EXACTLY what is and isn't shared with the adapter path: `serde_json` itself (a mature third-party library, not app logic) and `atlas_core::canon::resolve_alias` (a foundational lookup table exercised by dozens of other call sites, a much shallower shared surface than the KJV-specific parsing this law exists to check) ARE shared; the JSON extraction walk and the book-name-quirk normalization are NOT. Batch KJV-CASE/KJV-CASE-2 threaded a third parameter, `brainfuel: Option<&BrainFuelCorpus>`, through this law so it applies the IDENTICAL case-restoration transform (`atlas_etl::brainfuel::classify_and_restore`) to its own independently-derived 'expected' text before comparing -- keeping the independence boundary intact (the transform is a pure byte operation, not a parser) while keeping the law MEANINGFUL rather than falsely reporting drift at every restored position. A real regression test (`a_concord_text_unit_riding_alongside_is_not_a_kjv_fidelity_violation`) proves this law correctly scopes itself to the BIBLE half of the shared `TextUnit` node kind, since Concord paragraphs now share that same `NodeKind`. `red_when_the_graph_is_case_restored_but_the_check_is_not_told` proves the law has real teeth, not vacuous acceptance -- a graph built WITH restoration but checked WITHOUT the same corpus genuinely fails.",
+      "key_items": [
+        {
+          "name": "FidelityViolation",
+          "kind": "struct",
+          "what": "the named error type check_kjv_fidelity returns on any bijection or reconstruction failure",
+          "line": 63
+        },
+        {
+          "name": "independent_reader",
+          "kind": "module",
+          "what": "a from-scratch JSON reader sharing no parsing code with the adapter path being checked",
+          "line": 117
+        },
+        {
+          "name": "check_kjv_fidelity",
+          "kind": "fn",
+          "what": "the boundary law: bijection (every verse <-> exactly one node) + reconstruction (spine walk = source text)",
+          "line": 214
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "module",
+        "struct",
+        "BTreeSet",
+        "match",
+        "error-handling",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: green_on_a_clean_fixture, a_concord_text_unit_riding_alongside_is_not_a_kjv_fidelity_violation, independent_reader_resolves_the_same_quirky_book_names_the_adapter_does, red_when_a_verse_is_dropped_from_the_built_graph, red_when_a_rendering_byte_is_mutated, green_on_the_real_committed_kjv_source, green_over_real_data_with_case_restoration_threaded_through_both_sides, red_when_the_graph_is_case_restored_but_the_check_is_not_told."
+    },
+    {
+      "path": "server/atlas-graph/src/attestation_pending.rs",
+      "lines": 910,
+      "role": "the hand-curated exception list the attestation-exclusivity law is stated against",
+      "l1": "This is not code that does anything at runtime -- it's a big, mechanically-generated table of roughly 300 pairs of events that currently share at least one eyewitness verse, which is normally forbidden. Each row is a flagged 'known issue, not yet decided' entry: the owner hasn't yet ruled on whether each pair is a genuine duplicate, a mistake, or something the graph's vocabulary doesn't have a word for yet. The build only stays green because these specific pairs are declared here; a brand NEW collision the list doesn't already know about still fails the build.",
+      "l2": "`PENDING: &[Pending]` is a big **`const`** array of a small **struct** (`a`, `b`, `shared_verses`, `class`), sorted by `(a, b)`. `Class` is an **enum** with exactly two variants -- `Containment` (one event's whole set of witnessed verses sits inside the other's, the DOMINANT real shape, usually a Theographic mega-span like 'Holy Week' containing a fine-grained curated pericope) and `Overlap` (neither contains the other; the two genuinely cross, e.g. adjacent journey legs sharing a boundary verse). Every row was MECHANICALLY GENERATED from the real compiled corpus, never hand-typed, and `class` is a structural fact, never a semantic judgment about WHY the two collide.",
+      "l3": "The module doc comment is explicit about what this table is NOT: it carries no semantic disposition (shared-account error vs. mention-misfiled-as-account vs. needs-a-merge vs. genuine-containment-wanting-a-relation-this-vocabulary-lacks) -- that call belongs to the owner, made against the KJV text, one pair at a time, and a separate report file (`batch-attest1-report.md`) carries the full evidence table. This is the same shape `atlas_core::event_merge`'s own `EVENT_MERGE_PAIRS`/`EVENT_DISTINCT_PAIRS` already use for the sibling duplicate-identity question. `law_check::attestation_is_exclusive` reads `PENDING` and fails the build on an UNDECLARED collision or a DRIFTED shared-verse count; `law_check::attestation_inventory_has_no_stale_rows` (checked only over the real committed corpus, never a small synthetic test fixture) fails if a declared pair no longer collides at all -- the queue can only shrink deliberately, with the shrink recorded by deleting the row here. A KNOWN LIMIT is stated plainly in `law_check.rs`'s own doc comment: a declared row pins the shared-verse COUNT, not the shared-verse SET, so a future change that swaps one shared verse for a different one leaves the count unchanged and passes silently -- tolerable only because every listed pair is already queued for an owner ruling either way.",
+      "key_items": [
+        {
+          "name": "Pending",
+          "kind": "struct",
+          "what": "one declared, unresolved attestation collision: the pair, its shared-verse count, and its structural class",
+          "line": 58
+        },
+        {
+          "name": "Class",
+          "kind": "enum",
+          "what": "the mechanical structural class of a collision: Containment or Overlap, never a semantic judgment",
+          "line": 70
+        },
+        {
+          "name": "PENDING",
+          "kind": "const",
+          "what": "the ~300-row curated inventory law_check.rs's attestation-exclusivity law is stated against",
+          "line": 85
+        }
+      ],
+      "depends_on": [],
+      "used_by": [
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "struct",
+        "enum",
+        "const-static",
+        "content-hash"
+      ],
+      "tests": "exercised indirectly by law_check.rs's own attestation-exclusivity tests and by tests/attestation_exclusivity_real_data.rs, which asserts the real corpus against this exact list."
+    },
+    {
+      "path": "server/atlas-graph/src/service.rs",
+      "lines": 847,
+      "role": "GraphService: the one built-graph handle the server holds in memory",
+      "l1": "This is the object the web server actually keeps alive for its whole lifetime -- one built, checked graph, plus about a dozen small pre-computed lookup tables (which verse comes right after this one, which heading wins at this verse, every place's mentions, every event's timeline neighbor...) that make common questions fast to answer without re-scanning the whole graph on every web request. It can be built two ways: fresh from raw source files, or loaded instantly from the frozen graph.bin file.",
+      "l2": "`GraphService` wraps a `MemSnapshot` (the owner-approved storage **trait** `GraphQuery`'s implementation #1) plus roughly fifteen COMPANION fields -- **`HashMap`**s and **`BTreeMap`**s built ONCE, in `assemble`, right before the raw `Graph` moves into the store -- for lookups the generic port genuinely can't answer on its own (a reverse 'ref -> reading-spine position' index, per-verse heading resolution, cross-reference preview text, and more). `from_sources`/`from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter` build fresh from raw bytes, running the KJV fidelity law unconditionally inside the pipeline; `from_artifact(path)` loads instead from a serialized `graph.bin` file, with NO fidelity re-check (it was already proven once, at compile time, by the SAME `assert_answers_match` admission the compile binary itself runs). `build(raw_dir, atlas)` is the one filesystem-touching **`fn`** in this crate, reading `kjv.json`, the xrefs TSV, and gracefully-absent vendored corpora (brainfuel, Concord, Kretzmann, red-letter -- each `None`, never an error, when its own directory simply doesn't exist).",
+      "l3": "The module doc comment states the crate's own storage discipline plainly: this crate defines NO competing store/query trait (fix round 1, C1, a Critical finding against an earlier draft that did exactly that) -- `GraphService` is purely an adapter-side convenience wrapper. `assemble` (line 453) is the single choke point where every companion is built: `bible_position`/`concord_position` (reverse spine indexes), `era_ids` (sorted by `from_year`, reproducing the curated TOML's own chronological file order rather than the node table's alphabetical-by-id order), `narrative_legs`, `heading_index` (via `heading::build_heading_index`), `cross_refs_by_from`, `verse_text`, `persons_by_verse`, `temporal_neighbors` (read directly off `graph.temporal_adjacency`'s honest `earlier`/`later` ends, never re-derived from a position index), `red_letter_spans`, and `provenance::ProvenanceIndex`. Several field doc comments carry a real design argument for WHY each companion exists as a `HashMap` (only ever `.get()`'d by key, no determinism concern) vs. a sorted `Vec`/`BTreeMap` (iterated or serialized, so order matters). `MAX_CHAPTER_SPAN_PROBE = 200` (line 231) is a documented generous margin over the longest real KJV chapter (Psalm 119, 176 verses) that `chapter_span` probes with, then trims to the contiguous run actually sharing (book, chapter).",
+      "key_items": [
+        {
+          "name": "GraphService",
+          "kind": "struct",
+          "what": "the one built-graph handle the server holds: a MemSnapshot plus ~15 companion lookup indexes",
+          "line": 49
+        },
+        {
+          "name": "GraphService::from_artifact",
+          "kind": "fn",
+          "what": "loads from a serialized graph.bin file, skipping the fidelity law (already proven once at compile time)",
+          "line": 379
+        },
+        {
+          "name": "GraphService::build",
+          "kind": "fn",
+          "what": "the one filesystem-touching fn: reads raw sources + gracefully-absent vendored corpora, then builds",
+          "line": 410
+        },
+        {
+          "name": "GraphService::assemble",
+          "kind": "fn",
+          "what": "the single choke point building every companion index right before the graph enters the store",
+          "line": 453
+        },
+        {
+          "name": "GraphService::chapter_span",
+          "kind": "fn",
+          "what": "returns the (start, n) window covering exactly one chapter, derived from a probe + trim",
+          "line": 666
+        },
+        {
+          "name": "MAX_CHAPTER_SPAN_PROBE",
+          "kind": "const",
+          "what": "a documented generous margin (200) over the longest real KJV chapter's verse count",
+          "line": 231
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/legacy.rs",
+        "server/atlas-graph/src/heading.rs",
+        "server/atlas-graph/src/provenance.rs"
+      ],
+      "used_by": [
+        "server/atlas-server/src/main.rs",
+        "server/atlas-server/src/load.rs",
+        "server/atlas-server/src/app.rs",
+        "server/atlas-server/src/handlers.rs",
+        "server/atlas-server/src/graph_handlers.rs"
+      ],
+      "concepts": [
+        "struct",
+        "HashMap",
+        "BTreeMap",
+        "Option",
+        "Result",
+        "?-operator",
+        "Arc",
+        "closure",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: from_sources_publishes_and_opens_a_snapshot_at_that_version, bible_position_resolves_through_the_reverse_index, person_ids_enumerates_every_person_node, chapter_span_covers_exactly_that_chapters_verses_and_no_more; broad cross-file coverage in tests/artifact_conformance.rs, tests/window_law.rs, tests/overlay_equivalence.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/window.rs",
+      "lines": 150,
+      "role": "the generic windowed-reading primitive, built entirely on the storage trait",
+      "l1": "This is the small, shared engine behind 'give me the next 20 verses' and 'give me the 20 verses before this one' -- both directions of scrolling through the Bible (or the Concord) text. It's deliberately written so it never touches the graph's internal storage directly, only the same public query interface any storage backend must implement, which is what lets the app swap storage later without breaking this.",
+      "l2": "`window(query: &dyn GraphQuery, corpus, start_pos, n, dir: WindowDir) -> Vec<AnyNodeId>` is the ONE windowed-reading **fn** every text-serving endpoint calls, old and new alike. `WindowDir` is a small **enum** (`Onward`/`Backward`) whose only job is deciding WHICH spine index the slice starts from (`resolved_start`), never a second query mechanism -- the actual slice is always `GraphQuery::reading_window`, the port's own unmodified primitive. `render`/`render_layer` read a TextUnit node's rendering for a given translation layer, again purely through `GraphQuery::node`, never a direct field reach. This whole file is generic over `&dyn GraphQuery` (a **trait object**), which is proven, not just argued, by a test that runs the same query against both the raw `Graph` (which implements the trait directly) and a `MemSnapshot` and checks they agree.",
+      "l3": "The module doc comment ties this file directly to a fix-round finding (C1): 'the server binds to the PORT... do NOT define any parallel store/query trait in atlas-graph' -- this file is the concrete proof that discipline is followed: zero `atlas_graph_types::graph::Graph` field access anywhere, zero backend-specific state. Ref-resolution (`chapter_span`/`position_of`, which need the reading-spine REVERSE index `GraphQuery` doesn't model) deliberately lives on `GraphService` instead of here -- this file stays 'everything backend-agnostic,' the one adapter-specific companion index stays with the concrete service that built it. `render_layer` generalizes the KJV-only `render` with a caller-supplied translation key, letting a Concord TextUnit's own non-KJV canonical layer (`\"bente-dau\"`) read through the identical port-only path; `render_layer_generalizes_render_and_is_layer_selective` proves a mismatched translation key returns `None`, never a wrong-layer's text.",
+      "key_items": [
+        {
+          "name": "WindowDir",
+          "kind": "enum",
+          "what": "Onward or Backward -- which spine index a windowed query starts its slice from",
+          "line": 31
+        },
+        {
+          "name": "resolved_start",
+          "kind": "fn",
+          "what": "the ONE formula deciding which spine index a window actually starts from, given direction",
+          "line": 40
+        },
+        {
+          "name": "window",
+          "kind": "fn",
+          "what": "the one windowed-reading primitive every text-serving endpoint calls, generic over &dyn GraphQuery",
+          "line": 54
+        },
+        {
+          "name": "render",
+          "kind": "fn",
+          "what": "the KJV rendering text of a TextUnit node, via GraphQuery::node only",
+          "line": 63
+        },
+        {
+          "name": "render_layer",
+          "kind": "fn",
+          "what": "the corpus-generic sibling of render, taking a caller-supplied translation key",
+          "line": 74
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-server/src/graph_handlers.rs",
+        "server/atlas-server/src/handlers.rs",
+        "server/atlas-graph/src/legacy.rs"
+      ],
+      "concepts": [
+        "enum",
+        "trait",
+        "Option",
+        "match",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: onward_and_backward_windows_agree_on_overlap, render_reads_through_the_port_only, render_layer_generalizes_render_and_is_layer_selective, window_works_identically_against_the_raw_graph_and_a_snapshot."
+    },
+    {
+      "path": "server/atlas-graph/src/heading.rs",
+      "lines": 332,
+      "role": "which event/pericope heading wins at each verse, deterministically",
+      "l1": "Bible reader apps usually show a small heading above a group of verses ('The Creation,' 'The Fall of Man'). This file decides, for every single verse, which ONE heading wins when more than one event or narrative claims it -- following a fixed, three-part precedence rule so the answer is never ambiguous, and adding a rule for what happens when a heading's own passage crosses a chapter break.",
+      "l2": "`build_heading_index(graph, resolved) -> BTreeMap<String, HeadingEntry>` re-implements a matching rule already established elsewhere in the project (`atlas_core::data::AtlasData::finish()`'s own heading logic) directly over graph `Event` nodes, computed ONCE at `GraphService::assemble` time rather than per request. `precedence(layer, kind, year, seq, event_id) -> Precedence` builds a **tuple** ordered by **`Reverse`**-wrapped fields so a plain **tuple comparison** decides the winner: real-container events (layer 1) beat narrative-only ones, dated events beat undated ones by year and then timeline position, and -- a deliberate improvement this file adds -- the event's own ID is a fifth, ALWAYS-DISTINCT tie-breaking tier, making the winner a pure function of content for every possible input, never of incidental node-table iteration order.",
+      "l3": "`canonically_first(verses)` fixes a real, live-reported bug class (owner: 'genesis 6 the first verses have no container label... i'm assuming this isn't an isolated case'): an event's anchor verse is now the book's own CANONICALLY FIRST covered verse (minimum by reading-spine order), never merely the first one an enrichment pass happened to append to a curated array. `continuation_candidates_for` implements a second requirement (M-D1, 'CHAPTER-BOUNDARY CONTINUATION'): when a chapter's first verse sits mid-container (its own heading was anchored in a PREVIOUS chapter), that heading continues at the new chapter's opening verse with a quiet `continuation: true` marker, so no covered chapter opens with unlabeled verses. `build_heading_index` runs this in TWO deliberately sequential passes: pass 1 resolves every primary anchor by the objective precedence tuple; pass 2 fills gaps ONLY at verses pass 1 left unclaimed, since a primary anchor is always the stronger, unconditional claim -- this two-pass ordering is what keeps 'decisive rule still yields exactly one label' true even with continuations in play. `resolved_year_seq` reads `event_world::ChronologyDerivation.resolved` (the timeline's one authority) rather than a payload mirror, per the M-D3 owner ruling that removed `NodePayload::Event`'s own from_year/order_key fields.",
+      "key_items": [
+        {
+          "name": "HeadingEntry",
+          "kind": "struct",
+          "what": "the resolved pericope heading anchored at one verse, plus a continuation flag",
+          "line": 54
+        },
+        {
+          "name": "canonically_first",
+          "kind": "fn",
+          "what": "picks the reading-spine-order-first verse of a set, fixing the Genesis-6 anchor bug",
+          "line": 72
+        },
+        {
+          "name": "heading_anchors_for",
+          "kind": "fn",
+          "what": "one anchor per witness (or per book touched) at its own canonically first verse",
+          "line": 95
+        },
+        {
+          "name": "continuation_candidates_for",
+          "kind": "fn",
+          "what": "chapters strictly after a group's primary anchor that its coverage also opens",
+          "line": 149
+        },
+        {
+          "name": "precedence",
+          "kind": "fn",
+          "what": "the 5-tier (layer, kind, year, seq, event-id) ordering tuple that decides every collision",
+          "line": 205
+        },
+        {
+          "name": "build_heading_index",
+          "kind": "fn",
+          "what": "the full verse -> heading map, in two deliberately sequential passes",
+          "line": 260
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-server/src/handlers.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeMap",
+        "BTreeSet",
+        "HashMap",
+        "type-alias",
+        "Ord-PartialOrd",
+        "closure",
+        "unit-test"
+      ],
+      "tests": "no in-file test module found in this reading pass; heading precedence is covered by tests/heading_precedence.rs (a dedicated cross-file test suite)."
+    },
+    {
+      "path": "server/atlas-graph/src/provenance.rs",
+      "lines": 312,
+      "role": "the per-surface source-attribution companion index (PROV-1)",
+      "l1": "The owner's own order: 'one thing we definitely need for EVERY PIECE OF DATA is the source from which it came.' This file answers 'where did this fact come from' for things the graph's own fast lookup tables can't say by themselves -- because the generic edge index has no room to carry a source string on every one of ~344,000 cross-reference entries without a real memory/speed cost. It builds a small side table instead, once, with exactly the questions a UI actually asks.",
+      "l2": "`ProvenanceIndex::build(graph)` does ONE scan of the row tables, keeping only what a UI actually needs: `by_family` (every distinct provenance id per relation TABLE, as a **`BTreeSet`**), `attests_by_event` and `event_mentions_by_event` (per-EVENT provenance sets), and `analogue_by_pair` (per-PAIR, since `Analogue` is symmetric and stored from both ends). `by_family(name) -> Vec<String>` and `attests_for_event(id) -> Vec<String>` are the two accessor SHAPES this file distinguishes carefully: PER-FAMILY (the complete distinct set of a whole table, used where no smaller honest key exists) versus PER-ROW/PER-SUBJECT (the exact sources behind one rendered section of one node's frontier) -- the two are NOT interchangeable, and the module doc comment corrects its own earlier, wrong claim that `attests` was multi-sourced (it measured as single-sourced; only `mentions` genuinely is).",
+      "l3": "The module's own header states the real constraint plainly: `MemSnapshot`'s own `graph` field is private, `GraphQuery` exposes only `node`/`derive`/`edge_summary`/`edges`/`reading_window`, and none of those can answer 'what is this ROW's provenance' -- widening `EdgeMeta`/`EdgeEntry` to carry it would be a graph-types contract change (the standing types-first veto) AND would add a string to every one of ~344k `cites` index entries, against both the sub-100ms frontier law and the 3s artifact-load ceiling. 'THE LEPER LESSON' is the module's own name for the property `an_events_accounts_report_every_source_behind_them_not_just_one` proves: an event whose accounts come from two sources must report BOTH, never collapse to one -- exactly how a hand-repaired row would otherwise end up wearing an imported source's clothes, the failure mode a real, live-caught bug already exhibited once. `families()` exists for exactly ONE caller, its own completeness-guard test in `tests/provenance_registry_real_data.rs`, which asserts this file's own 22-family sweep and that test's hand-written copy name the identical set -- so a family present in the sweep but missing here can never silently degrade to 'this table has no rows.'",
+      "key_items": [
+        {
+          "name": "family",
+          "kind": "module",
+          "what": "named constants for the row families a wire surface actually cites (CROSS_REFS, CATECHISM, ATTESTS, MENTIONS, ANALOGUE)",
+          "line": 90
+        },
+        {
+          "name": "ProvenanceIndex",
+          "kind": "struct",
+          "what": "the built companion: by_family plus three narrower per-subject provenance maps",
+          "line": 98
+        },
+        {
+          "name": "ProvenanceIndex::build",
+          "kind": "fn",
+          "what": "the ONE pre-store scan building every provenance view from the row tables",
+          "line": 110
+        },
+        {
+          "name": "ProvenanceIndex::by_family",
+          "kind": "fn",
+          "what": "every distinct provenance id carried by one row family, as a sorted list",
+          "line": 176
+        },
+        {
+          "name": "ProvenanceIndex::attests_for_event",
+          "kind": "fn",
+          "what": "the distinct provenance of the Attests rows for one event -- 'the leper lesson' in code",
+          "line": 201
+        }
+      ],
+      "depends_on": [],
+      "used_by": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-server/src/handlers.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeMap",
+        "BTreeSet",
+        "module",
+        "Option",
+        "match",
+        "macro_rules",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: an_events_accounts_report_every_source_behind_them_not_just_one, an_analogue_row_resolves_from_either_end_because_the_relation_is_symmetric, only_event_mentions_land_in_the_event_mentions_map, a_familys_distinct_set_is_exactly_its_rows_and_an_unknown_family_is_empty; completeness pinned by tests/provenance_registry_real_data.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/legacy.rs",
+      "lines": 250,
+      "role": "reconstructs the old pre-graph data shapes from graph queries, for surfaces not yet migrated",
+      "l1": "Before the graph existed, the server read from five separate compiled JSON files (places, events, narratives, KJV text, cross-references). This file is the bridge that lets old, not-yet-updated parts of the server keep working exactly as before, EVEN THOUGH those five files are gone -- it rebuilds the same old-shaped data structures on the fly, by asking the new graph the right questions, once at startup.",
+      "l2": "`event_from_node`/`place_from_node`/`narrative_from_node` each reconstruct one `atlas_core::data` **struct** (an `Event`, `Place`, or `Narrative`) from its graph node, reading ONLY through `atlas_graph_types::store::GraphQuery` (the generic port) -- never a raw `Graph` field reach -- so these functions work identically whether the graph came from-sources or from a loaded artifact. `drain` is a small shared helper that pages through every edge of one kind at one position via the port's own cursor-based `EdgeQuery`, accumulating results across pages. `atlas_data_overlay(gs: &GraphService) -> LegacyAtlasFields` is the one function called ONCE at server startup on the default path: it scans the service's own `event_ids`/`place_ids`/`narrative_ids` companions and calls the three reconstruction functions over each, producing the SAME shape (`events`, `places`, `narratives`, `verses`) the old JSON files used to provide.",
+      "l3": "`event_from_node` (line 76) is the clearest example of the M-D3 owner ruling's downstream effect: since `NodePayload::Event` no longer carries its own `from_year`/`to_year`/`order_key` mirror, this function now reads `from_year` from `chrono.resolved` (the timeline's one authority) and the genuine `to_year`/`order_key` from the SEPARATE `chrono.source_meta` companion -- never `resolved.date.to`/`.seq`, since `seq` is a faithful ORDERING substitute for `order_key` but not the same literal VALUE a real, independently-consumed field (`nt_calibration.rs`'s own calibrated keys) must reproduce exactly. A genuinely disclosed gap (module doc comment, `atlas_data_overlay`'s own doc comment): no dedicated test file independently checks this WHOLE function's output against real `atlas_etl::compile::compile` data end to end -- the only verification on record is a manual live-curl comparison described in commit messages, though each of its own composed pieces DOES have real unit coverage individually. `verses_from_graph` walks the reading spine with a generous 200,000-length margin (mirroring `GraphService::MAX_CHAPTER_SPAN_PROBE`'s own 'wide, documented margin' class) rather than a magic exact count of the real ~31,102-verse KJV.",
+      "key_items": [
+        {
+          "name": "event_from_node",
+          "kind": "fn",
+          "what": "reconstructs one Event struct from its graph node + the chronology's own resolved/source_meta",
+          "line": 76
+        },
+        {
+          "name": "place_from_node",
+          "kind": "fn",
+          "what": "reconstructs one Place struct, resolving verse_links from mentioned-in inverse edges",
+          "line": 126
+        },
+        {
+          "name": "narrative_from_node",
+          "kind": "fn",
+          "what": "reconstructs one Narrative struct, taking its legs as a caller-supplied parameter",
+          "line": 157
+        },
+        {
+          "name": "locus_dot_ref",
+          "kind": "fn",
+          "what": "a Bible-corpus TextLocus's own canonical dot-ref citation, None for Concord loci",
+          "line": 167
+        },
+        {
+          "name": "verses_from_graph",
+          "kind": "fn",
+          "what": "reconstructs the full verse -> KJV text map by walking the reading spine end to end",
+          "line": 180
+        },
+        {
+          "name": "atlas_data_overlay",
+          "kind": "fn",
+          "what": "the one startup-time function reconstructing every legacy AtlasData field the deletion event retired",
+          "line": 230
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "server/atlas-graph/src/window.rs",
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/event_world.rs"
+      ],
+      "used_by": [
+        "server/atlas-server/src/load.rs",
+        "server/atlas-server/src/main.rs",
+        "server/atlas-server/src/handlers.rs",
+        "server/atlas-server/src/graph_handlers.rs",
+        "server/atlas-core/src/data.rs"
+      ],
+      "concepts": [
+        "struct",
+        "HashMap",
+        "Option",
+        "closure",
+        "unit-test"
+      ],
+      "tests": "no dedicated in-file test module found; covered indirectly by tests/overlay_equivalence.rs and tests/peoples_real_data.rs, and disclosed by its own doc comment as lacking a whole-function end-to-end test."
+    },
+    {
+      "path": "server/atlas-graph/src/artifact.rs",
+      "lines": 2385,
+      "role": "the largest file in the crate -- freezes a built Graph to graph.bin and reads it back",
+      "l1": "This file is the freezer and the microwave for the graph: it turns a fully-built, checked graph into one compact binary file (`graph.bin`) the server can load in under three seconds at startup, and reads that file back into an identical graph later, with no re-parsing of raw text needed. It is a hand-written mirror of every single table the graph carries -- one 'DTO' twin type for every node kind and every edge kind -- kept intentionally separate from the graph's own pure type definitions so that changing how data is stored on disk never risks breaking the types every other part of the app relies on.",
+      "l2": "Every real graph-types type gets a matching `Dto*` **struct**/**enum** (`DtoNode`, `DtoPayload`, `DtoAttests`, `DtoContains`, ...), each with `#[derive(Serialize, Deserialize)]` for the `serde` framework `bincode` uses. `dump(graph, chronology, stats, event_world_stats) -> Result<ArtifactDump, ArtifactError>` walks every table of a built `Graph` and converts it field by field into its DTO twin, refusing loudly (an `ArtifactError`, never a silent drop) if any table this format doesn't yet know how to serialize is non-empty. `to_service_parts(dump) -> Result<(Graph, BuildStats, EventWorldStats, Chronology), ArtifactError>` is the reverse: it rebuilds a `Graph` from the DTOs, using **`std::thread::scope`** to convert the four LARGEST tables (nodes, cross_refs, comments_on, mentions -- hundreds of thousands of rows) across multiple threads in parallel chunks, then concatenates them back in original order so the result is bit-for-bit identical to doing it sequentially, just faster. `encode`/`decode` are thin wrappers around `bincode::serialize`/`deserialize`; `FORMAT_VERSION` is a single **`const u32`** bumped every time any DTO shape changes, and `to_service_parts` REFUSES any artifact whose stamped version doesn't match exactly.",
+      "l3": "The module's own header explains WHY a hand-written DTO layer exists at all rather than deriving serde directly on `graph-types`' own types: several of them are deeply **generic**/**phantom-typed** (`NodeId<K: KindTag>`, `Locus<C: Corpus>`) in ways that would force either a crate-wide derive sweep or per-type `#[serde(bound = ...)]` overrides threaded through generic code, touching the owner-approved, extend-only `graph-types` crate for a serialization concern it was never designed around -- a self-contained mirror confined entirely to this crate carries zero risk to it. `FORMAT_VERSION`'s own doc comment (line 872 onward) is a running CHANGELOG of every bump since M-C, each entry naming its exact trigger (an appended enum variant, a new relation table, a retyped field) and whether the content-addressed VERSION ROOT moved as a result (it hashes only node id+payload, so a new relation table alone never moves it, but a new node kind does) -- currently at `13`. `to_service_parts`'s own PERF-m1 note discloses the thread-parallel conversion as a deliberate, disclosed follow-up over a documented performance floor, with the exact same 'handles processed in vector order regardless of which thread finishes first' guarantee `Graph::build_indexes` itself already makes. `dump_and_to_graph_round_trip_losslessly_over_bincode_bytes` is the crate's own admission-law proof: `atlas_graph_types::store::assert_answers_match` checks that a graph decoded from real bincode bytes answers every generic-port question identically to the graph it was dumped from -- 'implementation #2 passes the same law as #1.'",
+      "key_items": [
+        {
+          "name": "ArtifactError",
+          "kind": "struct",
+          "what": "the one named error type every dump/decode/reconstruct function returns",
+          "line": 63
+        },
+        {
+          "name": "DtoPayload",
+          "kind": "enum",
+          "what": "the hand-written mirror of every NodePayload variant, serde-derived, versioned separately from graph-types",
+          "line": 228
+        },
+        {
+          "name": "ArtifactDump",
+          "kind": "struct",
+          "what": "the whole serialized artifact: every node/row table plus the chronology companion and startup stats",
+          "line": 754
+        },
+        {
+          "name": "FORMAT_VERSION",
+          "kind": "const",
+          "what": "the artifact wire format's own version, currently 13, with a running changelog of every bump and its trigger",
+          "line": 1012
+        },
+        {
+          "name": "dump",
+          "kind": "fn",
+          "what": "converts a built Graph into an ArtifactDump, refusing loudly if an unserialized table is non-empty",
+          "line": 1054
+        },
+        {
+          "name": "to_service_parts",
+          "kind": "fn",
+          "what": "reconstructs a Graph + stats + Chronology from a dump, thread-parallel for the four dominant tables",
+          "line": 1370
+        },
+        {
+          "name": "encode",
+          "kind": "fn",
+          "what": "bincode-serializes an ArtifactDump to bytes",
+          "line": 1754
+        },
+        {
+          "name": "decode",
+          "kind": "fn",
+          "what": "bincode-deserializes bytes into an ArtifactDump",
+          "line": 1758
+        },
+        {
+          "name": "artifact_format_version",
+          "kind": "fn",
+          "what": "a function over the private FORMAT_VERSION constant so the number keeps exactly one definition site",
+          "line": 1029
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/event_world.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/bins/compile_graph.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "concepts": [
+        "struct",
+        "enum",
+        "serde",
+        "bincode",
+        "Result",
+        "error-handling",
+        "threads",
+        "scoped-threads",
+        "generics",
+        "phantom-type",
+        "content-hash",
+        "unit-test",
+        "integration-test"
+      ],
+      "tests": "extensive in-file #[cfg(test)] mod tests: dump_and_to_graph_round_trip_losslessly_over_bincode_bytes (the admission-law proof), temporal_adjacency_round_trips_losslessly_with_real_rows, named_after_round_trips_losslessly_with_a_real_row, fulfills_round_trips_losslessly_with_a_real_row, commentary_item_and_comments_on_round_trip_losslessly_with_a_real_kretzmann_build, plus more; cross-file coverage in tests/artifact_conformance.rs and tests/version_root_regression.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/exports.rs",
+      "lines": 574,
+      "role": "writes gazetteer.json and chronology.json for the separate map-system project to consume",
+      "l1": "This file writes two small, human-readable JSON files that a COMPLETELY SEPARATE project (the map system) reads to draw borders and a time slider -- a gazetteer of every place with its coordinates, and a chronology of every dated event, era span, and calendar anchor. These are the whole contract between the two projects: the map repo fetches them at a pinned version, never talks to this server directly.",
+      "l2": "`gazetteer_places(graph) -> Vec<GazetteerPlace>` walks every Place node and folds in its `mentions`-derived attestation verses, producing one row per place (id, canonical name, aliases, lat/lon, provenance, and a `confidence` field that stays `None` for every place today -- kept IN the schema, `#[serde(skip_serializing_if)]`'d away, so a future adapter that captures real confidence data needs no format bump). `chronology_events`/`chronology_spans`/`chronology_anchors` build the matching event/era/anchor rows for `chronology.json`. Both top-level export **struct**s carry an `atlas_version_root: String` field stamped by the caller (`bins/compile_graph.rs`) with the SAME `GraphVersion` `graph.bin` itself reports, so drift between the two files is impossible by construction, not merely disciplined.",
+      "l3": "The module's own header is unusually candid about what the schema DOESN'T yet cover, calling each gap an 'HONESTY DISCLOSURE' rather than leaving it silent: `confidence` has zero real coverage (confirmed by reading every Place adapter fresh); `anchor-reign` spans ship zero rows because `DatePlacement::ReignYear` has no real constructor site anywhere in this workspace, so `chronology_spans` only ever emits `kind: \"era\"` rows; the placement shape is a plain `{from_year, to_year}` pair rather than a tagged `year|interval` enum, with equality standing in for the 'year' case. `bible_range_str` formats a verse range using the same convention `DtoCrossRef.target_display` already established (same-chapter collapses to `\"GEN.13.18-19\"`, cross-book stays full), proven correct for all three shapes by `bible_range_str_formats_single_verse_same_chapter_and_cross_book_ranges`. `kretzmann_date_rows` is a later addition (KRETZ-1, 'the date mine'): it extracts mechanically-parsed date clauses from Kretzmann's commentary prose via `atlas_etl::kretzmann::extract_date_clauses`, explicitly labeled `status: \"tentative-extraction\"` in its own export -- a real, disclosed 'this is not yet an adjudicated chronology placement' boundary.",
+      "key_items": [
+        {
+          "name": "GazetteerExport",
+          "kind": "struct",
+          "what": "the top-level gazetteer.json shape: format_version, atlas_version_root, places",
+          "line": 165
+        },
+        {
+          "name": "gazetteer_places",
+          "kind": "fn",
+          "what": "collects every Place node's export row, folding in mentions-derived attestations",
+          "line": 177
+        },
+        {
+          "name": "ChronologyExport",
+          "kind": "struct",
+          "what": "the top-level chronology.json shape: events, spans, anchors, plus the version root",
+          "line": 256
+        },
+        {
+          "name": "chronology_events",
+          "kind": "fn",
+          "what": "every DATED event with its real ResolvedPlacement, in global timeline order",
+          "line": 271
+        },
+        {
+          "name": "chronology_spans",
+          "kind": "fn",
+          "what": "era spans only -- anchor-reign ships zero rows, a disclosed schema gap, not a fabricated one",
+          "line": 307
+        },
+        {
+          "name": "kretzmann_date_rows",
+          "kind": "fn",
+          "what": "tentative, mechanically-parsed date clauses mined from Kretzmann's own commentary prose",
+          "line": 419
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/event_world.rs"
+      ],
+      "used_by": [
+        "server/atlas-graph/src/bins/compile_graph.rs"
+      ],
+      "concepts": [
+        "struct",
+        "BTreeMap",
+        "BTreeSet",
+        "serde",
+        "Option",
+        "content-hash",
+        "unit-test"
+      ],
+      "tests": "in-file #[cfg(test)] mod tests: gazetteer_round_trips_through_json, chronology_round_trips_through_json, bible_range_str_formats_single_verse_same_chapter_and_cross_book_ranges, kretzmann_date_rows_extracts_verbatim_clauses_and_resolves_their_own_target_and_round_trips_through_json, kretzmann_date_rows_is_empty_over_a_graph_with_no_commentary_items; the three peer-named binding examples are checked in tests/exports_laws.rs."
+    },
+    {
+      "path": "server/atlas-graph/src/bins/compile_graph.rs",
+      "lines": 356,
+      "role": "the standalone binary that compiles graph.bin and self-checks it before writing anything",
+      "l1": "This is the one program you actually run to produce the final `graph.bin` file (and the map project's two JSON exports) from all the raw and curated source data. Its most important feature is that it doesn't trust itself: it builds the WHOLE graph TWICE, from two independent code paths, and refuses to write anything to disk unless both builds answer every possible question identically. This is the 'admission' step -- proof, not a promise, that the frozen file matches what a fresh build would produce.",
+      "l2": "`main()` reads `--data-dir`/`--out` command-line arguments, then runs the same `atlas_etl::compile::compile` orchestration the separate ETL binary runs to get an `AtlasData`, reads the raw KJV/xrefs files, and reads every large vendored corpus (brain-fuel multilingual editions, the Book of Concord, Kretzmann's commentary, red-letter data) -- each one HARD-REQUIRED here (unlike `GraphService::build`'s graceful dev-fallback), since a `graph.bin` compiled without them would silently ship an incomplete corpus. It builds the graph TWICE (`graph_a`, `graph_b`) from identical inputs, calls `atlas_graph_types::store::assert_answers_match` between them, THEN also decodes the just-encoded bytes and admits THOSE against the second build too -- proving the actual on-disk bytes round-trip losslessly, not just that the pre-dump graph was internally consistent. Only after both admissions pass does it write `graph.bin`, the red-letter span table, and the two/three map-system export JSON files.",
+      "l3": "The module doc comment frames this file's own reason for existing as a SEPARATE binary rather than a mode flag on the existing ETL tool: the graph-artifact compile step (raw KJV/xrefs + curated eras.toml + already-compiled AtlasData -> one graph artifact) is layered ON TOP of the ETL tool's own curated-TOML+Theographic pipeline, and reads more naturally as its own small tool. The KJV-CASE restoration recompute at line 130 is a deliberate, disclosed SECOND computation of the same restored verse map purely for the startup log AND for feeding the red-letter alignment step (which must run against RESTORED casing, never the raw parse) -- one call serving two purposes, not a third parse of the file. The admission timing itself is measured and printed (`admit_start.elapsed()`), disclosed as 'the expensive check (~3-15s over the full real graph)' that happens HERE, once, at compile time -- never at server startup, which is exactly what keeps the load-time ceiling achievable. The C2/C3 map-system exports and the KRETZ-1 date-mine export are built as a TERMINAL PASS after admission, from the SAME already-admitted `graph_a_indexed`, so `atlas_version_root` in every exported JSON embeds the IDENTICAL `GraphVersion` `graph.bin` itself reports -- drift is impossible by construction, not merely disciplined.",
+      "key_items": [
+        {
+          "name": "parse_args",
+          "kind": "fn",
+          "what": "parses the --data-dir/--out command-line arguments this binary requires",
+          "line": 46
+        },
+        {
+          "name": "main",
+          "kind": "fn",
+          "what": "the whole compile pipeline: read sources, build twice, admit, write graph.bin and the map exports",
+          "line": 69
+        },
+        {
+          "name": "assert_answers_match (called here)",
+          "kind": "fn",
+          "what": "graph-types' own admission law: proves two independently-built graphs answer every query identically",
+          "line": 249
+        }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/exports.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "server/atlas-graph/src/red_letter_spans.rs",
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/lib.rs"
+      ],
+      "used_by": [],
+      "concepts": [
+        "Command-process",
+        "PathBuf",
+        "env-macro",
+        "Result",
+        "error-handling",
+        "anyhow",
+        "content-hash"
+      ],
+      "tests": "no in-file test module (this is a binary entry point, not a library); its own admission checks ARE the test -- it refuses to write output on any mismatch. Its output is exercised by tests/artifact_conformance.rs and tests/exports_laws.rs."
+    }
+  ]
+}

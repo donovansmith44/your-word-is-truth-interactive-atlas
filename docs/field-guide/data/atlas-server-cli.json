@@ -1,0 +1,787 @@
+{
+  "area": "server/atlas-server + atlas-cli",
+  "title": "atlas-server & bibex — the HTTP API and the offline CLI over one graph",
+  "kind": "crate",
+  "language": "rust",
+  "overview": {
+    "l1": "This is the front door to the whole Bible atlas. atlas-server is a small web server: it loads the one compiled graph file, then answers questions like \"give me John chapter 3\" or \"what places does this event touch\" over the network as JSON, which is what the map and reader in your browser actually talk to. atlas-cli builds the exact same questions and answers into a command-line program called bibex — think of it as the app without the browser: you type `bibex verse GEN.1.1` in a terminal and get the verse, its cross references, and everything attached to it, with no server and no network involved. If atlas-server vanished, the client would have nothing to fetch from; if atlas-cli vanished, you'd lose a fast, scriptable way to poke at the graph directly.",
+    "l2": "atlas-server is an axum web application. `main.rs` parses command-line flags and starts it; `load.rs` is the single function both the real binary and the test harness call to turn a data directory into a running app, so the two can never quietly diverge; `app.rs` wires every URL path to its handler function; `handlers.rs` and `graph_handlers.rs` contain those handler functions, which read query parameters, ask the graph a question through a trait called `GraphQuery`, and wrap the answer in `Json(...)`; `graph_wire.rs` converts the graph's internal ids into human-readable strings like `\"Event:ab_ur\"` and back. atlas-cli mirrors this shape without any of the HTTP machinery: `main.rs` hand-parses `argv`, `load.rs` loads the same compiled graph file, and each file under `commands/` is one subcommand (`verse`, `chapter`, `node`, `edges`, `find`, `kinds`, `tutorial`, `help`), each offering both a plain-text and a `--json` rendering of the identical underlying query. Both crates depend on `atlas-graph` (the query engine) and `atlas-graph-types` (the trait and id vocabulary) rather than inventing their own.",
+    "l3": "atlas-server exposes 22 routes off one `axum::Router` (`app.rs::build_with_sources`), backed by `AppState { data: Arc<AtlasData>, graph: Arc<GraphService>, sources: Arc<SourcesDocument> }` via `FromRef`. Every handler is `async fn(State<...>, ...) -> Result<Json<T>, ApiError>`; `ApiError` (error.rs) is the one error type, rendered as `{\"error\":{\"code\",\"message\"}}`. The load path is deliberately singular: `load.rs::load_from_data_dir`/`load_graph_and_data` is called by both `main.rs` and `tests/contract_pact.rs`'s pact recorder, closing a real bug class (contract.rs's own module doc records two prior fidelity bugs where the recorder and the server silently diverged). `graph_wire.rs` is the DTO-identity layer: `encode_node_id`/`decode_node_id` are a proven bijection (graph_wire.rs:230-291 tests), and `parse_edge_kind` is total over `RelationId::ALL`/`SymRelationId::ALL` so a new relation can never go unparseable. atlas-cli reuses `atlas_server::graph_wire` and `atlas_server::handlers`/`graph_handlers` DTO field names directly (Cargo.toml's own R1 comment: \"no parallel query logic\"), so its JSON output is provably the same shape the HTTP API serves. Both crates are heavily test-covered: atlas-server's tests directory is larger than its src (12 files vs 11), spanning HTTP-level tests (api.rs, graph_api.rs), server-vs-model conformance (graph_conformance.rs, graph_equivalence.rs), a Gherkin-driven contract corpus (aqc_cucumber.rs) and a byte-for-byte regression pact (contract_pact.rs)."
+  },
+  "reading_order": [
+    "server/Cargo.toml",
+    "server/atlas-server/Cargo.toml",
+    "server/atlas-server/src/lib.rs",
+    "server/atlas-server/src/main.rs",
+    "server/atlas-server/src/load.rs",
+    "server/atlas-server/src/app.rs",
+    "server/atlas-server/src/handlers.rs",
+    "server/atlas-server/src/graph_handlers.rs",
+    "server/atlas-server/src/graph_wire.rs",
+    "server/atlas-server/src/contract.rs",
+    "server/atlas-server/src/error.rs",
+    "server/atlas-server/src/aqc_export.rs",
+    "server/atlas-server/src/bins/export_aqc_examples.rs",
+    "server/atlas-server/tests/api.rs",
+    "server/atlas-server/tests/graph_api.rs",
+    "server/atlas-server/tests/graph_equivalence.rs",
+    "server/atlas-server/tests/graph_conformance.rs",
+    "server/atlas-server/tests/contract_api.rs",
+    "server/atlas-server/tests/sources_api.rs",
+    "server/atlas-server/tests/brainfuel_layers.rs",
+    "server/atlas-server/tests/perf_smoke.rs",
+    "server/atlas-server/tests/scene_byte_identity.rs",
+    "server/atlas-server/tests/aqc_cucumber.rs",
+    "server/atlas-server/tests/aqc_corpus_generation.rs",
+    "server/atlas-server/tests/contract_pact.rs",
+    "server/atlas-server/benches/queries.rs",
+    "server/atlas-cli/Cargo.toml",
+    "server/atlas-cli/src/main.rs",
+    "server/atlas-cli/src/load.rs",
+    "server/atlas-cli/src/error.rs",
+    "server/atlas-cli/src/commands/mod.rs",
+    "server/atlas-cli/src/commands/help.rs",
+    "server/atlas-cli/src/commands/kinds.rs",
+    "server/atlas-cli/src/commands/node.rs",
+    "server/atlas-cli/src/commands/edges.rs",
+    "server/atlas-cli/src/commands/find.rs",
+    "server/atlas-cli/src/commands/chapter.rs",
+    "server/atlas-cli/src/commands/verse.rs",
+    "server/atlas-cli/src/commands/tutorial.rs",
+    "server/atlas-cli/tests/cli.rs",
+    "server/atlas-cli/tests/contract_pact_cli.rs"
+  ],
+  "groups": [
+    {
+      "name": "Server entry & assembly",
+      "paths": ["server/Cargo.toml", "server/atlas-server/Cargo.toml", "server/atlas-server/src/lib.rs", "server/atlas-server/src/main.rs", "server/atlas-server/src/load.rs", "server/atlas-server/src/app.rs"],
+      "note": "How a directory on disk becomes a running, routed axum server — one path, shared by the real binary and the tests that must not drift from it."
+    },
+    {
+      "name": "HTTP handlers and wire shapes",
+      "paths": ["server/atlas-server/src/handlers.rs", "server/atlas-server/src/graph_handlers.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-server/src/contract.rs", "server/atlas-server/src/error.rs"],
+      "note": "The actual per-endpoint logic and the DTOs/id-encoding it hands to the client, plus the one error type every handler returns."
+    },
+    {
+      "name": "Contract export tooling",
+      "paths": ["server/atlas-server/src/aqc_export.rs", "server/atlas-server/src/bins/export_aqc_examples.rs"],
+      "note": "Generates the committed Gherkin contract corpus and its fixtures straight from the real graph, so the contract can never hand-drift from what the server actually serves."
+    },
+    {
+      "name": "Server tests — HTTP behavior",
+      "paths": ["server/atlas-server/tests/api.rs", "server/atlas-server/tests/graph_api.rs", "server/atlas-server/tests/contract_api.rs", "server/atlas-server/tests/sources_api.rs", "server/atlas-server/tests/brainfuel_layers.rs"],
+      "note": "Exercise real routes over a router, in-process, without binding a socket, asserting status codes and JSON shapes."
+    },
+    {
+      "name": "Server tests — correctness proofs",
+      "paths": ["server/atlas-server/tests/graph_equivalence.rs", "server/atlas-server/tests/graph_conformance.rs", "server/atlas-server/tests/scene_byte_identity.rs"],
+      "note": "Prove a migration or refactor changed nothing observable: old logic vs new logic over all 1,189 chapters, the port contract vs the real graph, and byte-identical scene responses."
+    },
+    {
+      "name": "Server tests — contract & performance gates",
+      "paths": ["server/atlas-server/tests/aqc_cucumber.rs", "server/atlas-server/tests/aqc_corpus_generation.rs", "server/atlas-server/tests/contract_pact.rs", "server/atlas-server/tests/perf_smoke.rs", "server/atlas-server/benches/queries.rs"],
+      "note": "The Gherkin-driven external contract, its own drift checks, the consumer-driven-contract pact, and speed regression gates (a fast CI-wired smoke tier plus a deep hand-run criterion suite)."
+    },
+    {
+      "name": "bibex CLI entry and commands",
+      "paths": ["server/atlas-cli/Cargo.toml", "server/atlas-cli/src/main.rs", "server/atlas-cli/src/load.rs", "server/atlas-cli/src/error.rs", "server/atlas-cli/src/commands/mod.rs", "server/atlas-cli/src/commands/help.rs", "server/atlas-cli/src/commands/kinds.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/edges.rs", "server/atlas-cli/src/commands/find.rs", "server/atlas-cli/src/commands/chapter.rs", "server/atlas-cli/src/commands/verse.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "note": "The whole offline command-line explorer: argument parsing, graph loading, one file per subcommand, each with a plain-text and a --json rendering."
+    },
+    {
+      "name": "bibex tests",
+      "paths": ["server/atlas-cli/tests/cli.rs", "server/atlas-cli/tests/contract_pact_cli.rs"],
+      "note": "Run the real compiled binary as a subprocess against the real committed graph, plus the CLI's own slice of the cross-transport consumer-driven contract."
+    }
+  ],
+  "files": [
+    {
+      "path": "server/Cargo.toml",
+      "lines": 982,
+      "role": "Workspace manifest — declares the five crates, plus a very long test-counting ritual",
+      "l1": "This file is the master list of which Rust project folders belong to \"the server\" as one buildable unit — atlas-core, atlas-etl, atlas-server, atlas-graph, and atlas-cli. Nearly all of its length, though, is a running diary explaining a quirk: one more crate, graph-types, holds a lot of important tests but technically lives just outside this list (Cargo's rules won't let it be listed, since it sits one folder above). So whenever someone wants \"how many tests pass right now,\" they can't just run one command — they have to run two and add the numbers together, and this file's giant header is where that two-step ritual and its running history are written down so nobody forgets it or miscounts.",
+      "l2": "`[workspace] members = [...]` lists the five crates sharing one `Cargo.lock`. The header comment explains why `graph-types` (repo root) isn't in that list: **Cargo** requires every workspace member to live *underneath* the workspace root folder, and `graph-types/` is a sibling of `server/`, not a child of it — so it's pulled in only indirectly, as a path dependency of `atlas-graph`. The consequence is the \"STANDING COUNTING PROCEDURE\": a full test count is `cargo test --workspace` (everything reachable from this manifest) *plus* `cargo test -p atlas-graph-types` run separately (since `--workspace` alone never reaches a non-member crate), with every `\"test result: ok. N passed\"` line from both commands summed. The rest of the file is a long, append-only **ledger** — each development batch adds a paragraph recording the new total, which sections changed, and any test that failed for reasons unrelated to that batch's own code (a documented, disclosed judgment call, not a silent skip). This is a `Cargo-toml` concept: a `Cargo-toml` manifest can hold structured config (`[workspace]`, `resolver`) alongside plain `#`-comments that become load-bearing project history.",
+      "l3": "`members = [\"atlas-core\", \"atlas-etl\", \"atlas-server\", \"atlas-graph\", \"atlas-cli\"]`, `resolver = \"2\"`. The STANDING COUNTING PROCEDURE (established at commit `f988f1b`) is restated by every batch: sum every `\"test result: ok. N passed\"` line from `cargo test --workspace` and `cargo test -p atlas-graph-types` run separately from `server/`, plus report the AQC corpus's own `scenarios/steps` count as a mandatory companion line (it never prints a `test result:` line at all, since `aqc_cucumber.rs` sets `harness = false` — see `atlas-server/Cargo.toml`). The ledger records the count moving from 747 (at `f988f1b`) through many batches to over 1050+ by the most recent entries read, each paragraph naming exactly which new test files/sections were added and disclosing any environment-sensitive timing-gate flake (e.g. `perf_smoke.rs`'s wall-clock thresholds, `graph_conformance.rs`'s 60s ceiling) rather than silently re-running until green. This is project culture made mechanical: a batch that cannot account for the exact delta in the total (old count + new tests − any newly-disclosed failure = new count) has not actually verified its own work. No test or build logic lives here beyond `[workspace]`/`resolver`; it purely declares crate membership and documents the counting discipline every other crate's CLAUDE-adjacent batch report must follow."
+    },
+    {
+      "path": "server/atlas-server/Cargo.toml",
+      "lines": 65,
+      "role": "atlas-server's manifest — deps, its second export_aqc_examples binary, and its own test/bench targets",
+      "l1": "This file lists what atlas-server needs to build (the web framework `axum`, the async runtime `tokio`, JSON support) and declares that this one project folder actually produces two separate runnable programs: the main server, and a small helper tool that regenerates the project's contract-testing examples. It also flags one of its test files as special (it runs its own way rather than the normal way) and registers a separate \"benchmark\" program for deep performance investigation.",
+      "l2": "Standard `[package]`/`[dependencies]`/`[dev-dependencies]` sections. `default-run = \"atlas-server\"` disambiguates `cargo run -p atlas-server` now that a second `[[bin]]` (`export_aqc_examples`, at `src/bins/export_aqc_examples.rs` — deliberately outside `src/bin/` because this repo's `.gitignore` has a broad `**/bin/` rule for the Blazor client's build output) exists. `[[test]] name = \"aqc_cucumber\" harness = false` tells Cargo that `tests/aqc_cucumber.rs` is its own test runner (the `cucumber` crate's own `World::run`) rather than a normal `#[test]`-per-function binary — this is the `unit-test` vs `integration-test` distinction Rust's tooling draws, extended here by a third-party test harness. `[[bench]] name = \"queries\" harness = false` registers `benches/queries.rs` for `cargo bench`, using the `criterion` crate instead of Rust's built-in (and now-unstable) bench harness.",
+      "l3": "Dependencies: `axum = \"0.8\"`, `tokio` (rt-multi-thread/macros/net features — the concrete `tokio` async runtime this crate actually drives, since `async-await` code needs an executor), `tower`/`tower-http` (cors, fs — used by `app.rs`'s SPA fallback and permissive CORS layer), `serde`/`serde_json`, `anyhow` (used in `main.rs`/`load.rs` for `Result`-with-context error plumbing). Dev-dependencies: `http-body-util` (test body extraction), `cucumber = \"0.23\"` + `futures` (the Gherkin harness, MIT/Apache-2.0, disclosed as a genuinely new test-time dependency), `criterion = \"0.5\"` (the bench harness). The comments trace two real build-tooling decisions to their originating batches (AQC-1 for the second `[[bin]]`/cucumber harness, PERF-2a for the criterion bench) rather than presenting them as defaults."
+    },
+    {
+      "path": "server/atlas-cli/Cargo.toml",
+      "lines": 40,
+      "role": "atlas-cli's manifest — depends on atlas-server itself to reuse its wire grammar, one [[bin]] named bibex",
+      "l1": "This file lists what the command-line tool needs, and the interesting thing about it is that it depends on the WEB SERVER project too — not to run a server, but to reuse the server's own \"how do we spell an id\" and \"how do we parse an edge kind\" logic, so the command-line tool and the website never disagree about vocabulary. It also renames the actual program people run from the technical project name (\"atlas-cli\") to the friendlier \"bibex\" (Bible Explorer).",
+      "l2": "`[dependencies]` includes `atlas-core`, `atlas-graph`, `atlas-graph-types` (the query engine and its types, same as atlas-server) plus `atlas-server = { path = \"../atlas-server\" }` — a library dependency reusing `atlas_server::graph_wire` (id encode/decode) and DTO field-name conventions, not a runtime dependency (this crate never starts a server or imports `axum`). `serde_json = \"1\"` supports `--json` mode, added as \"a new edge in the dependency graph, not a new external crate\" since it was already resolved workspace-wide. `[[bin]] name = \"bibex\" path = \"src/main.rs\"` is the rename: the crate is still called `atlas-cli` for Cargo's own bookkeeping, but the binary a user types is `bibex`.",
+      "l3": "A removed-dependency note is preserved in comments: `anyhow` was declared but never imported (`load.rs` only calls `.map_err` on an already-typed `anyhow::Result`, never naming the `anyhow` type itself) — a dead dependency, caught in review and deleted (\"FIX ROUND 1 (review T-1)\"). The R1/R3 design rulings are restated here as comments: \"no parallel query logic\" (every graph question goes through `atlas_graph::GraphService`/`atlas_graph_types::store::GraphQuery`, or reuses `atlas-server`'s own id/edge-kind grammar as a library, never a hand-rolled duplicate) and \"args hand-parsed... no clap, no new runtime deps beyond what atlas-server itself already brings in\" (mirroring `atlas-server/src/main.rs`'s own hand-rolled flag loop rather than adding a CLI-argument-parsing crate)."
+    },
+    {
+      "path": "server/atlas-server/src/lib.rs",
+      "lines": 19,
+      "role": "The library root — declares atlas-server's modules so tests can call them directly",
+      "l1": "This tiny file is the table of contents for the server's internal code. It exists so that the test files (which check the server's behavior) can reach directly into the server's logic — build the exact same web app the real server builds — without actually starting a real, listening server and making real network calls for every test.",
+      "l2": "`pub mod app; pub mod aqc_export; pub mod contract; pub mod error; pub mod graph_handlers; pub mod graph_wire; pub mod handlers; pub mod load;` — this is Rust's `module` system: each line exposes one source file as a `module` other code (including `main.rs` and every file in `tests/`) can `use`. Because atlas-server is built as both a library (`lib.rs`) and a binary (`main.rs`), `main.rs` is described as \"a thin binary shell... around `app::build`\" — nearly all real logic lives in modules reachable from here, and `main.rs` just calls into them.",
+      "l3": "The doc comment states the architectural reason directly: `tests/api.rs` and friends exercise `app::build` via `tower::ServiceExt::oneshot` (see `api.rs`, `graph_api.rs`), which requires `app` (and everything it touches) to be `pub` from a library target — a binary-only crate cannot be `use`d by an external test binary. `pub mod load` carries its own comment explaining CDC-1 fix round 1's motivation (the load path had to become the one shared assembly point after two provider/recorder-drift bugs — see `load.rs`). No logic of its own; purely a `module` re-export surface.",
+      "key_items": [
+        {"name": "app", "kind": "module", "what": "Router construction and AppState — re-exported for tests", "line": 7},
+        {"name": "load", "kind": "module", "what": "The one data_dir-to-Router assembly path, shared by main.rs and the pact recorder", "line": 19}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs", "server/atlas-server/src/aqc_export.rs", "server/atlas-server/src/contract.rs", "server/atlas-server/src/error.rs", "server/atlas-server/src/graph_handlers.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-server/src/handlers.rs", "server/atlas-server/src/load.rs"],
+      "used_by": ["server/atlas-server/src/main.rs", "server/atlas-server/tests/api.rs", "server/atlas-server/tests/graph_api.rs", "server/atlas-cli/src/commands/node.rs"],
+      "concepts": ["crate", "module", "visibility"],
+      "tests": "Exercised indirectly by every integration test in tests/, which `use atlas_server::...` against these re-exports; no dedicated test of its own (there is nothing to test — it declares no logic)."
+    },
+    {
+      "path": "server/atlas-server/src/main.rs",
+      "lines": 208,
+      "role": "The atlas-server binary: parses CLI flags, loads data, starts listening",
+      "l1": "This is the program that actually runs when someone starts the web server. It reads command-line options (which folder holds the compiled data, which network port to use), loads the graph either from a fast pre-built file or, for developers, freshly from raw source files, prints some helpful startup statistics, and then starts listening for web requests until the process is stopped.",
+      "l2": "`parse_args` hand-parses `env::args()` into a small `Args` struct (`data_dir`, `static_dir`, `port`, `build_from_raw`) — no argument-parsing library, just a `while` loop over a `&[String]` `slice`. `#[tokio::main] async fn main() -> Result<()>` is the entry point: the `tokio` attribute macro sets up an async runtime so `main` itself can be `async fn` and use `.await`. The startup has two branches: the default path calls `atlas_server::load::load_graph_and_data`, which reads the pre-compiled `graph.bin` artifact (fast — a committed law keeps this under 3 seconds); `--build-from-raw` instead calls `atlas_etl::compile::compile` and `GraphService::build` to construct the graph in memory from raw source files (slower, for iterating on data without recompiling). Either way, the result is wrapped in `Arc` (an atomic reference-counted pointer — many async request handlers can each hold a cheap clone of the same graph without copying it) before being handed to `atlas_server::app::build_with_sources`. Finally `tokio::net::TcpListener::bind` opens the port and `axum::serve` runs forever, handling requests.",
+      "l3": "`Args { data_dir: PathBuf, static_dir: Option<PathBuf>, port: u16, build_from_raw: bool }`; `parse_args(args: &[String]) -> Result<Args>` (anyhow::Result, using `.context(...)`/`bail!` for fail-loud, path-naming errors). `main` measures `load_start.elapsed()` and prints per-path stats (`graph.stats.kjv_verses`, `cites_rows`, event-world stats) so an operator can see load health at a glance. The doc comments record two real historical bugs this file's own structure now prevents: startup logic used to be hand-copied into the contract-pact test recorder and drifted from what the real binary did (fixed by extracting `atlas_server::load`, see load.rs); and a doubled word in a log format string (\"artifact load load complete\") was fixed by restructuring the format string rather than the branch strings. `sources` (the Sources-page registry) is loaded as a third, independent piece of state via `atlas_server::load::load_sources`, never folded into `AtlasData`. Wired to `graph_handlers`/`handlers` only indirectly, through `app::build_with_sources`.",
+      "key_items": [
+        {"name": "Args", "kind": "struct", "what": "Parsed CLI flags: data_dir, static_dir, port, build_from_raw", "line": 15},
+        {"name": "parse_args", "kind": "fn", "what": "Hand-rolled argv parser producing Args or a contextual anyhow error", "line": 30},
+        {"name": "main", "kind": "fn", "what": "Async entry point: load graph+data, build router, bind and serve", "line": 66}
+      ],
+      "depends_on": ["server/atlas-server/src/load.rs", "server/atlas-server/src/app.rs"],
+      "used_by": [],
+      "concepts": ["async-await", "tokio", "anyhow", "error-handling", "PathBuf", "Arc", "?-operator", "Command-process", "env-macro"],
+      "tests": "No dedicated unit test file for main.rs itself (its two branches are exercised indirectly: the default path via load.rs's own callers in tests, and both startup log lines only observed by running the real binary); CONTRACT.md-adjacent CLI tests exercise the analogous atlas-cli main.rs instead."
+    },
+    {
+      "path": "server/atlas-server/src/load.rs",
+      "lines": 121,
+      "role": "The one function that turns a data_dir into a serving Router — shared by main.rs and the pact recorder",
+      "l1": "This file exists because of a real mistake the project made twice: a test that regenerates \"proof\" of what the server does was accidentally built differently from the real server, so its proof was quietly wrong — once it claimed an entire page of data was there when it wasn't, and once it silently served nothing at all for a whole feature. The fix was to write the \"load everything and get ready to serve\" steps exactly once, in this file, so both the real server and the test that checks it are guaranteed to do the identical thing.",
+      "l2": "`LoadedAtlas { data: Arc<AtlasData>, graph: Arc<GraphService>, sources: Arc<SourcesDocument> }` bundles the three pieces of server state into one `struct`, so \"add a fourth ingredient\" can't be done in only one of the two call sites. `load_sources` reads `sources.json` (fail-loud `Result` with `.context(...)` naming the exact path on failure — this is the `error-handling` idiom of returning a `Result<T, E>` and using the `?-operator` to propagate it up rather than a language-level exception). `load_graph_and_data` loads the compiled `graph.bin` artifact via `GraphService::from_artifact`, loads the remaining compiled JSON files via `AtlasData::load`, then rebuilds a few retiring fields directly from the graph (`atlas_graph::legacy::atlas_data_overlay`) before calling `.finish()` — the doc comment stresses this last `finish()` call is not optional: skipping it silently leaves derived lookups empty, which is exactly the second historical bug. `load_from_data_dir` composes both halves into one `LoadedAtlas`.",
+      "l3": "`LoadedAtlas::into_router(self, static_dir) -> Router` is documented as \"THE ONLY CALL SITE of `app::build_with_sources` outside tests that deliberately exercise a partial app\" — a structural guarantee, not a convention, that the pact recorder and the production binary assemble the app identically. `load_graph_and_data(data_dir: &Path) -> Result<(GraphService, AtlasData)>` is called by both `main.rs`'s default branch and `tests/contract_pact.rs::app()`. Fix round 1 (review C-3) is the naming context: the recorder previously used `SourcesDocument::default()` (so `GET /api/sources` recorded empty against a real 18-source server) and ran the `--build-from-raw` path (so `AtlasData::finish()` never ran and `GET /api/catechism/{sref}` silently answered `[]` for every reference) — both green suites over wrong providers, the exact class of bug this module's existence prevents by removing the second copy entirely.",
+      "key_items": [
+        {"name": "LoadedAtlas", "kind": "struct", "what": "The three server-state ingredients (data, graph, sources) bundled as one value", "line": 52},
+        {"name": "LoadedAtlas::into_router", "kind": "fn", "what": "The only production call site of app::build_with_sources outside tests", "line": 70},
+        {"name": "load_sources", "kind": "fn", "what": "Fail-loud load of the compiled sources.json registry", "line": 81},
+        {"name": "load_graph_and_data", "kind": "fn", "what": "Loads graph.bin + compiled JSON, overlays retiring fields, finish()es derived indexes", "line": 96},
+        {"name": "load_from_data_dir", "kind": "fn", "what": "The whole default path (graph through sources) as one call, used by the pact recorder", "line": 117}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs"],
+      "used_by": ["server/atlas-server/src/main.rs", "server/atlas-server/tests/contract_pact.rs", "server/atlas-cli/src/load.rs"],
+      "concepts": ["struct", "Arc", "Result", "?-operator", "anyhow", "error-handling", "PathBuf"],
+      "tests": "No dedicated tests/load.rs file; its two functions are exercised end-to-end by every test that calls tests/contract_pact.rs::app() (which calls load_from_data_dir directly) and by the real binary at every startup."
+    },
+    {
+      "path": "server/atlas-server/src/app.rs",
+      "lines": 194,
+      "role": "Router construction: maps every URL to its handler, wires shared state, layers CORS and the SPA fallback",
+      "l1": "This file is the server's own map: it lists every web address the app understands (like `/api/verse/{vref}` or `/api/chapter/{cref}`) and says which piece of code answers each one. It also decides what happens when the address doesn't match any API route — instead of a plain error page, it serves the actual website files, so a browser bookmark to a specific page (like `/world`) still works.",
+      "l2": "`AppState { data: Arc<AtlasData>, graph: Arc<GraphService>, sources: Arc<SourcesDocument> }` is a `#[derive(Clone)]` `struct` holding everything a handler might need. Each field gets an `impl FromRef<AppState> for Arc<T>` — this is `axum`'s way of letting a handler declare `State<Arc<GraphService>>` in its function signature and have axum automatically pull just that one field out of the combined `AppState`, without every handler needing to know about the other fields. `build_with_sources` constructs the `Router` with `.route(path, get(handler_fn))` for every endpoint, then (if a `static_dir` was given) attaches a fallback that serves the published website's files, rewriting a \"file not found\" 404 into a 200 so client-side page routes like `/world` don't look like errors to tools that check status codes. `CorsLayer::permissive()` is applied last, deliberately, so it wraps the static-file fallback too.",
+      "l3": "22 routes registered on one `api` sub-router built with `.with_state(state)`, then optionally wrapped with a `ServeDir::new(dir).not_found_service(ServeFile::new(index))` fallback (tower-http's documented single-page-app idiom) before `.layer(CorsLayer::permissive())`. The doc comment calls out a real fixed bug: `Router::layer` only wraps whatever exists on the router at call time, and `fallback_service` replaces the fallback with a brand-new `Route` that bypasses any layer applied earlier — so CORS must be layered *after* the fallback is attached, not before, or every SPA-served response would silently lack CORS headers while `/api/*` had them; `tests/api.rs::static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes` pins this ordering. `GraphService` is held concretely (not `Arc<dyn GraphQuery>`) because `GraphStore`'s associated-type shape (`type Snapshot: GraphSnapshot`) is not `dyn`-safe — the actual query surface every handler uses is still entirely the `GraphQuery` trait, opened via `graph.snapshot()`. `build(...)` is the pre-existing signature every non-sources test calls, delegating to `build_with_sources` with an empty `SourcesDocument::default()`.",
+      "key_items": [
+        {"name": "AppState", "kind": "struct", "what": "The three Arc-wrapped pieces of shared server state, Clone + FromRef", "line": 52},
+        {"name": "build_with_sources", "kind": "fn", "what": "Registers all 22 routes, wires state, attaches optional SPA fallback + CORS", "line": 124},
+        {"name": "build", "kind": "fn", "what": "Back-compat wrapper: build_with_sources with an empty SourcesDocument", "line": 120}
+      ],
+      "depends_on": ["server/atlas-server/src/handlers.rs", "server/atlas-server/src/graph_handlers.rs", "server/atlas-server/src/contract.rs"],
+      "used_by": ["server/atlas-server/src/main.rs", "server/atlas-server/src/load.rs", "server/atlas-server/tests/api.rs", "server/atlas-server/tests/graph_api.rs", "server/atlas-server/tests/sources_api.rs", "server/atlas-server/tests/contract_api.rs", "server/atlas-server/tests/aqc_cucumber.rs", "server/atlas-server/tests/contract_pact.rs", "server/atlas-server/src/bins/export_aqc_examples.rs"],
+      "concepts": ["struct", "derive", "Arc", "trait", "axum", "module", "Clone-Copy"],
+      "tests": "tests/api.rs::static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes proves the CORS/fallback ordering; every other HTTP test in api.rs/graph_api.rs/contract_api.rs/sources_api.rs exercises this router indirectly via build/build_with_sources."
+    },
+    {
+      "path": "server/atlas-server/src/handlers.rs",
+      "lines": 2019,
+      "role": "The bulk of the HTTP API: one handler function plus wire DTOs per endpoint",
+      "l1": "This is the biggest file in the server, and it's where most of the actual work happens: for each thing a browser can ask for — a Bible chapter, a single verse with everything attached to it, an event's details, a place's history, a catechism item, cross references — there is one function here that fetches the answer and shapes it into the exact JSON the client expects. It also carries the project's policy on tricky edge cases, like \"what happens if someone asks for a chapter number that doesn't exist\" (answer: an honest empty list, not an error) versus \"what happens if someone asks for a verse that plain doesn't exist\" (answer: a real 404).",
+      "l2": "Every handler has the shape `pub async fn name(State(x): State<Arc<T>>, ...) -> Result<Json<Out>, ApiError>` — `axum`'s `extractor` pattern: `State<T>` pulls shared app state, `Path<String>` pulls a URL segment, `Query<HashMap<String,String>>` pulls query-string parameters. Dozens of `#[derive(Serialize)]` `struct`s (like `VerseDetailOut`, `EventDetailOut`, `ChapterOut`) are the actual JSON shapes; `serde`'s `#[serde(skip_serializing_if = \"Option::is_none\")]` attribute is used everywhere to omit a field from the JSON entirely (rather than sending `null`) when there's genuinely nothing to say — the file's own convention is \"never a silent blank and never a fabricated label.\" A recurring pattern is \"provenance\" fields: nearly every DTO carries a `String` or `Vec<String>` naming which real-world source (KJV, openbible.info, a hand-curated note) a piece of data came from, resolved via `snap.node(id).map(|n| n.provenance)` and failing loud (`ApiError::internal`) rather than defaulting if that attribution is ever missing. Two closely related sibling functions, `chapter` and `verse`, both read verse text through the SAME low-level `window::render` call the generic `/api/text` endpoint uses, so all three surfaces can never disagree about what a verse says.",
+      "l3": "Notable handlers: `scene_time`/`scene_scripture` (time/scripture-window map scenes via `atlas_core::scene::compose_*`), `chapter` (handlers.rs:473, re-implemented over `GraphService::chapter_span` + `window::window`/`render`, proven byte-identical to the pre-migration lookup by `tests/graph_equivalence.rs`), `kretzmann_chapter` (handlers.rs:622, replaces a 176-request-per-chapter client fan-out with one server-side walk of `commented-on-by` edges), `verse` (handlers.rs:1006, assembles `VerseDetailOut` — text, events via the inverse `Attests` edge, cross-refs via `graph.cross_refs_by_from`, catechism citations, red-letter spans, and four separate provenance fields), `narrative_event_positions` (handlers.rs:1258, walks `Succession` edges tagged with `EdgeMeta::Narrative` via the private helper `drain_edges`, which pages through a whole edge frontier rather than one page), `event` (handlers.rs:1558) and `place` (handlers.rs:1968, the file's last handler, resolving `PlaceDetailOut` including a window-resolved historical name and an optional Easton's/Kretzmann `description`). `drain_edges` (handlers.rs:1370) is the one private helper reused by three handlers to fully page an edge frontier via `GraphQuery::edges`'s cursor. `CatechismRefOut`/`CrossRefOut::provenance` doc comments (handlers.rs:720-806) carry an extensive, self-correcting discussion of \"section-level vs per-row\" attribution granularity — a real design constraint (the underlying companion index doesn't carry per-row provenance) stated plainly after two earlier, wrong comments claimed otherwise, fixed across two review rounds. `ruling-3-policy` (referenced throughout) is the house rule for when an out-of-canon query is a 200-with-empty-result vs a 404/400.",
+      "key_items": [
+        {"name": "chapter", "kind": "fn", "what": "GET /api/chapter/{cref} — a whole chapter's verses, places, headings, xref counts", "line": 473},
+        {"name": "verse", "kind": "fn", "what": "GET /api/verse/{vref} — one verse's full detail card with provenance", "line": 1006},
+        {"name": "kretzmann_chapter", "kind": "fn", "what": "GET /api/kretzmann/chapter/{cref} — chapter-scoped commentary items", "line": 622},
+        {"name": "narrative_event_positions", "kind": "fn", "what": "GET /api/narrative/event/{id} — narrative + global timeline adjacency for an event", "line": 1258},
+        {"name": "event", "kind": "fn", "what": "GET /api/event/{id} — an event's full detail card", "line": 1558},
+        {"name": "place", "kind": "fn", "what": "GET /api/place/{id} — a place's events, history, description", "line": 1968},
+        {"name": "polities", "kind": "fn", "what": "GET /api/polities?from=&to= — every polity era intersecting a time window", "line": 244},
+        {"name": "VerseDetailOut", "kind": "struct", "what": "Wire shape for GET /api/verse/{vref}: text, events, cross_refs, catechism, 4 provenance fields", "line": 815},
+        {"name": "EventDetailOut", "kind": "struct", "what": "Wire shape for GET /api/event/{id}: places, witnesses, analogues, mentioned_in, provenance", "line": 1442},
+        {"name": "drain_edges", "kind": "fn", "what": "Private helper: pages through an entire edge frontier of one kind at one position", "line": 1370},
+        {"name": "ApiError", "kind": "struct", "what": "(used, not defined here) the one error type every handler returns", "line": 1}
+      ],
+      "depends_on": ["server/atlas-server/src/error.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-server/src/graph_handlers.rs"],
+      "used_by": ["server/atlas-server/src/app.rs", "server/atlas-server/benches/queries.rs", "server/atlas-server/src/graph_handlers.rs"],
+      "concepts": ["axum", "async-await", "serde", "struct", "derive", "Option", "Result", "?-operator", "match", "HashMap", "Arc", "error-handling", "trait"],
+      "tests": "The dominant test file is tests/api.rs (demo fixture, in-process oneshot calls) and tests/graph_api.rs (real committed graph); tests/graph_equivalence.rs proves the chapter handler's swap onto the graph is byte-identical; tests/scene_byte_identity.rs pins scene_time/scene_scripture output hashes; tests/perf_smoke.rs times chapter/xrefs/text-window paths.",
+      "gotchas": [
+        "An out-of-canon scripture ref/chapter/time-window is a 200 with an empty result (ruling-3-policy); a syntactically malformed one is a 400 bad_ref/bad_window — these are easy to conflate.",
+        "provenance fields on CrossRefOut/CatechismRefOut are section-level, duplicated onto every element — not real per-row attribution, despite looking like it; the doc comments explain why per-row isn't available."
+      ]
+    },
+    {
+      "path": "server/atlas-server/src/graph_handlers.rs",
+      "lines": 478,
+      "role": "The three generic, kind-agnostic graph endpoints: node card, node edges, text window",
+      "l1": "Where handlers.rs has one bespoke function per specific feature (a verse, a place), this file has just three functions that work uniformly across EVERY kind of thing in the graph — any node, any relationship, any stretch of readable text. `GET /api/node/{id}` gives you a summary card for literally any node id; `GET /api/node/{id}/edges` walks any relationship from any node, one page at a time; `GET /api/text` reads a window of consecutive text (Bible verses, or paragraphs of Luther's Small Catechism) starting from a given reference. Together they're the general-purpose \"explore anything\" surface the other, more specific endpoints are built on top of.",
+      "l2": "`node_card` (`GET /api/node/{id}`) decodes the wire id via `graph_wire::decode_node_id`, fetches the node with `snap.node(&node_id)`, and returns its label, provenance, and a summary of how many edges of each kind it has (`snap.edge_summary`). `node_edges` (`GET /api/node/{id}/edges?kind=&cursor=&limit=`) parses the `kind` string back into a strongly-typed `EdgeKind` via `graph_wire::parse_edge_kind`, then calls `snap.edges(position, &EdgeQuery { kind, cursor, limit })` — this is `GraphQuery`'s own cursor-based pagination primitive, capped between 1 and 200 entries per page (`.clamp(1, MAX_EDGE_LIMIT)`). `text_window` (`GET /api/text?ref=&n=&dir=&scope=&corpus=`) supports two corpora (`bible`, the default, and `concord`, the Book of Concord) and reads a window of text units via `window::window`/`window::render`, walking either `Onward` or `Backward` from a starting position — both are variants of a Rust `enum` called `WindowDir`. An HTTP `ETag`/`If-None-Match` check lets a client skip re-downloading text it already has, since the whole graph is immutable for the server's lifetime.",
+      "l3": "`node_description` (graph_handlers.rs:98) is a small, deliberately-relocated helper (moved here from `atlas_graph::legacy` in a documented layering cleanup) matching on `NodePayload::{Place,Person,PeopleGroup,CommentaryItem}` to surface an optional Easton's/Kretzmann prose `description` — reused by both `node_card` and `handlers::place`. `node_edges` filters out any `PeopleGroup`-kind neighbor before returning it (graph_handlers.rs:234) because `graph_wire::decode_node_id` carries no `PeopleGroup` arm yet — a documented, disclosed, one-line-revertable serving-boundary projection (PG-1a), not a graph-level omission (the underlying `snap.edges` call is unfiltered). `parse_ref`/`parse_concord_ref` are the two ref grammars `text_window` accepts; `dir=backward` combined with `scope=chapter` is explicitly rejected (`ApiError::bad_dir`) as a parameter combination with no honest meaning, rather than silently misapplied — the doc comment for `text_window` (graph_handlers.rs:306) walks through a real historical bug this rejection replaces (a chapter-scoped backward window used to silently serve the PRECEDING chapter's tail). `DEFAULT_EDGE_LIMIT = 20`, `MAX_EDGE_LIMIT = 200` are the pagination constants.",
+      "key_items": [
+        {"name": "node_card", "kind": "fn", "what": "GET /api/node/{id} — id/kind/label/provenance/edge_summary/version for any node", "line": 123},
+        {"name": "node_edges", "kind": "fn", "what": "GET /api/node/{id}/edges — one cursor-paginated page of one edge kind", "line": 198},
+        {"name": "text_window", "kind": "fn", "what": "GET /api/text — a window of {ref,text} units over the bible or concord corpus", "line": 348},
+        {"name": "node_description", "kind": "fn", "what": "Private: Easton's/Kretzmann prose lookup shared by node_card and handlers::place", "line": 98},
+        {"name": "NodeCardOut", "kind": "struct", "what": "Wire shape for /api/node/{id}", "line": 57},
+        {"name": "EdgePageOut", "kind": "struct", "what": "Wire shape for one page of /api/node/{id}/edges", "line": 182},
+        {"name": "TextWindowOut", "kind": "struct", "what": "Wire shape for /api/text: units + next cursor + version", "line": 265}
+      ],
+      "depends_on": ["server/atlas-server/src/error.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-server/src/handlers.rs"],
+      "used_by": ["server/atlas-server/src/app.rs", "server/atlas-server/benches/queries.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/edges.rs"],
+      "concepts": ["axum", "async-await", "trait", "enum", "match", "Option", "Result", "?-operator", "HashMap", "serde"],
+      "tests": "tests/graph_api.rs is the primary coverage (node_card_returns_id_kind_label_edge_summary_and_version, node_edges_pagination_pages_are_windows_over_the_total, text_window_scope_chapter_rejects_dir_backward_but_accepts_dir_onward, text_window_concord_* cases, bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id); tests/perf_smoke.rs times text_window/chapter_window paths."
+    },
+    {
+      "path": "server/atlas-server/src/graph_wire.rs",
+      "lines": 292,
+      "role": "The id/edge-kind encoding layer between the graph's internal ids and human-readable wire strings",
+      "l1": "The graph keeps track of things using its own internal id format, but a web address or a JSON field needs a readable string like `\"Event:ab_ur\"` or `\"text-unit:JHN.3.16\"`. This file is the translator in both directions: given an internal id, produce the readable string a client should see; given a readable string a client sent back, resolve it to the internal id. It also translates relationship names — a caller says `\"cites\"` or `\"located-at\"`, and this file turns that into the internal, strongly-typed representation the graph actually understands.",
+      "l2": "`encode_node_id(id: &AnyNodeId) -> String` `match`es on the node's `kind` (an `enum`): a `TextUnit` becomes `\"text-unit:JHN.3.16\"` (via `atlas_graph::kjv_adapter`) or a Book-of-Concord citation string; every other kind falls through to a generic `\"{Kind:?}:{raw}\"` format (using Rust's `Debug-Display` `{:?}` formatting on the `enum` variant). `decode_node_id(s: &str) -> Option<AnyNodeId>` is the inverse, `match`ing on the string's `\"kind:\"` prefix — returning `Option::None` (not panicking) for anything unrecognized, so a bad id from a client becomes an honest 400, never a crash. `parse_edge_kind(label: &str) -> Option<EdgeKind>` is described as a \"total inverse\" of a relation's own `.label()` method, built by looping over `RelationId::ALL`/`SymRelationId::ALL` — an array `const`ant graph-types declares — rather than a hand-written table, so a newly added relation is automatically parseable here with zero code change.",
+      "l3": "The module doc comment frames the whole file as \"wire-identity conversions... kept entirely at this DTO layer\" — graph-types' own `AnyNodeId`/`EdgeKind` are untouched; this is purely a presentation-layer bijection. Each node kind this graph has ever grown (`Event`, `Narrative`, `Anchor`, `Place`, `Era`, `Polity`, `CatechismItem`, `Person`, `Translation`, `CommentaryItem`, `Container`) got exactly one new `match` arm added to `decode_node_id` in its own historical batch, because `encode_node_id`'s generic fallback already produced the matching wire string for free — the file's own test `event_narrative_anchor_place_ids_round_trips_through_the_wire_form` (graph_wire.rs:235) proves every one of those 13+ kind/id pairs round-trips exactly. `describe_node`/`describe_position` (graph_wire.rs:187, 220) produce a human label for any `Position` (node or edge) by falling back to graph-types' own `card()` view assembly rather than re-deriving a label match locally. This file is the SAME grammar `atlas-cli` reuses directly (`use atlas_server::graph_wire::{decode_node_id, describe_node, ...}`) rather than reimplementing — the concrete mechanism behind the \"one source of truth for id spelling\" design rule stated in atlas-cli's Cargo.toml.",
+      "key_items": [
+        {"name": "encode_node_id", "kind": "fn", "what": "AnyNodeId -> human wire string, e.g. \"Event:ab_ur\"", "line": 46},
+        {"name": "decode_node_id", "kind": "fn", "what": "Wire string -> AnyNodeId, None (never panics) on anything unrecognized", "line": 73},
+        {"name": "parse_edge_kind", "kind": "fn", "what": "Edge-kind label -> EdgeKind, total over the relation manifest", "line": 163},
+        {"name": "describe_node", "kind": "fn", "what": "A node id -> (label, kind-string) for display", "line": 187},
+        {"name": "describe_position", "kind": "fn", "what": "A Position (node or edge) -> (id, kind, label) for display", "line": 220}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-server/src/graph_handlers.rs", "server/atlas-server/src/handlers.rs", "server/atlas-server/src/aqc_export.rs", "server/atlas-server/src/bins/export_aqc_examples.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/edges.rs", "server/atlas-cli/src/commands/find.rs", "server/atlas-cli/src/commands/verse.rs", "server/atlas-cli/src/commands/kinds.rs"],
+      "concepts": ["enum", "match", "Option", "trait", "String-vs-str", "Debug-Display", "unit-test"],
+      "tests": "graph_wire.rs's own #[cfg(test)] module (4 tests): event_narrative_anchor_place_ids_round_trips_through_the_wire_form, decode_node_id_rejects_an_empty_raw_id, text_unit_id_round_trips_through_the_wire_form, edge_kind_labels_round_trip_for_every_relation."
+    },
+    {
+      "path": "server/atlas-server/src/contract.rs",
+      "lines": 48,
+      "role": "GET /api/contract — advertises the server's supported AQC (Atlas Query Contract) version range",
+      "l1": "This is the smallest useful endpoint in the whole server: it just answers \"which version of the query contract do you speak?\" so the client can check at startup and refuse to run (loudly, on purpose) rather than silently misbehave if the two sides ever get out of sync.",
+      "l2": "Two `pub const &str` values, `MIN_SUPPORTED_VERSION` and `MAX_SUPPORTED_VERSION`, both currently `\"0.1.0\"` since only one contract version has ever shipped. `ContractOut` is a two-field `#[derive(Serialize)]` `struct`; `contract()` is an `async fn` handler with no arguments that just returns it wrapped in `Json`.",
+      "l3": "The doc comment frames this as \"the sole exception\" to Batch AQC-1 otherwise being pure snapshot/no-behavior-change work — every other AQC-1 deliverable was additive documentation/tooling, but this one new route is real, new server behavior. The constants are deliberately hand-maintained (not derived from the `VERSION` file in `contracts/atlas-query-contract/`) — a release-process discipline the comment likens to any other \"generated from one source\" pairing elsewhere in the repo, with `tests/aqc_corpus_generation.rs` separately cross-checking that this file's constants, the `VERSION` file, and `aqc.schema.json`'s own version field all agree.",
+      "key_items": [
+        {"name": "MIN_SUPPORTED_VERSION", "kind": "const", "what": "The pinned minimum AQC version this server supports", "line": 25},
+        {"name": "MAX_SUPPORTED_VERSION", "kind": "const", "what": "The pinned maximum AQC version this server supports", "line": 26},
+        {"name": "contract", "kind": "fn", "what": "GET /api/contract handler", "line": 34}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-server/src/app.rs", "server/atlas-server/tests/contract_api.rs", "server/atlas-server/tests/aqc_corpus_generation.rs"],
+      "concepts": ["const-static", "derive", "serde", "axum", "async-await"],
+      "tests": "Its own #[cfg(test)] module (advertises_the_pinned_aqc_version_range) plus tests/contract_api.rs's two HTTP-level tests (api_contract_advertises_the_pinned_aqc_version_range, api_contract_carries_no_other_fields)."
+    },
+    {
+      "path": "server/atlas-server/src/error.rs",
+      "lines": 106,
+      "role": "ApiError — the one error type every handler returns, rendered as {\"error\":{\"code\",\"message\"}}",
+      "l1": "Every question this server can fail to answer fails the same way: a matching HTTP status code and a small JSON object naming what went wrong and why. This file is where that one shape is defined, along with a labeled constructor for each kind of failure — a bad reference, something not found, a bad request parameter, or an internal problem — so every part of the server reports errors consistently instead of each handler inventing its own error format.",
+      "l2": "`ApiError { status: StatusCode, code: &'static str, message: String }` is one plain `struct`, not an `enum` of error variants — a deliberate simplicity choice. Named constructor functions (`bad_window`, `bad_ref`, `not_found`, `bad_kind`, `bad_dir`, `bad_corpus`, `internal`) each fix a status code and a fixed `code` string, so the same failure always looks the same on the wire. `impl IntoResponse for ApiError` is the `trait` `axum` calls automatically whenever a handler's `Result<_, ApiError>` is `Err` — this is why a handler can just `return Err(ApiError::not_found(\"verse\"))` and axum handles turning that into an actual HTTP response.",
+      "l3": "The module doc comment states a controller ruling explicitly: axum's own default extractor-rejection body must never reach the client, so every handler deliberately uses lenient extractors (`Query<HashMap<String,String>>` rather than a strongly-typed `Query<T>`, plain `Path<String>`) that cannot themselves fail to deserialize, converting every \"missing/unparseable/out of shape\" case into one of these typed errors instead. `ApiError::internal` (error.rs:85) is the newest constructor, added for exactly one class of failure the server-side fail-loud law creates: a node whose text rendered successfully but which carries no provenance string to attribute it to — a 500 naming the id, deliberately distinct from `not_found` (\"the resource DOES exist; this project's own data about it is incomplete, which is our bug, not the caller's\").",
+      "key_items": [
+        {"name": "ApiError", "kind": "struct", "what": "The one error type: status + code + message", "line": 18},
+        {"name": "ApiError::bad_ref", "kind": "fn", "what": "400 for a structurally malformed scripture ref/id", "line": 38},
+        {"name": "ApiError::not_found", "kind": "fn", "what": "404 for a syntactically valid id naming no real resource", "line": 44},
+        {"name": "ApiError::internal", "kind": "fn", "what": "500 for a server-side data-completeness invariant violation", "line": 85},
+        {"name": "IntoResponse for ApiError", "kind": "impl", "what": "Renders ApiError as {status, JSON error body} for axum", "line": 101}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-server/src/handlers.rs", "server/atlas-server/src/graph_handlers.rs"],
+      "concepts": ["struct", "trait", "derive", "serde", "Debug-Display", "error-handling"],
+      "tests": "No dedicated tests/error.rs; exercised extensively and indirectly through every *_bad_ref/*_not_found/*_400 assertion in tests/api.rs and tests/graph_api.rs."
+    },
+    {
+      "path": "server/atlas-server/src/aqc_export.rs",
+      "lines": 181,
+      "role": "Pure (no I/O) generation logic for the AQC contract's Gherkin feature files and fixture list",
+      "l1": "The project's automated contract tests are written in a plain-English-like format (Gherkin), and rather than someone hand-typing every example in those files, this file generates them from a fixed list of real ids in the real graph. Keeping the actual file-writing separate from this generation logic means a second, standing test can call the exact same generation functions and check that the committed files still match — so nobody can hand-edit the generated files and have that drift go unnoticed.",
+      "l2": "Three `pub const` arrays are the actual data: `SEEDS` (one real node id per kind the graph carries, e.g. `(\"Event\", \"Event:ab_ur\")`), `FOCUS_IDENTITY_EXTRA` (one extra round-trip case), and `FIXTURES` (a list of `(name, url)` pairs for HTTP responses to capture, including deliberately bad requests like a malformed id, to prove error paths too). `path_encode` percent-encodes the one wire character (`/`) that would otherwise collide with URL routing. `focus_query_feature()`/`exploration_roundtrip_feature()` are plain functions returning `String`s of Gherkin text, built with Rust's `format!` macro — no template engine, just string formatting.",
+      "l3": "The doc comment explains the extraction: this pure logic used to live only in `src/bins/export_aqc_examples.rs`; it was factored out in \"fix round 1 (Q-6)\" specifically so `tests/aqc_corpus_generation.rs` can call `focus_query_feature()`/`exploration_roundtrip_feature()` directly and byte-compare their output against the committed `.feature` files, catching drift without needing to run the binary or touch the real graph. Every `SEEDS` id is documented as independently verified live against the real graph by the exporter binary at generation time (never invented) and deliberately excludes the KJV translation (`brainfuel_layers.rs::no_kjv_translation_node_is_authored_this_batch` proves KJV is the canonical layer itself, not a Translation node). `examples_table` right-pads a Gherkin `Examples:` table by computing the widest kind/id string first — a small, self-contained column-alignment routine.",
+      "key_items": [
+        {"name": "SEEDS", "kind": "const", "what": "One real (kind, wire-id) pair per node kind the graph materializes", "line": 27},
+        {"name": "FIXTURES", "kind": "const", "what": "Named (fixture-name, request-url) pairs to capture as committed pact fixtures", "line": 63},
+        {"name": "focus_query_feature", "kind": "fn", "what": "Generates the FocusQuery .feature file text", "line": 113},
+        {"name": "exploration_roundtrip_feature", "kind": "fn", "what": "Generates the ExplorationRoundTrip .feature file text", "line": 150},
+        {"name": "path_encode", "kind": "fn", "what": "Percent-encodes '/' in a wire id for use in a URL path segment", "line": 98}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-server/src/bins/export_aqc_examples.rs", "server/atlas-server/tests/aqc_corpus_generation.rs"],
+      "concepts": ["const-static", "module", "String-vs-str"],
+      "tests": "tests/aqc_corpus_generation.rs::regenerated_features_match_the_committed_files byte-compares this module's output against the committed .feature files; every_seed_and_fixture_name_has_a_committed_file_and_vice_versa cross-checks SEEDS/FOCUS_IDENTITY_EXTRA/FIXTURES against the committed fixtures directory."
+    },
+    {
+      "path": "server/atlas-server/src/bins/export_aqc_examples.rs",
+      "lines": 122,
+      "role": "The second binary: builds the real graph, verifies every seed id, writes .feature files and fixture JSON to disk",
+      "l1": "This is a small standalone tool (run by hand, not part of normal server startup) that regenerates the project's contract-test example files. It builds the real graph from scratch, double-checks that every example id it's about to use actually still exists (so a renamed or deleted record fails loudly here rather than shipping a broken example), and then writes out both the Gherkin feature files and a set of captured real HTTP responses other test suites read as fixtures.",
+      "l2": "`#[tokio::main] async fn main() -> anyhow::Result<()>` compiles the graph via `atlas_etl::compile::compile` and `GraphService::build`, then loops over `aqc_export::SEEDS`, asserting each seed id both round-trips (`decode_node_id` then `encode_node_id` gives back the same string) and resolves against the real graph (`snap.node(&decoded)`) — using `panic!` deliberately on failure, since this is a maintenance tool where \"fail loud immediately\" is exactly right. `capture(app, uri)` makes one in-process HTTP request via `tower::ServiceExt::oneshot` (no real network socket) and returns `{\"status\": ..., \"body\": ...}` as a `serde_json::Value`. The final loop writes one JSON fixture file per seed and per `FIXTURES` entry, plus an `index.json` mapping every wire id used to its fixture name.",
+      "l3": "Located deliberately outside `src/bin/` — the repo's own root `.gitignore` has a broad `**/bin/` rule intended for the Blazor client's .NET build output, so this source lives at `src/bins/export_aqc_examples.rs` and is registered explicitly via the `[[bin]]` table in `Cargo.toml`, the same disclosed workaround `atlas-graph`'s `compile_graph.rs` and `atlas-etl`'s `gen_sources.rs` use. `identity_index` (a `BTreeMap<String,String>`) is keyed by the REQUEST id, never the response's own echoed id — this distinction matters because it's what lets a consuming test's round-trip proof genuinely fail if the bijection ever breaks, rather than trivially passing by comparing a value to itself. Run via `cargo run -p atlas-server --bin export_aqc_examples` from `server/`.",
+      "key_items": [
+        {"name": "main", "kind": "fn", "what": "Builds the real graph, verifies seeds, writes feature files + fixtures + index.json", "line": 53},
+        {"name": "capture", "kind": "fn", "what": "One in-process HTTP capture via tower::ServiceExt::oneshot", "line": 45}
+      ],
+      "depends_on": ["server/atlas-server/src/aqc_export.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-server/src/app.rs"],
+      "used_by": [],
+      "concepts": ["async-await", "tokio", "anyhow", "BTreeMap", "panic-unwrap-expect", "Command-process"],
+      "tests": "Not itself under test (it's a maintenance binary); its output is what tests/aqc_corpus_generation.rs checks for drift, and what tests/aqc_cucumber.rs's scenarios ultimately run against."
+    },
+    {
+      "path": "server/atlas-server/tests/api.rs",
+      "lines": 1278,
+      "role": "HTTP-level tests against a synthetic demo_fixture(), covering nearly every non-generic endpoint",
+      "l1": "This is the biggest test file for the server's specific (non-generic) features, and it deliberately uses small, made-up test data instead of the real Bible text — so tests run fast and every input/output can be hand-verified. It checks each endpoint's happy path (the normal, expected case) and its error cases (bad input, missing data), for things like the time-window scene, verses, chapters, places, events, polities (kingdoms with borders), catechism items, and cross references.",
+      "l2": "`app()` builds a full `axum::Router` from `atlas_core::data::demo_fixture()` (a small, hand-authored dataset) via `atlas_server::app::build`, paired with a graph built from that SAME fixture's own canon/verses/eras (`graph_fixture_for`) — the file's own doc comment stresses this avoids two independently-authored fixtures silently drifting apart. Every test is `#[tokio::test] async fn ...`, using `tower::ServiceExt::oneshot` to send one request through the router in-process (no real network socket bound) and a small `call(app, uri)` helper to get back `(StatusCode, serde_json::Value)`.",
+      "l3": "Notable tests: `scene_time_query_extraction_never_leaks_axum_rejection_body` (proves the lenient-extractor design ruling holds), `static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes` (the CORS/fallback-ordering regression guard for app.rs), `polities_intersection_ordering_and_color_key_stability` and `polities_transition_and_fall_conditional_presence_on_the_wire` (a dedicated `app_with_test_polities()` fixture with a hand-built `square_ring()` geometry), `event_endpoint_omits_when_for_general_kind_passages` / `general_kind_event_places_never_resolve_a_spurious_period_name` (the general-vs-event kind distinction). `xrefs_tsv_from` is a helper that renders `data.cross_refs` back into openbible.info's own raw TSV format so the fixture graph's cites edges never diverge from `AtlasData.cross_refs`.",
+      "key_items": [
+        {"name": "app", "kind": "fn", "what": "Builds a full test Router from demo_fixture() + its own derived graph", "line": 100},
+        {"name": "graph_fixture_for", "kind": "fn", "what": "Derives a GraphService from an AtlasData's own canon/verses/eras/xrefs", "line": 50},
+        {"name": "call", "kind": "fn", "what": "Sends one oneshot request, returns (StatusCode, Value)", "line": 109}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "async-await", "tokio", "axum", "serde", "HashMap"],
+      "tests": "This file IS a test file — 27 #[tokio::test] functions covering scene, verse, chapter, place, event, narrative-position, polities, xrefs, catechism, landmarks, land-mask, and static-dir-fallback endpoints."
+    },
+    {
+      "path": "server/atlas-server/tests/graph_api.rs",
+      "lines": 1343,
+      "role": "HTTP-level tests over the REAL compiled graph, covering the generic endpoints and every node kind",
+      "l1": "This is the counterpart to api.rs, but instead of small made-up data it runs against the actual, real, full Bible Explorer graph — the same one the live server uses. It's the largest test file in the whole project and its job is to prove the generic \"look up anything\" endpoints genuinely work for every real kind of thing in the graph: verses, events, places, people, eras, kingdoms, commentary items, translations, and more.",
+      "l2": "`real_atlas_data()` compiles the actual `data/raw`/`data/curated` sources once (`OnceLock`, so all ~45 tests in this file share one real compile rather than repeating expensive work), and `real_app()`-style helpers build the router from it. Tests are grouped by what they prove: text windows (bible and Concord), node cards for each of ~10 different node kinds, edge pagination, the \"bijection\" property (a forward `cites` edge and its inverse `cited-by` counterpart always carry the identical edge id), and — the largest cluster — provenance: that every attribution field the wire serves is genuinely non-blank and that a bare-array endpoint response can still carry a \"?\" attribution per element.",
+      "l3": "Selected tests: `bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id` (graph_api.rs:673) proves the M-A acceptance requirement over John 3:16's real 178 cross-references; `peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generic_edges_page` / `peoplegroup_node_id_cannot_be_fetched_directly_yet` document the disclosed PG-1a filtering gap directly at the HTTP layer; `no_provenance_field_the_wire_serves_is_ever_blank` (graph_api.rs:1130) and `every_provenance_id_the_wire_serves_resolves_to_a_registry_source` (graph_api.rs:1285) are sweeping, whole-of-wire assertions rather than single-endpoint checks; `chapter_container_card_and_frontiers_are_served_by_the_generic_endpoints` / `book_container_card_is_served_and_a_verse_reaches_its_chapter_back` cover the NODE-1 batch's book/chapter Container nodes through the same generic `/api/node` machinery every other kind uses.",
+      "key_items": [
+        {"name": "real_atlas_data", "kind": "fn", "what": "Compiles the real committed data/raw + data/curated once, cached", "line": 29},
+        {"name": "the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_question_mark_too", "kind": "test", "what": "Proves per-element provenance duplication on bare-array endpoints", "line": 1235},
+        {"name": "every_provenance_id_the_wire_serves_resolves_to_a_registry_source", "kind": "test", "what": "Whole-of-wire sweep: every served provenance id resolves against sources.json", "line": 1285}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs", "server/atlas-server/src/graph_wire.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "async-await", "OnceLock", "axum", "serde", "HashMap"],
+      "tests": "This file IS the test file — roughly 45 #[tokio::test] functions, the largest single coverage surface for graph_handlers.rs and handlers.rs together over real data."
+    },
+    {
+      "path": "server/atlas-server/tests/graph_equivalence.rs",
+      "lines": 144,
+      "role": "Proves the old per-verse-lookup chapter logic and the new graph-window logic agree, for all 1,189 real chapters",
+      "l1": "When the chapter endpoint was rewritten to read verse text from the new graph instead of the old lookup table, this test is the proof that nothing actually changed for a reader: it independently re-implements BOTH the old way and the new way of gathering a chapter's verses, runs both over every single real chapter in the whole Bible, and checks they produce byte-identical text every time.",
+      "l2": "`old_chapter_texts` is a small local function reproducing the pre-migration logic verbatim (look up `\"{book}.{chapter}.{verse}\"` in a `HashMap`, skipping any verse not found) — deliberately NOT calling into `atlas_server::handlers` itself, so this test doesn't just check the current code against itself. `new_chapter_texts` calls the actual current primitives (`GraphService::chapter_span` + `window::window`/`render`) the live handler uses. The main test loops over every book and chapter in the real compiled canon, comparing the two `Vec<String>` results and collecting any mismatches into a list rather than failing at the first one, so a failure reports every affected chapter at once.",
+      "l3": "`real_restored_verses` applies `atlas_etl::brainfuel::restore_kjv_case` to the \"old\" side's verses before comparing — a KJV-CASE-batch nuance documented in-line: the new graph path threads case-restoration through automatically via `GraphService::build`'s brainfuel wiring, but `AtlasData.verses` (the pre-migration field this test's \"old\" side reads) deliberately does not, so the old side must be case-restored the same way here or the comparison would be comparing two differently-cased texts and calling that a bug. `every_chapter_in_canon_matches_between_the_old_lookup_and_the_new_window_query` asserts `chapters_checked == 1_189` (a hard-coded sanity constant: \"the real KJV canon has exactly 1,189 chapters\") in addition to the equivalence itself. `john_3_16_text_matches_between_old_and_new_paths` is a secondary, human-checkable spot check guarding against a bug that preserves verse COUNT but corrupts verse TEXT in a way the `Vec<String>` equality might theoretically miss.",
+      "key_items": [
+        {"name": "every_chapter_in_canon_matches_between_the_old_lookup_and_the_new_window_query", "kind": "test", "what": "Compares old vs new chapter-text logic over all 1,189 real chapters", "line": 95},
+        {"name": "john_3_16_text_matches_between_old_and_new_paths", "kind": "test", "what": "Byte-level spot check pinning JHN.3.16's exact wording on both paths", "line": 134},
+        {"name": "old_chapter_texts", "kind": "fn", "what": "Reproduces the pre-migration per-verse lookup logic verbatim", "line": 74},
+        {"name": "new_chapter_texts", "kind": "fn", "what": "The current GraphService::chapter_span + window::window/render path", "line": 84}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "OnceLock", "Vec"],
+      "tests": "This file IS the equivalence test itself — the acceptance-set proof named in handlers::chapter's own doc comment."
+    },
+    {
+      "path": "server/atlas-server/tests/graph_conformance.rs",
+      "lines": 205,
+      "role": "Proves the server's in-memory graph store answers every question exactly like the raw built model, over real KJV text",
+      "l1": "The graph engine defines a strict promise (a trait/interface) about how it will answer questions, and this test is the proof that atlas-server's actual storage keeps that promise for real Bible text — not just that the code compiles against the interface. It runs the check twice: once on a small, real four-chapter slice (the Book of Ruth) for speed, and once, more slowly, on the entire real 31,102-verse Bible plus every event, place, and relationship the graph carries.",
+      "l2": "`assert_answers_match(&snapshot, &model)` is the actual conformance law (owned by graph-types, called here, not modified) — it compares every node/edge/reading-window answer the candidate (a published, opened `MemStore` snapshot, the exact kind of handle the real server holds) gives against the model (the raw, freshly-built `Graph`), panicking with a precisely named divergence at the first mismatch. The Ruth-slice test slices the real `data/raw/kjv.json` down to one book via `serde_json::Value` manipulation rather than hand-typing test data, so every byte compared is real KJV text, just fewer verses of it.",
+      "l3": "The module doc comment discloses a real, measured performance finding: `Graph::derive`/`MemSnapshot::derive` used to resolve an id via a linear scan over every node, making the full 31,102-node conformance check cost an estimated ~1 billion pid computations (two direct attempts, one debug and one --release, each ran past a 5-minute budget with no result) — this is why the file keeps BOTH a small, fast Ruth-slice test and a full-scale test, rather than only the full one. `the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly` reports this concern was resolved by an owner-side fix (`Graph`'s own `pid_index: BTreeMap<Pid, AnyNodeId>` making `derive` an O(log n) lookup) and times the check itself against a disclosed, measurement-derived 60-second ceiling (`CONFORMANCE_CEILING`), printing the exact wall time and full corpus stats (`31,102 text units`, `450+ dated events`, etc.) via `eprintln!` regardless of pass/fail.",
+      "key_items": [
+        {"name": "the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly", "kind": "test", "what": "Fast conformance proof over a real 85-verse Ruth slice", "line": 78},
+        {"name": "the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly", "kind": "test", "what": "Slow, full-scale conformance proof over the entire real graph, with a 60s ceiling", "line": 139},
+        {"name": "real_kjv_slice", "kind": "fn", "what": "Slices real kjv.json down to named books via serde_json::Value", "line": 61}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "HashSet", "PathBuf", "trait"],
+      "tests": "This file IS the conformance test — the direct proof behind design doc §9a's \"the fidelity and property laws run against the port and therefore certify any backend.\""
+    },
+    {
+      "path": "server/atlas-server/tests/contract_api.rs",
+      "lines": 40,
+      "role": "HTTP-level test for GET /api/contract",
+      "l1": "This small file checks that the version-advertisement endpoint actually works over a real HTTP-style request: it asks the server what contract version it speaks and checks the answer is exactly right and carries nothing extra.",
+      "l2": "Two `#[tokio::test]` functions build a router from `atlas_core::data::demo_fixture()` (this endpoint needs no real graph data, since it's static) and send one request via `tower::ServiceExt::oneshot`. `api_contract_carries_no_other_fields` specifically asserts the response object's key set is exactly `[\"max_version\", \"min_version\"]` — a structural check, not just a value check.",
+      "l3": "Mirrors `tests/api.rs`'s own oneshot idiom exactly, but scoped to a single endpoint. `app()` builds the minimal fixture graph via `GraphService::from_canon_and_verses` since `/api/contract` never touches `data`/`graph` at all.",
+      "key_items": [
+        {"name": "api_contract_advertises_the_pinned_aqc_version_range", "kind": "test", "what": "Checks min_version/max_version equal 0.1.0", "line": 22},
+        {"name": "api_contract_carries_no_other_fields", "kind": "test", "what": "Checks the response object has exactly two keys", "line": 32}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "async-await", "axum"],
+      "tests": "This file IS the HTTP-level test for contract.rs."
+    },
+    {
+      "path": "server/atlas-server/tests/sources_api.rs",
+      "lines": 127,
+      "role": "HTTP-level tests for GET /api/sources — the sources/attribution registry endpoint",
+      "l1": "This checks the page that lists where all the project's data actually came from (openbible.info, Theographic, etc.) — proving the server serves the real, curated list of sources and categories, not a hardcoded stand-in, and that every source and every provenance row carries the fields the Sources page needs to render honestly.",
+      "l2": "`real_sources_document()` reads and parses the actual `data/curated/sources.toml` file the same way the real `gen_sources` tool does, then the tests build a router via `atlas_server::app::build_with_sources` and check the JSON response's `categories`/`sources`/`provenances` arrays match that real document's counts and required fields exactly. `api_sources_defaults_to_empty_when_build_called_without_sources` proves the plain `app::build` (used by every other test in the crate) correctly delegates to an empty `SourcesDocument::default()` rather than silently reusing some other data.",
+      "l3": "`get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_against` is the most structurally interesting test: it asserts the join between `sources` and `provenances` actually HOLDS on the wire (every provenance row's `source` field names an id that really exists in the SAME response's `sources` array) — because the client resolves this join entirely client-side against one already-fetched document, a dangling reference here would silently render as \"Unrecognized source\" in the UI with no server-side error at all.",
+      "key_items": [
+        {"name": "get_api_sources_returns_every_real_curated_source_and_category", "kind": "test", "what": "Real sources.toml content matches the served JSON shape and counts", "line": 45},
+        {"name": "get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_against", "kind": "test", "what": "Proves the sources<->provenances join holds on the wire itself", "line": 92},
+        {"name": "real_sources_document", "kind": "fn", "what": "Parses the real data/curated/sources.toml the same way gen_sources does", "line": 28}
+      ],
+      "depends_on": ["server/atlas-server/src/app.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "async-await", "axum", "HashSet"],
+      "tests": "This file IS the HTTP-level test suite for the /api/sources endpoint (3 tests)."
+    },
+    {
+      "path": "server/atlas-server/tests/brainfuel_layers.rs",
+      "lines": 173,
+      "role": "Proves non-KJV translation layers (Vulgate, Masoretic, etc.) exist in the graph but never leak into the KJV-only wire",
+      "l1": "The graph secretly holds several other Bible translations (Latin, Hebrew, Greek, Finnish, Swedish) attached to each verse for future use, but today's reader should only ever see the King James Version text. This file proves both halves of that promise at once: the other translations really are there if you go looking through the generic node endpoint, and the normal verse/chapter reading endpoints genuinely still show only the KJV, byte for byte, unchanged.",
+      "l2": "Direct, no-HTTP tests read a TextUnit node's `renderings` map straight off the graph (`NodePayload::TextUnit { renderings, .. }`) and check each of the six ingested editions' exact text for Genesis 1:1 and John 1:1 — including which editions correctly do NOT apply (Hebrew Masoretic shouldn't appear on a New Testament verse; Greek Textus Receptus shouldn't appear on an Old Testament one). HTTP-level tests then hit `/api/verse/GEN.1.1` and `/api/text?ref=JHN.1.1` and assert the response object carries no `renderings` key at all, plus a separate test that each of the six Translation nodes really is reachable through the generic `/api/node/{id}` endpoint.",
+      "l3": "`no_kjv_translation_node_is_authored_this_batch` is a deliberate negative test: `GET /api/node/Translation:kjv` must be 404, because the KJV is modeled as the canonical rendering layer itself, never as its own separate Translation-kind node — a disclosed scoping decision this test pins so a future change can't accidentally introduce one. `renderings_of` is a small local helper matching on `NodePayload::TextUnit` and panicking on any other payload kind, since this file's whole premise depends on the node actually being a TextUnit.",
+      "key_items": [
+        {"name": "genesis_1_1_carries_every_ot_applicable_edition_on_the_real_graph", "kind": "test", "what": "Checks all 6 OT-applicable translation layers for GEN.1.1", "line": 85},
+        {"name": "every_ingested_translation_node_is_reachable_through_the_existing_generic_node_endpoint", "kind": "test", "what": "HTTP: each of 6 Translation nodes resolves via /api/node/{id}", "line": 145},
+        {"name": "no_kjv_translation_node_is_authored_this_batch", "kind": "test", "what": "Negative test: Translation:kjv must 404", "line": 165}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "async-await", "HashMap", "match", "enum"],
+      "tests": "This file IS the test suite proving CORP-1a's translation layers are additive-only over the real graph and real HTTP surface."
+    },
+    {
+      "path": "server/atlas-server/tests/perf_smoke.rs",
+      "lines": 169,
+      "role": "Fast, CI-wired performance gate: fails loud on a gross (3x+) regression in named hot paths",
+      "l1": "This is a speed check that runs every time the whole test suite runs. It doesn't try to catch tiny slowdowns — it's deliberately loose, tripping only if a real hot path (like the timeline slider's underlying query) becomes at least three times slower than its known baseline. That looseness is intentional: a check that's too sensitive to normal machine noise gets disabled by frustrated developers, and a disabled check catches nothing.",
+      "l2": "`median_of(iters, f)` runs a closure several times and returns the middle (median) duration, which resists one slow warmup iteration or a stray OS hiccup better than an average would. Six `#[test]` functions each time one specific, named operation (`compose_time_scene` over the full atlas span, `compose_scripture_scene` for John 3, `aggregate_span_xrefs`, a text window, a chapter window) directly — as plain Rust function calls, never over real HTTP — and assert the median stays under a fixed millisecond threshold.",
+      "l3": "The module doc comment explains why these are measured as direct function calls rather than real HTTP round trips: an investigation found this development machine's own \"localhost\" DNS resolution adds an unrelated ~200ms constant to several command-line HTTP tools, which would have made a real-HTTP smoke test flake for reasons having nothing to do with this codebase. Every threshold here is stated as \"at least 3x this batch's own measured baseline... rounded up to a clean number, not shaved to the theoretical 3x floor\" — e.g. `scene_time_full_span_completes_within_smoke_threshold`'s 75ms gate against a measured ~8ms real baseline. `real_data_and_graph()` caches the real committed `data/compiled/graph.bin` load once via `OnceLock` so all six tests share it.",
+      "key_items": [
+        {"name": "scene_time_full_span_completes_within_smoke_threshold", "kind": "test", "what": "compose_time_scene over the whole atlas span must stay under 75ms", "line": 84},
+        {"name": "scene_scripture_chapter_completes_within_smoke_threshold", "kind": "test", "what": "compose_scripture_scene(JHN.3) must stay under 50ms", "line": 104},
+        {"name": "median_of", "kind": "fn", "what": "Runs a closure N times, returns the median duration", "line": 63}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "Arc", "closure"],
+      "tests": "This file IS the smoke-tier performance test suite; a deeper, hand-run counterpart lives in benches/queries.rs."
+    },
+    {
+      "path": "server/atlas-server/tests/scene_byte_identity.rs",
+      "lines": 249,
+      "role": "Byte-identity regression harness: pins hashes of 25 real scene responses so a silent behavior change fails loud",
+      "l1": "Two of the most-used endpoints — the time-window scene and the scripture-window scene — get their exact output fingerprinted here for 25 real, representative requests. If a future change ever silently alters what one of those requests returns, this test fails immediately by hash mismatch, without the project needing to store the (large) actual responses.",
+      "l2": "Each test case computes a real scene response, hashes it with FNV-1a (a small, fixed, dependency-free hashing algorithm chosen specifically because Rust's built-in `DefaultHasher` is NOT guaranteed stable across compiler versions — using it here would eventually cause false-positive failures unrelated to any real change), and compares against a hard-coded expected hash. The file frames this explicitly as \"commit the harness, not the captured fixtures\" — a single response can be ~205KB, so hashing avoids committing several megabytes of JSON for no real benefit.",
+      "l3": "The module doc comment is itself a running ledger (much like server/Cargo.toml's) recording exactly which batches legitimately moved these hashes and why (a data batch merging duplicate events, a container-node batch, etc.) versus batches that made zero changes here and are expected to see the hashes hold steady as proof of \"zero behavior change.\" This is not a security property — a scene response is public data — the value being bought is a cheap, algorithmically-stable fingerprint, nothing more.",
+      "key_items": [],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "Hash"],
+      "tests": "This file IS the byte-identity regression harness for compose_time_scene/compose_scripture_scene."
+    },
+    {
+      "path": "server/atlas-server/tests/aqc_cucumber.rs",
+      "lines": 494,
+      "role": "The Rust half of the Gherkin-driven Atlas Query Contract test harness",
+      "l1": "This runs a whole separate suite of tests written in plain-English-like sentences (Gherkin, e.g. \"Given a node of kind X... When I run FocusQuery... Then the response is valid\") stored in `.feature` files elsewhere in the repo, and translates each sentence into a real HTTP request against the real, live graph. It's a second, independent way of proving the server's public contract holds, phrased in a form that doesn't require reading Rust to understand.",
+      "l2": "Uses the `cucumber` crate (a third-party Gherkin test-runner library) with `#[given]`/`#[when]`/`#[then]` attribute macros binding phrases in the `.feature` files to small Rust functions — deliberately kept \"thin glue, not contract knowledge\" per the module doc comment: the actual meaning of the contract lives in the schema and feature files, not hardcoded here. `harness = false` in Cargo.toml means this file's own `main`-equivalent (`World::run`) drives execution, rather than Rust's normal per-`#[test]`-function runner. `app()` builds the router from the real compiled graph exactly once via `OnceLock`.",
+      "l3": "`schema()` parses `contracts/atlas-query-contract/aqc.schema.json` once and reads required-field lists from it directly, replacing a prior hand-copied `required_fields()` match that three separate places (this file, the schema, and a C# equivalent) each carried independently with nothing enforcing they stayed in sync — a fix-round-1 controller ruling: \"the schema IS the contract knowledge; this function only reads it.\" `path_encode` duplicates `graph_wire`'s own percent-encoding for the same `/`-in-id collision reason.",
+      "key_items": [
+        {"name": "app", "kind": "fn", "what": "Builds the real committed graph's Router once, cached", "line": 37},
+        {"name": "schema", "kind": "fn", "what": "Parses aqc.schema.json once, used as the source of required-field truth", "line": 77}
+      ],
+      "depends_on": ["server/atlas-server/src/graph_wire.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "attribute", "macro_rules", "axum", "async-await"],
+      "tests": "This file IS the Gherkin step-definition harness; it counts as one test section (harness=false) rather than N individual #[test] functions."
+    },
+    {
+      "path": "server/atlas-server/tests/aqc_corpus_generation.rs",
+      "lines": 208,
+      "role": "Standing drift checks: the committed .feature/fixture files must match what the generator would produce right now",
+      "l1": "This makes sure nobody can hand-edit the generated contract-test files and have it go unnoticed, and that every generated example actually has its corresponding saved response file (and vice versa) — plus a small check that the version number appears identically in five different places across the project.",
+      "l2": "`regenerated_features_match_the_committed_files` reads the two committed `.feature` files off disk and compares them byte-for-byte against calling `atlas_server::aqc_export::focus_query_feature()`/`exploration_roundtrip_feature()` fresh — a pure, fast check needing no live server or real graph. `every_seed_and_fixture_name_has_a_committed_file_and_vice_versa` cross-checks the three `aqc_export` constant lists against the actual files present in the fixtures directory, in both directions, using `BTreeSet`s to compute the difference.",
+      "l3": "The doc comment names the exact real gap this test would have caught automatically: during BIBEX-1's own development, a `focus-traversal-target.json` fixture went briefly unindexed and had to be caught and fixed by hand — this standing test formalizes that exact class of check going forward. A separate, smaller check (not shown in the excerpt but referenced in the header) cross-verifies the `VERSION` file, `aqc.schema.json`'s own version field, and `contract::{MIN,MAX}_SUPPORTED_VERSION` all agree — \"the five-hand-kept-'0.1.0'-copies cross-check.\"",
+      "key_items": [
+        {"name": "regenerated_features_match_the_committed_files", "kind": "test", "what": "Byte-compares committed .feature files against fresh generation", "line": 34},
+        {"name": "every_seed_and_fixture_name_has_a_committed_file_and_vice_versa", "kind": "test", "what": "Cross-checks SEEDS/FIXTURES against the fixtures directory, both directions", "line": 53}
+      ],
+      "depends_on": ["server/atlas-server/src/aqc_export.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "BTreeSet", "PathBuf"],
+      "tests": "This file IS the drift-detection test suite for the AQC generator."
+    },
+    {
+      "path": "server/atlas-server/tests/contract_pact.rs",
+      "lines": 715,
+      "role": "The provider half of the consumer-driven contract gate: regenerates a recorded pact from the live graph and diffs it byte-for-byte",
+      "l1": "There's a rule in this project that whoever WRITES a piece of consuming code gets to write down exactly what they expect the server to answer, and the server has to keep proving it still gives those answers. Running a real server on a real network port to check this every time would be slow and fragile, so instead this file re-records \"the real server's real answers\" into a file and compares it byte-for-byte against what's already committed — and separately, another tool (not in this crate) replays the consumer's actual expectations against that recorded file.",
+      "l2": "`app()` builds the real router through `atlas_server::load` — the SAME one-line call the real production binary uses — described as deliberately trivial \"and that is the fix,\" since two earlier versions of this recorder each hand-copied `main.rs`'s startup logic and silently drifted from it. `record_http`/`build_pact` capture real in-process HTTP responses (again via `tower::ServiceExt::oneshot`, no socket) for every request key the Gherkin feature files actually ask for — read directly out of the `.feature` files (`request_key`, `feature_files`) rather than a hand-maintained list, so a new `When I GET /api/something-new` line automatically requires (and, if missing, loudly fails for) a corresponding pact entry.",
+      "l3": "`the_recorded_pact_still_matches_the_live_graph` is the core test: it rebuilds the pact fresh and asserts byte-for-byte equality against the committed `contracts/pacts/http.json`, using `first_differing_key` to name exactly which key diverged on failure rather than dumping a raw diff. `the_assembled_app_is_not_hollow_on_any_derived_index` is a second, orthogonal check catching the specific historical failure mode the module doc comment describes (a recorder assembling state differently and silently serving empty derived indexes). `graph_vocabulary`/`the_published_vocabulary_is_drawn_from_the_macros` cross-checks the relation vocabulary (`RelationId`/`SymRelationId`) the recorder publishes against what the `relations!` macro itself declares, so a new relation can't be added to the graph without this pact noticing.",
+      "key_items": [
+        {"name": "app", "kind": "fn", "what": "Builds the real committed graph's Router via atlas_server::load (the one true path)", "line": 80},
+        {"name": "the_recorded_pact_still_matches_the_live_graph", "kind": "test", "what": "The core provider-drift proof: fresh pact vs committed pact, byte-for-byte", "line": 468},
+        {"name": "request_key", "kind": "fn", "what": "Extracts the request key a Gherkin step line names", "line": 219},
+        {"name": "the_assembled_app_is_not_hollow_on_any_derived_index", "kind": "test", "what": "Catches the specific historical bug class of silently-empty derived indexes", "line": 615}
+      ],
+      "depends_on": ["server/atlas-server/src/load.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "PathBuf", "BTreeMap", "axum", "async-await"],
+      "tests": "This file IS the provider-side contract-pact test suite; server/atlas-cli/tests/contract_pact_cli.rs is its CLI-transport sibling, reusing the request-key list this file publishes."
+    },
+    {
+      "path": "server/atlas-server/benches/queries.rs",
+      "lines": 219,
+      "role": "Deep, hand-run criterion benchmark suite over the real committed graph (not part of cargo test)",
+      "l1": "This is the detailed, slow-to-run performance instrument a developer reaches for when actually investigating a specific slow query — as opposed to perf_smoke.rs's fast, loose, always-on gate. It covers nearly every kind of query the server serves (scenes, verse/chapter windows, text windows, cross references, node cards, catechism lookups, and the full startup artifact load) and produces a full statistical distribution, not just a pass/fail.",
+      "l2": "Built on the `criterion` crate rather than Rust's own built-in bench harness, `#[[bench]] harness = false` in Cargo.toml hands control entirely to `criterion_main!`. `load_real` mirrors `main.rs`'s own default startup sequence field-for-field, loading the real `data/compiled/graph.bin` the way the actual server would. Run by hand via `cargo bench` — never as part of `cargo test`, so it never slows down or flakes a normal test run.",
+      "l3": "The doc comment explains a deliberate scope exclusion: full-graph `assert_answers_match` \"admission\" is NOT duplicated here, since it's already a committed, passing correctness law elsewhere (`atlas-graph/tests/artifact_conformance.rs`) that takes 15-40 seconds and would cost criterion's own minimum-10-sample statistical harness 2.5-6.5+ minutes to re-measure a number that test already prints — evaluated and explicitly rejected as the wrong tool for a compile-time-only correctness gate. The one exception it DOES bench directly is the real, runtime-hot artifact LOAD path (`artifact_load`) since that's genuinely on the owner's \"make it fast\" critical path at every server startup, unlike the one-time compile-time check.",
+      "key_items": [
+        {"name": "load_real", "kind": "fn", "what": "Field-for-field mirror of main.rs's default artifact-load startup sequence", "line": 60}
+      ],
+      "depends_on": ["server/atlas-server/src/handlers.rs", "server/atlas-server/src/graph_handlers.rs"],
+      "used_by": [],
+      "concepts": ["bench", "criterion", "tokio", "Arc", "HashMap", "PathBuf"],
+      "tests": "This IS the deep benchmark suite; run with `cargo bench` (or `cargo bench -p atlas-server`), never counted in cargo test's canonical total per server/Cargo.toml's own STANDING COUNTING PROCEDURE."
+    },
+    {
+      "path": "server/atlas-cli/src/main.rs",
+      "lines": 287,
+      "role": "bibex's entry point: hand-parses argv, dispatches to a subcommand in either plain-text or --json mode",
+      "l1": "This is the program that runs when you type `bibex` at a terminal. It figures out which command you meant (verse, chapter, node, edges, find, kinds, tutorial, or help), whether you asked for machine-readable JSON output instead of normal text, loads the graph data, and prints the answer — or, if something's wrong, prints a clear one-line error and exits with a specific, documented exit code.",
+      "l2": "`main()` first checks for a bare `--json` flag anywhere in the arguments (a simple presence check that can't itself fail) before any other parsing runs, then strips it out, so a JSON request that fails for an unrelated reason still gets rendered as JSON, never a plain-text error by accident. `run(args)`/`run_json(args)` are near-mirror `match` statements over the subcommand name, each calling into the matching `commands::` module; the JSON variant additionally treats `tutorial`/`help`/a bare invocation as `bad_usage`, since a JSON caller has no use for prose output. `extract_data_dir` pulls the `--data-dir` flag out of the argument list wherever it appears (a global flag, not tied to any one position).",
+      "l3": "`one_positional` (main.rs:229) is the shared validator for every single-argument subcommand (`verse`/`chapter`/`node`), specifically checking for a leading `--` on the extra argument first so an unrecognized flag is always named explicitly in the error rather than falling into a generic \"too many arguments\" message — a fix-round-1 consistency fix (review T-3) matching `edges.rs`'s own diagnostic style. `parse_edges_args` (main.rs:250) hand-parses `edges`'s own three optional flags (`--kind`, `--limit`, `--cursor`) plus one required positional id, returning a tuple the two `edges::run`/`run_json` functions both accept — the file's own comment flags this as `#[allow(clippy::type_complexity)]`, a deliberate, disclosed lint suppression rather than introducing a new named struct just to silence it.",
+      "key_items": [
+        {"name": "main", "kind": "fn", "what": "Entry point: detects --json, dispatches to run/run_json, prints result or error", "line": 17},
+        {"name": "run", "kind": "fn", "what": "Plain-text subcommand dispatch", "line": 103},
+        {"name": "run_json", "kind": "fn", "what": "--json subcommand dispatch", "line": 158},
+        {"name": "extract_data_dir", "kind": "fn", "what": "Pulls --data-dir out of args wherever it appears", "line": 55},
+        {"name": "one_positional", "kind": "fn", "what": "Shared exactly-one-argument validator for verse/chapter/node", "line": 229},
+        {"name": "parse_edges_args", "kind": "fn", "what": "Hand-parses edges' <id> plus --kind/--limit/--cursor flags", "line": 250}
+      ],
+      "depends_on": ["server/atlas-cli/src/commands/mod.rs", "server/atlas-cli/src/error.rs", "server/atlas-cli/src/load.rs"],
+      "used_by": [],
+      "concepts": ["match", "Option", "Result", "?-operator", "String-vs-str", "PathBuf", "Vec", "closure"],
+      "tests": "No unit tests in this file itself; exercised end-to-end (as the real compiled binary) by every test in tests/cli.rs."
+    },
+    {
+      "path": "server/atlas-cli/src/load.rs",
+      "lines": 65,
+      "role": "Startup: loads graph.bin + compiled JSON, the exact same artifact-load path atlas-server's default startup uses",
+      "l1": "This loads the compiled graph and its supporting data files into memory before any command can run — the identical process the web server uses when it starts up normally, just without ever opening a network port. If this fails (a missing file, a corrupt artifact), every command reports it the same documented way.",
+      "l2": "`Loaded { graph: Arc<GraphService>, data: Arc<AtlasData> }` bundles the two pieces of state every command needs. `load(data_dir)` calls `GraphService::from_artifact` to read `graph.bin`, then `AtlasData::load` for the remaining compiled JSON files, then reconstructs a few retiring fields directly from the already-loaded graph and calls `.finish()` — line-for-line the same sequence `atlas-server/src/main.rs`'s default branch performs. Every failure on this path is wrapped as the one `CliError::data_load_failed` variant, since nothing downstream can distinguish \"file missing\" from \"file corrupt\" anyway.",
+      "l3": "`default_data_dir()` returns `\"../data/compiled\"`, the same relative layout convention `atlas-server/src/main.rs` documents for its own default. This crate never has a `--build-from-raw` equivalent — the module doc comment states plainly that rebuilding from raw sources is \"a server-only dev fallback, out of scope for a query CLI,\" so this file is strictly simpler than its atlas-server counterpart.",
+      "key_items": [
+        {"name": "Loaded", "kind": "struct", "what": "The two pieces of loaded state: graph and data, both Arc-wrapped", "line": 21},
+        {"name": "load", "kind": "fn", "what": "Loads graph.bin + compiled JSON, overlays retiring fields, finish()es indexes", "line": 33},
+        {"name": "default_data_dir", "kind": "fn", "what": "Returns the default ../data/compiled path", "line": 63}
+      ],
+      "depends_on": ["server/atlas-cli/src/error.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs"],
+      "concepts": ["struct", "Arc", "Result", "?-operator", "PathBuf", "error-handling"],
+      "tests": "No dedicated unit test; exercised at every real invocation in tests/cli.rs (data_load_failed_when_graph_bin_is_missing specifically targets this file's failure path)."
+    },
+    {
+      "path": "server/atlas-cli/src/error.rs",
+      "lines": 109,
+      "role": "CliError — the one error type every command returns, with a fixed 5-class taxonomy and matching exit codes",
+      "l1": "Whenever bibex can't answer a question, it fails in one of exactly five well-defined ways (a typo in the command, a badly-formed reference, a real-looking id that doesn't exist, missing data files, or a real question with zero results) — and each of those five ways always prints the same shaped message and exits with the same fixed numeric code, so a script calling bibex can reliably tell what went wrong just from the exit code.",
+      "l2": "`CliError` is a Rust `enum` with five variants (`BadUsage`, `BadRef`, `NotFound`, `DataLoadFailed`, `EmptyResult`), each carrying the same three `String` fields (`what`, `why`, `do_`). `code()` and `exit_code()` are `match` statements mapping each variant to its fixed label and integer. `impl fmt::Display for CliError` renders the plain-text form (`\"atlas: error (<code>): <what> -- <why> -- <what to do>\"`); `to_json()` renders the exact same three fields as a `{\"error\":{\"code\",\"message\",\"hint\"}}` JSON object for `--json` mode — one source of truth, two renderings, so the two output modes can never disagree about what an error means.",
+      "l3": "`exit_code()` (error.rs:60) fixes: `EmptyResult` = 1, `BadRef` = 2, `NotFound` = 3, `BadUsage` = 4, `DataLoadFailed` = 5 — a documented, stable contract (`CONTRACT.md`'s own error taxonomy table) that `tests/cli.rs` asserts directly for every class. `parts()` (error.rs:70) is a private helper using Rust's `|`-pattern (matching several enum variants in one arm, since all five share the same field shape) to extract `(what, why, do_)` once, reused by both `Display` and `to_json` so the two renderings can never drift on which text goes where.",
+      "key_items": [
+        {"name": "CliError", "kind": "enum", "what": "The 5-class error taxonomy: BadUsage/BadRef/NotFound/DataLoadFailed/EmptyResult", "line": 12},
+        {"name": "CliError::exit_code", "kind": "fn", "what": "Fixed nonzero exit code per class", "line": 60},
+        {"name": "CliError::to_json", "kind": "fn", "what": "Renders the same fields as {error:{code,message,hint}} for --json mode", "line": 90},
+        {"name": "Display for CliError", "kind": "impl", "what": "Renders the plain-text 'atlas: error (code): what -- why -- do' line", "line": 102}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/load.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/edges.rs", "server/atlas-cli/src/commands/find.rs", "server/atlas-cli/src/commands/chapter.rs", "server/atlas-cli/src/commands/verse.rs"],
+      "concepts": ["enum", "match", "pattern-matching", "Debug-Display", "error-handling", "serde"],
+      "tests": "No dedicated unit test file; the whole taxonomy is exercised by tests/cli.rs's bad_usage_*/bad_ref_*/not_found_*/data_load_failed_*/empty_result_* tests."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/mod.rs",
+      "lines": 8,
+      "role": "Module declarations for the eight subcommand implementations",
+      "l1": "A short table of contents listing the eight files that each implement one bibex subcommand.",
+      "l2": "Eight `pub mod` lines, one per file in this directory — Rust's `module` system, letting `main.rs` reach each subcommand's `run`/`run_json` functions via `commands::verse::run(...)` etc.",
+      "l3": "Purely declarative; no logic. The order here (`chapter, edges, find, help, kinds, node, tutorial, verse`) is alphabetical and carries no runtime significance — `main.rs`'s own `match` statement determines actual dispatch order.",
+      "key_items": [],
+      "depends_on": ["server/atlas-cli/src/commands/chapter.rs", "server/atlas-cli/src/commands/edges.rs", "server/atlas-cli/src/commands/find.rs", "server/atlas-cli/src/commands/help.rs", "server/atlas-cli/src/commands/kinds.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/tutorial.rs", "server/atlas-cli/src/commands/verse.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs"],
+      "concepts": ["module", "visibility"],
+      "tests": "no dedicated tests found"
+    },
+    {
+      "path": "server/atlas-cli/src/commands/help.rs",
+      "lines": 23,
+      "role": "bibex help / bare invocation — the short command list",
+      "l1": "This is the text bibex prints when you run it with no arguments, or when you explicitly ask for `bibex help` — a short list of every command and global flag.",
+      "l2": "One function, `text() -> String`, building the help text with a series of `.push_str(...)` calls onto a mutable `String`. No parameters, no conditional logic — it's the same fixed text every time.",
+      "l3": "Deliberately identical output for a bare invocation and `bibex help` (CONTRACT.md's own stated requirement), both exiting 0. Ends by pointing to `bibex tutorial` for newcomers.",
+      "key_items": [
+        {"name": "text", "kind": "fn", "what": "Returns the fixed help/usage text", "line": 4}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["String-vs-str"],
+      "tests": "tests/cli.rs::bare_invocation_shows_short_help_and_names_the_tutorial, help_command_matches_bare_invocation."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/kinds.rs",
+      "lines": 81,
+      "role": "bibex kinds — lists every valid --kind token, drawn from the graph's own relation manifest",
+      "l1": "Since `bibex edges` needs you to specify which kind of relationship you want to walk (like \"cites\" or \"located-at\"), this command lists every single valid value you could type there — pulled directly from the graph engine's own master list, so this list can never go stale or list something that doesn't actually work.",
+      "l2": "`rows()` loops over `RelationId::ALL` (a `const` array the graph-types crate declares) building one row per forward direction and one per inverse direction of each relation, then appends every symmetric relation from `SymRelationId::ALL` — never a hand-typed, separately-maintained list. `run()`/`run_json()` render the same `rows()` data as an aligned text table or a JSON array respectively, the same \"one resolution, two renderings\" pattern the other commands use.",
+      "l3": "The doc comment draws an explicit equivalence: this listing shares graph_wire::parse_edge_kind's OWN source of truth (`RelationId::ALL`/`SymRelationId::ALL`), so it \"can never drift out of sync with what a real --kind value is actually accepted\" — and the file's own unit test `every_row_token_round_trips_through_parse_edge_kind` (kinds.rs:68) proves this directly by feeding every listed token back into `parse_edge_kind` and asserting it's accepted. Order is deliberately the manifest's own declaration order (not alphabetized) specifically to keep each relation's forward/inverse pair adjacent and legible.",
+      "key_items": [
+        {"name": "KindRow", "kind": "struct", "what": "One vocabulary row: token, relation name, direction", "line": 24},
+        {"name": "rows", "kind": "fn", "what": "Builds every valid --kind row from RelationId::ALL/SymRelationId::ALL", "line": 36},
+        {"name": "run", "kind": "fn", "what": "Plain-text aligned table rendering", "line": 48},
+        {"name": "run_json", "kind": "fn", "what": "JSON array rendering", "line": 57}
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "const-static", "Vec", "unit-test"],
+      "tests": "kinds.rs's own #[cfg(test)] module (every_row_token_round_trips_through_parse_edge_kind, rows_are_nonempty_and_cover_both_directed_and_symmetric); also tests/cli.rs::kinds_json_row_count_matches_parse_edge_kind_and_every_token_round_trips, kinds_plain_lists_the_full_vocabulary, kinds_takes_no_arguments."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/node.rs",
+      "lines": 103,
+      "role": "bibex node <id> — a node's card + edge summary, mirroring the /api/node/{id} handler",
+      "l1": "Given any id (like `Event:ab_ur` or `text-unit:GEN.1.1`), this prints that thing's basic card — what kind it is, its display label, where it came from, and a count of each kind of relationship it has to other things — the exact same information the website's own node-lookup endpoint gives, just without a network round trip.",
+      "l2": "`resolve(graph, id_raw)` does the one real piece of work: decode the id string via `graph_wire::decode_node_id`, look it up with `snap.node(...)`, get a display label via `graph_wire::describe_node`, and read the edge-kind counts via `snap.edge_summary(...)` — returning a private `ResolvedCard` struct. Both `run` (plain text) and `run_json` call this SAME `resolve` function and just render its result differently, so the two output modes can never disagree about what counts as a valid id or what the edge summary contains.",
+      "l3": "The doc comment states this file \"mirrors `atlas_server::graph_handlers::node_card` exactly (same id grammar, same GraphQuery calls), minus the HTTP wire wrapping\" — and indeed reuses `atlas_server::graph_wire::{decode_node_id, describe_node}` directly rather than reimplementing them. `ResolvedCard.edge_summary`'s own doc comment specifically calls out that each kind's label is already the exact, copy-pasteable `--kind` token `bibex edges` accepts back — a \"see it, use it\" discoverability property proven by both `kinds::tests::every_row_token_round_trips_through_parse_edge_kind` and this crate's own `node_edge_summary_kind_token_works_directly_in_edges` integration test.",
+      "key_items": [
+        {"name": "ResolvedCard", "kind": "struct", "what": "Private: one resolved node's id/kind/label/provenance/edge_summary", "line": 33},
+        {"name": "resolve", "kind": "fn", "what": "The one real lookup, shared by run and run_json", "line": 50},
+        {"name": "run", "kind": "fn", "what": "Plain-text card rendering", "line": 68},
+        {"name": "run_json", "kind": "fn", "what": "JSON card rendering, field names matching NodeCardOut/EdgeSummaryEntryOut", "line": 93}
+      ],
+      "depends_on": ["server/atlas-server/src/graph_wire.rs", "server/atlas-cli/src/error.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "Result", "?-operator", "trait", "Vec"],
+      "tests": "tests/cli.rs::node_happy_path_shows_card_and_edge_summary, node_json_happy_path_carries_real_fields, node_plain_output_is_byte_unchanged_by_the_json_addition, node_json_edge_summary_is_an_explicit_empty_array_for_a_real_zero_edge_node, plus the Container-node tests (node_resolves_a_chapter_container_with_members_and_navigation, node_resolves_a_book_container_with_its_chapters)."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/edges.rs",
+      "lines": 135,
+      "role": "bibex edges <id> --kind K [opts] — one paginated frontier page, mirroring /api/node/{id}/edges",
+      "l1": "Given a node id and a relationship kind (like \"cites\"), this walks and prints one page of the actual connections that relationship reveals — up to a limit, with a way to continue to the next page — the exact same paginated browsing the website's own generic edges endpoint offers.",
+      "l2": "`resolve(graph, args)` decodes the id, confirms the node exists, requires `--kind` (there's no honest default relationship to assume for an arbitrary node), parses it via `graph_wire::parse_edge_kind`, and calls `snap.edges(position, &EdgeQuery{kind, cursor, limit})` — the graph's own cursor-based pagination primitive, same one the server's `node_edges` handler calls. Zero matching entries is treated as a genuine error (`CliError::empty_result`), not a silently-empty success, matching the CLI's overall \"never a quiet blank\" philosophy.",
+      "l3": "Applies the identical `PeopleGroup`-kind filter atlas-server's `graph_handlers::node_edges` applies (edges.rs:80-98) and cites the exact same reasoning: since `graph_wire::decode_node_id` has no `PeopleGroup` arm yet, handing back such an id would create an unreachable dead end this command would otherwise silently produce — filtered at this one serving boundary, disclosed as \"one revert away\" once that gap closes. `DEFAULT_LIMIT = 20`, `MAX_LIMIT = 200` match the server's own constants exactly.",
+      "key_items": [
+        {"name": "EdgesArgs", "kind": "struct", "what": "Parsed arguments: id_raw, kind_raw, limit, cursor", "line": 17},
+        {"name": "resolve", "kind": "fn", "what": "The one real lookup: decode id, require+parse --kind, page edges, filter PeopleGroup", "line": 44},
+        {"name": "run", "kind": "fn", "what": "Plain-text page rendering with a 'more: continue with --cursor N' footer", "line": 111},
+        {"name": "run_json", "kind": "fn", "what": "JSON page rendering matching EdgePageOut/EdgeEntryOut/NodeRefOut", "line": 131}
+      ],
+      "depends_on": ["server/atlas-server/src/graph_wire.rs", "server/atlas-cli/src/error.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "Result", "?-operator", "trait", "Vec"],
+      "tests": "tests/cli.rs::edges_happy_path_lists_one_frontier_page, edges_json_happy_path_carries_real_fields, empty_result_when_an_edge_kind_has_zero_entries_at_a_real_id, edges_never_surfaces_an_unresolvable_peoplegroup_neighbor, edges_walks_chapter_succession_across_the_book_boundary, edges_reaches_a_chapters_verses_and_a_verse_reaches_its_chapter_back."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/find.rs",
+      "lines": 107,
+      "role": "bibex find <term> — case-insensitive name search across Place/Event/Narrative/Era/Polity/Person/CatechismItem",
+      "l1": "This lets you search by name instead of needing to already know an exact id — type part of a name (like \"jericho\") and get back every matching place, event, era, kingdom, person, or catechism item, each with its full copy-pasteable id ready to feed into `bibex node` or `bibex edges`.",
+      "l2": "`hits(graph, data, term)` lower-cases the search term and loops over six arrays of node ids the graph already tracks (`graph.place_ids`, `.event_ids`, etc. — the same companion lists the server's own listing endpoints read), calling `describe_node` on each to get a label and checking for a case-insensitive substring match, then separately scans `data.catechism` for CatechismItem matches. Results are sorted by `(kind, id)` for a stable, predictable order.",
+      "l3": "`SEARCHED_KINDS`/`EXCLUDED_KINDS` are `pub(crate) const` strings shared by three places (the zero-argument usage message, the zero-match empty-result message, and the search loop itself) specifically so they can't drift apart into three different claims about coverage. The doc comment discloses exactly why four kinds are NOT searched: PeopleGroup has no `bibex node`-resolvable id yet (the same graph_wire gap `edges.rs` works around), CommentaryItem has 50,000+ entries with no id/label enumeration surface at that scale, Translation is a fixed 6-row set with no such surface either, and TextUnit (individual verses) is covered directly by `bibex verse`/`bibex chapter` instead.",
+      "key_items": [
+        {"name": "SEARCHED_KINDS", "kind": "const", "what": "The shared string naming the 7 kinds find actually searches", "line": 30},
+        {"name": "hits", "kind": "fn", "what": "The one real search: 6 graph-tracked kinds + CatechismItem via AtlasData", "line": 34},
+        {"name": "run", "kind": "fn", "what": "Plain-text results table, or empty_result error if no matches", "line": 76},
+        {"name": "run_json", "kind": "fn", "what": "JSON array of {kind, id, label}, same empty_result error if no matches", "line": 99}
+      ],
+      "depends_on": ["server/atlas-server/src/graph_wire.rs", "server/atlas-cli/src/error.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "Vec", "closure", "Result", "?-operator"],
+      "tests": "tests/cli.rs::find_happy_path_matches_across_kinds, find_json_happy_path_carries_real_fields, find_json_widened_scope_carries_a_real_person_hit, find_json_widened_scope_carries_a_real_catechism_item_hit, empty_result_when_find_matches_nothing, find_with_no_argument_states_its_own_kind_coverage_scope, find_widened_to_person_and_the_id_is_directly_usable_in_node, find_widened_to_catechism_item, find_id_column_is_directly_usable_in_node_for_every_widened_kind."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/chapter.rs",
+      "lines": 193,
+      "role": "bibex chapter <ref> — every verse in a KJV chapter, one line each, with red-letter marks",
+      "l1": "Given a chapter reference like `GEN.1`, this prints every verse in that chapter, one per line, with any words of Christ bracketed inline — the terminal equivalent of opening that chapter in the reader.",
+      "l2": "`resolve_span(graph, ref_raw)` parses the reference and resolves it to a `(start, n)` window of positions in the graph's own reading order — failing with `bad_ref` for a malformed reference or `not_found` for a well-formed but nonexistent book/chapter. `run`/`run_json` then walk that window (`window::window` + rendering each unit) and format each verse either as a plain `\"REF  text\"` line or a JSON object.",
+      "l3": "`resolve_verse_line`/`render_verse_line` (chapter.rs:41-64) were extracted specifically to fix a real, if dormant, bug: the per-verse loop used to silently skip or blank a verse whose rendering was somehow missing, disagreeing with `verse.rs`'s own fail-loud handling of the identical condition — the real committed graph can never actually trigger this (every KJV position always has a rendering), so the fix is proven by a hand-built `#[cfg(test)]` fixture (`snapshot_with_a_textless_verse`) constructing a `Graph` with a deliberately empty `LayerMap`, rather than by an end-to-end test against real data. Concord (Book of Concord) references are deliberately rejected here, inheriting the same disclosed scope limit `graph_handlers::text_window` applies for the identical reason (a Concord article's paragraph count varies too widely for a server-derived span to mean anything consistent).",
+      "key_items": [
+        {"name": "resolve_span", "kind": "fn", "what": "Parses ref_raw, resolves to the chapter's (start,n) reading-spine window", "line": 71},
+        {"name": "render_verse_line", "kind": "fn", "what": "Fail-loud single-verse line rendering, extracted for unit testing", "line": 60},
+        {"name": "run", "kind": "fn", "what": "Plain-text: one line per verse", "line": 92},
+        {"name": "run_json", "kind": "fn", "what": "JSON array of {ref, text, words_of_christ}", "line": 112}
+      ],
+      "depends_on": ["server/atlas-cli/src/error.rs", "server/atlas-cli/src/commands/verse.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "generics", "trait-bound", "Result", "?-operator", "HashMap", "unit-test"],
+      "tests": "chapter.rs's own #[cfg(test)] module (render_verse_line_fails_loud_when_the_kjv_rendering_is_missing, render_verse_line_fails_loud_when_the_id_does_not_decode_as_a_kjv_verse, render_verse_line_succeeds_on_a_real_rendering); tests/cli.rs::chapter_happy_path_lists_every_verse, chapter_json_happy_path_carries_real_units_in_order."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/verse.rs",
+      "lines": 250,
+      "role": "bibex verse <ref> — one verse's text, red-letter marks, and every attached place/person/event/passage",
+      "l1": "This is the single-verse deep-dive command: given a reference like `GEN.1.1`, it prints that verse's text with Christ's words bracketed, then lists every place, person, event, and general passage the graph knows is connected to that exact verse — each with its own id right there in brackets, ready to look up further with `bibex node`.",
+      "l2": "`resolve_kjv` gathers the verse text (`window::render`), its red-letter spans, and its attached places/persons/events (split into `events` and `passages` by the underlying `Event::kind` field, so a real dated event and a general literary passage like a Psalm's acrostic stanza never get lumped together). `mark_red_letter(text, spans)` walks the text left-to-right once, wrapping each non-overlapping span in `[...]` brackets — a small, self-contained string-building function, separately unit tested. The function also handles the Book of Concord case (a leaner, untracked shape) via the same `decode_node_id`-based dispatch `chapter.rs`/`graph_wire.rs` establish.",
+      "l3": "`attached(kind, raw, label)` and the `Attached { id, label }` struct are the concrete mechanism behind the BIBEX-1 addendum's \"IDS EVERYWHERE\" ruling — every displayed name is always paired with its exact `graph_wire::encode_node_id`-produced id, so a user can always copy an id straight out of `bibex verse`'s output into `bibex node`. `events`/`passages` being separate fields (not one list with a flag) directly encodes the owner's PERI-1 ruling (\"NUN is not an event\") at the command layer, exactly mirroring `atlas_server::handlers::VerseEventOut.kind`'s server-side distinction. `pub(crate) fn mark_red_letter` is reused by `chapter.rs`.",
+      "key_items": [
+        {"name": "Attached", "kind": "struct", "what": "One id+label pair, used for every places/persons/events/passages entry", "line": 20},
+        {"name": "mark_red_letter", "kind": "fn", "what": "Brackets non-overlapping red-letter spans inline in a verse's text", "line": 52},
+        {"name": "resolve_kjv", "kind": "fn", "what": "Gathers text, spans, places, persons, events, and passages for one verse", "line": 88},
+        {"name": "run", "kind": "fn", "what": "Plain-text verse rendering with attached sections", "line": 124},
+        {"name": "run_json", "kind": "fn", "what": "JSON rendering, {tracked:true,...} for KJV or {tracked:false} for Concord", "line": 190}
+      ],
+      "depends_on": ["server/atlas-server/src/graph_wire.rs", "server/atlas-cli/src/error.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs", "server/atlas-cli/src/commands/chapter.rs", "server/atlas-cli/src/commands/tutorial.rs"],
+      "concepts": ["struct", "closure", "Result", "?-operator", "if-let", "String-vs-str", "unit-test"],
+      "tests": "verse.rs's own #[cfg(test)] module (mark_red_letter_brackets_a_single_span, mark_red_letter_is_identity_with_no_spans, mark_red_letter_brackets_multiple_non_overlapping_spans); tests/cli.rs::verse_happy_path_shows_text_and_attached_sections, verse_psa_119_105_shows_nun_under_passages_not_events, verse_gal_1_8_shows_astonishment_pericope_under_passages_not_events, verse_red_letter_span_is_bracketed_inline, verse_accepts_the_concord_grammar, verse_json_happy_path_carries_real_fields, verse_json_concord_shape_is_leaner_and_untracked, verse_plain_output_brackets_an_id_next_to_every_attached_name."
+    },
+    {
+      "path": "server/atlas-cli/src/commands/tutorial.rs",
+      "lines": 87,
+      "role": "bibex tutorial — a 7-step guided walkthrough that runs every other command for real",
+      "l1": "Running `bibex tutorial` prints a numbered, guided walkthrough of every command bibex offers — and unlike a normal tutorial, every example in it is a REAL, live query against the real graph, not a canned transcript typed out once and left to go stale.",
+      "l2": "`run(graph, data, data_dir_shown)` builds up one long `String` by literally calling `super::verse::run(...)`, `super::chapter::run(...)`, `super::node::run(...)`, `super::edges::run(...)`, `super::find::run(...)`, and `super::help::text()` in sequence, interleaving each real result with explanatory prose. Because it calls the actual command functions rather than a copy of their logic, a future change to any command's output automatically changes the tutorial's own output the next time it runs.",
+      "l3": "`TOTAL_STEPS: usize = 7` and `step_header(n, title)` produce the consistent `\"Step N of 7: <title>\"` headers. The doc comment notes every ref/id/kind used in the seven steps (`GEN.1.1`, `GEN.1`, `Event:ab_ur`, `located-at`, `jericho`) is a real, checked-present locus in the committed graph, verified by `tests/cli.rs::tutorial_runs_to_completion_with_seven_nonempty_steps` (R6) — so a future data change that happened to remove one of these example ids would break this test, not silently ship a broken tutorial.",
+      "key_items": [
+        {"name": "TOTAL_STEPS", "kind": "const", "what": "Fixed at 7, used by step_header for the 'Step N of 7' headers", "line": 17},
+        {"name": "run", "kind": "fn", "what": "Builds the full 7-step walkthrough by calling every other command for real", "line": 23}
+      ],
+      "depends_on": ["server/atlas-cli/src/commands/verse.rs", "server/atlas-cli/src/commands/chapter.rs", "server/atlas-cli/src/commands/node.rs", "server/atlas-cli/src/commands/edges.rs", "server/atlas-cli/src/commands/find.rs", "server/atlas-cli/src/commands/help.rs", "server/atlas-cli/src/commands/kinds.rs"],
+      "used_by": ["server/atlas-cli/src/main.rs"],
+      "concepts": ["const-static", "String-vs-str", "Result", "?-operator"],
+      "tests": "tests/cli.rs::tutorial_runs_to_completion_with_seven_nonempty_steps, json_tutorial_is_bad_usage."
+    },
+    {
+      "path": "server/atlas-cli/tests/cli.rs",
+      "lines": 755,
+      "role": "Integration tests running the real compiled bibex binary as a subprocess against the real committed graph",
+      "l1": "This is the big test file proving the actual, compiled bibex program works correctly end to end — it runs the real executable as a separate process (the same way a user would from a terminal) against the real Bible Explorer data, and checks every command's normal output, every documented error case, and the tutorial, in both plain-text and --json modes.",
+      "l2": "`run(args)`/`run_with_data_dir(args)` use `std::process::Command::new(env!(\"CARGO_BIN_EXE_bibex\"))` — a Cargo-provided environment variable pointing at the actual just-built binary — to spawn a real subprocess and capture its stdout/stderr/exit code. `run_json(args)` additionally parses stdout as JSON, failing loudly (not silently swallowing the parse error) if the output isn't valid JSON, since a `--json` happy path promises exactly one JSON value on stdout and nothing else.",
+      "l3": "Roughly 60 `#[test]` functions grouped by concern: happy paths per subcommand, every one of the 5 CONTRACT.md error-taxonomy classes with their exact exit codes, the tutorial smoke test, `--json` variants of every happy/error path, byte-for-byte \"plain output unchanged by the JSON addition\" regression guards (`node_plain_output_is_byte_unchanged_by_the_json_addition`, `edges_plain_output_is_byte_unchanged_by_the_json_addition`), and \"see it, use it\" round-trip proofs where an id found by `find` is fed directly into `node`, and a `--kind` token from `node`'s edge summary is fed directly into `edges` (`find_id_column_is_directly_usable_in_node_for_every_widened_kind`, `node_edge_summary_kind_token_is_directly_usable_in_edges`).",
+      "key_items": [
+        {"name": "run", "kind": "fn", "what": "Spawns the real compiled bibex binary as a subprocess", "line": 16},
+        {"name": "run_json", "kind": "fn", "what": "Runs bibex --json and parses stdout as JSON, fails loud on invalid JSON", "line": 39},
+        {"name": "tutorial_runs_to_completion_with_seven_nonempty_steps", "kind": "test", "what": "R6: proves every real id/ref the tutorial uses is present in the committed graph", "line": 176}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "Command-process", "PathBuf"],
+      "tests": "This file IS the end-to-end integration test suite for the whole bibex binary (~60 tests)."
+    },
+    {
+      "path": "server/atlas-cli/tests/contract_pact_cli.rs",
+      "lines": 165,
+      "role": "The CLI's own fragment of the cross-transport consumer-driven contract pact",
+      "l1": "Since bibex answers many of the same questions the web server does, this file makes sure they actually AGREE — it runs the same set of questions from the Gherkin contract files through the real bibex binary and records the answers, the CLI's own contribution to a combined pact file both transports (HTTP and CLI) are checked against together.",
+      "l2": "`cli_keys()` reads the list of bibex invocations the Gherkin corpus asks for — but crucially does NOT re-derive that list itself; it reads it from `contracts/pacts/http.json`, already published by the HTTP recorder (`atlas-server/tests/contract_pact.rs`). This avoids two independent parsers of the same Gherkin files potentially disagreeing about what a step line means — one rule lives in one place.",
+      "l3": "The module doc comment explains a genuine cross-crate constraint: `env!(\"CARGO_BIN_EXE_bibex\")` is only defined for tests belonging to the package that declares that binary (atlas-cli), so this recorder cannot live inside atlas-server's own test suite even though the two conceptually belong together — \"one recorder per crate that OWNS a transport is the smaller rule.\" A documented ordering dependency follows directly from this design: adding a new bibex step to a feature file requires re-running the HTTP recorder FIRST (to refresh `cli_keys` in `http.json`), then this one — and if forgotten, the shared contract runner fails loudly by naming the missing pact entry rather than silently passing.",
+      "key_items": [
+        {"name": "cli_keys", "kind": "fn", "what": "Reads the bibex invocation list published by the HTTP pact recorder", "line": 58},
+        {"name": "http_pact_path", "kind": "fn", "what": "Path to the shared contracts/pacts/http.json file", "line": 45},
+        {"name": "cli_pact_path", "kind": "fn", "what": "Path to this crate's own contracts/pacts/cli.json output", "line": 49}
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["integration-test", "Command-process", "PathBuf", "serde"],
+      "tests": "This file IS the CLI-transport half of the consumer-driven contract pact; server/atlas-server/tests/contract_pact.rs is its HTTP-transport sibling and the source of the request-key list this file consumes."
+    }
+  ]
+}

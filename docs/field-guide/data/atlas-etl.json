@@ -1,0 +1,648 @@
+{
+  "area": "server/atlas-etl",
+  "title": "atlas-etl — turning raw downloads into the atlas's graph",
+  "kind": "crate",
+  "language": "rust",
+  "overview": {
+    "l1": "This is the factory floor. Every raw file the project downloaded — the King James Bible as JSON, a spreadsheet of cross-references, a database of Bible places and people, Luther's Small Catechism, the entire Book of Concord, a 1921 Bible commentary, a file marking which words Jesus spoke — gets read here, cleaned up, checked for mistakes, and turned into tidy files under data/compiled/. If this crate vanished, the app would have raw text files nobody could use, and no way to catch a typo in the project's own hand-typed notes before it reached a reader. Nothing here talks to the internet — it only reads files already saved to disk and writes new ones.",
+    "l2": "atlas-etl is a library crate (`src/lib.rs` declares its modules) plus one binary (`src/main.rs`) and a small second binary (`src/bins/gen_sources.rs`). The house rule, stated in `lib.rs`'s own doc comment, is that every module except `compile.rs` is pure: `&str` in, typed data out, no filesystem or network access. That makes every parser trivially unit-testable — you hand it a string, you check the struct it returns. Each raw-data module (`kjv.rs`, `geo.rs`, `theographic.rs`, `xrefs.rs`, `people.rs`, `easton.rs`, `people_groups.rs`, `brainfuel.rs`, `concord.rs`, `kretzmann.rs`, `red_letter.rs`) targets one named external dataset. `curated.rs` parses this project's OWN hand-typed TOML files (eras, events, place histories, the catechism...). `validate.rs` is the fail-loud gate: it walks the fully-merged data and collects every problem (`Vec<String>`, an accumulator) rather than stopping at the first, so a curator fixing data sees the whole list at once. `compile.rs` is the one function that's allowed to touch disk — it orchestrates every parser and validator in order and hands back one `AtlasData` struct plus a coverage `Report`.",
+    "l3": "Workspace member depending on `atlas-core` (the shared type/canon crate) plus `serde`/`serde_json`/`toml`/`serde_yaml`/`anyhow`. `pub fn compile(raw_dir, curated_dir) -> Result<CompileOutput>` (compile.rs:71) is the single orchestration entry point three different callers use: `main.rs` (writes data/compiled/*.json + report.txt), `atlas-graph`'s `bins/compile_graph.rs`, and `atlas-server`'s `--build-from-raw` dev fallback — one code path, never three independently-drifting copies (compile.rs:1-31). M-C2 deleted five of the previously-written compiled JSON files (places/events/narratives/verses-kjv/cross-refs.json); that data now lives only on the compiled graph (`atlas-graph`), not in this crate's own output — `AtlasData` still carries it in memory for `validate::run` and the graph adapters. Determinism matters throughout: `xrefs::parse` sorts cross-refs by votes descending, `people::parse_people`/`people_groups::parse_people_groups` explicitly sort resolved verse links into canon order rather than trusting source-file order, and `polities::assign_color_keys` computes a collision-free palette assignment from the full sorted roster in one pass. Known scale/gap disclosures ride throughout the doc comments rather than being silently smoothed over (e.g. kretzmann.rs's over-excision guard, brainfuel.rs's KJV cross-check mismatch counts) — this codebase's 'scale honesty' convention. `tests/etl.rs` (2,280 lines) is the crate's main unit-level integration suite; `tests/coverage.rs`, `tests/*_real_data.rs`, and `tests/sources_validate.rs` run parsers against the REAL committed data files, not just synthetic fixtures."
+  },
+  "reading_order": [
+    "server/atlas-etl/src/lib.rs",
+    "server/atlas-etl/src/main.rs",
+    "server/atlas-etl/src/compile.rs",
+    "server/atlas-etl/src/osis.rs",
+    "server/atlas-etl/src/kjv.rs",
+    "server/atlas-etl/src/geo.rs",
+    "server/atlas-etl/src/xrefs.rs",
+    "server/atlas-etl/src/theographic.rs",
+    "server/atlas-etl/src/people.rs",
+    "server/atlas-etl/src/people_groups.rs",
+    "server/atlas-etl/src/easton.rs",
+    "server/atlas-etl/src/brainfuel.rs",
+    "server/atlas-etl/src/concord.rs",
+    "server/atlas-etl/src/kretzmann.rs",
+    "server/atlas-etl/src/red_letter.rs",
+    "server/atlas-etl/src/curated.rs",
+    "server/atlas-etl/src/catechism_map.rs",
+    "server/atlas-etl/src/polities.rs",
+    "server/atlas-etl/src/validate.rs",
+    "server/atlas-etl/src/report.rs",
+    "server/atlas-etl/src/sources.rs",
+    "server/atlas-etl/src/bins/gen_sources.rs",
+    "server/atlas-etl/Cargo.toml",
+    "server/atlas-etl/tests/etl.rs",
+    "server/atlas-etl/tests/coverage.rs",
+    "server/atlas-etl/tests/sources_validate.rs",
+    "server/atlas-etl/tests/brainfuel_real_data.rs",
+    "server/atlas-etl/tests/concord_real_data.rs",
+    "server/atlas-etl/tests/kretzmann_real_data.rs",
+    "server/atlas-etl/tests/red_letter_real_data.rs"
+  ],
+  "groups": [
+    {
+      "name": "Entry points and orchestration",
+      "paths": ["server/atlas-etl/src/lib.rs", "server/atlas-etl/src/main.rs", "server/atlas-etl/src/compile.rs", "server/atlas-etl/Cargo.toml"],
+      "note": "declares the crate's modules, then the one place that reads every raw+curated input, merges everything, validates it, and writes the compiled files."
+    },
+    {
+      "name": "Core Bible text and cross-references",
+      "paths": ["server/atlas-etl/src/osis.rs", "server/atlas-etl/src/kjv.rs", "server/atlas-etl/src/xrefs.rs"],
+      "note": "the KJV verse text itself and its shared verse-reference parsing, plus the openbible.info cross-reference table."
+    },
+    {
+      "name": "Places, events, and people (Theographic + geocoding)",
+      "paths": ["server/atlas-etl/src/geo.rs", "server/atlas-etl/src/theographic.rs", "server/atlas-etl/src/people.rs", "server/atlas-etl/src/people_groups.rs", "server/atlas-etl/src/easton.rs"],
+      "note": "one shared Airtable-style export (Theographic Bible Metadata) plus OpenBible's geocoding bundle feed the map's places, its dated events, its people, its tribes/nations, and Easton's dictionary descriptions."
+    },
+    {
+      "name": "Parallel Bible editions and commentary corpora",
+      "paths": ["server/atlas-etl/src/brainfuel.rs", "server/atlas-etl/src/concord.rs", "server/atlas-etl/src/kretzmann.rs", "server/atlas-etl/src/red_letter.rs"],
+      "note": "the crate's four big hand-rolled HTML/JSON scanners: parallel-edition verses, the Book of Concord, Kretzmann's commentary, and the words-of-Jesus markup — each the largest or near-largest file in the crate."
+    },
+    {
+      "name": "This project's own curated (hand-typed) data",
+      "paths": ["server/atlas-etl/src/curated.rs", "server/atlas-etl/src/catechism_map.rs", "server/atlas-etl/src/polities.rs"],
+      "note": "parsers for data/curated/*.toml (eras, events, place histories, the catechism, kingdoms/borders) — this project's own authored content, not a downloaded dataset."
+    },
+    {
+      "name": "Validation and reporting",
+      "paths": ["server/atlas-etl/src/validate.rs", "server/atlas-etl/src/report.rs", "server/atlas-etl/src/sources.rs", "server/atlas-etl/src/bins/gen_sources.rs"],
+      "note": "the fail-loud gate that checks the fully-merged data for mistakes, the human-readable coverage report, and the separate Sources-page/LICENSES.md consistency check."
+    },
+    {
+      "name": "Tests",
+      "paths": ["server/atlas-etl/tests/etl.rs", "server/atlas-etl/tests/coverage.rs", "server/atlas-etl/tests/sources_validate.rs", "server/atlas-etl/tests/brainfuel_real_data.rs", "server/atlas-etl/tests/concord_real_data.rs", "server/atlas-etl/tests/kretzmann_real_data.rs", "server/atlas-etl/tests/red_letter_real_data.rs"],
+      "note": "integration tests: etl.rs exercises every parser/validator against synthetic fixtures; the *_real_data.rs and coverage.rs files run the real, full, committed source files and pin exact counts."
+    }
+  ],
+  "files": [
+    {
+      "path": "server/atlas-etl/Cargo.toml",
+      "lines": 33,
+      "role": "package manifest: dependencies plus a second binary target",
+      "l1": "This is the crate's ingredient list and table of contents. It says what other code libraries this crate needs (things like 'a TOML reader' and 'a JSON reader') and it names the two runnable programs that live here: the main ETL build and a small helper that regenerates the Sources page's data file.",
+      "l2": "A standard Rust package manifest (TOML). `[dependencies]` names `atlas-core` (a workspace-local path dependency — the crate that defines the actual data types) plus `serde`/`serde_json`/`toml`/`serde_yaml`/`anyhow`, the parsing/error-handling libraries used throughout. `[[bin]]` declares a second binary, `gen_sources`, at a nonstandard path (`src/bins/gen_sources.rs`, note the plural 'bins') because this repo's `.gitignore` has a broad `**/bin/` rule meant for .NET build output that would otherwise silently exclude a real source file at Cargo's normal `src/bin/` convention. `default-run` pins a bare `cargo run -p atlas-etl` to the primary binary so existing tooling doesn't become ambiguous now that two `[[bin]]` targets exist.",
+      "l3": "`default-run = \"atlas-etl\"` avoids breaking every existing `cargo run -p atlas-etl` invocation once a second `[[bin]]` exists (comment cites this was grep-verified against dozens of call sites). The `gen_sources` binary's path workaround (`src/bins/` not `src/bin/`) mirrors an identical precedent in `atlas-graph/Cargo.toml`'s own `[[bin]]` entry for `compile_graph.rs`. `edition = \"2021\"`. No dev-dependencies section is needed since tests use only `std` fixtures plus `atlas_core`/`atlas_etl` themselves (workspace deps already in scope for integration tests under `tests/`).",
+      "key_items": [
+        { "name": "[[bin]] gen_sources", "kind": "const", "what": "declares the second binary at src/bins/gen_sources.rs, outside the gitignored src/bin/ path", "line": 14 },
+        { "name": "default-run", "kind": "const", "what": "keeps a bare `cargo run -p atlas-etl` targeting the original main.rs binary", "line": 12 }
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["Cargo-toml", "workspace"],
+      "tests": "no dedicated tests found (manifest, not code)",
+      "gotchas": ["the repo's root .gitignore has a broad **/bin/ rule, so a second binary MUST live outside src/bin/ or it silently vanishes from git"]
+    },
+    {
+      "path": "server/atlas-etl/src/lib.rs",
+      "lines": 36,
+      "role": "crate root: declares every module and states the crate's I/O discipline",
+      "l1": "This is the crate's table of contents. It lists every parser/checker file that makes up the ETL, and its comment states the one rule almost everything here follows: read only the text you're handed, produce only data, never touch a file or the network yourself. Only one file (compile.rs) is the disclosed exception.",
+      "l2": "A `pub mod` declaration list — the Rust mechanism for saying 'this crate has these sub-files, and they're part of the public API.' Each line like `pub mod kjv;` tells the compiler to look for `src/kjv.rs` and make its `pub` items reachable as `atlas_etl::kjv::...` from other crates. The module doc comment (`//!`, applying to the whole file/crate) explains WHY `compile.rs` is special: `main.rs`'s pre-existing compute phase was moved into a library function so `atlas-graph`'s compile-step binary and `atlas-server`'s dev fallback could call the exact same orchestration instead of a second, driftable copy.",
+      "l3": "18 `pub mod` declarations, alphabetically-ish grouped by theme in the file. No re-exports beyond the modules themselves — every consumer reaches functionality via `atlas_etl::module::item`. The doc comment is the crate's canonical statement of its own architecture law ('ETL does no networking'; parsers are pure) that every other module's own doc comment refers back to. Changing this file (adding/removing a module) is the only way to add a new top-level parser to the crate's public surface.",
+      "key_items": [
+        { "name": "pub mod compile", "kind": "module", "what": "the one disclosed I/O-touching exception; orchestrates every other module", "line": 20 },
+        { "name": "pub mod validate", "kind": "module", "what": "declares the fail-loud validation module", "line": 35 }
+      ],
+      "depends_on": [
+        "server/atlas-etl/src/brainfuel.rs", "server/atlas-etl/src/catechism_map.rs", "server/atlas-etl/src/compile.rs",
+        "server/atlas-etl/src/concord.rs", "server/atlas-etl/src/curated.rs", "server/atlas-etl/src/easton.rs",
+        "server/atlas-etl/src/geo.rs", "server/atlas-etl/src/kjv.rs", "server/atlas-etl/src/kretzmann.rs",
+        "server/atlas-etl/src/osis.rs", "server/atlas-etl/src/people.rs", "server/atlas-etl/src/people_groups.rs",
+        "server/atlas-etl/src/polities.rs", "server/atlas-etl/src/red_letter.rs", "server/atlas-etl/src/report.rs",
+        "server/atlas-etl/src/sources.rs", "server/atlas-etl/src/theographic.rs", "server/atlas-etl/src/validate.rs",
+        "server/atlas-etl/src/xrefs.rs"
+      ],
+      "used_by": ["server/atlas-etl/src/main.rs", "server/atlas-etl/src/bins/gen_sources.rs"],
+      "concepts": ["crate", "module", "visibility", "doc-comment"],
+      "tests": "no dedicated tests found (pure module declarations)"
+    },
+    {
+      "path": "server/atlas-etl/src/main.rs",
+      "lines": 75,
+      "role": "the primary binary: calls compile(), writes data/compiled/*.json + report.txt",
+      "l1": "This is the button you press to rebuild the atlas's data. Run it, and it reads every raw download plus every hand-typed curated file, checks everything for mistakes, and writes out the tidied files the rest of the app reads — plus a plain-text report showing how much data made it through and any problems found. This is the L1 story for 'how does the KJV text get in': this program calls compile(), which calls kjv::parse on the raw kjv.json file, and the resulting verse text ends up on the compiled AtlasData that eventually becomes the graph the reader/map serve from.",
+      "l2": "`fn main() -> Result<()>` builds three `PathBuf`s (raw/curated/compiled directories, joined from parts rather than a literal string so path separators stay consistent on Windows), calls `compile::compile(&raw_dir, &curated_dir)`, then writes each surviving field of the returned `AtlasData` to its own JSON file via a small `write_json` helper (`serde_json::to_string_pretty` + `fs::write`). The `?` operator propagates any error from `compile()` straight out of `main`, so a validation failure anywhere in the pipeline aborts the whole build with a printed error chain (`anyhow::Context` adds a human-readable trail). Five files this binary used to write (places/events/narratives/verses-kjv/cross-refs.json) were deleted at 'M-C2' — that data now lives only on the compiled graph, not as a standalone JSON file; the doc comment explains this deletion explicitly.",
+      "l3": "Uses `anyhow::{Context, Result}` for error propagation with `.with_context(|| ...)` closures that lazily format path-specific error messages. `write_json<T: serde::Serialize>(path, value)` (main.rs:72) is a small generic helper — `T: Serialize` is a trait bound restricting the function to types that know how to become JSON. Writes: canon.json, books-meta.json, chronology-anchors.json, book-narration-windows.json, polities.json, landmarks.json, place-history.json, place-names-kjv.json, land-mask.json, catechism.json, report.txt (also echoed to stdout via `print!`). `compile()`'s three extra return fields (`place_history_list`, `place_name_alias_list` alongside `data`/`report`) exist specifically so this file's own JSON writes stay in curated-file order rather than a HashMap's incidental iteration order.",
+      "key_items": [
+        { "name": "main", "kind": "fn", "what": "top-level ETL build entry point: compile, then write every surviving compiled file", "line": 27 },
+        { "name": "write_json", "kind": "fn", "what": "generic helper serializing any Serialize type to pretty JSON at a path", "line": 72 }
+      ],
+      "depends_on": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/report.rs"],
+      "used_by": [],
+      "concepts": ["Result", "?-operator", "error-handling", "anyhow", "generics", "trait-bound", "serde", "PathBuf", "Command-process"],
+      "tests": "no dedicated unit tests found; exercised indirectly by every integration test that reads data/compiled/* after a real compile"
+    },
+    {
+      "path": "server/atlas-etl/src/osis.rs",
+      "lines": 60,
+      "role": "shared helper: parses Book.Chapter.Verse OSIS-style references",
+      "l1": "Different downloaded datasets refer to Bible verses using slightly different book-name spellings (one might call a book '2Kgs', matching an older international standard called OSIS, rather than this project's own '2KI'). This tiny file is the one place that turns any of those OSIS-style references into this project's own consistent verse identifier, so every other parser in the crate can rely on one shared, tested translator instead of reinventing it.",
+      "l2": "Two public functions: `parse_verse(s: &str) -> Option<VerseId>` splits a string like `\"2Kgs.5.12\"` on `.`, resolves the book name via `atlas_core::canon::resolve_alias` (which matches by code OR OSIS abbreviation OR full name), and parses the chapter/verse numbers — returning `None` (Rust's 'maybe a value' type, used here instead of an error) on anything that doesn't fit the exact three-part shape, since callers decide for themselves whether a non-match is fatal or just a droppable row. `canonical(v: &VerseId) -> String` formats a `VerseId` back into this project's own canonical string form, e.g. `\"2KI.5.12\"`.",
+      "l3": "`parse_verse` (osis.rs:21) uses `?`-chaining through `Option` (via `.split('.').collect()`, `resolve_alias(...)?`, `.parse().ok()?`) to short-circuit on any malformed piece. Rejects chapter/verse `0` explicitly (OSIS never uses 1-based-from-zero). Used by essentially every corpus adapter in the crate (`xrefs.rs`, `geo.rs`, `theographic.rs`, `people.rs`, `people_groups.rs`) as the one shared translator between an external dataset's OSIS spelling and `atlas_core::refs::VerseId`. Unit-tested for both the happy path (2Kgs.5.12 -> 2KI.5.12) and four distinct rejection shapes (wrong segment count, unknown book, chapter 0, verse 0).",
+      "key_items": [
+        { "name": "parse_verse", "kind": "fn", "what": "parses a strict Book.Chapter.Verse OSIS ref into a VerseId, or None", "line": 21 },
+        { "name": "canonical", "kind": "fn", "what": "formats a VerseId as this project's canonical 'BOOK.CH.V' string", "line": 37 }
+      ],
+      "depends_on": [],
+      "used_by": [
+        "server/atlas-etl/src/xrefs.rs", "server/atlas-etl/src/geo.rs", "server/atlas-etl/src/theographic.rs",
+        "server/atlas-etl/src/people.rs", "server/atlas-etl/src/people_groups.rs", "server/atlas-etl/src/red_letter.rs"
+      ],
+      "concepts": ["Option", "?-operator", "pattern-matching", "unit-test"],
+      "tests": "osis.rs's own #[cfg(test)] module: resolves_osis_abbreviation_to_our_code and rejects_bad_shapes"
+    },
+    {
+      "path": "server/atlas-etl/src/kjv.rs",
+      "lines": 126,
+      "role": "parses the raw KJV JSON into the compiled Canon + verse-text map",
+      "l1": "This is where the actual King James Bible text enters the app. The raw file (data/raw/kjv.json) is one big JSON object listing every book, chapter, and verse; this file reads it and produces two things: a canon table (book names, codes, and how many verses each chapter has) and a lookup from 'GEN.1.1' to the actual verse text. Every verse card the reader ever sees traces back to this one parse. Its book names ('I Samuel', 'Revelation of John') use an old-fashioned style, so this file also normalizes them before matching against the project's own book list.",
+      "l2": "`parse(input: &str) -> Result<(Canon, HashMap<String, String>)>` deserializes the JSON via `serde`-derived `Deserialize` structs (`RawKjv`/`RawBook`/`RawChapter`/`RawVerse`), then for each book calls `normalize_book_name` to fix Roman-numeral prefixes ('I'/'II'/'III' -> '1'/'2'/'3') and strip an ' of John' suffix, then `atlas_core::canon::resolve_alias` to get a `BookId`. It builds a `HashMap<String, String>` keyed `\"CODE.CHAPTER.VERSE\"` and a `Canon` struct listing every book's chapter/verse counts, sorted into canonical book order regardless of the input file's own ordering (`books.sort_by_key`). A `bail!` (from `anyhow`) hard-errors if any book name can't be resolved even after normalization — there is no silent drop path for the base KJV text.",
+      "l3": "`normalize_book_name` (kjv.rs:54) is `pub(crate)` (visible crate-wide but not outside it) specifically because `brainfuel.rs`'s `book_code_map` reuses it verbatim for `data/books.json`'s identically-styled `kjv_name` field — 'one normalizer, not two independently-authored copies that could drift' (doc comment). `parse` (kjv.rs:72) returns a tuple `(Canon, HashMap<String, String>)` rather than a combined struct since the two are consumed differently downstream (Canon feeds canon.json; the verse map feeds everything else and is never itself written to disk). Hard-fails via `bail!` on any unresolvable book name, unlike most other parsers in this crate that soft-drop unresolvable raw-data rows — the base KJV text is treated as too load-bearing to tolerate a silent drop.",
+      "key_items": [
+        { "name": "parse", "kind": "fn", "what": "parses kjv.json into (Canon, dot-ref-keyed verse text HashMap)", "line": 72 },
+        { "name": "normalize_book_name", "kind": "fn", "what": "converts old-style book names ('I Samuel') into resolve_alias-matchable form", "line": 54 },
+        { "name": "RawKjv/RawBook/RawChapter/RawVerse", "kind": "struct", "what": "serde Deserialize structs mirroring kjv.json's exact JSON shape", "line": 19 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/brainfuel.rs"],
+      "concepts": ["struct", "derive", "serde", "Result", "error-handling", "anyhow", "HashMap", "sort-determinism"],
+      "tests": "kjv.rs's own #[cfg(test)] module (normalizes_roman_numerals_and_of_john_suffix); tests/etl.rs's kjv_parses_and_keys_canonically, kjv_normalizes_roman_numeral_and_of_john_names, kjv_unresolved_book_name_hard_errors"
+    },
+    {
+      "path": "server/atlas-etl/src/xrefs.rs",
+      "lines": 159,
+      "role": "parses openbible.info's cross-reference TSV into per-verse CrossRef lists",
+      "l1": "This turns a giant spreadsheet of 'verse A points to verse B, with N votes' into the data behind the app's cross-reference feature — the little list of related verses you see when reading. It handles the tricky bits of the source file (some entries point to a range of verses, not just one; some rows are junk) and it makes sure results are sorted so the most agreed-upon cross-references show up first.",
+      "l2": "`parse(input) -> Result<(HashMap<String, Vec<CrossRef>>, XrefStats)>` reads a tab-separated file, skipping its header row unconditionally (since real data rows have 3 tab fields but the header has 4). For each row it parses the 'From' verse and 'To' target (a single verse or a same-chapter/cross-chapter range, canonicalized by `parse_to_span`), drops the row if it's malformed or a self-reference, and sorts each verse's own cross-ref list by votes descending. `filter_missing_first_verse` is a second pure pass (no I/O) that drops any cross-ref whose target's first verse doesn't exist in the compiled KJV text — split out as its own function specifically so it stays unit-testable without needing the whole compiled verse map wired through `parse` itself.",
+      "l3": "`XrefStats` (xrefs.rs:27) tracks `dropped_unparseable`/`dropped_self` — every drop is counted, never silent. `parse_to_span` (xrefs.rs:40) tries the whole `To` field as one verse first, then falls back to splitting on the first `-` for a range, producing three possible canonical forms: single verse, same-chapter range (`COL.1.16-17`), or cross-book range (`MAT.5.3-MAT.6.2`). `first_verse_of_target` (xrefs.rs:106) extracts just the first verse of an already-canonicalized target string, used by `filter_missing_first_verse` — this is a SECOND pure pass over the already-parsed map, run by `main.rs`/`compile.rs` after the KJV verse map is available, since `xrefs::parse` itself has no access to it (pure `&str`-in design).",
+      "key_items": [
+        { "name": "parse", "kind": "fn", "what": "parses the whole cross-references TSV into a from-verse-keyed CrossRef map + stats", "line": 59 },
+        { "name": "filter_missing_first_verse", "kind": "fn", "what": "drops cross-refs whose target's first verse isn't in the compiled KJV text", "line": 124 },
+        { "name": "parse_to_span", "kind": "fn", "what": "parses a To field into (canonical target string, first verse, is_single_verse)", "line": 40 },
+        { "name": "XrefStats", "kind": "struct", "what": "counts of dropped rows (unparseable, self-reference)", "line": 28 }
+      ],
+      "depends_on": ["server/atlas-etl/src/osis.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["HashMap", "Result", "Option", "if-let", "sort-determinism", "struct", "Default"],
+      "tests": "xrefs.rs's own #[cfg(test)] module (first_verse_of_target_handles_all_three_shapes); tests/etl.rs's xrefs_sorted_desc_and_no_self, xrefs_drops_unparseable_target_and_counts, xrefs_canonicalizes_same_chapter_and_cross_chapter_spans, xrefs_filter_missing_first_verse_drops_and_counts"
+    },
+    {
+      "path": "server/atlas-etl/src/geo.rs",
+      "lines": 172,
+      "role": "parses OpenBible.info's ancient.jsonl geocoding bundle into compiled Places",
+      "l1": "This turns a giant list of ancient-place-name guesses (each with possible modern-day coordinates and a confidence score) into the actual dots on the app's map. Many ancient places have several candidate modern locations; this file picks the best-scored one for each place. A place with no usable coordinate at all is simply left off the map rather than causing an error — geocoding coverage is naturally incomplete.",
+      "l2": "`parse(input: &str) -> Result<Vec<Place>>` reads the file as JSON Lines (one JSON object per line, not a big array) and for each place calls `best_lonlat` to pick the highest-scoring `(lon, lat)` pair across all of that place's candidate 'identifications.' It builds a URL-friendly `id` via `kebab(name)` (lowercasing and hyphenating), handling name collisions by appending `-2`, `-3`, etc. It also filters each place's KJV verse links down to only verses whose translations list includes `\"kjv\"`, deduping as it goes via `osis::parse_verse`/`osis::canonical`.",
+      "l3": "`RawAncient`/`RawIdentification`/`RawResolution`/`RawModernAssoc`/`RawVerseLink` (geo.rs:25-64) are the `#[derive(Deserialize)]` structs mirroring the real JSON shape, with several `Option`/`#[serde(default)]` fields to handle a `\"special\": \"not_a_place\"` dead-end resolution that carries neither `lonlat` nor `modern_basis_id` at all. `best_lonlat` (geo.rs:91) walks every `identifications[].resolutions[]`, scoring each by `modern_associations[modern_basis_id].score` (default 0 if unknown), keeping the first-encountered on a tie. The module doc comment discloses a divergence from `data/raw/README.md`'s own worked example: the README describes `identifications[].score` as a plain int, but the real file nests it as a stats object, and the actually-used per-modern-id score lives at `modern_associations{modern_id}.score` instead — a real finding from data scouting, corrected in the README too.",
+      "key_items": [
+        { "name": "parse", "kind": "fn", "what": "parses ancient.jsonl into Vec<Place> with kebab-case slug ids", "line": 122 },
+        { "name": "best_lonlat", "kind": "fn", "what": "picks the highest-scoring coordinate across a place's candidate resolutions", "line": 91 },
+        { "name": "kebab", "kind": "fn", "what": "lowercase-kebab-cases a display name into a slug", "line": 69 }
+      ],
+      "depends_on": ["server/atlas-etl/src/osis.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "derive", "serde", "Option", "HashMap", "Result", "error-handling"],
+      "tests": "geo.rs's own #[cfg(test)] module (kebab_case_examples); tests/etl.rs's geo_slug_collisions_get_suffixes, geo_filters_non_kjv_verse_links_and_skips_unresolvable_places"
+    },
+    {
+      "path": "server/atlas-etl/src/report.rs",
+      "lines": 185,
+      "role": "formats the ETL's coverage/health report as plain text",
+      "l1": "After a build finishes, this file turns the raw statistics ('how many books, how many places, what percent of verses got a map location') into the human-readable report.txt you can open and read. It's the build's own report card.",
+      "l2": "Two data structs, `Counts` and `Report` (both `#[derive(Default)]` so an empty report is trivial to construct in tests), plus one function `write(r: &Report) -> String` that formats everything using `std::fmt::Write` (the `writeln!` macro appending into a `String` buffer rather than printing directly, so the result can be written to both stdout and report.txt from `main.rs`). It's pure — `Report` in, `String` out — so it's trivially unit-tested without touching disk.",
+      "l3": "`Counts` (report.rs:8) and `Report` (report.rs:27) carry doc comments explaining several 'graph-only, file retired' fields — counts that used to correspond to a standalone compiled JSON file (places.json, events.json, etc.) before the M-C2 deletion event, now reported with a 'graph-only' annotation rather than removed outright, so the coverage figure stays visible even though the file itself no longer exists. `write_list` (report.rs:87) is a small helper printing `\"  (none)\"` for an empty `Vec<String>` rather than an empty section. `PolityStats` (report.rs:81) is one line per curated polity (id, era count, total ring point count) — the report's per-polity breakdown.",
+      "key_items": [
+        { "name": "write", "kind": "fn", "what": "formats a full Report into the report.txt text, pure String output", "line": 97 },
+        { "name": "Report", "kind": "struct", "what": "the full coverage/health report: counts, percentages, warnings, per-part breakdowns", "line": 27 },
+        { "name": "Counts", "kind": "struct", "what": "raw compiled-file item counts (books, places, events, verses, people, ...)", "line": 8 },
+        { "name": "PolityStats", "kind": "struct", "what": "per-polity report line: id, era count, total point count", "line": 81 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/main.rs"],
+      "concepts": ["struct", "Default", "String-vs-str"],
+      "tests": "tests/etl.rs's report_contains_expected_sections"
+    },
+    {
+      "path": "server/atlas-etl/src/sources.rs",
+      "lines": 201,
+      "role": "parses/validates data/curated/sources.toml against LICENSES.md",
+      "l1": "The app's Sources page needs one authoritative list of where every dataset came from and what license it's under. This file reads that curated list and cross-checks it word-for-word against LICENSES.md's own table, so the two documents can never silently drift apart — if someone adds a source to one file but forgets the other, the build fails loudly instead of shipping a page that quietly disagrees with the license file.",
+      "l2": "Three public functions: `parse_sources` (TOML -> `SourcesDocument`, a plain structural parse), `validate_structure` (checks for duplicate ids, an undeclared category reference, an empty licenses_row_key, and — for the provenance join table — an undeclared source or off-vocabulary confidence value), and `validate_against_licenses` (the real cross-file check: extracts every data row of LICENSES.md's own '## Per-source table' and requires an exact 1:1 match against `sources.toml` entries by `licenses_row_key`, a literal substring match). Kept as its own module, deliberately never wired into the main `compile()` pipeline, since this data has nothing to do with the Bible graph itself.",
+      "l3": "`extract_per_source_table_rows` (sources.rs:112) is a small Markdown-table scraper: finds the `## Per-source table` heading, slices to the next `## ` heading, and reads every `|`-prefixed line as a row, skipping the header and separator rows by position (first two data-looking rows). `validate_against_licenses` (sources.rs:151) builds a `matched_row_for_source: Vec<Option<usize>>` and walks every LICENSES.md row, requiring `licenses_row_key` to match EXACTLY ONE source (an ambiguous or zero-match row both `bail!`), then separately checks every source got matched. Runs from two places that must never drift: `gen_sources`'s binary (regenerating sources.json) and `tests/sources_validate.rs` (so `cargo test --workspace` alone catches drift with nothing extra to remember to run).",
+      "key_items": [
+        { "name": "parse_sources", "kind": "fn", "what": "parses sources.toml's [[category]]/[[source]]/[[provenance]] arrays", "line": 39 },
+        { "name": "validate_structure", "kind": "fn", "what": "structural cross-checks: duplicate ids, undeclared category/source, off-vocabulary confidence", "line": 51 },
+        { "name": "validate_against_licenses", "kind": "fn", "what": "1:1 reconciliation of sources.toml against LICENSES.md's per-source table", "line": 151 },
+        { "name": "extract_per_source_table_rows", "kind": "fn", "what": "scrapes the Source-column text of every data row in LICENSES.md's table", "line": 112 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/bins/gen_sources.rs"],
+      "concepts": ["struct", "derive", "serde", "Result", "error-handling", "anyhow", "HashSet"],
+      "tests": "tests/sources_validate.rs's sources_toml_reconciles_1to1_against_licenses_md_per_source_table and related tests; sources.rs itself has no #[cfg(test)] module of its own"
+    },
+    {
+      "path": "server/atlas-etl/src/theographic.rs",
+      "lines": 258,
+      "role": "joins Theographic's events/places/verses tables into compiled Events",
+      "l1": "This is where dated events (the Exodus, the Fall of Jerusalem, and hundreds more) enter the app, sourced from a free Bible database called Theographic. That database uses its own internal reference numbers to link an event to its place and its verses, so this file's main job is following those links, converting the dates into this project's own year format, and — when an event's place isn't already one of the map's dots — creating a brand-new place for it on the spot.",
+      "l2": "`parse_events(places_json, verses_json, events_json, place_slug_by_name) -> Result<(Vec<Event>, Vec<Place>, TheoStats)>` deserializes three separate JSON files (an Airtable-style export, so every record is `{id, fields}`), then for each event resolves its place-name references (case-insensitive match against the caller's own compiled place list) and its verse references (through the verses table's own `osisRef`, via `osis::parse_verse`). An event place with no name match gets a brand-new `Place` synthesized straight from Theographic's own lat/lon (note: normal lat,lon order here, unlike OpenBible's lon,lat convention). Dates use an 'astronomical year' convention (`-4003` means `4004 BC`) which `parse_theo_year` converts to this project's own historical (no-year-zero) numbering.",
+      "l3": "`parse_theo_year` (theographic.rs:96) is `pub(crate)` specifically because `people::parse_people` reuses it verbatim for birth/death years — the SAME Theographic astronomical-year convention, so a second independently-authored copy would only risk drift, never add real independence. Handles three input shapes: bare astronomical integer (`\"-4003\"`), a literal `\"NNNN BC\"` calendar year (no shift), and an ISO-ish `\"0030-05-01\"` form (extracts the leading year). `TheoStats` (theographic.rs:73) tracks total/dated/undated/no_place/new_places — every drop or synthesis is counted, never silent. An event with an unparseable/empty date is dropped into `undated`, not fatal.",
+      "key_items": [
+        { "name": "parse_events", "kind": "fn", "what": "joins Theographic events/places/verses into compiled Events + any synthesized new Places", "line": 136 },
+        { "name": "parse_theo_year", "kind": "fn", "what": "converts a Theographic astronomical-year string into this project's historical year", "line": 96 },
+        { "name": "TheoStats", "kind": "struct", "what": "counts: total/dated/undated events, events with no place, synthesized new places", "line": 74 }
+      ],
+      "depends_on": ["server/atlas-etl/src/osis.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/people.rs"],
+      "concepts": ["struct", "derive", "serde", "HashMap", "Result", "generics", "Option"],
+      "tests": "theographic.rs's own #[cfg(test)] module (creation_event_matches_readmes_worked_example, iso_ish_and_bc_suffix_and_blank, positive_astronomical_year_is_unshifted); tests/etl.rs's theographic_undated_events_dropped_not_fatal, theographic_dates_parsed_and_places_joined_or_created"
+    },
+    {
+      "path": "server/atlas-etl/src/easton.rs",
+      "lines": 326,
+      "role": "parses Theographic's easton.json (6,519 entries) into compiled EastonEntry descriptions",
+      "l1": "This brings in Easton's Bible Dictionary (1897, public domain) — the short encyclopedia-style descriptions you might see for a person or place elsewhere in the app. Each dictionary entry is tagged as matching a specific person, a specific place, several possible things at once ('multi'), or nothing recognizable ('unmatched'); this file resolves the person/place tags to this project's own ids where it safely can, and never guesses when a match is genuinely ambiguous.",
+      "l2": "`parse_easton(easton_json, places_json) -> Result<(Vec<EastonEntry>, EastonStats)>` reads two JSON files: the dictionary entries themselves, and (again) the places table, purely to build a small `{Theographic place slug -> display name}` lookup used to resolve a `matchType: \"place\"` entry. A `matchType: \"person\"` entry's `matchSlugs` value IS the target person's slug directly. A `matchType: \"multi\"` entry (ambiguous — Theographic itself says this term could mean more than one thing) or `\"unmatched\"` entry resolves to neither a person nor a place, but the entry itself is still kept (its dictLookup text stays usable as a fallback elsewhere). An entry with no usable dictText at all is dropped.",
+      "l3": "The module doc comment discloses a real id-space mismatch: a compiled `PlaceId` is geo-derived kebab-case (e.g. `\"ammon\"`), completely different from Theographic's own internal place `slug` (`\"ammon_58\"`) — so this module re-parses `places.json`'s own slug/displayTitle/kjvName fields independently (a second, minimal, `pub(crate)`-invisible struct, not shared with `theographic.rs`'s own `PlaceFields`) to resolve slug -> name, which the graph's `description_adapter.rs` then joins by NAME against a compiled Place, never by id. Also discloses a real, deliberately-shipped inconsistency: this module `.trim()`s `dictText` before storing it, while `people.rs`'s sibling resolution does NOT — fixing either direction would silently change already-compiled description bytes for hundreds of real entries, so it's pinned as-is (`dict_text_with_edge_whitespace_is_trimmed_before_storage` test) rather than silently unified.",
+      "key_items": [
+        { "name": "parse_easton", "kind": "fn", "what": "parses easton.json + places.json into Vec<EastonEntry> with resolved person/place matches", "line": 114 },
+        { "name": "EastonStats", "kind": "struct", "what": "counts: total, no_text, person_matches, place_matches, place_slug_unresolved, multi, unmatched", "line": 89 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "derive", "serde", "HashMap", "Option", "Result", "match", "pattern-matching"],
+      "tests": "easton.rs's own #[cfg(test)] module: person_match_type_resolves_directly_to_the_theographic_person_slug, place_match_type_resolves_through_places_json_slug_to_a_lowercased_display_name, place_match_type_falls_back_to_kjv_name_when_display_title_is_absent, a_place_slug_absent_from_places_json_resolves_to_no_place_name_but_is_still_kept, multi_and_unmatched_match_types_resolve_to_neither_person_nor_place, an_entry_with_no_dict_text_is_dropped_not_panicked_on, dict_text_and_dict_lookup_ride_through_verbatim_never_transformed, dict_text_with_edge_whitespace_is_trimmed_before_storage"
+    },
+    {
+      "path": "server/atlas-etl/src/people_groups.rs",
+      "lines": 328,
+      "role": "parses Theographic's peopleGroups.json (23 records) into compiled PeopleGroups",
+      "l1": "This brings in tribes and nations (the Tribe of Levi, the Nation of Israel, and a handful of New Testament collectives like 'the Pharisees') as their own entities the graph can point to, separate from any one person. There are only 23 of these records total, and only 2 of them (Tribe of Judah, Nation of Israel) come with their own directly-cited Bible verses — most rely on other files to connect them to Scripture.",
+      "l2": "`parse_people_groups(people_groups_json, verses_json) -> Result<(Vec<PeopleGroup>, PeopleGroupStats)>` reads the group records (each just an id, `groupName`, and sometimes `verses`) plus the shared verses table for locus resolution, then builds each group's id via `slugify(name)` — since, unlike `people.json`, this source has no ready-made lookup/slug field of its own, so this project derives a friendly, hand-referenceable kebab-case id (`\"tribe-of-levi\"`) rather than falling back to an opaque Airtable record id. Any group's own `verses` field (present on only 2 of 23 real records) is resolved, deduped, and sorted into canon order exactly the way `people::parse_people` does for `Person.verse_links`.",
+      "l3": "`slugify` (people_groups.rs:107) is `pub`, not `pub(crate)`, because curated data (`data/curated/people-groups.toml`'s `[[named_after]]` rows) needs to reference these ids BY HAND — a friendly slug makes that curated authoring legible where an opaque Airtable id would not. The module doc comment discloses a self-correction: an earlier draft ('PG-1a') claimed no per-group verse arrays existed at all; the 'PG-1B rider' correction found 2 of 23 records DO carry a real `verses` field, resolved the same way `people.rs` resolves its own verse links. `members`/`events_dev`/`partOf` fields are read by nothing here (decision 1a: member-of relations are out of scope this batch) — proven by a dedicated test feeding a record carrying all three and confirming the parsed `PeopleGroup` carries none of it.",
+      "key_items": [
+        { "name": "parse_people_groups", "kind": "fn", "what": "parses peopleGroups.json + verses.json into Vec<PeopleGroup> with resolved verse links", "line": 134 },
+        { "name": "slugify", "kind": "fn", "what": "derives a kebab-case id from a group's display name (no source lookup field exists)", "line": 107 },
+        { "name": "PeopleGroupStats", "kind": "struct", "what": "counts: total, no_name, with_verses, verse_refs_total/unresolved", "line": 81 }
+      ],
+      "depends_on": ["server/atlas-etl/src/osis.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "derive", "serde", "HashMap", "Result", "sort-determinism"],
+      "tests": "people_groups.rs's own #[cfg(test)] module: slugify_lowercases_and_hyphenates, slugify_collapses_punctuation_and_trims_edges, parses_group_name_into_label_and_derives_the_id, a_record_with_no_group_name_is_dropped_not_panicked_on, members_events_dev_and_part_of_are_read_by_nothing_here, resolves_and_canon_sorts_a_groups_own_verses_field, an_unresolvable_group_verse_ref_is_dropped_not_panicked_on, a_group_verse_ref_repeated_in_the_source_is_deduped, real_committed_data_yields_exactly_23_groups_with_collision_free_slugs, real_committed_data_resolves_exactly_the_two_verse_bearing_groups (real-data tests read data/raw/theographic/... directly)"
+    },
+    {
+      "path": "server/atlas-etl/src/people.rs",
+      "lines": 407,
+      "role": "parses Theographic's people.json (3,067 records) into compiled Persons",
+      "l1": "This brings in every named (and some unnamed) person in the Theographic Bible database — Aaron, Saul, even 'God' and 'the Holy Spirit' and one false god ('Baal') — as its own entity. It reads each person's birth/death years, alternate names, verse mentions, and (when available) a short dictionary-style description, without trying to editorially decide who counts as a 'real' person; every record ships as-is.",
+      "l2": "`parse_people(people_json, verses_json) -> Result<(Vec<Person>, PeopleStats)>` deserializes the people records and, for each, resolves its verse mentions through the shared verses table into canon-sorted, deduped verse links (exactly like `theographic.rs`'s event-verse resolution). It resolves each person's short description from either of two source fields (`dictText`, a newer one-element array, preferred over the older plain-string `dictionaryText`) and splits `alsoCalled` on commas into a clean `Vec<String>`.",
+      "l3": "The module doc comment discloses a real finding from this batch's own data scouting: Theographic's `status` field (`\"wip\"` vs `\"publish\"`) is an authoring-workflow flag, NOT a notability signal — filtering to `\"publish\"` only would silently drop Saul, Elijah, Jeremiah, Daniel, Job, and dozens of other major figures (verified by verse-mention count), so this field is read and deliberately never used as a filter. Also discloses genealogy/family fields (`father`/`mother`/`children`/`siblings`/`partners`/`birthPlace`/`deathPlace`) that exist in the real data but are NOT modeled here — ledgered as a future new relation kind, not an oversight. `dict_text` resolution deliberately does NOT trim whitespace (unlike `easton.rs`'s sibling resolution) — a disclosed, pinned inconsistency, not unified, since either direction would silently change already-compiled description bytes.",
+      "key_items": [
+        { "name": "parse_people", "kind": "fn", "what": "parses people.json + verses.json into Vec<Person> with resolved verse links and descriptions", "line": 139 },
+        { "name": "PeopleStats", "kind": "struct", "what": "counts: total, with_verses, verse_refs_total/unresolved", "line": 125 }
+      ],
+      "depends_on": ["server/atlas-etl/src/osis.rs", "server/atlas-etl/src/theographic.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "derive", "serde", "HashMap", "Result", "Option", "sort-determinism"],
+      "tests": "people.rs's own #[cfg(test)] module: resolves_and_canon_sorts_verse_links_regardless_of_source_order, also_called_splits_on_comma_and_trims, missing_also_called_is_an_empty_list_not_a_one_element_list, an_unresolvable_verse_ref_is_dropped_not_panicked_on, a_verse_ref_repeated_in_the_source_is_deduped, birth_and_death_years_use_the_same_astronomical_conversion_as_events, missing_birth_and_death_years_stay_none_not_zero, dict_text_prefers_the_newer_array_field_over_the_legacy_string_field, dict_text_falls_back_to_dictionary_text_when_the_array_field_is_absent, dict_text_with_edge_whitespace_is_never_trimmed_on_the_primary_array_path_either, dict_text_stays_none_when_both_fields_are_absent, dict_text_stays_none_rather_than_some_empty_string, name_falls_back_to_display_title_then_bare_id_when_name_is_absent, every_real_person_record_gets_a_distinct_id"
+    },
+    {
+      "path": "server/atlas-etl/src/polities.rs",
+      "lines": 428,
+      "role": "geometry helpers for curated polity borders: color assignment + ring simplicity checking",
+      "l1": "This is the toolkit behind the map's colored kingdom borders. Each hand-drawn kingdom (Egypt, Assyria, Babylon...) needs a border shape that doesn't cross itself, and a distinct color so no two overlapping kingdoms look the same. This file provides both: a check that a hand-typed list of coordinates forms a sensible, non-self-crossing shape, and an algorithm that assigns every kingdom a color guaranteed different from every other kingdom's, every single build.",
+      "l2": "Two main pieces. `assign_color_keys(sorted_ids: &[&str]) -> Vec<u8>` computes a deterministic starting color 'bucket' for each polity id (`color_seed`, a hash summing Unicode code points, mod 16 palette slots) then linear-probes forward from that seed to find the first free bucket no earlier id in the same call already claimed — guaranteeing every polity gets a distinct color as long as there are 16 or fewer polities. `ring_is_simple(ring: &[(f64, f64)]) -> bool` implements the standard CCW/orientation-based segment-intersection test (a classic algorithm from Cormen et al.) to detect whether a hand-drawn border ring crosses itself (a 'bowtie' shape) — reused from an earlier one-off Node.js script, now a permanent, automatic build-time check instead of something a curator has to remember to run by hand.",
+      "l3": "`BIBLICAL_WORLD_BBOX` (polities.rs:48) is a `pub const Bbox` carried over byte-for-byte from a retired module and cross-referenced with `client/wwwroot/js/map.js`'s own `BIBLICAL_WORLD_BOUNDS` constant — the two MUST be kept in sync if the compiled place extent ever changes. `assign_color_keys` (polities.rs:141) requires `sorted_ids` already sorted by the caller (main.rs's own filename/id order) for determinism — 'same data, same colors, every run,' verified by tests over the real 14-polity roster plus synthetic rosters up to and past the 16-slot palette size (graceful degradation to a collision, never a panic, once id count exceeds 16). `ring_is_simple` (polities.rs:227) is O(n²) over ring edges, entirely adequate at this app's 30-90-point-per-ring scale; handles both closed (first point repeated) and open ring representations.",
+      "key_items": [
+        { "name": "assign_color_keys", "kind": "fn", "what": "collision-free deterministic color assignment across a full sorted polity roster", "line": 141 },
+        { "name": "ring_is_simple", "kind": "fn", "what": "CCW/orientation-based check that a polygon ring doesn't self-intersect", "line": 227 },
+        { "name": "BIBLICAL_WORLD_BBOX", "kind": "const", "what": "the biblical-world clip/label bounding box, must match map.js's own constant", "line": 48 },
+        { "name": "color_seed", "kind": "fn", "what": "deterministic starting hash bucket for a polity id (pre-collision-resolution)", "line": 96 },
+        { "name": "segments_intersect", "kind": "fn", "what": "the CCW orientation-based segment-intersection primitive", "line": 189 },
+        { "name": "ATLAS_START_YEAR / ATLAS_END_YEAR", "kind": "const", "what": "the app's own atlas year span, -4004..100", "line": 67 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/validate.rs", "server/atlas-etl/src/curated.rs"],
+      "concepts": ["struct", "const-static", "Clone-Copy", "PartialEq", "Ord-PartialOrd"],
+      "tests": "polities.rs's own #[cfg(test)] module: bbox_contains_checks_all_four_edges, color_seed_is_deterministic_and_in_range, color_seed_ignores_case_and_surrounding_whitespace, color_seed_differs_for_most_distinct_ids, assign_color_keys_is_collision_free_for_the_real_curated_roster, assign_color_keys_is_deterministic_same_data_same_colors_every_run, assign_color_keys_is_collision_free_for_any_roster_up_to_palette_size, assign_color_keys_degrades_to_a_collision_rather_than_panicking_past_palette_size, assign_color_keys_handles_empty_input, simple_square_is_simple, open_ring_without_closing_repeat_is_still_handled, bowtie_self_intersects, concave_but_simple_polygon_is_simple, a_vertex_touching_a_non_adjacent_edge_is_not_simple, real_curated_egypt_style_ring_is_simple"
+    },
+    {
+      "path": "server/atlas-etl/src/red_letter.rs",
+      "lines": 627,
+      "role": "parses the vendored KJV OSIS XML into per-verse red-letter (words of Jesus) spans",
+      "l1": "This adds the 'red letter' feature: marking exactly which words in the KJV text are Jesus speaking, verse by verse, sometimes down to which part of a verse. It reads a specially-marked public-domain KJV file and, for every span the source marks as Jesus's own words, finds the matching text in this project's own official KJV verse text — never trusting the source's own copy of the words, only using it to find WHERE in our text the red starts and stops.",
+      "l2": "`parse(xml, kjv_verses: &HashMap<String,String>) -> Result<RedLetterCorpus>` is a hand-rolled XML tag scanner (this crate never uses an XML parsing library) that tracks the current book/chapter/verse as it walks the file and, for each verse, records raw `<q who=\"Jesus\">` span texts. The moment a verse closes, `align_verse` searches for each span's own trimmed text as a substring of OUR canonical verse text, first case-sensitively then (if that fails) case-insensitively — resolving to a byte-offset range into OUR bytes, never storing a byte of the source's own copy. A span that matches neither way is dropped from the output but the verse itself STAYS in the verse set (the verse-content 'has red words' fact is independent of alignment success).",
+      "l3": "`attr`/`has_attr` (red_letter.rs:138/150) have a documented self-caught bug guard: searching for `\" sID=\\\"\"` (leading space) rather than bare `\"sID=\\\"\"`, since `sID=` is a literal trailing substring of `osisID=` and a naive search would silently match inside the WRONG attribute. `align_verse` (red_letter.rs:236) advances a cursor across successful matches so two spans in one verse (narration between two sayings) resolve left-to-right rather than both collapsing onto the first occurrence. `ascii_ci_find`/`ascii_ci_eq` deliberately avoid `str::to_lowercase()` since it's Unicode-aware and can change a string's own BYTE LENGTH, which would break offset math — only ASCII letters are treated case-insensitively. `contiguous_ranges` (red_letter.rs:422) groups the verse set into maximal contiguous canon-order ranges for a SpokenBy row shape, correctly detecting a chapter rollover via a caller-supplied `chapter_verse_counts` closure rather than assuming exactly verse+1. The module doc comment discloses 18 of 2,081 real spans (0.87%) that fail both alignment tiers — every one a real spelling/punctuation variant (Caesar/Cesar, Judaea/Judea, one source-side typo), never a content substitution.",
+      "key_items": [
+        { "name": "parse", "kind": "fn", "what": "hand-rolled OSIS XML scanner producing a RedLetterCorpus of verse+span data", "line": 284 },
+        { "name": "align_verse", "kind": "fn", "what": "cursor-advancing exact-then-case-insensitive alignment of source spans against our canonical text", "line": 236 },
+        { "name": "contiguous_ranges", "kind": "fn", "what": "groups the red-letter verse set into maximal contiguous canon-order ranges", "line": 422 },
+        { "name": "RedLetterCorpus / RedLetterVerse / AlignmentStats", "kind": "struct", "what": "the parsed output: per-verse aligned spans plus exact/case_insensitive/not_found counts", "line": 76 },
+        { "name": "read_all", "kind": "fn", "what": "the one filesystem-touching wrapper: reads and parses eng-kjv.osis.xml", "line": 404 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "HashMap", "Result", "Option", "String-vs-str", "if-let", "Default"],
+      "tests": "red_letter.rs's own #[cfg(test)] module (align_verse_*, parse_*, contiguous_ranges_*); tests/red_letter_real_data.rs's real_corpus_has_the_pinned_alignment_shape, mat_4_19_follow_me_is_the_named_spot_check, mat_5_4_is_a_fully_red_verse_spot_check, gen_1_1_is_a_no_red_verse_spot_check"
+    },
+    {
+      "path": "server/atlas-etl/src/catechism_map.rs",
+      "lines": 906,
+      "role": "ingests the brain-fuel/catechism verse-mapping repo (YAML) and the Deut5 supplement",
+      "l1": "Luther's Small Catechism has questions and answers, and each one is tied to specific Bible verses by a separate community-maintained project. This file reads that project's YAML files (one per catechism topic) and translates their human-friendly verse citations ('Isaiah 45:20', 'Romans 12-13', 'Exodus 34:1, 27-28') into this project's own exact verse-by-verse format, then attaches each question to the right catechism item.",
+      "l2": "`parse_yaml_questions(input) -> Result<Vec<RawQuestion>>` reads one YAML file's numbered `{title, refs}` entries (walking the generic `serde_yaml::Value` tree rather than a typed struct, since a YAML `!!set` doesn't have obvious derive support). `canonicalize_ref(raw, verses) -> Result<Vec<String>>` is the heart of the file: it parses a human-readable reference string into a book, a chapter, and one of five range shapes (`ChapterSpec` enum: whole chapter, chapter range, single verse, verse range, cross-chapter range), then WALKS the compiled KJV verse map itself to expand a whole-chapter or cross-chapter citation (rather than depending on a separate chapter-count table) — failing loudly the instant a produced verse doesn't actually exist. `build_questions_from_mapping` reads every mapped file and returns questions grouped by target catechism item id; `merge_questions_into_parts` attaches them.",
+      "l3": "Book-name resolution (`resolve_book_name`, catechism_map.rs:116) covers 52 of 53 real distinct book names via `atlas_core::canon::resolve_alias` directly, with exactly one disclosed local fallback: the source cites Psalms in the singular ('Psalm 23') where this app's canonical name is plural. `is_single_chapter_book` (catechism_map.rs:329) determines a one-chapter book (Obadiah, Philemon, 2/3 John, Jude) by checking whether `book.2.1` exists in the compiled text rather than a hardcoded book list — correct automatically for any future canon change; catches the real convention where 'Jude 6' means verse 6, not chapter 6. `expand_cross_chapter` (catechism_map.rs:272) walks verse-by-verse through the compiled text with a `MAX_STEPS = 5000` safety bound to avoid an infinite loop on a malformed range. `MappingFile::item_for` (catechism_map.rs:454) resolves a question's target item: the first per-question override that names it, else the file's own default item.",
+      "key_items": [
+        { "name": "parse_yaml_questions", "kind": "fn", "what": "parses one resources/*.yaml file's numbered {title, refs} entries", "line": 75 },
+        { "name": "canonicalize_ref", "kind": "fn", "what": "canonicalizes one human-readable ref string into a flat list of canonical verse ids", "line": 384 },
+        { "name": "resolve_book_name", "kind": "fn", "what": "resolves a full English book name, with a disclosed 'Psalm' singular fallback", "line": 116 },
+        { "name": "is_single_chapter_book", "kind": "fn", "what": "detects a one-chapter book from the compiled text itself, no hardcoded list", "line": 329 },
+        { "name": "build_questions_from_mapping", "kind": "fn", "what": "reads every mapped resources/*.yaml file into CatechismQuestions grouped by item id", "line": 497 },
+        { "name": "merge_questions_into_parts", "kind": "fn", "what": "assigns each target item's own questions field, fails loud on unknown item id", "line": 539 },
+        { "name": "MappingFile / Deut5Entry", "kind": "struct", "what": "one file->item mapping row (with per-question overrides), and one Deut5-parallel entry", "line": 438 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/curated.rs"],
+      "concepts": ["struct", "enum", "match", "Result", "HashMap", "Path", "error-handling", "anyhow"],
+      "tests": "catechism_map.rs's own large #[cfg(test)] module: parse_yaml_questions_reads_real_repo_shape, resolve_book_name_covers_full_names_and_the_psalm_singular_gap, every_real_book_name_resolves (all 53), split_book_and_tail_handles_numbered_and_multiword_books, canonicalize_ref_single_verse/same_chapter_range/bare_chapter/bare_chapter_range/cross_chapter_verse_range/comma_compound/single_chapter_book_bare_verse_and_range, canonicalize_ref_rejects_unknown_book/a_verse_missing_from_compiled_text/garbage/inverted_range, mapping_file_item_for_*, merge_questions_into_parts_*"
+    },
+    {
+      "path": "server/atlas-etl/src/concord.rs",
+      "lines": 1039,
+      "role": "parses the ten vendored Book of Concord HTML pages into paragraph-addressed text",
+      "l1": "The Book of Concord (the Lutheran confessional documents — the Augsburg Confession, the Small and Large Catechisms, and more) gets read in from ten downloaded web pages, one per document. This file breaks each document into its articles and paragraphs, keeping the source's own paragraph numbering wherever it exists, and inventing a sensible sequential numbering when a document (like the ancient Ecumenical Creeds) has no numbering of its own at all.",
+      "l2": "One parser (`parse_document`/`parse_document_full`), used for all ten documents rather than ten separate ones — 'document-parameterized,' per the doc comment. It's a hand-rolled HTML scanner (no HTML parsing library): `find_articles` locates every `<a href=...><h3>TITLE</h3></a><section>BODY</section>` block, and `group_and_number_paragraphs` finds paragraph-marker spans within each article's body and assigns each a `paragraph` number — following the source's own numbering when a fresh, higher digit appears, or synthesizing the next sequential number when the source has no usable digit (an unmarked '*' unit, or a whole document with zero markers like the Creeds). The Small Catechism's own Question/Answer pairs merge into ONE paragraph, matching how the existing `catechism.toml` already treats a Q+A pair as one item.",
+      "l3": "The Smalcald Articles are a documented, real exception: unlike the other nine documents, its root page doesn't embed the real article text at all — only a one-paragraph editorial blurb per Part — so its 23 real articles are vendored from separate per-article pages and spliced in via `splice_smalcald_extras`/`parse_single_article_page` (a different page template: bare `<h2>` + numbered paragraphs, no `<section>` wrapper). `group_and_number_paragraphs` (concord.rs:526) assigns a group id per marker via `leading_digits`/`is_ans_suffixed`, and a duplicate-label collision within one article (the real Ninth Commandment marks BOTH its question and answer '9') is remapped to a contiguous run and disclosed once per article, never once per collided paragraph (some real collisions span dozens of paragraphs). `decode_entities` handles the exact entity set an exhaustive sweep of the real ten pages found (amp/lt/gt/quot/apos/ndash/mdash/hellip/curly quotes/middot/nbsp) plus generic numeric escapes.",
+      "key_items": [
+        { "name": "read_all", "kind": "fn", "what": "the one filesystem-touching entry point: reads and parses all ten document HTML files", "line": 298 },
+        { "name": "parse_document / parse_document_full", "kind": "fn", "what": "document-parameterized parser: one function handles all ten Concord documents", "line": 330 },
+        { "name": "group_and_number_paragraphs", "kind": "fn", "what": "assigns each article's markers to a group and a paragraph number, following or synthesizing", "line": 526 },
+        { "name": "find_articles", "kind": "fn", "what": "locates every <a><h3>...</h3></a><section>...</section> article block", "line": 405 },
+        { "name": "splice_smalcald_extras", "kind": "fn", "what": "inserts the Smalcald Articles' 23 separately-vendored per-article pages in place", "line": 182 },
+        { "name": "DOCUMENTS", "kind": "const", "what": "the ten Book of Concord documents, in their traditional bound order (part 1-10)", "line": 103 },
+        { "name": "parse_sc_overlap", "kind": "fn", "what": "parses concord-sc-overlap.toml's curated Small Catechism alignment rows", "line": 837 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "const-static", "BTreeMap", "Result", "error-handling", "anyhow", "match", "pattern-matching", "toml"],
+      "tests": "concord.rs's own large #[cfg(test)] module (small_catechism_first_commandment_merges_question_and_answer_into_one_paragraph_and_excludes_the_next_heading, augsburg_confession_article_iv_is_three_plain_sequential_paragraphs, lords_prayer_introduction_merges_via_explicit_ans_pairing_and_gets_paragraph_zero, preface_style_uniform_star_labels_do_not_collapse_into_one_paragraph, a_duplicate_source_label_is_remapped_and_disclosed_not_silently_duplicated, ecumenical_creeds_style_no_markers_falls_back_to_synthetic_sequential_paragraphs, find_articles_skips_the_toc_sidebar_and_finds_the_real_content_anchor, a_document_with_no_h3_at_all_is_one_single_implicit_article, skipped_small_catechism_articles_are_disclosed_and_excluded_never_ingested, entity_decoding_covers_the_real_observed_set_plus_generic_numeric_escapes, documents_table_has_ten_distinct_parts_in_the_traditional_order, parse_sc_overlap_*); tests/concord_real_data.rs runs the real ten HTML files and pins per-document paragraph counts"
+    },
+    {
+      "path": "server/atlas-etl/src/brainfuel.rs",
+      "lines": 1069,
+      "role": "parses parallel Bible editions (Vulgate, Masoretic, Douay-Rheims, Finnish, Swedish, Textus Receptus) + the KJV case-restoration pass",
+      "l1": "This brings in five other historic Bible translations, aligned verse-for-verse against our own KJV, from a vendored open dataset that already lines them all up. It also does something specific and careful: it reads that same dataset's OWN copy of the KJV text purely to compare against our official KJV — never to change a WORD of it, only to restore the correct capitalization pattern (like 'LORD' in all-caps where the KJV convention calls for it) when this app's own imported text lost that capitalization along the way. The project's own rule (the 'KJV inerrancy directive') is: never touch the actual words, only ever fix the letter case, and only when it's provably safe to do so.",
+      "l2": "`read_all(root) -> Result<BrainFuelCorpus>` walks every `bible/{ot,nt}/{CODE}/{NNN}.json` chapter file (929 OT + 260 NT, pre-aligned to KJV verse positions) and for each verse records which of six editions has real text at that position, tracking three states per edition: present (a real rendering), absent (a documented per-verse gap, e.g. verses merged in the Vulgate tradition), or not-applicable (the edition doesn't apply to that testament at all). `restore_verse_case(ours, theirs) -> Option<String>` is the core case-restoration primitive: returns `None` unless the two texts are equal ignoring ASCII case, then transfers `theirs`'s exact case pattern onto `ours`'s own bytes one-for-one. `classify_and_restore` extends this to a second class — a folded-in Psalm superscription our text keeps but the comparison source doesn't — via `tail_align`, restoring only the aligned tail, never the superscription itself.",
+      "l3": "`RenderingOutcome`/`VerseRow.field()` (brainfuel.rs:213/229) route each of six possible edition fields through one shared classification. `restore_verse_case` (brainfuel.rs:485) is provably UTF-8-safe: `eq_ignore_ascii_case` requires equal byte length so the zipped byte streams stay aligned, and every byte it CHANGES is guaranteed single-byte ASCII on both sides, so a non-ASCII continuation byte is never touched. `SUPERSCRIPTION_EXCLUSIONS` (brainfuel.rs:539) is a small, disclosed, hand-authored exclusion table — three positions that WOULD tail-align but are known brain-fuel transcription artifacts (an all-caps rendering quirk, a real versification-boundary coincidence at ACT.9.29), checked BEFORE `tail_align` runs. `king_james_by_dot_ref` exposes the raw comparison column for `atlas_graph::fidelity`'s own independent re-derivation, so the SAME transform (never a second copy) backs both the ETL restoration pass and the graph's own fidelity check.",
+      "key_items": [
+        { "name": "read_all", "kind": "fn", "what": "walks the whole vendored corpus into a BrainFuelCorpus of per-verse VerseRows", "line": 358 },
+        { "name": "restore_verse_case", "kind": "fn", "what": "transfers theirs's exact case pattern onto ours's bytes when case-fold-equal, else None", "line": 485 },
+        { "name": "classify_and_restore", "kind": "fn", "what": "the full per-position classification: whole-verse, superscription-tail, excluded, mirror-case, or residue", "line": 636 },
+        { "name": "kjv_cross_check", "kind": "fn", "what": "raw byte-for-byte KJV column comparison against our own canonical text, disclosed never imported", "line": 423 },
+        { "name": "restore_kjv_case", "kind": "fn", "what": "the owner-ordered case-restoration pass over the whole corpus, returns a new verse map", "line": 714 },
+        { "name": "EDITIONS", "kind": "const", "what": "the six ingested edition field names (never includes king_james itself)", "line": 125 },
+        { "name": "SUPERSCRIPTION_EXCLUSIONS", "kind": "const", "what": "three real, hand-vetted positions excluded from superscription-tail restoration", "line": 539 },
+        { "name": "book_code_map", "kind": "fn", "what": "maps brain-fuel's own book codes to BookId via the shared kjv-name normalizer", "line": 151 }
+      ],
+      "depends_on": ["server/atlas-etl/src/kjv.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "enum", "BTreeMap", "HashMap", "Result", "error-handling", "String-vs-str", "match", "pattern-matching"],
+      "tests": "brainfuel.rs's own large #[cfg(test)] module (book_code_map_*, present_rendering_imports_verbatim_including_trailing_whitespace, absent_marker_produces_no_rendering_never_an_empty_string, edition_not_applicable_to_testament_is_silently_absent_not_flagged, refs_src_is_counted_but_never_imported, king_james_column_is_carried_for_cross_check_only, kjv_cross_check_*, restore_verse_case_*, restore_kjv_case_*, classify_and_restore_*); tests/brainfuel_real_data.rs runs the full real corpus and pins exact counts (chapter_file_counts_match_the_real_kjv_skeleton, per_edition_present_counts_are_exact, kjv_column_cross_check_mismatch_count_is_pinned, kjv_case_restoration_counts_are_pinned, case_restoration_satisfies_the_case_only_law_over_every_real_position, superscription_exclusions_are_provably_untouched, and more)"
+    },
+    {
+      "path": "server/atlas-etl/src/compile.rs",
+      "lines": 760,
+      "role": "the one orchestration function: reads raw+curated, merges, hard-validates, returns AtlasData",
+      "l1": "This is the assembly line. It calls every single parser in this crate in the right order, joins their outputs together (attaching events to their places, merging cross-references, folding in curated hand-typed corrections), runs every validation check, and hands back one complete, checked bundle of data. Three different programs call this exact same function rather than each having their own copy — so there's only one true build process, never several that could quietly disagree.",
+      "l2": "`pub fn compile(raw_dir, curated_dir) -> Result<CompileOutput>` runs, in order: (1) every raw-data parser (kjv, geo, theographic, people, easton, people_groups, xrefs), (2) every curated-TOML parser (eras, chronology anchors, book windows, books, events-extra, narratives, people-group seeds, fulfillments, typology), (3) a long merge phase joining events to witnesses, applying an 'account vs. mention' retype correction, merging Acts/Atlas section provenance, then (4) `atlas_core::merge`/`event_merge`/`nt_calibration`/`chronology` corrections applied to the merged data, (5) `AtlasData::new(...).finish()` plus `validate::run`, and finally (6) polities/landmarks/land-mask/place-history/place-names-kjv/catechism, each with its own dedicated `validate::run_*` call. Every step's error is wrapped with `.context(...)` naming exactly which curated file to fix.",
+      "l3": "`process_polities` (compile.rs:575) reads every `data/curated/polities/*.toml` file in sorted filename order (deterministic report order), computes `PolityStats`, then calls `polities::assign_color_keys` over the FULL sorted id roster in one pass (color assignment needs global visibility, so it's deliberately not done per-file in `curated::parse_polity`). `check_curated_inputs_exist` (compile.rs:656) is a defensive pre-flight check listing every required curated file/directory by name, so a missing file fails with one clear list rather than a confusing downstream parse error. The 'ATTEST-1' account-vs-mention retype (compile.rs:190-249) is the pipeline's most delicate step: it strips named verses from an event's `verses` AND every witness row's translations in the SAME pass, since a stale correction that only strips one side would silently leave the other alive — with a disclosed known limitation that the match is exact-string, so a verse living INSIDE a stored range entry (`LUK.1.26-38`) won't be caught by the retype.",
+      "key_items": [
+        { "name": "compile", "kind": "fn", "what": "the single orchestration entry point: parse everything, merge, validate, return CompileOutput", "line": 71 },
+        { "name": "CompileOutput", "kind": "struct", "what": "the return bundle: AtlasData, Report, plus two curated-order-preserving lists", "line": 47 },
+        { "name": "process_polities", "kind": "fn", "what": "reads every polities/*.toml file and assigns collision-free color keys across the full roster", "line": 575 },
+        { "name": "check_curated_inputs_exist", "kind": "fn", "what": "pre-flight check that every required data/curated/ file/directory is present", "line": 656 },
+        { "name": "read_passages / read_narratives", "kind": "fn", "what": "read every *.toml file under passages/ or narratives/ in sorted filename order", "line": 614 }
+      ],
+      "depends_on": [
+        "server/atlas-etl/src/report.rs", "server/atlas-etl/src/catechism_map.rs", "server/atlas-etl/src/curated.rs",
+        "server/atlas-etl/src/easton.rs", "server/atlas-etl/src/geo.rs", "server/atlas-etl/src/kjv.rs",
+        "server/atlas-etl/src/people.rs", "server/atlas-etl/src/people_groups.rs", "server/atlas-etl/src/polities.rs",
+        "server/atlas-etl/src/theographic.rs", "server/atlas-etl/src/validate.rs", "server/atlas-etl/src/xrefs.rs"
+      ],
+      "used_by": ["server/atlas-etl/src/main.rs"],
+      "concepts": ["struct", "HashMap", "HashSet", "Result", "error-handling", "anyhow", "?-operator", "PathBuf"],
+      "tests": "no dedicated unit tests in this file itself; exercised end-to-end by every real-data test (tests/coverage.rs's real_compiled_data helper, tests/*_real_data.rs) which run the actual compile pipeline against real committed data"
+    },
+    {
+      "path": "server/atlas-etl/src/curated.rs",
+      "lines": 1508,
+      "role": "parsers for every data/curated/*.toml schema this project hand-authors",
+      "l1": "This is where every piece of this project's OWN hand-typed content gets read in — its list of historical eras, its own extra events not covered by the downloaded database, place histories (when a city changed names), the borders of kingdoms, the catechism text itself, and more. Each of these has its own small TOML file format, and this file has one function per format. Because this is the project's own authored data, mistakes are held to a strict bar: a badly-shaped file fails the build immediately rather than being quietly skipped.",
+      "l2": "One `pub fn parse_*` function per curated schema (about 20 of them): `parse_eras`, `parse_chronology_anchors`, `parse_book_narration_windows`, `parse_books`, `parse_narrative`, `parse_events_extra`, `parse_event_witnesses`, `parse_attestation_corrections`, `parse_acts_sections`, `parse_atlas_sections`, `parse_coverage_manifest`, `parse_landmarks`, `parse_place_history`, `parse_place_names_kjv`, `parse_polity`, `parse_land_mask`, `parse_catechism`, `parse_catechism_mapping`, `parse_catechism_deut5`, `parse_people_group_seeds`, `parse_fulfillments`, `parse_typology`. Most deserialize straight into `atlas_core::data` structs whose field names already match the TOML schema. A shared helper, `expand_verse_ref`, turns a curator-friendly single-verse-or-range string (`\"EXO.14.21-31\"`) into individual canonical verse ids, reused across several of these schemas rather than reimplemented per-file.",
+      "l3": "Every parser here follows a consistent split: parse structurally here (bail loud on malformed TOML), defer any cross-reference check needing the fuller compiled picture (a real place id, a real event id, the compiled KJV text) to `validate::run_*` — this is stated explicitly in nearly every function's own doc comment. `parse_events_extra` (curated.rs:247) has a Batch T2 conditional-required rule: `kind = \"general\"` FORBIDS `from_year`/`to_year`/`places` (a dateless/placeless titled container must not fabricate a date), while `kind = \"event\"` (default) REQUIRES all three — enforced structurally in both directions, not by convention. `parse_polity` (curated.rs:810) deliberately leaves `color_key` at a provisional `0`; only `process_polities` (compile.rs) assigns the real, collision-free value once every polity in the roster is visible at once. `parse_place_names_kjv`/`parse_event_witnesses`/`parse_acts_sections` are all deliberately FLAT arrays with an explicit id per row (never nested under a parent array-of-tables) — the doc comment explains this dodges a real TOML footgun (`[era.transition]`/`[era.fall]` attaching to whichever `[[era]]` was MOST RECENTLY OPENED, which shipped a real bug once, 7 of 22 deltas).",
+      "key_items": [
+        { "name": "expand_verse_ref", "kind": "fn", "what": "shared helper: expands a curator single-verse-or-range string into canonical verse ids", "line": 215 },
+        { "name": "parse_events_extra", "kind": "fn", "what": "parses events-extra.toml with kind-gated required/forbidden field enforcement", "line": 247 },
+        { "name": "parse_polity", "kind": "fn", "what": "parses one polities/{id}.toml file; color_key left provisional (0)", "line": 810 },
+        { "name": "parse_catechism", "kind": "fn", "what": "parses catechism.toml's nested [[part]]/[[part.item]] schema", "line": 906 },
+        { "name": "parse_place_history", "kind": "fn", "what": "parses place-history.toml's nested name/blurb arrays and established/destroyed claims", "line": 658 },
+        { "name": "parse_attestation_corrections", "kind": "fn", "what": "parses attestation-corrections.toml's [[mention]]/[[analogue]] retype/relation rows", "line": 415 },
+        { "name": "resolve_date_claim", "kind": "fn", "what": "resolves a place's established/destroyed date, requiring exactly one of year OR from+to", "line": 629 }
+      ],
+      "depends_on": ["server/atlas-etl/src/catechism_map.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-etl/src/bins/gen_sources.rs"],
+      "concepts": ["struct", "derive", "serde", "toml", "Result", "error-handling", "anyhow", "Option", "match"],
+      "tests": "curated.rs's own very large #[cfg(test)] module covering nearly every parse_* function: parse_landmarks_reads_valid_toml, parse_polity_reads_valid_toml_and_computes_color_key, parse_polity_rejects_malformed_toml, parse_land_mask_reads_valid_toml/rejects_malformed_toml, parse_catechism_reads_valid_toml_with_defaults_applied/rejects_*, parse_catechism_mapping_*, parse_catechism_deut5_*, expand_verse_ref_handles_single_and_range, parse_event_witnesses_*, parse_place_names_kjv_*, parse_people_group_seeds_* (reads all three arrays; defaults every array to empty; rejects malformed toml)"
+    },
+    {
+      "path": "server/atlas-etl/src/validate.rs",
+      "lines": 1489,
+      "role": "hard validation of the fully-merged AtlasData before it's written to disk",
+      "l1": "This is the project's quality gate. After everything has been read and joined together, this file checks the WHOLE result for mistakes: an event pointing at a place that doesn't exist, two overlapping time periods, a duplicate id, a typo'd Bible verse reference, two 'different' events that are secretly duplicates of each other. It never stops at the first problem it finds — it collects every single one and reports them all together, so a curator fixing the data sees the whole list in one build instead of playing whack-a-mole one error at a time.",
+      "l2": "`pub fn run(data: &AtlasData) -> Result<()>` is the main check, covering duplicate place/event ids, events referencing unknown places, non-canonical verse ids, era gaps/overlaps/coverage of the full year span, dangling narrative legs, and non-chronological narrative ordering. A dozen more `pub fn run_*` functions each validate one separate curated schema that needs its own extra context the main `run` doesn't have (the clip bounding box, the compiled KJV text, the full compiled place list): `run_landmarks`, `run_polities`, `run_land_mask`, `run_place_history`, `run_place_names_kjv`, `run_catechism`, `run_place_merges`, `run_event_merges`, `run_cross_book_duplicates`, `run_no_two_opinions`, `run_chronology_anchors`, `run_chronology_anchor_equality`, `run_chronology_windows`, `run_era_boundaries`. Every function follows the SAME shape: build a `Vec<String>` of errors, keep going instead of returning early, then `bail!` once at the end listing every violation found.",
+      "l3": "`check_duplicate_ids`/`check_eras` (validate.rs:1345/1358) are small shared helpers used by several `run_*` functions. `run_event_merges` (validate.rs:947) and `run_cross_book_duplicates` (validate.rs:1079) are two INDEPENDENT duplicate-event detectors — the doc comment explains why a second detector is needed: `verse_jaccard` is structurally blind to a same-occurrence pair citing disjoint verse sets (different books, or a small subset fully contained in a larger sibling), which `cross_book_duplicate_candidate`'s title-similarity check catches instead. `run_no_two_opinions` (validate.rs:1147) is 'THE CHRONOLOGY AUTHORITY LAW's own DIRECT enforcement — it runs on the FINAL, post-merge, post-calibration event set a reader actually sees (not the pre-merge set the other two duplicate-detectors need), asserting no two surviving events with heavy witness overlap carry disagreeing placements unless explicitly documented as genuinely distinct. `run_place_names_kjv` (validate.rs:694) enforces a 'verbatim-substring law': every curated KJV alias string must be a case-sensitive verbatim substring of the actual KJV text of every verse listed for it, with en/em dash normalization disclosed as necessary for one real pre-existing curated row.",
+      "key_items": [
+        { "name": "run", "kind": "fn", "what": "the main check: duplicate ids, unknown places, non-canon verses, era gaps/coverage, dangling legs", "line": 94 },
+        { "name": "run_polities", "kind": "fn", "what": "validates curated polity borders: duplicate ids, year bounds, era overlap, ring closure/simplicity/bbox", "line": 376 },
+        { "name": "run_event_merges", "kind": "fn", "what": "sweeps the whole event set for unlisted near-duplicate LAYER0<->LAYER1/LAYER0 pairs by verse jaccard", "line": 947 },
+        { "name": "run_cross_book_duplicates", "kind": "fn", "what": "the second duplicate-event detector: title-similarity + year/place overlap, catches disjoint-verse duplicates", "line": 1079 },
+        { "name": "run_no_two_opinions", "kind": "fn", "what": "asserts no two surviving events with heavy witness overlap carry disagreeing placements", "line": 1147 },
+        { "name": "run_place_names_kjv", "kind": "fn", "what": "verbatim-substring law: every curated KJV alias must appear literally in its cited verses", "line": 694 },
+        { "name": "run_catechism", "kind": "fn", "what": "validates the merged catechism: duplicate part/item ids, every citation parses and exists", "line": 812 },
+        { "name": "run_era_boundaries", "kind": "fn", "what": "checks every era_boundary anchor against the graph's own global timeline sort order", "line": 1326 },
+        { "name": "check_duplicate_ids", "kind": "fn", "what": "shared helper: collects every duplicate id from an iterator into the errors vec", "line": 1345 }
+      ],
+      "depends_on": ["server/atlas-etl/src/polities.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["HashMap", "HashSet", "Result", "error-handling", "anyhow", "closure", "iterator", "match"],
+      "tests": "validate.rs's own gaz1_r1_tests module (the place-names-kjv verbatim-substring law); every other check is exercised via tests/etl.rs's large validate_*/run_*_* suite (over 60 tests, one or more per checked invariant) and transitively via tests/coverage.rs and the real-data tests"
+    },
+    {
+      "path": "server/atlas-etl/src/kretzmann.rs",
+      "lines": 2088,
+      "role": "parses Kretzmann's Popular Commentary (1,189 pages, two HTML templates) into verse-anchored commentary units",
+      "l1": "This brings in an entire public-domain Bible commentary — a paragraph or more of explanation for nearly every passage, written by Paul Kretzmann in the early 1900s — and ties each piece of commentary to the exact verse or verses it discusses. The source website renders the Old and New Testaments slightly differently (one quotes short Bible phrases mid-sentence, the other quotes whole verses in a block first), so this file has to understand and reconcile both styles. It also runs an important safety check afterward: it reassembles what it excised as 'quoted Bible text' and compares it back against the official KJV text, to prove that no Bible content was silently altered while stripping the quotes out.",
+      "l2": "`parse_chapter(html, book_index, chapter, chapter_verse_count, kjv_verses) -> Result<ParsedChapter>` is the central function: a single document-order walk over recognized 'segments' (heading, a bold KJV-quote span, a blockquote-style KJV-quote paragraph, or plain commentary text between them) that builds up `KretzUnit`s (id, verse range, heading, and Kretzmann's own prose ONLY — never a byte of quoted KJV text) plus separately-tracked `ExcisedFragment`s (the removed quotes, kept only for the fidelity check). `check_conservation(fragments, canonical) -> ConservationReport` reassembles each verse's fragments and compares them against the real canonical verse text through three tiers: exact match, then case+punctuation-normalized match, then a curated table of American/British spelling variants (`SPELLING_VARIANTS`) — anything failing all three is a disclosed `Mismatch`, never silently ignored.",
+      "l3": "`OVER-EXCISION GUARD` (`apply_over_excision_guard`, kretzmann.rs:1550): a real self-caught bug class — the digital edition occasionally bolds Kretzmann's OWN short connective gloss alongside the quoted clause, which a naive quote-excision would silently destroy as if it were KJV text; this recovers the non-matching tail back into stored prose instead, using a word-tokenized longest-common-block alignment (`longest_common_block`/`align_recursive`, kretzmann.rs:1487-1549) against the real canonical verse. `find_inline_verse_marker` (kretzmann.rs:586) is a second, later fix (fix round 2): the source occasionally renders a mid-sentence verse boundary as literal text ('v. 61') instead of a proper tag, which used to silently swallow the whole following verse into the preceding fragment — recognized only when the cited number is EXACTLY the next verse after the currently-open one, so an ordinary backward cross-reference ('v. 7' inside a later verse's own lemma) is never mistaken for a boundary. `compose_reading_view`/`strip_comment_blocks` (kretzmann.rs:1700/1727) implement a second, independent law (KRETZ-ACCEPT-2): composing verse-plus-comment segments and then stripping every comment must reproduce the canonical Bible text exactly, proving the reading-view construction itself (not just the parse) never mutates verse text. `extract_date_clauses` (kretzmann.rs:1771) mines B.C./A.D./Anno Mundi dating clauses out of stored prose, parsing-only, never interpreting a reign-year formula into a numeric year.",
+      "key_items": [
+        { "name": "parse_chapter", "kind": "fn", "what": "the central per-chapter parser: one document-order walk handling both HTML page templates", "line": 759 },
+        { "name": "check_conservation", "kind": "fn", "what": "KRETZ-ACCEPT-1: compares reassembled excised fragments against canonical text in three tiers", "line": 1625 },
+        { "name": "apply_over_excision_guard", "kind": "fn", "what": "recovers Kretzmann's own bolded prose mistakenly captured inside an excised lemma", "line": 1550 },
+        { "name": "find_inline_verse_marker", "kind": "fn", "what": "recognizes a literal 'v. N' text boundary as a real verse marker, only when N is the next verse", "line": 586 },
+        { "name": "compose_reading_view / strip_comment_blocks", "kind": "fn", "what": "KRETZ-ACCEPT-2: verse+comment composition whose comment-stripped output must equal canonical text exactly", "line": 1700 },
+        { "name": "extract_date_clauses", "kind": "fn", "what": "mines verbatim B.C./A.D./Anno Mundi dating clauses from stored prose, parsing only", "line": 1771 },
+        { "name": "SPELLING_VARIANTS", "kind": "const", "what": "curated table of American/archaic-British spelling pairs for the third conservation tier", "line": 1245 },
+        { "name": "read_all", "kind": "fn", "what": "the one filesystem-touching entry point: reads all 1,189 chapter pages", "line": 308 },
+        { "name": "KretzUnit / ExcisedFragment / ConservationReport", "kind": "struct", "what": "the parsed commentary unit, the removed KJV quote, and the fidelity-check report", "line": 189 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-etl/src/compile.rs"],
+      "concepts": ["struct", "enum", "BTreeMap", "HashMap", "Result", "error-handling", "anyhow", "match", "pattern-matching", "closure"],
+      "tests": "kretzmann.rs's own #[cfg(test)] module (extensive, ~250 lines); tests/kretzmann_real_data.rs runs the full real 1,189-page corpus and pins exact counts: real_corpus_covers_all_1189_pages_with_the_pinned_unit_and_fragment_totals, gen_1_2_is_the_named_multi_unit_verse_spot_check, psa_110_1_the_restored_case_verse_reconciles_under_the_disclosed_mechanical_class, kretz_accept_1_conservation_law_over_the_whole_real_corpus_has_the_pinned_shape, every_date_clause_verbatim_is_a_real_substring_of_its_own_units_prose_over_the_whole_real_corpus, inline_verse_marker_instances_reclassify_to_their_own_verse_not_the_preceding_ones_prose, over_excision_guard_recovers_exo_20_12_and_rut_4_11_prose_verbatim_against_the_source_html, kretz_accept_2_composed_reading_view_strips_to_exactly_the_whole_canonical_bible, every_one_of_the_66_books_has_at_least_one_unit"
+    },
+    {
+      "path": "server/atlas-etl/src/bins/gen_sources.rs",
+      "lines": 68,
+      "role": "second binary: regenerates data/compiled/sources.json from sources.toml",
+      "l1": "This is a small separate program (not the main build) that regenerates just one file: the data behind the app's Sources page. It reads the curated sources list, checks it against the license file, and writes the result — deliberately kept OUT of the main build so touching it can never accidentally change the actual Bible graph data.",
+      "l2": "`fn main() -> Result<()>` reads `data/curated/sources.toml` and `LICENSES.md`, calls `atlas_etl::sources::parse_sources`/`validate_structure`/`validate_against_licenses`, then serializes the result to `data/compiled/sources.json`. Run explicitly via `cargo run -p atlas-etl --bin gen_sources` (never the bare `cargo run -p atlas-etl`, which stays pinned to the main binary via Cargo.toml's `default-run`).",
+      "l3": "Lives at `src/bins/gen_sources.rs` (plural 'bins', not Cargo's normal `src/bin/`) specifically to dodge the repo's root `.gitignore`'s broad `**/bin/` rule (meant for .NET build output) which would otherwise silently exclude this real source file — the SAME disclosed workaround `atlas-graph/Cargo.toml`'s own `[[bin]]` entry for `compile_graph.rs` already established. Deliberately never folded into `main.rs`'s own `compile()` pipeline: a batch brief requires any Rust helper this batch adds stay OUTSIDE the graph pipeline so `graph.bin`/`data/exports/` stay byte-untouched by anything here.",
+      "key_items": [
+        { "name": "main", "kind": "fn", "what": "reads sources.toml + LICENSES.md, validates, writes sources.json", "line": 31 }
+      ],
+      "depends_on": ["server/atlas-etl/src/sources.rs"],
+      "used_by": [],
+      "concepts": ["Result", "error-handling", "anyhow", "PathBuf", "Command-process"],
+      "tests": "no dedicated unit tests in this file itself; tests/sources_validate.rs exercises the same sources.rs functions this binary calls"
+    },
+    {
+      "path": "server/atlas-etl/tests/etl.rs",
+      "lines": 2280,
+      "role": "the crate's main integration-test suite over synthetic fixtures",
+      "l1": "This is the biggest single test file in the crate: it checks nearly every parser and every validation rule using small made-up examples rather than the real downloaded data. It groups roughly into two halves: one proving each individual file parses correctly (kjv, geo, theographic, xrefs, curated), and a much larger half proving `validate.rs`'s many checks actually catch the mistakes they claim to catch — a bad date, a dangling reference, two secretly-duplicate events, an out-of-bounds map coordinate, and dozens more.",
+      "l2": "Organized as one flat file of `#[test] fn` functions grouped by `// --- module.rs ---` comment banners, no shared test-module wrapper. Small helper functions (`empty_atlas`, `full_eras`, `mat_verses`, `witness`, `square_ring`, `test_bbox`, `one_era_polity`, etc.) build minimal fixtures so each test can focus on one specific rule. The heaviest section validates `validate::run_event_merges`/`run_cross_book_duplicates`/`run_no_two_opinions` — the three duplicate-event detectors — each proven both to fire on an unlisted near-duplicate pair and to stay silent once that pair is properly listed as merged or documented-distinct.",
+      "l3": "Groups (by section banner, in file order): kjv.rs, geo.rs, theographic.rs, xrefs.rs, curated.rs (events-extra kind-gating, acts-sections), validate::run (eras/narratives/duplicates/unknown-place/witness-book-coverage/date-span/kind-enum/witness-overlap/heading-anchor-collision/order_key-tiebreak), validate::run_landmarks, validate::run_polities (year bounds, era overlap, ring closure/simplicity/bbox, transition/fall delta checks), validate::run_land_mask, validate::run_catechism, osis.rs, report.rs, validate::run_place_history, validate::run_place_names_kjv, validate::run_place_merges, validate::run_event_merges, validate::run_cross_book_duplicates, validate::run_no_two_opinions (including `run_no_two_opinions_exempts_every_real_distinct_pair`, which reads the REAL `EVENT_DISTINCT_PAIRS` table against synthetic events), validate::run_chronology_anchors/run_chronology_anchor_equality/run_chronology_windows/run_era_boundaries. Every validate_*_fails test asserts both that `.is_err()` and (usually) that the error text names the specific offending id.",
+      "key_items": [
+        { "name": "empty_atlas", "kind": "fn", "what": "builds a minimal valid AtlasData fixture, extended by most validate_* tests", "line": 301 },
+        { "name": "full_eras", "kind": "fn", "what": "builds a complete, valid era set covering the full atlas year span", "line": 315 },
+        { "name": "run_no_two_opinions_exempts_every_real_distinct_pair", "kind": "test", "what": "reads the real EVENT_DISTINCT_PAIRS table and proves every real pair is properly exempted", "line": 2080 },
+        { "name": "validate_valid_data_passes", "kind": "test", "what": "the baseline positive case: a well-formed AtlasData passes validate::run cleanly", "line": 422 }
+      ],
+      "depends_on": [
+        "server/atlas-etl/src/validate.rs", "server/atlas-etl/src/curated.rs", "server/atlas-etl/src/kjv.rs",
+        "server/atlas-etl/src/geo.rs", "server/atlas-etl/src/theographic.rs", "server/atlas-etl/src/xrefs.rs",
+        "server/atlas-etl/src/osis.rs", "server/atlas-etl/src/report.rs", "server/atlas-etl/src/polities.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "unit-test", "struct", "HashMap", "HashSet"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/coverage.rs",
+      "lines": 859,
+      "role": "proves the curated Robertson-harmony/Acts/book-coverage tables are honest against real compiled data",
+      "l1": "This checks a specific promise the project makes to itself: every section of a respected 1922 harmony of the Gospels (Robertson's) is accounted for somewhere in the real curated data — either directly cited, folded into a wider event that's explicitly documented as covering it, or explicitly marked as having no Gospel text to cite at all. It reads the REAL curated files (not fake test data) to make sure this promise is actually kept, not just claimed.",
+      "l2": "`robertson_table()` hardcodes the transcribed 185-slot Robertson table (this project's own independently-verified transcription, cross-checked against two Project Gutenberg mirrors) as the ground truth to check against. `every_robertson_section_is_accounted_for_in_the_real_curated_data` reads every curated events/witnesses file and requires every one of the 185 slots to fall into exactly one of three buckets: cited directly, named in a disclosed `subsumed()` list (with `check_subsumption_content` separately verifying the subsuming event's own witness range genuinely covers it), or named in `honestly_omitted()`. Similar tests check Acts-section coverage and book-by-book coverage-manifest completeness against the real compiled AtlasData.",
+      "l3": "`check_subsumption_content` (coverage.rs:137) doesn't just trust the `subsumed()` list's own claim — it independently re-derives, from the real witness data, whether the claimed subsuming event's own verse coverage actually reaches every citation the subsumed Robertson section would need, catching a stale/false subsumption claim rather than a merely-declared one. `every_declared_book_is_fully_covered_by_the_real_compiled_data` and `declared_books_never_shrink_below_the_established_floor` guard `coverage-manifest.toml`'s own claim that certain books are FULLY covered by titled containers, checked against the real compiled event set's verse coverage. `no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_timeline` and `chron1_*` tests are regression guards for specific historical duplicate-event bugs that shipped once and were fixed.",
+      "key_items": [
+        { "name": "robertson_table", "kind": "fn", "what": "the hardcoded, independently-verified 185-slot Robertson Harmony section table", "line": 34 },
+        { "name": "check_subsumption_content", "kind": "fn", "what": "independently re-verifies a claimed subsumption's real witness-range coverage", "line": 137 },
+        { "name": "every_robertson_section_is_accounted_for_in_the_real_curated_data", "kind": "test", "what": "requires all 185 Robertson sections cited, subsumed-and-verified, or honestly omitted", "line": 275 },
+        { "name": "every_declared_book_is_fully_covered_by_the_real_compiled_data", "kind": "test", "what": "checks coverage-manifest.toml's fully-covered book claims against real compiled data", "line": 488 }
+      ],
+      "depends_on": ["server/atlas-etl/src/curated.rs", "server/atlas-etl/src/compile.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "HashSet", "HashMap", "struct"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/sources_validate.rs",
+      "lines": 183,
+      "role": "fail-loud drift test: sources.toml must reconcile 1:1 against LICENSES.md",
+      "l1": "This makes sure the Sources page's data and the license file never quietly drift apart. Every time the test suite runs, this file checks that both documents agree exactly about which sources exist and how they're licensed — the same check `gen_sources` runs when regenerating its file, just guaranteed to run automatically with nothing to remember.",
+      "l2": "Reads the real `data/curated/sources.toml` and `LICENSES.md` files from disk and calls `atlas_etl::sources::parse_sources`/`validate_structure`/`validate_against_licenses` directly, plus checks that a freshly-generated `sources.json` matches what's already committed, and that the provenance join table is structurally sound and actually reaches real committed data.",
+      "l3": "`sources_toml_reconciles_1to1_against_licenses_md_per_source_table` is the CI-visible enforcement of the single-source-of-truth contract; `compiled_sources_json_matches_a_fresh_generation_from_curated_toml` guards against a stale committed sources.json that no longer matches its own source TOML. `a_malformed_provenance_row_fails_validation_loudly` proves the provenance join table's own off-vocabulary/undeclared-source checks actually fire.",
+      "key_items": [
+        { "name": "sources_toml_reconciles_1to1_against_licenses_md_per_source_table", "kind": "test", "what": "the core CI-visible reconciliation check", "line": 19 },
+        { "name": "compiled_sources_json_matches_a_fresh_generation_from_curated_toml", "kind": "test", "what": "guards against a stale committed sources.json", "line": 54 },
+        { "name": "a_malformed_provenance_row_fails_validation_loudly", "kind": "test", "what": "proves the provenance table's structural checks actually fire", "line": 112 }
+      ],
+      "depends_on": ["server/atlas-etl/src/sources.rs"],
+      "used_by": [],
+      "concepts": ["integration-test"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/brainfuel_real_data.rs",
+      "lines": 484,
+      "role": "real-data tests over the full vendored parallel-editions corpus (929 OT + 260 NT files)",
+      "l1": "This runs the parallel-Bible-editions parser against the actual downloaded files (not fake test data) and locks in the exact numbers found: how many verses per edition, how many marked gaps, and — most importantly — exactly how many places brain-fuel's own copy of the KJV text disagrees with our official KJV text, both before and after the careful letter-case-only correction pass.",
+      "l2": "Builds the real corpus once (`corpus()`, a cached helper) and real KJV verse map (`our_kjv_verses()`), then asserts exact pinned counts: total chapter files, total verse rows, per-edition present/absent counts, zero anomalies, and the KJV cross-check mismatch counts before and after case restoration. Several tests spot-check specific verses byte-for-byte against the real source HTML.",
+      "l3": "`case_restoration_satisfies_the_case_only_law_over_every_real_position` is a property test over the WHOLE real corpus (not a spot check) proving the KJV inerrancy directive holds everywhere the restoration pass touches: before/after must be identical under ASCII case-folding at every touched position. `superscription_exclusions_are_provably_untouched` proves the three hand-authored exclusion-table entries genuinely restore nothing. `real_absent_marker_example_1_chronicles_11_47` pins one specific documented real gap.",
+      "key_items": [
+        { "name": "corpus", "kind": "fn", "what": "cached helper: parses the whole real vendored corpus once for reuse across tests", "line": 21 },
+        { "name": "kjv_column_cross_check_mismatch_count_is_pinned", "kind": "test", "what": "pins the exact raw byte-mismatch count between brain-fuel's KJV column and ours", "line": 153 },
+        { "name": "case_restoration_satisfies_the_case_only_law_over_every_real_position", "kind": "test", "what": "property test: proves case-only restoration holds everywhere in the real corpus", "line": 303 },
+        { "name": "superscription_exclusions_are_provably_untouched", "kind": "test", "what": "proves the three hand-authored exclusion-table entries restore nothing", "line": 456 }
+      ],
+      "depends_on": ["server/atlas-etl/src/brainfuel.rs", "server/atlas-etl/src/kjv.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "property-test", "HashMap"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/concord_real_data.rs",
+      "lines": 128,
+      "role": "real-data tests over the ten vendored Book of Concord HTML pages",
+      "l1": "This runs the Book of Concord parser against the actual ten downloaded pages and locks in the exact numbers: how many paragraphs per document, proving the reading order is correct (Preface, then the Creeds, then each confession in the traditional order), and spot-checking one famous paragraph (the First Commandment's Question and Answer) byte-for-byte against the wording already used elsewhere in the app.",
+      "l2": "Builds the real corpus once via a cached helper, then checks per-document paragraph counts, spine ordering, one verbatim spot-check, that the Ecumenical Creeds' lack of native numbering is properly disclosed, that skipped modern-site-furniture articles are named in the disclosures (never silently ingested), and that the Smalcald Articles' 23 separately-vendored sub-pages are spliced into the right place in table-of-contents order.",
+      "l3": "`the_sc_first_commandment_paragraph_is_verbatim_and_matches_the_existing_catechism_toml_wording` cross-checks the freshly-parsed Concord text against the wording already hand-typed into `catechism.toml` — a real fidelity proof between two independently-authored sources of the same confessional text. `smalcald_articles_extras_are_spliced_after_their_own_part_blurb_in_toc_order` verifies the one documented two-template exception in this corpus parses and splices correctly.",
+      "key_items": [
+        { "name": "corpus", "kind": "fn", "what": "cached helper: parses all ten real Concord documents once", "line": 16 },
+        { "name": "ten_documents_parse_clean_with_the_expected_per_document_paragraph_counts", "kind": "test", "what": "pins exact per-document paragraph counts against the real ten pages", "line": 21 },
+        { "name": "the_sc_first_commandment_paragraph_is_verbatim_and_matches_the_existing_catechism_toml_wording", "kind": "test", "what": "cross-checks parsed Concord text against catechism.toml's independently-authored wording", "line": 64 }
+      ],
+      "depends_on": ["server/atlas-etl/src/concord.rs"],
+      "used_by": [],
+      "concepts": ["integration-test"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/kretzmann_real_data.rs",
+      "lines": 661,
+      "role": "real-data tests over the full 1,189-page Kretzmann commentary corpus",
+      "l1": "This runs the commentary parser against every one of the 1,189 real downloaded pages and pins the exact resulting numbers, including the crucial fidelity check: comparing every excised quoted-Bible-text fragment back against the real KJV to prove Kretzmann's commentary content never silently swallowed or altered actual Scripture. It also spot-checks a few famous or tricky verses individually.",
+      "l2": "Builds the real corpus (`real_corpus`), the real KJV verse map (`real_kjv_verses`), and the real restored canonical text (`real_canonical`) once via cached helpers, then asserts pinned totals for units/fragments/footnotes/over-excisions/inline-verse-markers, runs `check_conservation` over the whole real corpus and pins its exact exact/mechanical/mechanical_spelling/mismatch counts, and spot-checks specific verses (Genesis 1:2's three-way split, Psalm 110:1's Tetragrammaton case restoration, John 3:16 as a Type-B block quote example).",
+      "l3": "`kretz_accept_1_conservation_law_over_the_whole_real_corpus_has_the_pinned_shape` is the load-bearing fidelity assertion — the exact/mechanical/mechanical_spelling/mismatch counts (2,525/23,606/1,903/2,998 as of the last fix round, per the file's own doc comment) are pinned as a REGRESSION HARNESS that 'moves only with a disclosed reason,' never asserted as zero mismatches (which the doc comment calls dishonest at this data scale). `over_excision_guard_recovers_exo_20_12_and_rut_4_11_prose_verbatim_against_the_source_html` and `mat_26_60_to_61_inline_verse_marker_lands_as_v61_lemma_not_v60_prose_end_to_end` are end-to-end regression tests for the two documented self-caught bug fixes (fix rounds 1 and 2). `kretz_accept_2_composed_reading_view_strips_to_exactly_the_whole_canonical_bible` proves the second, independent law over the whole real corpus.",
+      "key_items": [
+        { "name": "real_corpus", "kind": "fn", "what": "cached helper: parses all 1,189 real Kretzmann pages once", "line": 102 },
+        { "name": "kretz_accept_1_conservation_law_over_the_whole_real_corpus_has_the_pinned_shape", "kind": "test", "what": "runs check_conservation over the whole real corpus, pins exact deviation-class counts", "line": 260 },
+        { "name": "over_excision_guard_recovers_exo_20_12_and_rut_4_11_prose_verbatim_against_the_source_html", "kind": "test", "what": "end-to-end regression test for the fix-round-1 over-excision bug", "line": 481 },
+        { "name": "kretz_accept_2_composed_reading_view_strips_to_exactly_the_whole_canonical_bible", "kind": "test", "what": "proves the second law: composed reading view strips to exactly canonical text", "line": 629 }
+      ],
+      "depends_on": ["server/atlas-etl/src/kretzmann.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "property-test", "BTreeMap", "HashMap"],
+      "tests": "this IS the test file"
+    },
+    {
+      "path": "server/atlas-etl/tests/red_letter_real_data.rs",
+      "lines": 111,
+      "role": "real-data tests over the vendored KJV OSIS red-letter XML source",
+      "l1": "This runs the red-letter (words of Jesus) parser against the real downloaded file and pins the exact resulting numbers — how many verses have red text, how many quoted spans matched exactly vs. needed a case-insensitive fallback vs. couldn't be matched at all — plus a few named spot checks (Matthew 4:19's famous 'Follow me,' a fully-red verse, and a verse with no red text at all).",
+      "l2": "Builds the real corpus (`real_corpus`) against the real, restored canonical text (`real_restored_verses` — the same KJV-CASE-restored text the graph actually serves, not the raw unrestored source) via cached helpers, then asserts the pinned alignment shape and three named spot checks.",
+      "l3": "Aligning against the RESTORED canonical text (not the raw kjv.json) is a deliberate choice matching this crate's own established precedent (`kretzmann_real_data.rs::real_canonical`) for 'align against the text the graph actually serves.' The doc comment states the counts pinned here are reported verbatim in the batch's own report — 'counted, categorized, never guessed.'",
+      "key_items": [
+        { "name": "real_corpus", "kind": "fn", "what": "cached helper: parses the real red-letter OSIS XML against restored canonical text", "line": 40 },
+        { "name": "real_corpus_has_the_pinned_alignment_shape", "kind": "test", "what": "pins the exact verse-set size and exact/case-insensitive/not-found span counts", "line": 52 },
+        { "name": "mat_4_19_follow_me_is_the_named_spot_check", "kind": "test", "what": "spot-checks the famous 'Follow me' verse's alignment", "line": 79 }
+      ],
+      "depends_on": ["server/atlas-etl/src/red_letter.rs"],
+      "used_by": [],
+      "concepts": ["integration-test"],
+      "tests": "this IS the test file"
+    }
+  ]
+}

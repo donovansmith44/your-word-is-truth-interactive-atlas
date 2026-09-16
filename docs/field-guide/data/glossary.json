@@ -1,0 +1,1412 @@
+{
+  "primer_order": [
+    "crate",
+    "module",
+    "Cargo-toml",
+    "workspace",
+    "struct",
+    "enum",
+    "impl",
+    "trait",
+    "visibility",
+    "ownership",
+    "borrowing",
+    "reference",
+    "slice",
+    "String-vs-str",
+    "Option",
+    "match",
+    "pattern-matching",
+    "if-let",
+    "Result",
+    "?-operator",
+    "error-handling",
+    "panic-unwrap-expect",
+    "derive",
+    "Default",
+    "Clone-Copy",
+    "Debug-Display",
+    "Ord-PartialOrd",
+    "Hash",
+    "From-Into",
+    "closure",
+    "iterator",
+    "Vec",
+    "HashMap",
+    "BTreeMap",
+    "BTreeSet",
+    "generics",
+    "trait-bound",
+    "lifetime",
+    "Box",
+    "type-alias",
+    "newtype",
+    "phantom-type",
+    "const-static",
+    "attribute",
+    "cfg",
+    "doc-comment",
+    "macro_rules",
+    "Arc",
+    "Rc",
+    "Mutex",
+    "RwLock",
+    "OnceLock",
+    "unsafe",
+    "threads",
+    "scoped-threads",
+    "channels",
+    "async-await",
+    "tokio",
+    "axum",
+    "serde",
+    "bincode",
+    "anyhow",
+    "thiserror",
+    "feature-flag",
+    "Command-process",
+    "PathBuf",
+    "env-macro",
+    "build-script",
+    "unit-test",
+    "integration-test",
+    "property-test",
+    "bench",
+    "content-hash",
+    "interning",
+    "sort-determinism"
+  ],
+  "entries": [
+    {
+      "tag": "crate",
+      "title": "crate — a compiled unit of Rust code",
+      "family": "rust-language",
+      "l1": "A crate is one buildable chunk of Rust — think of it like a single npm package or a .csproj project. This codebase is split into several: `graph-types` (the shared vocabulary of nodes and edges), `atlas-core`, `atlas-etl`, `atlas-graph`, `atlas-server`, `atlas-cli`. Each compiles on its own and can depend on others. If `graph-types` vanished, nothing else could even describe what a Place or a verse IS — every other crate imports its types.",
+      "l2": "A crate is either a *binary* (has a `main.rs`, produces an .exe, like `atlas-server`) or a *library* (has a `lib.rs`, produces code other crates import, like `graph-types`). Its name and dependencies are declared in `Cargo.toml`. Inside a library crate, `pub` items become that crate's public API to everyone else.\n\nExample:\n```\n// graph-types/src/lib.rs\npub mod id;\npub mod graph;\npub use graph::Graph;\n```\nA newcomer's mistake: assuming one crate == one file. A crate is a whole directory tree rooted at `src/lib.rs` or `src/main.rs`; `mod` lines (see `module`) wire the rest of the tree in.",
+      "l3": "This workspace has six crates: `graph-types` (root-level, deliberately NOT a Cargo workspace member — see `workspace`), and `atlas-core`, `atlas-etl`, `atlas-graph`, `atlas-server`, `atlas-cli` under `server/`. `graph-types/src/lib.rs:16-26` is the library root, declaring its modules and re-exporting the small `covenant` surface (`lib.rs:35-40`) that the sibling map-system project is allowed to depend on — everything else in the crate can change without notice. `atlas-graph` depends on `graph-types` via a plain path dependency (`server/atlas-graph/Cargo.toml`), which is what pulls a non-member crate into one shared `Cargo.lock` (see `workspace`). Crate boundaries here are also API boundaries: crossing one always means going through `pub` items only.",
+      "see_also": [
+        "module",
+        "workspace",
+        "Cargo-toml",
+        "visibility"
+      ]
+    },
+    {
+      "tag": "module",
+      "title": "module — folders and files as namespaces",
+      "family": "rust-language",
+      "l1": "A module is Rust's way of organizing code into named drawers, like folders or packages elsewhere. `mod id;` in a crate's entry file says 'there's a drawer called id, defined in id.rs' — that's how a 2,000-line crate stays navigable instead of one giant file. Modules also control what's visible from outside (see `visibility`): put something in a module and don't mark it `pub`, and no other file can reach it, keeping internal helpers internal.",
+      "l2": "`mod name;` tells the compiler to compile `name.rs` (or `name/mod.rs`) as part of the current module tree; `mod name { ... }` declares one inline instead. You reach into a module with `::`, e.g. `crate::id::NodeId`, or bring a path into scope with `use`.\n\nExample:\n```\n// lib.rs\npub mod id;\npub mod graph;\n\n// graph.rs\nuse crate::id::AnyNodeId;\n```\nNewcomer mistake: forgetting `mod x;` in the parent — Rust does not auto-discover files the way some languages auto-discover folders; an un-declared file simply isn't part of the crate and won't even show as an error until you try to `use` it.",
+      "l3": "`graph-types/src/lib.rs:16-26` declares eleven top-level modules (`id`, `text`, `node`, `edge`, `chrono`, `ingest`, `graph`, `explore`, `frontier`, `present`, `store`); `lib.rs:73` also has an inline `mod tests;` for the crate's own law tests. Modules nest arbitrarily (`graph-types/src/id.rs` has an inner `#[cfg(test)] mod tests` too, at the bottom of files like `graph.rs:514-515`). Module boundaries here roughly track the domain: `id.rs` owns identity, `edge.rs` owns relations, `store.rs` owns the query contract (`GraphQuery` trait). A privacy nuance worth knowing: `pub(crate)` (used in `server/atlas-core/src/data.rs:2019`, `server/atlas-cli/src/commands/find.rs:30-31`) makes an item visible everywhere in ITS crate but invisible outside it — narrower than `pub`, wider than private.",
+      "see_also": [
+        "crate",
+        "visibility",
+        "struct"
+      ]
+    },
+    {
+      "tag": "struct",
+      "title": "struct — a named bundle of fields",
+      "family": "rust-language",
+      "l1": "A struct groups related pieces of data under one name, the way a spreadsheet row groups columns. `Graph` bundles every node and every kind of edge the app knows about; a `Place` struct would bundle a name, a position, maybe a modern-day label. If structs vanished, you'd have no way to hand around 'a place' as one thing — you'd be passing five separate loose values everywhere and hoping they stay in sync.",
+      "l2": "Declare fields with `struct Name { field: Type, ... }` (a 'named-field' struct) or `struct Name(Type, ...)` (a 'tuple' struct — see `newtype`). Fields are private by default; add `pub` per field or on the struct to expose them.\n\nExample:\n```\npub struct Graph {\n    pub nodes: BTreeMap<AnyNodeId, Node>,\n    pub attests: Vec<Attests>,\n}\n```\nNewcomer mistake: expecting a struct to have methods baked in like a class. Rust separates data (the `struct`) from behavior (a separate `impl` block) — see `impl`.",
+      "l3": "`graph-types/src/graph.rs:25-27` — `pub struct Graph { pub nodes: BTreeMap<AnyNodeId, Node>, ... }` — is the crate's central data structure; every other field below it (`contains_bible`, `attests`, `succession`, etc., `graph.rs:29-34`) is one typed edge relation stored as a flat `Vec`. Structs here are also used as zero-field 'tag' markers (`graph-types/src/id.rs:38-39`, generated by the `kind_tags!` macro) purely to carry a type through generics — see `phantom-type`. `#[derive(...)]` on a struct (see `derive`) is how most of them get `Debug`, `Clone`, `PartialEq`, etc. for free rather than hand-written.",
+      "see_also": [
+        "enum",
+        "impl",
+        "derive",
+        "newtype"
+      ]
+    },
+    {
+      "tag": "enum",
+      "title": "enum — one of several named shapes",
+      "family": "rust-language",
+      "l1": "An enum lists every shape a value is allowed to take — like a multiple-choice question where the compiler checks you've handled every option. `NodeKind` is 'Place, Person, Event, Era, Polity, ...and nothing else' — the closed vocabulary of things the graph can hold. This matters for honesty: if the codebase invented a new kind of node without updating the enum and every place that switches on it, the compiler refuses to build until you've dealt with the new case.",
+      "l2": "`enum Name { VariantA, VariantB(Type), VariantC { field: Type } }` — variants can carry no data, a tuple of data, or named fields, unlike enums in most other mainstream languages. You inspect which variant you have with `match` (see `match`) or `if let`.\n\nExample:\n```\npub enum NodeKind {\n    Place,\n    Person,\n    Event,\n    // ...\n}\n```\nNewcomer mistake: treating an enum like a C-style int flag. Rust enums are 'sum types' — each variant can carry its OWN different payload, which is what makes `Option` and `Result` (both enums under the hood) possible.",
+      "l3": "`graph-types/src/id.rs:13-29` — `pub enum NodeKind` — is explicitly called a 'closed node-kind vocabulary' whose doc comment (`id.rs:9-12`) says extending it is 'a deliberate act every exhaustive match must acknowledge': adding a variant breaks every non-wildcard `match` on `NodeKind` until it's handled, by design. `RelationId`/`SymRelationId` in `graph-types/src/edge.rs` are enums generated by the `relations!` macro (`edge.rs:42`) and matched exhaustively at `edge.rs:25,56,59,66` to compute each relation's forward/inverse/symmetric kind. Error types are also enums: `CoreError` (`server/atlas-core/src/lib.rs:20-31`) has one variant per failure mode, each carrying its own payload (e.g. `Io { path: String, source: std::io::Error }`).",
+      "see_also": [
+        "struct",
+        "match",
+        "pattern-matching",
+        "Option"
+      ]
+    },
+    {
+      "tag": "trait",
+      "title": "trait — a promised set of methods",
+      "family": "rust-language",
+      "l1": "A trait is a promise: 'any type that implements me supports these operations.' It's Rust's version of an interface. `GraphQuery` is the promise the rest of the app makes about how it will ask questions of the graph — 'give me this node', 'how many edges of each kind leave here', 'the next twenty verses'. Any storage that can keep that promise can sit underneath the app, which is what lets the project swap its storage later without touching the reader or the map.",
+      "l2": "`pub trait Name { fn method(&self) -> Type; }` declares the promise; `impl Name for ConcreteType { ... }` fulfills it. Traits can have default method bodies, associated types, and associated constants.\n\nExample:\n```\npub trait KindTag {\n    const KIND: NodeKind;\n}\n```\nNewcomer mistake: thinking a trait alone is a usable type. You can't hold 'a KindTag' directly — you hold a concrete type that implements it, or a `Box<dyn Trait>` (see `Box`) for a dynamically-chosen implementer.",
+      "l3": "`graph-types/src/store.rs`'s `GraphQuery` trait (per this codebase's own design note) declares five methods — `node`, `derive`, `edge_summary`, `edges`, `reading_window` — and `Graph` implements it, which the crate's own tests enforce as a 'canonical instance' law (every other backend's answers must match the in-memory graph's). `KindTag` (`graph-types/src/id.rs:33-36`) is a trait with only an associated `const`, used purely to carry compile-time identity through `NodeId<K>` — see `phantom-type`. `pipeline.rs` uses a trait as an interface for build-pipeline passes: `Vec<Box<dyn Pass>>` (`server/atlas-graph/src/pipeline.rs:549,565`) is a runtime-dispatched list of heterogeneous pass implementations — see `Box`.",
+      "see_also": [
+        "impl",
+        "trait-bound",
+        "generics",
+        "struct"
+      ]
+    },
+    {
+      "tag": "impl",
+      "title": "impl — where a type's behavior lives",
+      "family": "rust-language",
+      "l1": "An `impl` block is where you write the functions that belong to a struct or enum — its methods. Data (the struct) and behavior (the impl block) are declared separately in Rust, unlike a class in most other languages where they're one unit. `impl Graph { ... }` is where you'd find 'how do I look up a node', separate from the `struct Graph` that says what a Graph HOLDS.",
+      "l2": "`impl TypeName { fn method(&self) -> ... }` adds inherent methods; `impl TraitName for TypeName { ... }` fulfills a trait's promise for that type. A single type can have several `impl` blocks, even in different files.\n\nExample:\n```\nimpl<K: KindTag> NodeId<K> {\n    pub fn new(raw: impl Into<Interned>) -> Self {\n        NodeId(raw.into(), PhantomData)\n    }\n}\n```\nNewcomer mistake: expecting inheritance. There's no `class Dog : Animal` in Rust — shared behavior comes from multiple types implementing the same trait, not from subclassing.",
+      "l3": "`graph-types/src/id.rs:68-75` — `impl<K: KindTag> NodeId<K>` — attaches `new` and `erase` to every kind-tagged id type at once, generic over the tag `K` (see `generics`, `trait-bound`). Trait impls are pervasive: `impl std::fmt::Display for ArtifactError` (`server/atlas-graph/src/artifact.rs:65`) gives a custom error type a human-readable message; `impl KindTag for $tag { const KIND = ...; }` (`graph-types/src/id.rs:41`) is generated fourteen times by the `kind_tags!` macro rather than hand-written. The distinction to keep straight: an inherent `impl Type` block's methods are only callable when the type is known; a trait `impl Trait for Type` block's methods are callable through the trait too (`dyn Trait`, or a generic `T: Trait`).",
+      "see_also": [
+        "trait",
+        "struct",
+        "generics",
+        "macro_rules"
+      ]
+    },
+    {
+      "tag": "generics",
+      "title": "generics — write it once, for any type",
+      "family": "rust-language",
+      "l1": "Generics let you write one function or struct that works for many types instead of copy-pasting it per type — like a shipping container that works whether it holds books or bricks, without the shipping company caring which. `NodeId<K>` is one definition that becomes 'a Place id', 'a Person id', 'an Event id', etc. depending on what `K` is filled in with, instead of thirteen near-identical hand-written id types.",
+      "l2": "Angle brackets after a name introduce a generic parameter: `struct NodeId<K>`, `fn first<T>(items: &[T]) -> Option<&T>`. Usually paired with a trait bound (see `trait-bound`) restricting which types are allowed.\n\nExample:\n```\npub struct NodeId<K: KindTag>(pub Interned, pub PhantomData<K>);\n```\nHere `K` isn't stored as data at runtime at all — see `phantom-type`; it exists purely so the compiler can tell a `NodeId<PlaceTag>` and a `NodeId<PersonTag>` apart. Newcomer mistake: assuming generics work like Java/C# generics with runtime type info available — Rust generics are compiled away per concrete type (monomorphization), so there's no `typeof(K)` at runtime unless the trait itself exposes one (as `KindTag::KIND` does).",
+      "l3": "`graph-types/src/id.rs:67` (`pub struct NodeId<K: KindTag>`) is this codebase's flagship generic type: a phantom-typed id where the type parameter exists only to make 'comparing a Place id to a Person id' a compile error rather than a runtime bug (id.rs:32-33's own doc comment: 'a cross-kind reference is a type error, not a runtime surprise'). `corpus_key<C: Corpus>() -> &'static str` (`graph-types/src/graph.rs:510`) is a smaller generic function bounded by the `Corpus` trait. Monomorphization means each concrete instantiation (`NodeId<PlaceTag>`, `NodeId<PersonTag>`, ...) is compiled as its own type with zero runtime overhead versus a hand-written non-generic version — the phantom type costs nothing at runtime.",
+      "see_also": [
+        "trait-bound",
+        "phantom-type",
+        "trait",
+        "impl"
+      ]
+    },
+    {
+      "tag": "trait-bound",
+      "title": "trait-bound — generics with a requirement",
+      "family": "rust-language",
+      "l1": "A trait bound is the fine print on a generic: 'this works for any type T, AS LONG AS T can do these specific things.' Without a bound, a generic function can't call any methods on its placeholder type at all — the compiler has no idea what it can do. `K: KindTag` on `NodeId<K>` says 'K must be one of the recognized node-kind tags', which is what lets `NodeId::new` read `K::KIND` to know which kind of id it's building.",
+      "l2": "Written as `T: TraitName` in the angle brackets, or after a `where` clause for readability with several bounds.\n\nExample:\n```\npub trait KindTag {\n    const KIND: NodeKind;\n}\n\nimpl<K: KindTag> NodeId<K> {\n    pub fn new(raw: impl Into<Interned>) -> Self { ... }\n}\n```\n`impl Into<Interned>` in the parameter position is a shorthand trait bound too ('any type that can convert into an Interned'). Newcomer mistake: forgetting the bound and then being confused why `K::KIND` or `k.some_method()` doesn't compile inside a generic function — without `K: KindTag`, the compiler only knows `K` is SOME type, not what it can do.",
+      "l3": "`graph-types/src/id.rs:67-68`: `NodeId<K: KindTag>` and its `impl<K: KindTag> NodeId<K>` block both carry the bound, letting `erase()` (id.rs:72-74) call `K::KIND` to build an `AnyNodeId`. `pub fn new(raw: impl Into<Interned>) -> Self` (id.rs:70) is an argument-position trait bound (`impl Trait` sugar for a bound generic parameter) — see `From-Into`. `corpus_key<C: Corpus>()` (`graph-types/src/graph.rs:510`) bounds by the `Corpus` trait to read `C::ID`. Trait bounds are how this codebase gets compile-time guarantees (a `NodeId<PlaceTag>` provably has a `NodeKind`) without runtime type-checking or reflection.",
+      "see_also": [
+        "generics",
+        "trait",
+        "From-Into",
+        "phantom-type"
+      ]
+    },
+    {
+      "tag": "lifetime",
+      "title": "lifetime — how long a reference is good for",
+      "family": "rust-language",
+      "l1": "A lifetime is the compiler's way of making sure you never hold onto a reference to something after it's gone — like a library card that stops working the moment the book is returned. You never invent the actual duration; you just tell the compiler two references are tied together ('this returned reference is only valid as long as that input is'), and it verifies you never break that promise.",
+      "l2": "Written as `'a` (an apostrophe plus a name, usually a single letter). `fn f<'a>(x: &'a str) -> &'a str` means: the returned reference lives exactly as long as `x` does.\n\nExample:\n```\nfn one_positional<'a>(rest: &'a [String], cmd: &str, shape: &str)\n    -> Result<&'a str, CliError> { ... }\n```\nHere the returned `&'a str` borrows from `rest`, so the compiler forbids using the result after `rest` is dropped. Newcomer mistake: trying to 'fix' a lifetime error by adding `'a` everywhere at random. Lifetimes describe existing relationships between references; they don't create new ones — if the error persists, the actual fix is usually to return an owned value (`String` instead of `&str`) instead.",
+      "l3": "`server/atlas-cli/src/main.rs:229` (`fn one_positional<'a>(rest: &'a [String], ...) -> Result<&'a str, CliError>`) ties the returned string slice's lifetime to the input slice's. `server/atlas-core/src/translation.rs:37,49` (`resolve<'a>`, `resolve_name<'a>`) do the same for translation lookups, and `server/atlas-core/src/chronology.rs:406` (`window_for_book<'a>(...) -> Option<&'a BookNarrationWindow>`) returns a borrowed `Option`. Most of this codebase's data-carrying types (`Graph`, `NodeId`) own their data instead of borrowing it, so explicit lifetimes cluster in small lookup functions rather than throughout — a sign of a codebase that mostly avoids the added complexity of borrowed long-lived structures in favor of owned `String`/`Vec` data (see `String-vs-str`, `ownership`).",
+      "see_also": [
+        "reference",
+        "borrowing",
+        "ownership",
+        "slice"
+      ]
+    },
+    {
+      "tag": "ownership",
+      "title": "ownership — exactly one owner at a time",
+      "family": "rust-language",
+      "l1": "Rust's core idea: every value has exactly one owner, and when that owner goes away, the value is cleaned up automatically — no garbage collector guessing when, no manual free. Hand a value to a function and you've handed over ownership (unless you explicitly lend a reference — see `borrowing`); the original owner can no longer use it. This is what lets Rust guarantee memory safety without a garbage collector pausing your program.",
+      "l2": "Assigning or passing a non-`Copy` value moves it: `let a = String::from(\"x\"); let b = a;` makes `a` unusable afterward — the compiler flags any later use of `a` as an error at compile time, not a runtime crash. Types that are cheap to duplicate (numbers, etc.) implement `Copy` instead and don't move — see `Clone-Copy`.\n\nExample:\n```\nlet raw: String = load_name();\nlet id = NodeId::<PlaceTag>::new(raw); // raw is moved in\n```\nNewcomer mistake: fighting ownership by cloning everything to make errors go away. That compiles, but it's usually a sign you should be borrowing (`&T`) instead of taking ownership.",
+      "l3": "`NodeId::new(raw: impl Into<Interned>)` (`graph-types/src/id.rs:70-71`) takes `raw` by value — it MOVES the caller's string in and owns it from then on, matching `Interned`'s status as an owned `String` type alias (id.rs:8). `Graph` (`graph-types/src/graph.rs:25-34`) owns every node and edge it holds — no field is a reference — which is a deliberate simplification this codebase's tests rely on: an owned graph in memory means no lifetime parameter threads through `GraphQuery` implementations, keeping the trait itself lifetime-free. The tradeoff, paid at load time, is that building the artifact clones/moves data rather than borrowing from a longer-lived source; see `content-hash` and `artifact.rs`'s `dump` for where that owned data gets serialized.",
+      "see_also": [
+        "borrowing",
+        "reference",
+        "Clone-Copy",
+        "lifetime"
+      ]
+    },
+    {
+      "tag": "borrowing",
+      "title": "borrowing — using without taking",
+      "family": "rust-language",
+      "l1": "Borrowing is asking to use a value without taking it away from its owner — like reading a book at the library instead of buying it. You get a reference (see `reference`); the owner keeps ownership and can lend it out to many readers at once, or to exactly one writer, but never both simultaneously. The compiler enforces that rule (the 'borrow checker') so two parts of the program can never quietly stomp on the same data at the same time.",
+      "l2": "`&value` borrows for reading (any number of shared borrows can coexist); `&mut value` borrows for writing (only one at a time, and no shared borrows while it's alive).\n\nExample:\n```\nfn edges(&self, at: Position) -> EdgeSummary { ... }\n```\n`&self` here borrows the graph immutably — calling this method doesn't consume the graph, so you can call it again right after. Newcomer mistake: trying to hold a `&mut` borrow and a `&` borrow of the same value at once ('cannot borrow as mutable because it is also borrowed as immutable') — the fix is almost always to shrink the borrow's scope, not to sprinkle `.clone()` everywhere.",
+      "l3": "Query methods across this codebase take `&self` (shared borrow) since reading the graph shouldn't require exclusive access — see the `GraphQuery` trait's methods (`graph-types/src/store.rs`). `std::thread::scope`'s parallel build path (`server/atlas-graph/src/artifact.rs:1430`, `graph-types/src/graph.rs:393-408`) is a case where borrowing rules do real safety work across threads: `graph.rs:112`'s doc comment calls it 'safe, unsafe-free data parallelism' — the borrow checker statically proves no two spawned threads can mutate the same data at once, which is exactly what would otherwise need a `Mutex` (see `Mutex`) or manual discipline in a language without borrow checking.",
+      "see_also": [
+        "reference",
+        "ownership",
+        "lifetime",
+        "Mutex"
+      ]
+    },
+    {
+      "tag": "reference",
+      "title": "reference — a pointer the compiler checks",
+      "family": "rust-language",
+      "l1": "A reference is an address pointing at a value someone else owns — like a hyperlink to a document rather than a photocopy of it. `&Graph` says 'here's where to find the graph, I'm not giving it to you.' Unlike a raw pointer in C, the compiler checks every reference to guarantee it never outlives the thing it points at and never gets used to write while someone else is reading — no dangling pointers, no data races, verified before the program ever runs.",
+      "l2": "`&T` is a shared (read-only) reference; `&mut T` is an exclusive (read-write) reference. Dereference with `*r` when you need the value itself rather than the pointer to it (often unnecessary — method calls auto-dereference).\n\nExample:\n```\nfn node(&self, id: &AnyNodeId) -> Option<&Node> { ... }\n```\nBoth `&self` and `&AnyNodeId` are borrowed, and the returned `Option<&Node>` borrows FROM the graph too, so it can't outlive it. Newcomer mistake: confusing `&Type` (a reference to something owned elsewhere) with `Type` itself — passing a reference where an owned value is expected (or vice versa) is one of the most common early compile errors.",
+      "l3": "`graph-types/src/store.rs`'s `GraphQuery` methods take `&self` and reference parameters throughout, returning borrowed data tied to the graph's own lifetime. `server/atlas-cli/src/main.rs:229`'s `rest: &'a [String]` is a reference to a slice (see `slice`) of owned `String`s, borrowed rather than copied — passing potentially many command-line arguments around without duplicating them. This codebase generally prefers borrowing over cloning in hot lookup paths (queries) and owning in build/storage paths (`Graph`'s fields), a common Rust idiom: own data where it lives, borrow it where it's merely read.",
+      "see_also": [
+        "borrowing",
+        "ownership",
+        "slice",
+        "lifetime"
+      ]
+    },
+    {
+      "tag": "slice",
+      "title": "slice — a view into part of a sequence",
+      "family": "rust-language",
+      "l1": "A slice is a window onto a run of elements — 'these five items, starting here' — without copying them. Think of it like a crop of a photo: you're pointing at a region of the original image, not making a new one. `&[String]` is 'a borrowed view of some run of strings', which is how this codebase passes around command-line arguments or lists of ids without duplicating them every time a function wants to look at a few.",
+      "l2": "`&[T]` (a shared slice) or `&mut [T]` (a mutable slice) — a pointer plus a length, tracked together so out-of-bounds access is caught rather than silently reading garbage memory. `&str` is specifically a slice of UTF-8 bytes (see `String-vs-str`).\n\nExample:\n```\nfn one_positional<'a>(rest: &'a [String], cmd: &str, shape: &str)\n    -> Result<&'a str, CliError> { ... }\n```\n`rest: &'a [String]` is a slice of the full argument `Vec<String>`, not a copy of it. Newcomer mistake: expecting `[T]` alone (no `&`) to be usable as a type in a variable — a bare `[T]` is 'unsized' (its length isn't known at compile time), so it can only ever be used behind a reference or a `Box`.",
+      "l3": "`server/atlas-cli/src/main.rs:229`'s `rest: &'a [String]` and `server/atlas-etl/src/red_letter.rs:138`'s `attr<'a>(tag: &'a str, ...)` both slice into caller-owned data rather than taking ownership. `&str` itself (used throughout, e.g. `translation.rs:49`'s `Result<&'a str, CoreError>`) is the slice-of-`String` case: a `String` owns a growable heap buffer, while `&str` borrows some run of it — that's the whole distinction covered under `String-vs-str`. Slices are why passing 'part of a Vec' around is cheap in Rust — no allocation, no copy, just a pointer and a length checked at every access.",
+      "see_also": [
+        "reference",
+        "String-vs-str",
+        "Vec",
+        "borrowing"
+      ]
+    },
+    {
+      "tag": "Option",
+      "title": "Option<T> — maybe a value",
+      "family": "rust-language",
+      "l1": "`Option<T>` is Rust's honest way of saying 'there might not be an answer.' Instead of a function silently returning `null` and letting you find out the hard way (a crash) when you use it, Rust makes 'nothing here' part of the type itself — you're FORCED to check before you can get at the value. Looking up a place by an id you made up gets you `None`, not a mysterious crash three steps later.",
+      "l2": "`Option<T>` is an enum with two variants: `Some(value)` or `None`. You unwrap it safely with `match`, `if let Some(x) = opt { ... }`, or combinators like `.map()`, `.unwrap_or()`, `.ok_or()` (turns it into a `Result`).\n\nExample:\n```\npub fn window_for_book<'a>(windows: &'a [BookNarrationWindow], book: &str)\n    -> Option<&'a BookNarrationWindow> {\n    windows.iter().find(|w| w.book == book)\n}\n```\nNewcomer mistake: calling `.unwrap()` on an `Option` you haven't proven is `Some` — that panics at runtime if it's `None`, which is exactly the crash `Option` exists to let you avoid. Reach for `.unwrap()` only in tests or when you've already checked.",
+      "l3": "`server/atlas-core/src/chronology.rs:406` (`window_for_book`) and `graph-types/src/store.rs`'s `node`/`derive` methods return `Option` for lookups that may legitimately miss. `graph-types/src/id.rs:135` returns `Result<Self, KindMismatch>` rather than `Option` when a MISMATCH (not merely an absence) is the failure — a deliberate distinction: `None` means 'not found', `Err` means 'found something, but it's wrong.' Combinators seen in this codebase include `.map()` and `?` via `ok_or`-style conversions at API boundaries (`server/atlas-server/src/graph_handlers.rs`) turning a missing node into a proper HTTP error rather than a panic.",
+      "see_also": [
+        "Result",
+        "match",
+        "if-let",
+        "?-operator"
+      ]
+    },
+    {
+      "tag": "Result",
+      "title": "Result<T, E> — success or a named failure",
+      "family": "rust-language",
+      "l1": "`Result<T, E>` is how Rust functions say 'this might fail, and here's what failure looks like' as part of the return type — not as a separately-thrown exception you might forget to catch. Reading a data file might fail because the file's missing, or because its contents don't parse; `Result` forces the caller to decide what to do in both cases before the code compiles, rather than discovering it live when a file is missing in production.",
+      "l2": "`Result<T, E>` is an enum: `Ok(value)` on success, `Err(error)` on failure. The `?` operator (see `?-operator`) is the idiomatic way to propagate an `Err` up to the caller without a manual `match` at every step.\n\nExample:\n```\npub fn resolve<'a>(translations: &'a HashMap<String, Vec<String>>, code: &str)\n    -> Result<&'a [String], CoreError> {\n    translations.get(code).map(Vec::as_slice)\n        .ok_or_else(|| CoreError::UnknownCode(code.into()))\n}\n```\nNewcomer mistake: using `Result<T, String>` everywhere for convenience. It compiles, but throws away the ability to `match` on WHICH failure happened — this codebase instead defines real error enums (see `error-handling`).",
+      "l3": "`server/atlas-core/src/translation.rs:37,49` return `Result<..., CoreError>`; `CoreError` (`server/atlas-core/src/lib.rs:20-31`) is a `thiserror`-derived enum with one variant per real failure mode (`Io`, `Json`, etc.), so callers can `match` on the exact cause. ETL parsing throughout `server/atlas-etl/src/compile.rs` returns `anyhow::Result` instead (see `anyhow`) — a deliberate difference: library crates (`atlas-core`) expose a precise, matchable error type, while the ETL binary's own top-level plumbing (`compile.rs:73-77`) just needs to propagate-and-report, for which `anyhow` is idiomatic. `Result` and `Option` interconvert via `.ok_or()`/`.ok()`.",
+      "see_also": [
+        "Option",
+        "?-operator",
+        "error-handling",
+        "anyhow"
+      ]
+    },
+    {
+      "tag": "?-operator",
+      "title": "? — propagate the error and stop",
+      "family": "rust-language",
+      "l1": "The `?` after a function call means 'if this failed, stop here and hand the failure up to whoever called me; otherwise, give me the successful value and keep going.' It replaces writing the same 'if it failed, return early' check by hand after every fallible step — one character does what would otherwise be several lines of boilerplate, and it can't accidentally be forgotten the way an unchecked error code can.",
+      "l2": "Only usable inside a function that itself returns `Result` (or `Option`) with a compatible error type. `expr?` is shorthand for: if `expr` is `Err(e)`, `return Err(e.into())` immediately; if `Ok(v)`, the whole expression evaluates to `v`.\n\nExample:\n```\npub fn compile(raw_dir: &Path) -> anyhow::Result<AtlasData> {\n    let kjv_raw = read(&raw_dir.join(\"kjv.json\"))?;\n    let (canon, verses) = kjv::parse(&kjv_raw)?;\n    // ...\n}\n```\nEach `?` bails out of `compile` the moment any one step fails. Newcomer mistake: trying to use `?` in `fn main()` without `main` itself returning a `Result` — as of modern Rust, `fn main() -> anyhow::Result<()>` fixes this, which is exactly the pattern this codebase's binaries use.",
+      "l3": "`server/atlas-etl/src/compile.rs:73-77` chains four `?`s in a row reading and parsing source files — any failure short-circuits the whole compile with that step's specific error. `server/atlas-server/src/bins/export_aqc_examples.rs:54` (`async fn main() -> anyhow::Result<()>`) is the pattern that lets `?` work directly in a binary's entry point. The error type produced by `?` must implement `From<OriginalError>` for the function's declared error type (usually satisfied automatically by `anyhow::Result`'s blanket conversion, or by `#[source]` fields in a `thiserror` enum like `CoreError`) — see `From-Into` and `error-handling`.",
+      "see_also": [
+        "Result",
+        "error-handling",
+        "anyhow",
+        "Option"
+      ]
+    },
+    {
+      "tag": "match",
+      "title": "match — branch on every possible shape",
+      "family": "rust-language",
+      "l1": "`match` is a switch statement that the compiler holds to a higher standard: you must account for every possibility, or it won't compile. Given a `NodeKind`, a `match` covering Place, Person, and Event but forgetting Era is a compile error, not a silent bug waiting to surface the day someone visits an Era. It's how this codebase enforces 'when we add a new kind of thing, every place that reacts to kinds must be updated.'",
+      "l2": "```\nmatch self {\n    RelationId::Contains => ...,\n    RelationId::Attests => ...,\n    // every variant, or a `_ => ...` catch-all\n}\n```\nEach arm can also destructure data out of the matched value (see `pattern-matching`). Newcomer mistake: reaching for a catch-all `_ => ...` arm out of habit — it compiles, but it silently swallows any FUTURE variant you add, defeating the exhaustiveness check that's `match`'s whole safety benefit.",
+      "l3": "`graph-types/src/edge.rs:25,56,59,66` all `match self { ... }` over `RelationId`/`SymRelationId` to compute forward/inverse/symmetric relation kinds — generated by the `relations!` macro so each new relation is added in exactly one place, with the macro expanding it into every needed `match` arm. `graph-types/src/edge.rs:126` matches on `NodeKind` (`match k { ... }`). Because `NodeKind` (`graph-types/src/id.rs:13-29`) is explicitly documented as a closed vocabulary, its doc comment (id.rs:11) calls out that adding a variant requires 'every exhaustive match' to acknowledge it — the compiler enforces that promise for free.",
+      "see_also": [
+        "enum",
+        "pattern-matching",
+        "if-let",
+        "error-handling"
+      ]
+    },
+    {
+      "tag": "pattern-matching",
+      "title": "pattern-matching — taking values apart by shape",
+      "family": "rust-language",
+      "l1": "Pattern matching is the ability to say 'if this value looks like THIS shape, pull out THESE pieces' in one step — like sorting mail by both envelope color and what's printed on it, extracting the sender's name only from the ones that match. `Ok(value)` isn't just a check that a `Result` succeeded; the pattern also names `value` for you to use immediately, no separate unwrap step.",
+      "l2": "Patterns appear in `match` arms, `if let`, `let` bindings, and function parameters. They can destructure structs, enums, tuples, and nest arbitrarily.\n\nExample:\n```\nErr(KindMismatch { expected: K::KIND, found: self.kind })\n```\nThis both matches the `Err` variant AND destructures a `KindMismatch` struct's fields by name in one pattern. Newcomer mistake: writing `if x == Some(5)` instead of `if let Some(5) = x` — the latter is idiomatic pattern matching and reads more naturally once it clicks, and is required at all once the thing you're comparing isn't `PartialEq`.",
+      "l3": "`graph-types/src/id.rs:135` (`Err(KindMismatch { expected: K::KIND, found: self.kind })`) constructs — the mirror-image use, pattern-matching's underlying machinery, would destructure it the same way on the receiving end. Macro-generated code leans on patterns heavily: `kind_tags!` (`graph-types/src/id.rs:40-46`) and `relations!` (`graph-types/src/edge.rs:42`) both use `$(...)` repetition patterns to expand a compact table into many `match` arms and `impl` blocks — patterns aren't only for consuming values, they're also central to how `macro_rules!` itself is written.",
+      "see_also": [
+        "match",
+        "if-let",
+        "enum",
+        "macro_rules"
+      ]
+    },
+    {
+      "tag": "if-let",
+      "title": "if let — match just the case you care about",
+      "family": "rust-language",
+      "l1": "`if let` is a shortcut for when you only care about ONE shape a value might have and want to ignore the rest — 'if this happens to be a Some, do something with it; otherwise, move on' — without writing a full `match` with an empty catch-all arm. It reads almost like plain English once you've seen it a few times.",
+      "l2": "```\nif let Some(n) = &b {\n    // use n\n}\n```\nequivalent to a `match` with one real arm and a `_ => {}` arm, but shorter. Pair with `else` for the negative case, or `while let` to loop while a pattern keeps matching. Newcomer mistake: chaining several unrelated `if let`s where a `match` would be clearer — `if let` shines for ONE pattern; more than that, prefer `match` so every case is visible together.",
+      "l3": "`graph-types/src/store.rs:248` (`if let Some(n) = &b { ... }`) is this codebase's example: checking one branch of an `Option` inline rather than a full `match`. This idiom is common wherever a lookup's success case matters but the absence case is a plain no-op or an early return — it keeps the 'happy path' code visually flat instead of nested inside a `match` arm.",
+      "see_also": [
+        "match",
+        "pattern-matching",
+        "Option"
+      ]
+    },
+    {
+      "tag": "closure",
+      "title": "closure — a function that remembers its surroundings",
+      "family": "rust-language",
+      "l1": "A closure is a small, on-the-spot function that can reach out and use variables from the code around it — like a sticky note you write that still remembers what desk it came from. `.map(|chunk| ...)` hands a mini-function to `.map()` that processes each chunk; that mini-function is a closure, and it can see `scope` and other nearby variables without you passing them in explicitly.",
+      "l2": "`|params| expression` or `|params| { block }`. Closures capture their environment by reference, by mutable reference, or by move (`move |params| ...`), depending on what the body needs.\n\nExample:\n```\nchunk.iter().map(|(_, n)| (n.pid(), n.id.clone()))\n    .collect::<BTreeMap<_, _>>()\n```\nThe closure `|(_, n)| ...` destructures a tuple parameter (see `pattern-matching`) and builds a new tuple per element. Newcomer mistake: fighting a `move` closure that 'stole' a variable you wanted to keep using afterward — `move` transfers ownership into the closure (see `ownership`), so clone beforehand if you need the original too.",
+      "l3": "`graph-types/src/graph.rs:408` — `.map(|chunk| scope.spawn(move || chunk.iter().map(|(_, n)| (n.pid(), n.id.clone())).collect::<BTreeMap<_, _>>()))` — nests THREE closures: an outer one building spawn tasks, a `move` closure handed to `thread::scope` (see `scoped-threads`) that owns its chunk, and an inner one used by `.map()` on the chunk's iterator. The `move` there is required because each closure must own its slice of work independently once handed to a separate thread — sharing a borrow across threads would violate the same rules `borrowing` describes, just checked across a `thread::scope` boundary instead of a single function.",
+      "see_also": [
+        "iterator",
+        "scoped-threads",
+        "ownership",
+        "pattern-matching"
+      ]
+    },
+    {
+      "tag": "iterator",
+      "title": "iterator — a recipe for producing values one at a time",
+      "family": "rust-language",
+      "l1": "An iterator is a lazy recipe for 'give me the next item' repeated until there are none left — like a conveyor belt that only moves when you ask for the next piece, rather than dumping everything on you at once. `.iter().map(...).collect()` reads as a pipeline: look at each item, transform it, then gather the results — and nothing actually runs until `.collect()` (or similar) asks for the output.",
+      "l2": "Any type implementing the `Iterator` trait (with a `next()` method) can be chained with `.map()`, `.filter()`, `.find()`, `.collect()`, and dozens more adapters, all without allocating an intermediate list at each step.\n\nExample:\n```\nwindows.iter().find(|w| w.book == book)\n```\nfinds the first matching window without building a temporary filtered list. Newcomer mistake: calling `.collect()` after every intermediate step 'just to see it' — that defeats the laziness and allocates memory you didn't need; chain the adapters and collect once at the end.",
+      "l3": "`graph-types/src/graph.rs:408` chains `.iter().map(...).collect::<BTreeMap<_,_>>()` to build a lookup table from a chunk of nodes. `server/atlas-core/src/chronology.rs:406`'s `window_for_book` uses `.iter().find(...)` for a linear scan. This codebase generally favors iterator chains over hand-written index loops for anything that reads, filters, or transforms a collection — partly for concision, partly because it composes cleanly with `.collect::<BTreeMap<_, _>>()`/`.collect::<Vec<_>>()` when the exact deterministic container matters (see `sort-determinism`).",
+      "see_also": [
+        "closure",
+        "Vec",
+        "BTreeMap",
+        "slice"
+      ]
+    },
+    {
+      "tag": "Vec",
+      "title": "Vec<T> — a growable list",
+      "family": "rust-language",
+      "l1": "`Vec<T>` is Rust's resizable array — a list that can grow as you push items onto it, like an ArrayList or a Python list. It's the default 'give me an ordered bunch of things' container. `Graph`'s `attests: Vec<Attests>` is literally the flat list of every attestation edge in the graph, in the order they were added.",
+      "l2": "`Vec::new()` or the `vec![]` macro to build one; `.push()` to append; index with `v[i]` (panics if out of bounds) or `v.get(i)` (returns `Option`, see `Option`, for safe access).\n\nExample:\n```\npub struct ReadingSpine {\n    pub order: Vec<AnyNodeId>, // canonical order of materialized units\n}\n```\nNewcomer mistake: reaching for `Vec` when order doesn't matter and duplicates shouldn't be allowed — `BTreeSet`/`HashMap` often model the actual requirement (a set, a lookup table) more honestly than a `Vec` you then have to de-duplicate by hand.",
+      "l3": "`graph-types/src/graph.rs:29-34` stores every edge relation as a plain `Vec` (`contains_bible: Vec<Contains<BibleTag>>`, `attests: Vec<Attests>`, `succession: Vec<Succession>`, ...) — flat row tables, deliberately not indexed, mirroring how the artifact is eventually dumped as row-oriented bytes (`artifact.rs`'s `dump`). `server/atlas-graph/tests/determinism.rs:13-15` explicitly credits this Vec-based, never-HashMap-keyed design for the artifact's byte-for-byte reproducibility — see `sort-determinism`. `Vec<Box<dyn Pass>>` (`server/atlas-graph/src/pipeline.rs:549`) is a `Vec` of trait objects, an ordered, heterogeneous pipeline.",
+      "see_also": [
+        "iterator",
+        "BTreeMap",
+        "BTreeSet",
+        "slice"
+      ]
+    },
+    {
+      "tag": "HashMap",
+      "title": "HashMap<K,V> — fast lookup, unordered",
+      "family": "rust-language",
+      "l1": "`HashMap<K, V>` is a lookup table: give it a key, get back its value, fast, regardless of how many entries it holds — like a dictionary or a phone book indexed by name instead of page number. The tradeoff this codebase cares about a lot: iterating a `HashMap` visits entries in an essentially random order that can even change between runs of the SAME program, which is fine for lookups but dangerous if you serialize the iteration order to disk.",
+      "l2": "`HashMap::new()`, `.insert(k, v)`, `.get(&k) -> Option<&V>`. Keys must implement `Hash` and `Eq`.\n\nExample:\n```\npub translations: HashMap<String, Vec<String>>,\n```\nNewcomer mistake: relying on `HashMap` iteration order for anything that gets written to disk, hashed, or compared byte-for-byte — Rust's `HashMap` deliberately randomizes its hash seed per process for security (DoS resistance), so that 'accidental' ordering isn't even stable run-to-run. If order matters, use `BTreeMap` instead — see `sort-determinism`.",
+      "l3": "`server/atlas-core/src/data.rs:545,762,1022-1023,1051` uses `HashMap<String, ...>` for translation tables, verse-by-reference and cross-reference lookups, and place histories — pure by-key lookup, never serialized in iteration order directly. `server/atlas-graph/tests/determinism.rs:8-15`'s own header comment names exactly this class of bug it fixed: the OLD `verses-kjv.json`/`cross-refs.json` writers were `HashMap`-keyed JSON dumps whose random per-process iteration order produced byte-different (though content-identical) files on every run; those writers were deleted, and everything the serialized graph artifact dumps now sources from `Vec`/`BTreeMap` fields instead (see `BTreeMap`).",
+      "see_also": [
+        "BTreeMap",
+        "sort-determinism",
+        "Hash",
+        "Vec"
+      ]
+    },
+    {
+      "tag": "BTreeMap",
+      "title": "BTreeMap<K,V> — lookup with a guaranteed order",
+      "family": "rust-language",
+      "l1": "`BTreeMap<K, V>` is a lookup table like `HashMap`, but it keeps its keys sorted and always iterates in that same sorted order — like a card catalog filed alphabetically instead of a pile sorted by whatever order cards were added. Slightly slower per lookup than a `HashMap`, but iterating it twice, or on two different machines, always visits entries in the exact same order — which matters enormously when the result gets hashed or written to a file that must be byte-identical every time.",
+      "l2": "Same API shape as `HashMap` (`.insert`, `.get`), but keys must implement `Ord` (see `Ord-PartialOrd`) rather than just `Hash`.\n\nExample:\n```\npub struct Graph {\n    pub nodes: BTreeMap<AnyNodeId, Node>,\n    // ...\n}\n```\nNewcomer mistake: defaulting to `BTreeMap` everywhere 'to be safe' — it's the right choice when you serialize, hash, or diff the contents; a `HashMap` is fine (and slightly faster) for purely in-memory, never-compared lookups.",
+      "l3": "`graph-types/src/graph.rs:27` — `pub nodes: BTreeMap<AnyNodeId, Node>` — is the graph's primary node table, chosen specifically so that dumping the graph to bytes (`server/atlas-graph/src/artifact.rs`'s `dump`) produces the same output every time given the same input, which `server/atlas-graph/tests/determinism.rs` asserts directly by building the artifact twice and comparing bytes. `graph-types/src/explore.rs:46` (`type EdgeSummary = BTreeMap<EdgeKind, usize>`) and `graph-types/src/edge.rs:553-554` (`fwd`/`inv` adjacency maps) use the same pattern for the same reason: anything that ends up in a hash or a file needs `BTreeMap`, never `HashMap`.",
+      "see_also": [
+        "HashMap",
+        "sort-determinism",
+        "Ord-PartialOrd",
+        "content-hash"
+      ]
+    },
+    {
+      "tag": "BTreeSet",
+      "title": "BTreeSet<T> — a sorted set with no duplicates",
+      "family": "rust-language",
+      "l1": "`BTreeSet<T>` holds a collection of unique values, sorted, with no duplicates possible — like a sorted, de-duplicated guest list. Add the same name twice and it only appears once; iterate it and you always get the same order. It's the 'just the unique, sorted items' counterpart to `BTreeMap`'s 'unique, sorted keys with values attached.'",
+      "l2": "`BTreeSet::new()`, `.insert(v)` (returns `false` if already present), `.contains(&v)`. Elements must implement `Ord`.\n\nExample:\n```\npub struct Holdings(pub BTreeSet<Position>);\n```\nNewcomer mistake: reaching for a `Vec` plus manual de-duplication logic (`if !v.contains(&x) { v.push(x) }`) where a `BTreeSet` would give you uniqueness and order for free, more clearly and more efficiently for larger collections.",
+      "l3": "`graph-types/src/edge.rs:155` (`pub grounds: BTreeSet<Ground>`) and `graph-types/src/edge.rs:259` (`let distinct: BTreeSet<_> = chain.iter().collect();`) both use `BTreeSet` to deduplicate while keeping deterministic order. `graph-types/src/explore.rs:149` (`pub struct Holdings(pub BTreeSet<Position>)`) wraps one in a newtype (see `newtype`) representing 'the distinct positions someone is holding/viewing.' Like `BTreeMap`, the choice over `HashSet` here is deliberate for determinism, not accidental — the same law that governs `BTreeMap` applies.",
+      "see_also": [
+        "BTreeMap",
+        "sort-determinism",
+        "Ord-PartialOrd",
+        "Vec"
+      ]
+    },
+    {
+      "tag": "String-vs-str",
+      "title": "String vs &str — owned text vs. borrowed text",
+      "family": "rust-language",
+      "l1": "Rust splits 'text' into two types on purpose: `String` is text you own — you can grow it, change it, and it lives until you're done with it, like a notebook page you can keep writing on. `&str` is a borrowed VIEW of text someone else owns — like reading a sentence someone else wrote, useful but not yours to keep or edit. Function parameters usually take `&str` (cheap to pass, works with either kind of text); return values or struct fields that need to own their data use `String`.",
+      "l2": "`String::from(\"x\")` or `\"x\".to_string()` to own text; `&str` (or a string literal `\"x\"`, which is already a `&str`) to borrow it. `String` derefs to `&str`, so you can call `&str` methods directly on a `String`.\n\nExample:\n```\npub type Interned = String; // owned\nfn resolve_name<'a>(names: &'a HashMap<String, String>, code: &str)\n    -> Result<&'a str, CoreError> // borrowed in, borrowed out\n```\nNewcomer mistake: writing `fn f(s: String)` for a parameter that only reads the text — that forces every caller to either own a `String` already or clone one; `fn f(s: &str)` accepts both a `&String` and a string literal with no extra cost.",
+      "l3": "`graph-types/src/id.rs:8` (`pub type Interned = String;`) commits ids to owned text — the crate's own doc comment (`lib.rs:11`) calls this a deliberate 'skeleton' simplification standing in for a future interner (see `interning`). Lookup functions borrow instead: `server/atlas-core/src/translation.rs:37,49` take `code: &str` and return `&'a str`/`&'a [String]` slices into the caller's own map, never allocating a new `String` just to answer a lookup. The rule of thumb this codebase follows: own text where it's stored long-term (ids, node payloads); borrow it (`&str`) where it's merely read or compared.",
+      "see_also": [
+        "slice",
+        "reference",
+        "interning",
+        "Ord-PartialOrd"
+      ]
+    },
+    {
+      "tag": "Box",
+      "title": "Box<T> — a value on the heap, one owner",
+      "family": "rust-language",
+      "l1": "`Box<T>` puts a value on the heap instead of directly inline, and hands you a single owning pointer to it — useful when a value is too big to move around cheaply, or when you don't know its exact type ahead of time and only know it fulfills some trait. `Box<dyn Pass>` means 'some build-pipeline step, I don't need to know exactly which kind, just that it can run as a Pass.'",
+      "l2": "`Box::new(value)` allocates and owns it; `Box<dyn Trait>` is a 'trait object' — a box holding ANY type that implements `Trait`, resolved at runtime rather than compile time (opposite of a generic's compile-time monomorphization — see `generics`).\n\nExample:\n```\npub fn pipeline() -> Vec<Box<dyn Pass>> {\n    vec![Box::new(SomeStep), Box::new(AnotherStep)]\n}\n```\nNewcomer mistake: reaching for `Box<dyn Trait>` where a plain generic (`fn f<T: Trait>(x: T)`) would do — a trait object costs a small runtime dispatch overhead and forbids some optimizations; use it specifically when you need a heterogeneous COLLECTION of different implementers, as the pipeline does.",
+      "l3": "`server/atlas-graph/src/pipeline.rs:549` (`pub fn pipeline() -> Vec<Box<dyn Pass>>`) is exactly that case: the build pipeline is an ORDERED LIST of heterogeneous passes, each a different concrete type, unified only by implementing the `Pass` trait — the pipeline.rs doc comment (line 4) calls passes 'DATA', formalizing the pipeline as 'an ordered contract.' `run_pipeline(ctx: &mut BuildCtx, passes: &[Box<dyn Pass>])` (pipeline.rs:565) then iterates that list generically, calling each pass without caring which concrete step it is. Tests filter and rebuild the list (pipeline.rs:595, 614) to check ordering and failure behavior.",
+      "see_also": [
+        "trait",
+        "generics",
+        "Vec",
+        "impl"
+      ]
+    },
+    {
+      "tag": "Arc",
+      "title": "Arc<T> — shared ownership across threads",
+      "family": "rust-language",
+      "l1": "`Arc<T>` ('atomically reference-counted') lets multiple owners share the SAME value safely, even across threads — like several people holding the same library card that only gets returned once everyone's done with it. The library tracks how many people are holding it and doesn't shelve it until the count hits zero. It's the standard way this server hands the same loaded graph to every incoming web request without copying gigabytes of data per request.",
+      "l2": "`Arc::new(value)` wraps it; `.clone()` on an `Arc` doesn't copy the underlying data — it just bumps a shared counter and hands out another pointer to the same value. Read-only sharing across threads is `Arc`'s specialty; for shared MUTATION you'd normally pair it with a `Mutex` or `RwLock`.\n\nExample:\n```\npub struct Loaded {\n    pub graph: Arc<GraphService>,\n    pub data: Arc<AtlasData>,\n}\n```\nNewcomer mistake: assuming `Arc<T>` alone lets you mutate `T` from multiple threads — it doesn't; `Arc` only makes SHARING safe, not MUTATING. You still need interior mutability (`Mutex`/`RwLock`) for that, which this codebase doesn't need because its shared graph never changes after load.",
+      "l3": "`server/atlas-cli/src/load.rs:22-23` (`pub graph: Arc<GraphService>, pub data: Arc<AtlasData>`) and `server/atlas-server/benches/queries.rs:65` (`fn load_real() -> (Arc<AtlasData>, Arc<GraphService>)`) share one loaded, immutable graph across every request handler and every benchmark iteration without reloading or copying it. Notably, nothing in this codebase pairs `Arc` with a `Mutex` or `RwLock` (neither appears anywhere in `server/` or `graph-types/`) — because the graph is built once at startup and never mutated afterward, plain `Arc` is enough; there's no shared mutable state to protect.",
+      "see_also": [
+        "Mutex",
+        "Rc",
+        "threads",
+        "ownership"
+      ]
+    },
+    {
+      "tag": "Rc",
+      "title": "Rc<T> — shared ownership, single-threaded",
+      "family": "rust-language",
+      "l1": "`Rc<T>` ('reference-counted') is `Arc`'s single-threaded sibling: several owners share one value, and it's freed once the last owner drops it — but WITHOUT the extra bookkeeping `Arc` needs to stay safe across threads, so it's a little cheaper when you know everything stays on one thread. This codebase doesn't use it anywhere it was searched for.",
+      "l2": "`Rc::new(value)`, `.clone()` bumps a plain (non-atomic) counter. The compiler refuses to let an `Rc` cross a thread boundary — trying to send one to another thread is a compile error, which is exactly the safety `Arc`'s extra cost buys back.\n\nExample (illustrative, not from this repo):\n```\nuse std::rc::Rc;\nlet shared = Rc::new(vec![1, 2, 3]);\nlet other_owner = shared.clone(); // same data, +1 to the count\n```\nNewcomer mistake: using `Rc` inside code that later gets moved to a multithreaded context (like an `async` handler that might run on any worker thread) — the compiler will reject it, and the fix is switching to `Arc`.",
+      "l3": "No use of `Rc` was found anywhere in `server/` or `graph-types/` (searched across all `.rs` sources). This tracks with the codebase's shape: shared data here (`GraphService`, `AtlasData`) is shared ACROSS an async web server's worker threads, so `Arc` (server/atlas-cli/src/load.rs:22-23) is the only sharing primitive needed — `Rc` would be a compile error the moment that data reached a `tokio` task on a different thread. It's documented here because a Rust newcomer will meet `Rc` immediately in tutorials and should know why THIS codebase skips it.",
+      "see_also": [
+        "Arc",
+        "ownership",
+        "threads"
+      ]
+    },
+    {
+      "tag": "Mutex",
+      "title": "Mutex<T> — one writer at a time",
+      "family": "rust-language",
+      "l1": "A `Mutex` ('mutual exclusion') is a lock: only one piece of code can hold it open and touch the data inside at a time; everyone else waits their turn. It's how you safely let multiple threads take turns MODIFYING the same shared data, where `Arc` alone only lets them safely SHARE read access. This codebase's search across `server/` and `graph-types/` found no use of `Mutex` anywhere.",
+      "l2": "`Mutex::new(value)`, then `.lock()` to get exclusive access (blocks until available, returns a guard that unlocks automatically when dropped).\n\nExample (illustrative, not from this repo):\n```\nuse std::sync::Mutex;\nlet counter = Mutex::new(0);\n*counter.lock().unwrap() += 1;\n```\nNewcomer mistake: holding a lock longer than necessary (e.g., across an `.await` or a slow computation), which blocks every other thread waiting on it — lock, do the minimum, unlock.",
+      "l3": "No `Mutex` usage appears in this codebase's Rust sources. The reason follows directly from the architecture: `GraphService`/`AtlasData` are built once at startup and shared read-only via `Arc` (`server/atlas-cli/src/load.rs:22-23`) — there is no shared MUTABLE state across requests to protect, so a `Mutex` would add cost and complexity for no benefit. If a future feature needed live, mutable, shared state (e.g., an in-memory cache updated by concurrent requests), a `Mutex` (for occasional writes) or `RwLock` (for read-heavy access) would be the natural next tool — worth knowing even though the codebase hasn't needed it yet.",
+      "see_also": [
+        "RwLock",
+        "Arc",
+        "threads",
+        "borrowing"
+      ]
+    },
+    {
+      "tag": "RwLock",
+      "title": "RwLock<T> — many readers, or one writer",
+      "family": "rust-language",
+      "l1": "An `RwLock` ('read-write lock') is a more permissive `Mutex`: any number of readers can hold it at once, but a writer needs it all to itself with nobody else reading or writing. It's the right tool when reads vastly outnumber writes and you don't want every reader queuing behind every other reader. Not used anywhere in this codebase's Rust sources (checked across `server/` and `graph-types/`).",
+      "l2": "`RwLock::new(value)`, then `.read()` for a shared guard or `.write()` for an exclusive one.\n\nExample (illustrative, not from this repo):\n```\nuse std::sync::RwLock;\nlet cache = RwLock::new(HashMap::new());\nlet snapshot = cache.read().unwrap(); // many of these can coexist\n```\nNewcomer mistake: assuming `RwLock` is strictly better than `Mutex` because it allows concurrent reads — it has more internal bookkeeping and can be slower under heavy write contention or short critical sections; choose based on the actual read/write ratio.",
+      "l3": "Absent from this codebase for the same structural reason as `Mutex`: the graph is loaded once and shared read-only via `Arc` (`server/atlas-cli/src/load.rs:22-23`), so there's no live read/write contention to arbitrate. If this project ever added a request-time mutable cache with many concurrent readers and occasional writers (e.g., memoizing an expensive computed view), `RwLock` would be the natural choice over `Mutex` specifically because reads there would vastly outnumber writes — worth knowing as the concept a newcomer will meet in the standard library even though this codebase hasn't needed it.",
+      "see_also": [
+        "Mutex",
+        "Arc",
+        "threads"
+      ]
+    },
+    {
+      "tag": "OnceLock",
+      "title": "OnceLock<T> — set once, read many times",
+      "family": "rust-language",
+      "l1": "`OnceLock<T>` is a box that starts empty and can be filled exactly once — after that, everyone who asks just gets the same already-computed value instead of redoing the work. It's the standard way to build something expensive (like loading a big test fixture) lazily the FIRST time it's needed, then reuse it for every subsequent call in the same process, which matters a lot for test suites that would otherwise reload gigabytes of data per test.",
+      "l2": "`static CELL: OnceLock<T> = OnceLock::new();` then `CELL.get_or_init(|| expensive_computation())` — the closure runs at most once, no matter how many times or from how many threads `get_or_init` is called.\n\nExample:\n```\nstatic CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();\n```\nNewcomer mistake: reaching for a `lazy_static!`-style external crate macro out of old habit — `OnceLock` has been in `std` since Rust 1.70 and needs no extra dependency for this exact pattern.",
+      "l3": "`server/atlas-etl/tests/coverage.rs:438-441`, `server/atlas-graph/tests/artifact_conformance.rs:54`, and `server/atlas-graph/tests/attestation_exclusivity_real_data.rs:29,41` all use a `static CACHED: OnceLock<...>` (or `static GRAPH: OnceLock<atlas_graph_types::graph::Graph>`) to load the real committed data/graph exactly once per test binary, then share it across every test function in that file — the coverage.rs comment (line 438) notes it's a 'same-crate call, no layering question at all' and is cached specifically because reloading the real dataset per test would be slow. This is purely a test-performance pattern here, not a production runtime one.",
+      "see_also": [
+        "threads",
+        "unit-test",
+        "integration-test",
+        "const-static"
+      ]
+    },
+    {
+      "tag": "derive",
+      "title": "derive — generate boilerplate implementations",
+      "family": "rust-language",
+      "l1": "`#[derive(...)]` tells the compiler to write certain repetitive-but-mechanical code for you — 'give this type the ability to be compared for equality, printed for debugging, and cloned' — instead of you hand-writing near-identical code for every type. It's the difference between typing out 'how do I compare two of these' by hand fifty times and asking the compiler to do the mechanical part once, correctly, every time.",
+      "l2": "`#[derive(Debug, Clone, PartialEq)]` above a `struct`/`enum` definition generates those traits' implementations automatically, based on the type's fields (all of which must also implement the trait being derived).\n\nExample:\n```\n#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct ContentHash(pub u64);\n```\nNewcomer mistake: deriving `Copy` on a type that owns a `String` or `Vec` — it won't compile, because `Copy` requires every field to also be trivially copyable (a heap-allocated `String` isn't); use `Clone` alone instead for those.",
+      "l3": "Derives are everywhere in this codebase: `server/atlas-core/src/data.rs:11,18,25,89,138` derives `Debug, Clone, Default, PartialEq, Serialize, Deserialize` on data-shape structs; `graph-types/src/id.rs:163` derives `Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash` on `ContentHash` so it can be a `BTreeMap`/`BTreeSet` key AND compared cheaply by value. The `kind_tags!` macro (`graph-types/src/id.rs:38-39`) even derives the SAME trait set on fourteen generated zero-field tag structs in one stroke — derive plus a macro together eliminate what would otherwise be dozens of hand-written, error-prone `impl` blocks.",
+      "see_also": [
+        "struct",
+        "enum",
+        "Clone-Copy",
+        "Debug-Display"
+      ]
+    },
+    {
+      "tag": "macro_rules",
+      "title": "macro_rules! — code that writes code",
+      "family": "rust-language",
+      "l1": "`macro_rules!` lets you define a pattern that expands into repetitive code at compile time — like a fill-in-the-blank template that generates several near-identical pieces of code from one compact table, instead of pasting the same shape by hand for every variant. `kind_tags!` takes a short list of 'name => kind' pairs and expands it into fourteen full struct-plus-trait-impl definitions.",
+      "l2": "```\nmacro_rules! kind_tags {\n    ($($tag:ident => $kind:ident),+ $(,)?) => {$(\n        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]\n        pub struct $tag;\n        impl KindTag for $tag { const KIND: NodeKind = NodeKind::$kind; }\n    )+};\n}\n```\ncalled as `kind_tags! { PlaceTag => Place, PersonTag => Person, ... }`. Newcomer mistake: reaching for a macro before trying generics or a plain function — macros are harder to read, debug, and get IDE support for, so this codebase (like most Rust code) uses them sparingly, only where the alternative is genuinely repetitive boilerplate across TYPES (which generics can't abstract over).",
+      "l3": "`graph-types/src/id.rs:40-46` (`kind_tags!`) generates fourteen zero-sized tag structs plus their `KindTag` impls from one table (id.rs:48-61), each becoming the `K` in a `NodeId<K>` — see `phantom-type`. `graph-types/src/edge.rs:42` (`relations!`) similarly generates `RelationId`/`SymRelationId` enum variants plus their forward/inverse/symmetric `match` arms (edge.rs:25,56,59,66) from a compact table. `server/atlas-server/tests/contract_pact.rs:109` (`node_kind_manifest!`) and `server/atlas-graph/src/provenance.rs:112`/`tests/provenance_registry_real_data.rs:65` (`sweep!`) use local, function-scoped macros to avoid repeating a sweep pattern across many similar checks.",
+      "see_also": [
+        "derive",
+        "generics",
+        "attribute",
+        "trait"
+      ]
+    },
+    {
+      "tag": "attribute",
+      "title": "attribute — a note to the compiler above an item",
+      "family": "rust-language",
+      "l1": "An attribute is a tag you put on a piece of code that tells the compiler (or a tool) to treat it specially — like a sticky note on a form saying 'process this one differently.' `#[derive(Debug)]` above a struct, `#[cfg(test)]` above a test module, `#[tokio::main]` above `fn main` — all attributes, all changing how that one item is compiled or generated, without changing the code's own logic.",
+      "l2": "Written as `#[name]` or `#[name(args)]` directly above the item it applies to; `#![name]` (with a `!`) applies to the whole enclosing module or crate instead of the next item.\n\nExample:\n```\n#[cfg(test)]\nmod tests { ... }\n\n#[tokio::main]\nasync fn main() -> anyhow::Result<()> { ... }\n```\nNewcomer mistake: confusing `#[attr]` (applies to the NEXT item) with `#![attr]` (applies to the ENCLOSING item, often the whole crate, usually seen at the very top of `lib.rs`/`main.rs`) — `graph-types/src/lib.rs:14` (`#![allow(dead_code)]`) is the crate-wide form.",
+      "l3": "This codebase uses attributes for: derives (`#[derive(...)]`, e.g. `graph-types/src/id.rs:163`), conditional compilation (`#[cfg(test)]`, `graph-types/src/graph.rs:514`), async entry points (`#[tokio::main]`, `server/atlas-server/src/main.rs:66`), test markers (`#[tokio::test]`, `server/atlas-server/src/contract.rs:42`), and crate-wide lint suppression (`#![allow(dead_code)]`, `graph-types/src/lib.rs:14` — an honest acknowledgment that a 'skeleton' crate has some currently-unused code). See `cfg`, `derive`, and `tokio` for the specific attribute families this codebase leans on most.",
+      "see_also": [
+        "cfg",
+        "derive",
+        "tokio",
+        "unit-test"
+      ]
+    },
+    {
+      "tag": "visibility",
+      "title": "visibility — what's public, what's private",
+      "family": "rust-language",
+      "l1": "Visibility controls who's allowed to see or use a piece of code — the difference between a public storefront and a back office. By default in Rust, everything is PRIVATE to its own module; you have to explicitly mark something `pub` for code outside that module to reach it. This is a deliberate safety net: internal helpers can be refactored freely because the compiler can prove nothing outside the module depends on them.",
+      "l2": "`pub` makes an item visible everywhere the crate is reachable from (and re-exportable outside it); `pub(crate)` makes it visible anywhere in the SAME crate but nowhere outside; no modifier means visible only within the current module and its children.\n\nExample:\n```\npub(crate) fn year_index(y: Year) -> i64 { ... }\n```\nNewcomer mistake: marking everything `pub` 'just in case' — that turns every internal detail into part of your public API, which then can't change later without breaking callers. Default to private, and widen only what genuinely needs to be reached from outside.",
+      "l3": "`graph-types/src/lib.rs:35-40`'s `pub mod covenant` is the DELIBERATE, narrow public surface a sibling map-system project is allowed to depend on — everything else in the crate can change freely. `server/atlas-core/src/data.rs:2019` (`pub(crate) fn year_index`) and `server/atlas-cli/src/commands/find.rs:30-31` (`pub(crate) const SEARCHED_KINDS`/`EXCLUDED_KINDS`) use crate-internal visibility for helpers shared across a crate's own modules but never meant for outside callers. This distinction (`pub` vs `pub(crate)` vs private) is how the 'covenant' promise in `lib.rs` is actually enforced by the compiler, not just documentation.",
+      "see_also": [
+        "module",
+        "crate",
+        "struct"
+      ]
+    },
+    {
+      "tag": "newtype",
+      "title": "newtype — wrapping one type to give it a new identity",
+      "family": "rust-language",
+      "l1": "A newtype is a struct with exactly one field, used purely to give a plain value (a number, a string) its OWN distinct type — like putting a plain dollar bill in a labeled envelope so it can't be mistaken for a euro bill even though both are just paper. `ContentHash(u64)` is 'a u64, but specifically a content hash' — you can't accidentally pass a page count where a content hash was expected, because they're different types even though both are secretly a `u64`.",
+      "l2": "`struct Name(InnerType);` — access the inner value with `.0`. Often paired with `derive` to forward useful traits, and sometimes with `impl Deref` to make the wrapper behave like its inner type where convenient.\n\nExample:\n```\npub struct ArtifactError(pub String);\n\nimpl std::fmt::Display for ArtifactError {\n    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n        write!(f, \"{}\", self.0)\n    }\n}\n```\nNewcomer mistake: treating a newtype as free ceremony — its entire value is that the compiler now catches mixing it up with its inner type or with OTHER newtypes wrapping the same inner type, which a plain type alias (see `type-alias`) would NOT catch.",
+      "l3": "`graph-types/src/id.rs:164` (`pub struct ContentHash(pub u64);`) prevents a raw hash number from being confused with any other `u64` in the codebase. Error types follow the same pattern throughout `atlas-graph`: `ArtifactError(pub String)` (`server/atlas-graph/src/artifact.rs:64`), `FidelityViolation(pub String)` (`fidelity.rs:63`), `FulfillmentGroundingViolation(pub String)` (`fulfillment_adapter.rs:114`), `PeoplesFidelityViolation`/`NamedAfterGroundingViolation` (`peoples_adapter.rs:307,414`), `PersonFidelityViolation` (`person_adapter.rs:169`) — each a one-field wrapper around a message, each with its own `Display` impl, so a `match`/`?` chain can never confuse one violation kind for another even though they're all 'just a String' underneath.",
+      "see_also": [
+        "struct",
+        "type-alias",
+        "Debug-Display",
+        "content-hash"
+      ]
+    },
+    {
+      "tag": "phantom-type",
+      "title": "phantom-type — a type parameter with no runtime data",
+      "family": "rust-language",
+      "l1": "A phantom type is a type parameter that exists ONLY at compile time to keep the compiler honest — it adds zero bytes to the value at runtime, but lets the compiler tell apart things that would otherwise look identical. `NodeId<PlaceTag>` and `NodeId<PersonTag>` are both, underneath, just a stored string — but the compiler will never let you accidentally compare a Place id to a Person id, because they're different TYPES even though they're the same SHAPE.",
+      "l2": "Achieved with `std::marker::PhantomData<T>` — a zero-sized field that 'pretends' to hold a `T` for the compiler's bookkeeping, without actually storing one.\n\nExample:\n```\npub struct NodeId<K: KindTag>(pub Interned, pub PhantomData<K>);\n\nimpl<K: KindTag> NodeId<K> {\n    pub fn new(raw: impl Into<Interned>) -> Self {\n        NodeId(raw.into(), PhantomData)\n    }\n}\n```\nNewcomer mistake: forgetting `PhantomData` is needed at all when a generic parameter `K` doesn't appear in any field — without it, the compiler complains the type parameter is 'unused', since it has no way to know you intend `K` as a compile-time-only marker.",
+      "l3": "`graph-types/src/id.rs:67` (`pub struct NodeId<K: KindTag>(pub Interned, pub PhantomData<K>);`) is this codebase's central phantom-typed identity: the doc comment above `KindTag` (id.rs:32-33) states the payoff directly — 'a cross-kind reference is a type error, not a runtime surprise.' At runtime, every `NodeId<K>` is exactly as large as the `Interned` string it wraps; the `K` and its `PhantomData<K>` marker vanish entirely after compilation (monomorphization — see `generics`), so this safety costs nothing in memory or speed.",
+      "see_also": [
+        "generics",
+        "trait-bound",
+        "newtype",
+        "content-hash"
+      ]
+    },
+    {
+      "tag": "type-alias",
+      "title": "type-alias — a nickname for a type",
+      "family": "rust-language",
+      "l1": "A type alias gives an existing type a new, more meaningful name — the type itself doesn't change, only what you call it. `type Interned = String;` doesn't create a new kind of thing; it just lets the rest of the codebase say 'an Interned' instead of 'a String' in places where that name communicates INTENT (this string is meant to be a deduplicated, interned identifier) even though, today, it's really nothing more than a plain `String`.",
+      "l2": "`type Name = ExistingType;` — usable anywhere `ExistingType` is, interchangeably; the compiler does NOT distinguish `Interned` from `String` the way it would a newtype (see `newtype`) wrapping the same thing.\n\nExample:\n```\npub type Interned = String;\npub type EdgeSummary = BTreeMap<EdgeKind, usize>;\n```\nNewcomer mistake: reaching for a type alias when you actually want type-level SAFETY (preventing mix-ups) — an alias is purely a readability nickname; two aliases for the same underlying type are still fully interchangeable to the compiler, unlike two different newtypes.",
+      "l3": "`graph-types/src/id.rs:8` (`pub type Interned = String;`) is explicitly called a 'skeleton stand-in for a future interner' by the comment right above it, and the crate's own top-level doc comment (`lib.rs:11`) discloses it as a deliberate simplification — a real interning pool is anticipated but not built (see `interning`). `graph-types/src/explore.rs:46` (`pub type EdgeSummary = BTreeMap<EdgeKind, usize>`) and `graph-types/src/ingest.rs:14` (`pub type ProvenanceId = Interned;`) use aliases purely for readability at call sites, so a function signature reads 'returns an EdgeSummary' rather than a bare, unexplained `BTreeMap<EdgeKind, usize>`.",
+      "see_also": [
+        "newtype",
+        "String-vs-str",
+        "interning"
+      ]
+    },
+    {
+      "tag": "const-static",
+      "title": "const & static — values baked in at compile time",
+      "family": "rust-language",
+      "l1": "`const` and `static` both declare a value that's fixed before the program even starts running — the difference from a regular variable is that these exist for the WHOLE program's lifetime and never move. `const` is more like a name for a literal value, copy-pasted wherever it's used; `static` is one single, fixed memory location shared by everyone who reads it — which is why `static` is what you reach for when you need something built once and then reused (like a cached test fixture).",
+      "l2": "`const NAME: Type = value;` (inlined at each use site, must be computable at compile time) vs `static NAME: Type = value;` (one real memory address, can be combined with `OnceLock` for lazy one-time initialization — see `OnceLock`). A trait can also declare an associated `const`.\n\nExample:\n```\npub trait KindTag {\n    const KIND: NodeKind;\n}\nimpl KindTag for PlaceTag { const KIND: NodeKind = NodeKind::Place; }\n```\nNewcomer mistake: using `static mut` for shared mutable global state — it's `unsafe` and almost never the right tool; `OnceLock`, `Mutex`, or `Arc` (all thread-safe) are the idiomatic replacements.",
+      "l3": "`graph-types/src/id.rs:35` (`const KIND: NodeKind;` on the `KindTag` trait) and its fourteen implementations generated by `kind_tags!` (id.rs:41) are associated constants — each tag struct's `KindTag::KIND` is resolved entirely at compile time. `server/atlas-etl/tests/coverage.rs:441` (`static CACHED: OnceLock<AtlasData> = OnceLock::new();`) is the `static` form, paired with `OnceLock` for safe one-time lazy initialization rather than eager static data. `server/atlas-cli/src/commands/find.rs:30-31` uses `pub(crate) const` for two fixed lookup strings.",
+      "see_also": [
+        "OnceLock",
+        "trait",
+        "type-alias"
+      ]
+    },
+    {
+      "tag": "Default",
+      "title": "Default — a sensible empty/starting value",
+      "family": "rust-language",
+      "l1": "The `Default` trait gives a type a standard 'starting' or 'empty' value you can ask for without spelling out every field — like a form that comes pre-filled with reasonable blanks instead of you typing zero into every box by hand. `Graph::default()` gives you an empty graph — no nodes, no edges yet — ready to be filled in during the build step.",
+      "l2": "`#[derive(Default)]` generates it automatically (each field gets ITS OWN default: `0` for numbers, empty for `Vec`/`String`/`HashMap`, etc.); `Default::default()` or `Type::default()` calls it. `..Default::default()` in struct-update syntax lets you override just a few fields and default the rest.\n\nExample:\n```\n#[derive(Debug, Default)]\npub struct Graph {\n    pub nodes: BTreeMap<AnyNodeId, Node>,\n    // ...\n}\n```\nNewcomer mistake: assuming EVERY type gets `Default` for free — it only derives automatically if every field's type also implements `Default`; a field with no sensible 'empty' value needs a manual `impl Default` or excludes the derive.",
+      "l3": "`graph-types/src/graph.rs:24-25` (`#[derive(Debug, Default)] pub struct Graph`) and `ReadingSpine` (graph.rs:20-21) both derive `Default`, giving the build pipeline (`server/atlas-graph/src/pipeline.rs`) a clean, empty starting graph to progressively fill as each pass runs. `server/atlas-core/src/data.rs:11,18` derives `Default` alongside `Serialize`/`Deserialize` on several data-shape structs, useful both for tests constructing partial fixtures and for JSON deserialization filling in optional/missing fields.",
+      "see_also": [
+        "struct",
+        "derive",
+        "Clone-Copy"
+      ]
+    },
+    {
+      "tag": "Clone-Copy",
+      "title": "Clone & Copy — duplicating a value",
+      "family": "rust-language",
+      "l1": "`Clone` and `Copy` both mean 'you can duplicate this value', but for different costs and different kinds of data. `Copy` is for small, simple values (numbers, and structs made purely of them) — duplicating them is so cheap it happens automatically, silently, every time you'd otherwise 'move' them (see `ownership`). `Clone` is for anything that might be expensive to duplicate (a `String`, a `Vec`, anything with heap data) — you have to explicitly call `.clone()`, so the cost is always visible in the code, never hidden.",
+      "l2": "`#[derive(Clone)]` adds a `.clone()` method (deep-copies); `#[derive(Copy)]` (requires `Clone` too) makes the type implicitly duplicate on every use instead of moving — only legal if every field is itself `Copy` (no `String`, `Vec`, `Box`, etc.).\n\nExample:\n```\n#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct ContentHash(pub u64);\n```\nNewcomer mistake: sprinkling `.clone()` everywhere to silence a borrow-checker complaint without understanding why it was complaining — it usually compiles, but can paper over a design that should be borrowing instead of duplicating; see `borrowing`.",
+      "l3": "`graph-types/src/id.rs:163` derives `Copy` on `ContentHash` (a plain `u64` wrapper — free to duplicate) but the fourteen `kind_tags!`-generated tag structs (`id.rs:38-39`) ALSO derive `Copy` since they're zero-sized markers with nothing to actually copy. `NodeId<K>` itself (id.rs:66, `#[derive(Debug)]` only) is deliberately NOT `Copy` (it owns a `String`) — cloning it explicitly (`.clone()`, id.rs:81) is a visible, intentional operation, matching the general rule: identity-carrying, potentially-expensive values stay `Clone`-only; small value-like markers are `Copy`.",
+      "see_also": [
+        "derive",
+        "ownership",
+        "struct"
+      ]
+    },
+    {
+      "tag": "Debug-Display",
+      "title": "Debug & Display — two ways to print a value",
+      "family": "rust-language",
+      "l1": "Rust splits 'turn this into text' into two separate traits with two separate purposes. `Debug` (`{:?}`) is the programmer's view — dump everything, field names included, for debugging; you almost always just derive it. `Display` (`{}`) is the human-facing view — a message a USER should read, like an error message — and you write it by hand because only you know what a good user-facing message looks like.",
+      "l2": "`#[derive(Debug)]` for the programmer's view, printed with `println!(\"{:?}\", value)`. `impl std::fmt::Display for Type { fn fmt(&self, f: &mut Formatter) -> fmt::Result { write!(f, \"...\") } }` for the human-facing message, printed with `println!(\"{}\", value)`.\n\nExample:\n```\nimpl std::fmt::Display for ArtifactError {\n    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n        write!(f, \"{}\", self.0)\n    }\n}\n```\nNewcomer mistake: trying to `println!(\"{}\", value)` a type that only derives `Debug` — that's a compile error; `Debug` and `Display` are separate traits, and only types with the LATTER support `{}`.",
+      "l3": "`Debug` is derived nearly everywhere in this codebase (e.g. `graph-types/src/graph.rs:24`, `server/atlas-core/src/data.rs:11`). `Display` is hand-implemented specifically on error types, since THOSE messages are meant to be read by a human running the CLI or hitting an HTTP endpoint: `server/atlas-graph/src/artifact.rs:65` (`ArtifactError`), `server/atlas-cli/src/error.rs:102` (`CliError`), `server/atlas-core/src/refs.rs:104` (`ScriptureRef`), `fidelity.rs:65`, `fulfillment_adapter.rs:116` (`FulfillmentGroundingViolation`) — each turns its wrapped `String` (see `newtype`) into a clean, user-facing message rather than a debug dump of internal fields.",
+      "see_also": [
+        "derive",
+        "newtype",
+        "error-handling"
+      ]
+    },
+    {
+      "tag": "From-Into",
+      "title": "From & Into — type conversions the compiler can chain",
+      "family": "rust-language",
+      "l1": "`From`/`Into` are how Rust standardizes 'convert this type into that type' so the conversion can be used generically, not just called by a specific method name. If `TypeB` implements `From<TypeA>`, you automatically get `TypeA`'s `.into()` to produce a `TypeB` too — implement one direction, get both usable forms for free. This is also the machinery behind `impl Into<Interned>` as a function parameter: 'accept anything that can become an Interned', so callers can pass a `String`, a `&str`, or anything else that converts.",
+      "l2": "```\nimpl From<&str> for MyType { fn from(s: &str) -> Self { ... } }\n// then automatically: let x: MyType = some_str.into();\n```\nAccepting `impl Into<T>` as a parameter type (rather than `T` directly) lets a function take anything convertible, converting exactly once inside.\n\nExample:\n```\npub fn new(raw: impl Into<Interned>) -> Self {\n    NodeId(raw.into(), PhantomData)\n}\n```\nNewcomer mistake: implementing `Into<TypeB> for TypeA` directly instead of `From<TypeA> for TypeB` — the standard library gives you `Into` automatically once `From` exists (a blanket impl), so implementing `From` is almost always the right direction.",
+      "l3": "`graph-types/src/id.rs:70` (`pub fn new(raw: impl Into<Interned>) -> Self`) accepts anything convertible into the `Interned` (`String`) type, then calls `.into()` (id.rs:71) to perform the conversion exactly once — this is a trait-bound in argument position (see `trait-bound`) built directly on `Into`. `?`-propagated errors (see `?-operator`) also rely on `From`: a `thiserror` `#[source]` field (`server/atlas-core/src/lib.rs:29,31`) works with `?` precisely because `thiserror` generates a `From` conversion from the source error into `CoreError`.",
+      "see_also": [
+        "trait-bound",
+        "?-operator",
+        "error-handling"
+      ]
+    },
+    {
+      "tag": "Ord-PartialOrd",
+      "title": "Ord & PartialOrd — putting values in order",
+      "family": "rust-language",
+      "l1": "`PartialOrd`/`Ord` let the compiler compare two values and say which comes first — like giving playing cards a rank so they can be sorted into a deck. `PartialOrd` allows for pairs that CAN'T be compared (like NaN with floating-point numbers); `Ord` promises every pair CAN always be ordered, which is required for anything used as a `BTreeMap`/`BTreeSet` key, since those containers need to always know where a new item belongs.",
+      "l2": "`#[derive(PartialOrd, Ord)]` generates a field-by-field, top-to-bottom comparison (like comparing tuples lexicographically). Required for `BTreeMap`/`BTreeSet` keys and for `.sort()`.\n\nExample:\n```\n#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct Pid {\n    pub kind: PositionKind,\n    pub hash: ContentHash,\n}\n```\nNewcomer mistake: deriving `Ord` and expecting a MEANINGFUL sort order without checking field declaration order — the derived comparison goes field-by-field in the order they're WRITTEN in the struct, so `Pid`'s ordering is 'by kind first, then by hash', not the other way around, purely because `kind` is declared first.",
+      "l3": "`graph-types/src/id.rs:163,166` derive `Ord`/`PartialOrd` on `ContentHash` and `Pid` so they can be `BTreeMap`/`BTreeSet` keys and produce a deterministic sort — see `sort-determinism`. `AnyNodeId` (used as the key of `Graph::nodes: BTreeMap<AnyNodeId, Node>`, `graph-types/src/graph.rs:27`) needs the same derives for the same reason: the artifact dump's byte-determinism (`server/atlas-graph/tests/determinism.rs`) depends on every BTree-keyed type having a total, derived order.",
+      "see_also": [
+        "BTreeMap",
+        "BTreeSet",
+        "derive",
+        "sort-determinism"
+      ]
+    },
+    {
+      "tag": "Hash",
+      "title": "Hash — turning a value into a lookup key",
+      "family": "rust-language",
+      "l1": "The `Hash` trait lets a value be turned into a number suitable for fast lookup — it's what makes a type usable as a `HashMap` key. Two equal values must always hash to the same number (otherwise the lookup table would lose track of them), which is why `Hash` is almost always derived TOGETHER with `Eq`, never on its own.",
+      "l2": "`#[derive(Hash)]` (usually alongside `PartialEq, Eq`) generates a hash by combining every field's own hash. A custom `impl Hash` is only needed when you want to hash based on LESS than all the fields (e.g., ignoring a cache field that doesn't affect equality).\n\nExample:\n```\nfn hash<H: Hasher>(&self, st: &mut H) {\n    // custom logic\n}\n```\nNewcomer mistake: implementing `Hash` and `PartialEq` inconsistently (hashing on fields that `PartialEq` ignores, or vice versa) — this breaks `HashMap`/`HashSet` silently, since equal-by-`PartialEq` values could then hash differently and never be found as the 'same' key.",
+      "l3": "`graph-types/src/id.rs:101` and `graph-types/src/text.rs:140,191` hand-write `fn hash<H: Hasher>(&self, st: &mut H)` rather than deriving it — a deliberate choice for types where the derived (all-fields) hash wouldn't match the type's own custom `PartialEq`. `ContentHash`/`Pid` (id.rs:163,166) derive `Hash` normally, since content-addressed identity needs no custom logic: the whole point of a `ContentHash` is that its bytes ARE the identity, so the default field-based hash is exactly right — see `content-hash`.",
+      "see_also": [
+        "derive",
+        "HashMap",
+        "Ord-PartialOrd",
+        "content-hash"
+      ]
+    },
+    {
+      "tag": "error-handling",
+      "title": "error-handling — failures as named, typed values",
+      "family": "rust-language",
+      "l1": "Rust treats 'something went wrong' as an ordinary value passed back through a return type, not a surprise thrown across your program. Instead of catching an unpredictable exception that could come from anywhere, a function's signature TELLS you it might fail (`Result`), and what kinds of failure to expect (an error enum listing them). It reads almost like a form with checkboxes for every way a task can go wrong, rather than a blank 'something broke' message.",
+      "l2": "The idiom: define an error enum with one variant per real failure mode (often via `#[derive(Debug, thiserror::Error)]` — see `thiserror`), have fallible functions return `Result<T, YourError>`, and propagate with `?` (see `?-operator`).\n\nExample:\n```\n#[derive(Debug, Error)]\npub enum CoreError {\n    #[error(\"io error reading {path}\")]\n    Io { path: String, #[source] source: std::io::Error },\n    #[error(\"json error reading {path}\")]\n    Json { path: String, #[source] source: serde_json::Error },\n}\n```\nNewcomer mistake: reaching for `panic!`/`.unwrap()` for anything a CALLER might reasonably want to recover from — reserve panics for truly unrecoverable bugs (see `panic-unwrap-expect`), and model expected failures as `Result` instead.",
+      "l3": "`server/atlas-core/src/lib.rs:20-31` (`CoreError`) is the library-level pattern: a closed, matchable set of failure modes. `server/atlas-graph/src/artifact.rs:64-65`, `fidelity.rs:63-65`, `fulfillment_adapter.rs:114-116`, `peoples_adapter.rs:307,414`, `person_adapter.rs:169` each define a small newtype error (see `newtype`) with its own `Display` message instead of sharing one generic error type — a deliberate choice so a `match`/`?` chain can distinguish e.g. a fidelity violation from a grounding violation. ETL binaries use `anyhow` instead (see `anyhow`) at the top level, where propagate-and-report is all that's needed.",
+      "see_also": [
+        "Result",
+        "?-operator",
+        "thiserror",
+        "anyhow"
+      ]
+    },
+    {
+      "tag": "anyhow",
+      "title": "anyhow — one flexible error type for application code",
+      "family": "rust-language",
+      "l1": "`anyhow` is a small crate that gives you one universal 'something went wrong, here's a message and maybe a cause chain' error type, so you don't have to design a custom error enum for every binary or script. It's meant for the TOP of a program — a CLI tool or ETL script — where you mostly want to report a clear failure and exit, not carefully match on which of ten specific things happened.",
+      "l2": "`anyhow::Result<T>` is shorthand for `Result<T, anyhow::Error>`; `.context(\"doing X\")` or `anyhow::Context` adds a human-readable breadcrumb to an error as it propagates; `bail!(\"message\")` returns an error immediately.\n\nExample:\n```\nuse anyhow::{bail, Context, Result};\n\nfn compile(raw_dir: &Path) -> Result<AtlasData> {\n    let kjv_raw = read(&raw_dir.join(\"kjv.json\")).context(\"reading kjv.json\")?;\n    // ...\n}\n```\nNewcomer mistake: using `anyhow` inside a LIBRARY crate whose callers need to `match` on specific failure kinds — `anyhow::Error` erases the original type for convenience, which is exactly wrong for a library API; use a proper error enum (`thiserror`) there instead.",
+      "l3": "`server/atlas-etl/src/bins/gen_sources.rs:29`, `brainfuel.rs:111`, `catechism_map.rs:43`, `compile.rs:37`, `concord.rs:78` all `use anyhow::{Context, Result}` (some with `bail`) for ETL parsing and compilation, where the ETL binary's job is 'transform source files or fail with a clear message', not offer a matchable API. `server/atlas-server/src/bins/export_aqc_examples.rs:53-54` (`#[tokio::main] async fn main() -> anyhow::Result<()>`) is the same pattern at a binary's entry point. This is the deliberate split this codebase draws: `anyhow` in binaries/ETL scripts, `thiserror` enums in libraries.",
+      "see_also": [
+        "Result",
+        "thiserror",
+        "error-handling",
+        "?-operator"
+      ]
+    },
+    {
+      "tag": "thiserror",
+      "title": "thiserror — deriving proper error enums",
+      "family": "rust-language",
+      "l1": "`thiserror` is a small crate that removes the tedious, error-prone boilerplate of hand-writing `Display` and `std::error::Error` for a custom error enum. You write the enum and a `#[error(\"...\")]` message template per variant; `thiserror` derives the rest. It's the difference between hand-writing a formatting function for every failure case and just annotating each case with the message it should show.",
+      "l2": "`#[derive(Debug, thiserror::Error)]` on an enum; each variant gets `#[error(\"message with {field} interpolation\")]`; a field can be tagged `#[source]` to wire it into the standard `Error::source()` chain (which is what lets tools print 'caused by: ...' chains, and what lets `?` convert an underlying error automatically).\n\nExample:\n```\n#[derive(Debug, Error)]\npub enum CoreError {\n    #[error(\"io error reading {path}\")]\n    Io { path: String, #[source] source: std::io::Error },\n}\n```\nNewcomer mistake: forgetting `#[source]` on the wrapped underlying error — without it, `?` won't automatically convert that error type into yours, and error-chain tools won't show the original cause.",
+      "l3": "`server/atlas-core/src/lib.rs:18,20-31` is this codebase's one `thiserror` use: `use thiserror::Error;` then `#[derive(Debug, Error)] pub enum CoreError { Io { path: String, #[source] source: std::io::Error }, Json { path: String, #[source] source: serde_json::Error }, ... }`. This is the library-facing counterpart to `anyhow`'s binary-facing convenience (see `anyhow`) — `atlas-core` callers can `match` on exactly which of `CoreError`'s variants occurred, something an `anyhow::Error` deliberately doesn't support.",
+      "see_also": [
+        "error-handling",
+        "anyhow",
+        "Result",
+        "derive"
+      ]
+    },
+    {
+      "tag": "panic-unwrap-expect",
+      "title": "panic! / unwrap / expect — giving up on purpose",
+      "family": "rust-language",
+      "l1": "`panic!`, `.unwrap()`, and `.expect()` are Rust's way of saying 'this should be IMPOSSIBLE, and if it happens anyway, stop everything rather than continue with corrupted assumptions.' Unlike a `Result`-based error, a panic isn't meant to be recovered from by ordinary code — it's a program-crashing assertion that a bug exists. Using them means: 'I've decided this failure means the program is broken, not that the caller made a normal mistake.'",
+      "l2": "`panic!(\"message\")` stops the current thread immediately. `.unwrap()` on an `Option`/`Result` panics if it's `None`/`Err`; `.expect(\"message\")` does the same but with a custom panic message explaining WHY you believed it couldn't fail.\n\nExample:\n```\nCommand::new(env!(\"CARGO_BIN_EXE_bibex\")).args(args).output().expect(\"bibex must run\")\n```\nNewcomer mistake: reaching for `.unwrap()` in ordinary application logic 'to get it compiling', then shipping it — a `None`/`Err` there becomes a hard crash for a real user. `.unwrap()`/`.expect()` are fine in tests (where a failure SHOULD stop the test loudly) and genuinely-impossible cases; anywhere else, propagate the error instead (see `?-operator`).",
+      "l3": "`server/atlas-cli/tests/cli.rs:17` (`.output().expect(\"bibex must run\")`) and `server/atlas-cli/tests/contract_pact_cli.rs:93` use `.expect()` in TEST code, where a failure to even run the binary under test should abort the test suite loudly and immediately — an appropriate, deliberate use. Production request-handling code in `server/atlas-server/src/graph_handlers.rs` instead returns `Result<Json<...>, ApiError>` (e.g. `graph_handlers.rs:123`) rather than unwrapping, converting a missing node into a proper HTTP error response instead of crashing the server process for one bad request.",
+      "see_also": [
+        "Result",
+        "error-handling",
+        "?-operator"
+      ]
+    },
+    {
+      "tag": "doc-comment",
+      "title": "doc-comment — documentation the compiler checks",
+      "family": "rust-language",
+      "l1": "A doc comment (`///` above an item, or `//!` at the top of a file/module) is documentation that tools actually understand — it can be turned into a browsable reference (`cargo doc`), and any code examples inside it can be run as tests (`cargo test` executes doc examples too), so stale documentation that no longer matches the code tends to get caught automatically. This codebase's doc comments are unusually long and narrative — they explain WHY a design decision was made, not just WHAT a function does.",
+      "l2": "`///` documents the item directly below it; `//!` (note the `!`) documents the ENCLOSING item — typically used at the very top of a file to describe the whole module or crate.\n\nExample:\n```\n//! Identity: kind-tagged node ids, positions, content-addressed pids.\n\n/// Kind tag for phantom-typed ids: a cross-kind reference is a type\n/// error, not a runtime surprise.\npub trait KindTag { const KIND: NodeKind; }\n```\nNewcomer mistake: confusing `///` (item-level, most common) with a plain `//` comment — only `///`/`//!` are picked up by documentation tooling; a plain `//` is invisible to `cargo doc` and to doc-tests.",
+      "l3": "`graph-types/src/lib.rs:1-12` (crate-level `//!`) and `graph-types/src/id.rs:1,9-12,32-33` (module- and item-level docs) are representative: long, narrative comments explaining the DESIGN rationale ('a cross-kind reference is a type error, not a runtime surprise') alongside disclosed simplifications ('Interned is a String; the content hash is a 64-bit std hash'). The brief for this very glossary notes these doc comments cite past work batches by name (e.g. 'M-C', 'PROV-1') — treat those as historical context markers, not something to explain to a reader.",
+      "see_also": [
+        "attribute",
+        "crate",
+        "module"
+      ]
+    },
+    {
+      "tag": "cfg",
+      "title": "cfg — compile this only under some condition",
+      "family": "rust-language",
+      "l1": "`#[cfg(...)]` tells the compiler 'only include this code when a certain condition holds' — most commonly, 'only when running tests.' It's how test-only helper code and production code can live in the SAME file without the test code ever being compiled into the real, shipped binary — no separate test project needed, no risk of test helpers accidentally leaking into production.",
+      "l2": "`#[cfg(test)]` above a module or item includes it only during `cargo test`; other conditions include target OS, feature flags (see `feature-flag`), and debug-vs-release builds.\n\nExample:\n```\n#[cfg(test)]\nmod tests {\n    use super::*;\n    // test functions here\n}\n```\nNewcomer mistake: putting test-only helper functions OUTSIDE a `#[cfg(test)]` block 'to keep things simple' — that ships unused test-support code (and its dependencies) into the real binary; keeping it behind `#[cfg(test)]` means it costs nothing outside `cargo test`.",
+      "l3": "`graph-types/src/graph.rs:514-515` (`#[cfg(test)] mod tests { use super::*; ... }`) and `graph-types/src/frontier.rs:589` are examples of this codebase's standard pattern: unit tests live at the bottom of the same file as the code they test, gated so they never ship. Integration tests (see `integration-test`) don't need `#[cfg(test)]` at all — files under a crate's `tests/` directory are automatically test-only by their location, not by an attribute.",
+      "see_also": [
+        "unit-test",
+        "attribute",
+        "integration-test"
+      ]
+    },
+    {
+      "tag": "feature-flag",
+      "title": "feature-flag — a switch compiled into (or out of) the build",
+      "family": "rust-language",
+      "l1": "A feature flag is an on/off switch decided before the program runs — either 'compile this optional piece of code in or out' (Cargo's own feature mechanism) or, more loosely, 'this behavior is currently on, and could be flipped off in one place.' This Rust codebase's `Cargo.toml` files don't define any Cargo `[features]` sections, so the closest real example of the CONCEPT lives on the client side instead.",
+      "l2": "Cargo features: declared in `[features]` in `Cargo.toml`, checked in code with `#[cfg(feature = \"name\")]`, and turned on per-dependency or via `--features` on the command line. A simpler, non-Cargo version of the same idea is just a `const`/`static bool` gating a branch.\n\nExample (the pattern this codebase actually uses, in C#):\n```\npublic static class FeatureFlags\n{\n    public static readonly bool XrefSuperscripts = true;\n}\n```\nNewcomer mistake: assuming every 'flag' in a codebase is a Cargo feature — check whether it's a compile-time Cargo `[features]` switch (changes what gets COMPILED) or just a plain boolean constant (changes what RUNS); this codebase uses the latter, not the former.",
+      "l3": "No `[features]` section exists in any `Cargo.toml` under `server/` (checked directly) — this codebase's Rust crates don't use Cargo's conditional-compilation feature mechanism at all. The real analog is `client/FeatureFlags.cs:1-28`, a `static readonly bool XrefSuperscripts` gate whose own doc comment explains a `static readonly` (not `const`) was chosen deliberately: a `const false` made a render branch provably unreachable and tripped a compiler warning (CS0162) on an otherwise warning-free build. It's a runtime-checked, compile-time-set switch — one home for flags, not scattered magic booleans.",
+      "see_also": [
+        "cfg",
+        "Cargo-toml",
+        "workspace"
+      ]
+    },
+    {
+      "tag": "unsafe",
+      "title": "unsafe — code the compiler can't fully check for you",
+      "family": "rust-language",
+      "l1": "`unsafe` is an escape hatch: a small, explicitly marked region where YOU take over responsibility for guarantees the compiler normally enforces automatically (like never reading freed memory). This codebase deliberately doesn't use it — the whole point of choosing safe alternatives (like `thread::scope` instead of raw threads with shared pointers) is to get the SAME capability without ever needing to open that escape hatch.",
+      "l2": "`unsafe { ... }` blocks (or `unsafe fn`) are required for a handful of specific operations: dereferencing raw pointers, calling other `unsafe` functions, mutating a `static`, and a few others. Nothing about `unsafe` disables the borrow checker everywhere — it only unlocks those specific operations, and everything else in the block is still checked normally.\n\nExample: none needed here — this codebase's own comment on its hardest concurrency problem states outright that its solution is 'safe, unsafe-free data parallelism.'\n\nNewcomer mistake: assuming `unsafe` means 'anything goes' — it doesn't disable Rust's type system or most of its checks; it only permits a specific, narrow set of extra operations, and misusing THOSE can still cause real memory bugs.",
+      "l3": "A search across every `.rs` file in `server/` and `graph-types/` found no `unsafe` keyword usage at all. `graph-types/src/graph.rs:111` explicitly calls out the alternative this codebase chose for its one genuinely tricky concurrency problem (building the artifact in parallel across `std::thread::available_parallelism()` worker threads): 'That's safe, unsafe-free data parallelism' via `std::thread::scope` (see `scoped-threads`), where the borrow checker itself proves no two threads can touch the same data — the guarantee `unsafe` code would otherwise have to hand-verify.",
+      "see_also": [
+        "scoped-threads",
+        "borrowing",
+        "threads"
+      ]
+    },
+    {
+      "tag": "threads",
+      "title": "threads — running code at the same time",
+      "family": "rust-language",
+      "l1": "A thread is a separate line of execution running alongside your main program — like having several workers on the same job at once instead of one worker doing everything in sequence. This codebase uses threads specifically to speed up building the graph artifact: split the work into chunks, hand each chunk to its own thread, and combine the results once they're all done.",
+      "l2": "`std::thread::available_parallelism()` asks the OS how many CPU cores are usable; the actual spawning here uses SCOPED threads (see `scoped-threads`) rather than the more familiar `std::thread::spawn`, which this codebase doesn't use anywhere.\n\nExample:\n```\nlet n_threads = std::thread::available_parallelism()\n    .map(|n| n.get())\n    .unwrap_or(4);\n```\nNewcomer mistake: assuming more threads always means faster — beyond the number of CPU cores, extra threads just add scheduling overhead without more real parallelism; `available_parallelism()` is exactly how this codebase avoids over-subscribing the machine.",
+      "l3": "`server/atlas-graph/src/artifact.rs:1388-1417` computes `n_threads` from `std::thread::available_parallelism()` and uses it to size chunks for the parallel build step (artifact.rs:1417,1430) — a comment right above (artifact.rs:1388-1389) frames this as a deliberate 'tier' choice. No use of plain `std::thread::spawn` (the un-scoped, detached form) appears anywhere in this codebase; every threaded computation here goes through `std::thread::scope` instead — see `scoped-threads` for why that's the safer, chosen alternative.",
+      "see_also": [
+        "scoped-threads",
+        "channels",
+        "closure"
+      ]
+    },
+    {
+      "tag": "scoped-threads",
+      "title": "std::thread::scope — threads that can't outlive their data",
+      "family": "rust-language",
+      "l1": "A scoped thread is a worker thread that the program GUARANTEES will finish before moving on — which means it's allowed to borrow data from outside instead of needing its own full copy. Regular threads can outlive the function that spawned them, so they can only safely borrow data that lives forever (or that they own outright); a `thread::scope` block promises 'everything spawned inside here finishes before we leave this block', so borrowing short-lived data across threads becomes safe and compiler-checked.",
+      "l2": "`std::thread::scope(|scope| { scope.spawn(|| { ... }); ... })` — every `scope.spawn`'d closure must finish before `thread::scope` itself returns; the compiler enforces this, which is what lets those closures borrow data from the enclosing function safely.\n\nExample:\n```\nlet rows = std::thread::scope(|scope| -> Result<_, ArtifactError> {\n    let handles: Vec<_> = chunks.into_iter()\n        .map(|chunk| scope.spawn(move || process(chunk)))\n        .collect();\n    // join handles, combine results\n});\n```\nNewcomer mistake: expecting `thread::scope` closures to be able to outlive the `scope` block (e.g., stashing a handle somewhere for later) — by design, they can't; that constraint is exactly what makes the borrowing safe.",
+      "l3": "`server/atlas-graph/src/artifact.rs:1430` (`std::thread::scope(|scope| -> Result<_, ArtifactError> { ... })`) splits node-processing work into chunks across `available_parallelism()` threads (see `threads`), each chunk closure built with `.map(|chunk| scope.spawn(move || ...))` (`graph-types/src/graph.rs:408`). `graph-types/src/graph.rs:111-112,393` explicitly frames this as the reason the parallel build needs no `unsafe` code and no shared mutable state crossing a thread boundary — each spawned closure owns (via `move`) its own chunk, and results are collected only once every thread has rejoined at the end of the `scope`.",
+      "see_also": [
+        "threads",
+        "closure",
+        "unsafe",
+        "borrowing"
+      ]
+    },
+    {
+      "tag": "channels",
+      "title": "channels — passing messages between threads",
+      "family": "rust-language",
+      "l1": "A channel is a pipe for sending values from one thread to another safely — one end sends, the other receives, and the runtime handles the handoff without either side touching the other's memory directly. This codebase's own search turned up no channel usage anywhere in its Rust sources; its one multi-threaded workload (building the graph artifact) doesn't need one.",
+      "l2": "`std::sync::mpsc::channel()` returns a `(Sender, Receiver)` pair; a sender can be cloned and handed to multiple threads, a receiver reads whatever arrives, in order.\n\nExample (illustrative, not from this repo):\n```\nlet (tx, rx) = std::sync::mpsc::channel();\ntx.send(compute_something()).unwrap();\nlet result = rx.recv().unwrap();\n```\nNewcomer mistake: reaching for a channel when a simpler tool would do — if you just need EACH worker's final result back once, `thread::scope`'s own `JoinHandle::join()` (returning each spawned closure's return value directly) is simpler than setting up a channel, which is exactly why this codebase's parallel build skips channels entirely.",
+      "l3": "No `mpsc::channel` or similar message-passing primitive appears anywhere in `server/` or `graph-types/`. The parallel artifact build (`server/atlas-graph/src/artifact.rs:1430`, `graph-types/src/graph.rs:408`) gets results back from each `scope.spawn`'d closure simply by RETURNING a value from the closure and collecting the `JoinHandle`s' results directly — no message passing needed, since each thread does one bounded chunk of work and then the whole `thread::scope` block ends. Channels would matter more for an ongoing producer/consumer pattern, which this codebase doesn't currently have.",
+      "see_also": [
+        "scoped-threads",
+        "threads"
+      ]
+    },
+    {
+      "tag": "async-await",
+      "title": "async / await — pausable functions",
+      "family": "rust-language",
+      "l1": "`async`/`await` let a function pause while it's waiting on something slow (like a network response) WITHOUT blocking the whole program — the runtime can go do other work during that wait, then come back and resume exactly where it left off. Every HTTP request handler in the web server is written this way: it can 'wait' for the graph to answer a query without freezing every OTHER request being handled at the same time.",
+      "l2": "`async fn name(...) -> T { ... }` defines a function that returns a not-yet-run 'future'; `.await` inside another async function actually runs it and yields control back to the runtime (see `tokio`) while it's waiting.\n\nExample:\n```\npub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>)\n    -> Result<Json<NodeCardOut>, ApiError> {\n    // ...\n}\n```\nNewcomer mistake: forgetting that an `async fn` does NOTHING until it's `.await`ed (or otherwise driven by a runtime) — just calling it produces an inert future, not the result.",
+      "l3": "Every axum handler in `server/atlas-server/src/graph_handlers.rs` (e.g. `node_card` at line 123, `node_edges` at 198, `text_window` at 348) and `server/atlas-server/src/handlers.rs:29` (`pub async fn health()`) is `async`, matching axum's requirement that route handlers be async functions the runtime can juggle across many simultaneous requests. `server/atlas-server/src/contract.rs:34,42` shows both an async handler and an `#[tokio::test] async fn` test calling it directly.",
+      "see_also": [
+        "tokio",
+        "axum",
+        "closure"
+      ]
+    },
+    {
+      "tag": "tokio",
+      "title": "tokio — the engine that runs async code",
+      "family": "rust-language",
+      "l1": "`async`/`await` alone doesn't run anything — you need a RUNTIME that actually schedules and drives all those pausable functions, juggling them across however many worker threads make sense. `tokio` is that runtime: the thing that lets the web server handle many requests 'at once' by switching between them whenever one is waiting rather than truly running them all in true parallel on separate CPU cores exclusively.",
+      "l2": "`#[tokio::main] async fn main() { ... }` sets up tokio's runtime and lets `main` itself be async; `#[tokio::test] async fn test_name() { ... }` does the same for individual async tests.\n\nExample:\n```\n#[tokio::main]\nasync fn main() -> anyhow::Result<()> {\n    // start the axum server here\n}\n```\nNewcomer mistake: writing `async fn main()` without `#[tokio::main]` above it (or manually building a runtime) — plain Rust has no built-in async runtime; `async` syntax alone doesn't know how to actually run anything without one attached.",
+      "l3": "`server/atlas-server/src/main.rs:66` (`#[tokio::main]`) boots the whole web server's async runtime. `server/atlas-server/src/contract.rs:42` and `server/atlas-server/tests/api.rs:121,140` use `#[tokio::test]` to run individual async test functions each on their own tiny tokio runtime, without needing a full server process. `server/atlas-server/src/bins/export_aqc_examples.rs:53-54` shows the same `#[tokio::main]` pattern powering a smaller utility binary that captures API examples rather than the main server.",
+      "see_also": [
+        "async-await",
+        "axum"
+      ]
+    },
+    {
+      "tag": "axum",
+      "title": "axum — the web framework serving the API",
+      "family": "rust-language",
+      "l1": "`axum` is the toolkit that turns 'a function that answers a query' into 'an HTTP endpoint the Blazor client can call.' It maps URLs (like `/api/node/:id`) to handler functions, handles the plumbing of requests and responses, and lets you plug in shared state (like the loaded graph) that every handler can reach. It's the same role Express, Flask, or ASP.NET Core plays in other stacks.",
+      "l2": "`axum::Router::new().route(\"/path\", get(handler_fn))` builds up the URL-to-handler map; `State(shared_value)` as a handler parameter gives that handler access to state registered once at startup (e.g. the loaded graph, wrapped in `Arc` — see `Arc`).\n\nExample:\n```\nlet api = Router::new()\n    .route(\"/api/node/:id\", get(node_card));\n```\nNewcomer mistake: expecting handler functions to share MUTABLE state casually — axum encourages read-mostly shared state via `State<Arc<T>>`; genuine shared mutation needs its own synchronization (a `Mutex`/`RwLock`), which this codebase currently avoids entirely by keeping the graph immutable after load.",
+      "l3": "`server/atlas-server/src/app.rs:11,132` (`use axum::Router; let api = Router::new()...`) builds this server's route table; `server/atlas-server/src/graph_handlers.rs:123,198,348` (`node_card`, `node_edges`, `text_window`) are handler functions taking `State(graph): State<Arc<GraphService>>` to reach the shared, loaded graph. `server/atlas-server/tests/api.rs:100` (`fn app() -> axum::Router`) builds the same router for integration tests, so tests exercise the real routing/handler wiring rather than calling handler functions directly in isolation.",
+      "see_also": [
+        "async-await",
+        "tokio",
+        "Arc"
+      ]
+    },
+    {
+      "tag": "serde",
+      "title": "serde — converting Rust values to and from data formats",
+      "family": "rust-language",
+      "l1": "`serde` is the standard way Rust code turns its own values into JSON (or other formats) and back — the bridge between 'a struct in memory' and 'text a web client or a saved file can understand.' Rather than hand-writing 'read this field, then that field' parsing code for every struct, you tag the struct once and `serde` generates the conversion.",
+      "l2": "`#[derive(Serialize, Deserialize)]` on a struct/enum generates the conversion code; combined with `serde_json` it becomes `serde_json::to_string(&value)` / `serde_json::from_str(&text)`.\n\nExample:\n```\n#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]\npub struct SomeDto { pub field: String }\n```\nNewcomer mistake: assuming field NAMES automatically match a different naming convention on the wire (like `snake_case` Rust fields vs. `camelCase` JSON) — serde needs an explicit `#[serde(rename = \"...\")]` or a container-level rename rule for that; it won't guess.",
+      "l3": "`server/atlas-core/src/data.rs:11,18,25,89,138` derives `Serialize, Deserialize` (alongside `Debug, Clone, Default, PartialEq`) on the data-shape structs the ETL pipeline reads from JSON source files and the server later re-serializes for API responses. `server/atlas-server/src/contract.rs` and `graph_handlers.rs` use `Json<T>` (axum's serde-backed response wrapper) to turn handler return values directly into JSON HTTP responses — see `axum`.",
+      "see_also": [
+        "derive",
+        "bincode",
+        "axum"
+      ]
+    },
+    {
+      "tag": "bincode",
+      "title": "bincode — a compact binary format for Rust values",
+      "family": "rust-language",
+      "l1": "`bincode` turns a Rust value directly into a tight binary byte sequence (and back) — no field names, no human-readable text, just the raw data laid out efficiently. It's the format the project's compiled graph artifact is stored in: smaller and faster to load than JSON would be, at the cost of not being human-readable if you open the file directly.",
+      "l2": "`bincode::serialize(&value) -> Result<Vec<u8>, _>` and `bincode::deserialize(&bytes) -> Result<T, _>` — the type being (de)serialized needs `serde`'s `Serialize`/`Deserialize` derives (see `serde`), since `bincode` is a serde-compatible format, not its own separate derive.\n\nExample:\n```\nbincode::serialize(d).map_err(|e| ArtifactError(format!(\"bincode encode failed: {e}\")))\n```\nNewcomer mistake: expecting a `bincode`-encoded file to be readable in a text editor or diffable in a normal way like JSON — it's a dense binary format; verifying its contents means decoding it back into Rust values (or comparing raw bytes, as this codebase's own determinism test does) rather than reading it directly.",
+      "l3": "`server/atlas-graph/src/artifact.rs:1755,1759` (`bincode::serialize(d)...`, `bincode::deserialize(bytes)...`) encodes and decodes the compiled `data/compiled/graph.bin` artifact — the single file the whole server loads at startup. `server/atlas-graph/tests/determinism.rs` builds this artifact TWICE from the same real sources and asserts the encoded BYTES are byte-for-byte identical, a stronger check than comparing decoded values, since it also catches accidental non-determinism in field ORDER — see `sort-determinism`.",
+      "see_also": [
+        "serde",
+        "content-hash",
+        "sort-determinism"
+      ]
+    },
+    {
+      "tag": "Command-process",
+      "title": "std::process::Command — running another program",
+      "family": "rust-language",
+      "l1": "`std::process::Command` lets Rust code launch ANOTHER program as a subprocess and capture what it prints — like a script calling out to a separate tool and reading its output. This codebase's CLI tests use it to run the REAL, compiled `bibex` command-line binary (not a stand-in or mock) and check its actual printed output, which is a stronger test than calling internal functions directly.",
+      "l2": "`Command::new(\"program\").args([\"arg1\", \"arg2\"]).output()` runs the program and returns its captured stdout/stderr/exit code (wrapped in `Result`/`io::Result`).\n\nExample:\n```\nCommand::new(env!(\"CARGO_BIN_EXE_bibex\")).args(args).output().expect(\"bibex must run\")\n```\nNewcomer mistake: assuming a test that calls a crate's functions DIRECTLY is equivalent to testing the actual compiled binary — argument parsing, exit codes, and printed output are only genuinely exercised by running the real executable via `Command`, which is exactly what `env!(\"CARGO_BIN_EXE_bibex\")` (see `env-macro`) gives you: the path to the test's own freshly-built binary.",
+      "l3": "`server/atlas-cli/tests/cli.rs:2,17` and `server/atlas-cli/tests/contract_pact_cli.rs:33,93` both run the real `bibex` binary via `Command::new(env!(\"CARGO_BIN_EXE_bibex\"))`, treating the CLI's actual observable behavior (its printed text, its exit status) as the thing under test — the `cli.rs` header comment (line 2) says this directly: tests run `std::process::Command`, against the REAL committed binary, not an in-process shortcut. `graph-types/tests/toolchain_pin.rs:11` uses the same tool to shell out to `cargo`/`rustc` and check the pinned toolchain version.",
+      "see_also": [
+        "integration-test",
+        "env-macro",
+        "PathBuf"
+      ]
+    },
+    {
+      "tag": "PathBuf",
+      "title": "PathBuf — an owned, cross-platform file path",
+      "family": "rust-language",
+      "l1": "`PathBuf` is Rust's owned representation of a file-system path — built to work correctly whether the program runs on Windows (`\\`) or Linux/Mac (`/`) without you hand-splicing separator characters. It's what you build up and pass around when you need to OWN a path (versus `&Path`, a borrowed view of one, the same owned/borrowed split as `String`/`&str`).",
+      "l2": "`PathBuf::from(\"some/path\")` creates one; `.join(\"more\")` appends a segment (handling the separator correctly for the current OS); `Path::new(\"x\")` gives a borrowed `&Path` when you don't need ownership.\n\nExample:\n```\npub fn default_data_dir() -> PathBuf {\n    PathBuf::from(\"../data/compiled\")\n}\n```\nNewcomer mistake: building paths with string concatenation (`format!(\"{}/{}\", dir, file)`) instead of `.join()` — that hardcodes the wrong separator on the other OS and mishandles edge cases `.join()` gets right automatically.",
+      "l3": "`server/atlas-cli/src/load.rs:13,63-64` (`use std::path::{Path, PathBuf}; pub fn default_data_dir() -> PathBuf { PathBuf::from(\"../data/compiled\") }`) is where the CLI decides where to look for the compiled graph artifact by default. `server/atlas-cli/src/main.rs:13,55` uses `PathBuf` for parsing a `--data-dir`-style argument out of the command line (`extract_data_dir`). Tests build paths relative to the crate manifest with `Path::new(env!(\"CARGO_MANIFEST_DIR\")).join(...)` (`server/atlas-cli/tests/cli.rs:13`) rather than assuming a fixed working directory.",
+      "see_also": [
+        "String-vs-str",
+        "Command-process",
+        "env-macro"
+      ]
+    },
+    {
+      "tag": "env-macro",
+      "title": "env!() — reading build-time environment into your code",
+      "family": "rust-language",
+      "l1": "`env!(\"VAR\")` reads an environment variable AT COMPILE TIME and bakes its value directly into the compiled program as a string — different from `std::env::var(\"VAR\")`, which reads it fresh every time the program RUNS. Cargo sets several useful variables automatically during a build, like the crate's own source directory or the path to a just-built sibling binary, which is exactly what this codebase's tests rely on.",
+      "l2": "`env!(\"CARGO_MANIFEST_DIR\")` expands (at compile time) to the absolute path of the crate's own directory; `env!(\"CARGO_BIN_EXE_name\")` expands to the path of a just-built binary target named `name`, available only inside that crate's own tests.\n\nExample:\n```\nPath::new(env!(\"CARGO_MANIFEST_DIR\")).join(\"../../data/compiled\")\n```\nNewcomer mistake: confusing `env!(...)` (a compile-time macro, fails to COMPILE if the variable is unset) with `std::env::var(...)` (a runtime function call, returns a `Result` you check at runtime) — they look similar but resolve at completely different times.",
+      "l3": "`server/atlas-cli/tests/cli.rs:4,13,17` and `server/atlas-cli/tests/contract_pact_cli.rs:11,38` use `env!(\"CARGO_MANIFEST_DIR\")` to locate test fixtures relative to the crate root regardless of the current working directory, and `env!(\"CARGO_BIN_EXE_bibex\")` to get the exact path Cargo just built the `bibex` binary to — the `contract_pact_cli.rs:11` comment notes this variable 'is defined only for the tests of' the crate that actually builds that binary target, a Cargo-specific gotcha worth knowing before reusing this pattern elsewhere.",
+      "see_also": [
+        "Command-process",
+        "PathBuf",
+        "Cargo-toml"
+      ]
+    },
+    {
+      "tag": "integration-test",
+      "title": "integration-test — testing a crate from the outside",
+      "family": "rust-language",
+      "l1": "An integration test exercises a crate the same way an OUTSIDE caller would — through its public API only, from a separate file, as if it were just another dependency. This catches bugs that a test living INSIDE the crate (with access to private internals) might miss, and it's where this codebase puts its biggest, most important checks: whole-artifact determinism, real-data law checks, and CLI behavior.",
+      "l2": "Files under a crate's `tests/` directory (e.g. `server/atlas-graph/tests/determinism.rs`) are each compiled as their OWN separate crate that depends on the library under test through its public API — no `#[cfg(test)]` attribute needed, since the whole file only exists during `cargo test`.\n\nExample: `server/atlas-graph/tests/determinism.rs` builds the real compiled graph artifact TWICE and asserts the two byte sequences are identical — testing the crate's actual observable output, not an internal function.\n\nNewcomer mistake: putting a test that needs PRIVATE (non-`pub`) access into `tests/` — it won't compile, since integration tests can only see what the crate exposes publicly; that kind of test belongs inside the crate as a unit test instead.",
+      "l3": "`server/atlas-graph/tests/` holds this codebase's heaviest integration tests: `determinism.rs` (byte-identical rebuilds), `artifact_conformance.rs`, `attestation_exclusivity_real_data.rs`, `bible_containers_real_data.rs`, `chronology_laws.rs`, `exports_laws.rs`, `frontier_falsifiability.rs`, and others — many named 'real_data' because they build and check the ACTUAL committed dataset, not a synthetic fixture. `graph-types/tests/toolchain_pin.rs` and `server/atlas-cli/tests/cli.rs` are further examples, the latter literally shelling out to the compiled binary (see `Command-process`).",
+      "see_also": [
+        "unit-test",
+        "property-test",
+        "Command-process"
+      ]
+    },
+    {
+      "tag": "unit-test",
+      "title": "unit-test — testing one piece from the inside",
+      "family": "rust-language",
+      "l1": "A unit test checks one small piece of behavior — usually a single function or type — with full access to a crate's PRIVATE internals, because it lives right inside the same file, just gated to only compile during testing. It's the quick, focused check: 'does THIS one function do the right thing', versus an integration test's 'does the whole crate behave correctly from the outside.'",
+      "l2": "`#[cfg(test)] mod tests { use super::*; #[test] fn it_works() { assert_eq!(...); } }` at the bottom of a source file — `use super::*` pulls in everything from the enclosing module, INCLUDING private items, which is exactly what an integration test in `tests/` can't do.\n\nExample:\n```\n#[cfg(test)]\nmod tests {\n    use super::*;\n    // test fns using crate internals directly\n}\n```\nNewcomer mistake: putting every test as a unit test out of habit, even ones that are really checking the crate's overall PUBLIC behavior — those read more clearly (and get checked more honestly) as integration tests in `tests/`, since a unit test's access to internals makes it easy to accidentally test implementation details instead of behavior.",
+      "l3": "`graph-types/src/graph.rs:514-515` (`#[cfg(test)] mod tests { use super::*; ... }`) runs this crate's own 'monad laws, the dual involution, the bijection witness, and temporal totality' checks (per `lib.rs:6-8`'s own description) directly against private graph internals. `graph-types/src/frontier.rs:589` has its own similarly-scoped test module. These sit alongside — not instead of — the crate's integration tests; `lib.rs:6-8` frames both together as the check that 'the design composes.'",
+      "see_also": [
+        "cfg",
+        "integration-test",
+        "property-test"
+      ]
+    },
+    {
+      "tag": "property-test",
+      "title": "property-test — checking a rule against many random inputs",
+      "family": "rust-language",
+      "l1": "A property test doesn't check one hand-picked example — it checks that a RULE holds across hundreds of randomly generated inputs, and if it finds a failing case, it automatically shrinks it down to the smallest input that still breaks the rule. Instead of writing 'given these three specific dates, the result should be X', you write 'for ANY two dates in this range, this relationship should always hold' and let the tool hunt for counterexamples.",
+      "l2": "Using the `proptest` crate: `proptest! { #[test] fn rule_holds(x in strategy1(), y in strategy2()) { assert!(some_property(x, y)); } }` — `strategy1()`/`strategy2()` describe the RANGE of random values to try, not a fixed example.\n\nExample (shape used in this codebase):\n```\nproptest! {\n    #[test]\n    fn merge_is_associative(a in any_scene(), b in any_scene(), c in any_scene()) {\n        assert_eq!(merge(merge(a.clone(), b.clone()), c.clone()), merge(a, merge(b, c)));\n    }\n}\n```\nNewcomer mistake: writing a property that's actually too weak to catch real bugs (e.g. checking a property trivially true for every input) — the value of a property test lives entirely in choosing a property that WOULD fail if the code were wrong.",
+      "l3": "`server/atlas-core/src/history.rs:261,712,739`, `merge.rs`, `refs.rs`, `scene.rs`, `time.rs`, and `xrefs.rs` all `use proptest::prelude::*` and contain `proptest! { ... }` blocks — `atlas-core`'s `Cargo.toml` and `atlas-graph`'s `Cargo.toml` both list `proptest` as a dev-dependency. These are exactly the kind of algebraic law this codebase's culture prizes ('laws as tests'): merge associativity, chronology invariants, and reference-parsing round-trips checked against hundreds of generated cases rather than a handful of examples.",
+      "see_also": [
+        "unit-test",
+        "integration-test",
+        "match"
+      ]
+    },
+    {
+      "tag": "bench",
+      "title": "bench — measuring speed, tracked over time",
+      "family": "rust-language",
+      "l1": "A benchmark measures how fast a piece of code runs, carefully enough to notice a real slowdown rather than just measurement noise — it runs the code many times, accounts for warm-up and variance, and reports a statistically sound number. This codebase keeps a PERMANENT benchmark harness specifically to catch performance regressions on real query workloads, not just correctness bugs.",
+      "l2": "Using the `criterion` crate: files under a crate's `benches/` directory, each with a `criterion_group!`/`criterion_main!` setup, run with `cargo bench` (typically in release mode, since benchmark numbers in an unoptimized debug build aren't meaningful).\n\nExample (shape used in this codebase):\n```\nfn load_real() -> (Arc<AtlasData>, Arc<GraphService>) { ... }\n\nfn bench_queries(c: &mut Criterion) {\n    let (data, graph) = load_real();\n    c.bench_function(\"node_card\", |b| b.iter(|| graph.node_card(...)));\n}\n```\nNewcomer mistake: benchmarking a debug build and trusting the numbers — debug builds skip most optimizations, so their timings don't reflect real-world performance; `criterion` benchmarks should always run against a release build.",
+      "l3": "`server/atlas-server/Cargo.toml:57,61` adds `criterion = \"0.5\"` as the 'permanent criterion regression harness'; `server/atlas-server/benches/queries.rs:65` (`fn load_real() -> (Arc<AtlasData>, Arc<GraphService>)`) loads the real committed data once and benchmarks actual query paths against it. `server/Cargo.toml:84,93,561` comments describe this as a 'permanent criterion/smoke-tier benchmark harness' and note it needs a release build to be meaningful — see `BENCHMARKS.md` at the server root for the tracked numbers themselves.",
+      "see_also": [
+        "Arc",
+        "integration-test",
+        "workspace"
+      ]
+    },
+    {
+      "tag": "workspace",
+      "title": "workspace — several crates sharing one build",
+      "family": "rust-language",
+      "l1": "A Cargo workspace lets several crates share ONE dependency-resolution and ONE lock file, so they always build against consistent versions of shared dependencies instead of each crate potentially picking a different version of the same library. This project's `server/` directory is one workspace of five crates (`atlas-core`, `atlas-etl`, `atlas-server`, `atlas-graph`, `atlas-cli`); the sixth crate, `graph-types`, lives at the repo root and is pulled in as an ordinary path dependency rather than being a declared workspace member.",
+      "l2": "`[workspace]` in a root `Cargo.toml` with a `members = [...]` list of crate directories; every member shares one `Cargo.lock` and one `target/` build output directory.\n\nExample:\n```\n[workspace]\nmembers = [\"atlas-core\", \"atlas-etl\", \"atlas-server\", \"atlas-graph\", \"atlas-cli\"]\nresolver = \"2\"\n```\nNewcomer mistake: expecting every crate a workspace crate depends on to automatically become a workspace member — a plain path dependency (like `atlas-graph`'s dependency on `../../graph-types`) pulls a crate into the SAME lockfile/resolution without it needing to be listed in `members`.",
+      "l3": "`server/Cargo.toml:1-19` is unusually well-documented on exactly this point: `graph-types/` is deliberately NOT listed in `members` because Cargo requires every member to be hierarchically BELOW the workspace root, and `graph-types/` is a SIBLING of `server/`, not a descendant — moving it to satisfy that rule was judged a bigger deviation than working around it. `atlas-graph`'s plain `path = \"../../graph-types\"` dependency still pulls it into this ONE workspace's resolution and lockfile, and `cargo test -p atlas-graph-types` (run from `server/`) still reaches its 13 law tests even though it's a non-member — a 'standing counting procedure' comment right below (server/Cargo.toml) documents this two-command test-counting quirk for anyone running the full suite.",
+      "see_also": [
+        "Cargo-toml",
+        "crate",
+        "build-script"
+      ]
+    },
+    {
+      "tag": "Cargo-toml",
+      "title": "Cargo.toml — a crate's manifest",
+      "family": "rust-language",
+      "l1": "`Cargo.toml` is a crate's ID card: its name, version, dependencies, and (for a workspace root) which sub-crates belong to it. It's the equivalent of `package.json` in Node or a `.csproj` in .NET — the one file Cargo (Rust's build tool) reads to know what to build and what it needs to build it.",
+      "l2": "Key sections: `[package]` (name, version, edition), `[dependencies]` (what this crate needs), `[dev-dependencies]` (test/bench-only dependencies, like `proptest` or `criterion`), and `[workspace]` (only at a workspace root — see `workspace`).\n\nExample:\n```\n[dependencies]\nserde = { version = \"1\", features = [\"derive\"] }\n\n[dev-dependencies]\nproptest = \"1\"\ncriterion = \"0.5\"\n```\nNewcomer mistake: adding a test-only dependency under `[dependencies]` instead of `[dev-dependencies]` — that bloats the actual shipped/production build with a dependency only tests need.",
+      "l3": "`server/Cargo.toml` is this workspace's root manifest, holding both the `[workspace]` block (lines 1-19, with the extensive comment explaining why `graph-types` isn't a listed member) and dependency version notes elsewhere in the file (e.g. `criterion = \"0.5\"` at line 61 inside `atlas-server`'s own manifest). `graph-types/Cargo.toml` has had its OWN `[workspace]` marker deliberately removed (per `server/Cargo.toml`'s comment) so it doesn't compete with the real workspace root — a subtlety worth knowing if you ever wonder why a sibling crate's manifest looks unusually bare.",
+      "see_also": [
+        "workspace",
+        "crate"
+      ]
+    },
+    {
+      "tag": "build-script",
+      "title": "build-script (build.rs) — code that runs before compiling",
+      "family": "rust-language",
+      "l1": "A Cargo build script (`build.rs`, at a crate's root, wired up via `build = \"build.rs\"` in `Cargo.toml`) is code that Cargo runs BEFORE compiling the rest of the crate — used for things like generating code, compiling a bundled C library, or emitting extra compiler flags. This codebase doesn't use one anywhere.",
+      "l2": "Declared with `build = \"build.rs\"` under `[package]` in `Cargo.toml`; the script itself is a normal `fn main()` that can print special `cargo:` directives Cargo understands (e.g. `cargo:rerun-if-changed=...`).\n\nExample (illustrative, not from this repo):\n```\n// build.rs\nfn main() {\n    println!(\"cargo:rerun-if-changed=schema.proto\");\n    // generate code here\n}\n```\nNewcomer mistake: confusing a Cargo build SCRIPT (`build.rs`, a special pre-compile hook) with `server/atlas-graph/src/build.rs` in THIS codebase — that file is just an ordinary module happening to be named `build.rs`, containing the graph-artifact build PIPELINE logic, not a Cargo build script at all.",
+      "l3": "No `Cargo.toml` in this workspace declares a `build = \"...\"` entry (checked across `server/*/Cargo.toml` and `graph-types/Cargo.toml`), so no crate here has an actual Cargo build script. `server/atlas-graph/src/build.rs` is easy to mistake for one by name alone — it's a regular source module holding the graph-building pipeline's orchestration code, compiled as ordinary crate code, not run specially by Cargo before compilation.",
+      "see_also": [
+        "Cargo-toml",
+        "workspace"
+      ]
+    },
+    {
+      "tag": "sort-determinism",
+      "title": "sort-determinism — same input, same bytes, every time",
+      "family": "rust-ecosystem",
+      "l1": "This project has a hard rule: build the same graph from the same source files twice, and you must get byte-for-byte IDENTICAL output both times — same order, same everything. That matters because the compiled graph gets content-hashed (see `content-hash`), and a hash is only a trustworthy fingerprint if equal inputs always produce equal bytes. The historical bug this rule guards against: using `HashMap` (whose iteration order is randomized per process) to write files meant that running the SAME build twice could produce two different-looking (but equally correct) files — which silently broke that trust.",
+      "l2": "The fix, applied throughout: every collection whose contents end up serialized uses `BTreeMap`/`BTreeSet` (which always iterate in sorted order) or a plain `Vec` built by iterating deterministically-ordered sources — never a `HashMap` for anything that gets written out.\n\nExample: `server/atlas-graph/tests/determinism.rs` builds the graph artifact twice and asserts `assert_eq!(bytes_one, bytes_two)`.\n\nNewcomer mistake: assuming 'the values are the same' is enough — this codebase's own tests go further and compare raw BYTES, since two structurally-equal-but-differently-ORDERED outputs would pass a naive equality check while still failing a byte comparison (and producing a different hash).",
+      "l3": "`server/atlas-graph/tests/determinism.rs:1-19` documents the history directly: the old `verses-kjv.json`/`cross-refs.json` writers were `HashMap`-keyed and produced non-deterministic byte layouts; both files and their writers were deleted, and every row table `artifact.rs`'s `dump` now writes is sourced from `graph-types::graph::Graph`'s `Vec`/`BTreeMap` fields (`graph-types/src/graph.rs:27`), never a `HashMap`, built from sorted-by-filename curated source lists. The test itself (determinism.rs) is deliberately STRONGER than comparing version roots or `assert_answers_match`: it compares the entire dumped byte stream, catching ordering bugs a semantic-equality check would miss.",
+      "see_also": [
+        "BTreeMap",
+        "content-hash",
+        "HashMap",
+        "bincode"
+      ]
+    },
+    {
+      "tag": "content-hash",
+      "title": "content-hash — an id derived from the thing itself",
+      "family": "rust-ecosystem",
+      "l1": "Instead of handing out arbitrary, incrementing ids (1, 2, 3, ...), this project derives an id FROM the content itself — hash the thing's own canonical bytes, and that hash IS its id. The payoff: two things with identical content always get the identical id, automatically, with no coordination needed, and an id is 'self-verifying' — you can always recompute it from the content and check nothing's been silently altered. It's the same principle git commit hashes use.",
+      "l2": "This codebase's version: a `ContentAddressed` trait requires a type to produce `canonical_bytes()`; hashing those bytes (with the kind of thing it is) produces a `Pid` (position id).\n\nExample:\n```\npub struct ContentHash(pub u64);\n\npub trait ContentAddressed {\n    fn canonical_bytes(&self) -> Vec<u8>;\n    fn position_kind(&self) -> PositionKind;\n    fn pid(&self) -> Pid {\n        let mut h = DefaultHasher::new();\n        self.canonical_bytes().hash(&mut h);\n        Pid { kind: self.position_kind(), hash: ContentHash(h.finish()) }\n    }\n}\n```\nNewcomer mistake: assuming a content hash means 'globally unique in a cryptographic sense' here — this codebase's own doc comment discloses its current hash is a 64-bit `std` hash, a 'skeleton' stand-in for a real production-grade multihash, not collision-proof at scale.",
+      "l3": "`graph-types/src/id.rs:161-181` is the whole mechanism: `ContentHash(pub u64)` (id.rs:164), `Pid { kind: PositionKind, hash: ContentHash }` (id.rs:167-170), and the `ContentAddressed` trait's default `pid()` method (id.rs:174-182) computing `hash(canonical_bytes(derive(pid))) == pid` — a law stated directly in the comment above it (id.rs:172-173). `graph-types/src/store.rs:32` calls this 'the content-addressed store law — the canonical bytes of derive.' `graph-types/src/lib.rs:11` discloses the current hash is 'a 64-bit std hash (production: a real multihash)' — a deliberate, disclosed simplification, not an oversight.",
+      "see_also": [
+        "Hash",
+        "newtype",
+        "sort-determinism",
+        "interning"
+      ]
+    },
+    {
+      "tag": "interning",
+      "title": "interning — one shared copy instead of many duplicates",
+      "family": "rust-ecosystem",
+      "l1": "Interning means: when the same piece of text (or value) shows up many times, store it ONCE and hand out cheap references to that one copy, instead of duplicating the full text every time it's needed — like a library keeping one copy of a book and lending it out, instead of printing a fresh copy for every borrower. This codebase names its id-backing type `Interned` to signal that intent, but — DISCLOSED directly in the crate's own doc comment — it's currently just a plain `String`, with no actual deduplication pool behind it yet.",
+      "l2": "A real interner typically maps each distinct string to a small integer or handle, so equal strings become equal (and cheap-to-compare) handles instead of separately-allocated, separately-compared text.\n\nExample (what exists today, not a real interner):\n```\n/// Skeleton stand-in for an interner handle.\npub type Interned = String;\n```\nNewcomer mistake: assuming `Interned` implies deduplication or cheap equality checks somewhere in this codebase today — it doesn't yet; comparing two `Interned` values currently means a full string comparison, exactly as it would for two plain `String`s, because that's literally what it is.",
+      "l3": "`graph-types/src/id.rs:7-8` (`/// Skeleton stand-in for an interner handle.` `pub type Interned = String;`) is the entire current implementation — a type alias, not a real interning pool (see `type-alias`). `graph-types/src/lib.rs:10-12`'s own top-level doc comment lists this among its 'deliberate, documented simplifications (none change shapes)': 'Interned is a String; ... tables are Vecs' — meaning a future swap to a real interner is anticipated to change performance characteristics only, not any type's public shape. Every id type built on `Interned` (`NodeId<K>`, `EdgeId`, `ProvenanceId`) would benefit from real interning without any of their own code changing.",
+      "see_also": [
+        "type-alias",
+        "content-hash",
+        "String-vs-str"
+      ]
+    },
+    {
+      "tag": "blazor-component",
+      "title": "blazor-component — a self-contained piece of UI",
+      "family": "csharp-blazor",
+      "l1": "A Blazor component is a reusable piece of the page — its own markup, its own logic, its own state — that you can drop into other pages like a custom HTML tag. The reader's verse card, the map's popover, the time slider: each is its own component, written once and reused everywhere it's needed, so a fix to how a popover behaves happens in one file instead of copy-pasted markup scattered across every page that shows one.",
+      "l2": "A component is a `.razor` file (see `razor`) combining HTML-like markup with C# logic in an `@code { }` block. Parent components pass data down via `[Parameter]` properties and receive events back up via `EventCallback` (see `event-callback`).\n\nExample:\n```\n<div class=\"card\">@Title</div>\n\n@code {\n    [Parameter, EditorRequired] public string Title { get; set; } = \"\";\n}\n```\nNewcomer mistake: expecting a component's fields to persist across every re-render the way a class instance normally would — Blazor can recreate/reuse component instances across renders depending on the parent's structure, so state you need to survive should live in `[Parameter]`s, a service (see `state-service`), or explicit lifecycle handling, not assumed-stable private fields alone.",
+      "l3": "This codebase's components live under `client/Components/`, `client/Pages/`, `client/Views/`, and `client/Layout/` — e.g. `ArrowNav.razor`, `CompositionSplit.razor`, `ExplorerPopover.razor`, `CatechismList.razor`. `CompositionSplit.razor:281,317` shows a component both consuming an `EventCallback` parameter and exposing its own (`OnFractionCommitted`). Cross-component shared state that ISN'T naturally parent-to-child (like the split-view study layout) goes through an injected service instead (see `state-service`) — `client/Program.cs`'s comments explain this choice directly for `ViewStateService`.",
+      "see_also": [
+        "razor",
+        "event-callback",
+        "dependency-injection",
+        "state-service"
+      ]
+    },
+    {
+      "tag": "razor",
+      "title": "razor — HTML and C# in one file",
+      "family": "csharp-blazor",
+      "l1": "Razor is the templating syntax that lets you write ordinary HTML and drop into C# mid-markup with an `@` sign — no separate templating language to learn, just HTML with an escape hatch into real code. `@if (loading) { <Spinner /> }` reads almost like plain HTML with a conditional woven in, because that's essentially what it is.",
+      "l2": "`@` introduces C# inside markup: `@variable`, `@(expression)`, `@if`/`@foreach`/`@switch` for control flow, and an `@code { }` block for a component's fields, properties, and methods.\n\nExample:\n```\n@if (Places.Any())\n{\n    <ul>\n        @foreach (var p in Places)\n        {\n            <li>@p.Name</li>\n        }\n    </ul>\n}\n```\nNewcomer mistake: forgetting that razor markup compiles into ordinary C# rendering code — a stray unescaped `@` where you meant literal text needs `@@` to escape it, the same class of gotcha as needing to escape a special character in any templating language.",
+      "l3": "Every `.razor` file across `client/Components/`, `client/Pages/`, `client/Views/`, and `client/Layout/` is razor syntax — the component system (see `blazor-component`) IS razor: markup plus an `@code` block. `client/App.razor` is the root component that bootstraps routing for the whole single-page app.",
+      "see_also": [
+        "blazor-component",
+        "wasm"
+      ]
+    },
+    {
+      "tag": "dependency-injection",
+      "title": "dependency-injection — services handed to you, not looked up",
+      "family": "csharp-blazor",
+      "l1": "Dependency injection means a component or service declares 'I need one of these' and the framework hands it the right instance automatically, rather than the component going and constructing (or globally looking up) it itself. It's what lets `AtlasClient` (the thing that talks to the server) be built ONCE at startup and then handed to every component or service that needs it, without each one knowing how to construct one itself.",
+      "l2": "Registered once in `Program.cs` (`builder.Services.AddSingleton(...)`, `AddScoped(...)`), then requested via `@inject TypeName Name` in a razor component or a constructor parameter in a plain C# class.\n\nExample:\n```\nbuilder.Services.AddSingleton<IExplorableClient>(_ => new GraphExplorableClient(new HttpClient { ... }));\n```\n```\n@inject IExplorableClient Client\n```\nNewcomer mistake: registering something as `AddScoped` out of habit (copied from ASP.NET Core server conventions) in a Blazor WASM app — WASM has no per-request scope the way a server does; `AddSingleton` is usually the right choice there, as this codebase's own `Program.cs` comment on `ViewStateService` explains directly.",
+      "l3": "`client/Program.cs:15-30` registers `HttpClient`, `AtlasClient`, and `IExplorableClient` (backed by `GraphExplorableClient`) as singletons, with a comment (lines 24-27) explaining the interface is depended on everywhere rather than the concrete `GraphExplorableClient` type directly — the standard DI principle of depending on an abstraction. `client/Program.cs`'s later comment about `ViewStateService` explains WHY `AddSingleton` (not `AddScoped`) is the deliberately correct choice specifically in Blazor WASM.",
+      "see_also": [
+        "blazor-component",
+        "state-service",
+        "wasm"
+      ]
+    },
+    {
+      "tag": "wasm",
+      "title": "wasm — running .NET code in the browser",
+      "family": "csharp-blazor",
+      "l1": "WebAssembly (WASM) is a way to run compiled code directly in the browser at near-native speed, alongside (or instead of) JavaScript. Blazor WebAssembly compiles the C# client app to WASM and ships it to the browser, so the reader and the map run as REAL .NET code on your machine — no round trip to a server for every click — rather than a server rendering pages and sending HTML down each time.",
+      "l2": "`WebAssemblyHostBuilder.CreateDefault(args)` bootstraps a Blazor WASM app in `Program.cs`; the compiled app (C#, the .NET runtime, and your code) downloads once and then runs entirely client-side, calling the server only for actual data (via `HttpClient`).\n\nExample:\n```\nvar builder = WebAssemblyHostBuilder.CreateDefault(args);\nbuilder.RootComponents.Add<App>(\"#app\");\n```\nNewcomer mistake: assuming WASM means 'just like a normal desktop app' with unrestricted access to the machine — a WASM app runs sandboxed inside the browser, so anything touching the DOM, local files, or browser APIs goes through JS interop (see `js-interop`) rather than direct OS calls.",
+      "l3": "`client/Program.cs:11-13` (`WebAssemblyHostBuilder.CreateDefault(args); builder.RootComponents.Add<App>(\"#app\");`) is this app's WASM entry point. `client/LocalStore.cs:19-23`'s own doc comment notes a WASM-specific consequence directly: Blazor WASM's DI-registered `IJSRuntime` always implements `IJSInProcessRuntime` because there's no network hop to a separate browser process the way Blazor SERVER has — so every JS interop call here can be synchronous, no `Task`/`await` needed for what would otherwise be a network round trip in Blazor Server.",
+      "see_also": [
+        "blazor-component",
+        "js-interop",
+        "HttpClient"
+      ]
+    },
+    {
+      "tag": "js-interop",
+      "title": "js-interop — C# calling JavaScript, and back",
+      "family": "csharp-blazor",
+      "l1": "JS interop is the bridge that lets C# code call JavaScript functions (for things only the browser can do, like drawing the Leaflet map) and lets JavaScript call BACK into C# (like reporting 'the user hovered over this place marker'). The map itself is JavaScript (Leaflet); the C# side drives it and listens to it through this bridge, rather than reimplementing map rendering in C#.",
+      "l2": "`IJSRuntime.InvokeAsync<T>(\"jsFunctionName\", args)` calls into JS from C#; a C# method marked `[JSInvokable]` (often on a class instance passed to JS as a `DotNetObjectReference`) can be called FROM JavaScript back into C#.\n\nExample:\n```\nusing Microsoft.JSInterop;\n\npublic interface IMapEvents\n{\n    void OnPlaceHover(string id, double x, double y);\n}\n```\nNewcomer mistake: assuming every JS interop call needs `await` — in Blazor WASM specifically (unlike Blazor Server), the JS runtime is in the SAME process, so synchronous interop (`IJSInProcessRuntime`) is available and used here for cheap calls like localStorage reads, per `LocalStore.cs`'s own comment.",
+      "l3": "`client/MapInterop.cs:1-20` defines `IMapEvents`, the interface `map.js`'s `wireEvents`/`ArrowLayer` call back into C# through, implemented by `World.razor`; `MapEventsSink` (referenced at MapInterop.cs:12) is the actual JS-callable bridge object. `client/LocalStore.cs:18-23` explains the reverse direction (C# calling into JS for `localStorage`), and its own doc comment is explicit that Blazor WASM's `IJSRuntime` always implements `IJSInProcessRuntime`, making these calls plain synchronous method calls rather than async ones.",
+      "see_also": [
+        "wasm",
+        "localStorage",
+        "Leaflet"
+      ]
+    },
+    {
+      "tag": "record",
+      "title": "record — a value defined by its data",
+      "family": "csharp-blazor",
+      "l1": "A `record` is a C# type built for VALUES rather than identity — two records with the same field values are automatically considered equal, and printing one automatically shows all its fields, without you writing that comparison or printing code by hand. It's the natural fit for the small, immutable data shapes this app passes around: a Scene, a TimeRange, a Focus — things defined entirely by what they contain, not by which specific instance you're holding.",
+      "l2": "`public record Name(Type Field1, Type Field2);` gives you a constructor, equality, `ToString()`, and (for a positional record) property getters, all generated. `with` expressions create a modified copy: `var updated = original with { Field1 = newValue };`.\n\nExample:\n```\npublic sealed record TimeRangeDto(int FromYear, int ToYear);\n```\nNewcomer mistake: mutating a record's properties in place expecting the usual reference-type sharing semantics of a `class` — records are meant to be treated as immutable snapshots; the idiomatic way to 'change' one is `with { ... }`, producing a NEW record rather than modifying the original in place.",
+      "l3": "`client/Dtos.cs:13,26,28` (`Scene`, `TimeRangeDto`, `ScenePlace`) defines the client's wire-facing data shapes as records. `client/Contracts/Focus.cs:18` and `Interactions.cs:52` use records for in-app value types (`Focus`, `TimingDiscipline`). `client/MapInterop.cs:158` and `SavedExplorationsService.cs:82,90` use `with` expressions (`s with { Places = ... }`, `i with { Name = name }`) to produce modified copies via LINQ's `.Select()` — the idiomatic 'immutable update' pattern this codebase leans on throughout its client-side state handling.",
+      "see_also": [
+        "LINQ",
+        "state-service",
+        "System.Text.Json"
+      ]
+    },
+    {
+      "tag": "async-Task",
+      "title": "async Task — C#'s pausable operations",
+      "family": "csharp-blazor",
+      "l1": "`async`/`Task` is C#'s version of the same idea Rust's `async`/`await` covers: a method that can pause while waiting on something slow (a network call to the server) without blocking the whole browser tab. Every call from the client out to the atlas server — fetching a scene, a chapter, a place's history — is one of these, so the UI stays responsive while waiting for a response.",
+      "l2": "`async Task<T> MethodAsync(...)` (or plain `async Task` for no return value) marks a pausable method; `await someTask` inside it actually waits for the result while letting the browser handle other work in the meantime.\n\nExample:\n```\npublic async Task<Scene> SceneTime(int from, int to)\n{\n    return await _http.GetFromJsonAsync<Scene>($\"/api/scene?from={from}&to={to}\");\n}\n```\nNewcomer mistake: calling an async method without `await`ing it ('fire and forget') when you actually need its result — the method starts running but your code moves on immediately, often before the result you wanted is ready, and any exception it throws can go unobserved.",
+      "l3": "`client/AtlasClient.cs:86,99,116,163,189` (`SceneTime`, `SceneScripture`, `Chapter`, `PlaceHistory`, `Xrefs`) are all `async Task<T>` methods wrapping HTTP calls to the atlas server. This mirrors the server side's own `async fn` axum handlers (see `async-await`) — the same asynchronous-request idiom on both ends of the wire, just in two different languages.",
+      "see_also": [
+        "HttpClient",
+        "wasm",
+        "LINQ"
+      ]
+    },
+    {
+      "tag": "LINQ",
+      "title": "LINQ — querying collections like a sentence",
+      "family": "csharp-blazor",
+      "l1": "LINQ lets you filter, transform, and search collections with readable, chainable operations — `.Where(...)`, `.Select(...)`, `.FirstOrDefault(...)` — instead of hand-written loops with manual index bookkeeping. It reads close to a sentence: 'take these places, where the name matches, and give me the first one.'",
+      "l2": "Method-syntax LINQ (the style used throughout this codebase): `collection.Where(predicate).Select(transform).ToList()`. Common terminal operations: `.FirstOrDefault()`, `.Any()`, `.OrderBy()`, `.ToList()`.\n\nExample:\n```\nvar forMap = s with { Places = s.Places.Select(p => p with { Name = p.DisplayName }).ToList() };\n```\nNewcomer mistake: calling `.ToList()` (or another eager operation) too early in a chain, then filtering afterward — like Rust's iterators, LINQ is LAZY until a terminal operation runs, so materializing early can waste work building a list you're about to filter down anyway.",
+      "l3": "`client/MapInterop.cs:158` and `client/SavedExplorationsService.cs:82,90` use `.Select()`/`.Where()` with `with` expressions (see `record`) for immutable-style updates to lists of records. `client/Explore/BookNode.cs:38` (`toc.FirstOrDefault(b => b.Code == _bookCode)`) and `client/Explore/ExplorationDescriptor.cs:141-142` (`.Where(v => v.Verse >= span.FromVerse && v.Verse <= span.ToVerse).Select(v => v.Text)`) use LINQ for lookup and text-extraction logic against the client's exploration/reader data.",
+      "see_also": [
+        "record",
+        "async-Task"
+      ]
+    },
+    {
+      "tag": "event-callback",
+      "title": "EventCallback — a component's way of speaking to its parent",
+      "family": "csharp-blazor",
+      "l1": "An `EventCallback` is how a child component tells its PARENT 'something happened here' — like a button reporting 'I was clicked' up to whoever placed it, without the button needing to know what the parent will actually do about it. Data flows DOWN from parent to child via parameters; events flow back UP via `EventCallback`, keeping the direction of communication consistent and predictable.",
+      "l2": "`[Parameter] public EventCallback<T> OnSomething { get; set; }` on the child; the parent passes a method: `<Child OnSomething=\"HandleIt\" />`; the child invokes it with `await OnSomething.InvokeAsync(value)`.\n\nExample:\n```\n[Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }\n```\nNewcomer mistake: using a plain C# `Action`/`Func` delegate instead of `EventCallback` for a component parameter — `EventCallback` integrates with Blazor's rendering system (it knows to trigger a re-render after being invoked); a raw delegate doesn't, unless the component that OWNS the underlying state handles re-rendering itself, which is exactly the deliberate exception `CompositionSplit.razor`'s own comment calls out.",
+      "l3": "`client/Components/ArrowNav.razor:360` and `CatechismList.razor:46` both declare `[Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }` — the shared way any explorable-node component reports 'the user picked this' upward. `CompositionSplit.razor:281,317,342` shows both an `EventCallback.Factory.Create(this, RequestCloseAsync)` construction and a deliberate exception: a plain `Action` (not `EventCallback`) for `ViewArrangementAtom.Changed`, with a comment explaining that field is owned elsewhere and doesn't need Blazor's own re-render hook.",
+      "see_also": [
+        "blazor-component",
+        "record",
+        "cascading-parameter"
+      ]
+    },
+    {
+      "tag": "cascading-parameter",
+      "title": "CascadingParameter — passing data down many levels at once",
+      "family": "csharp-blazor",
+      "l1": "A cascading parameter is a way to make a value available to every DESCENDANT component in a tree, without threading it explicitly through every single component in between as an ordinary parameter — like a public address announcement reaching everyone in a building at once, rather than a note passed hand-to-hand down every floor. Not used anywhere in this codebase's Rust... rather, its C# client.",
+      "l2": "`<CascadingValue Value=\"@someValue\"><ChildContent/></CascadingValue>` in a parent makes `someValue` available to any descendant that declares `[CascadingParameter] public T Value { get; set; }`, at ANY nesting depth, without every intermediate component needing to know about or re-pass it.\n\nExample (illustrative, not from this repo):\n```\n<CascadingValue Value=\"@currentTheme\">\n    <PageBody />\n</CascadingValue>\n```\nNewcomer mistake: reaching for a cascading parameter for something only ONE direct child needs — that's simpler and more explicit as an ordinary `[Parameter]`; cascading values are for data genuinely needed by an unpredictable, deep set of descendants.",
+      "l3": "A search across every `.razor` and `.cs` file in `client/` found no `CascadingValue`/`CascadingParameter` usage at all. Where this codebase needs to share context across a subtree (e.g. split-view state), it instead passes an explicit typed value — `CompositionSplitContext` (`client/Components/CompositionSplitContext.cs:42`, a plain `record`) — directly as a `[Parameter]`, or reaches for an injected singleton service (see `state-service`) when the sharing crosses unrelated parts of the component tree entirely rather than a strict parent-descendant chain.",
+      "see_also": [
+        "blazor-component",
+        "event-callback",
+        "state-service"
+      ]
+    },
+    {
+      "tag": "state-service",
+      "title": "state-service — shared state that outlives any one component",
+      "family": "csharp-blazor",
+      "l1": "A state service is a plain C# class, registered once with dependency injection, that holds state meant to be shared across UNRELATED parts of the app — the current view arrangement, saved explorations, selection state — the way a single shared notebook works better than each component keeping its own private copy and hoping they stay in sync. Components inject it and read/write it directly, and can subscribe to a 'changed' event to re-render when it updates.",
+      "l2": "A singleton service (`AddSingleton` — see `dependency-injection`) with public methods/properties for reading and mutating its state, often exposing a `Changed`/`StateChanged` event components subscribe to so they know to re-render.\n\nExample:\n```\npublic class SavedExplorationsService\n{\n    public void Rename(string id, string name) =>\n        _items = _items.Select(i => i.Id == id ? i with { Name = name } : i).ToList();\n}\n```\nNewcomer mistake: registering a state service as `AddScoped` in Blazor WASM out of habit from server-side ASP.NET Core — WASM has no per-request scope, so `AddScoped` and `AddSingleton` behave almost identically there, and this codebase's own `Program.cs` comment calls out `AddSingleton` as the deliberately correct choice.",
+      "l3": "`client/ViewStateService.cs`, `client/SavedExplorationsService.cs`, and `client/LocalStore.cs`'s two consumers together form this codebase's state-service layer. `client/LocalStore.cs:6-16`'s own doc comment describes the idiom directly: 'restore on init, synced continuously at the point state actually changes, never captured lazily', and explicitly contrasts `ViewStateService`'s in-memory-only Map/Reader halves (never persisted) against the newer, genuinely durable localStorage-backed stores it now supports.",
+      "see_also": [
+        "dependency-injection",
+        "localStorage",
+        "record"
+      ]
+    },
+    {
+      "tag": "localStorage",
+      "title": "localStorage — the browser's own small file cabinet",
+      "family": "csharp-blazor",
+      "l1": "`localStorage` is a small key-value storage area the browser keeps for each website, surviving page reloads and browser restarts — like a filing cabinet built into the browser itself. This app uses it to remember things across visits: saved explorations, view preferences — anything that should still be there next time you open the app, without needing a server account.",
+      "l2": "Accessed from C# via JS interop (see `js-interop`) — typically `IJSRuntime.InvokeAsync<string>(\"localStorage.getItem\", key)` / `\"localStorage.setItem\"` — wrapped in a small helper so callers don't repeat the interop boilerplate.\n\nExample:\n```\ninternal static class LocalStore\n{\n    // reads/writes a JSON document under one localStorage key\n}\n```\nNewcomer mistake: assuming localStorage is shared across devices or synced anywhere — it's strictly per-browser, per-device, per-origin; nothing written there is visible on a different machine or even a different browser on the same machine.",
+      "l3": "`client/LocalStore.cs:1-23` is the shared primitive `SavedExplorationsService` and `SelectionTrayService` both build on — a plain, camelCase JSON document per key, explicitly NOT the same snake_case convention `Wire.cs` uses for server communication (LocalStore.cs:14-16 notes this distinction directly: this is a client-local document, never a wire DTO). Its own comment explains why every read/write here can be a synchronous call rather than async: Blazor WASM's `IJSRuntime` is always also an `IJSInProcessRuntime` (see `wasm`), unlike Blazor Server.",
+      "see_also": [
+        "js-interop",
+        "state-service",
+        "System.Text.Json"
+      ]
+    },
+    {
+      "tag": "HttpClient",
+      "title": "HttpClient — calling the server",
+      "family": "csharp-blazor",
+      "l1": "`HttpClient` is the standard .NET tool for making web requests — it's how the Blazor client actually talks to the Rust atlas server, fetching scenes, chapters, place histories, and cross-references over HTTP. One `HttpClient`, configured once with the server's base address, gets reused for every request rather than creating a fresh connection setup each time.",
+      "l2": "`new HttpClient { BaseAddress = new Uri(...) }`, then `.GetFromJsonAsync<T>(\"path\")` for a JSON GET request, or lower-level `.GetAsync`/`.PostAsync` when you need more control over the request/response.\n\nExample:\n```\nbuilder.Services.AddSingleton(sp => new HttpClient {\n    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)\n});\n```\nNewcomer mistake: creating a NEW `HttpClient` per request instead of reusing one — under the hood this can exhaust available network sockets under load; registering it once via dependency injection (as this codebase does) is the standard fix.",
+      "l3": "`client/Program.cs:15-30` registers TWO separate `HttpClient` instances deliberately: one for `AtlasClient`, one for `GraphExplorableClient` — a comment there explains the separation is intentional, not an oversight (see that file's own header comment for why). `client/AtlasClient.cs:24,62` (`private readonly HttpClient _http; public AtlasClient(HttpClient http) { ... }`) receives its client via constructor injection rather than constructing one itself, keeping the class testable and its network configuration centralized in `Program.cs`.",
+      "see_also": [
+        "dependency-injection",
+        "async-Task",
+        "System.Text.Json"
+      ]
+    },
+    {
+      "tag": "System.Text.Json",
+      "title": "System.Text.Json — .NET's built-in JSON library",
+      "family": "csharp-blazor",
+      "l1": "`System.Text.Json` is the standard, built-in way .NET code converts between C# objects and JSON text — the C# counterpart to Rust's `serde`. It's what turns the server's JSON response into a usable `Scene` object in C#, and what would turn a C# object back into JSON to send somewhere, all without a third-party dependency.",
+      "l2": "`JsonSerializer.Serialize(value)` / `JsonSerializer.Deserialize<T>(json)`; `JsonSerializerOptions` configures details like naming conventions (`camelCase` vs `PascalCase`) shared consistently across every call site.\n\nExample:\n```\nusing System.Text.Json;\n\npublic static readonly JsonSerializerOptions Options = new() { /* shared settings */ };\n```\nNewcomer mistake: constructing a fresh `JsonSerializerOptions` at every call site instead of sharing one configured instance — that risks subtly inconsistent serialization behavior (naming, casing) between different parts of the app talking to the same server.",
+      "l3": "`client/Wire.cs:1,15` defines one shared `JsonSerializerOptions Options` for the whole client, with a header comment establishing its own snake_case convention specifically for talking to the atlas server (contrasted directly against `LocalStore.cs`'s camelCase, client-local convention — see `localStorage`). `AtlasClient.cs`'s `GetFromJsonAsync<T>` calls rely on this same options/DTO convention for every server response the client deserializes.",
+      "see_also": [
+        "HttpClient",
+        "record",
+        "localStorage"
+      ]
+    },
+    {
+      "tag": "xunit",
+      "title": "xunit — the C# test framework used here",
+      "family": "web-testing",
+      "l1": "xUnit is the test framework this project's C# tests run on — the counterpart to Rust's built-in `#[test]`. A test method marked `[Fact]` runs once; `[Theory]` with `[InlineData(...)]` runs the same test body against several different inputs, similar in spirit to a lightweight version of Rust's property tests but with explicit, hand-picked cases rather than randomly generated ones.",
+      "l2": "`[Fact] public void MethodName() { /* Assert.Equal(...), etc. */ }` for a single test case; `[Theory] [InlineData(1, 2)] [InlineData(3, 4)] public void Method(int a, int b) { ... }` for the same test run against multiple listed inputs.\n\nExample:\n```\n[Fact]\npublic void ParsesTimeRange()\n{\n    Assert.Equal(expected, actual);\n}\n```\nNewcomer mistake: writing several unrelated assertions crammed into one `[Fact]` — when it fails, you only learn THAT something broke, not immediately which check; smaller, single-purpose test methods pinpoint failures faster.",
+      "l3": "`client.Tests/` holds this codebase's C# unit tests — files like `AcctCoalesceTests.cs`, `AqcContractTests.cs`, `ArrowNavTests.cs`, `AsyncMemoConformanceTests.cs`, `AsyncMemoTests.cs` all use xunit's `[Fact]`/`[Theory]` attributes (per the project's `PackageReference Include=\"xunit\"` in its `.csproj`). These tests exercise client-side LOGIC classes (services, DTO handling, LINQ-based helpers) directly, in-process, without needing a browser or a rendering harness.",
+      "see_also": [
+        "bUnit",
+        "Reqnroll",
+        "Playwright"
+      ]
+    },
+    {
+      "tag": "bUnit",
+      "title": "bUnit — testing Blazor components directly",
+      "family": "web-testing",
+      "l1": "bUnit is a testing library specifically for rendering Blazor components in a test, without a real browser, so you can assert on the rendered markup or simulate a click and check what happens — a Blazor-specific alternative to a full end-to-end browser test. This codebase's own `client.Tests` project does NOT use it: no `bUnit`/`TestContext` reference was found anywhere.",
+      "l2": "Typically: `using var ctx = new Bunit.TestContext(); var cut = ctx.RenderComponent<MyComponent>(parameters => parameters.Add(p => p.Title, \"x\")); cut.Find(\"button\").Click();` then assert on `cut.Markup` or component state.\n\nExample (illustrative, not from this repo):\n```\nvar cut = ctx.RenderComponent<Counter>();\ncut.Find(\"button\").Click();\nAssert.Contains(\"1\", cut.Markup);\n```\nNewcomer mistake: assuming a project's C# test project automatically covers component RENDERING just because it uses xunit — xunit alone tests plain C# logic; testing actual razor component rendering needs bUnit (or an end-to-end browser test) specifically.",
+      "l3": "`client.Tests/*.csproj` lists only `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`, and `coverlet.collector` as test-related packages — no `bunit` package reference anywhere. This means `client.Tests` covers plain C# classes and services (see `xunit`) directly, while actual rendered-component and full-page behavior is instead covered by the Playwright end-to-end suite under `tests/ux/` (see `Playwright`) and the Gherkin/Reqnroll contract tests under `client.ContractTests/` (see `Reqnroll`) — two different layers filling the gap a bUnit suite would otherwise cover.",
+      "see_also": [
+        "xunit",
+        "Playwright",
+        "blazor-component"
+      ]
+    },
+    {
+      "tag": "Reqnroll",
+      "title": "Reqnroll — running Gherkin scenarios as C# tests",
+      "family": "web-testing",
+      "l1": "Reqnroll is the tool that takes a plain-English Gherkin scenario (see `Gherkin`) — 'When I GET /api/eras, Then the consumed projection equals fixture X' — and actually RUNS it as a real test, by matching each line to a C# 'step definition' method that performs that action. It's the glue between a human-readable feature description and executable test code.",
+      "l2": "A `.feature` file (Gherkin) describes scenarios in plain English; a `[Binding]`-attributed C# class with `[When(\"...\")]`/`[Then(\"...\")]` methods (matched by regex or a Cucumber-expression) implements each step.\n\nExample:\n```\n[When(\"I GET {string}\")]\npublic async Task WhenIGet(string path) { /* perform the HTTP call */ }\n```\nNewcomer mistake: writing step definitions so specific to ONE scenario's wording that they can't be reused by the next scenario — the value of Gherkin/Reqnroll comes from a small vocabulary of steps being reused across many scenarios; near-duplicate steps mean the vocabulary is growing instead of being reused.",
+      "l3": "`contracts/atlas-edge/*.feature` (e.g. `eras.feature`, `events.feature`, `land-mask.feature`, `landmarks.feature`, `narratives.feature`) are the Gherkin scenario files. `client.ContractTests/Steps/AqcSteps.cs` and `CorpusCountTests.cs` are the Reqnroll step-definition/binding code that actually executes them, per the `Reqnroll`/`Reqnroll.xUnit.ReqnrollPlugin` packages referenced in `client.ContractTests`'s build output. This is this codebase's API-contract layer: each `.feature` file's vocabulary of 'projections' is checked against the real server's actual JSON responses.",
+      "see_also": [
+        "Gherkin",
+        "xunit"
+      ]
+    },
+    {
+      "tag": "Playwright",
+      "title": "Playwright — driving a real browser for tests",
+      "family": "web-testing",
+      "l1": "Playwright automates an actual browser — clicking, typing, navigating — so a test can verify the app behaves correctly the way a real person using it would, rather than testing isolated pieces of logic. This project's end-to-end tests (`tests/ux/`) use it to check things like: does hovering a cross-reference marker actually open the right popover, anchored correctly, in a real rendered page.",
+      "l2": "A `.spec.ts` file imports Playwright's test runner, opens a page, interacts with it (`page.click(...)`, `page.hover(...)`), and asserts on what actually rendered (`await expect(locator).toBeVisible()`).\n\nExample:\n```\nimport { test, expect } from '@playwright/test';\n\ntest('reader shows a verse', async ({ page }) => {\n  await page.goto('/reader');\n  await expect(page.locator('.verse-card')).toBeVisible();\n});\n```\nNewcomer mistake: writing brittle tests that depend on exact pixel positions or timing — Playwright's `expect(...).toBeVisible()`-style assertions auto-retry for a bit, which is more robust than a raw `page.waitForTimeout(...)` sleep, and should generally be preferred.",
+      "l3": "`tests/ux/` holds this codebase's whole Playwright suite: `accounts-and-mentions.spec.ts`, `api-exhaustive.spec.ts`, `api-place-history.spec.ts`, `api-reader.spec.ts`, `api-scene.spec.ts`, `frontier-matrix.spec.ts`, and many more — end-to-end checks against the running app, some purely API-level (per `client/FeatureFlags.cs`'s own comment mentioning `tests/ux/reader-xref-superscripts.spec.ts` covering the reader's cross-reference-superscript feature directly).",
+      "see_also": [
+        "fast-check",
+        "Gherkin",
+        "xunit"
+      ]
+    },
+    {
+      "tag": "fast-check",
+      "title": "fast-check — property-based testing for TypeScript/JS",
+      "family": "web-testing",
+      "l1": "fast-check is JavaScript/TypeScript's version of the same idea as Rust's `proptest`: instead of one hand-picked example, it generates hundreds of random inputs and checks that a RULE holds across all of them, shrinking any failure down to the smallest input that still breaks it. This codebase uses it for math-heavy, pure-logic checks — like verifying the sphere/vector coordinate conversion is correct for ANY latitude/longitude, not just a few chosen test points.",
+      "l2": "`import fc from 'fast-check'; fc.assert(fc.property(fc.double({ min: ..., max: ... }), (x) => { /* property that must hold */ }));` — `fc.double`/`fc.integer`/etc. describe the RANGE of random values to generate.\n\nExample:\n```\nimport fc from 'fast-check';\n\nconst lat = () => fc.double({ min: -Math.PI / 2 + EPS_POLE, max: Math.PI / 2 - EPS_POLE, noNaN: true });\n```\nNewcomer mistake: forgetting `noNaN: true` (or an equivalent constraint) when generating floating-point inputs for geometry/math code — NaN inputs can trigger unrelated failures that have nothing to do with the actual property being tested, muddying the results.",
+      "l3": "`tests/ux/geo.spec.ts:2,8-9,30-44` is this codebase's clearest example: a comment there explicitly frames it as 'a pure-node fast-check spec that never opens a browser is fine and fast', generating latitude/longitude/bearing/fraction values (`fc.double({...})`) to check the sphere-to-vector coordinate conversion functions in `client/wwwroot/js/geo.js` (see `ES-module`) hold their mathematical properties for any valid input, not just a handful of hand-picked angles.",
+      "see_also": [
+        "Playwright",
+        "ES-module"
+      ]
+    },
+    {
+      "tag": "Gherkin",
+      "title": "Gherkin — plain-English test scenarios",
+      "family": "web-testing",
+      "l1": "Gherkin is a structured, plain-English way of writing test scenarios so a non-programmer can read (and even write) them: 'Given ..., When ..., Then ...' — a shared vocabulary between what the app is supposed to do and the tests that check it does it. This project uses it to describe its API contract in language close to the domain ('the consumed projection eras equals fixture X') rather than raw HTTP assertions.",
+      "l2": "A `.feature` file: `Feature: name` followed by one or more `Scenario:` blocks, each a sequence of `Given`/`When`/`Then`/`And` lines. A tool like Reqnroll (see `Reqnroll`) matches each line to real test code that executes it.\n\nExample:\n```\nScenario: the whole era table, as we consume it\n  When I GET /api/eras\n  Then the consumed projection eras equals fixture \"eras-consumed\"\n```\nNewcomer mistake: writing Gherkin steps that describe IMPLEMENTATION details ('When I call the internal parse_eras function') instead of observable BEHAVIOR ('When I GET /api/eras') — Gherkin's whole value is describing behavior a non-programmer stakeholder could verify, which implementation-level steps defeat.",
+      "l3": "`contracts/atlas-edge/*.feature` — `eras.feature`, `events.feature`, `land-mask.feature`, `landmarks.feature`, `narratives.feature` — are this codebase's Gherkin contract specifications. `eras.feature:1-11` is a representative example: its header prose explains WHAT the underlying `parse_eras` function reads (four fields per era) before its `Scenario:` block states the observable HTTP behavior being verified, with a shared `Vocabulary:` table (era.feature:6-7) defining the fixed set of valid 'projection' names reused across scenarios.",
+      "see_also": [
+        "Reqnroll",
+        "Playwright"
+      ]
+    },
+    {
+      "tag": "Leaflet",
+      "title": "Leaflet — the map library rendering /world",
+      "family": "web",
+      "l1": "Leaflet is the JavaScript library that actually draws the interactive map — panning, zooming, markers, custom layers — that the `/world` page's borders and time slider sit on top of. Blazor doesn't render maps itself; the C# side drives Leaflet through JS interop (see `js-interop`), telling it what to draw and listening for what the user does on it.",
+      "l2": "A Leaflet map is created with `L.map('elementId')`, then layers (tile layers, markers, polygons for borders) are added to it; custom behavior (like this project's era-morph border animation) is built as Leaflet plugins/layers in plain JS.\n\nExample (illustrative, Leaflet's own API):\n```\nconst map = L.map('map').setView([31.8, 35.2], 6);\nL.marker([31.78, 35.23]).addTo(map);\n```\nNewcomer mistake: expecting to control Leaflet directly from C# component code the way you'd control a native Blazor component — Leaflet lives entirely in JS; every interaction crosses the JS-interop boundary (see `js-interop`) rather than being a normal C# method call.",
+      "l3": "`client/wwwroot/vendor/leaflet/leaflet.js` and `leaflet.css` are the vendored library; `client/wwwroot/js/map.js` is this project's own driving code on top of it — wiring event handlers (`wireEvents`, `ArrowLayer`, per `MapInterop.cs`'s own comment), rendering place markers, and (per `map.js:3554-3563`'s own comment) currently rendering border-morph animation via Leaflet/SVG rather than WebGL, with WebGL noted there as a possible future 'swap seam' rather than something implemented today — see `WebGL`.",
+      "see_also": [
+        "js-interop",
+        "SVG",
+        "WebGL"
+      ]
+    },
+    {
+      "tag": "SVG",
+      "title": "SVG — drawing shapes with markup, not pixels",
+      "family": "web",
+      "l1": "SVG (Scalable Vector Graphics) describes shapes — lines, curves, borders — as MATH (points and paths) rather than a grid of colored pixels, so it stays crisp at any zoom level. This project's map borders and legend icons are drawn this way, which is why zooming into a polity's border on the map doesn't blur or pixelate the way a zoomed bitmap image would.",
+      "l2": "Written as XML-like markup (`<svg><path d=\"...\"/></svg>`) either inline in HTML or generated dynamically from JavaScript via `document.createElementNS(...)` (the DOM API for creating namespaced elements like SVG, which plain `createElement` can't produce correctly).\n\nExample:\n```\n<svg viewBox=\"0 0 100 100\">\n  <path d=\"M10 10 L90 90\" stroke=\"black\" />\n</svg>\n```\nNewcomer mistake: trying to create an SVG element with plain `document.createElement('path')` — SVG elements need the NAMESPACED `createElementNS('http://www.w3.org/2000/svg', 'path')` form, or the browser won't render them correctly as SVG at all.",
+      "l3": "`client/wwwroot/js/map.js` and Leaflet itself (`client/wwwroot/vendor/leaflet/leaflet.js`) use SVG for rendering vector shapes on the map — Leaflet's default vector renderer is SVG-based. `client/Components/Legend.razor` uses inline SVG markup for legend iconography directly in razor markup (mixing HTML and SVG tags, since SVG is valid inside HTML). The border-morph animation work (see `WebGL`) currently renders through this same SVG/Leaflet path rather than a lower-level GPU approach.",
+      "see_also": [
+        "Leaflet",
+        "WebGL",
+        "CSS"
+      ]
+    },
+    {
+      "tag": "WebGL",
+      "title": "WebGL — drawing with the GPU directly",
+      "family": "web",
+      "l1": "WebGL lets JavaScript draw graphics using the computer's GPU directly, which is dramatically faster than SVG or plain HTML/CSS for complex, frequently-changing visuals — think smoothly animating many shapes at once rather than a static or slowly-changing drawing. This project doesn't use it today; its border-morph animation is explicitly called out in a code comment as a candidate for a FUTURE move to WebGL, not something currently implemented.",
+      "l2": "Accessed via `canvas.getContext('webgl')` (or `'webgl2'`), then drawing happens through low-level graphics primitives (vertex buffers, shaders) rather than DOM elements — a much lower-level, more verbose API than SVG or Canvas 2D, in exchange for far higher performance at scale.\n\nExample (illustrative, not from this repo):\n```\nconst gl = canvas.getContext('webgl');\n// upload vertex data, compile shaders, draw\n```\nNewcomer mistake: assuming 'we mention WebGL in a comment' means it's implemented — check the actual rendering code; a documented future direction is not the same as current behavior, which is exactly the case here.",
+      "l3": "`client/wwwroot/js/map.js:3554,3563` explicitly discusses 'the GPU/WebGL swap seam' and notes 'a WebGL evaluator would instead upload posA/posB per-vertex attribute[s]' for the border-morph animation — framed as a possible FUTURE optimization for the vector-based border interpolation (see the related `border-morph-vector-idea` project memory), not code that exists yet. Today, that animation renders through Leaflet's SVG path instead (see `Leaflet`, `SVG`).",
+      "see_also": [
+        "Leaflet",
+        "SVG"
+      ]
+    },
+    {
+      "tag": "ES-module",
+      "title": "ES-module — JavaScript's own import/export system",
+      "family": "web",
+      "l1": "An ES module is a JavaScript file that explicitly declares what it exports (so other files can import exactly those pieces) and what it imports from elsewhere — the standard, built-in way JS files depend on each other, without needing a bundler or a global-namespace convention (like every function just living on `window`). It's the same organizing idea as Rust's `mod`/`pub use` or C#'s `using`, just JavaScript's native version.",
+      "l2": "`export function name() { ... }` / `export const x = ...;` in the defining file; `import { name, x } from './file.js';` wherever it's used. A module can also be loaded directly by the browser via `<script type=\"module\" src=\"...\">`.\n\nExample:\n```\n// geo.js\nexport function toVec(phi, lambda) { ... }\nexport function fromVec(v) { ... }\n```\nNewcomer mistake: mixing ES module `import`/`export` syntax with older-style scripts that expect everything as global variables (loaded via a plain `<script>` tag without `type=\"module\"`) — the two loading models don't automatically interoperate; a module's exports are only reachable via `import`, not as globals.",
+      "l3": "`client/wwwroot/js/geo.js:36,53,87,98,103,110,114,118` exports its coordinate-conversion functions (`toVec`, `fromVec`, `dot`, `cross`, `norm`, etc.) as a small, pure, framework-agnostic module — its own header comment (geo.js:4-10) notes it deliberately has no Leaflet or DOM dependency specifically so it can be imported both from the browser (`map.js`/`border-morph.js`) AND from plain Node for its `tests/ux/geo.spec.ts` fast-check spec, with zero setup, purely because it's a standard ES module rather than something requiring a browser environment or bundler configuration.",
+      "see_also": [
+        "fast-check",
+        "Leaflet"
+      ]
+    },
+    {
+      "tag": "CSS",
+      "title": "CSS — how the app looks",
+      "family": "web",
+      "l1": "CSS (Cascading Style Sheets) is the language that controls how HTML actually looks — colors, spacing, layout, fonts — separate from the markup structure itself and separate from the C#/JS logic. This project's overall app styling and the vendored Leaflet map's own default styling both live as `.css` files loaded once for the whole app.",
+      "l2": "Selectors target elements by tag, class, or id and apply property/value declarations: `.verse-card { padding: 8px; border-radius: 4px; }`. Stylesheets are linked from the HTML host page or imported by a component/module.\n\nExample:\n```\n.legend-icon {\n  width: 16px;\n  height: 16px;\n}\n```\nNewcomer mistake: fighting CSS specificity by piling on `!important` everywhere instead of understanding WHY a more specific selector elsewhere is winning — usually a sign the stylesheet's organization (or selector specificity) needs a rethink rather than a forced override.",
+      "l3": "`client/wwwroot/css/app.css` is this project's main application stylesheet; `client/wwwroot/vendor/leaflet/leaflet.css` is the vendored map library's own required styling, loaded alongside it so Leaflet's markers, controls, and panes render correctly. Component-specific styling elsewhere in this codebase generally lives inline in razor markup or scoped alongside the relevant `.razor` file rather than in one monolithic sheet.",
+      "see_also": [
+        "Leaflet",
+        "SVG",
+        "razor"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "area": "server/atlas-core",
+  "title": "atlas-core — the old AtlasData model: canon, dedup, scene composition, sources",
+  "kind": "crate",
+  "language": "rust",
+  "overview": {
+    "l1": "Before the app had one big graph, it had one big struct: AtlasData, holding every place, event, narrative, and border the map and reader use. This crate defines that struct and everything built on top of it — cleaning up duplicate places and events, fixing wrong dates, turning a time window or a Bible verse into what the map should show, and looking up cross-references and catechism citations. Some of it (the map's scene-drawing, the book order, the Sources page) is still exactly what runs today. Other parts (the place/event lists themselves) are being replaced by the graph, one piece at a time.",
+    "l2": "This crate is a Rust `struct`-and-`impl` model, not a service: `data.rs` defines `AtlasData` (places, events, narratives, borders, catechism, and more) plus a `finish()` method that builds lookup indexes (`HashMap`s) after loading. Several sibling modules are cleanup passes that run inside `finish()`: `merge.rs` folds duplicate place records together, `event_merge.rs` does the same for duplicate events, and `nt_calibration.rs`/`chronology.rs` correct dates that were imported on the wrong calendar. `scene.rs` turns a time window or `ScriptureRef` into the `wire.rs` `Scene` type the client actually renders — this is genuinely still how the map works today. `history.rs`, `xrefs.rs`, `catechism.rs`, and `narrative.rs` are smaller pure-function lookups (place names over time, cross-reference aggregation, catechism citations, timeline neighbors). `canon.rs`/`refs.rs`/`time.rs`/`translation.rs` are the shared vocabulary (book order, verse ids, year ranges) every other crate in the workspace, including the newer graph, still imports. You'll see Rust's `Option`/`Result` everywhere for maybe-missing/maybe-failed values, `HashMap`/`HashSet` for lookups, and heavy use of doc comments that read like a change log — this codebase's own convention for keeping decisions attached to the code they justify.",
+    "l3": "`atlas_core::data::AtlasData` (data.rs:1015) is the schema ETL writes and the server reads; `AtlasData::load`/`finish` (data.rs:1958, 1510) are its two lifecycle methods — `finish()` runs `merge::apply_place_merges` and `event_merge::apply_event_merges` first (both idempotent by construction), then builds every `#[serde(skip)]` derived index (`place_index`, `verse_to_events`, `verse_heading`, `timeline_order`, etc.) in one pass each. `heading_precedence`/`heading_anchors_for` (data.rs:1450, 1371) implement the DECISIVE-CONTAINER law: when two titled containers claim the same anchor verse, a 4-tuple `(layer, kind, Reverse(from_year), Reverse(order_key))` picks the winner deterministically. `scene::compose_time_scene`/`compose_scripture_scene` (scene.rs:16, 30) are the two real entry points the server still calls for `/api/scene`; `verse_groups_for`'s scripture-mode cap-prioritization (scene.rs:334) is a real, tested fix for a truncation bug (SCRIP-1/SCRIP-3). `merge::MERGE_PAIRS`/`event_merge::EVENT_MERGE_PAIRS` are hand-curated Rust tables (not TOML) because a `.toml`-driven pipeline stage was judged not worth building for a couple dozen rows — each entry is a `(survivor, absorbed, reason)` triple, checked in unit tests against `great_circle_km`/`verse_jaccard`. `chronology.rs`/`nt_calibration.rs` are one-time ETL-side date fixes (never called from `finish()`, since a date shift is not idempotent the way removal-based merging is) with an unusually large disclosed audit trail. This crate has NO dependency on `atlas-graph` or `atlas-etl` (see Cargo.toml's own comment on why a `dev-dependency` cycle was tried and reverted); `atlas-graph/src/legacy.rs` is the bridge that reconstructs `atlas_core::data::{Event, Place, Narrative}` from graph queries so every consumer of this crate's types keeps working even after the compiled JSON files it originally loaded are retired."
+  },
+  "reading_order": [
+    "server/atlas-core/src/lib.rs",
+    "server/atlas-core/src/canon.rs",
+    "server/atlas-core/src/refs.rs",
+    "server/atlas-core/src/time.rs",
+    "server/atlas-core/src/translation.rs",
+    "server/atlas-core/src/data.rs",
+    "server/atlas-core/src/merge.rs",
+    "server/atlas-core/src/event_merge.rs",
+    "server/atlas-core/src/nt_calibration.rs",
+    "server/atlas-core/src/chronology.rs",
+    "server/atlas-core/src/history.rs",
+    "server/atlas-core/src/scene.rs",
+    "server/atlas-core/src/wire.rs",
+    "server/atlas-core/src/narrative.rs",
+    "server/atlas-core/src/xrefs.rs",
+    "server/atlas-core/src/catechism.rs",
+    "server/atlas-core/src/sources.rs",
+    "server/atlas-core/Cargo.toml",
+    "server/atlas-core/tests/golden.rs"
+  ],
+  "groups": [
+    {
+      "name": "Foundations: canon order, verse ids, time, translation",
+      "paths": ["server/atlas-core/src/lib.rs", "server/atlas-core/src/canon.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/time.rs", "server/atlas-core/src/translation.rs"],
+      "note": "Shared vocabulary (66-book order, BookId/VerseId/ScriptureRef, signed BC/AD years, the KJV-only translation indirection) that every other module here, and several other crates, build on."
+    },
+    {
+      "name": "The AtlasData model",
+      "paths": ["server/atlas-core/src/data.rs"],
+      "note": "The one big struct (places, events, narratives, borders, catechism, chronology anchors) plus its load/finish lifecycle and derived indexes — everything else in this crate operates on it."
+    },
+    {
+      "name": "Identity cleanup: duplicate places, duplicate events, wrong dates",
+      "paths": ["server/atlas-core/src/merge.rs", "server/atlas-core/src/event_merge.rs", "server/atlas-core/src/nt_calibration.rs", "server/atlas-core/src/chronology.rs"],
+      "note": "Curated, hand-verified fixes for import defects — two place records for one site, two event records for one occurrence, a whole NT clock imported 3 years off, and a graph-wide chronology audit guard."
+    },
+    {
+      "name": "Place history resolution",
+      "paths": ["server/atlas-core/src/history.rs"],
+      "note": "Pure functions resolving which period name and blurb a place should show for a given time window — used by both the map and the place-detail endpoint."
+    },
+    {
+      "name": "Map scene composition and wire shapes (still load-bearing)",
+      "paths": ["server/atlas-core/src/scene.rs", "server/atlas-core/src/wire.rs"],
+      "note": "Turns a time window or scripture reference into the exact Scene JSON the client's map renders — this is genuinely still how /api/scene works today, not legacy."
+    },
+    {
+      "name": "Cross-cutting lookups: cross-references, catechism, timeline",
+      "paths": ["server/atlas-core/src/xrefs.rs", "server/atlas-core/src/catechism.rs", "server/atlas-core/src/narrative.rs"],
+      "note": "Small, pure, narrow-in/narrow-out modules answering one question each: which cross-refs does a span aggregate, which catechism items cite a verse, what's chronologically before/after an event."
+    },
+    {
+      "name": "Sources page",
+      "paths": ["server/atlas-core/src/sources.rs"],
+      "note": "A deliberately separate, small schema for the /api/sources page and the provenance-id registry — has nothing to do with the graph pipeline."
+    },
+    {
+      "name": "Build manifest and golden-fixture test",
+      "paths": ["server/atlas-core/Cargo.toml", "server/atlas-core/tests/golden.rs"],
+      "note": "The crate's dependency list (serde, thiserror, proptest) and its one integration test, which pins the Scene wire format byte-for-byte against a committed fixture."
+    }
+  ],
+  "files": [
+    {
+      "path": "server/atlas-core/src/lib.rs",
+      "lines": 44,
+      "role": "Crate root: declares every module and the shared CoreError enum",
+      "l1": "This is the front door of the crate — it just lists every other file as a module so the rest of the app can use them, and defines the handful of error messages this crate can produce (a bad Bible reference, a year of zero, a file that won't read, an unknown Bible translation). If this file vanished, nothing else in the crate would be reachable from outside it.",
+      "l2": "`pub mod` lines (lib.rs:1-16) make every sibling file's public items visible as `atlas_core::canon::...`, `atlas_core::data::...`, and so on — this is how a Rust **crate** is organized into **module**s. `CoreError` is an **enum** (a type that is exactly one of several named variants) deriving `Debug` and, via the `thiserror` crate, `Error` — each variant's `#[error(\"...\")]` attribute (an **attribute**, a `#[...]` annotation that changes how the compiler treats the item below it) generates a human-readable message automatically, so callers get real error text without writing `impl Display` by hand. Two variants (`Io`, `Json`) wrap an underlying `std::io::Error`/`serde_json::Error` via `#[source]`, preserving the original cause for debugging.",
+      "l3": "`CoreError` (lib.rs:20-44) is the crate's one error type, returned by `TimeRange::new`, `ScriptureRef::parse`, `AtlasData::load`, and `translation::resolve`. Its `UnknownTranslation` variant's doc comment is a pointer into `translation.rs`'s own module doc — the crate's convention of cross-referencing rather than duplicating rationale. No tests target this file directly; its variants are exercised indirectly by every other module's own error-path tests (e.g. time.rs's `zero_year_rejected`, refs.rs's parse-failure tests).",
+      "key_items": [
+        { "name": "CoreError", "kind": "enum", "what": "The crate's one error type: bad year, inverted range, bad scripture ref, I/O/JSON failure, unknown translation", "line": 21 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-core/src/data.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/time.rs", "server/atlas-core/src/translation.rs"],
+      "concepts": ["module", "enum", "derive", "attribute", "thiserror", "Debug-Display", "error-handling"],
+      "tests": "no dedicated tests found (error variants are exercised indirectly by tests in time.rs, refs.rs, translation.rs)"
+    },
+    {
+      "path": "server/atlas-core/src/canon.rs",
+      "lines": 76,
+      "role": "The 66-book Protestant canon in traditional KJV order",
+      "l1": "This file is the master list of the 66 books of the Bible, in the exact order the King James Version prints them — Genesis through Malachi, then Matthew through Revelation. Every verse id in the app (like \"GEN.1.1\") is really just a position in this list plus a chapter and verse number. If this list were reordered, every verse id, every \"what comes next\" answer on the map's book navigation, and the compiled graph itself would all shift.",
+      "l2": "`BookInfo` is a plain **struct** holding one book's short code (`\"GEN\"`), OSIS abbreviation (`\"Gen\"`), and display name (`\"Genesis\"`). `BOOKS` is a `const` array of 66 of these — a **const-static** value baked into the compiled binary, so looking up a book never touches disk. `resolve_alias` takes any spelling a user or curator might type (\"Genesis\", \"Gen\", \"GEN\") and finds its **index** in `BOOKS` by normalizing case and punctuation first (`norm`), then calling `.position()`, an **iterator** method that returns the first matching index as an `Option<usize>` — Rust's way of saying \"maybe found, maybe not\" instead of returning -1 or throwing.",
+      "l3": "`pub const BOOKS: [BookInfo; 66]` (canon.rs:32) is the single canonical authority for book ORDER — `refs::BookId(u8)` is an index into this array, and `atlas_graph::bible_container_adapter` compiles the array's order directly into `CanonSuccession` edges (chapter→next-chapter, book→next-book), so changing this array's order is a data-visible, navigation-visible act, not a cosmetic one. `resolve_alias` (canon.rs:72) is O(66) per call with no caching — fine at this scale, never called in a hot loop. No dedicated unit tests live in this file; `refs.rs`'s own `aliases_resolve` test and every `canon::resolve_alias(...)` call across the test suites exercise it indirectly.",
+      "key_items": [
+        { "name": "BookInfo", "kind": "struct", "what": "One book's code, OSIS abbreviation, and display name", "line": 30 },
+        { "name": "BOOKS", "kind": "const", "what": "The 66-book canon array in canonical KJV order — the one navigation/id authority", "line": 32 },
+        { "name": "resolve_alias", "kind": "fn", "what": "Resolves any spelling of a book name/code to its BookId", "line": 72 }
+      ],
+      "depends_on": ["server/atlas-core/src/refs.rs"],
+      "used_by": ["server/atlas-core/src/data.rs", "server/atlas-core/src/refs.rs", "server/atlas-graph/src/bible_container_adapter.rs", "server/atlas-graph/src/kjv_adapter.rs"],
+      "concepts": ["struct", "const-static", "Ord-PartialOrd", "iterator", "Option"],
+      "tests": "no dedicated tests found in this file; exercised indirectly by server/atlas-core/src/refs.rs's aliases_resolve test"
+    },
+    {
+      "path": "server/atlas-core/src/catechism.rs",
+      "lines": 201,
+      "role": "Resolves which Luther's Small Catechism items a Bible span cites",
+      "l1": "When you read a verse and see a note like \"cited in the Small Catechism\", this is the file that figures out which catechism item(s) apply. It takes a verse or passage and a pre-built lookup table, and returns the list of catechism entries — each labeled with which question it came from, if any — without ever listing the same item-and-question pair twice.",
+      "l2": "`CatechismRef` is a small **struct** (id, name, optional question title) representing one citation hit. `items_for_span` is the one real function: it calls `xrefs::span_member_verses` to expand a passage into its individual verses, looks each one up in a `HashMap<String, Vec<(String, Option<String>)>>` (verse → list of (item id, question) pairs), and uses a `HashSet` of `(id, question)` tuples to skip anything already seen — the standard Rust dedup-while-iterating pattern. It's a **pure function**: no file reads, no `AtlasData` — the caller (`AtlasData::catechism_items_for_span`) hands it pre-built indexes.",
+      "l3": "`items_for_span` (catechism.rs:56) dedups by the `(id, question)` PAIR, not by id alone — deliberate, so a passage citing the same catechism item via two different questions lists it twice (test: `same_item_via_two_different_questions_is_not_collapsed`, catechism.rs:173), but the same (item, question) pair from two member verses collapses to one row (`same_item_same_question_from_two_verses_dedupes_to_one_row`, catechism.rs:191). An id present in the verse index but missing from `item_names` is silently skipped, not panicked (`unknown_id_missing_from_item_names_is_skipped_not_panicked`, catechism.rs:152) — the crate's general soft-fail-on-impossible-inconsistency policy. `Book`/`Chapter` refs have no member verses and always return empty (catechism.rs:161). Six unit tests cover single-verse, passage-union, empty, unknown-id, book/chapter, and the two dedup edge cases directly in this file.",
+      "key_items": [
+        { "name": "CatechismRef", "kind": "struct", "what": "One resolved citation: item id, display name, optional question title", "line": 38 },
+        { "name": "items_for_span", "kind": "fn", "what": "Unions (item, question) citations across a span's member verses, deduped, first-seen order", "line": 56 }
+      ],
+      "depends_on": ["server/atlas-core/src/refs.rs", "server/atlas-core/src/xrefs.rs"],
+      "used_by": ["server/atlas-core/src/data.rs"],
+      "concepts": ["struct", "HashMap", "HashSet", "iterator", "pattern-matching", "unit-test"],
+      "tests": "six unit tests in this file's own #[cfg(test)] module (catechism.rs:80-201)"
+    },
+    {
+      "path": "server/atlas-core/src/chronology.rs",
+      "lines": 837,
+      "role": "Guard: every dated event's year must fall inside its witness books' narration windows",
+      "l1": "This is a fact-checker for dates. It makes sure that if an event says \"this happened in year X\" and cites, say, 1 Samuel as a witness, then X actually falls inside the span of history 1 Samuel is known to narrate — catching the class of bug where an event got dated 48 years too early and showed up next to the wrong era on the map. It also has short, hand-written exception lists for the rare legitimate cases (a genealogy chapter recounting ancient history, or a specific verse that's a special case).",
+      "l2": "Three checks live here, each returning a `Vec` of violation structs rather than panicking (this crate's usual \"aggregate every problem, don't fail on the first one\" style). `window_violations` compares each dated `Event`'s year against its witness books' `BookNarrationWindow` (a curated `[from_year, to_year]` per book). `era_boundary_violations` checks that events sort on the correct side of named era boundaries. `anchor_equality_check` verifies the crate's curated `ChronologyAnchor` table agrees with the actual compiled event dates. Three exception mechanisms — `RECOUNTING_CHAPTERS` (a chapter is retrospective by genre, like a genealogy), `WINDOW_EXEMPTIONS` (one specific verse citation is exempted), and `ANCHOR_DEFERRALS` (a known, temporary, disclosed drift) — are plain `const` arrays of tuples/structs, checked with `.iter().any(...)`, Rust's **iterator**-based \"does any element match\" idiom.",
+      "l3": "`window_check_books` (chronology.rs:429) is the single shared predicate for \"which books actually constrain this event's date,\" reused by both `window_violations` and `era_boundary_violations` so the two checks can never silently disagree about book membership (a real bug this module's own doc comment says was caught once). `anchor_equality_check` (chronology.rs:304) is called from BOTH `atlas_etl::validate::run_chronology_anchor_equality` and (per its own doc comment) `atlas-graph`'s real-data test suite — \"one predicate, two independent layers,\" not two hand-written copies that could drift. `THEO_DATE_OVERRIDES`/`apply_theo_date_overrides` (chronology.rs:349, 382) are isolated corrupt-import-row fixes, ETL-only, run exactly once on the pre-`finish()` event set for the same idempotency reason `nt_calibration.rs` documents. Extensive doc comments disclose the full audit methodology (why 0.8/statistical sweeps produced false positives) and every individual date correction's derivation. Over 20 unit tests cover each mechanism, including explicit red-then-green pairs (e.g. `red_df_ramah_pre_fix_date_fails_the_1sa_window`/`green_df_ramah_post_fix_date_passes_the_1sa_window`, chronology.rs:660-674).",
+      "key_items": [
+        { "name": "RECOUNTING_CHAPTERS", "kind": "const", "what": "Chapter ranges (e.g. 1 Chronicles 1-9) that are retrospective by genre, exempt from window checks", "line": 134 },
+        { "name": "WINDOW_EXEMPTIONS", "kind": "const", "what": "Individual (event, book) exemptions from the narration-window check, each with a written reason", "line": 174 },
+        { "name": "ANCHOR_DEFERRALS", "kind": "const", "what": "Time-bounded, disclosed anchor/event date mismatches awaiting a future migration", "line": 223 },
+        { "name": "anchor_equality_check", "kind": "fn", "what": "Shared predicate checking chronology anchors agree with compiled event dates", "line": 304 },
+        { "name": "THEO_DATE_OVERRIDES", "kind": "const", "what": "Isolated corrupt raw-import date corrections, one row per event", "line": 349 },
+        { "name": "window_violations", "kind": "fn", "what": "Every dated event whose year falls outside a witness book's narration window", "line": 462 },
+        { "name": "era_boundary_violations", "kind": "fn", "what": "Every event that sorts on the wrong side of a declared era boundary", "line": 530 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/time.rs", "server/atlas-core/src/event_merge.rs"],
+      "used_by": ["server/atlas-etl/src/validate.rs", "server/atlas-graph/tests/chronology_laws.rs"],
+      "concepts": ["const-static", "struct", "HashMap", "HashSet", "iterator", "pattern-matching", "property-test", "unit-test"],
+      "tests": "over 20 unit tests in this file's own #[cfg(test)] module (chronology.rs:590-838); anchor_equality_check is also exercised by atlas_etl::validate and atlas-graph's real-data test suite"
+    },
+    {
+      "path": "server/atlas-core/src/data.rs",
+      "lines": 2787,
+      "role": "The AtlasData schema and its load/finish lifecycle — the old data model's spine",
+      "l1": "This is the biggest file in the crate: it defines every kind of record the old (pre-graph) model knows about — places, events (which double as \"titled passages\" like pericope headings), narratives, borders, catechism parts, chronology anchors, and more — plus the one big AtlasData struct that holds them all. It also builds the lookup tables (which events touch which verse, which heading to show above a verse, the master timeline order) once, right after loading, so every other part of the app can answer those questions instantly instead of re-scanning everything each time.",
+      "l2": "Dozens of `struct`s here are the compiled-file schema (`Place`, `Event`, `Narrative`, `Polity`, `CatechismItem`, and more), each deriving `Serialize`/`Deserialize` (via `serde`) so they round-trip to/from JSON automatically — a **derive** macro that writes the (de)serialization code for you at compile time. `AtlasData` (data.rs:1015) is the big one: its public fields are the schema, but several fields marked `#[serde(skip)]` are private derived indexes (`HashMap<String, usize>`, etc.) that `finish()` (data.rs:1510) rebuilds after every load — this is why `AtlasData::load(...).finish()` is always called as a pair. `Event::kind` distinguishes a dated `\"event\"` from an undated `\"general\"` titled container — the crate's \"every verse eventually belongs to a titled container\" model, still only partially built out. `heading_precedence` (data.rs:1450) returns a **tuple** `(u8, u8, Reverse<i32>, Reverse<i32>)` compared with Rust's built-in tuple `Ord`, using `std::cmp::Reverse` to flip \"earlier wins\" into an ascending comparison without overflow risk.",
+      "l3": "`AtlasData::finish()` (data.rs:1510-1778) runs, in order: `merge::apply_place_merges`, then `event_merge::apply_event_merges` (both BEFORE any index is built, so every derived index reflects the merged graph), then `events.sort_by_key(|e| e.when.from_year)`, then builds `place_index`/`event_index`/`verse_to_events` (unioning `Event.verses` with every witness's verses, deduped — a real bug fix, data.rs:1548-1574), `verse_to_places`, `event_bearing_place_ids`/`event_counts_by_place` (the \"ever-present graph\" quiet-places support), `verse_to_catechism`, `verse_heading` (via `heading_anchors_for`/`heading_precedence`, resolving the DECISIVE-CONTAINER collision rule when two containers claim one anchor verse), `heading_anchor_collisions` (a same-pass side channel later used as a fail-loud ETL check), and finally `timeline_order`/`timeline_index` (a stable sort by `(from_year, order_key)` over `kind == \"event\"` only). `AtlasData::load` (data.rs:1958) reads eight-plus compiled JSON files via the generic `read_json` helper (data.rs:2027), which maps I/O and JSON errors onto `CoreError::Io`/`CoreError::Json`. `demo_fixture()` (data.rs:2051, `#[doc(hidden)]`) is a small hand-built world reused by both this crate's own scene tests and atlas-server's integration tests — its ids (`jericho`, `e1`..`e5`, `conquest`) are pinned across multiple test files, so changing it is a cross-crate breaking change. `year_index` (data.rs:2019) is the shared zero-year-gap-removal helper (`...,-2,-1,1,2,...` → `...,-2,-1,0,1,...`) reused by `history.rs`'s midpoint math. Roughly 30 unit tests (data.rs:2320-2787) cover heading collisions, catechism lookups, and index correctness.",
+      "key_items": [
+        { "name": "AtlasData", "kind": "struct", "what": "The whole compiled atlas: places, events, narratives, borders, catechism, plus derived indexes", "line": 1015 },
+        { "name": "Event", "kind": "struct", "what": "A datable happening / titled passage container, with witnesses, provenance fields, order_key", "line": 356 },
+        { "name": "Place", "kind": "struct", "what": "A geocoded place with verse_links driving scripture-mode lighting", "line": 26 },
+        { "name": "Polity", "kind": "struct", "what": "A kingdom/nation with a sequence of timerange border eras", "line": 1004 },
+        { "name": "CatechismItem", "kind": "struct", "what": "One item of Luther's Small Catechism with text, explanation, verses, questions", "line": 917 },
+        { "name": "AtlasData::finish", "kind": "fn", "what": "Runs merges, sorts events, and builds every derived lookup index", "line": 1510 },
+        { "name": "AtlasData::load", "kind": "fn", "what": "Reads the compiled JSON files from disk into an AtlasData", "line": 1958 },
+        { "name": "heading_precedence", "kind": "fn", "what": "4-tuple precedence rule deciding which container wins a verse-heading collision", "line": 1450 },
+        { "name": "demo_fixture", "kind": "fn", "what": "Hand-built small demo world reused across this crate's and atlas-server's tests", "line": 2051 }
+      ],
+      "depends_on": ["server/atlas-core/src/time.rs", "server/atlas-core/src/merge.rs", "server/atlas-core/src/event_merge.rs", "server/atlas-core/src/translation.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/catechism.rs"],
+      "used_by": ["server/atlas-server/src/load.rs", "server/atlas-server/src/handlers.rs", "server/atlas-server/src/graph_handlers.rs", "server/atlas-etl/src/compile.rs", "server/atlas-graph/src/legacy.rs", "server/atlas-graph/src/event_world.rs"],
+      "concepts": ["struct", "enum", "derive", "serde", "Option", "Result", "HashMap", "HashSet", "BTreeMap", "Default", "Clone-Copy", "sort-determinism", "unit-test"],
+      "tests": "roughly 30 unit tests in this file's own #[cfg(test)] module (data.rs:2320-2787), plus indirect coverage via server/atlas-core/tests/golden.rs and atlas-server integration tests using demo_fixture()"
+    },
+    {
+      "path": "server/atlas-core/src/event_merge.rs",
+      "lines": 1304,
+      "role": "Curated table + logic merging duplicate event records into one",
+      "l1": "The old import process sometimes created two separate event records for the same real occurrence — say, \"John baptizes Jesus\" once from a rough automatic import and again as a carefully hand-checked entry with the correct date. This file has the fix: a hand-verified list of which two ids are really \"the same event,\" and the code that removes the lesser one everywhere in the compiled data, so a reader never sees the same moment in history dated two different ways.",
+      "l2": "`EventMerge` is a plain **struct** (survivor id, absorbed id, reason string); `EVENT_MERGE_PAIRS` is a `const` array of about 90 of them, each individually verified against real data (not automatically generated). `apply_event_merges` removes every `absorbed` event from the `events` `Vec` and repoints any `Narrative.legs` entry naming it to `survivor` instead — an **identity-only** merge: unlike the place-merge module, no fields are unioned, because the survivor is always the richer, correctly-dated record. Two similarity metrics support the CURATION process (deciding which pairs belong in the table) rather than running at request time: `verse_jaccard` (intersection-over-union of two events' verse sets, using `HashSet`) and `title_jaccard` (the same math over stopword-stripped title words) — both **pure functions** returning `f64` between 0 and 1, each backing a documented, empirically-derived threshold constant.",
+      "l3": "`apply_event_merges` (event_merge.rs:847) runs inside `AtlasData::finish()`, BEFORE `events.sort_by_key`, mirroring `merge::apply_place_merges`'s call position exactly — every derived index built afterward sees only canonical post-merge ids. `is_layer0` (event_merge.rs:652) is `pub` (not `pub(crate)`) specifically so `atlas_etl::validate::run_event_merges` can run the identical LAYER-0/LAYER-1 predicate against the pre-merge event set from a different crate. `DUPLICATE_JACCARD_THRESHOLD = 0.5` (event_merge.rs:695) and `TITLE_JACCARD_THRESHOLD = 0.70` (event_merge.rs:805) are both empirically derived against the real compiled corpus, documented with the actual score distributions that justified each cutoff — `cross_book_duplicate_candidate` (event_merge.rs:817) is a SECOND, orthogonal detector for duplicates whose verse sets don't overlap at all (different books citing the same occurrence), since `verse_jaccard` is structurally blind to that case. `EVENT_DISTINCT_PAIRS` (event_merge.rs:332) is the companion table of pairs that LOOK similar but are genuinely distinct (mega-span events bundling two pericopes), preventing the fail-loud ETL validator from re-flagging them every run. The module doc comment (event_merge.rs:1-169) states \"THE CHRONOLOGY AUTHORITY LAW\" governing this and the chronology.rs/nt_calibration.rs modules together. Extensive unit tests validate table integrity (no duplicate ids) and the merge/metric functions directly.",
+      "key_items": [
+        { "name": "EventMerge", "kind": "struct", "what": "One curated same-event pair: survivor id, absorbed id, reason", "line": 183 },
+        { "name": "EVENT_MERGE_PAIRS", "kind": "const", "what": "~90 hand-verified duplicate-event pairs to merge", "line": 220 },
+        { "name": "EVENT_DISTINCT_PAIRS", "kind": "const", "what": "Pairs that look similar but are confirmed genuinely distinct", "line": 332 },
+        { "name": "apply_event_merges", "kind": "fn", "what": "Removes absorbed events and repoints narrative legs to their survivor", "line": 847 },
+        { "name": "verse_jaccard", "kind": "fn", "what": "Verse-set Jaccard similarity between two events", "line": 665 },
+        { "name": "title_jaccard", "kind": "fn", "what": "Word-set Jaccard similarity between two event titles", "line": 787 },
+        { "name": "cross_book_duplicate_candidate", "kind": "fn", "what": "Detects same-occurrence duplicates whose verse sets don't overlap", "line": 817 },
+        { "name": "effective_verses", "kind": "fn", "what": "Union of an event's own verses and every witness's verses", "line": 636 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs"],
+      "used_by": ["server/atlas-etl/src/validate.rs", "server/atlas-core/src/chronology.rs", "server/atlas-core/src/nt_calibration.rs"],
+      "concepts": ["struct", "const-static", "HashSet", "iterator", "closure", "sort-determinism", "unit-test"],
+      "tests": "extensive unit tests in this file's own #[cfg(test)] module, including table-integrity checks and direct metric tests"
+    },
+    {
+      "path": "server/atlas-core/src/history.rs",
+      "lines": 776,
+      "role": "Resolves a place's period-accurate display name and blurb for a given window",
+      "l1": "Places change names over time — Bethel used to be called Luz. This file decides, given a time window, which name and which short description (\"blurb\") a place should show. It also decides whether a place had even come into existence yet, or had already been destroyed, so the map can grey out a label without hiding the marker entirely.",
+      "l2": "`resolve_display_name`/`resolve_display_name_and_canonical` pick among a place's curated `PlaceNameEntry` ranges (each an interval plus a name) using `pick_by_window`, a shared helper that first tries the range covering the window's midpoint, then falls back to \"latest intersecting.\" `resolve_blurb` does the analogous job for descriptive text, preferring a broad summary when the window spans more than one narrower \"era\" blurb. `resolve_existence`/`existence_gates_label` compute and apply an established/destroyed **tuple** of `Option<Year>` bounds — `Option` here means \"we don't know\" rather than a hard 0, so an unknown founding date never wrongly gates a label. Every function is a **pure function** over plain data (`TimeRange`, `HashMap`), with no I/O — the same function serves both the map's per-scene name resolution and the `/api/place/{id}` detail endpoint.",
+      "l3": "`resolve_display_name_and_canonical` (history.rs:158) implements the full priority order: a curated period name (if the window intersects one) wins outright; otherwise a curated KJV `PlaceNameAlias` (translation-keyed, not time-windowed) fills the gap; otherwise the bare default name with its ETL disambiguation suffix stripped (`strip_disambiguation_suffix`, history.rs:200, also reused by `atlas_etl::validate::run_place_names_kjv`). `resolve_existence` (history.rs:45) WIDENS its established/destroyed bounds by any curated name range outside them — the Jerusalem/Jebus case, where the place demonstrably existed under an earlier name long before its \"established\" date. `window_midpoint` (history.rs:89) is a zero-aware midpoint calculation mirroring `AtlasData`'s own BC/AD-seam handling. `resolve_blurb`'s era-vs-broad logic (history.rs:225) is pinned by a named regression test (`narrated_boundary_year_resolves_to_the_specific_blurb_not_broad`, history.rs:525) for a real off-by-one bug in a curated range. Over 30 unit tests plus two `proptest` property tests (determinism and existence-gating-agrees-with-TimeRange-intersects) cover this file thoroughly.",
+      "key_items": [
+        { "name": "resolve_display_name", "kind": "fn", "what": "Resolves the one display name a place should show for an optional window", "line": 143 },
+        { "name": "resolve_display_name_and_canonical", "kind": "fn", "what": "Same resolution, also reporting the canonical name when an alias won", "line": 158 },
+        { "name": "resolve_blurb", "kind": "fn", "what": "Resolves the one hover blurb for a window, preferring broad over era when the window spans several eras", "line": 225 },
+        { "name": "resolve_existence", "kind": "fn", "what": "Computes established/destroyed year bounds, widened by curated name ranges", "line": 45 },
+        { "name": "existence_gates_label", "kind": "fn", "what": "True when a window falls entirely outside a place's existence bounds", "line": 69 },
+        { "name": "strip_disambiguation_suffix", "kind": "fn", "what": "Strips a trailing ' <digits>' ETL disambiguation suffix from a default name", "line": 200 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/time.rs", "server/atlas-core/src/translation.rs"],
+      "used_by": ["server/atlas-core/src/scene.rs", "server/atlas-server/src/handlers.rs"],
+      "concepts": ["struct", "Option", "HashMap", "closure", "generics", "property-test", "unit-test"],
+      "tests": "over 30 unit tests plus two proptest property tests in this file's own #[cfg(test)] module (history.rs:258-777)"
+    },
+    {
+      "path": "server/atlas-core/src/merge.rs",
+      "lines": 781,
+      "role": "Curated table + logic merging duplicate place records into one",
+      "l1": "Two different data sources sometimes geocoded the exact same real-world spot twice — once from one import, once from another — creating two markers on the map for one place. This file has the fix: a short, individually hand-verified list of \"these two ids are the same place,\" and the code that combines their evidence (verse links, event references) into one surviving marker.",
+      "l2": "`PlaceMerge` is a **struct** (survivor, absorbed, reason); `MERGE_PAIRS` is a `const` array of 17 hand-curated entries. `great_circle_km` computes real-world distance with the haversine formula — used both as a validation `debug_assert!` on every curated pair and in this file's own tests, never as the DISCOVERY mechanism (distance alone can't distinguish \"same place, two records\" from \"two genuinely distinct places that happen to share an imprecise geocode\", which the module doc comment explains at length with real examples). `apply_place_merges` unions the absorbed place's `verse_links` onto the survivor (deduped), rewrites every `Event.places` entry pointing at the absorbed id IN PLACE (preserving array position, since `places[0]` is a load-bearing \"anchor place\"), then removes the absorbed place entirely.",
+      "l3": "`apply_place_merges` (merge.rs:367) runs inside `AtlasData::finish()`, is idempotent (a pair whose `absorbed` id no longer exists is silently skipped — `finish()` runs twice across the real pipeline), and a `debug_assert!` (merge.rs:375) enforces `SAME_PLACE_THRESHOLD_KM = 1.0` on every curated entry as a safety net against a future curation mistake. The module doc comment's own worked example (Shittim vs. the \"plains of Moab\" camp, 0km apart, both genuinely distinct, both required to stay separate by a live Playwright test) is the crate's canonical illustration of why this table is curated rather than automatic. `absorbed_ids_for` (merge.rs:342) feeds `ScenePlace::merged_ids`/`QuietPlace::merged_ids` for wire traceability. A `proptest` property test (merge.rs:538) checks the haversine threshold boundary at arbitrary bearings, with a documented, deliberately-preserved regression witness (`merge_boundary_1_original_witness_replays_exactly`, merge.rs:583) for a since-fixed WGS84-vs-sphere unit conversion bug. Extensive unit tests cover every curated pair's real coordinates against the threshold.",
+      "key_items": [
+        { "name": "PlaceMerge", "kind": "struct", "what": "One curated same-place pair: survivor id, absorbed id, reason", "line": 96 },
+        { "name": "MERGE_PAIRS", "kind": "const", "what": "17 hand-verified duplicate-place pairs to merge", "line": 104 },
+        { "name": "great_circle_km", "kind": "fn", "what": "Haversine great-circle distance between two lat/lon points", "line": 77 },
+        { "name": "SAME_PLACE_THRESHOLD_KM", "kind": "const", "what": "The 1.0km same-place distance threshold", "line": 88 },
+        { "name": "apply_place_merges", "kind": "fn", "what": "Unions verse_links, rewrites Event.places, and drops absorbed place records", "line": 367 },
+        { "name": "absorbed_ids_for", "kind": "fn", "what": "Ids absorbed into a survivor, for wire traceability", "line": 342 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs"],
+      "used_by": ["server/atlas-core/src/scene.rs"],
+      "concepts": ["struct", "const-static", "HashSet", "property-test", "unit-test"],
+      "tests": "extensive unit tests plus a proptest property test in this file's own #[cfg(test)] module (merge.rs:412-782)"
+    },
+    {
+      "path": "server/atlas-core/src/narrative.rs",
+      "lines": 320,
+      "role": "PRIOR/FOLLOWING event lookups for the reader popover, and the global timeline walk",
+      "l1": "When you're reading about one event on the map or in a popover and want to know \"what happened right before this\" or \"right after,\" this file answers that — either within one narrative thread, or across the WHOLE Bible timeline regardless of which story it belongs to. Most of what used to live here has actually moved to the newer graph; this file mainly keeps one shared helper and the global-timeline walker alive.",
+      "l2": "`NarrativeAdjacentEvent` is the shape one adjacent event's card needs (id, label, places, verse groups). `adjacent_event` builds one from an event id by calling `scene::to_scene_event` — the SAME function the map's own scene composition uses — so a popover's neighbor card and a map arrow's endpoint can never show different verse text for the same event. `global_timeline_position` returns a `TimelinePosition` struct with `prior`/`following`, both `Option<NarrativeAdjacentEvent>` — `None` only at the true start or end of the whole dated-event timeline, or when the event itself is undated (`kind == \"general\"`), never as a disabled placeholder.",
+      "l3": "The module's own doc comment (narrative.rs:1-36) records a real retirement: `positions_for_events`, once \"the core resolver, shared by BOTH the verse-keyed and the event-id-keyed lookup,\" was deleted at M-D3 because `atlas_server::handlers::narrative_event_positions` now reads succession topology straight off the GRAPH's own edges and calls `adjacent_event` (narrative.rs:82) directly — this file's job narrowed to presentation only. `global_timeline_position` (narrative.rs:122) is kept alive specifically because `server/atlas-graph/tests/timeline_equivalence.rs` uses it as a proven lockstep ORACLE against the graph's own reconstructed timeline order, the same exemption class `AtlasData::heading_for_verse` earns. The file's own \"ONE-GRAPH EQUALITY PROOF\" test (`adjacent_event_verse_groups_equal_the_map_arrows_own_scene_event`, narrative.rs:301) directly asserts byte-for-byte equality between a popover's verse groups and the map's own scene verse groups for the same event — not an argument, a real assertion.",
+      "key_items": [
+        { "name": "NarrativeAdjacentEvent", "kind": "struct", "what": "One adjacent event's card: id, label, places, verse_groups", "line": 52 },
+        { "name": "adjacent_event", "kind": "fn", "what": "Builds one event's NarrativeAdjacentEvent via scene::to_scene_event", "line": 82 },
+        { "name": "TimelinePosition", "kind": "struct", "what": "prior/following adjacent events on the global chronological timeline", "line": 106 },
+        { "name": "global_timeline_position", "kind": "fn", "what": "The global chronological PRIOR/FOLLOWING for one dated event, independent of narrative", "line": 122 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/wire.rs", "server/atlas-core/src/scene.rs"],
+      "used_by": ["server/atlas-server/src/handlers.rs", "server/atlas-graph/tests/timeline_equivalence.rs", "server/atlas-graph/tests/narrative_real_data.rs"],
+      "concepts": ["struct", "Option", "unit-test", "integration-test"],
+      "tests": "unit tests in this file's own #[cfg(test)] module (narrative.rs:129-320), including a direct one-graph equality proof against scene.rs"
+    },
+    {
+      "path": "server/atlas-core/src/nt_calibration.rs",
+      "lines": 400,
+      "role": "One-time ETL fix shifting Theographic's NT-era dates onto this app's AD-33 anchor",
+      "l1": "The imported New Testament events were all dated on a slightly different calendar than this app's own official one — three years off, consistently. Left alone, a live bug meant \"the Resurrection\" could sort as happening BEFORE Jesus's first miracle. This file shifts every affected imported event forward by exactly three years, once, and carefully re-slots them so they land in the right order relative to the hand-curated Passion Week events.",
+      "l2": "`is_uncalibrated_nt_event` is the selection rule: an id starting with `\"theo-\"`, a strictly-AD year, and at least one New Testament verse among its effective verses. `apply_nt_calibration` shifts `when.from_year`/`when.to_year` by the `NT_CALIBRATION_SHIFT` constant (3) for every matching event, and also reassigns `order_key` using one of two schemes: a mechanical formula for anything witnessing Acts (`ACTS_ORDER_KEY_BASE + chapter*100 + verse`), or a hand-placed lookup table (`GOSPEL_ORDER_KEY_OVERRIDES`, a `const` array of `(id, order_key, reason)` tuples) for Gospel-era events that don't fit the formula. It returns a `Vec<CalibrationLogEntry>` — an explicit audit trail, not silent mutation.",
+      "l3": "`apply_nt_calibration` (nt_calibration.rs:218) must run EXACTLY ONCE, on the raw pre-`finish()` event set, from `atlas_etl::main` — never from `AtlasData::finish()`, because (unlike the removal-based merges in merge.rs/event_merge.rs) a raw date shift is not naturally idempotent: `finish()` runs twice across the real pipeline (ETL write, server load), and the selection predicate itself stays true after one shift (proven directly by `is_idempotent_by_construction_when_called_once...`, nt_calibration.rs:328). `GOSPEL_ORDER_KEY_OVERRIDES` (nt_calibration.rs:157) is individually justified per row against the real curated Passion-Week `order_key` landscape (`pw_*`/`rob_*`, 0..11,000) so a calibrated mega-span event never sorts before the real pericope it bundles. `first_verse_in_book` (nt_calibration.rs:134) is `pub` specifically so `atlas-graph`'s own era-boundary gate test can reuse the identical \"is this event Acts-witnessed\" predicate this module uses, so the two can never disagree. The regression this whole module exists to fix — `theo-460` (Resurrection/Ascension) sorting adjacent to `jm_cana` (Jesus's first miracle) — is pinned directly by name in `red_then_green_resurrection_no_longer_sorts_adjacent_to_cana` (nt_calibration.rs:301).",
+      "key_items": [
+        { "name": "NT_CALIBRATION_SHIFT", "kind": "const", "what": "The +3 year shift applied to every uncalibrated NT-clock event", "line": 87 },
+        { "name": "is_uncalibrated_nt_event", "kind": "fn", "what": "Selection rule: theo- id, strictly AD, touches an NT verse", "line": 105 },
+        { "name": "GOSPEL_ORDER_KEY_OVERRIDES", "kind": "const", "what": "Hand-placed order_key values for Gospel-era events colliding at year 33", "line": 157 },
+        { "name": "apply_nt_calibration", "kind": "fn", "what": "Applies the year shift and order_key placement, once, with an audit log", "line": 218 },
+        { "name": "first_verse_in_book", "kind": "fn", "what": "An event's earliest (chapter, verse) in a given book among its effective verses", "line": 134 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/canon.rs", "server/atlas-core/src/event_merge.rs"],
+      "used_by": ["server/atlas-etl/src/compile.rs", "server/atlas-graph/tests/narrative_real_data.rs"],
+      "concepts": ["const-static", "struct", "Option", "unit-test"],
+      "tests": "extensive unit tests in this file's own #[cfg(test)] module (nt_calibration.rs:245-401), including named red-then-green regression tests"
+    },
+    {
+      "path": "server/atlas-core/src/refs.rs",
+      "lines": 189,
+      "role": "Scripture reference types: BookId, VerseId, ScriptureRef, and their parsing",
+      "l1": "This file defines what a \"Bible reference\" is in code — a book, a book-and-chapter, a single verse, or a verse range — and how to turn a typed string like \"GEN.1.1-5\" into one of these and back again. Almost every other file that deals with verses uses these types.",
+      "l2": "`BookId` is a **newtype** (`struct BookId(pub u8)`, a thin wrapper around a plain number that gives it its own type identity) indexing into `canon::BOOKS`. `VerseId` is a struct of book+chapter+verse with hand-written `Serialize`/`Deserialize` impls that read/write the canonical `\"GEN.1.1\"` string form directly, rather than the default field-by-field JSON object serde would otherwise generate. `ScriptureRef` is an **enum** with four variants (`Book`, `Chapter`, `Passage`, `Verse`) — Rust's **pattern-matching** `match` in `ScriptureRef::parse`/`Display` handles each shape explicitly, so the compiler enforces that every variant is accounted for.",
+      "l3": "`ScriptureRef::parse` (refs.rs:67) splits on `.` and dispatches on the resulting slice's length via `match parts.as_slice()` — a **slice** pattern match — rejecting empty segments, non-numeric chapters/verses, zero values, and inverted ranges (`from_verse >= to_verse`) all as `CoreError::BadRef`. Book code matching is case-insensitive at parse time but always canonicalizes to uppercase on `Display`, pinned by `parse_case_insensitive_book_code_displays_uppercase` (refs.rs:160). A `proptest` round-trip property (refs.rs:171) generates arbitrary book/chapter/verse combinations and asserts `parse(x.to_string()) == x` for every `ScriptureRef` variant. `VerseId`'s custom serde impls (refs.rs:34-45) are what let every wire type in `wire.rs` carry a `VerseId` field that serializes as a plain string rather than a nested object.",
+      "key_items": [
+        { "name": "BookId", "kind": "struct", "what": "Newtype index into canon::BOOKS", "line": 6 },
+        { "name": "VerseId", "kind": "struct", "what": "book+chapter+verse, serializes as the canonical dot-ref string", "line": 18 },
+        { "name": "ScriptureRef", "kind": "enum", "what": "Book | Chapter | Passage | Verse — a reference at any granularity", "line": 49 },
+        { "name": "ScriptureRef::parse", "kind": "fn", "what": "Strict canonical parse of a BOOK[.CH[.V[-V2]]] string", "line": 67 }
+      ],
+      "depends_on": ["server/atlas-core/src/canon.rs"],
+      "used_by": ["server/atlas-core/src/data.rs", "server/atlas-core/src/scene.rs", "server/atlas-core/src/xrefs.rs", "server/atlas-core/src/catechism.rs", "server/atlas-server/src/handlers.rs"],
+      "concepts": ["struct", "enum", "newtype", "pattern-matching", "slice", "From-Into", "property-test", "unit-test"],
+      "tests": "unit tests plus a proptest round-trip property in this file's own #[cfg(test)] module (refs.rs:117-190)"
+    },
+    {
+      "path": "server/atlas-core/src/scene.rs",
+      "lines": 1007,
+      "role": "Turns a time window or scripture ref into the wire-level Scene the map renders — genuinely still live",
+      "l1": "This is the file that actually decides what the map shows you. Give it a time window (\"800 BC to 700 BC\") or a Bible reference (\"Genesis 1\"), and it figures out which places should light up, which events they carry, which arrows connect a story's steps, and what the legend should say. Unlike much of the rest of this crate, this is not legacy — it's exactly what runs today.",
+      "l2": "`compose_time_scene` and `compose_scripture_scene` are the two entry points, each returning a `wire::Scene`. Both share four private helpers: `lit_places` groups kept events by every place they touch into `ScenePlace`s (using a `HashMap<&str, Vec<&Event>>`); `quiet_places` (time mode only) adds every OTHER event-bearing place as dim/grey rather than hiding it; `build_arrows` walks each narrative's legs and emits a `SceneArrow` between consecutive kept legs at different places; `legend` lists which narratives have at least one arrow in this scene. `verse_groups_for` groups verse ids by (book, chapter) and caps each group at 20, with special handling (a `.partition()` **iterator** call) so scripture-mode never caps away the very verse that earned an event its spot in the scene.",
+      "l3": "`compose_scripture_scene` (scene.rs:30) adds synthetic `mention-{place_id}` pseudo-events for places lit only by their geocoded `verse_links` matching the ref (not by any real event) — these ids never enter `d.events` or narrative legs, so \"an arrow never references a mention pseudo-event\" is vacuously true by construction, not a checked invariant. `witnesses_for` (scene.rs:272) is the ONE function both `AtlasData::finish`'s heading index and the live EVENT popover call, so a heading's anchor verse and the popover's parallel-accounts section can never disagree about witness count — it synthesizes exactly one implicit witness (grouped by book, first-seen order) when `e.witnesses` was never curated. `verse_groups_for`'s scripture-mode cap logic (scene.rs:334-368) is a real, tested fix (SCRIP-1/SCRIP-3) for silent truncation of the justifying verse in dense chapters. `to_scene_event` (scene.rs:242) is `pub` so atlas-server's verse/place-detail endpoints reuse the identical verse-grouping logic rather than duplicating it. `ref_contains` (scene.rs:99) is the one place \"does this verse match this ScriptureRef\" is decided for both scene modes. The remaining ~600 lines are this file's own extensive `#[cfg(test)]` module.",
+      "key_items": [
+        { "name": "compose_time_scene", "kind": "fn", "what": "Builds the time-mode Scene: every event intersecting a window, plus quiet places", "line": 16 },
+        { "name": "compose_scripture_scene", "kind": "fn", "what": "Builds the scripture-mode Scene: events and geocoded mentions matching a ScriptureRef", "line": 30 },
+        { "name": "ref_contains", "kind": "fn", "what": "True when a verse id matches a ScriptureRef at any granularity", "line": 99 },
+        { "name": "witnesses_for", "kind": "fn", "what": "Resolves an event's witness list, synthesizing one implicit witness when none is curated", "line": 272 },
+        { "name": "to_scene_event", "kind": "fn", "what": "Builds one event's SceneEvent shape, reused by non-scene endpoints", "line": 242 },
+        { "name": "verse_groups_for", "kind": "fn", "what": "Groups and caps verse ids by (book, chapter), prioritizing ref-matching verses under the cap", "line": 334 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/history.rs", "server/atlas-core/src/refs.rs", "server/atlas-core/src/time.rs", "server/atlas-core/src/wire.rs", "server/atlas-core/src/merge.rs", "server/atlas-core/src/translation.rs"],
+      "used_by": ["server/atlas-server/src/handlers.rs", "server/atlas-core/src/narrative.rs", "server/atlas-graph/src/legacy.rs"],
+      "concepts": ["struct", "HashMap", "HashSet", "iterator", "closure", "Option", "unit-test", "property-test"],
+      "tests": "extensive unit tests in this file's own #[cfg(test)] module (scene.rs:399-1007), plus server/atlas-core/tests/golden.rs pinning the Scene wire format and server/atlas-core/src/narrative.rs's one-graph equality proof"
+    },
+    {
+      "path": "server/atlas-core/src/sources.rs",
+      "lines": 169,
+      "role": "Schema for the /api/sources page and the provenance-id registry",
+      "l1": "This file backs the site's \"Sources\" page — the list explaining where every dataset came from and how it's licensed — and also the behind-the-scenes table that maps each internal ingest tag (like \"kjv\" or \"theographic\") to the human-readable source it names. It's deliberately kept separate from everything else here: it has nothing to do with the map or the graph pipeline.",
+      "l2": "`SourceCategory`/`SourceEntry`/`SourcesDocument` are plain **struct**s mirroring `data/curated/sources.toml`'s own shape 1:1 — the SAME struct reads the curated TOML and serializes the compiled JSON the client's Sources page renders directly, so \"the page renders from data, not hardcoded prose\" holds by construction. `ProvenanceEntry` is the registry row joining a graph-carried provenance id (an ingest fact) to a `SourceEntry` (a publication fact) plus a `Confidence` string, validated against a closed vocabulary (`CONFIDENCE_VOCABULARY`, a `const` slice of `&str`). `split_provenance_id` splits a compound id like `\"kretzmann/jeremiah/1\"` at the FIRST slash into `(kind, Option<locator>)` — the one place this id grammar is defined, mirrored (not re-derived) by the client's own C# `ProvenanceResolver.SplitId`.",
+      "l3": "`split_provenance_id` (sources.rs:143) is deliberately shared logic: `atlas-graph/tests/provenance_registry_real_data.rs` asserts the id-grammar law through this exact function, never a second copy. `CONFIDENCE_VOCABULARY` (sources.rs:123) duplicates `atlas_graph_types::ingest::Confidence`'s variant names as plain strings rather than importing the enum, BECAUSE `atlas-core` has no dependency on the graph-types crate — the wire value is a string either way, and the real-data test in atlas-graph reconciles the two independently. This module is explicitly NOT a field on `AtlasData` (per its own doc comment, quoting the originating batch brief) so that nothing here can ever touch `graph.bin` or `data/exports/`. Two unit tests cover `split_provenance_id`'s bare-id and suffixed-id cases.",
+      "key_items": [
+        { "name": "SourcesDocument", "kind": "struct", "what": "The whole compiled/curated Sources page shape: categories, sources, provenances", "line": 57 },
+        { "name": "SourceEntry", "kind": "struct", "what": "One row of the Sources page: title, description, license, link", "line": 38 },
+        { "name": "ProvenanceEntry", "kind": "struct", "what": "Joins a graph provenance id to a SourceEntry and a confidence tier", "line": 96 },
+        { "name": "CONFIDENCE_VOCABULARY", "kind": "const", "what": "The closed Confidence vocabulary, mirrored from graph-types as plain strings", "line": 123 },
+        { "name": "split_provenance_id", "kind": "fn", "what": "Splits a compound provenance id into (kind, Option<locator>) at the first slash", "line": 143 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-server/src/handlers.rs", "server/atlas-server/src/load.rs", "server/atlas-server/src/app.rs", "server/atlas-etl/src/sources.rs"],
+      "concepts": ["struct", "const-static", "serde", "Option", "unit-test"],
+      "tests": "two unit tests in this file's own #[cfg(test)] module (sources.rs:150-170); the id-grammar law is also asserted by server/atlas-graph/tests/provenance_registry_real_data.rs"
+    },
+    {
+      "path": "server/atlas-core/src/time.rs",
+      "lines": 136,
+      "role": "Year type and TimeRange: signed BC/AD years with no year zero",
+      "l1": "This file defines what a \"year\" and a \"time range\" are in code — since there's no year zero (1 BC is immediately followed by AD 1), it handles that gap correctly everywhere years get compared or stepped. It also defines a special \"undated\" range used for passages that are real containers of verses but have no defensible date at all.",
+      "l2": "`Year` is a **type alias** for `i32` (a plain rename, not a new type) — negative for BC, positive for AD, zero forbidden. `TimeRange` is a struct of `from_year`/`to_year`, constructed only through the fallible `TimeRange::new`, which returns `Result<Self, CoreError>` rejecting a zero year or an inverted range (from > to) rather than allowing an invalid value to exist at all. `next_year` handles the BC/AD adjacency specially (`next_year(-1) == 1`, skipping zero). `intersects`/`contains_year` are the two comparison operations every other module in this crate relies on.",
+      "l3": "`TimeRange::undated()` (time.rs:60) returns the fixed `(-4004, 100)` whole-atlas span — a deliberate, self-documenting sentinel for a `kind == \"general\"` event's structurally-required but meaningless `when` field, chosen because it always passes `atlas_etl::validate::run`'s bound check with no special case and is instantly recognizable as \"not a real date claim\" (the server's own `/api/event/{id}` handler omits `when` entirely for a general-kind passage, so this value never actually reaches a reader). `TimeRange` has no `#[derive(Default)]` on purpose — every field must go through the validating `new()` constructor. A `proptest` module (time.rs:119-136) generates random valid ranges and checks `intersects` is symmetric and that containment implies intersection.",
+      "key_items": [
+        { "name": "Year", "kind": "type", "what": "Type alias for i32 — signed BC/AD year, never zero", "line": 3 },
+        { "name": "TimeRange", "kind": "struct", "what": "A validated from_year/to_year range", "line": 14 },
+        { "name": "TimeRange::new", "kind": "fn", "what": "Fallible constructor rejecting zero years and inverted ranges", "line": 20 },
+        { "name": "TimeRange::undated", "kind": "fn", "what": "The whole-atlas-span sentinel for a general-kind (dateless) passage", "line": 60 },
+        { "name": "next_year", "kind": "fn", "what": "Increments a year, skipping the nonexistent year zero", "line": 5 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-core/src/data.rs", "server/atlas-core/src/scene.rs", "server/atlas-core/src/history.rs", "server/atlas-core/src/wire.rs"],
+      "concepts": ["type-alias", "struct", "Result", "derive", "Clone-Copy", "property-test", "unit-test"],
+      "tests": "unit tests plus proptest property tests in this file's own #[cfg(test)] module (time.rs:65-136)"
+    },
+    {
+      "path": "server/atlas-core/src/translation.rs",
+      "lines": 121,
+      "role": "The KJV-only translation indirection: fail-loud lookup, ready for future translations",
+      "l1": "The app only has King James Version text today, but its internal data shape already supports multiple translations, just in case one is added later. This file is the one real lookup: given a translation code like \"kjv\", find the matching verses or place-name — and if you ask for a translation that doesn't exist (like \"esv\"), it tells you clearly rather than silently pretending to be KJV.",
+      "l2": "`DEFAULT_TRANSLATION` is the `const &str` `\"kjv\"`. `resolve` takes a `&HashMap<String, Vec<String>>` (translation code → verse list) and a code, returning `Result<&[String], CoreError>` — a **slice** reference into the map's own data, no copying, with `Err(CoreError::UnknownTranslation)` on a miss. `resolve_name` is the sibling for a `HashMap<String, String>` (translation code → one display name), used for place-name aliases. Both are deliberately case-sensitive — a curator typing `\"KJV\"` instead of `\"kjv\"` is a real bug worth surfacing, not smoothing over.",
+      "l3": "This module exists so `EventWitness::translations`/`PlaceNameAlias::translations` can be REAL `HashMap`s keyed by translation code today, even though every curated witness carries exactly one key (`\"kjv\"`) — the module doc comment quotes the owner's own requirement verbatim: \"this set of passages... maps to a mapping of translation to a set of verses... so that we can expand into different translations and keep mappings the same.\" `resolve`/`resolve_name` are called by `atlas-server::handlers::event` on every request and by `history::resolve_display_name_and_canonical` respectively — genuine, exercised lookups, not decorative scaffolding for a feature that doesn't exist yet. Ten unit tests cover both functions' happy path, case-sensitivity, unknown-translation, and empty-map cases.",
+      "key_items": [
+        { "name": "DEFAULT_TRANSLATION", "kind": "const", "what": "The one translation this atlas compiles today: \"kjv\"", "line": 28 },
+        { "name": "resolve", "kind": "fn", "what": "Fail-loud lookup of a translation's verse list from an EventWitness-shaped map", "line": 37 },
+        { "name": "resolve_name", "kind": "fn", "what": "Fail-loud lookup of a translation's display name from a PlaceNameAlias-shaped map", "line": 49 }
+      ],
+      "depends_on": [],
+      "used_by": ["server/atlas-core/src/data.rs", "server/atlas-core/src/scene.rs", "server/atlas-core/src/history.rs", "server/atlas-server/src/handlers.rs"],
+      "concepts": ["const-static", "HashMap", "slice", "Result", "unit-test"],
+      "tests": "ten unit tests in this file's own #[cfg(test)] module (translation.rs:53-121)"
+    },
+    {
+      "path": "server/atlas-core/src/wire.rs",
+      "lines": 180,
+      "role": "The Scene wire types the client's map actually deserializes",
+      "l1": "This file defines exactly what JSON shape the map's data arrives in — which places are lit up, which are quiet, which arrows connect events, and what the legend says. It's the contract between the Rust server and the Blazor client for everything the /world map page shows.",
+      "l2": "`Scene`, `ScenePlace`, `QuietPlace`, `SceneEvent`, `VerseGroup`, `SceneArrow`, `SceneNarrative` are all plain **struct**s deriving `Serialize`/`Deserialize`. Several fields use `#[serde(skip_serializing_if = \"Option::is_none\")]` or `\"Vec::is_empty\"` to keep the wire lean — a field that's almost always absent (like `existence_from` on a place with no curated history) never shows up as `null`/`[]` in the JSON at all, saving bandwidth. `Scene::sref` is renamed to `\"ref\"` on the wire via `#[serde(rename = \"ref\")]` since `ref` is a reserved word in Rust.",
+      "l3": "`Scene::quiet_places` and `SceneEvent::verse_groups` are deliberately ALWAYS present (never `skip_serializing_if`), even when empty, for wire regularity — `ScenePlace`/`QuietPlace::merged_ids` and `existence_from`/`existence_to`, by contrast, ARE conditionally omitted, since they're empty/absent for the overwhelming majority of places (only a merged or historically-dated place carries them). This file's own single test (wire.rs:157) pins that a populated `sref` serializes under the key `\"ref\"`, that `window` is omitted when `None`, and that `quiet_places` stays a present empty array even for a scripture-mode scene — a direct, narrow proof of the field-presence rules the doc comments describe. `server/atlas-core/tests/golden.rs` is the broader companion check: a full hand-built `Scene`, serialized and compared byte-for-byte against a committed JSON fixture, catching any accidental wire-format drift across the whole struct tree, not just one field.",
+      "key_items": [
+        { "name": "Scene", "kind": "struct", "what": "The whole scene payload: mode, window/ref, places, quiet_places, arrows, narratives", "line": 6 },
+        { "name": "ScenePlace", "kind": "struct", "what": "One lit place: name, display_name, events, existence bounds, merged_ids", "line": 33 },
+        { "name": "QuietPlace", "kind": "struct", "what": "One event-bearing but not-currently-lit place, shown dim on the map", "line": 85 },
+        { "name": "SceneArrow", "kind": "struct", "what": "One narrative-leg connection between two places", "line": 135 }
+      ],
+      "depends_on": ["server/atlas-core/src/time.rs"],
+      "used_by": ["server/atlas-core/src/scene.rs", "server/atlas-core/src/narrative.rs", "server/atlas-server/src/graph_wire.rs", "server/atlas-core/tests/golden.rs"],
+      "concepts": ["struct", "serde", "Option", "derive", "unit-test"],
+      "tests": "one unit test in this file's own #[cfg(test)] module (wire.rs:153-181); the full wire shape is additionally pinned by server/atlas-core/tests/golden.rs"
+    },
+    {
+      "path": "server/atlas-core/src/xrefs.rs",
+      "lines": 371,
+      "role": "Aggregates cross-references across a scripture span's member verses",
+      "l1": "When you look up cross-references for a whole passage rather than a single verse, this file combines the results: it collects every cross-reference cited by any verse in the passage, adds up votes for ones cited more than once, drops references that just point back inside the passage itself, and returns the top 20 sorted by strength.",
+      "l2": "`AggregatedXref` is the result struct (target, votes, preview text). `span_member_verses` expands a `ScriptureRef` into its individual `VerseId`s (empty for `Book`/`Chapter` refs, which have no defined member list here). `aggregate_span_xrefs` is the main function: it walks each member verse's cross-ref list, sums votes per target in a `HashMap<String, i32>` while tracking first-seen order in a separate `Vec` (so the final sort is stable rather than depending on `HashMap`'s unspecified iteration order), drops any target whose own range is a SUBSET of the queried span (a \"self-target\"), then sorts by votes descending and truncates to 20.",
+      "l3": "`target_within_span` (xrefs.rs:84) is a genuine SUBSET check, not merely \"does the target intersect the span\" — a target that starts inside the span but reaches past its far end survives (pinned by `self_targets_are_dropped_but_a_target_merely_starting_inside_the_span_survives`, xrefs.rs:247), matching the batch brief's exact wording, \"no target ⊆ the span.\" `target_span` (xrefs.rs:58) mirrors `atlas-server::handlers::first_verse_of_target`'s three-shape cross-ref-target parse (single verse, same-chapter span, cross-chapter/book span) — duplicated rather than shared because this crate must not depend on the ETL-only crate that owns the canonical parser. A `proptest` property test (`xref_2_span_aggregation`, xrefs.rs:340) checks, over random valid spans, that every returned target parses, is never a subset of the span, has non-increasing votes, and genuinely appears in some member verse's raw xref list — a direct, generative proof of the aggregation contract, not just example-based tests.",
+      "key_items": [
+        { "name": "AggregatedXref", "kind": "struct", "what": "One aggregated cross-ref target with summed votes and preview text", "line": 27 },
+        { "name": "span_member_verses", "kind": "fn", "what": "Expands a ScriptureRef into its individual member VerseIds", "line": 43 },
+        { "name": "aggregate_span_xrefs", "kind": "fn", "what": "Unions and sums cross-ref votes across a span's member verses, dropping self-targets", "line": 109 },
+        { "name": "target_within_span", "kind": "fn", "what": "True when a cross-ref target's range is a subset of the queried span", "line": 84 }
+      ],
+      "depends_on": ["server/atlas-core/src/data.rs", "server/atlas-core/src/refs.rs"],
+      "used_by": ["server/atlas-server/src/handlers.rs", "server/atlas-core/src/catechism.rs"],
+      "concepts": ["struct", "HashMap", "iterator", "closure", "property-test", "unit-test"],
+      "tests": "extensive unit tests plus a proptest property test (xref_2_span_aggregation) in this file's own #[cfg(test)] module (xrefs.rs:154-372)"
+    },
+    {
+      "path": "server/atlas-core/Cargo.toml",
+      "lines": 22,
+      "role": "The crate's manifest: dependencies (serde, thiserror, proptest) and a documented cycle workaround",
+      "l1": "This is the crate's own ingredient list — which outside packages it needs (serde for JSON, thiserror for errors, proptest for randomized tests) and its Rust edition. Its comment also explains why this crate deliberately does NOT depend on the ETL crate, even for tests.",
+      "l2": "A standard **Cargo-toml** manifest: `[dependencies]` lists `serde` (with the `derive` feature), `serde_json`, and `thiserror`, all needed at normal build time; `[dev-dependencies]` adds `proptest`, needed only for `#[cfg(test)]` code. The trailing comment documents a real, tried-and-reverted idea: adding `atlas-etl` as a dev-dependency to write tests against real compiled data directly in this crate.",
+      "l3": "The comment (Cargo.toml:13-22) records a genuine Rust type-system constraint: `atlas_etl::compile::compile` returns `atlas_core::data::AtlasData`, and a dev-dependency FROM atlas-core ON atlas-etl would create a cycle where the test-cfg build of `atlas-core` and the normal build `atlas-etl` links against become two DIFFERENT types with the identical name (`error[E0308]: mismatched types... multiple different versions of crate atlas_core`) — Cargo can only tolerate a dev-dependency cycle when no type from the cycling crate crosses the boundary, which is not the case here. The real-data tests that needed this moved instead to `server/atlas-graph/tests/narrative_real_data.rs`, which sits outside the cycle. This is why `history.rs`/`xrefs.rs`/`catechism.rs` are written as pure, narrow-slice-in functions — that shape is what lets `atlas-graph` reuse them without atlas-core ever depending back on it.",
+      "key_items": [
+        { "name": "[dependencies]", "kind": "module", "what": "serde (derive), serde_json, thiserror — the crate's normal-build dependencies", "line": 6 },
+        { "name": "[dev-dependencies]", "kind": "module", "what": "proptest — used only by #[cfg(test)] property tests", "line": 11 }
+      ],
+      "depends_on": [],
+      "used_by": [],
+      "concepts": ["Cargo-toml", "workspace"],
+      "tests": "not applicable (a manifest file, not code)"
+    },
+    {
+      "path": "server/atlas-core/tests/golden.rs",
+      "lines": 70,
+      "role": "Integration test pinning the Scene JSON wire format against a committed fixture",
+      "l1": "This test builds one small, hand-crafted map scene and checks that its JSON output is byte-for-byte identical to a file already saved on disk. If anyone ever changes how a Scene is written out to JSON — even a tiny formatting detail — this test fails immediately, so the client and server never drift apart silently.",
+      "l2": "`sample_scene` builds a `wire::Scene` literal with one lit place (Jericho, with one event and one verse group), one quiet place (Shiloh, with curated existence bounds), one arrow, and one narrative — deliberately touching every field `wire.rs` defines. `golden_scene_fixture` (an **integration test**, living in `tests/` rather than inside `src/`, so it exercises the crate exactly as an outside consumer would) serializes it with `serde_json::to_string_pretty`, creates the fixture file on first run if it's missing, then asserts the on-disk text matches exactly and that deserializing it back reproduces the identical struct.",
+      "l3": "The fixture lives at `../../tests/fixtures/golden-scene.json` (golden.rs:60), a workspace-level path shared across crates rather than crate-local — `CARGO_MANIFEST_DIR` plus a relative `..` climb resolves it regardless of which directory `cargo test` is invoked from. The comparison normalizes `\\r\\n` to `\\n` before comparing (golden.rs:66) so the test passes identically on Windows and Unix checkouts. This is the crate's only file under `tests/` (as opposed to `#[cfg(test)]` modules inside `src/`), making it the one true END-TO-END check of the wire format as a whole tree, complementing wire.rs's own single narrow unit test of the `ref`-rename/omission rules.",
+      "key_items": [
+        { "name": "sample_scene", "kind": "fn", "what": "Builds one hand-crafted Scene touching every wire.rs field", "line": 4 },
+        { "name": "golden_scene_fixture", "kind": "test", "what": "Serializes sample_scene and diffs it byte-for-byte against a committed JSON fixture", "line": 58 }
+      ],
+      "depends_on": ["server/atlas-core/src/wire.rs", "server/atlas-core/src/time.rs"],
+      "used_by": [],
+      "concepts": ["integration-test", "serde", "Cargo-toml"],
+      "tests": "this file IS the test — golden_scene_fixture (golden.rs:58-70)"
+    }
+  ]
+}

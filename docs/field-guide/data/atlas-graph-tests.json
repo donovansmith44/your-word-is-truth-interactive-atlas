@@ -1,0 +1,630 @@
+{
+  "area": "server/atlas-graph (tests)",
+  "title": "atlas-graph tests — the laws that keep the graph honest",
+  "kind": "tests",
+  "language": "rust",
+  "overview": {
+    "l1": "This folder is the project's proof pile. Each file checks one promise about the Bible graph: that the file the server actually loads (data/compiled/graph.bin) matches what building it from scratch would produce, that rebuilding it twice gives byte-identical results, that every relationship (a verse belongs to a chapter, an event has a date, a fact names its source) is really backed by real data and not a decoration, and that dozens of specific, owner-reported bugs stay fixed. If one of these tests goes red, something the app shows you — a verse, a date, a map border, an attribution — would be silently wrong or missing.",
+    "l2": "Every *.rs file here is its own Rust 'integration test' crate: Cargo compiles each one as a separate binary that links against atlas-graph and its sibling crates (atlas-core, atlas-etl, graph-types) purely through their public APIs, the same way an outside consumer would. Each file lists one or more `#[test] fn` — a function `cargo test` discovers and runs, reporting pass/fail from its `assert!`/`assert_eq!` calls. Almost every file reads the project's own real, committed data (`data/raw`, `data/curated`, sometimes the shipped `data/compiled/graph.bin` itself) rather than a synthetic fixture, because these are supposed to be true statements about the actual Bible Atlas, not about a toy example. Building that real data is expensive, so most files cache it once per test binary with `std::sync::OnceLock` (Rust's 'compute this exactly once, safely, even if multiple tests ask for it' primitive) instead of paying the cost per test.",
+    "l3": "These are `tests/*.rs` integration tests for the `atlas-graph` crate (Cargo convention: anything under `tests/` compiles as an independent crate per file, sees only `pub` items, and runs via `cargo test -p atlas-graph`). Most files duplicate a small `real_atlas_data()`/`real_graph()` helper rather than sharing one (a deliberate crate convention, noted in several files' own headers) so each file's real-data construction is self-contained and auditable. Two files load the actual shipped artifact instead of rebuilding (`kjv_case_artifact_real_data.rs`, `provenance_registry_real_data.rs`) because their claim is specifically about what ships, not what a fresh build would produce. Disclosed costs and ceilings are load-bearing: `artifact_conformance.rs`'s 4-second load ceiling was retargeted after a documented flake under parallel `cargo test --workspace` runs; `determinism.rs` discloses its own two-independent-full-build cost at ~90 seconds and calls itself 'this crate's single most expensive test'. Several files pin exact real-data counts as named constants (e.g. `version_root_regression.rs`'s `EXPECTED_VERSION_HEX`, `attestation_exclusivity_real_data.rs`'s `SWEEP_*_PAIRS`) with the rule that a deliberate content change updates the constant in the same commit, never silently."
+  },
+  "reading_order": [
+    "server/atlas-graph/tests/version_root_regression.rs",
+    "server/atlas-graph/tests/determinism.rs",
+    "server/atlas-graph/tests/artifact_conformance.rs",
+    "server/atlas-graph/tests/kjv_case_artifact_real_data.rs",
+    "server/atlas-graph/tests/provenance_registry_real_data.rs",
+    "server/atlas-graph/tests/bible_containers_real_data.rs",
+    "server/atlas-graph/tests/frontier_falsifiability.rs",
+    "server/atlas-graph/tests/window_law.rs",
+    "server/atlas-graph/tests/overlay_equivalence.rs",
+    "server/atlas-graph/tests/exports_laws.rs",
+    "server/atlas-graph/tests/chronology_laws.rs",
+    "server/atlas-graph/tests/timeline_equivalence.rs",
+    "server/atlas-graph/tests/narrative_real_data.rs",
+    "server/atlas-graph/tests/heading_precedence.rs",
+    "server/atlas-graph/tests/brainfuel_adapter_real_data.rs",
+    "server/atlas-graph/tests/concord_sc_overlap_real_data.rs",
+    "server/atlas-graph/tests/kretzmann_adapter_real_data.rs",
+    "server/atlas-graph/tests/red_letter_adapter_real_data.rs",
+    "server/atlas-graph/tests/attestation_exclusivity_real_data.rs",
+    "server/atlas-graph/tests/description_real_data.rs",
+    "server/atlas-graph/tests/fulfillment_typology_real_data.rs",
+    "server/atlas-graph/tests/justified_by_real_data.rs",
+    "server/atlas-graph/tests/peoples_real_data.rs"
+  ],
+  "groups": [
+    {
+      "name": "Shipped-artifact honesty",
+      "paths": [
+        "server/atlas-graph/tests/version_root_regression.rs",
+        "server/atlas-graph/tests/determinism.rs",
+        "server/atlas-graph/tests/artifact_conformance.rs",
+        "server/atlas-graph/tests/kjv_case_artifact_real_data.rs",
+        "server/atlas-graph/tests/provenance_registry_real_data.rs"
+      ],
+      "note": "These check the compiled file itself: same content in, same bytes and version root out, fast to load, and every fact traceable to a named source."
+    },
+    {
+      "name": "Structural graph laws",
+      "paths": [
+        "server/atlas-graph/tests/bible_containers_real_data.rs",
+        "server/atlas-graph/tests/frontier_falsifiability.rs",
+        "server/atlas-graph/tests/window_law.rs",
+        "server/atlas-graph/tests/overlay_equivalence.rs",
+        "server/atlas-graph/tests/exports_laws.rs"
+      ],
+      "note": "Shape-of-the-graph laws: containers form a tree, every advertised relationship has real rows, reading windows compose correctly, and the legacy/export views reconstruct losslessly."
+    },
+    {
+      "name": "Chronology and timeline laws",
+      "paths": [
+        "server/atlas-graph/tests/chronology_laws.rs",
+        "server/atlas-graph/tests/timeline_equivalence.rs",
+        "server/atlas-graph/tests/narrative_real_data.rs",
+        "server/atlas-graph/tests/heading_precedence.rs"
+      ],
+      "note": "Dates and ordering: every dated event agrees with the anchor table and its witness books' narration windows, the graph's own ordering matches the pre-graph resolver exactly, and passage headings pick the right title."
+    },
+    {
+      "name": "Per-corpus adapter real-data checks",
+      "paths": [
+        "server/atlas-graph/tests/brainfuel_adapter_real_data.rs",
+        "server/atlas-graph/tests/concord_sc_overlap_real_data.rs",
+        "server/atlas-graph/tests/kretzmann_adapter_real_data.rs",
+        "server/atlas-graph/tests/red_letter_adapter_real_data.rs"
+      ],
+      "note": "One test file per ingested corpus (parallel Bible editions, the Book of Concord, Kretzmann's commentary, red-letter speech), each pinning a real merge count or coverage figure."
+    },
+    {
+      "name": "Content-correctness and curation laws",
+      "paths": [
+        "server/atlas-graph/tests/attestation_exclusivity_real_data.rs",
+        "server/atlas-graph/tests/description_real_data.rs",
+        "server/atlas-graph/tests/fulfillment_typology_real_data.rs",
+        "server/atlas-graph/tests/justified_by_real_data.rs",
+        "server/atlas-graph/tests/peoples_real_data.rs"
+      ],
+      "note": "Owner-reported content bugs and curated-table fidelity: which verses narrate vs. merely mention an event, description fill rates, prophecy/typology grounding, justification totals, and people-group identity."
+    }
+  ],
+  "files": [
+    {
+      "path": "server/atlas-graph/tests/artifact_conformance.rs",
+      "lines": 235,
+      "role": "Proves the compiled graph.bin loads fast and answers identically to a fresh build.",
+      "l1": "Every so often the Bible Atlas's whole dataset gets compiled once into a single file. This test proves two promises about that file: the server can load it in well under 4 seconds (so it starts up fast), and once loaded, it answers every question — a verse's text, an event's connections — exactly the same as building the graph fresh from the raw sources would. If this broke, the shipped file could quietly disagree with the truth, or startup could stall.",
+      "l2": "This integration test builds the graph twice: once the normal way (`atlas_graph::build`, 'implementation #1'), and once by dumping that graph to bytes (`artifact::dump`), writing them to a temp file, and reading them back (`artifact::read_file` + `to_service_parts`, 'implementation #2'). A `OnceLock` caches the expensive real-data compile so both `#[test]` functions in the file share one build instead of paying for it twice. `std::time::Instant` times only the load step, compared against a named `LOAD_CEILING` constant. The key assertion, `atlas_graph_types::store::assert_answers_match`, is the crate's 'two implementations must agree' law: it walks the shared `GraphQuery` trait's methods on both graphs and compares every answer. A second test builds a `GraphService` (the production-facing wrapper) both `from_sources` and `from_artifact` and checks their `version()` and rendered verse text agree.",
+      "l3": "`serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling` (line 101) builds via `atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann`, dumps+writes+reads, times only `read_file`+`to_service_parts`+`build_indexes`+`add_justified_by` against `LOAD_CEILING = 4s` (line 44), then runs `store::assert_answers_match` (untimed admission pass) and `law_check::indexes_derive_exactly_from_rows` over the FROM-ARTIFACT graph specifically. `graph_service_from_artifact_serves_the_same_answers_as_from_sources` (line 204) compares `GraphService::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann` against `::from_artifact` by `version()` and `window::render` on John 3:16. Disclosed caveat (lines 18-43): the ceiling moved from a flat 3s to 4s after a documented flake under parallel `cargo test --workspace` load (4/4 in-suite failures at 3.51-4.16s vs. 4/4 passes isolated at 2.58-2.76s); parallelizing `Graph::build_indexes` lowered real numbers to 2.39-2.59s even under two concurrent full-workspace test runs, leaving a ~54% margin, not a knife-edge one.",
+      "key_items": [
+        { "name": "real_atlas_data", "kind": "fn", "what": "Cached (OnceLock) real ETL compile of data/raw + data/curated, cloned per caller.", "line": 53 },
+        { "name": "LOAD_CEILING", "kind": "const", "what": "4-second hard ceiling for artifact load time (controller decision 6).", "line": 44 },
+        { "name": "serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling", "kind": "test", "what": "Times the artifact load and runs the admission/index-conformance laws over it.", "line": 101 },
+        { "name": "graph_service_from_artifact_serves_the_same_answers_as_from_sources", "kind": "test", "what": "Checks GraphService::from_artifact agrees with ::from_sources on version and rendered text.", "line": 204 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/window.rs",
+        "graph-types/src/store.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "Result", "panic-unwrap-expect", "doc-comment", "content-hash", "sort-determinism"],
+      "tests": "This file is itself the test coverage for artifact::dump/read_file/to_service_parts round-tripping and for the load-ceiling and index-conformance laws.",
+      "gotchas": ["The `assert_answers_match` admission pass is slow (~15-40s) and is never run at real server startup, only here and in the compile-time gate.", "The 4s ceiling has previously flaked under heavy parallel `cargo test` load; treat a near-ceiling failure as possibly a machine-contention issue, per the file's own disclosed history."]
+    },
+    {
+      "path": "server/atlas-graph/tests/attestation_exclusivity_real_data.rs",
+      "lines": 245,
+      "role": "Pins the owner-reported Attests-vs-Mentions/Analogue corrections over real data.",
+      "l1": "The owner found a real bug: some Bible passages were marked as *narrating* an event when they only *mention* it in passing, and two similar-but-different Gospel stories (two healed lepers) were wrongly tied together as one. This file proves those exact mistakes are fixed and stay fixed, and it counts the whole backlog of similar suspicious cases so it can't quietly grow or shrink without someone noticing.",
+      "l2": "Builds the real graph once (`real_graph`, `OnceLock`-cached) via `atlas_graph::build::build_graph_from_sources_with_eras`, then filters its row tables (`graph.attests`, `graph.mentions`, `graph.analogue`) with iterator adapters (`.filter()`, `.map()`, `.collect()`) and Rust's `matches!` macro for pattern-matching an enum variant (`MentionedEntity::Event`). Two tests check the owner's exact two named cases end to end (the espousal of Mary keeps both its facts, just retyped; the two leper healings stay distinct events joined by an `Analogue` row). A third test calls the crate's own standing law functions (`law_check::attestation_is_exclusive` and friends) directly against the real corpus. A fourth pins the size and shape of the whole curation backlog (`attestation_pending::PENDING`) as named constants, so a future change to the queue must update the constants in the same commit rather than drift silently.",
+      "l3": "`the_espousal_of_mary_is_mention_only_and_keeps_both_facts` (line 61) asserts `graph.attests` has zero rows for `theo-249` and exactly two `Mentions` rows (MAT.1.18, LUK.1.27) — both halves asserted together because either alone would pass on a broken (data-loss) shape. `the_two_leprosy_events_are_distinct_and_joined_by_an_analogue` (line 112) proves `mat_leper_healed` keeps its own MAT.8.1-4 span and `rob_leper_healed` never attests it, joined instead by a `graph.analogue` row. `the_attestation_laws_hold_over_the_real_corpus` (line 161) calls `atlas_graph::law_check::{attestation_is_exclusive, attestation_inventory_has_no_stale_rows, analogue_rows_join_two_distinct_events}` — the same functions `pipeline::LawCheckPass` runs on every build, re-asserted here as named tests. `the_corpus_sweep_totals_are_pinned` (line 184) checks `attestation_pending::PENDING` sorts/dedups cleanly and pins its size via named constants `SWEEP_PENDING_PAIRS = 824`, `SWEEP_CONTAINMENT_PAIRS = 590`, `SWEEP_OVERLAP_PAIRS = 234` (lines 243-245), and asserts three specific pairs are absent (resolved).",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "OnceLock-cached real graph build shared by every test in the file.", "line": 40 },
+        { "name": "the_espousal_of_mary_is_mention_only_and_keeps_both_facts", "kind": "test", "what": "Founding case: theo-249 has zero Attests rows and both mentions preserved.", "line": 61 },
+        { "name": "the_two_leprosy_events_are_distinct_and_joined_by_an_analogue", "kind": "test", "what": "Matthew's and Mark's leper healings stay distinct, linked by Analogue.", "line": 112 },
+        { "name": "the_attestation_laws_hold_over_the_real_corpus", "kind": "test", "what": "Re-runs the standing law_check functions directly against real data.", "line": 161 },
+        { "name": "the_corpus_sweep_totals_are_pinned", "kind": "test", "what": "Pins the size/shape of the whole attestation curation backlog.", "line": 184 },
+        { "name": "SWEEP_PENDING_PAIRS / SWEEP_CONTAINMENT_PAIRS / SWEEP_OVERLAP_PAIRS", "kind": "const", "what": "Pinned totals (824/590/234) for the curation queue.", "line": 243 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/attestation_pending.rs",
+        "graph-types/src/edge.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "iterator", "match", "pattern-matching", "Vec", "BTreeSet"],
+      "tests": "This file is the dedicated regression test for the ATTEST-1 corrections and for law_check's attestation-exclusivity/analogue-distinctness laws.",
+      "gotchas": ["Pinned constants are exact equality, not floors — a legitimate future fix to the curation queue must update the constants in the same commit."]
+    },
+    {
+      "path": "server/atlas-graph/tests/bible_containers_real_data.rs",
+      "lines": 223,
+      "role": "Proves books and chapters are real, correctly-shaped container nodes with declared rows.",
+      "l1": "Chapters and books aren't magic labels in this app — they're real nodes in the graph, the same kind of thing a place or a person is, connected by real 'contains' and 'comes before/after' relationships. This file counts them (66 books, 1,189 chapters, 31,102 verses) and walks those relationships the way the reader UI would: a chapter's verses, a book's chapters, and 'next/previous chapter' navigation across book boundaries (Genesis 50 leads into Exodus 1).",
+      "l2": "Uses the shared `real_graph()` pattern this crate repeats per file, then queries the graph exactly the way a client would: through `PositionRef(...).edges(g, &EdgeQuery { kind, cursor, limit })`, the generic edge-traversal port every relation in the app rides (not a direct field read). `EdgeKind::Directed(RelationId::Contains, Direction::Forward)` and its siblings are Rust `const`s built from an `enum`, used as lookup keys. A small local `edges()` helper wraps pagination into a flat `Vec<Position>` for easy `assert_eq!`. Two tests are 'standing gate' laws also run at build time: `container_containment_is_a_forest` (no cycles, one parent each) and `indexes_derive_exactly_from_rows` (the served indexes are a pure function of the declared row tables, never hand-patched afterward).",
+      "l3": "`the_real_canon_declares_every_container_row` (line 87) counts book/chapter `Container` nodes (66/1,189) and `graph.contains_bible` rows split by `ContainerContent::{Loci, Container}` variant (1,189 Loci rows covering 31,102 verse loci; 1,189 book⊃chapter rows; 2,378 total) plus 1,253 `canon_succession` rows (1,188 chapter steps + 65 book steps). `container_containment_is_a_forest_over_the_real_canon` (127) and `served_indexes_are_a_pure_function_of_the_declared_rows` (139) call `atlas_graph::law_check::{container_containment_is_a_forest, indexes_derive_exactly_from_rows}` directly. `chapter_succession_navigates_within_and_across_book_boundaries` (200) asserts the disclosed boundary choice explicitly: GEN.50→EXO.1 and MAL.4→MAT.1 (the testament seam) follow canon order with no special case, and honest ends (GEN.1 has no predecessor, REV.22 no successor) return empty, not a placeholder.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds and caches the real graph via build_graph_from_sources_with_eras.", "line": 45 },
+        { "name": "CONTAINS / MEMBER_OF / FOLLOWS / PRECEDES", "kind": "const", "what": "Named EdgeKind constants for the Contains/Succession relation, both directions.", "line": 74 },
+        { "name": "the_real_canon_declares_every_container_row", "kind": "test", "what": "Pins exact real counts: 66 books, 1,189 chapters, 2,378 Contains rows, 1,253 succession rows.", "line": 87 },
+        { "name": "container_containment_is_a_forest_over_the_real_canon", "kind": "test", "what": "Runs the acyclicity/single-parent standing law over the real canon.", "line": 127 },
+        { "name": "served_indexes_are_a_pure_function_of_the_declared_rows", "kind": "test", "what": "Runs the indexes-derive-from-rows conformance law over the real canon.", "line": 139 },
+        { "name": "chapter_succession_navigates_within_and_across_book_boundaries", "kind": "test", "what": "Checks prev/next chapter edges including the GEN.50→EXO.1 boundary.", "line": 200 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/bible_container_adapter.rs",
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/law_check.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "graph-types/src/explore.rs",
+        "graph-types/src/edge.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "enum", "const-static", "iterator", "Vec"],
+      "tests": "This file is the dedicated real-data coverage for bible_container_adapter and the two NODE1-ROWS-1 standing laws (forest, index-purity)."
+    },
+    {
+      "path": "server/atlas-graph/tests/brainfuel_adapter_real_data.rs",
+      "lines": 45,
+      "role": "Pins the real merge totals for the six parallel-Bible-edition adapter.",
+      "l1": "The app shows a verse's text in the KJV, but behind the scenes it also lines that verse up against five other historic Bible editions (Latin, Hebrew, French Douay-Rheims, Swedish, Greek). This short test proves that merge actually worked over the real vendored files: every one of the roughly 147,000 (edition, verse) pairs found a home, none were orphaned, and exactly six extra 'translation' entries were created.",
+      "l2": "Calls the adapter function under test, `brainfuel_adapter::normalize`, directly against a minimal, real-but-partial `BuildCtx` (built with `pipeline::BuildCtx::with_eras_and_brainfuel`) rather than running the whole six-stage ETL pipeline — cheaper, because `normalize` only reads `ctx.graph.nodes` (already built by `kjv_adapter::normalize`, called first) and `ctx.brainfuel`. This shows the pattern of testing one pipeline stage in isolation instead of paying for a full compile when the code under test only touches two specific inputs.",
+      "l3": "`merge_stats_over_the_real_vendored_data_match_the_verified_per_edition_totals` (line 25) parses real `kjv.json` and `brain-fuel-bible` data, calls `kjv_adapter::normalize` then `brainfuel_adapter::normalize`, and asserts the returned `BrainFuelAdapterStats`: `renderings_merged == 147_527` (sum of six per-edition present counts), `rows_with_no_matching_text_unit == 0` (zero orphans), `translation_nodes == 6`. These numbers were independently verified three ways per the file's own comment (Python sweep, atlas_etl unit test, compile-step console output) before being pinned here as a fourth, adapter-level check.",
+      "key_items": [
+        { "name": "merge_stats_over_the_real_vendored_data_match_the_verified_per_edition_totals", "kind": "test", "what": "Pins renderings_merged=147527, zero orphan rows, 6 translation nodes.", "line": 26 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/brainfuel_adapter.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "server/atlas-graph/src/pipeline.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "struct", "Result"],
+      "tests": "This is the dedicated adapter-level real-data test for brainfuel_adapter::normalize (complementing a parser-level test in atlas-etl)."
+    },
+    {
+      "path": "server/atlas-graph/tests/chronology_laws.rs",
+      "lines": 298,
+      "role": "Re-proves the four dating-consistency laws (E1-E4) computed straight off graph rows.",
+      "l1": "Every dated event in the Bible Atlas (creation, the Exodus, David's reign...) has to agree with a table of well-known anchor dates and with the books that actually narrate it. This file re-checks that agreement, but reading the dates straight out of the graph's own edges rather than a separate summary table — proving the graph itself, not just an old side-calculation, gets the chronology right.",
+      "l2": "Builds the real graph and, independently, a `HashMap<String, ResolvedPlacement>` by walking every `graph.dated_by` row through `event_world::resolve_timepoint` (never trusting a cached year field). `HashMap`/`HashSet` are Rust's hash-keyed collections (unordered, fast lookup by key — used here to index events and books by id). Four `#[test]` functions named `e1_`..`e4_` mirror four laws already proven elsewhere over the older `AtlasData`-shaped data, restated here against the graph's `Attests` rows and `atlas_graph_types::chrono::temporal_order`. A fifth test is a single named regression: a specific event's date must resolve to the historically corrected year, not the raw import's anachronistic one.",
+      "l3": "`build_real()` (line 66) builds `RealGraph { atlas, graph, resolved }` where `resolved` re-derives every `dated_by` row's placement via `event_world::resolve_timepoint`, paired with `chrono.resolved[&id].seq`. `graph_witness_books` (97) reads witness books from `graph.attests` rows directly (not `Event.verses`), applying the same `is_recounting`/`is_exempted` exclusion the production window check uses. `e1_every_bound_anchor_equals_its_graphs_own_resolved_event_year` (125) requires exactly 4 typed deferrals (`ANCHOR_DEFERRALS`) and zero unexplained mismatches. `e3_...monotone_under_the_graphs_own_temporal_order` (184) sorts bound anchors by table year and checks `temporal_order` agrees, tie only where table years match. `e4_...era_boundary_anchors...` (219) checks every dated event's witness-book windows land strictly before/after every `era_boundary` anchor, with a straddle carve-out. `theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year` (290) pins `theo-87` to `-2242` (Ussher), guarding against the raw Theographic import's `-1822`.",
+      "key_items": [
+        { "name": "build_real", "kind": "fn", "what": "Builds the real graph plus an independently re-resolved placement map.", "line": 66 },
+        { "name": "graph_witness_books", "kind": "fn", "what": "Reads an event's witness books from real Attests rows, applying recounting/exemption rules.", "line": 97 },
+        { "name": "e1_every_bound_anchor_equals_its_graphs_own_resolved_event_year", "kind": "test", "what": "Anchor-equality law over graph-resolved years.", "line": 125 },
+        { "name": "e2_every_dated_event_adheres_to_its_graph_attested_books_own_narration_window", "kind": "test", "what": "Window-adherence law over graph-attested witness books.", "line": 159 },
+        { "name": "e3_bound_anchors_sorted_by_table_year_are_monotone_under_the_graphs_own_temporal_order", "kind": "test", "what": "Canonical-order law over temporal_order.", "line": 184 },
+        { "name": "e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal_order", "kind": "test", "what": "Era-partition law relative to every era_boundary anchor.", "line": 219 },
+        { "name": "theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year", "kind": "test", "what": "Regression pin: theo-87 must resolve to -2242, not -1822.", "line": 290 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "graph-types/src/chrono.rs",
+        "graph-types/src/edge.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "HashSet", "OnceLock", "struct", "Result", "Ord-PartialOrd"],
+      "tests": "This file duplicates and extends atlas-core's original E1-E4 chronology tests, over the graph's own dated_by rows instead of AtlasData fields."
+    },
+    {
+      "path": "server/atlas-graph/tests/concord_sc_overlap_real_data.rs",
+      "lines": 126,
+      "role": "Proves the Small Catechism <-> Book of Concord overlap links resolve over real data.",
+      "l1": "Luther's Small Catechism (the First Commandment, the Creed, etc.) is also printed as part of the larger Book of Concord. This test proves the two real texts actually get linked together correctly — every curated overlap row resolves against both real sources, and clicking through from the First Commandment really does reach the correct paragraph of the Concord's own explanation, word for word.",
+      "l2": "Builds the real graph with the Concord bundle threaded in (`ConcordBundle { corpus, sc_overlap }`), then walks the generic edge port (`PositionRef(...).edges(...)`) with explicit pagination (a `loop` following `page.next` cursors) to prove a fixed page-size limit wouldn't silently truncate before reaching an appended-last row — a real lesson from the file's own first failing draft, per its comment.",
+      "l3": "`real_graph()` (31) asserts the curated table's own row count (`sc_overlap.len() == 33`) before building. `sc_overlap_expands_to_37_catechism_link_rows_with_zero_unmatched` (62) checks `concord_locus_links` (rows whose locus is `TextRef::Concord`) total 37 (11+3+9+7+2+5, hand-verified alignment table). `the_first_commandment_catechism_item_reaches_its_concord_home_over_real_data` (75) fully paginates `CatechismLink` edges from `catechism_item_node_id(\"commandment-1\")`, isolates the one Concord-locus entry, and asserts the rendered text matches the real bookofconcord.org-sourced First Commandment byte-for-byte. `augsburg_confession_article_iv_container_holds_exactly_its_three_paragraphs` (117) checks a `Contains`-forward edge count on a specific `ContainerNodeId`.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds the real graph with brainfuel + Concord data, indexed.", "line": 31 },
+        { "name": "concord_locus_links", "kind": "fn", "what": "Filters graph.catechism rows down to the ones with a Concord-corpus locus.", "line": 57 },
+        { "name": "sc_overlap_expands_to_37_catechism_link_rows_with_zero_unmatched", "kind": "test", "what": "Pins the exact 37-row Concord-locus catechism link count.", "line": 62 },
+        { "name": "the_first_commandment_catechism_item_reaches_its_concord_home_over_real_data", "kind": "test", "what": "Fully paginates and checks the First Commandment's Concord link text verbatim.", "line": 75 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/concord_adapter.rs",
+        "server/atlas-graph/src/catechism_adapter.rs",
+        "server/atlas-graph/src/build.rs",
+        "graph-types/src/explore.rs",
+        "graph-types/src/text.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "match", "iterator", "String-vs-str"],
+      "tests": "This is the dedicated real-data proof for the CORP-2a Concord/Small-Catechism overlap decision (unit-mechanism already covered separately in concord_adapter.rs)."
+    },
+    {
+      "path": "server/atlas-graph/tests/description_real_data.rs",
+      "lines": 143,
+      "role": "Reports honest fill rates for Easton's-sourced descriptions over real data.",
+      "l1": "Not every person or place in the atlas has a written description yet — some come from Easton's 1897 Bible Dictionary, some don't. This test spot-checks that well-known entries (Hebron, Moses) really do have real text, then reports, honestly, what fraction of all persons/places/people-groups are filled in — a floor that can only ever grow, never silently regress to zero.",
+      "l2": "Runs the ETL pipeline directly (`pipeline::run_pipeline`, not the higher-level `build::build_graph_from_sources` wrapper) specifically so the test can read `ctx.description_stats` (the fill-pass's own returned statistics) alongside the built graph from one single build, rather than building twice. Pattern-matches `NodePayload::Place { canonical, description, .. }` and `NodePayload::Person { .. }` — the `..` syntax means 'ignore the remaining fields', a common Rust idiom when only a couple of fields from a large struct/enum variant matter.",
+      "l3": "`hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data` (48) looks up `PlaceId::new(\"hebron\")` and `PersonId::new(\"moses_2108\")` and asserts non-empty descriptions. `description_fill_rates_over_the_real_compiled_data_are_reported_honestly` (83) asserts `s.person_total == atlas.people.len() - atlas.people_group_reclassify.len()` (exact), floors `person_filled() >= 2000` and `place_filled() >= 600` (can only grow, so a floor not exact equality), and pins `people_group_total == 38` exactly (23 Theographic + 6 curated seeds + 9 reclassified — a fixed, curated roster, unlike Easton's open-ended coverage).",
+      "key_items": [
+        { "name": "build_real_ctx", "kind": "fn", "what": "Runs the full pipeline directly to expose both ctx.graph and ctx.description_stats.", "line": 41 },
+        { "name": "hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data", "kind": "test", "what": "Spot-checks two named real nodes have non-empty descriptions.", "line": 47 },
+        { "name": "description_fill_rates_over_the_real_compiled_data_are_reported_honestly", "kind": "test", "what": "Asserts exact person/place-group totals and sane fill-rate floors.", "line": 83 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/description_adapter.rs",
+        "graph-types/src/node.rs",
+        "graph-types/src/id.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "match", "pattern-matching", "Option", "struct"],
+      "tests": "This is the dedicated real-data proof for description_adapter::fill_descriptions and its ENT-1a/PG-1a fill-rate statistics."
+    },
+    {
+      "path": "server/atlas-graph/tests/determinism.rs",
+      "lines": 115,
+      "role": "Proves the compiled artifact's bytes are identical across two independent builds.",
+      "l1": "If you build the atlas's data file twice from the exact same sources, you should get the exact same bytes — not just the same meaning, the same bytes, in the same order. This test proves that, closing off an old bug class where computer-internal 'random-order' data structures made every build slightly different even though nothing had really changed.",
+      "l2": "Calls its own `real_sources()` helper TWICE, independently (not once with the result reused), so the test proves the whole ETL pipeline is deterministic, not just the graph-build half over an already-fixed input. `build_and_encode` runs the exact sequence `atlas-graph-compile` performs (build → dump → `artifact::encode`) and returns `Vec<u8>`, compared byte-for-byte with `assert_eq!`.",
+      "l3": "`serialized_artifact_bytes_are_deterministic_across_independent_builds` (95) sanity-checks the raw source strings match between the two independent reads, then asserts `bytes_a.len() == bytes_b.len()` and `bytes_a == bytes_b`. Disclosed cost (lines 31-49): builds the ~344k-cross-reference-edge graph twice, including all six brain-fuel editions each time — measured directly at 89.70s and 89.79s standalone, 92.60s inside a full `cargo test --workspace` run; the file calls itself 'this crate's single most expensive test' and flags that a slower CI machine could plausibly cross a notional 90s budget, a disclosed-but-accepted tradeoff rather than a silently re-budgeted one.",
+      "key_items": [
+        { "name": "real_sources", "kind": "fn", "what": "Reads and compiles the real sources fresh, called twice independently per test.", "line": 53 },
+        { "name": "build_and_encode", "kind": "fn", "what": "Builds, dumps, and encodes the graph to bytes — the same sequence the compile binary runs.", "line": 86 },
+        { "name": "serialized_artifact_bytes_are_deterministic_across_independent_builds", "kind": "test", "what": "The sole test: asserts two independent builds produce byte-identical output.", "line": 95 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/artifact.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "Vec", "sort-determinism", "content-hash", "HashMap"],
+      "tests": "This IS the determinism law's own test — no other file duplicates it."
+    },
+    {
+      "path": "server/atlas-graph/tests/exports_laws.rs",
+      "lines": 239,
+      "role": "Checks the C2C3 map-facing exports (gazetteer/chronology JSON) for drift, resolution, and a documented hash gap.",
+      "l1": "The map system consumes exported JSON files (a gazetteer of places, a list of dated events) rather than the graph directly. This file proves those exports stay honest: every dated event actually resolves to a real year (none silently dropped), a few named places the map system depends on are findable by their expected names, every time-span has a sensible start before its end, and the exports round-trip through JSON without losing data. It also documents, on purpose, one known gap: the embedded version stamp doesn't change if only a date's resolved value changes.",
+      "l2": "Builds everything once per test binary into a `Built` struct (cached via `OnceLock`, `#[derive(Clone)]` so each test gets its own cheap copy of small owned data) rather than each test paying for a real compile again. `MemStore::default().publish(graph)` is the in-memory `GraphPublisher` implementation that stamps a content-hash `GraphVersion`; `version_hex` renders it as a hex string for comparison. The final test mutates a *copy* of a `Chronology` derivation (never the graph itself) to prove, mechanically rather than by assertion in prose, that the exported `atlas_version_root` field does not change even though the exported content genuinely differs.",
+      "l3": "`built()` (57) constructs gazetteer/events/spans/anchors via `exports::{gazetteer_places, chronology_events, chronology_spans, chronology_anchors}`, and computes both an `actual_hex` (bare build + `MemStore::publish`) and an `expected_hex` (via `GraphService`'s production constructor) to prove they agree (`law_atlas_version_root_equals_the_live_graph_version`, 105). `law_alias_and_canonical_spot_checks_for_the_peers_binding_names` (127) checks 'Kadesh-barnea'/'En-rogel' resolve by canonical name and 'entrance of Hamath' resolves specifically onto `lebo-hamath` via a curated alias. `export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own_resolved_placement_does` (179) is a DISCLOSED, accepted gap (EXPORT-HASH-1, low priority): it shifts one event's resolved year by +1 on a cloned `Chronology`, re-exports, and asserts the two exports differ in content (`assert_ne!`) yet share the identical `atlas_version_root` (`assert_eq!`) — because `GraphVersion` hashes node payloads only, and `DatedBy` placements are edge-shaped data (M-D3's ruling), so the root cannot detect this class of drift. The disposition (a future `content_hash` header field) is explicitly deferred to the next export format-version bump.",
+      "key_items": [
+        { "name": "Built", "kind": "struct", "what": "Cached bundle of exported rows plus both version-root computations for one test binary run.", "line": 38 },
+        { "name": "built", "kind": "fn", "what": "OnceLock-cached construction of Built from a full real compile.", "line": 57 },
+        { "name": "law_atlas_version_root_equals_the_live_graph_version", "kind": "test", "what": "Exports' own version derivation must match GraphService's production path.", "line": 105 },
+        { "name": "law_every_dated_events_placement_resolves_none_silently_dropped", "kind": "test", "what": "Every dated event id must produce exactly one exported row.", "line": 111 },
+        { "name": "export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own_resolved_placement_does", "kind": "test", "what": "Documents that the version root can't detect a resolved-placement-only change.", "line": 180 },
+        { "name": "real_data_export_round_trips_through_json", "kind": "test", "what": "Gazetteer and chronology exports round-trip losslessly through serde_json.", "line": 227 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/exports.rs",
+        "server/atlas-graph/src/build.rs",
+        "graph-types/src/store.rs",
+        "graph-types/src/chrono.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "OnceLock", "derive", "Clone-Copy", "serde", "content-hash"],
+      "tests": "This is the dedicated real-data proof for the C2C3-EXPORT design's laws (exports.rs itself has synthetic-fixture unit tests for round-trip parsing)."
+    },
+    {
+      "path": "server/atlas-graph/tests/frontier_falsifiability.rs",
+      "lines": 241,
+      "role": "Proves every advertised relation actually has real rows in the compiled artifact — no decorative capabilities.",
+      "l1": "The app's UI promises certain kinds of connections exist — 'this event has parallel accounts', 'this chapter has a previous chapter'. This test makes sure none of those promises are empty: for every relationship type the app can show, there's at least one real row backing it in the real compiled data. It exists because the project once shipped a UI affordance ('Parallel') that had zero real connections behind it anywhere — a decoration, not a feature.",
+      "l2": "Iterates `Capability::ALL` (every named UI-facing capability) and, for each one's `edges()` cells, counts real rows via a local `relation_row_count` function that `match`es on `EdgeKind` and reads the corresponding `Graph` field's `.len()`. The match's `other => panic!(...)` arm is deliberate: an unmapped relation must fail loudly rather than silently pass, which is the same 'fail loud' philosophy the rest of the crate follows.",
+      "l3": "`relation_row_count` (85) maps `EdgeKind::Directed`/`Symmetric` variants to `graph.{cross_refs, attests, mentions, succession+canon_succession, dated_by, located_at, comments_on, contains_bible, catechism, temporal_adjacency, analogue}.len()` — `Succession` deliberately sums two row implementations (event-narrative chains and pairwise canon steps) since the relation has two producers. `every_capability_has_real_rows_in_the_compiled_artifact` (120) is the sweep itself. Four more tests pin specific, previously-risky capabilities by identity, not just count: `members_capability_has_real_bible_contains_rows_since_node_1` (147), `analogues_capability_has_the_owners_own_charter_row` (167, checks the exact rob_leper_healed/mat_leper_healed pair), `the_espousal_is_a_mention_only_event_with_no_attests_rows` (195), and `succession_has_real_rows_in_both_of_its_row_implementations` (227).",
+      "key_items": [
+        { "name": "relation_row_count", "kind": "fn", "what": "Maps an EdgeKind to its real row-table count, panicking on an unmapped relation.", "line": 85 },
+        { "name": "every_capability_has_real_rows_in_the_compiled_artifact", "kind": "test", "what": "The falsifiability sweep: every Capability::ALL edge must have >0 real rows.", "line": 120 },
+        { "name": "analogues_capability_has_the_owners_own_charter_row", "kind": "test", "what": "Checks the Analogue relation's owner-reported charter case by identity.", "line": 167 },
+        { "name": "succession_has_real_rows_in_both_of_its_row_implementations", "kind": "test", "what": "Checks both Succession row families (narrative and canon) independently.", "line": 227 }
+      ],
+      "depends_on": [
+        "graph-types/src/frontier.rs",
+        "graph-types/src/edge.rs",
+        "server/atlas-graph/src/build.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "match", "enum", "panic-unwrap-expect", "OnceLock"],
+      "tests": "This file is the dedicated falsifiability gate named by design review B1; it lives here rather than in graph-types because graph-types cannot load a compiled artifact by owner ruling."
+    },
+    {
+      "path": "server/atlas-graph/tests/fulfillment_typology_real_data.rs",
+      "lines": 185,
+      "role": "Checks the prophecy-fulfillment and type/antitype curated tables over real data.",
+      "l1": "The atlas records that certain Old Testament prophecies were fulfilled in the New Testament, and that certain OT people/events (like Melchizedek) foreshadow later ones. This test checks the real curated list of those pairs: the right count of rows, every verse range actually exists in the real KJV text, every row cites its own Scripture as grounds, and a few famous examples (Isaiah 7:14, Melchizedek, the Passover lamb) resolve exactly right.",
+      "l2": "Runs the pipeline directly via `BuildCtx`/`run_pipeline` to get a fully law-checked graph. Uses a small local helper `assert_range_is_real` that walks every verse in a range (not just its two endpoints) against a real `HashMap<String,String>` of dot-ref-keyed verses, checking `from.book == to.book` and `from.chapter == to.chapter` (this batch's own curated data never crosses those boundaries) before iterating `from.verse..=to.verse` (Rust's inclusive range syntax).",
+      "l3": "`exact_seeded_row_counts` (47) pins `atlas.fulfillment_seeds.len() == 24`, `atlas.typology_seeds.len() == 16`, and their post-build `ctx.graph.{fulfills,typology}.len()` equal to the same (zero runtime omissions). `every_fulfillment_and_typology_row_has_a_scripture_ground` (62) calls `fulfillment_adapter::{every_fulfillment_row_has_a_scripture_ground, every_typology_row_has_a_scripture_ground}` and inline-checks each row's `justification.grounds` is a single `Ground::Scripture` matching the row's own passage. `every_locus_in_every_row_resolves_to_a_real_kjv_verse` (87) verifies every verse of every range via `kjv_adapter::dot_ref`. Named spot checks: `spot_check_isaiah_7_14_fulfilled_in_matthew_1_22_23` (117), `spot_check_melchizedek_typology_row` (133), `the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables` (149, brief decision 1b's 'may appear in both tables' case), `fulfillment_and_typology_rows_add_zero_nodes` (174, these are edges only, never new nodes).",
+      "key_items": [
+        { "name": "build_real_ctx", "kind": "fn", "what": "Runs the full pipeline over real data, proving LAW-CHECK already passed.", "line": 28 },
+        { "name": "exact_seeded_row_counts", "kind": "test", "what": "Pins 24 fulfillment + 16 typology curated rows, zero runtime omissions.", "line": 47 },
+        { "name": "every_fulfillment_and_typology_row_has_a_scripture_ground", "kind": "test", "what": "Every row's justification is grounded in its own Scripture passage.", "line": 62 },
+        { "name": "every_locus_in_every_row_resolves_to_a_real_kjv_verse", "kind": "test", "what": "Every verse in every range resolves against real compiled KJV verses.", "line": 88 },
+        { "name": "the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables", "kind": "test", "what": "Confirms the passover lamb pairing is both a fulfillment and a typology row.", "line": 149 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/fulfillment_adapter.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "graph-types/src/edge.rs",
+        "graph-types/src/text.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "match", "iterator", "Option"],
+      "tests": "This is the dedicated real-data proof for EDGE-1a's fulfillments.toml/typology.toml curated tables."
+    },
+    {
+      "path": "server/atlas-graph/tests/heading_precedence.rs",
+      "lines": 248,
+      "role": "Proves the passage-heading (decisive-title) law picks the right title on real, previously-buggy cases.",
+      "l1": "When you read a passage, the app shows a heading like 'The Prodigal Son' — but sometimes two different possible headings compete for the same verse. This file proves the tie-breaking rule works correctly on real, previously-broken examples: a real curated container beats a bare auto-generated one, a heading correctly spans two related Psalms, a heading anchors at the true first verse of its story rather than wherever an import happened to list first, and no chapter that has real story coverage is left with no heading at all.",
+      "l2": "Builds the real graph plus its chronology resolution (`build_graph_from_sources_with_eras`) and calls `atlas_graph::heading::build_heading_index(&graph, &resolved)` to get a `HashMap`-like lookup from a verse reference string to its winning heading. Each named test looks up a specific verse (e.g. `\"JHN.12.1\"`) and asserts which event id won and whether it's a 'continuation' heading (a later chapter boundary inside a container that already has a heading elsewhere) versus a 'primary' one. The largest test independently re-derives, from scratch, the whole set of 'heading-worthy' chapters by walking `graph.nodes` filtering `NodeKind::Event` — a second, independent implementation of 'what should have a heading', deliberately not calling into `build_heading_index`'s own internals, so a real gap has somewhere to surface instead of being hidden by testing the same code against itself.",
+      "l3": "`named_case_jhn_12_1_the_real_container_beats_the_freebie` (57) asserts the real curated container `pw_bethany` wins the collision over the bare narrative-leg freebie `jm_bethany` at JHN.12.1 — the CONTRACT.md 'decisive-container model' example. `named_case_psa_53_1_the_shared_fool_incipit_container_anchors_both_psalms` (67) proves one event (`psa_014`) anchors headings at both PSA.14.1 and PSA.53.1 with the identical title (multi-witness anchoring). `named_case_gen_6_1_anchors_canonically_first_not_curated_import_order` (100) is a red-then-green regression on the owner's own live report: `theo-32`'s heading moved from GEN.6.7 (import order) to GEN.6.1 (canonically first covered verse). `named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_heading_at_6_1` (126) proves a container spanning a chapter boundary gets a `continuation: true` heading at EZR.6.1, same title as its primary at EZR.5.1. `m_d1_every_chapter_with_heading_worthy_coverage_opens_with_a_real_heading` (168) independently rebuilds a `BTreeSet<(String,u16)>` of heading-worthy chapters (narrative legs or containers with witnesses/robertson_section/acts_section/atlas_section/kjv_superscription) and asserts a floor of >=500 with zero missing headings — deliberately out of scope for events that are correctly un-headinged per CONTRACT.md's own rule (a bare Theographic freebie that is no narrative leg).",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds the real graph plus its chronology ResolvedPlacement map.", "line": 36 },
+        { "name": "named_case_jhn_12_1_the_real_container_beats_the_freebie", "kind": "test", "what": "Layer-tier collision resolution: real container beats bare freebie.", "line": 57 },
+        { "name": "named_case_psa_53_1_the_shared_fool_incipit_container_anchors_both_psalms", "kind": "test", "what": "Multi-witness anchoring: one event, two heading anchors, same title.", "line": 67 },
+        { "name": "named_case_gen_6_1_anchors_canonically_first_not_curated_import_order", "kind": "test", "what": "Regression: heading anchors at canonically-first verse, not import order.", "line": 100 },
+        { "name": "named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_heading_at_6_1", "kind": "test", "what": "Chapter-boundary continuation heading, same title as its primary.", "line": 126 },
+        { "name": "m_d1_every_chapter_with_heading_worthy_coverage_opens_with_a_real_heading", "kind": "test", "what": "Independent re-derivation proving no heading-worthy chapter is unlabeled.", "line": 168 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/heading.rs",
+        "server/atlas-graph/src/build.rs",
+        "graph-types/src/id.rs",
+        "graph-types/src/chrono.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "BTreeSet", "closure", "match", "iterator"],
+      "tests": "This file is the dedicated real-data regression suite for atlas_graph::heading::build_heading_index, re-homing two atlas-core unit-test cases plus new M-D1 continuation cases."
+    },
+    {
+      "path": "server/atlas-graph/tests/justified_by_real_data.rs",
+      "lines": 89,
+      "role": "Pins the grand total of justified-by pairs (dating + fulfillment + typology + eponymy grounds) over real data.",
+      "l1": "Lots of facts in the atlas (a date, a prophecy fulfillment, a name origin) are supposed to point back to their own justification. This short test counts, over the real data, exactly how many of these justification links exist in total — a single number that would move if any of the four underlying relations changed, catching a regression the individual mechanism tests wouldn't add up on their own.",
+      "l2": "Runs the pipeline directly (`pipeline::run_pipeline`) to get access to `ctx.justified_by_count`, the return value of `event_world::add_justified_by` captured mid-pipeline — the same reason `description_real_data.rs` bypasses the higher-level `build::build_graph_from_sources` wrapper.",
+      "l3": "`justified_by_grand_total_over_the_real_compiled_data_is_pinned` (70) asserts `ctx.justified_by_count == 76` — read back from a real test run (76 = 17 pre-existing DatedBy pairs + 59 EDGE-1a pairs: 24 fulfills×1 + 16 typology×1 + 18 named_after×1-2 grounds). Exact equality, not a floor, matching this crate's convention for a fixed disclosed total: a genuine future data change updates this pin in the same commit.",
+      "key_items": [
+        { "name": "build_real_ctx", "kind": "fn", "what": "Runs the pipeline directly to expose ctx.justified_by_count.", "line": 54 },
+        { "name": "justified_by_grand_total_over_the_real_compiled_data_is_pinned", "kind": "test", "what": "Pins the exact 76-pair grand total across all four justification-bearing relations.", "line": 70 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/event_world.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "struct"],
+      "tests": "This is the only aggregate-count test for add_justified_by's grand total over real data; the mechanism itself is unit-tested (event_world.rs) and HTTP-tested (atlas-server/tests/graph_api.rs) separately."
+    },
+    {
+      "path": "server/atlas-graph/tests/kjv_case_artifact_real_data.rs",
+      "lines": 127,
+      "role": "Reads five spot-law verses back from the real committed graph.bin to prove KJV LORD/Lord/GOD casing restoration actually shipped.",
+      "l1": "The KJV traditionally capitalizes 'LORD' differently depending on the underlying Hebrew name for God (a translation convention, not a typo). This app restores that historic casing during compilation. Unlike almost every other test here, this one doesn't rebuild the graph — it opens the actual file the server ships and reads five famous verses straight out of it, proving the restoration reached the real shipped file, not just an in-memory build that nobody serves.",
+      "l2": "Loads `GraphService::from_artifact(&data/compiled/graph.bin)` directly — the real file committed to the repo — rather than building from raw sources like every other `_real_data.rs` file. `verse_text` resolves a book code via `atlas_core::canon::resolve_alias`, mints the verse's node id, and calls `atlas_graph::window::render` to get its display text, panicking with a clear message (`unwrap_or_else(|| panic!(...))`) if anything along the way is missing.",
+      "l3": "`spot_law_verses_read_back_from_the_real_committed_artifact` (63) checks five verses' exact rendered text: PSA 110:1 (superscription-tail-restored, the flagship KJV-CASE-2 case — 'A Psalm of David.' kept untouched, 'the LORD said'/'my Lord' both correctly distinguished in one verse), PSA 23:1, GEN 2:4 ('LORD God'), EZK 2:4 ('Lord GOD'), PSA 68:4 ('JAH'). `superscription_exclusions_carry_our_canonical_casing_untouched_in_the_real_artifact` (111) reads three deliberately-excluded verses (`PSA.70.1`, `PSA.92.1`, `ACT.9.29` — brain-fuel transcription artifacts per `SUPERSCRIPTION_EXCLUSIONS`) back from the artifact and compares them against a *fresh, independent* parse of `data/raw/kjv.json` (never a hardcoded literal), so the law survives even if the KJV text is re-vendored.",
+      "key_items": [
+        { "name": "real_graph_bin", "kind": "fn", "what": "Loads GraphService straight from the committed data/compiled/graph.bin.", "line": 32 },
+        { "name": "verse_text", "kind": "fn", "what": "Resolves a book/chapter/verse to its rendered text via window::render.", "line": 37 },
+        { "name": "spot_law_verses_read_back_from_the_real_committed_artifact", "kind": "test", "what": "Checks five named verses' exact KJV-casing-restored text from the real artifact.", "line": 63 },
+        { "name": "superscription_exclusions_carry_our_canonical_casing_untouched_in_the_real_artifact", "kind": "test", "what": "Proves three deliberately-excluded verses stay untouched, checked against a fresh parse.", "line": 112 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/window.rs",
+        "server/atlas-graph/src/kjv_adapter.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "Option", "panic-unwrap-expect", "String-vs-str"],
+      "tests": "This file is the dedicated read-back proof that KJV-CASE and KJV-CASE-2 restoration reached the shipped artifact (in-memory build coverage lives in atlas-etl's own brainfuel_real_data.rs)."
+    },
+    {
+      "path": "server/atlas-graph/tests/kretzmann_adapter_real_data.rs",
+      "lines": 255,
+      "role": "Pins Kretzmann commentary row counts and documents a known multi-verse attribution gap.",
+      "l1": "Kretzmann's Popular Commentary is attached to specific verses, and Psalm 119 (the KJV's longest chapter, 176 verses) used to make the old page design fire 176 separate requests. This file proves the new one-request-per-chapter listing serves exactly the same commentary the old per-verse lookup already proved correct, and it pins the total real commentary-item count. It also honestly documents one real limitation: a commentary note that covers many verses at once (like a chapter introduction) only shows up under its first verse, never the later ones — a known, disclosed gap, not a bug nobody noticed.",
+      "l2": "Builds the real graph with brainfuel, Concord, and Kretzmann data all threaded in. `chapter_commentary_serves_psalm_119_with_real_counts_matching_a_direct_comments_on_cross_check` cross-checks the new `kretzmann_adapter::chapter_commentary` function's output against a hand-built `BTreeSet` built by walking `graph.comments_on` directly (structural field access, not the edge-index API) — a genuinely independent second path, not a tautological self-check. The final test discovers a real multi-verse-spanning commentary unit generically (never a hardcoded book/chapter) and proves, and documents, exactly where the port's current design falls short.",
+      "l3": "`kretzmann_comments_on_rows_have_the_pinned_real_count` (81) pins `graph.comments_on.len() == 50602` (post-fix-round-1's OVER-EXCISION GUARD recovery, up from a pre-fix 50,439) and asserts one `CommentaryItem` node per `CommentsOn` row, one `Source` node for the whole work. `chapter_commentary_serves_psalm_119_with_real_counts_matching_a_direct_comments_on_cross_check` (103) calls `kretzmann_adapter::chapter_commentary(graph, book, 119, 176)`, checks verse-ascending/ordinal-ascending order, and cross-checks against a hand-expanded `BTreeSet<(u16,String)>` from `graph.comments_on` directly — with an explicit precondition check that PSA 119 happens to contain no multi-verse-spanning row (so this test does not, by itself, exercise that case). `chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_first_verse_kretz_m2` (222) is a DOCUMENT-ONLY disposition (KRETZ-m2): it finds any real spanning `comments_on` row generically, asserts it appears at its own first verse, and asserts it is ABSENT at every later verse in its own range — with a doc comment explaining the fix is blocked by the `GraphQuery` port offering no way to recover a row's full range from an edge query alone.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds the real graph with brainfuel/Concord/Kretzmann data, indexed.", "line": 26 },
+        { "name": "kretzmann_comments_on_rows_have_the_pinned_real_count", "kind": "test", "what": "Pins comments_on.len() == 50602 and the one-Source-node law.", "line": 81 },
+        { "name": "chapter_commentary_serves_psalm_119_with_real_counts_matching_a_direct_comments_on_cross_check", "kind": "test", "what": "Cross-checks chapter_commentary's output against a structural graph.comments_on walk.", "line": 103 },
+        { "name": "chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_first_verse_kretz_m2", "kind": "test", "what": "Documents (does not fix) the multi-verse-unit first-verse-only attribution gap.", "line": 222 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/kretzmann_adapter.rs",
+        "server/atlas-graph/src/build.rs",
+        "graph-types/src/graph.rs",
+        "graph-types/src/store.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "BTreeSet", "OnceLock", "iterator"],
+      "tests": "This file is the dedicated real-data pin for KRETZ-1's comments_on total and the KRETZ-SCALE-1 chapter_commentary path (unit-mechanism covered separately by kretzmann_adapter.rs's own tests)."
+    },
+    {
+      "path": "server/atlas-graph/tests/narrative_real_data.rs",
+      "lines": 806,
+      "role": "The largest test file in the crate: real-data timeline-ordering laws, duplicate-event rectification, and a five-part global-chronology property audit.",
+      "l1": "This is the biggest single collection of chronology bug-fixes in the app, all proven against the real, full timeline of dated events. It checks: there are hundreds of real dated events; the very first (Creation) and very last events make sense; three sets of duplicate events (the same story imported twice under different ids) are properly merged; Jesus's baptism sorts before his temptation; a whole-Bible audit that every event's chronological order agrees with its reading order (with every disclosed exception explained by name); the whole Gospel account sorts before Acts; and several owner-reported date mistakes (like Solomon's dream being wrongly dated to Saul's era) are fixed and stay fixed.",
+      "l2": "This file was mechanically relocated from `atlas-core/src/narrative.rs`'s own test module (its own header explains why: a dev-dependency cycle prevented keeping it in atlas-core once the real-data source moved to atlas-etl). It uses `atlas_core::narrative::global_timeline_position` and `atlas_core::data::AtlasData` almost exclusively — this is really an atlas-core-level test that lives here purely to break a crate-dependency cycle. Its style is heavy with `HashMap`/`BTreeSet` bookkeeping and closures (e.g. a big `is_justified` closure enumerating every accepted class of 'reading order disagrees with chronological order' case, each with its own paragraph of reasoning) rather than typed graph queries, since it predates the graph-based rewrite.",
+      "l3": "Key tests: `global_timeline_real_compiled_data_has_well_over_450_dated_events` (68) and `global_timeline_true_extremes_of_the_real_atlas` (75, theo-1 Creation has no prior, theo-385 is the true last event post-Roman-imprisonment reconciliation). `m_d1_the_three_remaining_duplicate_pairs_are_rectified_on_the_real_graph` (121) proves three absorbed event ids 404 while survivors keep correct dates and narrative-leg repointing. `amendment_c_baptism_precedes_temptation_on_the_global_timeline` (167). `amendment_d_monotonicity_audit_reading_order_vs_global_timeline` (196) is a same-book-scoped audit over every dated event pair sharing a witness book, with an extensive `is_justified` closure (lines ~243-399) enumerating six named, disclosed exception classes (both-real-layer-1 harmonization calls, same-year zero-order-key ties, layer0-vs-layer1 mega-spans, genealogy stubs, Nehemiah 7 recapitulation, Exodus-year scale tension, Psalter numbering vs. chronological order) — anything NOT matching one of these fails loud. `fix_round_1_era_boundary_gate_passion_cluster_sorts_before_every_act_witnessed_event` (468) and `fix_round_1_within_acts_section_events_follow_acts_chapter_order` (515) are narrower, explicit cross-book gates the same-book audit structurally cannot see. E1-E5 (581-806) restate the anchor-equality/window-adherence/canonical-order/era-partition properties table-driven off `d.chronology_anchors`/`d.book_narration_windows` (never a hardcoded year), plus the owner's own named Solomon-Gibeon/`df_ramah` case (E5, 743/782).",
+      "key_items": [
+        { "name": "load_real_compiled_data", "kind": "fn", "what": "OnceLock-cached real ETL compile shared by the whole file.", "line": 53 },
+        { "name": "global_timeline_real_compiled_data_has_well_over_450_dated_events", "kind": "test", "what": "Floors the real dated-event count at >=450.", "line": 68 },
+        { "name": "m_d1_the_three_remaining_duplicate_pairs_are_rectified_on_the_real_graph", "kind": "test", "what": "Proves three named duplicate-event pairs are merged and repointed.", "line": 121 },
+        { "name": "amendment_c_baptism_precedes_temptation_on_the_global_timeline", "kind": "test", "what": "Baptism must sort strictly before Temptation.", "line": 167 },
+        { "name": "amendment_d_monotonicity_audit_reading_order_vs_global_timeline", "kind": "test", "what": "Whole-Bible same-book reading-order vs. chronology audit with named exception classes.", "line": 196 },
+        { "name": "fix_round_1_era_boundary_gate_passion_cluster_sorts_before_every_act_witnessed_event", "kind": "test", "what": "Cross-book gate: the Passion cluster must sort before all Acts-witnessed content.", "line": 468 },
+        { "name": "e1_every_bound_anchor_equals_its_compiled_events_own_from_year", "kind": "test", "what": "Anchor-equality property, table-driven, with typed deferrals reported by name.", "line": 581 },
+        { "name": "e5_solomon_gibeons_neighbors_are_solomon_era_never_saul_persecution_era", "kind": "test", "what": "Owner's own named regression case for a mis-dated event's neighbors.", "line": 743 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "BTreeSet", "closure", "OnceLock", "iterator", "match"],
+      "tests": "This file is itself the real-data test coverage for atlas_core::narrative::global_timeline_position and atlas_core::chronology's E1-E5 properties; atlas-core's own test module keeps only the synthetic-fixture tests."
+    },
+    {
+      "path": "server/atlas-graph/tests/overlay_equivalence.rs",
+      "lines": 137,
+      "role": "Proves the legacy AtlasData-shaped overlay reconstructs every event, place, narrative, and verse losslessly from the real shipped artifact.",
+      "l1": "Older parts of the app still expect data shaped the old way (a flat list of events, places, narratives) rather than graph rows. A translation layer rebuilds that old shape from the new graph. This test proves that translation is complete and correct for every single item, not just the handful any one spot-check test happens to name — every real event, place, narrative, and verse reconstructs field-for-field identical to a fresh from-scratch build.",
+      "l2": "Compares two independently-built things: the OLD/reference side is a fresh `atlas_etl::compile::compile` (never touching the graph at all), and the NEW/under-test side is `atlas_graph::legacy::atlas_data_overlay` fed by `GraphService::from_artifact` loading the real committed `data/compiled/graph.bin` — the exact production sequence `atlas-server`'s default startup path runs. Since `Event`/`Place`/`Narrative` already `derive(PartialEq, Debug)`, each test is a sorted-by-id `assert_eq!` over the whole collection — no new test infrastructure needed, which the file's own header notes as the code review's 'right-sized' judgment.",
+      "l3": "`expected()` (51) and `real_overlay()` (70) are the two independently-built sides. `every_reconstructed_event_equals_compiles_own_real_event_field_for_field` (76), `..._place..._field_for_field` (86), `..._narrative..._field_for_field` (96) each sort both `Vec`s by id and `assert_eq!` the whole collection, pinning real counts in their own messages (1,711 events, 1,373 places, 13 narratives). `every_reconstructed_verse_text_equals_the_real_compiled_kjv_text_exactly` (123) is more subtle: `expected().verses` (compile()'s own output) is never case-restored by design, while the real artifact IS (KJV-CASE restoration happens at graph-compile time) — so this test applies `atlas_etl::brainfuel::restore_kjv_case` to the 'want' side too, which the file's own comment frames as keeping the test's stated promise honest rather than weakening it, once the true source is honestly two-staged (raw-compile, then case-restore).",
+      "key_items": [
+        { "name": "expected", "kind": "fn", "what": "OnceLock-cached independent reference: a fresh atlas_etl::compile::compile.", "line": 51 },
+        { "name": "real_overlay", "kind": "fn", "what": "Loads the real graph.bin and runs atlas_data_overlay over it — the path under test.", "line": 70 },
+        { "name": "every_reconstructed_event_equals_compiles_own_real_event_field_for_field", "kind": "test", "what": "Whole-collection field-for-field equality, sorted by id, 1,711 real events.", "line": 76 },
+        { "name": "every_reconstructed_verse_text_equals_the_real_compiled_kjv_text_exactly", "kind": "test", "what": "Verse text equality after applying the same KJV-case restoration to both sides.", "line": 123 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/legacy.rs",
+        "server/atlas-graph/src/service.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "derive", "Debug-Display", "Ord-PartialOrd", "OnceLock"],
+      "tests": "This is the only dedicated bulk-enumeration test for atlas_graph::legacy::atlas_data_overlay; its four composed pieces are each spot-checked elsewhere by other tests."
+    },
+    {
+      "path": "server/atlas-graph/tests/peoples_real_data.rs",
+      "lines": 343,
+      "role": "Checks PeopleGroup node identity, reclassification, and eponym (named-after) rows over real data.",
+      "l1": "Some entities in the atlas are peoples/nations (Ammonites, Jebusites) rather than individual persons — and a few used to be miscategorized as a single 'person' when they're really a people group. This file proves that reclassification landed correctly and exhaustively (38 real PeopleGroup nodes from three sources, nine of them switched over from Person), that mentions of these groups carry the right sense, that every 'named after' claim (a nation named after its ancestor) cites real Scripture, and it honestly reports exactly which descriptions did and didn't fill in from Easton's dictionary.",
+      "l2": "Runs the pipeline directly for `ctx.graph` access, the same shape `description_real_data.rs` uses. Filters `ctx.graph.nodes` by `NodeKind::PeopleGroup`/`NodeKind::Person` to count node kinds, and filters `ctx.graph.mentions` by matching the `MentionedEntity` enum's `PeopleGroup`/`Person` variants to check which 'sense' a mention carries. Several tests pin an exact roster (a `Vec<&str>`, sorted, `assert_eq!`'d against a computed list) rather than just a count, so a regression in either direction — gaining or losing a match — is caught and named, not just counted.",
+      "l3": "`peoplegroup_node_counts_match_all_three_sources_exactly` (55) pins `atlas.people_groups.len() == 23`, `people_group_seeds.len() == 6`, `people_group_reclassify.len() == 9`, and the built graph's `PeopleGroup` node count at exactly 38, with each reclassified slug's `Person` node confirmed gone and its `PeopleGroup` node confirmed present under the same raw id. `reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus` (91) spot-checks `jebusite_748` carries exactly its two real Theographic `verse_links` (GEN.10.16, 1CH.1.14) as PeopleGroup-sense mentions, explicitly NOT fabricating a JOS.15.63 row the source doesn't attest. `every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decision_3` (130) pins 18 curated rows, calls `peoples_adapter::every_named_after_row_has_a_scripture_ground`, and spot-checks Ammonites (single ground) vs. Edomites (two real grounds). `group_description_fill_matches_the_exact_disclosed_roster` (225) pins the exact 8-of-38 filled roster by name (Arkite, Canaanites, Pharisees, Philistines, Sadducees, Scribes, Sinite, Zemarite), explicitly disclosing which groups do NOT fill (plural curated labels vs. Easton's singular headwords) rather than silently patching a fuzzy match. `pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci` (263) pins Tribe of Judah's one real verse as PRO.25.1 (explicitly NOT JDG.1.2, correcting a plausible-but-wrong assumption) and Nation of Israel's 12 Psalms verses, exact.",
+      "key_items": [
+        { "name": "build_real_ctx", "kind": "fn", "what": "Runs the full pipeline directly for ctx.graph access.", "line": 34 },
+        { "name": "peoplegroup_node_counts_match_all_three_sources_exactly", "kind": "test", "what": "Pins exact node counts across all three PeopleGroup sources (38 total).", "line": 55 },
+        { "name": "reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus", "kind": "test", "what": "Spot-checks a reclassified slug's mentions carry PeopleGroup sense at real loci.", "line": 91 },
+        { "name": "every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decision_3", "kind": "test", "what": "Pins 18 curated named_after rows, all Scripture-grounded.", "line": 130 },
+        { "name": "group_description_fill_matches_the_exact_disclosed_roster", "kind": "test", "what": "Pins the exact 8/38 roster of PeopleGroup nodes with a filled description.", "line": 225 },
+        { "name": "pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci", "kind": "test", "what": "Pins the exact 13 verse-bearing PeopleGroup mention loci.", "line": 263 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/pipeline.rs",
+        "server/atlas-graph/src/peoples_adapter.rs",
+        "server/atlas-graph/src/legacy.rs",
+        "graph-types/src/edge.rs",
+        "graph-types/src/id.rs",
+        "graph-types/src/node.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "match", "HashMap", "iterator", "Vec"],
+      "tests": "This file is the dedicated real-data proof for PG-1a's node reclassification and PG-1B's mention-sense corrections."
+    },
+    {
+      "path": "server/atlas-graph/tests/provenance_registry_real_data.rs",
+      "lines": 457,
+      "role": "The resolution law: every piece of data in the real artifact must resolve to a named source in the registry.",
+      "l1": "The owner's rule is simple: every piece of data must say where it came from. This file is that rule enforced as code: it scans the real shipped file for every distinct 'this came from X' tag and checks each one is registered with a real source name — never blank, never ambiguous, and never a registered source that nothing actually uses. It also guards against a new kind of data quietly slipping past this check in the future.",
+      "l2": "Unlike almost every other file in this crate, `real_graph()` loads the actual committed `data/compiled/graph.bin` (via `artifact::read_file` + `to_service_parts`) rather than rebuilding from raw sources — because the from-sources builder used elsewhere only covers KJV + cross-references, missing five whole provenance kinds (Concord, Kretzmann, red-letter, brainfuel, sc-overlap) the shipped artifact carries. A `macro_rules! sweep!` macro (Rust's pattern-based code-generation facility) expands into one line per provenance-bearing `Graph` field, avoiding 20 near-identical hand-written lines. `BTreeMap`/`BTreeSet` (sorted collections) keep the output deterministic for comparison.",
+      "l3": "`provenance_by_family` (63) sweeps every `pub provenance:`-bearing row family (via the `sweep!` macro) plus `nodes`, keyed by field name. `every_distinct_provenance_id_in_the_artifact_resolves_to_a_registry_source` (125) is the law itself: every distinct provenance *kind* (via `atlas_core::sources::split_provenance_id`) must resolve to exactly one `[[provenance]]` registry row whose own `source` exists — reporting unresolved/dangling/duplicated separately. `every_declared_provenance_row_is_inhabited_by_the_real_artifact` (162) is the mirror direction: no dead registry rows. `the_sweep_covers_every_provenance_bearing_row_family` (228) is a completeness guard that counts `pub provenance:` field declarations across all of `graph-types/src` by reading the directory (fix round 1: previously named three files by hand, silently missing any new file) and reconciles the count against the swept families by an explicit equation (22 fields − 2 node.rs non-row fields = 20 row structs + 1 second Contains vector + 1 nodes map = 22 families). `the_runtime_index_and_the_test_sweep_name_exactly_the_same_families` (287) reconciles this file's own sweep against `atlas_graph::provenance::ProvenanceIndex::build`'s runtime family list, closing a drift hole a prior review found. Two more tests PIN, by identity, the full 26-kind provenance inventory (`PINNED_INVENTORY`, 331) and the complete per-family provenance map (`PINNED_FAMILIES`, 405) — the latter's own doc comment discloses the batch's own authoring mistake (assuming `attests` was multi-sourced when it isn't) as the reason the fact is code now, not prose.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Loads the real committed graph.bin directly, not a rebuild.", "line": 36 },
+        { "name": "provenance_by_family", "kind": "fn", "what": "Sweeps every provenance-bearing row family via a macro, keyed by field name.", "line": 63 },
+        { "name": "every_distinct_provenance_id_in_the_artifact_resolves_to_a_registry_source", "kind": "test", "what": "The resolution law itself: every provenance id resolves to exactly one registry source.", "line": 125 },
+        { "name": "the_sweep_covers_every_provenance_bearing_row_family", "kind": "test", "what": "Completeness guard: reconciles field-declaration counts against the swept families.", "line": 228 },
+        { "name": "the_runtime_index_and_the_test_sweep_name_exactly_the_same_families", "kind": "test", "what": "Reconciles this file's sweep against ProvenanceIndex::build's runtime family list.", "line": 287 },
+        { "name": "PINNED_INVENTORY", "kind": "const", "what": "The exact, pinned 26-kind distinct provenance inventory of the real artifact.", "line": 331 },
+        { "name": "PINNED_FAMILIES", "kind": "const", "what": "The exact, pinned per-family provenance-kind map of the real artifact.", "line": 405 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/artifact.rs",
+        "server/atlas-graph/src/provenance.rs",
+        "graph-types/src/graph.rs",
+        "graph-types/src/ingest.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "macro_rules", "BTreeMap", "BTreeSet", "String-vs-str"],
+      "tests": "This file is the dedicated real-data enforcement of PROV-1's source-attribution law and its own completeness/drift guards."
+    },
+    {
+      "path": "server/atlas-graph/tests/red_letter_adapter_real_data.rs",
+      "lines": 202,
+      "role": "Pins real SpokenAt coverage (461/470) and honestly categorizes the 9 uncovered ranges as data gaps, not code bugs.",
+      "l1": "Jesus's recorded words ('red-letter' text) are also linked to where he was standing when he said them, when that's known. This file pins how well that linkage works over the real data (461 of 470 speech ranges, 98.1%) and, for the 9 that don't connect, proves each one is a genuine gap in the source location data — not something the code could fix by trying harder.",
+      "l2": "Builds the real graph with red-letter data included (aligned against KJV-case-restored verses, matching what the real build does internally). The key data structure is a `BTreeMap<String, ((u8,u16,u16),(u8,u16,u16))>` tracking each event's own reconstructed min/max verse span — read from real `graph.attests` output rows directly (never re-implementing the adapter's own containment algorithm a second time), which is the discipline that makes this a genuine independent check rather than a tautology.",
+      "l3": "`spoken_at_coverage_over_the_real_data_is_461_of_470_pinned` (94) pins `graph.spoken_by.len() == 470`, all distinct, and `graph.spoken_at`'s distinct covered-range count at exactly 461 (9 uncovered). `every_uncovered_range_is_assessed_and_is_a_genuine_data_gap_not_a_predicate_bug` (128) categorizes each of the 9 as either 'too-narrow' (a located event's reconstructed span overlaps the range but doesn't fully contain it — needs new Attests rows, a data change) or 'disconnected' (no located event's span overlaps at all — needs a located event that doesn't exist in the source data), printing each range's category and asserting the split totals 9. Disposition: DOCUMENT-ONLY per RED-m2's own ticket — `data/` stays byte-untouched, no code fix is available without new source location data landing first.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds the real graph with red-letter data aligned against KJV-case-restored verses.", "line": 39 },
+        { "name": "spoken_at_coverage_over_the_real_data_is_461_of_470_pinned", "kind": "test", "what": "Pins the exact 461-of-470 SpokenAt coverage figure.", "line": 95 },
+        { "name": "every_uncovered_range_is_assessed_and_is_a_genuine_data_gap_not_a_predicate_bug", "kind": "test", "what": "Categorizes each of the 9 uncovered ranges as too-narrow or disconnected.", "line": 128 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/red_letter_adapter.rs",
+        "server/atlas-graph/src/build.rs",
+        "graph-types/src/text.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "BTreeSet", "BTreeMap", "iterator"],
+      "tests": "This file is the dedicated real-data pin for RED-1's SpokenAt containment predicate and RED-m2's own gap assessment."
+    },
+    {
+      "path": "server/atlas-graph/tests/timeline_equivalence.rs",
+      "lines": 123,
+      "role": "The M-B acceptance centerpiece: the graph's own event ordering must equal the pre-graph resolver's ordering exactly.",
+      "l1": "Before this app used a graph for everything, it had an older way of figuring out which Bible event came before which. This test proves the new, graph-based ordering produces the identical sequence of events as the old one did — a single, decisive proof that switching to the graph didn't quietly re-shuffle anyone's timeline.",
+      "l2": "Compares two independently-computed total orders over the same real data: the OLD order, walked via `AtlasData::timeline_event_at(i)` in a `while let Some(...) = ...` loop (Rust's 'keep going while this pattern matches' construct) until it returns `None`; the NEW order, built by re-resolving every real `graph.dated_by` row's stored placement via `event_world::resolve_timepoint` (never trusting a cached value) into a `HashMap<String, ResolvedPlacement>`, then `sort_by`'d using `temporal_order`. Deliberately calls the OLD resolver's own public accessor rather than reading `AtlasData.events` directly, so this test can't accidentally reimplement (and silently diverge from) the very algorithm it's checking.",
+      "l3": "`the_graphs_total_order_over_resolved_placements_equals_the_old_resolvers_timeline_order_exactly` (63) asserts `ew_stats.dated_events >= 450` and `graph.dated_by.len() == ew_stats.dated_events` (one DatedBy row per dated event), independently re-resolves every row and cross-checks the recovered year against `atlas.event_by_id(...).when.from_year`, then does `graph_order.sort_by(|a,b| temporal_order(&resolved[a], &resolved[b]))` and asserts `graph_order == old_order` element-for-element — 'THE ACCEPTANCE CENTERPIECE' per the assertion's own message. A closing loop constructs `EventId::new(id.clone())` for every id in the old order as a second witness that no id-encoding bug could make a garbled-but-consistent comparison silently pass.",
+      "key_items": [
+        { "name": "old_timeline_order", "kind": "fn", "what": "Walks AtlasData::timeline_event_at via its own public accessor to get the old order.", "line": 52 },
+        { "name": "the_graphs_total_order_over_resolved_placements_equals_the_old_resolvers_timeline_order_exactly", "kind": "test", "what": "The sole test: graph-derived order must equal the old resolver's order exactly.", "line": 63 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/build.rs",
+        "server/atlas-graph/src/event_world.rs",
+        "graph-types/src/chrono.rs",
+        "graph-types/src/id.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "HashMap", "if-let", "Ord-PartialOrd"],
+      "tests": "This IS the M-B design doc's own named acceptance test; no other file duplicates this specific comparison."
+    },
+    {
+      "path": "server/atlas-graph/tests/version_root_regression.rs",
+      "lines": 371,
+      "role": "Pins the graph's content-hash version root to an exact value, with a full changelog of every deliberate move.",
+      "l1": "The whole graph has a single fingerprint (a content hash) that changes if, and only if, its actual content changes. This test pins that fingerprint to one exact value over the real data — and every time a real, deliberate change to the atlas's content lands, the pinned value is updated in that same commit with a one-line reason. The huge comment block at the bottom of this file is effectively a changelog of every real content change the atlas has ever made, in order.",
+      "l2": "The test itself is short: build the real graph (eras-less, via `GraphService::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann`), compute its hex-rendered version via `atlas_graph::version_hex(svc.snapshot().version())`, and `assert_eq!` it against a single `const EXPECTED_VERSION_HEX`. The interesting content is the huge trailing comment: roughly 30 numbered 'MOVED (deliberately -- ...)' entries, each naming the batch, what content changed, and the new hex value — a real audit trail proving 'content addressing is your regression harness' (design doc §9b) in practice, not just in theory.",
+      "l3": "`version_root_matches_the_captured_pre_pipeline_baseline` (52) threads real brainfuel/Concord/Kretzmann data through the build so the root reflects the same graph `atlas-graph-compile` actually ships (minus eras, a disclosed, historical difference from the compile binary's own with-eras root). The current pinned value is `EXPECTED_VERSION_HEX = \"59c6f7dc236f6f23\"` (line 371), following the ATTEST-1 batch's changes (one new Event node `mat_leper_healed`, two changed Event payloads). The comment history documents every prior move back to the pre-pipeline baseline `4ad17fd0f68660f7`, each tied to a specific adapter/data change (new adapters, payload widenings, event merges, KJV-case restoration, new corpora, PeopleGroup reclassification, and more) — useful as a map of the crate's whole content-evolution history, not just a hash log.",
+      "key_items": [
+        { "name": "real_atlas_data", "kind": "fn", "what": "OnceLock-cached real ETL compile shared across the file's tests.", "line": 40 },
+        { "name": "version_root_matches_the_captured_pre_pipeline_baseline", "kind": "test", "what": "The sole test: computes the real version root and compares it to the pinned constant.", "line": 52 },
+        { "name": "EXPECTED_VERSION_HEX", "kind": "const", "what": "The current pinned content-hash root, updated deliberately alongside content changes.", "line": 371 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/service.rs",
+        "graph-types/src/store.rs"
+      ],
+      "used_by": [],
+      "concepts": ["integration-test", "content-hash", "OnceLock", "const-static"],
+      "tests": "This IS the version-root regression law's own test; it is the crate's canonical example of 'content addressing as a regression harness'."
+    },
+    {
+      "path": "server/atlas-graph/tests/window_law.rs",
+      "lines": 133,
+      "role": "Property-based proof that reading windows compose correctly, over both the port and the raw graph.",
+      "l1": "The reader loads the Bible in small chunks (a 'window' of verses) as you scroll, rather than all 31,000+ verses at once. This test proves that however you slice up your reading into windows — one big chunk, or many small ones — you always get exactly the same text back, in the same order. That's what guarantees lazy loading can never quietly change what the Bible says.",
+      "l2": "Uses `proptest`, a property-based testing library: instead of hand-picking example inputs, each `#[test]` inside the `proptest! { ... }` macro block runs many randomly-generated inputs (here, random start positions and random window-size partitions) and checks a general rule holds for all of them, catching edge cases a human wouldn't think to write by hand. `prop_assume!` discards a randomly generated case that wouldn't make sense (e.g. a partition that would run off the end of the Bible) rather than treating it as a failure. The graph is accessed only through `&dyn GraphQuery` — a Rust *trait object* (a value manipulated only through its trait's methods, its concrete type erased) — proving the window law holds at the same abstract seam any future storage backend would plug into, not just for one concrete implementation.",
+      "l3": "`partition_concatenation_matches_the_single_whole_window` (69) generates a random start fraction and a `Vec<usize>` of 1-12 window sizes (1-50 each), computes one 'whole' window and a manually-concatenated sequence of per-piece windows, and asserts they're identical — proving `window::window`'s core algebraic law: partitioning is invariant under concatenation. `backward_window_is_the_mirror_of_an_onward_one` (98) proves a `WindowDir::Backward` window ending at a position equals the `WindowDir::Onward` window starting where it starts. `holds_against_the_raw_graph_too_not_just_a_snapshot` (120) re-runs the law against `real_raw_graph()` (a raw `graph_types::graph::Graph`, graph-types' own canonical `GraphQuery` instance) rather than a `MemSnapshot`, proving the window functions are generically correct, not merely working by coincidence against one implementation. `bible_len()` (48) is cached in a `OnceLock` since `GraphQuery` deliberately has no dedicated 'spine length' operation — computing it means walking the whole corpus once.",
+      "key_items": [
+        { "name": "real_graph", "kind": "fn", "what": "Builds and caches a GraphService over an empty AtlasData (reading-order scope only).", "line": 21 },
+        { "name": "real_raw_graph", "kind": "fn", "what": "Builds and caches the raw Graph directly, for the port-genericity proof.", "line": 36 },
+        { "name": "partition_strategy", "kind": "fn", "what": "A proptest Strategy generating 1-12 window sizes of 1-50 each.", "line": 60 },
+        { "name": "partition_concatenation_matches_the_single_whole_window", "kind": "test", "what": "Core window law: any partition concatenates to the same sequence as the whole.", "line": 69 },
+        { "name": "backward_window_is_the_mirror_of_an_onward_one", "kind": "test", "what": "A backward window equals the onward window starting at the same place.", "line": 98 },
+        { "name": "holds_against_the_raw_graph_too_not_just_a_snapshot", "kind": "test", "what": "Re-proves the law against the raw Graph, not just a snapshot wrapper.", "line": 120 }
+      ],
+      "depends_on": [
+        "server/atlas-graph/src/window.rs",
+        "server/atlas-graph/src/service.rs",
+        "server/atlas-graph/src/kjv_adapter.rs",
+        "graph-types/src/graph.rs",
+        "graph-types/src/store.rs"
+      ],
+      "used_by": [],
+      "concepts": ["property-test", "OnceLock", "trait", "generics", "closure"],
+      "tests": "This IS the window law's own dedicated test file (design doc §6)."
+    }
+  ]
+}
