@@ -51,7 +51,10 @@ pub fn load(data_dir: &Path) -> Result<Loaded, CliError> {
     data.events = overlay.events;
     data.places = overlay.places;
     data.narratives = overlay.narratives;
-    data.verses = overlay.verses;
+    // OVERLAY-1 Task 2: verse text is no longer materialized onto
+    // `AtlasData` at all -- `GraphService::verse_text_of` reads it on
+    // demand from the graph, so `AtlasData.verses` simply stays empty on
+    // this (artifact-load) path.
     let data = data.finish();
 
     Ok(Loaded { graph: Arc::new(graph), data: Arc::new(data) })

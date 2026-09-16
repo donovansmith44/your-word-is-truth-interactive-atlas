@@ -1019,6 +1019,21 @@ pub struct AtlasData {
     pub narratives: Vec<Narrative>,
     pub eras: Vec<Era>,
     pub books_meta: Vec<BookMeta>,
+    /// OVERLAY-1 Task 2 ("one KJV in memory"): NO LONGER graph-derived at
+    /// server runtime -- the default (artifact-load) startup path used to
+    /// overwrite this with `atlas_graph::legacy::atlas_data_overlay`'s own
+    /// `verses` (a whole-spine clone of `GraphService::verse_text`, itself
+    /// a whole-spine clone of the graph's own TextUnit nodes -- three
+    /// copies of the same ~31,102-verse KJV text in memory at once); that
+    /// overwrite is deleted, so on that path this field now simply stays
+    /// empty, and every server-side reader goes through `GraphService::
+    /// verse_text_of` instead, on demand, per verse. This field still has
+    /// a real, non-empty producer: `atlas_etl::compile::compile` (and
+    /// `AtlasData::new`'s own test-fixture callers) populate it as the
+    /// RAW SOURCE the graph itself is built FROM in the first place
+    /// (`GraphService::from_canon_and_verses`/`from_sources` et al.) -- a
+    /// precursor to graph truth, not a copy of it, and legitimately out of
+    /// this batch's "one KJV in memory at serving time" scope.
     pub verses: HashMap<String, String>,
     pub cross_refs: HashMap<String, Vec<CrossRef>>,
 

@@ -141,18 +141,28 @@ fn every_reconstructed_narrative_equals_compiles_own_real_narrative_field_for_fi
 /// weakening this test, it is keeping its OWN stated promise (bijection +
 /// content fidelity between the overlay and the true compiled source) once
 /// that source is honestly two-staged (raw-compile, then case-restore).
+///
+/// OVERLAY-1 Task 2: `real_overlay().verses` no longer exists -- there is
+/// no copy left to compare against. This test now proves the SAME law
+/// (every one of the compile path's 31,102 verse refs resolves, through
+/// the graph, to identical text) by calling `GraphService::verse_text_of`
+/// once per ref instead of comparing two whole-collection maps.
 #[test]
 fn every_reconstructed_verse_text_equals_the_real_compiled_kjv_text_exactly() {
     let brainfuel = real_brainfuel();
     let (want, _report) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &expected().verses);
-    let got = real_overlay().verses;
-    assert_eq!(got.len(), want.len(), "verse count must match exactly (real data: 31,102)");
+    assert_eq!(want.len(), 31_102, "the compiled KJV corpus itself must carry the real verse count");
+
+    let graph = GraphService::from_artifact(&data_dir().join("compiled/graph.bin")).expect("the real committed data/compiled/graph.bin must load");
+
     let mut mismatches: Vec<String> = Vec::new();
     for (k, want_text) in &want {
-        match got.get(k) {
-            Some(got_text) if got_text == want_text => {}
-            Some(got_text) => mismatches.push(format!("{k}: text differs (want {want_text:?}, got {got_text:?})")),
-            None => mismatches.push(format!("{k}: missing from the overlay entirely")),
+        let vid = atlas_core::refs::VerseId::parse_canonical(k).unwrap_or_else(|e| panic!("{k}: not a canonical dot-ref: {e}"));
+        let got_text = graph.verse_text_of(&atlas_graph_types::text::VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse });
+        match got_text {
+            Some(got) if &got == want_text => {}
+            Some(got) => mismatches.push(format!("{k}: text differs (want {want_text:?}, got {got:?})")),
+            None => mismatches.push(format!("{k}: missing from the graph entirely")),
         }
     }
     assert!(mismatches.is_empty(), "verse text mismatches:\n{}", mismatches.join("\n"));
@@ -198,7 +208,10 @@ fn finished_overlay_atlas_data() -> AtlasData {
     data.events = overlay.events;
     data.places = overlay.places;
     data.narratives = overlay.narratives;
-    data.verses = overlay.verses;
+    // OVERLAY-1 Task 2: verse text is no longer materialized onto
+    // `AtlasData` at all -- `GraphService::verse_text_of` reads it on
+    // demand from the graph, so `AtlasData.verses` simply stays empty
+    // here too (matching the real server startup path this helper mirrors).
     data.finish()
 }
 

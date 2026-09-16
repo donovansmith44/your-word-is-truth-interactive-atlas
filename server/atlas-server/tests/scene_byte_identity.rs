@@ -68,7 +68,6 @@ fn real_data_and_graph() -> (Arc<AtlasData>, Arc<GraphService>) {
             data.events = overlay.events;
             data.places = overlay.places;
             data.narratives = overlay.narratives;
-            data.verses = overlay.verses;
             let data = data.finish();
             (Arc::new(data), Arc::new(graph))
         })

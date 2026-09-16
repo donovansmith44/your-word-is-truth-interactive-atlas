@@ -139,22 +139,6 @@ pub struct GraphService {
     /// `target_display`) -- same "port doesn't model this access shape"
     /// class as `narrative_legs` above.
     pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
-    /// M-C2 FIX (definitive surface list, requirement 1 -- a gap this
-    /// batch's own first pass at `handlers::verse`/`handlers::xrefs` left
-    /// behind): dot-ref -> that verse's own KJV text, the SAME content
-    /// `legacy::verses_from_graph` builds for `atlas_data_overlay`'s
-    /// `AtlasData.verses` -- computed ONCE here instead, off this
-    /// service's own just-published snapshot, so the two named handlers'
-    /// cross-ref PREVIEW text (the one remaining `data.verses.get(...)`
-    /// read each had) can go through a real graph query instead of
-    /// `AtlasData`, exactly like the cross-ref ROWS themselves already do
-    /// via `cross_refs_by_from` above. `atlas_data_overlay` now reuses
-    /// this field (`gs.verse_text.clone()`) rather than recomputing the
-    /// identical map a second time -- one source, not two. `HashMap`, not
-    /// `BTreeMap`, for the same reason as `cross_refs_by_from`: only ever
-    /// `.get()`'d by key, never iterated or serialized, so iteration order
-    /// carries no determinism concern.
-    pub verse_text: HashMap<String, String>,
     /// M-D3 (owner ruling U5, "in-text person and place name links,
     /// mentions-attested ONLY"): FROM-verse dot-ref -> every PERSON the
     /// graph's own `mentions` relation attests at that locus, `(id,
@@ -175,7 +159,7 @@ pub struct GraphService {
     /// `resolve_display_name` in the handler) that this field does not
     /// replace or duplicate -- EXTEND-ONLY discipline, a place mention's
     /// own existing path is untouched. `HashMap`, not `BTreeMap`, for the
-    /// same reason as `cross_refs_by_from`/`verse_text`: only ever
+    /// same reason as `cross_refs_by_from`: only ever
     /// `.get()`'d by key inside the `chapter` handler, never iterated or
     /// serialized as a whole.
     pub persons_by_verse: HashMap<String, Vec<(String, String)>>,
@@ -197,7 +181,7 @@ pub struct GraphService {
     /// retirement doc comment): this field is the ONE surviving path.
     /// `HashMap`, not `BTreeMap` -- same "only ever `.get()`'d by key,
     /// never iterated/serialized" reasoning as `cross_refs_by_from`/
-    /// `verse_text`/`persons_by_verse` above.
+    /// `persons_by_verse` above.
     pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
     /// RED-1 (decision 4, "the heading-index precedent"): dot-ref -> the
     /// KJV sub-verse span table's own char-offset ranges for that verse --
@@ -210,7 +194,7 @@ pub struct GraphService {
     /// ALREADY-RESOLVED parameter instead of computing it from `&graph`,
     /// the one companion field with that shape. `HashMap`, not `BTreeMap`
     /// -- same "only ever `.get()`'d by key" reasoning as `cross_refs_by_
-    /// from`/`verse_text`/`persons_by_verse` above.
+    /// from`/`persons_by_verse` above.
     pub red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
     /// Batch PROV-1 (owner order 1, "one thing we definitely need for
     /// EVERY PIECE OF DATA is the source from which it came"): the SAME
@@ -598,11 +582,6 @@ impl GraphService {
         let mut store = MemStore::default();
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
-        // M-C2 FIX (this struct's own `verse_text` doc comment): needs a
-        // snapshot (the `GraphQuery` trait, not raw `Graph` field access),
-        // so computed here, after publish/open, unlike the `&graph`-based
-        // companions above.
-        let verse_text = crate::legacy::verses_from_graph(&snapshot);
         GraphService {
             snapshot,
             bible_position,
@@ -619,7 +598,6 @@ impl GraphService {
             narrative_legs,
             heading_index,
             cross_refs_by_from,
-            verse_text,
             persons_by_verse,
             temporal_neighbors,
             red_letter_spans,
@@ -672,6 +650,21 @@ impl GraphService {
         } else {
             Some((start, n))
         }
+    }
+
+    /// OVERLAY-1 Task 2 ("one KJV in memory"): reads one verse's own KJV
+    /// text ON DEMAND, straight off this service's own published snapshot
+    /// -- the SAME `kjv_adapter::verse_node_id` + `window::render` pair
+    /// `legacy::verses_from_graph` used to build the whole-spine
+    /// `verse_text` companion this batch retires (see that field's own
+    /// former doc comment, and `legacy::atlas_data_overlay`'s, for the
+    /// "three copies of the same KJV text in memory" this call replaces).
+    /// One node lookup -- microseconds, not a whole-spine walk -- and no
+    /// caching: every former reader of `verse_text`/`AtlasData.verses`
+    /// calls this instead, per verse, at request time.
+    pub fn verse_text_of(&self, r: &atlas_graph_types::text::VerseRef) -> Option<String> {
+        let id = crate::kjv_adapter::verse_node_id(r.book, r.chapter, r.verse);
+        crate::window::render(&self.snapshot(), &id)
     }
 }
 
@@ -843,5 +836,27 @@ mod tests {
         let ids = svc.snapshot().reading_window(crate::kjv_adapter::BIBLE_CORPUS, start, n);
         let decoded: Vec<_> = ids.iter().map(|id| crate::kjv_adapter::decode_text_unit(id).unwrap()).collect();
         assert_eq!(decoded, vec![(0, 1, 1), (0, 1, 2), (0, 1, 3)], "must not spill into chapter 2");
+    }
+
+    /// OVERLAY-1 Task 2 ("one KJV in memory"): `verse_text_of` reads one
+    /// verse's own text on demand, straight off the published graph -- no
+    /// `verse_text` companion map is built at all any more. Proves it
+    /// against the SAME primitive `legacy::verses_from_graph` (the now-
+    /// deleted companion's own builder) used per entry: `window::render`
+    /// over the `kjv_adapter::verse_node_id` for that verse.
+    #[test]
+    fn verse_text_of_equals_window_render_for_the_same_verse() {
+        let svc = service();
+        let id = crate::kjv_adapter::verse_node_id(0, 1, 1);
+        let want = crate::window::render(&svc.snapshot(), &id);
+        assert_eq!(want.as_deref(), Some("In the beginning God created the heaven and the earth."));
+        let got = svc.verse_text_of(&atlas_graph_types::text::VerseRef { book: 0, chapter: 1, verse: 1 });
+        assert_eq!(got, want, "verse_text_of must read exactly what window::render gives for the same verse");
+    }
+
+    #[test]
+    fn verse_text_of_is_none_for_an_out_of_canon_verse() {
+        let svc = service();
+        assert_eq!(svc.verse_text_of(&atlas_graph_types::text::VerseRef { book: 0, chapter: 99, verse: 1 }), None, "an unknown verse must be a graceful None, not a panic");
     }
 }

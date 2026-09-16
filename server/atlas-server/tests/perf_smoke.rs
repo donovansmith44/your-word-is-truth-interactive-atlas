@@ -58,7 +58,6 @@ fn real_data_and_graph() -> (Arc<AtlasData>, Arc<GraphService>) {
             data.events = overlay.events;
             data.places = overlay.places;
             data.narratives = overlay.narratives;
-            data.verses = overlay.verses;
             let data = data.finish();
             (Arc::new(data), Arc::new(graph))
         })
@@ -128,15 +127,21 @@ fn scene_scripture_chapter_completes_within_smoke_threshold() {
 /// `handlers::xrefs`'s own service-layer call
 /// (`atlas_core::xrefs::aggregate_span_xrefs`) -- benched directly for the
 /// same "no unrelated network/DNS noise" reason the module doc comment
-/// gives; `graph.cross_refs_by_from`/`graph.verse_text` are the exact
-/// companion indexes the real handler reads.
+/// gives; `graph.cross_refs_by_from` is the same companion index the real
+/// handler reads, and `graph.verse_text_of` (OVERLAY-1 Task 2 -- the
+/// retired `graph.verse_text` whole-spine companion's on-demand
+/// replacement) is the same per-key preview-text closure the real handler
+/// builds.
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn xrefs_for_verse_completes_within_smoke_threshold() {
     let (_data, graph) = real_data_and_graph();
     let span = ScriptureRef::parse("JHN.3.16").unwrap();
     let elapsed = median_of(7, || {
-        let _ = atlas_core::xrefs::aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &graph.verse_text);
+        let _ = atlas_core::xrefs::aggregate_span_xrefs(&span, &graph.cross_refs_by_from, |key| {
+            let v = atlas_core::refs::VerseId::parse_canonical(key).ok()?;
+            graph.verse_text_of(&atlas_graph_types::text::VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
+        });
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "xrefs_for_verse_completes_within_smoke_threshold", 30);
     assert!(elapsed < Duration::from_millis(30), "aggregate_span_xrefs(JHN.3.16) took {elapsed:?}, over the 30ms smoke gate");

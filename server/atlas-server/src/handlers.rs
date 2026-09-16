@@ -23,6 +23,7 @@ use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
+use atlas_graph_types::text::VerseRef;
 
 use crate::error::ApiError;
 
@@ -1106,11 +1107,11 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // `target_display` -- the honest original citation string) instead of
     // `data.cross_refs` -- see that field's own doc comment.
     //
-    // M-C2 FIX: the preview TEXT itself now comes from `graph.verse_text`
-    // (a real graph-derived companion, see its own doc comment), not
-    // `data.verses` -- the one `AtlasData` read this handler's own M-C2
-    // migration pass left behind. Same fail-soft behavior as before (a
-    // missing preview skips the row, per this endpoint's own "ruling 4"
+    // OVERLAY-1 Task 2: the preview TEXT itself now comes from
+    // `graph.verse_text_of` -- a real, on-demand graph query (one node
+    // lookup per row), not the retired `graph.verse_text` whole-spine
+    // companion, and not `data.verses`. Same fail-soft behavior as before
+    // (a missing preview skips the row, per this endpoint's own "ruling 4"
     // doc comment above): only the DATA SOURCE moved.
     // PROV-1 FIX ROUND 1 (review M-3): the family set, read ONCE off the
     // load-time companion index and cloned onto each element, so the two
@@ -1145,9 +1146,8 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .iter()
         .filter_map(|cr| {
             let first = first_verse_of_target(&cr.target)?;
-            let key = format!("{}.{}.{}", first.book.code(), first.chapter, first.verse);
-            let preview = graph.verse_text.get(&key)?;
-            Some(CrossRefOut { target: cr.target.clone(), votes: cr.votes, preview: preview.clone(), provenance: cross_refs_provenance.clone() })
+            let preview = graph.verse_text_of(&VerseRef { book: first.book.0, chapter: first.chapter, verse: first.verse })?;
+            Some(CrossRefOut { target: cr.target.clone(), votes: cr.votes, preview, provenance: cross_refs_provenance.clone() })
         })
         .collect();
 
@@ -1774,8 +1774,22 @@ pub struct CatechismItemOut {
 /// exists in the compiled KJV text) is skipped rather than panicking, same
 /// ruling-4 soft-fail policy `handlers::verse`'s own cross-ref preview
 /// lookup already follows.
-pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<String>) -> Result<Json<CatechismItemOut>, ApiError> {
+///
+/// OVERLAY-1 Task 2: proof-verse text now comes from `graph.verse_text_of`
+/// (a real, on-demand graph query), not the retired `AtlasData.verses` --
+/// this handler picks up a second extractor, `State<Arc<GraphService>>`,
+/// the same combined-state pattern `handlers::verse` already uses.
+pub async fn catechism_item(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Path(id): Path<String>,
+) -> Result<Json<CatechismItemOut>, ApiError> {
     let (part, item) = data.catechism_item_by_id(&id).ok_or_else(|| ApiError::not_found("catechism item"))?;
+
+    let text_of = |v: &str| -> Option<String> {
+        let vid = VerseId::parse_canonical(v).ok()?;
+        graph.verse_text_of(&VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse })
+    };
 
     // Batch F2: THE SCRIPTURES is the item-level `verses` (Luther's own
     // embedded citations, Batch F, `question: None`, listed FIRST -- "items
@@ -1795,8 +1809,8 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
         if !seen.insert((v.clone(), None)) {
             continue;
         }
-        if let Some(text) = data.verses.get(v) {
-            verses.push(CatechismProofVerseOut { vref: v.clone(), text: text.clone(), question: None });
+        if let Some(text) = text_of(v) {
+            verses.push(CatechismProofVerseOut { vref: v.clone(), text, question: None });
         }
     }
     for q in &item.questions {
@@ -1804,8 +1818,8 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
             if !seen.insert((v.clone(), Some(q.title.clone()))) {
                 continue;
             }
-            if let Some(text) = data.verses.get(v) {
-                verses.push(CatechismProofVerseOut { vref: v.clone(), text: text.clone(), question: Some(q.title.clone()) });
+            if let Some(text) = text_of(v) {
+                verses.push(CatechismProofVerseOut { vref: v.clone(), text, question: Some(q.title.clone()) });
             }
         }
     }
@@ -1838,39 +1852,37 @@ pub async fn catechism_item(State(data): State<Arc<AtlasData>>, Path(id): Path<S
 /// atlas's compiled canon -- is NOT an error: 200 with an empty list, the
 /// same "gracefully empty, never a 404" policy `scene_scripture`/`chapter`
 /// already follow. This falls out of the aggregation itself needing no
-/// special-casing: `aggregate_span_xrefs` only ever reads its two map
-/// arguments (`graph.cross_refs_by_from`/`graph.verse_text` as of M-C2) by
-/// key, and a key simply absent from either map contributes nothing, which
-/// is exactly as true for a real, canonical verse with zero curated
-/// cross-references (the overwhelmingly common case) as for an
-/// out-of-canon one.
+/// special-casing: `aggregate_span_xrefs` only ever reads `cross_refs` by
+/// key and calls `verse_text` by key, and a key simply absent/`None`
+/// contributes nothing, which is exactly as true for a real, canonical
+/// verse with zero curated cross-references (the overwhelmingly common
+/// case) as for an out-of-canon one.
 ///
 /// Business logic (the union-and-sum aggregation, self-target drop, sort,
 /// cap-at-20) lives in `atlas_core::xrefs::aggregate_span_xrefs` -- this
 /// handler is pure response-shape assembly, per this module's own file
 /// header.
-/// M-C2 (definitive surface list): `aggregate_span_xrefs` itself is
-/// UNCHANGED (business logic stays in `atlas_core::xrefs`, per this
-/// module's own file header, and that crate still has no `graph-types`
-/// dependency of its own -- its signature is still `&HashMap<...>` in,
-/// `&HashMap<...>` out) -- only WHAT `handlers::xrefs` passes in moved:
-/// `graph.cross_refs_by_from` (the graph's own `cites` rows -- `target`
-/// carries each row's own `target_display`, the honest original citation
-/// string, graph_types::edge::CrossRef's own M-C2 widening) for the rows,
-/// and `graph.verse_text` (M-C2 FIX -- this handler's own migration pass
-/// first missed this second argument, still reading `data.verses`; see
-/// `GraphService::verse_text`'s own doc comment) for the preview text.
-/// Both are real graph-derived data, just handed to the SAME unmodified
-/// `atlas_core` function as plain maps -- no new dependency, no crate
-/// boundary crossed. `AtlasData` is no longer read anywhere in this
-/// handler at all, so it no longer takes one as a parameter.
+/// OVERLAY-1 Task 2: `aggregate_span_xrefs`'s own preview-text parameter
+/// is now `impl Fn(&str) -> Option<String>`, not `&HashMap<String,
+/// String>` -- `atlas_core` still has no `graph-types` dependency of its
+/// own (the closure type crosses the boundary, not a graph type), and the
+/// aggregation logic itself is unchanged. `graph.cross_refs_by_from` (the
+/// graph's own `cites` rows -- `target` carries each row's own
+/// `target_display`, the honest original citation string, graph_types::
+/// edge::CrossRef's own M-C2 widening) still supplies the rows; the
+/// preview text now comes from `graph.verse_text_of` called per candidate
+/// key, on demand, instead of the retired `graph.verse_text` whole-spine
+/// companion. `AtlasData` is still not read anywhere in this handler.
 pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<CrossRefOut>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {
         Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
         _ => return Err(ApiError::bad_ref(&sref)),
     };
 
-    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &graph.verse_text);
+    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, |key| {
+        let v = VerseId::parse_canonical(key).ok()?;
+        graph.verse_text_of(&VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
+    });
     // PROV-1 FIX ROUND 1 (review M-3): one read off the load-time companion
     // index, cloned per row -- no scan, no fetch. See
     // `CrossRefOut.provenance` for why the value is the family SET.

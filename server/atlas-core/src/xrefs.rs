@@ -109,7 +109,7 @@ fn target_within_span(target: &str, span: &ScriptureRef) -> bool {
 pub fn aggregate_span_xrefs(
     span: &ScriptureRef,
     cross_refs: &HashMap<String, Vec<CrossRef>>,
-    verses: &HashMap<String, String>,
+    verse_text: impl Fn(&str) -> Option<String>,
 ) -> Vec<AggregatedXref> {
     let mut votes_by_target: HashMap<String, i32> = HashMap::new();
     let mut order: Vec<String> = Vec::new();
@@ -137,12 +137,12 @@ pub fn aggregate_span_xrefs(
             let votes = *votes_by_target.get(&target)?;
             // Preview fails soft (same ruling-4 policy `handlers::verse`'s own
             // cross-ref preview already follows): a target whose own first
-            // verse is unexpectedly missing from `verses` is skipped, not
+            // verse's text is unexpectedly unavailable is skipped, not
             // panicked on.
             let (first, _) = target_span(&target)?;
             let preview_key = format!("{}.{}.{}", first.book.code(), first.chapter, first.verse);
-            let preview = verses.get(&preview_key)?;
-            Some(AggregatedXref { target, votes, preview: preview.clone() })
+            let preview = verse_text(&preview_key)?;
+            Some(AggregatedXref { target, votes, preview })
         })
         .collect();
 
@@ -238,14 +238,14 @@ mod tests {
     // "some positive number" or the max of the two.
     #[test]
     fn votes_sum_across_member_verses_not_just_the_first_hit() {
-        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), &fixture_verses());
+        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), |k| fixture_verses().get(k).cloned());
         let jhn = out.iter().find(|x| x.target == "JHN.1.1").expect("JHN.1.1 must survive aggregation");
         assert_eq!(jhn.votes, 14, "10 (from GEN.1.1) + 4 (from GEN.1.2)");
     }
 
     #[test]
     fn self_targets_are_dropped_but_a_target_merely_starting_inside_the_span_survives() {
-        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), &fixture_verses());
+        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), |k| fixture_verses().get(k).cloned());
         let targets: Vec<&str> = out.iter().map(|x| x.target.as_str()).collect();
         // GEN.1.3 (exactly one member verse) and GEN.1.1-2 (wholly inside
         // the span) are both self-targets -- dropped.
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn sorted_votes_descending_and_preview_is_targets_own_first_verse_text() {
-        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), &fixture_verses());
+        let out = aggregate_span_xrefs(&gen_1_span(1, 5), &fixture_cross_refs(), |k| fixture_verses().get(k).cloned());
         for pair in out.windows(2) {
             assert!(pair[0].votes >= pair[1].votes, "{out:?}");
         }
@@ -277,7 +277,7 @@ mod tests {
         // Pinning this distinction is the point of the test: "self" is
         // relative to the QUERIED span, not to whichever verse happens to
         // cite the target.
-        let out = aggregate_span_xrefs(&gen_1_span(1, 1), &fixture_cross_refs(), &fixture_verses());
+        let out = aggregate_span_xrefs(&gen_1_span(1, 1), &fixture_cross_refs(), |k| fixture_verses().get(k).cloned());
         let targets: Vec<&str> = out.iter().map(|x| x.target.as_str()).collect();
         assert_eq!(targets, vec!["JHN.1.1", "GEN.1.3", "PSA.33.6"]);
     }
@@ -289,7 +289,7 @@ mod tests {
         // real members) still contribute normally -- GEN.1.3-10 survives
         // (starts at verse 3, before this span's own from_verse=4, so it is
         // not a subset) alongside PSA.74.16 and 1JN.1.5.
-        let out = aggregate_span_xrefs(&gen_1_span(4, 6), &fixture_cross_refs(), &fixture_verses());
+        let out = aggregate_span_xrefs(&gen_1_span(4, 6), &fixture_cross_refs(), |k| fixture_verses().get(k).cloned());
         let targets: Vec<&str> = out.iter().map(|x| x.target.as_str()).collect();
         assert_eq!(targets, vec!["GEN.1.3-10", "PSA.74.16", "1JN.1.5"]); // votes 9, 8, 1
     }
@@ -304,7 +304,7 @@ mod tests {
             verses.insert(format!("PSA.{i}.1"), format!("verse {i}"));
         }
 
-        let out = aggregate_span_xrefs(&gen_1_span(1, 1), &cross_refs, &verses);
+        let out = aggregate_span_xrefs(&gen_1_span(1, 1), &cross_refs, |k| verses.get(k).cloned());
         assert_eq!(out.len(), 20);
         assert_eq!(out[0].target, "PSA.25.1"); // highest votes (25) first
         assert_eq!(out[19].target, "PSA.6.1"); // 25 down to 6 is exactly the top 20
@@ -314,8 +314,8 @@ mod tests {
     fn determinism_repeated_calls_yield_the_same_result() {
         let cross_refs = fixture_cross_refs();
         let verses = fixture_verses();
-        let a = aggregate_span_xrefs(&gen_1_span(1, 5), &cross_refs, &verses);
-        let b = aggregate_span_xrefs(&gen_1_span(1, 5), &cross_refs, &verses);
+        let a = aggregate_span_xrefs(&gen_1_span(1, 5), &cross_refs, |k| verses.get(k).cloned());
+        let b = aggregate_span_xrefs(&gen_1_span(1, 5), &cross_refs, |k| verses.get(k).cloned());
         assert_eq!(a, b);
     }
 
@@ -340,7 +340,7 @@ mod tests {
         fn xref_2_span_aggregation(span in span_strategy()) {
             let cross_refs = fixture_cross_refs();
             let verses = fixture_verses();
-            let result = aggregate_span_xrefs(&span, &cross_refs, &verses);
+            let result = aggregate_span_xrefs(&span, &cross_refs, |k| verses.get(k).cloned());
 
             prop_assert!(result.len() <= MAX_RESULTS);
 

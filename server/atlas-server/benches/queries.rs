@@ -71,7 +71,6 @@ fn load_real() -> (Arc<AtlasData>, Arc<GraphService>) {
     data.events = overlay.events;
     data.places = overlay.places;
     data.narratives = overlay.narratives;
-    data.verses = overlay.verses;
     let data = data.finish();
     (Arc::new(data), Arc::new(graph))
 }
@@ -163,7 +162,10 @@ fn bench_handlers(c: &mut Criterion) {
         b.iter(|| rt.block_on(handlers::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
     });
     group.bench_function("catechism_item", |b| {
-        b.iter(|| rt.block_on(handlers::catechism_item(State(data.clone()), AxPath("commandment-1".to_string()))))
+        // OVERLAY-1 Task 2: second extractor, `State<Arc<GraphService>>` --
+        // proof-verse text now comes from `graph.verse_text_of`, not the
+        // retired `AtlasData.verses`.
+        b.iter(|| rt.block_on(handlers::catechism_item(State(data.clone()), State(graph.clone()), AxPath("commandment-1".to_string()))))
     });
 
     group.finish();

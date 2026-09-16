@@ -17,8 +17,6 @@
 //! GraphQuery` (the port) -- no raw `Graph` field reach -- so it works
 //! identically against the from-sources build and the loaded artifact.
 
-use std::collections::HashMap;
-
 use atlas_core::data::{Event, EventWitness, Narrative, Place};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
@@ -171,34 +169,17 @@ pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
     }
 }
 
-/// Reconstructs the full `verse -> KJV text` map by walking the bible
-/// reading spine end to end (the port's own `reading_window`, the SAME
-/// primitive the reader's own windowed queries use) -- 200,000 is a
-/// generous margin over the real ~31,102-verse KJV (same "wide, documented
-/// margin" class as `GraphService::MAX_CHAPTER_SPAN_PROBE`), not a magic
-/// exact count.
-pub fn verses_from_graph(q: &impl GraphQuery) -> HashMap<String, String> {
-    const GENEROUS_SPINE_LENGTH: usize = 200_000;
-    let mut out = HashMap::new();
-    for id in q.reading_window(crate::kjv_adapter::BIBLE_CORPUS, 0, GENEROUS_SPINE_LENGTH) {
-        let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&id) else { continue };
-        if let Some(text) = crate::window::render(q, &id) {
-            out.insert(crate::kjv_adapter::dot_ref(b, c, v), text);
-        }
-    }
-    out
-}
-
-/// The five `AtlasData` fields the deletion event retires from `AtlasData::
+/// The four `AtlasData` fields the deletion event retires from `AtlasData::
 /// load`'s own file-backed loaders, reconstructed instead -- `cross_refs`
 /// is deliberately ABSENT (this struct's own doc comment on `atlas_data_
-/// overlay` has the reason).
+/// overlay` has the reason). OVERLAY-1 Task 2 ("one KJV in memory") retired
+/// the fifth, `verses`: `GraphService::verse_text_of` reads one verse's own
+/// text on demand instead of this struct carrying a whole-spine copy.
 #[derive(Debug, Clone, Default)]
 pub struct LegacyAtlasFields {
     pub events: Vec<Event>,
     pub places: Vec<Place>,
     pub narratives: Vec<Narrative>,
-    pub verses: HashMap<String, String>,
 }
 
 /// M-C2: keeps every surface NOT in this batch's own definitive migration
@@ -222,12 +203,14 @@ pub struct LegacyAtlasFields {
 /// `total_events_for(id)` for every place) -- superseding the manual
 /// live-curl comparison this batch's own earlier commit messages
 /// described. Its own composed pieces (`event_from_node`/
-/// `place_from_node`/`narrative_from_node`/`verses_from_graph`) each also
-/// have real unit coverage individually. NOT Fast: db1-plan.md §3.4
-/// measured this pass (plus the artifact load it follows) as the boot's
-/// DOMINANT cost, ~751 MiB peak resident on real committed data -- an
-/// in-memory walk over thousands of graph entries plus the full ~31,102-
-/// verse reading spine, not the cheap step this comment used to claim.
+/// `place_from_node`/`narrative_from_node`) each also have real unit
+/// coverage individually. NOT Fast: db1-plan.md §3.4 measured this pass
+/// (plus the artifact load it follows) as the boot's DOMINANT cost, ~751
+/// MiB peak resident on real committed data -- an in-memory walk over
+/// thousands of graph entries (OVERLAY-1 Task 2 retired the fifth
+/// composed piece, `verses_from_graph`'s own full ~31,102-verse reading-
+/// spine walk, entirely: verse text is no longer materialized here at
+/// all, see `GraphService::verse_text_of`).
 pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasFields {
     let snap = gs.snapshot();
 
@@ -239,13 +222,6 @@ pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasField
         .iter()
         .filter_map(|id| narrative_from_node(id, &snap, gs.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
         .collect();
-    // M-C2 FIX: `gs.verse_text` (this service's own precomputed companion,
-    // added so `handlers::verse`/`handlers::xrefs` can read verse-preview
-    // text through the graph instead of `AtlasData`) is built from this
-    // SAME `verses_from_graph(&snap)` call -- reused here, not
-    // recomputed, so the full ~31,102-verse reading-spine walk happens
-    // once per startup, not twice.
-    let verses = gs.verse_text.clone();
 
-    LegacyAtlasFields { events, places, narratives, verses }
+    LegacyAtlasFields { events, places, narratives }
 }
