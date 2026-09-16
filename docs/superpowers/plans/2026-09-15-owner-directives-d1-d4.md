@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land the owner's four 2026-09-15 directives: (D1) one scripture selector while following; (D3) the Small Catechism and Book of Concord become genuinely explorable with a symmetric verse ↔ catechism ↔ Concord traversal and a real Concord containment tree; (D4) table-of-contents navigation as an expandable tree derived from the graph's containers; (D2) any two of {reader, world} side by side, including the same view twice, with a follow toggle where following makes sense.
+**Goal:** Land the owner's five 2026-09-15 directives: (D1) one scripture selector while following; (D3) the Small Catechism and Book of Concord become genuinely explorable with a symmetric verse ↔ catechism ↔ Concord traversal and a real Concord containment tree; (D4) table-of-contents navigation as an expandable tree derived from the graph's containers; (D2) any two of {reader, world} side by side, including the same view twice, with a follow toggle where following makes sense; (D5) person cards that show life, events and family instead of every verse.
 
 **Architecture:** Every affordance is a queried edge (project law), so D3 is mostly *traversal* of edges that already exist (`catechism-link` is already symmetric in the graph) plus one structural fix in the compiler (Concord documents contain articles as `Container` rows, mirroring Bible books ⊃ chapters). D4 reads that containment forest through a new `/api/contents/{corpus}` endpoint and renders it with one generic tree component. D1 is a guard plus a source-scan law. D2 replaces five hardcoded host→guest pairings with a generic pairing over the view registry and introduces pane-scoped state so the same view can appear twice.
 
@@ -985,9 +985,87 @@ EOF
 
 ---
 
+---
+
+### Task 9: D5 — person cards: lifespan, events, family (no more "every verse")
+
+**Owner's words (2026-09-15, binding):** "when we click on a person's name there's no point to just see every verse that name is mentioned … when clicking on a person, then i want to see the years that person is alive (years are explorable, remember), and then events (explorable!) where they're mentioned. the exception is God because he is eternal so keep that in mind. you might also show a family tree for each person where the names therein are explorable."
+
+**Files:**
+- Modify: `server/atlas-etl/src/people.rs:84–124` (`PersonFields` gains `father`, `mother`, `children`, `partners`, `siblings`, `minYear`, `maxYear`, `timeline` — all `#[serde(default)]`, Theographic record ids resolved to `personLookup` ids the same way `verses` resolve to refs), `server/atlas-core/src/data.rs` (the `Person` struct these land on), `server/atlas-etl/src/theographic.rs` (events gain `participants: Vec<String>` — Theographic `events.json` carries `participants` and `people (from verses)`; ingest `participants` only)
+- Create: `data/curated/people-eternal.toml` (see Step 3)
+- Modify: `graph-types/src/edge.rs` (`relations!` manifest: `ParentOf` directed `parent-of`/`child-of`; `Partners` symmetric `partner-of`; `Participates` directed `participates-in`/`participants`), `graph-types/src/graph.rs` (three row `Vec`s + lowering), `graph-types/src/node.rs` (`NodePayload::Person` gains `active_from: Option<i32>`, `active_to: Option<i32>`, `eternal: bool` — extend-only), `graph-types/src/frontier.rs` (Person row offers `ParentOf` both directions, `Partners`, `Participates` forward; Event row offers `Participates` inverse)
+- Modify: `server/atlas-graph/src/person_adapter.rs` (rows + payload fields), `server/atlas-graph/src/law_check.rs` (one law, Step 4), `server/atlas-graph/tests/peoples_real_data.rs` or a new `kinship_real_data.rs`
+- Regenerate: `data/compiled/graph.bin`, `report.txt`
+- Modify: `client/Explore/PersonNode.cs:73–74`, `client/Explore/PopoverSectionProviders.cs:3027` (`PersonCardAndMentionsSection`), `client/Explore/YearNode.cs` (a sibling `LifeYearNode` built from a year + label, since today's `YearNode` takes a place `DateClaimOut`), the TRACKED frontier-matrix mirror, `client/Dtos.cs` (Person payload fields on the node-card wire if the card reads them), the Playwright spec that covers person cards (grep `Person` in `tests/ux`), `tests/ux/CONTRACT.md`
+- Modify: `LICENSES.md` only if a new Theographic field class needs its own row (kinship is the same CC BY-SA bundle already credited — probably no change; say so in the report).
+
+**Interfaces:**
+- Consumes: Theographic `people.json` fields (verified 2026-09-15: `father`/`mother`/`children`/`partners`/`siblings` as record-id lists — 1,599 of 3,067 people have a parent; `minYear`/`maxYear` ints; `timeline` = event record ids on 268 people); `events.json` `participants`; existing `YearNode`/`EventNode`/`PersonNode`; `/api/node/{id}/edges?kind=…`.
+- Produces: three relations with rows (imported, provenance `theographic`, no justification); Person payload `active_from/active_to/eternal`; a person card whose sections are, in this order and each only when inhabited: **Life** → **Events** → **Family** → **Mentioned in** (the old verse list, collapsed by default, last).
+
+- [ ] **Step 1: Failing ETL tests** in `people.rs`'s test module (follow its existing JSON-fixture style, e.g. the `aaron_1` birth/death test near `:300`): (a) a person with `father: ["recF"]`, `mother: ["recM"]`, `children: ["recC1","recC2"]`, `partners: ["recP"]` resolves each to the referenced record's `personLookup` id, in source order, dangling ids dropped and counted in `PeopleStats`; (b) `minYear`/`maxYear` parse as `active_from/active_to`; (c) a record with no parent fields yields empty vectors, never a panic. In `theographic.rs`'s tests: an event with `participants: ["recA","recB"]` resolves to person ids. Run `cargo test -p atlas-etl people theographic` → FAIL (fields do not exist).
+
+- [ ] **Step 2: Implement the parsing** (extend-only structs; `#[serde(default)]` everywhere; resolution through the same record-id → `personLookup` map the file already builds for verses/`memberOf`). GREEN.
+
+- [ ] **Step 3: The eternity exception, as curated truth with grounds** — create `data/curated/people-eternal.toml`:
+
+```toml
+# D5 (owner, 2026-09-15): "the exception is God because he is eternal."
+# A person listed here has NO lifespan: no birth, no death, no active years.
+# Theographic carries God and the Holy Spirit as person records with
+# minYear -4004 / maxYear 96 (the corpus span) -- that is the dataset's
+# bookkeeping, not a lifespan, and the card must never render it as one.
+# Jesus (jesus_905, born 4 BC, died AD 30) is NOT listed: His earthly life
+# has dates, and the card labels them "Earthly life" (Step 7).
+[[eternal]]
+id = "god_1324"
+grounds = ["PSA.90.2", "REV.1.8"]
+
+[[eternal]]
+id = "holy_spirit_7400"
+grounds = ["HEB.9.14"]
+```
+
+Read it in `curated.rs` (same pattern as the other small curated tables), validate that every id resolves to a real person (fail loud otherwise), and set `eternal = true` on those payloads in `person_adapter.rs`; for eternal persons, `active_from/active_to/birth_year/death_year` are forced to `None` in the payload (the card can then rely on the flag alone). Test: a real-data test asserts `Person:god_1324` has `eternal == true` and no years, and `Person:jesus_905` has `eternal == false`, `birth_year == Some(-4)`, `death_year == Some(30)`.
+
+- [ ] **Step 4: Relations and the law.** Add the three relations to the `relations!` manifest and the three row structs (`ParentOf { parent: PersonId, child: PersonId, provenance }`, `Partners { a, b, provenance }` with `a < b` canonical like `Analogue`, `Participates { person: PersonId, event: EventId, provenance }`). Adapter: one `ParentOf` row per `(father|mother) → person` and per `person → child` — deduplicated by `(parent, child)` since Theographic states the edge from both ends; one `Partners` row per unordered pair; one `Participates` row per `(event.participants[i], event)`, skipping participants that are not persons (Theographic `participants` may include groups; count the skips in stats). Law in `law_check.rs`: **`kinship_is_acyclic`** — following `parent-of` edges never returns to the start (nobody is their own ancestor); fail loud with the cycle. Real-data test: Abraham has ≥ 8 `parent-of` rows; Isaac's `child-of` frontier contains Abraham; the law passes on the real graph; `Partners` count > 0; `Participates` count > 0. Frontier matrix (Rust, then the tracked C# mirror) offers the new kinds on Person and Event.
+
+- [ ] **Step 5: Regenerate** (`cargo run -p atlas-etl`, then `atlas-graph-compile` as in Task 2 Step 5); `scene_byte_identity` unchanged (scenes do not read kinship); the version root MOVES this time because Person payloads changed — record old and new roots in the report (this is a node-payload change; map-generator's stale-check will fire once, as designed — flag it for the owner).
+
+- [ ] **Step 6: Wire: nothing new needed** — `/api/node/Person:{id}` already returns the payload and `edge_summary`; `/api/node/{id}/edges?kind=parent-of|child-of|partner-of|participates-in` pages the rows. Add the new payload fields to the client's node-card DTO if it is typed (grep `birth_year` in `client/`).
+
+- [ ] **Step 7: The card.** `PersonNode.ExploreAsync` fetches the four edge kinds (limit 200 each) and the node card, and returns explorations in this order, each only when inhabited:
+  1. **Life** — for `eternal`: one line "Eternal — Psalm 90:2", the verse a `VerseNode` chip, no years. Otherwise: "Born c. 1997 BC · Died c. 1821 BC" when both known, each year a `LifeYearNode` (title "Born c. 1997 BC" / "Died c. 1821 BC"; exploring it sets the world time window to that year exactly as `YearNode` does — reuse `YearNode`'s exploration body, parameterised by a year and a label rather than a `DateClaimOut`); when birth/death are unknown but `active_from/active_to` exist: "Active c. 2056–64 BC" with the two ends as `LifeYearNode`s and the word "Active" (never "Born"/"Died"). For `jesus_905` the heading reads "Earthly life". Formatting through `YearText` (BC/AD conventions already pinned by CONTRACT.md).
+  2. **Events (n)** — `participates-in` targets as `EventNode` chips in the events' canonical order (sort client-side by the event's date if the wire carries it; otherwise the edge order).
+  3. **Family** — a compact tree: Parents (`child-of` targets) above, Partners beside, Children (`parent-of` targets) below, Siblings = other children of the same parents (derived client-side from the parents' `parent-of` pages; capped at 12 with "+n more"). Every name is a `PersonNode` chip. Render as labelled rows with `role="group"`, not a canvas.
+  4. **Mentioned in (n)** — today's verse list, collapsed behind a disclosure, last.
+  Retire the verse list as the card's default body (`PersonCardAndMentionsSection` becomes the fourth section only). POPOVER-LAW-1: no section renders empty.
+
+- [ ] **Step 8: Tests.** xunit: `PopoverSectionRegistryTests` asserts the four providers and their order for kind `Person`; a pure-C# test for the sibling derivation and the +n cap. Playwright (add to the person spec or create `tests/ux/person-card.spec.ts`): (a) Abraham's card shows a Life line with two year chips, an Events section with ≥ 1 chip, a Family section naming Isaac under Children and Terah under Parents, and the verse list collapsed; (b) God's card shows "Eternal" and NO year chip and NO Family section; (c) clicking a Family name opens that person's card (frontier round trip); (d) clicking a year chip changes the world time window (reuse the existing YearNode assertion). Register testids `person-life`, `person-life-year-{born|died|from|to}`, `person-events`, `person-family`, `person-family-{parents|partners|children|siblings}`, `person-mentions`. Run if port 8000 is free; else report not-executed.
+
+- [ ] **Step 9: Commit** (two commits are fine: server+data, then client). Message for the combined change:
+
+```
+feat(graph+client): D5 -- person cards show life, events and family, not every verse
+
+Theographic kinship (father/mother/children/partners) and event
+participants enter the graph as parent-of, partner-of and participates-in
+rows (imported, provenance-tagged); Person payloads gain active years and
+an `eternal` flag driven by data/curated/people-eternal.toml (God, the Holy
+Spirit; grounds Psalm 90:2, Revelation 1:8, Hebrews 9:14). A new law:
+kinship is acyclic. The person card now reads Life -> Events -> Family ->
+Mentioned in (collapsed), every year and every name explorable.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GsqLmd5gxtMWYDSeVSn43W
+```
+
+**Judgment calls (owner can reverse):** eternity is curated data with Scripture grounds, not a hardcoded name check; Jesus keeps His earthly dates under an "Earthly life" heading; siblings are derived from shared parents rather than stored (Theographic's `siblings` list is redundant with parents and would be a second path to the same fact); Theographic `people (from verses)` is NOT ingested (derived data — the graph already has Mentions); the verse list survives, collapsed and last, because it is still a real edge set.
+
 ## Self-review (done while writing)
 
-**Directive coverage.** D1 → Task 1 (guard on both non-Reader mounts + source-scan law + specs). D3 → Tasks 2 (containers, "analogous to how we did the Bible"), 3 (the wire fact that makes "pointlessly clickable" fixable), 4 (the symmetric traversal verse ↔ item ↔ Concord in both directions, dead clicks removed, deep link into the corpus). D4 → Tasks 5–6 (tree from the containment forest, toggle semantics, stop at chapter/article, no pages). D2 → Tasks 7–8 (cartesian product over {reader, world} incl. same-view, follow where linkable).
+**Directive coverage.** D5 → Task 9 (lifespan with explorable years, eternity as curated truth with grounds, events via participates-in, family tree with explorable names, verse list demoted). D1 → Task 1 (guard on both non-Reader mounts + source-scan law + specs). D3 → Tasks 2 (containers, "analogous to how we did the Bible"), 3 (the wire fact that makes "pointlessly clickable" fixable), 4 (the symmetric traversal verse ↔ item ↔ Concord in both directions, dead clicks removed, deep link into the corpus). D4 → Tasks 5–6 (tree from the containment forest, toggle semantics, stop at chapter/article, no pages). D2 → Tasks 7–8 (cartesian product over {reader, world} incl. same-view, follow where linkable).
 
 **Judgment calls made (owner can reverse any):** (1) task order D1 → D3 → D4 → D2 by dependency and risk; (2) clickability decided server-side via an additive `edge_summary` on text-window units rather than N+1 node-card calls or a hardcoded part list; (3) the contents endpoint is graph-derived (containers) rather than a hand-maintained list, so a new corpus gets a ToC for free; (4) `PaneScopes` keeps the host on the existing singletons so no single-pane URL or behaviour changes; (5) follow stays one toggle per split (one guest at a time), typed by capability, default off for same-view pairs; (6) the CatechismNode's new "Scripture" edge section defers to the existing bespoke `CatechismScripturesSection` when they would show the same verses (POPOVER-LAW-1); (7) Playwright may be unrunnable on this machine while port 8000 is held — tasks report not-executed rather than editing the harness.
 
