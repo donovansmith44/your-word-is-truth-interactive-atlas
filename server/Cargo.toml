@@ -20,8 +20,8 @@ resolver = "2"
 
 # STANDING COUNTING PROCEDURE (established by review at f988f1b, restated by
 # every batch that reports a full-suite total; amended by CONTENTION-1,
-# 2026-09-14): a full-suite count is THREE commands, the first two run from
-# server/ and the third from the repo root, AFTER the first two finish --
+# 2026-09-14): a full-suite count is THREE commands, ALL run from server/,
+# the third AFTER the first two finish --
 #   cargo test --workspace
 #   cargo test -p atlas-graph-types
 #   bash ../scripts/timing-gates.sh      # the 8 wall-clock gates, serialized
@@ -33,9 +33,11 @@ resolver = "2"
 # in the same report, or the count is not a count.
 # `-p atlas-graph-types` is required separately because of the non-member
 # status explained above: `--workspace` alone never reaches it. Sum every
-# "test result: ok. N passed" line printed by BOTH commands (one line per
-# test binary/section) to get the canonical total; report the per-command
-# split (workspace N + atlas-graph-types N) alongside the grand total and
+# "test result: ok. N passed" line printed by the FIRST TWO commands (one
+# line per test binary/section) -- the third, timing-gates.sh, prints no
+# `test result` lines of its own, only its own `TIMING GATES: N/8 passed`
+# summary counted separately above -- to get the canonical total; report
+# the per-command split (workspace N + atlas-graph-types N) alongside the grand total and
 # the section count, not the grand total alone. Canonical ground truth at
 # f988f1b: 747 passed (727 + 20) across 37 sections.
 #

@@ -9,7 +9,22 @@ REASON='wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-
 
 pass=0; fail=0
 expect_ok()      { if "$@" >/dev/null 2>&1; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL (expected ok):      $*" >&2; fi; }
-expect_refused() { if "$@" >/dev/null 2>&1; then fail=$((fail+1)); echo "FAIL (expected refused): $*" >&2; else pass=$((pass+1)); fi; }
+# F5: a nonzero exit alone is not a refusal -- a crash (unbound variable,
+# missing binary, etc.) also exits nonzero and must FAIL the self-test, not
+# score as a pass. Require BOTH a nonzero exit AND the text `REFUSED:` on
+# stderr, captured to a temp file.
+expect_refused() {
+  local errf; errf="$(mktemp)"
+  if "$@" >/dev/null 2>"$errf"; then
+    fail=$((fail+1)); echo "FAIL (expected refused, exited 0): $*" >&2
+  elif grep -qF 'REFUSED:' "$errf"; then
+    pass=$((pass+1))
+  else
+    fail=$((fail+1)); echo "FAIL (expected refused, no REFUSED: on stderr): $*" >&2
+    sed 's/^/    stderr: /' "$errf" >&2
+  fi
+  rm -f "$errf"
+}
 
 # A synthetic tree whose ignored tests exactly match the script's list.
 mk_tree() { # <dir> ; writes one .rs per gate name given on stdin
@@ -71,6 +86,18 @@ expect_refused env TIMING_GATES_TREE="$tmp/t7" bash "$GATES" check
 #    or the standing counting procedure silently drops 8 gates.
 expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/README.md"
 expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/server/Cargo.toml"
+
+# 9. ATTEMPT (F1): a stray bare #[ignore] lands in the SECOND default root,
+#    graph-types/ (the standing count's second command, `cargo test -p
+#    atlas-graph-types`, is sourced from there) -- not server/. `check`
+#    must scan BOTH default roots, not just server/. Proven here via
+#    TIMING_GATES_ROOTS (space-separated), pointing at two temp dirs that
+#    mimic the real server/ + graph-types/ layout: t9-server reconciles
+#    clean on its own, so a refusal can only come from t9-graph-types.
+mk_tree "$tmp/t9-server" < "$tmp/names"
+mkdir -p "$tmp/t9-graph-types/src"
+printf '#[ignore]\nfn quietly_disabled_in_graph_types() {}\n' >> "$tmp/t9-graph-types/src/x.rs"
+expect_refused env TIMING_GATES_ROOTS="$tmp/t9-server $tmp/t9-graph-types" bash "$GATES" check
 
 echo "timing-gates selftest: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

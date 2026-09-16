@@ -14,7 +14,21 @@
 # each bypass and requires refusal.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TREE="${TIMING_GATES_TREE:-$ROOT/server}"
+# The scanned roots are a LIST -- the standing count's second command,
+# `cargo test -p atlas-graph-types`, is sourced from graph-types/, a sibling
+# of server/, not a descendant (F1: a bare #[ignore] there used to pass
+# `check` silently). Two overrides exist, self-test only:
+#   TIMING_GATES_TREE  -- replaces the list with ONE synthetic root.
+#   TIMING_GATES_ROOTS -- space-separated, replaces the list with SEVERAL
+#                         synthetic roots (selftest case 9: proves the
+#                         SECOND default root, graph-types/, is scanned).
+if [ -n "${TIMING_GATES_ROOTS:-}" ]; then
+  read -r -a TREES <<<"$TIMING_GATES_ROOTS"
+elif [ -n "${TIMING_GATES_TREE:-}" ]; then
+  TREES=("$TIMING_GATES_TREE")
+else
+  TREES=("$ROOT/server" "$ROOT/graph-types")
+fi
 LOG_DIR="${TIMING_GATES_LOG_DIR:-$ROOT/.superpowers/sdd/2026-08-17-bible-atlas-m1/logs-timing-gates}"
 REASON='wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)'
 
@@ -32,10 +46,13 @@ GATES=(
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }
 
-# Every `fn NAME` that directly follows a `#[ignore = REASON]` attribute.
+# Every `fn NAME` that directly follows a `#[ignore = REASON]` attribute,
+# across every root in TREES.
 names_in_tree() {
-  grep -rn --include='*.rs' --exclude-dir=target -A 2 -F "#[ignore = \"$REASON\"]" "$TREE" 2>/dev/null \
-    | grep -oE '(^|[-:])fn [A-Za-z0-9_]+' | sed -E 's/^.*fn //' | sort
+  local d
+  for d in "${TREES[@]}"; do
+    grep -rn --include='*.rs' --exclude-dir=target -A 2 -F "#[ignore = \"$REASON\"]" "$d" 2>/dev/null || true
+  done | grep -oE '(^|[-:])fn [A-Za-z0-9_]+' | sed -E 's/^.*fn //' | sort
 }
 
 # Any #[ignore attribute at all (bare, with a different reason, sharing a
@@ -55,7 +72,10 @@ names_in_tree() {
 # server/ today (verified: only the eight gated attributes and doc-prose
 # mentions exist), so this is not narrowed further.
 foreign_ignores() {
-  grep -rn --include='*.rs' --exclude-dir=target -E '#\[[^]]*\bignore\b' "$TREE" 2>/dev/null \
+  local d
+  for d in "${TREES[@]}"; do
+    grep -rn --include='*.rs' --exclude-dir=target -E '#\[[^]]*\bignore\b' "$d" 2>/dev/null || true
+  done \
     | grep -vE '^[^:]*:[0-9]+:[[:space:]]*//' \
     | grep -vF "#[ignore = \"$REASON\"]" || true
 }
@@ -64,12 +84,12 @@ check() {
   local ok=0
   local foreign; foreign="$(foreign_ignores)"
   if [ -n "$foreign" ]; then
-    echo "REFUSED: #[ignore] attributes under $TREE that are not the CONTENTION-1 gate reason:" >&2
+    echo "REFUSED: #[ignore] attributes under ${TREES[*]} that are not the CONTENTION-1 gate reason:" >&2
     echo "$foreign" >&2; ok=1
   fi
   # MULTISET comparison: `diff` on the sorted, non-deduplicated lists.
   if ! diff <(names_in_script) <(names_in_tree) >"$LOG_DIR/.check.diff" 2>/dev/null; then
-    echo "REFUSED: the gate list in $0 and the #[ignore = REASON] tests under $TREE differ (< script, > tree):" >&2
+    echo "REFUSED: the gate list in $0 and the #[ignore = REASON] tests under ${TREES[*]} differ (< script, > tree):" >&2
     cat "$LOG_DIR/.check.diff" >&2; ok=1
   fi
   [ "$ok" -eq 0 ] && echo "timing-gates check: ${#GATES[@]} gates reconcile with the tree"
@@ -77,6 +97,10 @@ check() {
 }
 
 run() {
+  if [ -n "${TIMING_GATES_TREE:-}" ] || [ -n "${TIMING_GATES_ROOTS:-}" ]; then
+    echo "REFUSED: TIMING_GATES_TREE/ROOTS overrides are for the self-test only; run mode scans the real tree" >&2
+    exit 2
+  fi
   command -v cargo >/dev/null || { echo "cargo not on PATH (export PATH=\"\$PATH:\$HOME/.cargo/bin\")" >&2; exit 2; }
   check || { echo "not running gates whose list does not reconcile" >&2; exit 1; }
   local stamp; stamp="$(date -u +%Y%m%dT%H%M%SZ)"

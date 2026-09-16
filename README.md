@@ -173,7 +173,7 @@ bash ../scripts/timing-gates.sh     # the 8 gates, serialized, one process each 
 The timing gates (artifact load ≤ 4 s, full-graph conformance ≤ 60 s,
 six perf_smoke thresholds) live in the tests themselves and are never
 loosened; `scripts/timing-gates.sh check` refuses any `#[ignore]` under
-`server/` that is not one of the eight, and
+`server/` and `graph-types/` that is not one of the eight, and
 `scripts/timing-gates-selftest.sh` attempts the bypasses. Report a
 full-suite count as the three per-command numbers, never a bare total
 (see the `STANDING COUNTING PROCEDURE` comment in `server/Cargo.toml`).

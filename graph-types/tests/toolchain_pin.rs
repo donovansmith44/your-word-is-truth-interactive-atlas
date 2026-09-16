@@ -55,16 +55,28 @@ fn the_compiler_that_built_this_test_is_the_pinned_version() {
 
 #[test]
 fn rustup_resolves_the_pin_from_the_repo_root() {
-    // The proxy in ~/.cargo/bin resolves the toolchain from the working
+    // The proxy in CARGO_HOME/bin (falling back to ~/.cargo/bin when
+    // CARGO_HOME isn't set) resolves the toolchain from the working
     // directory; from the repo root it must land on the pin.
-    let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).expect("a home dir");
-    let proxy = Path::new(&home)
-        .join(".cargo")
+    //
+    // env_remove("RUSTUP_TOOLCHAIN") matters: cargo-launched test processes
+    // inherit RUSTUP_TOOLCHAIN from the toolchain that built/ran this test,
+    // and that env var outranks rust-toolchain.toml when the proxy resolves
+    // a version -- without removing it, this test would pass even if
+    // rust-toolchain.toml were deleted or pointed elsewhere, never actually
+    // consulting the file it claims to prove is load-bearing.
+    let cargo_home = std::env::var("CARGO_HOME").map(PathBuf::from).or_else(|_| {
+        std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .map(|home| Path::new(&home).join(".cargo"))
+    }).expect("CARGO_HOME or a home dir");
+    let proxy = cargo_home
         .join("bin")
         .join(if cfg!(windows) { "rustc.exe" } else { "rustc" });
     let out = Command::new(&proxy)
         .arg("--version")
         .current_dir(repo_root())
+        .env_remove("RUSTUP_TOOLCHAIN")
         .output()
         .unwrap_or_else(|e| panic!("could not run the rustup proxy {}: {e}", proxy.display()));
     let v = String::from_utf8_lossy(&out.stdout);
