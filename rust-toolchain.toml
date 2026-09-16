@@ -1,0 +1,13 @@
+# TOOLCHAIN-1 (docs/superpowers/specs/2026-09-14-relational-artifact-design.md §3.2).
+# Every content-addressed id was, until the relational-artifact cutover, a
+# `DefaultHasher` output -- an algorithm Rust documents as unspecified and
+# free to change between releases. Without this pin a routine `rustup update`
+# could move every pid, every edge id and the version root with ZERO data
+# change, silently breaking map-generator's C6 stale-check and bibex's
+# byte-pinned transcripts. The exact version, never a channel name.
+# Bump deliberately, in its own batch, with the ids re-blessed on purpose.
+#
+# graph-types/tests/toolchain_pin.rs makes this file load-bearing.
+[toolchain]
+channel = "1.97.1"
+components = ["llvm-tools"]
