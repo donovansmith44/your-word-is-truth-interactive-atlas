@@ -67,5 +67,10 @@ mk_tree "$tmp/t7" < "$tmp/names"
 printf '#[test] #[ignore]\nfn quietly_disabled_same_line() {}\n' >> "$tmp/t7/src/gates.rs"
 expect_refused env TIMING_GATES_TREE="$tmp/t7" bash "$GATES" check
 
+# 8. The README and the workspace manifest must name the serialized step,
+#    or the standing counting procedure silently drops 8 gates.
+expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/README.md"
+expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/server/Cargo.toml"
+
 echo "timing-gates selftest: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

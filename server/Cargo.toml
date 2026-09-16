@@ -19,10 +19,18 @@ members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-graph", "atlas-cli"
 resolver = "2"
 
 # STANDING COUNTING PROCEDURE (established by review at f988f1b, restated by
-# every batch that reports a full-suite total): a full-suite count is TWO
-# commands, both run from server/, summed together --
+# every batch that reports a full-suite total; amended by CONTENTION-1,
+# 2026-09-14): a full-suite count is THREE commands, the first two run from
+# server/ and the third from the repo root, AFTER the first two finish --
 #   cargo test --workspace
 #   cargo test -p atlas-graph-types
+#   bash ../scripts/timing-gates.sh      # the 8 wall-clock gates, serialized
+# The eight gates are `#[ignore = "wall-clock gate: ..."]` in the first
+# command (they show as "ignored" there, never as passed) and are counted
+# ONLY from the third command's own summary line, `TIMING GATES: N/8
+# passed`. Report all three per-command numbers and the section count;
+# `bash ../scripts/timing-gates.sh check` must print "8 gates reconcile"
+# in the same report, or the count is not a count.
 # `-p atlas-graph-types` is required separately because of the non-member
 # status explained above: `--workspace` alone never reaches it. Sum every
 # "test result: ok. N passed" line printed by BOTH commands (one line per

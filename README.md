@@ -157,6 +157,30 @@ check; `graph.bin` is a binary diff — its own byte-determinism is a
 committed test, `server/atlas-graph/tests/determinism.rs`, so an unexpected
 diff there is itself worth investigating) before committing it.
 
+## Test suite
+
+Three commands, in this order, the third only after the first two have
+finished (it measures wall-clock ceilings and must not share the machine
+with a parallel build):
+
+```powershell
+cd server
+cargo test --workspace              # parallel; the 8 wall-clock gates show as "ignored" here
+cargo test -p atlas-graph-types     # graph-types is a path dep, not a workspace member
+bash ../scripts/timing-gates.sh     # the 8 gates, serialized, one process each -> "TIMING GATES: 8/8 passed"
+```
+
+The timing gates (artifact load ≤ 4 s, full-graph conformance ≤ 60 s,
+six perf_smoke thresholds) live in the tests themselves and are never
+loosened; `scripts/timing-gates.sh check` refuses any `#[ignore]` under
+`server/` that is not one of the eight, and
+`scripts/timing-gates-selftest.sh` attempts the bypasses. Report a
+full-suite count as the three per-command numbers, never a bare total
+(see the `STANDING COUNTING PROCEDURE` comment in `server/Cargo.toml`).
+The client suites (`dotnet test client.Tests`, `dotnet test
+client.ContractTests`) and the Playwright UX suite (`tests/ux/`) are
+separate and unchanged.
+
 ## Dev loop
 
 Two processes, two ports — run each from the repo root in its own terminal:
