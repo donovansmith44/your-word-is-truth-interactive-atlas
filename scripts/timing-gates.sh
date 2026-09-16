@@ -87,10 +87,22 @@ run() {
     local log="$LOG_DIR/$stamp-$i-$bin-$name.log"
     echo "== gate $i/${#GATES[@]}: $pkg::$bin::$name"
     # One process per gate. --exact so a name is a name, not a prefix.
-    if ( cd "$ROOT/server" && cargo test -p "$pkg" --test "$bin" -- --ignored --exact "$name" --test-threads=1 ) >"$log" 2>&1 \
-       && grep -qF "test $name ... ok" "$log" \
+    # --nocapture (added so a passing perf_smoke gate's PERF SMOKE line lands
+    # in the log) means the harness's own "test NAME ... " prefix is no
+    # longer reliably followed by "ok" on the SAME line: with output not
+    # captured, the test's own stdout (e.g. our PERF SMOKE println, or the
+    # conformance tests' pre-existing build-log prints) is written inline
+    # right after the "test NAME ... " prefix, so the harness's trailing
+    # "ok"/"FAILED" ends up on its own line once that stdout ends in a
+    # newline (verified against a live run of all 8 gates: every one that
+    # prints anything shows "ok" alone on the next line, not concatenated).
+    # A silent test (none of the 8 gates today, but possible later) still
+    # prints "test NAME ... ok" on one line, so both shapes are accepted.
+    if ( cd "$ROOT/server" && cargo test -p "$pkg" --test "$bin" -- --ignored --exact "$name" --test-threads=1 --nocapture ) >"$log" 2>&1 \
+       && grep -qE "^test $name \.\.\." "$log" \
+       && grep -qE "^(ok|test $name \.\.\. ok)[[:space:]]*\$" "$log" \
        && grep -qE "^test result: ok\. 1 passed" "$log"; then
-      passed=$((passed+1)); grep -E "ARTIFACT LOAD|CONFORMANCE|took|ceiling" "$log" | head -3 | sed 's/^/   /' || true
+      passed=$((passed+1)); grep -E "ARTIFACT LOAD|CONFORMANCE|PERF SMOKE|took|ceiling" "$log" | head -3 | sed 's/^/   /' || true
     else
       failed=$((failed+1)); echo "   FAILED -- see $log"; grep -E "panicked|exceeding|over the" "$log" | head -3 | sed 's/^/   /' || true
     fi

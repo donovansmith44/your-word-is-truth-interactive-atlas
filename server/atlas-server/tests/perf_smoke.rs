@@ -97,6 +97,7 @@ fn scene_time_full_span_completes_within_smoke_threshold() {
     let elapsed = median_of(7, || {
         let _ = compose_time_scene(&data, w);
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_time_full_span_completes_within_smoke_threshold", 75);
     assert!(elapsed < Duration::from_millis(75), "compose_time_scene(full span) took {elapsed:?}, over the 75ms smoke gate (baseline ~8ms HTTP / sub-ms pure-compute -- see BENCHMARKS.md)");
 }
 
@@ -108,6 +109,7 @@ fn scene_time_nt_window_completes_within_smoke_threshold() {
     let elapsed = median_of(7, || {
         let _ = compose_time_scene(&data, w);
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_time_nt_window_completes_within_smoke_threshold", 75);
     assert!(elapsed < Duration::from_millis(75), "compose_time_scene(NT window) took {elapsed:?}, over the 75ms smoke gate (baseline ~4-5ms HTTP -- see BENCHMARKS.md)");
 }
 
@@ -119,6 +121,7 @@ fn scene_scripture_chapter_completes_within_smoke_threshold() {
     let elapsed = median_of(7, || {
         let _ = compose_scripture_scene(&data, &r);
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "scene_scripture_chapter_completes_within_smoke_threshold", 50);
     assert!(elapsed < Duration::from_millis(50), "compose_scripture_scene(JHN.3) took {elapsed:?}, over the 50ms smoke gate");
 }
 
@@ -135,6 +138,7 @@ fn xrefs_for_verse_completes_within_smoke_threshold() {
     let elapsed = median_of(7, || {
         let _ = atlas_core::xrefs::aggregate_span_xrefs(&span, &graph.cross_refs_by_from, &graph.verse_text);
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "xrefs_for_verse_completes_within_smoke_threshold", 30);
     assert!(elapsed < Duration::from_millis(30), "aggregate_span_xrefs(JHN.3.16) took {elapsed:?}, over the 30ms smoke gate");
 }
 
@@ -158,6 +162,7 @@ fn text_window_completes_within_smoke_threshold() {
             let _ = window::render(&snap, id);
         }
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "text_window_completes_within_smoke_threshold", 30);
     assert!(elapsed < Duration::from_millis(30), "text_window(JHN.3, n=20) took {elapsed:?}, over the 30ms smoke gate");
 }
 
@@ -180,5 +185,6 @@ fn chapter_window_completes_within_smoke_threshold() {
             }
         }
     });
+    println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "chapter_window_completes_within_smoke_threshold", 50);
     assert!(elapsed < Duration::from_millis(50), "chapter(JHN.3) window took {elapsed:?}, over the 50ms smoke gate");
 }
