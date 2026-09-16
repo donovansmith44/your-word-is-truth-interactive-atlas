@@ -29,8 +29,10 @@ goes through `atlas_graph_types::store::GraphQuery`'s trait methods (via
 `GraphService::snapshot()`) or `GraphService`'s own public adapter-side
 companions (`position_of`, `chapter_span`, `era_ids`/`polity_ids`/
 `narrative_ids`/`event_ids`/`place_ids`, `red_letter_spans`,
-`persons_by_verse`), and `AtlasData`'s own public accessors
-(`places_for_verse`, `place_by_id`, `events_for_verse`, `event_by_id`) —
+`persons_by_verse`, `scene_source`), and — via that last one —
+`atlas_graph::scene_source::GraphSceneSource`'s own inherent accessors
+(`places_for_verse`, `place`, `events_for_verse`, `event`), which OVERLAY-1
+Task 5 moved off `AtlasData` when it deleted the boot-time overlay. They are
 the identical fields/methods `atlas-server`'s handlers already read. Ref
 grammar (both `GEN.1.1` and `"BoC 1.2.3"`) is decoded via
 `atlas_server::graph_wire::{decode_node_id, encode_node_id, parse_edge_kind,
@@ -132,8 +134,9 @@ field), then FOUR labeled sections — Places / Persons / Events / Passages
 space, never omitted — the empty-result discipline applies inside a
 successful command's own sections too, not just at the top level).
 Places/Persons/Events/Passages are populated ONLY for KJV verses
-(`AtlasData`'s own `places_for_verse`/`events_for_verse`/the graph's
-`persons_by_verse` are all Bible-specific tables); a Concord ref's card
+(`GraphSceneSource`'s own `places_for_verse`/`events_for_verse` and the
+graph's `persons_by_verse` are all Bible-specific tables); a Concord ref's
+card
 states this plainly ("Places/Persons/Events/Passages: not tracked for the
 Book of Concord") rather than showing four empty sections that would
 misleadingly imply a real, checked absence.

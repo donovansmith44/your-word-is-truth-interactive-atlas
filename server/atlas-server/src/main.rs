@@ -134,6 +134,24 @@ async fn main() -> Result<()> {
         // re-parsing `data/curated/`.
         let graph = GraphService::build(&raw_dir, &data)
             .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
+        // OVERLAY-1 fix round 1 (F2): prime the graph-backed scene source
+        // HERE TOO. `load::load_graph_and_data` primes it on the default
+        // path; without this line the dev fallback was the one startup that
+        // did not, so the FIRST `/api/scene`, `/api/chapter` or
+        // `/api/narrative/event/{id}` request on it paid the whole
+        // materialisation inline -- a latency cliff on exactly the path a
+        // developer is most likely to be watching, and a quiet
+        // contradiction of this file's own "primed at load" claim.
+        //
+        // DISCLOSED: on THIS path `data` is `atlas_etl::compile::compile`'s
+        // own output, so its `events`/`places`/`narratives` ARE populated
+        // (they are the graph compiler's input here, not a retired runtime
+        // overlay). The process therefore holds TWO materialisations on the
+        // dev fallback, where the default artifact path holds exactly one.
+        // That is accepted: `--build-from-raw` exists to run without a
+        // compiled artifact at all, and it already pays a full raw+curated
+        // compile to get there.
+        graph.scene_source(&data);
         (graph, data)
     } else {
         // CDC-1 fix round 1 (review C-3): this sequence used to be written

@@ -1341,3 +1341,68 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
     }
 }
 
+
+/// OVERLAY-1 fix round 1 (review F1): the `/api/chapter/{cref}` PLACE-MENTION
+/// half, end to end over REAL committed data.
+///
+/// WHY THIS DID NOT EXIST AND HAD TO. OVERLAY-1 Task 5 re-sourced this half
+/// off `AtlasData::places_for_verse`/`place_by_id` (deleted) onto
+/// `GraphService::scene_source`'s own `places_for_verse`/`place`. The Task 5
+/// report claimed the existing suites proved that byte-identical; the review
+/// found they do not. `graph_equivalence.rs` compares verse TEXT only and
+/// never reads `places`; the recorded pact carries no `/api/chapter` entry;
+/// and the one chapter-wire `places` assertion that did exist
+/// (`api.rs::verse_chapter_place_and_404`) asserts the EMPTY case over
+/// `demo_fixture()`. So the re-sourced path had no test that would fail if it
+/// returned nothing at all. This is that test.
+///
+/// NOT VACUOUS, by construction: it asserts a specific real place id at a
+/// specific real verse, AND that a sibling verse in the SAME chapter response
+/// is empty -- so neither "always empty" nor "everything gets a place" can
+/// pass it. It also exercises the `OnceLock` wiring for real: `real_app()`
+/// never primes `scene_source`, so serving this request is what builds it.
+#[tokio::test]
+async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_source() {
+    let app = real_app();
+
+    let (st, chapter, _) = get(&app, "/api/chapter/GEN.13").await;
+    assert_eq!(st, 200);
+    let verses = chapter["verses"].as_array().expect("GEN.13 must serve verses");
+
+    let v18 = verses.iter().find(|v| v["verse"] == 18).expect("GEN.13.18 must be in the chapter");
+    let places = v18["places"].as_array().expect("places must always be present");
+    // Printed so the assertion below is readable as a real value, not just a
+    // green tick -- `cargo test -- --nocapture` shows what it matched.
+    println!("GEN.13.18 places = {}", serde_json::to_string(places).unwrap());
+    assert!(
+        !places.is_empty(),
+        "GEN.13.18 ('Abram... dwelt in the plain of Mamre, which is in Hebron') must carry at least one mentioned place -- an empty array here is exactly the silent darkening OVERLAY-1's re-sourcing could have caused: {chapter}"
+    );
+    let hebron = places.iter().find(|p| p["id"] == "hebron").unwrap_or_else(|| panic!("GEN.13.18 must name Place:hebron: {places:?}"));
+    assert!(
+        hebron["name"].as_str().is_some_and(|n| !n.is_empty()),
+        "the place must carry a resolved display name, not an empty string: {hebron}"
+    );
+
+    // The negative half, from the SAME response: at least one verse of this
+    // chapter must carry NO place, so this cannot pass on a "place on every
+    // verse" bug either. DISCOVERED by scanning rather than hardcoded -- the
+    // first draft of this test guessed GEN.13.1 and was wrong (it really
+    // does name Egypt: "And Abram went up out of Egypt"), which is exactly
+    // the class of stale assumption this file's own
+    // `chapter_verse_xref_count_is_zero_not_omitted_...` already warns about.
+    let empty: Vec<u64> = verses
+        .iter()
+        .filter(|v| v["places"].as_array().is_some_and(|p| p.is_empty()))
+        .map(|v| v["verse"].as_u64().unwrap())
+        .collect();
+    println!("GEN.13 verses with NO place mention = {empty:?}");
+    assert!(
+        !empty.is_empty(),
+        "at least one verse of GEN.13 must carry an empty places array -- otherwise this test would pass on a 'place on every verse' bug too"
+    );
+    assert!(
+        empty.len() < verses.len(),
+        "and not ALL of them, which the hebron assertion above already proves"
+    );
+}

@@ -247,12 +247,17 @@ async fn verse_chapter_place_and_404() {
     // Batch R requirement 5 (place-in-verse hover -> marker blink): `places`
     // is ALWAYS present (never an omitted key), empty here since none of
     // JOS.1's own fixture verses are in any place's `verse_links`. Real
-    // resolution (a verse that DOES have a linked place) is covered by
-    // atlas-core's own `places_for_verse` unit test -- see data.rs -- since
-    // exercising it here would mean growing demo_fixture()'s own GEN canon
-    // entry (currently a deliberately tiny `chapters: vec![31]`, asserted
-    // verbatim by health_books_eras_narratives_shapes above) just to reach a
-    // chapter 13 the chapter handler can serve at all.
+    // resolution (a verse that DOES have a linked place) is covered
+    // TWICE, both against REAL data rather than this fixture: the unit level
+    // by `atlas_graph::scene_source`'s own test module (OVERLAY-1 Task 5
+    // re-homed the reverse-index pins there when it deleted
+    // `AtlasData::places_for_verse`), and end to end over HTTP by
+    // `graph_api.rs::chapter_verse_places_name_real_places_from_the_graph_
+    // backed_scene_source`. Exercising it HERE would mean growing
+    // demo_fixture()'s own GEN canon entry (currently a deliberately tiny
+    // `chapters: vec![31]`, asserted verbatim by
+    // health_books_eras_narratives_shapes above) just to reach a chapter 13
+    // the chapter handler can serve at all.
     assert_eq!(verses[0]["places"], serde_json::json!([]));
     // U5: `persons` gets the exact same "always present, never omitted"
     // treatment -- same reasoning, same demo_fixture() limitation (no

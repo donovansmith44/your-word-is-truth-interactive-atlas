@@ -753,3 +753,43 @@ fn node_json_on_a_chapter_container_carries_the_same_card_shape() {
     let contains = v["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "contains").expect("a contains row");
     assert_eq!(contains["count"], 36);
 }
+
+/// OVERLAY-1 fix round 1 (review F1): `bibex verse`'s own PLACES section,
+/// with real CONTENT, against the real committed graph.
+///
+/// WHY THIS DID NOT EXIST AND HAD TO. `verse_happy_path_shows_text_and_
+/// attached_sections` above asserts `out.contains("Places:")` -- the LABEL
+/// only. A `Places:  (none)` line satisfies it. So when OVERLAY-1 Task 5
+/// re-sourced this section off the deleted `AtlasData::places_for_verse`
+/// onto `GraphSceneSource::places_for_verse`, the pinned transcripts would
+/// have stayed green even if it had returned nothing at all. This test
+/// closes that: a real verse, a real place id, in the rendered line.
+///
+/// NOT VACUOUS: the `(none)` half is asserted too, from a different real
+/// verse, so neither "always empty" nor "always something" passes.
+#[test]
+fn verse_places_line_names_a_real_place_and_stays_none_for_a_verse_with_no_mention() {
+    // GEN.13.18 -- "Abram... dwelt in the plain of Mamre, which is in
+    // Hebron," one of the cleanest single-place mentions in the curated
+    // gazetteer. The SAME verse `atlas-server/tests/graph_api.rs::chapter_
+    // verse_places_name_real_places_from_the_graph_backed_scene_source`
+    // asserts over HTTP, deliberately: one fact, both surfaces.
+    let o = run_with_data_dir(&["verse", "GEN.13.18"]);
+    assert!(o.status.success(), "stderr: {}", stderr(&o));
+    let out = stdout(&o);
+    let places_line = out.lines().find(|l| l.starts_with("Places:")).expect("a Places: line");
+    println!("GEN.13.18 -> {places_line}");
+    assert!(places_line.contains("[Place:hebron]"), "the PLACES section must name the real place id: {out}");
+    assert!(places_line.contains("Hebron"), "and its resolved display name: {out}");
+    assert!(!places_line.contains("(none)"), "a verse with a real mention must never render the empty sentinel: {out}");
+
+    // The negative half: a real verse the gazetteer links to no place at all
+    // still renders the literal `(none)` sentinel (CONTRACT.md's own
+    // empty-result discipline), never a blank or an omitted section.
+    let o2 = run_with_data_dir(&["verse", "GEN.1.1"]);
+    assert!(o2.status.success(), "stderr: {}", stderr(&o2));
+    let out2 = stdout(&o2);
+    let places_line2 = out2.lines().find(|l| l.starts_with("Places:")).expect("a Places: line");
+    println!("GEN.1.1  -> {places_line2}");
+    assert!(places_line2.contains("(none)"), "GEN.1.1 has no curated place mention and must say so: {out2}");
+}
