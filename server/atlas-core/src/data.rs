@@ -1011,6 +1011,31 @@ pub struct Polity {
 /// before writing it to disk; the server deserializes the file and calls
 /// `.finish()` again to rebuild the derived indexes (they are `#[serde(skip)]`
 /// and therefore empty immediately after deserialization).
+///
+/// OVERLAY-1 Task 5 -- WHAT `places`/`events`/`narratives`/`verses` ARE NOW.
+/// They are COMPILE-TIME INPUTS and nothing else. `atlas_etl::compile::
+/// compile` fills them from the raw + curated sources and `atlas_etl::
+/// validate` inspects them (post-`finish()`, so it sees the merged,
+/// sorted, fully-derived value); `atlas_graph::event_world` reads them to
+/// build the graph's Event/Place/Narrative nodes; the whole-workspace test
+/// fixtures (`demo_fixture`, `atlas-etl/tests/etl.rs`, `atlas-core`'s own
+/// `scene.rs`/`golden.rs`) build them by hand. On every SERVING path they
+/// are EMPTY: `AtlasData::load` has not read the corresponding JSON files
+/// since the M-C2 deletion event, and OVERLAY-1 Task 5 deleted
+/// `atlas_graph::legacy::atlas_data_overlay`, the boot-time pass that used
+/// to reconstruct them from the graph. The server and `bibex` compose the
+/// map scene, and answer every per-verse place/event question, from
+/// `atlas_graph::scene_source::GraphSceneSource` instead -- one
+/// materialisation, on the graph side, instead of one there and another
+/// here. The derived indexes below that are built FROM these fields
+/// (`place_index`, `event_index`, `event_counts_by_place`,
+/// `event_bearing_place_ids`, `verse_heading`, `heading_anchor_collisions`)
+/// therefore also serve only the compile-time and fixture paths now --
+/// `heading_anchor_collisions` is read by `atlas_etl::validate::run`, and
+/// the four scene ones back this struct's own `impl SceneSource`, which is
+/// what `atlas-core`'s own scene tests and `tests/golden.rs` compose
+/// against. Deleting them would mean restructuring the ETL, which OVERLAY-1
+/// deliberately does not do.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AtlasData {
     pub canon: Canon,
@@ -1021,7 +1046,7 @@ pub struct AtlasData {
     pub books_meta: Vec<BookMeta>,
     /// OVERLAY-1 Task 2 ("one KJV in memory"): NO LONGER graph-derived at
     /// server runtime -- the default (artifact-load) startup path used to
-    /// overwrite this with `atlas_graph::legacy::atlas_data_overlay`'s own
+    /// overwrite this with the (Task-5-deleted) boot-time overlay's own
     /// `verses` (a whole-spine clone of `GraphService::verse_text`, itself
     /// a whole-spine clone of the graph's own TextUnit nodes -- three
     /// copies of the same ~31,102-verse KJV text in memory at once); that
@@ -1232,23 +1257,6 @@ pub struct AtlasData {
     /// Derived: event id -> index into `events`. Built by `finish()`.
     #[serde(skip)]
     event_index: HashMap<String, usize>,
-    /// Derived: canonical verse id -> event ids that reference it. Built by `finish()`.
-    #[serde(skip)]
-    verse_to_events: HashMap<String, Vec<String>>,
-    /// Batch R requirement 5 (place-in-verse hover -> marker blink): derived,
-    /// canonical verse id -> ids of every place whose OWN `verse_links`
-    /// names it -- the reverse of `Place::verse_links` (which lists, per
-    /// PLACE, every verse the geocoder attached to it). Built by `finish()`
-    /// in one pass over `places`, same shape as `verse_to_events` just above.
-    /// `handlers::chapter` uses this to populate each `VerseOut.places` --
-    /// the client-side seam (a mini-reader rendering a chapter) needs to
-    /// know, per verse, which curated places to offer as hoverable mentions;
-    /// this is the ONLY data source for that (no separate "NER offsets"
-    /// exist in this app -- the client itself does the plain-text substring
-    /// match against each returned place's own name, see World.razor's/the
-    /// mini-reader's own comment).
-    #[serde(skip)]
-    verse_to_places: HashMap<String, Vec<String>>,
     /// Batch E2 (the ever-present graph): "cities in our graph" per the
     /// user's own direction quoted in batch-e2-brief.md -- ids of every
     /// place touched by >=1 event, ANY window (206 in the real compiled
@@ -1560,45 +1568,19 @@ impl AtlasData {
             .map(|(i, e)| (e.id.clone(), i))
             .collect();
 
-        // Batch T requirement 3 ("verse popover: event membership"): a
-        // REAL, live-caught bug, self-caught via a hanging Playwright test
-        // before this shipped -- this reverse index used to be built from
-        // `e.verses` ALONE, so a verse cited ONLY by a witness (e.g.
-        // MAT.26.6, Matthew's own account of the Bethany anointing --
-        // `pw_bethany`'s own top-level `verses` field is JHN.12.1-11 only)
-        // never resolved to its own event here, even though the SAME verse
-        // correctly anchors a reader heading (`heading_anchors_for`, which
-        // already walked witnesses). That split meant a real user reading
-        // Matthew 26:6 would see a reader heading naming the event, but the
-        // verse's own popover would show NO "EVENT" section for it at all
-        // -- confusingly inconsistent, and the exact bug the owner's own
-        // requirement 3 exists to fix. Every witness's own verses are now
-        // unioned in too, per event, deduped (a verse present in BOTH
-        // `e.verses` and a witness must still yield this event id only
-        // ONCE, never twice).
-        let mut verse_to_events: HashMap<String, Vec<String>> = HashMap::new();
-        for e in &self.events {
-            let mut seen: HashSet<&str> = HashSet::new();
-            for v in e.verses.iter().chain(
-                e.witnesses.iter().filter_map(|w| w.translations.get(crate::translation::DEFAULT_TRANSLATION)).flatten(),
-            ) {
-                if seen.insert(v.as_str()) {
-                    verse_to_events.entry(v.clone()).or_default().push(e.id.clone());
-                }
-            }
-        }
-        self.verse_to_events = verse_to_events;
-
-        // Batch R requirement 5: one pass over every place's own
-        // `verse_links` builds the reverse index -- see `verse_to_places`'s
-        // own doc comment.
-        let mut verse_to_places: HashMap<String, Vec<String>> = HashMap::new();
-        for p in &self.places {
-            for v in &p.verse_links {
-                verse_to_places.entry(v.clone()).or_default().push(p.id.clone());
-            }
-        }
-        self.verse_to_places = verse_to_places;
+        // OVERLAY-1 Task 5: the two VERSE-WEB reverse indexes that used to
+        // be derived here -- `verse_to_events` (Batch T requirement 3, the
+        // "verse popover: event membership" union of an event's own verses
+        // with every witness's own verses) and `verse_to_places` (Batch R
+        // requirement 5, the reverse of `Place::verse_links`) -- are GONE
+        // from this struct. Their only readers were server/CLI runtime
+        // surfaces (`handlers::chapter`'s place-mention half, `bibex
+        // verse`'s PLACES/EVENTS/PASSAGES sections), and those now read
+        // `atlas_graph::scene_source::GraphSceneSource`, which rebuilds BOTH
+        // indexes from the graph-materialised collections in exactly these
+        // passes -- the witness-union rule included, with its own
+        // regression tests re-homed alongside it. Nothing here derived them
+        // for ETL-time validation, so nothing here still needs them.
 
         // Batch E2: one pass over every event's `places` builds BOTH the
         // event-bearing id set and each one's all-time event count -- "cities
@@ -1849,11 +1831,6 @@ impl AtlasData {
         self.event_counts_by_place.get(id).copied().unwrap_or(0)
     }
 
-    /// Event ids whose `verses` include the given canonical verse id.
-    pub fn events_for_verse(&self, verse: &str) -> &[String] {
-        self.verse_to_events.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
-    }
-
     /// Batch T2: every `(anchor_verse, event_id, event_id)` pair where two
     /// DIFFERENT real (layer-1) curated containers anchor the identical
     /// verse -- see the `heading_anchor_collisions` field's own doc comment
@@ -1863,13 +1840,6 @@ impl AtlasData {
     /// loud on every entry here.
     pub fn heading_anchor_collisions(&self) -> &[(String, String, String)] {
         &self.heading_anchor_collisions
-    }
-
-    /// Batch R requirement 5: place ids whose own `verse_links` include the
-    /// given canonical verse id (the reverse of `Place::verse_links`) -- see
-    /// `verse_to_places`'s own doc comment.
-    pub fn places_for_verse(&self, verse: &str) -> &[String] {
-        self.verse_to_places.get(verse).map(|v| v.as_slice()).unwrap_or(&[])
     }
 
     /// Batch T requirement 5: the pericope heading (event id + title) that
@@ -1950,26 +1920,31 @@ impl AtlasData {
     /// `landmarks.json`, `place-history.json`, ...) and assembles an
     /// `AtlasData`. Does NOT call `.finish()` — the derived indexes are
     /// `#[serde(skip)]` and come back empty from a fresh deserialize (see
-    /// the struct doc comment); callers must call `.finish()` themselves
-    /// (or, on the server's own DEFAULT startup path, overlay the five
-    /// fields below from the graph FIRST -- see `atlas_graph::legacy::
-    /// atlas_data_overlay`'s own doc comment -- then call `.finish()`
-    /// once).
+    /// the struct doc comment); callers must call `.finish()` themselves.
+    /// OVERLAY-1 Task 5: there is no longer an overlay step between this
+    /// loader and `.finish()` on any path -- the server's own DEFAULT
+    /// startup path is now `load` then `finish` then
+    /// `GraphService::scene_source`, and the five fields this loader stopped
+    /// reading in M-C2 stay honestly empty for the life of the process.
     ///
     /// M-C2 DELETION EVENT (requirement 2, completing P1): `places.json`/
     /// `events.json`/`narratives.json`/`verses-kjv.json`/`cross-refs.json`
     /// retire, joining `eras.json`'s own M-C retirement -- every
     /// production reader of these five fields migrated onto the graph
     /// this batch (`handlers::place`/`event`/`verse`/`xrefs`/`narratives`
-    /// directly; every NOT-yet-migrated surface via `atlas_graph::legacy::
-    /// atlas_data_overlay`/`atlas_etl::compile::compile`, both graph/
+    /// directly; every NOT-yet-migrated surface via the boot-time overlay
+    /// OVERLAY-1 Task 5 has since deleted, or
+    /// `atlas_etl::compile::compile`, both graph/
     /// raw-sourced, never this loader -- see batch-mc2-report.md's own
     /// deletion inventory for the grep proof). The FIVE FIELDS stay on
-    /// `AtlasData` (ETL-time validation, `.finish()`'s own derived-index
-    /// web, and several test fixtures across this workspace still need
-    /// them) -- only THIS loader's own reads retire; a fresh
-    /// `AtlasData::load` now always starts with all five honestly empty,
-    /// never stale or fabricated, exactly like `.eras` already does.
+    /// `AtlasData` as COMPILE-TIME INPUTS -- ETL-time validation, the graph
+    /// compiler's own node adapters, and several test fixtures across this
+    /// workspace read them (see the struct's own doc comment) -- only THIS
+    /// loader's own reads retire; a fresh `AtlasData::load` now always
+    /// starts with all five honestly empty, never stale or fabricated,
+    /// exactly like `.eras` already does. OVERLAY-1 Task 5 made that
+    /// emptiness permanent at runtime by deleting the overlay that used to
+    /// refill three of them immediately afterwards.
     pub fn load(dir: &std::path::Path) -> Result<Self, crate::CoreError> {
         let canon: Canon = read_json(dir, "canon.json")?;
         let places: Vec<Place> = Vec::new();
@@ -2377,114 +2352,6 @@ pub fn demo_fixture() -> AtlasData {
 }
 
 #[cfg(test)]
-mod verse_to_places_tests {
-    use super::*;
-
-    // Batch R requirement 5 (place-in-verse hover -> marker blink):
-    // `places_for_verse` is the reverse of `Place::verse_links` -- proven
-    // here against `demo_fixture()`'s own `hebron` place (GEN.13.18 is its
-    // one curated verse_link) rather than in atlas-server's own endpoint
-    // test, since exercising this through `GET /api/chapter/{cref}` would
-    // require growing the fixture's deliberately tiny GEN canon entry (see
-    // atlas-server's `verse_chapter_place_and_404`'s own comment on why it
-    // doesn't).
-    #[test]
-    fn places_for_verse_resolves_the_reverse_of_verse_links() {
-        let data = demo_fixture();
-        assert_eq!(data.places_for_verse("GEN.13.18"), &["hebron".to_string()]);
-    }
-
-    #[test]
-    fn places_for_verse_is_empty_for_an_unlinked_verse() {
-        let data = demo_fixture();
-        assert!(data.places_for_verse("JOS.1.1").is_empty());
-    }
-}
-
-#[cfg(test)]
-mod events_for_verse_witness_tests {
-    use super::*;
-    use std::collections::HashMap;
-
-    // Batch T requirement 3: a REAL, live-caught bug (self-caught via a
-    // hanging Playwright test before this shipped, not guessed) --
-    // `events_for_verse` used to be built from `Event::verses` ALONE, so a
-    // verse cited ONLY by a witness (never in the event's own top-level
-    // `verses`) resolved to NO event at all, even though the identical
-    // verse correctly anchors a reader heading (`heading_anchors_for`,
-    // witness-aware from the start). Pinned here so it can never silently
-    // regress: a multi-witness event whose own top-level `verses` names
-    // only ONE book must still resolve via a DIFFERENT book's own
-    // witness-only verse.
-    fn multi_witness_fixture() -> AtlasData {
-        let places = vec![Place { id: "golgotha".into(), name: "Golgotha".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
-        let events = vec![Event {
-            id: "pw_golgotha".into(),
-            label: "The crucifixion at Golgotha".into(),
-            when: crate::time::TimeRange::new(33, 33).unwrap(),
-            places: vec!["golgotha".into()],
-            verses: vec!["JHN.19.17".into()], // top-level: JOHN only, matching this batch's own real pw_golgotha shape
-            witnesses: vec![
-                EventWitness {
-                    book: "MAT".into(),
-                    translations: HashMap::from([("kjv".to_string(), vec!["MAT.27.33".to_string()])]),
-                    ref_note: None,
-                    robertson_section: None,
-                },
-                EventWitness {
-                    book: "MRK".into(),
-                    translations: HashMap::from([("kjv".to_string(), vec!["MRK.15.22".to_string()])]),
-                    ref_note: None,
-                    robertson_section: None,
-                },
-            ],
-            ..Default::default()
-        }];
-        AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish()
-    }
-
-    #[test]
-    fn events_for_verse_resolves_a_witness_only_verse_not_in_the_top_level_verses_field() {
-        let data = multi_witness_fixture();
-        // MAT.27.33 is ONLY in the Matthew witness, never in Event::verses
-        // (which names only JHN.19.17) -- this is exactly the bug: it must
-        // still resolve to pw_golgotha.
-        assert_eq!(data.events_for_verse("MAT.27.33"), &["pw_golgotha".to_string()]);
-        assert_eq!(data.events_for_verse("MRK.15.22"), &["pw_golgotha".to_string()]);
-    }
-
-    #[test]
-    fn events_for_verse_still_resolves_the_top_level_verses_field_too() {
-        let data = multi_witness_fixture();
-        assert_eq!(data.events_for_verse("JHN.19.17"), &["pw_golgotha".to_string()]);
-    }
-
-    #[test]
-    fn events_for_verse_never_double_lists_an_event_for_one_verse() {
-        // A verse present in BOTH Event::verses and a witness (an unusual
-        // but not-impossible curated shape) must yield the event id ONCE,
-        // never twice, for the same verse.
-        let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
-        let events = vec![Event {
-            id: "e1".into(),
-            label: "E1".into(),
-            when: crate::time::TimeRange::new(33, 33).unwrap(),
-            places: vec!["p".into()],
-            verses: vec!["MAT.1.1".into()],
-            witnesses: vec![EventWitness {
-                book: "MAT".into(),
-                translations: HashMap::from([("kjv".to_string(), vec!["MAT.1.1".to_string()])]),
-                ref_note: None,
-                robertson_section: None,
-            }],
-            ..Default::default()
-        }];
-        let data = AtlasData::new(Canon { books: vec![] }, places, events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
-        assert_eq!(data.events_for_verse("MAT.1.1"), &["e1".to_string()]);
-    }
-}
-
-#[cfg(test)]
 mod heading_collision_tests {
     use super::*;
     use std::collections::HashMap;
@@ -2568,12 +2435,31 @@ mod heading_collision_tests {
     fn heading_collision_shadowed_event_stays_reachable_via_event_membership() {
         // Important-1's own reason this is Important, not Critical: the
         // LOSING event of a heading collision must remain fully reachable
-        // through the verse's own EVENT membership section (events_for_verse),
-        // completely independent of which one won the single heading slot.
+        // through the verse's own EVENT membership section, completely
+        // independent of which one won the single heading slot.
+        //
+        // OVERLAY-1 Task 5: the reverse index that serves that section --
+        // `verse_to_events`/`events_for_verse` -- moved off this struct onto
+        // `atlas_graph::scene_source::GraphSceneSource`, whose own tests pin
+        // the union rule and the no-double-listing rule. What THIS test
+        // still owns, and what the heading fix could actually have broken,
+        // is upstream of any index: resolving the collision must not remove
+        // or rewrite the losing container. So it is asserted here directly
+        // -- both events survive `finish()`, and both still claim the
+        // contested verse, which is exactly what makes the reverse index (an
+        // unconditional pass over these same events) list both.
         let events = vec![bare_leg(), rich_leg()];
         let narratives = vec![narrative_for("bare_leg")];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
-        let mut ids = data.events_for_verse("JHN.12.1").to_vec();
+        let mut ids: Vec<String> = data
+            .events
+            .iter()
+            .filter(|e| {
+                e.verses.iter().any(|v| v == "JHN.12.1")
+                    || e.witnesses.iter().any(|w| w.translations.values().flatten().any(|v| v == "JHN.12.1"))
+            })
+            .map(|e| e.id.clone())
+            .collect();
         ids.sort();
         assert_eq!(ids, vec!["bare_leg".to_string(), "rich_leg".to_string()], "BOTH events must stay listed in the verse's own EVENT membership, win or lose the heading");
     }

@@ -3,9 +3,12 @@
 //! `--build-from-raw`) branch already uses -- see that file's own doc
 //! comment for the full reasoning (`GraphService::from_artifact` reads
 //! `<data-dir>/graph.bin`; `AtlasData::load` reads the ten surviving
-//! compiled JSON files; `atlas_graph::legacy::atlas_data_overlay`
-//! reconstructs the five retiring fields straight off the already-loaded
-//! graph, no raw/curated re-parsing). This crate never builds from raw
+//! compiled JSON files; OVERLAY-1 Task 5 retired the overlay that used to
+//! reconstruct the five deleted `AtlasData` fields on top of that, so the
+//! event/place/narrative data `bibex verse` reads now lives in ONE place,
+//! `GraphService::scene_source`, materialised straight off the already-
+//! loaded graph -- still no raw/curated re-parsing). This crate never builds
+//! from raw
 //! sources (`--build-from-raw` is a server-only dev fallback, out of
 //! scope for a query CLI) and never touches HTTP/axum -- R1's "no server,
 //! no HTTP" requirement.
@@ -40,22 +43,20 @@ pub fn load(data_dir: &Path) -> Result<Loaded, CliError> {
         )
     })?;
 
-    let mut data = AtlasData::load(data_dir).map_err(|e| {
+    let data = AtlasData::load(data_dir).map_err(|e| {
         CliError::data_load_failed(
             format!("could not load compiled data from {}", data_dir.display()),
             e.to_string(),
             "pass --data-dir to point at the directory containing canon.json, books-meta.json, and the other compiled JSON files (the sibling of graph.bin)",
         )
     })?;
-    let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-    data.events = overlay.events;
-    data.places = overlay.places;
-    data.narratives = overlay.narratives;
-    // OVERLAY-1 Task 2: verse text is no longer materialized onto
-    // `AtlasData` at all -- `GraphService::verse_text_of` reads it on
-    // demand from the graph, so `AtlasData.verses` simply stays empty on
-    // this (artifact-load) path.
     let data = data.finish();
+    // OVERLAY-1 Task 5: prime the graph-backed scene source, the SAME thing
+    // `atlas_server::load::load_graph_and_data` primes -- `bibex verse`'s
+    // PLACES/EVENTS/PASSAGES sections read it, and doing it here keeps the
+    // cost inside the load step this crate already reports as
+    // `data_load_failed` on failure rather than inside a command.
+    graph.scene_source(&data);
 
     Ok(Loaded { graph: Arc::new(graph), data: Arc::new(data) })
 }

@@ -102,17 +102,19 @@ async fn main() -> Result<()> {
     //   reads the TEN surviving compiled files (canon/books-meta/
     //   chronology-anchors/book-narration-windows/polities/landmarks/
     //   place-history/place-names-kjv/land-mask/catechism, all untouched
-    //   by this batch), then `atlas_graph::legacy::atlas_data_overlay`
-    //   reconstructs the five retiring fields DIRECTLY FROM THE
-    //   ALREADY-LOADED GRAPH (no raw/curated re-parsing at all) -- fast,
-    //   in-memory, which is what keeps the artifact LOAD-TIME ceiling
-    //   (<=3s, a committed law) meaningful for this server's own real
-    //   total startup, not just the graph's own isolated load step. Every
-    //   surface not yet migrated onto the graph this batch (scene.rs's map
-    //   composition, `handlers::chapter`'s place-mention half,
-    //   `handlers::catechism_item`'s proof-verse text, `narrative_event_
-    //   positions`'s residual `adjacent_event` calls) keeps working on
-    //   this reconstructed `AtlasData`, unchanged.
+    //   by this batch), and the five retiring fields stay honestly
+    //   EMPTY. OVERLAY-1 Task 5 deleted the boot-time overlay that used to
+    //   reconstruct three of them (`events`/`places`/`narratives`) from the
+    //   already-loaded graph and hang them back on `AtlasData`; every
+    //   surface that used to read them -- scene.rs's map composition,
+    //   `handlers::chapter`'s place-mention half,
+    //   `narrative_event_positions` -- now reads
+    //   `GraphService::scene_source`, ONE materialisation on the graph
+    //   side, primed in `load::load_graph_and_data`. That is a strictly
+    //   smaller startup than the reconstruct-and-copy it replaces, so the
+    //   artifact LOAD-TIME ceiling (<=3s, a committed law) stays meaningful
+    //   for this server's own real total startup, not just the graph's own
+    //   isolated load step.
     let load_start = std::time::Instant::now();
     let (graph, data) = if args.build_from_raw {
         let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));

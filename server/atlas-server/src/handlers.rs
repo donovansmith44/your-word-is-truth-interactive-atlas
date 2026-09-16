@@ -42,14 +42,26 @@ fn parse_year(params: &HashMap<String, String>, key: &str) -> Result<i32, ApiErr
 /// cannot itself fail to deserialize on these inputs, so every failure mode
 /// (missing, non-integer, zero, inverted) is handled by this function and
 /// always yields the typed `bad_window` body.
+///
+/// OVERLAY-1 Task 5: the scene's DATA now comes from the graph port --
+/// `graph.scene_source(&data)`, an `atlas_graph::scene_source::
+/// GraphSceneSource` built once at load from `GraphService`'s own snapshot,
+/// not from `AtlasData`'s former graph-derived `events`/`places`/
+/// `narratives` fields (which `legacy::atlas_data_overlay` used to
+/// reconstruct at boot, and which are no longer written on any serving
+/// path). `data` is still extracted because that source reads two genuinely
+/// curated-JSON sidecars through it (`place-history.json`,
+/// `place-names-kjv.json`). The composed bytes are unchanged -- `tests/
+/// scene_byte_identity.rs`'s 25 pinned hashes are the gate on that.
 pub async fn scene_time(
     State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Scene>, ApiError> {
     let from = parse_year(&params, "from")?;
     let to = parse_year(&params, "to")?;
     let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
-    Ok(Json(compose_time_scene(&*data, window)))
+    Ok(Json(compose_time_scene(graph.scene_source(&data), window)))
 }
 
 /// `GET /api/scene/scripture?ref=`.
@@ -66,13 +78,17 @@ pub async fn scene_time(
 /// ruling 2's "don't reject out-of-span time windows" for the sibling
 /// endpoint. This needs no extra bounds-checking code — it falls out of not
 /// adding any.
+///
+/// OVERLAY-1 Task 5: composes from `graph.scene_source(&data)`, exactly as
+/// `scene_time` above does -- see that handler's own doc comment.
 pub async fn scene_scripture(
     State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<Scene>, ApiError> {
     let raw = params.get("ref").map(String::as_str).unwrap_or("");
     let r = ScriptureRef::parse(raw).map_err(|_| ApiError::bad_ref(raw))?;
-    Ok(Json(compose_scripture_scene(&*data, &r)))
+    Ok(Json(compose_scripture_scene(graph.scene_source(&data), &r)))
 }
 
 pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
@@ -459,10 +475,16 @@ pub struct ChapterOut {
 /// handler as a VIEW over the window query"): the verse TEXT below now
 /// comes from `GraphState::chapter_span` + `GraphState::window` -- the SAME
 /// windowed reading-order query `GET /api/text?scope=chapter` calls --
-/// instead of `data.verses.get(key)`. Everything else (places, headings,
-/// the verse-count bound, the out-of-canon policy above) is UNCHANGED,
-/// still sourced from `AtlasData` -- THIS endpoint (the reader's own
-/// chapter view) is untouched by Batch M-B's own event-world migration;
+/// instead of `data.verses.get(key)`. The verse-count bound and the
+/// out-of-canon policy above are UNCHANGED and still sourced from
+/// `AtlasData`; headings moved to `graph.heading_index` in M-C2, and
+/// OVERLAY-1 Task 5 moved the PLACE-MENTION half onto the port too
+/// (`graph.scene_source(&data)`'s own `places_for_verse`/`place`, the
+/// materialised-from-the-graph successors of the deleted
+/// `AtlasData::places_for_verse`/`place_by_id` -- identical ids in
+/// identical order, see those methods' own doc comments). THIS endpoint
+/// (the reader's own chapter view) was untouched by Batch M-B's own
+/// event-world migration;
 /// only `/api/narrative/event/{id}` (see that handler's own doc comment)
 /// and the generic `/api/node`/`/edges` endpoints move to the graph this
 /// batch. The WIRE SHAPE is byte-for-byte identical -- proven by
@@ -511,14 +533,20 @@ pub async fn chapter(
         })
         .unwrap_or_default();
 
+    // OVERLAY-1 Task 5: the place-mention half's own source -- the
+    // graph-backed scene source, resolved ONCE for the whole chapter rather
+    // than per verse (it is a single `OnceLock` read, but hoisting it keeps
+    // the hot loop below free of any repeated lookup).
+    let scene_source = graph.scene_source(&data);
+
     let mut verses = Vec::new();
     for v in 1..=verse_count {
         let key = format!("{code}.{chapter}.{v}");
         if let Some(text) = graph_texts.get(&v) {
-            let places = data
+            let places = scene_source
                 .places_for_verse(&key)
                 .iter()
-                .filter_map(|pid| data.place_by_id(pid))
+                .filter_map(|pid| scene_source.place(pid))
                 .map(|p| PlaceRefOut {
                     id: p.id.clone(),
                     // Batch E3: resolved (period-history/KJV-alias-aware)
@@ -1268,10 +1296,18 @@ pub async fn narrative_event_positions(
 
     let snap = graph.snapshot();
     let event_id = atlas_graph::event_world::event_node_id(&id);
-    if snap.node(&event_id).is_none() {
+    // OVERLAY-1 Task 5: the existence check and the label are ONE node
+    // fetch now -- the label comes straight off the Event node's own
+    // payload, so this handler needs no materialised event collection at
+    // all (it replaces `data.event_by_id(&id).label`, which the deleted
+    // overlay used to populate).
+    let Some(node) = snap.node(&event_id) else {
         return Err(ApiError::not_found("event"));
-    }
-    let event_label = data.event_by_id(&id).map(|e| e.label.clone()).unwrap_or_default();
+    };
+    let event_label = match node.payload {
+        NodePayload::Event { label, .. } => label,
+        _ => String::new(),
+    };
     let event_pos = Position::Node(event_id);
 
     // "follows-in" (Forward) is THIS event's own following-event page;
@@ -1298,12 +1334,17 @@ pub async fn narrative_event_positions(
     // EdgeMeta-tagged succession pages -- a real, structural gap in the
     // `succession` relation's own shape (it communicates SEQUENCE, not bare
     // membership), not a bug in this batch's port-based rewrite. Solo-leg
-    // narratives are enumerated directly off `data.narratives` (a small,
+    // narratives are enumerated directly off the narrative list (a small,
     // in-memory scan -- narrative counts stay in the tens, never paged) so
     // this event's own membership in one is never silently dropped; every
     // narrative reached this way that DOES have a real prior/following
-    // still gets it from the port entries above, never from `AtlasData`.
-    for n in &data.narratives {
+    // still gets it from the port entries above.
+    // OVERLAY-1 Task 5: that list is `graph.scene_source(&data)`'s own,
+    // materialised from `gs.narrative_ids` + `gs.narrative_legs` through
+    // `legacy::narrative_from_node` (and post-`apply_event_merges`, so a leg
+    // naming an absorbed event is already repointed) -- the exact content
+    // and order the deleted `AtlasData.narratives` carried.
+    for n in graph.scene_source(&data).narrative_list() {
         if n.legs.len() == 1 && n.legs[0] == id {
             narrative_ids.insert(NarrativeId::new(n.id.clone()));
         }

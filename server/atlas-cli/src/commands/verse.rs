@@ -93,10 +93,18 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
     })?;
     let spans = graph.red_letter_spans.get(&sref).cloned().unwrap_or_default();
 
-    let places: Vec<Attached> = data
+    // OVERLAY-1 Task 5: places/events for a verse come from the graph-
+    // backed scene source (`GraphService::scene_source`, primed at load)
+    // rather than the deleted `AtlasData::places_for_verse`/
+    // `events_for_verse` indexes. Same ids, same order -- both indexes are
+    // rebuilt there in the exact passes `AtlasData::finish()` used, which is
+    // what keeps this command's pinned transcripts byte-identical.
+    let scene_source = graph.scene_source(data);
+
+    let places: Vec<Attached> = scene_source
         .places_for_verse(&sref)
         .iter()
-        .filter_map(|pid| data.place_by_id(pid).map(|p| (pid, p)))
+        .filter_map(|pid| scene_source.place(pid).map(|p| (pid, p)))
         .map(|(pid, p)| {
             let name = resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id));
             attached(NodeKind::Place, pid, name)
@@ -114,7 +122,7 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
     // PSA.119.105/GAL.1.8 repros). Each independently empty when its own
     // kind has zero entries -- the SAME empty-result discipline as before,
     // now applied per-kind. See CONTRACT.md's own `bibex verse` section.
-    let all_events: Vec<&atlas_core::data::Event> = data.events_for_verse(&sref).iter().filter_map(|eid| data.event_by_id(eid)).collect();
+    let all_events: Vec<&atlas_core::data::Event> = scene_source.events_for_verse(&sref).iter().filter_map(|eid| scene_source.event(eid)).collect();
     let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == "event").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
     let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == "general").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
 

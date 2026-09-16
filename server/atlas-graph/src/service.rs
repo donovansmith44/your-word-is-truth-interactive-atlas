@@ -84,9 +84,10 @@ pub struct GraphService {
     pub polity_ids: Vec<AnyNodeId>,
     /// M-C2: the same "companion enumeration the generic port doesn't
     /// model" class as `era_ids`/`polity_ids` above -- `handlers::
-    /// narratives`' own full listing and `legacy::atlas_data_overlay`'s
-    /// own reconstruction both need "every node of kind K," never a
-    /// per-position query. `narrative_ids` is `graph.nodes`'s own
+    /// narratives`' own full listing and (OVERLAY-1 Task 5, which replaced
+    /// `legacy::atlas_data_overlay` here) `scene_source::GraphSceneSource::
+    /// build`'s own materialisation both need "every node of kind K," never
+    /// a per-position query. `narrative_ids` is `graph.nodes`'s own
     /// alphabetical-by-id order (unmodified -- confirmed to already match
     /// `data/curated/narratives/`'s own sorted-by-filename compiled order,
     /// since a narrative's filename stem IS its id).
@@ -208,6 +209,30 @@ pub struct GraphService {
     /// (a frozen-contract change, and a string on every one of ~344k
     /// `cites` index entries) is the wrong shape for it.
     pub provenance: crate::provenance::ProvenanceIndex,
+    /// OVERLAY-1 Task 5: the map scene's own data, materialised once from
+    /// THIS service's port (`crate::scene_source::GraphSceneSource`) --
+    /// what `handlers::scene_time`/`scene_scripture` compose against now
+    /// that `legacy::atlas_data_overlay` is gone. Held here rather than as
+    /// a fourth `AppState` member deliberately: all EIGHTEEN existing
+    /// callers of `app::build`/`app::build_with_sources` (the test
+    /// fixtures, the AQC example exporter, the pact recorder) keep their
+    /// exact signatures, `main.rs`'s own `--build-from-raw` dev fallback
+    /// needs no second construction path, and the two scene handlers reach
+    /// it through the `State<Arc<GraphService>>` extractor they can already
+    /// ask for.
+    ///
+    /// `OnceLock`, not a plain field, for the one thing it genuinely needs
+    /// that `assemble` cannot give it: the two CURATED-JSON sidecar maps
+    /// `scene.rs` reads (`place_history`, `place_name_aliases`) live in
+    /// `AtlasData`, which this crate never loads. `scene_source(&data)`
+    /// below builds it on first call and hands back the same borrow
+    /// forever after. The real server and the CLI PRIME it at load time
+    /// (`atlas_server::load::load_graph_and_data`,
+    /// `atlas_cli::load::load`) so no request ever pays the
+    /// materialisation; every other caller (fixtures, benches, the CLI's
+    /// own commands) gets it built on first use, which is why not one of
+    /// those eighteen sites had to change.
+    scene_source: std::sync::OnceLock<crate::scene_source::GraphSceneSource>,
 }
 
 /// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
@@ -473,7 +498,8 @@ impl GraphService {
         let era_ids: Vec<AnyNodeId> = era_nodes.into_iter().map(|(_, id)| id).collect();
         let polity_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Polity).cloned().collect();
         // M-C2: the same one-time node-table scan, for the three kinds
-        // `handlers::narratives`/`legacy::atlas_data_overlay` need to
+        // `handlers::narratives`/`scene_source::GraphSceneSource::build`
+        // (OVERLAY-1 Task 5's successor to the deleted overlay) need to
         // enumerate. `graph.nodes` is a `BTreeMap<AnyNodeId, _>`, so this
         // is already alphabetical-by-id order (confirmed to match
         // `data/curated/narratives/`'s own sorted-by-filename compiled
@@ -602,6 +628,7 @@ impl GraphService {
             temporal_neighbors,
             red_letter_spans,
             provenance,
+            scene_source: std::sync::OnceLock::new(),
         }
     }
 
@@ -656,15 +683,33 @@ impl GraphService {
     /// text ON DEMAND, straight off this service's own published snapshot
     /// -- the SAME `kjv_adapter::verse_node_id` + `window::render` pair
     /// `legacy::verses_from_graph` used to build the whole-spine
-    /// `verse_text` companion this batch retires (see that field's own
-    /// former doc comment, and `legacy::atlas_data_overlay`'s, for the
-    /// "three copies of the same KJV text in memory" this call replaces).
+    /// `verse_text` companion this batch retires (Task 5 then deleted
+    /// `legacy::atlas_data_overlay` itself, the third of the "three copies
+    /// of the same KJV text in memory" this call replaces).
     /// One node lookup -- microseconds, not a whole-spine walk -- and no
     /// caching: every former reader of `verse_text`/`AtlasData.verses`
     /// calls this instead, per verse, at request time.
     pub fn verse_text_of(&self, r: &atlas_graph_types::text::VerseRef) -> Option<String> {
         let id = crate::kjv_adapter::verse_node_id(r.book, r.chapter, r.verse);
         crate::window::render(&self.snapshot(), &id)
+    }
+
+    /// OVERLAY-1 Task 5: the map scene's own data source, built ONCE from
+    /// this service's port and cached -- see the `scene_source` field's own
+    /// doc comment for why it lives here and why it is an `OnceLock`.
+    ///
+    /// `sidecars` is only ever read for the two curated-JSON maps
+    /// `GraphSceneSource::build` copies (`place_history`,
+    /// `place_name_aliases`); a bare, un-`finish()`ed `AtlasData::load(..)`
+    /// is a valid argument, and none of that struct's compile-time
+    /// `events`/`places`/`narratives` fields is touched. It is IGNORED on
+    /// every call after the first -- the source is immutable once built, so
+    /// a caller that passes a different `AtlasData` later does not rebuild
+    /// it. In this codebase there is exactly one `AtlasData` per process,
+    /// loaded before this is ever called, so that never arises; the eager
+    /// priming at load time is what keeps it that way by construction.
+    pub fn scene_source(&self, sidecars: &AtlasData) -> &crate::scene_source::GraphSceneSource {
+        self.scene_source.get_or_init(|| crate::scene_source::GraphSceneSource::build(self, sidecars))
     }
 }
 
@@ -841,9 +886,9 @@ mod tests {
     /// OVERLAY-1 Task 2 ("one KJV in memory"): `verse_text_of` reads one
     /// verse's own text on demand, straight off the published graph -- no
     /// `verse_text` companion map is built at all any more. Proves it
-    /// against the SAME primitive `legacy::verses_from_graph` (the now-
-    /// deleted companion's own builder) used per entry: `window::render`
-    /// over the `kjv_adapter::verse_node_id` for that verse.
+    /// against the SAME primitive the now-deleted whole-spine builder
+    /// (`legacy::verses_from_graph`) used per entry: `window::render` over
+    /// the `kjv_adapter::verse_node_id` for that verse.
     #[test]
     fn verse_text_of_equals_window_render_for_the_same_verse() {
         let svc = service();

@@ -20,8 +20,10 @@ Four requirements, all binding here: (1) REALLY SIMPLE, (2) TUTORIAL,
 `atlas-cli` is a new workspace binary crate. It loads
 `<data-dir>/graph.bin` directly via `atlas_graph::GraphService::from_artifact`
 — the SAME artifact-load path `atlas-server/src/main.rs`'s default branch
-uses — and reconstructs `AtlasData` the SAME way (`atlas_core::data::AtlasData::load`
-+ `atlas_graph::legacy::atlas_data_overlay` + `.finish()`). No HTTP, no
+uses — and loads `AtlasData` the SAME way (`atlas_core::data::AtlasData::load`
++ `.finish()`, then `GraphService::scene_source` for the event/place data
+the verse command reads; OVERLAY-1 Task 5 deleted the boot-time overlay
+that used to hang that data on `AtlasData` itself). No HTTP, no
 axum, no server process. Every actual graph QUESTION this crate answers
 goes through `atlas_graph_types::store::GraphQuery`'s trait methods (via
 `GraphService::snapshot()`) or `GraphService`'s own public adapter-side

@@ -86,29 +86,40 @@ pub fn load_sources(data_dir: &Path) -> Result<SourcesDocument> {
     serde_json::from_str(&sources_json).with_context(|| format!("parsing {}", sources_path.display()))
 }
 
-/// The DEFAULT startup path: load the serialized graph artifact, reconstruct
-/// the retiring `AtlasData` fields directly from it, and `finish()` the
-/// derived indexes.
+/// The DEFAULT startup path: load the serialized graph artifact, load the
+/// compiled JSON sidecars, `finish()` the sidecar-derived indexes, and build
+/// the graph-backed scene source.
 ///
-/// The `finish()` at the end is not a detail. Without it every index derived
-/// from the compiled files is empty, and endpoints that read one answer as
-/// though they had no data — silently, with a 200. That was fidelity bug 2.
+/// The `finish()` here is not a detail. Without it every index derived from
+/// the compiled files is empty, and endpoints that read one answer as though
+/// they had no data -- silently, with a 200. That was fidelity bug 2. What
+/// it still derives on this path is the SIDECAR half (the catechism trio,
+/// the heading reference index, the merge tables): `AtlasData.events`/
+/// `.places`/`.narratives` are never populated on any serving path any more,
+/// so every derivation built from them is a no-op over empty collections.
+///
+/// OVERLAY-1 Task 5: `legacy::atlas_data_overlay` is GONE. The scene's data
+/// is `GraphSceneSource`, materialised from the graph port and primed here,
+/// eagerly, so no request ever pays for it (see
+/// `GraphService::scene_source`). That is the batch's whole point: the
+/// events/places/narratives the map composes from exist ONCE, in that
+/// object, instead of once there and once again inside `AtlasData`.
 pub fn load_graph_and_data(data_dir: &Path) -> Result<(GraphService, AtlasData)> {
     let artifact_path = data_dir.join("graph.bin");
     let graph = GraphService::from_artifact(&artifact_path).with_context(|| {
         format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display())
     })?;
-    let mut data = AtlasData::load(data_dir)
-        .with_context(|| format!("loading compiled data from {}", data_dir.display()))?;
-    let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-    data.events = overlay.events;
-    data.places = overlay.places;
-    data.narratives = overlay.narratives;
-    // OVERLAY-1 Task 2: verse text is no longer materialized onto
-    // `AtlasData` at all -- `GraphService::verse_text_of` reads it on
-    // demand from the graph, so `AtlasData.verses` simply stays empty on
-    // this (artifact-load) path.
-    let data = data.finish();
+    let data = AtlasData::load(data_dir)
+        .with_context(|| format!("loading compiled data from {}", data_dir.display()))?
+        .finish();
+    // OVERLAY-1 Task 5: prime the graph-backed scene source once, here, on
+    // the real startup path -- `scene_source` is lazily built on first use
+    // everywhere else (fixtures, benches, the CLI's own commands), and
+    // priming it is what keeps the first `/api/scene` request from paying
+    // the materialisation. `&data` is read ONLY for the two curated-JSON
+    // sidecar maps the composer needs (`place-history.json`,
+    // `place-names-kjv.json`).
+    graph.scene_source(&data);
     Ok((graph, data))
 }
 

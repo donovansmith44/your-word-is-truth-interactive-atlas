@@ -55,21 +55,26 @@ use atlas_core::data::AtlasData;
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
+use atlas_graph::scene_source::GraphSceneSource;
 use atlas_graph::GraphService;
 
-fn real_data_and_graph() -> (Arc<AtlasData>, Arc<GraphService>) {
-    static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
+/// OVERLAY-1 Task 5: the scene's data now comes from the PORT, through
+/// `GraphSceneSource` -- the same object `GraphService::scene_source`
+/// holds for `handlers::scene_time`/`scene_scripture`, built the same way
+/// `load::load_graph_and_data` builds it (artifact + a bare, un-`finish()`ed
+/// `AtlasData::load` for the two curated sidecars it reads). The overlay
+/// (`legacy::atlas_data_overlay`) and `AtlasData::finish()`'s graph-derived
+/// index web are gone from this path entirely; the 25 pinned hashes below
+/// are unchanged, which is the whole gate on that cut-over.
+fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
+    static CACHED: std::sync::OnceLock<(Arc<GraphSceneSource>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
             let graph = GraphService::from_artifact(&compiled.join("graph.bin")).expect("data/compiled/graph.bin must exist -- run atlas-graph-compile first");
-            let mut data = AtlasData::load(&compiled).expect("data/compiled must exist");
-            let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-            data.events = overlay.events;
-            data.places = overlay.places;
-            data.narratives = overlay.narratives;
-            let data = data.finish();
-            (Arc::new(data), Arc::new(graph))
+            let sidecars = AtlasData::load(&compiled).expect("data/compiled must exist");
+            let source = GraphSceneSource::build(&graph, &sidecars);
+            (Arc::new(source), Arc::new(graph))
         })
         .clone()
 }
@@ -192,12 +197,12 @@ fn scripture_refs() -> Vec<(&'static str, &'static str, u64, usize)> {
 /// brief's own N>=20 floor.
 #[test]
 fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
-    let (data, _graph) = real_data_and_graph();
+    let (source, _graph) = real_scene_source_and_graph();
 
     let mut failures = Vec::new();
     for (label, from, to, expected_hash, expected_len) in time_windows() {
         let w = TimeRange::new(from, to).unwrap();
-        let scene = compose_time_scene(&*data, w);
+        let scene = compose_time_scene(&*source, w);
         let bytes = serde_json::to_vec(&scene).unwrap();
         let hash = fnv1a(&bytes);
         println!("{label} -> hash {hash:#018x} ({} bytes)", bytes.len());
@@ -214,7 +219,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
 
     for (label, sref, expected_hash, expected_len) in scripture_refs() {
         let r = ScriptureRef::parse(sref).unwrap();
-        let scene = compose_scripture_scene(&*data, &r);
+        let scene = compose_scripture_scene(&*source, &r);
         let bytes = serde_json::to_vec(&scene).unwrap();
         let hash = fnv1a(&bytes);
         println!("{label} -> hash {hash:#018x} ({} bytes)", bytes.len());

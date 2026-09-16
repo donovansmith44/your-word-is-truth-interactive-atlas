@@ -1,17 +1,37 @@
-//! M-C2: reconstructs small `atlas_core::data` structs directly from graph
-//! queries -- the SAME per-entity building block shared by (a) the
-//! handlers migrated onto the graph this batch (`handlers::place`/
-//! `event`/`verse`/`narratives`, which read a single node/verse and reuse
-//! `atlas_core`'s own EXISTING, already-tested presentation functions --
-//! `scene::to_scene_event`/`witnesses_for`, `history::
-//! resolve_display_name`, ... -- against the reconstructed struct, never
-//! re-deriving display logic atlas_core already owns) and (b) `atlas_data_
-//! overlay` below, the server's own default-startup-path bridge that keeps
-//! every NOT-yet-migrated surface (scene.rs's own map composition,
-//! `handlers::chapter`'s place-mention half, `handlers::catechism_item`'s
-//! proof-verse text, `narrative_event_positions`'s residual `adjacent_
-//! event` calls) working unchanged once the five retiring compiled JSON
-//! files are gone.
+//! Per-entity RECONSTRUCTION: small `atlas_core::data` structs built
+//! directly from graph queries. Three builders --
+//! `event_from_node`/`place_from_node`/`narrative_from_node` -- and the
+//! `drain` paging helper they share. That is the whole of this module now.
+//!
+//! WHO CALLS THEM (OVERLAY-1 Task 5 -- the list is short and deliberate):
+//!   * `atlas_server::handlers::event`/`place`/`narratives`/`verse`, which
+//!     read ONE node (or one node's own frontier) per request and reuse
+//!     `atlas_core`'s own existing, already-tested presentation functions
+//!     (`scene::to_scene_event`/`witnesses_for`,
+//!     `history::resolve_display_name`, ...) against the reconstructed
+//!     struct, never re-deriving display logic `atlas_core` already owns;
+//!   * `crate::scene_source::GraphSceneSource::build`, which runs all three
+//!     over `gs.event_ids`/`place_ids`/`narrative_ids` ONCE, at load, to
+//!     materialise the map scene's own data.
+//!
+//! `locus_dot_ref` is the module's fifth item: a `TextLocus` -> dot-ref
+//! helper `GraphService::assemble` and `person_adapter` share with the
+//! builders above.
+//!
+//! WHAT IS GONE: `atlas_data_overlay` and `LegacyAtlasFields`, the
+//! server's own default-startup-path bridge that used to assign
+//! reconstructed `events`/`places`/`narratives` (and, before OVERLAY-1
+//! Task 2, a whole-spine `verses` clone) back onto `AtlasData` so every
+//! not-yet-migrated surface kept working after the five compiled JSON files
+//! retired. Every one of those surfaces now reads the graph directly, or
+//! reads `GraphSceneSource`; `AtlasData`'s `events`/`places`/`narratives`
+//! are never written on ANY serving path, which is the memory result
+//! OVERLAY-1 exists for (db1-plan.md §3.4 measured that bridge, plus the
+//! artifact load it followed, as the boot's dominant cost). The proof that
+//! the cut-over changed nothing served is
+//! `atlas-server/tests/scene_byte_identity.rs`: its 25 pinned response
+//! hashes are composed from `GraphSceneSource` and are the values captured
+//! against the overlay path.
 //!
 //! Every function here reads ONLY through `atlas_graph_types::store::
 //! GraphQuery` (the port) -- no raw `Graph` field reach -- so it works
@@ -167,61 +187,4 @@ pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
         TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),
         TextRef::Concord(_) => None,
     }
-}
-
-/// The four `AtlasData` fields the deletion event retires from `AtlasData::
-/// load`'s own file-backed loaders, reconstructed instead -- `cross_refs`
-/// is deliberately ABSENT (this struct's own doc comment on `atlas_data_
-/// overlay` has the reason). OVERLAY-1 Task 2 ("one KJV in memory") retired
-/// the fifth, `verses`: `GraphService::verse_text_of` reads one verse's own
-/// text on demand instead of this struct carrying a whole-spine copy.
-#[derive(Debug, Clone, Default)]
-pub struct LegacyAtlasFields {
-    pub events: Vec<Event>,
-    pub places: Vec<Place>,
-    pub narratives: Vec<Narrative>,
-}
-
-/// M-C2: keeps every surface NOT in this batch's own definitive migration
-/// scope (scene.rs's map composition; `handlers::chapter`'s place-mention
-/// half; `handlers::catechism_item`'s proof-verse text; `narrative_event_
-/// positions`'s residual `atlas_core::narrative::adjacent_event` calls)
-/// working, unchanged, once `places.json`/`events.json`/`narratives.json`/
-/// `verses-kjv.json` are deleted and their `AtlasData::load` reads retire.
-///
-/// Called ONCE, on the server's own DEFAULT startup path, immediately
-/// after `GraphService::from_artifact` -- never per-request, never on the
-/// `--build-from-raw` dev-fallback path (which has no graph yet to
-/// reconstruct FROM; it builds `AtlasData` from raw+curated sources
-/// directly, via `atlas_etl::compile::compile`). GAP CLOSED (OVERLAY-1
-/// Task 1): `server/atlas-graph/tests/overlay_equivalence.rs` now
-/// independently checks this function's own output against real
-/// `atlas_etl::compile::compile` data end to end -- both whole-collection
-/// (events/places/narratives/verses, sorted by id), order-sensitive
-/// (`places[0]` anchor order; the post-`finish()` event order), and
-/// post-`finish()` aggregate (`event_bearing_place_ids()`/
-/// `total_events_for(id)` for every place) -- superseding the manual
-/// live-curl comparison this batch's own earlier commit messages
-/// described. Its own composed pieces (`event_from_node`/
-/// `place_from_node`/`narrative_from_node`) each also have real unit
-/// coverage individually. NOT Fast: db1-plan.md §3.4 measured this pass
-/// (plus the artifact load it follows) as the boot's DOMINANT cost, ~751
-/// MiB peak resident on real committed data -- an in-memory walk over
-/// thousands of graph entries (OVERLAY-1 Task 2 retired the fifth
-/// composed piece, `verses_from_graph`'s own full ~31,102-verse reading-
-/// spine walk, entirely: verse text is no longer materialized here at
-/// all, see `GraphService::verse_text_of`).
-pub fn atlas_data_overlay(gs: &crate::service::GraphService) -> LegacyAtlasFields {
-    let snap = gs.snapshot();
-
-    let events: Vec<Event> = gs.event_ids.iter().filter_map(|id| event_from_node(id, &snap, &gs.chronology.chrono)).collect();
-    let places: Vec<Place> = gs.place_ids.iter().filter_map(|id| place_from_node(id, &snap)).collect();
-    let empty_legs: Vec<String> = Vec::new();
-    let narratives: Vec<Narrative> = gs
-        .narrative_ids
-        .iter()
-        .filter_map(|id| narrative_from_node(id, &snap, gs.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
-        .collect();
-
-    LegacyAtlasFields { events, places, narratives }
 }

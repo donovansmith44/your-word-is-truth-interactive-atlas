@@ -59,19 +59,21 @@ fn repo_data_dir() -> PathBuf {
 
 /// Field-for-field the SAME sequence `main.rs`'s default (non-`--build-from-raw`)
 /// startup path runs: load the serialized graph artifact, load the ten
-/// surviving compiled JSON files, overlay the graph-derived fields onto
-/// `AtlasData`, `finish()`. This is what every query bench below queries
-/// against, and what `bench_artifact_load` itself times end to end.
+/// surviving compiled JSON files, `finish()`, and prime the graph-backed
+/// scene source. This is what every query bench below queries against, and
+/// what `bench_artifact_load` itself times end to end.
+///
+/// OVERLAY-1 Task 5: the overlay assignment that used to sit between
+/// `AtlasData::load` and `finish()` is gone from the real startup path, so
+/// it is gone from here too -- keeping this function field-for-field
+/// faithful to `atlas_server::load::load_graph_and_data` is the only reason
+/// it exists.
 fn load_real() -> (Arc<AtlasData>, Arc<GraphService>) {
     let compiled = repo_data_dir().join("compiled");
     let graph = GraphService::from_artifact(&compiled.join("graph.bin"))
         .expect("data/compiled/graph.bin must exist -- run atlas-graph-compile first (see README)");
-    let mut data = AtlasData::load(&compiled).expect("data/compiled must exist");
-    let overlay = atlas_graph::legacy::atlas_data_overlay(&graph);
-    data.events = overlay.events;
-    data.places = overlay.places;
-    data.narratives = overlay.narratives;
-    let data = data.finish();
+    let data = AtlasData::load(&compiled).expect("data/compiled must exist").finish();
+    graph.scene_source(&data);
     (Arc::new(data), Arc::new(graph))
 }
 
@@ -88,7 +90,10 @@ fn qmap(pairs: &[(&str, &str)]) -> HashMap<String, String> {
 /// (`compose_time_scene`/`compose_scripture_scene`), so a regression here
 /// can never be masked or falsely blamed on handler-layer overhead.
 fn bench_scene_pure(c: &mut Criterion) {
-    let (data, _graph) = load_real();
+    let (data, graph) = load_real();
+    // OVERLAY-1 Task 5: the exact object `handlers::scene_time`/
+    // `scene_scripture` compose from now.
+    let source = graph.scene_source(&data);
     let mut group = c.benchmark_group("scene_pure");
 
     // Same five windows batch-perf2a-report.md's before/after table uses --
@@ -103,11 +108,11 @@ fn bench_scene_pure(c: &mut Criterion) {
     ];
     for (label, from, to) in windows {
         let w = TimeRange::new(*from, *to).unwrap();
-        group.bench_function(*label, |b| b.iter(|| compose_time_scene(black_box(&*data), black_box(w))));
+        group.bench_function(*label, |b| b.iter(|| compose_time_scene(black_box(source), black_box(w))));
     }
 
     let chapter_ref = ScriptureRef::parse("JHN.3").unwrap();
-    group.bench_function("scripture_chapter", |b| b.iter(|| compose_scripture_scene(black_box(&*data), black_box(&chapter_ref))));
+    group.bench_function("scripture_chapter", |b| b.iter(|| compose_scripture_scene(black_box(source), black_box(&chapter_ref))));
 
     group.finish();
 }
@@ -125,10 +130,10 @@ fn bench_handlers(c: &mut Criterion) {
     let mut group = c.benchmark_group("handlers");
 
     group.bench_function("scene_time", |b| {
-        b.iter(|| rt.block_on(handlers::scene_time(State(data.clone()), AxQuery(qmap(&[("from", "-5"), ("to", "100")])))))
+        b.iter(|| rt.block_on(handlers::scene_time(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("from", "-5"), ("to", "100")])))))
     });
     group.bench_function("scene_scripture", |b| {
-        b.iter(|| rt.block_on(handlers::scene_scripture(State(data.clone()), AxQuery(qmap(&[("ref", "JHN.3")])))))
+        b.iter(|| rt.block_on(handlers::scene_scripture(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("ref", "JHN.3")])))))
     });
     group.bench_function("books", |b| b.iter(|| rt.block_on(handlers::books(State(data.clone())))));
     group.bench_function("eras", |b| b.iter(|| rt.block_on(handlers::eras(State(graph.clone())))));

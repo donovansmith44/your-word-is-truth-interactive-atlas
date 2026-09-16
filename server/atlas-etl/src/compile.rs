@@ -19,10 +19,11 @@
 //! `places.json`/`events.json`/`narratives.json`. Once those files are
 //! gone, this function is what stands in their place for exactly the two
 //! callers that build a graph from nothing (the server's own DEFAULT
-//! startup path, loading the pre-built artifact, does NOT call this --
-//! see `atlas_graph::legacy::atlas_data_overlay`'s own doc comment for why
-//! a graph-reconstructed overlay, not a second raw+curated compile, is the
-//! right, cheap counterpart there).
+//! startup path, loading the pre-built artifact, does NOT call this, and
+//! since OVERLAY-1 Task 5 does not reconstruct these fields at all: it
+//! reads the graph it just loaded, through
+//! `atlas_graph::scene_source::GraphSceneSource`, instead of compiling a
+//! second copy of them from raw+curated sources).
 //!
 //! `AtlasData::load` (the JSON-file loader) stays -- it still reads the
 //! TEN surviving compiled files (canon/books-meta/chronology-anchors/
