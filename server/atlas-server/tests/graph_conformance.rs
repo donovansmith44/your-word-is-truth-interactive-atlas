@@ -45,6 +45,15 @@
 //! above the port is what's slow) -- flagged in the batch report's own
 //! concerns, not silently worked around. `Graph`/`MemSnapshot::derive` are
 //! owner-approved shapes this batch may not modify (extend-only law).
+//!
+//! CONTENTION-1 (spec 2026-09-14-relational-artifact-design §8): the
+//! timing gate(s) in this file are `#[ignore]`d in the default run and
+//! executed by `scripts/timing-gates.sh` -- one cargo process per gate,
+//! `--test-threads=1`, after the parallel suite -- because three
+//! wall-clock ceilings were resolving BOTH WAYS on identical code under
+//! parallel load (progress.md, 2026-09-08 through 2026-09-10). The
+//! ceilings themselves are unchanged. `timing-gates.sh check` refuses
+//! any #[ignore] in server/ that is not one of the listed gates.
 
 use std::collections::HashSet;
 use std::path::Path;
@@ -136,6 +145,7 @@ fn the_real_kjv_derived_graph_is_admitted_the_in_memory_store_answers_match_the_
 /// makes the full-scale conformance check actually run to completion, with
 /// its own wall time reported below rather than assumed.
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist (committed real data)");

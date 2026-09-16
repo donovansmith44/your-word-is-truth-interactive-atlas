@@ -26,6 +26,15 @@
 //! nothing to do with this codebase's own performance. Calling the same
 //! functions the handlers call, directly, measures exactly the thing this
 //! batch's own compose-cost investigation and fix are about.
+//!
+//! CONTENTION-1 (spec 2026-09-14-relational-artifact-design §8): the
+//! timing gate(s) in this file are `#[ignore]`d in the default run and
+//! executed by `scripts/timing-gates.sh` -- one cargo process per gate,
+//! `--test-threads=1`, after the parallel suite -- because three
+//! wall-clock ceilings were resolving BOTH WAYS on identical code under
+//! parallel load (progress.md, 2026-09-08 through 2026-09-10). The
+//! ceilings themselves are unchanged. `timing-gates.sh check` refuses
+//! any #[ignore] in server/ that is not one of the listed gates.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -81,6 +90,7 @@ fn median_of<F: FnMut()>(iters: usize, mut f: F) -> Duration {
 /// was <25ms; this gate is deliberately looser than the target itself
 /// (a target is an engineering goal, not a noise-immune CI gate).
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn scene_time_full_span_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let w = TimeRange::new(-4004, 100).unwrap();
@@ -91,6 +101,7 @@ fn scene_time_full_span_completes_within_smoke_threshold() {
 }
 
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn scene_time_nt_window_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let w = TimeRange::new(-5, 100).unwrap();
@@ -101,6 +112,7 @@ fn scene_time_nt_window_completes_within_smoke_threshold() {
 }
 
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn scene_scripture_chapter_completes_within_smoke_threshold() {
     let (data, _graph) = real_data_and_graph();
     let r = ScriptureRef::parse("JHN.3").unwrap();
@@ -116,6 +128,7 @@ fn scene_scripture_chapter_completes_within_smoke_threshold() {
 /// gives; `graph.cross_refs_by_from`/`graph.verse_text` are the exact
 /// companion indexes the real handler reads.
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn xrefs_for_verse_completes_within_smoke_threshold() {
     let (_data, graph) = real_data_and_graph();
     let span = ScriptureRef::parse("JHN.3.16").unwrap();
@@ -130,6 +143,7 @@ fn xrefs_for_verse_completes_within_smoke_threshold() {
 /// window from a real anchor, the same shape a Reader.razor chapter-scroll
 /// fetch uses.
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn text_window_completes_within_smoke_threshold() {
     let (_data, graph) = real_data_and_graph();
     let snap = graph.snapshot();
@@ -150,6 +164,7 @@ fn text_window_completes_within_smoke_threshold() {
 /// `handlers::chapter`'s own service-layer call chain (chapter_span +
 /// window + per-verse place/person lookups) -- John 3 (JHN.3), 36 verses.
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn chapter_window_completes_within_smoke_threshold() {
     let (_data, graph) = real_data_and_graph();
     let snap = graph.snapshot();

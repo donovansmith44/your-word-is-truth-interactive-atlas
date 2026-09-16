@@ -9,6 +9,15 @@
 //! same sequence `atlas-server`'s own real startup performs when loading
 //! from an artifact file instead of building from raw) are BOTH proven
 //! here, over the real committed sources, as committed failing-test laws.
+//!
+//! CONTENTION-1 (spec 2026-09-14-relational-artifact-design §8): the
+//! timing gate(s) in this file are `#[ignore]`d in the default run and
+//! executed by `scripts/timing-gates.sh` -- one cargo process per gate,
+//! `--test-threads=1`, after the parallel suite -- because three
+//! wall-clock ceilings were resolving BOTH WAYS on identical code under
+//! parallel load (progress.md, 2026-09-08 through 2026-09-10). The
+//! ceilings themselves are unchanged. `timing-gates.sh check` refuses
+//! any #[ignore] in server/ that is not one of the listed gates.
 
 use std::path::Path;
 use std::time::Instant;
@@ -98,6 +107,7 @@ fn real_kretzmann_corpus(kjv_json: &str, raw_dir: &Path) -> atlas_etl::kretzmann
 }
 
 #[test]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling() {
     let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
