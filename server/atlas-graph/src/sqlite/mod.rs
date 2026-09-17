@@ -2,8 +2,8 @@
 //! logical dump, manifest and the `SqliteSnapshot` read port. Everything
 //! SQLite in the workspace lives under this module; `graph-types` never
 //! sees it (zero-dep covenant, spec §1.2).
-// pub mod columns;   // Task 3
-// pub mod ddl;       // Task 3
+pub mod columns;
+pub mod ddl;
 // pub mod logical;   // Task 6
 // pub mod manifest;  // Task 5
 // pub mod partition; // Task 5
