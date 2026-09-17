@@ -34,6 +34,14 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.3.0** (Batch DB-3) — **MINOR: the vocabulary widened.** `graph-
+  vocabulary.json` gains one node kind (`LexiconEntry`) and one directed
+  relation (`Occurs`: `occurs-in` / `words`), both uninhabited until LEX-1
+  (spec §7). Every previously pinned value is unchanged and
+  `artifact_format_version` stays 13 — the new DTO variants are appended,
+  so every pre-DB-3 `graph.bin` decodes byte-identically. DB-4's own move
+  (root semantics and id width, spec §9) therefore lands as 0.4.0.
+
 - **0.2.0** (Batch CDC-1, fix round 1) — **MINOR: one guarantee added.** The
   graph's declared vocabulary now also pins `artifact_format_version`, read
   from the same private constant `atlas_graph::artifact::load` enforces
