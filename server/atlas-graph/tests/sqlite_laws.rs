@@ -785,3 +785,89 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// DB-3 Task 3: the SqliteSnapshot overrides for the widened port
+// ---------------------------------------------------------------------
+#[test]
+fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() {
+    use atlas_graph_types::edge::{at, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
+    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::id::{NodeKind, Position};
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db3-snap-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, "0123456789abcdef", "test", &dir).unwrap();
+    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    // nodes_of_kind pages across sections (Container lives in core, kjv AND
+    // concord) in one byte order.
+    let containers = snap.nodes_of_kind(NodeKind::Container, None, 2);
+    assert_eq!(
+        containers.ids.iter().map(|i| i.raw.as_str()).collect::<Vec<_>>(),
+        ["bible-book-GEN", "bible-chapter-GEN-1"]
+    );
+    assert_eq!(containers.next, Some(2));
+    let rest = snap.nodes_of_kind(NodeKind::Container, Some(2), 10);
+    assert_eq!(
+        rest.ids.iter().map(|i| i.raw.as_str()).collect::<Vec<_>>(),
+        ["concord-ac", "concord-ac-1", "passage-creation"]
+    );
+    assert_eq!(rest.next, None);
+    assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 0, "uninhabited until LEX-1");
+    assert_eq!(snap.nodes_of_kind(NodeKind::Container, Some(1), 0).next, Some(1), "limit 0 with more: next = cursor");
+    // row_provenance: a directed row, a symmetric row, a justified-by edge
+    // (None, judgment call 3), an unknown id (None).
+    let located = g
+        .edges(
+            &at(&g.located_at[0].event.erase()),
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward), cursor: None, limit: 1 },
+        )
+        .entries[0]
+        .edge
+        .clone();
+    let r = snap.row_provenance(&located).unwrap();
+    assert_eq!((r.family, r.row_id, r.provenance.as_str()), (RowFamily::LocatedAt, 0, "curated/events"));
+    let analogue = g
+        .edges(
+            &at(&g.analogue[0].a.erase()),
+            &EdgeQuery { kind: EdgeKind::Symmetric(SymRelationId::Analogue), cursor: None, limit: 1 },
+        )
+        .entries[0]
+        .edge
+        .clone();
+    assert_eq!(
+        snap.row_provenance(&analogue).map(|r| (r.family, r.provenance)),
+        Some((RowFamily::Analogue, "curated/analogues".into()))
+    );
+    // add_justified_by fans out grounds for DatedBy/Fulfills/Typology/NamedAfter
+    // rows only; the specimen's second dated_by row carries full_justification().
+    let dated = g
+        .edges(
+            &at(&g.dated_by[1].event.erase()),
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::DatedBy, Direction::Forward), cursor: None, limit: 1 },
+        )
+        .entries[0]
+        .edge
+        .clone();
+    let justified = g
+        .edges(
+            &Position::Edge(dated.clone()),
+            &EdgeQuery { kind: EdgeKind::Directed(RelationId::JustifiedBy, Direction::Forward), cursor: None, limit: 1 },
+        )
+        .entries[0]
+        .edge
+        .clone();
+    assert_eq!(snap.row_provenance(&justified), None, "a synthesised edge has no row");
+    assert_eq!(g.row_provenance(&justified), None, "and the model agrees");
+    assert_eq!(snap.row_provenance(&EdgeId("LocatedAt:0000000000000000".into())), None);
+    // position_of over both spines and off-spine.
+    let v2 = &g.reading["bible"].order[1];
+    assert_eq!(snap.position_of("bible", v2), Some(1));
+    assert_eq!(snap.position_of("concord", v2), None);
+    assert_eq!(snap.position_of("bible", &g.located_at[0].event.erase()), None);
+    assert_eq!(snap.position_of("nope", v2), None);
+    // And the whole harness, which now covers the five methods.
+    assert_answers_match(&snap, &g);
+}
