@@ -704,3 +704,84 @@ fn a_changed_row_changes_the_logical_hash_and_a_changed_timestamp_does_not() {
     assert_eq!(m3.sections[1].logical, m1.sections[1].logical, "kjv did not");
     assert_ne!(m3.root, m1.root);
 }
+
+// ---------------------------------------------------------------------
+// Task 7: SqliteSnapshot -- the read port over the attached sections
+// ---------------------------------------------------------------------
+use atlas_graph::sqlite::snapshot::SqliteSnapshot;
+use atlas_graph_types::store::{assert_answers_match, GraphQuery, GraphSnapshot};
+
+#[test]
+fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-snap-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, "0123456789abcdef", "test", &dir).unwrap();
+    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann]);
+    assert_answers_match(&snap, &g);
+    assert_eq!(snap.version().0.hex(), "0123456789abcdef");
+}
+
+#[test]
+fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-absent-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (m, written) = write_sections(&g, "0123456789abcdef", "test", &dir).unwrap();
+    std::fs::remove_file(&written.iter().find(|w| w.section == Section::Kretzmann).unwrap().path).unwrap();
+    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord]);
+    let item = g.comments_on[0].item.erase();
+    assert!(snap.node(&item).is_none(), "the CommentaryItem node lives only in kretzmann");
+    let verse_pos = atlas_graph_types::edge::at(&g.reading["bible"].order[0]);
+    let kinds = snap.edge_summary(&verse_pos);
+    assert!(!kinds.keys().any(|k| matches!(
+        k,
+        atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::CommentsOn, _)
+    )));
+    drop(snap); // Windows holds an open section file locked
+    std::fs::remove_file(&written.iter().find(|w| w.section == Section::Kjv).unwrap().path).unwrap();
+    let err = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap_err();
+    assert!(
+        err.0.contains("kjv") && err.0.contains(&m.sections[1].logical),
+        "a missing REQUIRED section is refused by name and hash (spec 11): {}",
+        err.0
+    );
+}
+
+#[test]
+fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-paging-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, "0123456789abcdef", "test", &dir).unwrap();
+    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    // The container with a Loci set of two verses has 2 Contains entries:
+    // walk every (cursor, limit) in 0..=3.
+    let container = atlas_graph_types::edge::at(
+        &g.contains_bible
+            .iter()
+            .find(|c| matches!(c.content, atlas_graph_types::edge::ContainerContent::Loci(_)))
+            .unwrap()
+            .container
+            .erase(),
+    );
+    let kind = atlas_graph_types::edge::EdgeKind::Directed(
+        atlas_graph_types::edge::RelationId::Contains,
+        atlas_graph_types::edge::Direction::Forward,
+    );
+    assert_eq!(g.edge_summary(&container)[&kind], 2);
+    for cursor in [None, Some(0), Some(1), Some(2), Some(3)] {
+        for limit in 0..=3 {
+            let q = atlas_graph_types::explore::EdgeQuery { kind, cursor, limit };
+            assert_eq!(snap.edges(&container, &q), g.edges(&container, &q), "cursor {cursor:?} limit {limit}");
+        }
+    }
+}

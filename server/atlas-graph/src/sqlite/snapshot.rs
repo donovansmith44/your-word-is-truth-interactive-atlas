@@ -1,0 +1,263 @@
+//! DB-2b: `SqliteSnapshot` -- the read port (`GraphQuery` +
+//! `GraphSnapshot`) over the attached section files (spec §2.5, §5.2).
+//! Every answer must equal the in-memory `Graph`'s; `assert_answers_match`
+//! is the judge (the specimen in `sqlite_laws.rs`, the real graph in
+//! `sqlite_real_data.rs`).
+//!
+//! Judgment call 6 (plan): one connection behind a `Mutex` -- the gate is
+//! single-threaded; spec §2.5's connection-per-worker lands with the
+//! server switch-over in DB-4.
+
+use std::path::Path;
+use std::sync::Mutex;
+
+use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
+use atlas_graph_types::canon::Canon;
+use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind};
+use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary};
+use atlas_graph_types::graph::EdgeRel;
+use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, Pid, Position};
+use atlas_graph_types::node::Node;
+use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion};
+use rusqlite::{Connection, OptionalExtension};
+
+use super::manifest::read_manifest;
+use super::partition::{rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
+use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
+use crate::sections::Section;
+
+pub struct SqliteSnapshot {
+    conn: Mutex<Connection>,
+    version: GraphVersion,
+    /// Manifest order, attached sections only.
+    present: Vec<Section>,
+}
+
+impl std::fmt::Debug for SqliteSnapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SqliteSnapshot").field("version", &self.version).field("present", &self.present).finish_non_exhaustive()
+    }
+}
+
+fn section_named(name: &str) -> Option<Section> {
+    Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
+}
+
+impl SqliteSnapshot {
+    /// Spec §2.5 steps 1–4: read + verify the manifest; open `core` as
+    /// `main`; ATTACH every other present section under its name in
+    /// manifest order; `PRAGMA query_only = ON`; build the TEMP views
+    /// `all_edge_index` and `all_node` over the attached sections. A
+    /// `required` section whose file is missing is an error naming the
+    /// section and its logical hash (spec §11); an optional one is
+    /// recorded absent and skipped.
+    pub fn open(manifest_path: &Path) -> Result<SqliteSnapshot, SqliteError> {
+        let manifest = read_manifest(manifest_path)?;
+        let dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+        let mut present: Vec<(Section, std::path::PathBuf)> = Vec::new();
+        for ms in &manifest.sections {
+            let section = section_named(&ms.name)
+                .ok_or_else(|| SqliteError(format!("manifest names an unknown section {}", ms.name)))?;
+            let path = dir.join(format!("{}.{}.sqlite", ms.name, ms.logical));
+            if path.is_file() {
+                present.push((section, path));
+            } else if ms.required {
+                return Err(SqliteError(format!(
+                    "required section {} ({}) missing at {}",
+                    ms.name,
+                    ms.logical,
+                    path.display()
+                )));
+            }
+        }
+        let Some((Section::Core, core_path)) = present.first() else {
+            return Err(SqliteError("manifest does not list core first".into()));
+        };
+        let conn = open_read_only(core_path)?;
+        for (section, path) in present.iter().skip(1) {
+            let sql = format!("ATTACH DATABASE ?1 AS {}", section.name());
+            conn.execute(&sql, [path.to_string_lossy().as_ref()])?;
+        }
+        // `open_read_only` already set `query_only = ON`, which also refuses
+        // TEMP objects; lift it just long enough to build the two views
+        // (the file itself stays read-only through the open flag).
+        conn.execute_batch("PRAGMA query_only = OFF;")?;
+        let mut edge_view = String::from("CREATE TEMP VIEW all_edge_index AS SELECT 0 AS sec, * FROM main.edge_index");
+        let mut node_view = String::from("CREATE TEMP VIEW all_node AS SELECT 0 AS sec, * FROM main.node");
+        for (rank, (section, _)) in present.iter().enumerate().skip(1) {
+            edge_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.edge_index", section.name()));
+            node_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.node", section.name()));
+        }
+        conn.execute_batch(&format!("{edge_view}; {node_view}; PRAGMA query_only = ON;"))?;
+        let version_hex: String = conn
+            .query_row("SELECT value FROM main.meta WHERE key = 'graph_version'", [], |r| r.get(0))
+            .map_err(|e| SqliteError(format!("core meta.graph_version: {e}")))?;
+        let version = ContentHash::from_hex(&version_hex)
+            .map(GraphVersion)
+            .ok_or_else(|| SqliteError(format!("core meta.graph_version {version_hex} is not a ContentHash")))?;
+        Ok(SqliteSnapshot { conn: Mutex::new(conn), version, present: present.into_iter().map(|(s, _)| s).collect() })
+    }
+
+    pub fn present(&self) -> &[Section] {
+        &self.present
+    }
+
+    fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> Result<T, SqliteError>) -> Result<T, SqliteError> {
+        let guard = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        f(&guard)
+    }
+
+    fn kind_of(rel: i64, dir: i64) -> Option<EdgeKind> {
+        match (rel_of_code(rel)?, dir) {
+            (EdgeRel::Directed(r), DIR_FORWARD) => Some(EdgeKind::Directed(r, Direction::Forward)),
+            (EdgeRel::Directed(r), DIR_INVERSE) => Some(EdgeKind::Directed(r, Direction::Inverse)),
+            (EdgeRel::Symmetric(s), DIR_SYMMETRIC) => Some(EdgeKind::Symmetric(s)),
+            _ => None,
+        }
+    }
+
+    fn code_of(kind: EdgeKind) -> (i64, i64, String) {
+        match kind {
+            EdgeKind::Directed(r, d) => (
+                rel_code_of(EdgeRel::Directed(r)),
+                if d == Direction::Forward { DIR_FORWARD } else { DIR_INVERSE },
+                format!("{r:?}"),
+            ),
+            EdgeKind::Symmetric(s) => (rel_code_of(EdgeRel::Symmetric(s)), DIR_SYMMETRIC, format!("{s:?}")),
+        }
+    }
+
+    fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
+        let (rel, dir, rel_name) = Self::code_of(q.kind);
+        let subject = position_str(p);
+        let start = q.cursor.unwrap_or(0);
+        self.with_conn(|conn| {
+            let total: i64 = conn
+                .prepare_cached("SELECT COUNT(*) FROM all_edge_index WHERE subject = ?1 AND rel = ?2 AND dir = ?3")?
+                .query_row(rusqlite::params![subject, rel, dir], |r| r.get(0))?;
+            let mut stmt = conn.prepare_cached(
+                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes FROM all_edge_index \
+                 WHERE subject = ?1 AND rel = ?2 AND dir = ?3 ORDER BY ord LIMIT ?4 OFFSET ?5",
+            )?;
+            let mut rows = stmt.query(rusqlite::params![subject, rel, dir, q.limit as i64, start as i64])?;
+            let mut entries = Vec::new();
+            while let Some(row) = rows.next()? {
+                let object: String = row.get(0)?;
+                let blob: Vec<u8> = row.get(1)?;
+                let meta_kind: i64 = row.get(2)?;
+                let narrative: Option<String> = row.get(3)?;
+                let votes: Option<i64> = row.get(4)?;
+                let meta = match (meta_kind, narrative, votes) {
+                    (0, None, None) => EdgeMeta::None,
+                    (1, Some(n), None) => EdgeMeta::Narrative(NarrativeId::new(n)),
+                    (2, None, Some(v)) => EdgeMeta::Votes(
+                        u32::try_from(v).map_err(|_| SqliteError(format!("meta_votes {v} out of range")))?,
+                    ),
+                    (k, n, v) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}) is malformed"))),
+                };
+                entries.push(EdgeEntry {
+                    edge: EdgeId(format!("{rel_name}:{}", hash_from_bytes(&blob)?.hex())),
+                    node: atlas_graph_types::canon::ids::parse_position(&object, "edge_index.object")?,
+                    meta,
+                });
+            }
+            let total = usize::try_from(total).unwrap_or(0);
+            let next = if start + entries.len() < total { Some(start + entries.len()) } else { None };
+            Ok(EdgePage { kind: q.kind, entries, next })
+        })
+    }
+}
+
+impl GraphQuery for SqliteSnapshot {
+    fn node(&self, id: &AnyNodeId) -> Option<Node> {
+        let key = any_node_id_str(id);
+        self.with_conn(|conn| {
+            let payload: Option<Vec<u8>> = conn
+                .prepare_cached("SELECT payload FROM all_node WHERE id = ?1")?
+                .query_row([key.as_str()], |r| r.get(0))
+                .optional()?;
+            Ok(match payload {
+                Some(bytes) => Some(Node::decode(&bytes)?),
+                None => None,
+            })
+        })
+        .unwrap_or(None)
+    }
+
+    fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
+        let key = hash_bytes(&pid.hash);
+        self.with_conn(|conn| {
+            let payload: Option<Vec<u8>> = conn
+                .prepare_cached("SELECT payload FROM all_node WHERE pid = ?1")?
+                .query_row([key.as_slice()], |r| r.get(0))
+                .optional()?;
+            Ok(match payload {
+                Some(bytes) => {
+                    let node = Node::decode(&bytes)?;
+                    // `PositionKind` is not a column: re-derive and compare,
+                    // so a pid of another kind with the same hash is refused.
+                    (node.pid() == *pid).then(|| node.canonical_bytes())
+                }
+                None => None,
+            })
+        })
+        .unwrap_or(None)
+    }
+
+    fn edge_summary(&self, p: &Position) -> EdgeSummary {
+        let subject = position_str(p);
+        self.with_conn(|conn| {
+            let mut stmt =
+                conn.prepare_cached("SELECT rel, dir, COUNT(*) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
+            let mut rows = stmt.query([subject.as_str()])?;
+            let mut out = EdgeSummary::new();
+            while let Some(row) = rows.next()? {
+                let rel: i64 = row.get(0)?;
+                let dir: i64 = row.get(1)?;
+                let n: i64 = row.get(2)?;
+                let kind = Self::kind_of(rel, dir)
+                    .ok_or_else(|| SqliteError(format!("edge_index (rel {rel}, dir {dir}) names no EdgeKind")))?;
+                if n > 0 {
+                    out.insert(kind, n as usize);
+                }
+            }
+            Ok(out)
+        })
+        .unwrap_or_default()
+    }
+
+    fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage {
+        self.edges_inner(p, q).unwrap_or_else(|_| EdgePage { kind: q.kind, entries: Vec::new(), next: None })
+    }
+
+    fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId> {
+        let section = match corpus {
+            "bible" => Section::Kjv,
+            "concord" => Section::Concord,
+            _ => return Vec::new(),
+        };
+        if !self.present.contains(&section) {
+            return Vec::new();
+        }
+        let schema = if section == Section::Core { "main" } else { section.name() };
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached(&format!(
+                "SELECT node_id FROM {schema}.reading_spine WHERE ord >= ?1 ORDER BY ord LIMIT ?2"
+            ))?;
+            let mut rows = stmt.query(rusqlite::params![start as i64, n as i64])?;
+            let mut out = Vec::new();
+            while let Some(row) = rows.next()? {
+                let id: String = row.get(0)?;
+                out.push(parse_any_node_id(&id, "reading_spine.node_id")?);
+            }
+            Ok(out)
+        })
+        .unwrap_or_default()
+    }
+}
+
+impl GraphSnapshot for SqliteSnapshot {
+    fn version(&self) -> GraphVersion {
+        self.version
+    }
+}

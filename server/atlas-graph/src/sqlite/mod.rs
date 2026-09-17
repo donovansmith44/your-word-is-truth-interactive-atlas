@@ -8,7 +8,7 @@ pub mod logical;
 pub mod manifest;
 pub mod partition;
 pub mod rows;
-// pub mod snapshot;  // Task 7
+pub mod snapshot;
 pub mod writer;
 
 use std::path::Path;
