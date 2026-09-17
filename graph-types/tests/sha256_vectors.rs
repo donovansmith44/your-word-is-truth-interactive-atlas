@@ -53,26 +53,33 @@ fn nist_one_million_a() {
     );
 }
 
+/// Padding is where a hand-written SHA-256 goes wrong, so every dangerous
+/// length is a KNOWN-ANSWER test, not a shape check.
+///
+/// 55 is the largest message whose `0x80` + zeros + 64-bit length still
+/// fit in one block. 56..=63 each spill the length word into a SECOND
+/// block. 64 is a whole block with the entire padding block following.
+/// 65 restarts the cycle; 119/120 are the same two cases one block later,
+/// so an off-by-one that only shows after the first `chunks_exact`
+/// iteration cannot hide.
+///
+/// Every digest below is `sha256sum` of that many `'a'` bytes, confirmed
+/// independently against `openssl dgst -sha256`. Two outside tools, not
+/// this crate agreeing with itself.
 #[test]
-fn padding_boundaries_around_one_block() {
-    // 55 bytes is the largest message whose padding + length still fit in
-    // one block; 56..=63 and 64 each spill into a second. Cross-checked
-    // against the streaming identity below rather than against magic
-    // constants: what matters is that no length is mis-padded.
-    for n in 0..=130usize {
-        let msg = vec![b'x'; n];
-        let d = sha256(&msg);
-        assert_eq!(d.len(), 32, "digest is always 32 bytes (n = {n})");
+fn padding_boundaries_are_known_answer_tests() {
+    let cases: [(usize, &str); 7] = [
+        (55, "9f4390f8d30c2dd92ec9f095b65e2b9ae9b0a925a5258e241c9f1e910f734318"),
+        (56, "b35439a4ac6f0948b6d6f9e3c6af0f5f590ce20f1bde7090ef7970686ec6738a"),
+        (63, "7d3e74a05d7db15bce4ad9ec0658ea98e3f06eeecf16b4c6fff2da457ddc2f34"),
+        (64, "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb"),
+        (65, "635361c48bb9eab14198e76ea8ab7f1a41685d6ad62aa9146d301d4f17eb0ae0"),
+        (119, "31eba51c313a5c08226adf18d4a359cfdfd8d2e816b13f4af952f7ea6584dcfb"),
+        (120, "2f3d335432c70b580af0e8e1b3674a7c020d683aa5f73aaaedfdc55af904c21c"),
+    ];
+    for (n, expected) in cases {
+        assert_eq!(hex(&sha256(&vec![b'a'; n])), expected, "{n} × 'a' mis-padded");
     }
-    // Known-answer anchors at the two dangerous lengths.
-    assert_eq!(
-        hex(&sha256(&vec![b'a'; 55])),
-        "9f4390f8d30c2dd92ec9f095b65e2b9ae9b0a925a5258e241c9f1e910f734318"
-    );
-    assert_eq!(
-        hex(&sha256(&vec![b'a'; 64])),
-        "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb"
-    );
 }
 
 #[test]

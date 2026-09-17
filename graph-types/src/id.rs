@@ -199,11 +199,14 @@ pub struct ContentHash(pub [u8; 16]);
 
 #[cfg(feature = "canon-ids")]
 impl ContentHash {
-    /// 32 lowercase hex chars -- the artifact's id spelling.
+    /// 32 lowercase hex chars -- the artifact's id spelling. Written into
+    /// one pre-sized String rather than allocating a `format!` per byte:
+    /// this runs once per node on every graph load.
     pub fn hex(&self) -> String {
+        use std::fmt::Write;
         let mut s = String::with_capacity(32);
         for b in self.0 {
-            s.push_str(&format!("{b:02x}"));
+            let _ = write!(s, "{b:02x}"); // writing into a String cannot fail
         }
         s
     }

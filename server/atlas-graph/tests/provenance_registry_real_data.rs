@@ -16,7 +16,7 @@
 //! `real_graph` below for the measured reason.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// THE ARTIFACT ITSELF -- `data/compiled/graph.bin`, deserialized, not a
 /// partial rebuild.
@@ -173,44 +173,63 @@ fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
 }
 
 /// Every `pub provenance:` FIELD DECLARATION in graph-types' own source
-/// text, counted per file, over the WHOLE `graph-types/src` directory.
+/// text, counted per file, over the WHOLE `graph-types/src` tree --
+/// RECURSIVELY, every `.rs` file at every depth. Keys are paths relative
+/// to `src`, `/`-separated (`node.rs`, `canon/node.rs`).
 ///
 /// FIX ROUND 1 (review L-2): this used to read three NAMED files
 /// (`edge.rs`, `chrono.rs`, `node.rs`) with three exact-string needles. A
-/// provenance-bearing row family declared in any of the crate's other 10
+/// provenance-bearing row family declared in any of the crate's other
 /// source files -- or spelled with a different path to the same type --
 /// left all three counts unchanged, so the guard passed and the new family
 /// escaped attribution silently: the exact hole the guard exists to close.
-/// It now walks the directory and matches the FIELD, not a file plus a
+/// It now walks the tree and matches the FIELD, not a file plus a
 /// verbatim type path.
 ///
-/// (FIX ROUND 2, review L-NEW-4: that figure read "11". Re-measured at the
-/// moment of writing: `graph-types/src` holds 13 `.rs` files -- chrono,
-/// edge, explore, frontier, graph, id, ingest, lib, node, present, store,
-/// tests, text -- of which 3 carry declarations, so the others number 10.
-/// The original review said "the crate has 14 files", also wrong, and round
-/// 1 adapted the wrong number instead of re-running it: a count asserted in
-/// prose inside the very fix whose lesson was "walk it, don't name it".
-/// The guard below reads the directory; this sentence is only narration.)
+/// (FIX ROUND 2, review L-NEW-4: this narration used to assert a FILE
+/// COUNT -- "11", then "13, of which 3 carry declarations" -- and got it
+/// wrong twice, inside the very fix whose lesson was "walk it, don't name
+/// it". So it no longer counts anything in prose. The guard reads the
+/// directory; the pin below reads the guard.)
+///
+/// (DB-2a Task 3 FIX ROUND 1, ruling R16: the walk is now RECURSIVE.
+/// It used to read ONE level and assert every entry `is_file`, on the
+/// theory that a flat module directory made a subdirectory a new place
+/// declarations could hide. Task 1 added `graph-types/src/canon/`, and the
+/// assert did exactly what it was built to do -- it failed loudly. The
+/// right answer to "declarations could hide in a subdirectory" is to walk
+/// the subdirectory, not to forbid it: every `.rs` file at any depth is
+/// read, and the map is keyed by the path RELATIVE to `src` with `/`
+/// separators, so a future `canon/rows.rs` declaration would appear under
+/// its own name rather than colliding with a top-level `rows.rs`.)
 fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
     let types_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../graph-types/src");
     let mut out: BTreeMap<String, usize> = BTreeMap::new();
-    let entries = std::fs::read_dir(&types_dir).unwrap_or_else(|e| panic!("{} must be readable: {e}", types_dir.display()));
-    for entry in entries {
-        let path = entry.expect("a readable directory entry").path();
-        // The crate is a flat module directory today; a subdirectory
-        // appearing here would be a NEW place declarations could hide, so
-        // it fails loudly rather than being skipped.
-        assert!(path.is_file(), "graph-types/src gained a subdirectory ({}) -- this guard walks one level; widen it", path.display());
-        if path.extension().and_then(|e| e.to_str()) != Some("rs") {
-            continue;
-        }
-        let src = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{} must be readable: {e}", path.display()));
-        // The FIELD, however its type is spelled: `ProvenanceId`,
-        // `crate::ingest::ProvenanceId`, or any future path to it.
-        let n = src.lines().filter(|l| l.trim().starts_with("pub provenance:") && l.trim().ends_with(',')).count();
-        if n > 0 {
-            out.insert(path.file_name().expect("a named file").to_string_lossy().into_owned(), n);
+
+    // Explicit stack rather than recursion: the whole walk stays in one
+    // function, so the "every .rs at any depth" claim is readable in one
+    // place. `rel` is the path so far, `/`-joined, and is what keys `out`.
+    let mut stack: Vec<(PathBuf, String)> = vec![(types_dir.clone(), String::new())];
+    while let Some((dir, rel)) = stack.pop() {
+        let entries = std::fs::read_dir(&dir).unwrap_or_else(|e| panic!("{} must be readable: {e}", dir.display()));
+        for entry in entries {
+            let path = entry.expect("a readable directory entry").path();
+            let name = path.file_name().expect("a named entry").to_string_lossy().into_owned();
+            let child_rel = if rel.is_empty() { name.clone() } else { format!("{rel}/{name}") };
+            if path.is_dir() {
+                stack.push((path, child_rel));
+                continue;
+            }
+            if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+                continue;
+            }
+            let src = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{} must be readable: {e}", path.display()));
+            // The FIELD, however its type is spelled: `ProvenanceId`,
+            // `crate::ingest::ProvenanceId`, or any future path to it.
+            let n = src.lines().filter(|l| l.trim().starts_with("pub provenance:") && l.trim().ends_with(',')).count();
+            if n > 0 {
+                out.insert(child_rel, n);
+            }
         }
     }
     out

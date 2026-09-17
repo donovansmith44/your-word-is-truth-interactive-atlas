@@ -125,8 +125,15 @@ fn version_of(g: &Graph) -> GraphVersion {
 }
 
 /// ON: the root is SHA-256-128 over the LOGICAL DUMP — every node, every
-/// row of every family, every reading spine. Nothing the graph holds is
-/// outside the stamp, which is what closes spec §3.1 defect 1.
+/// row of every family, every reading spine, which is what closes spec
+/// §3.1 defect 1.
+///
+/// What the stamp deliberately EXCLUDES: `indexes`, `symmetric_indexes`
+/// and `pid_index`. Those are DERIVED by `build_indexes` from the rows
+/// already in the dump — hashing them would stamp the same information
+/// twice and make the root depend on the index builder's internals rather
+/// than on the graph's content. The dump is the AUTHORED state; the
+/// derived state is a function of it.
 #[cfg(feature = "canon-ids")]
 fn version_of(g: &Graph) -> GraphVersion {
     GraphVersion(ContentHash(crate::sha256::sha256_prefixed_128(
@@ -538,16 +545,29 @@ mod laws {
     /// Spec §3.1 defect 1, ON: the root covers ROWS. Adding a
     /// `succession` and a `located_at` with the node table untouched must
     /// move the version.
-    #[cfg(feature = "canon-ids")]
-    #[test]
-    fn version_root_covers_rows_not_only_nodes() {
-        let base = graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]);
-        let rowed = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+    /// The ONE setup both sides of spec §3.1 defect 1 argue over: two
+    /// graphs with the SAME node table, one of which also carries a
+    /// `succession` and a `located_at` row. Shared so the two cfg'd tests
+    /// below differ in exactly the thing they disagree about — the
+    /// assertion — and cannot drift into comparing different graphs.
+    /// The node-table equality is asserted HERE, once, because it is the
+    /// premise of both, not a claim either test is making.
+    fn base_and_rowed() -> (Graph, Graph) {
+        let texts = [("bible/1.1.1", "a"), ("bible/1.1.2", "b")];
+        let base = graph_with(&texts);
+        let rowed = with_edges(graph_with(&texts));
         assert_eq!(
             base.nodes.keys().collect::<Vec<_>>(),
             rowed.nodes.keys().collect::<Vec<_>>(),
-            "the two graphs differ in ROWS only"
+            "premise: the two graphs differ in ROWS only"
         );
+        (base, rowed)
+    }
+
+    #[cfg(feature = "canon-ids")]
+    #[test]
+    fn version_root_covers_rows_not_only_nodes() {
+        let (base, rowed) = base_and_rowed();
         assert_ne!(version_of(&base), version_of(&rowed), "a row changes the root");
     }
 
@@ -559,13 +579,7 @@ mod laws {
     #[cfg(not(feature = "canon-ids"))]
     #[test]
     fn version_root_is_blind_to_rows_the_documented_defect() {
-        let base = graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]);
-        let rowed = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
-        assert_eq!(
-            base.nodes.keys().collect::<Vec<_>>(),
-            rowed.nodes.keys().collect::<Vec<_>>(),
-            "the two graphs differ in ROWS only"
-        );
+        let (base, rowed) = base_and_rowed();
         assert_eq!(
             version_of(&base),
             version_of(&rowed),
