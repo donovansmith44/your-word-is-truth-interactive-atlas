@@ -94,3 +94,64 @@ fn the_eras_wire_order_is_reproduced_by_sorting_the_payloads() {
 type Positions = HashMap<AnyNodeId, usize>;
 #[allow(dead_code)]
 type ByKey = BTreeMap<String, Vec<String>>;
+
+// --------------------------------------- Task 5: positions, persons_by_verse
+
+/// ORACLE: service.rs's bible_position / concord_position, verbatim.
+fn oracle_positions(g: &Graph, corpus: &'static str) -> Positions {
+    g.reading.get(corpus).map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect()).unwrap_or_default()
+}
+
+/// ORACLE: service.rs's persons_by_verse, verbatim (Person mentions only, row order, keyed by dotted ref).
+fn oracle_persons_by_verse(g: &Graph) -> HashMap<String, Vec<(String, String)>> {
+    let mut out: HashMap<String, Vec<(String, String)>> = HashMap::new();
+    for row in &g.mentions {
+        let atlas_graph_types::edge::MentionedEntity::Person(person_id) = &row.entity else { continue };
+        let Some(key) = atlas_graph::legacy::locus_dot_ref(&row.locus) else { continue };
+        let Some(label) = g.nodes.get(&person_id.erase()).and_then(|n| match &n.payload {
+            NodePayload::Person { label, .. } => Some(label.clone()),
+            _ => None,
+        }) else {
+            continue;
+        };
+        out.entry(key).or_default().push((person_id.0.clone(), label));
+    }
+    out
+}
+
+#[test]
+fn every_spine_slot_is_answered_by_position_of_and_nothing_else_is() {
+    let g = committed_graph();
+    let s = service();
+    let bible = oracle_positions(g, "bible");
+    assert!(!bible.is_empty());
+    for (id, want) in &bible {
+        let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id).expect("bible spine id decodes");
+        assert_eq!(s.position_of(b, c, v), Some(*want), "bible {id:?}");
+    }
+    let concord = oracle_positions(g, "concord");
+    assert!(!concord.is_empty());
+    for (id, want) in &concord {
+        let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id).expect("concord spine id decodes");
+        assert_eq!(s.concord_position_of(p, a, para), Some(*want), "concord {id:?}");
+    }
+    assert_eq!(s.position_of(1, 1, 200), None, "GEN 1:200 is off the spine");
+    assert_eq!(s.concord_position_of(99, 1, 1), None);
+}
+
+#[test]
+fn persons_at_verse_equals_the_retired_persons_by_verse_over_every_verse() {
+    let g = committed_graph();
+    let s = service();
+    let oracle = oracle_persons_by_verse(g);
+    assert!(oracle.len() > 1000, "the shipped graph mentions persons in thousands of verses: {}", oracle.len());
+    let mut inhabited = 0usize;
+    for id in &g.reading["bible"].order {
+        let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id).unwrap();
+        let key = atlas_graph::kjv_adapter::dot_ref(b, c, v);
+        let want = oracle.get(&key).cloned().unwrap_or_default();
+        inhabited += usize::from(!want.is_empty());
+        assert_eq!(s.persons_at_verse(b, c, v), want, "{key}");
+    }
+    assert_eq!(inhabited, oracle.len(), "every keyed verse is a spine verse");
+}

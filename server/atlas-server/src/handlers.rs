@@ -574,11 +574,14 @@ pub async fn chapter(
             // treatment as `heading`/`xref_count` below, off the
             // precomputed `graph.persons_by_verse` companion -- see that
             // field's own doc comment.
+            // DB-3: through the port (`GraphService::persons_at_verse`,
+            // `edges_with_nodes` over `mentions`), the retired
+            // `persons_by_verse` companion's exact answer.
             let persons = graph
-                .persons_by_verse
-                .get(&key)
-                .map(|rows| rows.iter().map(|(id, name)| PersonRefOut { id: id.clone(), name: name.clone() }).collect())
-                .unwrap_or_default();
+                .persons_at_verse(book.0, chapter, v)
+                .into_iter()
+                .map(|(id, name)| PersonRefOut { id, name })
+                .collect();
             // M-C2 (requirement 1, decisive-title law re-homed as a graph
             // query): `graph.heading_index` (precomputed at `GraphService::
             // assemble` time by `heading::build_heading_index`), not

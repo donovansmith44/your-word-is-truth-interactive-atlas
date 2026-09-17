@@ -111,7 +111,7 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
         })
         .collect();
 
-    let persons: Vec<Attached> = graph.persons_by_verse.get(&sref).map(|v| v.iter().map(|(pid, label)| attached(NodeKind::Person, pid, label.clone())).collect()).unwrap_or_default();
+    let persons: Vec<Attached> = graph.persons_at_verse(book, chapter, verse).iter().map(|(pid, label)| attached(NodeKind::Person, pid, label.clone())).collect();
 
     // Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is
     // not an event. fix this error and others like it"): SPLIT by

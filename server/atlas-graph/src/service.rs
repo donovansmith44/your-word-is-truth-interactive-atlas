@@ -48,18 +48,6 @@ use crate::event_world::{Chronology, EventWorldStats};
 
 pub struct GraphService {
     snapshot: MemSnapshot,
-    /// Reverse index: TextUnit node id -> its position in the bible
-    /// reading spine. `GraphQuery` (the port) has no such lookup (only
-    /// forward `reading_window`); building this once, alongside the
-    /// graph, is what lets `chapter_span`/`position_of` below resolve
-    /// "start from this ref" without scanning the whole spine per call.
-    bible_position: HashMap<AnyNodeId, usize>,
-    /// CORP-2a (decision 8): the Concord-corpus sibling of
-    /// `bible_position` above -- SAME shape, over the "concord" reading
-    /// spine (empty when no Concord data was built, e.g. every fixture
-    /// that doesn't supply a `ConcordBundle` -- an honestly empty
-    /// lookup, never a placeholder).
-    concord_position: HashMap<AnyNodeId, usize>,
     pub stats: BuildStats,
     /// Batch M-B (narrowed at M-C, renamed `EventWorld` -> `Chronology`):
     /// the chronology companion index -- same status as `bible_position`
@@ -102,30 +90,6 @@ pub struct GraphService {
     /// `target_display`) -- same "port doesn't model this access shape"
     /// class as `narrative_legs` above.
     pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
-    /// M-D3 (owner ruling U5, "in-text person and place name links,
-    /// mentions-attested ONLY"): FROM-verse dot-ref -> every PERSON the
-    /// graph's own `mentions` relation attests at that locus, `(id,
-    /// display label)` pairs in row-insertion order (the SAME "no
-    /// re-sort, wire order is canon order" discipline `EdgeSectionRegistry.
-    /// Mentions`'s own client-side doc comment already establishes for
-    /// this exact relation). Precomputed once here, the SAME "O(1)
-    /// per-verse lookup for a whole-chapter fetch" treatment
-    /// `heading_index`/`cross_refs_by_from` above already get, rather than
-    /// a per-verse graph query inside the `chapter` handler's own hot
-    /// loop. Read straight off `Graph.mentions` (the SAME raw table
-    /// `cross_refs_by_from` above reads `Graph.cross_refs` from, BEFORE
-    /// publish, since this is built in `assemble` alongside those
-    /// companions) filtered to `MentionedEntity::Person` -- `MentionedEntity::
-    /// Place` rows are deliberately NOT folded in here: `VerseOut.places`
-    /// already has its own, separate, EARLIER-established source
-    /// (`AtlasData::places_for_verse`, alias-resolved via
-    /// `resolve_display_name` in the handler) that this field does not
-    /// replace or duplicate -- EXTEND-ONLY discipline, a place mention's
-    /// own existing path is untouched. `HashMap`, not `BTreeMap`, for the
-    /// same reason as `cross_refs_by_from`: only ever
-    /// `.get()`'d by key inside the `chapter` handler, never iterated or
-    /// serialized as a whole.
-    pub persons_by_verse: HashMap<String, Vec<(String, String)>>,
     /// TRAV-1 (controller decision 2, "the graph serves it... one path"):
     /// prior/following-in-time -- DIRECTION read directly off the honest
     /// `earlier`/`later` ends of the graph's own `temporal_adjacency` rows,
@@ -422,18 +386,6 @@ impl GraphService {
     /// the artifact's own serialized fields, via `artifact::to_service_parts`,
     /// on the from-artifact path) and hands the finished value in here.
     fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, chronology: Chronology, red_letter_spans: HashMap<String, Vec<(usize, usize)>>) -> Self {
-        let bible_position = graph
-            .reading
-            .get(crate::kjv_adapter::BIBLE_CORPUS)
-            .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
-            .unwrap_or_default();
-        // CORP-2a: the SAME one-time reverse-index build as `bible_position`
-        // above, over the "concord" spine.
-        let concord_position = graph
-            .reading
-            .get(crate::concord_adapter::CONCORD_CORPUS)
-            .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
-            .unwrap_or_default();
         let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for row in &graph.succession {
             narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
@@ -455,41 +407,6 @@ impl GraphService {
         for row in &graph.cross_refs {
             let Some(key) = crate::legacy::locus_dot_ref(&row.from) else { continue };
             cross_refs_by_from.entry(key).or_default().push(atlas_core::data::CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
-        }
-        // M-D3 (owner ruling U5): the SAME treatment for the mentions
-        // relation's own PERSON rows -- see this struct's own
-        // `persons_by_verse` doc comment. `AnyNodeId::erase` (PersonId ->
-        // AnyNodeId) is the standard "look this typed id up in the raw
-        // node map" step every other id-carrying row in this crate already
-        // uses; a mentions row naming a person id absent from `graph.nodes`
-        // is a data-integrity impossibility the law-check stage already
-        // guards elsewhere in this pipeline, but this loop still skips it
-        // defensively (`?`) rather than panicking on a network handler's
-        // own eventual caller.
-        //
-        // PG-1a WIRE SEAM (batch-pg1a-brief.md decision 6): the `let-else`
-        // match against `MentionedEntity::Person` below ALREADY excludes
-        // `MentionedEntity::PeopleGroup` rows by construction (it was
-        // written for the two-variant `PlaceOrPerson` era and never
-        // widened) -- the nine reclassified Gen-10 gentilics (PG-1a) LOSE
-        // their in-text `VerseOut.persons` link here, verified and
-        // disclosed rather than silently true: this is the U5-rebinding
-        // seam for the READING surface specifically (`graph_handlers::
-        // node_edges`'s own filter is the seam for the GENERIC entity-list
-        // surface) -- a future PeopleGroup-aware client widens this arm
-        // (and adds its own `PeopleGroupRefOut`/`VerseOut.people_groups`),
-        // not this batch.
-        let mut persons_by_verse: HashMap<String, Vec<(String, String)>> = HashMap::new();
-        for row in &graph.mentions {
-            let atlas_graph_types::edge::MentionedEntity::Person(person_id) = &row.entity else { continue };
-            let Some(key) = crate::legacy::locus_dot_ref(&row.locus) else { continue };
-            let Some(label) = graph.nodes.get(&person_id.erase()).and_then(|n| match &n.payload {
-                atlas_graph_types::node::NodePayload::Person { label, .. } => Some(label.clone()),
-                _ => None,
-            }) else {
-                continue;
-            };
-            persons_by_verse.entry(key).or_default().push((person_id.0.clone(), label));
         }
         // TRAV-1: the SAME one-time, pre-store `graph` scan as the
         // companions above. Two DIFFERENT questions, deliberately kept
@@ -533,15 +450,12 @@ impl GraphService {
         let snapshot = store.open(version).expect("the version just published must always be open-able");
         GraphService {
             snapshot,
-            bible_position,
-            concord_position,
             stats,
             chronology,
             event_world_stats,
             narrative_legs,
             heading_index,
             cross_refs_by_from,
-            persons_by_verse,
             temporal_neighbors,
             red_letter_spans,
             provenance,
@@ -585,14 +499,49 @@ impl GraphService {
     /// generic port (see this struct's own doc comment) -- an adapter-side
     /// companion, same status as `chapter_span` below.
     pub fn position_of(&self, book: u8, chapter: u16, verse: u16) -> Option<usize> {
-        self.bible_position.get(&crate::kjv_adapter::verse_node_id(book, chapter, verse)).copied()
+        // DB-3: the port's own `position_of` (spec 4); the reverse index
+        // this used to read (`bible_position`) is retired.
+        self.snapshot.position_of(crate::kjv_adapter::BIBLE_CORPUS, &crate::kjv_adapter::verse_node_id(book, chapter, verse))
     }
 
     /// CORP-2a (decision 8): the Concord-corpus sibling of `position_of`
     /// above — resolves a `(part, article, paragraph)` ref into the
     /// "concord" spine's own starting index.
     pub fn concord_position_of(&self, part: u8, article: u16, paragraph: u16) -> Option<usize> {
-        self.concord_position.get(&crate::concord_adapter::text_unit_id(part, article, paragraph)).copied()
+        self.snapshot.position_of(crate::concord_adapter::CONCORD_CORPUS, &crate::concord_adapter::text_unit_id(part, article, paragraph))
+    }
+
+    /// DB-3 (spec 4): every PERSON the `mentions` relation attests at one
+    /// verse, `(id, display label)` in mentions-row order -- the retired
+    /// `persons_by_verse` companion, answered through the port
+    /// (`edges_with_nodes` over `mentions`, forward, at the verse). Only
+    /// `Person` targets: the PG-1a seam (a PeopleGroup mention is a
+    /// different wire field, not this one) is preserved by kind.
+    pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
+        use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::id::NodeKind;
+        use atlas_graph_types::node::NodePayload;
+        let p = at(&crate::kjv_adapter::verse_node_id(book, chapter, verse));
+        let kind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+        let mut out = Vec::new();
+        let mut cursor = None;
+        loop {
+            let page = self.snapshot.edges_with_nodes(&p, &EdgeQuery { kind, cursor, limit: 256 });
+            for e in page.entries {
+                let Some(node) = e.node else { continue };
+                if node.id.kind != NodeKind::Person {
+                    continue;
+                }
+                if let NodePayload::Person { label, .. } = node.payload {
+                    out.push((node.id.raw.clone(), label));
+                }
+            }
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break out,
+            }
+        }
     }
 
     /// The (start, n) window covering exactly one chapter -- `scope=chapter`'s
