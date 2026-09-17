@@ -317,6 +317,17 @@ fn position_inventory(model: &Graph) -> BTreeSet<Position> {
         out.extend(ix.fwd.keys().cloned());
         out.extend(ix.inv.keys().cloned());
     }
+    // Survey gotcha 1: `symmetric_indexes` is the SAME kind of built,
+    // never-authored adjacency `indexes` is (`BiIndex::build_symmetric`
+    // instead of `build`) -- a row whose only lowering is symmetric (e.g.
+    // an `Analogue` pair with no directed row alongside it) has both its
+    // ends live ONLY here, so omitting this loop left them outside "every
+    // position the model knows" (position_inventory_covers_symmetric_
+    // indexes pins the gap this closes).
+    for ix in model.symmetric_indexes.values() {
+        out.extend(ix.fwd.keys().cloned());
+        out.extend(ix.inv.keys().cloned());
+    }
     out
 }
 
@@ -407,7 +418,7 @@ pub fn assert_answers_match(candidate: &impl GraphQuery, model: &Graph) {
 #[cfg(test)]
 mod laws {
     use super::*;
-    use crate::edge::{Justification, LocatedAt, Succession};
+    use crate::edge::{Analogue, Justification, LocatedAt, Succession};
     use crate::id::{EventId, NodeKind, PlaceId};
     use crate::ingest::ProvenanceId;
     use crate::node::NodePayload;
@@ -668,6 +679,42 @@ mod laws {
             assert_answers_match(&liar, &g)
         }));
         assert!(caught.is_err(), "the harness must catch a dropped edge");
+    }
+
+    /// Survey gotcha 1: `position_inventory` walked `indexes` but never
+    /// `symmetric_indexes`, so a graph whose ONLY row is symmetric (no
+    /// directed row at all) reports an inventory that omits both of that
+    /// row's own ends -- a real blind spot in the port admission
+    /// harness (`assert_answers_match` above quantifies "every position
+    /// the model knows" over exactly this set). Analogue is the row: two
+    /// Event ids, no directed row alongside them, no node table entries
+    /// either (the same sparse-table shape `conformance_harness_catches_
+    /// a_lying_snapshot` above already relies on).
+    #[test]
+    fn position_inventory_covers_symmetric_indexes() {
+        let mut g = Graph::default();
+        g.analogue.push(Analogue {
+            a: EventId::new("e1"),
+            b: EventId::new("e2"),
+            provenance: "p".into(),
+        });
+        g.build_indexes();
+
+        let inventory = position_inventory(&g);
+        assert!(
+            inventory.contains(&Position::Node(AnyNodeId {
+                kind: NodeKind::Event,
+                raw: "e1".into()
+            })),
+            "a symmetric-only graph's first end must be a known position"
+        );
+        assert!(
+            inventory.contains(&Position::Node(AnyNodeId {
+                kind: NodeKind::Event,
+                raw: "e2".into()
+            })),
+            "a symmetric-only graph's second end must be a known position"
+        );
     }
 
     #[test]
