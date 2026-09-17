@@ -610,3 +610,31 @@ Ceiling pinned at **570 s** (271.5 x 2, rounded up to the next 30 s) in
 scale: gate 2 (`assert_answers_match` over `MemSnapshot`, the same
 inventory) runs in ~26-40 s; the SQLite backend answers identically at
 ~5x the cost in this debug-build harness.
+
+## DB-3 (2026-09-17): the port widened, companions retired
+
+| Measure | Before | After |
+|---|---:|---:|
+| Gate 1 artifact load (ceiling 4 s) | 2.245 s | 2.714 s |
+| Gate 9 SQLite admission (ceiling 570 s) | 271.5 s | 377.7 s |
+| `Graph::edge_rows` | -- | 1,042,278 entries x 16 B = 16.7 MB |
+
+Gate 1's +0.47 s is `edge_rows` (one more mint of every index entry's id,
+in a parallel pass -- the single-threaded first cut measured 4.07 s and
+tripped the ceiling) plus `spine_index`. Gate 9 grew because the
+conformance harness now also drains `nodes_of_kind` per kind, `nodes`
+in 1,000-id chunks, `edges_with_nodes` + `row_provenance` on the first
+page of every kind at every position, and `position_of` per node:
+`assert_answers_match` over SQLite went 159.7 s -> 264.3 s; write and
+dump re-derivation are unchanged (47.9 s, 18.3 s).
+
+Retired: era_ids, polity_ids, narrative_ids, event_ids, place_ids, person_ids,
+bible_position, concord_position, persons_by_verse, temporal_neighbors,
+ProvenanceIndex::{attests_for_event, event_mentions_for_event, analogue_for_pair}.
+Each has an equivalence test against its port composition over the real
+artifact (`server/atlas-graph/tests/port_widening_real_data.rs`, the retired
+computation kept there as the oracle). Kept with reasons (plan judgment calls
+4-5): `cross_refs_by_from` (its `target_display` is a row field the port does
+not expose; DB-4's `kjv.cross_refs` seek retires it), `ProvenanceIndex::by_family`
+(a per-family DISTINCT, a section-level scan). Not shipped (judgment call 1):
+`compose_frontier` -- no `frontier::compose` exists to default to.
