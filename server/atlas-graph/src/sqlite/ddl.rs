@@ -64,11 +64,17 @@ CREATE TABLE edge_index (
 ) WITHOUT ROWID;
 ";
 
-/// Spec §5.1's three indexes -- created after the inserts.
+/// Spec §5.1's three indexes -- created after the inserts. `edge_by_id`
+/// is NOT unique, deviating from the spec's text (ruled in DB-2b, spec
+/// erratum): a symmetric entry is stored once under EACH end with the
+/// same `(edge_id, dir = 2)` (spec §5.2's own shape), and a directed
+/// relation whose rows mint one id twice (identical `(rel, subject,
+/// object)`) keeps both entries in memory today; a unique index would
+/// refuse both. `row_provenance` reads the first hit either way.
 pub const COMMON_INDEX_DDL: &str = "
 CREATE INDEX node_by_kind ON node (kind, id);
 CREATE UNIQUE INDEX node_by_pid ON node (pid);
-CREATE UNIQUE INDEX edge_by_id ON edge_index (edge_id, dir);
+CREATE INDEX edge_by_id ON edge_index (edge_id, dir);
 ";
 
 /// Spec §5.4 / §5.5: `reading_spine` (kjv: corpus 'bible'; concord: 'concord').

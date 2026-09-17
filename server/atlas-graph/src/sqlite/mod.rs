@@ -4,12 +4,12 @@
 //! sees it (zero-dep covenant, spec §1.2).
 pub mod columns;
 pub mod ddl;
-// pub mod logical;   // Task 6
-// pub mod manifest;  // Task 5
-// pub mod partition; // Task 5
+pub mod logical;
+pub mod manifest;
+pub mod partition;
 pub mod rows;
 // pub mod snapshot;  // Task 7
-// pub mod writer;    // Task 5
+pub mod writer;
 
 use std::path::Path;
 

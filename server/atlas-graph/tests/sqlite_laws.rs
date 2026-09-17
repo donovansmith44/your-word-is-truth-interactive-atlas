@@ -223,8 +223,11 @@ fn full_justification() -> Justification {
 /// One hand-built row per family plus the nodes and spines the rows
 /// refer to. The 21 row constructions are COPIED VERBATIM from the golden
 /// test `graph-types/tests/canon_row_vectors.rs` (DB-2a), so their
-/// canonical bytes are ALREADY pinned there; extra rows cover the other
-/// `ContainerContent` shape of each corpus and every `DatePlacement` kind.
+/// canonical bytes are ALREADY pinned there (container ids renamed so
+/// spec 2.1's placement rule splits them: `passage-` -> core,
+/// `bible-book-`/`bible-chapter-` -> kjv, `concord-` -> concord); extra
+/// rows cover the other `ContainerContent` shape of each corpus and every
+/// `DatePlacement` kind.
 fn specimen_graph() -> atlas_graph_types::graph::Graph {
     use atlas_graph_types::graph::{Graph, ReadingSpine};
     use atlas_graph_types::id::{AnyNodeId, NodeKind};
@@ -232,28 +235,28 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     let mut g = Graph::default();
     // 1. contains_bible -- the flat-loci content, a non-empty set.
     g.contains_bible.push(Contains::<BibleTag> {
-        container: ContainerNodeId::new("bible/GEN.1"),
+        container: ContainerNodeId::new("passage-creation"),
         content: ContainerContent::Loci(LocusSet([bl(1, 1, 1), bl(1, 1, 2)].into_iter().collect())),
         provenance: "kjv".into(),
         justification: Justification::default(),
     });
     // 1b. contains_bible -- the child-container content.
     g.contains_bible.push(Contains::<BibleTag> {
-        container: ContainerNodeId::new("bible/GEN"),
-        content: ContainerContent::Container(ContainerNodeId::new("bible/GEN.1")),
+        container: ContainerNodeId::new("bible-book-GEN"),
+        content: ContainerContent::Container(ContainerNodeId::new("bible-chapter-GEN-1")),
         provenance: "kjv".into(),
         justification: full_justification(),
     });
     // 2. contains_concord -- the recursive child-container content.
     g.contains_concord.push(Contains::<ConcordTag> {
-        container: ContainerNodeId::new("concord/ac"),
-        content: ContainerContent::Container(ContainerNodeId::new("concord/ac.1")),
+        container: ContainerNodeId::new("concord-ac"),
+        content: ContainerContent::Container(ContainerNodeId::new("concord-ac-1")),
         provenance: "concord".into(),
         justification: Justification::default(),
     });
     // 2b. contains_concord -- a loci set of two, one with a span.
     g.contains_concord.push(Contains::<ConcordTag> {
-        container: ContainerNodeId::new("concord/ac.1"),
+        container: ContainerNodeId::new("concord-ac-1"),
         content: ContainerContent::Loci(LocusSet(
             [cl(1, 1, 1), Locus { unit: ConcordRef { part: 1, article: 1, paragraph: 2 }, span: Some(span(0, 3)) }]
                 .into_iter()
@@ -432,10 +435,11 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         node(NodeKind::TextUnit, "bible/1.1.1", unit("bible", "kjv", "In the beginning")),
         node(NodeKind::TextUnit, "bible/1.1.2", unit("bible", "kjv", "And the earth")),
         node(NodeKind::TextUnit, "concord/1.1.1", unit("concord", "en", "We believe")),
-        node(NodeKind::Container, "bible/GEN", NodePayload::Container { title: "Genesis".into() }),
-        node(NodeKind::Container, "bible/GEN.1", NodePayload::Container { title: "Genesis 1".into() }),
-        node(NodeKind::Container, "concord/ac", NodePayload::Container { title: "Augsburg Confession".into() }),
-        node(NodeKind::Container, "concord/ac.1", NodePayload::Container { title: "Article I".into() }),
+        node(NodeKind::Container, "passage-creation", NodePayload::Container { title: "Creation".into() }),
+        node(NodeKind::Container, "bible-book-GEN", NodePayload::Container { title: "Genesis".into() }),
+        node(NodeKind::Container, "bible-chapter-GEN-1", NodePayload::Container { title: "Genesis 1".into() }),
+        node(NodeKind::Container, "concord-ac", NodePayload::Container { title: "Augsburg Confession".into() }),
+        node(NodeKind::Container, "concord-ac-1", NodePayload::Container { title: "Article I".into() }),
     ] {
         g.nodes.insert(n.id.clone(), n);
     }
@@ -513,4 +517,129 @@ fn every_family_round_trips_through_its_columns_with_identical_canon_bytes() {
             assert_eq!(read, written, "{s:?}/{f:?}");
         }
     }
+}
+
+// ---------------------------------------------------------------------
+// Task 5: the partition, the manifest, and the writer
+// ---------------------------------------------------------------------
+use atlas_graph::sqlite::manifest::{read_manifest, root_of, Manifest, ManifestSection};
+use atlas_graph::sqlite::partition::{edge_row_map, partition};
+use atlas_graph::sqlite::writer::write_sections;
+
+#[test]
+fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_row() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let parts = partition(&g).unwrap();
+    let total: usize = parts.iter().map(|p| p.edges.len()).sum();
+    let in_memory: usize = g
+        .indexes
+        .values()
+        .map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>() + ix.inv.values().map(Vec::len).sum::<usize>())
+        .sum::<usize>()
+        + g.symmetric_indexes.values().map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>()).sum::<usize>();
+    assert_eq!(total, in_memory, "no entry lost, none duplicated");
+    assert!(total > 0, "the specimen graph indexes something");
+    let map = edge_row_map(&g);
+    let justified_code = atlas_graph_types::edge::RelationId::ALL
+        .iter()
+        .position(|r| *r == atlas_graph_types::edge::RelationId::JustifiedBy)
+        .unwrap() as i64;
+    let mut saw_justified = false;
+    for p in &parts {
+        for e in &p.edges {
+            if e.rel != justified_code {
+                let (fam, ord, raw) = &map[&e.edge_id];
+                assert_eq!((e.row_family, e.row_id), (*fam, *ord));
+                assert_eq!(atlas_graph::sections::section_of_justified_by(e.row_family, raw.as_deref()), p.section);
+            } else {
+                saw_justified = true;
+                // A justified-by entry's row is its SOURCE row, and its
+                // section is that row's section.
+                let end = if e.dir == 0 { &e.subject } else { &e.object };
+                let source = match end {
+                    atlas_graph_types::id::Position::Edge(id) => id,
+                    other => panic!("justified-by source end must be an edge, got {other:?}"),
+                };
+                let (fam, ord, raw) = &map[source];
+                assert_eq!((e.row_family, e.row_id), (*fam, *ord));
+                assert_eq!(atlas_graph::sections::section_of_justified_by(*fam, raw.as_deref()), p.section);
+            }
+        }
+    }
+    assert!(saw_justified, "the specimen's grounded rows synthesise justified-by entries");
+    assert!(
+        parts.iter().any(|p| p.section == Section::Core && p.rows.iter().any(|(f, _, _)| *f == RowFamily::ContainsBible)),
+        "curated container row in core"
+    );
+    assert!(
+        parts.iter().any(|p| p.section == Section::Kjv && p.rows.iter().any(|(f, _, _)| *f == RowFamily::ContainsBible)),
+        "chapter container row in kjv"
+    );
+}
+
+#[test]
+fn the_manifest_round_trips_and_its_root_is_over_the_section_lines_only() {
+    let s = |name: &str, req: bool, logical: &str| ManifestSection {
+        name: name.into(),
+        required: req,
+        logical: logical.into(),
+        blob: "00".repeat(32),
+        bytes: 1,
+        schema_version: 14,
+    };
+    let sections = vec![s("core", true, &"a".repeat(32)), s("kjv", true, &"b".repeat(32)), s("concord", false, &"c".repeat(32))];
+    let root = root_of(&sections);
+    assert_eq!(root.len(), 32);
+    let m = Manifest {
+        schema: 1,
+        compiler: "test".into(),
+        built: "2026-09-17T00:00:00Z".into(),
+        root: root.clone(),
+        sections: sections.clone(),
+    };
+    let dir = std::env::temp_dir().join(format!("db2b-manifest-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("manifest.toml");
+    atlas_graph::sqlite::manifest::write_manifest(&m, &path).unwrap();
+    assert_eq!(read_manifest(&path).unwrap(), m);
+    let mut later = m.clone();
+    later.built = "2030-01-01T00:00:00Z".into();
+    later.sections[0].bytes = 999;
+    assert_eq!(root_of(&later.sections), root, "timestamps and byte sizes are outside the root (spec 2.2)");
+    let mut tampered = m.clone();
+    tampered.sections[1].logical = "d".repeat(32);
+    atlas_graph::sqlite::manifest::write_manifest(&tampered, &path).unwrap();
+    assert!(read_manifest(&path).is_err(), "a manifest whose root does not recompute is refused (spec 11)");
+}
+
+#[test]
+fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-writer-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (m, written) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann"]);
+    for (w, ms) in written.iter().zip(&m.sections) {
+        assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite", ms.name, ms.logical));
+        assert_eq!(ms.blob.len(), 64);
+        assert_eq!(ms.bytes, std::fs::metadata(&w.path).unwrap().len());
+        assert_eq!(ms.required, matches!(w.section, Section::Core | Section::Kjv));
+    }
+    assert_eq!(read_manifest(&dir.join("manifest.toml")).unwrap(), m);
+    let (m2, _) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    assert_eq!(m2.root, m.root, "a rewrite of identical content has an identical root");
+    assert_eq!(
+        m2.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
+        m.sections.iter().map(|s| &s.logical).collect::<Vec<_>>()
+    );
+    let files: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|f| f.ends_with(".sqlite"))
+        .collect();
+    assert_eq!(files.len(), 4, "stale section files are deleted before a rewrite: {files:?}");
 }
