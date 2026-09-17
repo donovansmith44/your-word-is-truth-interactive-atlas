@@ -165,10 +165,51 @@ fn version_of(g: &Graph) -> GraphVersion {
 /// canonical string spelling for an id. `DOMAIN_PREFIX` is NOT part of
 /// this stream: it is hashed in front of it by `version_of`, so the dump
 /// stays readable as itself.
+///
+/// FINAL REVIEW item 3: the walk is closed over `Graph` as well as over
+/// `RowFamily`. `Graph` is DESTRUCTURED below with every field named and
+/// no `..`, so a new row `Vec` added to the struct is a compile error
+/// here until it is given a place in the dump — which is to say, in the
+/// version root. Closing only over `RowFamily` would have let spec §3.1
+/// defect 1 (a root blind to rows) back in through the side door: a field
+/// with no matching family is simply never visited. The three DERIVED
+/// maps are named and discarded explicitly (`indexes: _`,
+/// `symmetric_indexes: _`, `pid_index: _`) — they are a function of the
+/// rows already in the dump, so hashing them would stamp the same
+/// information twice.
 #[cfg(feature = "canon-ids")]
 pub fn logical_dump(g: &Graph) -> Vec<u8> {
     use crate::canon::ids::any_node_id_str;
     use crate::canon::{Canon, RowFamily};
+
+    let Graph {
+        nodes,
+        contains_bible,
+        contains_concord,
+        attests,
+        succession,
+        canon_succession,
+        dated_by,
+        located_at,
+        fulfills,
+        typology,
+        named_after,
+        catechism,
+        comments_on,
+        spoken_by,
+        spoken_at,
+        mentions,
+        cross_refs,
+        quotes,
+        confesses,
+        corresponds_bible,
+        temporal_adjacency,
+        analogue,
+        reading,
+        indexes: _,
+        symmetric_indexes: _,
+        pid_index: _,
+    } = g;
 
     let mut out: Vec<u8> = Vec::new();
 
@@ -179,7 +220,7 @@ pub fn logical_dump(g: &Graph) -> Vec<u8> {
         out.push(b'\n');
     };
 
-    for node in g.nodes.values() {
+    for node in nodes.values() {
         line("node", &node.encode());
     }
 
@@ -189,7 +230,7 @@ pub fn logical_dump(g: &Graph) -> Vec<u8> {
     for family in RowFamily::ALL {
         macro_rules! rows {
             ($field:ident) => {
-                for row in &g.$field {
+                for row in $field {
                     line(family.name(), &row.encode());
                 }
             };
@@ -219,8 +260,27 @@ pub fn logical_dump(g: &Graph) -> Vec<u8> {
         }
     }
 
-    for (corpus, spine) in &g.reading {
+    // FINAL REVIEW item 8 (M3-5). THE INJECTIVITY ASSUMPTION, named for
+    // DB-2b: a spine line joins its ids with `,` and escapes nothing, and
+    // the whole line is `\t`-delimited and `\n`-terminated. That spelling
+    // is injective ONLY while no id contains `,`, `\t` or `\n` — if one
+    // ever did, two different spines could produce the same line and the
+    // version root would stop distinguishing them. Nothing in the id
+    // grammar forbids those bytes today; the ids the shipped corpora mint
+    // simply do not use them. So the assumption is asserted here rather
+    // than merely believed. DB-2b, which writes these lines into the
+    // manifest per section, must either keep this assertion or escape the
+    // separator — it cannot inherit the assumption silently.
+    for (corpus, spine) in reading {
         let ids: Vec<String> = spine.order.iter().map(any_node_id_str).collect();
+        debug_assert!(
+            !corpus.contains([',', '\t', '\n']),
+            "a spine corpus tag must not contain the dump's own separators: {corpus:?}"
+        );
+        debug_assert!(
+            !ids.iter().any(|raw| raw.contains([',', '\t', '\n'])),
+            "a spine id must not contain the dump's own separators (corpus {corpus:?})"
+        );
         out.extend_from_slice(b"spine\t");
         out.extend_from_slice(corpus.as_bytes());
         out.push(b'\t');

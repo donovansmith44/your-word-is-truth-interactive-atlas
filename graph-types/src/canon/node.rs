@@ -27,7 +27,7 @@ use crate::id::SourceId;
 use crate::node::{
     EventWitnessPayload, Node, NodePayload, PolityDeltaPayload, PolityEraPayload,
 };
-use crate::text::{LayerMap, TranslationId};
+use crate::text::{BibleTag, ConcordTag, Corpus, LayerMap, TranslationId};
 
 use super::ids::{any_node_id_str, parse_any_node_id};
 use super::{
@@ -341,17 +341,28 @@ fn number(f: f64) -> Value {
 /// `TextUnit.corpus` is a `&'static str`, so decoding cannot mint one:
 /// the string must match a corpus literal the binary already owns. Those
 /// are `Corpus::ID` for the two corpora (`BibleTag`, `ConcordTag`).
+///
+/// FINAL REVIEW item 9: it now says that in code as well as in prose --
+/// the arms ARE `BibleTag::ID`/`ConcordTag::ID`, not two copies of their
+/// text, so a corpus that renamed its `ID` could not leave a stale
+/// literal behind here. The consts are exactly `"bible"` and `"concord"`,
+/// so the bytes do not move; `canon_row_vectors`/`canon_vectors`'
+/// existing goldens are the proof.
 fn corpus_from_value(
     m: &BTreeMap<String, Value>,
     path: &str,
 ) -> Result<&'static str, CanonError> {
     let s = field_str(m, path, "corpus")?;
     match s.as_str() {
-        "bible" => Ok("bible"),
-        "concord" => Ok("concord"),
+        BibleTag::ID => Ok(BibleTag::ID),
+        ConcordTag::ID => Ok(ConcordTag::ID),
         other => Err(CanonError::new(
             join(path, "corpus"),
-            format!("unknown corpus `{other}`; the known corpora are `bible` and `concord`"),
+            format!(
+                "unknown corpus `{other}`; the known corpora are `{}` and `{}`",
+                BibleTag::ID,
+                ConcordTag::ID
+            ),
         )),
     }
 }

@@ -17,5 +17,17 @@ description = "The Explorable Graph type system — compiling base point for the
 # DefaultHasher pids, debug-format canonical bytes, the `dfcf6ee4c2a39965`
 # version root. ON = SHA-256-128 content addresses over canonical JSON.
 # An empty feature list is the point: no optional dependency hides here.
+#
+# THE ON GATE IS RUN FROM THIS DIRECTORY (final review item 13):
+#
+#     cd graph-types && cargo test --features canon-ids
+#
+# The `server/` workspace does NOT forward this feature -- no member
+# declares an optional `atlas-graph-types/canon-ids` passthrough, and
+# there is no workspace-level feature to flip -- so
+# `cargo test --workspace --features canon-ids` from `server/` does not
+# build the ON state, it errors. That is deliberate (a workspace member
+# cannot flip the id width by accident), and it means the ON laws are
+# proven here and only here.
 [features]
 canon-ids = []

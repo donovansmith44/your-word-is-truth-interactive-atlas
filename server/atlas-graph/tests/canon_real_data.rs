@@ -24,9 +24,31 @@ use std::sync::OnceLock;
 
 use atlas_graph_types::canon::ids::{parse_position, position_str};
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily};
+use atlas_graph_types::edge::{Confesses, Corresponds, Justification, Quotes};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::Position;
 use atlas_graph_types::node::Node;
+use atlas_graph_types::text::{
+    BibleLocusRange, BibleTag, ConcordRef, Locus, LocusRange, TextLocus, TextRef, VerseRef,
+};
+
+// ------------------------------------------------- hand-built row builders
+
+/// The specimens the three UNINHABITED families are proven on (M2-5).
+/// Deliberately the simplest lawful shapes: no token spans, no grounds --
+/// the byte goldens in `graph-types/tests/canon_row_vectors.rs` pin the
+/// rich specimens; what is needed here is a row that exists at all.
+fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
+    VerseRef { book, chapter, verse }
+}
+
+fn blr(from: (u8, u16, u16), to: (u8, u16, u16)) -> BibleLocusRange {
+    LocusRange::new(
+        Locus::whole(vr(from.0, from.1, from.2)),
+        Locus::whole(vr(to.0, to.1, to.2)),
+    )
+    .expect("a test range must be ordered")
+}
 
 // --------------------------------------------------------------- the graph
 
@@ -80,7 +102,12 @@ fn every_node_round_trips_and_re_encodes_identically() {
     for (kind, n) in &by_kind {
         println!("  node {kind}: {n}");
     }
-    assert!(count > 90_000, "the committed graph must carry ~92k nodes, found {count}");
+    // FINAL REVIEW item 11: the EXACT count, not a lower bound. A lower
+    // bound passes while nodes silently disappear; the exact number turns
+    // the printed table above into an assertion. It moves only when the
+    // committed artifact is recompiled from changed sources, which is a
+    // deliberate act that should re-pin this line.
+    assert_eq!(count, 93_194, "the committed graph carries exactly 93,194 nodes");
 }
 
 // ------------------------------------------------------------------- rows
@@ -107,14 +134,51 @@ fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
     rows.len()
 }
 
+/// FINAL REVIEW item 3: this walk is closed over `Graph` as well as over
+/// `RowFamily`. Every field of `Graph` is NAMED in the destructure below
+/// and there is no `..`, so a new row `Vec` on the struct is a compile
+/// error here until it joins the round-trip proof. Closing only over
+/// `RowFamily` (the `fam!` list) left the other direction open: a field
+/// with no family is simply never walked, and nothing complains.
+///
+/// The non-row fields are named and discarded (`nodes: _`, `reading: _`,
+/// `indexes: _`, `symmetric_indexes: _`, `pid_index: _`): `nodes` has its
+/// own test above, and the last three are derived state, not rows.
 #[test]
 fn every_row_of_every_family_round_trips() {
-    let g = committed_graph();
+    let Graph {
+        nodes: _,
+        contains_bible,
+        contains_concord,
+        attests,
+        succession,
+        canon_succession,
+        dated_by,
+        located_at,
+        fulfills,
+        typology,
+        named_after,
+        catechism,
+        comments_on,
+        spoken_by,
+        spoken_at,
+        mentions,
+        cross_refs,
+        quotes,
+        confesses,
+        corresponds_bible,
+        temporal_adjacency,
+        analogue,
+        reading: _,
+        indexes: _,
+        symmetric_indexes: _,
+        pid_index: _,
+    } = committed_graph();
     let mut counts: Vec<(RowFamily, usize)> = Vec::new();
 
     macro_rules! fam {
         ($field:ident, $family:expr) => {
-            counts.push(($family, round_trip_family(&g.$field, $family)))
+            counts.push(($family, round_trip_family($field, $family)))
         };
     }
 
@@ -152,16 +216,77 @@ fn every_row_of_every_family_round_trips() {
     let walked: Vec<RowFamily> = counts.iter().map(|(f, _)| *f).collect();
     assert_eq!(walked, RowFamily::ALL.to_vec(), "families must be walked in ordinal order");
 
-    // The three uninhabited families (artifact.rs refuses to dump a
-    // non-empty one) are still real encoders: an empty table round-trips
-    // vacuously, and the golden vectors pin their bytes from hand-built
-    // rows.
-    let empty = [RowFamily::Quotes, RowFamily::Confesses, RowFamily::CorrespondsBible];
-    for family in empty {
-        let (_, n) = counts.iter().find(|(f, _)| *f == family).expect("family walked");
-        assert_eq!(*n, 0, "{} is uninhabited in the shipped graph", family.name());
-    }
-    assert!(total > 300_000, "the committed graph must carry ~400k rows, found {total}");
+    // FINAL REVIEW item 11: the EXACT per-family counts, so the printed
+    // table above IS the assertion. A lower bound on the total cannot see
+    // one family emptying while another grows; this can. These move only
+    // when the committed artifact is recompiled from changed sources.
+    let expected: Vec<(RowFamily, usize)> = vec![
+        (RowFamily::ContainsBible, 2_378),
+        (RowFamily::ContainsConcord, 145),
+        (RowFamily::Attests, 33_355),
+        (RowFamily::Succession, 13),
+        (RowFamily::CanonSuccession, 1_253),
+        (RowFamily::DatedBy, 912),
+        (RowFamily::LocatedAt, 955),
+        (RowFamily::Fulfills, 24),
+        (RowFamily::Typology, 16),
+        (RowFamily::NamedAfter, 18),
+        (RowFamily::Catechism, 6_568),
+        (RowFamily::CommentsOn, 50_602),
+        (RowFamily::SpokenBy, 470),
+        (RowFamily::SpokenAt, 6_381),
+        (RowFamily::Mentions, 35_852),
+        (RowFamily::CrossRefs, 343_558),
+        (RowFamily::Quotes, 0),
+        (RowFamily::Confesses, 0),
+        (RowFamily::CorrespondsBible, 0),
+        (RowFamily::TemporalAdjacency, 911),
+        (RowFamily::Analogue, 1),
+    ];
+    assert_eq!(counts, expected, "per-family row counts");
+    assert_eq!(total, 483_412, "the committed graph carries exactly 483,412 rows");
+
+    // M2-5. The three uninhabited families (artifact.rs refuses to dump a
+    // non-empty one) are still real encoders. "An empty table round-trips
+    // vacuously" is not a test of anything, so each one is proven on a
+    // HAND-BUILT row here, through the same `round_trip_family` helper
+    // the inhabited families go through -- bare bytes, decode, byte fixed
+    // point, and fixed point inside `{"family":…,"row":…}`. That the real
+    // table is empty is asserted separately, above, by the exact counts.
+    assert_eq!(
+        round_trip_family(
+            &[Quotes {
+                quoting: TextLocus { at: TextRef::Bible(vr(40, 4, 4)), span: None },
+                quoted: blr((5, 8, 3), (5, 8, 3)),
+                provenance: "curated/quotes".into(),
+            }],
+            RowFamily::Quotes
+        ),
+        1
+    );
+    assert_eq!(
+        round_trip_family(
+            &[Confesses {
+                confessing: Locus::whole(ConcordRef { part: 1, article: 2, paragraph: 3 }),
+                confessed: blr((45, 3, 28), (45, 3, 28)),
+                provenance: "concord".into(),
+                justification: Justification::default(),
+            }],
+            RowFamily::Confesses
+        ),
+        1
+    );
+    assert_eq!(
+        round_trip_family(
+            &[Corresponds::<BibleTag> {
+                a: Locus { unit: vr(43, 3, 16), span: None },
+                b: Locus { unit: vr(43, 3, 17), span: None },
+                provenance: "alignment".into(),
+            }],
+            RowFamily::CorrespondsBible
+        ),
+        1
+    );
 }
 
 // --------------------------------------------------------------- positions
@@ -244,8 +369,13 @@ fn real_sources() -> RealSources {
         .expect("data/curated/concord-sc-overlap.toml must exist");
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text)
         .expect("concord-sc-overlap.toml must parse");
-    let (_, kjv_verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
-    let kretzmann = atlas_etl::kretzmann::read_all(&raw_dir.join("kretzmann"), &kjv_verses)
+    // M2-2: the verse map Kretzmann aligns against is `atlas.verses` --
+    // the SAME map `bins/compile_graph.rs` passes (`read_all(&root,
+    // &atlas.verses)`), not a second parse of `kjv.json`. The two agree
+    // today, which is exactly why they could drift without anyone
+    // noticing; one source is one fewer way for this proof to stop
+    // mirroring the real compile.
+    let kretzmann = atlas_etl::kretzmann::read_all(&raw_dir.join("kretzmann"), &atlas.verses)
         .expect("data/raw/kretzmann must exist");
     // The red-letter span alignment runs against the graph's own
     // KJV-CASE-restored text, never the raw parse -- the same

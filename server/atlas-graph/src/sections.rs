@@ -21,7 +21,7 @@
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::edge::{Contains, EdgeId};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::BibleTag;
+use atlas_graph_types::text::{BibleTag, ConcordTag, Corpus};
 
 /// The five per-corpus SQLite sections (spec §2.1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -77,24 +77,47 @@ fn section_of_container_raw(raw: &str) -> Section {
 /// Placement rule (spec §2.1): a node lives in the section of the adapter
 /// that authored it.
 ///
-///   `TextUnit{corpus:"bible"}` -> Kjv; `TextUnit{corpus:"concord"}` ->
-///   Concord; `CommentaryItem` -> Kretzmann; `Container`: raw starts with
+///   `TextUnit{corpus: BibleTag::ID}` -> Kjv;
+///   `TextUnit{corpus: ConcordTag::ID}` -> Concord;
+///   `CommentaryItem` -> Kretzmann; `Container`: raw starts with
 ///   `"bible-book-"`/`"bible-chapter-"` -> Kjv, starts with `"concord-"`
 ///   -> Concord, else Core; every other kind -> Core. (`LexiconEntry` ->
 ///   Lexicon, when it exists -- no such node exists today.)
+///
+/// FINAL REVIEW items 2 + 9 (M4-2): the match is EXHAUSTIVE -- every
+/// `NodePayload` kind is listed, there is no `_` arm, and the `TextUnit`
+/// corpus is matched against `BibleTag::ID`/`ConcordTag::ID` (the consts
+/// the corpora themselves define) rather than two string literals.
+///
+/// Why: DB-3 will add `NodePayload::LexiconEntry`, and LEX-1's acceptance
+/// test is "no change to any other section's hash". A `_ => Core` arm
+/// would have filed the new kind under Core silently and moved Core's
+/// hash; now it is a compile error here, in the one place that decides.
+/// The corpus arm is loud for the same reason the canon decoder
+/// (`canon/node.rs`'s `corpus_from_value`) refuses an unknown corpus: a
+/// third corpus is a new section decision, not a default.
 pub fn section_of_node(node: &Node) -> Section {
     match &node.payload {
         NodePayload::TextUnit { corpus, .. } => match *corpus {
-            "bible" => Section::Kjv,
-            "concord" => Section::Concord,
-            // No third corpus is authored today; the rule names only
-            // these two, so an unrecognised one falls to the catch-all
-            // rather than panicking a real-data walk.
-            _ => Section::Core,
+            BibleTag::ID => Section::Kjv,
+            ConcordTag::ID => Section::Concord,
+            other => unreachable!("TextUnit corpus {other}"),
         },
         NodePayload::CommentaryItem { .. } => Section::Kretzmann,
         NodePayload::Container { .. } => section_of_container_raw(&node.id.raw),
-        _ => Section::Core,
+        // The eleven Core kinds, named one by one so a new variant cannot
+        // join them by default.
+        NodePayload::Event { .. }
+        | NodePayload::Narrative { .. }
+        | NodePayload::Place { .. }
+        | NodePayload::Person { .. }
+        | NodePayload::PeopleGroup { .. }
+        | NodePayload::Anchor { .. }
+        | NodePayload::Era { .. }
+        | NodePayload::Polity { .. }
+        | NodePayload::CatechismItem { .. }
+        | NodePayload::Source { .. }
+        | NodePayload::Translation { .. } => Section::Core,
     }
 }
 

@@ -1,7 +1,14 @@
 //! Identity: kind-tagged node ids, positions, content-addressed pids.
 
+// FINAL REVIEW item 6: `DefaultHasher` and the two traits it is driven
+// through are OFF-state machinery and carry the SAME gate, so the import
+// block cannot hold a name the ON build does not use. The manual
+// `impl Hash for NodeId` below therefore spells both trait paths in full
+// (`std::hash::Hash` / `std::hash::Hasher`) rather than relying on these
+// imports: that impl exists in BOTH states, the imports do not.
 #[cfg(not(feature = "canon-ids"))]
 use std::collections::hash_map::DefaultHasher;
+#[cfg(not(feature = "canon-ids"))]
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
@@ -98,9 +105,9 @@ impl<K: KindTag> Ord for NodeId<K> {
         self.0.cmp(&o.0)
     }
 }
-impl<K: KindTag> Hash for NodeId<K> {
-    fn hash<H: Hasher>(&self, st: &mut H) {
-        self.0.hash(st);
+impl<K: KindTag> std::hash::Hash for NodeId<K> {
+    fn hash<H: std::hash::Hasher>(&self, st: &mut H) {
+        std::hash::Hash::hash(&self.0, st);
     }
 }
 

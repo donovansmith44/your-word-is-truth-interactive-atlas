@@ -20,6 +20,17 @@
 //! through `expect_exact_keys` (R9), and every error carrying a
 //! root-anchored path (R10).
 //!
+//! **Every `to_value` destructures `self`.** `let Self { a, b, .. } = self`
+//! -- with every field NAMED and no `..` -- is how the encoder is closed
+//! over its own type, exactly as `canon/node.rs` closes `payload_to_value`
+//! over `NodePayload`. Reading `self.a` instead would let a field added to
+//! a row struct compile straight out of the bytes: the row would keep
+//! encoding, the decoder's struct literal would be the only thing that
+//! complained, and only for a type whose decode is exercised. With the
+//! destructure, a new field is a compile error in the one place that
+//! decides what the bytes say. (Enum `to_value`s already destructure --
+//! their `match` arms name every member.)
+//!
 //! Two things are worth naming, because they are where a row encoding
 //! could quietly lose meaning:
 //!
@@ -273,10 +284,11 @@ const TEXT_LOCUS_KEYS: &[&str] = &["at", "span"];
 
 impl Canon for VerseRef {
     fn to_value(&self) -> Value {
+        let Self { book, chapter, verse } = self;
         obj(vec![
-            ("book", Value::Int(i64::from(self.book))),
-            ("chapter", Value::Int(i64::from(self.chapter))),
-            ("verse", Value::Int(i64::from(self.verse))),
+            ("book", Value::Int(i64::from(*book))),
+            ("chapter", Value::Int(i64::from(*chapter))),
+            ("verse", Value::Int(i64::from(*verse))),
         ])
     }
 
@@ -293,10 +305,11 @@ impl Canon for VerseRef {
 
 impl Canon for ConcordRef {
     fn to_value(&self) -> Value {
+        let Self { article, paragraph, part } = self;
         obj(vec![
-            ("article", Value::Int(i64::from(self.article))),
-            ("paragraph", Value::Int(i64::from(self.paragraph))),
-            ("part", Value::Int(i64::from(self.part))),
+            ("article", Value::Int(i64::from(*article))),
+            ("paragraph", Value::Int(i64::from(*paragraph))),
+            ("part", Value::Int(i64::from(*part))),
         ])
     }
 
@@ -313,10 +326,11 @@ impl Canon for ConcordRef {
 
 impl Canon for TokenSpan {
     fn to_value(&self) -> Value {
+        let Self { end, layer, start } = self;
         obj(vec![
-            ("end", Value::Int(i64::from(self.end))),
-            ("layer", str_value(&self.layer.0)),
-            ("start", Value::Int(i64::from(self.start))),
+            ("end", Value::Int(i64::from(*end))),
+            ("layer", str_value(&layer.0)),
+            ("start", Value::Int(i64::from(*start))),
         ])
     }
 
@@ -337,7 +351,8 @@ where
     C::Ref: Canon,
 {
     fn to_value(&self) -> Value {
-        obj(vec![("span", opt_value(&self.span)), ("unit", self.unit.to_value())])
+        let Self { span, unit } = self;
+        obj(vec![("span", opt_value(span)), ("unit", unit.to_value())])
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
@@ -355,7 +370,8 @@ where
     C::Ref: Canon,
 {
     fn to_value(&self) -> Value {
-        obj(vec![("from", self.from.to_value()), ("to", self.to.to_value())])
+        let Self { from, to } = self;
+        obj(vec![("from", from.to_value()), ("to", to.to_value())])
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
@@ -376,7 +392,8 @@ where
     fn to_value(&self) -> Value {
         // `BTreeSet` order IS the canonical order -- no sort needed, and
         // none permitted.
-        Value::Arr(self.0.iter().map(Canon::to_value).collect())
+        let Self(loci) = self;
+        Value::Arr(loci.iter().map(Canon::to_value).collect())
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
@@ -405,7 +422,8 @@ impl Canon for TextRef {
 
 impl Canon for TextLocus {
     fn to_value(&self) -> Value {
-        obj(vec![("at", self.at.to_value()), ("span", opt_value(&self.span))])
+        let Self { at, span } = self;
+        obj(vec![("at", at.to_value()), ("span", opt_value(span))])
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
@@ -445,9 +463,10 @@ impl Canon for Ground {
 
 impl Canon for Justification {
     fn to_value(&self) -> Value {
+        let Self { grounds, text } = self;
         obj(vec![
-            ("grounds", Value::Arr(self.grounds.iter().map(Canon::to_value).collect())),
-            ("text", opt_str(&self.text)),
+            ("grounds", Value::Arr(grounds.iter().map(Canon::to_value).collect())),
+            ("text", opt_str(text)),
         ])
     }
 
@@ -472,10 +491,11 @@ const ERA_ONLY_KEYS: &[&str] = &["era"];
 
 impl Canon for Duration {
     fn to_value(&self) -> Value {
+        let Self { days, months, years } = self;
         obj(vec![
-            ("days", Value::Int(i64::from(self.days))),
-            ("months", Value::Int(i64::from(self.months))),
-            ("years", Value::Int(i64::from(self.years))),
+            ("days", Value::Int(i64::from(*days))),
+            ("months", Value::Int(i64::from(*months))),
+            ("years", Value::Int(i64::from(*years))),
         ])
     }
 
@@ -672,11 +692,12 @@ where
     C::Ref: Canon,
 {
     fn to_value(&self) -> Value {
+        let Self { container, content, justification, provenance } = self;
         obj(vec![
-            ("container", id_value(&self.container)),
-            ("content", self.content.to_value()),
-            ("justification", self.justification.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("container", id_value(container)),
+            ("content", content.to_value()),
+            ("justification", justification.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -694,11 +715,12 @@ where
 
 impl Canon for Attests {
     fn to_value(&self) -> Value {
+        let Self { attestation, event, justification, provenance } = self;
         obj(vec![
-            ("attestation", self.attestation.to_value()),
-            ("event", id_value(&self.event)),
-            ("justification", self.justification.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("attestation", attestation.to_value()),
+            ("event", id_value(event)),
+            ("justification", justification.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -716,11 +738,12 @@ impl Canon for Attests {
 
 impl Canon for Succession {
     fn to_value(&self) -> Value {
+        let Self { chain, justification, narrative, provenance } = self;
         obj(vec![
-            ("chain", Value::Arr(self.chain.iter().map(id_value).collect())),
-            ("justification", self.justification.to_value()),
-            ("narrative", id_value(&self.narrative)),
-            ("provenance", str_value(&self.provenance)),
+            ("chain", Value::Arr(chain.iter().map(id_value).collect())),
+            ("justification", justification.to_value()),
+            ("narrative", id_value(narrative)),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -747,11 +770,12 @@ impl Canon for Succession {
 
 impl Canon for CanonSuccession {
     fn to_value(&self) -> Value {
+        let Self { justification, next, prior, provenance } = self;
         obj(vec![
-            ("justification", self.justification.to_value()),
-            ("next", id_value(&self.next)),
-            ("prior", id_value(&self.prior)),
-            ("provenance", str_value(&self.provenance)),
+            ("justification", justification.to_value()),
+            ("next", id_value(next)),
+            ("prior", id_value(prior)),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -769,12 +793,13 @@ impl Canon for CanonSuccession {
 
 impl Canon for DatedBy {
     fn to_value(&self) -> Value {
+        let Self { basis, event, justification, placement, provenance } = self;
         obj(vec![
-            ("basis", self.basis.to_value()),
-            ("event", id_value(&self.event)),
-            ("justification", self.justification.to_value()),
-            ("placement", self.placement.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("basis", basis.to_value()),
+            ("event", id_value(event)),
+            ("justification", justification.to_value()),
+            ("placement", placement.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -793,11 +818,12 @@ impl Canon for DatedBy {
 
 impl Canon for LocatedAt {
     fn to_value(&self) -> Value {
+        let Self { event, justification, place, provenance } = self;
         obj(vec![
-            ("event", id_value(&self.event)),
-            ("justification", self.justification.to_value()),
-            ("place", id_value(&self.place)),
-            ("provenance", str_value(&self.provenance)),
+            ("event", id_value(event)),
+            ("justification", justification.to_value()),
+            ("place", id_value(place)),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -815,11 +841,12 @@ impl Canon for LocatedAt {
 
 impl Canon for Fulfills {
     fn to_value(&self) -> Value {
+        let Self { fulfillment, justification, prophecy, provenance } = self;
         obj(vec![
-            ("fulfillment", self.fulfillment.to_value()),
-            ("justification", self.justification.to_value()),
-            ("prophecy", self.prophecy.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("fulfillment", fulfillment.to_value()),
+            ("justification", justification.to_value()),
+            ("prophecy", prophecy.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -837,12 +864,13 @@ impl Canon for Fulfills {
 
 impl Canon for Typology {
     fn to_value(&self) -> Value {
+        let Self { antitype_passage, justification, note, provenance, type_passage } = self;
         obj(vec![
-            ("antitype_passage", self.antitype_passage.to_value()),
-            ("justification", self.justification.to_value()),
-            ("note", opt_str(&self.note)),
-            ("provenance", str_value(&self.provenance)),
-            ("type_passage", self.type_passage.to_value()),
+            ("antitype_passage", antitype_passage.to_value()),
+            ("justification", justification.to_value()),
+            ("note", opt_str(note)),
+            ("provenance", str_value(provenance)),
+            ("type_passage", type_passage.to_value()),
         ])
     }
 
@@ -861,11 +889,12 @@ impl Canon for Typology {
 
 impl Canon for NamedAfter {
     fn to_value(&self) -> Value {
+        let Self { eponym, justification, namesake, provenance } = self;
         obj(vec![
-            ("eponym", id_value(&self.eponym)),
-            ("justification", self.justification.to_value()),
-            ("namesake", self.namesake.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("eponym", id_value(eponym)),
+            ("justification", justification.to_value()),
+            ("namesake", namesake.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -883,11 +912,12 @@ impl Canon for NamedAfter {
 
 impl Canon for CatechismLink {
     fn to_value(&self) -> Value {
+        let Self { item, justification, locus, provenance } = self;
         obj(vec![
-            ("item", id_value(&self.item)),
-            ("justification", self.justification.to_value()),
-            ("locus", self.locus.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("item", id_value(item)),
+            ("justification", justification.to_value()),
+            ("locus", locus.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -905,11 +935,12 @@ impl Canon for CatechismLink {
 
 impl Canon for CommentsOn {
     fn to_value(&self) -> Value {
+        let Self { item, justification, on, provenance } = self;
         obj(vec![
-            ("item", id_value(&self.item)),
-            ("justification", self.justification.to_value()),
-            ("on", self.on.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("item", id_value(item)),
+            ("justification", justification.to_value()),
+            ("on", on.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -927,11 +958,12 @@ impl Canon for CommentsOn {
 
 impl Canon for SpokenBy {
     fn to_value(&self) -> Value {
+        let Self { justification, locus, provenance, speaker } = self;
         obj(vec![
-            ("justification", self.justification.to_value()),
-            ("locus", self.locus.to_value()),
-            ("provenance", str_value(&self.provenance)),
-            ("speaker", id_value(&self.speaker)),
+            ("justification", justification.to_value()),
+            ("locus", locus.to_value()),
+            ("provenance", str_value(provenance)),
+            ("speaker", id_value(speaker)),
         ])
     }
 
@@ -949,11 +981,12 @@ impl Canon for SpokenBy {
 
 impl Canon for SpokenAt {
     fn to_value(&self) -> Value {
+        let Self { justification, locus, place, provenance } = self;
         obj(vec![
-            ("justification", self.justification.to_value()),
-            ("locus", self.locus.to_value()),
-            ("place", id_value(&self.place)),
-            ("provenance", str_value(&self.provenance)),
+            ("justification", justification.to_value()),
+            ("locus", locus.to_value()),
+            ("place", id_value(place)),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -971,10 +1004,11 @@ impl Canon for SpokenAt {
 
 impl Canon for Mentions {
     fn to_value(&self) -> Value {
+        let Self { entity, locus, provenance } = self;
         obj(vec![
-            ("entity", self.entity.to_value()),
-            ("locus", self.locus.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("entity", entity.to_value()),
+            ("locus", locus.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -991,13 +1025,14 @@ impl Canon for Mentions {
 
 impl Canon for CrossRef {
     fn to_value(&self) -> Value {
+        let Self { from, provenance, target_display, to, to_last, votes } = self;
         obj(vec![
-            ("from", self.from.to_value()),
-            ("provenance", str_value(&self.provenance)),
-            ("target_display", str_value(&self.target_display)),
-            ("to", self.to.to_value()),
-            ("to_last", opt_value(&self.to_last)),
-            ("votes", Value::Int(i64::from(self.votes))),
+            ("from", from.to_value()),
+            ("provenance", str_value(provenance)),
+            ("target_display", str_value(target_display)),
+            ("to", to.to_value()),
+            ("to_last", opt_value(to_last)),
+            ("votes", Value::Int(i64::from(*votes))),
         ])
     }
 
@@ -1017,10 +1052,11 @@ impl Canon for CrossRef {
 
 impl Canon for Quotes {
     fn to_value(&self) -> Value {
+        let Self { provenance, quoted, quoting } = self;
         obj(vec![
-            ("provenance", str_value(&self.provenance)),
-            ("quoted", self.quoted.to_value()),
-            ("quoting", self.quoting.to_value()),
+            ("provenance", str_value(provenance)),
+            ("quoted", quoted.to_value()),
+            ("quoting", quoting.to_value()),
         ])
     }
 
@@ -1037,11 +1073,12 @@ impl Canon for Quotes {
 
 impl Canon for Confesses {
     fn to_value(&self) -> Value {
+        let Self { confessed, confessing, justification, provenance } = self;
         obj(vec![
-            ("confessed", self.confessed.to_value()),
-            ("confessing", self.confessing.to_value()),
-            ("justification", self.justification.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("confessed", confessed.to_value()),
+            ("confessing", confessing.to_value()),
+            ("justification", justification.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -1062,10 +1099,11 @@ where
     C::Ref: Canon,
 {
     fn to_value(&self) -> Value {
+        let Self { a, b, provenance } = self;
         obj(vec![
-            ("a", self.a.to_value()),
-            ("b", self.b.to_value()),
-            ("provenance", str_value(&self.provenance)),
+            ("a", a.to_value()),
+            ("b", b.to_value()),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -1082,10 +1120,11 @@ where
 
 impl Canon for TemporalAdjacency {
     fn to_value(&self) -> Value {
+        let Self { earlier, later, provenance } = self;
         obj(vec![
-            ("earlier", id_value(&self.earlier)),
-            ("later", id_value(&self.later)),
-            ("provenance", str_value(&self.provenance)),
+            ("earlier", id_value(earlier)),
+            ("later", id_value(later)),
+            ("provenance", str_value(provenance)),
         ])
     }
 
@@ -1102,10 +1141,11 @@ impl Canon for TemporalAdjacency {
 
 impl Canon for Analogue {
     fn to_value(&self) -> Value {
+        let Self { a, b, provenance } = self;
         obj(vec![
-            ("a", id_value(&self.a)),
-            ("b", id_value(&self.b)),
-            ("provenance", str_value(&self.provenance)),
+            ("a", id_value(a)),
+            ("b", id_value(b)),
+            ("provenance", str_value(provenance)),
         ])
     }
 

@@ -42,16 +42,54 @@ fn manifest_path() -> PathBuf {
 /// into one entry list (a manifest may use both), and a dotted header
 /// counts as an entry ITSELF -- `[dependencies.serde]` declares a
 /// dependency whether or not a single line follows it.
+///
+/// FINAL REVIEW item 12: two more gaps, both in the header test.
+///
+/// 1. The PLATFORM-SCOPED spelling. `[target.'cfg(windows)'.dependencies]`
+///    (and the unquoted `[target.cfg(unix).dependencies]`) declares a real
+///    dependency, and neither `[dependencies]` nor `[dependencies.` sees
+///    it. A header now belongs to the table when it ENDS `.{table}]` as
+///    well -- a suffix rule, so `[dev-dependencies]` still cannot be read
+///    as `dependencies` (it does not end `.dependencies]`) while every
+///    `target`-scoped spelling can.
+/// 2. A TRAILING COMMENT. `[features]  # the one switch` was not equal to
+///    `[features]`, so the whole table vanished and its law passed on an
+///    empty reading. A header's comment is stripped before comparing --
+///    the `#` must be OUTSIDE any quoted cfg string, so a `#` inside
+///    `'cfg(...)'` is left alone.
+///
+/// Crude in the safe direction, still: a header shape this cannot read
+/// fails the test rather than passing it.
+fn strip_header_comment(line: &str) -> &str {
+    let bytes = line.as_bytes();
+    let mut quote: Option<u8> = None;
+    for (i, b) in bytes.iter().enumerate() {
+        match quote {
+            Some(q) if *b == q => quote = None,
+            Some(_) => {}
+            None if *b == b'\'' || *b == b'"' => quote = Some(*b),
+            None if *b == b'#' => return line[..i].trim_end(),
+            None => {}
+        }
+    }
+    line
+}
+
 fn table_entries(toml: &str, table: &str) -> Option<Vec<String>> {
     let exact = format!("[{table}]");
     let dotted = format!("[{table}.");
+    let suffix = format!(".{table}]");
     let mut found = false;
     let mut inside = false;
     let mut out = Vec::new();
     for line in toml.lines() {
         let t = line.trim();
         if t.starts_with('[') {
-            let is_sub = t.starts_with(&dotted) && t.ends_with(']');
+            let t = strip_header_comment(t);
+            // `[table.…]` (dotted sub-table) or `[….table]` (target-scoped);
+            // either way the header itself declares the table.
+            let is_sub =
+                (t.starts_with(&dotted) && t.ends_with(']')) || t.ends_with(&suffix);
             inside = t == exact || is_sub;
             if inside {
                 found = true;
@@ -151,4 +189,69 @@ fn a_dotted_sub_table_cannot_hide_a_dependency() {
         Some(vec!["canon-ids = []".to_string()])
     );
     assert_eq!(table_entries(manifest, "dev-dependencies"), None);
+}
+
+/// FINAL REVIEW item 12, first gap: a PLATFORM-SCOPED dependency table.
+/// Like the dotted case above, this asserts the parser SEES the
+/// dependency -- a test that merely re-checked the clean manifest would
+/// pass whether or not the rule exists.
+#[test]
+fn a_target_scoped_table_cannot_hide_a_dependency() {
+    for (table, text) in [
+        ("dependencies", "[target.'cfg(windows)'.dependencies]\nwinapi = \"0.3\"\n"),
+        ("dependencies", "[target.cfg(unix).dependencies]\nlibc = \"0.2\"\n"),
+        (
+            "dev-dependencies",
+            "[target.'cfg(target_os = \"linux\")'.dev-dependencies]\nproptest = \"1\"\n",
+        ),
+        ("build-dependencies", "[target.'cfg(windows)'.build-dependencies]\ncc = \"1\"\n"),
+    ] {
+        let found = table_entries(text, table)
+            .unwrap_or_else(|| panic!("a target-scoped [{table}] must be attributed to {table}"));
+        assert!(
+            found.len() == 2,
+            "the header ITSELF declares the table, and its one line is an entry: {found:?}"
+        );
+    }
+
+    // The suffix rule is a SUFFIX, not a substring: `dev-dependencies` is
+    // not `dependencies`, scoped or not.
+    assert_eq!(
+        table_entries("[target.'cfg(windows)'.dev-dependencies]\nproptest = \"1\"\n", "dependencies"),
+        None,
+        "`.dev-dependencies]` must not be read as `.dependencies]`"
+    );
+
+    // And the law itself still reads the REAL manifest as clean.
+    let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
+    assert_eq!(table_entries(&toml, "dependencies"), Some(Vec::new()));
+}
+
+/// FINAL REVIEW item 12, second gap: a header with a trailing comment.
+/// The crate's own `[features]` carries a comment block above it today;
+/// one on the header LINE used to make the whole table invisible, which
+/// would have turned `features_holds_exactly_the_canon_ids_switch` into a
+/// test of nothing.
+#[test]
+fn a_trailing_comment_on_a_header_does_not_hide_the_table() {
+    let commented = "[dependencies]  # nothing lives here\nserde = \"1\"\n";
+    assert_eq!(
+        table_entries(commented, "dependencies"),
+        Some(vec!["serde = \"1\"".to_string()]),
+        "a commented header is still the header"
+    );
+    assert_eq!(
+        table_entries("[features] # the one switch\ncanon-ids = []\n", "features"),
+        Some(vec!["canon-ids = []".to_string()])
+    );
+    assert_eq!(
+        table_entries("[dependencies.serde] # pinned\nversion = \"1\"\n", "dependencies"),
+        Some(vec!["[dependencies.serde]".to_string(), "version = \"1\"".to_string()])
+    );
+    // A `#` INSIDE a quoted cfg is part of the header, not a comment: the
+    // table is still attributed, and the stripper does not cut it short.
+    let quoted = "[target.'cfg(feature = \"a#b\")'.dependencies]\nlibc = \"0.2\"\n";
+    let found = table_entries(quoted, "dependencies").expect("attributed");
+    assert_eq!(found.len(), 2, "got {found:?}");
+    assert!(found[0].ends_with(".dependencies]"), "header kept whole: {:?}", found[0]);
 }
