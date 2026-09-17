@@ -440,6 +440,15 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         node(NodeKind::Container, "bible-chapter-GEN-1", NodePayload::Container { title: "Genesis 1".into() }),
         node(NodeKind::Container, "concord-ac", NodePayload::Container { title: "Augsburg Confession".into() }),
         node(NodeKind::Container, "concord-ac-1", NodePayload::Container { title: "Article I".into() }),
+        node(
+            NodeKind::CommentaryItem,
+            "kretzmann/JHN.3.16",
+            NodePayload::CommentaryItem {
+                work: SourceId::new("kretzmann"),
+                heading: Some("The love of God".into()),
+                text: "For God so loved the world...".into(),
+            },
+        ),
     ] {
         g.nodes.insert(n.id.clone(), n);
     }
@@ -642,4 +651,56 @@ fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order(
         .filter(|f| f.ends_with(".sqlite"))
         .collect();
     assert_eq!(files.len(), 4, "stale section files are deleted before a rewrite: {files:?}");
+}
+
+// ---------------------------------------------------------------------
+// Task 6: the logical dump from the SQLite file agrees with the partition
+// ---------------------------------------------------------------------
+use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_dump_of_partition, logical_hash};
+
+#[test]
+fn the_logical_dump_recomputed_from_each_written_file_equals_the_partitions_dump() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-logical-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (m, written) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    let parts = partition(&g).unwrap();
+    for (p, w) in parts.iter().zip(&written) {
+        let from_mem = logical_dump_of_partition(p);
+        let conn = open_read_only(&w.path).unwrap();
+        let from_db = logical_dump_of_db(&conn, p.section).unwrap();
+        assert_eq!(String::from_utf8_lossy(&from_db), String::from_utf8_lossy(&from_mem), "{:?}", p.section);
+        assert_eq!(logical_hash(&from_db), m.sections.iter().find(|s| s.name == p.section.name()).unwrap().logical);
+        let stamped: String =
+            conn.query_row("SELECT value FROM meta WHERE key = 'logical_hash'", [], |r| r.get(0)).unwrap();
+        assert_eq!(stamped, logical_hash(&from_mem));
+        assert!(from_mem.starts_with(b"node\t{\"id\":\""), "first line is a node line");
+        if matches!(p.section, Section::Kjv | Section::Concord) {
+            assert!(
+                String::from_utf8_lossy(&from_db).contains("\nreading_spine\t{\"corpus\":\""),
+                "{:?} carries spine lines",
+                p.section
+            );
+        }
+    }
+}
+
+#[test]
+fn a_changed_row_changes_the_logical_hash_and_a_changed_timestamp_does_not() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-logical2-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (m1, _) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    let (m2, _) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    assert_eq!(m1.root, m2.root);
+    g.located_at[0].provenance = "another-source".into();
+    let (m3, _) = write_sections(&g, "0000000000000000", "test", &dir).unwrap();
+    assert_ne!(m3.sections[0].logical, m1.sections[0].logical, "core moved");
+    assert_eq!(m3.sections[1].logical, m1.sections[1].logical, "kjv did not");
+    assert_ne!(m3.root, m1.root);
 }
