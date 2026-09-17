@@ -38,8 +38,10 @@ use std::collections::BTreeMap;
 mod json;
 pub mod ids;
 pub mod node;
+pub mod rows;
 
 pub use json::{parse, serialize};
+pub use rows::{encode_row_in_family, RowFamily};
 
 /// The encoding's version. Bump ONLY for a breaking byte change; every
 /// stored artifact records the version it was written under.
@@ -270,6 +272,16 @@ pub fn expect_u8(v: &Value, path: &str) -> Result<u8, CanonError> {
     u8::try_from(n).map_err(|_| CanonError::new(path, format!("{n} is out of range for u8")))
 }
 
+pub fn expect_u16(v: &Value, path: &str) -> Result<u16, CanonError> {
+    let n = expect_i64(v, path)?;
+    u16::try_from(n).map_err(|_| CanonError::new(path, format!("{n} is out of range for u16")))
+}
+
+pub fn expect_u32(v: &Value, path: &str) -> Result<u32, CanonError> {
+    let n = expect_i64(v, path)?;
+    u32::try_from(n).map_err(|_| CanonError::new(path, format!("{n} is out of range for u32")))
+}
+
 pub fn expect_opt_i32(v: &Value, path: &str) -> Result<Option<i32>, CanonError> {
     match v {
         Value::Null => Ok(None),
@@ -368,6 +380,16 @@ pub fn field_opt_i32(
 pub fn field_u8(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<u8, CanonError> {
     let (v, p) = field(m, path, key)?;
     expect_u8(v, &p)
+}
+
+pub fn field_u16(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<u16, CanonError> {
+    let (v, p) = field(m, path, key)?;
+    expect_u16(v, &p)
+}
+
+pub fn field_u32(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<u32, CanonError> {
+    let (v, p) = field(m, path, key)?;
+    expect_u32(v, &p)
 }
 
 pub fn field_opt_u8(
