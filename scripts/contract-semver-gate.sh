@@ -521,9 +521,27 @@ for suite in "${suites[@]}"; do
     echo "        this suite for real once the base advances past its introduction."
   fi
 
-  if [ "$(rank "$declared")" -lt "$(rank "$required")" ]; then
+  # PRE-LAUNCH SEMVER (owner ruling 2026-08-26, docs/superpowers/specs/
+  # 2026-08-26-frontend-backend-contract-design.md "Semver law"; restated
+  # for the migration at 2026-09-14-relational-artifact-design.md section 9;
+  # applied here by owner decision 2026-09-17 at DB-3): while a suite lives
+  # at 0.x, a breaking change bumps MINOR and an additive one bumps PATCH --
+  # 1.0.0 is minted at production launch and nowhere else. So a declared
+  # bump on a 0.x base is READ one class up before it is compared with what
+  # the diff requires. The class the diff requires does not move: MAJOR
+  # still means "a promise changed", and the CHANGELOG entry must say so.
+  effective="$declared"
+  if [ "${oma:-1}" -eq 0 ] && [ "$declared" != none ]; then
+    case "$declared" in
+      major) effective=major;;   # over-declaring is always allowed
+      minor) effective=major;;
+      patch) effective=minor;;
+    esac
+  fi
+
+  if [ "$(rank "$effective")" -lt "$(rank "$required")" ]; then
     echo "contract-semver-gate: $suite" >&2
-    echo "  the diff requires a $(echo "$required" | tr '[:lower:]' '[:upper:]') bump; the declared bump is $(echo "$declared" | tr '[:lower:]' '[:upper:]') ($old_v -> $new_v)." >&2
+    echo "  the diff requires a $(echo "$required" | tr '[:lower:]' '[:upper:]') bump; the declared bump is $(echo "$declared" | tr '[:lower:]' '[:upper:]') ($old_v -> $new_v)$([ "${oma:-1}" -eq 0 ] && printf ' -- read as %s under the pre-launch 0.x rule' "$(echo "$effective" | tr '[:lower:]' '[:upper:]')")." >&2
     echo "  Raise $vfile and add a CHANGELOG.md entry saying what promise changed." >&2
     failed=1
     continue
@@ -537,7 +555,7 @@ for suite in "${suites[@]}"; do
     fi
   fi
 
-  echo "contract-semver-gate: $suite ok (diff requires $required, declared $declared, version $new_v)"
+  echo "contract-semver-gate: $suite ok (diff requires $required, declared $declared$([ "$effective" != "$declared" ] && printf ' = %s under the 0.x rule' "$effective"), version $new_v)"
 done
 
 # M-R2-2: "nothing to classify" printed three times in a row read as a pass.
