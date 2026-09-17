@@ -24,6 +24,8 @@ pub mod explore;
 pub mod frontier;
 pub mod present;
 pub mod store;
+/// DB-2a: the canonical, decodable JSON encoding for the SQLite artifact.
+pub mod canon;
 
 pub use edge::{dual, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
 pub use explore::{Explorable, Holdings};
