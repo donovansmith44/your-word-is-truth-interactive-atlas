@@ -5,19 +5,17 @@
 //! byte strings mean one value, and the artifact's hashes would stop
 //! meaning anything. So every non-canonical spelling -- whitespace, an
 //! unsorted or repeated key, a redundant escape, `1.50`, `1e5`, `01` --
-//! is an error, not a kindness.
+//! is an error, not a kindness. Errors are located: every one carries a
+//! path from the shared `ROOT`, so a bad artifact row names its own spot.
 
 use std::collections::BTreeMap;
 
-use super::{CanonError, Value};
+use super::{CanonError, Value, ROOT};
 
 /// How deep a value may nest before the parser gives up. Node and edge
 /// payloads nest fewer than ten levels; the limit exists so hostile or
 /// corrupt bytes fail as an `Err`, not as a blown stack.
-const MAX_DEPTH: u32 = 64;
-
-/// The path the parser reports the top-level value under.
-const ROOT: &str = "$";
+pub const MAX_DEPTH: u32 = 64;
 
 // ------------------------------------------------------------- serialization
 
@@ -66,21 +64,18 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
     }
 }
 
-/// Minimal escaping: the two mandatory escapes, the five two-character
-/// control escapes (shorter than `\u00xx`, so they are the canonical
-/// form), `\u00xx` in lowercase hex for the remaining C0 controls, and
-/// everything else -- `/` included, non-ASCII included -- raw UTF-8.
+/// Minimal escaping, spec form (ruling R5): exactly TWO two-character
+/// escapes -- `\"` and `\\` -- then `\u00xx` in lowercase hex for EVERY
+/// C0 control (U+0000 through U+001F), with no exceptions. JSON's other
+/// short escapes (`\b \t \n \f \r`) are deliberately NOT produced and are
+/// rejected on the way back in: one character, one spelling. Everything
+/// else -- `/` included, non-ASCII included -- rides raw as UTF-8.
 fn write_string(s: &str, out: &mut Vec<u8>) {
     out.push(b'"');
     for ch in s.chars() {
         match ch {
             '"' => out.extend_from_slice(b"\\\""),
             '\\' => out.extend_from_slice(b"\\\\"),
-            '\u{8}' => out.extend_from_slice(b"\\b"),
-            '\t' => out.extend_from_slice(b"\\t"),
-            '\n' => out.extend_from_slice(b"\\n"),
-            '\u{c}' => out.extend_from_slice(b"\\f"),
-            '\r' => out.extend_from_slice(b"\\r"),
             c if (c as u32) < 0x20 => {
                 out.extend_from_slice(format!("\\u{:04x}", c as u32).as_bytes());
             }
@@ -91,12 +86,6 @@ fn write_string(s: &str, out: &mut Vec<u8>) {
         }
     }
     out.push(b'"');
-}
-
-/// The C0 controls that have a two-character escape, so a `\u00xx`
-/// spelling of them is non-minimal.
-fn has_short_escape(code: u32) -> bool {
-    matches!(code, 0x08 | 0x09 | 0x0a | 0x0c | 0x0d)
 }
 
 // ------------------------------------------------------------------- parsing
@@ -274,10 +263,11 @@ impl<'a> Parser<'a> {
     }
 
     /// Decode one escape (the backslash is already consumed). Only the
-    /// minimal forms are legal: a six-character spelling of a control
-    /// that has a two-character escape, an escape of a character that
-    /// needs none (a letter, a solidus), and uppercase hex are all
-    /// rejected rather than silently accepted.
+    /// canonical forms are legal (ruling R5): `\"`, `\\`, and `\u00xx`
+    /// for a C0 control. JSON's other short escapes -- `\n` and its four
+    /// siblings -- are a SECOND spelling of a character that already has
+    /// one, so they are rejected here as unknown escapes, exactly like an
+    /// escaped solidus, an escaped letter, or uppercase hex.
     fn escape(&mut self, path: &str) -> Result<char, CanonError> {
         let e = match self.peek() {
             Some(e) => e,
@@ -287,11 +277,6 @@ impl<'a> Parser<'a> {
         let ch = match e {
             b'"' => '"',
             b'\\' => '\\',
-            b'b' => '\u{8}',
-            b't' => '\t',
-            b'n' => '\n',
-            b'f' => '\u{c}',
-            b'r' => '\r',
             b'u' => {
                 let hex = match self.b.get(self.i..self.i + 4) {
                     Some(h) => h,
@@ -312,10 +297,12 @@ impl<'a> Parser<'a> {
                     code = code * 16 + v;
                 }
                 self.i += 4;
-                if code > 0x1f || has_short_escape(code) {
+                if code > 0x1f {
                     return self.err(
                         path,
-                        format!("non-minimal escape \\u{code:04x}: that character has a shorter canonical spelling"),
+                        format!(
+                            "non-minimal escape \\u{code:04x}: only C0 controls are escaped"
+                        ),
                     );
                 }
                 // code <= 0x1f, so this is always a valid scalar value.

@@ -6,6 +6,10 @@
 //! colon-free, but nothing forbids them and edge ids carry one), so the
 //! parse side splits at the FIRST colon and hands the whole remainder
 //! back as the raw -- that makes the round trip total for every raw.
+//!
+//! Each parser takes the `path` it is decoding under (R10b): these are
+//! called from inside a field decoder, and an error that cannot say WHERE
+//! the bad id sat is most of the way to useless.
 
 use crate::edge::EdgeId;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -33,7 +37,9 @@ pub fn node_kind_str(k: NodeKind) -> &'static str {
     }
 }
 
-pub fn parse_node_kind(s: &str) -> Result<NodeKind, CanonError> {
+/// `path` is where the caller sits, so a bad kind inside a node id
+/// reports at that node id's own location rather than nowhere (R10b).
+pub fn parse_node_kind(s: &str, path: &str) -> Result<NodeKind, CanonError> {
     match s {
         "TextUnit" => Ok(NodeKind::TextUnit),
         "Container" => Ok(NodeKind::Container),
@@ -49,7 +55,7 @@ pub fn parse_node_kind(s: &str) -> Result<NodeKind, CanonError> {
         "Translation" => Ok(NodeKind::Translation),
         "PeopleGroup" => Ok(NodeKind::PeopleGroup),
         "CommentaryItem" => Ok(NodeKind::CommentaryItem),
-        other => Err(CanonError::new("", format!("unknown node kind `{other}`"))),
+        other => Err(CanonError::new(path, format!("unknown node kind `{other}`"))),
     }
 }
 
@@ -58,11 +64,11 @@ pub fn any_node_id_str(id: &AnyNodeId) -> String {
     format!("{}:{}", node_kind_str(id.kind), id.raw)
 }
 
-pub fn parse_any_node_id(s: &str) -> Result<AnyNodeId, CanonError> {
-    let (kind, raw) = s
-        .split_once(':')
-        .ok_or_else(|| CanonError::new("", format!("node id `{s}` has no `kind:raw` separator")))?;
-    Ok(AnyNodeId { kind: parse_node_kind(kind)?, raw: raw.to_string() })
+pub fn parse_any_node_id(s: &str, path: &str) -> Result<AnyNodeId, CanonError> {
+    let (kind, raw) = s.split_once(':').ok_or_else(|| {
+        CanonError::new(path, format!("node id `{s}` has no `kind:raw` separator"))
+    })?;
+    Ok(AnyNodeId { kind: parse_node_kind(kind, path)?, raw: raw.to_string() })
 }
 
 /// `"n:"` + the node id, or `"e:"` + the edge id. Positions include
@@ -74,10 +80,10 @@ pub fn position_str(p: &Position) -> String {
     }
 }
 
-pub fn parse_position(s: &str) -> Result<Position, CanonError> {
+pub fn parse_position(s: &str, path: &str) -> Result<Position, CanonError> {
     match s.split_once(':') {
-        Some(("n", rest)) => Ok(Position::Node(parse_any_node_id(rest)?)),
+        Some(("n", rest)) => Ok(Position::Node(parse_any_node_id(rest, path)?)),
         Some(("e", rest)) => Ok(Position::Edge(EdgeId(rest.to_string()))),
-        _ => Err(CanonError::new("", format!("position `{s}` is neither `n:` nor `e:`"))),
+        _ => Err(CanonError::new(path, format!("position `{s}` is neither `n:` nor `e:`"))),
     }
 }

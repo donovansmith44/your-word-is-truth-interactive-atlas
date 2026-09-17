@@ -50,6 +50,13 @@ pub const CANON_VERSION: u32 = 1;
 /// of the same bytes meaning something else.
 pub const DOMAIN_PREFIX: &[u8] = b"bible-atlas/canon/1\n";
 
+/// The ONE path root, shared by `parse` and by every `Canon::from_value`
+/// (ruling R10c). Both sides start here, so a decode error reads as one
+/// continuous location -- `$.payload.Place.lat` -- whether the byte
+/// parser or a field decoder raised it, and NO error ever carries an
+/// empty path.
+pub const ROOT: &str = "$";
+
 /// The canonical JSON data model. Deliberately small: no integer/float
 /// unification, no object ordering choice, no room for two spellings of
 /// one value.
@@ -72,7 +79,7 @@ impl Value {
         if f.is_finite() {
             Ok(Value::Float(f))
         } else {
-            Err(CanonError::new("", "non-finite float has no canonical spelling"))
+            Err(CanonError::new(ROOT, "non-finite float has no canonical spelling"))
         }
     }
 
@@ -90,9 +97,12 @@ impl Value {
     }
 }
 
-/// A decode failure, located. `path` is a dotted trail from the root of
-/// the encoded value (`payload.Place.lat`, `payload.Polity.eras.0.rings`)
-/// so a bad artifact row names its own bad field.
+/// A decode failure, located. `path` is a dotted trail from `ROOT` (`$`)
+/// down to the offending spot -- `$.payload.Place.lat`,
+/// `$.payload.Polity.eras.0.rings.0.2` -- so a bad artifact row names its
+/// own bad field. The root is shared by the byte parser and by every
+/// `from_value`, which is what lets the two compose into one trail; a
+/// `CanonError` is therefore NEVER built with an empty path.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CanonError {
     pub path: String,
@@ -127,11 +137,13 @@ pub trait Canon: Sized {
 
 // ------------------------------------------------------------- build helpers
 
-/// Extend a path with one more segment. The root path is `""`, so the
-/// first segment carries no leading dot.
+/// Extend a path with one more segment. An empty side contributes
+/// nothing, so `join` never yields a leading, trailing or doubled dot.
 pub fn join(path: &str, seg: &str) -> String {
     if path.is_empty() {
         seg.to_string()
+    } else if seg.is_empty() {
+        path.to_string()
     } else {
         format!("{path}.{seg}")
     }
@@ -284,10 +296,19 @@ pub fn expect_f64(v: &Value, path: &str) -> Result<f64, CanonError> {
     }
 }
 
-/// Re-locate an error raised by a helper that did not know its own path
-/// (the `ids` string parsers, `Year::new`, and friends).
+/// Re-ROOT an error onto `path`, KEEPING whatever nested location it
+/// already carried (ruling R10a). The inner path is appended, never
+/// dropped: re-rooting `$.eras.0` onto `edge.payload` gives
+/// `edge.payload.eras.0`. A bare `ROOT` contributes nothing, so
+/// re-rooting a root-level error just yields `path`.
+///
+/// This is how a nested `Canon::from_value` -- which starts at `ROOT`
+/// because it cannot know where its caller sits -- splices into the
+/// caller's trail. Task 2's row decoders are the intended users.
 pub fn at_path(path: &str, e: CanonError) -> CanonError {
-    CanonError { path: path.to_string(), msg: e.msg }
+    let inner = e.path.strip_prefix(ROOT).unwrap_or(&e.path);
+    let inner = inner.strip_prefix('.').unwrap_or(inner);
+    CanonError { path: join(path, inner), msg: e.msg }
 }
 
 // ------------------------------------------------------------ field accessors
@@ -379,6 +400,31 @@ pub fn field_obj<'a>(
 ) -> Result<(&'a BTreeMap<String, Value>, String), CanonError> {
     let (v, p) = field(m, path, key)?;
     Ok((expect_obj(v, &p)?, p))
+}
+
+/// Reject UNKNOWN members (ruling R9). Every closed object in this
+/// encoding names its members exactly, so a key nobody asked for means
+/// the bytes were written by something that does not share this schema --
+/// silently ignoring it would let an artifact carry meaning this decoder
+/// cannot see. The error names the first unexpected key (BTree order, so
+/// the message is deterministic) in its path.
+///
+/// MISSING keys are not this function's job: `get`/`field_*` already
+/// report those, each under its own path.
+pub fn expect_exact_keys(
+    m: &BTreeMap<String, Value>,
+    path: &str,
+    keys: &[&str],
+) -> Result<(), CanonError> {
+    for k in m.keys() {
+        if !keys.contains(&k.as_str()) {
+            return Err(CanonError::new(
+                join(path, k),
+                format!("unexpected member `{k}`; this object allows only {keys:?}"),
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// Unwrap a `{"Variant": payload}` object into its name and payload.

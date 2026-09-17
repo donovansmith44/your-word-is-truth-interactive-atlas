@@ -6,12 +6,19 @@
 //! encoding reads like the type, and adding a variant is a compile error
 //! here until it is encoded.
 //!
+//! Every object is CLOSED (ruling R9): each decoder declares its exact
+//! member set through `expect_exact_keys`, so a key nobody asked for is a
+//! located error rather than something silently dropped. Decoding starts
+//! at the shared `ROOT`, so a failure reads as one continuous trail --
+//! `$.payload.Place.lat` -- from the byte parser straight through to the
+//! field that refused.
+//!
 //! Every arm is mechanical on purpose. The interesting decisions live in
-//! the small helpers below: `corpus` (a `&'static str` field can only
-//! decode to one of the two known literals), `time_point` (the `Year` and
-//! `TimePoint` invariants are re-checked on the way in, so a bad artifact
-//! cannot smuggle year zero or a day without a month past the
-//! constructors), and `number` (f64 fields).
+//! the small helpers below: `corpus_from_value` (a `&'static str` field
+//! can only decode to one of the two known literals), `time_point_from_value`
+//! (the `Year` and `TimePoint` invariants are re-checked on the way in, so
+//! a bad artifact cannot smuggle year zero or a day without a month past
+//! the constructors), and `number` (f64 members).
 
 use std::collections::BTreeMap;
 
@@ -24,11 +31,43 @@ use crate::text::{LayerMap, TranslationId};
 
 use super::ids::{any_node_id_str, parse_any_node_id};
 use super::{
-    at_path, expect_arr, expect_obj, expect_str, expect_variant, field, field_arr, field_f64,
-    field_i32, field_obj, field_opt_i32, field_opt_str, field_opt_u8, field_str, field_u8,
-    field_vec_str, join, obj, opt_i32, opt_str, opt_u8, str_value, variant, vec_str, Canon,
-    CanonError, Value,
+    expect_arr, expect_exact_keys, expect_obj, expect_str, expect_variant, field, field_arr,
+    field_f64, field_i32, field_obj, field_opt_i32, field_opt_str, field_opt_u8, field_str,
+    field_u8, field_vec_str, join, obj, opt_i32, opt_str, opt_u8, str_value, variant, vec_str,
+    Canon, CanonError, Value, ROOT,
 };
+
+/// The member set of every closed object in the node encoding, named once
+/// so the encoder and the decoder cannot drift apart.
+const NODE_KEYS: &[&str] = &["id", "payload", "provenance"];
+const TEXT_UNIT_KEYS: &[&str] = &["corpus", "renderings"];
+const CONTAINER_KEYS: &[&str] = &["title"];
+const EVENT_KEYS: &[&str] = &[
+    "acts_section",
+    "atlas_section",
+    "kind",
+    "kjv_superscription",
+    "label",
+    "ref_note",
+    "robertson_section",
+    "verses",
+    "witnesses",
+];
+const NARRATIVE_KEYS: &[&str] = &["color", "label"];
+const PLACE_KEYS: &[&str] = &["aliases", "canonical", "description", "lat", "lon"];
+const PERSON_KEYS: &[&str] =
+    &["also_called", "birth_year", "death_year", "description", "gender", "label"];
+const PEOPLE_GROUP_KEYS: &[&str] = &["description", "label"];
+const ANCHOR_KEYS: &[&str] = &["at", "citation"];
+const ERA_KEYS: &[&str] = &["from_year", "label", "to_year"];
+const POLITY_KEYS: &[&str] = &["color_key", "eras", "label"];
+const LABEL_ONLY_KEYS: &[&str] = &["label"];
+const COMMENTARY_ITEM_KEYS: &[&str] = &["heading", "text", "work"];
+const WITNESS_KEYS: &[&str] = &["book", "ref_note", "robertson_section", "translations"];
+const DELTA_KEYS: &[&str] = &["event", "ref_note", "verses"];
+const POLITY_ERA_KEYS: &[&str] =
+    &["fall", "from_year", "name", "ref_note", "rings", "to_year", "transition"];
+const TIME_POINT_KEYS: &[&str] = &["day", "month", "year"];
 
 impl Canon for Node {
     fn to_value(&self) -> Value {
@@ -40,12 +79,13 @@ impl Canon for Node {
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
-        let m = expect_obj(v, "")?;
-        let id_str = field_str(m, "", "id")?;
-        let id = parse_any_node_id(&id_str).map_err(|e| at_path("id", e))?;
-        let (payload_value, payload_path) = field(m, "", "payload")?;
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, NODE_KEYS)?;
+        let id_str = field_str(m, ROOT, "id")?;
+        let id = parse_any_node_id(&id_str, &join(ROOT, "id"))?;
+        let (payload_value, payload_path) = field(m, ROOT, "payload")?;
         let payload = payload_from_value(payload_value, &payload_path)?;
-        let provenance = field_str(m, "", "provenance")?;
+        let provenance = field_str(m, ROOT, "provenance")?;
         Ok(Node { id, payload, provenance })
     }
 }
@@ -169,12 +209,19 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
     let p = join(path, name);
     let m = expect_obj(body, &p)?;
     match name {
-        "TextUnit" => Ok(NodePayload::TextUnit {
-            corpus: corpus_from_value(m, &p)?,
-            renderings: layer_map_from_value(m, &p)?,
-        }),
-        "Container" => Ok(NodePayload::Container { title: field_str(m, &p, "title")? }),
+        "TextUnit" => {
+            expect_exact_keys(m, &p, TEXT_UNIT_KEYS)?;
+            Ok(NodePayload::TextUnit {
+                corpus: corpus_from_value(m, &p)?,
+                renderings: layer_map_from_value(m, &p)?,
+            })
+        }
+        "Container" => {
+            expect_exact_keys(m, &p, CONTAINER_KEYS)?;
+            Ok(NodePayload::Container { title: field_str(m, &p, "title")? })
+        }
         "Event" => {
+            expect_exact_keys(m, &p, EVENT_KEYS)?;
             let (witnesses, wp) = field_arr(m, &p, "witnesses")?;
             Ok(NodePayload::Event {
                 label: field_str(m, &p, "label")?,
@@ -192,42 +239,59 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
                 ref_note: field_opt_str(m, &p, "ref_note")?,
             })
         }
-        "Narrative" => Ok(NodePayload::Narrative {
-            label: field_str(m, &p, "label")?,
-            color: field_str(m, &p, "color")?,
-        }),
-        "Place" => Ok(NodePayload::Place {
-            canonical: field_str(m, &p, "canonical")?,
-            lat: field_f64(m, &p, "lat")?,
-            lon: field_f64(m, &p, "lon")?,
-            aliases: field_vec_str(m, &p, "aliases")?,
-            description: field_opt_str(m, &p, "description")?,
-        }),
-        "Person" => Ok(NodePayload::Person {
-            label: field_str(m, &p, "label")?,
-            gender: field_opt_str(m, &p, "gender")?,
-            birth_year: field_opt_i32(m, &p, "birth_year")?,
-            death_year: field_opt_i32(m, &p, "death_year")?,
-            also_called: field_vec_str(m, &p, "also_called")?,
-            description: field_opt_str(m, &p, "description")?,
-        }),
-        "PeopleGroup" => Ok(NodePayload::PeopleGroup {
-            label: field_str(m, &p, "label")?,
-            description: field_opt_str(m, &p, "description")?,
-        }),
+        "Narrative" => {
+            expect_exact_keys(m, &p, NARRATIVE_KEYS)?;
+            Ok(NodePayload::Narrative {
+                label: field_str(m, &p, "label")?,
+                color: field_str(m, &p, "color")?,
+            })
+        }
+        "Place" => {
+            expect_exact_keys(m, &p, PLACE_KEYS)?;
+            Ok(NodePayload::Place {
+                canonical: field_str(m, &p, "canonical")?,
+                lat: field_f64(m, &p, "lat")?,
+                lon: field_f64(m, &p, "lon")?,
+                aliases: field_vec_str(m, &p, "aliases")?,
+                description: field_opt_str(m, &p, "description")?,
+            })
+        }
+        "Person" => {
+            expect_exact_keys(m, &p, PERSON_KEYS)?;
+            Ok(NodePayload::Person {
+                label: field_str(m, &p, "label")?,
+                gender: field_opt_str(m, &p, "gender")?,
+                birth_year: field_opt_i32(m, &p, "birth_year")?,
+                death_year: field_opt_i32(m, &p, "death_year")?,
+                also_called: field_vec_str(m, &p, "also_called")?,
+                description: field_opt_str(m, &p, "description")?,
+            })
+        }
+        "PeopleGroup" => {
+            expect_exact_keys(m, &p, PEOPLE_GROUP_KEYS)?;
+            Ok(NodePayload::PeopleGroup {
+                label: field_str(m, &p, "label")?,
+                description: field_opt_str(m, &p, "description")?,
+            })
+        }
         "Anchor" => {
-            let (at, at_path_) = field_obj(m, &p, "at")?;
+            expect_exact_keys(m, &p, ANCHOR_KEYS)?;
+            let (at, at_path) = field_obj(m, &p, "at")?;
             Ok(NodePayload::Anchor {
-                at: time_point_from_value(at, &at_path_)?,
+                at: time_point_from_value(at, &at_path)?,
                 citation: field_str(m, &p, "citation")?,
             })
         }
-        "Era" => Ok(NodePayload::Era {
-            label: field_str(m, &p, "label")?,
-            from_year: field_i32(m, &p, "from_year")?,
-            to_year: field_i32(m, &p, "to_year")?,
-        }),
+        "Era" => {
+            expect_exact_keys(m, &p, ERA_KEYS)?;
+            Ok(NodePayload::Era {
+                label: field_str(m, &p, "label")?,
+                from_year: field_i32(m, &p, "from_year")?,
+                to_year: field_i32(m, &p, "to_year")?,
+            })
+        }
         "Polity" => {
+            expect_exact_keys(m, &p, POLITY_KEYS)?;
             let (eras, ep) = field_arr(m, &p, "eras")?;
             Ok(NodePayload::Polity {
                 label: field_str(m, &p, "label")?,
@@ -240,15 +304,25 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
             })
         }
         "CatechismItem" => {
+            expect_exact_keys(m, &p, LABEL_ONLY_KEYS)?;
             Ok(NodePayload::CatechismItem { label: field_str(m, &p, "label")? })
         }
-        "CommentaryItem" => Ok(NodePayload::CommentaryItem {
-            work: SourceId::new(field_str(m, &p, "work")?),
-            heading: field_opt_str(m, &p, "heading")?,
-            text: field_str(m, &p, "text")?,
-        }),
-        "Source" => Ok(NodePayload::Source { label: field_str(m, &p, "label")? }),
-        "Translation" => Ok(NodePayload::Translation { label: field_str(m, &p, "label")? }),
+        "CommentaryItem" => {
+            expect_exact_keys(m, &p, COMMENTARY_ITEM_KEYS)?;
+            Ok(NodePayload::CommentaryItem {
+                work: SourceId::new(field_str(m, &p, "work")?),
+                heading: field_opt_str(m, &p, "heading")?,
+                text: field_str(m, &p, "text")?,
+            })
+        }
+        "Source" => {
+            expect_exact_keys(m, &p, LABEL_ONLY_KEYS)?;
+            Ok(NodePayload::Source { label: field_str(m, &p, "label")? })
+        }
+        "Translation" => {
+            expect_exact_keys(m, &p, LABEL_ONLY_KEYS)?;
+            Ok(NodePayload::Translation { label: field_str(m, &p, "label")? })
+        }
         other => Err(CanonError::new(p, format!("unknown payload variant `{other}`"))),
     }
 }
@@ -282,6 +356,9 @@ fn corpus_from_value(
     }
 }
 
+/// A `LayerMap` is an OPEN map -- its keys are translation ids, not a
+/// fixed schema -- so `expect_exact_keys` deliberately does not apply
+/// here. Same for a witness's `translations`.
 fn layer_map_to_value(map: &LayerMap) -> Value {
     Value::Obj(map.iter().map(|(k, v)| (k.0.clone(), Value::Str(v.clone()))).collect())
 }
@@ -309,6 +386,7 @@ fn time_point_from_value(
     m: &BTreeMap<String, Value>,
     path: &str,
 ) -> Result<TimePoint, CanonError> {
+    expect_exact_keys(m, path, TIME_POINT_KEYS)?;
     let raw_year = field_i32(m, path, "year")?;
     // Both constructors are re-run, not bypassed: no year zero, no day
     // without a month, however the bytes were written.
@@ -337,6 +415,7 @@ fn witness_to_value(w: &EventWitnessPayload) -> Value {
 
 fn witness_from_value(v: &Value, path: &str) -> Result<EventWitnessPayload, CanonError> {
     let m = expect_obj(v, path)?;
+    expect_exact_keys(m, path, WITNESS_KEYS)?;
     let (translations, tp) = field_obj(m, path, "translations")?;
     Ok(EventWitnessPayload {
         book: field_str(m, path, "book")?,
@@ -368,6 +447,7 @@ fn polity_delta_to_value(d: &PolityDeltaPayload) -> Value {
 
 fn polity_delta_from_value(v: &Value, path: &str) -> Result<PolityDeltaPayload, CanonError> {
     let m = expect_obj(v, path)?;
+    expect_exact_keys(m, path, DELTA_KEYS)?;
     Ok(PolityDeltaPayload {
         event: field_str(m, path, "event")?,
         verses: field_vec_str(m, path, "verses")?,
@@ -389,10 +469,7 @@ fn opt_delta_from_value(
 
 fn polity_era_to_value(e: &PolityEraPayload) -> Value {
     obj(vec![
-        (
-            "fall",
-            e.fall.as_ref().map_or(Value::Null, polity_delta_to_value),
-        ),
+        ("fall", e.fall.as_ref().map_or(Value::Null, polity_delta_to_value)),
         ("from_year", Value::Int(i64::from(e.from_year))),
         ("name", str_value(&e.name)),
         ("ref_note", str_value(&e.ref_note)),
@@ -414,15 +491,13 @@ fn polity_era_to_value(e: &PolityEraPayload) -> Value {
             ),
         ),
         ("to_year", Value::Int(i64::from(e.to_year))),
-        (
-            "transition",
-            e.transition.as_ref().map_or(Value::Null, polity_delta_to_value),
-        ),
+        ("transition", e.transition.as_ref().map_or(Value::Null, polity_delta_to_value)),
     ])
 }
 
 fn polity_era_from_value(v: &Value, path: &str) -> Result<PolityEraPayload, CanonError> {
     let m = expect_obj(v, path)?;
+    expect_exact_keys(m, path, POLITY_ERA_KEYS)?;
     let (rings, rp) = field_arr(m, path, "rings")?;
     Ok(PolityEraPayload {
         name: field_str(m, path, "name")?,

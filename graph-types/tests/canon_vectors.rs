@@ -4,7 +4,10 @@
 //! asserted here are pinned, not descriptive. `std` only -- `graph-types`
 //! is a zero-dependency crate and its tests keep that promise.
 
-use atlas_graph_types::canon::{parse, serialize, Canon, Value};
+use atlas_graph_types::canon::{
+    at_path, expect_exact_keys, parse, serialize, Canon, CanonError, Value, CANON_VERSION,
+    DOMAIN_PREFIX, ROOT,
+};
 use atlas_graph_types::chrono::{TimePoint, Year};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, SourceId};
 use atlas_graph_types::node::{
@@ -28,19 +31,20 @@ fn serialize_is_canonical_and_minimal() {
     ]);
     assert_eq!(
         String::from_utf8(serialize(&v)).unwrap(),
-        r#"{"a":"x\"y\\z\n","b":2,"c":[null,true]}"#
+        r#"{"a":"x\"y\\z\u000a","b":2,"c":[null,true]}"#
     );
 }
 
 #[test]
-fn control_characters_use_the_shortest_legal_escape() {
-    // The five JSON two-char control escapes are the minimal form; every
-    // other C0 control goes out as \u00xx with LOWERCASE hex. Nothing
-    // else is escaped -- '/' and all non-ASCII ride raw as UTF-8.
+fn every_control_character_uses_the_six_character_escape() {
+    // Ruling R5: the ONLY two-character escapes are \" and \\. Every C0
+    // control -- the five JSON gives short escapes included -- goes out as
+    // \u00xx in LOWERCASE hex, so one character has exactly one spelling.
+    // Nothing else is escaped: '/' and all non-ASCII ride raw as UTF-8.
     let v = Value::Str("\u{8}\t\n\u{c}\r\u{0}\u{1f}\u{b}/\u{e9}".into());
     assert_eq!(
         String::from_utf8(serialize(&v)).unwrap(),
-        "\"\\b\\t\\n\\f\\r\\u0000\\u001f\\u000b/\u{e9}\""
+        "\"\\u0008\\u0009\\u000a\\u000c\\u000d\\u0000\\u001f\\u000b/\u{e9}\""
     );
     assert_eq!(parse(&serialize(&v)).unwrap(), v);
 }
@@ -88,7 +92,13 @@ fn parse_is_strict() {
 #[test]
 fn parse_rejects_every_non_canonical_spelling() {
     let bad: &[(&[u8], &str)] = &[
-        (b"\"\\u000a\"", "newline must use the short escape"),
+        // R5: the two-character control escapes are a SECOND spelling of a
+        // character that already has one, so the parser refuses them.
+        (b"\"\\n\"", "two-character newline escape"),
+        (b"\"\\t\"", "two-character tab escape"),
+        (b"\"\\b\"", "two-character backspace escape"),
+        (b"\"\\f\"", "two-character form-feed escape"),
+        (b"\"\\r\"", "two-character carriage-return escape"),
         (b"\"\\/\"", "solidus never needs escaping"),
         (b"\"\\x41\"", "unknown escape"),
         (b"\"\\u001F\"", "uppercase hex"),
@@ -115,10 +125,29 @@ fn parse_rejects_every_non_canonical_spelling() {
     }
 }
 
+/// `[[[…1…]]]` nested `depth` levels deep.
+fn nested(depth: usize) -> Vec<u8> {
+    let mut v = vec![b'['; depth];
+    v.push(b'1');
+    v.extend(std::iter::repeat(b']').take(depth));
+    v
+}
+
 #[test]
 fn parse_rejects_deep_nesting_without_panicking() {
-    let deep: Vec<u8> = std::iter::repeat(b'[').take(100_000).collect();
-    assert!(parse(&deep).is_err(), "depth limit, not a stack overflow");
+    // A runaway `[` never reaches the end of input, so this would be a
+    // blown stack rather than an `Err` if the depth cap were missing.
+    let runaway: Vec<u8> = std::iter::repeat(b'[').take(100_000).collect();
+    assert!(parse(&runaway).is_err(), "depth limit, not a stack overflow");
+}
+
+#[test]
+fn the_depth_limit_sits_exactly_at_64() {
+    // The boundary is pinned so the cap cannot drift silently: 64 levels
+    // is the deepest value the artifact may carry.
+    assert!(parse(&nested(64)).is_ok(), "64 levels must parse");
+    let err = parse(&nested(65)).unwrap_err();
+    assert!(!err.path.is_empty(), "the depth error must be located: {err:?}");
 }
 
 #[test]
@@ -142,11 +171,13 @@ fn ids_round_trip_including_colons_in_raw() {
     use atlas_graph_types::canon::ids::*;
     let id = AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/JHN.3.16".into() };
     assert_eq!(any_node_id_str(&id), "TextUnit:bible/JHN.3.16");
-    assert_eq!(parse_any_node_id("TextUnit:bible/JHN.3.16").unwrap(), id);
+    assert_eq!(parse_any_node_id("TextUnit:bible/JHN.3.16", "$.id").unwrap(), id);
     let weird = AnyNodeId { kind: NodeKind::Container, raw: "a:b:c".into() };
-    assert_eq!(parse_any_node_id(&any_node_id_str(&weird)).unwrap(), weird);
-    assert!(parse_any_node_id("Nope:x").is_err());
-    assert!(parse_any_node_id("Place").is_err(), "no separator");
+    assert_eq!(parse_any_node_id(&any_node_id_str(&weird), "$.id").unwrap(), weird);
+    // R10b: the caller's path rides into the error, both for a bad kind
+    // and for a missing separator.
+    assert_eq!(parse_any_node_id("Nope:x", "$.id").unwrap_err().path, "$.id");
+    assert_eq!(parse_any_node_id("Place", "$.subject").unwrap_err().path, "$.subject");
 }
 
 #[test]
@@ -170,8 +201,9 @@ fn every_node_kind_names_itself_with_its_debug_name() {
     ];
     for k in all {
         assert_eq!(node_kind_str(k), format!("{k:?}"));
-        assert_eq!(parse_node_kind(node_kind_str(k)).unwrap(), k);
+        assert_eq!(parse_node_kind(node_kind_str(k), "$.kind").unwrap(), k);
     }
+    assert_eq!(parse_node_kind("Nope", "$.kind").unwrap_err().path, "$.kind");
 }
 
 #[test]
@@ -181,12 +213,13 @@ fn positions_round_trip_for_nodes_and_edges() {
     use atlas_graph_types::EdgeId;
     let n = Position::Node(AnyNodeId { kind: NodeKind::Place, raw: "jerusalem".into() });
     assert_eq!(position_str(&n), "n:Place:jerusalem");
-    assert_eq!(parse_position(&position_str(&n)).unwrap(), n);
+    assert_eq!(parse_position(&position_str(&n), "$.subject").unwrap(), n);
     let e = Position::Edge(EdgeId("located_at:00ff".into()));
     assert_eq!(position_str(&e), "e:located_at:00ff");
-    assert_eq!(parse_position(&position_str(&e)).unwrap(), e);
-    assert!(parse_position("x:Place:jerusalem").is_err());
-    assert!(parse_position("n:Nope:x").is_err());
+    assert_eq!(parse_position(&position_str(&e), "$.subject").unwrap(), e);
+    for bad in ["x:Place:jerusalem", "n:Nope:x", "nope"] {
+        assert_eq!(parse_position(bad, "$.subject").unwrap_err().path, "$.subject");
+    }
 }
 
 // -------------------------------------------------------------- node golden
@@ -215,25 +248,126 @@ fn place_node_golden_bytes() {
     assert_eq!(format!("{:?}", back.payload), format!("{:?}", n.payload));
 }
 
+/// Every malformed node this file feeds `Node::decode`. Each row is
+/// `(bytes, expected path)`; the path is asserted exactly, and the
+/// non-empty law is asserted over the whole table.
+const MALFORMED_NODES: &[(&[u8], &str)] = &[
+    (
+        br#"{"id":"Place:jerusalem","payload":{"Place":{"aliases":["Salem"],"canonical":"Jerusalem","description":null,"lat":"nope","lon":35.2345}},"provenance":"p"}"#,
+        "$.payload.Place.lat",
+    ),
+    (br#"{"id":"Place:jerusalem","payload":{"Nope":{}},"provenance":"p"}"#, "$.payload.Nope"),
+    (br#"{"id":"Place:jerusalem","provenance":"p"}"#, "$.payload"),
+    (br#"{"id":"Nope:jerusalem","payload":{"Source":{"label":"x"}},"provenance":"p"}"#, "$.id"),
+    (
+        br#"{"id":"TextUnit:x/1.1.1","payload":{"TextUnit":{"corpus":"vulgate","renderings":{}}},"provenance":"p"}"#,
+        "$.payload.TextUnit.corpus",
+    ),
+    // R9: unknown members, at the node, in a payload, and in a sub-object.
+    (
+        br#"{"extra":1,"id":"Place:jerusalem","payload":{"Source":{"label":"x"}},"provenance":"p"}"#,
+        "$.extra",
+    ),
+    (
+        br#"{"id":"Source:s","payload":{"Source":{"label":"x","note":"nope"}},"provenance":"p"}"#,
+        "$.payload.Source.note",
+    ),
+    (
+        br#"{"id":"Anchor:x","payload":{"Anchor":{"at":{"day":null,"era":"AM","month":null,"year":-4004},"citation":"c"}},"provenance":"p"}"#,
+        "$.payload.Anchor.at.era",
+    ),
+    // R10c: even a root-level type failure is located.
+    (b"null", ROOT),
+];
+
 #[test]
 fn node_decode_reports_the_failing_path() {
-    let bad = br#"{"id":"Place:jerusalem","payload":{"Place":{"aliases":["Salem"],"canonical":"Jerusalem","description":null,"lat":"nope","lon":35.2345}},"provenance":"p"}"#;
-    let err = Node::decode(bad).unwrap_err();
-    assert_eq!(err.path, "payload.Place.lat", "got {err:?}");
+    for (bytes, expected) in MALFORMED_NODES {
+        let err = Node::decode(bytes).unwrap_err();
+        assert_eq!(&err.path, expected, "for {}", String::from_utf8_lossy(bytes));
+    }
+}
 
-    let unknown = br#"{"id":"Place:jerusalem","payload":{"Nope":{}},"provenance":"p"}"#;
-    let err = Node::decode(unknown).unwrap_err();
-    assert_eq!(err.path, "payload.Nope");
-
-    let missing = br#"{"id":"Place:jerusalem","provenance":"p"}"#;
-    assert_eq!(Node::decode(missing).unwrap_err().path, "payload");
+#[test]
+fn no_node_decode_error_ever_carries_an_empty_path() {
+    // R10c: the byte parser and the field decoders share one root, so
+    // there is no way to get an error that cannot say where it happened.
+    for (bytes, _) in MALFORMED_NODES {
+        let err = Node::decode(bytes).unwrap_err();
+        assert!(!err.path.is_empty(), "empty path for {}", String::from_utf8_lossy(bytes));
+        assert!(err.path.starts_with(ROOT), "path must start at the root: {err:?}");
+    }
+    // Errors raised by the byte parser, before any decoder sees a value.
+    for bytes in [&b"{"[..], b"{\"a\":1, \"b\":2}", b"01", b""] {
+        let err = Node::decode(bytes).unwrap_err();
+        assert!(!err.path.is_empty(), "empty path for {}", String::from_utf8_lossy(bytes));
+    }
 }
 
 #[test]
 fn unknown_corpus_is_rejected_because_corpus_is_a_static_str() {
     let bad = br#"{"id":"TextUnit:x/1.1.1","payload":{"TextUnit":{"corpus":"vulgate","renderings":{}}},"provenance":"p"}"#;
     let err = Node::decode(bad).unwrap_err();
-    assert_eq!(err.path, "payload.TextUnit.corpus");
+    assert_eq!(err.path, "$.payload.TextUnit.corpus");
+}
+
+#[test]
+fn a_non_finite_coordinate_encodes_as_null_and_fails_to_decode_by_path() {
+    // R7: `to_value` has no Result, so a non-finite double -- which has no
+    // canonical spelling -- goes out as `null` and is refused BY PATH on
+    // the way back in. A located error, never a silent bad coordinate.
+    let n = Node {
+        id: AnyNodeId { kind: NodeKind::Place, raw: "nowhere".into() },
+        payload: NodePayload::Place {
+            canonical: "Nowhere".into(),
+            lat: f64::NAN,
+            lon: 35.2345,
+            aliases: vec![],
+            description: None,
+        },
+        provenance: "p".into(),
+    };
+    let bytes = n.encode();
+    let text = String::from_utf8(bytes.clone()).unwrap();
+    assert!(text.contains(r#""lat":null"#), "got {text}");
+    assert_eq!(Node::decode(&bytes).unwrap_err().path, "$.payload.Place.lat");
+}
+
+#[test]
+fn unknown_members_are_rejected_rather_than_ignored() {
+    // R9 at the helper level -- Task 2 reuses this for the row families.
+    let mut m = BTreeMap::new();
+    m.insert("label".to_string(), Value::Str("x".into()));
+    assert!(expect_exact_keys(&m, "$.payload.Source", &["label"]).is_ok());
+    m.insert("note".to_string(), Value::Int(1));
+    let err = expect_exact_keys(&m, "$.payload.Source", &["label"]).unwrap_err();
+    assert_eq!(err.path, "$.payload.Source.note");
+    // A missing key is NOT this helper's business; `field_*` reports those.
+    assert!(expect_exact_keys(&BTreeMap::new(), "$", &["label"]).is_ok());
+}
+
+#[test]
+fn at_path_prefixes_and_never_drops_the_nested_location() {
+    // R10a: re-rooting a nested error keeps where it happened.
+    let inner = CanonError::new("$.eras.0.rings", "bad ring");
+    assert_eq!(at_path("$.payload.Polity", inner).path, "$.payload.Polity.eras.0.rings");
+    // A root-level inner error contributes nothing but is not lost.
+    let root_level = CanonError::new(ROOT, "expected object");
+    assert_eq!(at_path("$.payload", root_level).path, "$.payload");
+}
+
+#[test]
+fn the_canon_version_and_domain_prefix_are_pinned() {
+    // Bumping either is a breaking change to every stored artifact, so
+    // both are pinned here rather than left to drift.
+    assert_eq!(CANON_VERSION, 1);
+    assert_eq!(DOMAIN_PREFIX, b"bible-atlas/canon/1\n");
+    let prefix = std::str::from_utf8(DOMAIN_PREFIX).unwrap();
+    assert!(prefix.ends_with('\n'), "the prefix must terminate: {prefix:?}");
+    assert!(
+        prefix.contains(&CANON_VERSION.to_string()),
+        "the prefix must embed the version it separates: {prefix:?}"
+    );
 }
 
 fn nid(kind: NodeKind, raw: &str) -> AnyNodeId {
@@ -574,8 +708,33 @@ fn anchor_time_point_is_year_month_day_and_rejects_year_zero() {
     assert!(s.contains(r#""at":{"day":null,"month":null,"year":-4004}"#), "got {s}");
 
     let zero = br#"{"id":"Anchor:x","payload":{"Anchor":{"at":{"day":null,"month":null,"year":0},"citation":"c"}},"provenance":"p"}"#;
-    assert_eq!(Node::decode(zero).unwrap_err().path, "payload.Anchor.at.year");
+    assert_eq!(Node::decode(zero).unwrap_err().path, "$.payload.Anchor.at.year");
 
     let day_without_month = br#"{"id":"Anchor:x","payload":{"Anchor":{"at":{"day":3,"month":null,"year":-4004},"citation":"c"}},"provenance":"p"}"#;
-    assert_eq!(Node::decode(day_without_month).unwrap_err().path, "payload.Anchor.at");
+    assert_eq!(Node::decode(day_without_month).unwrap_err().path, "$.payload.Anchor.at");
+}
+
+#[test]
+fn the_node_goldens_stay_control_character_free() {
+    // R5 moved the control-character spelling, and the node goldens did
+    // not move with it -- because none of them contains a control
+    // character. This test is what keeps that true: if a future golden
+    // gains one, it must be re-pinned deliberately, not by accident.
+    let goldens: &[&[u8]] = &[
+        br#"{"id":"Place:jerusalem","payload":{"Place":{"aliases":["Salem"],"canonical":"Jerusalem","description":null,"lat":31.7767,"lon":35.2345}},"provenance":"openbible-geo"}"#,
+        br#""rings":[[[35.75,31.5]]]"#,
+        br#""at":{"day":null,"month":null,"year":-4004}"#,
+    ];
+    for g in goldens {
+        assert!(
+            !g.iter().any(|b| *b < 0x20),
+            "golden holds a control character: {}",
+            String::from_utf8_lossy(g)
+        );
+        assert!(
+            !String::from_utf8_lossy(g).contains("\\u"),
+            "golden holds an escape: {}",
+            String::from_utf8_lossy(g)
+        );
+    }
 }
