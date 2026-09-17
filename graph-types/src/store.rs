@@ -94,8 +94,18 @@ pub trait GraphQuery {
     }
 
     /// The row behind an edge id, with its provenance; `None` for a
-    /// synthesised edge (`justified-by`) or an unknown id.
+    /// synthesised edge (`justified-by`) or an unknown id. When two rows
+    /// mint one id (identical `(rel, subject, object)`), this is the FIRST
+    /// by `(family, ord)`; `rows_behind` lists them all.
     fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef>;
+
+    /// EVERY row behind an edge id, in `(family, ord)` order -- the leper
+    /// lesson: one event's account attested by two sources is two rows
+    /// with one id, and both sources must stay reachable. Default: the one
+    /// row `row_provenance` names; backends that keep every row override.
+    fn rows_behind(&self, e: &crate::edge::EdgeId) -> Vec<RowRef> {
+        self.row_provenance(e).into_iter().collect()
+    }
 
     /// Index of a unit in a corpus's reading spine; `None` off-spine or
     /// for an unknown corpus.
@@ -147,6 +157,15 @@ impl GraphQuery for Graph {
         let r = self.edge_row(e)?;
         let provenance = self.row_provenance_of(r.family, r.row_ord as usize)?;
         Some(RowRef { family: r.family, row_id: u64::from(r.row_ord), provenance: provenance.to_string() })
+    }
+    fn rows_behind(&self, e: &crate::edge::EdgeId) -> Vec<RowRef> {
+        self.rows_of_edge(e)
+            .iter()
+            .filter_map(|r| {
+                let provenance = self.row_provenance_of(r.family, r.row_ord as usize)?;
+                Some(RowRef { family: r.family, row_id: u64::from(r.row_ord), provenance: provenance.to_string() })
+            })
+            .collect()
     }
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.spine_index.get(corpus).and_then(|m| m.get(id)).copied()
@@ -415,6 +434,9 @@ impl GraphQuery for MemSnapshot {
     fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
         self.graph.row_provenance(e)
     }
+    fn rows_behind(&self, e: &crate::edge::EdgeId) -> Vec<RowRef> {
+        self.graph.rows_behind(e)
+    }
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.graph.position_of(corpus, id)
     }
@@ -593,6 +615,12 @@ pub fn assert_answers_match(candidate: &impl GraphQuery, model: &Graph) {
                     candidate.row_provenance(&x.entry.edge),
                     model.row_provenance(&y.entry.edge),
                     "conformance: row_provenance({:?}) diverges",
+                    x.entry.edge
+                );
+                assert_eq!(
+                    candidate.rows_behind(&x.entry.edge),
+                    model.rows_behind(&y.entry.edge),
+                    "conformance: rows_behind({:?}) diverges",
                     x.entry.edge
                 );
             }
@@ -1031,6 +1059,23 @@ mod laws {
         assert_eq!(snap.position_of("bible", &id), Some(1));
         assert_eq!(snap.row_provenance(&entry.edge).map(|r| r.family), Some(crate::canon::RowFamily::LocatedAt));
         assert_eq!(snap.nodes_of_kind(NodeKind::TextUnit, None, 9).ids.len(), 2);
+    }
+
+    #[test]
+    fn two_rows_minting_one_id_are_both_behind_it() {
+        let mut g = graph_with(&[("bible/1.1.1", "a")]);
+        for prov in ["event-witnesses", "attestation-corrections"] {
+            g.located_at.push(LocatedAt { event: EventId::new("e1"), place: PlaceId::new("jordan"), provenance: prov.into(), justification: Justification::default() });
+        }
+        g.build_indexes();
+        let e1 = Position::Node(EventId::new("e1").erase());
+        let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
+        let page = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 2, "the index keeps both entries");
+        assert_eq!(page.entries[0].edge, page.entries[1].edge, "one id");
+        let rows = g.rows_behind(&page.entries[0].edge);
+        assert_eq!(rows.iter().map(|r| (r.row_id, r.provenance.as_str())).collect::<Vec<_>>(), [(0, "event-witnesses"), (1, "attestation-corrections")]);
+        assert_eq!(g.row_provenance(&page.entries[0].edge).map(|r| r.row_id), Some(0), "the FIRST row");
     }
 
     #[test]

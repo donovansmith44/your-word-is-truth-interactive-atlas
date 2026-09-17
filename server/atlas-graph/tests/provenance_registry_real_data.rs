@@ -251,7 +251,10 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
     // L-2) -- so a provenance field appearing in a file that had none, or a
     // file dropping out entirely, fails HERE with its own name in the
     // message rather than passing three unchanged per-file counts.
-    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 19), ("node.rs", 2)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    // DB-3: `store.rs` carries ONE `pub provenance:` -- `RowRef`'s field, the
+    // port's answer to "which row made this edge" (spec 4), not a row family;
+    // the sweeps below have nothing to add for it.
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 19), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
     assert_eq!(
         per_file, expected,
         "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
@@ -267,7 +270,9 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
     assert_eq!(node_decls, 2, "graph-types/src/node.rs's provenance fields changed ({node_decls} now, 2 pinned: Node + the Card projection)");
 
     let total_decls: usize = per_file.values().sum();
-    let row_structs = total_decls - node_decls;
+    // DB-3: minus `store.rs`'s one (`RowRef.provenance`, a port projection
+    // of a row's field, not a row struct).
+    let row_structs = total_decls - node_decls - per_file["store.rs"];
     let families = provenance_by_family(real_graph());
     // The two `Contains<C>` vectors (`contains_bible`, `contains_concord`)
     // share ONE struct declaration, so the vector count is one more than

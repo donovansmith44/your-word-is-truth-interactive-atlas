@@ -81,12 +81,13 @@ pub struct Graph {
     /// lookup, not a scan (same derived-state class as `indexes`;
     /// content addressing makes it deterministic).
     pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
-    /// DB-3: edge-id hash -> the row that produced the entry, sorted by
-    /// hash (binary search) -- the in-memory `GraphQuery::row_provenance`.
-    /// Built beside the indexes from the same `row_edges()` pass; a
-    /// duplicate id (two rows with one `(rel, subject, object)`) keeps the
-    /// FIRST row, as `sqlite::partition::edge_row_map` does. Sixteen bytes
-    /// per index entry.
+    /// DB-3: edge-id hash -> the row(s) that produced the entry, sorted by
+    /// `(hash, row_ord)` (binary search) -- the in-memory
+    /// `GraphQuery::row_provenance` / `rows_behind`. Built beside the
+    /// indexes from the same `row_edges()` pass. EVERY row is kept: two
+    /// rows with one `(rel, subject, object)` (the leper lesson -- one
+    /// event's account attested by two sources) mint one id, and both
+    /// sources must stay reachable behind it. Sixteen bytes per index entry.
     pub edge_rows: Vec<EdgeRow>,
     /// DB-3: corpus -> unit id -> spine index -- the in-memory
     /// `GraphQuery::position_of`, a lookup instead of a scan of the spine.
@@ -94,7 +95,7 @@ pub struct Graph {
 }
 
 /// DB-3: one index entry's row, keyed by its edge id's hash.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EdgeRow {
     pub hash: crate::id::ContentHash,
     pub family: crate::canon::RowFamily,
@@ -413,10 +414,19 @@ impl Graph {
         }
     }
 
-    /// DB-3: the row behind an edge id (`edge_rows`, built by `build_indexes`).
+    /// DB-3: every row behind an edge id, in `(family, row_ord)` order
+    /// (`edge_rows`, built by `build_indexes`); empty for an unknown or
+    /// synthesised id.
+    pub fn rows_of_edge(&self, e: &crate::edge::EdgeId) -> &[EdgeRow] {
+        let Some(h) = edge_hash(e) else { return &[] };
+        let start = self.edge_rows.partition_point(|r| r.hash < h);
+        let end = start + self.edge_rows[start..].partition_point(|r| r.hash == h);
+        &self.edge_rows[start..end]
+    }
+
+    /// DB-3: the FIRST row behind an edge id (see `rows_of_edge`).
     pub fn edge_row(&self, e: &crate::edge::EdgeId) -> Option<EdgeRow> {
-        let h = edge_hash(e)?;
-        self.edge_rows.binary_search_by_key(&h, |r| r.hash).ok().map(|i| self.edge_rows[i])
+        self.rows_of_edge(e).first().copied()
     }
 
     /// DB-3: one row's `provenance`, by family and ord -- the 21-arm match,
@@ -505,8 +515,8 @@ impl Graph {
                 handles.into_iter().flat_map(|h| h.join().expect("an edge-row chunk never panics")).collect()
             })
         };
-        edge_rows.sort_unstable_by_key(|r| (r.hash, r.row_ord));
-        edge_rows.dedup_by_key(|r| r.hash);
+        edge_rows.sort_unstable_by_key(|r| (r.hash, r.family, r.row_ord));
+        edge_rows.dedup();
         self.edge_rows = edge_rows;
         for e in edges {
             match e.rel {

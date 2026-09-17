@@ -155,3 +155,72 @@ fn persons_at_verse_equals_the_retired_persons_by_verse_over_every_verse() {
     }
     assert_eq!(inhabited, oracle.len(), "every keyed verse is a spine verse");
 }
+
+// --------------------------- Task 6: per-edge provenance, temporal_neighbors
+
+/// ORACLE: provenance.rs's three per-edge maps, verbatim.
+fn oracle_provenance(g: &Graph) -> (ByKey, ByKey, BTreeMap<(String, String), String>) {
+    use std::collections::BTreeSet;
+    let mut attests: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for row in &g.attests {
+        attests.entry(row.event.0.clone()).or_default().insert(row.provenance.clone());
+    }
+    let mut mentions: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for row in &g.mentions {
+        if let atlas_graph_types::edge::MentionedEntity::Event(e) = &row.entity {
+            mentions.entry(e.0.clone()).or_default().insert(row.provenance.clone());
+        }
+    }
+    let mut analogue: BTreeMap<(String, String), String> = BTreeMap::new();
+    for row in &g.analogue {
+        analogue.insert((row.a.0.clone(), row.b.0.clone()), row.provenance.clone());
+        analogue.insert((row.b.0.clone(), row.a.0.clone()), row.provenance.clone());
+    }
+    (
+        attests.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect(),
+        mentions.into_iter().map(|(k, v)| (k, v.into_iter().collect())).collect(),
+        analogue,
+    )
+}
+
+/// ORACLE: service.rs's temporal_neighbors, verbatim (domain seeded from
+/// chrono.order, direction from the rows' own earlier/later ends).
+fn oracle_temporal_neighbors(g: &Graph, order: &[String]) -> HashMap<String, (Option<String>, Option<String>)> {
+    let mut m: HashMap<String, (Option<String>, Option<String>)> = order.iter().map(|id| (id.clone(), (None, None))).collect();
+    for row in &g.temporal_adjacency {
+        m.entry(row.earlier.0.clone()).or_insert((None, None)).1 = Some(row.later.0.clone());
+        m.entry(row.later.0.clone()).or_insert((None, None)).0 = Some(row.earlier.0.clone());
+    }
+    m
+}
+
+#[test]
+fn per_edge_provenance_through_row_provenance_equals_the_retired_index_for_every_event() {
+    let g = committed_graph();
+    let s = service();
+    let (attests, mentions, analogue) = oracle_provenance(g);
+    assert!(attests.len() > 500 && !analogue.is_empty(), "attests {} analogue {}", attests.len(), analogue.len());
+    for id in s.ids_of_kind(NodeKind::Event) {
+        assert_eq!(s.attests_provenance(&id.raw), attests.get(&id.raw).cloned().unwrap_or_default(), "attests {}", id.raw);
+        assert_eq!(s.event_mentions_provenance(&id.raw), mentions.get(&id.raw).cloned().unwrap_or_default(), "mentions {}", id.raw);
+    }
+    for ((a, b), prov) in &analogue {
+        assert_eq!(s.analogue_provenance(a, b).as_deref(), Some(prov.as_str()), "analogue {a} <-> {b}");
+    }
+    assert_eq!(s.analogue_provenance("nativity", "nativity"), None);
+}
+
+#[test]
+fn temporal_neighbors_of_equals_the_retired_map_over_every_dated_event() {
+    let g = committed_graph();
+    let s = service();
+    let oracle = oracle_temporal_neighbors(g, &s.chronology.chrono.order);
+    assert!(oracle.len() > 800, "{}", oracle.len());
+    let mut dated = 0usize;
+    for id in s.ids_of_kind(NodeKind::Event) {
+        let got = s.temporal_neighbors_of(&id.raw);
+        assert_eq!(got, oracle.get(&id.raw).cloned(), "{}", id.raw);
+        dated += usize::from(got.is_some());
+    }
+    assert_eq!(dated, oracle.len(), "the domain is exactly chrono.order");
+}

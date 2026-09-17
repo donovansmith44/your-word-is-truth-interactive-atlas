@@ -29,11 +29,15 @@
 //! -- every value is a `provenance` field copied verbatim off the row that
 //! declared it.
 //!
-//! HONESTY OVER CONVENIENCE. Two kinds of entry live here, and they are
+//! HONESTY OVER CONVENIENCE. Two kinds of entry lived here, and they are
 //! not interchangeable:
 //!   * PER-ROW / PER-SUBJECT (`attests_by_event`, `analogue_by_pair`,
 //!     `event_mentions_by_event`) -- the exact rows behind one rendered
-//!     section of one node's frontier.
+//!     section of one node's frontier. DB-3 (spec 4) moved these OUT of
+//!     this index: `GraphQuery::row_provenance` answers "which row made
+//!     this edge" from the port, and `GraphService::{attests_provenance,
+//!     event_mentions_provenance, analogue_provenance}` compose it; their
+//!     unit laws (the leper lesson included) live in `service.rs` now.
 //!
 //!     CORRECTED (this batch's own error, kept visible rather than quietly
 //!     rewritten): the first version of this paragraph asserted that
@@ -80,7 +84,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::graph::Graph;
 
 /// One row family's name, spelled as the `Graph` field name verbatim, so
@@ -97,10 +100,14 @@ pub mod family {
 
 #[derive(Debug, Default, Clone)]
 pub struct ProvenanceIndex {
+    // DB-3: the per-edge lookups this index used to carry
+    // (`attests_for_event`, `event_mentions_for_event`, `analogue_for_pair`)
+    // moved to `GraphQuery::row_provenance` (spec 4) -- see
+    // `GraphService::{attests_provenance, event_mentions_provenance,
+    // analogue_provenance}`. `by_family` stays: a per-family DISTINCT
+    // aggregate is a section-level scan, not an edge lookup, until DB-4's
+    // `SELECT DISTINCT provenance` (plan judgment call 5).
     by_family: BTreeMap<&'static str, BTreeSet<String>>,
-    attests_by_event: BTreeMap<String, BTreeSet<String>>,
-    event_mentions_by_event: BTreeMap<String, BTreeSet<String>>,
-    analogue_by_pair: BTreeMap<(String, String), String>,
 }
 
 impl ProvenanceIndex {
@@ -141,30 +148,7 @@ impl ProvenanceIndex {
         sweep!("temporal_adjacency", temporal_adjacency);
         sweep!(family::ANALOGUE, analogue);
 
-        let mut attests_by_event: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-        for row in &g.attests {
-            attests_by_event.entry(row.event.0.clone()).or_default().insert(row.provenance.clone());
-        }
-
-        let mut event_mentions_by_event: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-        for row in &g.mentions {
-            if let MentionedEntity::Event(e) = &row.entity {
-                event_mentions_by_event.entry(e.0.clone()).or_default().insert(row.provenance.clone());
-            }
-        }
-
-        let mut analogue_by_pair: BTreeMap<(String, String), String> = BTreeMap::new();
-        for row in &g.analogue {
-            // `Analogue` is SYMMETRIC (`SymRelationId::Analogue`) and the
-            // wire walks it from EITHER end, so both orderings are stored
-            // -- the same "both ends populate the same map" shape
-            // `BiIndex::build_symmetric` itself uses. Not a duplicate
-            // claim: one row, two lookup keys.
-            analogue_by_pair.insert((row.a.0.clone(), row.b.0.clone()), row.provenance.clone());
-            analogue_by_pair.insert((row.b.0.clone(), row.a.0.clone()), row.provenance.clone());
-        }
-
-        ProvenanceIndex { by_family, attests_by_event, event_mentions_by_event, analogue_by_pair }
+        ProvenanceIndex { by_family }
     }
 
     /// Every distinct provenance id carried by one row family, as a sorted
@@ -194,104 +178,17 @@ impl ProvenanceIndex {
         self.by_family.keys().copied().collect()
     }
 
-    /// The distinct provenance of the `Attests` rows for ONE event -- the
-    /// "PARALLEL ACCOUNTS" section's own sources. Empty for an event with
-    /// no accounts at all (the Espousal of Mary, correctly), which renders
-    /// as no affordance rather than as a blank one.
-    pub fn attests_for_event(&self, event_id: &str) -> Vec<String> {
-        self.attests_by_event.get(event_id).map(|s| s.iter().cloned().collect()).unwrap_or_default()
-    }
-
-    /// The distinct provenance of the `Mentions` rows naming ONE event --
-    /// the "MENTIONED IN" section's own sources.
-    pub fn event_mentions_for_event(&self, event_id: &str) -> Vec<String> {
-        self.event_mentions_by_event.get(event_id).map(|s| s.iter().cloned().collect()).unwrap_or_default()
-    }
-
-    /// The provenance of the ONE `Analogue` row joining two events --
-    /// genuinely per-row, in either direction. `None` when the pair is not
-    /// joined (which a caller reaching this from a walked edge cannot
-    /// normally see).
-    pub fn analogue_for_pair(&self, a: &str, b: &str) -> Option<&str> {
-        self.analogue_by_pair.get(&(a.to_string(), b.to_string())).map(|s| s.as_str())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph_types::edge::{Analogue, Attests, Mentions};
-    use atlas_graph_types::id::EventId;
 
     fn locus() -> atlas_graph_types::text::TextLocus {
         atlas_graph_types::text::TextLocus {
             at: atlas_graph_types::text::TextRef::Bible(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 3 }),
             span: None,
         }
-    }
-
-    fn range() -> atlas_graph_types::text::BibleLocusRange {
-        atlas_graph_types::text::BibleLocusRange::new(
-            atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 1 }),
-            atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 4 }),
-        )
-        .expect("from <= to")
-    }
-
-    /// THE LEPER LESSON, as a unit test over a SYNTHETIC graph: an event
-    /// whose accounts come from TWO sources must report both, never one.
-    /// Collapsing this to a single value is exactly how a hand-repaired row
-    /// ends up wearing an imported source's clothes.
-    ///
-    /// The fixture is synthetic ON PURPOSE, and the distinction matters:
-    /// the REAL `attests` table is single-sourced today
-    /// (`the_per_family_provenance_map_of_the_real_artifact_is_pinned`
-    /// measures `{event-witnesses}`), so this is the behavior the index
-    /// must have IF a second source ever lands there -- not a description
-    /// of the corpus. See this module's own header for the correction.
-    #[test]
-    fn an_events_accounts_report_every_source_behind_them_not_just_one() {
-        let mut g = Graph::default();
-        g.attests.push(Attests { event: EventId::new("e1"), attestation: range(), provenance: "event-witnesses".into(), justification: Default::default() });
-        g.attests.push(Attests { event: EventId::new("e1"), attestation: range(), provenance: "attestation-corrections".into(), justification: Default::default() });
-        g.attests.push(Attests { event: EventId::new("e2"), attestation: range(), provenance: "event-witnesses".into(), justification: Default::default() });
-
-        let ix = ProvenanceIndex::build(&g);
-        assert_eq!(ix.attests_for_event("e1"), vec!["attestation-corrections".to_string(), "event-witnesses".to_string()]);
-        assert_eq!(ix.attests_for_event("e2"), vec!["event-witnesses".to_string()]);
-        // An event with no accounts renders no affordance, not a blank one.
-        assert!(ix.attests_for_event("e3").is_empty());
-        // ...and in THIS fixture the family view is multi-sourced, which
-        // the SET itself says (fix round 1, review L-4: this used to ask a
-        // now-deleted `is_single_sourced` predicate; the equality is the
-        // stronger statement anyway -- it names WHICH two).
-        assert_eq!(ix.by_family(family::ATTESTS), vec!["attestation-corrections".to_string(), "event-witnesses".to_string()]);
-    }
-
-    #[test]
-    fn an_analogue_row_resolves_from_either_end_because_the_relation_is_symmetric() {
-        let mut g = Graph::default();
-        g.analogue.push(Analogue { a: EventId::new("mat_leper_healed"), b: EventId::new("rob_leper_healed"), provenance: "curated-analogues".into() });
-        let ix = ProvenanceIndex::build(&g);
-        assert_eq!(ix.analogue_for_pair("mat_leper_healed", "rob_leper_healed"), Some("curated-analogues"));
-        assert_eq!(ix.analogue_for_pair("rob_leper_healed", "mat_leper_healed"), Some("curated-analogues"));
-        assert_eq!(ix.analogue_for_pair("mat_leper_healed", "nothing"), None);
-    }
-
-    #[test]
-    fn only_event_mentions_land_in_the_event_mentions_map() {
-        let mut g = Graph::default();
-        g.mentions.push(Mentions { locus: locus(), entity: MentionedEntity::Event(EventId::new("theo-249")), provenance: "event-mentions".into() });
-        g.mentions.push(Mentions {
-            locus: locus(),
-            entity: MentionedEntity::Person(atlas_graph_types::id::PersonId::new("joseph_1")),
-            provenance: "theographic-people".into(),
-        });
-        let ix = ProvenanceIndex::build(&g);
-        assert_eq!(ix.event_mentions_for_event("theo-249"), vec!["event-mentions".to_string()]);
-        // The family view still sees BOTH -- the per-event view is a
-        // filter, never a redefinition of the family.
-        assert_eq!(ix.by_family(family::MENTIONS), vec!["event-mentions".to_string(), "theographic-people".to_string()]);
     }
 
     #[test]

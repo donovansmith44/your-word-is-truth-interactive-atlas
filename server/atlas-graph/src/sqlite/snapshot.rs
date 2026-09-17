@@ -288,24 +288,36 @@ impl GraphQuery for SqliteSnapshot {
     }
 
     fn row_provenance(&self, e: &EdgeId) -> Option<RowRef> {
-        let blob = super::writer::edge_id_blob(e).ok()?;
+        self.rows_behind(e).into_iter().next()
+    }
+
+    /// Every DISTINCT `(row_family, row_id)` behind the id across the
+    /// attached sections, in `(family, id)` order -- the same order the
+    /// in-memory `edge_rows` keeps, so the first is the same first.
+    fn rows_behind(&self, e: &EdgeId) -> Vec<RowRef> {
+        let Ok(blob) = super::writer::edge_id_blob(e) else { return Vec::new() };
         let justified = directed_rel_code(atlas_graph_types::edge::RelationId::JustifiedBy);
         self.with_conn(|conn| {
-            let hit: Option<(i64, i64, i64)> = conn
-                .prepare_cached("SELECT sec, row_family, row_id FROM all_edge_index WHERE edge_id = ?1 AND rel != ?2 LIMIT 1")?
-                .query_row(rusqlite::params![blob, justified], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
-                .optional()?;
-            let Some((sec, family_ord, row_id)) = hit else { return Ok(None) };
-            let family = u8::try_from(family_ord).ok().and_then(atlas_graph_types::canon::RowFamily::from_ordinal)
-                .ok_or_else(|| SqliteError(format!("edge_index.row_family {family_ord} is not a RowFamily")))?;
-            let schema = usize::try_from(sec).ok().and_then(|r| self.schema_of(r))
-                .ok_or_else(|| SqliteError(format!("edge_index.sec {sec} names no attached section")))?;
-            let provenance: String = conn
-                .prepare_cached(&format!("SELECT provenance FROM {schema}.{} WHERE id = ?1", family.name()))?
-                .query_row([row_id], |r| r.get(0))?;
-            Ok(Some(RowRef { family, row_id: row_id as u64, provenance }))
+            let mut stmt = conn.prepare_cached(
+                "SELECT DISTINCT sec, row_family, row_id FROM all_edge_index WHERE edge_id = ?1 AND rel != ?2 ORDER BY row_family, row_id",
+            )?;
+            let hits: Vec<(i64, i64, i64)> = stmt
+                .query_map(rusqlite::params![blob, justified], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+                .collect::<Result<_, _>>()?;
+            let mut out = Vec::with_capacity(hits.len());
+            for (sec, family_ord, row_id) in hits {
+                let family = u8::try_from(family_ord).ok().and_then(atlas_graph_types::canon::RowFamily::from_ordinal)
+                    .ok_or_else(|| SqliteError(format!("edge_index.row_family {family_ord} is not a RowFamily")))?;
+                let schema = usize::try_from(sec).ok().and_then(|r| self.schema_of(r))
+                    .ok_or_else(|| SqliteError(format!("edge_index.sec {sec} names no attached section")))?;
+                let provenance: String = conn
+                    .prepare_cached(&format!("SELECT provenance FROM {schema}.{} WHERE id = ?1", family.name()))?
+                    .query_row([row_id], |r| r.get(0))?;
+                out.push(RowRef { family, row_id: row_id as u64, provenance });
+            }
+            Ok(out)
         })
-        .unwrap_or(None)
+        .unwrap_or_default()
     }
 
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {

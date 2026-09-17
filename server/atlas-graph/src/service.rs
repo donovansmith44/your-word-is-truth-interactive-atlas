@@ -89,27 +89,13 @@ pub struct GraphService {
     /// verse + `EdgeMeta::Votes`, not the row's own `to_last`/
     /// `target_display`) -- same "port doesn't model this access shape"
     /// class as `narrative_legs` above.
+    ///
+    /// DB-3 (plan judgment call 4): NOT retired with the other companions
+    /// -- `target_display` (the original citation string) is a `cross_refs`
+    /// ROW field the port does not expose, and the spec's replacement is a
+    /// `kjv.cross_refs` seek the server can only make once it reads the
+    /// SQLite sections (DB-4).
     pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
-    /// TRAV-1 (controller decision 2, "the graph serves it... one path"):
-    /// prior/following-in-time -- DIRECTION read directly off the honest
-    /// `earlier`/`later` ends of the graph's own `temporal_adjacency` rows,
-    /// never re-derived from a position index; DOMAIN (which ids are dated
-    /// at all) seeded from `chronology.chrono.order` so a dated id with no
-    /// real neighbor on either side (the atlas's own true first/last event,
-    /// or the degenerate single-dated-event case) still gets a `Some((None,
-    /// None))` entry rather than going missing outright (`assemble`'s own
-    /// comment has the fuller "two different questions" argument). The SAME
-    /// "companion the generic port doesn't model" class as
-    /// `narrative_legs`/`cross_refs_by_from` above, built once here from
-    /// the raw, pre-store `graph` the same way they are. RETIRES
-    /// `event_world::Chronology`'s own former `temporal_neighbors` field
-    /// (index-arithmetic-derived, over `chrono.order`, a second
-    /// representation of this identical fact -- see that struct's own
-    /// retirement doc comment): this field is the ONE surviving path.
-    /// `HashMap`, not `BTreeMap` -- same "only ever `.get()`'d by key,
-    /// never iterated/serialized" reasoning as `cross_refs_by_from`/
-    /// `persons_by_verse` above.
-    pub temporal_neighbors: HashMap<String, (Option<String>, Option<String>)>,
     /// RED-1 (decision 4, "the heading-index precedent"): dot-ref -> the
     /// KJV sub-verse span table's own char-offset ranges for that verse --
     /// the SAME "precomputed once here, O(1) per-verse lookup" treatment
@@ -408,31 +394,6 @@ impl GraphService {
             let Some(key) = crate::legacy::locus_dot_ref(&row.from) else { continue };
             cross_refs_by_from.entry(key).or_default().push(atlas_core::data::CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
         }
-        // TRAV-1: the SAME one-time, pre-store `graph` scan as the
-        // companions above. Two DIFFERENT questions, deliberately kept
-        // separate: WHICH ids are genuinely part of the timeline at all
-        // (a plain DOMAIN/membership fact -- seeded from `chronology.chrono.
-        // order`, the same `Vec<String>` `populate_temporal_adjacency`
-        // itself was built from, so this is not a second derivation of
-        // ORDER, just a re-read of the one that already exists) vs. WHICH
-        // direction each neighbor sits in (read directly off
-        // `graph.temporal_adjacency`'s own honest `earlier`/`later` row
-        // ends, never re-derived from a position index -- see
-        // `event_world::Chronology`'s own doc comment). Seeding first
-        // matters at the atlas's own true first/last dated event AND at
-        // the (rare, but real -- a live-caught HOTFIX-4 regression fixture)
-        // single-dated-event case: `windows(2)` on that id's own
-        // neighborhood yields no ROW at all, but the id is still honestly
-        // DATED, so `timeline` must still be `Some` (both directions
-        // `None`), never omitted outright the way a truly general-kind/
-        // undated/unknown id is -- `handlers::narrative_event_positions`'s
-        // own `.get(id)` presence check is what draws that line.
-        let mut temporal_neighbors: HashMap<String, (Option<String>, Option<String>)> =
-            chronology.chrono.order.iter().map(|id| (id.clone(), (None, None))).collect();
-        for row in &graph.temporal_adjacency {
-            temporal_neighbors.entry(row.earlier.0.clone()).or_insert((None, None)).1 = Some(row.later.0.clone());
-            temporal_neighbors.entry(row.later.0.clone()).or_insert((None, None)).0 = Some(row.earlier.0.clone());
-        }
         // GraphPublisher::publish (design doc §9a): the compiler
         // publishes; serving never writes. One publish, at startup; M-A
         // never calls it again (no hot-reload exists yet) -- MemStore's
@@ -456,7 +417,6 @@ impl GraphService {
             narrative_legs,
             heading_index,
             cross_refs_by_from,
-            temporal_neighbors,
             red_letter_spans,
             provenance,
             scene_source: std::sync::OnceLock::new(),
@@ -488,6 +448,105 @@ impl GraphService {
                 None => break out,
             }
         }
+    }
+
+    /// DB-3: the distinct, sorted provenance of every row behind the edges
+    /// of one kind at one position -- `rows_behind` over one drained page
+    /// walk. A synthesised edge contributes nothing.
+    fn provenance_over(&self, p: &atlas_graph_types::id::Position, kind: atlas_graph_types::edge::EdgeKind) -> Vec<String> {
+        use atlas_graph_types::explore::EdgeQuery;
+        let mut set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+        let mut cursor = None;
+        loop {
+            let page = self.snapshot.edges(p, &EdgeQuery { kind, cursor, limit: 256 });
+            for e in &page.entries {
+                // `rows_behind`, not `row_provenance`: two rows minting one
+                // id (the leper lesson) both count.
+                for r in self.snapshot.rows_behind(&e.edge) {
+                    set.insert(r.provenance);
+                }
+            }
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break set.into_iter().collect(),
+            }
+        }
+    }
+
+    /// DB-3: the distinct provenance of the `Attests` rows for ONE event
+    /// (the "PARALLEL ACCOUNTS" section's own sources) -- the retired
+    /// `ProvenanceIndex::attests_for_event`, through the port.
+    pub fn attests_provenance(&self, event_raw: &str) -> Vec<String> {
+        use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+        self.provenance_over(&at(&atlas_graph_types::id::EventId::new(event_raw).erase()), EdgeKind::Directed(RelationId::Attests, Direction::Forward))
+    }
+
+    /// DB-3: the distinct provenance of the `Mentions` rows naming ONE event
+    /// (a mention lowers with the event as OBJECT, so the inverse reading at
+    /// the event lists exactly those rows) -- the retired
+    /// `event_mentions_for_event`, through the port.
+    pub fn event_mentions_provenance(&self, event_raw: &str) -> Vec<String> {
+        use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+        self.provenance_over(&at(&atlas_graph_types::id::EventId::new(event_raw).erase()), EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
+    }
+
+    /// DB-3: the provenance of the ONE `Analogue` row joining two events,
+    /// from either end -- the retired `analogue_for_pair`, through the port.
+    pub fn analogue_provenance(&self, a_raw: &str, b_raw: &str) -> Option<String> {
+        use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
+        use atlas_graph_types::explore::EdgeQuery;
+        let a = at(&atlas_graph_types::id::EventId::new(a_raw).erase());
+        let b = at(&atlas_graph_types::id::EventId::new(b_raw).erase());
+        let kind = EdgeKind::Symmetric(SymRelationId::Analogue);
+        let mut cursor = None;
+        loop {
+            let page = self.snapshot.edges(&a, &EdgeQuery { kind, cursor, limit: 256 });
+            if let Some(e) = page.entries.iter().find(|e| e.node == b) {
+                return self.snapshot.row_provenance(&e.edge).map(|r| r.provenance);
+            }
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => return None,
+            }
+        }
+    }
+
+    /// DB-3: prior/following-in-time for ONE event -- the retired
+    /// `temporal_neighbors` companion, through the port. `None` unless the
+    /// event is in the chronology's order at all (the DOMAIN fact the old
+    /// map seeded from `chronology.chrono.order`); adjacency from the
+    /// `temporal-adjacency` edges; direction from that same order (the
+    /// neighbour earlier in it is `prior`).
+    pub fn temporal_neighbors_of(&self, event_raw: &str) -> Option<(Option<String>, Option<String>)> {
+        use atlas_graph_types::edge::{at, EdgeKind, SymRelationId};
+        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::id::Position;
+        let order = &self.chronology.chrono.order;
+        let me = order.iter().position(|x| x == event_raw)?;
+        let p = at(&atlas_graph_types::id::EventId::new(event_raw).erase());
+        let kind = EdgeKind::Symmetric(SymRelationId::TemporalAdjacency);
+        let mut prior: Option<(usize, String)> = None;
+        let mut following: Option<(usize, String)> = None;
+        let mut cursor = None;
+        loop {
+            let page = self.snapshot.edges(&p, &EdgeQuery { kind, cursor, limit: 256 });
+            for e in &page.entries {
+                let Position::Node(n) = &e.node else { continue };
+                let Some(idx) = order.iter().position(|x| *x == n.raw) else { continue };
+                if idx < me {
+                    if prior.as_ref().is_none_or(|(i, _)| idx > *i) {
+                        prior = Some((idx, n.raw.clone()));
+                    }
+                } else if idx > me && following.as_ref().is_none_or(|(i, _)| idx < *i) {
+                    following = Some((idx, n.raw.clone()));
+                }
+            }
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break,
+            }
+        }
+        Some((prior.map(|(_, id)| id), following.map(|(_, id)| id)))
     }
 
     pub fn snapshot(&self) -> MemSnapshot {
@@ -724,6 +783,75 @@ mod tests {
         let svc = service();
         assert_eq!(svc.position_of(0, 1, 2), Some(1));
         assert_eq!(svc.position_of(0, 99, 1), None, "unknown verse position is None, not a panic");
+    }
+
+    /// DB-3: a synthetic graph for the per-edge provenance laws that moved
+    /// here from `provenance.rs` (the retired `ProvenanceIndex` per-event
+    /// maps) -- rows only; the events need no node to be edge subjects.
+    fn provenance_service(g: Graph) -> GraphService {
+        let mut g = g;
+        g.build_indexes();
+        GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new())
+    }
+
+    fn prov_range() -> atlas_graph_types::text::BibleLocusRange {
+        atlas_graph_types::text::LocusRange::new(
+            atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 1 }),
+            atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 4 }),
+        )
+        .expect("from <= to")
+    }
+
+    fn prov_locus() -> atlas_graph_types::text::TextLocus {
+        atlas_graph_types::text::TextLocus { at: atlas_graph_types::text::TextRef::Bible(atlas_graph_types::text::VerseRef { book: 40, chapter: 8, verse: 2 }), span: None }
+    }
+
+    /// THE LEPER LESSON (moved from provenance.rs at DB-3): an event whose
+    /// accounts come from TWO sources must report both, never one --
+    /// collapsing this to a single value is exactly how a hand-repaired
+    /// row ends up wearing an imported source's clothes. Synthetic on
+    /// purpose: the REAL `attests` table is single-sourced today.
+    #[test]
+    fn an_events_accounts_report_every_source_behind_them_not_just_one() {
+        use atlas_graph_types::edge::Attests;
+        use atlas_graph_types::id::EventId;
+        let mut g = Graph::default();
+        g.attests.push(Attests { event: EventId::new("e1"), attestation: prov_range(), provenance: "event-witnesses".into(), justification: Default::default() });
+        g.attests.push(Attests { event: EventId::new("e1"), attestation: prov_range(), provenance: "attestation-corrections".into(), justification: Default::default() });
+        g.attests.push(Attests { event: EventId::new("e2"), attestation: prov_range(), provenance: "event-witnesses".into(), justification: Default::default() });
+        let svc = provenance_service(g);
+        assert_eq!(svc.attests_provenance("e1"), vec!["attestation-corrections".to_string(), "event-witnesses".to_string()]);
+        assert_eq!(svc.attests_provenance("e2"), vec!["event-witnesses".to_string()]);
+        // An event with no accounts renders no affordance, not a blank one.
+        assert!(svc.attests_provenance("e3").is_empty());
+        // The family view still sees the set (this one stays on ProvenanceIndex).
+        assert_eq!(svc.provenance.by_family(crate::provenance::family::ATTESTS), vec!["attestation-corrections".to_string(), "event-witnesses".to_string()]);
+    }
+
+    #[test]
+    fn an_analogue_row_resolves_from_either_end_because_the_relation_is_symmetric() {
+        use atlas_graph_types::edge::Analogue;
+        use atlas_graph_types::id::EventId;
+        let mut g = Graph::default();
+        g.analogue.push(Analogue { a: EventId::new("mat_leper_healed"), b: EventId::new("rob_leper_healed"), provenance: "curated-analogues".into() });
+        let svc = provenance_service(g);
+        assert_eq!(svc.analogue_provenance("mat_leper_healed", "rob_leper_healed").as_deref(), Some("curated-analogues"));
+        assert_eq!(svc.analogue_provenance("rob_leper_healed", "mat_leper_healed").as_deref(), Some("curated-analogues"));
+        assert_eq!(svc.analogue_provenance("mat_leper_healed", "nothing"), None);
+    }
+
+    #[test]
+    fn only_event_mentions_reach_event_mentions_provenance() {
+        use atlas_graph_types::edge::{MentionedEntity, Mentions};
+        use atlas_graph_types::id::EventId;
+        let mut g = Graph::default();
+        g.mentions.push(Mentions { locus: prov_locus(), entity: MentionedEntity::Event(EventId::new("theo-249")), provenance: "event-mentions".into() });
+        g.mentions.push(Mentions { locus: prov_locus(), entity: MentionedEntity::Person(atlas_graph_types::id::PersonId::new("joseph_1")), provenance: "theographic-people".into() });
+        let svc = provenance_service(g);
+        assert_eq!(svc.event_mentions_provenance("theo-249"), vec!["event-mentions".to_string()]);
+        // The family view still sees BOTH -- the per-event view is a
+        // filter, never a redefinition of the family.
+        assert_eq!(svc.provenance.by_family(crate::provenance::family::MENTIONS), vec!["event-mentions".to_string(), "theographic-people".to_string()]);
     }
 
     #[test]

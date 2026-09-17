@@ -1434,7 +1434,10 @@ pub async fn narrative_event_positions(
     // filters to `kind == "event"`), so it never gets a `temporal_adjacency`
     // row either, hence absent from `temporal_neighbors` exactly like it
     // was absent from the old `timeline_index`.
-    let timeline = graph.temporal_neighbors.get(&id).map(|(prior, following)| TimelinePositionOut {
+    // DB-3: through the port (`GraphService::temporal_neighbors_of`):
+    // membership from the chronology order, adjacency from the
+    // temporal-adjacency edges, direction from that order.
+    let timeline = graph.temporal_neighbors_of(&id).map(|(prior, following)| TimelinePositionOut {
         prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
         following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
     });
@@ -1728,12 +1731,13 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                 // catches is the real one the review named: an id
                 // normalization or `EventId` alias change that leaves the
                 // walked edge and the row key disagreeing.
+                // DB-3: `row_provenance` through the port
+                // (`GraphService::analogue_provenance`); the fail-loud
+                // claim is unchanged.
                 let provenance = graph
-                    .provenance
-                    .analogue_for_pair(&e.id, &other.id)
+                    .analogue_provenance(&e.id, &other.id)
                     .filter(|p| !p.trim().is_empty())
-                    .ok_or_else(|| ApiError::internal(&format!("analogue row {} <-> {} has no provenance to attribute it to", e.id, other.id)))?
-                    .to_string();
+                    .ok_or_else(|| ApiError::internal(&format!("analogue row {} <-> {} has no provenance to attribute it to", e.id, other.id)))?;
                 Ok(EventAnalogueOut { id: other.id.clone(), title: other.label.clone(), provenance })
             }),
             Position::Edge(_) => None,
@@ -1766,10 +1770,12 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
             .map(|n| n.provenance)
             .filter(|p| !p.trim().is_empty())
             .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
-        // Both straight off the load-time companion index -- no scan, no
-        // fetch, nothing added to the per-request path.
-        witnesses_provenance: graph.provenance.attests_for_event(&e.id),
-        mentions_provenance: graph.provenance.event_mentions_for_event(&e.id),
+        // DB-3: both through `GraphQuery::row_provenance`, one lookup per
+        // walked edge (`GraphService::{attests_provenance,
+        // event_mentions_provenance}`), instead of the retired load-time
+        // per-event maps.
+        witnesses_provenance: graph.attests_provenance(&e.id),
+        mentions_provenance: graph.event_mentions_provenance(&e.id),
     }))
 }
 
