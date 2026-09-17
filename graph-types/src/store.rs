@@ -99,6 +99,14 @@ pub trait GraphPublisher {
 /// Skeleton version derivation: hash the node ids + payload debug forms.
 /// (Production: Merkle root. The LAW — same content ⇒ same version — is
 /// what the tests pin.)
+///
+/// KNOWN DEFECT, disclosed rather than hidden (spec §3.1 defect 1): this
+/// hashes the NODE TABLE ONLY. Add a row — a `located_at`, a `mentions` —
+/// with the nodes untouched and the version root does not move, so two
+/// materially different graphs share one stamp. `version_root_is_blind_to_rows`
+/// below asserts that defect so it cannot be forgotten; the `canon-ids`
+/// version underneath FIXES it.
+#[cfg(not(feature = "canon-ids"))]
 fn version_of(g: &Graph) -> GraphVersion {
     struct V<'a>(&'a Graph);
     impl<'a> ContentAddressed for V<'a> {
@@ -114,6 +122,106 @@ fn version_of(g: &Graph) -> GraphVersion {
         }
     }
     GraphVersion(V(g).pid().hash)
+}
+
+/// ON: the root is SHA-256-128 over the LOGICAL DUMP — every node, every
+/// row of every family, every reading spine. Nothing the graph holds is
+/// outside the stamp, which is what closes spec §3.1 defect 1.
+#[cfg(feature = "canon-ids")]
+fn version_of(g: &Graph) -> GraphVersion {
+    GraphVersion(ContentHash(crate::sha256::sha256_prefixed_128(
+        crate::canon::DOMAIN_PREFIX,
+        &logical_dump(g),
+    )))
+}
+
+/// The graph as one canonical byte stream — the thing the version root is
+/// a digest of.
+///
+/// `pub` deliberately: DB-2b's artifact writer must hash the IDENTICAL
+/// stream, section by section, by filtering this same walk down to the
+/// families and nodes a section carries. Two independent implementations
+/// of "the bytes of a graph" is precisely the bug that would make an
+/// artifact's stamp disagree with the server's.
+///
+/// The format, exactly:
+///
+/// ```text
+/// node\t<canonical JSON of the node>\n          (each node, `nodes` order)
+/// <family>\t<canonical JSON of the row>\n       (RowFamily::ALL order, rows in table order)
+/// spine\t<corpus>\t<id,id,id>\n                 (each corpus, `reading` order)
+/// ```
+///
+/// The family NAME is the line's own first field, so the row bytes are
+/// the row's plain `Canon::encode` — the family is said once, not twice.
+/// Node and spine ids use `canon::ids::any_node_id_str`, the crate's one
+/// canonical string spelling for an id. `DOMAIN_PREFIX` is NOT part of
+/// this stream: it is hashed in front of it by `version_of`, so the dump
+/// stays readable as itself.
+#[cfg(feature = "canon-ids")]
+pub fn logical_dump(g: &Graph) -> Vec<u8> {
+    use crate::canon::ids::any_node_id_str;
+    use crate::canon::{Canon, RowFamily};
+
+    let mut out: Vec<u8> = Vec::new();
+
+    let mut line = |tag: &str, bytes: &[u8]| {
+        out.extend_from_slice(tag.as_bytes());
+        out.push(b'\t');
+        out.extend_from_slice(bytes);
+        out.push(b'\n');
+    };
+
+    for node in g.nodes.values() {
+        line("node", &node.encode());
+    }
+
+    // One arm per family, in `RowFamily::ALL` order. The exhaustive match
+    // is the point: a new family cannot be added to the enum without the
+    // compiler demanding its place in the version root.
+    for family in RowFamily::ALL {
+        macro_rules! rows {
+            ($field:ident) => {
+                for row in &g.$field {
+                    line(family.name(), &row.encode());
+                }
+            };
+        }
+        match family {
+            RowFamily::ContainsBible => rows!(contains_bible),
+            RowFamily::ContainsConcord => rows!(contains_concord),
+            RowFamily::Attests => rows!(attests),
+            RowFamily::Succession => rows!(succession),
+            RowFamily::CanonSuccession => rows!(canon_succession),
+            RowFamily::DatedBy => rows!(dated_by),
+            RowFamily::LocatedAt => rows!(located_at),
+            RowFamily::Fulfills => rows!(fulfills),
+            RowFamily::Typology => rows!(typology),
+            RowFamily::NamedAfter => rows!(named_after),
+            RowFamily::Catechism => rows!(catechism),
+            RowFamily::CommentsOn => rows!(comments_on),
+            RowFamily::SpokenBy => rows!(spoken_by),
+            RowFamily::SpokenAt => rows!(spoken_at),
+            RowFamily::Mentions => rows!(mentions),
+            RowFamily::CrossRefs => rows!(cross_refs),
+            RowFamily::Quotes => rows!(quotes),
+            RowFamily::Confesses => rows!(confesses),
+            RowFamily::CorrespondsBible => rows!(corresponds_bible),
+            RowFamily::TemporalAdjacency => rows!(temporal_adjacency),
+            RowFamily::Analogue => rows!(analogue),
+        }
+    }
+
+    for (corpus, spine) in &g.reading {
+        let ids: Vec<String> = spine.order.iter().map(any_node_id_str).collect();
+        out.extend_from_slice(b"spine\t");
+        out.extend_from_slice(corpus.as_bytes());
+        out.push(b'\t');
+        out.extend_from_slice(ids.join(",").as_bytes());
+        out.push(b'\n');
+    }
+
+    out
 }
 
 /// A version-stamped handle to a Graph — the canonical presentation.
@@ -379,6 +487,120 @@ mod laws {
             .unwrap();
         let bytes = snap.derive(&n.pid()).expect("derivable from its pid");
         assert_eq!(bytes, n.canonical_bytes(), "derive returns the canonical form");
+    }
+
+    /// True in BOTH states: `hex` is the one wire spelling and `from_hex`
+    /// its strict inverse. Width is asserted separately, per state.
+    #[test]
+    fn content_hash_hex_and_from_hex_are_inverse() {
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        let s = h.hex();
+        assert!(
+            s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+            "lowercase hex only, no `0x`, no padding ambiguity: {s:?}"
+        );
+        assert_eq!(ContentHash::from_hex(&s), Some(h), "from_hex(hex(h)) == h");
+        assert_eq!(ContentHash::from_hex(&"A".repeat(s.len())), None, "uppercase is refused");
+        assert_eq!(ContentHash::from_hex(&s[1..]), None, "a short string is refused");
+        assert_eq!(ContentHash::from_hex(&format!("{s}0")), None, "a long string is refused");
+    }
+
+    #[cfg(not(feature = "canon-ids"))]
+    #[test]
+    fn hex_is_sixteen_chars_while_the_hash_is_sixty_four_bits() {
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        assert_eq!(h.hex().len(), 16);
+    }
+
+    #[cfg(feature = "canon-ids")]
+    #[test]
+    fn hex_is_thirty_two_chars_while_the_hash_is_a_hundred_and_twenty_eight_bits() {
+        let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
+        assert_eq!(h.hex().len(), 32);
+    }
+
+    /// The content-addressing law, stated over the SHA-256 ids: identity
+    /// follows content and nothing else. Two nodes built independently
+    /// from equal parts share a pid; one byte of payload text apart, they
+    /// do not.
+    #[cfg(feature = "canon-ids")]
+    #[test]
+    fn equal_nodes_have_equal_pids_and_one_payload_byte_moves_them() {
+        let a = unit("bible/1.1.1", "In the beginning");
+        let b = unit("bible/1.1.1", "In the beginning");
+        assert_eq!(a.pid(), b.pid(), "equal content, equal pid");
+
+        let c = unit("bible/1.1.1", "In the beginninq"); // one byte apart
+        assert_ne!(a.pid(), c.pid(), "one byte of payload is one different id");
+        assert_eq!(a.pid().kind, c.pid().kind, "only the hash moved, not the kind");
+    }
+
+    /// Spec §3.1 defect 1, ON: the root covers ROWS. Adding a
+    /// `succession` and a `located_at` with the node table untouched must
+    /// move the version.
+    #[cfg(feature = "canon-ids")]
+    #[test]
+    fn version_root_covers_rows_not_only_nodes() {
+        let base = graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]);
+        let rowed = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+        assert_eq!(
+            base.nodes.keys().collect::<Vec<_>>(),
+            rowed.nodes.keys().collect::<Vec<_>>(),
+            "the two graphs differ in ROWS only"
+        );
+        assert_ne!(version_of(&base), version_of(&rowed), "a row changes the root");
+    }
+
+    /// Spec §3.1 defect 1, OFF: the SAME comparison, asserted the other
+    /// way. This is not a passing test celebrating correct behaviour --
+    /// it PINS a known defect so it cannot be quietly inherited: today's
+    /// root hashes the node table alone, so a graph that gained two edge
+    /// rows still stamps as the graph that did not.
+    #[cfg(not(feature = "canon-ids"))]
+    #[test]
+    fn version_root_is_blind_to_rows_the_documented_defect() {
+        let base = graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]);
+        let rowed = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+        assert_eq!(
+            base.nodes.keys().collect::<Vec<_>>(),
+            rowed.nodes.keys().collect::<Vec<_>>(),
+            "the two graphs differ in ROWS only"
+        );
+        assert_eq!(
+            version_of(&base),
+            version_of(&rowed),
+            "spec §3.1 defect 1: the skeleton root is blind to rows -- \
+             `canon-ids` fixes this, and the ON sibling of this test asserts the fix"
+        );
+    }
+
+    /// The dump is the version root's preimage, so its SHAPE is a law:
+    /// node lines first, then family lines tagged with the family's own
+    /// table name, then one spine line per corpus.
+    #[cfg(feature = "canon-ids")]
+    #[test]
+    fn logical_dump_carries_nodes_then_rows_then_spines() {
+        let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+        let dump = String::from_utf8(logical_dump(&g)).expect("the dump is UTF-8");
+        let lines: Vec<&str> = dump.lines().collect();
+
+        let tags: Vec<&str> = lines.iter().map(|l| l.split('\t').next().unwrap()).collect();
+        assert_eq!(&tags[..2], &["node", "node"], "nodes lead, in `nodes` order");
+        assert_eq!(
+            &tags[2..],
+            &["succession", "located_at", "spine"],
+            "then families in RowFamily::ALL order, then the spines"
+        );
+
+        let spine = lines.last().unwrap();
+        assert_eq!(
+            *spine,
+            "spine\tbible\tTextUnit:bible/1.1.1,TextUnit:bible/1.1.2",
+            "the spine line is corpus + comma-joined canonical ids"
+        );
+        // The node line carries the node's own canonical JSON, not a
+        // debug print -- decodable, which is the whole point.
+        assert!(lines[0].starts_with("node\t{\"id\":\"TextUnit:bible/1.1.1\","), "{}", lines[0]);
     }
 
     #[test]

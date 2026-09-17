@@ -1,5 +1,6 @@
 //! Identity: kind-tagged node ids, positions, content-addressed pids.
 
+#[cfg(not(feature = "canon-ids"))]
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
@@ -160,8 +161,67 @@ pub enum PositionKind {
 
 /// Content-addressed identity: pid = kind + hash(canonical bytes); the
 /// id is a key from which the thing is derivable (self-verifying store).
+///
+/// DB-2a widens this. OFF (default) it is what it has always been: a
+/// 64-bit `DefaultHasher` output -- an algorithm std itself says "may
+/// change between releases", which is exactly why the relational artifact
+/// cannot keep it. ON (`--features canon-ids`) it is the first 128 bits
+/// of a SHA-256 over domain-prefixed canonical JSON: stable across
+/// toolchains, wide enough that a ~10^6-thing corpus has no birthday
+/// problem, and the width spec §3.1 fixes for the artifact's id column.
+///
+/// `hex()` is how a hash reaches the wire in BOTH states, so no caller
+/// has to know the width: 16 lowercase hex chars OFF, 32 ON.
+#[cfg(not(feature = "canon-ids"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContentHash(pub u64);
+
+#[cfg(not(feature = "canon-ids"))]
+impl ContentHash {
+    /// Fixed-width lowercase hex -- zero-padded, so equal hashes are
+    /// byte-identical strings (ETag comparison depends on it).
+    pub fn hex(&self) -> String {
+        format!("{:016x}", self.0)
+    }
+
+    /// The inverse of `hex`, strict: exactly 16 lowercase hex digits.
+    pub fn from_hex(s: &str) -> Option<ContentHash> {
+        if s.len() != 16 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+            return None;
+        }
+        u64::from_str_radix(s, 16).ok().map(ContentHash)
+    }
+}
+
+#[cfg(feature = "canon-ids")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ContentHash(pub [u8; 16]);
+
+#[cfg(feature = "canon-ids")]
+impl ContentHash {
+    /// 32 lowercase hex chars -- the artifact's id spelling.
+    pub fn hex(&self) -> String {
+        let mut s = String::with_capacity(32);
+        for b in self.0 {
+            s.push_str(&format!("{b:02x}"));
+        }
+        s
+    }
+
+    /// The inverse of `hex`, strict: exactly 32 lowercase hex digits.
+    pub fn from_hex(s: &str) -> Option<ContentHash> {
+        if s.len() != 32 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+            return None;
+        }
+        let bytes = s.as_bytes();
+        let mut out = [0u8; 16];
+        for (i, slot) in out.iter_mut().enumerate() {
+            let pair = std::str::from_utf8(&bytes[i * 2..i * 2 + 2]).ok()?;
+            *slot = u8::from_str_radix(pair, 16).ok()?;
+        }
+        Some(ContentHash(out))
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pid {
@@ -174,10 +234,26 @@ pub struct Pid {
 pub trait ContentAddressed {
     fn canonical_bytes(&self) -> Vec<u8>;
     fn position_kind(&self) -> PositionKind;
+
+    /// OFF: the historical 64-bit `DefaultHasher` digest, byte for byte.
+    #[cfg(not(feature = "canon-ids"))]
     fn pid(&self) -> Pid {
         let mut h = DefaultHasher::new();
         self.canonical_bytes().hash(&mut h);
         Pid { kind: self.position_kind(), hash: ContentHash(h.finish()) }
+    }
+
+    /// ON: SHA-256-128 over `DOMAIN_PREFIX ‖ canonical_bytes`. The prefix
+    /// is hashed, never stored — the bytes on disk stay exactly what
+    /// `Canon::encode` produced, while a node's digest can never collide
+    /// with a digest of the same bytes meaning something else.
+    #[cfg(feature = "canon-ids")]
+    fn pid(&self) -> Pid {
+        let hash = crate::sha256::sha256_prefixed_128(
+            crate::canon::DOMAIN_PREFIX,
+            &self.canonical_bytes(),
+        );
+        Pid { kind: self.position_kind(), hash: ContentHash(hash) }
     }
 }
 

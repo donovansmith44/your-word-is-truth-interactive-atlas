@@ -602,6 +602,11 @@ impl BiIndex {
 }
 
 /// Content-derived entry id: hash of (relation, subject, object).
+///
+/// The hash reaches the string through `ContentHash::hex`, not through a
+/// width-baked `{:016x}` — so the id widens with the hash when
+/// `canon-ids` is on, and renders exactly as before when it is off.
+/// There is no `#[cfg]` here on purpose: the split lives in ONE place.
 pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
     struct E<'a>(RelationId, &'a Position, &'a Position);
     impl<'a> ContentAddressed for E<'a> {
@@ -613,7 +618,7 @@ pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
         }
     }
     let pid = E(rel, s, o).pid();
-    EdgeId(format!("{:?}:{:016x}", rel, pid.hash.0))
+    EdgeId(format!("{:?}:{}", rel, pid.hash.hex()))
 }
 
 /// The symmetric sibling of `entry_id`: a SYMMETRIC relation's two ends are
@@ -634,7 +639,7 @@ pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> Edg
         }
     }
     let pid = E(rel, lo, hi).pid();
-    EdgeId(format!("{:?}:{:016x}", rel, pid.hash.0))
+    EdgeId(format!("{:?}:{}", rel, pid.hash.hex()))
 }
 
 /// Convenience: node position.

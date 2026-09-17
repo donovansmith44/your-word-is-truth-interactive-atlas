@@ -11,3 +11,11 @@ description = "The Explorable Graph type system — compiling base point for the
 # in isolation via `cargo test -p atlas-graph-types`.
 
 [dependencies]
+
+# DB-2a: the ONE switch. OFF (default) = every observable byte is exactly
+# what it was before the relational-artifact work began -- 64-bit
+# DefaultHasher pids, debug-format canonical bytes, the `dfcf6ee4c2a39965`
+# version root. ON = SHA-256-128 content addresses over canonical JSON.
+# An empty feature list is the point: no optional dependency hides here.
+[features]
+canon-ids = []

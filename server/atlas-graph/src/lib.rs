@@ -77,5 +77,9 @@ pub use window::WindowDir;
 /// all, even for a small additive `Display` impl; `GraphVersion`'s own
 /// `.0.0` field access is public, so this needs no such impl to exist).
 pub fn version_hex(v: atlas_graph_types::store::GraphVersion) -> String {
-    format!("{:016x}", v.0 .0)
+    // DB-2a: delegated to `ContentHash::hex` rather than spelled with a
+    // width-baked `{:016x}` here, so the wire form follows the hash when
+    // the `canon-ids` feature widens it (16 hex chars off, 32 on) and
+    // this crate needs no feature knowledge of its own.
+    v.0.hex()
 }

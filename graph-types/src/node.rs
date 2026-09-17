@@ -197,14 +197,31 @@ impl NodeData for Node {
 }
 
 impl ContentAddressed for Node {
+    /// OFF: the skeleton's debug print — unstable in principle (a `{:?}`
+    /// shape is not a promise) but pinned in practice by the fixtures, so
+    /// it must not move while the feature is off.
+    #[cfg(not(feature = "canon-ids"))]
     fn canonical_bytes(&self) -> Vec<u8> {
         format!("{:?}|{:?}", self.id, self.payload_discriminant()).into_bytes()
     }
+
+    /// ON: the canonical JSON of DB-2a — one value, one byte spelling,
+    /// and decodable back into the very `Node` that produced it, which is
+    /// what makes `derive` a real self-verifying store rather than a
+    /// lookup that happens to agree.
+    #[cfg(feature = "canon-ids")]
+    fn canonical_bytes(&self) -> Vec<u8> {
+        crate::canon::Canon::encode(self)
+    }
+
     fn position_kind(&self) -> PositionKind {
         PositionKind::Node(self.id.kind)
     }
 }
 
+/// Lives and dies with the OFF `canonical_bytes` above: it is that
+/// encoding's payload spelling and has no other caller.
+#[cfg(not(feature = "canon-ids"))]
 impl Node {
     fn payload_discriminant(&self) -> String {
         format!("{:?}", self.payload)
