@@ -11,9 +11,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::explore::{EdgeEntry, EdgePage, EdgeQuery, EdgeSummary, Explorable, PositionRef};
+use crate::explore::{EdgeEntry, EdgeEntryWithNode, EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, Explorable, NodePage, PositionRef};
 use crate::graph::Graph;
-use crate::id::{AnyNodeId, ContentAddressed, ContentHash, Pid, Position};
+use crate::id::{AnyNodeId, ContentAddressed, ContentHash, NodeKind, Pid, Position};
 use crate::node::Node;
 
 /// The version root: one stamp identifies one immutable compiled graph.
@@ -21,6 +21,15 @@ use crate::node::Node;
 /// Merkle root over every thing.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GraphVersion(pub ContentHash);
+
+/// DB-3 (spec 4): which row produced an edge, and its provenance.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RowRef {
+    pub family: crate::canon::RowFamily,
+    /// The row's ord within its family (spec 5.0 `ord`; `id` in the tables).
+    pub row_id: u64,
+    pub provenance: crate::ingest::ProvenanceId,
+}
 
 /// THE SHARED QUERY CONTRACT: what it means to answer graph questions.
 /// The concrete Graph implements it (canonical instance); every backend
@@ -42,6 +51,55 @@ pub trait GraphQuery {
     /// A window along one corpus's reading spine (unit ids, canonical
     /// order). Text composes via `node`.
     fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId>;
+
+    // ---- DB-3 (spec 4): the port widened. Defaults are compositions
+    // over the five above wherever one exists; the other three are
+    // required because enumeration, row identity and the spine index
+    // are not derivable from the five.
+
+    /// All node ids of one kind, in id (byte) order, paged. Retires the
+    /// per-kind id lists the service used to precompute.
+    fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage;
+
+    /// Batch lookup; position `i` answers `ids[i]`.
+    fn nodes(&self, ids: &[AnyNodeId]) -> Vec<Option<Node>> {
+        ids.iter().map(|i| self.node(i)).collect()
+    }
+
+    /// One page of one kind WITH each target node (an edge position has
+    /// none) -- the N+1 the reader and frontier worked around.
+    fn edges_with_nodes(&self, p: &Position, q: &EdgeQuery) -> EdgePageWithNodes {
+        let page = self.edges(p, q);
+        let ids: Vec<AnyNodeId> = page
+            .entries
+            .iter()
+            .filter_map(|e| match &e.node {
+                Position::Node(id) => Some(id.clone()),
+                Position::Edge(_) => None,
+            })
+            .collect();
+        let mut looked = self.nodes(&ids).into_iter();
+        let entries = page
+            .entries
+            .into_iter()
+            .map(|entry| {
+                let node = match &entry.node {
+                    Position::Node(_) => looked.next().flatten(),
+                    Position::Edge(_) => None,
+                };
+                EdgeEntryWithNode { entry, node }
+            })
+            .collect();
+        EdgePageWithNodes { kind: page.kind, entries, next: page.next }
+    }
+
+    /// The row behind an edge id, with its provenance; `None` for a
+    /// synthesised edge (`justified-by`) or an unknown id.
+    fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef>;
+
+    /// Index of a unit in a corpus's reading spine; `None` off-spine or
+    /// for an unknown corpus.
+    fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize>;
 }
 
 /// The canonical instance: the Graph answers its own questions. Typed
@@ -65,6 +123,33 @@ impl GraphQuery for Graph {
     }
     fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId> {
         Graph::reading_window(self, corpus, start, n)
+    }
+    fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
+        let start = cursor.unwrap_or(0);
+        // `AnyNodeId: Ord` is `(kind, raw)`, so one kind is one contiguous
+        // range of the node table; within it, raw byte order.
+        let mut ids: Vec<AnyNodeId> = self
+            .nodes
+            .range(AnyNodeId { kind, raw: String::new() }..)
+            .take_while(|(id, _)| id.kind == kind)
+            .map(|(id, _)| id.clone())
+            .skip(start)
+            .take(limit.saturating_add(1))
+            .collect();
+        let more = ids.len() > limit;
+        if more {
+            ids.truncate(limit);
+        }
+        let next = if more { Some(start + ids.len()) } else { None };
+        NodePage { ids, next }
+    }
+    fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
+        let r = self.edge_row(e)?;
+        let provenance = self.row_provenance_of(r.family, r.row_ord as usize)?;
+        Some(RowRef { family: r.family, row_id: u64::from(r.row_ord), provenance: provenance.to_string() })
+    }
+    fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
+        self.spine_index.get(corpus).and_then(|m| m.get(id)).copied()
     }
 }
 
@@ -209,6 +294,8 @@ pub fn logical_dump(g: &Graph) -> Vec<u8> {
         indexes: _,
         symmetric_indexes: _,
         pid_index: _,
+        edge_rows: _,
+        spine_index: _,
     } = g;
 
     let mut out: Vec<u8> = Vec::new();
@@ -321,6 +408,15 @@ impl GraphQuery for MemSnapshot {
     }
     fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId> {
         self.graph.reading_window(corpus, start, n)
+    }
+    fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
+        self.graph.nodes_of_kind(kind, cursor, limit)
+    }
+    fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
+        self.graph.row_provenance(e)
+    }
+    fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
+        self.graph.position_of(corpus, id)
     }
 }
 
@@ -456,6 +552,54 @@ pub fn assert_answers_match(candidate: &impl GraphQuery, model: &Graph) {
                     kind,
                     limit
                 );
+            }
+        }
+    }
+
+    // DB-3 (spec 4, 6.2): the widened methods, over the same inventory.
+    for kind in NodeKind::ALL {
+        let mut cursor = None;
+        let mut got: Vec<AnyNodeId> = Vec::new();
+        loop {
+            let page = candidate.nodes_of_kind(kind, cursor, 97);
+            got.extend(page.ids);
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break,
+            }
+        }
+        let want = model.nodes_of_kind(kind, None, usize::MAX).ids;
+        assert_eq!(got, want, "conformance: nodes_of_kind({kind:?}) diverges");
+    }
+    let all_ids: Vec<AnyNodeId> = model.nodes.keys().cloned().collect();
+    for chunk in all_ids.chunks(1000) {
+        let a = candidate.nodes(chunk);
+        let b = model.nodes(chunk);
+        assert_eq!(a.len(), b.len(), "conformance: nodes() length diverges");
+        for (x, y) in a.iter().zip(&b) {
+            assert!(node_eq(x, y), "conformance: nodes() diverges");
+        }
+    }
+    for p in position_inventory(model) {
+        for (kind, _) in model.edge_summary(&p) {
+            let q = EdgeQuery { kind, cursor: None, limit: 1 };
+            let a = candidate.edges_with_nodes(&p, &q);
+            let b = model.edges_with_nodes(&p, &q);
+            assert_eq!((a.kind, a.next, a.entries.len()), (b.kind, b.next, b.entries.len()), "conformance: edges_with_nodes({p:?}, {kind:?}) page shape diverges");
+            for (x, y) in a.entries.iter().zip(&b.entries) {
+                assert_eq!(x.entry, y.entry, "conformance: edges_with_nodes entry diverges at {p:?}");
+                assert!(node_eq(&x.node, &y.node), "conformance: edges_with_nodes node diverges at {p:?}");
+                assert_eq!(
+                    candidate.row_provenance(&x.entry.edge),
+                    model.row_provenance(&y.entry.edge),
+                    "conformance: row_provenance({:?}) diverges",
+                    x.entry.edge
+                );
+            }
+        }
+        if let Position::Node(id) = &p {
+            for corpus in model.reading.keys() {
+                assert_eq!(candidate.position_of(corpus, id), model.position_of(corpus, id), "conformance: position_of({corpus}, {id:?}) diverges");
             }
         }
     }
@@ -726,6 +870,15 @@ mod laws {
             ) -> Vec<AnyNodeId> {
                 self.0.reading_window(corpus, start, n)
             }
+            fn nodes_of_kind(&self, k: NodeKind, c: Option<usize>, l: usize) -> NodePage {
+                self.0.nodes_of_kind(k, c, l)
+            }
+            fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
+                self.0.row_provenance(e)
+            }
+            fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
+                self.0.position_of(c, id)
+            }
         }
 
         // Deliberately SPARSE node table: e1/jordan exist only in edge
@@ -794,5 +947,129 @@ mod laws {
             parts.extend(snap.reading_window("bible", split, 5 - split));
             assert_eq!(parts, whole, "windows are honest partitions");
         }
+    }
+
+    // ---- DB-3 (spec 4): the widened port on the canonical instance.
+
+    #[test]
+    fn nodes_of_kind_pages_in_id_order_with_edge_page_semantics() {
+        let g = with_edges(graph_with(&[("bible/1.1.2", "b"), ("bible/1.1.1", "a"), ("bible/1.1.3", "c")]));
+        let all = g.nodes_of_kind(NodeKind::TextUnit, None, 10);
+        let raws: Vec<&str> = all.ids.iter().map(|i| i.raw.as_str()).collect();
+        assert_eq!(raws, ["bible/1.1.1", "bible/1.1.2", "bible/1.1.3"], "byte order of raw within the kind");
+        assert_eq!(all.next, None);
+        let first = g.nodes_of_kind(NodeKind::TextUnit, None, 2);
+        assert_eq!((first.ids.len(), first.next), (2, Some(2)));
+        let rest = g.nodes_of_kind(NodeKind::TextUnit, Some(2), 2);
+        assert_eq!((rest.ids.len(), rest.next), (1, None));
+        assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(9), 2), NodePage { ids: vec![], next: None });
+        // with_edges adds ROWS, never Place/Event nodes: those kinds are empty.
+        assert_eq!(g.nodes_of_kind(NodeKind::Place, None, 5), NodePage { ids: vec![], next: None });
+        assert_eq!(g.nodes_of_kind(NodeKind::Polity, None, 5), NodePage { ids: vec![], next: None });
+        // limit 0 with entries remaining: next = Some(cursor) (explore.rs's rule, mirrored).
+        assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(1), 0).next, Some(1));
+        assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(3), 0).next, None);
+    }
+
+    #[test]
+    fn nodes_answers_positionally_and_edges_with_nodes_carries_the_targets() {
+        let g = with_edges(graph_with(&[("bible/1.1.1", "a")]));
+        let ids = vec![
+            AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() },
+            AnyNodeId { kind: NodeKind::TextUnit, raw: "nope".into() },
+        ];
+        let got = g.nodes(&ids);
+        assert!(got[0].is_some() && got[1].is_none());
+        let e1 = Position::Node(EventId::new("e1").erase());
+        let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
+        let page = g.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 1);
+        // The place position is indexed, but with_edges never inserted a Place NODE: honest None.
+        assert!(page.entries[0].node.is_none());
+        assert_eq!(page.entries[0].entry, g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 }).entries[0]);
+        // A target that IS a node comes back as that node.
+        let v = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
+        let g2 = {
+            let mut g2 = graph_with(&[("bible/1.1.1", "a")]);
+            g2.attests.push(crate::edge::Attests {
+                event: EventId::new("e1"),
+                attestation: crate::text::LocusRange::new(
+                    crate::text::Locus::whole(crate::text::VerseRef { book: 1, chapter: 1, verse: 1 }),
+                    crate::text::Locus::whole(crate::text::VerseRef { book: 1, chapter: 1, verse: 1 }),
+                )
+                .unwrap(),
+                provenance: "p".into(),
+                justification: Justification::default(),
+            });
+            g2.build_indexes();
+            g2
+        };
+        let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::Attests, crate::edge::Direction::Forward);
+        let page = g2.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        assert_eq!(page.entries[0].entry.node, v);
+        assert_eq!(page.entries[0].node.as_ref().map(|n| n.id.clone()), Some(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() }));
+    }
+
+    #[test]
+    fn row_provenance_names_the_row_and_position_of_names_the_spine_slot() {
+        let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+        let e1 = Position::Node(EventId::new("e1").erase());
+        let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
+        let entry = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 1 }).entries[0].clone();
+        let r = g.row_provenance(&entry.edge).expect("a located_at row produced this edge");
+        assert_eq!((r.family, r.row_id, r.provenance.as_str()), (crate::canon::RowFamily::LocatedAt, 0, "p"));
+        assert_eq!(g.row_provenance(&crate::edge::EdgeId("LocatedAt:0000000000000000".into())), None);
+        assert_eq!(g.row_provenance(&crate::edge::EdgeId("garbage".into())), None);
+        let id = AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.2".into() };
+        assert_eq!(g.position_of("bible", &id), Some(1));
+        assert_eq!(g.position_of("concord", &id), None);
+        assert_eq!(g.position_of("bible", &EventId::new("e1").erase()), None);
+        // MemSnapshot delegates every new method.
+        let mut store = MemStore::default();
+        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")])));
+        let snap = store.open(v).unwrap();
+        assert_eq!(snap.position_of("bible", &id), Some(1));
+        assert_eq!(snap.row_provenance(&entry.edge).map(|r| r.family), Some(crate::canon::RowFamily::LocatedAt));
+        assert_eq!(snap.nodes_of_kind(NodeKind::TextUnit, None, 9).ids.len(), 2);
+    }
+
+    #[test]
+    fn the_harness_catches_a_snapshot_that_lies_about_the_new_methods() {
+        struct LiesAboutRows(MemSnapshot);
+        impl GraphQuery for LiesAboutRows {
+            fn node(&self, id: &AnyNodeId) -> Option<Node> {
+                self.0.node(id)
+            }
+            fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
+                self.0.derive(pid)
+            }
+            fn edge_summary(&self, p: &Position) -> EdgeSummary {
+                self.0.edge_summary(p)
+            }
+            fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage {
+                self.0.edges(p, q)
+            }
+            fn reading_window(&self, c: &'static str, s: usize, n: usize) -> Vec<AnyNodeId> {
+                self.0.reading_window(c, s, n)
+            }
+            fn nodes_of_kind(&self, k: NodeKind, c: Option<usize>, l: usize) -> NodePage {
+                self.0.nodes_of_kind(k, c, l)
+            }
+            fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef> {
+                self.0.row_provenance(e).map(|mut r| {
+                    r.provenance.push('!');
+                    r
+                })
+            }
+            fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
+                self.0.position_of(c, id)
+            }
+        }
+        let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
+        let mut store = MemStore::default();
+        let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")])));
+        let snap = store.open(v).unwrap();
+        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| assert_answers_match(&LiesAboutRows(snap), &g)));
+        assert!(caught.is_err(), "a provenance lie must fail conformance");
     }
 }

@@ -81,6 +81,31 @@ pub struct Graph {
     /// lookup, not a scan (same derived-state class as `indexes`;
     /// content addressing makes it deterministic).
     pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
+    /// DB-3: edge-id hash -> the row that produced the entry, sorted by
+    /// hash (binary search) -- the in-memory `GraphQuery::row_provenance`.
+    /// Built beside the indexes from the same `row_edges()` pass; a
+    /// duplicate id (two rows with one `(rel, subject, object)`) keeps the
+    /// FIRST row, as `sqlite::partition::edge_row_map` does. Sixteen bytes
+    /// per index entry.
+    pub edge_rows: Vec<EdgeRow>,
+    /// DB-3: corpus -> unit id -> spine index -- the in-memory
+    /// `GraphQuery::position_of`, a lookup instead of a scan of the spine.
+    pub spine_index: BTreeMap<&'static str, BTreeMap<AnyNodeId, usize>>,
+}
+
+/// DB-3: one index entry's row, keyed by its edge id's hash.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EdgeRow {
+    pub hash: crate::id::ContentHash,
+    pub family: crate::canon::RowFamily,
+    pub row_ord: u32,
+}
+
+/// The hash inside an `EdgeId`'s `"Rel:hex"` spelling, or `None` for any
+/// other string (the id grammar is `entry_id`'s, not this function's).
+pub fn edge_hash(e: &crate::edge::EdgeId) -> Option<crate::id::ContentHash> {
+    let (_, hex) = e.0.split_once(':')?;
+    crate::id::ContentHash::from_hex(hex)
 }
 
 /// Which relation a row family lowers into (directed or symmetric).
@@ -388,6 +413,41 @@ impl Graph {
         }
     }
 
+    /// DB-3: the row behind an edge id (`edge_rows`, built by `build_indexes`).
+    pub fn edge_row(&self, e: &crate::edge::EdgeId) -> Option<EdgeRow> {
+        let h = edge_hash(e)?;
+        self.edge_rows.binary_search_by_key(&h, |r| r.hash).ok().map(|i| self.edge_rows[i])
+    }
+
+    /// DB-3: one row's `provenance`, by family and ord -- the 21-arm match,
+    /// in one place.
+    pub fn row_provenance_of(&self, family: crate::canon::RowFamily, row_ord: usize) -> Option<&str> {
+        use crate::canon::RowFamily as F;
+        match family {
+            F::ContainsBible => self.contains_bible.get(row_ord).map(|r| r.provenance.as_str()),
+            F::ContainsConcord => self.contains_concord.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Attests => self.attests.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Succession => self.succession.get(row_ord).map(|r| r.provenance.as_str()),
+            F::CanonSuccession => self.canon_succession.get(row_ord).map(|r| r.provenance.as_str()),
+            F::DatedBy => self.dated_by.get(row_ord).map(|r| r.provenance.as_str()),
+            F::LocatedAt => self.located_at.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Fulfills => self.fulfills.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Typology => self.typology.get(row_ord).map(|r| r.provenance.as_str()),
+            F::NamedAfter => self.named_after.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Catechism => self.catechism.get(row_ord).map(|r| r.provenance.as_str()),
+            F::CommentsOn => self.comments_on.get(row_ord).map(|r| r.provenance.as_str()),
+            F::SpokenBy => self.spoken_by.get(row_ord).map(|r| r.provenance.as_str()),
+            F::SpokenAt => self.spoken_at.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Mentions => self.mentions.get(row_ord).map(|r| r.provenance.as_str()),
+            F::CrossRefs => self.cross_refs.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Quotes => self.quotes.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Confesses => self.confesses.get(row_ord).map(|r| r.provenance.as_str()),
+            F::CorrespondsBible => self.corresponds_bible.get(row_ord).map(|r| r.provenance.as_str()),
+            F::TemporalAdjacency => self.temporal_adjacency.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Analogue => self.analogue.get(row_ord).map(|r| r.provenance.as_str()),
+        }
+    }
+
     /// Build every bidirectional index from the row tables — one pass
     /// per relation; both directions are projections of the same rows.
     /// Also builds the pid index (derive() as lookup).
@@ -421,12 +481,44 @@ impl Graph {
         use crate::explore::EdgeMeta as M;
         let mut pairs: BTreeMap<RelationId, Vec<(Position, Position, M)>> = BTreeMap::new();
         let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
-        for e in self.row_edges() {
+        let edges = self.row_edges();
+        // DB-3: the row behind every index entry, by edge-id hash -- one more
+        // mint of the SAME id `BiIndex::build` mints below (see `EdgeRow`),
+        // spread across threads the way PERF-2b spreads the index build (a
+        // single-threaded pass here pushed the artifact load past its 4 s
+        // ceiling; measured in DB-3's report). Computed BEFORE the pairs
+        // take the edges by move, so no position is cloned.
+        let mut edge_rows: Vec<EdgeRow> = {
+            let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+            let chunk = edges.len().div_ceil(n).max(1);
+            std::thread::scope(|scope| {
+                let handles: Vec<_> = edges
+                    .chunks(chunk)
+                    .map(|c| {
+                        scope.spawn(move || {
+                            c.iter()
+                                .filter_map(|e| edge_hash(&Graph::edge_id_of(e)).map(|hash| EdgeRow { hash, family: e.family, row_ord: e.row_ord as u32 }))
+                                .collect::<Vec<_>>()
+                        })
+                    })
+                    .collect();
+                handles.into_iter().flat_map(|h| h.join().expect("an edge-row chunk never panics")).collect()
+            })
+        };
+        edge_rows.sort_unstable_by_key(|r| (r.hash, r.row_ord));
+        edge_rows.dedup_by_key(|r| r.hash);
+        self.edge_rows = edge_rows;
+        for e in edges {
             match e.rel {
                 EdgeRel::Directed(r) => pairs.entry(r).or_default().push((e.subject, e.object, e.meta)),
                 EdgeRel::Symmetric(s) => sym_pairs.entry(s).or_default().push((e.subject, e.object, e.meta)),
             }
         }
+        self.spine_index = self
+            .reading
+            .iter()
+            .map(|(corpus, spine)| (*corpus, spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect()))
+            .collect();
 
         // PERF-2b: the parallel pass -- see this function's own doc
         // comment. Chunk sizes are sized off `available_parallelism`

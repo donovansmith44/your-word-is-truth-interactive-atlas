@@ -14,15 +14,15 @@ use std::sync::Mutex;
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
 use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind};
-use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary};
+use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
-use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, Pid, Position};
+use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;
-use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion};
+use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion, RowRef};
 use rusqlite::{Connection, OptionalExtension};
 
 use super::manifest::read_manifest;
-use super::partition::{rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
+use super::partition::{directed_rel_code, node_kind_ordinal, rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
 use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
 use crate::sections::Section;
 
@@ -261,6 +261,79 @@ impl GraphQuery for SqliteSnapshot {
             Ok(out)
         })
         .unwrap_or_default()
+    }
+
+    // ---- DB-3 (spec 4): the three overrides the section indexes answer
+    // directly; `nodes` and `edges_with_nodes` keep the trait's
+    // compositions (plan judgment call 2).
+    fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
+        let start = cursor.unwrap_or(0);
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached("SELECT id FROM all_node WHERE kind = ?1 ORDER BY id LIMIT ?2 OFFSET ?3")?;
+            let mut rows = stmt.query(rusqlite::params![node_kind_ordinal(kind), limit.saturating_add(1) as i64, start as i64])?;
+            let mut ids: Vec<AnyNodeId> = Vec::new();
+            let mut more = false;
+            while let Some(row) = rows.next()? {
+                if ids.len() == limit {
+                    more = true;
+                    break;
+                }
+                let id: String = row.get(0)?;
+                ids.push(parse_any_node_id(&id, "node.id")?);
+            }
+            let next = if more { Some(start + ids.len()) } else { None };
+            Ok(NodePage { ids, next })
+        })
+        .unwrap_or(NodePage { ids: Vec::new(), next: None })
+    }
+
+    fn row_provenance(&self, e: &EdgeId) -> Option<RowRef> {
+        let blob = super::writer::edge_id_blob(e).ok()?;
+        let justified = directed_rel_code(atlas_graph_types::edge::RelationId::JustifiedBy);
+        self.with_conn(|conn| {
+            let hit: Option<(i64, i64, i64)> = conn
+                .prepare_cached("SELECT sec, row_family, row_id FROM all_edge_index WHERE edge_id = ?1 AND rel != ?2 LIMIT 1")?
+                .query_row(rusqlite::params![blob, justified], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+                .optional()?;
+            let Some((sec, family_ord, row_id)) = hit else { return Ok(None) };
+            let family = u8::try_from(family_ord).ok().and_then(atlas_graph_types::canon::RowFamily::from_ordinal)
+                .ok_or_else(|| SqliteError(format!("edge_index.row_family {family_ord} is not a RowFamily")))?;
+            let schema = usize::try_from(sec).ok().and_then(|r| self.schema_of(r))
+                .ok_or_else(|| SqliteError(format!("edge_index.sec {sec} names no attached section")))?;
+            let provenance: String = conn
+                .prepare_cached(&format!("SELECT provenance FROM {schema}.{} WHERE id = ?1", family.name()))?
+                .query_row([row_id], |r| r.get(0))?;
+            Ok(Some(RowRef { family, row_id: row_id as u64, provenance }))
+        })
+        .unwrap_or(None)
+    }
+
+    fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
+        let section = match corpus {
+            "bible" => Section::Kjv,
+            "concord" => Section::Concord,
+            _ => return None,
+        };
+        if !self.present.contains(&section) {
+            return None;
+        }
+        let key = any_node_id_str(id);
+        self.with_conn(|conn| {
+            let ord: Option<i64> = conn
+                .prepare_cached(&format!("SELECT ord FROM {}.reading_spine WHERE node_id = ?1", section.name()))?
+                .query_row([key.as_str()], |r| r.get(0))
+                .optional()?;
+            Ok(ord.and_then(|o| usize::try_from(o).ok()))
+        })
+        .unwrap_or(None)
+    }
+}
+
+impl SqliteSnapshot {
+    /// The schema name a section is attached under (`main` for core).
+    fn schema_of(&self, rank: usize) -> Option<&'static str> {
+        let s = *self.present.get(rank)?;
+        Some(if s == Section::Core { "main" } else { s.name() })
     }
 }
 

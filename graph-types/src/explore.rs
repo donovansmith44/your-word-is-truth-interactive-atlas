@@ -45,6 +45,32 @@ pub struct EdgePage {
 
 pub type EdgeSummary = BTreeMap<EdgeKind, usize>;
 
+/// DB-3 (spec 4): one page of node ids of one kind, in id (byte) order;
+/// `next` follows `EdgePage`'s own rule (`Some(cursor + ids.len())` iff
+/// more remain, `limit = 0` included).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NodePage {
+    pub ids: Vec<crate::id::AnyNodeId>,
+    pub next: Option<usize>,
+}
+
+/// DB-3 (spec 4): an edge entry with its target node already fetched. An
+/// edge position (a `justified-by` subject) has no node. No `PartialEq`:
+/// `Node` carries `f64` payload fields; compare through `format!("{:?}")`
+/// as the conformance harness does.
+#[derive(Clone, Debug)]
+pub struct EdgeEntryWithNode {
+    pub entry: EdgeEntry,
+    pub node: Option<crate::node::Node>,
+}
+
+#[derive(Clone, Debug)]
+pub struct EdgePageWithNodes {
+    pub kind: EdgeKind,
+    pub entries: Vec<EdgeEntryWithNode>,
+    pub next: Option<usize>,
+}
+
 /// What EXPLORATION means — yielding frontiers, nothing else. Card and
 /// payload live on NodeData/the view side (deliberate split).
 pub trait Explorable {
