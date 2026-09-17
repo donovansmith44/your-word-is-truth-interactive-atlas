@@ -127,21 +127,30 @@ impl SqliteSnapshot {
         }
     }
 
+    /// Paging is keyset, not OFFSET: `ord` IS the entry's position in the
+    /// in-memory `(subject, rel, dir)` list (spec §5.2), and those
+    /// positions are contiguous `0..n` across the attached sections, so
+    /// `ord >= cursor LIMIT limit` reads exactly the rows `skip(cursor).
+    /// take(limit)` reads -- O(limit) per page instead of O(cursor), and no
+    /// `COUNT(*)`: one extra row (`LIMIT limit + 1`) decides `next` --
+    /// `start + entries.len() < total` holds iff a row beyond the page
+    /// exists (`explore.rs`'s own rule, `limit = 0` included).
     fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
         let (rel, dir, rel_name) = Self::code_of(q.kind);
         let subject = position_str(p);
         let start = q.cursor.unwrap_or(0);
         self.with_conn(|conn| {
-            let total: i64 = conn
-                .prepare_cached("SELECT COUNT(*) FROM all_edge_index WHERE subject = ?1 AND rel = ?2 AND dir = ?3")?
-                .query_row(rusqlite::params![subject, rel, dir], |r| r.get(0))?;
             let mut stmt = conn.prepare_cached(
-                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes FROM all_edge_index \
-                 WHERE subject = ?1 AND rel = ?2 AND dir = ?3 ORDER BY ord LIMIT ?4 OFFSET ?5",
+                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes FROM all_edge_index                  WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 ORDER BY ord LIMIT ?5",
             )?;
-            let mut rows = stmt.query(rusqlite::params![subject, rel, dir, q.limit as i64, start as i64])?;
+            let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, q.limit as i64 + 1])?;
             let mut entries = Vec::new();
+            let mut more = false;
             while let Some(row) = rows.next()? {
+                if entries.len() == q.limit {
+                    more = true;
+                    break;
+                }
                 let object: String = row.get(0)?;
                 let blob: Vec<u8> = row.get(1)?;
                 let meta_kind: i64 = row.get(2)?;
@@ -161,8 +170,7 @@ impl SqliteSnapshot {
                     meta,
                 });
             }
-            let total = usize::try_from(total).unwrap_or(0);
-            let next = if start + entries.len() < total { Some(start + entries.len()) } else { None };
+            let next = if more { Some(start + entries.len()) } else { None };
             Ok(EdgePage { kind: q.kind, entries, next })
         })
     }

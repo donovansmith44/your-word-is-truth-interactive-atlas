@@ -548,3 +548,65 @@ marginally below the low end of) CONTENTION-1's own ten-run spread, i.e.
 ordinary single-sample noise, not a regression signal (a single run is not
 a re-acceptance of CONTENTION-1's ten-run gate; it corroborates Task 5's
 number).
+
+## DB-2b (2026-09-17): the SQLite section writer, `SqliteSnapshot`, gate 9
+
+Spec §12 asks for compile wall time before/after DB-2 and each section's
+size against the 104,857,600-byte ceiling. All numbers are the debug build
+(the standing "never `--release` while 8080 runs" rule), single runs on the
+16-core machine, `atlas-graph-compile --data-dir ../data/compiled --out
+../data/compiled/graph.bin` invoked as a prebuilt binary (run-only, no cargo
+build inside the number).
+
+### Compile wall time (run-only)
+
+| Build | Wall | Of which DB-2b |
+|---|---:|---|
+| Before DB-2b (Task 7 commit, `1c75619`) | 136 s | -- |
+| After Task 8, first cut (`OFFSET` paging, SQLite at `-O0`) | 675 s | write 50.6 s, SQLite admission 488.6 s |
+| After Task 8 as shipped (keyset paging, `libsqlite3-sys` at `opt-level = 2`) | 365 s | write 47.1 s, SQLite admission 181.0 s |
+
+The DB-2b admission is `assert_answers_match(&SqliteSnapshot, &graph_b)` --
+the same full-inventory walk the in-memory admission runs in ~30 s --
+plus the per-section logical-hash re-derivation from the tables. It costs
+~2M point queries through the four-section `UNION ALL` view; the two
+changes above took it from 488 s to 181 s, and what remains is debug-build
+Rust per query (position parsing, id formatting, hash round-trips), not
+SQLite. Compile is a build step, not a serving path; the 2.7x is disclosed
+here, not hidden, and DB-4's plan (which moves the server onto these
+files) is where per-query cost has to be attacked.
+
+### Section files (uncompressed `.sqlite`; compression arrives at DB-4)
+
+| Section | Nodes | Rows | Index entries | Bytes | vs 104,857,600 |
+|---|---:|---:|---:|---:|---|
+| core | 6,263 | 78,625 | 157,860 | 35,168,256 | 33.5 % |
+| kjv | 32,357 | 354,040 | 767,906 | 233,095,168 | **222 % -- uncompressed**; the ceiling is on the COMPRESSED blob (spec §12), which DB-4 produces. The KJV section carries every translation layer's text in `node.payload` plus the 344k-row `cross_refs` table with its three LOCUS groups. |
+| concord | 3,972 | 145 | 15,308 | 6,488,064 | 6.2 % |
+| kretzmann | 50,602 | 50,602 | 101,204 | 59,019,264 | 56.3 % |
+
+Logical hashes are stable across four independent writes (two gate runs,
+two compile runs): core `819b7d00293dca27bafa181e58c1ec39`, kjv
+`47cec020c7fab0c2d077d8365f9db4af`, concord
+`e1902cf2acbdcbeb3d8b4bf9205be654`, kretzmann
+`cfebcd669fe2737850598fbc8b57ff24`; manifest root
+`e5d656e22cff0be8ac3f5a711d5c20fe`. (These are DB-2b's per-section hashes
+under `canon-ids` OFF with 8-byte hash columns; they are re-blessed at
+DB-4 with every other id, per spec §3.6.)
+
+### Gate 9: `sqlite_real_data`
+
+`scripts/timing-gates.sh` gate 9 = write all four sections, re-derive each
+logical hash from the file's tables, `assert_answers_match` over
+`SqliteSnapshot`, write a second time and compare roots.
+
+| Run | write | dump re-derivation | `assert_answers_match` | total |
+|---|---:|---:|---:|---:|
+| first cut (`OFFSET`, `-O0`) | 51.5 s | 18.5 s | 215.3 s | 335.7 s |
+| as shipped | 46.6 s | 18.1 s | 159.7 s | 271.5 s |
+
+Ceiling pinned at **570 s** (271.5 x 2, rounded up to the next 30 s) in
+`sqlite_real_data.rs` and noted beside the gate in `timing-gates.sh`. For
+scale: gate 2 (`assert_answers_match` over `MemSnapshot`, the same
+inventory) runs in ~26-40 s; the SQLite backend answers identically at
+~5x the cost in this debug-build harness.

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # CONTENTION-1 (docs/superpowers/specs/2026-09-14-relational-artifact-design.md §8):
-# the eight wall-clock gates, run SERIALIZED -- one `cargo test` process per
+# the nine wall-clock gates, run SERIALIZED -- one `cargo test` process per
 # gate, `--test-threads=1`, never concurrently with the parallel suite.
 # The ceilings live in the tests and are NOT touched here.
 #
-#   bash scripts/timing-gates.sh          run all eight; exit 1 on any failure
+#   bash scripts/timing-gates.sh          run all nine; exit 1 on any failure
 #   bash scripts/timing-gates.sh check    reconcile this list against the tree
 #   bash scripts/timing-gates.sh list     print the gate names, one per line
 #
@@ -42,6 +42,11 @@ GATES=(
   "atlas-server|perf_smoke|xrefs_for_verse_completes_within_smoke_threshold"
   "atlas-server|perf_smoke|text_window_completes_within_smoke_threshold"
   "atlas-server|perf_smoke|chapter_window_completes_within_smoke_threshold"
+  # DB-2b (gate 9): the real graph written to SQLite sections, admitted
+  # through SqliteSnapshot, logical hashes re-derived from the tables.
+  # Ceiling in the test = measured run x 2, rounded up to 30 s: measured
+  # 271.5 s on 2026-09-17 (debug build) -> ceiling 570 s.
+  "atlas-graph|sqlite_real_data|the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashes_agree"
 )
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }

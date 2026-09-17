@@ -43,9 +43,15 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use atlas_graph_types::store::{GraphPublisher, MemStore};
 
-fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf)> {
+/// DB-2b: `--sections-out <dir>` -- where the SQLite section files and
+/// `manifest.toml` are written (spec §6.1). Default: `<out parent>/../cache/
+/// sections-build`, i.e. `data/cache/sections-build` for the documented
+/// `--out data/compiled/graph.bin` -- a gitignored build output; committed
+/// sections arrive at DB-4.
+fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, PathBuf)> {
     let mut data_dir: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
+    let mut sections_out: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -57,18 +63,25 @@ fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf)> {
                 i += 1;
                 out = Some(PathBuf::from(args.get(i).context("--out requires a value")?));
             }
+            "--sections-out" => {
+                i += 1;
+                sections_out = Some(PathBuf::from(args.get(i).context("--sections-out requires a value")?));
+            }
             other => anyhow::bail!("unrecognized argument: {other}"),
         }
         i += 1;
     }
     let data_dir = data_dir.context("--data-dir is required, e.g. --data-dir ../data/compiled")?;
     let out = out.context("--out is required, e.g. --out ../data/compiled/graph.bin")?;
-    Ok((data_dir, out))
+    let sections_out = sections_out.unwrap_or_else(|| {
+        out.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from(".")).join("..").join("cache").join("sections-build")
+    });
+    Ok((data_dir, out, sections_out))
 }
 
 fn main() -> Result<()> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    let (data_dir, out_path) = parse_args(&raw)?;
+    let (data_dir, out_path, sections_out) = parse_args(&raw)?;
 
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
@@ -351,6 +364,57 @@ fn main() -> Result<()> {
     let kretzmann_path = exports_dir.join("kretzmann-chronology.json");
     std::fs::write(&kretzmann_path, format!("{kretzmann_json}\n")).with_context(|| format!("writing {}", kretzmann_path.display()))?;
     println!("atlas-graph-compile: wrote {} ({} tentative date rows)", kretzmann_path.display(), kretzmann_export.rows.len());
+
+    // DB-2b (spec §6.1, §6.2): the SQLite sections, written LAST -- after
+    // `graph.bin`, the red-letter spans and every export are on disk, so a
+    // DB-2b failure never leaves the served artifact unwritten. `graph_b`
+    // (the independent model the admission above compared against) is
+    // still alive here and carries the same rows; `version_hex` is the
+    // in-memory `GraphVersion` this batch stamps as `meta.graph_version`
+    // (plan judgment call 4; DB-4 replaces it with the manifest root).
+    std::fs::create_dir_all(&sections_out).with_context(|| format!("creating {}", sections_out.display()))?;
+    println!("atlas-graph-compile: DB-2b -- writing SQLite sections to {} ...", sections_out.display());
+    let t = Instant::now();
+    let compiler = format!("atlas-graph-compile {} (rustc {})", env!("CARGO_PKG_VERSION"), "1.97.1");
+    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &version_hex, &compiler, &sections_out)
+        .map_err(|e| anyhow::anyhow!("{e}"))
+        .context("writing the SQLite sections")?;
+    for w in &written {
+        println!(
+            "atlas-graph-compile:   {:<10} {:>7} nodes {:>8} rows {:>8} edges {:>11} bytes  logical {}  ({:?})",
+            w.section.name(),
+            w.node_count,
+            w.row_count,
+            w.edge_count,
+            w.bytes,
+            w.logical,
+            w.elapsed
+        );
+    }
+    println!("atlas-graph-compile: DB-2b -- sections written in {:?}; manifest root {}", t.elapsed(), manifest.root);
+    println!("atlas-graph-compile: DB-2b ADMISSION -- SqliteSnapshot vs the model graph ...");
+    let t = Instant::now();
+    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(&sections_out.join("manifest.toml"))
+        .map_err(|e| anyhow::anyhow!("{e}"))
+        .context("opening the written sections")?;
+    for w in &written {
+        let conn = atlas_graph::sqlite::open_read_only(&w.path).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let recomputed = atlas_graph::sqlite::logical::logical_hash(
+            &atlas_graph::sqlite::logical::logical_dump_of_db(&conn, w.section).map_err(|e| anyhow::anyhow!("{e}"))?,
+        );
+        anyhow::ensure!(
+            recomputed == w.logical,
+            "DB-2b: {} logical hash from tables {} != from partition {}",
+            w.section.name(),
+            recomputed,
+            w.logical
+        );
+    }
+    atlas_graph_types::store::assert_answers_match(&snap, &graph_b);
+    println!(
+        "atlas-graph-compile: DB-2b ADMISSION passed (assert_answers_match over SqliteSnapshot + per-section logical hashes) in {:?}",
+        t.elapsed()
+    );
 
     Ok(())
 }

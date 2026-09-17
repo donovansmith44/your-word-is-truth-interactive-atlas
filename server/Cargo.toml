@@ -990,3 +990,12 @@ resolver = "2"
 # `EveryEventFrontierProviderAddedThisBatchAppearsExactlyOnce`. Measured
 # at 351/351 BEFORE the amendment too, with EVT-3's three untracked held
 # files in the build and untouched.
+
+# DB-2b: the bundled SQLite amalgamation is C compiled by the `cc` crate at
+# the profile's opt-level -- `-O0` under `dev`, which made the DB-2b
+# admission walk (~2M point queries) several times slower than the same
+# library at -O2. Optimising this ONE package leaves every Rust crate on the
+# debug profile (the "never --release while 8080 runs" rule is about the
+# server binary, not about a vendored C library's codegen).
+[profile.dev.package.libsqlite3-sys]
+opt-level = 2
