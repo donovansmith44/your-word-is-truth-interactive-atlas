@@ -60,6 +60,7 @@ pub mod red_letter_spans;
 pub mod scene_source;
 pub mod sections;
 pub mod service;
+pub mod sqlite;
 pub mod window;
 pub mod xref_adapter;
 
