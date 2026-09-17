@@ -881,16 +881,16 @@ fn bible_locus_node_id(v: &VerseRef) -> atlas_graph_types::id::AnyNodeId {
 /// whole point (module doc comment's own framing).
 ///
 /// A REAL POST-PROCESSING STEP over the already-built graph, NOT a
-/// graph-types change: computes each qualifying row's own `EdgeId` THE
-/// SAME WAY `Graph::build_indexes` computes it internally for that
-/// relation (mirrored here -- that pairing logic is private, so it cannot
-/// be called directly), then merges a NEW `RelationId::JustifiedBy` index
+/// graph-types change: takes each qualifying row's own `EdgeId` from
+/// `Graph::row_edges()` + `Graph::edge_id_of` -- the SAME lowering
+/// `Graph::build_indexes` places (DB-2b made it public; before that the
+/// pairing was mirrored here by hand), then merges a NEW `RelationId::JustifiedBy` index
 /// into `graph.indexes` using graph-types' own public `entry_id`/`BiIndex`
 /// primitives. Must run AFTER `graph.build_indexes()` (the indexes it
 /// mirrors must already exist for the two to agree on the SAME edge ids).
 pub fn add_justified_by(graph: &mut Graph) -> usize {
-    use atlas_graph_types::chrono::ChronoTarget;
-    use atlas_graph_types::edge::{at, entry_id, BiIndex, EdgeId, Namesake, RelationId};
+    use atlas_graph_types::canon::RowFamily;
+    use atlas_graph_types::edge::{at, BiIndex, EdgeId, RelationId};
     use atlas_graph_types::explore::EdgeMeta;
     use atlas_graph_types::id::Position;
 
@@ -916,63 +916,25 @@ pub fn add_justified_by(graph: &mut Graph) -> usize {
         }
     }
 
-    for row in &graph.dated_by {
-        if row.justification.grounds.is_empty() {
-            continue;
-        }
-        // Mirrors Graph::build_indexes's own DatedBy (subject, object)
-        // construction exactly (graph-types/src/graph.rs) -- the pair
-        // whose entry_id IS the edge id a client already sees on this
-        // row's own dated-by/dates entry.
-        let subject = at(&row.event.erase());
-        let object = match row.placement.target() {
-            ChronoTarget::Anchor(a) => at(&a.erase()),
-            ChronoTarget::Prior(p) => at(&p.erase()),
-            ChronoTarget::Era(er) => at(&er.erase()),
+    // DB-2b: ONE pass over the graph's own row->edge lowering
+    // (`Graph::row_edges`), so the edge id a ground fans out from is
+    // minted by the SAME function `build_indexes` places it with -- no
+    // hand-mirrored (subject, object) construction per family any more.
+    // Exactly the four families whose rows carry grounds fanned out
+    // today (EDGE-1a / JB-1): DatedBy, Fulfills, Typology, NamedAfter.
+    for e in graph.row_edges() {
+        let grounds = match e.family {
+            RowFamily::DatedBy => &graph.dated_by[e.row_ord].justification.grounds,
+            RowFamily::Fulfills => &graph.fulfills[e.row_ord].justification.grounds,
+            RowFamily::Typology => &graph.typology[e.row_ord].justification.grounds,
+            RowFamily::NamedAfter => &graph.named_after[e.row_ord].justification.grounds,
+            _ => continue,
         };
-        let edge_id = entry_id(RelationId::DatedBy, &subject, &object);
-        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
-    }
-
-    // EDGE-1a (JB-1 rider): mirrors Graph::build_indexes's own Fulfillment
-    // (subject, object) construction exactly -- prophecy's/fulfillment's
-    // own FIRST verse (graph-types/src/graph.rs's own "edge endpoint = a
-    // range's first verse" comment).
-    for row in &graph.fulfills {
-        if row.justification.grounds.is_empty() {
+        if grounds.is_empty() {
             continue;
         }
-        let subject = Position::Node(bible_locus_node_id(&row.prophecy.from.unit));
-        let object = Position::Node(bible_locus_node_id(&row.fulfillment.from.unit));
-        let edge_id = entry_id(RelationId::Fulfillment, &subject, &object);
-        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
-    }
-
-    // EDGE-1a (JB-1 rider): the Typology sibling -- same shape.
-    for row in &graph.typology {
-        if row.justification.grounds.is_empty() {
-            continue;
-        }
-        let subject = Position::Node(bible_locus_node_id(&row.type_passage.from.unit));
-        let object = Position::Node(bible_locus_node_id(&row.antitype_passage.from.unit));
-        let edge_id = entry_id(RelationId::Typology, &subject, &object);
-        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
-    }
-
-    // EDGE-1a (JB-1 rider): mirrors Graph::build_indexes's own NamedAfter
-    // (subject, object) construction exactly (the namesake -> eponym pair).
-    for row in &graph.named_after {
-        if row.justification.grounds.is_empty() {
-            continue;
-        }
-        let subject = match &row.namesake {
-            Namesake::PeopleGroup(g) => at(&g.erase()),
-            Namesake::Place(p) => at(&p.erase()),
-            Namesake::Polity(p) => at(&p.erase()),
-        };
-        let object = at(&row.eponym.erase());
-        let edge_id = entry_id(RelationId::NamedAfter, &subject, &object);
-        push_grounds(&mut pairs, edge_id, &row.justification.grounds);
+        let edge_id = Graph::edge_id_of(&e);
+        push_grounds(&mut pairs, edge_id, grounds);
     }
 
     let count = pairs.len();

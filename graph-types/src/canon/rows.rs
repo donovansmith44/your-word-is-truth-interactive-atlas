@@ -1159,3 +1159,38 @@ impl Canon for Analogue {
         })
     }
 }
+
+/// DB-2b (RELMAP-1): the TOTAL family -> relation map. Every row family
+/// lowers into exactly one relation (directed or symmetric); this is
+/// the single spelling of that pairing, exhaustive by construction (no
+/// wildcard arm), so adding a family without deciding its relation is a
+/// compile error. `JustifiedBy`, `DerivedFrom` and `Parallel` have no
+/// family: `JustifiedBy` is synthesised from grounds
+/// (`event_world::add_justified_by`); the other two have zero producers.
+impl RowFamily {
+    pub fn relation(self) -> crate::graph::EdgeRel {
+        use crate::edge::{RelationId as R, SymRelationId as S};
+        use crate::graph::EdgeRel::{Directed, Symmetric};
+        match self {
+            RowFamily::ContainsBible | RowFamily::ContainsConcord => Directed(R::Contains),
+            RowFamily::Attests => Directed(R::Attests),
+            RowFamily::Succession | RowFamily::CanonSuccession => Directed(R::Succession),
+            RowFamily::DatedBy => Directed(R::DatedBy),
+            RowFamily::LocatedAt => Directed(R::LocatedAt),
+            RowFamily::Fulfills => Directed(R::Fulfillment),
+            RowFamily::Typology => Directed(R::Typology),
+            RowFamily::NamedAfter => Directed(R::NamedAfter),
+            RowFamily::Catechism => Symmetric(S::CatechismLink),
+            RowFamily::CommentsOn => Directed(R::CommentsOn),
+            RowFamily::SpokenBy => Directed(R::SpokenBy),
+            RowFamily::SpokenAt => Directed(R::SpokenAt),
+            RowFamily::Mentions => Directed(R::Mentions),
+            RowFamily::CrossRefs => Directed(R::Cites),
+            RowFamily::Quotes => Directed(R::Quotes),
+            RowFamily::Confesses => Directed(R::Confesses),
+            RowFamily::CorrespondsBible => Symmetric(S::Corresponds),
+            RowFamily::TemporalAdjacency => Symmetric(S::TemporalAdjacency),
+            RowFamily::Analogue => Symmetric(S::Analogue),
+        }
+    }
+}

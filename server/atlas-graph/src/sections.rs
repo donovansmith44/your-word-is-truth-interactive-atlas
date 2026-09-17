@@ -19,7 +19,7 @@
 //! already the full, final list DB-2b writes against.
 
 use atlas_graph_types::canon::RowFamily;
-use atlas_graph_types::edge::{Contains, EdgeId};
+use atlas_graph_types::edge::{Contains, EdgeId, RelationId};
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, ConcordTag, Corpus};
 
@@ -199,16 +199,15 @@ pub fn section_of_justified_by(
 /// id's own text, with no new index needed. `add_justified_by` wires only
 /// four source relations today (`DatedBy`, `Fulfillment`, `Typology`,
 /// `NamedAfter`); this maps each to the `RowFamily` `section_of_justified_by`
-/// wants (note `RelationId::Fulfillment` names the SAME family
-/// `RowFamily::Fulfills` -- the relation and the row family are named
-/// independently and do not share a spelling for this one family).
+/// wants THROUGH `RowFamily::relation` (DB-2b, RELMAP-1: the total
+/// family->relation map), so the `Fulfillment`/`Fulfills` spelling split
+/// is decided in one place, not re-spelled here.
 pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> {
+    use atlas_graph_types::graph::EdgeRel;
     let (relation, _hash) = source_edge_id.0.split_once(':')?;
-    match relation {
-        "DatedBy" => Some(RowFamily::DatedBy),
-        "Fulfillment" => Some(RowFamily::Fulfills),
-        "Typology" => Some(RowFamily::Typology),
-        "NamedAfter" => Some(RowFamily::NamedAfter),
-        _ => None,
-    }
+    let rel = RelationId::ALL.iter().copied().find(|r| format!("{r:?}") == relation)?;
+    RowFamily::ALL.iter().copied().find(|f| {
+        f.relation() == EdgeRel::Directed(rel)
+            && matches!(f, RowFamily::DatedBy | RowFamily::Fulfills | RowFamily::Typology | RowFamily::NamedAfter)
+    })
 }

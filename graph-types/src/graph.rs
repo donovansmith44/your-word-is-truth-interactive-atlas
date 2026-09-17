@@ -83,6 +83,28 @@ pub struct Graph {
     pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
 }
 
+/// Which relation a row family lowers into (directed or symmetric).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EdgeRel {
+    Directed(RelationId),
+    Symmetric(crate::edge::SymRelationId),
+}
+
+/// One index entry BEFORE it is placed: the row that produced it, the
+/// relation, the two ends, the meta. `row_ord` is the row's position in
+/// its family's Vec (spec §5.0 `ord`); a set-valued row (a Contains row
+/// with N loci, a Succession chain with N events) yields N entries with
+/// the same `row_ord`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RowEdge {
+    pub family: crate::canon::RowFamily,
+    pub row_ord: usize,
+    pub rel: EdgeRel,
+    pub subject: Position,
+    pub object: Position,
+    pub meta: crate::explore::EdgeMeta,
+}
+
 fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
     // Skeleton mapping from a locus to its unit node id.
     let raw = match &kind_hint.at {
@@ -93,6 +115,279 @@ fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
 }
 
 impl Graph {
+    /// EVERY edge the row tables declare, in the exact order `build_indexes`
+    /// has always visited them -- the historical loop order, which is NOT
+    /// `RowFamily::ALL` order: contains_bible, contains_concord, attests,
+    /// succession, canon_succession, dated_by, comments_on, spoken_by,
+    /// spoken_at, located_at, named_after, mentions, cross_refs, quotes,
+    /// confesses, fulfills, typology, then symmetric: catechism,
+    /// temporal_adjacency, analogue. Order is load-bearing: `BiIndex` Vec
+    /// order = cursor order = pinned scene bytes. (`corresponds_bible` has
+    /// never been lowered by `build_indexes` and is not lowered here
+    /// either -- the same zero-index gap it has always had.)
+    ///
+    /// DB-2b: this is the ONE row->edge lowering. `build_indexes` consumes
+    /// it, and so does everything that must name the row behind an index
+    /// entry (`edge_index.row_family/row_id`, the justified-by synthesis).
+    pub fn row_edges(&self) -> Vec<RowEdge> {
+        use crate::canon::RowFamily;
+        use crate::edge::SymRelationId as S;
+        use crate::explore::EdgeMeta as M;
+        use RelationId as R;
+
+        fn push_edge(out: &mut Vec<RowEdge>, family: RowFamily, row_ord: usize, rel: EdgeRel, (subject, object, meta): (Position, Position, M)) {
+            out.push(RowEdge { family, row_ord, rel, subject, object, meta });
+        }
+
+        let mut out: Vec<RowEdge> = Vec::new();
+        for (i, row) in self.contains_bible.iter().enumerate() {
+            let c = at(&row.container.erase());
+            match &row.content {
+                ContainerContent::Loci(set) => {
+                    for l in &set.0 {
+                        let tl: TextLocus = l.clone().into();
+                        push_edge(&mut out, RowFamily::ContainsBible, i, EdgeRel::Directed(R::Contains), (c.clone(), at(&text_node(&tl)), M::None));
+                    }
+                }
+                // NODE1-ROWS-1: one child container per row -- book ⊃
+                // chapter is a DECLARED edge lowering here, not a derived
+                // index entry ("we have to declare edges. no special
+                // cases").
+                ContainerContent::Container(child) => {
+                    push_edge(&mut out, RowFamily::ContainsBible, i, EdgeRel::Directed(R::Contains), (c, at(&child.erase()), M::None));
+                }
+            }
+        }
+        // CORP-2a: the Concord sibling of the `contains_bible` loop
+        // immediately above -- SAME shape, the OTHER `Contains<C>`
+        // instantiation this struct carries (graph.rs's own field-level
+        // doc comment: "authored"). Declared alongside `contains_bible`
+        // since M-A but never lowered into `pairs` until now: `Contains<
+        // ConcordTag>` had no real caller before `concord_adapter.rs`
+        // (this batch's own first-real-caller note, matching artifact.rs's
+        // identical "deliberately incomplete until a real caller arrives"
+        // shape for `concord_locus_to_dto`) -- both are precedented,
+        // mechanical completions of an already-declared field, not a new
+        // relation or a type-shape change.
+        for (i, row) in self.contains_concord.iter().enumerate() {
+            let c = at(&row.container.erase());
+            match &row.content {
+                ContainerContent::Loci(set) => {
+                    for l in &set.0 {
+                        let tl: TextLocus = l.clone().into();
+                        push_edge(&mut out, RowFamily::ContainsConcord, i, EdgeRel::Directed(R::Contains), (c.clone(), at(&text_node(&tl)), M::None));
+                    }
+                }
+                ContainerContent::Container(child) => {
+                    push_edge(&mut out, RowFamily::ContainsConcord, i, EdgeRel::Directed(R::Contains), (c, at(&child.erase()), M::None));
+                }
+            }
+        }
+        for (i, row) in self.attests.iter().enumerate() {
+            let e = at(&row.event.erase());
+            let tl: TextLocus = row.attestation.from.clone().into();
+            push_edge(&mut out, RowFamily::Attests, i, EdgeRel::Directed(R::Attests), (e, at(&text_node(&tl)), M::None));
+        }
+        for (i, row) in self.succession.iter().enumerate() {
+            for w in row.chain.windows(2) {
+                push_edge(&mut out, RowFamily::Succession, i, EdgeRel::Directed(R::Succession), (
+                    at(&w[0].erase()),
+                    at(&w[1].erase()),
+                    M::Narrative(row.narrative.clone()),
+                ));
+            }
+        }
+        // NODE1-ROWS-1: the SECOND row implementation of Succession --
+        // pairwise canon container steps. `M::None` honestly: a canon
+        // step belongs to no narrative (the canon order itself is the
+        // chain; `EdgeMeta::Narrative` is the event-chain reading's own
+        // annotation, not this one's).
+        for (i, row) in self.canon_succession.iter().enumerate() {
+            push_edge(&mut out, RowFamily::CanonSuccession, i, EdgeRel::Directed(R::Succession), (
+                at(&row.prior.erase()),
+                at(&row.next.erase()),
+                M::None,
+            ));
+        }
+        for (i, row) in self.dated_by.iter().enumerate() {
+            let e = at(&row.event.erase());
+            let t = match row.placement.target() {
+                crate::chrono::ChronoTarget::Anchor(a) => at(&a.erase()),
+                crate::chrono::ChronoTarget::Prior(p) => at(&p.erase()),
+                crate::chrono::ChronoTarget::Era(er) => at(&er.erase()),
+            };
+            push_edge(&mut out, RowFamily::DatedBy, i, EdgeRel::Directed(R::DatedBy), (e, t, M::None));
+        }
+        // KRETZ-1 (the PRE-AUTHORIZED exception, standing since CORP-2a:
+        // "activating the declared-but-never-wired comments_on field in
+        // build_indexes by mechanically mirroring an existing sibling
+        // loop"): `comments_on` is shaped exactly like `attests` above --
+        // one node-typed field (`item`/`event`) plus one `BibleLocusRange`
+        // field (`on`/`attestation`) -- so this mirrors that loop verbatim,
+        // renamed. The range's own FIRST verse is the edge endpoint (the
+        // SAME "full range stays on the row for display" precedent
+        // `fulfills`/`typology` below also follow) -- a multi-verse
+        // CommentaryItem (a pericope/chapter-intro unit) is reachable from
+        // its range's first verse today; full multi-verse popover surfacing
+        // is deferred with the rest of the client-side POPOVER-LAW-1 work
+        // (decision 7).
+        for (i, row) in self.comments_on.iter().enumerate() {
+            let item = at(&row.item.erase());
+            let tl: TextLocus = row.on.from.clone().into();
+            push_edge(&mut out, RowFamily::CommentsOn, i, EdgeRel::Directed(R::CommentsOn), (item, at(&text_node(&tl)), M::None));
+        }
+        // RED-1 (the pre-authorized exception, standing since KRETZ-1's own
+        // `comments_on` precedent immediately above): `spoken_by`/
+        // `spoken_at` were declared on this struct at BASE but never
+        // lowered into `pairs` until this batch. Both mirror `attests`'s
+        // own shape (one `BibleLocusRange` field + one node-typed field),
+        // but with the OPPOSITE polarity: `attests` puts the NODE (event)
+        // first and the TEXT second; here the TEXT (this range's own FIRST
+        // verse -- the SAME "full range stays on the row, first verse is
+        // the edge endpoint" precedent `comments_on`/`attests` already
+        // establish) is the SUBJECT and the node (speaker/place) is the
+        // OBJECT -- the polarity each relation's own FORWARD LABEL decides
+        // (this function's own comments_on doc comment note), never a
+        // fixed node-type-first rule: "spoken-by"/"spoken-at" both read
+        // naturally as "[this verse] spoken-by/-at [X]".
+        for (i, row) in self.spoken_by.iter().enumerate() {
+            let tl: TextLocus = row.locus.from.clone().into();
+            push_edge(&mut out, RowFamily::SpokenBy, i, EdgeRel::Directed(R::SpokenBy), (at(&text_node(&tl)), at(&row.speaker.erase()), M::None));
+        }
+        for (i, row) in self.spoken_at.iter().enumerate() {
+            let tl: TextLocus = row.locus.from.clone().into();
+            push_edge(&mut out, RowFamily::SpokenAt, i, EdgeRel::Directed(R::SpokenAt), (at(&text_node(&tl)), at(&row.place.erase()), M::None));
+        }
+        for (i, row) in self.located_at.iter().enumerate() {
+            push_edge(&mut out, RowFamily::LocatedAt, i, EdgeRel::Directed(R::LocatedAt), (
+                at(&row.event.erase()),
+                at(&row.place.erase()),
+                M::None,
+            ));
+        }
+        for (i, row) in self.named_after.iter().enumerate() {
+            let s = match &row.namesake {
+                Namesake::PeopleGroup(g) => at(&g.erase()),
+                Namesake::Place(p) => at(&p.erase()),
+                Namesake::Polity(p) => at(&p.erase()),
+            };
+            push_edge(&mut out, RowFamily::NamedAfter, i, EdgeRel::Directed(R::NamedAfter), (s, at(&row.eponym.erase()), M::None));
+        }
+        for (i, row) in self.mentions.iter().enumerate() {
+            let s = at(&text_node(&row.locus));
+            let o = match &row.entity {
+                MentionedEntity::Place(p) => at(&p.erase()),
+                MentionedEntity::Person(p) => at(&p.erase()),
+                MentionedEntity::PeopleGroup(g) => at(&g.erase()),
+                // ATTEST-1: a verse that REFERENCES an event without
+                // narrating it (LUK 1:27's "a virgin espoused to a man")
+                // -- the SAME `Mentions` relation, one more attested
+                // sense, lowered the identical way.
+                MentionedEntity::Event(e) => at(&e.erase()),
+            };
+            push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, o, M::None));
+        }
+        for (i, row) in self.cross_refs.iter().enumerate() {
+            push_edge(&mut out, RowFamily::CrossRefs, i, EdgeRel::Directed(R::Cites), (
+                at(&text_node(&row.from)),
+                at(&text_node(&row.to)),
+                M::Votes(row.votes),
+            ));
+        }
+        for (i, row) in self.quotes.iter().enumerate() {
+            let s = at(&text_node(&row.quoting));
+            let tl: TextLocus = row.quoted.from.clone().into();
+            push_edge(&mut out, RowFamily::Quotes, i, EdgeRel::Directed(R::Quotes), (s, at(&text_node(&tl)), M::None));
+        }
+        for (i, row) in self.confesses.iter().enumerate() {
+            let s: TextLocus = row.confessing.clone().into();
+            let o: TextLocus = row.confessed.from.clone().into();
+            push_edge(&mut out, RowFamily::Confesses, i, EdgeRel::Directed(R::Confesses), (
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
+        }
+        // EDGE-1: prophecy/fulfillment and typology lower exactly like
+        // the other text-to-text relations -- edge endpoint is each
+        // range's FIRST verse (the cites/quotes/confesses precedent);
+        // the full ranges stay on the rows for display.
+        for (i, row) in self.fulfills.iter().enumerate() {
+            let s: TextLocus = row.prophecy.from.clone().into();
+            let o: TextLocus = row.fulfillment.from.clone().into();
+            push_edge(&mut out, RowFamily::Fulfills, i, EdgeRel::Directed(R::Fulfillment), (
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
+        }
+        for (i, row) in self.typology.iter().enumerate() {
+            let s: TextLocus = row.type_passage.from.clone().into();
+            let o: TextLocus = row.antitype_passage.from.clone().into();
+            push_edge(&mut out, RowFamily::Typology, i, EdgeRel::Directed(R::Typology), (
+                at(&text_node(&s)),
+                at(&text_node(&o)),
+                M::None,
+            ));
+        }
+        // M-D3 (owner ruling R2) closed M-C's long-disclosed `named` shape
+        // gap by RETIRING the relation: a `Named` row's object was a bare
+        // `String` with no `Position` representation, so the relation
+        // could never lower into `pairs` -- and the serving path was
+        // always `NodePayload::Place`'s own `aliases` payload field
+        // (node.rs). Manifest row, row struct, and the `graph.named`
+        // table are gone; aliases remain a fact ABOUT the place.
+
+        // M-C: the symmetric sibling of the directed pass above -- closes
+        // the "Symmetric relations: skeleton serves none yet" gap
+        // (`explore.rs`'s own `raw_neighbors`, disclosed since M-A).
+        // `catechism` (`CatechismLink { locus: TextLocus, item:
+        // CatechismItemId, .. }`) is the first symmetric relation with
+        // real rows to index; both ends resolve to real `Position`s (a
+        // TextUnit and a CatechismItem node respectively), unlike
+        // `named`'s own bare-string object (see this function's own note
+        // above) -- there is nothing blocking this one.
+        for (i, row) in self.catechism.iter().enumerate() {
+            let locus = at(&text_node(&row.locus));
+            let item = at(&row.item.erase());
+            push_edge(&mut out, RowFamily::Catechism, i, EdgeRel::Symmetric(S::CatechismLink), (locus, item, M::None));
+        }
+        // TRAV-1: the second inhabited symmetric relation -- the exact
+        // `temporal-adjacency` gap the doc comment above carried since
+        // M-B, now closed. Rows are compile-derived (see the struct's
+        // own doc); the symmetric index serves "adjacent-in-time"
+        // traversal both ways, and the honest `earlier`/`later` row
+        // ends carry direction for the Chronology block's display.
+        for (i, row) in self.temporal_adjacency.iter().enumerate() {
+            push_edge(&mut out, RowFamily::TemporalAdjacency, i, EdgeRel::Symmetric(S::TemporalAdjacency), (
+                at(&row.earlier.erase()),
+                at(&row.later.erase()),
+                M::None,
+            ));
+        }
+        // ATTEST-1: the THIRD inhabited symmetric relation. Neither end
+        // is the original (see `edge::Analogue`), so `build_symmetric`'s
+        // own sort-then-hash entry id is exactly right: querying from `a`
+        // or from `b` returns the other under the SAME EdgeId.
+        for (i, row) in self.analogue.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Analogue, i, EdgeRel::Symmetric(S::Analogue), (
+                at(&row.a.erase()),
+                at(&row.b.erase()),
+                M::None,
+            ));
+        }
+        out
+    }
+
+    /// The pure per-family edge id, so callers never re-spell `entry_id`
+    /// vs `entry_id_symmetric`.
+    pub fn edge_id_of(e: &RowEdge) -> crate::edge::EdgeId {
+        match e.rel {
+            EdgeRel::Directed(r) => crate::edge::entry_id(r, &e.subject, &e.object),
+            EdgeRel::Symmetric(s) => crate::edge::entry_id_symmetric(s, &e.subject, &e.object),
+        }
+    }
+
     /// Build every bidirectional index from the row tables — one pass
     /// per relation; both directions are projections of the same rows.
     /// Also builds the pid index (derive() as lookup).
@@ -121,247 +416,16 @@ impl Graph {
         use crate::id::ContentAddressed;
 
         use RelationId as R;
+        use crate::edge::SymRelationId as S;
 
         use crate::explore::EdgeMeta as M;
         let mut pairs: BTreeMap<RelationId, Vec<(Position, Position, M)>> = BTreeMap::new();
-
-        for row in &self.contains_bible {
-            let c = at(&row.container.erase());
-            match &row.content {
-                ContainerContent::Loci(set) => {
-                    for l in &set.0 {
-                        let tl: TextLocus = l.clone().into();
-                        pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
-                    }
-                }
-                // NODE1-ROWS-1: one child container per row -- book ⊃
-                // chapter is a DECLARED edge lowering here, not a derived
-                // index entry ("we have to declare edges. no special
-                // cases").
-                ContainerContent::Container(child) => {
-                    pairs.entry(R::Contains).or_default().push((c, at(&child.erase()), M::None));
-                }
-            }
-        }
-        // CORP-2a: the Concord sibling of the `contains_bible` loop
-        // immediately above -- SAME shape, the OTHER `Contains<C>`
-        // instantiation this struct carries (graph.rs's own field-level
-        // doc comment: "authored"). Declared alongside `contains_bible`
-        // since M-A but never lowered into `pairs` until now: `Contains<
-        // ConcordTag>` had no real caller before `concord_adapter.rs`
-        // (this batch's own first-real-caller note, matching artifact.rs's
-        // identical "deliberately incomplete until a real caller arrives"
-        // shape for `concord_locus_to_dto`) -- both are precedented,
-        // mechanical completions of an already-declared field, not a new
-        // relation or a type-shape change.
-        for row in &self.contains_concord {
-            let c = at(&row.container.erase());
-            match &row.content {
-                ContainerContent::Loci(set) => {
-                    for l in &set.0 {
-                        let tl: TextLocus = l.clone().into();
-                        pairs.entry(R::Contains).or_default().push((c.clone(), at(&text_node(&tl)), M::None));
-                    }
-                }
-                ContainerContent::Container(child) => {
-                    pairs.entry(R::Contains).or_default().push((c, at(&child.erase()), M::None));
-                }
-            }
-        }
-        for row in &self.attests {
-            let e = at(&row.event.erase());
-            let tl: TextLocus = row.attestation.from.clone().into();
-            pairs.entry(R::Attests).or_default().push((e, at(&text_node(&tl)), M::None));
-        }
-        for row in &self.succession {
-            for w in row.chain.windows(2) {
-                pairs.entry(R::Succession).or_default().push((
-                    at(&w[0].erase()),
-                    at(&w[1].erase()),
-                    M::Narrative(row.narrative.clone()),
-                ));
-            }
-        }
-        // NODE1-ROWS-1: the SECOND row implementation of Succession --
-        // pairwise canon container steps. `M::None` honestly: a canon
-        // step belongs to no narrative (the canon order itself is the
-        // chain; `EdgeMeta::Narrative` is the event-chain reading's own
-        // annotation, not this one's).
-        for row in &self.canon_succession {
-            pairs.entry(R::Succession).or_default().push((
-                at(&row.prior.erase()),
-                at(&row.next.erase()),
-                M::None,
-            ));
-        }
-        for row in &self.dated_by {
-            let e = at(&row.event.erase());
-            let t = match row.placement.target() {
-                crate::chrono::ChronoTarget::Anchor(a) => at(&a.erase()),
-                crate::chrono::ChronoTarget::Prior(p) => at(&p.erase()),
-                crate::chrono::ChronoTarget::Era(er) => at(&er.erase()),
-            };
-            pairs.entry(R::DatedBy).or_default().push((e, t, M::None));
-        }
-        // KRETZ-1 (the PRE-AUTHORIZED exception, standing since CORP-2a:
-        // "activating the declared-but-never-wired comments_on field in
-        // build_indexes by mechanically mirroring an existing sibling
-        // loop"): `comments_on` is shaped exactly like `attests` above --
-        // one node-typed field (`item`/`event`) plus one `BibleLocusRange`
-        // field (`on`/`attestation`) -- so this mirrors that loop verbatim,
-        // renamed. The range's own FIRST verse is the edge endpoint (the
-        // SAME "full range stays on the row for display" precedent
-        // `fulfills`/`typology` below also follow) -- a multi-verse
-        // CommentaryItem (a pericope/chapter-intro unit) is reachable from
-        // its range's first verse today; full multi-verse popover surfacing
-        // is deferred with the rest of the client-side POPOVER-LAW-1 work
-        // (decision 7).
-        for row in &self.comments_on {
-            let item = at(&row.item.erase());
-            let tl: TextLocus = row.on.from.clone().into();
-            pairs.entry(R::CommentsOn).or_default().push((item, at(&text_node(&tl)), M::None));
-        }
-        // RED-1 (the pre-authorized exception, standing since KRETZ-1's own
-        // `comments_on` precedent immediately above): `spoken_by`/
-        // `spoken_at` were declared on this struct at BASE but never
-        // lowered into `pairs` until this batch. Both mirror `attests`'s
-        // own shape (one `BibleLocusRange` field + one node-typed field),
-        // but with the OPPOSITE polarity: `attests` puts the NODE (event)
-        // first and the TEXT second; here the TEXT (this range's own FIRST
-        // verse -- the SAME "full range stays on the row, first verse is
-        // the edge endpoint" precedent `comments_on`/`attests` already
-        // establish) is the SUBJECT and the node (speaker/place) is the
-        // OBJECT -- the polarity each relation's own FORWARD LABEL decides
-        // (this function's own comments_on doc comment note), never a
-        // fixed node-type-first rule: "spoken-by"/"spoken-at" both read
-        // naturally as "[this verse] spoken-by/-at [X]".
-        for row in &self.spoken_by {
-            let tl: TextLocus = row.locus.from.clone().into();
-            pairs.entry(R::SpokenBy).or_default().push((at(&text_node(&tl)), at(&row.speaker.erase()), M::None));
-        }
-        for row in &self.spoken_at {
-            let tl: TextLocus = row.locus.from.clone().into();
-            pairs.entry(R::SpokenAt).or_default().push((at(&text_node(&tl)), at(&row.place.erase()), M::None));
-        }
-        for row in &self.located_at {
-            pairs.entry(R::LocatedAt).or_default().push((
-                at(&row.event.erase()),
-                at(&row.place.erase()),
-                M::None,
-            ));
-        }
-        for row in &self.named_after {
-            let s = match &row.namesake {
-                Namesake::PeopleGroup(g) => at(&g.erase()),
-                Namesake::Place(p) => at(&p.erase()),
-                Namesake::Polity(p) => at(&p.erase()),
-            };
-            pairs.entry(R::NamedAfter).or_default().push((s, at(&row.eponym.erase()), M::None));
-        }
-        for row in &self.mentions {
-            let s = at(&text_node(&row.locus));
-            let o = match &row.entity {
-                MentionedEntity::Place(p) => at(&p.erase()),
-                MentionedEntity::Person(p) => at(&p.erase()),
-                MentionedEntity::PeopleGroup(g) => at(&g.erase()),
-                // ATTEST-1: a verse that REFERENCES an event without
-                // narrating it (LUK 1:27's "a virgin espoused to a man")
-                // -- the SAME `Mentions` relation, one more attested
-                // sense, lowered the identical way.
-                MentionedEntity::Event(e) => at(&e.erase()),
-            };
-            pairs.entry(R::Mentions).or_default().push((s, o, M::None));
-        }
-        for row in &self.cross_refs {
-            pairs.entry(R::Cites).or_default().push((
-                at(&text_node(&row.from)),
-                at(&text_node(&row.to)),
-                M::Votes(row.votes),
-            ));
-        }
-        for row in &self.quotes {
-            let s = at(&text_node(&row.quoting));
-            let tl: TextLocus = row.quoted.from.clone().into();
-            pairs.entry(R::Quotes).or_default().push((s, at(&text_node(&tl)), M::None));
-        }
-        for row in &self.confesses {
-            let s: TextLocus = row.confessing.clone().into();
-            let o: TextLocus = row.confessed.from.clone().into();
-            pairs.entry(R::Confesses).or_default().push((
-                at(&text_node(&s)),
-                at(&text_node(&o)),
-                M::None,
-            ));
-        }
-        // EDGE-1: prophecy/fulfillment and typology lower exactly like
-        // the other text-to-text relations -- edge endpoint is each
-        // range's FIRST verse (the cites/quotes/confesses precedent);
-        // the full ranges stay on the rows for display.
-        for row in &self.fulfills {
-            let s: TextLocus = row.prophecy.from.clone().into();
-            let o: TextLocus = row.fulfillment.from.clone().into();
-            pairs.entry(R::Fulfillment).or_default().push((
-                at(&text_node(&s)),
-                at(&text_node(&o)),
-                M::None,
-            ));
-        }
-        for row in &self.typology {
-            let s: TextLocus = row.type_passage.from.clone().into();
-            let o: TextLocus = row.antitype_passage.from.clone().into();
-            pairs.entry(R::Typology).or_default().push((
-                at(&text_node(&s)),
-                at(&text_node(&o)),
-                M::None,
-            ));
-        }
-        // M-D3 (owner ruling R2) closed M-C's long-disclosed `named` shape
-        // gap by RETIRING the relation: a `Named` row's object was a bare
-        // `String` with no `Position` representation, so the relation
-        // could never lower into `pairs` -- and the serving path was
-        // always `NodePayload::Place`'s own `aliases` payload field
-        // (node.rs). Manifest row, row struct, and the `graph.named`
-        // table are gone; aliases remain a fact ABOUT the place.
-
-        // M-C: the symmetric sibling of the directed pass above -- closes
-        // the "Symmetric relations: skeleton serves none yet" gap
-        // (`explore.rs`'s own `raw_neighbors`, disclosed since M-A).
-        // `catechism` (`CatechismLink { locus: TextLocus, item:
-        // CatechismItemId, .. }`) is the first symmetric relation with
-        // real rows to index; both ends resolve to real `Position`s (a
-        // TextUnit and a CatechismItem node respectively), unlike
-        // `named`'s own bare-string object (see this function's own note
-        // above) -- there is nothing blocking this one.
-        use crate::edge::SymRelationId as S;
         let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
-        for row in &self.catechism {
-            let locus = at(&text_node(&row.locus));
-            let item = at(&row.item.erase());
-            sym_pairs.entry(S::CatechismLink).or_default().push((locus, item, M::None));
-        }
-        // TRAV-1: the second inhabited symmetric relation -- the exact
-        // `temporal-adjacency` gap the doc comment above carried since
-        // M-B, now closed. Rows are compile-derived (see the struct's
-        // own doc); the symmetric index serves "adjacent-in-time"
-        // traversal both ways, and the honest `earlier`/`later` row
-        // ends carry direction for the Chronology block's display.
-        for row in &self.temporal_adjacency {
-            sym_pairs.entry(S::TemporalAdjacency).or_default().push((
-                at(&row.earlier.erase()),
-                at(&row.later.erase()),
-                M::None,
-            ));
-        }
-        // ATTEST-1: the THIRD inhabited symmetric relation. Neither end
-        // is the original (see `edge::Analogue`), so `build_symmetric`'s
-        // own sort-then-hash entry id is exactly right: querying from `a`
-        // or from `b` returns the other under the SAME EdgeId.
-        for row in &self.analogue {
-            sym_pairs.entry(S::Analogue).or_default().push((
-                at(&row.a.erase()),
-                at(&row.b.erase()),
-                M::None,
-            ));
+        for e in self.row_edges() {
+            match e.rel {
+                EdgeRel::Directed(r) => pairs.entry(r).or_default().push((e.subject, e.object, e.meta)),
+                EdgeRel::Symmetric(s) => sym_pairs.entry(s).or_default().push((e.subject, e.object, e.meta)),
+            }
         }
 
         // PERF-2b: the parallel pass -- see this function's own doc
@@ -885,5 +949,79 @@ mod tests {
         assert_eq!(event_side.entries.len(), 1, "the EVENT's own inverse 'mentioned-in' frontier lists the verse back -- L3's mention-only frontier");
         assert_eq!(event_side.entries[0].node, crate::id::Position::Node(verse_id));
         assert_eq!(event_side.entries[0].edge, verse_side.entries[0].edge, "the SAME edge id, from either end");
+    }
+}
+
+#[cfg(test)]
+mod row_edge_laws {
+    use super::*;
+    use crate::canon::RowFamily;
+    use crate::edge::{Analogue, Attests, EdgeId, Justification, LocatedAt, Succession};
+    use crate::id::{EventId, NarrativeId, PlaceId};
+    use crate::text::{Locus, LocusRange, VerseRef};
+
+    fn g() -> Graph {
+        // Two events, one place, one narrative chain of two, one analogue,
+        // one attests over a range -- enough for every EdgeRel arm to fire.
+        let mut g = Graph::default();
+        let e1 = EventId::new("e1");
+        let e2 = EventId::new("e2");
+        let p = PlaceId::new("p");
+        g.located_at.push(LocatedAt { event: e1.clone(), place: p.clone(), provenance: "prov".into(), justification: Justification::default() });
+        g.located_at.push(LocatedAt { event: e2.clone(), place: p.clone(), provenance: "prov".into(), justification: Justification::default() });
+        g.succession.push(Succession::new(NarrativeId::new("n"), vec![e1.clone(), e2.clone()], "prov".into(), Justification::default()).unwrap());
+        g.analogue.push(Analogue { a: e1.clone(), b: e2.clone(), provenance: "prov".into() });
+        let from = Locus::<BibleTag> { unit: VerseRef { book: 1, chapter: 1, verse: 1 }, span: None };
+        let to = Locus::<BibleTag> { unit: VerseRef { book: 1, chapter: 1, verse: 3 }, span: None };
+        g.attests.push(Attests { event: e1, attestation: LocusRange::new(from, to).unwrap(), provenance: "prov".into(), justification: Justification::default() });
+        g
+    }
+
+    #[test]
+    fn every_row_edge_names_its_row_and_its_family_relation() {
+        let g = g();
+        let edges = g.row_edges();
+        assert_eq!(edges.len(), 2 + 1 + 1 + 1, "2 located_at + 1 succession step + 1 analogue + 1 attests");
+        for e in &edges {
+            assert_eq!(e.rel, e.family.relation(), "{:?}", e.family);
+        }
+        let located: Vec<_> = edges.iter().filter(|e| e.family == RowFamily::LocatedAt).map(|e| e.row_ord).collect();
+        assert_eq!(located, vec![0, 1]);
+        let attests_subject = edges.iter().find(|e| e.family == RowFamily::Attests).unwrap();
+        assert_eq!(crate::canon::ids::position_str(&attests_subject.object), "n:TextUnit:bible/1.1.1", "the range's FIRST verse is the endpoint");
+    }
+
+    #[test]
+    fn build_indexes_is_exactly_the_row_edges_placed() {
+        let mut g = g();
+        g.build_indexes();
+        let mut from_rows: BTreeMap<(EdgeRel, Position), Vec<EdgeId>> = BTreeMap::new();
+        for e in g.row_edges() {
+            let id = Graph::edge_id_of(&e);
+            from_rows.entry((e.rel, e.subject.clone())).or_default().push(id.clone());
+            match e.rel {
+                EdgeRel::Directed(_) => {}
+                EdgeRel::Symmetric(_) => from_rows.entry((e.rel, e.object.clone())).or_default().push(id),
+            }
+        }
+        for (rel, ix) in &g.indexes {
+            for (subject, entries) in &ix.fwd {
+                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+                assert_eq!(ids, from_rows[&(EdgeRel::Directed(*rel), subject.clone())], "fwd order at {subject:?}");
+            }
+        }
+        for (rel, ix) in &g.symmetric_indexes {
+            for (subject, entries) in &ix.fwd {
+                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+                assert_eq!(ids, from_rows[&(EdgeRel::Symmetric(*rel), subject.clone())], "sym order at {subject:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn relation_map_is_total_over_all_21_families() {
+        for f in RowFamily::ALL {
+            let _ = f.relation(); // exhaustive match: compiles only if total; runs to prove no panic
+        }
     }
 }
