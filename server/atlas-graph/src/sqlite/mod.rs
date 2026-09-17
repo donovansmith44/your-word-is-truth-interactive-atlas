@@ -7,7 +7,7 @@ pub mod ddl;
 // pub mod logical;   // Task 6
 // pub mod manifest;  // Task 5
 // pub mod partition; // Task 5
-// pub mod rows;      // Task 4
+pub mod rows;
 // pub mod snapshot;  // Task 7
 // pub mod writer;    // Task 5
 

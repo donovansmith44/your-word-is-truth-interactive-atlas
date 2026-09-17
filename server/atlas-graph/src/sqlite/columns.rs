@@ -31,7 +31,7 @@ pub fn locus_placeholders() -> &'static str {
     "?, ?, ?, ?, ?, ?, ?"
 }
 
-fn span_values(span: &Option<TokenSpan>) -> [Value; 3] {
+pub(crate) fn span_values(span: &Option<TokenSpan>) -> [Value; 3] {
     match span {
         Some(s) => [
             Value::Text(s.layer.0.clone()),
@@ -102,17 +102,17 @@ pub fn bible_range_values(r: &LocusRange<BibleTag>) -> [Value; 14] {
 // Readers
 // ---------------------------------------------------------------------
 
-fn col<T: rusqlite::types::FromSql>(row: &Row, i: usize, what: &str) -> Result<T, SqliteError> {
+pub(crate) fn col<T: rusqlite::types::FromSql>(row: &Row, i: usize, what: &str) -> Result<T, SqliteError> {
     row.get::<_, T>(i).map_err(|e| SqliteError(format!("column {i} ({what}): {e}")))
 }
 
-fn int_as<T: TryFrom<i64>>(row: &Row, i: usize, what: &str) -> Result<T, SqliteError> {
+pub(crate) fn int_as<T: TryFrom<i64>>(row: &Row, i: usize, what: &str) -> Result<T, SqliteError> {
     let v: i64 = col(row, i, what)?;
     T::try_from(v).map_err(|_| SqliteError(format!("column {i} ({what}): {v} is out of range")))
 }
 
 /// The optional TokenSpan at columns `i..i+3`: all NULL or all present.
-fn read_span(row: &Row, i: usize) -> Result<Option<TokenSpan>, SqliteError> {
+pub(crate) fn read_span(row: &Row, i: usize) -> Result<Option<TokenSpan>, SqliteError> {
     let layer: Option<String> = col(row, i, "layer")?;
     let start: Option<i64> = col(row, i + 1, "start")?;
     let end: Option<i64> = col(row, i + 2, "end")?;
