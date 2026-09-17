@@ -37,19 +37,20 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
 
     let mut out: Vec<Hit> = Vec::new();
 
-    let kinds: [(&'static str, &[AnyNodeId]); 6] = [
-        ("Place", &graph.place_ids),
-        ("Event", &graph.event_ids),
-        ("Narrative", &graph.narrative_ids),
-        ("Era", &graph.era_ids),
-        ("Polity", &graph.polity_ids),
-        // BIBEX-1 addendum (ticket 2): the owner's own "PERSONS above all"
-        // -- `GraphService::person_ids`, the identical companion-
-        // enumeration shape as the five kinds above.
-        ("Person", &graph.person_ids),
+    // DB-3: the six per-kind id lists are the port's `nodes_of_kind` now
+    // (`GraphService::ids_of_kind`); the hit order is this function's own
+    // `(kind, id)` sort below, so enumeration order never mattered here.
+    let kinds: [(&'static str, NodeKind); 6] = [
+        ("Place", NodeKind::Place),
+        ("Event", NodeKind::Event),
+        ("Narrative", NodeKind::Narrative),
+        ("Era", NodeKind::Era),
+        ("Polity", NodeKind::Polity),
+        // BIBEX-1 addendum (ticket 2): the owner's own "PERSONS above all".
+        ("Person", NodeKind::Person),
     ];
-    for (kind_name, ids) in kinds {
-        for id in ids {
+    for (kind_name, kind) in kinds {
+        for id in &graph.ids_of_kind(kind) {
             let (label, _) = describe_node(id, &snap);
             if label.to_lowercase().contains(&needle) {
                 out.push(Hit { kind: kind_name, id: encode_node_id(id), label });

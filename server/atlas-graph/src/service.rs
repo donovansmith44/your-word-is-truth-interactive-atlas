@@ -70,44 +70,6 @@ pub struct GraphService {
     /// now served by the generic port's `EdgeMeta::Narrative`).
     pub chronology: Chronology,
     pub event_world_stats: EventWorldStats,
-    /// M-C (map migration, controller decision 7): every Era/Polity node's
-    /// own id, in ascending id order -- `GraphQuery`'s port surface is
-    /// deliberately minimal (derive/node-lookup/edges/reading-window, no
-    /// "list every node of kind K" operation), so a LISTING endpoint
-    /// (`/api/eras`, `/api/polities`) needs a companion enumeration, same
-    /// status as `bible_position` above. Built once, from the graph's own
-    /// node table (a cheap one-time scan; era/polity counts stay in the
-    /// tens) -- every actual FIELD each listed era/polity carries still
-    /// comes from that node's own payload via a real `GraphQuery::node`
-    /// call at request time, never cached here.
-    pub era_ids: Vec<AnyNodeId>,
-    pub polity_ids: Vec<AnyNodeId>,
-    /// M-C2: the same "companion enumeration the generic port doesn't
-    /// model" class as `era_ids`/`polity_ids` above -- `handlers::
-    /// narratives`' own full listing and (OVERLAY-1 Task 5, which replaced
-    /// `legacy::atlas_data_overlay` here) `scene_source::GraphSceneSource::
-    /// build`'s own materialisation both need "every node of kind K," never
-    /// a per-position query. `narrative_ids` is `graph.nodes`'s own
-    /// alphabetical-by-id order (unmodified -- confirmed to already match
-    /// `data/curated/narratives/`'s own sorted-by-filename compiled order,
-    /// since a narrative's filename stem IS its id).
-    pub narrative_ids: Vec<AnyNodeId>,
-    pub event_ids: Vec<AnyNodeId>,
-    pub place_ids: Vec<AnyNodeId>,
-    /// BIBEX-1 addendum (ticket 2, owner order mid-batch, 2026-08-29:
-    /// "also i need to be able to find node/edge ids by the things...
-    /// PERSONS above all"): the SAME "companion enumeration the generic
-    /// port doesn't model" class as `era_ids`/`narrative_ids`/`event_ids`/
-    /// `place_ids` above, identical construction (a one-time scan over the
-    /// node table's own kind tag, before the graph moves into the store) --
-    /// `bibex find`'s own widened search now reads this the SAME way it
-    /// already reads the other five companions, so a Person becomes
-    /// discoverable without any new, un-shared enumeration logic (this IS
-    /// the established, owner-approved shape for exactly this need, not a
-    /// competing one). `graph.nodes` is a `BTreeMap<AnyNodeId, _>`, so this
-    /// is already alphabetical-by-id order, same as `narrative_ids`/
-    /// `event_ids`/`place_ids` (no separate sort needed).
-    pub person_ids: Vec<AnyNodeId>,
     /// M-C2: narrative id -> its own `succession` row's `chain`, in order
     /// -- the single source `handlers::narratives`/`legacy::
     /// narrative_from_node` read for `legs`, never duplicated onto the
@@ -472,45 +434,6 @@ impl GraphService {
             .get(crate::concord_adapter::CONCORD_CORPUS)
             .map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect())
             .unwrap_or_default();
-        // M-C (map migration): the era_ids/polity_ids companion
-        // enumeration (this struct's own doc comment) -- a one-time scan
-        // over the node table's own kind tag, before the graph moves into
-        // the store below. `era_ids` is sorted by `from_year` (chronological,
-        // ascending) rather than left in the node table's own id-alphabetical
-        // order (`BTreeMap<AnyNodeId, _>`'s own iteration order): the
-        // pre-M-C `/api/eras` wire response's own order was the curated
-        // TOML's file order, itself chronological (verified: the real
-        // `eras.toml` lists primeval/patriarchs/egypt-exodus/... in
-        // strictly ascending `from_year` order) -- sorting by `from_year`
-        // reproduces that exact order without needing to thread the
-        // original parse order through this far. `polity_ids` needs no
-        // such care: the handler re-sorts its own results explicitly
-        // (by polity id, then era `from`), unchanged from before this batch.
-        let mut era_nodes: Vec<(i32, AnyNodeId)> = graph
-            .nodes
-            .iter()
-            .filter_map(|(id, n)| match &n.payload {
-                atlas_graph_types::node::NodePayload::Era { from_year, .. } if id.kind == atlas_graph_types::id::NodeKind::Era => Some((*from_year, id.clone())),
-                _ => None,
-            })
-            .collect();
-        era_nodes.sort_by_key(|(from_year, id)| (*from_year, id.raw.clone()));
-        let era_ids: Vec<AnyNodeId> = era_nodes.into_iter().map(|(_, id)| id).collect();
-        let polity_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Polity).cloned().collect();
-        // M-C2: the same one-time node-table scan, for the three kinds
-        // `handlers::narratives`/`scene_source::GraphSceneSource::build`
-        // (OVERLAY-1 Task 5's successor to the deleted overlay) need to
-        // enumerate. `graph.nodes` is a `BTreeMap<AnyNodeId, _>`, so this
-        // is already alphabetical-by-id order (confirmed to match
-        // `data/curated/narratives/`'s own sorted-by-filename compiled
-        // order for `narrative_ids` -- no separate sort needed here,
-        // unlike `era_ids` above).
-        let narrative_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Narrative).cloned().collect();
-        let event_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Event).cloned().collect();
-        let place_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Place).cloned().collect();
-        // BIBEX-1 addendum (ticket 2): identical one-time scan for
-        // `person_ids` -- see this struct's own field doc comment.
-        let person_ids: Vec<AnyNodeId> = graph.nodes.keys().filter(|id| id.kind == atlas_graph_types::id::NodeKind::Person).cloned().collect();
         let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for row in &graph.succession {
             narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
@@ -615,12 +538,6 @@ impl GraphService {
             stats,
             chronology,
             event_world_stats,
-            era_ids,
-            polity_ids,
-            narrative_ids,
-            event_ids,
-            place_ids,
-            person_ids,
             narrative_legs,
             heading_index,
             cross_refs_by_from,
@@ -642,6 +559,23 @@ impl GraphService {
     /// `atlas_graph_types::store::GraphQuery`, so every actual graph
     /// query goes through its trait methods from here on, never through a
     /// direct `Graph` field reach. Cheap to clone (an `Arc<Graph>` inside).
+    /// DB-3 (spec 4): every node id of one kind, in id (byte) order -- the
+    /// port's `nodes_of_kind`, drained. Replaces the six per-kind id lists
+    /// this struct used to precompute; `era_ids`' chronological order is
+    /// the eras handler's own concern now (it sorts the payloads it fetches).
+    pub fn ids_of_kind(&self, kind: atlas_graph_types::id::NodeKind) -> Vec<AnyNodeId> {
+        let mut out: Vec<AnyNodeId> = Vec::new();
+        let mut cursor = None;
+        loop {
+            let page = self.snapshot.nodes_of_kind(kind, cursor, 4096);
+            out.extend(page.ids);
+            match page.next {
+                Some(c) => cursor = Some(c),
+                None => break out,
+            }
+        }
+    }
+
     pub fn snapshot(&self) -> MemSnapshot {
         self.snapshot.clone()
     }
@@ -841,36 +775,6 @@ mod tests {
         let svc = service();
         assert_eq!(svc.position_of(0, 1, 2), Some(1));
         assert_eq!(svc.position_of(0, 99, 1), None, "unknown verse position is None, not a panic");
-    }
-
-    /// BIBEX-1 addendum (ticket 2): `person_ids` is built the SAME way as
-    /// `event_ids`/`place_ids`/`narrative_ids` (a one-time scan over the
-    /// node table's own kind tag) -- this fixture has no real Person data
-    /// (the KJV-fixture-only `service()` helper above never carries one),
-    /// so a hand-built `Graph` with one `NodePayload::Person` row proves the
-    /// scan actually fires and finds it, the same "inject the one condition
-    /// the real committed graph doesn't exercise in this small unit test"
-    /// treatment `chapter.rs`'s own C-1 fixture tests use.
-    #[test]
-    fn person_ids_enumerates_every_person_node() {
-        use atlas_graph_types::id::NodeKind;
-        use atlas_graph_types::node::{Node, NodePayload};
-
-        let mut g = Graph::default();
-        let id = atlas_graph_types::id::PersonId::new("aaron_1").erase();
-        g.nodes.insert(
-            id.clone(),
-            Node {
-                id: id.clone(),
-                payload: NodePayload::Person { label: "Aaron".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None },
-                provenance: atlas_graph_types::ingest::ProvenanceId::from("test-fixture"),
-            },
-        );
-        g.build_indexes();
-
-        let svc = GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new());
-        assert_eq!(svc.person_ids, vec![id.clone()]);
-        assert_eq!(id.kind, NodeKind::Person);
     }
 
     #[test]

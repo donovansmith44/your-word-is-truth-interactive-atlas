@@ -109,19 +109,25 @@ pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
 pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
     use atlas_graph_types::node::NodePayload;
 
+    // DB-3: enumeration through the port (`nodes_of_kind`, id order); the
+    // chronological wire order the retired `era_ids` companion carried is
+    // this handler's own sort now -- by `(from_year, id)`, the same key the
+    // companion sorted by, so the response bytes are unchanged
+    // (`port_widening_real_data.rs` pins the equivalence).
     let snap = graph.snapshot();
-    let out: Vec<Era> = graph
-        .era_ids
-        .iter()
+    let mut eras: Vec<(i32, Era)> = graph
+        .ids_of_kind(atlas_graph_types::id::NodeKind::Era)
+        .into_iter()
         .filter_map(|id| {
-            let node = snap.node(id)?;
+            let node = snap.node(&id)?;
             match node.payload {
-                NodePayload::Era { label, from_year, to_year } => Some(Era { id: id.raw.clone(), name: label, from_year, to_year }),
+                NodePayload::Era { label, from_year, to_year } => Some((from_year, Era { id: id.raw.clone(), name: label, from_year, to_year })),
                 _ => None,
             }
         })
         .collect();
-    Json(out)
+    eras.sort_by(|a, b| (a.0, &a.1.id).cmp(&(b.0, &b.1.id)));
+    Json(eras.into_iter().map(|(_, e)| e).collect())
 }
 
 /// `GET /api/narratives` (M-C2, definitive surface list). Re-implemented as
@@ -137,7 +143,7 @@ pub async fn narratives(State(graph): State<Arc<GraphService>>) -> Json<Vec<Narr
     let snap = graph.snapshot();
     let empty_legs: Vec<String> = Vec::new();
     let out: Vec<Narrative> = graph
-        .narrative_ids
+        .ids_of_kind(atlas_graph_types::id::NodeKind::Narrative)
         .iter()
         .filter_map(|id| atlas_graph::legacy::narrative_from_node(id, &snap, graph.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
         .collect();
@@ -270,7 +276,7 @@ pub async fn polities(
 
     let snap = graph.snapshot();
     let mut out: Vec<PolityOut> = Vec::new();
-    for id in &graph.polity_ids {
+    for id in &graph.ids_of_kind(atlas_graph_types::id::NodeKind::Polity) {
         let Some(node) = snap.node(id) else { continue };
         let NodePayload::Polity { color_key, eras, .. } = node.payload else { continue };
         for era in &eras {

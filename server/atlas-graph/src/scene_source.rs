@@ -177,15 +177,18 @@ impl GraphSceneSource {
         let snap = gs.snapshot();
 
         // Step 0: materialise, in the SAME id order the deleted overlay
-        // walked (`gs.event_ids`/`place_ids`/`narrative_ids`), through the
-        // SAME reused per-node builders.
+        // walked (the retired `event_ids`/`place_ids`/`narrative_ids`
+        // companions; DB-3: the port's `nodes_of_kind`, the identical
+        // BTreeMap-by-id order), through the SAME reused per-node builders.
         // This is the pre-sort insertion order the stable sort below
-        // preserves for every `from_year` tie, so it is load-bearing.
-        let mut events: Vec<Event> = gs.event_ids.iter().filter_map(|id| crate::legacy::event_from_node(id, &snap, &gs.chronology.chrono)).collect();
-        let mut places: Vec<Place> = gs.place_ids.iter().filter_map(|id| crate::legacy::place_from_node(id, &snap)).collect();
+        // preserves for every `from_year` tie, so it is load-bearing
+        // (`scene_byte_identity.rs`'s 25 hashes are the proof).
+        use atlas_graph_types::id::NodeKind;
+        let mut events: Vec<Event> = gs.ids_of_kind(NodeKind::Event).iter().filter_map(|id| crate::legacy::event_from_node(id, &snap, &gs.chronology.chrono)).collect();
+        let mut places: Vec<Place> = gs.ids_of_kind(NodeKind::Place).iter().filter_map(|id| crate::legacy::place_from_node(id, &snap)).collect();
         let empty_legs: Vec<String> = Vec::new();
         let mut narratives: Vec<Narrative> = gs
-            .narrative_ids
+            .ids_of_kind(NodeKind::Narrative)
             .iter()
             .filter_map(|id| crate::legacy::narrative_from_node(id, &snap, gs.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
             .collect();
