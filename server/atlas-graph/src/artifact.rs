@@ -93,6 +93,9 @@ enum DtoNodeKind {
     /// module's own `FORMAT_VERSION` doc comment has the full "appended
     /// variant vs. added field" distinction, PG-1's own precedent).
     CommentaryItem,
+    /// DB-3: appended LAST (bincode variant indices are positional; every
+    /// pre-DB-3 graph.bin decodes identically).
+    LexiconEntry,
 }
 
 impl From<NodeKind> for DtoNodeKind {
@@ -112,6 +115,7 @@ impl From<NodeKind> for DtoNodeKind {
             NodeKind::Translation => DtoNodeKind::Translation,
             NodeKind::PeopleGroup => DtoNodeKind::PeopleGroup,
             NodeKind::CommentaryItem => DtoNodeKind::CommentaryItem,
+            NodeKind::LexiconEntry => DtoNodeKind::LexiconEntry,
         }
     }
 }
@@ -132,6 +136,7 @@ impl From<DtoNodeKind> for NodeKind {
             DtoNodeKind::Translation => NodeKind::Translation,
             DtoNodeKind::PeopleGroup => NodeKind::PeopleGroup,
             DtoNodeKind::CommentaryItem => NodeKind::CommentaryItem,
+            DtoNodeKind::LexiconEntry => NodeKind::LexiconEntry,
         }
     }
 }
@@ -262,6 +267,19 @@ enum DtoPayload {
     /// carried as a bare string, re-typed on read" convention every other
     /// node-id-carrying Dto field already uses).
     CommentaryItem { work: String, heading: Option<String>, text: String },
+    /// DB-3: appended LAST for the same positional reason as
+    /// `DtoNodeKind::LexiconEntry`; mirrors `NodePayload::LexiconEntry`.
+    LexiconEntry {
+        strong: String,
+        lang: String,
+        lemma: String,
+        translit: Option<String>,
+        pos: Option<String>,
+        glosses: Vec<String>,
+        senses: Vec<String>,
+        domains: Vec<String>,
+        root: Option<String>,
+    },
 }
 
 fn payload_to_dto(p: &NodePayload) -> DtoPayload {
@@ -297,6 +315,17 @@ fn payload_to_dto(p: &NodePayload) -> DtoPayload {
         NodePayload::Era { label, from_year, to_year } => DtoPayload::Era { label: label.clone(), from_year: *from_year, to_year: *to_year },
         NodePayload::Polity { label, color_key, eras } => DtoPayload::Polity { label: label.clone(), color_key: *color_key, eras: eras.iter().map(DtoPolityEra::from).collect() },
         NodePayload::CatechismItem { label } => DtoPayload::CatechismItem { label: label.clone() },
+        NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, glosses, senses, domains, root } => DtoPayload::LexiconEntry {
+            strong: strong.clone(),
+            lang: lang.clone(),
+            lemma: lemma.clone(),
+            translit: translit.clone(),
+            pos: pos.clone(),
+            glosses: glosses.clone(),
+            senses: senses.clone(),
+            domains: domains.clone(),
+            root: root.clone(),
+        },
         NodePayload::Source { label } => DtoPayload::Source { label: label.clone() },
         NodePayload::Translation { label } => DtoPayload::Translation { label: label.clone() },
         NodePayload::PeopleGroup { label, description } => DtoPayload::PeopleGroup { label: label.clone(), description: description.clone() },
@@ -342,6 +371,9 @@ fn payload_from_dto(d: DtoPayload) -> Result<NodePayload, ArtifactError> {
         DtoPayload::Era { label, from_year, to_year } => NodePayload::Era { label, from_year, to_year },
         DtoPayload::Polity { label, color_key, eras } => NodePayload::Polity { label, color_key, eras: eras.into_iter().map(PolityEraPayload::from).collect() },
         DtoPayload::CatechismItem { label } => NodePayload::CatechismItem { label },
+        DtoPayload::LexiconEntry { strong, lang, lemma, translit, pos, glosses, senses, domains, root } => {
+            NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, glosses, senses, domains, root }
+        }
         DtoPayload::Source { label } => NodePayload::Source { label },
         DtoPayload::Translation { label } => NodePayload::Translation { label },
         DtoPayload::PeopleGroup { label, description } => NodePayload::PeopleGroup { label, description },
@@ -1009,6 +1041,10 @@ pub struct ArtifactDump {
 /// `data/curated/events-extra.toml`) and the root hashes every node's
 /// id+payload, so `tests/version_root_regression.rs` is re-pinned in
 /// the same commit that rebuilds `data/compiled/graph.bin`.
+// DB-3 appended DtoNodeKind::LexiconEntry / DtoPayload::LexiconEntry at the
+// END of their enums: no existing variant index moved, so a graph.bin written
+// before DB-3 decodes identically (determinism.rs + version_root_regression.rs
+// are the proof); the wall stays at 13.
 const FORMAT_VERSION: u32 = 13;
 
 /// The artifact format this build reads and writes, published so a CONSUMER

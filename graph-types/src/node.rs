@@ -167,6 +167,22 @@ pub enum NodePayload {
     CommentaryItem { work: crate::id::SourceId, heading: Option<String>, text: String },
     Source { label: String },
     Translation { label: String },
+    /// DB-3 (spec 7.2): a lexicon entry keyed by its Strong's number
+    /// (`id.raw` = `strong`, e.g. "G3056"). `glosses`/`senses` in source
+    /// order, `domains` sorted atomic codes, `root` the Strong's id of the
+    /// root entry. Uninhabited until LEX-1; the vocabulary lands here so
+    /// the port and every closed match learn it once (spec 4).
+    LexiconEntry {
+        strong: String,
+        lang: String,
+        lemma: String,
+        translit: Option<String>,
+        pos: Option<String>,
+        glosses: Vec<String>,
+        senses: Vec<String>,
+        domains: Vec<String>,
+        root: Option<String>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -255,6 +271,7 @@ pub fn card(n: &dyn NodeData) -> Card {
         }
         NodePayload::Place { canonical, .. } => canonical.clone(),
         NodePayload::Anchor { citation, .. } => citation.clone(),
+        NodePayload::LexiconEntry { lemma, .. } => lemma.clone(),
     };
     Card { id: n.id(), label, provenance: n.provenance().clone() }
 }

@@ -63,6 +63,8 @@ const ERA_KEYS: &[&str] = &["from_year", "label", "to_year"];
 const POLITY_KEYS: &[&str] = &["color_key", "eras", "label"];
 const LABEL_ONLY_KEYS: &[&str] = &["label"];
 const COMMENTARY_ITEM_KEYS: &[&str] = &["heading", "text", "work"];
+const LEXICON_ENTRY_KEYS: &[&str] =
+    &["domains", "glosses", "lang", "lemma", "pos", "root", "senses", "strong", "translit"];
 const WITNESS_KEYS: &[&str] = &["book", "ref_note", "robertson_section", "translations"];
 const DELTA_KEYS: &[&str] = &["event", "ref_note", "verses"];
 const POLITY_ERA_KEYS: &[&str] =
@@ -195,6 +197,20 @@ fn payload_to_value(p: &NodePayload) -> Value {
                 ("work", str_value(&work.0)),
             ]),
         ),
+        NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, glosses, senses, domains, root } => variant(
+            "LexiconEntry",
+            obj(vec![
+                ("domains", vec_str(domains)),
+                ("glosses", vec_str(glosses)),
+                ("lang", str_value(lang)),
+                ("lemma", str_value(lemma)),
+                ("pos", opt_str(pos)),
+                ("root", opt_str(root)),
+                ("senses", vec_str(senses)),
+                ("strong", str_value(strong)),
+                ("translit", opt_str(translit)),
+            ]),
+        ),
         NodePayload::Source { label } => {
             variant("Source", obj(vec![("label", str_value(label))]))
         }
@@ -313,6 +329,20 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
                 work: SourceId::new(field_str(m, &p, "work")?),
                 heading: field_opt_str(m, &p, "heading")?,
                 text: field_str(m, &p, "text")?,
+            })
+        }
+        "LexiconEntry" => {
+            expect_exact_keys(m, &p, LEXICON_ENTRY_KEYS)?;
+            Ok(NodePayload::LexiconEntry {
+                strong: field_str(m, &p, "strong")?,
+                lang: field_str(m, &p, "lang")?,
+                lemma: field_str(m, &p, "lemma")?,
+                translit: field_opt_str(m, &p, "translit")?,
+                pos: field_opt_str(m, &p, "pos")?,
+                glosses: field_vec_str(m, &p, "glosses")?,
+                senses: field_vec_str(m, &p, "senses")?,
+                domains: field_vec_str(m, &p, "domains")?,
+                root: field_opt_str(m, &p, "root")?,
             })
         }
         "Source" => {

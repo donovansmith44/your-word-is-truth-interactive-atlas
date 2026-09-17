@@ -14,7 +14,8 @@
         "Source",
         "Translation",
         "PeopleGroup",
-        "CommentaryItem"
+        "CommentaryItem",
+        "LexiconEntry"
     ],
     "relations": [
         {
@@ -101,6 +102,11 @@
             "forward": "derived-from",
             "inverse": "derives",
             "name": "DerivedFrom"
+        },
+        {
+            "forward": "occurs-in",
+            "inverse": "words",
+            "name": "Occurs"
         }
     ],
     "symmetric": [

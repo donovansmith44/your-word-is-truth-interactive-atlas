@@ -104,6 +104,8 @@ pub fn section_of_node(node: &Node) -> Section {
             other => unreachable!("TextUnit corpus {other}"),
         },
         NodePayload::CommentaryItem { .. } => Section::Kretzmann,
+        // DB-3: the lexicon section's own kind (spec 7); no inhabitant until LEX-1.
+        NodePayload::LexiconEntry { .. } => Section::Lexicon,
         NodePayload::Container { .. } => section_of_container_raw(&node.id.raw),
         // The eleven Core kinds, named one by one so a new variant cannot
         // join them by default.

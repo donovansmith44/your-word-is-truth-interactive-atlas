@@ -152,6 +152,10 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // arm is kind-level, exactly like every prior batch's
         // (M-B/M-C/P/CORP-1a/KRETZ-1).
         "Container" => Some(AnyNodeId { kind: NodeKind::Container, raw: rest.to_string() }),
+        // DB-3: the identical one-arm round-trip completion for the (still
+        // uninhabited) LexiconEntry kind, so the vocabulary and the wire
+        // agree before LEX-1 authors the first node.
+        "LexiconEntry" => Some(AnyNodeId { kind: NodeKind::LexiconEntry, raw: rest.to_string() }),
         _ => None,
     }
 }

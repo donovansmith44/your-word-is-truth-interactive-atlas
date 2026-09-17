@@ -72,10 +72,11 @@ pub fn node_kind_ordinal(k: NodeKind) -> i64 {
         NodeKind::Translation => 11,
         NodeKind::PeopleGroup => 12,
         NodeKind::CommentaryItem => 13,
+        NodeKind::LexiconEntry => 14,
     }
 }
 pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
-    const ALL: [NodeKind; 14] = [
+    const ALL: [NodeKind; 15] = [
         NodeKind::TextUnit,
         NodeKind::Container,
         NodeKind::Event,
@@ -90,6 +91,7 @@ pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
         NodeKind::Translation,
         NodeKind::PeopleGroup,
         NodeKind::CommentaryItem,
+        NodeKind::LexiconEntry,
     ];
     ALL.get(usize::try_from(o).ok()?).copied()
 }
@@ -198,7 +200,18 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
 
     let mut nodes: Vec<Vec<&Node>> = vec![Vec::new(); sections.len()];
     for n in g.nodes.values() {
-        nodes[slot(section_of_node(n))].push(n);
+        let section = section_of_node(n);
+        // DB-3: the lexicon vocabulary exists (NodeKind::LexiconEntry) but its
+        // section has no tables before LEX-1 -- a node routed there is an
+        // error, never a silent drop or a default into core.
+        let Some(i) = sections.iter().position(|x| *x == section) else {
+            return Err(SqliteError(format!(
+                "node {} routes to the {:?} section, which has no tables before LEX-1",
+                any_node_id_str(&n.id),
+                section
+            )));
+        };
+        nodes[i].push(n);
     }
     for v in &mut nodes {
         v.sort_by_cached_key(|n| any_node_id_str(&n.id));

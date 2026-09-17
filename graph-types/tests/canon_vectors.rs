@@ -198,7 +198,9 @@ fn every_node_kind_names_itself_with_its_debug_name() {
         NodeKind::Translation,
         NodeKind::PeopleGroup,
         NodeKind::CommentaryItem,
+        NodeKind::LexiconEntry,
     ];
+    assert_eq!(all, NodeKind::ALL, "NodeKind::ALL is the one list; this array mirrors it");
     for k in all {
         assert_eq!(node_kind_str(k), format!("{k:?}"));
         assert_eq!(parse_node_kind(node_kind_str(k), "$.kind").unwrap(), k);
@@ -639,9 +641,41 @@ fn every_payload_variant_round_trips() {
             payload: NodePayload::Translation { label: "King James Version".into() },
             provenance: "bootstrap".into(),
         },
+        // 15. LexiconEntry (DB-3, spec 7.2) -- every optional Some, every list non-empty.
+        Node {
+            id: nid(NodeKind::LexiconEntry, "G3056"),
+            payload: NodePayload::LexiconEntry {
+                strong: "G3056".into(),
+                lang: "grc".into(),
+                lemma: "logos".into(),
+                translit: Some("logos".into()),
+                pos: Some("noun".into()),
+                glosses: vec!["word".into(), "speech".into()],
+                senses: vec!["a word, uttered by a living voice".into()],
+                domains: vec!["33.98".into(), "33.99".into()],
+                root: Some("G3004".into()),
+            },
+            provenance: "stepbible-tbesg".into(),
+        },
+        // 15b. LexiconEntry -- every optional None, every list empty.
+        Node {
+            id: nid(NodeKind::LexiconEntry, "H0430"),
+            payload: NodePayload::LexiconEntry {
+                strong: "H0430".into(),
+                lang: "hbo".into(),
+                lemma: "elohim".into(),
+                translit: None,
+                pos: None,
+                glosses: vec![],
+                senses: vec![],
+                domains: vec![],
+                root: None,
+            },
+            provenance: "stepbible-tahot".into(),
+        },
     ];
 
-    // All fourteen NodePayload variants are exercised; the extra rows are
+    // All fifteen NodePayload variants are exercised; the extra rows are
     // the Some/None and empty/non-empty companions the plan asked for.
     let mut seen: Vec<&'static str> = nodes
         .iter()
@@ -660,11 +694,12 @@ fn every_payload_variant_round_trips() {
             NodePayload::CommentaryItem { .. } => "CommentaryItem",
             NodePayload::Source { .. } => "Source",
             NodePayload::Translation { .. } => "Translation",
+            NodePayload::LexiconEntry { .. } => "LexiconEntry",
         })
         .collect();
     seen.sort_unstable();
     seen.dedup();
-    assert_eq!(seen.len(), 14, "every variant must appear: {seen:?}");
+    assert_eq!(seen.len(), 15, "every variant must appear: {seen:?}");
 
     for n in &nodes {
         round_trip(n);
@@ -737,4 +772,59 @@ fn the_node_goldens_stay_control_character_free() {
             String::from_utf8_lossy(g)
         );
     }
+}
+
+/// DB-3 (spec 4, 7.2-7.3): the lexicon vocabulary is present and its bytes
+/// are pinned, while nothing inhabits it yet.
+#[test]
+fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
+    use atlas_graph_types::canon::ids::*;
+    use atlas_graph_types::canon::Canon;
+    use atlas_graph_types::edge::RelationId;
+    assert_eq!(node_kind_str(NodeKind::LexiconEntry), "LexiconEntry");
+    assert_eq!(parse_node_kind("LexiconEntry", "$.kind").unwrap(), NodeKind::LexiconEntry);
+    // Appended LAST among directed relations: `edge_index.rel` codes are positional.
+    assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::Occurs));
+    assert_eq!(RelationId::Occurs.forward_label(), "occurs-in");
+    assert_eq!(RelationId::Occurs.inverse_label(), "words");
+    assert_eq!(RelationId::ALL.len(), 18);
+    assert_eq!(NodeKind::ALL.len(), 15);
+    assert_eq!(NodeKind::ALL.last().copied(), Some(NodeKind::LexiconEntry));
+    let full = Node {
+        id: nid(NodeKind::LexiconEntry, "G3056"),
+        payload: NodePayload::LexiconEntry {
+            strong: "G3056".into(),
+            lang: "grc".into(),
+            lemma: "logos".into(),
+            translit: Some("logos".into()),
+            pos: Some("noun".into()),
+            glosses: vec!["word".into(), "speech".into()],
+            senses: vec!["a word, uttered by a living voice".into()],
+            domains: vec!["33.98".into(), "33.99".into()],
+            root: Some("G3004".into()),
+        },
+        provenance: "stepbible-tbesg".into(),
+    };
+    assert_eq!(
+        String::from_utf8(full.encode()).unwrap(),
+        r#"{"id":"LexiconEntry:G3056","payload":{"LexiconEntry":{"domains":["33.98","33.99"],"glosses":["word","speech"],"lang":"grc","lemma":"logos","pos":"noun","root":"G3004","senses":["a word, uttered by a living voice"],"strong":"G3056","translit":"logos"}},"provenance":"stepbible-tbesg"}"#
+    );
+    round_trip(&full);
+    let bare = Node {
+        id: nid(NodeKind::LexiconEntry, "H0430"),
+        payload: NodePayload::LexiconEntry {
+            strong: "H0430".into(),
+            lang: "hbo".into(),
+            lemma: "elohim".into(),
+            translit: None,
+            pos: None,
+            glosses: vec![],
+            senses: vec![],
+            domains: vec![],
+            root: None,
+        },
+        provenance: "stepbible-tahot".into(),
+    };
+    round_trip(&bare);
+    assert!(String::from_utf8(bare.encode()).unwrap().contains(r#""root":null,"senses":[],"strong":"H0430","translit":null"#));
 }

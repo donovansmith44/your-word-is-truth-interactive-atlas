@@ -132,6 +132,7 @@ fn graph_vocabulary() -> Value {
         Translation,
         PeopleGroup,
         CommentaryItem,
+        LexiconEntry,
     ];
 
     // These two DO come straight from the macro-generated tables -- there

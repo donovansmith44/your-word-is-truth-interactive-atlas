@@ -34,6 +34,7 @@ pub fn node_kind_str(k: NodeKind) -> &'static str {
         NodeKind::Translation => "Translation",
         NodeKind::PeopleGroup => "PeopleGroup",
         NodeKind::CommentaryItem => "CommentaryItem",
+        NodeKind::LexiconEntry => "LexiconEntry",
     }
 }
 
@@ -55,6 +56,7 @@ pub fn parse_node_kind(s: &str, path: &str) -> Result<NodeKind, CanonError> {
         "Translation" => Ok(NodeKind::Translation),
         "PeopleGroup" => Ok(NodeKind::PeopleGroup),
         "CommentaryItem" => Ok(NodeKind::CommentaryItem),
+        "LexiconEntry" => Ok(NodeKind::LexiconEntry),
         other => Err(CanonError::new(path, format!("unknown node kind `{other}`"))),
     }
 }

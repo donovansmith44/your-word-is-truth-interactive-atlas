@@ -60,6 +60,7 @@ pub fn node_label(n: &Node) -> Option<&str> {
         NodePayload::Place { canonical, .. } => Some(canonical),
         NodePayload::Anchor { citation, .. } => Some(citation),
         NodePayload::CommentaryItem { work, .. } => Some(&work.0),
+        NodePayload::LexiconEntry { lemma, .. } => Some(lemma),
     }
 }
 

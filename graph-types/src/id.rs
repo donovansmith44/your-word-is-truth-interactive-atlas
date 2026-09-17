@@ -37,6 +37,8 @@ pub enum NodeKind {
     /// KRETZ-1: a verse-anchored unit of a commentary work's prose
     /// (annotation shape -- owner order 2026-08-24).
     CommentaryItem,
+    /// DB-3 (spec 7.2): a Strong's-keyed lexicon entry; uninhabited until LEX-1.
+    LexiconEntry,
 }
 
 /// Kind tag for phantom-typed ids: a cross-kind reference is a type
@@ -68,6 +70,7 @@ kind_tags! {
     TranslationTag => Translation,
     PeopleGroupTag => PeopleGroup,
     CommentaryItemTag => CommentaryItem,
+    LexiconEntryTag => LexiconEntry,
 }
 
 /// Typed in-memory handle; renders to its Pid at the boundary.
@@ -111,6 +114,31 @@ impl<K: KindTag> std::hash::Hash for NodeId<K> {
     }
 }
 
+impl NodeKind {
+    /// Every variant, in declaration order -- appended, never reordered
+    /// (`sqlite::partition::node_kind_ordinal` and the contract fixture
+    /// `graph-vocabulary.json` are positional over it). The compiler cannot
+    /// enumerate an enum; this is the ONE hand-written list, and the canon
+    /// vector test asserts its own array equals it.
+    pub const ALL: [NodeKind; 15] = [
+        NodeKind::TextUnit,
+        NodeKind::Container,
+        NodeKind::Event,
+        NodeKind::Narrative,
+        NodeKind::Place,
+        NodeKind::Person,
+        NodeKind::Anchor,
+        NodeKind::Era,
+        NodeKind::Polity,
+        NodeKind::CatechismItem,
+        NodeKind::Source,
+        NodeKind::Translation,
+        NodeKind::PeopleGroup,
+        NodeKind::CommentaryItem,
+        NodeKind::LexiconEntry,
+    ];
+}
+
 pub type TextUnitId = NodeId<TextUnitTag>;
 pub type ContainerNodeId = NodeId<ContainerTag>;
 pub type EventId = NodeId<EventTag>;
@@ -125,6 +153,7 @@ pub type SourceId = NodeId<SourceTag>;
 pub type TranslationNodeId = NodeId<TranslationTag>;
 pub type PeopleGroupId = NodeId<PeopleGroupTag>;
 pub type CommentaryItemId = NodeId<CommentaryItemTag>;
+pub type LexiconEntryId = NodeId<LexiconEntryTag>;
 
 /// Erased form for the wire/UI boundary and heterogeneous holdings.
 /// Narrowing back to a typed id is a checked parse.

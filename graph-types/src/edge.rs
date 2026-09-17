@@ -100,7 +100,10 @@ relations! {
         CommentsOn  => "comments-on" / "commented-on-by",
         SpokenBy    => "spoken-by" / "speech-of",
         SpokenAt    => "spoken-at" / "site-of-speech",
-        DerivedFrom => "derived-from" / "derives"
+        DerivedFrom => "derived-from" / "derives",
+        // DB-3 (spec 7.3): entry -> word locus (one token). Rows arrive at
+        // LEX-1; appended LAST because `edge_index.rel` is positional.
+        Occurs      => "occurs-in" / "words"
     }
     symmetric {
         // ATTEST-1 (owner ruling, verbatim: "let's call it Analogue;
