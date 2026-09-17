@@ -23,7 +23,7 @@ use atlas_graph::GraphService;
 // M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
 // return empty now -- `atlas_etl::compile::compile` is this crate's own
 // real-data source from here on. Cached (`OnceLock`) so this file's own
-// 15 `real_app()` call sites share one real compile -- `GraphService::
+// 15 `compiled_app()` call sites share one real compile -- `GraphService::
 // build` itself still runs fresh per call (unchanged from before this
 // batch), since a real app needs its own graph instance.
 fn real_atlas_data() -> AtlasData {
@@ -38,7 +38,27 @@ fn real_atlas_data() -> AtlasData {
         .clone()
 }
 
-fn real_app() -> axum::Router {
+/// The app over a FRESHLY COMPILED atlas: `atlas_etl::compile` for the data,
+/// `GraphService::build` for the graph.
+///
+/// RENAMED from `real_app` in OVERLAY-1-HOTFIX-1 fix round 1 (review I-4),
+/// because "real" was the wrong word twice over and 52 tests inherited the
+/// misreading:
+///
+///   * its `AtlasData` is the HAND-FILLED one -- `atlas_etl::compile` returns
+///     `AtlasData::new(canon, all_places, all_events, narratives, ..)`, so
+///     `events`/`places`/`narratives` are all populated. A real serving
+///     `AtlasData` has all three EMPTY (`AtlasData::load` has not read those
+///     files since M-C2). That asymmetry is exactly what hid this hotfix's
+///     regression, and a test built here cannot see it.
+///   * its graph is built from `data/raw` -- the `--build-from-raw` DEV
+///     FALLBACK shape, not the `graph.bin` artifact a running server loads.
+///
+/// None of that makes it useless: it is the right builder for a test about
+/// the CONTENT the ETL and the graph builder produce out of the committed
+/// raw/curated sources. It is the wrong builder for a test about what the
+/// SERVED shape does. Use `artifact_app()` below for those.
+fn compiled_app() -> axum::Router {
     let raw = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     let data = real_atlas_data();
     // GraphService::build runs the FIDELITY LAW unconditionally as part of
@@ -59,7 +79,7 @@ async fn get(app: &axum::Router, uri: &str) -> (StatusCode, serde_json::Value, a
 
 #[tokio::test]
 async fn text_window_single_verse_matches_the_compiled_verse_map() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _headers) = get(&app, "/api/text?ref=JHN.3.16").await;
     assert_eq!(st, 200);
     let units = body["units"].as_array().unwrap();
@@ -72,7 +92,7 @@ async fn text_window_single_verse_matches_the_compiled_verse_map() {
 
 #[tokio::test]
 async fn text_window_n_and_dir_walk_onward_and_backward() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, onward, _) = get(&app, "/api/text?ref=JHN.3.16&n=3&dir=onward").await;
     assert_eq!(st, 200);
@@ -87,7 +107,7 @@ async fn text_window_n_and_dir_walk_onward_and_backward() {
 
 #[tokio::test]
 async fn text_window_scope_chapter_returns_exactly_that_chapters_units() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter").await;
     assert_eq!(st, 200);
     let units = body["units"].as_array().unwrap();
@@ -116,7 +136,7 @@ async fn text_window_scope_chapter_returns_exactly_that_chapters_units() {
 /// could ever mean, so it stays a 200, not also rejected).
 #[tokio::test]
 async fn text_window_scope_chapter_rejects_dir_backward_but_accepts_dir_onward() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, body, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter&dir=backward").await;
     assert_eq!(st, 400, "{body}");
@@ -131,7 +151,7 @@ async fn text_window_scope_chapter_rejects_dir_backward_but_accepts_dir_onward()
 
 #[tokio::test]
 async fn text_window_etag_round_trips_via_if_none_match() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, _body, headers) = get(&app, "/api/text?ref=GEN.1.1").await;
     assert_eq!(st, 200);
     let etag = headers.get(header::ETAG).expect("ETag header must be present").to_str().unwrap().to_string();
@@ -149,7 +169,7 @@ async fn text_window_etag_round_trips_via_if_none_match() {
 
 #[tokio::test]
 async fn text_window_bad_ref_and_missing_ref_are_400() {
-    let app = real_app();
+    let app = compiled_app();
     for bad in ["/api/text?ref=NOPE.1.1", "/api/text", "/api/text?ref="] {
         let (st, body, _) = get(&app, bad).await;
         assert_eq!(st, 400, "{bad}");
@@ -159,7 +179,7 @@ async fn text_window_bad_ref_and_missing_ref_are_400() {
 
 // ---------------------------------------------------------------------
 // CORP-2a (decision 8): corpus=concord through the SAME `/api/text`
-// route -- `real_app()` above already carries the real Book of Concord
+// route -- `compiled_app()` above already carries the real Book of Concord
 // data (`GraphService::build` loads `data/raw/concord/` + `data/curated/
 // concord-sc-overlap.toml` automatically, the identical "real vendored
 // tree present -> real content" path brainfuel/eras already use), so
@@ -169,7 +189,7 @@ async fn text_window_bad_ref_and_missing_ref_are_400() {
 
 #[tokio::test]
 async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _headers) = get(&app, "/api/text?ref=BoC%207.2.1&corpus=concord").await;
     assert_eq!(st, 200, "{body}");
     let units = body["units"].as_array().unwrap();
@@ -185,7 +205,7 @@ async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment()
 
 #[tokio::test]
 async fn text_window_concord_n_and_dir_walk_onward_and_backward_within_augsburg_confession_iv() {
-    let app = real_app();
+    let app = compiled_app();
     // Augsburg Confession (part 3), Article IV (Of Justification), which
     // this batch's own report quotes as a 3-paragraph article.
     let (st, onward, _) = get(&app, "/api/text?ref=BoC%203.5.1&n=3&dir=onward&corpus=concord").await;
@@ -201,7 +221,7 @@ async fn text_window_concord_n_and_dir_walk_onward_and_backward_within_augsburg_
 
 #[tokio::test]
 async fn text_window_concord_scope_chapter_and_bad_ref_and_unknown_corpus_are_400() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/text?ref=BoC%207.2.1&scope=chapter&corpus=concord").await;
     assert_eq!(st, 400, "{body}");
     assert_eq!(body["error"]["code"], "bad_dir");
@@ -220,7 +240,7 @@ async fn text_window_bible_default_corpus_is_unchanged_by_the_new_param() {
     // Zero client changes (decision 8): omitting `corpus` entirely must
     // still serve the Bible corpus, byte-identical to `text_window_
     // single_verse_matches_the_compiled_verse_map` above.
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/text?ref=JHN.3.16&corpus=bible").await;
     assert_eq!(st, 200, "{body}");
     assert_eq!(body["units"][0]["text"].as_str().unwrap(), "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.");
@@ -228,7 +248,7 @@ async fn text_window_bible_default_corpus_is_unchanged_by_the_new_param() {
 
 #[tokio::test]
 async fn node_card_returns_id_kind_label_edge_summary_and_version() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
     assert_eq!(st, 200);
     assert_eq!(body["id"], "text-unit:JHN.3.16");
@@ -242,7 +262,7 @@ async fn node_card_returns_id_kind_label_edge_summary_and_version() {
 
 #[tokio::test]
 async fn node_card_unknown_id_is_404_malformed_id_is_400() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:GEN.999.999").await;
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
@@ -263,7 +283,7 @@ async fn node_card_unknown_id_is_404_malformed_id_is_400() {
 
 #[tokio::test]
 async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Event:ab_ur").await;
     assert_eq!(st, 200, "{body}");
@@ -292,7 +312,7 @@ async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
 
 #[tokio::test]
 async fn narrative_card_and_place_stub_card_are_served_generically() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Narrative:abraham-migration").await;
     assert_eq!(st, 200, "{body}");
@@ -311,7 +331,7 @@ async fn narrative_card_and_place_stub_card_are_served_generically() {
 /// (`data/curated/chronology-anchors.toml`) is a real, bound anchor row.
 #[tokio::test]
 async fn anchor_card_carries_its_citation_and_dates_frontier() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Anchor:solomon-crowned").await;
     assert_eq!(st, 200, "{body}");
@@ -339,7 +359,7 @@ async fn anchor_card_carries_its_citation_and_dates_frontier() {
 /// number invented for the test.
 #[tokio::test]
 async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoints() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
     assert_eq!(st, 200, "{body}");
@@ -374,7 +394,7 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
 /// exercise -- no new endpoint).
 #[tokio::test]
 async fn person_card_carries_a_real_easton_description_when_a_match_exists() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
     assert_eq!(st, 200, "{body}");
     let description = body["description"].as_str().expect("Aaron must carry a real description over the real compiled data");
@@ -387,7 +407,7 @@ async fn person_card_carries_a_real_easton_description_when_a_match_exists() {
 /// compiled geo place with a real tier-(b) Easton's match.
 #[tokio::test]
 async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/place/hebron").await;
     assert_eq!(st, 200, "{body}");
     let description = body["description"].as_str().expect("Hebron must carry a real description over the real compiled data");
@@ -409,7 +429,7 @@ async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
 /// "NODE IDENTITY" doc comment: `kretzmann/{book}.{chapter}.{ordinal}`).
 #[tokio::test]
 async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_description() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/CommentaryItem:kretzmann%2F0.1.0").await;
     assert_eq!(st, 200, "{body}");
     assert_eq!(body["label"], "The Creation of the World.: The Creation of Chaos and Light");
@@ -428,7 +448,7 @@ async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_descripti
 /// stray key.
 #[tokio::test]
 async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Era:primeval").await;
     assert_eq!(st, 200, "{body}");
     assert!(body.get("description").is_none(), "an Era card must never carry a description key at all, got: {body}");
@@ -455,7 +475,7 @@ async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
 
 #[tokio::test]
 async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/verse/MAT.4.19").await;
     assert_eq!(st, 200, "{body}");
 
@@ -485,7 +505,7 @@ async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
 /// one of the two.
 #[tokio::test]
 async fn chapter_endpoint_serves_the_same_real_words_of_christ_span_for_mat_4_19() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, chapter, _) = get(&app, "/api/chapter/MAT.4").await;
     assert_eq!(st, 200);
     let v19 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 19).expect("MAT.4.19 must be in the chapter");
@@ -502,7 +522,7 @@ async fn chapter_endpoint_serves_the_same_real_words_of_christ_span_for_mat_4_19
 /// three of Aaron, God, and Moses by Theographic's own tagging.
 #[tokio::test]
 async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, page, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
     assert_eq!(st, 200, "{page}");
@@ -522,7 +542,7 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
 /// the Girgasite,") is a real reclassified-gentilic locus (decision 1c).
 #[tokio::test]
 async fn peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generic_edges_page() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, card, _) = get(&app, "/api/node/text-unit:GEN.10.16").await;
     assert_eq!(st, 200, "{card}");
@@ -545,7 +565,7 @@ async fn peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generi
 /// could not follow it anywhere.
 #[tokio::test]
 async fn peoplegroup_node_id_cannot_be_fetched_directly_yet() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/node/PeopleGroup:jebusite_748").await;
     assert_eq!(st, 400, "{body}");
     assert_eq!(body["error"]["code"], "bad_ref");
@@ -562,7 +582,7 @@ async fn peoplegroup_node_id_cannot_be_fetched_directly_yet() {
 /// Theographic PERSON records).
 #[tokio::test]
 async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, chapter, _) = get(&app, "/api/chapter/GEN.10").await;
     assert_eq!(st, 200);
     let v16 = chapter["verses"].as_array().unwrap().iter().find(|v| v["verse"] == 16).expect("GEN.10.16 must be in the chapter");
@@ -584,7 +604,7 @@ async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span(
 /// `PlaceRefOut`, since there is exactly one node kind this field can name).
 #[tokio::test]
 async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mentions_frontier() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, chapter, _) = get(&app, "/api/chapter/EXO.4").await;
     assert_eq!(st, 200);
@@ -621,14 +641,14 @@ async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mention
 /// gained its own new match arm this batch.
 #[tokio::test]
 async fn person_card_unknown_id_is_404() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/Person:nonexistent-xyz").await;
     assert_eq!(st, 404, "{body}");
 }
 
 #[tokio::test]
 async fn node_edges_bad_kind_and_missing_kind_are_400() {
-    let app = real_app();
+    let app = artifact_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges").await;
     assert_eq!(st, 400);
     assert_eq!(body["error"]["code"], "bad_kind");
@@ -640,7 +660,7 @@ async fn node_edges_bad_kind_and_missing_kind_are_400() {
 
 #[tokio::test]
 async fn node_edges_pagination_pages_are_windows_over_the_total() {
-    let app = real_app();
+    let app = artifact_app();
     let (_, full, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
     let full_entries = full["entries"].as_array().unwrap();
     assert!(full_entries.len() > 1, "JHN.3.16 has many real cross-references");
@@ -671,7 +691,7 @@ async fn node_edges_pagination_pages_are_windows_over_the_total() {
 /// targets (e.g. a heavily-cited verse) may carry more than 200 citers.
 #[tokio::test]
 async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, forward_page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
     assert_eq!(st, 200);
@@ -739,7 +759,7 @@ fn first_verse_of(target: &str) -> String {
 
 #[tokio::test]
 async fn chapter_verse_xref_count_is_always_present_and_matches_the_generic_edges_page() {
-    let app = real_app();
+    let app = compiled_app();
 
     // JHN.3.16 -- already this file's own "many real cross-references"
     // exemplar (the pagination/bijection tests above).
@@ -765,7 +785,7 @@ async fn chapter_verse_xref_count_is_always_present_and_matches_the_generic_edge
 
 #[tokio::test]
 async fn chapter_verse_xref_count_is_always_present_never_omitted_across_a_whole_chapter() {
-    let app = real_app();
+    let app = compiled_app();
 
     // Shape/presence, proven over EVERY verse of a real chapter (not one
     // hand-picked verse): `xref_count` is a plain non-negative integer key
@@ -788,7 +808,7 @@ async fn chapter_verse_xref_count_is_always_present_never_omitted_across_a_whole
 
 #[tokio::test]
 async fn chapter_verse_xref_count_is_zero_not_omitted_for_a_real_verse_with_no_cross_references() {
-    let app = real_app();
+    let app = compiled_app();
 
     // Discovers a real zero-xref verse by scanning real chapters (sample-
     // driven, never a hardcoded assumption about which specific verse
@@ -825,7 +845,7 @@ async fn chapter_verse_xref_count_is_zero_not_omitted_for_a_real_verse_with_no_c
 
 #[tokio::test]
 async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_verse_endpoint() {
-    let app = real_app();
+    let app = compiled_app();
 
     // The bespoke endpoint's own `cross_refs` is built by iterating
     // `graph.cross_refs_by_from` with no re-sort -- which is itself built,
@@ -875,7 +895,7 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
 /// .23) is the real wire node.
 #[tokio::test]
 async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, body, _) = get(&app, "/api/node/text-unit:MAT.1.22").await;
     assert_eq!(st, 200, "{body}");
@@ -904,7 +924,7 @@ async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22()
 /// Melchizedek, GEN 14:18-20 -> HEB 7:1-17.
 #[tokio::test]
 async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchizedek_case() {
-    let app = real_app();
+    let app = compiled_app();
 
     let (st, body, _) = get(&app, "/api/node/text-unit:HEB.7.1").await;
     assert_eq!(st, 200, "{body}");
@@ -936,7 +956,7 @@ async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchized
 /// HTTP, through the SAME generic endpoint, no new bespoke wiring.
 #[tokio::test]
 async fn a_fulfillment_and_a_typology_rows_own_ground_carries_a_real_justifies_frontier() {
-    let app = real_app();
+    let app = compiled_app();
 
     // MAT.1.22 is the fulfillment passage AND (fulfillment_adapter's own
     // "self-attesting" convention) its own row's Ground::Scripture.
@@ -958,7 +978,7 @@ async fn a_fulfillment_and_a_typology_rows_own_ground_carries_a_real_justifies_f
 /// entry every node now carries.
 #[tokio::test]
 async fn nodes_uninvolved_in_fulfillment_or_typology_carry_no_such_edge_summary_entries() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _) = get(&app, "/api/node/text-unit:GEN.1.1").await;
     assert_eq!(st, 200, "{body}");
     let summary: Vec<String> = body["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap().to_string()).collect();
@@ -979,7 +999,7 @@ async fn nodes_uninvolved_in_fulfillment_or_typology_carry_no_such_edge_summary_
 
 #[tokio::test]
 async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoints() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Container:bible-chapter-JHN-3").await;
     assert_eq!(st, 200, "{body}");
@@ -1013,7 +1033,7 @@ async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoint
 
 #[tokio::test]
 async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, body, _) = get(&app, "/api/node/Container:bible-book-GEN").await;
     assert_eq!(st, 200, "{body}");
@@ -1046,7 +1066,7 @@ async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
 
 #[tokio::test]
 async fn verse_detail_carries_its_own_text_provenance_and_its_sections_sources() {
-    let app = real_app();
+    let app = compiled_app();
     let (st, body, _h) = get(&app, "/api/verse/GEN.1.1").await;
     assert_eq!(st, StatusCode::OK);
 
@@ -1079,7 +1099,7 @@ async fn verse_detail_carries_its_own_text_provenance_and_its_sections_sources()
 
 #[tokio::test]
 async fn event_detail_carries_its_own_provenance_and_its_sections_own_sources() {
-    let app = real_app();
+    let app = compiled_app();
 
     // AN IMPORTED EVENT.
     let (st, body, _h) = get(&app, "/api/event/theo-249").await;
@@ -1128,7 +1148,7 @@ async fn event_detail_carries_its_own_provenance_and_its_sections_own_sources() 
 /// specific fault rather than as an unresolvable id.
 #[tokio::test]
 async fn no_provenance_field_the_wire_serves_is_ever_blank() {
-    let app = real_app();
+    let app = compiled_app();
 
     let mut checked = 0usize;
     // FIX ROUND 2 (review L-NEW-1): a SECOND counter, because the first one
@@ -1233,7 +1253,7 @@ async fn no_provenance_field_the_wire_serves_is_ever_blank() {
 /// to two other arrays. Both halves ship now. This is the wire half.
 #[tokio::test]
 async fn the_bare_array_endpoints_attribute_their_rows_so_a_passage_gets_a_question_mark_too() {
-    let app = real_app();
+    let app = compiled_app();
 
     // A PASSAGE span -- the shape a reader lands on from a cross-reference
     // target, which is the most common way to arrive somewhere other than a
@@ -1292,7 +1312,7 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
         serde_json::from_str(&std::fs::read_to_string(&path).expect("sources.json must exist")).expect("sources.json must parse")
     };
 
-    let app = real_app();
+    let app = compiled_app();
     let (_st, verse, _h) = get(&app, "/api/verse/GEN.1.1").await;
     let (_st, event, _h) = get(&app, "/api/event/mat_leper_healed").await;
     // FIX ROUND 1 (review M-3): the two bare-array endpoints now carry
@@ -1359,11 +1379,11 @@ async fn every_provenance_id_the_wire_serves_resolves_to_a_registry_source() {
 /// NOT VACUOUS, by construction: it asserts a specific real place id at a
 /// specific real verse, AND that a sibling verse in the SAME chapter response
 /// is empty -- so neither "always empty" nor "everything gets a place" can
-/// pass it. It also exercises the `OnceLock` wiring for real: `real_app()`
+/// pass it. It also exercises the `OnceLock` wiring for real: `compiled_app()`
 /// never primes `scene_source`, so serving this request is what builds it.
 #[tokio::test]
 async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_source() {
-    let app = real_app();
+    let app = artifact_app();
 
     let (st, chapter, _) = get(&app, "/api/chapter/GEN.13").await;
     assert_eq!(st, 200);
@@ -1418,7 +1438,7 @@ async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_sourc
 /// those three files since M-C2, and OVERLAY-1 Task 5 deleted the boot-time
 /// overlay that used to re-fill them).
 ///
-/// This is NOT `real_app()` above: that one builds its `AtlasData` from
+/// This is NOT `artifact_app()` above: that one builds its `AtlasData` from
 /// `atlas_etl::compile::compile`, which DOES hand-fill all three collections,
 /// so a test written over it cannot see the difference between "the handler
 /// reads the graph" and "the handler reads `AtlasData.events`" -- exactly the
@@ -1426,14 +1446,37 @@ async fn chapter_verse_places_name_real_places_from_the_graph_backed_scene_sourc
 /// `load::load_graph_and_data` (THE one assembly path) rather than
 /// re-spelling it here is what keeps this builder honest as that path moves.
 fn artifact_app() -> axum::Router {
-    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    let (graph, data) = atlas_server::load::load_graph_and_data(&compiled)
-        .expect("data/compiled/{graph.bin,*.json} must exist -- run atlas-graph-compile first");
-    assert!(
-        data.events.is_empty() && data.places.is_empty() && data.narratives.is_empty(),
-        "this builder's whole point is the REAL serving shape: AtlasData's events/places/narratives must be EMPTY here"
-    );
-    atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
+    // Cached: the artifact load is real I/O plus a full `GraphService`
+    // materialisation, and every test here wants the same one. The Router
+    // itself is rebuilt per call (cheap) so no test can leak state into
+    // another through it.
+    static CACHED: std::sync::OnceLock<(
+        Arc<AtlasData>,
+        Arc<atlas_graph::GraphService>,
+        Arc<atlas_core::sources::SourcesDocument>,
+    )> = std::sync::OnceLock::new();
+    let (data, graph, sources) = CACHED
+        .get_or_init(|| {
+            let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+            let (graph, data) = atlas_server::load::load_graph_and_data(&compiled)
+                .expect("data/compiled/{graph.bin,*.json} must exist -- run atlas-graph-compile first");
+            let sources = atlas_server::load::load_sources(&compiled)
+                .expect("data/compiled/sources.json must exist -- run `cargo run -p atlas-etl --bin gen_sources` first");
+            assert!(
+                data.events.is_empty() && data.places.is_empty() && data.narratives.is_empty(),
+                "this builder's whole point is the REAL serving shape: AtlasData's events/places/narratives must be EMPTY here"
+            );
+            (Arc::new(data), Arc::new(graph), Arc::new(sources))
+        })
+        .clone();
+    // THE one assembly path (`load.rs`'s own doc comment): `into_router` is
+    // the single call site of `app::build_with_sources` outside tests that
+    // deliberately exercise a partial app, and this is not one of those --
+    // going through it is what keeps this builder from drifting away from
+    // what `main.rs` serves (fix round 1, review M-1). Note the consequence:
+    // unlike `artifact_app()`, this app serves the REAL compiled source
+    // registry rather than a default-empty one.
+    atlas_server::load::LoadedAtlas { data, graph, sources }.into_router(None)
 }
 
 /// OVERLAY-1-HOTFIX-1 (the regression this hotfix exists for).

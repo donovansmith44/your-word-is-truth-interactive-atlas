@@ -1343,9 +1343,19 @@ pub async fn narrative_event_positions(
     // (materialised from the port with `finish()`'s merges and sort replayed),
     // so an adjacent event's own label/places/verse_groups are LITERALLY the
     // map arrow endpoint's own -- the ONE-GRAPH property
-    // `atlas_core::narrative`'s own header states, now true by construction on
-    // the serving path too. `tests/no_legacy_event_reads.rs` is the standing
-    // law that no serving handler goes back to `AtlasData.events`.
+    // `atlas_core::narrative`'s own header states, now true on the serving
+    // path too.
+    //
+    // Fix round 1 (review I-1): "true by construction" is what the first
+    // version of this comment said, and it was not. `impl SceneSource for
+    // AtlasData` exists, so a future edit CAN hand this function an
+    // `AtlasData` again (`adjacent_event(&*data, ..)` compiles) and get the
+    // same empty answer back. Two standing laws are the real guard --
+    // `tests/no_legacy_event_reads.rs` (no serving source reads the emptied
+    // collections or their derived accessors) and
+    // `atlas-core/tests/no_atlas_data_in_public_signatures.rs` (no new public
+    // fn in atlas-core takes an `AtlasData` at all) -- and the cure is
+    // ETL-INPUT-1, deleting the three fields.
     let src = graph.scene_source(&data);
 
     // A narrative whose `legs` names exactly ONE event (a real, if rare,

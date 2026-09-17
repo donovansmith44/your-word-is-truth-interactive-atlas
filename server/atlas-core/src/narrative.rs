@@ -20,18 +20,33 @@
 //! (deleted alongside it; recoverable from git history at the commit
 //! immediately preceding this one).
 //!
-//! OVERLAY-1-HOTFIX-1: `adjacent_event` no longer takes `&AtlasData` at
-//! all -- it takes `&dyn SceneSource`. It had to: OVERLAY-1 Task 5 stopped
-//! filling `AtlasData.events` on every SERVING path (the boot-time overlay
-//! that used to is deleted), so the handler's `prior`/`following`/`timeline`
+//! OVERLAY-1-HOTFIX-1: `adjacent_event` takes `&dyn SceneSource`, not
+//! `&AtlasData`. It had to: OVERLAY-1 Task 5 stopped filling
+//! `AtlasData.events` on every SERVING path (the boot-time overlay that
+//! used to is deleted), so the handler's `prior`/`following`/`timeline`
 //! silently went blank for every real event while the `demo_fixture()`-based
-//! test stayed green. Taking the source rather than the data makes the
-//! regression UNREPRESENTABLE at compile level: this function cannot reach
-//! an emptied collection because it can no longer name one. `AtlasData`'s
-//! own `SceneSource` impl is what keeps every fixture caller working
-//! unchanged (`&d as &dyn SceneSource`), and the serving path passes
+//! test stayed green. The serving path now passes
 //! `GraphService::scene_source`, the port-materialised source the map itself
 //! composes from.
+//!
+//! WHAT THAT SIGNATURE CHANGE DOES AND DOES NOT BUY (fix round 1, review
+//! I-1 -- the first version of this paragraph overclaimed and is corrected
+//! here). It does NOT make the regression unrepresentable at compile level.
+//! `impl SceneSource for AtlasData` exists (`data.rs`), so
+//! `adjacent_event(&*data, ..)` still compiles and still returns the old
+//! empty answer -- `global_timeline_position` below deliberately calls it
+//! exactly that way, as `&d as &dyn SceneSource`. What the change removes is
+//! the ACCIDENTAL SPELLING: no caller reaches the emptied vecs by simply
+//! passing the `AtlasData` it already had in hand; doing it now takes a
+//! deliberate coercion that reads as one. The backstops for the deliberate
+//! case are two standing laws --
+//! `atlas-core/tests/no_atlas_data_in_public_signatures.rs` (no NEW public
+//! fn in this crate may take an `AtlasData` at all; the two remaining
+//! oracles are a closed, documented list) and
+//! `atlas-server/tests/no_legacy_event_reads.rs` (no serving source may read
+//! the emptied collections or the accessors derived from them). The actual
+//! cure is ETL-INPUT-1: delete `AtlasData.events`/`.places`/`.narratives`,
+//! after which there is nothing to reach.
 //!
 //! ONE-GRAPH property (the user's own words: "we have one graph
 //! representing narratives"): the ONLY input this module reads is its
@@ -83,8 +98,10 @@ pub struct NarrativeAdjacentEvent {
 /// input).
 ///
 /// OVERLAY-1-HOTFIX-1: takes `&dyn SceneSource` (was `&AtlasData`) -- see
-/// this module's own header for why the old signature was the regression.
-/// Behaviour is otherwise unchanged: `event_by_id` is a `SceneSource` trait
+/// this module's own header for why the old signature was the regression,
+/// and for the honest limit of what the new one prevents (an
+/// `AtlasData` can still be coerced in; the standing laws, not the type
+/// system, are the guard). Behaviour is otherwise unchanged: `event_by_id` is a `SceneSource` trait
 /// method already, `AtlasData` implements it with the very same lookup, and
 /// `GraphSceneSource` implements it over the port-materialised events with
 /// `finish()`'s merges and sort replayed -- which is exactly what the

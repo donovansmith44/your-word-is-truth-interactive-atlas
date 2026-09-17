@@ -30,11 +30,43 @@
 //! This is the grep that would have caught it in seconds, promoted to a
 //! standing test so it runs every time. It scans the two SERVING crates'
 //! sources (`atlas-server/src`, `atlas-cli/src`) for the exact shapes of
-//! that regression. The fix that made it pass was to change
-//! `adjacent_event`'s SIGNATURE (it takes `&dyn SceneSource` now and cannot
-//! name `AtlasData` at all) -- compile-level enforcement is always stronger
-//! than a scan; this file is the backstop for the next reader that a
-//! signature change does not happen to cover.
+//! that regression.
+//!
+//! # Its two companions, and the honest limit of each
+//!
+//! The fix that made it pass changed `adjacent_event`'s SIGNATURE, to
+//! `&dyn SceneSource`. Fix round 1 (review I-1) corrects what that buys:
+//! NOT compile-level enforcement -- `impl SceneSource for AtlasData` exists,
+//! so `adjacent_event(&*data, ..)` still compiles and still answers empty --
+//! only the removal of the accidental spelling.
+//!
+//! This scan cannot be pointed at `atlas-core`, where the reader actually
+//! hid, because `scene.rs` legitimately names its `&dyn SceneSource`
+//! parameters `d` and a receiver-name scan there would be one long false
+//! positive. So `atlas-core/tests/no_atlas_data_in_public_signatures.rs`
+//! (fix round 1, review I-2) covers that crate by TYPE instead: no new
+//! public fn there may take an `AtlasData` at all.
+//!
+//! Neither law is the cure. The cure is ETL-INPUT-1 -- deleting
+//! `AtlasData.events`/`.places`/`.narratives` so there is nothing to read.
+//! Until then: this file for the serving crates, that one for `atlas-core`.
+//!
+//! # What is forbidden here
+//!
+//! * `data.events` / `data.places` / `data.narratives` -- the three empty vecs.
+//! * `.event_by_id(` / `.place_by_id(` on a named `AtlasData` receiver.
+//! * the six accessors `AtlasData::finish()` DERIVES from those vecs
+//!   (fix round 1, review I-3): `heading_for_verse`,
+//!   `heading_anchor_collisions`, `timeline_position`, `timeline_event_at`,
+//!   `event_bearing_place_ids`, `total_events_for`. These matter because
+//!   emptiness propagates through `finish()` by name rather than by field
+//!   access: each returns an honest-looking, permanently-wrong answer (an
+//!   empty map, a `None`, a 0) on a serving `AtlasData`, with a 200 status,
+//!   which is precisely how the original regression hid. The review's own
+//!   audit found no serving caller of any of the six today; this law is what
+//!   keeps that true.
+//! * `adjacent_event(&data` / `(&*data` / `(&d,` -- this hotfix's own
+//!   regression, verbatim.
 //!
 //! # The allowlist
 //!
@@ -84,9 +116,33 @@ fn laws() -> Vec<Law> {
             name: r"\.event_by_id\( / \.place_by_id\( on an AtlasData-named receiver",
             why: "AtlasData::event_by_id/place_by_id look into the EMPTY vecs -- call them on the SceneSource",
             hit: |code| {
-                ["data", "atlas", "sidecars", "d"].iter().any(|recv| {
+                RECEIVERS.iter().any(|recv| {
                     [".event_by_id(", ".place_by_id("].iter().any(|m| contains_call(code, recv, m))
                 })
+            },
+        },
+        Law {
+            // Fix round 1, review I-3. `AtlasData.events`/`.places`/
+            // `.narratives` being empty does not only blank the three fields
+            // themselves -- it blanks every index `AtlasData::finish()`
+            // DERIVES from them, and those are reached by name, not by
+            // touching a vec. The review's audit found no serving caller of
+            // any of these today; this law is what keeps that true. Each
+            // returns an honest-looking, permanently-wrong answer on the
+            // serving path (an empty map, a `None`, a 0), never an error --
+            // the same silent-200 failure mode as the original regression.
+            name: r"the six EMPTY-DERIVED AtlasData accessors on a named receiver",
+            why: "derived from the EMPTY events/places/narratives by AtlasData::finish() -- always blank on a serving AtlasData",
+            hit: |code| {
+                const DERIVED: [&str; 6] = [
+                    ".heading_for_verse(",
+                    ".heading_anchor_collisions(",
+                    ".timeline_position(",
+                    ".timeline_event_at(",
+                    ".event_bearing_place_ids(",
+                    ".total_events_for(",
+                ];
+                RECEIVERS.iter().any(|recv| DERIVED.iter().any(|m| contains_call(code, recv, m)))
             },
         },
         Law {
@@ -105,6 +161,15 @@ fn laws() -> Vec<Law> {
 
 /// EMPTY, and asserted empty below. See this file's own header.
 const ALLOWLIST: &[(&str, u32, &str)] = &[];
+
+/// The names a serving `AtlasData` is bound to. `data` is what every handler
+/// binds its `Arc<AtlasData>` to (the axum `State` extractor), `sidecars` is
+/// what `load.rs`'s own prose calls it, and `d`/`atlas` are the short forms
+/// used elsewhere. Naming the receivers is how the method laws below stay a
+/// text scan (no type resolution) while still never firing on
+/// `src.event_by_id(..)` / `source.total_events_for(..)`, which are the
+/// CORRECT calls, through the SceneSource.
+const RECEIVERS: [&str; 4] = ["data", "atlas", "sidecars", "d"];
 
 /// `receiver` + `method` as a WHOLE identifier -- i.e. `data.event_by_id(`
 /// matches, but `loaded.event_by_id(` does not match receiver `d`. Without
@@ -226,6 +291,13 @@ fn the_scan_actually_matches_the_regression_and_not_its_correct_replacement() {
         "    for n in data.narratives.iter() {",
         "    let e = data.event_by_id(&id)?;",
         "    let p = data.place_by_id(&id)?;",
+        // Fix round 1 (I-3): the six EMPTY-DERIVED accessors, one sample each.
+        "    let h = data.heading_for_verse(&sref);",
+        "    for (a, b, c) in data.heading_anchor_collisions() {",
+        "    let idx = data.timeline_position(&id)?;",
+        "    let e = data.timeline_event_at(idx + 1);",
+        "    let lit = sidecars.event_bearing_place_ids();",
+        "    let n = atlas.total_events_for(&place.id);",
         "    prior.and_then(|pid| atlas_core::narrative::adjacent_event(&data, &pid))",
         "    adjacent_event(&*data, pid)",
     ];
@@ -241,8 +313,13 @@ fn the_scan_actually_matches_the_regression_and_not_its_correct_replacement() {
         "    for n in src.narrative_list() {",
         "    prior.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid))",
         "    let places = source.places();",
+        // The SceneSource carries its OWN event_bearing_place_ids/
+        // total_events_for -- those are the right calls and must stay silent.
+        "    let lit = src.event_bearing_place_ids();",
+        "    let n = source.total_events_for(&place.id);",
         // A one-letter receiver must not fire on the tail of a longer name.
         "    let e = loaded.event_by_id(&id)?;",
+        "    let n = wrapped.total_events_for(&id);",
         // ...and the same forbidden text, but in a comment: prose about the
         // regression (this file, and handlers.rs, are both full of it) must
         // not fail the law.
