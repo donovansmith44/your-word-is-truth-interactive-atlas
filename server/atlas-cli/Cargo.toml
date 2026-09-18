@@ -10,7 +10,9 @@ edition = "2021"
 # (reused as a library dependency, not re-parsed by hand).
 atlas-core = { path = "../atlas-core" }
 atlas-graph = { path = "../atlas-graph" }
-atlas-graph-types = { path = "../../graph-types" }
+# DB-4a: canon-ids ON for the atlas -- SHA-256-128 pids, canonical edge ids, the
+# manifest root. graph-types' own default stays off for the sibling repo.
+atlas-graph-types = { path = "../../graph-types", features = ["canon-ids"] }
 atlas-server = { path = "../atlas-server" }
 
 # BIBEX-1 (--json flag, contract-first): serialization via what the

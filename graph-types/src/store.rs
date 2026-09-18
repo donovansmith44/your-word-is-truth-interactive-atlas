@@ -228,174 +228,19 @@ fn version_of(g: &Graph) -> GraphVersion {
     GraphVersion(V(g).pid().hash)
 }
 
-/// ON: the root is SHA-256-128 over the LOGICAL DUMP — every node, every
-/// row of every family, every reading spine, which is what closes spec
-/// §3.1 defect 1.
-///
-/// What the stamp deliberately EXCLUDES: `indexes`, `symmetric_indexes`
-/// and `pid_index`. Those are DERIVED by `build_indexes` from the rows
-/// already in the dump — hashing them would stamp the same information
-/// twice and make the root depend on the index builder's internals rather
-/// than on the graph's content. The dump is the AUTHORED state; the
-/// derived state is a function of it.
+/// ON (DB-4a, ROOT-1): the root is THE manifest root -- spec §3.4 --
+/// `sha256_prefixed_128(DOMAIN_PREFIX, manifest lines)` over the shipped
+/// sections' logical hashes (`crate::sections::version_root`). It is the
+/// number the section writer writes as `manifest.toml`'s `root` and
+/// `SqliteSnapshot::version()` reads back: one root, three readers.
+/// Derived state (`indexes`, `symmetric_indexes`, `pid_index`, `edge_rows`,
+/// `spine_index`) is a function of the rows already in the dumps and is
+/// not hashed.
 #[cfg(feature = "canon-ids")]
 fn version_of(g: &Graph) -> GraphVersion {
-    GraphVersion(ContentHash(crate::sha256::sha256_prefixed_128(
-        crate::canon::DOMAIN_PREFIX,
-        &logical_dump(g),
-    )))
+    GraphVersion(crate::sections::version_root(g))
 }
 
-/// The graph as one canonical byte stream — the thing the version root is
-/// a digest of.
-///
-/// `pub` deliberately: DB-2b's artifact writer must hash the IDENTICAL
-/// stream, section by section, by filtering this same walk down to the
-/// families and nodes a section carries. Two independent implementations
-/// of "the bytes of a graph" is precisely the bug that would make an
-/// artifact's stamp disagree with the server's.
-///
-/// The format, exactly:
-///
-/// ```text
-/// node\t<canonical JSON of the node>\n          (each node, `nodes` order)
-/// <family>\t<canonical JSON of the row>\n       (RowFamily::ALL order, rows in table order)
-/// spine\t<corpus>\t<id,id,id>\n                 (each corpus, `reading` order)
-/// ```
-///
-/// The family NAME is the line's own first field, so the row bytes are
-/// the row's plain `Canon::encode` — the family is said once, not twice.
-/// Node and spine ids use `canon::ids::any_node_id_str`, the crate's one
-/// canonical string spelling for an id. `DOMAIN_PREFIX` is NOT part of
-/// this stream: it is hashed in front of it by `version_of`, so the dump
-/// stays readable as itself.
-///
-/// FINAL REVIEW item 3: the walk is closed over `Graph` as well as over
-/// `RowFamily`. `Graph` is DESTRUCTURED below with every field named and
-/// no `..`, so a new row `Vec` added to the struct is a compile error
-/// here until it is given a place in the dump — which is to say, in the
-/// version root. Closing only over `RowFamily` would have let spec §3.1
-/// defect 1 (a root blind to rows) back in through the side door: a field
-/// with no matching family is simply never visited. The three DERIVED
-/// maps are named and discarded explicitly (`indexes: _`,
-/// `symmetric_indexes: _`, `pid_index: _`) — they are a function of the
-/// rows already in the dump, so hashing them would stamp the same
-/// information twice.
-#[cfg(feature = "canon-ids")]
-pub fn logical_dump(g: &Graph) -> Vec<u8> {
-    use crate::canon::ids::any_node_id_str;
-    use crate::canon::{Canon, RowFamily};
-
-    let Graph {
-        nodes,
-        contains_bible,
-        contains_concord,
-        attests,
-        succession,
-        canon_succession,
-        dated_by,
-        located_at,
-        fulfills,
-        typology,
-        named_after,
-        catechism,
-        comments_on,
-        spoken_by,
-        spoken_at,
-        mentions,
-        cross_refs,
-        quotes,
-        confesses,
-        corresponds_bible,
-        temporal_adjacency,
-        analogue,
-        reading,
-        indexes: _,
-        symmetric_indexes: _,
-        pid_index: _,
-        edge_rows: _,
-        spine_index: _,
-    } = g;
-
-    let mut out: Vec<u8> = Vec::new();
-
-    let mut line = |tag: &str, bytes: &[u8]| {
-        out.extend_from_slice(tag.as_bytes());
-        out.push(b'\t');
-        out.extend_from_slice(bytes);
-        out.push(b'\n');
-    };
-
-    for node in nodes.values() {
-        line("node", &node.encode());
-    }
-
-    // One arm per family, in `RowFamily::ALL` order. The exhaustive match
-    // is the point: a new family cannot be added to the enum without the
-    // compiler demanding its place in the version root.
-    for family in RowFamily::ALL {
-        macro_rules! rows {
-            ($field:ident) => {
-                for row in $field {
-                    line(family.name(), &row.encode());
-                }
-            };
-        }
-        match family {
-            RowFamily::ContainsBible => rows!(contains_bible),
-            RowFamily::ContainsConcord => rows!(contains_concord),
-            RowFamily::Attests => rows!(attests),
-            RowFamily::Succession => rows!(succession),
-            RowFamily::CanonSuccession => rows!(canon_succession),
-            RowFamily::DatedBy => rows!(dated_by),
-            RowFamily::LocatedAt => rows!(located_at),
-            RowFamily::Fulfills => rows!(fulfills),
-            RowFamily::Typology => rows!(typology),
-            RowFamily::NamedAfter => rows!(named_after),
-            RowFamily::Catechism => rows!(catechism),
-            RowFamily::CommentsOn => rows!(comments_on),
-            RowFamily::SpokenBy => rows!(spoken_by),
-            RowFamily::SpokenAt => rows!(spoken_at),
-            RowFamily::Mentions => rows!(mentions),
-            RowFamily::CrossRefs => rows!(cross_refs),
-            RowFamily::Quotes => rows!(quotes),
-            RowFamily::Confesses => rows!(confesses),
-            RowFamily::CorrespondsBible => rows!(corresponds_bible),
-            RowFamily::TemporalAdjacency => rows!(temporal_adjacency),
-            RowFamily::Analogue => rows!(analogue),
-        }
-    }
-
-    // FINAL REVIEW item 8 (M3-5). THE INJECTIVITY ASSUMPTION, named for
-    // DB-2b: a spine line joins its ids with `,` and escapes nothing, and
-    // the whole line is `\t`-delimited and `\n`-terminated. That spelling
-    // is injective ONLY while no id contains `,`, `\t` or `\n` — if one
-    // ever did, two different spines could produce the same line and the
-    // version root would stop distinguishing them. Nothing in the id
-    // grammar forbids those bytes today; the ids the shipped corpora mint
-    // simply do not use them. So the assumption is asserted here rather
-    // than merely believed. DB-2b, which writes these lines into the
-    // manifest per section, must either keep this assertion or escape the
-    // separator — it cannot inherit the assumption silently.
-    for (corpus, spine) in reading {
-        let ids: Vec<String> = spine.order.iter().map(any_node_id_str).collect();
-        debug_assert!(
-            !corpus.contains([',', '\t', '\n']),
-            "a spine corpus tag must not contain the dump's own separators: {corpus:?}"
-        );
-        debug_assert!(
-            !ids.iter().any(|raw| raw.contains([',', '\t', '\n'])),
-            "a spine id must not contain the dump's own separators (corpus {corpus:?})"
-        );
-        out.extend_from_slice(b"spine\t");
-        out.extend_from_slice(corpus.as_bytes());
-        out.push(b'\t');
-        out.extend_from_slice(ids.join(",").as_bytes());
-        out.push(b'\n');
-    }
-
-    out
-}
 
 /// A version-stamped handle to a Graph — the canonical presentation.
 #[derive(Clone)]
@@ -836,28 +681,18 @@ mod laws {
     /// table name, then one spine line per corpus.
     #[cfg(feature = "canon-ids")]
     #[test]
-    fn logical_dump_carries_nodes_then_rows_then_spines() {
-        let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));
-        let dump = String::from_utf8(logical_dump(&g)).expect("the dump is UTF-8");
-        let lines: Vec<&str> = dump.lines().collect();
-
-        let tags: Vec<&str> = lines.iter().map(|l| l.split('\t').next().unwrap()).collect();
-        assert_eq!(&tags[..2], &["node", "node"], "nodes lead, in `nodes` order");
-        assert_eq!(
-            &tags[2..],
-            &["succession", "located_at", "spine"],
-            "then families in RowFamily::ALL order, then the spines"
-        );
-
-        let spine = lines.last().unwrap();
-        assert_eq!(
-            *spine,
-            "spine\tbible\tTextUnit:bible/1.1.1,TextUnit:bible/1.1.2",
-            "the spine line is corpus + comma-joined canonical ids"
-        );
-        // The node line carries the node's own canonical JSON, not a
-        // debug print -- decodable, which is the whole point.
-        assert!(lines[0].starts_with("node\t{\"id\":\"TextUnit:bible/1.1.1\","), "{}", lines[0]);
+    fn edge_ids_hash_canonical_edge_bytes_not_debug_text() {
+        use crate::edge::{entry_id, RelationId};
+        let s = Position::Node(EventId::new("e1").erase());
+        let o = Position::Node(PlaceId::new("jordan").erase());
+        let id = entry_id(RelationId::LocatedAt, &s, &o);
+        let expected = crate::sha256::sha256_prefixed_128(crate::canon::DOMAIN_PREFIX, &crate::canon::ids::edge_canonical_bytes("LocatedAt", &s, &o));
+        let mut hex = String::new();
+        for b in expected {
+            hex.push_str(&format!("{b:02x}"));
+        }
+        assert_eq!(id.0, format!("LocatedAt:{hex}"));
+        assert_eq!(id.0.len(), "LocatedAt:".len() + 32);
     }
 
     #[test]

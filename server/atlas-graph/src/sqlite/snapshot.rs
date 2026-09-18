@@ -89,12 +89,11 @@ impl SqliteSnapshot {
             node_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.node", section.name()));
         }
         conn.execute_batch(&format!("{edge_view}; {node_view}; PRAGMA query_only = ON;"))?;
-        let version_hex: String = conn
-            .query_row("SELECT value FROM main.meta WHERE key = 'graph_version'", [], |r| r.get(0))
-            .map_err(|e| SqliteError(format!("core meta.graph_version: {e}")))?;
-        let version = ContentHash::from_hex(&version_hex)
+        // DB-4a: the version IS the manifest root (spec 3.4) -- the same
+        // number `MemStore::publish` stamps from the in-memory graph.
+        let version = ContentHash::from_hex(&manifest.root)
             .map(GraphVersion)
-            .ok_or_else(|| SqliteError(format!("core meta.graph_version {version_hex} is not a ContentHash")))?;
+            .ok_or_else(|| SqliteError(format!("manifest root {} is not a ContentHash", manifest.root)))?;
         Ok(SqliteSnapshot { conn: Mutex::new(conn), version, present: present.into_iter().map(|(s, _)| s).collect() })
     }
 

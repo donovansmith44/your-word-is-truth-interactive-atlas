@@ -13,6 +13,9 @@ use atlas_graph_types::canon::RowFamily;
 use rusqlite::Connection;
 
 use super::{stamp_pragmas, SqliteError};
+// DB-4a: the section -> table map lives in graph-types (it is part of the
+// version root); re-exported here for the sqlite module's callers.
+pub use crate::sections::{has_spine, logical_table_order, row_tables_of};
 use crate::sections::Section;
 
 /// Spec §5.1 minus its three `CREATE … INDEX` lines (see `COMMON_INDEX_DDL`).
@@ -407,45 +410,6 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
     }
 }
 
-/// The row tables each section carries (spec §5.3–5.7). `ContainsBible`
-/// is the one family with two homes -- curated passage containers in
-/// core, book/chapter containers in kjv (spec §2.1's placement rule,
-/// `sections::section_of_contains_bible` decides per row).
-pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
-    match section {
-        Section::Core => &[
-            RowFamily::ContainsBible,
-            RowFamily::Attests,
-            RowFamily::Succession,
-            RowFamily::DatedBy,
-            RowFamily::LocatedAt,
-            RowFamily::Fulfills,
-            RowFamily::Typology,
-            RowFamily::NamedAfter,
-            RowFamily::Catechism,
-            RowFamily::Mentions,
-            RowFamily::CorrespondsBible,
-            RowFamily::TemporalAdjacency,
-            RowFamily::Analogue,
-        ],
-        Section::Kjv => &[
-            RowFamily::ContainsBible,
-            RowFamily::CanonSuccession,
-            RowFamily::CrossRefs,
-            RowFamily::SpokenBy,
-            RowFamily::SpokenAt,
-        ],
-        Section::Concord => &[RowFamily::ContainsConcord, RowFamily::Quotes, RowFamily::Confesses],
-        Section::Kretzmann => &[RowFamily::CommentsOn],
-        Section::Lexicon => &[],
-    }
-}
-
-/// Whether the section carries a `reading_spine` (spec §5.4, §5.5).
-pub fn has_spine(section: Section) -> bool {
-    matches!(section, Section::Kjv | Section::Concord)
-}
-
 /// Spec §6.1: pragmas first (page_size/encoding only bind on an empty
 /// file), then every table -- and NO index yet.
 pub fn create_tables(conn: &Connection, section: Section) -> Result<(), SqliteError> {
@@ -473,20 +437,6 @@ pub fn create_indexes(conn: &Connection, section: Section) -> Result<(), SqliteE
     }
     conn.execute_batch(&ddl)?;
     Ok(())
-}
-
-/// The tables the section's logical dump (spec §3.4) walks, in order:
-/// `node`, each row family's table in `row_tables_of` order, then
-/// `reading_spine` where present. `meta`, `justification`, `ground` and
-/// `edge_index` are NOT in the dump: the first is informational, the rest
-/// are derived from (or already inside) the rows' canonical bytes.
-pub fn logical_table_order(section: Section) -> Vec<&'static str> {
-    let mut v = vec!["node"];
-    v.extend(row_tables_of(section).iter().map(|f| f.name()));
-    if has_spine(section) {
-        v.push("reading_spine");
-    }
-    v
 }
 
 #[cfg(test)]

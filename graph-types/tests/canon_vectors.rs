@@ -828,3 +828,16 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
     round_trip(&bare);
     assert!(String::from_utf8(bare.encode()).unwrap().contains(r#""root":null,"senses":[],"strong":"H0430","translit":null"#));
 }
+
+/// DB-4a (EDGE-ID-1): the bytes an edge id is minted from are sorted,
+/// decodable canonical JSON over position strings -- never debug text.
+#[test]
+fn edge_canonical_bytes_are_sorted_decodable_json_over_position_strings() {
+    use atlas_graph_types::canon::ids::{edge_canonical_bytes, position_str};
+    use atlas_graph_types::id::{EventId, PlaceId, Position};
+    let s = Position::Node(EventId::new("e1").erase());
+    let o = Position::Node(PlaceId::new("jordan").erase());
+    let bytes = edge_canonical_bytes("LocatedAt", &s, &o);
+    assert_eq!(String::from_utf8(bytes).unwrap(), r#"{"object":"n:Place:jordan","rel":"LocatedAt","subject":"n:Event:e1"}"#);
+    assert_eq!(position_str(&s), "n:Event:e1");
+}

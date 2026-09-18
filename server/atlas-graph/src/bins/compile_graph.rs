@@ -376,7 +376,7 @@ fn main() -> Result<()> {
     println!("atlas-graph-compile: DB-2b -- writing SQLite sections to {} ...", sections_out.display());
     let t = Instant::now();
     let compiler = format!("atlas-graph-compile {} (rustc {})", env!("CARGO_PKG_VERSION"), "1.97.1");
-    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &version_hex, &compiler, &sections_out)
+    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &compiler, &sections_out)
         .map_err(|e| anyhow::anyhow!("{e}"))
         .context("writing the SQLite sections")?;
     for w in &written {

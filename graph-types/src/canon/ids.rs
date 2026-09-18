@@ -89,3 +89,17 @@ pub fn parse_position(s: &str, path: &str) -> Result<Position, CanonError> {
         _ => Err(CanonError::new(path, format!("position `{s}` is neither `n:` nor `e:`"))),
     }
 }
+
+/// DB-4a (EDGE-ID-1): the canonical bytes an edge id is minted from --
+/// `{"object":<position_str>,"rel":"<RelationId or SymRelationId Debug
+/// name>","subject":<position_str>}`, keys in byte order, no whitespace.
+/// Decodable and `Debug`-free (spec §3.1 defect 4, for edges). A
+/// symmetric relation's two ends are sorted by the caller before this
+/// is called, as `entry_id_symmetric` always did.
+pub fn edge_canonical_bytes(rel_name: &str, subject: &Position, object: &Position) -> Vec<u8> {
+    super::serialize(&super::obj(vec![
+        ("object", super::str_value(&position_str(object))),
+        ("rel", super::str_value(rel_name)),
+        ("subject", super::str_value(&position_str(subject))),
+    ]))
+}

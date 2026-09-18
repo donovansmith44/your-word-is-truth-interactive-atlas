@@ -368,4 +368,11 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 // Real, deliberate graph content change -- the root moving IS the owner's
 // two corrections landing as data. New captured value:
 // "59c6f7dc236f6f23".
-const EXPECTED_VERSION_HEX: &str = "59c6f7dc236f6f23";
+/// MOVED AGAIN (DB-4a, 2026-09-17): `canon-ids` is ON for the atlas.
+/// Every pid is SHA-256-128 over canonical node bytes, every edge id
+/// SHA-256-128 over canonical edge bytes, and the root is THE manifest
+/// root (spec 3.4) -- sha256_prefixed_128 over `name|logical|14|required`
+/// lines for the four shipped sections, each logical hash over that
+/// section's own dump. 32 hex from here on; the same number the section
+/// writer stamps in manifest.toml and SqliteSnapshot::version reads.
+const EXPECTED_VERSION_HEX: &str = "c76f205c0f596b1541e8f215b934a7cb";

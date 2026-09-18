@@ -6,8 +6,6 @@
 
 use std::path::Path;
 
-use atlas_graph_types::canon::DOMAIN_PREFIX;
-use atlas_graph_types::sha256::sha256_prefixed_128;
 use serde::{Deserialize, Serialize};
 
 use super::SqliteError;
@@ -38,24 +36,17 @@ pub struct Manifest {
     pub sections: Vec<ManifestSection>,
 }
 
-/// `name|logical|schema_version|required\n` per section, manifest order.
+/// `name|logical|schema_version|required\n` per section, manifest order
+/// (`atlas_graph_types::sections::manifest_lines`, the root's preimage).
 pub fn manifest_lines(sections: &[ManifestSection]) -> Vec<u8> {
-    let mut out = Vec::new();
-    for s in sections {
-        out.extend_from_slice(
-            format!("{}|{}|{}|{}\n", s.name, s.logical, s.schema_version, if s.required { "true" } else { "false" }).as_bytes(),
-        );
-    }
-    out
+    let entries: Vec<(&str, &str, u32, bool)> =
+        sections.iter().map(|s| (s.name.as_str(), s.logical.as_str(), s.schema_version, s.required)).collect();
+    atlas_graph_types::sections::manifest_lines(&entries)
 }
 
-/// Hex of `sha256_prefixed_128(DOMAIN_PREFIX, manifest_lines)`.
+/// The root as the manifest spells it: `sections::root_of_lines(..).hex()`.
 pub fn root_of(sections: &[ManifestSection]) -> String {
-    hex16(&sha256_prefixed_128(DOMAIN_PREFIX, &manifest_lines(sections)))
-}
-
-pub(crate) fn hex16(b: &[u8; 16]) -> String {
-    b.iter().map(|x| format!("{x:02x}")).collect()
+    atlas_graph_types::sections::root_of_lines(&manifest_lines(sections)).hex()
 }
 
 pub fn write_manifest(m: &Manifest, path: &Path) -> Result<(), SqliteError> {

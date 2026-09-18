@@ -29,6 +29,7 @@ pub mod canon;
 /// DB-2a: FIPS 180-4 SHA-256, hand-written and std-only — the one hash
 /// the `canon-ids` feature mints content addresses with. Always compiled
 /// (it is a plain function library); only its USE is behind the feature.
+pub mod sections;
 pub mod sha256;
 
 pub use edge::{dual, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};

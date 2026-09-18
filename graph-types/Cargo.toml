@@ -18,16 +18,16 @@ description = "The Explorable Graph type system — compiling base point for the
 # version root. ON = SHA-256-128 content addresses over canonical JSON.
 # An empty feature list is the point: no optional dependency hides here.
 #
-# THE ON GATE IS RUN FROM THIS DIRECTORY (final review item 13):
+# THE TWO GATES ARE RUN FROM THIS DIRECTORY:
 #
-#     cd graph-types && cargo test --features canon-ids
+#     cd graph-types && cargo test                      # OFF (default)
+#     cd graph-types && cargo test --features canon-ids # ON
 #
-# The `server/` workspace does NOT forward this feature -- no member
-# declares an optional `atlas-graph-types/canon-ids` passthrough, and
-# there is no workspace-level feature to flip -- so
-# `cargo test --workspace --features canon-ids` from `server/` does not
-# build the ON state, it errors. That is deliberate (a workspace member
-# cannot flip the id width by accident), and it means the ON laws are
-# proven here and only here.
+# DB-4a: the atlas workspace is ON -- every `server/` member declares
+# `atlas-graph-types = { path, features = ["canon-ids"] }`, so
+# `cargo test --workspace` from `server/` builds the ON state. The default
+# stays OFF because the map-generator sibling depends on this crate as a
+# path dependency and still reads `ContentHash` as a u64; deleting the OFF
+# paths is DB-5's call, once it has migrated.
 [features]
 canon-ids = []

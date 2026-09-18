@@ -613,8 +613,15 @@ impl BiIndex {
 pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
     struct E<'a>(RelationId, &'a Position, &'a Position);
     impl<'a> ContentAddressed for E<'a> {
+        /// OFF: the historical debug-text digest, byte for byte.
+        #[cfg(not(feature = "canon-ids"))]
         fn canonical_bytes(&self) -> Vec<u8> {
             format!("{:?}|{:?}|{:?}", self.0, self.1, self.2).into_bytes()
+        }
+        /// ON (DB-4a, EDGE-ID-1): canonical edge bytes over position strings.
+        #[cfg(feature = "canon-ids")]
+        fn canonical_bytes(&self) -> Vec<u8> {
+            crate::canon::ids::edge_canonical_bytes(&format!("{:?}", self.0), self.1, self.2)
         }
         fn position_kind(&self) -> PositionKind {
             PositionKind::Edge(EdgeKind::Directed(self.0, Direction::Forward))
@@ -634,8 +641,13 @@ pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> Edg
     let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
     struct E<'a>(SymRelationId, &'a Position, &'a Position);
     impl<'a> ContentAddressed for E<'a> {
+        #[cfg(not(feature = "canon-ids"))]
         fn canonical_bytes(&self) -> Vec<u8> {
             format!("{:?}|{:?}|{:?}", self.0, self.1, self.2).into_bytes()
+        }
+        #[cfg(feature = "canon-ids")]
+        fn canonical_bytes(&self) -> Vec<u8> {
+            crate::canon::ids::edge_canonical_bytes(&format!("{:?}", self.0), self.1, self.2)
         }
         fn position_kind(&self) -> PositionKind {
             PositionKind::Edge(EdgeKind::Symmetric(self.0))

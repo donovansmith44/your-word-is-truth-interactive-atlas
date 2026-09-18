@@ -52,7 +52,7 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     let dir = std::env::temp_dir().join("db2b-real-sections");
     let _ = std::fs::remove_dir_all(&dir);
     let t0 = Instant::now();
-    let (m1, written) = write_sections(g, "deadbeefdeadbeef", "test", &dir).expect("write");
+    let (m1, written) = write_sections(g, "test", &dir).expect("write");
     let write_secs = t0.elapsed().as_secs_f64();
     for w in &written {
         println!(
@@ -72,13 +72,13 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     }
     let dump_secs = t1.elapsed().as_secs_f64();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).expect("open");
-    assert_eq!(snap.version().0.hex(), "deadbeefdeadbeef");
+    assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(g), "one root: the snapshot, the manifest and the in-memory graph agree");
     let t2 = Instant::now();
     assert_answers_match(&snap, g);
     let admit_secs = t2.elapsed().as_secs_f64();
     let dir2 = std::env::temp_dir().join("db2b-real-sections-2");
     let _ = std::fs::remove_dir_all(&dir2);
-    let (m2, _) = write_sections(g, "deadbeefdeadbeef", "test", &dir2).expect("write 2");
+    let (m2, _) = write_sections(g, "test", &dir2).expect("write 2");
     assert_eq!(m1.root, m2.root, "determinism: two writes, one root");
     assert_eq!(
         m1.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),

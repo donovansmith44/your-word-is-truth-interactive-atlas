@@ -3,6 +3,10 @@
 //! `manifest.toml`. Rows first, indexes after (spec §6.1 step 2), one
 //! transaction per section, `VACUUM` before close.
 //!
+//! DB-4a: the manifest `root` IS the version root
+//! (`atlas_graph_types::sections::version_root`); `meta.graph_version` is
+//! gone and `SqliteSnapshot::version` reads the root.
+//!
 //! Judgment call 1 (plan): `edge_index` is written from Rust out of the
 //! partition, not by `INSERT … SELECT` per family -- edge ids are content
 //! hashes SQLite cannot compute, and `Graph::row_edges()` is the one
@@ -23,7 +27,8 @@ use rusqlite::{Connection, Transaction};
 
 use super::columns::JustificationWriter;
 use super::ddl::{create_indexes, create_tables};
-use super::logical::{logical_dump_of_partition, logical_hash};
+use super::logical::logical_hash;
+use atlas_graph_types::sections::logical_dump_section;
 use super::manifest::{root_of, write_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
 use super::partition::{node_kind_ordinal, partition, EdgeEntryOut, SectionPartition};
 use super::rows::insert_row;
@@ -145,15 +150,17 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn write_one(p: &SectionPartition, graph_version_hex: &str, compiler: &str, built: &str, out_dir: &Path) -> Result<WrittenSection, SqliteError> {
+fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_dir: &Path) -> Result<WrittenSection, SqliteError> {
     let started = Instant::now();
     let name = p.section.name();
     let tmp = out_dir.join(format!("{name}.tmp.sqlite"));
     let _ = std::fs::remove_file(&tmp);
 
-    // The logical hash is a pure function of the partition; compute it
-    // first so it can be stamped into `meta` and named on the file.
-    let logical = logical_hash(&logical_dump_of_partition(p));
+    // The logical hash is a pure function of the graph and the section
+    // (`sections::logical_dump_section`, the same walk `version_root`
+    // hashes); computed first so it can be stamped into `meta` and named
+    // on the file.
+    let logical = logical_hash(&logical_dump_section(g, p.section));
 
     let mut conn = Connection::open(&tmp)?;
     create_tables(&conn, p.section)?;
@@ -184,7 +191,6 @@ fn write_one(p: &SectionPartition, graph_version_hex: &str, compiler: &str, buil
             ("canon_version", CANON_VERSION.to_string()),
             ("built", built.to_string()),
             ("hash_width", HASH_WIDTH.to_string()),
-            ("graph_version", graph_version_hex.to_string()),
         ],
     )?;
     conn.execute_batch("VACUUM;")?;
@@ -214,12 +220,7 @@ fn write_one(p: &SectionPartition, graph_version_hex: &str, compiler: &str, buil
 /// Writes every shipped section to `<out_dir>/<name>.<logical>.sqlite`
 /// (stale `<name>.*.sqlite` files are deleted first) and
 /// `<out_dir>/manifest.toml`.
-pub fn write_sections(
-    g: &Graph,
-    graph_version_hex: &str,
-    compiler: &str,
-    out_dir: &Path,
-) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
+pub fn write_sections(g: &Graph, compiler: &str, out_dir: &Path) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
     std::fs::create_dir_all(out_dir)?;
     let parts = partition(g)?;
     for p in &parts {
@@ -236,7 +237,7 @@ pub fn write_sections(
     let built = now_rfc3339();
     let mut written = Vec::with_capacity(parts.len());
     for p in &parts {
-        written.push(write_one(p, graph_version_hex, compiler, &built, out_dir)?);
+        written.push(write_one(g, p, compiler, &built, out_dir)?);
     }
     let sections: Vec<ManifestSection> = written
         .iter()

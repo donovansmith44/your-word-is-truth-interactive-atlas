@@ -19,7 +19,9 @@ name = "atlas-graph-compile"
 path = "src/bins/compile_graph.rs"
 
 [dependencies]
-atlas-graph-types = { path = "../../graph-types" }
+# DB-4a: canon-ids ON for the atlas -- SHA-256-128 pids, canonical edge ids, the
+# manifest root. graph-types' own default stays off for the sibling repo.
+atlas-graph-types = { path = "../../graph-types", features = ["canon-ids"] }
 atlas-core = { path = "../atlas-core" }
 # Disclosed strangler deviation (controller ruling 2): a RUNTIME dependency
 # on atlas-etl, reusing its raw-source parsers (kjv::parse, xrefs::parse,

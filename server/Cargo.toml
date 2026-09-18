@@ -999,3 +999,12 @@ resolver = "2"
 # server binary, not about a vendored C library's codegen).
 [profile.dev.package.libsqlite3-sys]
 opt-level = 2
+
+# DB-4a: with `canon-ids` ON, every artifact load mints ~93k node pids and
+# ~2M edge ids through graph-types' hand-written SHA-256 and canonical JSON,
+# and stamps the manifest root over four section dumps. At `-O0` that pushed
+# gate 1 (artifact load, ceiling 4 s) to 4.49 s; at `-O2` for this ONE
+# package it is back under the ceiling (server/BENCHMARKS.md, DB-4a). The
+# crate's own laws still run under the debug profile from `graph-types/`.
+[profile.dev.package.atlas-graph-types]
+opt-level = 2
