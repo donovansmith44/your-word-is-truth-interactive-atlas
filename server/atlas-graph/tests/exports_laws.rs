@@ -81,6 +81,15 @@ fn built() -> Built {
             // NODE1-ROWS-1: container edges are declared rows, lowered by
             // build_indexes above -- no derived-edge step exists any more.
             let chronology = atlas_graph::Chronology::from_derivation(chrono);
+            // DB-4b: the bare path attaches the graph-derived extra tables
+            // before publishing, exactly as `bins/compile_graph.rs` does
+            // (`extras_for_artifact`) and as `GraphService::assemble` does on
+            // every path -- the root covers them now (spec 3.4). No sidecar
+            // files and no red-letter corpus are in hand here, so this is the
+            // from-sources shape: projections, event_date, heading_index.
+            let extras = atlas_graph::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono.resolved, &std::collections::HashMap::new())
+                .expect("the real graph's projections encode");
+            extras.attach(&mut graph);
 
             let gazetteer = exports::gazetteer_places(&graph);
             let events = exports::chronology_events(&graph, &chronology);
