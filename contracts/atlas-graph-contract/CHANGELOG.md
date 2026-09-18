@@ -34,6 +34,16 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.6.0** (Batch DB-4c) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The `contract` fixture's advertised AQC range moved 0.3.0 -> 0.4.0 -- the
+  LAST root move: `event_date` gained the chronology's `source_meta`
+  columns (the Event wire's curated `to_year`/`order_key`, which DB-4b's
+  fold had left out), so core's logical hash and the root moved once more.
+  The recorded `/api/contract` body (the HTTP pact) also gains
+  `manifest_schema` and `section_schema_version` (additive, DB-4c's read
+  cutover: the served identity is the manifest's; the `contract` fixture
+  pins only the range). No edge id, no pid, no scenario text moved.
+
 - **0.5.0** (Batch DB-4b) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The `contract` fixture's advertised AQC range moved 0.2.0 -> 0.3.0: the
   version root moved once more when the logical dump widened to the node

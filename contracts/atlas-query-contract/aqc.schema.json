@@ -3,7 +3,7 @@
   "$id": "https://bible-atlas.internal/contracts/atlas-query-contract/aqc.schema.json",
   "title": "Atlas Query Contract (AQC) v0.1.0",
   "description": "SNAPSHOT of today's actually-consumed wire shapes (spec §9 Q4, recommended scope). Every schema below is a field-for-field transcription of the real provider handler/DTO named in its own 'x-source' — this document does not redesign anything; it documents what already ships. Zero server behavior change accompanies this version; the ONLY new behavior in this batch is the /api/contract endpoint itself (ContractOut, §6 below).",
-  "version": "0.3.0",
+  "version": "0.4.0",
 
   "x-queries": {
     "FocusQuery": {
