@@ -1,0 +1,36 @@
+schema = 1
+compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
+built = "2026-09-18T02:51:01Z"
+root = "c454506ef781204d568c5d0a5b1c444d"
+
+[[section]]
+name = "core"
+required = true
+logical = "1e8ec060514b2cb11798a9bce2544d0a"
+blob = "7c3111c30cff799a02565030706a888e4e25c560537cef1b6cc6adfc1cdf79ff"
+bytes = 7561308
+schema_version = 14
+
+[[section]]
+name = "kjv"
+required = true
+logical = "abec1ca14dacb605148520b8d59cb4ec"
+blob = "8ac10dd0a9e28afa5bef199a74816afd17136395127b50610dd7cdb3943d7ac8"
+bytes = 45649709
+schema_version = 14
+
+[[section]]
+name = "concord"
+required = false
+logical = "fd4aca72b284947585df39619d67261b"
+blob = "84ad871f811ff7ce1076785a61e5716b11539c26840c11b6586696e9ddc9f5d5"
+bytes = 1091861
+schema_version = 14
+
+[[section]]
+name = "kretzmann"
+required = false
+logical = "cfebcd669fe2737850598fbc8b57ff24"
+blob = "5a70ba4c429210e610231ee835df21f94817505e00e41844b2a17a8b3eba2692"
+bytes = 9166273
+schema_version = 14

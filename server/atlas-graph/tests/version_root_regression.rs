@@ -375,4 +375,18 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 /// lines for the four shipped sections, each logical hash over that
 /// section's own dump. 32 hex from here on; the same number the section
 /// writer stamps in manifest.toml and SqliteSnapshot::version reads.
-const EXPECTED_VERSION_HEX: &str = "c76f205c0f596b1541e8f215b934a7cb";
+/// (Captured value then: "c76f205c0f596b1541e8f215b934a7cb".)
+/// MOVED AGAIN (DB-4b, 2026-09-17): the logical dump widened. Every
+/// section's dump now ends with its extra tables (spec 5.3-5.6 via
+/// `sections::extra_tables_of`): the node projections (`place`, `era`,
+/// `polity_era`, `verse`, `concord_unit`), `event_date` (the resolved
+/// chronology, seq = the total order), `heading_index` and
+/// `red_letter_span` -- attached by `GraphService::assemble` on EVERY
+/// path -- plus the nine folded sidecars on the artifact path. This
+/// from-sources harness attaches the graph-derived tables only (no
+/// sidecar files in hand: `sidecars = None`, disclosed in `assemble`'s
+/// doc), so its root is NOT data/compiled/manifest.toml's; the served
+/// root's own regression pin is `extras_real_data.rs`
+/// (`the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars`).
+/// No id moved; only the dump's table list did.
+const EXPECTED_VERSION_HEX: &str = "c3b99decd15cbc000eb81e159db52f75";

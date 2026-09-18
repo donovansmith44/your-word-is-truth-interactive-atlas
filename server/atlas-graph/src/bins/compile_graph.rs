@@ -43,15 +43,15 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use atlas_graph_types::store::{GraphPublisher, MemStore};
 
-/// DB-2b: `--sections-out <dir>` -- where the SQLite section files and
-/// `manifest.toml` are written (spec §6.1). Default: `<out parent>/../cache/
-/// sections-build`, i.e. `data/cache/sections-build` for the documented
-/// `--out data/compiled/graph.bin` -- a gitignored build output; committed
-/// sections arrive at DB-4.
-fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, PathBuf)> {
+/// DB-4b: the SQLite sections' home IS `--data-dir` (spec §2.3:
+/// `data/compiled/manifest.toml` + `data/compiled/sections/*.sqlite.zst`,
+/// committed); `--sections-cache <dir>` overrides the unpack cache the
+/// uncompressed files are written into (default: `<data-dir>/../cache/
+/// sections`, gitignored).
+fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, Option<PathBuf>)> {
     let mut data_dir: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
-    let mut sections_out: Option<PathBuf> = None;
+    let mut sections_cache: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -63,9 +63,9 @@ fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, PathBuf)> {
                 i += 1;
                 out = Some(PathBuf::from(args.get(i).context("--out requires a value")?));
             }
-            "--sections-out" => {
+            "--sections-cache" => {
                 i += 1;
-                sections_out = Some(PathBuf::from(args.get(i).context("--sections-out requires a value")?));
+                sections_cache = Some(PathBuf::from(args.get(i).context("--sections-cache requires a value")?));
             }
             other => anyhow::bail!("unrecognized argument: {other}"),
         }
@@ -73,15 +73,12 @@ fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, PathBuf)> {
     }
     let data_dir = data_dir.context("--data-dir is required, e.g. --data-dir ../data/compiled")?;
     let out = out.context("--out is required, e.g. --out ../data/compiled/graph.bin")?;
-    let sections_out = sections_out.unwrap_or_else(|| {
-        out.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from(".")).join("..").join("cache").join("sections-build")
-    });
-    Ok((data_dir, out, sections_out))
+    Ok((data_dir, out, sections_cache))
 }
 
 fn main() -> Result<()> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    let (data_dir, out_path, sections_out) = parse_args(&raw)?;
+    let (data_dir, out_path, sections_cache) = parse_args(&raw)?;
 
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
@@ -313,6 +310,23 @@ fn main() -> Result<()> {
     // public path to a `GraphVersion` from an owned `Graph` (`store::
     // version_of` is a graph-types-private fn; graph-types stays untouched,
     // per the EXTEND-ONLY rule). Consumes `graph_a_indexed`: its last use.
+    // DB-4b: the non-graph section tables (projections, resolved
+    // chronology, headings, red-letter spans, the nine folded sidecars)
+    // ride BOTH graphs into the root -- `graph_a_indexed` publishes the
+    // version the exports stamp, `graph_b` is what the sections are written
+    // from -- so `atlas_version_root`, `manifest.toml`'s root and the
+    // server's `from_artifact` version are one number. Read from the SAME
+    // files the server reads (`data_dir`), never from this binary's
+    // in-memory `AtlasData`, so the two sides agree by construction.
+    let extras = atlas_graph::sqlite::extras::extras_for_artifact(&graph_a_indexed, &chronology.chrono.resolved, &data_dir)
+        .context("folding the sidecars and projections (DB-4b)")?;
+    extras.attach(&mut graph_a_indexed);
+    extras.attach(&mut graph_b);
+    println!(
+        "atlas-graph-compile: DB-4b -- {} extra tables attached ({} rows)",
+        extras.tables.len(),
+        extras.tables.iter().map(|t| t.rows.len()).sum::<usize>()
+    );
     let mut version_store = MemStore::default();
     let graph_version = version_store.publish(graph_a_indexed);
     let version_hex = atlas_graph::version_hex(graph_version);
@@ -365,39 +379,61 @@ fn main() -> Result<()> {
     std::fs::write(&kretzmann_path, format!("{kretzmann_json}\n")).with_context(|| format!("writing {}", kretzmann_path.display()))?;
     println!("atlas-graph-compile: wrote {} ({} tentative date rows)", kretzmann_path.display(), kretzmann_export.rows.len());
 
-    // DB-2b (spec §6.1, §6.2): the SQLite sections, written LAST -- after
-    // `graph.bin`, the red-letter spans and every export are on disk, so a
-    // DB-2b failure never leaves the served artifact unwritten. `graph_b`
-    // (the independent model the admission above compared against) is
-    // still alive here and carries the same rows; `version_hex` is the
-    // in-memory `GraphVersion` this batch stamps as `meta.graph_version`
-    // (plan judgment call 4; DB-4 replaces it with the manifest root).
-    std::fs::create_dir_all(&sections_out).with_context(|| format!("creating {}", sections_out.display()))?;
-    println!("atlas-graph-compile: DB-2b -- writing SQLite sections to {} ...", sections_out.display());
+    // DB-2b/DB-4b (spec §6.1, §6.2): the SQLite sections, written LAST --
+    // after `graph.bin`, the red-letter spans and every export are on
+    // disk, so a section failure never leaves the served artifact
+    // unwritten. `graph_b` (the independent model the admission above
+    // compared against) is still alive here, carries the same rows, and
+    // has the same extras attached. Layout (spec §2.3): the committed
+    // `manifest.toml` + `sections/*.sqlite.zst` under `--data-dir`, the
+    // uncompressed files in the unpack cache.
+    let layout = match sections_cache {
+        Some(cache) => atlas_graph::sqlite::source::SectionLayout { compiled_dir: data_dir.clone(), cache_dir: cache },
+        None => atlas_graph::sqlite::source::SectionLayout::under(&data_dir),
+    };
+    println!(
+        "atlas-graph-compile: DB-4b -- writing SQLite sections to {} (cache {}) ...",
+        layout.sections_dir().display(),
+        layout.cache_dir.display()
+    );
     let t = Instant::now();
     let compiler = format!("atlas-graph-compile {} (rustc {})", env!("CARGO_PKG_VERSION"), "1.97.1");
-    let layout = atlas_graph::sqlite::source::SectionLayout::under(&sections_out);
-    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &atlas_graph::sqlite::extras::Extras::default(), &compiler, &layout)
+    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &extras, &compiler, &layout)
         .map_err(|e| anyhow::anyhow!("{e}"))
         .context("writing the SQLite sections")?;
     for w in &written {
         println!(
-            "atlas-graph-compile:   {:<10} {:>7} nodes {:>8} rows {:>8} edges {:>11} bytes  logical {}  ({:?})",
+            "atlas-graph-compile:   {:<10} {:>7} nodes {:>8} rows {:>7} extra {:>8} edges {:>11} -> {:>10} bytes ({})  logical {}  ({:?})",
             w.section.name(),
             w.node_count,
             w.row_count,
+            w.extra_row_count,
             w.edge_count,
+            w.uncompressed_bytes,
             w.bytes,
+            if w.reused_blob { "blob reused" } else { "zstd-19" },
             w.logical,
             w.elapsed
         );
     }
-    println!("atlas-graph-compile: DB-2b -- sections written in {:?}; manifest root {}", t.elapsed(), manifest.root);
-    println!("atlas-graph-compile: DB-2b ADMISSION -- SqliteSnapshot vs the model graph ...");
+    println!("atlas-graph-compile: DB-4b -- sections written in {:?}; manifest root {}", t.elapsed(), manifest.root);
+    // THE root-equality proof on the real graph, at compile: the manifest's
+    // root (over the four sections' logical dumps) is the version the
+    // exports carry and the server publishes.
+    anyhow::ensure!(
+        manifest.root == version_hex,
+        "DB-4b: manifest root {} != the published version {} -- the sections and the in-memory graph disagree",
+        manifest.root,
+        version_hex
+    );
+    println!("atlas-graph-compile: DB-4b ADMISSION -- SqliteSnapshot (through CommittedZstdSource) vs the model graph ...");
     let t = Instant::now();
-    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(&layout.manifest_path(), &atlas_graph::sqlite::source::CommittedZstdSource { layout: layout.clone() })
-        .map_err(|e| anyhow::anyhow!("{e}"))
-        .context("opening the written sections")?;
+    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(
+        &layout.manifest_path(),
+        &atlas_graph::sqlite::source::CommittedZstdSource { layout: layout.clone() },
+    )
+    .map_err(|e| anyhow::anyhow!("{e}"))
+    .context("opening the written sections")?;
     for w in &written {
         let conn = atlas_graph::sqlite::open_read_only(&w.path).map_err(|e| anyhow::anyhow!("{e}"))?;
         let recomputed = atlas_graph::sqlite::logical::logical_hash(
@@ -405,7 +441,7 @@ fn main() -> Result<()> {
         );
         anyhow::ensure!(
             recomputed == w.logical,
-            "DB-2b: {} logical hash from tables {} != from partition {}",
+            "DB-4b: {} logical hash from tables {} != from partition {}",
             w.section.name(),
             recomputed,
             w.logical
@@ -413,7 +449,7 @@ fn main() -> Result<()> {
     }
     atlas_graph_types::store::assert_answers_match(&snap, &graph_b);
     println!(
-        "atlas-graph-compile: DB-2b ADMISSION passed (assert_answers_match over SqliteSnapshot + per-section logical hashes) in {:?}",
+        "atlas-graph-compile: DB-4b ADMISSION passed (assert_answers_match over SqliteSnapshot + per-section logical hashes + root equality) in {:?}",
         t.elapsed()
     );
 

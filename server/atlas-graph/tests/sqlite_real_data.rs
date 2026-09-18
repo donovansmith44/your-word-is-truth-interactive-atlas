@@ -17,6 +17,7 @@ use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
 use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::open_read_only;
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
+use atlas_graph::sqlite::extras::{extras_for_artifact, Extras};
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph::sqlite::writer::write_sections;
 
@@ -30,19 +31,27 @@ fn open_written(dir: &Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::Sqlit
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::store::{assert_answers_match, GraphSnapshot};
 
-/// Loaded ONCE for the binary (the same helper `canon_real_data.rs` uses).
-fn committed_graph() -> &'static Graph {
-    static CACHED: OnceLock<Graph> = OnceLock::new();
+fn data_dir() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
+}
+
+/// Loaded ONCE for the binary (the same helper `canon_real_data.rs` uses),
+/// DB-4b: with the extras attached from the same sidecar files the
+/// compile and the server read (`extras_for_artifact`).
+fn committed_graph() -> &'static (Graph, Extras) {
+    static CACHED: OnceLock<(Graph, Extras)> = OnceLock::new();
     CACHED.get_or_init(|| {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin");
+        let path = data_dir().join("graph.bin");
         let dump = atlas_graph::artifact::read_file(&path).expect(
             "data/compiled/graph.bin must exist -- run `cargo run -p atlas-graph --bin atlas-graph-compile` from server/ first",
         );
-        let (mut graph, _stats, _ews, _chronology) =
+        let (mut graph, _stats, _ews, chronology) =
             atlas_graph::artifact::to_service_parts(dump).expect("to_service_parts must succeed");
         graph.build_indexes();
         atlas_graph::event_world::add_justified_by(&mut graph);
-        graph
+        let extras = extras_for_artifact(&graph, &chronology.chrono.resolved, &data_dir()).expect("the sidecars fold");
+        extras.attach(&mut graph);
+        (graph, extras)
     })
 }
 
@@ -57,16 +66,16 @@ const CEILING_SECS: u64 = 570;
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashes_agree() {
-    let g = committed_graph();
+    let (g, extras) = committed_graph();
     let dir = std::env::temp_dir().join("db2b-real-sections");
     let _ = std::fs::remove_dir_all(&dir);
     let t0 = Instant::now();
-    let (m1, written) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &layout_under(&dir)).expect("write");
+    let (m1, written) = write_sections(g, extras, "test", &layout_under(&dir)).expect("write");
     let write_secs = t0.elapsed().as_secs_f64();
     for w in &written {
         println!(
-            "DB-2b SECTION {:?}: {} nodes, {} rows, {} edges, {} bytes, logical {}, in {:?}",
-            w.section, w.node_count, w.row_count, w.edge_count, w.bytes, w.logical, w.elapsed
+            "DB-4b SECTION {:?}: {} nodes, {} rows, {} extra rows, {} edges, {} -> {} bytes, logical {}, in {:?}",
+            w.section, w.node_count, w.row_count, w.extra_row_count, w.edge_count, w.uncompressed_bytes, w.bytes, w.logical, w.elapsed
         );
     }
     let t1 = Instant::now();
@@ -87,7 +96,7 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     let admit_secs = t2.elapsed().as_secs_f64();
     let dir2 = std::env::temp_dir().join("db2b-real-sections-2");
     let _ = std::fs::remove_dir_all(&dir2);
-    let (m2, _) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &layout_under(&dir2)).expect("write 2");
+    let (m2, _) = write_sections(g, extras, "test", &layout_under(&dir2)).expect("write 2");
     assert_eq!(m1.root, m2.root, "determinism: two writes, one root");
     assert_eq!(
         m1.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
@@ -95,9 +104,19 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
         "determinism: every logical hash"
     );
     assert_eq!(read_manifest(&layout_under(&dir).manifest_path()).unwrap().root, m1.root);
+    // DB-4b: the COMMITTED manifest is what this graph + these sidecars produce
+    let committed = read_manifest(&data_dir().join("manifest.toml")).expect("data/compiled/manifest.toml is committed");
+    assert_eq!(committed.root, m1.root, "data/compiled/manifest.toml's root is this graph's (recompile if the sidecars or the graph moved)");
+    assert_eq!(
+        committed.sections.iter().map(|s| (&s.name, &s.logical)).collect::<Vec<_>>(),
+        m1.sections.iter().map(|s| (&s.name, &s.logical)).collect::<Vec<_>>()
+    );
+    for w in &written {
+        assert!(w.bytes <= atlas_graph::sqlite::blob::BLOB_CEILING, "{:?}: {} bytes over the ceiling", w.section, w.bytes);
+    }
     let total = t0.elapsed().as_secs_f64();
     println!(
-        "DB-2b GATE: write {write_secs:.1}s, dump-recompute {dump_secs:.1}s, assert_answers_match {admit_secs:.1}s, total {total:.1}s (ceiling {CEILING_SECS}s)"
+        "DB-4b GATE: write {write_secs:.1}s (incl. zstd-19), dump-recompute {dump_secs:.1}s, assert_answers_match {admit_secs:.1}s, total {total:.1}s (ceiling {CEILING_SECS}s)"
     );
-    assert!(total <= CEILING_SECS as f64, "DB-2b gate {total:.1}s exceeds ceiling {CEILING_SECS}s");
+    assert!(total <= CEILING_SECS as f64, "DB-4b gate {total:.1}s exceeds ceiling {CEILING_SECS}s");
 }

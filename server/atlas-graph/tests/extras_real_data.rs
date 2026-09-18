@@ -92,3 +92,12 @@ fn a_fixture_directory_without_canon_json_yields_no_sidecars() {
     std::fs::create_dir_all(&dir).unwrap();
     assert!(Sidecars::load(&dir).unwrap().is_none());
 }
+
+/// DB-4b, the server-path proof: `GraphService::from_artifact` (what
+/// `atlas-server` and `bibex` load) publishes the committed manifest's root.
+#[test]
+fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
+    let service = atlas_graph::service::GraphService::from_artifact(&data_dir().join("graph.bin")).expect("graph.bin loads");
+    let manifest = atlas_graph::sqlite::manifest::read_manifest(&data_dir().join("manifest.toml")).expect("manifest.toml is committed");
+    assert_eq!(service.version().0.hex(), manifest.root, "one root: the served version and data/compiled/manifest.toml");
+}

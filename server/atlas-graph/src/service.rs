@@ -259,7 +259,7 @@ impl GraphService {
             }
             None => HashMap::new(),
         };
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans))
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans, None))
     }
 
     /// Test-fixture path: builds from an already-parsed `(Canon, verses)`
@@ -282,7 +282,7 @@ impl GraphService {
         // source bytes at all on this test-fixture path) -- an honestly
         // empty span table, the SAME "absent == empty" treatment every
         // other companion here gets.
-        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new()))
+        Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new(), None))
     }
 
     /// M-C (controller decision 4): loads from a SERIALIZED ARTIFACT --
@@ -317,7 +317,11 @@ impl GraphService {
         // this path (`red_letter_spans::read_file`'s own doc comment).
         let spans_path = path.parent().map(|p| p.join("red-letter-spans.json")).unwrap_or_else(|| std::path::PathBuf::from("red-letter-spans.json"));
         let red_letter_spans: HashMap<String, Vec<(usize, usize)>> = crate::red_letter_spans::read_file(&spans_path)?.unwrap_or_default().into_iter().collect();
-        Ok(Self::assemble(graph, stats, event_world_stats, chronology, red_letter_spans))
+        // DB-4b: the sidecars beside `graph.bin` (`None` for a fixture
+        // directory without `canon.json` -- graph-derived tables only).
+        let data_dir = path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| std::path::PathBuf::from("."));
+        let sidecars = crate::sqlite::sidecars::Sidecars::load(&data_dir)?;
+        Ok(Self::assemble(graph, stats, event_world_stats, chronology, red_letter_spans, sidecars.as_ref()))
     }
 
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
@@ -371,7 +375,24 @@ impl GraphService {
     /// `AtlasData`, via `Chronology::build`, on the from-sources paths; from
     /// the artifact's own serialized fields, via `artifact::to_service_parts`,
     /// on the from-artifact path) and hands the finished value in here.
-    fn assemble(graph: Graph, stats: BuildStats, event_world_stats: EventWorldStats, chronology: Chronology, red_letter_spans: HashMap<String, Vec<(usize, usize)>>) -> Self {
+    ///
+    /// DB-4b: `sidecars` -- the compiled directory's own `AtlasData` +
+    /// `sources.json` (`from_artifact` loads them beside `graph.bin`) --
+    /// fold into the graph's `extra_tables` here, before `publish`, so this
+    /// service's version IS `manifest.toml`'s root. The from-sources
+    /// constructors pass `None`: graph-derived tables only, a root that is
+    /// DISCLOSED as not the manifest's (the `--build-from-raw` dev fallback
+    /// and the fixture constructors). `heading_index` is built twice on the
+    /// way (once for the service, once inside `Extras::graph_derived`):
+    /// 1,711 events, milliseconds, one function, no drift.
+    fn assemble(
+        mut graph: Graph,
+        stats: BuildStats,
+        event_world_stats: EventWorldStats,
+        chronology: Chronology,
+        red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
+        sidecars: Option<&crate::sqlite::sidecars::Sidecars>,
+    ) -> Self {
         let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for row in &graph.succession {
             narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
@@ -386,6 +407,15 @@ impl GraphService {
         // chronology tie-breaking from the timeline's one authority instead
         // of the payload's now-removed `from_year`/`order_key` mirror.
         let heading_index = crate::heading::build_heading_index(&graph, &chronology.chrono.resolved);
+        // DB-4b: the non-graph section tables ride the graph into the root
+        // (graph-types `Graph::extra_tables`), computed from the same values
+        // the section writer folds (`sqlite::extras`).
+        let mut extras = crate::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono.resolved, &red_letter_spans)
+            .expect("assemble: the graph's projections encode");
+        if let Some(sc) = sidecars {
+            extras.extend(crate::sqlite::sidecars::fold_sidecars(&sc.atlas, &sc.sources).expect("assemble: the sidecars fold"));
+        }
+        extras.attach(&mut graph);
         // M-C2 (requirement 2): the SAME treatment for the cites relation's
         // own span data -- see this struct's own `cross_refs_by_from` doc
         // comment.
@@ -791,7 +821,7 @@ mod tests {
     fn provenance_service(g: Graph) -> GraphService {
         let mut g = g;
         g.build_indexes();
-        GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new())
+        GraphService::assemble(g, BuildStats::default(), EventWorldStats::default(), Chronology::from_derivation(crate::event_world::ChronologyDerivation::default()), HashMap::new(), None)
     }
 
     fn prov_range() -> atlas_graph_types::text::BibleLocusRange {
