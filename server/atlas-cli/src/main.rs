@@ -92,6 +92,25 @@ fn parse_find_term(rest: &[String]) -> Result<&str, CliError> {
     }
 }
 
+/// Shared by `run` and `run_json` -- `verify` takes nothing or
+/// `--section <name>` (DB-4b).
+fn parse_verify_args(rest: &[String]) -> Result<Option<String>, CliError> {
+    match &rest[1..] {
+        [] => Ok(None),
+        [flag, name] if flag == "--section" => Ok(Some(name.clone())),
+        [flag] if flag == "--section" => Err(CliError::bad_usage(
+            "--section requires a value",
+            "usage: bibex verify [--section <name>]",
+            "name one of the manifest's sections (core, kjv, concord, kretzmann), or omit --section to verify all",
+        )),
+        other => Err(CliError::bad_usage(
+            format!("unrecognized arguments for 'verify': {}", other.join(" ")),
+            "usage: bibex verify [--section <name>]",
+            "run 'bibex verify' with no arguments, or exactly '--section <name>'",
+        )),
+    }
+}
+
 /// Shared by `run` and `run_json` -- `kinds` takes no arguments at all.
 fn check_no_kinds_args(rest: &[String]) -> Result<(), CliError> {
     if rest.len() > 1 {
@@ -142,9 +161,13 @@ fn run(args: &[String]) -> Result<String, CliError> {
             check_no_kinds_args(&rest)?;
             Ok(commands::kinds::run())
         }
+        "verify" => {
+            let only = parse_verify_args(&rest)?;
+            commands::verify::run(&data_dir, only.as_deref())
+        }
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
-            "'atlas' only knows verse, chapter, node, edges, find, kinds, tutorial, help",
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, tutorial, help",
             "run 'bibex help' for the full list",
         )),
     }
@@ -162,7 +185,7 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
         return Err(CliError::bad_usage(
             "a bare invocation has no --json output",
             "a bare invocation prints a prose help block, not a machine-shaped answer",
-            "run 'bibex' or 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+            "run 'bibex' or 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds/verify)",
         ));
     };
 
@@ -170,12 +193,12 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
         "help" => Err(CliError::bad_usage(
             "'help' has no --json output",
             "help is a prose command list, not a machine-shaped answer",
-            "run 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+            "run 'bibex help' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds/verify)",
         )),
         "tutorial" => Err(CliError::bad_usage(
             "'tutorial' has no --json output",
             "a tutorial is a guided prose walkthrough by nature, not a machine-shaped answer",
-            "run 'bibex tutorial' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds)",
+            "run 'bibex tutorial' without --json, or use --json with a real query command (verse/chapter/node/edges/find/kinds/verify)",
         )),
         "verse" => {
             let ref_raw = one_positional(&rest, "verse", "<ref>")?;
@@ -206,9 +229,13 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
             check_no_kinds_args(&rest)?;
             Ok(commands::kinds::run_json())
         }
+        "verify" => {
+            let only = parse_verify_args(&rest)?;
+            commands::verify::run_json(&data_dir, only.as_deref())
+        }
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
-            "'atlas' only knows verse, chapter, node, edges, find, kinds, tutorial, help",
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, tutorial, help",
             "run 'bibex help' for the full list",
         )),
     }

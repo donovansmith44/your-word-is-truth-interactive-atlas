@@ -1,5 +1,5 @@
 //! `CliError`: the one error type every command function returns. Fixes
-//! the CONTRACT's five-class taxonomy (CONTRACT.md "Error taxonomy") --
+//! the CONTRACT's six-class taxonomy (CONTRACT.md "Error taxonomy") --
 //! one fixed nonzero exit code per class, one fixed message shape
 //! (`atlas: error (<code>): <WHAT> -- <WHY> -- <WHAT TO DO>`), printed to
 //! stderr by `main.rs`'s own top-level dispatch, never inline by a command
@@ -24,6 +24,10 @@ pub enum CliError {
     /// zero rows (CONTRACT.md: distinct from `NotFound` -- the id/ref is
     /// real, the *question* about it just has no answer right now).
     EmptyResult { what: String, why: String, do_: String },
+    /// DB-4b: `bibex verify` found the data on disk disagreeing with its
+    /// manifest -- a logical or transport hash mismatch, a required
+    /// section's blob missing, a manifest whose root does not recompute.
+    IntegrityFailed { what: String, why: String, do_: String },
 }
 
 impl CliError {
@@ -42,6 +46,9 @@ impl CliError {
     pub fn empty_result(what: impl Into<String>, why: impl Into<String>, do_: impl Into<String>) -> Self {
         CliError::EmptyResult { what: what.into(), why: why.into(), do_: do_.into() }
     }
+    pub fn integrity_failed(what: impl Into<String>, why: impl Into<String>, do_: impl Into<String>) -> Self {
+        CliError::IntegrityFailed { what: what.into(), why: why.into(), do_: do_.into() }
+    }
 
     /// The taxonomy's own fixed class name, exactly as CONTRACT.md's table
     /// names it -- printed in the `(<code>)` slot and used by tests to
@@ -53,6 +60,7 @@ impl CliError {
             CliError::NotFound { .. } => "not_found",
             CliError::DataLoadFailed { .. } => "data_load_failed",
             CliError::EmptyResult { .. } => "empty_result",
+            CliError::IntegrityFailed { .. } => "integrity_failed",
         }
     }
 
@@ -64,6 +72,7 @@ impl CliError {
             CliError::NotFound { .. } => 3,
             CliError::BadUsage { .. } => 4,
             CliError::DataLoadFailed { .. } => 5,
+            CliError::IntegrityFailed { .. } => 6,
         }
     }
 
@@ -73,7 +82,8 @@ impl CliError {
             | CliError::BadRef { what, why, do_ }
             | CliError::NotFound { what, why, do_ }
             | CliError::DataLoadFailed { what, why, do_ }
-            | CliError::EmptyResult { what, why, do_ } => (what, why, do_),
+            | CliError::EmptyResult { what, why, do_ }
+            | CliError::IntegrityFailed { what, why, do_ } => (what, why, do_),
         }
     }
 

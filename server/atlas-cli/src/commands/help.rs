@@ -11,10 +11,12 @@ pub fn text() -> String {
     out.push_str("  edges <id> --kind K [opts]       one frontier page at a node\n");
     out.push_str("  find <term>                      name lookup across Place/Event/Narrative/Era/Polity/Person/CatechismItem\n");
     out.push_str("  kinds                            the full edge-kind vocabulary (--kind tokens) for 'edges'\n");
+    out.push_str("  verify [--section <name>]        recompute every section's logical hash, blob hash and the root against\n");
+    out.push_str("                                    manifest.toml (exit 6, integrity_failed, on any mismatch)\n");
     out.push_str("  tutorial                         a guided, numbered walkthrough (real queries, real output)\n");
     out.push_str("  help                             this text\n\n");
     out.push_str("global flags:\n");
-    out.push_str("  --data-dir <path>                where graph.bin lives (default: ../data/compiled)\n");
+    out.push_str("  --data-dir <path>                where graph.bin and manifest.toml live (default: ../data/compiled)\n");
     out.push_str("  --json                           machine-readable JSON on stdout instead of prose (see CONTRACT.md's\n");
     out.push_str("                                    own --json mode section); a failure is a JSON object on stderr,\n");
     out.push_str("                                    same exit codes; not available for tutorial/help/a bare invocation\n\n");

@@ -289,6 +289,36 @@ Person/CatechismItem labels (...)"), not a blank stdout line — `find`'s
 entire output IS the match list, so no matches means the command's whole
 answer came back empty.
 
+### `bibex verify [--section <name>]` (DB-4b)
+
+Spec `docs/superpowers/specs/2026-09-14-relational-artifact-design.md`
+§3.5, verification on demand: recomputes, against `<data-dir>/manifest.toml`,
+each section's LOGICAL hash (from the tables of its cached `.sqlite`,
+unpacked on a cache miss through the same `CommittedZstdSource` the server
+uses), each committed blob's TRANSPORT hash (SHA-256 of
+`<data-dir>/sections/<name>.<logical>.sqlite.zst`), the section's
+`PRAGMA user_version` against `schema_version`, and the root from the
+manifest's own section lines. One line per section, then the root:
+
+```
+core       logical <32 hex>  OK       transport OK       37,949,440 -> 11,510,415 bytes
+kjv        logical <32 hex>  OK       transport OK       246,849,536 -> 61,383,932 bytes
+concord    logical <32 hex>  OK       transport OK       6,815,744 -> 1,626,620 bytes
+kretzmann  logical <32 hex>  OK       transport OK       61,587,456 -> 14,131,688 bytes
+root <32 hex> OK (recomputed from 4 section lines)
+```
+
+`transport` is `OK` | `MISSING` (a required section's blob is absent) |
+`absent (optional)` (an optional section a deployment omitted -- not a
+failure; its logical check reads `skipped`) | `MISMATCH (...)` (both hashes
+named). `logical` is `OK` | `MISMATCH (...)` | `skipped`. `--section <name>`
+limits the per-section checks to that section (an unknown name is
+`bad_usage`); the root line always prints. Any `MISMATCH` or required
+`MISSING`, or a manifest whose root does not recompute, is the
+`integrity_failed` class (exit 6, below); the failing checks are the WHY.
+A data directory with no `manifest.toml` at all is `data_load_failed`.
+Exit 0 only when every check passes.
+
 ## Error taxonomy
 
 Every failure path below prints to **stderr**, in the fixed shape:
@@ -297,7 +327,7 @@ Every failure path below prints to **stderr**, in the fixed shape:
 atlas: error (<code>): <WHAT failed> -- <WHY> -- <WHAT TO DO>
 ```
 
-`<code>` is one of the five class names; the process's exit status is
+`<code>` is one of the six class names; the process's exit status is
 that class's own fixed nonzero code (stable across runs — scripts can
 branch on it). Successful output always goes to stdout; stderr carries
 nothing on a clean run.
@@ -309,6 +339,7 @@ nothing on a clean run.
 | `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no node with that raw id -- try 'atlas find <term>' to locate the id you meant` |
 | `data_load_failed` | 5 | `graph.bin` (or a required compiled JSON file) is missing, unreadable, or fails to parse at startup, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
 | `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | `atlas: error (empty_result): no matches for 'zzqx' -- searched Place/Event/Narrative/Era/Polity labels -- try a shorter or different substring` |
+| `integrity_failed` | 6 | (DB-4b) `bibex verify` found the data on disk disagreeing with its manifest: a section's logical or transport hash mismatch, a required section's blob missing, a manifest whose root does not recompute | `atlas: error (integrity_failed): 1 of 9 checks failed -- concord: transport MISMATCH manifest 0a77... file 3b19... -- recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served` |
 
 "Empty result" is intentionally its OWN class, distinct from `not_found`:
 `not_found` means the id/ref you asked about does not exist at all;
@@ -434,6 +465,7 @@ with a failure:
 | `bibex node <id>` | `{id, kind, label, provenance, edge_summary: [{kind,count}]}` | `{"id":"Event:ab_ur","kind":"Event","label":"Terah's family leaves Ur","provenance":"curated","edge_summary":[{"kind":"located-at","count":1}]}` |
 | `bibex edges <id> --kind K` | `{kind, entries: [{edge, node: {id,kind,label}}], next}` | `{"kind":"located-at","entries":[{"edge":"LocatedAt:...","node":{"id":"Place:ur-1","kind":"Place","label":"Ur 1"}}],"next":null}` |
 | `bibex find <term>` | array of `{kind, id, label}` | `[{"kind":"Person","id":"Person:moses_2108","label":"Moses"}]` |
+| `bibex verify` | `{root: {manifest, recomputed, ok}, sections: [{name, required, logical, blob, bytes, transport, logical_check, schema_version, uncompressed_bytes}]}` (DB-4b; `transport` is `ok`/`missing`/`absent`/`mismatch`, `logical_check` is `ok`/`mismatch`/`skipped`; a failure is the error envelope, exit 6) | `{"root":{"manifest":"e5d6...","recomputed":"e5d6...","ok":true},"sections":[{"name":"core","required":true,...}]}` |
 | `bibex kinds` | array of `{token, relation, direction}` | `[{"token":"cites","relation":"Cites","direction":"forward"}, ...]` |
 
 ## ID discoverability (BIBEX-1 addendum, ticket 2 — owner order mid-batch,

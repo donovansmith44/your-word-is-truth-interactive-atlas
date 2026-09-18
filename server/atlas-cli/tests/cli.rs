@@ -25,6 +25,23 @@ fn run_with_data_dir(args: &[&str]) -> Output {
     run(&full)
 }
 
+/// DB-4b: the same two shapes against an arbitrary data directory (the
+/// verify tests copy the committed sections and tamper with the copy).
+fn run_with_data_dir_at(dir: &Path, args: &[&str]) -> Output {
+    let dd_str = dir.to_str().expect("data dir path must be valid UTF-8");
+    let mut full = vec!["--data-dir", dd_str];
+    full.extend_from_slice(args);
+    run(&full)
+}
+fn run_json_with_data_dir_at(dir: &Path, args: &[&str]) -> (Output, Option<serde_json::Value>) {
+    let dd_str = dir.to_str().expect("data dir path must be valid UTF-8");
+    let mut full = vec!["--data-dir", dd_str, "--json"];
+    full.extend_from_slice(args);
+    let o = run(&full);
+    let value = if o.status.success() { Some(serde_json::from_str(&stdout(&o)).expect("--json happy path stdout must be valid JSON")) } else { None };
+    (o, value)
+}
+
 fn stdout(o: &Output) -> String {
     String::from_utf8(o.stdout.clone()).expect("stdout must be valid UTF-8")
 }
@@ -793,4 +810,106 @@ fn verse_places_line_names_a_real_place_and_stays_none_for_a_verse_with_no_menti
     let places_line2 = out2.lines().find(|l| l.starts_with("Places:")).expect("a Places: line");
     println!("GEN.1.1  -> {places_line2}");
     assert!(places_line2.contains("(none)"), "GEN.1.1 has no curated place mention and must say so: {out2}");
+}
+
+// ---------------------------------------------------------------------
+// DB-4b: `bibex verify` (spec 3.5, 11; CONTRACT.md "bibex verify").
+// ---------------------------------------------------------------------
+
+#[test]
+fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root() {
+    let o = run_with_data_dir(&["verify"]);
+    assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
+    let text = stdout(&o);
+    for name in ["core", "kjv", "concord", "kretzmann"] {
+        let line = text.lines().find(|l| l.starts_with(name)).unwrap_or_else(|| panic!("no line for {name}: {text}"));
+        assert!(line.contains("logical ") && line.contains(" OK ") && line.contains("transport OK"), "{line}");
+        assert!(line.contains(" -> ") && line.contains(" bytes"), "sizes: {line}");
+    }
+    let last = text.lines().last().unwrap();
+    assert!(last.starts_with("root ") && last.contains(" OK (recomputed from 4 section lines)"), "{text}");
+    assert_eq!(text.lines().count(), 5);
+
+    let (o, v) = run_json(&["verify"]);
+    assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
+    let v = v.unwrap();
+    assert_eq!(v["root"]["ok"], true);
+    assert_eq!(v["root"]["manifest"], v["root"]["recomputed"]);
+    let sections = v["sections"].as_array().unwrap();
+    assert_eq!(sections.len(), 4);
+    assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == 14));
+    assert!(sections.iter().all(|s| s["uncompressed_bytes"].as_u64().unwrap() > s["bytes"].as_u64().unwrap()));
+
+    let o = run_with_data_dir(&["verify", "--section", "concord"]);
+    assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
+    assert_eq!(stdout(&o).lines().count(), 2, "one section line + the root line: {}", stdout(&o));
+    assert!(stdout(&o).starts_with("concord "));
+
+    let o = run_with_data_dir(&["verify", "--section", "nope"]);
+    assert_eq!(o.status.code(), Some(4));
+    assert!(stderr(&o).contains("bad_usage") && stderr(&o).contains("unknown section 'nope'"), "{}", stderr(&o));
+    let o = run_with_data_dir(&["verify", "--section"]);
+    assert_eq!(o.status.code(), Some(4));
+    let o = run_with_data_dir(&["verify", "extra"]);
+    assert_eq!(o.status.code(), Some(4));
+}
+
+#[test]
+fn verify_fails_with_exit_6_on_a_tampered_blob_and_names_both_hashes() {
+    // a private copy: manifest + blobs, no cache, so the tampered blob must be unpacked and refused
+    let src = data_dir();
+    let root = std::env::temp_dir().join(format!("bibex-verify-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let data = root.join("compiled");
+    std::fs::create_dir_all(data.join("sections")).unwrap();
+    std::fs::copy(src.join("manifest.toml"), data.join("manifest.toml")).unwrap();
+    for e in std::fs::read_dir(src.join("sections")).unwrap() {
+        let e = e.unwrap();
+        std::fs::copy(e.path(), data.join("sections").join(e.file_name())).unwrap();
+    }
+    let concord = std::fs::read_dir(data.join("sections"))
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .find(|p| p.file_name().unwrap().to_string_lossy().starts_with("concord."))
+        .expect("a concord blob");
+    let mut bytes = std::fs::read(&concord).unwrap();
+    let mid = bytes.len() / 2;
+    bytes[mid] ^= 0xFF;
+    std::fs::write(&concord, &bytes).unwrap();
+
+    let o = run_with_data_dir_at(&data, &["verify"]);
+    assert_eq!(o.status.code(), Some(6), "stderr: {}", stderr(&o));
+    let err = stderr(&o);
+    assert!(err.contains("integrity_failed") && err.contains("concord: transport MISMATCH manifest ") && err.contains(" file "), "{err}");
+    assert!(err.contains("1 of 9 checks failed"), "{err}");
+    let (o, v) = run_json_with_data_dir_at(&data, &["verify"]);
+    assert_eq!(o.status.code(), Some(6));
+    assert!(v.is_none());
+    let envelope: serde_json::Value = serde_json::from_str(&stderr(&o)).expect("a JSON error envelope on stderr");
+    assert_eq!(envelope["error"]["code"], "integrity_failed");
+    // the other three still verify; the tampered section is the only failure named
+    let o = run_with_data_dir_at(&data, &["verify", "--section", "core"]);
+    assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
+    // nothing landed in the copy's cache for concord (spec 11: no partial file)
+    let cache = root.join("cache").join("sections");
+    if cache.is_dir() {
+        let leftovers: Vec<String> = std::fs::read_dir(&cache).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().to_string()).filter(|n| n.ends_with(".tmp")).collect();
+        assert!(leftovers.is_empty(), "{leftovers:?}");
+    }
+    // a required blob removed is MISSING, exit 6; an optional one removed is absent, exit 0
+    std::fs::remove_file(&concord).unwrap();
+    let o = run_with_data_dir_at(&data, &["verify", "--section", "concord"]);
+    assert_eq!(o.status.code(), Some(0), "an absent optional section is not a failure: {}", stderr(&o));
+    assert!(stdout(&o).contains("absent (optional)"), "{}", stdout(&o));
+    let kjv = std::fs::read_dir(data.join("sections")).unwrap().map(|e| e.unwrap().path()).find(|p| p.file_name().unwrap().to_string_lossy().starts_with("kjv.")).unwrap();
+    std::fs::remove_file(&kjv).unwrap();
+    let o = run_with_data_dir_at(&data, &["verify", "--section", "kjv"]);
+    assert_eq!(o.status.code(), Some(6));
+    assert!(stderr(&o).contains("kjv: required blob MISSING"), "{}", stderr(&o));
+    // no manifest at all is data_load_failed, not integrity_failed
+    let empty = root.join("empty");
+    std::fs::create_dir_all(&empty).unwrap();
+    let o = run_with_data_dir_at(&empty, &["verify"]);
+    assert_eq!(o.status.code(), Some(5), "{}", stderr(&o));
+    std::fs::remove_dir_all(&root).ok();
 }
