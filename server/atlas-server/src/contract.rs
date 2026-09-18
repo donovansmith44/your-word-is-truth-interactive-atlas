@@ -12,7 +12,7 @@
 //! keeping this endpoint's own constants in lockstep with that file is a
 //! release-process discipline, the same as any other "generated from one
 //! source" pairing in this repo; see `versioning.feature`'s own scenario
-//! pinning `min_version`/`max_version` to "0.1.0"/"0.1.0" for the drift-
+//! pinning `min_version`/`max_version` to "0.2.0"/"0.2.0" (DB-4a; was 0.1.0) for the drift-
 //! failing mechanism the conformance corollary requires).
 
 use axum::Json;
@@ -22,8 +22,8 @@ use serde::Serialize;
 /// §2's semver law), min == max == the one version this codebase currently
 /// implements -- there is no "supports a range of prior versions" story
 /// yet; that becomes meaningful once a second AQC version ships.
-pub const MIN_SUPPORTED_VERSION: &str = "0.1.0";
-pub const MAX_SUPPORTED_VERSION: &str = "0.1.0";
+pub const MIN_SUPPORTED_VERSION: &str = "0.2.0";
+pub const MAX_SUPPORTED_VERSION: &str = "0.2.0";
 
 #[derive(Debug, Serialize)]
 pub struct ContractOut {
@@ -42,7 +42,7 @@ mod tests {
     #[tokio::test]
     async fn advertises_the_pinned_aqc_version_range() {
         let Json(body) = contract().await;
-        assert_eq!(body.min_version, "0.1.0");
-        assert_eq!(body.max_version, "0.1.0");
+        assert_eq!(body.min_version, "0.2.0");
+        assert_eq!(body.max_version, "0.2.0");
     }
 }

@@ -15,7 +15,7 @@ namespace BibleAtlas.Client;
 /// </summary>
 public static class AqcContract
 {
-    public const string ClientVersion = "0.1.0";
+    public const string ClientVersion = "0.2.0";
 
     /// <summary>
     /// True iff <see cref="ClientVersion"/> falls within the server's own
