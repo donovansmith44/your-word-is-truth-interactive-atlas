@@ -17,7 +17,16 @@ use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
 use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::open_read_only;
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
+use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph::sqlite::writer::write_sections;
+
+fn layout_under(dir: &Path) -> SectionLayout {
+    SectionLayout { compiled_dir: dir.join("compiled"), cache_dir: dir.join("cache").join("sections") }
+}
+fn open_written(dir: &Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::SqliteError> {
+    let layout = layout_under(dir);
+    SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout })
+}
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::store::{assert_answers_match, GraphSnapshot};
 
@@ -52,7 +61,7 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
     let dir = std::env::temp_dir().join("db2b-real-sections");
     let _ = std::fs::remove_dir_all(&dir);
     let t0 = Instant::now();
-    let (m1, written) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &dir).expect("write");
+    let (m1, written) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &layout_under(&dir)).expect("write");
     let write_secs = t0.elapsed().as_secs_f64();
     for w in &written {
         println!(
@@ -71,21 +80,21 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
         );
     }
     let dump_secs = t1.elapsed().as_secs_f64();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).expect("open");
+    let snap = open_written(&dir).expect("open");
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(g), "one root: the snapshot, the manifest and the in-memory graph agree");
     let t2 = Instant::now();
     assert_answers_match(&snap, g);
     let admit_secs = t2.elapsed().as_secs_f64();
     let dir2 = std::env::temp_dir().join("db2b-real-sections-2");
     let _ = std::fs::remove_dir_all(&dir2);
-    let (m2, _) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &dir2).expect("write 2");
+    let (m2, _) = write_sections(g, &atlas_graph::sqlite::extras::Extras::default(), "test", &layout_under(&dir2)).expect("write 2");
     assert_eq!(m1.root, m2.root, "determinism: two writes, one root");
     assert_eq!(
         m1.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
         m2.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
         "determinism: every logical hash"
     );
-    assert_eq!(read_manifest(&dir.join("manifest.toml")).unwrap().root, m1.root);
+    assert_eq!(read_manifest(&layout_under(&dir).manifest_path()).unwrap().root, m1.root);
     let total = t0.elapsed().as_secs_f64();
     println!(
         "DB-2b GATE: write {write_secs:.1}s, dump-recompute {dump_secs:.1}s, assert_answers_match {admit_secs:.1}s, total {total:.1}s (ceiling {CEILING_SECS}s)"

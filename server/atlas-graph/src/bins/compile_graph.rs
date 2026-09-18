@@ -376,7 +376,8 @@ fn main() -> Result<()> {
     println!("atlas-graph-compile: DB-2b -- writing SQLite sections to {} ...", sections_out.display());
     let t = Instant::now();
     let compiler = format!("atlas-graph-compile {} (rustc {})", env!("CARGO_PKG_VERSION"), "1.97.1");
-    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &atlas_graph::sqlite::extras::Extras::default(), &compiler, &sections_out)
+    let layout = atlas_graph::sqlite::source::SectionLayout::under(&sections_out);
+    let (manifest, written) = atlas_graph::sqlite::writer::write_sections(&graph_b, &atlas_graph::sqlite::extras::Extras::default(), &compiler, &layout)
         .map_err(|e| anyhow::anyhow!("{e}"))
         .context("writing the SQLite sections")?;
     for w in &written {
@@ -394,7 +395,7 @@ fn main() -> Result<()> {
     println!("atlas-graph-compile: DB-2b -- sections written in {:?}; manifest root {}", t.elapsed(), manifest.root);
     println!("atlas-graph-compile: DB-2b ADMISSION -- SqliteSnapshot vs the model graph ...");
     let t = Instant::now();
-    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(&sections_out.join("manifest.toml"))
+    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(&layout.manifest_path(), &atlas_graph::sqlite::source::CommittedZstdSource { layout: layout.clone() })
         .map_err(|e| anyhow::anyhow!("{e}"))
         .context("opening the written sections")?;
     for w in &written {

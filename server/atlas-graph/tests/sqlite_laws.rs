@@ -1,12 +1,26 @@
 //! DB-2b laws on synthetic data: the seams the section writer and the
 //! SqliteSnapshot are built from, each proven in isolation before the
 //! real-data gate (`sqlite_real_data.rs`) composes them.
+use atlas_graph::sqlite::blob::sha256_hex_of_file;
 use atlas_graph::sqlite::extras::Extras;
+use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout, SectionSource};
 use atlas_graph::sqlite::{
     hash_bytes, hash_from_bytes, open_read_only, stamp_pragmas, APPLICATION_ID, HASH_WIDTH,
     SCHEMA_VERSION,
 };
 use atlas_graph_types::id::ContentHash;
+
+/// DB-4b: a test's private layout -- `compiled/` (manifest + `sections/`)
+/// and `cache/sections/` under one temp dir.
+fn layout_under(dir: &std::path::Path) -> SectionLayout {
+    SectionLayout { compiled_dir: dir.join("compiled"), cache_dir: dir.join("cache").join("sections") }
+}
+
+/// Opens what `write_sections` wrote under `dir`, through the committed source.
+fn open_written(dir: &std::path::Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::SqliteError> {
+    let layout = layout_under(dir);
+    SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout })
+}
 
 #[test]
 fn hash_blob_round_trips_at_the_current_width() {
@@ -668,27 +682,28 @@ fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order(
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-writer-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann"]);
     for (w, ms) in written.iter().zip(&m.sections) {
-        assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite", ms.name, ms.logical));
+        assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.sqlite", ms.logical), "the cache file is named by the logical hash");
+        assert_eq!(w.blob_path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite.zst", ms.name, ms.logical));
         assert_eq!(ms.blob.len(), 64);
-        assert_eq!(ms.bytes, std::fs::metadata(&w.path).unwrap().len());
+        assert_eq!(ms.bytes, std::fs::metadata(&w.blob_path).unwrap().len(), "bytes = the compressed size");
         assert_eq!(ms.required, matches!(w.section, Section::Core | Section::Kjv));
     }
-    assert_eq!(read_manifest(&dir.join("manifest.toml")).unwrap(), m);
-    let (m2, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    assert_eq!(read_manifest(&layout_under(&dir).manifest_path()).unwrap(), m);
+    let (m2, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     assert_eq!(m2.root, m.root, "a rewrite of identical content has an identical root");
     assert_eq!(
         m2.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
         m.sections.iter().map(|s| &s.logical).collect::<Vec<_>>()
     );
-    let files: Vec<String> = std::fs::read_dir(&dir)
+    let files: Vec<String> = std::fs::read_dir(layout_under(&dir).sections_dir())
         .unwrap()
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-        .filter(|f| f.ends_with(".sqlite"))
+        .filter(|f| f.ends_with(".sqlite.zst"))
         .collect();
-    assert_eq!(files.len(), 4, "stale section files are deleted before a rewrite: {files:?}");
+    assert_eq!(files.len(), 4, "stale blobs are deleted after a rewrite: {files:?}");
 }
 
 // ---------------------------------------------------------------------
@@ -704,7 +719,7 @@ fn the_logical_dump_recomputed_from_each_written_file_equals_the_partitions_dump
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-logical-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let parts = partition(&g).unwrap();
     for (p, w) in parts.iter().zip(&written) {
         let from_mem = logical_dump_section(&g, p.section);
@@ -733,12 +748,12 @@ fn a_changed_row_changes_the_logical_hash_and_a_changed_timestamp_does_not() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-logical2-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m1, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m1, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     std::thread::sleep(std::time::Duration::from_millis(1100));
-    let (m2, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m2, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     assert_eq!(m1.root, m2.root);
     g.located_at[0].provenance = "another-source".into();
-    let (m3, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m3, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     assert_ne!(m3.sections[0].logical, m1.sections[0].logical, "core moved");
     assert_eq!(m3.sections[1].logical, m1.sections[1].logical, "kjv did not");
     assert_ne!(m3.root, m1.root);
@@ -757,8 +772,8 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-snap-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann]);
     assert_answers_match(&snap, &g);
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "SqliteSnapshot::version is the manifest root = the in-memory root");
@@ -771,9 +786,11 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-absent-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
-    std::fs::remove_file(&written.iter().find(|w| w.section == Section::Kretzmann).unwrap().path).unwrap();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let kz = written.iter().find(|w| w.section == Section::Kretzmann).unwrap();
+    std::fs::remove_file(&kz.path).unwrap();
+    std::fs::remove_file(&kz.blob_path).unwrap();
+    let snap = open_written(&dir).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord]);
     let item = g.comments_on[0].item.erase();
     assert!(snap.node(&item).is_none(), "the CommentaryItem node lives only in kretzmann");
@@ -784,8 +801,10 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
         atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::CommentsOn, _)
     )));
     drop(snap); // Windows holds an open section file locked
-    std::fs::remove_file(&written.iter().find(|w| w.section == Section::Kjv).unwrap().path).unwrap();
-    let err = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap_err();
+    let kjv = written.iter().find(|w| w.section == Section::Kjv).unwrap();
+    std::fs::remove_file(&kjv.path).unwrap();
+    std::fs::remove_file(&kjv.blob_path).unwrap();
+    let err = open_written(&dir).unwrap_err();
     assert!(
         err.0.contains("kjv") && err.0.contains(&m.sections[1].logical),
         "a missing REQUIRED section is refused by name and hash (spec 11): {}",
@@ -800,8 +819,8 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-paging-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
     // The container with a Loci set of two verses has 2 Contains entries:
     // walk every (cursor, limit) in 0..=3.
     let container = atlas_graph_types::edge::at(
@@ -838,8 +857,8 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db3-snap-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
     // nodes_of_kind pages across sections (Container lives in core, kjv AND
     // concord) in one byte order.
     let containers = snap.nodes_of_kind(NodeKind::Container, None, 2);
@@ -921,8 +940,8 @@ fn the_sqlite_snapshots_version_is_the_manifest_root_and_equals_the_in_memory_ro
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db4a-root-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
-    let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
+    let (m, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
     assert_eq!(snap.version().0.hex(), m.root, "SqliteSnapshot::version IS the manifest root");
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "and equals the in-memory root (one root, spec 3.4)");
 }
@@ -937,7 +956,7 @@ fn mem_store_stamps_the_same_root_the_sections_carry() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db4a-root2-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
+    let (m, _) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let mut store = MemStore::default();
     let v = store.publish(g);
     assert_eq!(v.0.hex(), m.root, "what MemStore stamps is what the manifest says");
@@ -1022,7 +1041,7 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     assert_eq!(g.extra_tables["place"], vec![b"{\"canonical\":\"Ur\",\"lat\":30.96,\"lon\":46.1,\"node_id\":\"Place:ur-1\"}".to_vec()]);
     let dir = std::env::temp_dir().join(format!("db4b-extras-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (_m, written) = write_sections(&g, &extras, "test", &dir).unwrap();
+    let (_m, written) = write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
     assert_eq!(written.iter().map(|w| w.extra_row_count).sum::<usize>(), extras.tables.iter().map(|t| t.rows.len()).sum::<usize>());
     for w in &written {
         let conn = open_read_only(&w.path).unwrap();
@@ -1040,6 +1059,119 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     atlas_graph::event_world::add_justified_by(&mut bare);
     let dir2 = std::env::temp_dir().join(format!("db4b-extras2-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir2);
-    let (m2, _) = write_sections(&bare, &Extras::default(), "test", &dir2).unwrap();
+    let (m2, _) = write_sections(&bare, &Extras::default(), "test", &layout_under(&dir2)).unwrap();
     assert_ne!(m2.root, _m.root, "the extras are in the root");
+}
+
+// ---------------------------------------------------------------------
+// DB-4b: zstd blobs, the committed source and the cache (spec 2.3, 2.4, 11)
+// ---------------------------------------------------------------------
+#[test]
+fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_hash() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4b-blobs-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    assert_eq!(written.len(), 4);
+    for w in &written {
+        assert_eq!(w.path, layout.cache_path(&w.logical));
+        assert_eq!(w.blob_path, layout.blob_path(w.section.name(), &w.logical));
+        assert!(w.blob_path.is_file() && w.path.is_file());
+        assert_eq!(sha256_hex_of_file(&w.blob_path).unwrap(), w.blob);
+        assert_eq!(std::fs::metadata(&w.blob_path).unwrap().len(), w.bytes);
+        assert!(w.bytes < w.uncompressed_bytes, "{}: zstd shrinks a sqlite file", w.section.name());
+        assert!(!w.reused_blob);
+        let ms = m.sections.iter().find(|s| s.name == w.section.name()).unwrap();
+        assert_eq!((ms.blob.as_str(), ms.bytes), (w.blob.as_str(), w.bytes));
+    }
+    // a cold cache: delete it, resolve through the source, get a byte-identical file back
+    let core_cache = layout.cache_path(&written[0].logical);
+    let before = std::fs::read(&core_cache).unwrap();
+    std::fs::remove_file(&core_cache).unwrap();
+    let src = CommittedZstdSource { layout: layout.clone() };
+    let resolved = src.resolve(&m.sections[0]).unwrap();
+    assert_eq!(resolved, core_cache);
+    assert_eq!(std::fs::read(&resolved).unwrap(), before, "unpacking the blob reproduces the written file byte for byte");
+    // a tampered blob is refused, both hashes named, and nothing lands in the cache
+    std::fs::remove_file(&core_cache).unwrap();
+    let mut bytes = std::fs::read(&written[0].blob_path).unwrap();
+    let last = bytes.len() - 1;
+    bytes[last] ^= 0x55;
+    std::fs::write(&written[0].blob_path, &bytes).unwrap();
+    let err = src.resolve(&m.sections[0]).unwrap_err().to_string();
+    assert!(err.contains(&m.sections[0].blob) && err.contains("transport hash"), "{err}");
+    assert!(!core_cache.exists() && !layout.cache_dir.join(format!("{}.sqlite.tmp", written[0].logical)).exists());
+    // the snapshot refuses it too -- core is required
+    let open_err = open_written(&dir).unwrap_err().to_string();
+    assert!(open_err.contains("required section core") && open_err.contains("transport hash"), "{open_err}");
+}
+
+#[test]
+fn a_corrupt_optional_blob_is_loud_where_a_missing_one_is_merely_absent() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4b-optblob-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    let (_m, written) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    let concord = written.iter().find(|w| w.section == Section::Concord).unwrap();
+    std::fs::remove_file(&concord.path).unwrap();
+    let mut bytes = std::fs::read(&concord.blob_path).unwrap();
+    let mid = bytes.len() / 2;
+    bytes[mid] ^= 0xFF;
+    std::fs::write(&concord.blob_path, &bytes).unwrap();
+    let err = open_written(&dir).unwrap_err().to_string();
+    assert!(err.contains("optional section concord") && err.contains("transport hash"), "a present-but-corrupt optional blob is refused (spec 11): {err}");
+    std::fs::remove_file(&concord.blob_path).unwrap();
+    let snap = open_written(&dir).unwrap();
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Kretzmann], "a missing optional blob is simply absent");
+}
+
+#[test]
+fn a_recompile_is_idempotent_and_reuses_unchanged_blobs() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4b-idem-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    let (m1, w1) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    let text1 = std::fs::read_to_string(layout.manifest_path()).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    let (m2, w2) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    assert_eq!(m1, m2, "root, blobs, bytes AND built are unchanged");
+    assert_eq!(text1, std::fs::read_to_string(layout.manifest_path()).unwrap());
+    assert!(w2.iter().all(|w| w.reused_blob) && w1.iter().all(|w| !w.reused_blob));
+    let mut g2 = specimen_graph();
+    g2.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g2);
+    g2.analogue[0].provenance = "moved".into();
+    let (m3, w3) = write_sections(&g2, &Extras::default(), "test", &layout).unwrap();
+    assert_ne!(m3.root, m2.root);
+    assert_ne!(m3.built, m2.built, "a changed root stamps a new built");
+    assert!(!w3[0].reused_blob && w3[1].reused_blob, "core changed and was recompressed; kjv did not and was reused");
+    let stale: Vec<String> = std::fs::read_dir(layout.sections_dir())
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().to_string())
+        .filter(|n| n.starts_with("core."))
+        .collect();
+    assert_eq!(stale.len(), 1, "the stale core blob was deleted: {stale:?}");
+    // meta carries no timestamp: the section file itself is a pure function of the content
+    let conn = open_read_only(&w3[1].path).unwrap();
+    let built: Option<String> = conn.query_row("SELECT value FROM meta WHERE key = 'built'", [], |r| r.get(0)).ok();
+    assert!(built.is_none(), "meta.built is gone (it would move the blob hash every compile)");
+}
+
+#[test]
+fn the_blob_constants_are_the_specs() {
+    assert_eq!(atlas_graph::sqlite::blob::BLOB_CEILING, 104_857_600);
+    assert_eq!(atlas_graph::sqlite::blob::ZSTD_LEVEL, 19);
+    let layout = SectionLayout::under(std::path::Path::new("data/compiled"));
+    assert_eq!(layout.cache_dir, std::path::Path::new("data").join("cache").join("sections"));
+    assert_eq!(layout.blob_path("core", "abc"), std::path::Path::new("data/compiled").join("sections").join("core.abc.sqlite.zst"));
+    assert_eq!(layout.cache_path("abc"), std::path::Path::new("data").join("cache").join("sections").join("abc.sqlite"));
 }

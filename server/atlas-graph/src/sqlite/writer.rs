@@ -1,7 +1,15 @@
 //! DB-2b: the section writer (spec §6.1). One `.sqlite` per partition,
-//! named `<name>.<logical>.sqlite` once its logical hash is known, then
-//! `manifest.toml`. Rows first, indexes after (spec §6.1 step 2), one
-//! transaction per section, `VACUUM` before close.
+//! rows first, indexes after (spec §6.1 step 2), one transaction per
+//! section, `VACUUM` before close. DB-4b: the file is written straight into
+//! the unpack cache (`<cache>/<logical>.sqlite` -- byte-identical to what
+//! unpacking its own blob yields, so the first start after a compile is a
+//! cache hit), compressed to `<compiled>/sections/<name>.<logical>.sqlite.zst`
+//! (zstd 19, transport hash = SHA-256 of the blob), then `manifest.toml`.
+//! A recompile is idempotent: an unchanged section's blob is reused (its
+//! recorded hash re-checked), `built` is preserved when root and blobs are
+//! unchanged, and the manifest is rewritten only when it differs -- an idle
+//! recompile leaves `git status` clean. `meta.built` is NOT in the section
+//! file (it would move the blob hash on every compile).
 //!
 //! DB-4a: the manifest `root` IS the version root
 //! (`atlas_graph_types::sections::version_root`); `meta.graph_version` is
@@ -12,7 +20,7 @@
 //! hashes SQLite cannot compute, and `Graph::row_edges()` is the one
 //! lowering both the in-memory indexes and this table are derived from.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime};
 
 use atlas_graph_types::canon::ids::{any_node_id_str, position_str};
@@ -21,13 +29,15 @@ use atlas_graph_types::explore::EdgeMeta;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{ContentAddressed, ContentHash};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::sha256::sha256;
 use rusqlite::types::Value;
 use rusqlite::{Connection, Transaction};
 
 use super::columns::JustificationWriter;
 use super::ddl::{create_indexes, create_tables};
+use super::blob::{compress_file, sha256_hex_of_file, BLOB_CEILING};
 use super::extras::{insert_table, table_specs_of, Extras};
+use super::manifest::read_manifest;
+use super::source::SectionLayout;
 use super::logical::logical_hash;
 use atlas_graph_types::sections::logical_dump_section;
 use super::manifest::{root_of, write_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
@@ -39,10 +49,18 @@ use crate::sections::Section;
 #[derive(Debug, Clone)]
 pub struct WrittenSection {
     pub section: Section,
+    /// The uncompressed file: `<cache>/<logical>.sqlite`.
     pub path: PathBuf,
+    /// The committed blob: `<compiled>/sections/<name>.<logical>.sqlite.zst`.
+    pub blob_path: PathBuf,
     pub logical: String,
+    /// SHA-256 of the blob (64 hex): the manifest's transport hash.
     pub blob: String,
+    /// Compressed size (the manifest's `bytes`).
     pub bytes: u64,
+    pub uncompressed_bytes: u64,
+    /// The blob already existed with the recorded hash: not recompressed.
+    pub reused_blob: bool,
     pub node_count: usize,
     pub row_count: usize,
     /// DB-4b: rows of the section's extra tables (projections, sidecars).
@@ -149,14 +167,18 @@ pub fn now_rfc3339() -> String {
     format!("{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z", rem / 3600, (rem % 3600) / 60, rem % 60)
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn write_one(g: &Graph, p: &SectionPartition, extras: &Extras, compiler: &str, out_dir: &Path) -> Result<WrittenSection, SqliteError> {
+fn write_one(
+    g: &Graph,
+    p: &SectionPartition,
+    extras: &Extras,
+    compiler: &str,
+    layout: &SectionLayout,
+    previous: Option<&Manifest>,
+) -> Result<WrittenSection, SqliteError> {
     let started = Instant::now();
     let name = p.section.name();
-    let tmp = out_dir.join(format!("{name}.tmp.sqlite"));
+    std::fs::create_dir_all(&layout.cache_dir)?;
+    let tmp = layout.cache_dir.join(format!("{name}.build.tmp"));
     let _ = std::fs::remove_file(&tmp);
 
     // The logical hash is a pure function of the graph and the section
@@ -207,20 +229,39 @@ fn write_one(g: &Graph, p: &SectionPartition, extras: &Extras, compiler: &str, o
     conn.execute_batch("VACUUM;")?;
     drop(conn);
 
-    let bytes_of_file = std::fs::read(&tmp)?;
-    let blob = hex(&sha256(&bytes_of_file));
-    let bytes = bytes_of_file.len() as u64;
-    drop(bytes_of_file);
-    let path = out_dir.join(format!("{name}.{logical}.sqlite"));
+    let uncompressed_bytes = std::fs::metadata(&tmp)?.len();
+    let path = layout.cache_path(&logical);
     let _ = std::fs::remove_file(&path);
     std::fs::rename(&tmp, &path)?;
+
+    // The blob: reused when the previous manifest recorded this very
+    // (name, logical) and the file on disk still hashes to what it said;
+    // compressed otherwise. Either way the size is checked against the
+    // git ceiling (spec §2.3).
+    let blob_path = layout.blob_path(name, &logical);
+    let prev = previous.and_then(|m| m.sections.iter().find(|s| s.name == name && s.logical == logical));
+    let (blob, bytes, reused_blob) = match prev {
+        Some(prev) if blob_path.is_file() && sha256_hex_of_file(&blob_path)? == prev.blob => (prev.blob.clone(), prev.bytes, true),
+        _ => {
+            let (h, b) = compress_file(&path, &blob_path)?;
+            (h, b, false)
+        }
+    };
+    if bytes > BLOB_CEILING {
+        return Err(SqliteError(format!(
+            "section {name} compressed to {bytes} bytes, over the {BLOB_CEILING}-byte ceiling (spec 2.3): it needs the fetching source (spec 2.4, implementation #2) before it can ship"
+        )));
+    }
 
     Ok(WrittenSection {
         section: p.section,
         path,
+        blob_path,
         logical,
         blob,
         bytes,
+        uncompressed_bytes,
+        reused_blob,
         node_count: p.nodes.len(),
         row_count: p.rows.len(),
         extra_row_count: extra_rows,
@@ -229,27 +270,37 @@ fn write_one(g: &Graph, p: &SectionPartition, extras: &Extras, compiler: &str, o
     })
 }
 
-/// Writes every shipped section to `<out_dir>/<name>.<logical>.sqlite`
-/// (stale `<name>.*.sqlite` files are deleted first) and
-/// `<out_dir>/manifest.toml`.
-pub fn write_sections(g: &Graph, extras: &Extras, compiler: &str, out_dir: &Path) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
-    std::fs::create_dir_all(out_dir)?;
+/// Writes every shipped section: `<cache>/<logical>.sqlite`,
+/// `<compiled>/sections/<name>.<logical>.sqlite.zst` (a stale
+/// `<name>.*.sqlite.zst` is deleted; the cache is content-addressed and
+/// kept), then `<compiled>/manifest.toml` -- rewritten only when it
+/// differs, its `built` preserved when root and every blob are unchanged.
+pub fn write_sections(
+    g: &Graph,
+    extras: &Extras,
+    compiler: &str,
+    layout: &SectionLayout,
+) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
+    std::fs::create_dir_all(layout.sections_dir())?;
+    std::fs::create_dir_all(&layout.cache_dir)?;
+    // A previous manifest that fails its own root check is treated as absent.
+    let previous = read_manifest(&layout.manifest_path()).ok();
     let parts = partition(g)?;
+    let mut written = Vec::with_capacity(parts.len());
     for p in &parts {
-        let prefix = format!("{}.", p.section.name());
-        for entry in std::fs::read_dir(out_dir)? {
-            let entry = entry?;
-            let file = entry.file_name();
-            let file = file.to_string_lossy();
-            if file.starts_with(&prefix) && file.ends_with(".sqlite") {
+        written.push(write_one(g, p, extras, compiler, layout, previous.as_ref())?);
+    }
+    for entry in std::fs::read_dir(layout.sections_dir())? {
+        let entry = entry?;
+        let file = entry.file_name();
+        let file = file.to_string_lossy();
+        for w in &written {
+            let prefix = format!("{}.", w.section.name());
+            let current = format!("{}.{}.sqlite.zst", w.section.name(), w.logical);
+            if file.starts_with(&prefix) && file.ends_with(".sqlite.zst") && file != current {
                 std::fs::remove_file(entry.path())?;
             }
         }
-    }
-    let built = now_rfc3339();
-    let mut written = Vec::with_capacity(parts.len());
-    for p in &parts {
-        written.push(write_one(g, p, extras, compiler, out_dir)?);
     }
     let sections: Vec<ManifestSection> = written
         .iter()
@@ -262,7 +313,19 @@ pub fn write_sections(g: &Graph, extras: &Extras, compiler: &str, out_dir: &Path
             schema_version: SCHEMA_VERSION,
         })
         .collect();
-    let manifest = Manifest { schema: MANIFEST_SCHEMA, compiler: compiler.to_string(), built, root: root_of(&sections), sections };
-    write_manifest(&manifest, &out_dir.join("manifest.toml"))?;
+    let root = root_of(&sections);
+    let built = match &previous {
+        Some(prev)
+            if prev.root == root
+                && prev.sections.iter().map(|s| (&s.name, &s.blob)).eq(sections.iter().map(|s| (&s.name, &s.blob))) =>
+        {
+            prev.built.clone()
+        }
+        _ => now_rfc3339(),
+    };
+    let manifest = Manifest { schema: MANIFEST_SCHEMA, compiler: compiler.to_string(), built, root, sections };
+    if previous.as_ref() != Some(&manifest) {
+        write_manifest(&manifest, &layout.manifest_path())?;
+    }
     Ok((manifest, written))
 }

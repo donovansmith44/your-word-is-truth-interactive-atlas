@@ -22,6 +22,7 @@ use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion, RowRef};
 use rusqlite::{Connection, OptionalExtension};
 
 use super::manifest::read_manifest;
+use super::source::{is_missing, SectionSource};
 use super::partition::{directed_rel_code, node_kind_ordinal, rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
 use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
 use crate::sections::Section;
@@ -44,30 +45,34 @@ fn section_named(name: &str) -> Option<Section> {
 }
 
 impl SqliteSnapshot {
-    /// Spec §2.5 steps 1–4: read + verify the manifest; open `core` as
-    /// `main`; ATTACH every other present section under its name in
-    /// manifest order; `PRAGMA query_only = ON`; build the TEMP views
+    /// Spec §2.5 steps 1–4: read + verify the manifest; resolve every
+    /// section through the `SectionSource` (DB-4b: `CommittedZstdSource`
+    /// verifies the transport hash and unpacks on a cache miss); open
+    /// `core` as `main`; ATTACH every other present section under its name
+    /// in manifest order; `PRAGMA query_only = ON`; build the TEMP views
     /// `all_edge_index` and `all_node` over the attached sections. A
-    /// `required` section whose file is missing is an error naming the
-    /// section and its logical hash (spec §11); an optional one is
-    /// recorded absent and skipped.
-    pub fn open(manifest_path: &Path) -> Result<SqliteSnapshot, SqliteError> {
+    /// `required` section that cannot be resolved is an error naming the
+    /// section and its logical hash (spec §11); an optional one whose blob
+    /// is MISSING is recorded absent and skipped -- any other failure
+    /// (a present but corrupt blob, an unpack error) is loud for optional
+    /// sections too.
+    pub fn open(manifest_path: &Path, source: &dyn SectionSource) -> Result<SqliteSnapshot, SqliteError> {
         let manifest = read_manifest(manifest_path)?;
-        let dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
         let mut present: Vec<(Section, std::path::PathBuf)> = Vec::new();
         for ms in &manifest.sections {
             let section = section_named(&ms.name)
                 .ok_or_else(|| SqliteError(format!("manifest names an unknown section {}", ms.name)))?;
-            let path = dir.join(format!("{}.{}.sqlite", ms.name, ms.logical));
-            if path.is_file() {
-                present.push((section, path));
-            } else if ms.required {
-                return Err(SqliteError(format!(
-                    "required section {} ({}) missing at {}",
-                    ms.name,
-                    ms.logical,
-                    path.display()
-                )));
+            match source.resolve(ms) {
+                Ok(path) => present.push((section, path)),
+                Err(e) if !ms.required && is_missing(&e) => {}
+                Err(e) => {
+                    return Err(SqliteError(format!(
+                        "{} section {} ({}) unavailable: {e}",
+                        if ms.required { "required" } else { "optional" },
+                        ms.name,
+                        ms.logical
+                    )))
+                }
             }
         }
         let Some((Section::Core, core_path)) = present.first() else {

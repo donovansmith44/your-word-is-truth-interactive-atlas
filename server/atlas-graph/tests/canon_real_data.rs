@@ -142,8 +142,9 @@ fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
 /// with no family is simply never walked, and nothing complains.
 ///
 /// The non-row fields are named and discarded (`nodes: _`, `reading: _`,
-/// `indexes: _`, `symmetric_indexes: _`, `pid_index: _`): `nodes` has its
-/// own test above, and the last three are derived state, not rows.
+/// `extra_tables: _`, `indexes: _`, `symmetric_indexes: _`, `pid_index: _`):
+/// `nodes` has its own test above, `extra_tables` (DB-4b) is proven by the
+/// section laws, and the last three are derived state, not rows.
 #[test]
 fn every_row_of_every_family_round_trips() {
     let Graph {
@@ -170,6 +171,9 @@ fn every_row_of_every_family_round_trips() {
         temporal_adjacency,
         analogue,
         reading: _,
+        // DB-4b: the non-graph tables' canonical bodies -- not rows of a
+        // family; their own round trip is `sqlite_laws.rs`/gate 9.
+        extra_tables: _,
         indexes: _,
         symmetric_indexes: _,
         pid_index: _,

@@ -54,6 +54,7 @@ bincode = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }
 # DB-2b: manifest.toml (spec §2.2) — serde derive on Manifest/ManifestSection.
 toml = "0.8"
+zstd = { version = "0.13", features = ["zstdmt"] }
 
 [dev-dependencies]
 proptest = "1"

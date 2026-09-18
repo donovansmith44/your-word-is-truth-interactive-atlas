@@ -25,3 +25,9 @@
 # on parsed values, but `git diff` deciding WHETHER to grade them is not).
 contracts/pacts/*.json      text eol=lf
 contracts/*/fixtures/*.json text eol=lf
+
+# DB-4b: committed section blobs are binary; the manifest is LF like the
+# pacts (its root is over parsed values; the blob hashes are over the .zst
+# bytes, which autocrlf must never touch).
+data/compiled/sections/*.sqlite.zst binary
+data/compiled/manifest.toml text eol=lf
