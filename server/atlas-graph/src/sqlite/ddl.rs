@@ -1,8 +1,11 @@
 //! DB-2b: the per-section DDL, verbatim from spec §5.1 and §5.3–5.6, and
-//! the section -> row-table map. Scope (plan judgment call 3): the common
-//! tables, every row family's table (+ `_locus` / `_step` sub-tables) and
-//! `reading_spine`; the node projections, `event_date`, `heading_index`,
-//! `red_letter_span` and the folded sidecars arrive at DB-4.
+//! the section -> row-table map: the common tables, every row family's
+//! table (+ `_locus` / `_step` sub-tables) and `reading_spine`. DB-4b: the
+//! node projections, `event_date`, `heading_index`, `red_letter_span` and
+//! the folded sidecars (`extra_ddl`/`extra_index_ddl`; column specs in
+//! `sqlite::extras`/`sqlite::sidecars`, pinned against this DDL by
+//! `sqlite_laws.rs`; amendments to spec §5.3 in the DB-4b plan's judgment
+//! calls 3–6).
 //!
 //! Spec §5.0: no `FOREIGN KEY`, no `CHECK`, no triggers -- the compiler
 //! proves the laws, the file only describes the shape (a unit test below
@@ -355,6 +358,178 @@ CREATE UNIQUE INDEX comments_on_ord ON comments_on (ord);
 CREATE INDEX comments_on_by_from ON comments_on (on_from_a, on_from_b, on_from_c, ord);
 ";
 
+// ---------------------------------------------------------------------
+// DB-4b: the extra tables (spec §5.3–5.6, amended)
+// ---------------------------------------------------------------------
+
+/// Core: the graph-derived tables.
+const EXTRA_DDL_CORE_GRAPH: &str = "
+CREATE TABLE place (
+  node_id TEXT PRIMARY KEY, canonical TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE era (
+  node_id TEXT PRIMARY KEY, label TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE polity_era (
+  node_id TEXT NOT NULL, ord INTEGER NOT NULL, name TEXT NOT NULL,
+  from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
+  PRIMARY KEY (node_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE event_date (
+  event_id  TEXT PRIMARY KEY,
+  from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
+  from_month INTEGER, from_day INTEGER, to_month INTEGER, to_day INTEGER,
+  seq       INTEGER NOT NULL,
+  basis     INTEGER NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE heading_index (
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
+  event_id TEXT NOT NULL, title TEXT NOT NULL, kind TEXT NOT NULL, continuation INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse)
+) WITHOUT ROWID;
+";
+const EXTRA_INDEX_DDL_CORE_GRAPH: &str = "
+CREATE INDEX polity_era_by_span ON polity_era (from_year, to_year);
+CREATE INDEX event_by_span ON event_date (from_year, to_year);
+CREATE INDEX event_by_order ON event_date (seq);
+CREATE INDEX heading_by_event ON heading_index (event_id);
+";
+
+/// Core: the nine folded sidecars as 21 tables.
+const EXTRA_DDL_CORE_SIDECARS: &str = "
+CREATE TABLE canon_book (
+  ord INTEGER PRIMARY KEY, code TEXT NOT NULL, name TEXT NOT NULL, testament TEXT NOT NULL,
+  chapters INTEGER NOT NULL
+);
+CREATE TABLE canon_chapter_verses (
+  book_ord INTEGER NOT NULL, chapter INTEGER NOT NULL, verses INTEGER NOT NULL,
+  PRIMARY KEY (book_ord, chapter)
+) WITHOUT ROWID;
+CREATE TABLE book_meta (
+  book TEXT PRIMARY KEY, author TEXT NOT NULL, write_place TEXT, write_from INTEGER, write_to INTEGER
+) WITHOUT ROWID;
+CREATE TABLE chronology_anchor (
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, label TEXT NOT NULL, year INTEGER NOT NULL,
+  event_id TEXT, era_boundary INTEGER NOT NULL, source TEXT NOT NULL, note TEXT
+) WITHOUT ROWID;
+CREATE TABLE book_narration_window (
+  book TEXT PRIMARY KEY, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL, note TEXT
+) WITHOUT ROWID;
+CREATE TABLE landmark (
+  ord INTEGER PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL, size TEXT
+);
+CREATE TABLE land_mask_region (
+  ord INTEGER PRIMARY KEY, name TEXT, ref_note TEXT, rings_json TEXT NOT NULL
+);
+CREATE TABLE catechism_part (
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, title TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE catechism_item (
+  id TEXT PRIMARY KEY, part_id TEXT NOT NULL, ord INTEGER NOT NULL, name TEXT NOT NULL,
+  text TEXT, explanation_heading TEXT NOT NULL, explanation TEXT NOT NULL,
+  where_written TEXT, ref_note TEXT
+) WITHOUT ROWID;
+CREATE TABLE catechism_item_verse (
+  item_id TEXT NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
+  PRIMARY KEY (item_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE catechism_question (
+  item_id TEXT NOT NULL, ord INTEGER NOT NULL, title TEXT NOT NULL, source TEXT NOT NULL,
+  PRIMARY KEY (item_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE catechism_question_verse (
+  item_id TEXT NOT NULL, question_ord INTEGER NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
+  PRIMARY KEY (item_id, question_ord, ord)
+) WITHOUT ROWID;
+CREATE TABLE place_history (
+  place_id TEXT PRIMARY KEY,
+  est_from INTEGER, est_to INTEGER, est_note TEXT,
+  dest_from INTEGER, dest_to INTEGER, dest_note TEXT
+) WITHOUT ROWID;
+CREATE TABLE place_history_name (
+  place_id TEXT NOT NULL, ord INTEGER NOT NULL, name TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
+  PRIMARY KEY (place_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE place_history_blurb (
+  place_id TEXT NOT NULL, ord INTEGER NOT NULL, text TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL, breadth TEXT NOT NULL,
+  PRIMARY KEY (place_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE place_history_verse (
+  place_id TEXT NOT NULL, owner_kind INTEGER NOT NULL, owner_ord INTEGER NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
+  PRIMARY KEY (place_id, owner_kind, owner_ord, ord)
+) WITHOUT ROWID;
+CREATE TABLE place_name_alias (
+  place_id TEXT NOT NULL, alias_ord INTEGER NOT NULL, translation TEXT NOT NULL, name TEXT NOT NULL,
+  PRIMARY KEY (place_id, alias_ord, translation)
+) WITHOUT ROWID;
+CREATE TABLE place_name_alias_verse (
+  place_id TEXT NOT NULL, alias_ord INTEGER NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
+  PRIMARY KEY (place_id, alias_ord, ord)
+) WITHOUT ROWID;
+CREATE TABLE source_category (
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, label TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE source_entry (
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, category TEXT NOT NULL, title TEXT NOT NULL,
+  what_it_is TEXT NOT NULL, what_we_built TEXT NOT NULL, license TEXT NOT NULL, link TEXT,
+  licenses_row_key TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE provenance_entry (
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, source TEXT NOT NULL, confidence TEXT NOT NULL, locator TEXT
+) WITHOUT ROWID;
+";
+/// The write-time materialisation of `AtlasData::finish()`'s verse->item
+/// join (`/api/catechism/{sref}` seeks these at DB-4c).
+const EXTRA_INDEX_DDL_CORE_SIDECARS: &str = "
+CREATE INDEX catechism_item_by_part ON catechism_item (part_id, ord);
+CREATE INDEX catechism_item_verse_by_sref ON catechism_item_verse (sref);
+CREATE INDEX catechism_question_verse_by_sref ON catechism_question_verse (sref);
+CREATE INDEX provenance_by_source ON provenance_entry (source);
+";
+
+const EXTRA_DDL_KJV: &str = "
+CREATE TABLE verse (
+  node_id TEXT PRIMARY KEY, book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE red_letter_span (
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL, ord INTEGER NOT NULL,
+  start INTEGER NOT NULL, end_ INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse, ord)
+) WITHOUT ROWID;
+";
+const EXTRA_INDEX_DDL_KJV: &str = "
+CREATE UNIQUE INDEX verse_by_ref ON verse (book, chapter, verse);
+";
+
+const EXTRA_DDL_CONCORD: &str = "
+CREATE TABLE concord_unit (
+  node_id TEXT PRIMARY KEY, part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL
+) WITHOUT ROWID;
+";
+const EXTRA_INDEX_DDL_CONCORD: &str = "
+CREATE UNIQUE INDEX concord_by_ref ON concord_unit (part, article, paragraph);
+";
+
+/// DB-4b: the section's extra tables' `CREATE TABLE` text.
+pub fn extra_ddl(section: Section) -> &'static [&'static str] {
+    match section {
+        Section::Core => &[EXTRA_DDL_CORE_GRAPH, EXTRA_DDL_CORE_SIDECARS],
+        Section::Kjv => &[EXTRA_DDL_KJV],
+        Section::Concord => &[EXTRA_DDL_CONCORD],
+        Section::Kretzmann | Section::Lexicon => &[],
+    }
+}
+
+/// DB-4b: the section's extra tables' indexes (created after the inserts).
+pub fn extra_index_ddl(section: Section) -> &'static [&'static str] {
+    match section {
+        Section::Core => &[EXTRA_INDEX_DDL_CORE_GRAPH, EXTRA_INDEX_DDL_CORE_SIDECARS],
+        Section::Kjv => &[EXTRA_INDEX_DDL_KJV],
+        Section::Concord => &[EXTRA_INDEX_DDL_CONCORD],
+        Section::Kretzmann | Section::Lexicon => &[],
+    }
+}
+
 /// The `CREATE TABLE` text (plus sub-table) of spec §5.3–5.6 for a family.
 pub fn family_ddl(f: RowFamily) -> &'static str {
     match f {
@@ -421,6 +596,9 @@ pub fn create_tables(conn: &Connection, section: Section) -> Result<(), SqliteEr
     if has_spine(section) {
         ddl.push_str(SPINE_DDL);
     }
+    for extra in extra_ddl(section) {
+        ddl.push_str(extra);
+    }
     conn.execute_batch(&ddl)?;
     Ok(())
 }
@@ -434,6 +612,9 @@ pub fn create_indexes(conn: &Connection, section: Section) -> Result<(), SqliteE
     }
     if has_spine(section) {
         ddl.push_str(SPINE_INDEX_DDL);
+    }
+    for extra in extra_index_ddl(section) {
+        ddl.push_str(extra);
     }
     conn.execute_batch(&ddl)?;
     Ok(())
@@ -451,6 +632,10 @@ mod laws {
         for f in RowFamily::ALL {
             all.push(family_ddl(f));
             all.push(family_index_ddl(f));
+        }
+        for s in Section::MANIFEST_ORDER {
+            all.extend(extra_ddl(s).iter().copied());
+            all.extend(extra_index_ddl(s).iter().copied());
         }
         for ddl in all {
             let upper = ddl.to_ascii_uppercase();

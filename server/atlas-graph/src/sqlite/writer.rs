@@ -27,6 +27,7 @@ use rusqlite::{Connection, Transaction};
 
 use super::columns::JustificationWriter;
 use super::ddl::{create_indexes, create_tables};
+use super::extras::{insert_table, table_specs_of, Extras};
 use super::logical::logical_hash;
 use atlas_graph_types::sections::logical_dump_section;
 use super::manifest::{root_of, write_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
@@ -44,6 +45,8 @@ pub struct WrittenSection {
     pub bytes: u64,
     pub node_count: usize,
     pub row_count: usize,
+    /// DB-4b: rows of the section's extra tables (projections, sidecars).
+    pub extra_row_count: usize,
     pub edge_count: usize,
     pub elapsed: Duration,
 }
@@ -150,7 +153,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_dir: &Path) -> Result<WrittenSection, SqliteError> {
+fn write_one(g: &Graph, p: &SectionPartition, extras: &Extras, compiler: &str, out_dir: &Path) -> Result<WrittenSection, SqliteError> {
     let started = Instant::now();
     let name = p.section.name();
     let tmp = out_dir.join(format!("{name}.tmp.sqlite"));
@@ -164,6 +167,7 @@ fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_d
 
     let mut conn = Connection::open(&tmp)?;
     create_tables(&conn, p.section)?;
+    let mut extra_rows = 0usize;
     {
         let tx = conn.transaction()?;
         insert_nodes(&tx, &p.nodes)?;
@@ -178,6 +182,14 @@ fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_d
                 stmt.execute(rusqlite::params![i as i64, any_node_id_str(id)])?;
             }
         }
+        // DB-4b: the section's extra tables, typed rows in pk order; their
+        // canonical bodies are already in `g.extra_tables` (the dump).
+        for spec in table_specs_of(p.section) {
+            if let Some(t) = extras.table(spec.name) {
+                insert_table(&tx, t)?;
+                extra_rows += t.rows.len();
+            }
+        }
         tx.commit()?;
     }
     create_indexes(&conn, p.section)?;
@@ -189,7 +201,6 @@ fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_d
             ("logical_hash", logical.clone()),
             ("compiler", compiler.to_string()),
             ("canon_version", CANON_VERSION.to_string()),
-            ("built", built.to_string()),
             ("hash_width", HASH_WIDTH.to_string()),
         ],
     )?;
@@ -212,6 +223,7 @@ fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_d
         bytes,
         node_count: p.nodes.len(),
         row_count: p.rows.len(),
+        extra_row_count: extra_rows,
         edge_count: p.edges.len(),
         elapsed: started.elapsed(),
     })
@@ -220,7 +232,7 @@ fn write_one(g: &Graph, p: &SectionPartition, compiler: &str, built: &str, out_d
 /// Writes every shipped section to `<out_dir>/<name>.<logical>.sqlite`
 /// (stale `<name>.*.sqlite` files are deleted first) and
 /// `<out_dir>/manifest.toml`.
-pub fn write_sections(g: &Graph, compiler: &str, out_dir: &Path) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
+pub fn write_sections(g: &Graph, extras: &Extras, compiler: &str, out_dir: &Path) -> Result<(Manifest, Vec<WrittenSection>), SqliteError> {
     std::fs::create_dir_all(out_dir)?;
     let parts = partition(g)?;
     for p in &parts {
@@ -237,7 +249,7 @@ pub fn write_sections(g: &Graph, compiler: &str, out_dir: &Path) -> Result<(Mani
     let built = now_rfc3339();
     let mut written = Vec::with_capacity(parts.len());
     for p in &parts {
-        written.push(write_one(g, p, compiler, &built, out_dir)?);
+        written.push(write_one(g, p, extras, compiler, out_dir)?);
     }
     let sections: Vec<ManifestSection> = written
         .iter()

@@ -4,10 +4,12 @@
 //! sees it (zero-dep covenant, spec §1.2).
 pub mod columns;
 pub mod ddl;
+pub mod extras;
 pub mod logical;
 pub mod manifest;
 pub mod partition;
 pub mod rows;
+pub mod sidecars;
 pub mod snapshot;
 pub mod writer;
 

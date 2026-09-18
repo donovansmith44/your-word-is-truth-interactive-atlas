@@ -4,7 +4,8 @@
 //! for each row in primary-key order, `<table>\t<canonical row JSON>\n`:
 //! `node` -> `Node::encode()`, a row table -> `encode_row_in_family`, and
 //! `reading_spine` -> `{"corpus":…,"node_id":…,"ord":N}` through
-//! `canon::obj`/`serialize` (keys in byte order, no whitespace). Logical
+//! `canon::obj`/`serialize` (keys in byte order, no whitespace), and (DB-4b)
+//! an extra table -> `extras::row_body` over its `SELECT … ORDER BY pk`. Logical
 //! hash = `sha256_prefixed_128(DOMAIN_PREFIX, dump)` as 32 lowercase hex.
 //!
 //! Node order on both sides is `any_node_id_str` BYTE order -- what
@@ -70,6 +71,14 @@ pub fn logical_dump_of_db(conn: &Connection, section: Section) -> Result<Vec<u8>
                     let ord: i64 = row.get(0)?;
                     let node_id: String = row.get(1)?;
                     line(&mut out, "reading_spine", &spine_line_body(corpus, ord, &node_id));
+                }
+            }
+            // DB-4b: an extra table -- `SELECT … ORDER BY pk`, re-encoded
+            // through the one body spelling (`extras::row_body`).
+            extra if super::extras::spec_named(extra).is_some() => {
+                let spec = super::extras::spec_named(extra).expect("guarded");
+                for row in super::extras::read_table(conn, spec)? {
+                    line(&mut out, extra, &super::extras::row_body(spec, &row)?);
                 }
             }
             family_table => {

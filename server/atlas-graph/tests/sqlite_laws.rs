@@ -1,6 +1,7 @@
 //! DB-2b laws on synthetic data: the seams the section writer and the
 //! SqliteSnapshot are built from, each proven in isolation before the
 //! real-data gate (`sqlite_real_data.rs`) composes them.
+use atlas_graph::sqlite::extras::Extras;
 use atlas_graph::sqlite::{
     hash_bytes, hash_from_bytes, open_read_only, stamp_pragmas, APPLICATION_ID, HASH_WIDTH,
     SCHEMA_VERSION,
@@ -451,6 +452,41 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
                 text: "For God so loved the world...".into(),
             },
         ),
+        // DB-4b: one node of each projected kind (place / era / polity_era).
+        node(
+            NodeKind::Place,
+            "ur-1",
+            NodePayload::Place { canonical: "Ur".into(), lat: 30.96, lon: 46.1, aliases: vec![], description: None },
+        ),
+        node(NodeKind::Era, "patriarchs", NodePayload::Era { label: "Patriarchs".into(), from_year: -2100, to_year: -1800 }),
+        node(
+            NodeKind::Polity,
+            "egypt",
+            NodePayload::Polity {
+                label: "Egypt".into(),
+                color_key: 1,
+                eras: vec![
+                    atlas_graph_types::node::PolityEraPayload {
+                        name: "Old Kingdom".into(),
+                        from_year: -2686,
+                        to_year: -2181,
+                        rings: vec![vec![(30.0, 31.0), (30.5, 31.5), (30.0, 31.5)]],
+                        ref_note: "test".into(),
+                        transition: None,
+                        fall: None,
+                    },
+                    atlas_graph_types::node::PolityEraPayload {
+                        name: "Middle Kingdom".into(),
+                        from_year: -2055,
+                        to_year: -1650,
+                        rings: vec![],
+                        ref_note: "test".into(),
+                        transition: None,
+                        fall: None,
+                    },
+                ],
+            },
+        ),
     ] {
         g.nodes.insert(n.id.clone(), n);
     }
@@ -632,7 +668,7 @@ fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order(
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-writer-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, "test", &dir).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann"]);
     for (w, ms) in written.iter().zip(&m.sections) {
         assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite", ms.name, ms.logical));
@@ -641,7 +677,7 @@ fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order(
         assert_eq!(ms.required, matches!(w.section, Section::Core | Section::Kjv));
     }
     assert_eq!(read_manifest(&dir.join("manifest.toml")).unwrap(), m);
-    let (m2, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m2, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     assert_eq!(m2.root, m.root, "a rewrite of identical content has an identical root");
     assert_eq!(
         m2.sections.iter().map(|s| &s.logical).collect::<Vec<_>>(),
@@ -668,7 +704,7 @@ fn the_logical_dump_recomputed_from_each_written_file_equals_the_partitions_dump
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-logical-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, "test", &dir).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let parts = partition(&g).unwrap();
     for (p, w) in parts.iter().zip(&written) {
         let from_mem = logical_dump_section(&g, p.section);
@@ -697,12 +733,12 @@ fn a_changed_row_changes_the_logical_hash_and_a_changed_timestamp_does_not() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-logical2-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m1, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m1, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     std::thread::sleep(std::time::Duration::from_millis(1100));
-    let (m2, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m2, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     assert_eq!(m1.root, m2.root);
     g.located_at[0].provenance = "another-source".into();
-    let (m3, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m3, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     assert_ne!(m3.sections[0].logical, m1.sections[0].logical, "core moved");
     assert_eq!(m3.sections[1].logical, m1.sections[1].logical, "kjv did not");
     assert_ne!(m3.root, m1.root);
@@ -721,7 +757,7 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-snap-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, "test", &dir).unwrap();
+    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann]);
     assert_answers_match(&snap, &g);
@@ -735,7 +771,7 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-absent-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, written) = write_sections(&g, "test", &dir).unwrap();
+    let (m, written) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     std::fs::remove_file(&written.iter().find(|w| w.section == Section::Kretzmann).unwrap().path).unwrap();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord]);
@@ -764,7 +800,7 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-paging-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, "test", &dir).unwrap();
+    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
     // The container with a Loci set of two verses has 2 Contains entries:
     // walk every (cursor, limit) in 0..=3.
@@ -802,7 +838,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db3-snap-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    write_sections(&g, "test", &dir).unwrap();
+    write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
     // nodes_of_kind pages across sections (Container lives in core, kjv AND
     // concord) in one byte order.
@@ -885,7 +921,7 @@ fn the_sqlite_snapshots_version_is_the_manifest_root_and_equals_the_in_memory_ro
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db4a-root-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let snap = SqliteSnapshot::open(&dir.join("manifest.toml")).unwrap();
     assert_eq!(snap.version().0.hex(), m.root, "SqliteSnapshot::version IS the manifest root");
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "and equals the in-memory root (one root, spec 3.4)");
@@ -901,8 +937,109 @@ fn mem_store_stamps_the_same_root_the_sections_carry() {
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db4a-root2-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let (m, _) = write_sections(&g, "test", &dir).unwrap();
+    let (m, _) = write_sections(&g, &Extras::default(), "test", &dir).unwrap();
     let mut store = MemStore::default();
     let v = store.publish(g);
     assert_eq!(v.0.hex(), m.root, "what MemStore stamps is what the manifest says");
+}
+
+// ---------------------------------------------------------------------
+// DB-4b: extras -- the non-graph tables (projections, chronology, headings,
+// red-letter spans, sidecars) through one row shape
+// ---------------------------------------------------------------------
+use atlas_graph::sqlite::extras::{read_table, row_body, spec_named, table_specs_of, Col};
+use atlas_graph_types::chrono::{ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
+
+#[test]
+fn every_extra_table_spec_matches_its_ddl_and_graph_types_lists_it() {
+    for s in Section::SHIPPED {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        create_tables(&conn, s).unwrap();
+        create_indexes(&conn, s).unwrap();
+        let names: Vec<&str> = table_specs_of(s).iter().map(|t| t.name).collect();
+        assert_eq!(names, atlas_graph_types::sections::extra_tables_of(s), "{s:?}: specs and graph-types agree on names and order");
+        for spec in table_specs_of(s) {
+            let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", spec.name)).unwrap();
+            let info: Vec<(String, i64)> = stmt
+                .query_map([], |r| Ok((r.get::<_, String>(1)?, r.get::<_, i64>(5)?)))
+                .unwrap()
+                .map(|r| r.unwrap())
+                .collect();
+            let cols: Vec<&str> = info.iter().map(|(n, _)| n.as_str()).collect();
+            assert_eq!(cols, spec.columns, "{}: DDL columns == spec.columns, in order", spec.name);
+            let mut pk: Vec<(i64, &str)> = info.iter().filter(|(_, k)| *k > 0).map(|(n, k)| (*k, n.as_str())).collect();
+            pk.sort();
+            let pk: Vec<&str> = pk.into_iter().map(|(_, n)| n).collect();
+            assert_eq!(pk, spec.pk, "{}: DDL primary key == spec.pk, in order", spec.name);
+        }
+    }
+    assert!(spec_named("verse").is_some() && spec_named("nope").is_none());
+}
+
+#[test]
+fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attached_dump() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let mut resolved = std::collections::HashMap::new();
+    resolved.insert(
+        "e1".to_string(),
+        ResolvedPlacement {
+            date: ResolvedDate {
+                from: TimePoint { year: Year::new(-1000).unwrap(), month: Some(3), day: None },
+                to: TimePoint { year: Year::new(-999).unwrap(), month: None, day: None },
+            },
+            seq: SeqKey(0),
+            basis: PlacementBasis::Traditional,
+        },
+    );
+    let mut red = std::collections::HashMap::new();
+    red.insert("GEN.1.1".to_string(), vec![(0usize, 5usize), (10, 12)]);
+    let extras = Extras::graph_derived(&g, &resolved, &red).unwrap();
+    let verse = extras.table("verse").unwrap();
+    assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]), "{:?}", verse.rows);
+    let ed = extras.table("event_date").unwrap();
+    assert_eq!(
+        ed.rows[0],
+        vec![Col::Text("e1".into()), Col::Int(-1000), Col::Int(-999), Col::Int(3), Col::Null, Col::Null, Col::Null, Col::Int(0), Col::Int(1)]
+    );
+    let rl = extras.table("red_letter_span").unwrap();
+    assert_eq!(
+        rl.rows,
+        vec![
+            vec![Col::Int(0), Col::Int(1), Col::Int(1), Col::Int(0), Col::Int(0), Col::Int(5)],
+            vec![Col::Int(0), Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(10), Col::Int(12)]
+        ]
+    );
+    let place = extras.table("place").unwrap();
+    assert_eq!(place.spec.columns, &["node_id", "canonical", "lat", "lon"]);
+    assert_eq!(place.rows, vec![vec![Col::Text("Place:ur-1".into()), Col::Text("Ur".into()), Col::Real(30.96), Col::Real(46.1)]]);
+    assert_eq!(extras.table("polity_era").unwrap().rows.len(), 2);
+    assert_eq!(extras.table("era").unwrap().rows.len(), 1);
+    assert_eq!(extras.table("concord_unit").unwrap().rows, vec![vec![Col::Text("TextUnit:concord/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]]);
+
+    extras.attach(&mut g);
+    assert_eq!(g.extra_tables["place"], vec![b"{\"canonical\":\"Ur\",\"lat\":30.96,\"lon\":46.1,\"node_id\":\"Place:ur-1\"}".to_vec()]);
+    let dir = std::env::temp_dir().join(format!("db4b-extras-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let (_m, written) = write_sections(&g, &extras, "test", &dir).unwrap();
+    assert_eq!(written.iter().map(|w| w.extra_row_count).sum::<usize>(), extras.tables.iter().map(|t| t.rows.len()).sum::<usize>());
+    for w in &written {
+        let conn = open_read_only(&w.path).unwrap();
+        for spec in table_specs_of(w.section) {
+            let back = read_table(&conn, spec).unwrap();
+            let expected: Vec<Vec<u8>> = g.extra_tables.get(spec.name).cloned().unwrap_or_default();
+            let got: Vec<Vec<u8>> = back.iter().map(|r| row_body(spec, r).unwrap()).collect();
+            assert_eq!(got, expected, "{}: SELECT … ORDER BY pk re-encodes to the attached bodies", spec.name);
+        }
+        assert_eq!(logical_hash(&logical_dump_of_db(&conn, w.section).unwrap()), w.logical, "{:?}", w.section);
+    }
+    // a graph nobody attached to writes empty extra tables and a different root
+    let mut bare = specimen_graph();
+    bare.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut bare);
+    let dir2 = std::env::temp_dir().join(format!("db4b-extras2-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir2);
+    let (m2, _) = write_sections(&bare, &Extras::default(), "test", &dir2).unwrap();
+    assert_ne!(m2.root, _m.root, "the extras are in the root");
 }
