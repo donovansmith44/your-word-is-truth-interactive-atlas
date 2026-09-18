@@ -638,3 +638,33 @@ computation kept there as the oracle). Kept with reasons (plan judgment calls
 not expose; DB-4's `kjv.cross_refs` seek retires it), `ProvenanceIndex::by_family`
 (a per-family DISTINCT, a section-level scan). Not shipped (judgment call 1):
 `compose_frontier` -- no `frontier::compose` exists to default to.
+
+## DB-4a (2026-09-17): the identity cutover
+
+`canon-ids` is ON for the atlas workspace: SHA-256-128 pids over canonical
+node bytes, edge ids over canonical edge bytes, the version root = the
+manifest root over the four sections' logical dumps (spec 3.4).
+
+| Measure | Before | After |
+|---|---:|---:|
+| Gate 1 artifact load (ceiling 4 s) | 2.714 s | 2.041 s (4.488 s before `[profile.dev.package.atlas-graph-types] opt-level = 2`) |
+| Gate 9 SQLite admission (ceiling 570 s) | 377.7 s | 311.7 s (write 19.1 s, dump re-derivation 4.1 s, assert_answers_match 265.8 s) |
+| Section files, uncompressed | 35.2 / 233.1 / 6.5 / 59.0 MB | 37.9 / 246.8 / 6.8 / 61.6 MB (core / kjv / concord / kretzmann; 16-byte pid and edge_id BLOBs) |
+| Version root | `dfcf6ee4c2a39965` | `e5d656e22cff0be8ac3f5a711d5c20fe` |
+
+The section logical hashes did not move (`819b7d00…`, `47cec020…`,
+`e1902cf2…`, `cfebcd66…`): a logical dump carries no id, so the manifest
+root DB-2b already computed is the version root now. Optimising the
+graph-types package alone in the dev profile paid for itself twice: SHA-256
+and canonical JSON at load (gate 1), and the section writer (gate 9's write
+50 s -> 19 s).
+
+Re-recorded once (spec 3.6): 3 export roots, 3 pact bodies + 4 pact edge
+ids, 19 AQC fixture roots + 22 AQC edge ids, 2 graph-contract edge ids, the
+`bibex edges` transcript, the root regression constant. `graph.bin` is
+byte-identical; the 25 scene hashes did not move.
+
+ORDER-1: no sort key changed. The chronology's total order is data-carried
+(`resolved[id].seq` == position; DB-4b's `event_date.seq`); an `id`
+tie-break was tried and reverted because the curated same-year order is a
+narrative's own leg sequence (`narrative_real_data.rs` E5 laws).

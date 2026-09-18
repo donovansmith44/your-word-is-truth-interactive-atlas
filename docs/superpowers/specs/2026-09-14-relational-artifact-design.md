@@ -318,7 +318,7 @@ a hash; nothing inside it depends on `std::hash`.
 | Thing | Hash input |
 |---|---|
 | node pid | domain prefix + node canonical bytes |
-| edge id | domain prefix + `family|row canonical bytes` |
+| edge id | domain prefix + canonical edge bytes `{"object":<position>,"rel":"<name>","subject":<position>}` (DB-4a judgment call 1: the per-row key would give one id to every entry a multi-locus `Contains` row produces; `edge_index.row_family/row_id` still name the row) |
 | section logical hash | domain prefix + the section's **logical dump**: for each table in the fixed schema order, for each row in primary-key order, `table\tcanonical row JSON\n` |
 | version root | domain prefix + the manifest's canonical section lines (§2.2) |
 
