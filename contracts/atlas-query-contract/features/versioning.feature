@@ -1,4 +1,4 @@
-# AQC v0.1.0 -- /api/contract advertisement + fail-loud mismatch (spec §2's
+# AQC v0.2.0 (DB-4a; v0.1.0 before) -- /api/contract advertisement + fail-loud mismatch (spec §2's
 # versioning law, the house fail-loud law). This is the ONE new behavioral
 # surface this batch adds -- server/atlas-server/src/contract.rs::contract,
 # client/AqcContract.cs::Satisfies.
@@ -14,7 +14,7 @@ Feature: Versioning -- the server advertises its AQC range; the client fails lou
     Then the client accepts the advertised range
 
   Scenario: a client whose version falls outside the advertised range is rejected, loud
-    Given the server advertises AQC version "0.2.0" through "0.5.0"
+    Given the server advertises AQC version "0.3.0" through "0.5.0"
     Then the client rejects the advertised range
 
   # Fix round 1 (Q-4/§0, controller ruling): a MALFORMED advertisement is

@@ -42,7 +42,8 @@ hatch — and adding one to a previously-green scenario is classified
   the only fixture values that changed; no scenario text moved. The version
   root (32 hex now: the manifest root over the four sections) is asserted as a
   law between artifacts, never as a literal, so nothing else in this suite
-  re-blessed.
+  re-blessed -- except `contract.json`, the advertised AQC range, which
+  follows the atlas-query-contract's own move to 0.2.0.
 
 - **0.3.0** (Batch DB-3) — **MINOR: the vocabulary widened.** `graph-
   vocabulary.json` gains one node kind (`LexiconEntry`) and one directed
