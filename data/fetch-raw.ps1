@@ -69,6 +69,32 @@ if (-not (Test-Path $bibleVendored)) {
   Remove-Item $bibleExtractTmp -Recurse -Force
   Remove-Item (Join-Path $raw 'brain-fuel-bible-src.zip') -Force
 }
+# LEX-1 (spec 2026-09-14 relational-artifact-design, section 7.1): from the
+# SAME pinned commit, the lexicon (`lexicon/{grc,hbo}`: 13,548 Strong's
+# entries -- Strong's 1890 PD; glosses/domains CC BY 4.0 STEPBible/MACULA)
+# and the per-word morphology (`morph/{nt,ot}`: 452,689 CoNLL-U tokens with
+# Strong= alignment, CC BY 4.0 STEPBible). NOT `morph/lxx` (owner's standing
+# "no apocrypha for now"). Guarded separately so an existing CORP-1a vendoring
+# gains the two directories without re-copying the editions.
+if (-not (Test-Path (Join-Path $bibleVendored 'lexicon')) -or -not (Test-Path (Join-Path $bibleVendored 'morph'))) {
+  Fetch "https://github.com/brain-fuel/bible/archive/$bibleSha.zip" 'brain-fuel-bible-src.zip'
+  $bibleExtractTmp = Join-Path $raw 'brain-fuel-bible-src-extract'
+  if (-not (Test-Path $bibleExtractTmp)) { Expand-Archive (Join-Path $raw 'brain-fuel-bible-src.zip') $bibleExtractTmp }
+  $srcRoot = Join-Path $bibleExtractTmp "bible-$bibleSha"
+  New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'lexicon') | Out-Null
+  New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'morph') | Out-Null
+  Copy-Item (Join-Path $srcRoot 'lexicon\grc') (Join-Path $bibleVendored 'lexicon\grc') -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'lexicon\hbo') (Join-Path $bibleVendored 'lexicon\hbo') -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'morph
+t') (Join-Path $bibleVendored 'morph
+t') -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'morph\ot') (Join-Path $bibleVendored 'morph\ot') -Recurse -Force
+  # upstream's own README and LICENSE travel with the data: attribution is a license condition
+  Copy-Item (Join-Path $srcRoot 'README.md') (Join-Path $bibleVendored 'UPSTREAM-README.md') -Force -ErrorAction SilentlyContinue
+  Copy-Item (Join-Path $srcRoot 'LICENSE*') $bibleVendored -Force -ErrorAction SilentlyContinue
+  Remove-Item $bibleExtractTmp -Recurse -Force
+  Remove-Item (Join-Path $raw 'brain-fuel-bible-src.zip') -Force
+}
 
 # Historical border snapshots are NOT fetched -- Batch L (license
 # remediation) removed the aourednik/historical-basemaps (GPL-3.0) source

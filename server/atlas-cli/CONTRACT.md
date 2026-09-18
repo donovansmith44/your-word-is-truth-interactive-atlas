@@ -17,10 +17,12 @@ Four requirements, all binding here: (1) REALLY SIMPLE, (2) TUTORIAL,
 
 ## Reuse boundary (design ruling R1)
 
-`atlas-cli` is a new workspace binary crate. It loads
-`<data-dir>/graph.bin` directly via `atlas_graph::GraphService::from_artifact`
-— the SAME artifact-load path `atlas-server/src/main.rs`'s default branch
-uses — and loads `AtlasData` the SAME way (`atlas_core::data::AtlasData::load`
+`atlas-cli` is a new workspace binary crate. It opens the committed
+sections under `<data-dir>` (`manifest.toml` + `sections/*.sqlite.zst`) via
+`atlas_graph::GraphService::from_sections` — the SAME path
+`atlas-server/src/main.rs`'s default branch uses (DB-4c; DB-5 retired
+`graph.bin` and the compiled JSON sidecars) — and gets its `AtlasData` from
+the same call (`atlas_core::data::AtlasData::load`
 + `.finish()`, then `GraphService::scene_source` for the event/place data
 the verse command reads; OVERLAY-1 Task 5 deleted the boot-time overlay
 that used to hang that data on `AtlasData` itself). No HTTP, no
@@ -59,8 +61,8 @@ their own sections below.
 
 Two global flags, accepted before OR after the subcommand, in any order
 relative to each other:
-- `--data-dir <path>` — where to look for `graph.bin` and the compiled
-  JSON files. Defaults to `../data/compiled` (the same relative layout
+- `--data-dir <path>` — where to look for `manifest.toml` and `sections/`
+  (and `sources.json`). Defaults to `../data/compiled` (the same relative layout
   every other tool in this repo assumes when run from `server/`).
 - `--json` (BIBEX-1) — machine-readable JSON on stdout instead of prose;
   see "`--json` mode" below.
@@ -337,7 +339,7 @@ nothing on a clean run.
 | `bad_usage` | 4 | the command line itself is unparseable — unknown subcommand, unknown flag, missing a required positional/flag value, or extra positional arguments the command doesn't take | `atlas: error (bad_usage): unrecognized subcommand 'vers' -- 'atlas' only knows verse, chapter, node, edges, find, tutorial, help -- run 'atlas help' for the full list` |
 | `bad_ref` | 2 | a ref/id argument does not parse against its own grammar (locus grammar for `verse`/`chapter`, wire-id grammar for `node`/`edges`, an unrecognized `--kind` label for `edges`) | `atlas: error (bad_ref): 'GEN.1.99.3' is not a valid verse/Concord reference -- expected BOOK.CHAPTER.VERSE (e.g. GEN.1.1) or "BoC PART.ARTICLE.PARAGRAPH" -- check the book code and the dot-separated parts` |
 | `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no node with that raw id -- try 'atlas find <term>' to locate the id you meant` |
-| `data_load_failed` | 5 | `graph.bin` (or a required compiled JSON file) is missing, unreadable, or fails to parse at startup, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
+| `data_load_failed` | 5 | the sections (`manifest.toml`, a required blob) are missing, unreadable, or refused at open, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
 | `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | `atlas: error (empty_result): no matches for 'zzqx' -- searched Place/Event/Narrative/Era/Polity labels -- try a shorter or different substring` |
 | `integrity_failed` | 6 | (DB-4b) `bibex verify` found the data on disk disagreeing with its manifest: a section's logical or transport hash mismatch, a required section's blob missing, a manifest whose root does not recompute | `atlas: error (integrity_failed): 1 of 9 checks failed -- concord: transport MISMATCH manifest 0a77... file 3b19... -- recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served` |
 
@@ -523,7 +525,7 @@ command again with a one-line reminder of its shape. Each step prints:
 4. one short paragraph explaining what the step just demonstrated
 
 Every real query the tutorial runs targets GEN.1.1/GEN.1/an id/edge kind
-that is GENUINELY present in the committed `data/compiled/graph.bin` —
+that is GENUINELY present in the committed `data/compiled/sections/` —
 verified by this crate's own smoke test (`tutorial runs to completion,
 nonempty numbered steps` per R6), never a placeholder that would 404 on a
 real invocation. Bare `atlas` (no args) names `bibex tutorial` by
@@ -540,7 +542,7 @@ edited, paraphrased, or commented on as if uncertain.
 
 `server/atlas-cli/tests/cli.rs` — integration tests invoking the REAL
 compiled binary via `std::process::Command`, against the REAL committed
-`data/compiled/graph.bin` (no fixture graph, no mock): every subcommand's
+`data/compiled/sections/` (no fixture graph, no mock): every subcommand's
 happy path, every error-taxonomy class (one test per class minimum, two
 for `bad_ref` covering both the locus-grammar and the wire-id-grammar
 shapes), the tutorial smoke test (runs to completion, exit 0, output

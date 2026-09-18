@@ -595,7 +595,8 @@ variants this source spells differently than our own canon (`Caesar`/our
 `Barjona`/our `Bar–jona`), two dropped possessive apostrophes, one dropped
 comma, and one source-side literal typo (MAT.5.30 "cut **if** off" for "cut
 **it** off"). A verse whose only span lands in this residual carries no
-sub-verse row in `data/compiled/red-letter-spans.json` but STAYS in the
+sub-verse row in the kjv section's `red_letter_span` table (DB-5 retired
+`data/compiled/red-letter-spans.json`) but STAYS in the
 graph's own SpokenBy verse set regardless (the verse set is edition-
 independent by construction — decision 2a).
 
