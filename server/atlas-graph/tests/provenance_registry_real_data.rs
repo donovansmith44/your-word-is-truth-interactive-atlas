@@ -36,11 +36,8 @@ use std::path::{Path, PathBuf};
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
     GRAPH.get_or_init(|| {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin");
-        let dump = atlas_graph::artifact::read_file(&path)
-            .unwrap_or_else(|e| panic!("{} must be readable as a compiled artifact: {e}", path.display()));
-        let (graph, ..) = atlas_graph::artifact::to_service_parts(dump).expect("the committed artifact must load");
-        graph
+        // DB-5: the committed sections read back (sqlite::reload).
+        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
 }
 

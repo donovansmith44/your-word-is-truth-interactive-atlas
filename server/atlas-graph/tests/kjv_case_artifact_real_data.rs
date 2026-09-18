@@ -29,9 +29,12 @@ use std::path::Path;
 
 use atlas_graph::GraphService;
 
+/// DB-5: the SHIPPED SECTIONS (data/compiled/manifest.toml + sections/),
+/// opened exactly as atlas-server opens them -- the read-back discipline
+/// this file exists for, over the artifact that ships now.
 fn real_graph_bin() -> GraphService {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin");
-    GraphService::from_artifact(&path).expect("data/compiled/graph.bin must exist and load -- run the atlas-etl + atlas-graph-compile pipeline first")
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    GraphService::from_sections(&compiled).expect("data/compiled/manifest.toml + sections/ must exist and open -- run atlas-graph-compile first").0
 }
 
 fn verse_text(svc: &GraphService, book_code: &str, chapter: u16, verse: u16) -> String {

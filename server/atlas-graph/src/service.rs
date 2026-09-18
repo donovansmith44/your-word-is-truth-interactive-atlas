@@ -123,7 +123,6 @@ impl GraphSnapshot for Snap {
     }
 }
 
-use crate::artifact;
 use crate::build::{self, BuildStats};
 use crate::event_world::{Chronology, EventWorldStats};
 
@@ -373,45 +372,6 @@ impl GraphService {
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), HashMap::new(), None))
     }
 
-    /// M-C (controller decision 4): loads from a SERIALIZED ARTIFACT --
-    /// GraphStore implementation #2 -- instead of building from raw
-    /// sources. No `AtlasData`/raw KJV bytes touched at all: the artifact
-    /// carries every row/node table plus the chronology companion's own
-    /// fields (`artifact.rs`'s own module doc comment for exactly what
-    /// "logical artifact" means here). The KJV fidelity law does not run
-    /// here (there are no raw bytes on this path to independently re-check
-    /// against -- fidelity was already proven once, at COMPILE time, by
-    /// the compile step that produced this file, via the SAME
-    /// `assert_answers_match` admission `tests/artifact_conformance.rs`
-    /// exercises); this is the "proof at the boundary, once" the whole
-    /// design insists on (P3), not a weakening of it.
-    pub fn from_artifact(path: &Path) -> anyhow::Result<Self> {
-        let dump = artifact::read_file(path).map_err(|e| anyhow::anyhow!("{e}"))?;
-        let (mut graph, stats, event_world_stats, chronology) = artifact::to_service_parts(dump).map_err(|e| anyhow::anyhow!("{e}"))?;
-        graph.build_indexes();
-        crate::event_world::add_justified_by(&mut graph);
-        // NODE1-ROWS-1 (fix round 1): container membership/succession are
-        // artifact-serialized rows now -- `build_indexes` above lowers
-        // them like every other row family; no post-index derivation step
-        // exists any more, so from-artifact and from-sources agree by
-        // construction.
-        // RED-1: the KJV sub-verse span table's own sibling file --
-        // `<data_dir>/red-letter-spans.json`, the SAME "disclosed
-        // convention: same directory every other compiled file already
-        // lives in" `main.rs`'s own `--build-from-raw` doc comment already
-        // establishes for `graph.bin` itself. `None` (the file doesn't
-        // exist -- an older `data/compiled/` snapshot, or a test fixture
-        // directory) is an honestly empty span table, never an error on
-        // this path (`red_letter_spans::read_file`'s own doc comment).
-        let spans_path = path.parent().map(|p| p.join("red-letter-spans.json")).unwrap_or_else(|| std::path::PathBuf::from("red-letter-spans.json"));
-        let red_letter_spans: HashMap<String, Vec<(usize, usize)>> = crate::red_letter_spans::read_file(&spans_path)?.unwrap_or_default().into_iter().collect();
-        // DB-4b: the sidecars beside `graph.bin` (`None` for a fixture
-        // directory without `canon.json` -- graph-derived tables only).
-        let data_dir = path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| std::path::PathBuf::from("."));
-        let sidecars = crate::sqlite::sidecars::Sidecars::load(&data_dir)?;
-        Ok(Self::assemble(graph, stats, event_world_stats, chronology, red_letter_spans, sidecars.as_ref()))
-    }
-
     /// Reads `raw_dir/kjv.json` and `raw_dir/xrefs/cross_references.txt`
     /// and builds from them, plus the event world from `atlas` — the only
     /// filesystem-touching function in this crate. M-C: also reads
@@ -464,8 +424,8 @@ impl GraphService {
     /// the artifact's own serialized fields, via `artifact::to_service_parts`,
     /// on the from-artifact path) and hands the finished value in here.
     ///
-    /// DB-4b: `sidecars` -- the compiled directory's own `AtlasData` +
-    /// `sources.json` (`from_artifact` loads them beside `graph.bin`) --
+    /// DB-4b/DB-5: `sidecars` -- an `AtlasData` + `SourcesDocument` in
+    /// memory (nothing loads them from JSON any more) --
     /// fold into the graph's `extra_tables` here, before `publish`, so this
     /// service's version IS `manifest.toml`'s root. The from-sources
     /// constructors pass `None`: graph-derived tables only, a root that is
@@ -479,7 +439,7 @@ impl GraphService {
         event_world_stats: EventWorldStats,
         chronology: Chronology,
         red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
-        sidecars: Option<&crate::sqlite::sidecars::Sidecars>,
+        sidecars: Option<(&AtlasData, &SourcesDocument)>,
     ) -> Self {
         let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for row in &graph.succession {
@@ -500,8 +460,8 @@ impl GraphService {
         // the section writer folds (`sqlite::extras`).
         let mut extras = crate::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono, &red_letter_spans)
             .expect("assemble: the graph's projections encode");
-        if let Some(sc) = sidecars {
-            extras.extend(crate::sqlite::sidecars::fold_sidecars(&sc.atlas, &sc.sources).expect("assemble: the sidecars fold"));
+        if let Some((atlas, sources)) = sidecars {
+            extras.extend(crate::sqlite::sidecars::fold_sidecars(atlas, sources).expect("assemble: the sidecars fold"));
         }
         extras.attach(&mut graph);
         // M-C2 (requirement 2): the SAME treatment for the cites relation's

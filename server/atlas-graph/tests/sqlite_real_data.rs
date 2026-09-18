@@ -17,7 +17,7 @@ use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
 use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::open_read_only;
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
-use atlas_graph::sqlite::extras::{extras_for_artifact, Extras};
+use atlas_graph::sqlite::extras::Extras;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph::sqlite::writer::write_sections;
 
@@ -35,22 +35,19 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
-/// Loaded ONCE for the binary (the same helper `canon_real_data.rs` uses),
-/// DB-4b: with the extras attached from the same sidecar files the
-/// compile and the server read (`extras_for_artifact`).
+/// Loaded ONCE for the binary. DB-5: the committed SECTIONS read back
+/// (`sqlite::reload`) -- extras already attached -- plus the typed extras
+/// the writer needs, recomputed from the ETL's in-memory `AtlasData`
+/// (raw + curated) and `sources.json`, exactly as the compile folds them.
 fn committed_graph() -> &'static (Graph, Extras) {
     static CACHED: OnceLock<(Graph, Extras)> = OnceLock::new();
     CACHED.get_or_init(|| {
-        let path = data_dir().join("graph.bin");
-        let dump = atlas_graph::artifact::read_file(&path).expect(
-            "data/compiled/graph.bin must exist -- run `cargo run -p atlas-graph --bin atlas-graph-compile` from server/ first",
-        );
-        let (mut graph, _stats, _ews, chronology) =
-            atlas_graph::artifact::to_service_parts(dump).expect("to_service_parts must succeed");
-        graph.build_indexes();
-        atlas_graph::event_world::add_justified_by(&mut graph);
-        let extras = extras_for_artifact(&graph, &chronology.chrono, &data_dir()).expect("the sidecars fold");
-        extras.attach(&mut graph);
+        let (graph, snap) = atlas_graph::sqlite::reload::committed_graph(&data_dir()).expect("the committed sections read back");
+        let (chrono, red_letter) = snap.with_conn(|c| Ok((atlas_graph::sqlite::serve::load_chronology(c)?, atlas_graph::sqlite::serve::load_red_letter_spans(c)?))).expect("companions");
+        let data = data_dir().parent().unwrap().to_path_buf();
+        let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
+        let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
+        let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, &atlas, &sources).expect("the fold");
         (graph, extras)
     })
 }

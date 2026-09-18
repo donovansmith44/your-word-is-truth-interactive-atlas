@@ -441,7 +441,7 @@ impl Chronology {
 
 /// Startup-log-friendly counts, mirrors `build::BuildStats`'s own role for
 /// the KJV/xrefs half.
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct EventWorldStats {
     pub places: usize,
     pub events: usize,

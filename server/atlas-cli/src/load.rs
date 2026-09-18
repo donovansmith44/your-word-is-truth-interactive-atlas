@@ -1,9 +1,8 @@
-//! Startup: load the compiled graph artifact + `AtlasData`, the SAME
-//! artifact-load path `atlas-server/src/main.rs`'s default (non
-//! `--build-from-raw`) branch already uses -- see that file's own doc
-//! comment for the full reasoning (`GraphService::from_artifact` reads
-//! `<data-dir>/graph.bin`; `AtlasData::load` reads the ten surviving
-//! compiled JSON files; OVERLAY-1 Task 5 retired the overlay that used to
+//! Startup: open the committed sections (`GraphService::from_sections`,
+//! DB-4c; DB-5 retired `graph.bin` and the compiled JSON sidecars), the
+//! SAME path `atlas-server/src/main.rs`'s default (non `--build-from-raw`)
+//! branch already uses -- see that file's own doc comment for the full
+//! reasoning (OVERLAY-1 Task 5 retired the overlay that used to
 //! reconstruct the five deleted `AtlasData` fields on top of that, so the
 //! event/place/narrative data `bibex verse` reads now lives in ONE place,
 //! `GraphService::scene_source`, materialised straight off the already-
@@ -26,7 +25,7 @@ pub struct Loaded {
     pub data: Arc<AtlasData>,
 }
 
-/// Loads `graph.bin` + the compiled JSON files from `data_dir`. Every
+/// Opens the sections under `data_dir` (manifest.toml + sections/). Every
 /// failure on this path is `data_load_failed` (CONTRACT.md) -- this runs
 /// before any command's own logic, so nothing downstream can distinguish
 /// "graph missing" from "graph corrupt" from "a JSON file missing"; the

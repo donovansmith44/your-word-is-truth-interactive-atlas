@@ -77,7 +77,7 @@ impl LoadedAtlas {
 /// Its own independent piece of state, never folded into `AtlasData` or the
 /// graph (see `app::AppState`'s doc comment). A missing or unparseable file
 /// fails loud, the same "never silently serve stale/absent data" discipline
-/// applied to `graph.bin`.
+/// applied to the sections.
 pub fn load_sources(data_dir: &Path) -> Result<SourcesDocument> {
     // DB-4c: from core's `source_*`/`provenance_entry` tables (the fold of
     // `sources.json`), never the JSON. One-worker open, sources only.

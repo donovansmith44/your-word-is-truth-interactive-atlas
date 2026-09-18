@@ -42,15 +42,9 @@ use atlas_graph_types::text::{ConcordRef, TextLocus, TextRef, VerseRef};
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin");
-        let dump = atlas_graph::artifact::read_file(&path).expect(
-            "data/compiled/graph.bin must exist -- run `cargo run -p atlas-graph --bin atlas-graph-compile` from server/ first",
-        );
-        let (mut graph, _stats, _ews, _chronology) =
-            atlas_graph::artifact::to_service_parts(dump).expect("to_service_parts must succeed");
-        graph.build_indexes();
-        atlas_graph::event_world::add_justified_by(&mut graph);
-        graph
+        // DB-5: the committed SECTIONS read back (sqlite::reload), indexed
+        // exactly as the served path indexes -- graph.bin is gone.
+        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
 }
 

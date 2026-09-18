@@ -34,7 +34,8 @@ REASON='wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-
 
 # package | test binary | test name -- ORDER IS THE RUN ORDER.
 GATES=(
-  "atlas-graph|artifact_conformance|serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling"
+  # DB-5: the artifact load gate retired with its subject (artifact.rs, graph.bin);
+  # the served startup gate (sections_startup, below) is its successor.
   "atlas-server|graph_conformance|the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly"
   "atlas-server|perf_smoke|scene_time_full_span_completes_within_smoke_threshold"
   "atlas-server|perf_smoke|scene_time_nt_window_completes_within_smoke_threshold"

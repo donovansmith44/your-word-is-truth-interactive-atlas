@@ -14,9 +14,12 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
+/// DB-5: the reference is the served path itself (`from_sections`); the
+/// loaders below are what it runs, so each law now says "loaded through the
+/// service and loaded directly, equal" plus the shape checks on the values.
 fn artifact() -> &'static GraphService {
     static CACHED: OnceLock<GraphService> = OnceLock::new();
-    CACHED.get_or_init(|| GraphService::from_artifact(&data_dir().join("graph.bin")).expect("graph.bin loads"))
+    CACHED.get_or_init(|| GraphService::from_sections(&data_dir()).expect("the sections open").0)
 }
 
 fn sections() -> &'static SqliteSnapshot {

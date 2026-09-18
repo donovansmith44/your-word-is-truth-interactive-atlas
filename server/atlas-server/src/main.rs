@@ -17,9 +17,9 @@ struct Args {
     static_dir: Option<PathBuf>,
     port: u16,
     /// M-C (controller decision 4): the startup build retires -- the
-    /// DEFAULT path loads the serialized graph artifact
-    /// (`<data_dir>/graph.bin`, disclosed convention: same directory
-    /// every other compiled file already lives in). `--build-from-raw`
+    /// DEFAULT path opens the compiled artifact (DB-4c/DB-5: the SQLite
+    /// sections, `<data_dir>/manifest.toml` + `sections/`; `graph.bin` is
+    /// gone). `--build-from-raw`
     /// is the dev fallback flag the brief's own wording calls for
     /// (disclosed): rebuilds in memory from `data/raw/` + curated eras,
     /// exactly the M-A/M-B startup path, for iterating on curated data
@@ -80,9 +80,9 @@ async fn main() -> Result<()> {
     // scope). 31,102 KJV verses plus ~344k raw cross-reference rows is
     // trivial startup work.
     // Batch M-C (controller decision 4): the startup BUILD retires -- the
-    // default path LOADS the serialized graph artifact
-    // (`<data_dir>/graph.bin`, produced by the `atlas-graph-compile` bin,
-    // see `bin/compile_graph.rs`'s own doc comment), start-to-listening
+    // default path OPENS the compiled artifact (DB-4c/DB-5: the SQLite
+    // sections under `<data_dir>`, produced by the `atlas-graph-compile`
+    // bin, see `bin/compile_graph.rs`'s own doc comment), start-to-listening
     // <=3s release, a committed law (`tests/artifact_conformance.rs`
     // proves it in CI). `--build-from-raw` is the disclosed dev fallback:
     // rebuilds in memory from `data/raw/` + curated eras, the M-A/M-B
@@ -212,7 +212,7 @@ async fn main() -> Result<()> {
     // graph -- see `app::AppState`'s own doc comment). A missing or
     // unparseable file fails loud at startup, the same "never silently
     // serve stale/absent data" discipline this binary already applies to
-    // `graph.bin`/the compiled JSON files above -- run `cargo run -p
+    // the sections above -- run `cargo run -p
     // atlas-etl --bin gen_sources` (from `server/`) to (re)generate it.
     // CDC-1 fix round 1 (review C-3): read through `atlas_server::load`,
     // the same call the pact recorder makes -- a recorder that built with

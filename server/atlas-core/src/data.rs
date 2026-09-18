@@ -1913,90 +1913,6 @@ impl AtlasData {
         let &(pi, ii) = self.catechism_item_index.get(id)?;
         Some((&self.catechism[pi], &self.catechism[pi].items[ii]))
     }
-
-    /// Reads the SURVIVING compiled JSON files ETL writes under `dir`
-    /// (exact filenames mirror `atlas-etl/src/main.rs`'s `write_json`
-    /// calls: `canon.json`, `books-meta.json`, plus `polities.json`,
-    /// `landmarks.json`, `place-history.json`, ...) and assembles an
-    /// `AtlasData`. Does NOT call `.finish()` — the derived indexes are
-    /// `#[serde(skip)]` and come back empty from a fresh deserialize (see
-    /// the struct doc comment); callers must call `.finish()` themselves.
-    /// OVERLAY-1 Task 5: there is no longer an overlay step between this
-    /// loader and `.finish()` on any path -- the server's own DEFAULT
-    /// startup path is now `load` then `finish` then
-    /// `GraphService::scene_source`, and the five fields this loader stopped
-    /// reading in M-C2 stay honestly empty for the life of the process.
-    ///
-    /// M-C2 DELETION EVENT (requirement 2, completing P1): `places.json`/
-    /// `events.json`/`narratives.json`/`verses-kjv.json`/`cross-refs.json`
-    /// retire, joining `eras.json`'s own M-C retirement -- every
-    /// production reader of these five fields migrated onto the graph
-    /// this batch (`handlers::place`/`event`/`verse`/`xrefs`/`narratives`
-    /// directly; every NOT-yet-migrated surface via the boot-time overlay
-    /// OVERLAY-1 Task 5 has since deleted, or
-    /// `atlas_etl::compile::compile`, both graph/
-    /// raw-sourced, never this loader -- see batch-mc2-report.md's own
-    /// deletion inventory for the grep proof). The FIVE FIELDS stay on
-    /// `AtlasData` as COMPILE-TIME INPUTS -- ETL-time validation, the graph
-    /// compiler's own node adapters, and several test fixtures across this
-    /// workspace read them (see the struct's own doc comment) -- only THIS
-    /// loader's own reads retire; a fresh `AtlasData::load` now always
-    /// starts with all five honestly empty, never stale or fabricated,
-    /// exactly like `.eras` already does. OVERLAY-1 Task 5 made that
-    /// emptiness permanent at runtime by deleting the overlay that used to
-    /// refill three of them immediately afterwards.
-    pub fn load(dir: &std::path::Path) -> Result<Self, crate::CoreError> {
-        let canon: Canon = read_json(dir, "canon.json")?;
-        let places: Vec<Place> = Vec::new();
-        let events: Vec<Event> = Vec::new();
-        let narratives: Vec<Narrative> = Vec::new();
-        let eras: Vec<Era> = Vec::new();
-        let books_meta: Vec<BookMeta> = read_json(dir, "books-meta.json")?;
-        let verses: HashMap<String, String> = HashMap::new();
-        let cross_refs: HashMap<String, Vec<CrossRef>> = HashMap::new();
-
-        let polities: Vec<Polity> = read_json(dir, "polities.json")?;
-        let landmarks: Vec<Landmark> = read_json(dir, "landmarks.json")?;
-        let place_history_list: Vec<PlaceHistory> = read_json(dir, "place-history.json")?;
-        let place_history: HashMap<String, PlaceHistory> =
-            place_history_list.into_iter().map(|h| (h.id.clone(), h)).collect();
-        let place_name_alias_list: Vec<PlaceNameAlias> = read_json(dir, "place-names-kjv.json")?;
-        // Batch GAZ-1-R1: GROUPED by id (was a plain 1:1 collect) -- the
-        // compiled file's own shape is unchanged (still a flat
-        // `Vec<PlaceNameAlias>`, multiple rows per id now legitimate), only
-        // the in-memory aggregation widened, same reasoning as
-        // `compile.rs`'s own identical fold immediately below its own
-        // `place_names_kjv` read.
-        let mut place_name_aliases: HashMap<String, Vec<PlaceNameAlias>> = HashMap::new();
-        for a in place_name_alias_list {
-            place_name_aliases.entry(a.id.clone()).or_default().push(a);
-        }
-        // Batch R requirement 1: `land-mask.json` is already the flattened
-        // `Vec<Vec<(f64, f64)>>` shape (see `curated::parse_land_mask`'s own
-        // doc comment for why region names/ref_notes never leave the ETL
-        // step) -- a direct read, no per-region unwrapping needed here.
-        let land_mask: Vec<Vec<(f64, f64)>> = read_json(dir, "land-mask.json")?;
-        // Batch F: `catechism.json` is already the curated `Vec<CatechismPart>`
-        // shape (see `CatechismPart`'s own doc comment) -- a direct read, no
-        // per-part unwrapping needed here, same as `polities.json` above.
-        let catechism: Vec<CatechismPart> = read_json(dir, "catechism.json")?;
-        // Batch HOTFIX-6: `chronology-anchors.json`/`book-narration-windows.json`
-        // are both already the curated `Vec<_>` shape (see each struct's own
-        // doc comment) -- direct reads, same as `polities.json` above.
-        let chronology_anchors: Vec<ChronologyAnchor> = read_json(dir, "chronology-anchors.json")?;
-        let book_narration_windows: Vec<BookNarrationWindow> = read_json(dir, "book-narration-windows.json")?;
-
-        let mut data = Self::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs);
-        data.polities = polities;
-        data.place_history = place_history;
-        data.place_name_aliases = place_name_aliases;
-        data.landmarks = landmarks;
-        data.land_mask = land_mask;
-        data.catechism = catechism;
-        data.chronology_anchors = chronology_anchors;
-        data.book_narration_windows = book_narration_windows;
-        Ok(data)
-    }
 }
 
 /// OVERLAY-1 Task 3: `AtlasData` implements the seam `atlas_core::scene`
@@ -2065,13 +1981,6 @@ pub(crate) fn year_index(y: Year) -> i64 {
     } else {
         y as i64
     }
-}
-
-fn read_json<T: serde::de::DeserializeOwned>(dir: &std::path::Path, file: &str) -> Result<T, crate::CoreError> {
-    let path = dir.join(file);
-    let text = std::fs::read_to_string(&path)
-        .map_err(|source| crate::CoreError::Io { path: path.display().to_string(), source })?;
-    serde_json::from_str(&text).map_err(|source| crate::CoreError::Json { path: path.display().to_string(), source })
 }
 
 /// A small, hand-built demo world. Originally

@@ -1459,7 +1459,7 @@ fn artifact_app() -> axum::Router {
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
             let (graph, data) = atlas_server::load::load_graph_and_data(&compiled)
-                .expect("data/compiled/{graph.bin,*.json} must exist -- run atlas-graph-compile first");
+                .expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");
             let sources = atlas_server::load::load_sources(&compiled)
                 .expect("data/compiled/sources.json must exist -- run `cargo run -p atlas-etl --bin gen_sources` first");
             assert!(

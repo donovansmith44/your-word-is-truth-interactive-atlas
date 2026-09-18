@@ -17,7 +17,6 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::path::Path;
 
 use atlas_graph_types::canon::ids::any_node_id_str;
 use atlas_graph_types::canon::Value;
@@ -331,21 +330,19 @@ pub fn verse_triple(sref: &str) -> Result<(i64, i64, i64), SqliteError> {
     }
 }
 
-/// The whole composition every artifact reader uses: graph-derived tables
-/// plus the folded sidecars of `data_dir` (`red-letter-spans.json` is read
-/// here too). Only the graph-derived tables when `<data_dir>/canon.json`
-/// is absent (a fixture directory).
-pub fn extras_for_artifact(
+/// The whole fold, from memory (DB-5): the graph-derived tables plus the
+/// nine sidecars folded from the ETL's own in-memory `AtlasData` and the
+/// `sources.json` document -- what the compile attaches to both graphs and
+/// writes into the sections. No JSON sidecar is read back from disk.
+pub fn compute(
     g: &Graph,
     chrono: &crate::event_world::ChronologyDerivation,
-    data_dir: &Path,
-) -> anyhow::Result<Extras> {
-    let spans: HashMap<String, Vec<(usize, usize)>> =
-        crate::red_letter_spans::read_file(&data_dir.join("red-letter-spans.json"))?.unwrap_or_default().into_iter().collect();
-    let mut ex = Extras::graph_derived(g, chrono, &spans).map_err(|e| anyhow::anyhow!("{e}"))?;
-    if let Some(sc) = super::sidecars::Sidecars::load(data_dir)? {
-        ex.extend(super::sidecars::fold_sidecars(&sc.atlas, &sc.sources).map_err(|e| anyhow::anyhow!("{e}"))?);
-    }
+    red_letter: &HashMap<String, Vec<(usize, usize)>>,
+    atlas: &atlas_core::data::AtlasData,
+    sources: &atlas_core::sources::SourcesDocument,
+) -> Result<Extras, SqliteError> {
+    let mut ex = Extras::graph_derived(g, chrono, red_letter)?;
+    ex.extend(super::sidecars::fold_sidecars(atlas, sources)?);
     Ok(ex)
 }
 

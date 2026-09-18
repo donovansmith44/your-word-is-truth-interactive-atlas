@@ -186,7 +186,8 @@ projections = Map.fromList
           -- not exactly this, so a bump refuses every holder of an older
           -- artifact -- the sharpest break available here, and previously
           -- invisible to all five gate legs.
-          field1 "artifact_format_version" Keep
+          field1 "manifest_schema" Keep
+        , field1 "section_schema_version" Keep
         , field1 "node_kinds" Keep
         , field1 "relations" (Each (Fields
             [ field1 "name" Keep, field1 "forward" Keep, field1 "inverse" Keep ]))

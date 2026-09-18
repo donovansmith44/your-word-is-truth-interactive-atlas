@@ -70,9 +70,10 @@ fn repo_data_dir() -> PathBuf {
 /// it exists.
 fn load_real() -> (Arc<AtlasData>, Arc<GraphService>) {
     let compiled = repo_data_dir().join("compiled");
-    let graph = GraphService::from_artifact(&compiled.join("graph.bin"))
-        .expect("data/compiled/graph.bin must exist -- run atlas-graph-compile first (see README)");
-    let data = AtlasData::load(&compiled).expect("data/compiled must exist").finish();
+    // DB-5: the sections, exactly as `atlas_server::load::load_all` opens them.
+    let (graph, data, _sources) = GraphService::from_sections(&compiled)
+        .expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first (see README)");
+    let data = data.finish();
     graph.scene_source(&data);
     (Arc::new(data), Arc::new(graph))
 }
@@ -212,15 +213,15 @@ fn bench_graph_handlers(c: &mut Criterion) {
 /// even 10 samples cost ~20-30s, and this is the one bench in this file
 /// whose whole POINT is the real end-to-end cost of the thing every other
 /// group's `load_real()` call pays once and amortizes away.
-fn bench_artifact_load(c: &mut Criterion) {
-    let mut group = c.benchmark_group("artifact_load");
+fn bench_sections_open(c: &mut Criterion) {
+    let mut group = c.benchmark_group("sections_open");
     group.sample_size(10);
-    group.bench_function("full_startup_load", |b| b.iter(load_real));
+    group.bench_function("full_startup_open", |b| b.iter(load_real));
     group.finish();
 }
 
 criterion_group!(scene_pure, bench_scene_pure);
 criterion_group!(handlers_query, bench_handlers);
 criterion_group!(graph_handlers_query, bench_graph_handlers);
-criterion_group!(artifact_load, bench_artifact_load);
-criterion_main!(scene_pure, handlers_query, graph_handlers_query, artifact_load);
+criterion_group!(sections_open, bench_sections_open);
+criterion_main!(scene_pure, handlers_query, graph_handlers_query, sections_open);

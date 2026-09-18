@@ -47,7 +47,7 @@ use crate::{contract, graph_handlers, handlers};
 /// its own field, never folded into `AtlasData`: this content has nothing
 /// to do with the Explorable Graph, and batch-s-brief.md's own
 /// finalization block requires this batch's own additions stay outside
-/// the graph pipeline so `graph.bin`/`data/exports/` stay byte-untouched.
+/// the graph pipeline so the sections/`data/exports/` stay byte-untouched.
 #[derive(Clone)]
 pub struct AppState {
     pub data: Arc<AtlasData>,

@@ -51,7 +51,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use atlas_core::data::AtlasData;
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
@@ -71,8 +70,10 @@ fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
     CACHED
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-            let graph = GraphService::from_artifact(&compiled.join("graph.bin")).expect("data/compiled/graph.bin must exist -- run atlas-graph-compile first");
-            let sidecars = AtlasData::load(&compiled).expect("data/compiled must exist");
+            // DB-5: the served path -- the committed sections, exactly as
+            // atlas_server::load::load_all opens them.
+            let (graph, sidecars, _sources) = GraphService::from_sections(&compiled).expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");
+            let sidecars = sidecars.finish();
             let source = GraphSceneSource::build(&graph, &sidecars);
             (Arc::new(source), Arc::new(graph))
         })

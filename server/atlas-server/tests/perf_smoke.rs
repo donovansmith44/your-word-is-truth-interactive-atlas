@@ -213,22 +213,28 @@ fn frontier_page_latency_corpus_over_both_arms() {
     use atlas_graph_types::explore::EdgeQuery;
     use atlas_graph_types::id::{NodeKind, Position};
     use atlas_graph_types::store::GraphQuery;
+    use atlas_graph_types::store::{GraphPublisher, GraphStore, MemStore};
     let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-    let mem = GraphService::from_artifact(&compiled.join("graph.bin")).expect("graph.bin");
+    // DB-5: the in-memory arm is the sections read back (sqlite::reload)
+    // and published into a MemStore -- graph.bin is gone.
+    let (g, _) = atlas_graph::sqlite::reload::committed_graph(&compiled).expect("the sections read back");
+    let mut store = MemStore::default();
+    let v = store.publish(g);
+    let mem_snap = store.open(v).expect("the published version opens");
     let (sql, _, _) = GraphService::from_sections(&compiled).expect("sections");
+    let sql_snap = sql.snapshot();
     let corpus: Vec<Position> = {
-        let snap = mem.snapshot();
+        let snap = &mem_snap;
         let mut v = Vec::new();
         for kind in NodeKind::ALL {
             v.extend(snap.nodes_of_kind(kind, None, 100).ids.into_iter().map(Position::Node));
         }
         v
     };
-    let run = |label: &str, svc: &GraphService| {
-        let snap = svc.snapshot();
+    fn run<S: GraphQuery>(label: &str, snap: &S, corpus: &[Position]) -> Duration {
         let mut samples: Vec<Duration> = Vec::new();
         let mut pages = 0usize;
-        for p in &corpus {
+        for p in corpus {
             let summary = snap.edge_summary(p);
             for (kind, _) in summary.iter() {
                 let t = Instant::now();
@@ -242,8 +248,8 @@ fn frontier_page_latency_corpus_over_both_arms() {
         println!("FRONTIER LATENCY [{label}]: {} positions, {} pages, p50 {:?}, p90 {:?}, p99 {:?}, max {:?}", corpus.len(), samples.len(), pct(0.5), pct(0.9), pct(0.99), samples.last().unwrap());
         let _ = pages;
         pct(0.99)
-    };
-    let _mem_p99 = run("mem (artifact)", &mem);
-    let sql_p99 = run("sqlite (sections)", &sql);
+    }
+    let _mem_p99 = run("mem (sections read back)", &mem_snap, &corpus);
+    let sql_p99 = run("sqlite (sections)", &sql_snap, &corpus);
     assert!(sql_p99 < Duration::from_millis(100), "served frontier page p99 {sql_p99:?} over 100 ms (spec 12)");
 }

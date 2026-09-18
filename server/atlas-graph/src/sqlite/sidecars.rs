@@ -15,11 +15,11 @@
 //! (`/api/polities` reads Polity payloads): retired at DB-5, not folded
 //! (spec §5.3's closing note).
 //!
-//! Sources: `AtlasData::load` (atlas-core `data.rs`) for eight files and
-//! `sources.json` -> `SourcesDocument` (atlas-core `sources.rs`, the file
-//! `atlas-server::load::load_sources` reads; NOT part of `AtlasData`).
-
-use std::path::Path;
+//! Sources (DB-5): the ETL's own in-memory `AtlasData`
+//! (`atlas_etl::compile::compile`) and `sources.json` -> `SourcesDocument`
+//! (atlas-core `sources.rs`, written by `gen_sources`) -- the compile folds
+//! them straight into the sections; no compiled JSON sidecar exists any
+//! more. `unfold` is the inverse the served path uses.
 
 use std::collections::HashMap;
 
@@ -131,30 +131,6 @@ pub static SIDECAR_SPECS: [&TableSpec; 21] = [
     &SOURCE_ENTRY,
     &PROVENANCE_ENTRY,
 ];
-
-/// The two sidecar documents the fold reads.
-pub struct Sidecars {
-    pub atlas: AtlasData,
-    pub sources: SourcesDocument,
-}
-
-impl Sidecars {
-    /// `None` when `<data_dir>/canon.json` is absent (a fixture directory,
-    /// an older snapshot); every other missing or unparsable file is an
-    /// error -- a real compiled directory carries all of them.
-    pub fn load(data_dir: &Path) -> anyhow::Result<Option<Sidecars>> {
-        if !data_dir.join("canon.json").is_file() {
-            return Ok(None);
-        }
-        let atlas = AtlasData::load(data_dir)?.finish();
-        let sources_path = data_dir.join("sources.json");
-        let text = std::fs::read_to_string(&sources_path)
-            .map_err(|e| anyhow::anyhow!("reading {}: {e}", sources_path.display()))?;
-        let sources: SourcesDocument =
-            serde_json::from_str(&text).map_err(|e| anyhow::anyhow!("parsing {}: {e}", sources_path.display()))?;
-        Ok(Some(Sidecars { atlas, sources }))
-    }
-}
 
 fn t(s: &str) -> Col {
     Col::Text(s.to_string())

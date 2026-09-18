@@ -17,8 +17,8 @@ pub enum CliError {
     BadRef { what: String, why: String, do_: String },
     /// The ref/id parses cleanly but names nothing this graph has.
     NotFound { what: String, why: String, do_: String },
-    /// `graph.bin` or a required compiled JSON file is missing, unreadable,
-    /// or fails to parse at startup.
+    /// The sections (`manifest.toml`, a required blob) are missing,
+    /// unreadable, or refused at open, before any command's own logic runs.
     DataLoadFailed { what: String, why: String, do_: String },
     /// The command ran correctly end-to-end but its own entire answer is
     /// zero rows (CONTRACT.md: distinct from `NotFound` -- the id/ref is

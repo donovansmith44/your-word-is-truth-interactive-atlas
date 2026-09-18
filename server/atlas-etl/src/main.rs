@@ -16,10 +16,9 @@
 //! unchanged, straight off the SAME `AtlasData`/`Report` `compile()`
 //! returns.
 
-use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use atlas_etl::compile::compile;
 use atlas_etl::report;
@@ -31,45 +30,15 @@ fn main() -> Result<()> {
     let data_dir: PathBuf = Path::new("..").join("data");
     let raw_dir = data_dir.join("raw");
     let curated_dir = data_dir.join("curated");
-    let compiled_dir = data_dir.join("compiled");
 
     let out = compile(&raw_dir, &curated_dir)?;
-    let data = out.data;
     let rpt = out.report;
-    let place_history_list = out.place_history_list;
-    let place_name_alias_list = out.place_name_alias_list;
 
-    // --- write compiled output ------------------------------------------
-    fs::create_dir_all(&compiled_dir).with_context(|| format!("creating {}", compiled_dir.display()))?;
-    write_json(&compiled_dir.join("canon.json"), &data.canon)?;
-    // M-C2 DELETION EVENT: places.json/events.json/narratives.json/
-    // verses-kjv.json/cross-refs.json retire -- `data.places`/`.events`/
-    // `.narratives`/`.verses`/`.cross_refs` stay populated in THIS process
-    // (this binary's own `validate::run`, and every graph adapter reading
-    // this same `AtlasData` when this function is called from
-    // `atlas-graph-compile`/`--build-from-raw`, still need them), but are
-    // no longer written to disk -- no surface reads these five files
-    // anymore (grep-proven in batch-mc2-report.md's own deletion
-    // inventory), mirroring eras.json's own M-C retirement exactly.
-    write_json(&compiled_dir.join("books-meta.json"), &data.books_meta)?;
-    write_json(&compiled_dir.join("chronology-anchors.json"), &data.chronology_anchors)?;
-    write_json(&compiled_dir.join("book-narration-windows.json"), &data.book_narration_windows)?;
-
-    write_json(&compiled_dir.join("polities.json"), &data.polities)?;
-    write_json(&compiled_dir.join("landmarks.json"), &data.landmarks)?;
-    write_json(&compiled_dir.join("place-history.json"), &place_history_list)?;
-    write_json(&compiled_dir.join("place-names-kjv.json"), &place_name_alias_list)?;
-    write_json(&compiled_dir.join("land-mask.json"), &data.land_mask)?;
-    write_json(&compiled_dir.join("catechism.json"), &data.catechism)?;
-
+    // DB-5: nothing is written under data/compiled any more -- the compile
+    // (`atlas-graph-compile`) folds this same in-memory `AtlasData` into the
+    // SQLite sections; this binary validates and reports.
     let text = report::write(&rpt);
-    fs::write(compiled_dir.join("report.txt"), &text).context("writing data/compiled/report.txt")?;
     print!("{text}");
 
     Ok(())
-}
-
-fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
-    let text = serde_json::to_string_pretty(value).with_context(|| format!("serializing {}", path.display()))?;
-    fs::write(path, text).with_context(|| format!("writing {}", path.display()))
 }

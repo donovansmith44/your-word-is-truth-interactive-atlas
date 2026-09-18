@@ -5,7 +5,7 @@
 use std::path::Path;
 
 use atlas_graph::sqlite::extras::{table_specs_of, Col, Extras};
-use atlas_graph::sqlite::sidecars::{fold_sidecars, Sidecars};
+use atlas_graph::sqlite::sidecars::fold_sidecars;
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph_types::sections::Section;
@@ -14,9 +14,25 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
+/// DB-5: the fold's input -- the ETL's own in-memory `AtlasData` (from
+/// raw + curated, exactly what the compile folds) and `sources.json`.
+struct Sidecars {
+    atlas: atlas_core::data::AtlasData,
+    sources: atlas_core::sources::SourcesDocument,
+}
+fn sidecars() -> &'static Sidecars {
+    static CACHED: std::sync::OnceLock<Sidecars> = std::sync::OnceLock::new();
+    CACHED.get_or_init(|| {
+        let data = data_dir().parent().unwrap().to_path_buf();
+        let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
+        let sources = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
+        Sidecars { atlas, sources }
+    })
+}
+
 #[test]
 fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
-    let sc = Sidecars::load(&data_dir()).unwrap().expect("data/compiled has canon.json");
+    let sc = sidecars();
     let tables = fold_sidecars(&sc.atlas, &sc.sources).unwrap();
     let mut ex = Extras::default();
     ex.extend(tables);
@@ -88,18 +104,11 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     }
 }
 
-#[test]
-fn a_fixture_directory_without_canon_json_yields_no_sidecars() {
-    let dir = std::env::temp_dir().join(format!("db4b-nosidecars-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    assert!(Sidecars::load(&dir).unwrap().is_none());
-}
-
 /// DB-4b, the server-path proof: `GraphService::from_artifact` (what
 /// `atlas-server` and `bibex` load) publishes the committed manifest's root.
 #[test]
 fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
-    let service = atlas_graph::service::GraphService::from_artifact(&data_dir().join("graph.bin")).expect("graph.bin loads");
+    let (service, _, _) = atlas_graph::service::GraphService::from_sections(&data_dir()).expect("the sections open");
     let manifest = atlas_graph::sqlite::manifest::read_manifest(&data_dir().join("manifest.toml")).expect("manifest.toml is committed");
     assert_eq!(service.version().0.hex(), manifest.root, "one root: the served version and data/compiled/manifest.toml");
 }
@@ -108,7 +117,7 @@ fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
 /// serving path can build `AtlasData` and `SourcesDocument` from core.
 #[test]
 fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
-    let sc = Sidecars::load(&data_dir()).unwrap().unwrap();
+    let sc = sidecars();
     let layout = SectionLayout::under(&data_dir());
     let snap = SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout }).unwrap();
     let (atlas, sources) = snap.with_conn(atlas_graph::sqlite::sidecars::unfold).unwrap();
@@ -133,7 +142,10 @@ fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
     assert_eq!(atlas.place_history, sc.atlas.place_history);
     assert_eq!(atlas.place_name_aliases, sc.atlas.place_name_aliases);
     // and finish()'s derived indexes agree
-    let (a, b) = (atlas.finish(), sc.atlas.clone());
+    // `compile()` finishes its AtlasData BEFORE the catechism is assigned
+    // (the catechism indexes are built by the caller's own `finish()`, as
+    // the JSON path always did), so both sides are finished here.
+    let (a, b) = (atlas.finish(), sc.atlas.clone().finish());
     let span = atlas_core::refs::ScriptureRef::parse("JHN.3.16").unwrap();
     assert_eq!(a.catechism_items_for_span(&span).len(), b.catechism_items_for_span(&span).len());
     assert!(a.catechism_items_for_span(&span).len() > 0 || b.catechism_items_for_span(&span).is_empty());

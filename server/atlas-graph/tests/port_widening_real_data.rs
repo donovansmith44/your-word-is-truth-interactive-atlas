@@ -19,20 +19,17 @@ use atlas_graph_types::store::GraphQuery;
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin");
-        let dump = atlas_graph::artifact::read_file(&path).expect("data/compiled/graph.bin must exist");
-        let (mut graph, ..) = atlas_graph::artifact::to_service_parts(dump).expect("to_service_parts");
-        graph.build_indexes();
-        atlas_graph::event_world::add_justified_by(&mut graph);
-        graph
+        // DB-5: the committed sections read back (sqlite::reload).
+        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
 }
 
 fn service() -> &'static GraphService {
     static S: OnceLock<GraphService> = OnceLock::new();
     S.get_or_init(|| {
-        GraphService::from_artifact(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/graph.bin"))
-            .expect("from_artifact")
+        GraphService::from_sections(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled"))
+            .expect("from_sections")
+            .0
     })
 }
 

@@ -155,10 +155,15 @@ fn graph_vocabulary() -> Value {
     // `load` enforces, so a 13 -> 14 bump now moves the vocabulary fixture
     // and the semver gate classifies it MAJOR like any other removed
     // guarantee.
-    let artifact_format_version = atlas_graph::artifact::artifact_format_version();
+    // DB-5: the artifact is gone; the served identity is the manifest's
+    // (spec 9): its schema and every section's `PRAGMA user_version` --
+    // an unknown one is refused at open, exactly as an old graph.bin was.
+    let manifest_schema = atlas_graph::sqlite::manifest::MANIFEST_SCHEMA;
+    let section_schema_version = atlas_graph::sections::SECTION_SCHEMA_VERSION;
 
     json!({
-        "artifact_format_version": artifact_format_version,
+        "manifest_schema": manifest_schema,
+        "section_schema_version": section_schema_version,
         "node_kinds": node_kinds,
         "relations": relations,
         "symmetric": symmetric,

@@ -11,7 +11,7 @@
 //! already-large ETL binary.
 //!
 //! ```text
-//! atlas-graph-compile --data-dir data/compiled --out data/compiled/graph.bin
+//! atlas-graph-compile --data-dir data/compiled
 //! ```
 //! (`--data-dir` names the SAME `data/compiled` every other tool in this
 //! workspace uses as the anchor; `raw/`/`curated/` are its siblings under
@@ -48,7 +48,7 @@ use atlas_graph_types::store::{GraphPublisher, MemStore};
 /// committed); `--sections-cache <dir>` overrides the unpack cache the
 /// uncompressed files are written into (default: `<data-dir>/../cache/
 /// sections`, gitignored).
-fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, Option<PathBuf>)> {
+fn parse_args(args: &[String]) -> Result<(PathBuf, Option<PathBuf>)> {
     let mut data_dir: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
     let mut sections_cache: Option<PathBuf> = None;
@@ -72,13 +72,15 @@ fn parse_args(args: &[String]) -> Result<(PathBuf, PathBuf, Option<PathBuf>)> {
         i += 1;
     }
     let data_dir = data_dir.context("--data-dir is required, e.g. --data-dir ../data/compiled")?;
-    let out = out.context("--out is required, e.g. --out ../data/compiled/graph.bin")?;
-    Ok((data_dir, out, sections_cache))
+    if let Some(out) = out {
+        println!("atlas-graph-compile: --out {} is retired (DB-5: graph.bin is no longer written; the sections under --data-dir are the artifact)", out.display());
+    }
+    Ok((data_dir, sections_cache))
 }
 
 fn main() -> Result<()> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    let (data_dir, out_path, sections_cache) = parse_args(&raw)?;
+    let (data_dir, sections_cache) = parse_args(&raw)?;
 
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
@@ -230,9 +232,6 @@ fn main() -> Result<()> {
     );
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
-    println!("atlas-graph-compile: dumping to the artifact DTO form...");
-    let dump = atlas_graph::artifact::dump(&graph_a, &chronology, &stats, &event_world_stats).map_err(|e| anyhow::anyhow!("{e}")).context("dumping the built graph")?;
-
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
     let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
         &kjv_json,
@@ -259,31 +258,13 @@ fn main() -> Result<()> {
     atlas_graph_types::store::assert_answers_match(&graph_a_indexed, &graph_b);
     println!("atlas-graph-compile: ADMISSION passed (assert_answers_match, full graph) in {:?}", admit_start.elapsed());
 
-    // Also prove the DUMP ITSELF round-trips losslessly (not just that the
-    // pre-dump graph was internally consistent) -- decode what will
-    // actually be written and admit THAT against the model too.
-    let bytes = atlas_graph::artifact::encode(&dump).map_err(|e| anyhow::anyhow!("{e}"))?;
-    let redecoded = atlas_graph::artifact::decode(&bytes).map_err(|e| anyhow::anyhow!("{e}"))?;
-    let (mut reconstructed, ..) = atlas_graph::artifact::to_service_parts(redecoded).map_err(|e| anyhow::anyhow!("{e}"))?;
-    reconstructed.build_indexes();
-    atlas_graph::event_world::add_justified_by(&mut reconstructed);
-    atlas_graph_types::store::assert_answers_match(&reconstructed, &graph_b);
-    println!("atlas-graph-compile: ADMISSION passed for the encoded bytes themselves (round-trip, not just the pre-dump graph)");
-
-    std::fs::create_dir_all(out_path.parent().unwrap_or_else(|| Path::new("."))).ok();
-    std::fs::write(&out_path, &bytes).with_context(|| format!("writing {}", out_path.display()))?;
-    println!("atlas-graph-compile: wrote {} ({} bytes)", out_path.display(), bytes.len());
-
-    // RED-1 (decision 4, "Compiled data (NOT graph)"): the KJV sub-verse
-    // span table -- `data/compiled/red-letter-spans.json`, the SAME
-    // directory `graph.bin` itself just landed in (disclosed convention,
-    // `atlas-server/src/main.rs`'s own doc comment). Built from
+    // RED-1 / DB-5: the KJV sub-verse span table, built from
     // `red_letter_corpus` against `restored_verses` (the SAME restored
-    // text this whole compile step aligned against), not re-derived.
-    let red_letter_spans = atlas_graph::red_letter_spans::spans_by_dot_ref(&red_letter_corpus, &restored_verses);
-    let spans_path = out_path.parent().map(|p| p.join("red-letter-spans.json")).unwrap_or_else(|| Path::new("red-letter-spans.json").to_path_buf());
-    atlas_graph::red_letter_spans::write_file(&spans_path, &red_letter_spans)?;
-    println!("atlas-graph-compile: wrote {} ({} verses carrying a sub-verse span)", spans_path.display(), red_letter_spans.len());
+    // text this whole compile step aligned against) and folded into the
+    // kjv section's `red_letter_span` table below -- no file.
+    let red_letter_spans: std::collections::HashMap<String, Vec<(usize, usize)>> =
+        atlas_graph::red_letter_spans::spans_by_dot_ref(&red_letter_corpus, &restored_verses).into_iter().collect();
+    println!("atlas-graph-compile: {} verses carry a sub-verse red-letter span", red_letter_spans.len());
 
     // C2C3-EXPORT (map-system contracts C2/C3, .superpowers/sdd/
     // 2026-08-17-bible-atlas-m1/c2c3-export-design.md): a NEW TERMINAL PASS
@@ -318,8 +299,17 @@ fn main() -> Result<()> {
     // server's `from_artifact` version are one number. Read from the SAME
     // files the server reads (`data_dir`), never from this binary's
     // in-memory `AtlasData`, so the two sides agree by construction.
-    let extras = atlas_graph::sqlite::extras::extras_for_artifact(&graph_a_indexed, &chronology.chrono, &data_dir)
-        .context("folding the sidecars and projections (DB-4b)")?;
+    // DB-5: the sidecars are THIS binary's own in-memory `AtlasData` (the
+    // ETL's `compile`) and `sources.json` (`gen_sources`' file); nothing is
+    // round-tripped through a compiled JSON.
+    let sources_path = data_dir.join("sources.json");
+    let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(
+        &std::fs::read_to_string(&sources_path).with_context(|| format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display()))?,
+    )
+    .with_context(|| format!("parsing {}", sources_path.display()))?;
+    let extras = atlas_graph::sqlite::extras::compute(&graph_a_indexed, &chronology.chrono, &red_letter_spans, &atlas, &sources)
+        .map_err(|e| anyhow::anyhow!("{e}"))
+        .context("folding the sidecars and projections (DB-4b/DB-5)")?;
     extras.attach(&mut graph_a_indexed);
     extras.attach(&mut graph_b);
     println!(
