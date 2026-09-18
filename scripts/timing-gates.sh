@@ -45,7 +45,9 @@ GATES=(
   # DB-2b (gate 9): the real graph written to SQLite sections, admitted
   # through SqliteSnapshot, logical hashes re-derived from the tables.
   # Ceiling in the test = measured run x 2, rounded up to 30 s: measured
-  # 271.5 s on 2026-09-17 (debug build) -> ceiling 570 s.
+  # 271.5 s on 2026-09-17 (debug build) -> ceiling 570 s. DB-4b re-derived
+  # it over the wider gate (zstd-19 blobs, extra tables, the committed
+  # source): measured 471.3 s standalone on 2026-09-17 -> ceiling 960 s.
   "atlas-graph|sqlite_real_data|the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashes_agree"
 )
 

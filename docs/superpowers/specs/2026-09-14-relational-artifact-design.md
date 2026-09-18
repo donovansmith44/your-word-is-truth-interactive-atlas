@@ -341,7 +341,10 @@ update" primitive and CI's integrity check after `graph.bin` is gone.
 Every pid, every edge id, the version root, the CLI's byte-pinned
 transcripts (they embed edge ids; re-blessed ONCE, disclosed in DB-4's
 report), and map-generator's vendored `SOURCE.md` pin (its
-`StaleAgainstAtlas` fires exactly once and it re-vendors). No HTTP
+`StaleAgainstAtlas` fires exactly once and it re-vendors). DB-4 shipped
+as three sub-batches: DB-4a moved the ids and the root; DB-4b moved the
+ROOT once more when the logical dump widened to the projections and the
+folded sidecars (ids did not move); DB-4c moves nothing. No HTTP
 response body changes except where it carries an id or the root — and
 the 19 AQC fixtures that embed the version root are re-recorded by the
 recorder through the one assembly path, exactly as CDC-1 built it to
@@ -571,21 +574,28 @@ CREATE TABLE polity_era (                       -- Polity payload eras, one row 
 CREATE INDEX polity_era_by_span ON polity_era (from_year, to_year);   -- /api/polities?from&to
 
 -- resolved chronology: DERIVED from dated_by at compile (the Chronology companion, relocated)
+-- DB-4b (as shipped): `order_key` DROPPED -- R-DB4a-1 made `seq` THE total order, a second
+-- column with the same value was a drift risk; `month, day` split into from_/to_ (both
+-- TimePoints carry them). `event_by_order` indexes `seq`.
 CREATE TABLE event_date (
   event_id  TEXT PRIMARY KEY,
   from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
-  month INTEGER, day INTEGER,                    -- TimePoint precision when present
-  seq       INTEGER NOT NULL,                    -- SeqKey
-  order_key INTEGER NOT NULL,                    -- TOTAL traversal order (design §10)
+  from_month INTEGER, from_day INTEGER, to_month INTEGER, to_day INTEGER,   -- TimePoint precision when present
+  seq       INTEGER NOT NULL,                    -- SeqKey: THE total traversal order (R-DB4a-1)
   basis     INTEGER NOT NULL                     -- 0 Textual | 1 Traditional
 ) WITHOUT ROWID;
 CREATE INDEX event_by_span ON event_date (from_year, to_year);
-CREATE INDEX event_by_order ON event_date (order_key);
+CREATE INDEX event_by_order ON event_date (seq);
 
 -- heading index: STORED because it encodes a 3-tier decisive-title policy (heading.rs)
+-- DB-4b (as shipped): keyed by VERSE, not event -- `build_heading_index` returns one entry
+-- per dot-ref and several verses name one event, so `event_id` cannot be the key.
 CREATE TABLE heading_index (
-  event_id TEXT PRIMARY KEY, title TEXT NOT NULL, kind TEXT NOT NULL, continuation INTEGER NOT NULL
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
+  event_id TEXT NOT NULL, title TEXT NOT NULL, kind TEXT NOT NULL, continuation INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse)
 ) WITHOUT ROWID;
+CREATE INDEX heading_by_event ON heading_index (event_id);
 
 -- ---------- row families authored here ----------
 CREATE TABLE contains_bible (           -- curated passage containers only (book/chapter → kjv)
@@ -732,7 +742,10 @@ CREATE TABLE book_meta (                -- books-meta.json
   book TEXT PRIMARY KEY, author TEXT NOT NULL, write_place TEXT, write_from INTEGER, write_to INTEGER
 ) WITHOUT ROWID;
 CREATE TABLE chronology_anchor (        -- chronology-anchors.json
-  id TEXT PRIMARY KEY, label TEXT NOT NULL, year INTEGER NOT NULL, ord INTEGER NOT NULL
+  -- DB-4b (as shipped): + event_id, era_boundary, source, note -- the loaded struct's other
+  -- four fields (the fold is lossless: DB-5 deletes the JSON).
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, label TEXT NOT NULL, year INTEGER NOT NULL,
+  event_id TEXT, era_boundary INTEGER NOT NULL, source TEXT NOT NULL, note TEXT
 ) WITHOUT ROWID;
 CREATE TABLE book_narration_window (    -- book-narration-windows.json
   book TEXT PRIMARY KEY, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL, note TEXT
@@ -741,7 +754,10 @@ CREATE TABLE landmark (                 -- landmarks.json
   ord INTEGER PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL, size TEXT
 );
 CREATE TABLE land_mask_region (         -- land-mask.json; rings as canonical JSON (render-only data)
-  ord INTEGER PRIMARY KEY, name TEXT NOT NULL, ref_note TEXT NOT NULL, rings_json TEXT NOT NULL
+  -- DB-4b (as shipped): one row per RING, name/ref_note NULL -- the compiled land-mask.json is
+  -- already flattened rings (the ETL dropped the region metadata); re-sourcing the curated
+  -- TOML is ETL scope, not the writer's.
+  ord INTEGER PRIMARY KEY, name TEXT, ref_note TEXT, rings_json TEXT NOT NULL
 );
 CREATE TABLE catechism_part (           -- catechism.json
   id TEXT PRIMARY KEY, ord INTEGER NOT NULL, title TEXT NOT NULL
@@ -781,12 +797,13 @@ CREATE TABLE place_history_verse (      -- verses cited by name entries and date
   PRIMARY KEY (place_id, owner_kind, owner_ord, ord)
 ) WITHOUT ROWID;                        -- owner_kind: 0 name | 1 established | 2 destroyed
 CREATE TABLE place_name_alias (         -- place-names-kjv.json
-  place_id TEXT NOT NULL, translation TEXT NOT NULL, name TEXT NOT NULL,
-  PRIMARY KEY (place_id, translation)
+  -- DB-4b (as shipped): + alias_ord -- one place (lebo-hamath) carries two alias rows.
+  place_id TEXT NOT NULL, alias_ord INTEGER NOT NULL, translation TEXT NOT NULL, name TEXT NOT NULL,
+  PRIMARY KEY (place_id, alias_ord, translation)
 ) WITHOUT ROWID;
 CREATE TABLE place_name_alias_verse (
-  place_id TEXT NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
-  PRIMARY KEY (place_id, ord)
+  place_id TEXT NOT NULL, alias_ord INTEGER NOT NULL, ord INTEGER NOT NULL, sref TEXT NOT NULL,
+  PRIMARY KEY (place_id, alias_ord, ord)
 ) WITHOUT ROWID;
 CREATE TABLE source_category (          -- sources.json
   id TEXT PRIMARY KEY, ord INTEGER NOT NULL, label TEXT NOT NULL
@@ -797,7 +814,9 @@ CREATE TABLE source_entry (
   licenses_row_key TEXT NOT NULL
 ) WITHOUT ROWID;
 CREATE TABLE provenance_entry (         -- the PROV-1 provenance table; every `provenance` column names one of these
-  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, source TEXT NOT NULL, confidence TEXT NOT NULL
+  -- DB-4b (as shipped): + locator (the struct's fourth field). Read from sources.json's
+  -- `provenances` array (atlas-server::load::load_sources' file, not AtlasData).
+  id TEXT PRIMARY KEY, ord INTEGER NOT NULL, source TEXT NOT NULL, confidence TEXT NOT NULL, locator TEXT
 ) WITHOUT ROWID;
 ```
 
@@ -805,6 +824,16 @@ CREATE TABLE provenance_entry (         -- the PROV-1 provenance table; every `p
 reads Polity payloads). It is **retired**, not folded — disclosed here
 so the fold's inventory is honest: ten sidecars, nine folded, one
 retired.
+
+DB-4b (as shipped), the fold's two derivations: `canon_book.testament`
+is derived from `canon::BOOKS` order (index < 39 → `OT`, else `NT`;
+there is no source field), and the catechism's verse→item join
+(`AtlasData::finish()`'s in-memory `verse_to_catechism`) is the three
+`_by_sref`/`_by_part` indexes on the catechism tables. The extra tables
+(projections, `event_date`, `heading_index`, `red_letter_span` and the
+sidecars) ARE in each section's logical dump (§3.4), appended after
+`reading_spine` in `sections::extra_tables_of` order, carried on
+`Graph::extra_tables` as canonical row bodies so the root covers them.
 
 ### 5.4 `kjv` section
 

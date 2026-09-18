@@ -34,6 +34,15 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.5.0** (Batch DB-4b) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The `contract` fixture's advertised AQC range moved 0.2.0 -> 0.3.0: the
+  version root moved once more when the logical dump widened to the node
+  projections, the resolved chronology, the heading index, the red-letter
+  spans and the nine folded sidecars (spec §3.4, §5.3–5.6 as amended by
+  DB-4b), and the AQC suite re-recorded its 19 root-bearing fixtures. No
+  edge id, no pid, no scenario text moved; `edges-hazor-1-site-of.json` is
+  byte-identical. Ids are done moving; DB-4c moves nothing.
+
 - **0.4.0** (Batch DB-4a) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   Every edge id moved once: `canon-ids` is on for the atlas, so an id is
   SHA-256-128 over canonical edge bytes (`{object, rel, subject}` as position

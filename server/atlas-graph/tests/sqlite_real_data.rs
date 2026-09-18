@@ -61,7 +61,13 @@ fn committed_graph() -> &'static (Graph, Extras) {
 /// Measured 2026-09-17 (debug build, serialized): write 46.6 s + dump
 /// re-derivation 18.1 s + assert_answers_match 159.7 s + second write =
 /// 271.5 s total -> ceiling 570 s.
-const CEILING_SECS: u64 = 570;
+/// RE-DERIVED at DB-4b (2026-09-17), the same rule over a wider gate: the
+/// write now includes zstd-19 of ~356 MB (four threads) and the extra
+/// tables, the open goes through `CommittedZstdSource`. Measured
+/// standalone: write 104.4 s + dump re-derivation 4.2 s +
+/// assert_answers_match 255.5 s + second write = 471.3 s -> ceiling 960 s
+/// (x2, rounded up to 30 s). Not loosened afterward.
+const CEILING_SECS: u64 = 960;
 
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]

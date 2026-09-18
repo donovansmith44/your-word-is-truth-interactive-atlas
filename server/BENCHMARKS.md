@@ -668,3 +668,40 @@ ORDER-1: no sort key changed. The chronology's total order is data-carried
 (`resolved[id].seq` == position; DB-4b's `event_date.seq`); an `id`
 tie-break was tried and reverted because the curated same-year order is a
 narrative's own leg sequence (`narrative_real_data.rs` E5 laws).
+
+## DB-4b (2026-09-17): the writer completed -- projections, sidecars, zstd blobs, `bibex verify`
+
+The four sections now carry every table spec 5.3-5.6 lists (node
+projections, `event_date`, `heading_index`, `red_letter_span`, the nine
+sidecars folded into 21 tables -- 29 extra tables, 50,704 rows), are
+committed as zstd-19 blobs under `data/compiled/sections/` with
+`data/compiled/manifest.toml`, and are read through `CommittedZstdSource`
+(transport hash verified on unpack into `data/cache/sections/`). The
+logical dump widened to the extra tables, so the root moved once more
+(`e5d656e2…` -> `c454506ef781204d568c5d0a5b1c444d`); no id moved.
+
+| Measure | Before (DB-4a) | After |
+|---|---:|---:|
+| Compile wall time (cold: build x2, admission, exports, sections, admission through the source) | ~7 min | 8 m 35 s; recompile with unchanged content 6 m 53 s (sections 105 s -> 18 s: every blob reused) |
+| Section write incl. zstd-19 (4 threads) | 19 s (no compression) | 105 s |
+| Compressed blobs vs 104,857,600-byte ceiling | -- (uncompressed 37.9 / 246.8 / 6.8 / 61.6 MB) | core 7,561,308 / kjv 45,649,709 / concord 1,091,861 / kretzmann 9,166,273 bytes (uncompressed 39.0 / 249.0 / 7.1 / 61.6 MB); the largest is 43.5% of the ceiling |
+| Gate 9 SQLite admission (test ceiling) | 311.7 s (ceiling 570 s) | 471.3 s standalone (write 104.4 s incl. zstd, dump re-derivation 4.2 s, assert_answers_match 255.5 s); ceiling re-derived to 960 s (x2, rounded up to 30 s) |
+| `bibex verify` (4 sections, cache warm) | -- | 4.7 s |
+| Repository delta | -- | +63.5 MB of blobs + manifest (`graph.bin` stays until DB-5) |
+
+Idempotence: a second compile on the same tree reuses every blob, keeps
+`built`, rewrites nothing -- `git status data/` is identical before and
+after (the property `graph.bin` already had). `meta.built` left the
+section file for that reason.
+
+Re-recorded once more (spec 3.6, second and last time for DB-4): 3 export
+roots, 3 pact `/api/contract`/version bodies, 19 AQC fixture roots, the AGC
+`contract` fixture's advertised range; AQC 0.3.0, AGC 0.5.0. Edge ids,
+pids, scene hashes and the `bibex edges` transcript did not move.
+
+Disclosed: `GraphService::from_artifact` now loads the sidecars beside
+`graph.bin` (the same files `AppState` loads again) to fold them into the
+root -- a transitional double load until DB-4c reads the sections; the
+from-sources dev path publishes a graph-derived-tables-only root that is
+NOT the manifest's (`version_root_regression.rs` pins that one,
+`extras_real_data.rs` pins the served one).
