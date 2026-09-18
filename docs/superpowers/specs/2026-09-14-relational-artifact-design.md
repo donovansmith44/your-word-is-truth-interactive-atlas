@@ -1159,6 +1159,7 @@ happens.
 | 4 | DB-3 | the six port methods + `LexiconEntry`/`Occurs` uninhabited + `ContentHash` widening, as ONE `graph-types` change coordinated with map-generator; companions retired one per equivalence test | per-method equivalence over the real artifact; standing suite; map-generator's `atlas-edge` suite green against a live atlas |
 | 5 | DB-4 | cutover: manifest + four sections written and READ; SHA-256-128 ids ON; root widened; sidecars folded; `CommittedZstdSource` + cache; `bibex verify`; `graph.bin` no longer read; AQC fixtures re-recorded through the one assembly path | every gate in §9; version bumps in §9 |
 | 6 | DB-5 | delete `artifact.rs` (2,385 lines), `graph.bin`, the bincode encoder, `polities.json`, and the nine folded JSONs | after two green releases on the new backend; `git rm` of `graph.bin` is the commit that finally frees the 100 MiB headroom |
+| (as shipped, DB-5, 2026-09-18) | | `artifact.rs` was 2,421 lines when it went; `red-letter-spans.json` and `report.txt` went with the nine JSONs (the compile wrote the first, the ETL the second); the compile folds the ETL's in-memory `AtlasData` + `sources.json` into the sections (`Extras::compute`) and the ETL writes nothing under `data/compiled`; the tests' in-memory graph is the sections read back (`sqlite::reload`, 4 s), so the two-backend `assert_answers_match` keeps its second arm; `data/compiled` 158 MB -> 61 MB; root unchanged | the owner declared the "two green releases" gate met on 2026-09-18 |
 | 7 | LEX-1 | `lexicon` section: fetch extension, adapter, `Occurs` rows, `token` inventory, LICENSES rows | lands with NO change to the loader, the port, or any other section's hash — that invariance IS the acceptance test |
 
 ---
@@ -1193,6 +1194,7 @@ additive = PATCH"):
 | `contracts/atlas-edge` | — | unchanged | consumed projections unchanged |
 | artifact | `FORMAT_VERSION = 13` (bincode field) | manifest `schema = 1`; section `user_version = 14` | identity moves to the manifest; an old `graph.bin` holder is refused exactly as today |
 | (as shipped, DB-4c) | | `/api/contract` advertises `manifest_schema: 1` and `section_schema_version: 14` beside the graph vocabulary's `artifact_format_version: 13` (additive; the compile still writes `graph.bin` until DB-5 retires the field); a section whose `user_version` this build does not understand is refused with the artifact wall's wording | |
+| (as shipped, DB-5) | | the vocabulary's identity field IS the manifest's: `manifest_schema: 1` + `section_schema_version: 14` replace `artifact_format_version` (AGC 0.7.0, the runner's projection swapped); the artifact-load gate (4 s) retires with `graph.bin` -- gate 10 (served startup, 4 s) is its successor | |
 | `graph-types` | — | one MINOR (DB-3) | C1 covenant change, coordinated |
 
 ---
@@ -1238,7 +1240,9 @@ By the same methods DB-1 used, before and after:
 - compile wall time before/after DB-2 and DB-4;
 - each compressed section size against 104,857,600 bytes;
 - the frontier's p50/p99 on the FQ-1 corpus, before/after DB-4, against 100 ms;
-- repository size delta at DB-5 (the `graph.bin` removal).
+- repository size delta at DB-5 (the `graph.bin` removal) -- measured
+  (BENCHMARKS `## DB-5`): `data/compiled` 158 MB -> 61 MB; 36,193 lines
+  and 101.3 MB of `graph.bin` out of the tree.
 
 ---
 

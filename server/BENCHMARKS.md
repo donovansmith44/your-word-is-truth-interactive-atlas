@@ -739,3 +739,37 @@ in-memory compute they blocked on before; no `spawn_blocking`);
 (a compile-time count of rows never written); the `--build-from-raw` dev
 fallback keeps the in-memory arm. No "FQ-1 corpus" exists -- the frontier
 row above is the disclosed stand-in.
+
+## DB-5 (2026-09-18): the deletions -- one encoder, one artifact
+
+Plan `docs/superpowers/plans/2026-09-18-db5-deletions.md`; commits
+`0ac48f5`, `ae8d3da`, `0c9a142`, `6adf17f`. `artifact.rs` (2,421 lines: the
+bincode encoder/decoder, `FORMAT_VERSION = 13`, `dump`/`load`), the
+`bincode` dependency, `graph.bin` (101,319,287 bytes), `polities.json`,
+the nine folded JSON sidecars, `red-letter-spans.json` and `report.txt`
+are gone. The compile folds the ETL's in-memory `AtlasData` + `sources.json`
+straight into the sections (`Extras::compute`); the ETL validates and
+prints its report and writes nothing under `data/compiled`; every real-data
+test and bench either reads the sections back into a `Graph`
+(`sqlite::reload::graph_from_sections`, the compile's own writer inverted)
+or opens them (`from_sections`). The vocabulary's identity field is the
+manifest's (`manifest_schema` + `section_schema_version`; AGC 0.7.0). Gate 1
+(artifact load) retired with its subject; ten gates remain, none loosened.
+Root unchanged at `9c9697b846cd8625e475b135c7dea11e`; no section hash moved.
+
+| Measure | Before (DB-4c) | After (DB-5) |
+|---|---:|---:|
+| `data/compiled` on disk (spec 12: repository size delta) | 158 MB (`graph.bin` 101.3 MB + 13 JSON/txt files + sections) | **61 MB** (`manifest.toml`, `sections/` 63.5 MB of blobs, `sources.json`); the working tree loses 97 MB; the committed-tree diff `9364851..HEAD` is 36,193 deletions over 62 files |
+| Sections read back into a `Graph` (`reload_real_data`, 4 sections, cache warm) | -- (tests deserialized `graph.bin`) | 4.0 s standalone (7.9 s under the suite); root + all four logical hashes reproduced; 93,194 nodes, 343,558 cross_refs, 31,102 spine |
+| Compile wall time (cold: ETL build x2, admission, exports, sections, admission through the source) | 8 m 35 s / 6 m 53 s with every blob reused | **6 m 16 s** with every blob reused (sections 17.9 s; SQLite admission 251.6 s; the bincode encode + graph.bin write + red-letter file + the JSON round trip are gone) |
+| Re-run over the bare tree (`git rm` first, then compile + ETL) | -- | regenerates nothing: `git status --porcelain data/` shows only the deletions; root unchanged |
+| `bibex verify` (4 sections, cache warm) | 4.7 s | 4.4 s |
+| Workspace suite (DB-5 standing block) | 1073/0/11 over 67 sections | see the ledger's block line (the artifact gate and `artifact_conformance` retire) |
+
+Disclosed: `git count-objects` still holds the historical `graph.bin`
+objects (42.6 MiB packed on this worktree's side); the 100 MiB headroom the
+spec speaks of is per-file (GitHub's limit), which the deletion frees for
+LEX-1's `lexicon` section. `determinism.rs` now compares the shipped dumps
++ root across two builds instead of `graph.bin`'s bytes. The `RowFamily`
+sweep in `provenance.rs` and the `Extras::compute` fold are the only new
+compile-path code; nothing on the served path changed.
