@@ -151,6 +151,13 @@ impl ProvenanceIndex {
         ProvenanceIndex { by_family }
     }
 
+    /// DB-4c: the same index from the database's own `SELECT DISTINCT
+    /// provenance` per family (`sqlite::serve::load_provenance_families`) --
+    /// the sweep `build` does in memory, done by SQLite.
+    pub fn from_families(by_family: BTreeMap<&'static str, BTreeSet<String>>) -> ProvenanceIndex {
+        ProvenanceIndex { by_family }
+    }
+
     /// Every distinct provenance id carried by one row family, as a sorted
     /// list. An unknown family name yields an EMPTY list, never a panic --
     /// but note that an inhabited family always has at least one id, so an

@@ -21,11 +21,18 @@
 
 use std::path::Path;
 
-use atlas_core::data::{AtlasData, PlaceDateClaim};
-use atlas_core::sources::SourcesDocument;
-use atlas_graph_types::canon::{serialize, Value};
+use std::collections::HashMap;
 
-use super::extras::{Col, ExtraTable, TableSpec};
+use atlas_core::data::{
+    AtlasData, BookMeta, BookNarrationWindow, Canon, CanonBook, CatechismItem, CatechismPart, CatechismQuestion,
+    ChronologyAnchor, Landmark, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry,
+};
+use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::time::TimeRange;
+use atlas_graph_types::canon::{serialize, Value};
+use rusqlite::Connection;
+
+use super::extras::{read_table, Col, ExtraTable, TableSpec};
 use super::SqliteError;
 
 pub static CANON_BOOK: TableSpec =
@@ -345,4 +352,284 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         ExtraTable { spec: &SOURCE_ENTRY, rows: source_entry },
         ExtraTable { spec: &PROVENANCE_ENTRY, rows: provenance_entry },
     ])
+}
+
+// ---------------------------------------------------------------------
+// DB-4c: the inverse -- AtlasData and SourcesDocument from core's tables
+// ---------------------------------------------------------------------
+
+fn text(c: &Col, table: &str) -> Result<String, SqliteError> {
+    match c {
+        Col::Text(s) => Ok(s.clone()),
+        other => Err(SqliteError(format!("{table}: expected TEXT, got {other:?}"))),
+    }
+}
+fn opt_text(c: &Col, table: &str) -> Result<Option<String>, SqliteError> {
+    match c {
+        Col::Null => Ok(None),
+        Col::Text(s) => Ok(Some(s.clone())),
+        other => Err(SqliteError(format!("{table}: expected TEXT or NULL, got {other:?}"))),
+    }
+}
+fn int(c: &Col, table: &str) -> Result<i64, SqliteError> {
+    match c {
+        Col::Int(i) => Ok(*i),
+        other => Err(SqliteError(format!("{table}: expected INTEGER, got {other:?}"))),
+    }
+}
+fn opt_int(c: &Col, table: &str) -> Result<Option<i32>, SqliteError> {
+    match c {
+        Col::Null => Ok(None),
+        Col::Int(i) => Ok(Some(*i as i32)),
+        other => Err(SqliteError(format!("{table}: expected INTEGER or NULL, got {other:?}"))),
+    }
+}
+fn real(c: &Col, table: &str) -> Result<f64, SqliteError> {
+    match c {
+        Col::Real(f) => Ok(*f),
+        Col::Int(i) => Ok(*i as f64),
+        other => Err(SqliteError(format!("{table}: expected REAL, got {other:?}"))),
+    }
+}
+
+/// `AtlasData` (its serving-path fields: `canon`, `books_meta`, `landmarks`,
+/// `land_mask`, `place_history`, `place_name_aliases`, `catechism`,
+/// `chronology_anchors`, `book_narration_windows`; everything else
+/// `Default` -- never populated on the serving path since OVERLAY-1,
+/// `polities.json` retired at DB-5) and `SourcesDocument`, read back from
+/// the 21 tables `fold_sidecars` wrote. NOT `finish()`ed: the caller does
+/// that, exactly as `atlas-server::load` does for the JSON path. Proven the
+/// inverse of the fold on the real data (`extras_real_data.rs`).
+pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteError> {
+    let rows = |spec: &TableSpec| read_table(conn, spec);
+    // canon
+    let mut books: Vec<CanonBook> = Vec::new();
+    for r in rows(&CANON_BOOK)? {
+        books.push(CanonBook { code: text(&r[1], "canon_book")?, name: text(&r[2], "canon_book")?, chapters: Vec::new() });
+    }
+    for r in rows(&CANON_CHAPTER_VERSES)? {
+        let (b, ch, v) = (int(&r[0], "canon_chapter_verses")?, int(&r[1], "canon_chapter_verses")?, int(&r[2], "canon_chapter_verses")?);
+        let book = books.get_mut(b as usize).ok_or_else(|| SqliteError(format!("canon_chapter_verses: book_ord {b} out of range")))?;
+        if book.chapters.len() + 1 != ch as usize {
+            return Err(SqliteError(format!("canon_chapter_verses: {} chapter {ch} out of sequence", book.code)));
+        }
+        book.chapters.push(v as u16);
+    }
+    let canon = Canon { books };
+    // books-meta
+    let mut books_meta = Vec::new();
+    for r in rows(&BOOK_META)? {
+        let t = "book_meta";
+        books_meta.push(BookMeta { book: text(&r[0], t)?, author: text(&r[1], t)?, write_place: opt_text(&r[2], t)?, write_from: opt_int(&r[3], t)?, write_to: opt_int(&r[4], t)? });
+    }
+    // chronology anchors (source order = ord)
+    let mut anchors: Vec<(i64, ChronologyAnchor)> = Vec::new();
+    for r in rows(&CHRONOLOGY_ANCHOR)? {
+        let t = "chronology_anchor";
+        anchors.push((
+            int(&r[1], t)?,
+            ChronologyAnchor {
+                id: text(&r[0], t)?,
+                label: text(&r[2], t)?,
+                year: int(&r[3], t)? as i32,
+                event_id: opt_text(&r[4], t)?,
+                era_boundary: int(&r[5], t)? != 0,
+                source: text(&r[6], t)?,
+                note: opt_text(&r[7], t)?,
+            },
+        ));
+    }
+    anchors.sort_by_key(|(ord, _)| *ord);
+    let chronology_anchors = anchors.into_iter().map(|(_, a)| a).collect();
+    // narration windows (source order is the JSON's; the table's pk is book -- keep pk order, the consumers index by book)
+    let mut book_narration_windows = Vec::new();
+    for r in rows(&BOOK_NARRATION_WINDOW)? {
+        let t = "book_narration_window";
+        book_narration_windows.push(BookNarrationWindow { book: text(&r[0], t)?, from_year: int(&r[1], t)? as i32, to_year: int(&r[2], t)? as i32, note: opt_text(&r[3], t)? });
+    }
+    // landmarks
+    let mut landmarks = Vec::new();
+    for r in rows(&LANDMARK)? {
+        let t = "landmark";
+        landmarks.push(Landmark { name: text(&r[1], t)?, kind: text(&r[2], t)?, lat: real(&r[3], t)?, lon: real(&r[4], t)?, size: opt_text(&r[5], t)? });
+    }
+    // land mask
+    let mut land_mask: Vec<Vec<(f64, f64)>> = Vec::new();
+    for r in rows(&LAND_MASK_REGION)? {
+        let json = text(&r[3], "land_mask_region")?;
+        let ring: Vec<(f64, f64)> = serde_json::from_str(&json).map_err(|e| SqliteError(format!("land_mask_region rings_json: {e}")))?;
+        land_mask.push(ring);
+    }
+    // catechism
+    let mut parts: Vec<(i64, CatechismPart)> = Vec::new();
+    for r in rows(&CATECHISM_PART)? {
+        let t = "catechism_part";
+        parts.push((int(&r[1], t)?, CatechismPart { id: text(&r[0], t)?, title: text(&r[2], t)?, items: Vec::new() }));
+    }
+    parts.sort_by_key(|(ord, _)| *ord);
+    let mut items: Vec<(String, i64, CatechismItem)> = Vec::new();
+    for r in rows(&CATECHISM_ITEM)? {
+        let t = "catechism_item";
+        items.push((
+            text(&r[1], t)?,
+            int(&r[2], t)?,
+            CatechismItem {
+                id: text(&r[0], t)?,
+                name: text(&r[3], t)?,
+                text: opt_text(&r[4], t)?,
+                explanation_heading: text(&r[5], t)?,
+                explanation: text(&r[6], t)?,
+                where_written: opt_text(&r[7], t)?,
+                verses: Vec::new(),
+                ref_note: opt_text(&r[8], t)?,
+                questions: Vec::new(),
+            },
+        ));
+    }
+    let mut item_verses: HashMap<String, Vec<(i64, String)>> = HashMap::new();
+    for r in rows(&CATECHISM_ITEM_VERSE)? {
+        let t = "catechism_item_verse";
+        item_verses.entry(text(&r[0], t)?).or_default().push((int(&r[1], t)?, text(&r[2], t)?));
+    }
+    let mut questions: HashMap<String, Vec<(i64, CatechismQuestion)>> = HashMap::new();
+    for r in rows(&CATECHISM_QUESTION)? {
+        let t = "catechism_question";
+        questions.entry(text(&r[0], t)?).or_default().push((int(&r[1], t)?, CatechismQuestion { title: text(&r[2], t)?, verses: Vec::new(), source: text(&r[3], t)? }));
+    }
+    let mut question_verses: HashMap<(String, i64), Vec<(i64, String)>> = HashMap::new();
+    for r in rows(&CATECHISM_QUESTION_VERSE)? {
+        let t = "catechism_question_verse";
+        question_verses.entry((text(&r[0], t)?, int(&r[1], t)?)).or_default().push((int(&r[2], t)?, text(&r[3], t)?));
+    }
+    items.sort_by(|a, b| (&a.0, a.1).cmp(&(&b.0, b.1)));
+    for (part_id, _ord, mut item) in items {
+        if let Some(mut vs) = item_verses.remove(&item.id) {
+            vs.sort_by_key(|(o, _)| *o);
+            item.verses = vs.into_iter().map(|(_, v)| v).collect();
+        }
+        if let Some(mut qs) = questions.remove(&item.id) {
+            qs.sort_by_key(|(o, _)| *o);
+            for (qord, mut q) in qs {
+                if let Some(mut vs) = question_verses.remove(&(item.id.clone(), qord)) {
+                    vs.sort_by_key(|(o, _)| *o);
+                    q.verses = vs.into_iter().map(|(_, v)| v).collect();
+                }
+                item.questions.push(q);
+            }
+        }
+        let part = parts.iter_mut().find(|(_, p)| p.id == part_id).ok_or_else(|| SqliteError(format!("catechism_item {}: unknown part {part_id}", item.id)))?;
+        part.1.items.push(item);
+    }
+    let catechism: Vec<CatechismPart> = parts.into_iter().map(|(_, p)| p).collect();
+    // place history
+    let mut place_history: HashMap<String, PlaceHistory> = HashMap::new();
+    for r in rows(&PLACE_HISTORY)? {
+        let t = "place_history";
+        let id = text(&r[0], t)?;
+        let claim = |f: &Col, to: &Col, note: &Col| -> Result<Option<PlaceDateClaim>, SqliteError> {
+            Ok(match (opt_int(f, t)?, opt_int(to, t)?) {
+                (Some(from_year), Some(to_year)) => Some(PlaceDateClaim { when: TimeRange { from_year, to_year }, verses: Vec::new(), note: opt_text(note, t)? }),
+                _ => None,
+            })
+        };
+        let established = claim(&r[1], &r[2], &r[3])?;
+        let destroyed = claim(&r[4], &r[5], &r[6])?;
+        place_history.insert(id.clone(), PlaceHistory { id, names: Vec::new(), blurbs: Vec::new(), established, destroyed });
+    }
+    for r in rows(&PLACE_HISTORY_NAME)? {
+        let t = "place_history_name";
+        let id = text(&r[0], t)?;
+        let h = place_history.get_mut(&id).ok_or_else(|| SqliteError(format!("{t}: unknown place {id}")))?;
+        h.names.push(PlaceNameEntry { name: text(&r[2], t)?, when: TimeRange { from_year: int(&r[3], t)? as i32, to_year: int(&r[4], t)? as i32 }, verses: Vec::new() });
+    }
+    for r in rows(&PLACE_HISTORY_BLURB)? {
+        let t = "place_history_blurb";
+        let id = text(&r[0], t)?;
+        let h = place_history.get_mut(&id).ok_or_else(|| SqliteError(format!("{t}: unknown place {id}")))?;
+        h.blurbs.push(PlaceBlurbEntry { text: text(&r[2], t)?, when: TimeRange { from_year: int(&r[3], t)? as i32, to_year: int(&r[4], t)? as i32 }, breadth: text(&r[5], t)? });
+    }
+    for r in rows(&PLACE_HISTORY_VERSE)? {
+        let t = "place_history_verse";
+        let id = text(&r[0], t)?;
+        let (kind, owner) = (int(&r[1], t)?, int(&r[2], t)?);
+        let sref = text(&r[4], t)?;
+        let h = place_history.get_mut(&id).ok_or_else(|| SqliteError(format!("{t}: unknown place {id}")))?;
+        match kind {
+            0 => h.names.get_mut(owner as usize).ok_or_else(|| SqliteError(format!("{t}: {id} name {owner}")))?.verses.push(sref),
+            1 => h.established.as_mut().ok_or_else(|| SqliteError(format!("{t}: {id} has no established claim")))?.verses.push(sref),
+            2 => h.destroyed.as_mut().ok_or_else(|| SqliteError(format!("{t}: {id} has no destroyed claim")))?.verses.push(sref),
+            other => return Err(SqliteError(format!("{t}: owner_kind {other}"))),
+        }
+    }
+    // place name aliases
+    let mut aliases: HashMap<String, Vec<PlaceNameAlias>> = HashMap::new();
+    for r in rows(&PLACE_NAME_ALIAS)? {
+        let t = "place_name_alias";
+        let id = text(&r[0], t)?;
+        let aord = int(&r[1], t)? as usize;
+        let list = aliases.entry(id.clone()).or_default();
+        while list.len() <= aord {
+            list.push(PlaceNameAlias { id: id.clone(), translations: HashMap::new(), verses: Vec::new() });
+        }
+        list[aord].translations.insert(text(&r[2], t)?, text(&r[3], t)?);
+    }
+    for r in rows(&PLACE_NAME_ALIAS_VERSE)? {
+        let t = "place_name_alias_verse";
+        let id = text(&r[0], t)?;
+        let aord = int(&r[1], t)? as usize;
+        let list = aliases.entry(id.clone()).or_default();
+        while list.len() <= aord {
+            list.push(PlaceNameAlias { id: id.clone(), translations: HashMap::new(), verses: Vec::new() });
+        }
+        list[aord].verses.push(text(&r[3], t)?);
+    }
+    // sources.json
+    let mut categories: Vec<(i64, SourceCategory)> = Vec::new();
+    for r in rows(&SOURCE_CATEGORY)? {
+        let t = "source_category";
+        categories.push((int(&r[1], t)?, SourceCategory { id: text(&r[0], t)?, label: text(&r[2], t)? }));
+    }
+    categories.sort_by_key(|(o, _)| *o);
+    let mut entries: Vec<(i64, SourceEntry)> = Vec::new();
+    for r in rows(&SOURCE_ENTRY)? {
+        let t = "source_entry";
+        entries.push((
+            int(&r[1], t)?,
+            SourceEntry {
+                id: text(&r[0], t)?,
+                category: text(&r[2], t)?,
+                title: text(&r[3], t)?,
+                what_it_is: text(&r[4], t)?,
+                what_we_built: text(&r[5], t)?,
+                license: text(&r[6], t)?,
+                link: opt_text(&r[7], t)?,
+                licenses_row_key: text(&r[8], t)?,
+            },
+        ));
+    }
+    entries.sort_by_key(|(o, _)| *o);
+    let mut provenances: Vec<(i64, ProvenanceEntry)> = Vec::new();
+    for r in rows(&PROVENANCE_ENTRY)? {
+        let t = "provenance_entry";
+        provenances.push((int(&r[1], t)?, ProvenanceEntry { id: text(&r[0], t)?, source: text(&r[2], t)?, confidence: text(&r[3], t)?, locator: opt_text(&r[4], t)? }));
+    }
+    provenances.sort_by_key(|(o, _)| *o);
+    let sources = SourcesDocument {
+        categories: categories.into_iter().map(|(_, c)| c).collect(),
+        sources: entries.into_iter().map(|(_, e)| e).collect(),
+        provenances: provenances.into_iter().map(|(_, p)| p).collect(),
+    };
+    // `AtlasData` has private derived-index fields, so no struct update
+    // syntax: start from `Default` and set the nine serving-path fields.
+    let mut atlas = AtlasData::default();
+    atlas.canon = canon;
+    atlas.books_meta = books_meta;
+    atlas.landmarks = landmarks;
+    atlas.land_mask = land_mask;
+    atlas.place_history = place_history;
+    atlas.place_name_aliases = aliases;
+    atlas.catechism = catechism;
+    atlas.chronology_anchors = chronology_anchors;
+    atlas.book_narration_windows = book_narration_windows;
+    Ok((atlas, sources))
 }

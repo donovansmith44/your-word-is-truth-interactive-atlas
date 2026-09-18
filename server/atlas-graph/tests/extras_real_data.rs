@@ -6,6 +6,8 @@ use std::path::Path;
 
 use atlas_graph::sqlite::extras::{table_specs_of, Col, Extras};
 use atlas_graph::sqlite::sidecars::{fold_sidecars, Sidecars};
+use atlas_graph::sqlite::snapshot::SqliteSnapshot;
+use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
 use atlas_graph_types::sections::Section;
 
 fn data_dir() -> std::path::PathBuf {
@@ -100,4 +102,39 @@ fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
     let service = atlas_graph::service::GraphService::from_artifact(&data_dir().join("graph.bin")).expect("graph.bin loads");
     let manifest = atlas_graph::sqlite::manifest::read_manifest(&data_dir().join("manifest.toml")).expect("manifest.toml is committed");
     assert_eq!(service.version().0.hex(), manifest.root, "one root: the served version and data/compiled/manifest.toml");
+}
+
+/// DB-4c: `unfold` is the inverse of the fold on the real sidecars -- the
+/// serving path can build `AtlasData` and `SourcesDocument` from core.
+#[test]
+fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
+    let sc = Sidecars::load(&data_dir()).unwrap().unwrap();
+    let layout = SectionLayout::under(&data_dir());
+    let snap = SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout }).unwrap();
+    let (atlas, sources) = snap.with_conn(atlas_graph::sqlite::sidecars::unfold).unwrap();
+    assert_eq!(sources, sc.sources);
+    assert_eq!(atlas.canon, sc.atlas.canon);
+    // book_meta's key is the book code (spec 5.3): the table's pk order,
+    // not the JSON's canonical order -- every reader looks a book up.
+    let mut a_meta = atlas.books_meta.clone();
+    let mut b_meta = sc.atlas.books_meta.clone();
+    a_meta.sort_by(|x, y| x.book.cmp(&y.book));
+    b_meta.sort_by(|x, y| x.book.cmp(&y.book));
+    assert_eq!(a_meta, b_meta);
+    assert_eq!(atlas.landmarks, sc.atlas.landmarks);
+    assert_eq!(atlas.land_mask, sc.atlas.land_mask);
+    assert_eq!(atlas.catechism, sc.atlas.catechism);
+    assert_eq!(atlas.chronology_anchors, sc.atlas.chronology_anchors);
+    let mut a_windows = atlas.book_narration_windows.clone();
+    let mut b_windows = sc.atlas.book_narration_windows.clone();
+    a_windows.sort_by(|x, y| x.book.cmp(&y.book));
+    b_windows.sort_by(|x, y| x.book.cmp(&y.book));
+    assert_eq!(a_windows, b_windows, "narration windows (keyed by book; the table's pk order)");
+    assert_eq!(atlas.place_history, sc.atlas.place_history);
+    assert_eq!(atlas.place_name_aliases, sc.atlas.place_name_aliases);
+    // and finish()'s derived indexes agree
+    let (a, b) = (atlas.finish(), sc.atlas.clone());
+    let span = atlas_core::refs::ScriptureRef::parse("JHN.3.16").unwrap();
+    assert_eq!(a.catechism_items_for_span(&span).len(), b.catechism_items_for_span(&span).len());
+    assert!(a.catechism_items_for_span(&span).len() > 0 || b.catechism_items_for_span(&span).is_empty());
 }

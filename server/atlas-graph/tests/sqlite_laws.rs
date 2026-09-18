@@ -1012,16 +1012,38 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
             basis: PlacementBasis::Traditional,
         },
     );
+    resolved.insert(
+        "e2".to_string(),
+        ResolvedPlacement {
+            date: ResolvedDate {
+                from: TimePoint { year: Year::new(-900).unwrap(), month: None, day: None },
+                to: TimePoint { year: Year::new(-900).unwrap(), month: None, day: None },
+            },
+            seq: SeqKey(1),
+            basis: PlacementBasis::Textual,
+        },
+    );
+    // DB-4c: source_meta rides along (the Event wire's curated to_year/order_key); e2 has none.
+    let mut source_meta = std::collections::HashMap::new();
+    source_meta.insert("e1".to_string(), atlas_graph::event_world::SourceEventMeta { to_year: -990, order_key: 7 });
+    let chrono = atlas_graph::event_world::ChronologyDerivation {
+        order: vec!["e1".to_string(), "e2".to_string()],
+        placements: std::collections::HashMap::new(),
+        resolved,
+        source_meta,
+    };
     let mut red = std::collections::HashMap::new();
     red.insert("GEN.1.1".to_string(), vec![(0usize, 5usize), (10, 12)]);
-    let extras = Extras::graph_derived(&g, &resolved, &red).unwrap();
+    let extras = Extras::graph_derived(&g, &chrono, &red).unwrap();
     let verse = extras.table("verse").unwrap();
     assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]), "{:?}", verse.rows);
     let ed = extras.table("event_date").unwrap();
     assert_eq!(
         ed.rows[0],
-        vec![Col::Text("e1".into()), Col::Int(-1000), Col::Int(-999), Col::Int(3), Col::Null, Col::Null, Col::Null, Col::Int(0), Col::Int(1)]
+        vec![Col::Text("e1".into()), Col::Int(-1000), Col::Int(-999), Col::Int(3), Col::Null, Col::Null, Col::Null, Col::Int(0), Col::Int(1), Col::Int(-990), Col::Int(7)]
     );
+    assert_eq!(ed.rows[1][9], Col::Null, "no source_meta entry -> NULL meta_to_year");
+    assert_eq!(ed.rows[1][10], Col::Null, "no source_meta entry -> NULL order_key");
     let rl = extras.table("red_letter_span").unwrap();
     assert_eq!(
         rl.rows,
@@ -1174,4 +1196,78 @@ fn the_blob_constants_are_the_specs() {
     assert_eq!(layout.cache_dir, std::path::Path::new("data").join("cache").join("sections"));
     assert_eq!(layout.blob_path("core", "abc"), std::path::Path::new("data/compiled").join("sections").join("core.abc.sqlite.zst"));
     assert_eq!(layout.cache_path("abc"), std::path::Path::new("data").join("cache").join("sections").join("abc.sqlite"));
+}
+
+// ---------------------------------------------------------------------
+// DB-4c: one connection per worker, mmap, the user_version wall (spec 2.5, 11)
+// ---------------------------------------------------------------------
+#[test]
+fn the_snapshot_opens_one_connection_per_worker_and_every_one_answers() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4c-workers-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    let snap = SqliteSnapshot::open_with_workers(&layout.manifest_path(), &CommittedZstdSource { layout: layout.clone() }, 3).unwrap();
+    assert_eq!(snap.workers(), 3);
+    let expected: u64 = snap.manifest().sections.iter().map(|s| std::fs::metadata(layout.cache_path(&s.logical)).unwrap().len()).sum();
+    assert!(expected > 0 && snap.mmap_bytes() == expected, "mmap_size = the attached files' sum");
+    for _ in 0..6 {
+        snap.with_conn(|c| {
+            let n: i64 = c.query_row("SELECT COUNT(*) FROM all_node", [], |r| r.get(0))?;
+            assert!(n > 0);
+            let m: i64 = c.query_row("PRAGMA mmap_size", [], |r| r.get(0))?;
+            assert_eq!(m as u64, snap.mmap_bytes());
+            Ok(())
+        })
+        .unwrap();
+    }
+    let snap = std::sync::Arc::new(snap);
+    let ids: Vec<_> = g.nodes.keys().cloned().collect();
+    let expected_ids: std::sync::Arc<Vec<Option<atlas_graph_types::id::AnyNodeId>>> =
+        std::sync::Arc::new(ids.iter().map(|id| g.node(id).map(|n| n.id)).collect());
+    let ids = std::sync::Arc::new(ids);
+    let handles: Vec<_> = (0..8)
+        .map(|_| {
+            let s = snap.clone();
+            let ids = ids.clone();
+            let expected_ids = expected_ids.clone();
+            std::thread::spawn(move || {
+                for _ in 0..50 {
+                    for (id, want) in ids.iter().zip(expected_ids.iter()) {
+                        assert_eq!(s.node(id).map(|n| n.id), *want);
+                    }
+                }
+            })
+        })
+        .collect();
+    for h in handles {
+        h.join().unwrap();
+    }
+    assert_answers_match(&*snap, &g);
+    assert!(snap.absent().is_empty());
+    assert!(
+        SqliteSnapshot::open_with_workers(&layout.manifest_path(), &CommittedZstdSource { layout: layout.clone() }, 0).is_err(),
+        "zero workers is refused"
+    );
+}
+
+#[test]
+fn a_section_with_an_unknown_user_version_is_refused_like_an_old_artifact() {
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4c-wall-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    let (m, _) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    // tamper the cached concord file's user_version (the cache is trusted by name, so the wall must catch it)
+    let concord = layout.cache_path(&m.sections[2].logical);
+    let conn = rusqlite::Connection::open(&concord).unwrap();
+    conn.execute_batch("PRAGMA user_version = 99;").unwrap();
+    drop(conn);
+    let err = open_written(&dir).unwrap_err().to_string();
+    assert!(err.contains("section concord user_version 99 unsupported") && err.contains("understands 14"), "{err}");
 }

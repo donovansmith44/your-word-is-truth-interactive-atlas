@@ -4,11 +4,15 @@
 //! is the judge (the specimen in `sqlite_laws.rs`, the real graph in
 //! `sqlite_real_data.rs`).
 //!
-//! Judgment call 6 (plan): one connection behind a `Mutex` -- the gate is
-//! single-threaded; spec §2.5's connection-per-worker lands with the
-//! server switch-over in DB-4.
+//! DB-4c (spec §2.5 step 3): one connection PER WORKER -- `open_with_workers`
+//! opens `n` read-only connections (each attaching the same files and
+//! building its own TEMP views), `with_conn` hands a query the first free
+//! one (round-robin `try_lock`, falling back to blocking on its own slot),
+//! and `PRAGMA mmap_size` is the attached files' sum (capped). `open` is
+//! the one-worker form the gates and `bibex verify` use.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
@@ -21,50 +25,85 @@ use atlas_graph_types::node::Node;
 use atlas_graph_types::store::{GraphQuery, GraphSnapshot, GraphVersion, RowRef};
 use rusqlite::{Connection, OptionalExtension};
 
-use super::manifest::read_manifest;
+use super::manifest::{read_manifest, Manifest};
+use super::SCHEMA_VERSION;
 use super::source::{is_missing, SectionSource};
 use super::partition::{directed_rel_code, node_kind_ordinal, rel_code_of, rel_of_code, DIR_FORWARD, DIR_INVERSE, DIR_SYMMETRIC};
 use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
 use crate::sections::Section;
 
 pub struct SqliteSnapshot {
-    conn: Mutex<Connection>,
+    /// One per worker (spec §2.5 step 3); a query takes the first free one.
+    conns: Vec<Mutex<Connection>>,
+    next: AtomicUsize,
     version: GraphVersion,
     /// Manifest order, attached sections only.
     present: Vec<Section>,
+    /// Optional sections the manifest lists whose blob is absent (spec §11).
+    absent: Vec<Section>,
+    manifest: Manifest,
+    /// `PRAGMA mmap_size` on every connection: the attached files' sum, capped.
+    mmap_bytes: u64,
 }
 
 impl std::fmt::Debug for SqliteSnapshot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SqliteSnapshot").field("version", &self.version).field("present", &self.present).finish_non_exhaustive()
+        f.debug_struct("SqliteSnapshot")
+            .field("version", &self.version)
+            .field("present", &self.present)
+            .field("absent", &self.absent)
+            .field("workers", &self.conns.len())
+            .field("mmap_bytes", &self.mmap_bytes)
+            .finish_non_exhaustive()
     }
 }
+
+/// Spec §2.5 step 3: "capped by platform" -- 1 GiB covers the four
+/// shipped sections (356 MB) with room for the lexicon.
+pub const MMAP_CAP: u64 = 1 << 30;
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
 }
 
 impl SqliteSnapshot {
+    /// The one-worker form (the gates, `bibex verify`, the tests).
+    pub fn open(manifest_path: &Path, source: &dyn SectionSource) -> Result<SqliteSnapshot, SqliteError> {
+        Self::open_with_workers(manifest_path, source, 1)
+    }
+
     /// Spec §2.5 steps 1–4: read + verify the manifest; resolve every
     /// section through the `SectionSource` (DB-4b: `CommittedZstdSource`
-    /// verifies the transport hash and unpacks on a cache miss); open
-    /// `core` as `main`; ATTACH every other present section under its name
-    /// in manifest order; `PRAGMA query_only = ON`; build the TEMP views
-    /// `all_edge_index` and `all_node` over the attached sections. A
-    /// `required` section that cannot be resolved is an error naming the
-    /// section and its logical hash (spec §11); an optional one whose blob
-    /// is MISSING is recorded absent and skipped -- any other failure
-    /// (a present but corrupt blob, an unpack error) is loud for optional
-    /// sections too.
-    pub fn open(manifest_path: &Path, source: &dyn SectionSource) -> Result<SqliteSnapshot, SqliteError> {
+    /// verifies the transport hash and unpacks on a cache miss); then, for
+    /// each of `workers` connections: open `core` as `main`, ATTACH every
+    /// other present section under its name in manifest order, refuse a
+    /// `user_version` this build does not understand (spec §11, the
+    /// artifact wall's successor), `PRAGMA mmap_size`, `PRAGMA query_only =
+    /// ON`, and build the TEMP views `all_edge_index` and `all_node` over
+    /// the attached sections. A `required` section that cannot be resolved
+    /// is an error naming the section and its logical hash; an optional one
+    /// whose blob is MISSING is recorded absent and skipped -- any other
+    /// failure (a present but corrupt blob, an unpack error) is loud for
+    /// optional sections too.
+    pub fn open_with_workers(manifest_path: &Path, source: &dyn SectionSource, workers: usize) -> Result<SqliteSnapshot, SqliteError> {
+        if workers == 0 {
+            return Err(SqliteError("SqliteSnapshot needs at least one worker connection".into()));
+        }
         let manifest = read_manifest(manifest_path)?;
-        let mut present: Vec<(Section, std::path::PathBuf)> = Vec::new();
+        let mut present: Vec<(Section, PathBuf)> = Vec::new();
+        let mut absent: Vec<Section> = Vec::new();
         for ms in &manifest.sections {
             let section = section_named(&ms.name)
                 .ok_or_else(|| SqliteError(format!("manifest names an unknown section {}", ms.name)))?;
+            if ms.schema_version != SCHEMA_VERSION {
+                return Err(SqliteError(format!(
+                    "section {} schema_version {} unsupported (this build understands {SCHEMA_VERSION})",
+                    ms.name, ms.schema_version
+                )));
+            }
             match source.resolve(ms) {
                 Ok(path) => present.push((section, path)),
-                Err(e) if !ms.required && is_missing(&e) => {}
+                Err(e) if !ms.required && is_missing(&e) => absent.push(section),
                 Err(e) => {
                     return Err(SqliteError(format!(
                         "{} section {} ({}) unavailable: {e}",
@@ -75,39 +114,95 @@ impl SqliteSnapshot {
                 }
             }
         }
-        let Some((Section::Core, core_path)) = present.first() else {
+        let Some((Section::Core, _)) = present.first() else {
             return Err(SqliteError("manifest does not list core first".into()));
         };
-        let conn = open_read_only(core_path)?;
-        for (section, path) in present.iter().skip(1) {
-            let sql = format!("ATTACH DATABASE ?1 AS {}", section.name());
-            conn.execute(&sql, [path.to_string_lossy().as_ref()])?;
+        let mut total: u64 = 0;
+        for (_, path) in &present {
+            total = total.saturating_add(std::fs::metadata(path)?.len());
         }
-        // `open_read_only` already set `query_only = ON`, which also refuses
-        // TEMP objects; lift it just long enough to build the two views
-        // (the file itself stays read-only through the open flag).
-        conn.execute_batch("PRAGMA query_only = OFF;")?;
+        let mmap_bytes = total.min(MMAP_CAP);
         let mut edge_view = String::from("CREATE TEMP VIEW all_edge_index AS SELECT 0 AS sec, * FROM main.edge_index");
         let mut node_view = String::from("CREATE TEMP VIEW all_node AS SELECT 0 AS sec, * FROM main.node");
         for (rank, (section, _)) in present.iter().enumerate().skip(1) {
             edge_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.edge_index", section.name()));
             node_view.push_str(&format!(" UNION ALL SELECT {rank}, * FROM {}.node", section.name()));
         }
-        conn.execute_batch(&format!("{edge_view}; {node_view}; PRAGMA query_only = ON;"))?;
+        let mut conns = Vec::with_capacity(workers);
+        for _ in 0..workers {
+            let conn = open_read_only(&present[0].1)?;
+            for (section, path) in present.iter().skip(1) {
+                let sql = format!("ATTACH DATABASE ?1 AS {}", section.name());
+                conn.execute(&sql, [path.to_string_lossy().as_ref()])?;
+            }
+            // The wall (spec §11): every attached file's own user_version.
+            for (section, _) in &present {
+                let schema = if *section == Section::Core { "main".to_string() } else { section.name().to_string() };
+                let v: u32 = conn.query_row(&format!("PRAGMA {schema}.user_version"), [], |r| r.get(0))?;
+                if v != SCHEMA_VERSION {
+                    return Err(SqliteError(format!(
+                        "section {} user_version {v} unsupported (this build understands {SCHEMA_VERSION})",
+                        section.name()
+                    )));
+                }
+            }
+            // `open_read_only` already set `query_only = ON`, which also
+            // refuses TEMP objects; lift it just long enough to build the two
+            // views (the file itself stays read-only through the open flag).
+            conn.execute_batch(&format!(
+                "PRAGMA query_only = OFF; PRAGMA mmap_size = {mmap_bytes}; {edge_view}; {node_view}; PRAGMA query_only = ON;"
+            ))?;
+            conns.push(Mutex::new(conn));
+        }
         // DB-4a: the version IS the manifest root (spec 3.4) -- the same
         // number `MemStore::publish` stamps from the in-memory graph.
         let version = ContentHash::from_hex(&manifest.root)
             .map(GraphVersion)
             .ok_or_else(|| SqliteError(format!("manifest root {} is not a ContentHash", manifest.root)))?;
-        Ok(SqliteSnapshot { conn: Mutex::new(conn), version, present: present.into_iter().map(|(s, _)| s).collect() })
+        Ok(SqliteSnapshot {
+            conns,
+            next: AtomicUsize::new(0),
+            version,
+            present: present.into_iter().map(|(s, _)| s).collect(),
+            absent,
+            manifest,
+            mmap_bytes,
+        })
     }
 
     pub fn present(&self) -> &[Section] {
         &self.present
     }
 
-    fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> Result<T, SqliteError>) -> Result<T, SqliteError> {
-        let guard = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+    pub fn absent(&self) -> &[Section] {
+        &self.absent
+    }
+
+    pub fn manifest(&self) -> &Manifest {
+        &self.manifest
+    }
+
+    pub fn workers(&self) -> usize {
+        self.conns.len()
+    }
+
+    pub fn mmap_bytes(&self) -> u64 {
+        self.mmap_bytes
+    }
+
+    /// Runs `f` on the first free worker connection (round-robin start,
+    /// `try_lock` across all, then a blocking lock on the start slot).
+    /// `pub` so the serving companions (`sqlite::serve`, `sidecars::unfold`)
+    /// load over the same connections.
+    pub fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> Result<T, SqliteError>) -> Result<T, SqliteError> {
+        let n = self.conns.len();
+        let start = self.next.fetch_add(1, Ordering::Relaxed) % n;
+        for i in 0..n {
+            if let Ok(guard) = self.conns[(start + i) % n].try_lock() {
+                return f(&guard);
+            }
+        }
+        let guard = self.conns[start].lock().unwrap_or_else(|e| e.into_inner());
         f(&guard)
     }
 
