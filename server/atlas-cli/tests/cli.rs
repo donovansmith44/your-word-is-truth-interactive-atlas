@@ -574,7 +574,8 @@ fn node_plain_output_is_byte_unchanged_by_the_json_addition() {
 fn edges_plain_output_is_byte_unchanged_by_the_json_addition() {
     let o = run_with_data_dir(&["edges", "Event:ab_ur", "--kind", "located-at"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
-    let expected = "LocatedAt:b449e37d5a691cef Place        Place:ur-1                   Ur 1\n(end of list)\n";
+    // DB-4a: re-pinned once -- canon-ids ON (32-hex edge id; the {:<24} column overflows by the same 16 more chars); spec 3.6.
+    let expected = "LocatedAt:dafbb7c28eb80653a693de9906dc0669 Place        Place:ur-1                   Ur 1\n(end of list)\n";
     assert_eq!(stdout(&o), expected, "edges's plain output must be byte-identical to its pre-BIBEX-1 form");
 }
 

@@ -2,7 +2,7 @@
   "body": {
     "entries": [
       {
-        "edge": "Cites:92bf1e650f767d27",
+        "edge": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
         "node": {
           "id": "text-unit:ROM.5.8",
           "kind": "TextUnit",
@@ -12,7 +12,7 @@
     ],
     "kind": "cites",
     "next": 1,
-    "version": "82bac0bde5a53ec2"
+    "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
   },
   "status": 200
 }

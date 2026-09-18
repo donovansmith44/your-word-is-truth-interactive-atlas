@@ -2,7 +2,7 @@
   "body": {
     "entries": [
       {
-        "edge": "Cites:92bf1e650f767d27",
+        "edge": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
         "node": {
           "id": "text-unit:ROM.5.8",
           "kind": "TextUnit",
@@ -10,7 +10,7 @@
         }
       },
       {
-        "edge": "Cites:93c823118610ed6e",
+        "edge": "Cites:eaa59650fa21a2231374997066fc8bff",
         "node": {
           "id": "text-unit:1JN.4.9",
           "kind": "TextUnit",
@@ -18,7 +18,7 @@
         }
       },
       {
-        "edge": "Cites:639e12b802276a4b",
+        "edge": "Cites:91ce4174bf233de367889a44b615bbb0",
         "node": {
           "id": "text-unit:ROM.8.32",
           "kind": "TextUnit",
@@ -26,7 +26,7 @@
         }
       },
       {
-        "edge": "Cites:d8e096c7e5e4cd9a",
+        "edge": "Cites:6716c30c54adc9afa603169aa49fec2e",
         "node": {
           "id": "text-unit:JHN.3.15",
           "kind": "TextUnit",
@@ -34,7 +34,7 @@
         }
       },
       {
-        "edge": "Cites:f654fdd68671efd0",
+        "edge": "Cites:0949b073010a5d4c696954f0e01599a0",
         "node": {
           "id": "text-unit:JHN.11.25",
           "kind": "TextUnit",
@@ -42,7 +42,7 @@
         }
       },
       {
-        "edge": "Cites:88904b4a547cba06",
+        "edge": "Cites:a4438ffbb4fc9917c786712dee27320e",
         "node": {
           "id": "text-unit:JHN.6.40",
           "kind": "TextUnit",
@@ -50,7 +50,7 @@
         }
       },
       {
-        "edge": "Cites:cbcb5ebdd7145ea5",
+        "edge": "Cites:9a51c4c1805e2d92f6548388ff5bf1e4",
         "node": {
           "id": "text-unit:JHN.3.36",
           "kind": "TextUnit",
@@ -58,7 +58,7 @@
         }
       },
       {
-        "edge": "Cites:33a288a966dbaf14",
+        "edge": "Cites:74dc07521ad8cc2e934b8035d3fa007d",
         "node": {
           "id": "text-unit:1JN.4.19",
           "kind": "TextUnit",
@@ -66,7 +66,7 @@
         }
       },
       {
-        "edge": "Cites:57881f7d43e21978",
+        "edge": "Cites:5f2a7faec29fe4c7a2b5da5208767bc0",
         "node": {
           "id": "text-unit:JHN.10.28",
           "kind": "TextUnit",
@@ -74,7 +74,7 @@
         }
       },
       {
-        "edge": "Cites:ecf2973229182889",
+        "edge": "Cites:e3acde5fcbd7dc2fac01a0b85cadc024",
         "node": {
           "id": "text-unit:1TI.1.15",
           "kind": "TextUnit",
@@ -82,7 +82,7 @@
         }
       },
       {
-        "edge": "Cites:5e2081313ab54d44",
+        "edge": "Cites:80a4db76fc5e6fdb000d2d1f7b2cd9b6",
         "node": {
           "id": "text-unit:ROM.5.10",
           "kind": "TextUnit",
@@ -90,7 +90,7 @@
         }
       },
       {
-        "edge": "Cites:a5afa51e86de2913",
+        "edge": "Cites:c804d9923e57c8ed91ac366df4f3d531",
         "node": {
           "id": "text-unit:JHN.1.29",
           "kind": "TextUnit",
@@ -98,7 +98,7 @@
         }
       },
       {
-        "edge": "Cites:0a5f9f600861b503",
+        "edge": "Cites:65d484c0712cb8362f6b34efbcd089e0",
         "node": {
           "id": "text-unit:2TH.2.16",
           "kind": "TextUnit",
@@ -106,7 +106,7 @@
         }
       },
       {
-        "edge": "Cites:8ceda9bf97774a75",
+        "edge": "Cites:d04fcb0bfcbb570efe7888a8b8a68776",
         "node": {
           "id": "text-unit:2CO.5.19",
           "kind": "TextUnit",
@@ -114,7 +114,7 @@
         }
       },
       {
-        "edge": "Cites:5cb85015bb22c744",
+        "edge": "Cites:4349b14d7c603da24383a5f7864f79bf",
         "node": {
           "id": "text-unit:EPH.2.4",
           "kind": "TextUnit",
@@ -122,7 +122,7 @@
         }
       },
       {
-        "edge": "Cites:2ddb5a73a321bf7c",
+        "edge": "Cites:f978b8474d7e5aa1aca8c9310aa68024",
         "node": {
           "id": "text-unit:MAT.9.13",
           "kind": "TextUnit",
@@ -130,7 +130,7 @@
         }
       },
       {
-        "edge": "Cites:a0bb36c0e19b4c86",
+        "edge": "Cites:ce3444a0bf8985c070806598ba19d029",
         "node": {
           "id": "text-unit:REV.1.5",
           "kind": "TextUnit",
@@ -138,7 +138,7 @@
         }
       },
       {
-        "edge": "Cites:3b034bd138fa2955",
+        "edge": "Cites:6f455194f6b41942e36592c222760c0d",
         "node": {
           "id": "text-unit:GEN.22.12",
           "kind": "TextUnit",
@@ -146,7 +146,7 @@
         }
       },
       {
-        "edge": "Cites:ee00438a66128c71",
+        "edge": "Cites:81711806d3800487889eb2c720a81d92",
         "node": {
           "id": "text-unit:JHN.1.14",
           "kind": "TextUnit",
@@ -154,7 +154,7 @@
         }
       },
       {
-        "edge": "Cites:4024363412d93bd7",
+        "edge": "Cites:2abe12005399a3f093f2023051c66aea",
         "node": {
           "id": "text-unit:TIT.3.4",
           "kind": "TextUnit",
@@ -164,7 +164,7 @@
     ],
     "kind": "cites",
     "next": 20,
-    "version": "82bac0bde5a53ec2"
+    "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
   },
   "status": 200
 }

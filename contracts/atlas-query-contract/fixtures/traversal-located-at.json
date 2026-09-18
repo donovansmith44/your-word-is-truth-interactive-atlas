@@ -2,7 +2,7 @@
   "body": {
     "entries": [
       {
-        "edge": "LocatedAt:b449e37d5a691cef",
+        "edge": "LocatedAt:dafbb7c28eb80653a693de9906dc0669",
         "node": {
           "id": "Place:ur-1",
           "kind": "Place",
@@ -12,7 +12,7 @@
     ],
     "kind": "located-at",
     "next": null,
-    "version": "82bac0bde5a53ec2"
+    "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
   },
   "status": 200
 }

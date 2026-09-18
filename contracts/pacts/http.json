@@ -1428,7 +1428,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "dfcf6ee4c2a39965"
+        "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
       },
       "status": 200
     },
@@ -1449,7 +1449,7 @@
         "kind": "Place",
         "label": "Hazor 1",
         "provenance": "curated-places",
-        "version": "dfcf6ee4c2a39965"
+        "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
       },
       "status": 200
     },
@@ -1457,7 +1457,7 @@
       "body": {
         "entries": [
           {
-            "edge": "LocatedAt:548e223fe158b5b2",
+            "edge": "LocatedAt:ba554caa302fbfebb1c80f4267da7c35",
             "node": {
               "id": "Event:cq_hazor",
               "kind": "Event",
@@ -1465,7 +1465,7 @@
             }
           },
           {
-            "edge": "LocatedAt:641c637161ca0461",
+            "edge": "LocatedAt:741c521c9d67d4ae5a1c2a1d96c114cb",
             "node": {
               "id": "Event:theo-138",
               "kind": "Event",
@@ -1475,7 +1475,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "dfcf6ee4c2a39965"
+        "version": "e5d656e22cff0be8ac3f5a711d5c20fe"
       },
       "status": 200
     },

@@ -34,6 +34,16 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.4.0** (Batch DB-4a) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  Every edge id moved once: `canon-ids` is on for the atlas, so an id is
+  SHA-256-128 over canonical edge bytes (`{object, rel, subject}` as position
+  strings), 32 hex, no longer a `DefaultHasher` digest of debug text (spec
+  §3.1, §3.4 as amended by DB-4a). `edges-hazor-1-site-of.json`'s two ids are
+  the only fixture values that changed; no scenario text moved. The version
+  root (32 hex now: the manifest root over the four sections) is asserted as a
+  law between artifacts, never as a literal, so nothing else in this suite
+  re-blessed.
+
 - **0.3.0** (Batch DB-3) — **MINOR: the vocabulary widened.** `graph-
   vocabulary.json` gains one node kind (`LexiconEntry`) and one directed
   relation (`Occurs`: `occurs-in` / `words`), both uninhabited until LEX-1
