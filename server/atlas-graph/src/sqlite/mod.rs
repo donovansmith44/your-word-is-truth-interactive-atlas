@@ -9,6 +9,7 @@ pub mod extras;
 pub mod logical;
 pub mod manifest;
 pub mod partition;
+pub mod reload;
 pub mod rows;
 pub mod serve;
 pub mod sidecars;
