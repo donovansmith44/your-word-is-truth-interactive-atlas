@@ -40,7 +40,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use atlas_core::data::AtlasData;
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
@@ -58,9 +57,12 @@ fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<GraphSceneSource>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
+            // DB-4c: the SERVED path -- the committed sections, exactly what
+            // `atlas_server::load::load_all` opens; the six ceilings below did
+            // not move (the composed bytes did not: scene_byte_identity.rs).
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-            let graph = GraphService::from_artifact(&compiled.join("graph.bin")).expect("data/compiled/graph.bin must exist -- run atlas-graph-compile first");
-            let sidecars = AtlasData::load(&compiled).expect("data/compiled must exist");
+            let (graph, sidecars, _sources) = GraphService::from_sections(&compiled).expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");
+            let sidecars = sidecars.finish();
             let source = GraphSceneSource::build(&graph, &sidecars);
             (Arc::new(source), Arc::new(graph))
         })
@@ -196,4 +198,52 @@ fn chapter_window_completes_within_smoke_threshold() {
     });
     println!("PERF SMOKE {}: {elapsed:?} (gate {}ms)", "chapter_window_completes_within_smoke_threshold", 50);
     assert!(elapsed < Duration::from_millis(50), "chapter(JHN.3) window took {elapsed:?}, over the 50ms smoke gate");
+}
+
+/// DB-4c, spec 12's "frontier p50/p99" stand-in (no `compose_frontier`/
+/// FQ-1 corpus exists yet): the first `edges_with_nodes` page (limit 25)
+/// of EVERY inhabited edge kind at a fixed corpus of positions -- the
+/// first 100 ids of each node kind, in id order -- over BOTH arms, the
+/// in-memory artifact path and the served sections. Prints p50/p99 per arm;
+/// gates the served arm's p99 under 100 ms (spec 12's number). Not a
+/// timing-gates slot: it is a distribution, reported in BENCHMARKS.md.
+#[test]
+#[ignore = "measurement: run directly with --nocapture (DB-4c, spec 12)"]
+fn frontier_page_latency_corpus_over_both_arms() {
+    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::id::{NodeKind, Position};
+    use atlas_graph_types::store::GraphQuery;
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    let mem = GraphService::from_artifact(&compiled.join("graph.bin")).expect("graph.bin");
+    let (sql, _, _) = GraphService::from_sections(&compiled).expect("sections");
+    let corpus: Vec<Position> = {
+        let snap = mem.snapshot();
+        let mut v = Vec::new();
+        for kind in NodeKind::ALL {
+            v.extend(snap.nodes_of_kind(kind, None, 100).ids.into_iter().map(Position::Node));
+        }
+        v
+    };
+    let run = |label: &str, svc: &GraphService| {
+        let snap = svc.snapshot();
+        let mut samples: Vec<Duration> = Vec::new();
+        let mut pages = 0usize;
+        for p in &corpus {
+            let summary = snap.edge_summary(p);
+            for (kind, _) in summary.iter() {
+                let t = Instant::now();
+                let page = snap.edges_with_nodes(p, &EdgeQuery { kind: *kind, cursor: None, limit: 25 });
+                samples.push(t.elapsed());
+                pages += page.entries.len().min(1);
+            }
+        }
+        samples.sort();
+        let pct = |q: f64| samples[((samples.len() as f64 - 1.0) * q) as usize];
+        println!("FRONTIER LATENCY [{label}]: {} positions, {} pages, p50 {:?}, p90 {:?}, p99 {:?}, max {:?}", corpus.len(), samples.len(), pct(0.5), pct(0.9), pct(0.99), samples.last().unwrap());
+        let _ = pages;
+        pct(0.99)
+    };
+    let _mem_p99 = run("mem (artifact)", &mem);
+    let sql_p99 = run("sqlite (sections)", &sql);
+    assert!(sql_p99 < Duration::from_millis(100), "served frontier page p99 {sql_p99:?} over 100 ms (spec 12)");
 }

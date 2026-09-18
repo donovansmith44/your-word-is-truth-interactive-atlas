@@ -705,3 +705,37 @@ root -- a transitional double load until DB-4c reads the sections; the
 from-sources dev path publishes a graph-derived-tables-only root that is
 NOT the manifest's (`version_root_regression.rs` pins that one,
 `extras_real_data.rs` pins the served one).
+
+## DB-4c (2026-09-18): the read cutover -- the server and bibex serve from the sections
+
+`GraphService::from_sections` opens `data/compiled/manifest.toml` +
+`sections/*.sqlite.zst` through `CommittedZstdSource` (unpack cache
+`data/cache/sections/`), one read-only connection per worker (up to 8,
+round-robin `try_lock`), `PRAGMA mmap_size` = the attached files' sum
+(356 MB), and loads every serving companion from the tables; `AtlasData`
+and `SourcesDocument` unfold from core. `graph.bin` and the nine JSON
+sidecars are not opened on the served path (the compile still writes them
+until DB-5). The root moved ONCE more, first (Task 1: `event_date` gained
+the chronology's `source_meta` columns DB-4b's fold had left out --
+`9c9697b846cd8625e475b135c7dea11e`); after that nothing moved: the 25
+scene hashes, both pacts (the HTTP pact's `/api/contract` body gains two
+additive fields), the 19 AQC fixtures' bodies, `bibex`'s 58 transcripts.
+
+| Measure (debug build) | Before (artifact path) | After (sections) |
+|---|---:|---:|
+| Served startup, warm cache (gate 10, ceiling 4 s) | 1.99 s (gate 1: artifact load, kept) | **0.69 s** (`from_sections` 0.10 s, `finish` 4 ms, scene priming 0.58 s) |
+| Cold start -> `/health` 200 (spec 12; cache empty, unpack first) | -- | 3,249 ms (server peak working set 312 MiB) |
+| Warm start -> `/health` 200 | -- | 1,560 ms (301 MiB) |
+| Peak working set, `bibex verse JHN.3.16` (spec 12, `PeakWorkingSet64`) | 755.0 MiB (OVERLAY-1 baseline) | **156.2 MiB**; wall 727 ms |
+| perf_smoke scene full span / NT window / chapter scene (75/75/50 ms) | 23.2 / 11.7 / 26.1 ms | 23.6 / 11.6 / 25.8 ms (composition over `GraphSceneSource`, unchanged) |
+| perf_smoke xrefs / text window / chapter window (30/30/50 ms) | 0.11 / 0.02 / 0.05 ms | 1.89 / 1.56 / 2.83 ms (seek + decode per unit; well inside the gates) |
+| Frontier page latency (spec 12 stand-in: first `edges_with_nodes` page, limit 25, every inhabited kind at 736 positions = 1,490 pages) | p50 2 us, p99 55 us | p50 169 us, p99 **2.26 ms**, max 3.1 ms (gate: p99 < 100 ms) |
+| Per-call port latency (spike, warm, one connection) | -- | node 93 us; edge_summary 118 us; edge page 77 us; 20-verse window 1.9 ms |
+
+Disclosed: handlers still call the port synchronously inside `async fn`
+(the work is microseconds to low milliseconds, the same order as the
+in-memory compute they blocked on before; no `spawn_blocking`);
+`cites_dropped_negative_votes` in the boot log is 0 on the served path
+(a compile-time count of rows never written); the `--build-from-raw` dev
+fallback keeps the in-memory arm. No "FQ-1 corpus" exists -- the frontier
+row above is the disclosed stand-in.

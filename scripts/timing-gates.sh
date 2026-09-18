@@ -49,6 +49,10 @@ GATES=(
   # it over the wider gate (zstd-19 blobs, extra tables, the committed
   # source): measured 471.3 s standalone on 2026-09-17 -> ceiling 960 s.
   "atlas-graph|sqlite_real_data|the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashes_agree"
+  # DB-4c (gate 10): the SERVED startup -- GraphService::from_sections +
+  # AtlasData::finish + scene priming, cache warm -- under the same 4 s the
+  # artifact load (gate 1, kept: the compile's own admission) has always had.
+  "atlas-graph|sections_startup|the_served_path_starts_under_the_ceiling"
 )
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }

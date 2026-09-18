@@ -1192,6 +1192,7 @@ additive = PATCH"):
 | `contracts/map-api-consumer` | 0.1.0 | unchanged | our expectations of them |
 | `contracts/atlas-edge` | — | unchanged | consumed projections unchanged |
 | artifact | `FORMAT_VERSION = 13` (bincode field) | manifest `schema = 1`; section `user_version = 14` | identity moves to the manifest; an old `graph.bin` holder is refused exactly as today |
+| (as shipped, DB-4c) | | `/api/contract` advertises `manifest_schema: 1` and `section_schema_version: 14` beside the graph vocabulary's `artifact_format_version: 13` (additive; the compile still writes `graph.bin` until DB-5 retires the field); a section whose `user_version` this build does not understand is refused with the artifact wall's wording | |
 | `graph-types` | — | one MINOR (DB-3) | C1 covenant change, coordinated |
 
 ---
