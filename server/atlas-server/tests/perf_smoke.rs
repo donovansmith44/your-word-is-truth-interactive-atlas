@@ -205,10 +205,10 @@ fn chapter_window_completes_within_smoke_threshold() {
 /// of EVERY inhabited edge kind at a fixed corpus of positions -- the
 /// first 100 ids of each node kind, in id order -- over BOTH arms, the
 /// in-memory artifact path and the served sections. Prints p50/p99 per arm;
-/// gates the served arm's p99 under 100 ms (spec 12's number). Not a
-/// timing-gates slot: it is a distribution, reported in BENCHMARKS.md.
+/// gates the served arm's p99 under 100 ms (spec 12's number) -- gate 11
+/// in scripts/timing-gates.sh; the distribution is reported in BENCHMARKS.md.
 #[test]
-#[ignore = "measurement: run directly with --nocapture (DB-4c, spec 12)"]
+#[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn frontier_page_latency_corpus_over_both_arms() {
     use atlas_graph_types::explore::EdgeQuery;
     use atlas_graph_types::id::{NodeKind, Position};

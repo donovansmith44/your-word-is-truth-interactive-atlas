@@ -53,6 +53,9 @@ GATES=(
   # AtlasData::finish + scene priming, cache warm -- under the same 4 s the
   # artifact load (gate 1, kept: the compile's own admission) has always had.
   "atlas-graph|sections_startup|the_served_path_starts_under_the_ceiling"
+  # DB-4c (gate 11): spec 12's frontier p50/p99 stand-in -- the first edge page
+  # of every inhabited kind at 736 fixed positions, both arms; served p99 < 100 ms.
+  "atlas-server|perf_smoke|frontier_page_latency_corpus_over_both_arms"
 )
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }
