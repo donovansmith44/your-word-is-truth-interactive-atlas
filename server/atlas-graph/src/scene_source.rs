@@ -205,9 +205,11 @@ impl GraphSceneSource {
         // leave a different surviving order.
         atlas_core::event_merge::apply_event_merges(&mut events, &mut narratives);
 
-        // Step 3 (`AtlasData::finish`): the stable sort, single key, no
-        // secondary -- reproduced verbatim, ties and all.
-        events.sort_by_key(|e| e.when.from_year);
+        // Step 3 (`AtlasData::finish`): ORDER-1 (DB-4a) -- the total key
+        // `(from_year, id)`. The same order as before by construction: the
+        // input was id-ordered (`nodes_of_kind`) and the sort was stable, so
+        // ties already fell to id; the key now says so.
+        events.sort_by(|a, b| (a.when.from_year, &a.id).cmp(&(b.when.from_year, &b.id)));
 
         // Step 4 (`AtlasData::finish`): the two id -> index maps the
         // composer's `event_by_id`/`place_by_id` reads use.

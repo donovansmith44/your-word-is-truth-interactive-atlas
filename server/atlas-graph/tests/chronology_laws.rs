@@ -296,3 +296,34 @@ fn theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year() {
         "theo-87 ('Nimrod's kingdom begins') must resolve to -2242 (THEO_DATE_OVERRIDES) -- the raw Theographic import's anachronistic -1822 must not resurface"
     );
 }
+
+/// ORDER-1 (owner finding 2026-09-15; ruled at DB-4a): the chronology order
+/// is TOTAL and DATA-CARRIED. `resolved[id].seq` IS the event's position in
+/// `order` (a `SeqKey`, persisted in the artifact and, from DB-4b, in
+/// `event_date.seq`), so a SQL `ORDER BY seq` reproduces the served
+/// prior/following exactly -- no sort key has to re-derive it. The order
+/// itself is `from_year`-monotone; inside one year the curated sequence
+/// (a narrative's own leg order) is the tie-break and is SEMANTIC
+/// (`narrative_real_data.rs`'s E5 laws pin it), which is why the key is
+/// not "then id": id order would reorder David's flight. The scene path
+/// (`scene_source.rs`) is a different, also total, order: `(from_year, id)`.
+#[test]
+fn the_chronology_order_is_total_and_carried_by_seq() {
+    let atlas = load_real_atlas();
+    let chrono = event_world::derive_chronology(&atlas);
+    assert!(chrono.order.len() > 800, "hundreds of dated events: {}", chrono.order.len());
+    let mut years: Vec<i32> = Vec::with_capacity(chrono.order.len());
+    let mut seqs: Vec<u32> = Vec::with_capacity(chrono.order.len());
+    for (i, id) in chrono.order.iter().enumerate() {
+        let r = chrono.resolved.get(id).expect("every ordered event resolves");
+        assert_eq!(r.seq.0 as usize, i, "seq is the position in order ({id})");
+        years.push(r.date.from.year.get());
+        seqs.push(r.seq.0);
+    }
+    assert!(years.windows(2).all(|w| w[0] <= w[1]), "order is from_year-monotone");
+    let mut distinct = seqs.clone();
+    distinct.sort_unstable();
+    distinct.dedup();
+    assert_eq!(distinct.len(), seqs.len(), "seq is a total order: every position once");
+    assert_eq!(distinct, (0..seqs.len() as u32).collect::<Vec<_>>(), "and dense: 0..n");
+}
