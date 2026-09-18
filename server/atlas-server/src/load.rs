@@ -79,11 +79,25 @@ impl LoadedAtlas {
 /// fails loud, the same "never silently serve stale/absent data" discipline
 /// applied to `graph.bin`.
 pub fn load_sources(data_dir: &Path) -> Result<SourcesDocument> {
-    let sources_path = data_dir.join("sources.json");
-    let sources_json = std::fs::read_to_string(&sources_path).with_context(|| {
-        format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display())
+    // DB-4c: from core's `source_*`/`provenance_entry` tables (the fold of
+    // `sources.json`), never the JSON. One-worker open, sources only.
+    let (_, _, sources) = load_all(data_dir)?;
+    Ok(sources)
+}
+
+/// DB-4c: THE served path in one call -- the sections opened once,
+/// `AtlasData` finished, the scene source primed. `load_graph_and_data` and
+/// `load_sources` are the same call minus one output each.
+pub fn load_all(data_dir: &Path) -> Result<(GraphService, AtlasData, SourcesDocument)> {
+    let (graph, data, sources) = GraphService::from_sections(data_dir).with_context(|| {
+        format!(
+            "opening the committed sections under {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)",
+            data_dir.display()
+        )
     })?;
-    serde_json::from_str(&sources_json).with_context(|| format!("parsing {}", sources_path.display()))
+    let data = data.finish();
+    graph.scene_source(&data);
+    Ok((graph, data, sources))
 }
 
 /// The DEFAULT startup path: load the serialized graph artifact, load the
@@ -105,21 +119,9 @@ pub fn load_sources(data_dir: &Path) -> Result<SourcesDocument> {
 /// events/places/narratives the map composes from exist ONCE, in that
 /// object, instead of once there and once again inside `AtlasData`.
 pub fn load_graph_and_data(data_dir: &Path) -> Result<(GraphService, AtlasData)> {
-    let artifact_path = data_dir.join("graph.bin");
-    let graph = GraphService::from_artifact(&artifact_path).with_context(|| {
-        format!("loading the serialized graph artifact from {} (run atlas-graph-compile first, or pass --build-from-raw for the dev fallback)", artifact_path.display())
-    })?;
-    let data = AtlasData::load(data_dir)
-        .with_context(|| format!("loading compiled data from {}", data_dir.display()))?
-        .finish();
-    // OVERLAY-1 Task 5: prime the graph-backed scene source once, here, on
-    // the real startup path -- `scene_source` is lazily built on first use
-    // everywhere else (fixtures, benches, the CLI's own commands), and
-    // priming it is what keeps the first `/api/scene` request from paying
-    // the materialisation. `&data` is read ONLY for the two curated-JSON
-    // sidecar maps the composer needs (`place-history.json`,
-    // `place-names-kjv.json`).
-    graph.scene_source(&data);
+    // DB-4c: the sections, not `graph.bin` + the JSON sidecars (spec §8
+    // row 5). `finish()` and the scene priming are unchanged in role.
+    let (graph, data, _sources) = load_all(data_dir)?;
     Ok((graph, data))
 }
 
@@ -129,7 +131,6 @@ pub fn load_graph_and_data(data_dir: &Path) -> Result<(GraphService, AtlasData)>
 /// can print its startup statistics between them, and then reaches the
 /// Router through the same `into_router`.
 pub fn load_from_data_dir(data_dir: &Path) -> Result<LoadedAtlas> {
-    let (graph, data) = load_graph_and_data(data_dir)?;
-    let sources = load_sources(data_dir)?;
+    let (graph, data, sources) = load_all(data_dir)?;
     Ok(LoadedAtlas::new(data, graph, sources))
 }

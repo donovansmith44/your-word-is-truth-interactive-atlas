@@ -34,20 +34,14 @@ pub struct Loaded {
 /// exact underlying I/O/parse error, plus the fixed remedy (`--data-dir`,
 /// or re-run the compile step).
 pub fn load(data_dir: &Path) -> Result<Loaded, CliError> {
-    let artifact_path = data_dir.join("graph.bin");
-    let graph = GraphService::from_artifact(&artifact_path).map_err(|e| {
+    // DB-4c: the committed sections (manifest.toml + sections/*.sqlite.zst),
+    // never graph.bin or the JSON sidecars -- the same
+    // `GraphService::from_sections` the server starts from.
+    let (graph, data, _sources) = GraphService::from_sections(data_dir).map_err(|e| {
         CliError::data_load_failed(
-            format!("could not load {}", artifact_path.display()),
+            format!("could not open the sections under {}", data_dir.display()),
             e.to_string(),
-            "run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin",
-        )
-    })?;
-
-    let data = AtlasData::load(data_dir).map_err(|e| {
-        CliError::data_load_failed(
-            format!("could not load compiled data from {}", data_dir.display()),
-            e.to_string(),
-            "pass --data-dir to point at the directory containing canon.json, books-meta.json, and the other compiled JSON files (the sibling of graph.bin)",
+            "run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that has manifest.toml and sections/",
         )
     })?;
     let data = data.finish();

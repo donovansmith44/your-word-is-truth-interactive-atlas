@@ -1175,8 +1175,10 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // decision this batch deliberately refused, and it must not be implied
     // to have already happened.
     let cross_refs_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
-    let cross_refs: Vec<CrossRefOut> = graph
-        .cross_refs_by_from
+    // DB-4c: a seek on the kjv section's `xref_by_from` (or the Mem arm's
+    // retained map), never a whole-corpus companion.
+    let by_from = graph.cross_refs_for_span(&ScriptureRef::Verse(vid));
+    let cross_refs: Vec<CrossRefOut> = by_from
         .get(&canonical)
         .map(Vec::as_slice)
         .unwrap_or(&[])
@@ -1967,7 +1969,8 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<Stri
         _ => return Err(ApiError::bad_ref(&sref)),
     };
 
-    let aggregated = aggregate_span_xrefs(&span, &graph.cross_refs_by_from, |key| {
+    let by_from = graph.cross_refs_for_span(&span);
+    let aggregated = aggregate_span_xrefs(&span, &by_from, |key| {
         let v = VerseId::parse_canonical(key).ok()?;
         graph.verse_text_of(&VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
     });

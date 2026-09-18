@@ -141,7 +141,8 @@ fn xrefs_for_verse_completes_within_smoke_threshold() {
     let (_source, graph) = real_scene_source_and_graph();
     let span = ScriptureRef::parse("JHN.3.16").unwrap();
     let elapsed = median_of(7, || {
-        let _ = atlas_core::xrefs::aggregate_span_xrefs(&span, &graph.cross_refs_by_from, |key| {
+        let by_from = graph.cross_refs_for_span(&span);
+        let _ = atlas_core::xrefs::aggregate_span_xrefs(&span, &by_from, |key| {
             let v = atlas_core::refs::VerseId::parse_canonical(key).ok()?;
             graph.verse_text_of(&atlas_graph_types::text::VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
         });

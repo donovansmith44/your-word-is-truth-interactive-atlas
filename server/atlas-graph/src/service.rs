@@ -34,20 +34,101 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Context;
 
-use atlas_core::data::{AtlasData, Canon};
+use atlas_core::data::{AtlasData, Canon, CrossRef};
+use atlas_core::refs::ScriptureRef;
+use atlas_core::sources::SourcesDocument;
+use atlas_graph_types::edge::EdgeId;
+use atlas_graph_types::explore::{EdgePage, EdgePageWithNodes, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::Graph;
-use atlas_graph_types::id::AnyNodeId;
-use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphStore, GraphVersion, MemSnapshot, MemStore};
+use atlas_graph_types::id::{AnyNodeId, NodeKind, Pid, Position};
+use atlas_graph_types::node::Node;
+use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphSnapshot, GraphStore, GraphVersion, MemSnapshot, MemStore, RowRef};
+
+use crate::sections::Section;
+use crate::sqlite::snapshot::SqliteSnapshot;
+
+/// DB-4c: THE port handle a `GraphService` serves through -- the in-memory
+/// store's snapshot (the compile, the `--build-from-raw` dev fallback, the
+/// from-sources fixtures) or the committed sections (`from_sections`, the
+/// server's and `bibex`'s path). Every arm delegates the whole
+/// `GraphQuery`/`GraphSnapshot` port; handlers never see which one they
+/// hold. Cheap to clone (an `Arc` either way).
+#[derive(Clone)]
+pub enum Snap {
+    Mem(MemSnapshot),
+    Sqlite(Arc<SqliteSnapshot>),
+}
+
+impl std::fmt::Debug for Snap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Snap::Mem(s) => f.debug_tuple("Mem").field(&s.version()).finish(),
+            Snap::Sqlite(s) => f.debug_tuple("Sqlite").field(&**s).finish(),
+        }
+    }
+}
+
+macro_rules! delegate {
+    ($self:expr, $s:ident => $body:expr) => {
+        match $self {
+            Snap::Mem($s) => $body,
+            Snap::Sqlite($s) => $body,
+        }
+    };
+}
+
+impl GraphQuery for Snap {
+    fn node(&self, id: &AnyNodeId) -> Option<Node> {
+        delegate!(self, s => s.node(id))
+    }
+    fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
+        delegate!(self, s => s.derive(pid))
+    }
+    fn edge_summary(&self, p: &Position) -> EdgeSummary {
+        delegate!(self, s => s.edge_summary(p))
+    }
+    fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage {
+        delegate!(self, s => s.edges(p, q))
+    }
+    fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId> {
+        delegate!(self, s => s.reading_window(corpus, start, n))
+    }
+    fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
+        delegate!(self, s => s.nodes_of_kind(kind, cursor, limit))
+    }
+    fn nodes(&self, ids: &[AnyNodeId]) -> Vec<Option<Node>> {
+        delegate!(self, s => s.nodes(ids))
+    }
+    fn edges_with_nodes(&self, p: &Position, q: &EdgeQuery) -> EdgePageWithNodes {
+        delegate!(self, s => s.edges_with_nodes(p, q))
+    }
+    fn row_provenance(&self, e: &EdgeId) -> Option<RowRef> {
+        delegate!(self, s => s.row_provenance(e))
+    }
+    fn rows_behind(&self, e: &EdgeId) -> Vec<RowRef> {
+        delegate!(self, s => s.rows_behind(e))
+    }
+    fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
+        delegate!(self, s => s.position_of(corpus, id))
+    }
+}
+
+impl GraphSnapshot for Snap {
+    fn version(&self) -> GraphVersion {
+        delegate!(self, s => s.version())
+    }
+}
 
 use crate::artifact;
 use crate::build::{self, BuildStats};
 use crate::event_world::{Chronology, EventWorldStats};
 
 pub struct GraphService {
-    snapshot: MemSnapshot,
+    snapshot: Snap,
     pub stats: BuildStats,
     /// Batch M-B (narrowed at M-C, renamed `EventWorld` -> `Chronology`):
     /// the chronology companion index -- same status as `bible_position`
@@ -95,7 +176,14 @@ pub struct GraphService {
     /// ROW field the port does not expose, and the spec's replacement is a
     /// `kjv.cross_refs` seek the server can only make once it reads the
     /// SQLite sections (DB-4).
-    pub cross_refs_by_from: HashMap<String, Vec<atlas_core::data::CrossRef>>,
+    /// DB-4c: RETIRED as a public companion (spec §5.4, DB-3 judgment
+    /// call 4): the sections seek `kjv.cross_refs` per request
+    /// (`cross_refs_for_span`). The `Mem` arm keeps the map privately so
+    /// the from-sources paths answer the same question the same way.
+    mem_cross_refs: Option<HashMap<String, Vec<CrossRef>>>,
+    /// DB-4c: optional sections the manifest lists but the deployment
+    /// lacks (spec §11: their kinds are uninhabited); empty on the Mem arm.
+    absent_sections: Vec<Section>,
     /// RED-1 (decision 4, "the heading-index precedent"): dot-ref -> the
     /// KJV sub-verse span table's own char-offset ranges for that verse --
     /// the SAME "precomputed once here, O(1) per-verse lookup" treatment
@@ -410,7 +498,7 @@ impl GraphService {
         // DB-4b: the non-graph section tables ride the graph into the root
         // (graph-types `Graph::extra_tables`), computed from the same values
         // the section writer folds (`sqlite::extras`).
-        let mut extras = crate::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono.resolved, &red_letter_spans)
+        let mut extras = crate::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono, &red_letter_spans)
             .expect("assemble: the graph's projections encode");
         if let Some(sc) = sidecars {
             extras.extend(crate::sqlite::sidecars::fold_sidecars(&sc.atlas, &sc.sources).expect("assemble: the sidecars fold"));
@@ -440,16 +528,105 @@ impl GraphService {
         let version = store.publish(graph);
         let snapshot = store.open(version).expect("the version just published must always be open-able");
         GraphService {
-            snapshot,
+            snapshot: Snap::Mem(snapshot),
             stats,
             chronology,
             event_world_stats,
             narrative_legs,
             heading_index,
-            cross_refs_by_from,
+            mem_cross_refs: Some(cross_refs_by_from),
+            absent_sections: Vec::new(),
             red_letter_spans,
             provenance,
             scene_source: std::sync::OnceLock::new(),
+        }
+    }
+
+    /// DB-4c, THE served path (spec §2.5): opens the committed sections
+    /// under `data_dir` (`manifest.toml` + `sections/*.sqlite.zst`, unpacked
+    /// into the sibling `cache/sections/`), one connection per worker, and
+    /// loads every companion the handlers read from the section tables
+    /// (`sqlite::serve`) plus `AtlasData` and `SourcesDocument` from core
+    /// (`sqlite::sidecars::unfold`). `graph.bin` and the JSON sidecars are
+    /// not opened. Refusals (spec §11): a manifest whose root does not
+    /// recompute, a required section missing or failing its transport
+    /// hash, a section with an unknown `user_version`, an unwritable cache
+    /// directory -- all before anything is served; an absent OPTIONAL
+    /// section is one stderr line and uninhabited kinds. `AtlasData` comes
+    /// back NOT `finish()`ed (the caller finishes it, as the JSON path did).
+    pub fn from_sections(data_dir: &Path) -> anyhow::Result<(GraphService, AtlasData, SourcesDocument)> {
+        use crate::sqlite::source::{CommittedZstdSource, SectionLayout};
+        let layout = SectionLayout::under(data_dir);
+        std::fs::create_dir_all(&layout.cache_dir)
+            .map_err(|e| anyhow::anyhow!("cache directory {} is not writable: {e}", layout.cache_dir.display()))?;
+        let workers = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1).min(8);
+        let snap = SqliteSnapshot::open_with_workers(&layout.manifest_path(), &CommittedZstdSource { layout: layout.clone() }, workers)
+            .map_err(|e| anyhow::anyhow!("opening the sections at {}: {e}", layout.manifest_path().display()))?;
+        for s in snap.absent() {
+            eprintln!("atlas: optional section {} absent -- its kinds are uninhabited", s.name());
+        }
+        let present: Vec<Section> = snap.present().to_vec();
+        let absent_sections: Vec<Section> = snap.absent().to_vec();
+        let (chrono, heading_index, red_letter_spans, narrative_legs, families, (stats, event_world_stats), (atlas, sources)) = snap
+            .with_conn(|c| {
+                use crate::sqlite::serve;
+                Ok((
+                    serve::load_chronology(c)?,
+                    serve::load_heading_index(c)?,
+                    serve::load_red_letter_spans(c)?,
+                    serve::load_narrative_legs(c)?,
+                    serve::load_provenance_families(c, &present)?,
+                    serve::load_counters(c, &present)?,
+                    crate::sqlite::sidecars::unfold(c)?,
+                ))
+            })
+            .map_err(|e| anyhow::anyhow!("loading the serving companions from the sections: {e}"))?;
+        let service = GraphService {
+            snapshot: Snap::Sqlite(Arc::new(snap)),
+            stats,
+            chronology: Chronology::from_derivation(chrono),
+            event_world_stats,
+            narrative_legs,
+            heading_index,
+            mem_cross_refs: None,
+            absent_sections,
+            red_letter_spans,
+            provenance: crate::provenance::ProvenanceIndex::from_families(families),
+            scene_source: std::sync::OnceLock::new(),
+        };
+        Ok((service, atlas, sources))
+    }
+
+    /// DB-4c: optional sections the manifest lists but this deployment
+    /// lacks (empty on the in-memory arm).
+    pub fn absent_sections(&self) -> &[Section] {
+        &self.absent_sections
+    }
+
+    /// DB-4c: the cross-refs authored by the span's member verses, keyed by
+    /// dot-ref, each list in row order with its original `target_display`
+    /// -- exactly the slice `atlas_core::xrefs::aggregate_span_xrefs` reads.
+    /// Sections: a seek on `kjv.cross_refs`'s `xref_by_from` index. Mem:
+    /// the retained map filtered to the span.
+    pub fn cross_refs_for_span(&self, span: &ScriptureRef) -> HashMap<String, Vec<CrossRef>> {
+        match (&self.snapshot, &self.mem_cross_refs) {
+            (Snap::Sqlite(s), _) => s.with_conn(|c| crate::sqlite::serve::cross_refs_for_span(c, span)).unwrap_or_default(),
+            (Snap::Mem(_), Some(map)) => map
+                .iter()
+                .filter(|(key, _)| match ScriptureRef::parse(key) {
+                    Ok(ScriptureRef::Verse(v)) => match span {
+                        ScriptureRef::Book(b) => v.book == *b,
+                        ScriptureRef::Chapter { book, chapter } => v.book == *book && v.chapter == *chapter,
+                        ScriptureRef::Passage { book, chapter, from_verse, to_verse } => {
+                            v.book == *book && v.chapter == *chapter && v.verse >= *from_verse && v.verse <= *to_verse
+                        }
+                        ScriptureRef::Verse(w) => v == *w,
+                    },
+                    _ => false,
+                })
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
+            (Snap::Mem(_), None) => HashMap::new(),
         }
     }
 
@@ -579,7 +756,7 @@ impl GraphService {
         Some((prior.map(|(_, id)| id), following.map(|(_, id)| id)))
     }
 
-    pub fn snapshot(&self) -> MemSnapshot {
+    pub fn snapshot(&self) -> Snap {
         self.snapshot.clone()
     }
 
@@ -779,7 +956,7 @@ fn load_red_letter(raw_dir: &Path, kjv_json: &str, brainfuel: Option<&atlas_etl:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph_types::store::GraphSnapshot as _;
+    // DB-4c: `GraphSnapshot` is imported at the top of the module.
 
     const KJV_FIXTURE: &str = r#"{
       "translation": "KJV",

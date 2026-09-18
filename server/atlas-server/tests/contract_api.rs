@@ -24,8 +24,10 @@ async fn api_contract_advertises_the_pinned_aqc_version_range() {
     assert_eq!(response.status(), StatusCode::OK);
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(body["min_version"], "0.3.0");
-    assert_eq!(body["max_version"], "0.3.0");
+    assert_eq!(body["min_version"], "0.4.0");
+    assert_eq!(body["max_version"], "0.4.0");
+    assert_eq!(body["manifest_schema"], 1);
+    assert_eq!(body["section_schema_version"], 14);
 }
 
 #[tokio::test]
@@ -36,5 +38,6 @@ async fn api_contract_carries_no_other_fields() {
     let obj = body.as_object().expect("ContractOut must serialize as a JSON object");
     let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
     keys.sort();
-    assert_eq!(keys, vec!["max_version", "min_version"]);
+    // DB-4c: + the manifest schema and the sections' user_version (additive, spec 9).
+    assert_eq!(keys, vec!["manifest_schema", "max_version", "min_version", "section_schema_version"]);
 }

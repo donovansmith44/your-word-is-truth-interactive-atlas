@@ -178,7 +178,7 @@ async fn main() -> Result<()> {
     // Dropping "load" from the format string (not the branch strings)
     // reads correctly for both: "artifact load complete" / "from-raw build
     // complete".
-    println!("atlas-graph: {} complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "artifact load" });
+    println!("atlas-graph: {} complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "sections open" });
 
     // Published to the owner-approved `atlas_graph_types::store` port
     // (`GraphPublisher::publish`) before being wrapped here, on either
@@ -219,7 +219,7 @@ async fn main() -> Result<()> {
     // `SourcesDocument::default()` recorded an EMPTY registry while this
     // binary served 18 sources, and the contract suite went green over it.
     let sources = atlas_server::load::load_sources(&args.data_dir)?;
-    println!("atlas-server: {} source categories, {} sources loaded from {}", sources.categories.len(), sources.sources.len(), args.data_dir.join("sources.json").display());
+    println!("atlas-server: {} source categories, {} sources loaded from the core section under {}", sources.categories.len(), sources.sources.len(), args.data_dir.display());
 
     // The ONE door to a serving Router (`LoadedAtlas::into_router`), taken
     // by both startup branches and by the recorder. A new `AppState`
