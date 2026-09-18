@@ -389,4 +389,10 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 /// root's own regression pin is `extras_real_data.rs`
 /// (`the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars`).
 /// No id moved; only the dump's table list did.
-const EXPECTED_VERSION_HEX: &str = "c3b99decd15cbc000eb81e159db52f75";
+/// MOVED ONCE MORE (DB-4c, 2026-09-18, the LAST time): `event_date` gained
+/// the chronology's `source_meta` columns (`meta_to_year`, `order_key` --
+/// the curated values the Event wire serves, which DB-4b's fold had left
+/// out). Core's logical hash moved, so the root did. (Captured value then:
+/// "c3b99decd15cbc000eb81e159db52f75".) From here the served path reads
+/// the sections and nothing in DB-4c may move this again.
+const EXPECTED_VERSION_HEX: &str = "14f1506783eedfc6ca3ef046c94fb16c";

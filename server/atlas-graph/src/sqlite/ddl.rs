@@ -380,7 +380,8 @@ CREATE TABLE event_date (
   from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
   from_month INTEGER, from_day INTEGER, to_month INTEGER, to_day INTEGER,
   seq       INTEGER NOT NULL,
-  basis     INTEGER NOT NULL
+  basis     INTEGER NOT NULL,
+  meta_to_year INTEGER, order_key INTEGER
 ) WITHOUT ROWID;
 CREATE TABLE heading_index (
   book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,

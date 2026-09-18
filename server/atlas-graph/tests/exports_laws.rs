@@ -87,7 +87,7 @@ fn built() -> Built {
             // every path -- the root covers them now (spec 3.4). No sidecar
             // files and no red-letter corpus are in hand here, so this is the
             // from-sources shape: projections, event_date, heading_index.
-            let extras = atlas_graph::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono.resolved, &std::collections::HashMap::new())
+            let extras = atlas_graph::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono, &std::collections::HashMap::new())
                 .expect("the real graph's projections encode");
             extras.attach(&mut graph);
 

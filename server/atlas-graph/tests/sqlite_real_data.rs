@@ -49,7 +49,7 @@ fn committed_graph() -> &'static (Graph, Extras) {
             atlas_graph::artifact::to_service_parts(dump).expect("to_service_parts must succeed");
         graph.build_indexes();
         atlas_graph::event_world::add_justified_by(&mut graph);
-        let extras = extras_for_artifact(&graph, &chronology.chrono.resolved, &data_dir()).expect("the sidecars fold");
+        let extras = extras_for_artifact(&graph, &chronology.chrono, &data_dir()).expect("the sidecars fold");
         extras.attach(&mut graph);
         (graph, extras)
     })

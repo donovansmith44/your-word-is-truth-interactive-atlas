@@ -21,7 +21,7 @@ use std::path::Path;
 
 use atlas_graph_types::canon::ids::any_node_id_str;
 use atlas_graph_types::canon::Value;
-use atlas_graph_types::chrono::{PlacementBasis, ResolvedPlacement};
+use atlas_graph_types::chrono::PlacementBasis;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::sections::{extra_line_body, Section};
@@ -67,7 +67,7 @@ pub static POLITY_ERA: TableSpec =
     TableSpec { name: "polity_era", columns: &["node_id", "ord", "name", "from_year", "to_year"], pk: &["node_id", "ord"] };
 pub static EVENT_DATE: TableSpec = TableSpec {
     name: "event_date",
-    columns: &["event_id", "from_year", "to_year", "from_month", "from_day", "to_month", "to_day", "seq", "basis"],
+    columns: &["event_id", "from_year", "to_year", "from_month", "from_day", "to_month", "to_day", "seq", "basis", "meta_to_year", "order_key"],
     pk: &["event_id"],
 };
 pub static HEADING_INDEX: TableSpec = TableSpec {
@@ -214,15 +214,19 @@ impl Extras {
     }
 
     /// The graph-derived tables: projections of `Place`/`Era`/`Polity`/
-    /// `TextUnit` payloads, `event_date` from the resolved chronology
-    /// (`seq` is the total order, R-DB4a-1), `heading_index` through
+    /// `TextUnit` payloads, `event_date` from the chronology (`resolved`:
+    /// `seq` is the total order, R-DB4a-1; DB-4c: plus `source_meta`'s
+    /// curated `to_year`/`order_key`, the values the Event wire serves --
+    /// NULL for an event without an entry, which `legacy::event_from_node`
+    /// substitutes from `from_year`/`0`), `heading_index` through
     /// `heading::build_heading_index`, and `red_letter_span` from the
     /// char-offset span map.
     pub fn graph_derived(
         g: &Graph,
-        resolved: &HashMap<String, ResolvedPlacement>,
+        chrono: &crate::event_world::ChronologyDerivation,
         red_letter: &HashMap<String, Vec<(usize, usize)>>,
     ) -> Result<Extras, SqliteError> {
+        let resolved = &chrono.resolved;
         let (mut place, mut era, mut polity_era, mut verse, mut concord) = (vec![], vec![], vec![], vec![], vec![]);
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
@@ -272,6 +276,8 @@ impl Extras {
                         PlacementBasis::Textual => 0,
                         PlacementBasis::Traditional => 1,
                     }),
+                    chrono.source_meta.get(id).map(|m| Col::Int(m.to_year as i64)).unwrap_or(Col::Null),
+                    chrono.source_meta.get(id).map(|m| Col::Int(m.order_key as i64)).unwrap_or(Col::Null),
                 ]
             })
             .collect();
@@ -331,12 +337,12 @@ pub fn verse_triple(sref: &str) -> Result<(i64, i64, i64), SqliteError> {
 /// is absent (a fixture directory).
 pub fn extras_for_artifact(
     g: &Graph,
-    resolved: &HashMap<String, ResolvedPlacement>,
+    chrono: &crate::event_world::ChronologyDerivation,
     data_dir: &Path,
 ) -> anyhow::Result<Extras> {
     let spans: HashMap<String, Vec<(usize, usize)>> =
         crate::red_letter_spans::read_file(&data_dir.join("red-letter-spans.json"))?.unwrap_or_default().into_iter().collect();
-    let mut ex = Extras::graph_derived(g, resolved, &spans).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mut ex = Extras::graph_derived(g, chrono, &spans).map_err(|e| anyhow::anyhow!("{e}"))?;
     if let Some(sc) = super::sidecars::Sidecars::load(data_dir)? {
         ex.extend(super::sidecars::fold_sidecars(&sc.atlas, &sc.sources).map_err(|e| anyhow::anyhow!("{e}"))?);
     }

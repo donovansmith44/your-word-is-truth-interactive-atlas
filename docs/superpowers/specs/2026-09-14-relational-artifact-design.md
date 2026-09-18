@@ -577,12 +577,17 @@ CREATE INDEX polity_era_by_span ON polity_era (from_year, to_year);   -- /api/po
 -- DB-4b (as shipped): `order_key` DROPPED -- R-DB4a-1 made `seq` THE total order, a second
 -- column with the same value was a drift risk; `month, day` split into from_/to_ (both
 -- TimePoints carry them). `event_by_order` indexes `seq`.
+-- DB-4c (corrects DB-4b): the spec's `order_key` was the chronology's `source_meta`
+-- companion -- the CURATED `to_year`/`order_key` the Event wire serves
+-- (`legacy::event_from_node`), distinct from `resolved.date.to`/`seq`. Restored as two
+-- nullable columns, `meta_to_year, order_key` (NULL when no entry). The last root move.
 CREATE TABLE event_date (
   event_id  TEXT PRIMARY KEY,
   from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,
   from_month INTEGER, from_day INTEGER, to_month INTEGER, to_day INTEGER,   -- TimePoint precision when present
   seq       INTEGER NOT NULL,                    -- SeqKey: THE total traversal order (R-DB4a-1)
-  basis     INTEGER NOT NULL                     -- 0 Textual | 1 Traditional
+  basis     INTEGER NOT NULL,                    -- 0 Textual | 1 Traditional
+  meta_to_year INTEGER, order_key INTEGER        -- DB-4c: source_meta (curated), NULL when absent
 ) WITHOUT ROWID;
 CREATE INDEX event_by_span ON event_date (from_year, to_year);
 CREATE INDEX event_by_order ON event_date (seq);

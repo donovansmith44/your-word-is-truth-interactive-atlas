@@ -318,7 +318,7 @@ fn main() -> Result<()> {
     // server's `from_artifact` version are one number. Read from the SAME
     // files the server reads (`data_dir`), never from this binary's
     // in-memory `AtlasData`, so the two sides agree by construction.
-    let extras = atlas_graph::sqlite::extras::extras_for_artifact(&graph_a_indexed, &chronology.chrono.resolved, &data_dir)
+    let extras = atlas_graph::sqlite::extras::extras_for_artifact(&graph_a_indexed, &chronology.chrono, &data_dir)
         .context("folding the sidecars and projections (DB-4b)")?;
     extras.attach(&mut graph_a_indexed);
     extras.attach(&mut graph_b);
