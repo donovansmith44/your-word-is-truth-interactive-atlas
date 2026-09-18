@@ -67,6 +67,17 @@ pub struct Graph {
 
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
+    /// DB-4b: the canonical row bodies of the section tables that are NOT
+    /// derived from `nodes`/rows/`reading` here -- node projections, the
+    /// resolved chronology, the heading index, red-letter spans, the folded
+    /// sidecars -- keyed by table name (`sections::extra_tables_of`), rows
+    /// in primary-key order, each body the canonical JSON
+    /// `sections::extra_line_body` spells. Supplied by the compiler
+    /// (`atlas_graph::sqlite::extras`), attached again at artifact load
+    /// from the same files, so `sections::version_root` covers them on both
+    /// sides. Not serialized in `graph.bin`. Empty for a graph nobody
+    /// attached to.
+    pub extra_tables: BTreeMap<&'static str, Vec<Vec<u8>>>,
     pub indexes: BTreeMap<RelationId, BiIndex>,
     /// M-C: the symmetric sibling of `indexes` -- closes the "Symmetric
     /// relations: skeleton serves none yet" gap `explore.rs`'s own

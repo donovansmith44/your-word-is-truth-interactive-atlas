@@ -282,16 +282,67 @@ pub fn spine_corpus(section: Section) -> Option<&'static str> {
     }
 }
 
+/// DB-4b: the tables a section carries beyond `node`, its row families and
+/// `reading_spine` (spec §5.3–5.6, amended by the DB-4b plan's judgment
+/// calls 3–6): node projections, the resolved chronology, the heading
+/// index, red-letter spans and the folded sidecars. Their rows reach the
+/// dump through `Graph::extra_tables`; `atlas_graph::sqlite::extras`
+/// declares the matching column specs and a law pins the two lists equal.
+pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
+    match section {
+        Section::Core => &[
+            "place",
+            "era",
+            "polity_era",
+            "event_date",
+            "heading_index",
+            "canon_book",
+            "canon_chapter_verses",
+            "book_meta",
+            "chronology_anchor",
+            "book_narration_window",
+            "landmark",
+            "land_mask_region",
+            "catechism_part",
+            "catechism_item",
+            "catechism_item_verse",
+            "catechism_question",
+            "catechism_question_verse",
+            "place_history",
+            "place_history_name",
+            "place_history_blurb",
+            "place_history_verse",
+            "place_name_alias",
+            "place_name_alias_verse",
+            "source_category",
+            "source_entry",
+            "provenance_entry",
+        ],
+        Section::Kjv => &["verse", "red_letter_span"],
+        Section::Concord => &["concord_unit"],
+        Section::Kretzmann | Section::Lexicon => &[],
+    }
+}
+
+/// The ONE spelling of an extra table's row body, both sides (the compiler
+/// attaching to `Graph::extra_tables`, the reader re-encoding a `SELECT`):
+/// an object of `(column, value)` pairs, keys in byte order, no whitespace.
+pub fn extra_line_body(cols: Vec<(&str, Value)>) -> Vec<u8> {
+    serialize(&obj(cols))
+}
+
 /// The tables the section's logical dump (spec §3.4) walks, in order:
 /// `node`, each row family's table in `row_tables_of` order, then
-/// `reading_spine` where present. `meta`, `justification`, `ground` and
-/// `edge_index` are NOT in the dump: informational or derived.
+/// `reading_spine` where present, then `extra_tables_of` (DB-4b). `meta`,
+/// `justification`, `ground` and `edge_index` are NOT in the dump:
+/// informational or derived.
 pub fn logical_table_order(section: Section) -> Vec<&'static str> {
     let mut v = vec!["node"];
     v.extend(row_tables_of(section).iter().map(|f| f.name()));
     if has_spine(section) {
         v.push("reading_spine");
     }
+    v.extend(extra_tables_of(section));
     v
 }
 
@@ -362,6 +413,16 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
         if let Some(spine) = g.reading.get(corpus) {
             for (i, id) in spine.order.iter().enumerate() {
                 line(&mut out, "reading_spine", &spine_line_body(corpus, i as i64, &any_node_id_str(id)));
+            }
+        }
+    }
+    // DB-4b: the non-graph tables, bodies already canonical and in
+    // primary-key order (`Graph::extra_tables`); a table no section lists
+    // is not in any dump.
+    for table in extra_tables_of(section) {
+        if let Some(bodies) = g.extra_tables.get(table) {
+            for body in bodies {
+                line(&mut out, table, body);
             }
         }
     }
@@ -475,6 +536,47 @@ mod laws {
         let mut g3 = fixture();
         g3.build_indexes(); // derived state is not in the root
         assert_eq!(version_root(&g), version_root(&g3));
+    }
+
+    #[test]
+    fn extra_tables_follow_the_graph_native_tables_and_move_the_root() {
+        assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span"]);
+        assert_eq!(extra_tables_of(Section::Concord), &["concord_unit"]);
+        assert!(extra_tables_of(Section::Kretzmann).is_empty());
+        assert_eq!(extra_tables_of(Section::Core).len(), 26);
+        let order = logical_table_order(Section::Core);
+        assert_eq!(order.last().copied(), Some("provenance_entry"));
+        assert!(order.iter().position(|t| *t == "place").unwrap() > order.iter().position(|t| *t == "analogue").unwrap());
+        let mut all: Vec<&str> = Section::SHIPPED.iter().flat_map(|s| extra_tables_of(*s).iter().copied()).collect();
+        let n = all.len();
+        all.sort();
+        all.dedup();
+        assert_eq!(all.len(), n, "extra table names are unique across sections");
+
+        let g = fixture();
+        let base = version_root(&g);
+        let mut g2 = fixture();
+        g2.extra_tables.insert(
+            "verse",
+            vec![extra_line_body(vec![
+                ("book", Value::Int(0)),
+                ("chapter", Value::Int(1)),
+                ("node_id", str_value("TextUnit:bible/0.1.1")),
+                ("verse", Value::Int(1)),
+            ])],
+        );
+        assert_ne!(version_root(&g2), base, "an extra row moves the root");
+        let kjv = String::from_utf8(logical_dump_section(&g2, Section::Kjv)).unwrap();
+        assert!(
+            kjv.ends_with(
+                "reading_spine\t{\"corpus\":\"bible\",\"node_id\":\"TextUnit:bible/1.1.2\",\"ord\":1}\nverse\t{\"book\":0,\"chapter\":1,\"node_id\":\"TextUnit:bible/0.1.1\",\"verse\":1}\n"
+            ),
+            "extras come AFTER the spine, keys in byte order: {kjv}"
+        );
+        assert_eq!(logical_dump_section(&g2, Section::Core), logical_dump_section(&g, Section::Core), "a kjv extra does not touch core");
+        let mut g3 = fixture();
+        g3.extra_tables.insert("not_a_table", vec![b"{}".to_vec()]);
+        assert_eq!(version_root(&g3), base, "a table no section lists is not in any dump");
     }
 
     #[test]
