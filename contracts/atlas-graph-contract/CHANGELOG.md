@@ -34,6 +34,16 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.7.0** (Batch DB-5) — **MINOR under the 0.x policy (MAJOR class: a pinned field renamed).**
+  `artifact_format_version` leaves the graph vocabulary with the artifact
+  it described (`artifact.rs`, `graph.bin` and the bincode encoder are
+  deleted); `manifest_schema` (1) and `section_schema_version` (14) pin
+  the served identity instead (spec §9: "identity moves to the manifest";
+  a section whose `user_version` a build does not understand is refused at
+  open, exactly as an old `graph.bin` was). The runner's `vocabulary`
+  projection keeps the two new fields. No id, no root, no other fixture
+  moved.
+
 - **0.6.0** (Batch DB-4c) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The `contract` fixture's advertised AQC range moved 0.3.0 -> 0.4.0 -- the
   LAST root move: `event_date` gained the chronology's `source_meta`

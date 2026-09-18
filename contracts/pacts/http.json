@@ -7015,7 +7015,7 @@
     },
     "graph vocabulary": {
       "body": {
-        "artifact_format_version": 13,
+        "manifest_schema": 1,
         "node_kinds": [
           "TextUnit",
           "Container",
@@ -7125,6 +7125,7 @@
             "name": "Occurs"
           }
         ],
+        "section_schema_version": 14,
         "symmetric": [
           {
             "label": "analogous-to",
