@@ -773,3 +773,44 @@ LEX-1's `lexicon` section. `determinism.rs` now compares the shipped dumps
 + root across two builds instead of `graph.bin`'s bytes. The `RowFamily`
 sweep in `provenance.rs` and the `Extras::compute` fold are the only new
 compile-path code; nothing on the served path changed.
+
+## LEX-1 (2026-09-18): the lexicon section -- the first post-cutover corpus
+
+Plan `docs/superpowers/plans/2026-09-18-lex1-lexicon-section.md`; spec §5.7,
+§7, §8 row 7. The fifth section, `lexicon`, ships: 13,548 `LexiconEntry`
+nodes (5,122 Greek + 8,426 Hebrew, Strong's-keyed), 431,280 `Occurs` rows
+(one per aligned original-language token: verse + one-token span on the
+`greek_textus_receptus` / `hebrew_masoretic` layer), the 452,689-row `token`
+inventory (21,409 `Align=unmatched` tokens carry no edge, by upstream
+design), `lexicon_entry` + `lexicon_domain` projections. Loader and port
+unchanged; `graph-types` 0.3.0 (`RowFamily::Occurs`, ordinal 21, appended;
+`Section::SHIPPED` = all five). kjv/concord/kretzmann logical hashes
+byte-identical; core moved for the three attribution registry rows alone
+(table-by-table diff: `source_entry` 18 -> 21, `provenance_entry` 26 -> 29,
+nothing else); the root moved once (`9c9697b8…` -> `479878962a236495dc42acea199a4cbe`).
+Found and fixed on the way: with two rows minting one edge id (two tokens
+of one entry in one verse) the section writer resolved every index entry to
+the FIRST row behind its id, so the SQLite `rows_behind` listed one row where
+the in-memory port listed two -- `partition::edge_row_map` now pairs each
+index entry with its own row (caught by `assert_answers_match` on the laws'
+specimen before any real data was written).
+
+| Measure (debug build) | Before (DB-5) | After (LEX-1) |
+|---|---:|---:|
+| Corpus read (`atlas_etl::lexicon::read_all`: 13,548 JSON entries + 1,189 CoNLL-U files, 452,689 tokens) | -- | ~2.5 s warm (the real-data test's own wall), ~50 s including the test binary's first build |
+| Adapter (nodes + rows) inside the full from-raw build (`lexicon_real_data.rs`, three tests) | -- | 147 s for the three full builds (49 s each, the four-corpus build was ~45 s) |
+| Compile, cold (ETL, corpus reads, build x2, admission, exports, five sections, admission through the source) | 6 m 16 s | **16 m 07 s** (admission #1 215.8 s; sections written in 95.9 s of which the lexicon blob 54.6 s; admission through the source 570.3 s) |
+| The lexicon blob vs the 104,857,600-byte ceiling | -- | **42,847,606 bytes** (210,845,696 uncompressed; 40.9 % of the ceiling); 13,548 nodes, 431,280 rows, 487,259 extra rows, 862,560 index entries |
+| Committed sections, total | 63.5 MB (4 blobs) | 106.3 MB (5 blobs); `data/compiled` 61 MB -> 102 MB |
+| `bibex verify` (cache cold, 5 sections) | 4.4 s (warm, 4) | 19.4 s cold (the lexicon blob unpacks once); warm see the standing block line in the ledger |
+| Sections read back into a `Graph` (`reload_real_data`, 5 sections) | 4.0 s (7.9 s in-suite) | 13.95 s in-suite (106,742 nodes, 914,692 rows, 32 extra tables) |
+| A verse's `words` frontier (served path, John 3:16) | -- | 26 entries in token order over 21 distinct edge ids; the article's one edge has 5 rows behind it (`rows_behind`) |
+| Timing gates (10, serialized) | 10/10 (gate 8 sqlite admission 434.4 s of 960) | see the LEX-1 standing block line in the ledger; ceilings NOT loosened |
+
+Disclosed: the AQC fixtures are exported from the from-raw arm
+(`GraphService::build`, four corpora), so their `version` is that arm's root
+and their verse fixture shows no `words` (as it shows no `commented-on`);
+the served wire does (`bibex node text-unit:JHN.3.16` -> `words 26`). The
+`words` frontier is per TOKEN (spec §7.3), not per distinct entry. Sixteen
+upstream entries have no lemma and are carried as published. No English
+word is tagged (upstream aligns the original-language surface only).

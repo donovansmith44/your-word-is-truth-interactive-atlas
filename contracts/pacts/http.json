@@ -128,8 +128,8 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "max_version": "0.4.0",
-        "min_version": "0.4.0",
+        "max_version": "0.5.0",
+        "min_version": "0.5.0",
         "section_schema_version": 14
       },
       "status": 200
@@ -1430,7 +1430,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "9c9697b846cd8625e475b135c7dea11e"
+        "version": "479878962a236495dc42acea199a4cbe"
       },
       "status": 200
     },
@@ -1451,7 +1451,7 @@
         "kind": "Place",
         "label": "Hazor 1",
         "provenance": "curated-places",
-        "version": "9c9697b846cd8625e475b135c7dea11e"
+        "version": "479878962a236495dc42acea199a4cbe"
       },
       "status": 200
     },
@@ -1477,7 +1477,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "9c9697b846cd8625e475b135c7dea11e"
+        "version": "479878962a236495dc42acea199a4cbe"
       },
       "status": 200
     },
@@ -6538,6 +6538,24 @@
           },
           {
             "confidence": "Imported",
+            "id": "stepbible-tbesg",
+            "locator": "lexicon entries (Strong's 1890 text + TBESG gloss + MACULA domains)",
+            "source": "stepbible"
+          },
+          {
+            "confidence": "Imported",
+            "id": "stepbible-tagnt",
+            "locator": "NT word alignment (Greek Textus Receptus)",
+            "source": "stepbible"
+          },
+          {
+            "confidence": "Imported",
+            "id": "stepbible-tahot",
+            "locator": "OT word alignment (Westminster Leningrad Codex)",
+            "source": "stepbible"
+          },
+          {
+            "confidence": "Imported",
             "id": "theographic",
             "locator": null,
             "source": "theographic"
@@ -6713,6 +6731,36 @@
             "title": "brain-fuel/bible Parallel Editions",
             "what_it_is": "Six further public-domain Bible editions: the Clementine Vulgate, the Westminster Leningrad Codex, the Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), and the Greek Textus Receptus.",
             "what_we_built": "Compiled as additional translation layers in the graph, alongside -- never replacing -- this app's own canonical KJV text."
+          },
+          {
+            "category": "scripture",
+            "id": "stepbible",
+            "license": "CC BY 4.0",
+            "licenses_row_key": "STEPBible TAGNT",
+            "link": "https://github.com/STEPBible",
+            "title": "STEPBible TAGNT / TAHOT / TBESG (Tyndale House Cambridge)",
+            "what_it_is": "STEPBible's Translators Amalgamated Greek NT (TAGNT), Translators Amalgamated Hebrew OT (TAHOT), and Translators Brief Exhaustive Strong's Greek (TBESG): per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, produced by STEPBible and Tyndale House Cambridge.",
+            "what_we_built": "Every original-language word in the reader is aligned to its Strong's lexicon entry (the graph's Occurs rows: a verse's `words`, an entry's `occurs-in` concordance, in canonical order), and each Greek entry carries TBESG's brief English gloss. Alignment is by original-language word only -- no English word is tagged. Credit STEPBible and link to https://github.com/STEPBible."
+          },
+          {
+            "category": "scripture",
+            "id": "macula",
+            "license": "CC BY 4.0",
+            "licenses_row_key": "MACULA Greek and Hebrew",
+            "link": "https://github.com/Clear-Bible/macula-greek",
+            "title": "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)",
+            "what_it_is": "Clear Bible's MACULA datasets: Louw-Nida section references for the Greek NT and SDBH lexical-domain codes for the Hebrew OT (semantic domains per word).",
+            "what_we_built": "Each lexicon entry carries its sorted semantic-domain codes (the lexicon section's domain table), written so a later thesaurus-by-domain query can answer from them; no endpoint reads them yet."
+          },
+          {
+            "category": "scripture",
+            "id": "strongs",
+            "license": "Public domain",
+            "licenses_row_key": "Strong's Exhaustive Concordance",
+            "link": "https://github.com/openscriptures/strongs",
+            "title": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890)",
+            "what_it_is": "James Strong's 1890 Greek and Hebrew dictionaries, numbered G1-G5624 and H1-H8674 (XML encoding by Ulrik Petersen / openscriptures), the numbering every other lexical source here keys on.",
+            "what_we_built": "The 13,548 lexicon entries themselves: Strong's number, lemma, transliteration, part of speech, the 1890 definition text as the first English gloss, and the root-word link. Ingested as upstream publishes it (upstream normalises the tetragrammaton to 'Yahweh' in Strong's own PD gloss text; the KJV column is never edited)."
           },
           {
             "category": "narrative-history",

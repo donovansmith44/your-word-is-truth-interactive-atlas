@@ -53,6 +53,24 @@
             "title": "brain-fuel/bible Parallel Editions"
         },
         {
+            "category": "scripture",
+            "id": "stepbible",
+            "license": "CC BY 4.0",
+            "title": "STEPBible TAGNT / TAHOT / TBESG (Tyndale House Cambridge)"
+        },
+        {
+            "category": "scripture",
+            "id": "macula",
+            "license": "CC BY 4.0",
+            "title": "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)"
+        },
+        {
+            "category": "scripture",
+            "id": "strongs",
+            "license": "Public domain",
+            "title": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890)"
+        },
+        {
             "category": "narrative-history",
             "id": "theographic",
             "license": "CC BY-SA 4.0",

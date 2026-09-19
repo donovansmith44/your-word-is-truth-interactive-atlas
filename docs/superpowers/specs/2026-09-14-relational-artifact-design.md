@@ -1143,6 +1143,15 @@ Frontier consequences, by construction and nothing else:
 - **Thesaurus by domain, cross-translation queries:** `lexicon_domain`
   is written so a later batch can answer them; no endpoint now.
 
+**As shipped (LEX-1, 2026-09-18):** the frontier at a verse is PER TOKEN
+(John 3:16: 26 `words` entries in token order over 21 distinct edge ids;
+the article's one edge has five rows behind it), exactly as §7.3's "its
+tagged tokens in `ord`" says; `Align=source_extra:N` is an upstream note on
+an aligned token and is not carried; sixteen upstream entries have no
+lemma and are carried as published; the entry nodes' provenance is
+`stepbible-tbesg` (one registry row saying what it draws on), the rows'
+`stepbible-tagnt`/`stepbible-tahot`.
+
 ---
 
 ## 8. BATCHES (owner-approved order)
@@ -1161,6 +1170,7 @@ happens.
 | 6 | DB-5 | delete `artifact.rs` (2,385 lines), `graph.bin`, the bincode encoder, `polities.json`, and the nine folded JSONs | after two green releases on the new backend; `git rm` of `graph.bin` is the commit that finally frees the 100 MiB headroom |
 | (as shipped, DB-5, 2026-09-18) | | `artifact.rs` was 2,421 lines when it went; `red-letter-spans.json` and `report.txt` went with the nine JSONs (the compile wrote the first, the ETL the second); the compile folds the ETL's in-memory `AtlasData` + `sources.json` into the sections (`Extras::compute`) and the ETL writes nothing under `data/compiled`; the tests' in-memory graph is the sections read back (`sqlite::reload`, 4 s), so the two-backend `assert_answers_match` keeps its second arm; `data/compiled` 158 MB -> 61 MB; root unchanged | the owner declared the "two green releases" gate met on 2026-09-18 |
 | 7 | LEX-1 | `lexicon` section: fetch extension, adapter, `Occurs` rows, `token` inventory, LICENSES rows | lands with NO change to the loader, the port, or any other section's hash — that invariance IS the acceptance test |
+| (as shipped, LEX-1, 2026-09-18) | | `graph-types` 0.3.0 (`RowFamily::Occurs`, ordinal 21; `Section::SHIPPED` = all five); `atlas_etl::lexicon` reader; `lexicon_adapter`; the section's DDL verbatim from §5.7; 13,548 nodes, 431,280 `Occurs` rows, 452,689 `token` rows; blob 42,847,606 bytes (210.8 MB uncompressed); root `9c9697b8…` → `479878962a236495dc42acea199a4cbe`. Loader and port UNCHANGED; kjv/concord/kretzmann hashes byte-identical. **Disclosed:** core's hash moved for ONE reason — the attribution registry (`sources.json`, folded into core's `source_entry`/`provenance_entry` at DB-4b) gained the three LEX-1 source rows and three provenance ids; a table-by-table diff of the two core files shows every other core table identical (pinned in `atlas-graph/tests/lexicon_section_real_data.rs`). Also found: two rows minting one edge id (two tokens of one entry in one verse) exposed that the section writer resolved every index entry to the FIRST row behind its id; `partition::edge_row_map` now pairs each entry with its own row so `rows_behind` lists all of them (the leper lesson, closed for real) | AQC 0.5.0, AGC 0.8.0 |
 
 ---
 

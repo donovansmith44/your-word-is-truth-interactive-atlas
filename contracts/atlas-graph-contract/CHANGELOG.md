@@ -34,6 +34,20 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.8.0** (Batch LEX-1) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The fifth section, `lexicon`, ships: `Section::SHIPPED` grows to five, so
+  the manifest carries a fifth line and the version root moves once (a
+  new-section move the design foresaw -- spec §7, §8 row 7 -- not a
+  cutover move: the other four sections' logical hashes are byte-identical,
+  pinned by `atlas-graph/tests/lexicon_section_real_data.rs`). The
+  `version-root` fixtures and the `contract` fixture's advertised AQC range
+  (0.4.0 -> 0.5.0) and the `sources` fixture (three attribution rows) are
+  re-recorded; on the served path a verse's `edge_summary` now carries the
+  `words` kind (inverse of `occurs-in`) and `LexiconEntry` nodes /
+  `occurs-in` edges are inhabited -- `graph-types` 0.3.0 adds the `Occurs`
+  row family behind them (the vocabulary fixture already declared both
+  names since 0.3.0). No edge id, no scenario text moved.
+
 - **0.7.0** (Batch DB-5) — **MINOR under the 0.x policy (MAJOR class: a pinned field renamed).**
   `artifact_format_version` leaves the graph vocabulary with the artifact
   it described (`artifact.rs`, `graph.bin` and the bincode encoder are
