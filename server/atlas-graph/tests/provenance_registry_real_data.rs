@@ -86,6 +86,7 @@ fn provenance_by_family(g: &atlas_graph_types::graph::Graph) -> BTreeMap<&'stati
     sweep!(corresponds_bible);
     sweep!(temporal_adjacency);
     sweep!(analogue);
+    sweep!(occurs);
     out
 }
 
@@ -251,7 +252,7 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
     // DB-3: `store.rs` carries ONE `pub provenance:` -- `RowRef`'s field, the
     // port's answer to "which row made this edge" (spec 4), not a row family;
     // the sweeps below have nothing to add for it.
-    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 19), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 20), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
     assert_eq!(
         per_file, expected,
         "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
@@ -274,12 +275,12 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
     // The two `Contains<C>` vectors (`contains_bible`, `contains_concord`)
     // share ONE struct declaration, so the vector count is one more than
     // the struct count. Stated as one equation, literally true as written:
-    //   22 (every `pub provenance:` field in graph-types/src)
+    //   23 (every `pub provenance:` field in graph-types/src)
     //     - 2 (node.rs's storage field and its Card projection: not rows)
-    //     = 20 declared ROW structs
+    //     = 21 declared ROW structs
     //     + 1 (the second `Contains<C>` vector)
     //     + 1 (the `nodes` map)
-    //     = 22 swept families.
+    //     = 23 swept families.
     assert_eq!(
         families.len(),
         row_structs + 1 + 1,
@@ -371,6 +372,9 @@ const PINNED_INVENTORY: &[&str] = &[
     "kretzmann",
     "openbible.info-cross-references",
     "red-letter",
+    "stepbible-tagnt",
+    "stepbible-tahot",
+    "stepbible-tbesg",
     "theographic",
     "theographic-geocoding",
     "theographic-people",
@@ -448,6 +452,8 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
         ],
     ),
     ("named_after", &["curated-named-after"]),
+    // LEX-1: NT rows are STEPBible TAGNT's alignment, OT rows TAHOT's.
+    ("occurs", &["stepbible-tagnt", "stepbible-tahot"]),
     (
         "nodes",
         &[
@@ -463,6 +469,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
             "curated-polities",
             "kjv",
             "kretzmann",
+            "stepbible-tbesg",
             "theographic",
             "theographic-people",
             "theographic-people-groups",

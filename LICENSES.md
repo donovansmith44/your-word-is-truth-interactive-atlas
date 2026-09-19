@@ -31,6 +31,9 @@ file is the detailed version of record.
 | brain-fuel/bible parallel editions ([brain-fuel/bible](https://github.com/brain-fuel/bible)) — Clementine Vulgate, Westminster Leningrad Codex, Douay-Rheims (Challoner), Biblia 1776, Karl XII:s Bibel (1703), Greek Textus Receptus | Public domain (every text; see "brain-fuel/bible parallel editions" below for the verbatim per-edition sourcing this project verified against) | Redistributed — six edition RENDERINGS compiled into the graph artifact (`graph.bin`) as additional `TranslationId` layers on the existing TextUnit `renderings` LayerMap, alongside (never replacing) this app's own canonical KJV text; the app's own code (the brain-fuel repo's data-vs-code separation) is never used |
 | Paul E. Kretzmann, *Popular Commentary of the Bible* (Concordia Publishing House, 1921-1924), via [kretzmanncommentary.org](https://kretzmanncommentary.org) | Public domain (published 1921-1924, USA; doubly grounded — see "Kretzmann's Popular Commentary of the Bible" below) | Redistributed — Kretzmann's own commentary PROSE (never the excised KJV lemma/quote text itself, per LEMMA-EXCISION) compiled into the graph artifact (`graph.bin`) as `CommentaryItem` nodes, verse-anchored via `comments-on` edges; provenance and verification below |
 | KJV red-letter (words-of-Christ) markup, via [seven1m/open-bibles](https://github.com/seven1m/open-bibles) (eBible.org's own KJV OSIS distribution) | Public domain (the file's own embedded OSIS header states it plainly; see "KJV red-letter markup" below for the full CrossWire-substitution reasoning) | Redistributed — the SOURCE FILE itself is not shipped, but the FACT it encodes (which verses/sub-verse spans are Christ's own words) is: compiled into `graph.bin` as `spoken_by`/`spoken_at` edges (verse-granular) and into `data/compiled/red-letter-spans.json` (KJV sub-verse char-offset spans, compiled-data-side); provenance and verification below |
+| STEPBible TAGNT / TAHOT / TBESG ([STEPBible](https://github.com/STEPBible), Tyndale House Cambridge) — per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, via [brain-fuel/bible](https://github.com/brain-fuel/bible)'s `morph/` and `lexicon/` | **CC BY 4.0** (attribution required) | Redistributed with credit — compiled into the `lexicon` section (`data/compiled/sections/`): the `Occurs` rows (every aligned original-language word -> its lexicon entry), the `token` inventory, and the Greek entries' brief glosses. "Credit STEPBible and link to https://github.com/STEPBible" — done here, in `data/raw/README.md`, and on the Sources page. No English word is tagged: the alignment is by original-language word only. See "STEPBible / MACULA / Strong's — the lexicon section (LEX-1)" below |
+| MACULA Greek and Hebrew Linguistic Datasets ([Clear Bible Inc.](https://github.com/Clear-Bible/macula-greek), [macula-hebrew](https://github.com/Clear-Bible/macula-hebrew)) — Louw-Nida section references (Greek) and SDBH lexical-domain codes (Hebrew), via brain-fuel/bible's `lexicon/` | **CC BY 4.0** (attribution required) | Redistributed with credit — each lexicon entry's sorted semantic-domain codes are the `lexicon` section's `lexicon_domain` table (written for a later thesaurus query; no endpoint reads it yet) |
+| Strong's Exhaustive Concordance Greek and Hebrew dictionaries (James Strong, 1890; XML encoding by Ulrik Petersen / [openscriptures/strongs](https://github.com/openscriptures/strongs)), via brain-fuel/bible's `lexicon/` | Public domain (1890) | Redistributed — the 13,548 `LexiconEntry` nodes (number, lemma, transliteration, part of speech, the 1890 definition as the first gloss, root link), ingested as upstream publishes them (upstream's own "Yahweh" normalisation of the PD gloss text is upstream's build policy; the KJV column is never edited — the seven "Jehovah" verses stand) |
 
 ## Theographic CC BY-SA 4.0 — controller ruling
 
@@ -1071,6 +1074,55 @@ itself is never redistributed by this repo (`data/raw/red-letter/` is
 gitignored, fetched fresh by `data/fetch-raw.ps1`), only the FACT it
 encodes, re-derived against our own independently-sourced canonical text.
 
+## STEPBible / MACULA / Strong's — the lexicon section (LEX-1)
+
+Batch LEX-1 (2026-09-18; spec `docs/superpowers/specs/2026-09-14-relational-artifact-design.md` §7)
+adds the fifth compiled section, `lexicon`: 13,548 `LexiconEntry` nodes
+(5,122 Greek + 8,426 Hebrew, keyed by Strong's number) and 431,280
+`Occurs` rows -- one per ALIGNED original-language word in the Greek
+Textus Receptus (NT) and Westminster Leningrad Codex (OT) renderings the
+reader already carries (CORP-1a), each a verse-plus-one-token locus -- plus
+the 452,689-row `token` inventory (every word, matched or not; 21,409 are
+`Align=unmatched` by upstream design and carry no edge).
+
+**Sources, vendored from the SAME pinned `brain-fuel/bible` commit
+(`94d44842cb242e8aa840330748e03d2803f2a7c1`) as the parallel editions,
+attribution verbatim from upstream's README:**
+
+- **STEPBible TAGNT** (Translators Amalgamated Greek NT), **TAHOT**
+  (Translators Amalgamated Hebrew OT), and **TBESG** (Translators Brief
+  Exhaustive Strong's Greek): CC BY 4.0, produced by STEPBible and Tyndale
+  House Cambridge. Supply per-word lemma, morphology, Strong's numbers, and
+  English glosses for the NT Greek and OT Hebrew. **Credit STEPBible and
+  link to https://github.com/STEPBible.**
+- **MACULA Greek and Hebrew Linguistic Datasets** (Clear Bible Inc.): CC BY
+  4.0. Supplies Louw-Nida section references (Greek) and SDBH LexDomain
+  codes (Hebrew) for semantic domains. https://github.com/Clear-Bible/macula-greek
+  and https://github.com/Clear-Bible/macula-hebrew.
+- **Strong's Exhaustive Concordance** Greek and Hebrew dictionaries (James
+  Strong, 1890): Public Domain. XML encoding by Ulrik Petersen /
+  openscriptures. https://github.com/openscriptures/strongs.
+
+**What is and is not tagged (spec §7.3, said plainly):** upstream aligns
+only the Greek/Hebrew surface, so the concordance is by original-language
+word; no English (KJV) word carries a Strong's number here. The Greek is the
+Textus Receptus -- the KJV's own base text -- so no rival manuscript
+tradition enters (KJV inerrancy directive intact). The upstream "Yahweh"
+normalisation of Strong's own gloss text is upstream's build policy on its
+own public-domain text; we ingest the JSON as published, and the seven KJV
+verses reading "Jehovah" are untouched because the KJV column is never
+edited. Sixteen upstream entries (three extended-Strong's Greek ids and
+thirteen Hebrew affix/particle pseudo-entries such as `H9033`) have no
+lemma and are carried as published, never invented.
+
+**Not vendored (spec §7.4):** `morph/lxx` and the `lemma-*.json` Septuagint
+entries (the owner's standing "no apocrypha for now"); the 11.6M-edge
+relation graph; the thesaurus and cross-translation queries the domain
+table is written for.
+
+**Provenance ids** (`data/curated/sources.toml`): `stepbible-tbesg` (the
+entry nodes), `stepbible-tagnt` (NT rows), `stepbible-tahot` (OT rows).
+
 ## Per-artifact label (`data/compiled/*`)
 
 Compiled outputs are derived works: an artifact built from a
@@ -1096,6 +1148,7 @@ even though the file itself is generated, not hand-authored.
 | `book-narration-windows.json` | CC0 (ours) | Compiled from `data/curated/book-narration-windows.toml`, derived arithmetically from `chronology-anchors.toml`'s own values, added Batch HOTFIX-6 |
 | `report.txt` | Not a licensed dataset | (Retired at DB-5: `atlas-etl` prints its report and writes nothing under `data/compiled`.) Generated ETL build report (counts/warnings), not app content |
 | `red-letter-spans.json` | Public domain | (Retired at DB-5: the spans are the `kjv` section's `red_letter_span` table.) Batch RED-1, added 2026-08-25 — see "KJV red-letter markup" above. (This table predates the graph-artifact-centric model and does not otherwise cover `graph.bin`'s own per-corpus license mix, a pre-existing gap outside this batch's own scope; `graph.bin`'s `spoken_by`/`spoken_at` edges carry the SAME public-domain disposition as this row.) |
+| `sections/lexicon.<hash>.sqlite.zst` | Public domain (Strong's 1890) + **CC BY 4.0** (STEPBible TAGNT/TAHOT/TBESG; MACULA) | LEX-1, added 2026-09-18 — the fifth section (optional): `LexiconEntry` nodes, `Occurs` rows, `lexicon_entry`/`lexicon_domain`/`token` tables. Carries both CC BY 4.0 attributions above |
 | `sources.json` | CC0 (ours) | Batch S, added 2026-08-26 — the Sources page's own curated attribution prose (`GET /api/sources`). Compiled from `data/curated/sources.toml` by `cargo run -p atlas-etl --bin gen_sources`, one entry per row of the "## Per-source table" above (never a summary of it — every entry's own `license` field is copied verbatim from that table, cross-checked 1:1 by `atlas_etl::sources::validate_against_licenses`, fail-loud on drift). The ORGANIZATIONAL/EDITORIAL prose itself (what each source "is," what this project "built" from it) is this project's own writing, CC0; the license/status facts it states are, of course, only as true as the row they were copied from. |
 
 ## Everything not listed here

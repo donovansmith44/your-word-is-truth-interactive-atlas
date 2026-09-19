@@ -422,6 +422,28 @@ matching the upstream repo's own README), douay_rheims 13, swedish_karl_xii
 3; zero anomalies (an edition ever empty-and-unmarked) anywhere in the
 real data.
 
+**LEX-1 (2026-09-18) — `lexicon/{grc,hbo}/` and `morph/{nt,ot}/`, from the
+SAME pinned commit** (`fetch-raw.ps1`'s brain-fuel step copies them beside
+`data/`, `ot/`, `nt/`; `morph/lxx` and the 10,133 `lexicon/grc/lemma-*.json`
+Septuagint-only entries are NOT copied -- "no apocrypha for now").
+`lexicon/<lang>/<STRONG>.json`: 5,122 Greek + 8,426 Hebrew Strong's-keyed
+entries (`strong, lemma, translit, lang, pos, glosses{en:[{text,src}]},
+senses[{id,gloss_en,domain}], domains[], root, sources[]`).
+`morph/<nt|ot>/<UPSTREAM_CODE>/NNN.conllu`: 260 + 929 chapter files, one
+sentence per verse under `# ref = CODE.c.v`, NINE tab-separated columns
+(`id FORM LEMMA UPOS XPOS FEATS HEAD DEPREL MISC` -- upstream omits DEPS),
+MISC `Strong=G3972|Translit=Paulos[|Align=...]`; 140,610 NT + 312,079 OT
+tokens, of which 6,615 + 14,794 are `Align=unmatched` (no `Strong=`, by
+upstream design: surface divergence between the L0 text and STEPBible's
+alignment text, not errors). Verified by an independent Python sweep and
+pinned in `server/atlas-etl/tests/lexicon_real_data.rs`. Upstream book
+codes resolve through the SAME `data/books.json` map as the editions.
+Sources and licenses (STEPBible CC BY 4.0 -- "Credit STEPBible and link to
+https://github.com/STEPBible"; MACULA CC BY 4.0; Strong's 1890 PD):
+`LICENSES.md`'s "STEPBible / MACULA / Strong's — the lexicon section" section;
+upstream's own `UPSTREAM-README.md` and `licenses/` are vendored beside the
+data.
+
 ## `concord/*.html` (Batch CORP-2a — the Book of Concord, 1921 Bente-Dau)
 
 Ten document-root pages fetched from `bookofconcord.org` (see

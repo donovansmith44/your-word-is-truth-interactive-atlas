@@ -63,7 +63,10 @@ fn the_five_alphabetical_id_lists_equal_nodes_of_kind() {
         assert_eq!(got, oracle_ids(g, kind), "{kind:?}");
         assert!(!got.is_empty(), "{kind:?} is inhabited in the shipped graph");
     }
-    assert_eq!(s.ids_of_kind(NodeKind::LexiconEntry), Vec::<AnyNodeId>::new(), "uninhabited until LEX-1");
+    // LEX-1: inhabited -- the sixth kind reads like the five.
+    let lex = s.ids_of_kind(NodeKind::LexiconEntry);
+    assert_eq!(lex, oracle_ids(g, NodeKind::LexiconEntry));
+    assert_eq!(lex.len(), 13_548, "LEX-1: every Strong's entry");
 }
 
 #[test]

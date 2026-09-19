@@ -395,4 +395,11 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 /// out). Core's logical hash moved, so the root did. (Captured value then:
 /// "c3b99decd15cbc000eb81e159db52f75".) From here the served path reads
 /// the sections and nothing in DB-4c may move this again.
-const EXPECTED_VERSION_HEX: &str = "14f1506783eedfc6ca3ef046c94fb16c";
+/// MOVED AT LEX-1 (2026-09-18): this build carries NO lexicon corpus (the
+/// regression graph is the four-corpus build), yet the root moved because
+/// the attribution registry (`sources.json`, folded into core) gained the
+/// three LEX-1 source rows and three provenance ids -- a table-by-table
+/// diff of core shows `source_entry`/`provenance_entry` as the only moved
+/// tables (LEX-1 ruling R-LEX1-10). (Captured value before:
+/// "14f1506783eedfc6ca3ef046c94fb16c".)
+const EXPECTED_VERSION_HEX: &str = "0e17d941b8e30bc421a4370fdc1ee392";

@@ -146,15 +146,16 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
         "Concord section total must equal its text units + containers"
     );
 
-    // Core is everything left over; Lexicon is uninhabited today.
-    assert_eq!(by_section.get(&Section::Lexicon), None, "Lexicon has no inhabitant yet");
+    // Core is everything left over; Lexicon (LEX-1) is exactly the entries.
+    assert_eq!(by_section.get(&Section::Lexicon), Some(&13_548), "LEX-1: the 13,548 LexiconEntry nodes");
     let core = *by_section.get(&Section::Core).unwrap();
     assert_eq!(
         core,
         total
             - *by_section.get(&Section::Kjv).unwrap()
             - *by_section.get(&Section::Concord).unwrap_or(&0)
-            - *by_section.get(&Section::Kretzmann).unwrap(),
+            - *by_section.get(&Section::Kretzmann).unwrap()
+            - *by_section.get(&Section::Lexicon).unwrap(),
         "Core is the rest"
     );
 }
@@ -245,6 +246,7 @@ fn every_row_of_every_family_maps_to_a_section() {
     ];
     let concord_families = [RowFamily::ContainsConcord, RowFamily::Quotes, RowFamily::Confesses];
     let kretzmann_families = [RowFamily::CommentsOn];
+    let lexicon_families = [RowFamily::Occurs];
 
     for f in kjv_families {
         assert_eq!(section_of_family(f), Section::Kjv, "{} must be Kjv", f.name());
@@ -258,6 +260,9 @@ fn every_row_of_every_family_maps_to_a_section() {
     for f in kretzmann_families {
         assert_eq!(section_of_family(f), Section::Kretzmann, "{} must be Kretzmann", f.name());
     }
+    for f in lexicon_families {
+        assert_eq!(section_of_family(f), Section::Lexicon, "{} must be Lexicon", f.name());
+    }
 
     // Every family in the closed enum is accounted for, ContainsBible
     // (split by row, not by family) included exactly once.
@@ -266,6 +271,7 @@ fn every_row_of_every_family_maps_to_a_section() {
     accounted.extend(core_families);
     accounted.extend(concord_families);
     accounted.extend(kretzmann_families);
+    accounted.extend(lexicon_families);
     accounted.push(RowFamily::ContainsBible);
     accounted.sort_by_key(|f| f.ordinal());
     assert_eq!(accounted, RowFamily::ALL.to_vec(), "every family must be classified exactly once");
@@ -353,6 +359,7 @@ fn every_row_of_every_family_maps_to_a_section() {
         .earlier
         .erase());
     subject!(analogue, RowFamily::Analogue, Expect::SameAsFamily, |r| r.a.erase());
+    subject!(occurs, RowFamily::Occurs, Expect::SameAsFamily, |r| r.entry.erase());
 
     println!("DB-2a SUBJECT SWEEP: {} families", swept.len());
     for (family, expect, s) in &swept {

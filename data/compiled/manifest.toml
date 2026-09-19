@@ -1,14 +1,14 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-09-18T04:35:21Z"
-root = "9c9697b846cd8625e475b135c7dea11e"
+built = "2026-09-19T00:27:36Z"
+root = "479878962a236495dc42acea199a4cbe"
 
 [[section]]
 name = "core"
 required = true
-logical = "a34bb9212f730dec5470d340a2244ff4"
-blob = "545ff5a90e5c99280a8e52c1604f401bf75caa2859705f7f2a7a2190aba2bbf2"
-bytes = 7563576
+logical = "36c377d88a0f09869247b259242c681d"
+blob = "6479ffaea136b18f89ccfe2f43b38016aabb73ee5bf2ecee2b2c9280a12fbe70"
+bytes = 7564727
 schema_version = 14
 
 [[section]]
@@ -33,4 +33,12 @@ required = false
 logical = "cfebcd669fe2737850598fbc8b57ff24"
 blob = "5a70ba4c429210e610231ee835df21f94817505e00e41844b2a17a8b3eba2692"
 bytes = 9166273
+schema_version = 14
+
+[[section]]
+name = "lexicon"
+required = false
+logical = "60bc8e4c31c96c6439ad52f746652294"
+blob = "7640928b883f334f6e1114b2c367b8ed8de0ec7f9aea2ab2735efc05bae54c24"
+bytes = 42847606
 schema_version = 14

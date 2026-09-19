@@ -101,7 +101,7 @@ fn every_node_round_trips_and_re_encodes_identically() {
     // the printed table above into an assertion. It moves only when the
     // committed artifact is recompiled from changed sources, which is a
     // deliberate act that should re-pin this line.
-    assert_eq!(count, 93_194, "the committed graph carries exactly 93,194 nodes");
+    assert_eq!(count, 106_742, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1)");
 }
 
 // ------------------------------------------------------------------- rows
@@ -164,6 +164,7 @@ fn every_row_of_every_family_round_trips() {
         corresponds_bible,
         temporal_adjacency,
         analogue,
+        occurs,
         reading: _,
         // DB-4b: the non-graph tables' canonical bodies -- not rows of a
         // family; their own round trip is `sqlite_laws.rs`/gate 9.
@@ -203,6 +204,7 @@ fn every_row_of_every_family_round_trips() {
     fam!(corresponds_bible, RowFamily::CorrespondsBible);
     fam!(temporal_adjacency, RowFamily::TemporalAdjacency);
     fam!(analogue, RowFamily::Analogue);
+    fam!(occurs, RowFamily::Occurs);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -242,9 +244,10 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::CorrespondsBible, 0),
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
+        (RowFamily::Occurs, 431_280),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 483_412, "the committed graph carries exactly 483,412 rows");
+    assert_eq!(total, 914_692, "the committed graph carries exactly 914,692 rows (483,412 + 431,280 Occurs at LEX-1)");
 
     // M2-5. The three uninhabited families (artifact.rs refuses to dump a
     // non-empty one) are still real encoders. "An empty table round-trips
@@ -474,6 +477,7 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(corresponds_bible, RowFamily::CorrespondsBible);
     fam!(temporal_adjacency, RowFamily::TemporalAdjacency);
     fam!(analogue, RowFamily::Analogue);
+    fam!(occurs, RowFamily::Occurs);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

@@ -821,14 +821,14 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     let o = run_with_data_dir(&["verify"]);
     assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
     let text = stdout(&o);
-    for name in ["core", "kjv", "concord", "kretzmann"] {
+    for name in ["core", "kjv", "concord", "kretzmann", "lexicon"] {
         let line = text.lines().find(|l| l.starts_with(name)).unwrap_or_else(|| panic!("no line for {name}: {text}"));
         assert!(line.contains("logical ") && line.contains(" OK ") && line.contains("transport OK"), "{line}");
         assert!(line.contains(" -> ") && line.contains(" bytes"), "sizes: {line}");
     }
     let last = text.lines().last().unwrap();
-    assert!(last.starts_with("root ") && last.contains(" OK (recomputed from 4 section lines)"), "{text}");
-    assert_eq!(text.lines().count(), 5);
+    assert!(last.starts_with("root ") && last.contains(" OK (recomputed from 5 section lines)"), "{text}");
+    assert_eq!(text.lines().count(), 6);
 
     let (o, v) = run_json(&["verify"]);
     assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
@@ -836,7 +836,7 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     assert_eq!(v["root"]["ok"], true);
     assert_eq!(v["root"]["manifest"], v["root"]["recomputed"]);
     let sections = v["sections"].as_array().unwrap();
-    assert_eq!(sections.len(), 4);
+    assert_eq!(sections.len(), 5);
     assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == 14));
     assert!(sections.iter().all(|s| s["uncompressed_bytes"].as_u64().unwrap() > s["bytes"].as_u64().unwrap()));
 
@@ -881,7 +881,7 @@ fn verify_fails_with_exit_6_on_a_tampered_blob_and_names_both_hashes() {
     assert_eq!(o.status.code(), Some(6), "stderr: {}", stderr(&o));
     let err = stderr(&o);
     assert!(err.contains("integrity_failed") && err.contains("concord: transport MISMATCH manifest ") && err.contains(" file "), "{err}");
-    assert!(err.contains("1 of 9 checks failed"), "{err}");
+    assert!(err.contains("1 of 11 checks failed"), "{err}");
     let (o, v) = run_json_with_data_dir_at(&data, &["verify"]);
     assert_eq!(o.status.code(), Some(6));
     assert!(v.is_none());

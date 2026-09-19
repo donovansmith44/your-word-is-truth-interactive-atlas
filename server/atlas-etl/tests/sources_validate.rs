@@ -42,10 +42,10 @@ fn per_source_table_has_the_expected_row_count() {
     let doc = atlas_etl::sources::parse_sources(&toml_input).expect("data/curated/sources.toml must parse");
     assert_eq!(
         doc.sources.len(),
-        18,
-        "data/curated/sources.toml has {} entries, expected 18 (batch-s-brief.md's own finalization \
-         count at BASE dcb7278) -- if a real source was intentionally added/removed, update this \
-         expected count in the same commit",
+        21,
+        "data/curated/sources.toml has {} entries, expected 21 (batch-s-brief.md's own finalization \
+         count of 18 at BASE dcb7278, + 3 at LEX-1: STEPBible, MACULA, Strong's) -- if a real source \
+         was intentionally added/removed, update this expected count in the same commit",
         doc.sources.len()
     );
 }

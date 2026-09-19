@@ -73,6 +73,36 @@
       "licenses_row_key": "brain-fuel/bible parallel editions"
     },
     {
+      "id": "stepbible",
+      "category": "scripture",
+      "title": "STEPBible TAGNT / TAHOT / TBESG (Tyndale House Cambridge)",
+      "what_it_is": "STEPBible's Translators Amalgamated Greek NT (TAGNT), Translators Amalgamated Hebrew OT (TAHOT), and Translators Brief Exhaustive Strong's Greek (TBESG): per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, produced by STEPBible and Tyndale House Cambridge.",
+      "what_we_built": "Every original-language word in the reader is aligned to its Strong's lexicon entry (the graph's Occurs rows: a verse's `words`, an entry's `occurs-in` concordance, in canonical order), and each Greek entry carries TBESG's brief English gloss. Alignment is by original-language word only -- no English word is tagged. Credit STEPBible and link to https://github.com/STEPBible.",
+      "license": "CC BY 4.0",
+      "link": "https://github.com/STEPBible",
+      "licenses_row_key": "STEPBible TAGNT"
+    },
+    {
+      "id": "macula",
+      "category": "scripture",
+      "title": "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)",
+      "what_it_is": "Clear Bible's MACULA datasets: Louw-Nida section references for the Greek NT and SDBH lexical-domain codes for the Hebrew OT (semantic domains per word).",
+      "what_we_built": "Each lexicon entry carries its sorted semantic-domain codes (the lexicon section's domain table), written so a later thesaurus-by-domain query can answer from them; no endpoint reads them yet.",
+      "license": "CC BY 4.0",
+      "link": "https://github.com/Clear-Bible/macula-greek",
+      "licenses_row_key": "MACULA Greek and Hebrew"
+    },
+    {
+      "id": "strongs",
+      "category": "scripture",
+      "title": "Strong's Exhaustive Concordance dictionaries (James Strong, 1890)",
+      "what_it_is": "James Strong's 1890 Greek and Hebrew dictionaries, numbered G1-G5624 and H1-H8674 (XML encoding by Ulrik Petersen / openscriptures), the numbering every other lexical source here keys on.",
+      "what_we_built": "The 13,548 lexicon entries themselves: Strong's number, lemma, transliteration, part of speech, the 1890 definition text as the first English gloss, and the root-word link. Ingested as upstream publishes it (upstream normalises the tetragrammaton to 'Yahweh' in Strong's own PD gloss text; the KJV column is never edited).",
+      "license": "Public domain",
+      "link": "https://github.com/openscriptures/strongs",
+      "licenses_row_key": "Strong's Exhaustive Concordance"
+    },
+    {
       "id": "theographic",
       "category": "narrative-history",
       "title": "Theographic Bible Metadata",
@@ -233,6 +263,24 @@
       "source": "brainfuel-bible",
       "confidence": "Imported",
       "locator": null
+    },
+    {
+      "id": "stepbible-tbesg",
+      "source": "stepbible",
+      "confidence": "Imported",
+      "locator": "lexicon entries (Strong's 1890 text + TBESG gloss + MACULA domains)"
+    },
+    {
+      "id": "stepbible-tagnt",
+      "source": "stepbible",
+      "confidence": "Imported",
+      "locator": "NT word alignment (Greek Textus Receptus)"
+    },
+    {
+      "id": "stepbible-tahot",
+      "source": "stepbible",
+      "confidence": "Imported",
+      "locator": "OT word alignment (Westminster Leningrad Codex)"
     },
     {
       "id": "theographic",
