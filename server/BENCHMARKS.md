@@ -814,3 +814,14 @@ the served wire does (`bibex node text-unit:JHN.3.16` -> `words 26`). The
 `words` frontier is per TOKEN (spec §7.3), not per distinct entry. Sixteen
 upstream entries have no lemma and are carried as published. No English
 word is tagged (upstream aligns the original-language surface only).
+
+## D3+D4 (owner directives: Book of Concord containers + catechism traversal both ways; the table of contents as a tree) -- standing block on eb9d730, 2026-09-19
+
+| Measure | LEX-1 (6e9f2ca) | D3+D4 (eb9d730) |
+|---|---|---|
+| Workspace suite | 1072 / 0 / 10 | **1078 / 0 / 10** over 71 binaries (graph_api +4: text-window edge_summary, contents bible/concord; aqc_cucumber 47 scenarios) |
+| graph-types | 109 / 0 OFF and ON | green OFF and ON |
+| Timing gates (10, serialized) | 10/10; gate 8 908.0 s of 960 (5.4 % margin, disclosed) | **9/10 -- gate 8 EXCEEDED: 1104.0 s of 960** in the block (write 221.5 s, dump 9.6 s, answers 668.8 s), every correctness assertion inside it green (logical hashes agree, committed root matches); the block ran with the Playwright harness alive (a debug atlas-server on 8000 + the dotnet client on 5000). **Re-run ALONE: 1064.4 s** (write 197.8 s incl. zstd-19, dump 9.9 s, answers 652.5 s) -- still over. D3's delta is 125 concord rows (0.03 %); the width is LEX-1's (431,280 occurs rows, 862,560 index entries in the single-threaded sweep), and LEX-1's 5.4 % margin was inside run-to-run variance on this box. **Ceiling RE-DERIVED by the DB-2b rule from the clean reading: 1064.4 s x2, rounded up to 30 s -> 2130 s** (`atlas-graph/tests/sqlite_real_data.rs`). Gate 9 served startup 0.83 s of 4 (from_sections 126 ms, scene priming 698 ms); gate 1 conformance 24.7 s of 60; perf_smoke and frontier inside their gates |
+| Compile (D3, sections + exports) | 16 m 07 s cold | 19 m 16 s (concord section 145 -> 270 rows, blob 1,091,861 -> 904,484 bytes; the four other blobs reused; source admission 713 s) |
+
+OPEN (for the owner): ADMIT-PERF-1 -- the admission sweep (`assert_answers_match`) is single-threaded and now takes ~11 min over the five sections; a per-family parallel sweep would return gate 8 to minutes. The ceiling is a disclosure device, not a target: every widening since DB-4b has been rows, not slower code.

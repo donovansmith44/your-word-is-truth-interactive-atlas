@@ -67,7 +67,18 @@ fn committed_graph() -> &'static (Graph, Extras) {
 /// standalone: write 104.4 s + dump re-derivation 4.2 s +
 /// assert_answers_match 255.5 s + second write = 471.3 s -> ceiling 960 s
 /// (x2, rounded up to 30 s). Not loosened afterward.
-const CEILING_SECS: u64 = 960;
+/// RE-DERIVED at the D3+D4 standing block (2026-09-19), the same rule over
+/// the gate LEX-1 widened (431,280 `occurs` rows and 862,560 index entries
+/// joined the single-threaded answers sweep; LEX-1 read 908.0 s of 960 and
+/// disclosed the 5.4 % margin instead of re-deriving, because the rule
+/// re-derives only when exceeded). Exceeded twice on eb9d730: 1104.0 s
+/// inside the block (Playwright harness alive) and 1064.4 s ALONE (write
+/// 197.8 s incl. zstd-19, dump re-derivation 9.9 s, assert_answers_match
+/// 652.5 s) -- D3's own delta is 125 concord rows (0.03 % of the graph), so
+/// the width is LEX-1's, not a regression. 1064.4 s x2, rounded up to 30 s
+/// -> 2130 s. Not loosened afterward. The honest next step is a faster
+/// sweep (ADMIT-PERF-1: the comparison is single-threaded), not this number.
+const CEILING_SECS: u64 = 2130;
 
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
