@@ -24,6 +24,7 @@ pub mod easton;
 pub mod geo;
 pub mod kjv;
 pub mod kretzmann;
+pub mod lexicon;
 pub mod osis;
 pub mod people;
 pub mod people_groups;
