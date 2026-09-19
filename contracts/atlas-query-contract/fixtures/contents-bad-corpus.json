@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "not_found",
+      "message": "corpus not found"
+    }
+  },
+  "status": 404
+}

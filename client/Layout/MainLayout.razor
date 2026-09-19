@@ -78,6 +78,10 @@
                consistent. *@
             <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="CloseHamburger">&times;</button>
         </div>
+        @* D4: the table of contents is reachable from every page's own
+           hamburger -- the Bible's books-then-chapters tree; a chapter row
+           navigates to /read/{book}/{chapter}. *@
+        <button type="button" class="hamburger-contents explorable" data-testid="hamburger-contents" @onclick="OpenContentsFromMenu">Contents</button>
         @if (SavedExplorations.Items.Count == 0)
         {
             @* House copy law: direction, not mood -- "Save an exploration
@@ -98,6 +102,11 @@
     </div>
 }
 
+@if (_contentsOpen)
+{
+    <ContentsPanel Corpus="bible" CurrentRef="@null" OnNavigate="OnContentsNavigate" OnClose="@(() => _contentsOpen = false)" />
+}
+
 @if (_hamburgerActiveNode is not null)
 {
     <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" SeedStack="_hamburgerSeedStack" OnClose="CloseHamburgerPopover" />
@@ -115,6 +124,24 @@
 </main>
 
 @code {
+    // D4: the hamburger's Contents entry -- opens the Bible's contents tree;
+    // a chapter row navigates like a deep link.
+    private bool _contentsOpen;
+
+    private void OpenContentsFromMenu()
+    {
+        CloseHamburger();
+        _contentsOpen = true;
+    }
+
+    private void OnContentsNavigate(string sref)
+    {
+        _contentsOpen = false;
+        var parts = sref.Split('.');
+        var chapter = parts.Length > 1 ? parts[1] : "1";
+        Nav.NavigateTo($"/read/{parts[0]}/{chapter}");
+    }
+
     // The header is shared chrome (MainLayout wraps every page), but its
     // material -- parchment vs dusk glass -- depends on which page is
     // active, per design-direction.md. NavigationManager.Uri is the only

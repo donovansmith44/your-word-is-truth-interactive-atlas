@@ -196,7 +196,7 @@ fn count_scenarios_in_feature_files() -> usize {
 /// pin -- bump in the SAME commit as any corpus scenario add/remove
 /// (recorded here per the counting law's own ruling 4: "add this to
 /// server/Cargo.toml's STANDING COUNTING PROCEDURE comment block").
-const EXPECTED_SCENARIO_COUNT: usize = 44;
+const EXPECTED_SCENARIO_COUNT: usize = 47; // D4 (2026-09-18): + contents.feature's three ContentsQuery scenarios
 
 #[test]
 fn declared_scenario_count_matches_the_pinned_corpus_size() {

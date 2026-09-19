@@ -1,0 +1,1013 @@
+{
+  "body": {
+    "corpus": "concord",
+    "roots": [
+      {
+        "children": [
+          {
+            "count": 25,
+            "id": "Container:concord-art-preface-1",
+            "kind": "article",
+            "ref": "BoC 1.1.1",
+            "title": "Preface to the Book of Concord"
+          }
+        ],
+        "id": "Container:concord-doc-preface",
+        "kind": "document",
+        "ref": "BoC 1.1.1",
+        "title": "Preface to the Book of Concord"
+      },
+      {
+        "children": [
+          {
+            "count": 5,
+            "id": "Container:concord-art-ecumenical-creeds-1",
+            "kind": "article",
+            "ref": "BoC 2.1.1",
+            "title": "The Apostles' Creed"
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-ecumenical-creeds-2",
+            "kind": "article",
+            "ref": "BoC 2.2.1",
+            "title": "The Nicene Creed"
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-ecumenical-creeds-3",
+            "kind": "article",
+            "ref": "BoC 2.3.1",
+            "title": "The Athanasian Creed"
+          }
+        ],
+        "id": "Container:concord-doc-ecumenical-creeds",
+        "kind": "document",
+        "ref": "BoC 2.1.1",
+        "title": "The Three Ecumenical Creeds"
+      },
+      {
+        "children": [
+          {
+            "count": 24,
+            "id": "Container:concord-art-augsburg-confession-1",
+            "kind": "article",
+            "ref": "BoC 3.1.1",
+            "title": "Preface to Emperor Charles V."
+          },
+          {
+            "count": 6,
+            "id": "Container:concord-art-augsburg-confession-2",
+            "kind": "article",
+            "ref": "BoC 3.2.1",
+            "title": "Article I. Of God."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-3",
+            "kind": "article",
+            "ref": "BoC 3.3.1",
+            "title": "Article II. Of Original Sin."
+          },
+          {
+            "count": 6,
+            "id": "Container:concord-art-augsburg-confession-4",
+            "kind": "article",
+            "ref": "BoC 3.4.1",
+            "title": "Article III. Of the Son of God."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-5",
+            "kind": "article",
+            "ref": "BoC 3.5.1",
+            "title": "Article IV. Of Justification."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-augsburg-confession-6",
+            "kind": "article",
+            "ref": "BoC 3.6.1",
+            "title": "Article V. Of the Ministry."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-7",
+            "kind": "article",
+            "ref": "BoC 3.7.1",
+            "title": "Article VI. Of New Obedience."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-augsburg-confession-8",
+            "kind": "article",
+            "ref": "BoC 3.8.1",
+            "title": "Article VII. Of the Church."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-9",
+            "kind": "article",
+            "ref": "BoC 3.9.1",
+            "title": "Article VIII. What the Church Is."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-10",
+            "kind": "article",
+            "ref": "BoC 3.10.1",
+            "title": "Article IX. Of Baptism."
+          },
+          {
+            "count": 2,
+            "id": "Container:concord-art-augsburg-confession-11",
+            "kind": "article",
+            "ref": "BoC 3.11.1",
+            "title": "Article X. Of the Lord's Supper."
+          },
+          {
+            "count": 2,
+            "id": "Container:concord-art-augsburg-confession-12",
+            "kind": "article",
+            "ref": "BoC 3.12.1",
+            "title": "Article XI. Of Confession."
+          },
+          {
+            "count": 10,
+            "id": "Container:concord-art-augsburg-confession-13",
+            "kind": "article",
+            "ref": "BoC 3.13.1",
+            "title": "Article XII. Of Repentance."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-augsburg-confession-14",
+            "kind": "article",
+            "ref": "BoC 3.14.1",
+            "title": "Article XIII. Of the Use of the Sacraments."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-augsburg-confession-15",
+            "kind": "article",
+            "ref": "BoC 3.15.1",
+            "title": "Article XIV - Of Ecclesiastical Order."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-augsburg-confession-16",
+            "kind": "article",
+            "ref": "BoC 3.16.1",
+            "title": "Article XV. Of Ecclesiastical Usages."
+          },
+          {
+            "count": 7,
+            "id": "Container:concord-art-augsburg-confession-17",
+            "kind": "article",
+            "ref": "BoC 3.17.1",
+            "title": "Article XVI. Of Civil Affairs."
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-augsburg-confession-18",
+            "kind": "article",
+            "ref": "BoC 3.18.1",
+            "title": "Article XVII. Of Christ's Return to Judgment."
+          },
+          {
+            "count": 9,
+            "id": "Container:concord-art-augsburg-confession-19",
+            "kind": "article",
+            "ref": "BoC 3.19.1",
+            "title": "Article XVIII. Of Free Will."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-augsburg-confession-20",
+            "kind": "article",
+            "ref": "BoC 3.20.1",
+            "title": "Article XIX. Of the Cause of Sin."
+          },
+          {
+            "count": 40,
+            "id": "Container:concord-art-augsburg-confession-21",
+            "kind": "article",
+            "ref": "BoC 3.21.1",
+            "title": "Article XX. Of Good Works."
+          },
+          {
+            "count": 15,
+            "id": "Container:concord-art-augsburg-confession-22",
+            "kind": "article",
+            "ref": "BoC 3.22.1",
+            "title": "Article XXI. Of the Worship of the Saints."
+          },
+          {
+            "count": 12,
+            "id": "Container:concord-art-augsburg-confession-23",
+            "kind": "article",
+            "ref": "BoC 3.23.1",
+            "title": "Article XXII. Of Both Kinds in the Sacrament."
+          },
+          {
+            "count": 26,
+            "id": "Container:concord-art-augsburg-confession-24",
+            "kind": "article",
+            "ref": "BoC 3.24.1",
+            "title": "Article XXIII. Of the Marriage of Priests."
+          },
+          {
+            "count": 41,
+            "id": "Container:concord-art-augsburg-confession-25",
+            "kind": "article",
+            "ref": "BoC 3.25.1",
+            "title": "Article XXIV. Of the Mass."
+          },
+          {
+            "count": 13,
+            "id": "Container:concord-art-augsburg-confession-26",
+            "kind": "article",
+            "ref": "BoC 3.26.1",
+            "title": "Article XXV. Of Confession."
+          },
+          {
+            "count": 45,
+            "id": "Container:concord-art-augsburg-confession-27",
+            "kind": "article",
+            "ref": "BoC 3.27.1",
+            "title": "Article XXVI. Of the Distinction of Meats."
+          },
+          {
+            "count": 61,
+            "id": "Container:concord-art-augsburg-confession-28",
+            "kind": "article",
+            "ref": "BoC 3.28.1",
+            "title": "Article XXVII. Of Monastic Vows."
+          },
+          {
+            "count": 78,
+            "id": "Container:concord-art-augsburg-confession-29",
+            "kind": "article",
+            "ref": "BoC 3.29.1",
+            "title": "Article XXVIII. Of Ecclesiastical Power."
+          },
+          {
+            "count": 17,
+            "id": "Container:concord-art-augsburg-confession-30",
+            "kind": "article",
+            "ref": "BoC 3.30.1",
+            "title": "Conclusion."
+          }
+        ],
+        "id": "Container:concord-doc-augsburg-confession",
+        "kind": "document",
+        "ref": "BoC 3.1.1",
+        "title": "The Augsburg Confession"
+      },
+      {
+        "children": [
+          {
+            "count": 2,
+            "id": "Container:concord-art-defense-1",
+            "kind": "article",
+            "ref": "BoC 4.1.1",
+            "title": "Article I. Of God."
+          },
+          {
+            "count": 51,
+            "id": "Container:concord-art-defense-2",
+            "kind": "article",
+            "ref": "BoC 4.2.1",
+            "title": "Article II (I). Of Original Sin."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-defense-3",
+            "kind": "article",
+            "ref": "BoC 4.3.52",
+            "title": "Article III. Of Christ."
+          },
+          {
+            "count": 121,
+            "id": "Container:concord-art-defense-4",
+            "kind": "article",
+            "ref": "BoC 4.4.1",
+            "title": "Article IV (II). Of Justification."
+          },
+          {
+            "count": 278,
+            "id": "Container:concord-art-defense-5",
+            "kind": "article",
+            "ref": "BoC 4.5.1",
+            "title": "Article IV-b. Of Love and the Fulfilling of the Law."
+          },
+          {
+            "count": 50,
+            "id": "Container:concord-art-defense-6",
+            "kind": "article",
+            "ref": "BoC 4.6.1",
+            "title": "Article VII and VIII. Of the Church."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-defense-7",
+            "kind": "article",
+            "ref": "BoC 4.7.51",
+            "title": "Article IX. Of Baptism."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-defense-8",
+            "kind": "article",
+            "ref": "BoC 4.8.54",
+            "title": "Article X. Of the Holy Supper."
+          },
+          {
+            "count": 10,
+            "id": "Container:concord-art-defense-9",
+            "kind": "article",
+            "ref": "BoC 4.9.58",
+            "title": "Article XI. Of Confession."
+          },
+          {
+            "count": 96,
+            "id": "Container:concord-art-defense-10",
+            "kind": "article",
+            "ref": "BoC 4.10.1",
+            "title": "Article XII (V). Of Repentance."
+          },
+          {
+            "count": 80,
+            "id": "Container:concord-art-defense-11",
+            "kind": "article",
+            "ref": "BoC 4.11.1",
+            "title": "Article VI. Of Confession and Satisfaction."
+          },
+          {
+            "count": 23,
+            "id": "Container:concord-art-defense-12",
+            "kind": "article",
+            "ref": "BoC 4.12.1",
+            "title": "Article XIII (VII). Of the Number and Use of the Sacraments.."
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-defense-13",
+            "kind": "article",
+            "ref": "BoC 4.13.24",
+            "title": "Article XIV. Of Ecclesiastical Order."
+          },
+          {
+            "count": 52,
+            "id": "Container:concord-art-defense-14",
+            "kind": "article",
+            "ref": "BoC 4.14.1",
+            "title": "Article XV. Of Human Traditions in the Church"
+          },
+          {
+            "count": 13,
+            "id": "Container:concord-art-defense-15",
+            "kind": "article",
+            "ref": "BoC 4.15.53",
+            "title": "Article XVI. Of Political Order."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-defense-16",
+            "kind": "article",
+            "ref": "BoC 4.16.66",
+            "title": "Article XVII. Of Christ's Return to Judgment."
+          },
+          {
+            "count": 12,
+            "id": "Container:concord-art-defense-17",
+            "kind": "article",
+            "ref": "BoC 4.17.67",
+            "title": "Article XVIII. Of Free Will."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-defense-18",
+            "kind": "article",
+            "ref": "BoC 4.18.77",
+            "title": "Article XIX. Of the Cause of Sin."
+          },
+          {
+            "count": 15,
+            "id": "Container:concord-art-defense-19",
+            "kind": "article",
+            "ref": "BoC 4.19.78",
+            "title": "Article XX. Of Good Works."
+          },
+          {
+            "count": 44,
+            "id": "Container:concord-art-defense-20",
+            "kind": "article",
+            "ref": "BoC 4.20.1",
+            "title": "Article XXI. Of the Invocation of Saints."
+          },
+          {
+            "count": 17,
+            "id": "Container:concord-art-defense-21",
+            "kind": "article",
+            "ref": "BoC 4.21.1",
+            "title": "Article XXII. Of Both Kinds in the Lord's Supper."
+          },
+          {
+            "count": 71,
+            "id": "Container:concord-art-defense-22",
+            "kind": "article",
+            "ref": "BoC 4.22.1",
+            "title": "Article XXIII. Of the Marriage of Priests."
+          },
+          {
+            "count": 99,
+            "id": "Container:concord-art-defense-23",
+            "kind": "article",
+            "ref": "BoC 4.23.1",
+            "title": "Article XXIV. Of the Mass."
+          },
+          {
+            "count": 69,
+            "id": "Container:concord-art-defense-24",
+            "kind": "article",
+            "ref": "BoC 4.24.1",
+            "title": "Article XXVII. Of Monastic Vows."
+          },
+          {
+            "count": 27,
+            "id": "Container:concord-art-defense-25",
+            "kind": "article",
+            "ref": "BoC 4.25.1",
+            "title": "Article XXVIII. Of Ecclesiastical Power."
+          },
+          {
+            "count": 19,
+            "id": "Container:concord-art-defense-26",
+            "kind": "article",
+            "ref": "BoC 4.26.1",
+            "title": "Philip Melanchthon Presents His Greetings to the Reader"
+          }
+        ],
+        "id": "Container:concord-doc-defense",
+        "kind": "document",
+        "ref": "BoC 4.1.1",
+        "title": "Apology of the Augsburg Confession"
+      },
+      {
+        "children": [
+          {
+            "count": 15,
+            "id": "Container:concord-art-smalcald-articles-1",
+            "kind": "article",
+            "ref": "BoC 5.1.1",
+            "title": "Preface"
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-smalcald-articles-3",
+            "kind": "article",
+            "ref": "BoC 5.3.1",
+            "title": "Article I - The Nature of God"
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-smalcald-articles-4",
+            "kind": "article",
+            "ref": "BoC 5.4.1",
+            "title": "Article II - The Father"
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-smalcald-articles-5",
+            "kind": "article",
+            "ref": "BoC 5.5.1",
+            "title": "Article III - The Son"
+          },
+          {
+            "count": 2,
+            "id": "Container:concord-art-smalcald-articles-6",
+            "kind": "article",
+            "ref": "BoC 5.6.1",
+            "title": "Article IV - The Work of Salvation"
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-smalcald-articles-8",
+            "kind": "article",
+            "ref": "BoC 5.8.1",
+            "title": "Article I - First and Chief Article"
+          },
+          {
+            "count": 29,
+            "id": "Container:concord-art-smalcald-articles-9",
+            "kind": "article",
+            "ref": "BoC 5.9.1",
+            "title": "Article II - Of the Mass."
+          },
+          {
+            "count": 2,
+            "id": "Container:concord-art-smalcald-articles-10",
+            "kind": "article",
+            "ref": "BoC 5.10.1",
+            "title": "Article III - Of Chapters and Cloisters."
+          },
+          {
+            "count": 16,
+            "id": "Container:concord-art-smalcald-articles-11",
+            "kind": "article",
+            "ref": "BoC 5.11.1",
+            "title": "Article IV - Of the Papacy."
+          },
+          {
+            "count": 11,
+            "id": "Container:concord-art-smalcald-articles-13",
+            "kind": "article",
+            "ref": "BoC 5.13.1",
+            "title": "Article I - Of Sin."
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-smalcald-articles-14",
+            "kind": "article",
+            "ref": "BoC 5.14.1",
+            "title": "Article II - Of the Law."
+          },
+          {
+            "count": 43,
+            "id": "Container:concord-art-smalcald-articles-15",
+            "kind": "article",
+            "ref": "BoC 5.15.1",
+            "title": "Article III - Of Repentance."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-smalcald-articles-16",
+            "kind": "article",
+            "ref": "BoC 5.16.1",
+            "title": "Article IV - Of the Gospel."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-smalcald-articles-17",
+            "kind": "article",
+            "ref": "BoC 5.17.1",
+            "title": "Article V - Of Baptism."
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-smalcald-articles-18",
+            "kind": "article",
+            "ref": "BoC 5.18.1",
+            "title": "Article VI - Of the Sacrament of the Altar."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-smalcald-articles-19",
+            "kind": "article",
+            "ref": "BoC 5.19.1",
+            "title": "Article VII - Of the Keys."
+          },
+          {
+            "count": 13,
+            "id": "Container:concord-art-smalcald-articles-20",
+            "kind": "article",
+            "ref": "BoC 5.20.1",
+            "title": "Article VIII - Of Confession."
+          },
+          {
+            "count": 1,
+            "id": "Container:concord-art-smalcald-articles-21",
+            "kind": "article",
+            "ref": "BoC 5.21.1",
+            "title": "Article IX - Of Excommunication."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-smalcald-articles-22",
+            "kind": "article",
+            "ref": "BoC 5.22.1",
+            "title": "Article X - Of Ordination."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-smalcald-articles-23",
+            "kind": "article",
+            "ref": "BoC 5.23.1",
+            "title": "Article XI - Of the Marriage of Priests."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-smalcald-articles-24",
+            "kind": "article",
+            "ref": "BoC 5.24.1",
+            "title": "Article XII - Of the Church."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-smalcald-articles-25",
+            "kind": "article",
+            "ref": "BoC 5.25.1",
+            "title": "Article XIII - Of Good Works."
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-smalcald-articles-26",
+            "kind": "article",
+            "ref": "BoC 5.26.1",
+            "title": "Article XIV - Of Monastic Vows ."
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-smalcald-articles-27",
+            "kind": "article",
+            "ref": "BoC 5.27.1",
+            "title": "Article XV - Of Human Tradition."
+          },
+          {
+            "count": 43,
+            "id": "Container:concord-art-smalcald-articles-28",
+            "kind": "article",
+            "ref": "BoC 5.28.1",
+            "title": "Signatures."
+          }
+        ],
+        "id": "Container:concord-doc-smalcald-articles",
+        "kind": "document",
+        "ref": "BoC 5.1.1",
+        "title": "The Smalcald Articles"
+      },
+      {
+        "children": [
+          {
+            "count": 59,
+            "id": "Container:concord-art-power-and-primacy-1",
+            "kind": "article",
+            "ref": "BoC 6.1.1",
+            "title": "Treatise Compiled by the Theologians Assembled at Smalcald - 1537"
+          },
+          {
+            "count": 23,
+            "id": "Container:concord-art-power-and-primacy-2",
+            "kind": "article",
+            "ref": "BoC 6.2.60",
+            "title": "Of the Power and Jurisdiction of Bishops"
+          },
+          {
+            "count": 32,
+            "id": "Container:concord-art-power-and-primacy-3",
+            "kind": "article",
+            "ref": "BoC 6.3.1",
+            "title": "Doctors and Preachers (signatories to the AC/AP)"
+          }
+        ],
+        "id": "Container:concord-doc-power-and-primacy",
+        "kind": "document",
+        "ref": "BoC 6.1.1",
+        "title": "Treatise on the Power and Primacy of the Pope"
+      },
+      {
+        "children": [
+          {
+            "count": 14,
+            "id": "Container:concord-art-small-catechism-1",
+            "kind": "article",
+            "ref": "BoC 7.1.0",
+            "title": "Luther's Preface to the Small Catechism"
+          },
+          {
+            "count": 11,
+            "id": "Container:concord-art-small-catechism-2",
+            "kind": "article",
+            "ref": "BoC 7.2.1",
+            "title": "The Ten Commandments"
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-small-catechism-3",
+            "kind": "article",
+            "ref": "BoC 7.3.1",
+            "title": "II. The Creed"
+          },
+          {
+            "count": 9,
+            "id": "Container:concord-art-small-catechism-4",
+            "kind": "article",
+            "ref": "BoC 7.4.0",
+            "title": "III. The Lord's Prayer"
+          },
+          {
+            "count": 7,
+            "id": "Container:concord-art-small-catechism-5",
+            "kind": "article",
+            "ref": "BoC 7.5.1",
+            "title": "The Sacrament of Holy Baptism"
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-small-catechism-6",
+            "kind": "article",
+            "ref": "BoC 7.6.1",
+            "title": "How Christians should be taught to Confess"
+          },
+          {
+            "count": 5,
+            "id": "Container:concord-art-small-catechism-7",
+            "kind": "article",
+            "ref": "BoC 7.7.1",
+            "title": "The Sacrament of the Altar"
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-small-catechism-8",
+            "kind": "article",
+            "ref": "BoC 7.8.1",
+            "title": "Daily Prayers"
+          },
+          {
+            "count": 13,
+            "id": "Container:concord-art-small-catechism-9",
+            "kind": "article",
+            "ref": "BoC 7.9.1",
+            "title": "Table of Duties"
+          },
+          {
+            "count": 21,
+            "id": "Container:concord-art-small-catechism-10",
+            "kind": "article",
+            "ref": "BoC 7.10.0",
+            "title": "Christian Questions and their Answers"
+          }
+        ],
+        "id": "Container:concord-doc-small-catechism",
+        "kind": "document",
+        "ref": "BoC 7.1.0",
+        "title": "The Small Catechism"
+      },
+      {
+        "children": [
+          {
+            "count": 20,
+            "id": "Container:concord-art-large-catechism-1",
+            "kind": "article",
+            "ref": "BoC 8.1.1",
+            "title": "The Large Catechism - Introduction"
+          },
+          {
+            "count": 34,
+            "id": "Container:concord-art-large-catechism-2",
+            "kind": "article",
+            "ref": "BoC 8.2.1",
+            "title": "Short Preface of Dr. Martin Luther"
+          },
+          {
+            "count": 328,
+            "id": "Container:concord-art-large-catechism-3",
+            "kind": "article",
+            "ref": "BoC 8.3.1",
+            "title": "The Ten Commandments"
+          },
+          {
+            "count": 70,
+            "id": "Container:concord-art-large-catechism-4",
+            "kind": "article",
+            "ref": "BoC 8.4.1",
+            "title": "The Apostles' Creed"
+          },
+          {
+            "count": 123,
+            "id": "Container:concord-art-large-catechism-5",
+            "kind": "article",
+            "ref": "BoC 8.5.1",
+            "title": "The Lord's Prayer"
+          },
+          {
+            "count": 86,
+            "id": "Container:concord-art-large-catechism-6",
+            "kind": "article",
+            "ref": "BoC 8.6.1",
+            "title": "Holy Baptism"
+          },
+          {
+            "count": 87,
+            "id": "Container:concord-art-large-catechism-7",
+            "kind": "article",
+            "ref": "BoC 8.7.1",
+            "title": "The Sacrament of the Altar"
+          }
+        ],
+        "id": "Container:concord-doc-large-catechism",
+        "kind": "document",
+        "ref": "BoC 8.1.1",
+        "title": "The Large Catechism"
+      },
+      {
+        "children": [
+          {
+            "count": 8,
+            "id": "Container:concord-art-epitome-1",
+            "kind": "article",
+            "ref": "BoC 9.1.1",
+            "title": "Comprehensive Summary, Rule and Norm"
+          },
+          {
+            "count": 25,
+            "id": "Container:concord-art-epitome-2",
+            "kind": "article",
+            "ref": "BoC 9.2.1",
+            "title": "I. Original Sin."
+          },
+          {
+            "count": 19,
+            "id": "Container:concord-art-epitome-3",
+            "kind": "article",
+            "ref": "BoC 9.3.1",
+            "title": "II. Free Will."
+          },
+          {
+            "count": 23,
+            "id": "Container:concord-art-epitome-4",
+            "kind": "article",
+            "ref": "BoC 9.4.1",
+            "title": "III. The Righteousness of Faith Before God."
+          },
+          {
+            "count": 19,
+            "id": "Container:concord-art-epitome-5",
+            "kind": "article",
+            "ref": "BoC 9.5.1",
+            "title": "IV. Good Works."
+          },
+          {
+            "count": 11,
+            "id": "Container:concord-art-epitome-6",
+            "kind": "article",
+            "ref": "BoC 9.6.1",
+            "title": "V. Law and Gospel."
+          },
+          {
+            "count": 8,
+            "id": "Container:concord-art-epitome-7",
+            "kind": "article",
+            "ref": "BoC 9.7.1",
+            "title": "VI. The Third Use of the Law."
+          },
+          {
+            "count": 43,
+            "id": "Container:concord-art-epitome-8",
+            "kind": "article",
+            "ref": "BoC 9.8.1",
+            "title": "VII. The Lord's Supper."
+          },
+          {
+            "count": 39,
+            "id": "Container:concord-art-epitome-9",
+            "kind": "article",
+            "ref": "BoC 9.9.1",
+            "title": "VIII. The Person of Christ."
+          },
+          {
+            "count": 4,
+            "id": "Container:concord-art-epitome-10",
+            "kind": "article",
+            "ref": "BoC 9.10.1",
+            "title": "IX. The Descent of Christ into Hell."
+          },
+          {
+            "count": 12,
+            "id": "Container:concord-art-epitome-11",
+            "kind": "article",
+            "ref": "BoC 9.11.1",
+            "title": "X. Church Rites."
+          },
+          {
+            "count": 23,
+            "id": "Container:concord-art-epitome-12",
+            "kind": "article",
+            "ref": "BoC 9.12.1",
+            "title": "XI. Election."
+          },
+          {
+            "count": 31,
+            "id": "Container:concord-art-epitome-13",
+            "kind": "article",
+            "ref": "BoC 9.13.1",
+            "title": "XII. Other Sects."
+          }
+        ],
+        "id": "Container:concord-doc-epitome",
+        "kind": "document",
+        "ref": "BoC 9.1.1",
+        "title": "Formula of Concord: Epitome"
+      },
+      {
+        "children": [
+          {
+            "count": 10,
+            "id": "Container:concord-art-solid-declaration-1",
+            "kind": "article",
+            "ref": "BoC 10.1.1",
+            "title": "Preface"
+          },
+          {
+            "count": 20,
+            "id": "Container:concord-art-solid-declaration-2",
+            "kind": "article",
+            "ref": "BoC 10.2.1",
+            "title": "Comprehensive Summary, Foundation, Rule and Norm"
+          },
+          {
+            "count": 62,
+            "id": "Container:concord-art-solid-declaration-3",
+            "kind": "article",
+            "ref": "BoC 10.3.1",
+            "title": "I. Original Sin"
+          },
+          {
+            "count": 89,
+            "id": "Container:concord-art-solid-declaration-4",
+            "kind": "article",
+            "ref": "BoC 10.4.1",
+            "title": "II. Free Will"
+          },
+          {
+            "count": 67,
+            "id": "Container:concord-art-solid-declaration-5",
+            "kind": "article",
+            "ref": "BoC 10.5.1",
+            "title": "III. The Righteousness of Faith"
+          },
+          {
+            "count": 40,
+            "id": "Container:concord-art-solid-declaration-6",
+            "kind": "article",
+            "ref": "BoC 10.6.1",
+            "title": "IV. Good Works"
+          },
+          {
+            "count": 27,
+            "id": "Container:concord-art-solid-declaration-7",
+            "kind": "article",
+            "ref": "BoC 10.7.1",
+            "title": "V. Law and Gospel"
+          },
+          {
+            "count": 26,
+            "id": "Container:concord-art-solid-declaration-8",
+            "kind": "article",
+            "ref": "BoC 10.8.1",
+            "title": "VI. The Third Use of the Law"
+          },
+          {
+            "count": 128,
+            "id": "Container:concord-art-solid-declaration-9",
+            "kind": "article",
+            "ref": "BoC 10.9.1",
+            "title": "VII. The Holy Supper"
+          },
+          {
+            "count": 96,
+            "id": "Container:concord-art-solid-declaration-10",
+            "kind": "article",
+            "ref": "BoC 10.10.1",
+            "title": "VIII. The Person of Christ"
+          },
+          {
+            "count": 3,
+            "id": "Container:concord-art-solid-declaration-11",
+            "kind": "article",
+            "ref": "BoC 10.11.1",
+            "title": "IX. Christ's Descent into Hell"
+          },
+          {
+            "count": 32,
+            "id": "Container:concord-art-solid-declaration-12",
+            "kind": "article",
+            "ref": "BoC 10.12.1",
+            "title": "X. Church Rites, Commonly Called Adiaphora"
+          },
+          {
+            "count": 94,
+            "id": "Container:concord-art-solid-declaration-13",
+            "kind": "article",
+            "ref": "BoC 10.13.1",
+            "title": "XI. Election"
+          },
+          {
+            "count": 40,
+            "id": "Container:concord-art-solid-declaration-14",
+            "kind": "article",
+            "ref": "BoC 10.14.1",
+            "title": "XII. Other Sects"
+          }
+        ],
+        "id": "Container:concord-doc-solid-declaration",
+        "kind": "document",
+        "ref": "BoC 10.1.1",
+        "title": "Formula of Concord: Solid Declaration"
+      }
+    ],
+    "version": "7c4c8341cc761b73e374dc34586012a2"
+  },
+  "status": 200
+}

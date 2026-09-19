@@ -198,6 +198,12 @@
                         <span class="chapter-head-book">@BookName</span>
                         <span class="chapter-head-num">@_chapterNum</span>
                     </button>
+                    @* D4 (owner, 2026-09-15: "Table of contents = a tree ... Pages are
+                       not a meaningful way of thinking about things"): the Contents
+                       panel, beside the chapter head. A separate click target so the
+                       chapter-head button's own card/peek grammar is untouched. *@
+                    <button type="button" class="contents-open" data-testid="contents-open" aria-label="Contents"
+                            title="Contents" @onclick="OpenContents">Contents</button>
                     @if (_showChapterPeek)
                     {
                         <div class="chapter-head-peek" data-testid="chapter-head-peek">
@@ -300,6 +306,11 @@
         </div>
         </div>
     </CompositionSplit>
+
+    @if (_contentsOpen)
+    {
+        <ContentsPanel Corpus="bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
+    }
 
     @if (_activeNode is not null)
     {
@@ -1510,6 +1521,21 @@
     // 4 canonical ref shapes -- see ScripturePicker.Apply); this is the
     // reader's own NavigateReader-style dispatch for it (World's mount
     // instead sends the same ref straight into scripture-mode).
+    // D4: the Contents panel -- opened from the chapter head; a chapter row
+    // navigates through the SAME picker-apply path (ApplyScriptureRef), so
+    // host/guest/split behave exactly as a picker jump does.
+    private bool _contentsOpen;
+
+    private void OpenContents() => _contentsOpen = true;
+
+    private void CloseContents() => _contentsOpen = false;
+
+    private Task OnContentsNavigate(string sref)
+    {
+        _contentsOpen = false;
+        return ApplyScriptureRef(sref);
+    }
+
     private Task ApplyScriptureRef(string sref)
     {
         var parts = sref.Split('.');

@@ -287,6 +287,10 @@ public class AqcSteps
         var name = path switch
         {
             "/api/contract" => "contract",
+            // D4: ContentsQuery (contents.feature)
+            "/api/contents/bible" => "contents-bible",
+            "/api/contents/concord" => "contents-concord",
+            "/api/contents/nope" => "contents-bad-corpus",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
         (_status, _body) = LoadFixture(name);
@@ -352,6 +356,7 @@ public class AqcSteps
             "TextWindowOut" => JsonSerializer.Deserialize<TextWindowDto>(json, Wire.Options),
             "Scene" => JsonSerializer.Deserialize<Scene>(json, Wire.Options),
             "ContractOut" => JsonSerializer.Deserialize<ContractDto>(json, Wire.Options),
+            "ContentsOut" => JsonSerializer.Deserialize<ContentsOut>(json, Wire.Options),
             _ => null,
         };
         Assert.NotNull(dto);

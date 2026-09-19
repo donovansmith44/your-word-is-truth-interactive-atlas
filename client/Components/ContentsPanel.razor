@@ -1,0 +1,115 @@
+@* D4 (owner, 2026-09-15): the reader's Contents panel -- the SAME popover
+   chrome the hamburger panel uses (backdrop + .popover), holding one
+   ContentsTree over /api/contents/{Corpus}. The current chapter's book is
+   expanded on open (ExpandPathTo(CurrentRef)); a root label toggles, a
+   chapter navigates. The expanded set is a per-viewer CONVENIENCE kept in
+   localStorage ("contents-expanded-{corpus}") -- never state anyone else
+   needs; every access is guarded, and the panel renders correctly without
+   it. *@
+@using BibleAtlas.Client.Explore
+@inject AtlasClient Atlas
+@inject IJSRuntime JS
+
+<div class="popover-backdrop" data-testid="contents-backdrop" @onclick="Close"></div>
+<div class="popover contents-panel" data-testid="contents-panel" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="popover-head">
+        <p class="popover-title" data-testid="popover-title" data-ref="false">Contents</p>
+        <button type="button" class="popover-close" data-testid="contents-close" aria-label="Close" title="Close" @onclick="Close">&times;</button>
+    </div>
+    @if (CurrentRef is { Length: > 0 })
+    {
+        <p class="contents-current" data-testid="contents-current">Reading @CurrentRef</p>
+    }
+    @if (_model is { } model)
+    {
+        <ContentsTree Model="model" OnNavigate="NavigateAsync" OnChanged="PersistAsync" TestId="contents-tree" />
+    }
+    else if (_error is { } error)
+    {
+        <p class="toast-message" data-testid="contents-error">@error</p>
+    }
+    else
+    {
+        <p class="reader-loading">Loading&hellip;</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Corpus { get; set; } = "bible";
+    /// <summary>The chapter/paragraph being read now (<c>JHN.3</c>); its book opens on load.</summary>
+    [Parameter] public string? CurrentRef { get; set; }
+    [Parameter, EditorRequired] public EventCallback<string> OnNavigate { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+
+    private ContentsTreeModel? _model;
+    private string? _error;
+    private string? _loadedFor;
+
+    private string StorageKey => $"contents-expanded-{Corpus}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedFor == Corpus)
+        {
+            return;
+        }
+
+        _loadedFor = Corpus;
+        try
+        {
+            var contents = await Atlas.Contents(Corpus);
+            var model = ContentsTreeModel.From(contents);
+            var remembered = await RememberedAsync();
+            if (remembered is { Length: > 0 })
+            {
+                model.SetExpanded(remembered.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            if (CurrentRef is { Length: > 0 } sref)
+            {
+                model.ExpandPathTo(sref);
+            }
+
+            _model = model;
+        }
+        catch (Exception)
+        {
+            _error = "The contents could not be loaded. Try again.";
+        }
+    }
+
+    private async Task<string?> RememberedAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private async Task PersistAsync()
+    {
+        if (_model is not { } model)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, string.Join(',', model.ExpandedIds));
+        }
+        catch (Exception)
+        {
+            // a per-viewer convenience only -- a blocked store changes nothing
+        }
+    }
+
+    private Task NavigateAsync(ContentsTreeModel.Node node) => OnNavigate.InvokeAsync(node.Ref);
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Escape" ? Close() : Task.CompletedTask;
+}

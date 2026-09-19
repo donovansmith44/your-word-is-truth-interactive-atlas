@@ -1,0 +1,94 @@
+@* D4 (owner, 2026-09-15: "Contents is a tree; clicking a node toggles
+   visibility of its children. Stop at the level of ARTICLE (BoC) or TOPIC"):
+   ONE tree component (role=tree / treeitem, aria-expanded, aria-current)
+   over a ContentsTreeModel, rendered from Model.Flatten() -- the reader's
+   Contents panel and the Concord sidebar both use it, parameterized
+   ("one component/behavior, parameterized -- never two implementations").
+   A root row's LABEL either toggles (the panel) or navigates (the Concord
+   sidebar, whose document rows always jumped to the document's opening
+   paragraph -- CORPREAD-2's own `concord-toc-part-{n}`, kept); the caret
+   always toggles; a leaf's label always navigates. *@
+@using BibleAtlas.Client.Explore
+
+<ul class="contents-tree" role="tree" data-testid="@TestId">
+    @foreach (var row in Model.Flatten())
+    {
+        var slug = Slug(row.Node.Id);
+        var current = row.Current || (row.Depth == 0 && Model.CurrentId is { } cur && row.Node.Children.Any(c => c.Id == cur));
+        <li role="treeitem" class="@($"contents-row contents-depth-{row.Depth}{(row.Current ? " contents-row-current" : "")}")"
+            aria-expanded="@(row.Expandable ? (row.Expanded ? "true" : "false") : null)"
+            aria-current="@(row.Current ? "true" : null)"
+            data-testid="@($"contents-item-{slug}")">
+            @if (row.Expandable)
+            {
+                <button type="button" class="contents-toggle" data-testid="@($"contents-toggle-{slug}")"
+                        aria-label="@((row.Expanded ? "Collapse " : "Expand ") + row.Node.Title)"
+                        @onclick="() => ToggleAsync(row.Node.Id)">@(row.Expanded ? "▾" : "▸")</button>
+            }
+            <button type="button"
+                    class="@LabelClass(row, current)"
+                    data-testid="@LabelTestId(row, slug)"
+                    aria-current="@(current && row.Depth == 0 && RootClickNavigates ? "true" : null)"
+                    @onclick="() => OnRowClickAsync(row)">
+                @row.Node.Title
+                @if (row.Node.Count is int count)
+                {
+                    <span class="contents-count" aria-label="@($"{count} members")">@count</span>
+                }
+            </button>
+        </li>
+    }
+</ul>
+
+@code {
+    [Parameter, EditorRequired] public ContentsTreeModel Model { get; set; } = null!;
+    /// <summary>A leaf's (or, with <see cref="RootClickNavigates"/>, a root's) navigation target.</summary>
+    [Parameter, EditorRequired] public EventCallback<ContentsTreeModel.Node> OnNavigate { get; set; }
+    /// <summary>Raised after a toggle, so an owner can persist the expanded set.</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+    /// <summary>false: a root label toggles (the panel); true: it navigates (the Concord sidebar).</summary>
+    [Parameter] public bool RootClickNavigates { get; set; }
+    /// <summary>An owner-supplied testid for root labels (the Concord sidebar keeps <c>concord-toc-part-{n}</c>).</summary>
+    [Parameter] public Func<ContentsTreeModel.Node, string>? RootTestId { get; set; }
+    [Parameter] public string TestId { get; set; } = "contents-tree";
+    /// <summary>Extra classes for root labels (the Concord sidebar keeps its <c>concord-toc-item</c> look).</summary>
+    [Parameter] public string? RootClass { get; set; }
+    [Parameter] public string? RootCurrentClass { get; set; }
+
+    /// <summary>The testid slug rule (CONTRACT.md): every ':' and '.' in the node id becomes '-'.</summary>
+    public static string Slug(string id) => id.Replace(':', '-').Replace('.', '-').Replace(' ', '-');
+
+    private string LabelTestId(ContentsTreeModel.Row row, string slug) =>
+        row.Depth == 0 && RootTestId is { } f ? f(row.Node) : $"contents-node-{slug}";
+
+    private string LabelClass(ContentsTreeModel.Row row, bool current)
+    {
+        var navigates = row.Depth > 0 || RootClickNavigates;
+        var cls = "contents-label" + (navigates ? " explorable" : "");
+        if (row.Depth == 0 && RootClass is { } rc)
+        {
+            cls += " " + rc;
+            if (current && RootCurrentClass is { } rcc)
+            {
+                cls += " " + rcc;
+            }
+        }
+        return cls;
+    }
+
+    private async Task ToggleAsync(string id)
+    {
+        Model.Toggle(id);
+        await OnChanged.InvokeAsync();
+    }
+
+    private Task OnRowClickAsync(ContentsTreeModel.Row row)
+    {
+        if (row.Depth == 0 && !RootClickNavigates)
+        {
+            return ToggleAsync(row.Node.Id);
+        }
+
+        return OnNavigate.InvokeAsync(row.Node);
+    }
+}

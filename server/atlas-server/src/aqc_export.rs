@@ -87,6 +87,10 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("scene-scripture", "/api/scene/scripture?ref=JHN.3.16"),
     ("scene-bad-window", "/api/scene?from=100&to=-100"),
     ("scene-bad-ref", "/api/scene/scripture?ref=not-a-ref-at-all"),
+    // ContentsQuery (D4): the containment forest, two levels deep.
+    ("contents-bible", "/api/contents/bible"),
+    ("contents-concord", "/api/contents/concord"),
+    ("contents-bad-corpus", "/api/contents/nope"),
     // Versioning -- the one new behavioral endpoint (contract.rs).
     ("contract", "/api/contract"),
 ];

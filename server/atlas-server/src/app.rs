@@ -166,6 +166,10 @@ pub fn build_with_sources(
         .route("/api/node/{id}", get(graph_handlers::node_card))
         .route("/api/node/{id}/edges", get(graph_handlers::node_edges))
         .route("/api/text", get(graph_handlers::text_window))
+        // D4: the containment forest, two levels deep (books/chapters,
+        // documents/articles) -- read through the port from Container
+        // nodes and contains edges, never a hand-maintained list.
+        .route("/api/contents/{corpus}", get(crate::contents::contents))
         .with_state(state);
 
     let router = match static_dir {
