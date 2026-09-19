@@ -26,7 +26,13 @@ fn layout_under(dir: &Path) -> SectionLayout {
 }
 fn open_written(dir: &Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::SqliteError> {
     let layout = layout_under(dir);
-    SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout })
+    // ADMIT-PERF-1: the gate measures the admission the compile actually
+    // runs -- a pooled snapshot, one connection per core (capped).
+    SqliteSnapshot::open_with_workers(
+        &layout.manifest_path(),
+        &CommittedZstdSource { layout },
+        SqliteSnapshot::admission_workers(),
+    )
 }
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::store::{assert_answers_match, GraphSnapshot};
@@ -78,7 +84,21 @@ fn committed_graph() -> &'static (Graph, Extras) {
 /// the width is LEX-1's, not a regression. 1064.4 s x2, rounded up to 30 s
 /// -> 2130 s. Not loosened afterward. The honest next step is a faster
 /// sweep (ADMIT-PERF-1: the comparison is single-threaded), not this number.
-const CEILING_SECS: u64 = 2130;
+/// RE-DERIVED DOWN at ADMIT-PERF-1 (2026-09-19, owner: "yeah do that"):
+/// that faster sweep landed. `assert_answers_match` now spreads its two
+/// position passes across this box's cores (`std::thread::scope`, no new
+/// dependency) and builds the position inventory once instead of twice,
+/// and the two admission call sites open one connection per core instead
+/// of one in total. Measured ALONE, box otherwise idle, the same way every
+/// earlier reading here was taken:
+///   sweep       652.5 s -> 373.8 s
+///   gate total 1064.4 s -> 779.6 s
+/// 779.6 s x2, rounded up to 30 s -> 1560 s. This TIGHTENS the gate by
+/// 570 s; "never loosened" is a floor under the ceiling, not a ratchet
+/// that forbids reclaiming headroom a real speedup earned -- a ceiling
+/// left at 2130 s over a 780 s run would detect nothing short of a 2.7x
+/// regression, which is the opposite of what this gate is for.
+const CEILING_SECS: u64 = 1560;
 
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]

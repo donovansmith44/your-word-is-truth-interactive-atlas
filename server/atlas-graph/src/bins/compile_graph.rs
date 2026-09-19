@@ -440,9 +440,12 @@ fn main() -> Result<()> {
     );
     println!("atlas-graph-compile: DB-4b ADMISSION -- SqliteSnapshot (through CommittedZstdSource) vs the model graph ...");
     let t = Instant::now();
-    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open(
+    // ADMIT-PERF-1: a pool, so the admission sweep's workers each get a
+    // connection instead of queueing on one.
+    let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open_with_workers(
         &layout.manifest_path(),
         &atlas_graph::sqlite::source::CommittedZstdSource { layout: layout.clone() },
+        atlas_graph::sqlite::snapshot::SqliteSnapshot::admission_workers(),
     )
     .map_err(|e| anyhow::anyhow!("{e}"))
     .context("opening the written sections")?;

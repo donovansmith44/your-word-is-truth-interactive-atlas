@@ -380,48 +380,149 @@ fn node_eq(a: &Option<Node>, b: &Option<Node>) -> bool {
     }
 }
 
+/// ADMIT-PERF-1 (owner, 2026-09-19): one position's node/derive/
+/// edge_summary/edges answers, checked against the model. Extracted from
+/// `assert_answers_match`'s own first pass VERBATIM so the sweep below can
+/// hand it to several threads without the assertions themselves moving.
+fn check_position_answers<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position) {
+    if let Position::Node(id) = p {
+        let a = candidate.node(id);
+        let b = model.node(id);
+        assert!(node_eq(&a, &b), "conformance: node({:?}) diverges", id);
+        if let Some(n) = &b {
+            let pid = n.pid();
+            assert_eq!(
+                candidate.derive(&pid),
+                model.derive(&pid),
+                "conformance: derive({:?}) diverges",
+                pid
+            );
+        }
+    }
+
+    let sa = candidate.edge_summary(p);
+    let sb = model.edge_summary(p);
+    assert_eq!(sa, sb, "conformance: edge_summary({:?}) diverges", p);
+
+    for (kind, count) in sb {
+        for limit in [1usize, count.max(1)] {
+            assert_eq!(
+                drain(candidate, p, kind, limit),
+                drain(model, p, kind, limit),
+                "conformance: edges({:?}, {:?}, limit {}) diverges",
+                p,
+                kind,
+                limit
+            );
+        }
+    }
+}
+
+/// ADMIT-PERF-1: one position's ROW-level answers (edges_with_nodes and the
+/// row identity behind each entry, plus position_of). Extracted from
+/// `assert_answers_match`'s own second pass VERBATIM, same reason.
+fn check_position_rows<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position) {
+    for (kind, _) in model.edge_summary(p) {
+        let q = EdgeQuery { kind, cursor: None, limit: 1 };
+        let a = candidate.edges_with_nodes(p, &q);
+        let b = model.edges_with_nodes(p, &q);
+        assert_eq!((a.kind, a.next, a.entries.len()), (b.kind, b.next, b.entries.len()), "conformance: edges_with_nodes({p:?}, {kind:?}) page shape diverges");
+        for (x, y) in a.entries.iter().zip(&b.entries) {
+            assert_eq!(x.entry, y.entry, "conformance: edges_with_nodes entry diverges at {p:?}");
+            assert!(node_eq(&x.node, &y.node), "conformance: edges_with_nodes node diverges at {p:?}");
+            assert_eq!(
+                candidate.row_provenance(&x.entry.edge),
+                model.row_provenance(&y.entry.edge),
+                "conformance: row_provenance({:?}) diverges",
+                x.entry.edge
+            );
+            assert_eq!(
+                candidate.rows_behind(&x.entry.edge),
+                model.rows_behind(&y.entry.edge),
+                "conformance: rows_behind({:?}) diverges",
+                x.entry.edge
+            );
+        }
+    }
+    if let Position::Node(id) = p {
+        for corpus in model.reading.keys() {
+            assert_eq!(candidate.position_of(corpus, id), model.position_of(corpus, id), "conformance: position_of({corpus}, {id:?}) diverges");
+        }
+    }
+}
+
+/// ADMIT-PERF-1 (owner, 2026-09-19, on the finding that gate 8 outgrew its
+/// ceiling because this sweep is single-threaded while the rest of the box
+/// idles): runs `check` over every position, spread across this machine's
+/// own cores. `std::thread::scope` and `available_parallelism` only — the
+/// SAME zero-dependency idiom `Graph::build_indexes` already uses (this
+/// crate takes no dependencies; the compiler is the reviewer).
+///
+/// Every check is a PURE READ of `candidate` and `model` (no shared mutable
+/// state crosses a thread), so the work partitions with no coordination.
+/// Positions are STRIPED (worker `w` takes `w`, `w+n`, `w+2n`, ...) rather
+/// than sliced into contiguous blocks: per-position cost varies by orders of
+/// magnitude (a hub verse with hundreds of cross-references beside a leaf),
+/// and striping averages that out without a work-stealing queue.
+///
+/// FAIL-LOUD IS PRESERVED: an assertion inside a worker panics that worker,
+/// and `thread::scope` re-raises it once the scope ends, message intact. The
+/// ONE observable change is which divergence gets reported when a candidate
+/// has SEVERAL: it is now whichever worker reached one first, not the
+/// lowest-numbered position. With exactly one divergence -- every planted
+/// case in this file's own law tests, and the only case a real regression
+/// has ever produced -- the reported panic is identical.
+fn sweep_positions<Q: GraphQuery + Sync>(
+    candidate: &Q,
+    model: &Graph,
+    inventory: &[Position],
+    check: fn(&Q, &Graph, &Position),
+) {
+    let workers = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4)
+        .min(inventory.len().max(1));
+    if workers <= 1 {
+        for p in inventory {
+            check(candidate, model, p);
+        }
+        return;
+    }
+    std::thread::scope(|scope| {
+        for worker in 0..workers {
+            scope.spawn(move || {
+                for p in inventory.iter().skip(worker).step_by(workers) {
+                    check(candidate, model, p);
+                }
+            });
+        }
+    });
+}
+
 /// THE CONFORMANCE LAW: any GraphQuery implementation claiming to
 /// present `model` must answer every question identically to the Graph
 /// itself (which implements the same interface — no canonical-clone
 /// dance). Works for backend-vs-model AND, via two calls, for
-/// backend-vs-backend migration verification. Panics at the first
-/// divergence, precisely named. This is the port admission requirement:
-/// MemStore passes by construction; the serialized backend (M-C) and
-/// any future database must pass the same call to exist.
-pub fn assert_answers_match(candidate: &impl GraphQuery, model: &Graph) {
-    for p in position_inventory(model) {
-        if let Position::Node(id) = &p {
-            let a = candidate.node(id);
-            let b = model.node(id);
-            assert!(node_eq(&a, &b), "conformance: node({:?}) diverges", id);
-            if let Some(n) = &b {
-                let pid = n.pid();
-                assert_eq!(
-                    candidate.derive(&pid),
-                    model.derive(&pid),
-                    "conformance: derive({:?}) diverges",
-                    pid
-                );
-            }
-        }
+/// backend-vs-backend migration verification. Panics at a divergence,
+/// precisely named (see `sweep_positions` for the one ordering caveat
+/// ADMIT-PERF-1's threading introduces). This is the port admission
+/// requirement: MemStore passes by construction; the serialized backend
+/// (M-C) and any future database must pass the same call to exist.
+///
+/// ADMIT-PERF-1: `Sync` is required of the candidate because the two
+/// position sweeps run across cores. Every implementation in this workspace
+/// already satisfies it (`Graph` and `MemSnapshot` are plain data;
+/// `SqliteSnapshot` holds a POOL of `Mutex<Connection>`, built for exactly
+/// this). A candidate that genuinely cannot be shared across threads is not
+/// a graph backend this atlas can serve from.
+pub fn assert_answers_match<Q: GraphQuery + Sync>(candidate: &Q, model: &Graph) {
+    // ADMIT-PERF-1: built ONCE and shared by both sweeps. It used to be
+    // rebuilt from scratch for the second pass -- a full clone of every
+    // position in the graph, inserted one at a time into a fresh BTreeSet,
+    // for a set that had just been walked and thrown away.
+    let inventory: Vec<Position> = position_inventory(model).into_iter().collect();
 
-        let sa = candidate.edge_summary(&p);
-        let sb = model.edge_summary(&p);
-        assert_eq!(sa, sb, "conformance: edge_summary({:?}) diverges", p);
-
-        for (kind, count) in sb {
-            for limit in [1usize, count.max(1)] {
-                assert_eq!(
-                    drain(candidate, &p, kind, limit),
-                    drain(model, &p, kind, limit),
-                    "conformance: edges({:?}, {:?}, limit {}) diverges",
-                    p,
-                    kind,
-                    limit
-                );
-            }
-        }
-    }
+    sweep_positions(candidate, model, &inventory, check_position_answers::<Q>);
 
     // DB-3 (spec 4, 6.2): the widened methods, over the same inventory.
     for kind in NodeKind::ALL {
@@ -447,35 +548,7 @@ pub fn assert_answers_match(candidate: &impl GraphQuery, model: &Graph) {
             assert!(node_eq(x, y), "conformance: nodes() diverges");
         }
     }
-    for p in position_inventory(model) {
-        for (kind, _) in model.edge_summary(&p) {
-            let q = EdgeQuery { kind, cursor: None, limit: 1 };
-            let a = candidate.edges_with_nodes(&p, &q);
-            let b = model.edges_with_nodes(&p, &q);
-            assert_eq!((a.kind, a.next, a.entries.len()), (b.kind, b.next, b.entries.len()), "conformance: edges_with_nodes({p:?}, {kind:?}) page shape diverges");
-            for (x, y) in a.entries.iter().zip(&b.entries) {
-                assert_eq!(x.entry, y.entry, "conformance: edges_with_nodes entry diverges at {p:?}");
-                assert!(node_eq(&x.node, &y.node), "conformance: edges_with_nodes node diverges at {p:?}");
-                assert_eq!(
-                    candidate.row_provenance(&x.entry.edge),
-                    model.row_provenance(&y.entry.edge),
-                    "conformance: row_provenance({:?}) diverges",
-                    x.entry.edge
-                );
-                assert_eq!(
-                    candidate.rows_behind(&x.entry.edge),
-                    model.rows_behind(&y.entry.edge),
-                    "conformance: rows_behind({:?}) diverges",
-                    x.entry.edge
-                );
-            }
-        }
-        if let Position::Node(id) = &p {
-            for corpus in model.reading.keys() {
-                assert_eq!(candidate.position_of(corpus, id), model.position_of(corpus, id), "conformance: position_of({corpus}, {id:?}) diverges");
-            }
-        }
-    }
+    sweep_positions(candidate, model, &inventory, check_position_rows::<Q>);
 
     for (corpus, spine) in &model.reading {
         let len = spine.order.len();

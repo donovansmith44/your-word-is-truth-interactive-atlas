@@ -68,6 +68,24 @@ fn section_named(name: &str) -> Option<Section> {
 
 impl SqliteSnapshot {
     /// The one-worker form (the gates, `bibex verify`, the tests).
+    /// ADMIT-PERF-1: one connection per core -- what an
+    /// `assert_answers_match` admission needs to actually use the cores its
+    /// sweep now spreads across (a single-connection pool would serialize
+    /// every worker on one mutex, and a pool SMALLER than the sweep's own
+    /// thread count leaves the surplus threads queueing: measured on this
+    /// box, 16 sweep threads against a pool of 8 swept in 397.4 s, against
+    /// a matched pool of 16 in 373.8 s).
+    ///
+    /// The pool is cheap where it matters: every connection opens the SAME
+    /// section files, so their `mmap` pages are one shared set in the page
+    /// cache, not a private copy each -- the per-connection cost is the
+    /// handles, the statement cache and address space, never the ~540 MB of
+    /// section bytes multiplied out. Capped at 16 anyway: past that the
+    /// sweep is bound by those shared pages, not by cores.
+    pub fn admission_workers() -> usize {
+        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1).min(16)
+    }
+
     pub fn open(manifest_path: &Path, source: &dyn SectionSource) -> Result<SqliteSnapshot, SqliteError> {
         Self::open_with_workers(manifest_path, source, 1)
     }

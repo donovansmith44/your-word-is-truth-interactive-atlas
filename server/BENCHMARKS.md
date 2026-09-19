@@ -835,3 +835,47 @@ OPEN (for the owner): ADMIT-PERF-1 -- the admission sweep (`assert_answers_match
 | Timing gates (10, serialized) | 9/10 (gate 8 1104.0 s of 960; re-derived to 2130 s in 41df66a) | **10/10** -- gate 8 sqlite admission **1103.7 s of 2130** (write 202.1 s incl. zstd-19, dump re-derivation 10.2 s, assert_answers_match 655.1 s: +2,594 rows and the Person payload columns cost nothing measurable); gate 9 served startup 0.89 s of 4 (from_sections 135 ms, scene priming 750 ms); gate 1 conformance 25.6 s of 60; perf_smoke and frontier inside their gates |
 | Compile (sections + exports) | 19 m 16 s | 19 m 55 s (core section rewritten: 36c377d8 -> f9294873, 7,920,147 bytes; four blobs reused; source admission 712 s) |
 | Rows in the committed graph | 914,817 | **917,411** (parent-of 1,776; partner-of 104; participates-in 714) |
+
+## ADMIT-PERF-1 (owner: "yeah do that") -- the admission sweep across cores, 2026-09-19
+
+The open finding from the D3+D4 block, closed. `assert_answers_match` (the
+port-admission law: every answer the SQLite backend gives must equal the
+in-memory model's) walked ~106k positions twice, single-threaded, while the
+other fifteen cores idled; it was why gate 8 outgrew its 960 s ceiling once
+the lexicon's 431,280 rows joined the sweep.
+
+Three changes, no new dependency (`graph-types` takes none -- the sweep uses
+`std::thread::scope` and `available_parallelism`, the idiom `build_indexes`
+already used):
+
+1. both position passes are striped across the cores, the per-position
+   assertions extracted verbatim into two functions so the checks
+   themselves did not move;
+2. the position inventory is built ONCE and shared, not rebuilt from
+   scratch for the second pass;
+3. the two admission call sites (the compile's DB-4b step and this gate)
+   open one connection per core instead of one in total -- a sweep spread
+   over 16 threads against a 1-connection pool would simply queue.
+
+Measured ALONE, box otherwise idle, same method as every earlier reading:
+
+| Measure | before (D5, c23e25a) | pool of 8 | matched pool (shipped) |
+|---|---|---|---|
+| `assert_answers_match` | 652.5 s | 397.4 s | **373.8 s** (1.75x) |
+| gate 8 total | 1064.4 s | 823.2 s | **779.6 s** (1.36x) |
+| write (zstd-19, unchanged) | 197.8 s | 215.3 s | 198.5 s |
+| dump re-derivation (unchanged) | 9.9 s | 8.1 s | 8.2 s |
+
+The sweep is now bound by the section pages every worker shares, not by
+cores: the last 8 connections bought 24 s. The gate's remaining half is the
+write, which zstd-19 already threads.
+
+**Ceiling re-derived DOWN, 2130 s -> 1560 s** (779.6 x2, rounded up to 30 s).
+Fail-loud is unchanged: a worker's assertion panics that worker and
+`thread::scope` re-raises it, message intact; the planted-liar law tests
+(`conformance_harness_catches_a_lying_snapshot`,
+`the_harness_catches_a_snapshot_that_lies_about_the_new_methods`) still
+catch their divergence. DISCLOSED: with SEVERAL divergences at once the
+reported one is whichever worker reached it first rather than the
+lowest-numbered position; with one -- every planted case, and every real
+regression observed -- the panic is identical.
