@@ -75,9 +75,20 @@
        _pickerSyncToken's own comment below -- closes the gap where a
        follow OFF->ON cycle left this picker showing a stale applied ref
        even though CurrentBook/CurrentChapter never changed. *@
-    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
-                      CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter"
-                      SyncToken="@_pickerSyncToken" />
+    @* D1 LAW (owner, 2026-09-15, verbatim: "if we're following scripture on
+       the map, there is not an additional place to select scripture (the box
+       at the top right) on the map side of the screen"): while the atlas
+       FOLLOWS the reader there is ONE scripture selector on screen -- the
+       reader's. The picker returns the moment follow is released. Same
+       predicate as the mode-chip guard below; a source-scan law in
+       client.Tests (ConformanceTests.OneScriptureSelectorLaw_...) fails if
+       any non-Reader page ever mounts a picker without such a guard. *@
+    @if (!(SplitMode && _follow))
+    {
+        <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
+                          CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter"
+                          SyncToken="@_pickerSyncToken" />
+    }
 
     @if (_scene is not null && _scene.Places.Count == 0)
     {

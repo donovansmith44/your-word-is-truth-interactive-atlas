@@ -26,12 +26,13 @@ test('SYNC-1: both pickers agree after a reader-picker-driven chapter change, wh
   const readerRoot = page.getByTestId('reader-root');
   const atlasPane = page.getByTestId('split-pane-atlas');
 
-  // Both pickers start agreeing (GEN.12) -- the ONE user-visible change this
-  // batch permits/requires: the atlas-side picker shows the current chapter
-  // at all, standalone or split (SYNC-1's own root mechanism -- see
-  // ScripturePicker's own mount in World.razor).
-  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
-  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('12');
+  // D1 LAW (owner, 2026-09-15): while FOLLOWING there is ONE selector on
+  // screen, the reader's -- the atlas-side picker is not mounted at all
+  // (World.razor's guard), so "both pickers agree" is now "the atlas pane
+  // has no picker; the reader's carries the chapter". (SYNC-1's own
+  // projection -- the world picker rendering FROM the shared Locus atom --
+  // still holds the moment follow is released, below.)
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0);
 
   // Navigate via the READER's OWN picker.
   await readerRoot.getByTestId('picker-book').selectOption('EXO');
@@ -42,10 +43,9 @@ test('SYNC-1: both pickers agree after a reader-picker-driven chapter change, wh
   await expect(page.getByTestId('chapter-head')).toContainText('3');
   await expect(page.getByTestId('follow-chip')).toHaveText('Following EXO.3');
 
-  // Agreement: the atlas pane's OWN picker -- never touched directly --
-  // now reflects EXO.3 too, live, via the shared Locus atom.
-  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('EXO');
-  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('3');
+  // Agreement (D1): the atlas pane still has no picker of its own; the
+  // reader's carries EXO.3.
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0);
   await expect(readerRoot.getByTestId('picker-book')).toHaveValue('EXO');
   await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('3');
 
@@ -66,8 +66,7 @@ test('SYNC-1: both pickers agree after reader-next arrow navigation, while follo
 
   await expect(page.getByTestId('chapter-head')).toContainText('13');
   await expect(page.getByTestId('follow-chip')).toHaveText('Following GEN.13');
-  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
-  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0); // D1: one selector while following
   await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
   await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
 });
@@ -84,12 +83,18 @@ test('SYNC-1: follow OFF -- a world-picker Apply still works and leaves the read
   await page.waitForURL(/\/read\/GEN\/13/);
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true');
 
-  // The world-side picker jumps to something unrelated to the reader --
-  // this is the pre-existing "look at something on the map" contract,
-  // deliberately UNCHANGED this batch (World's own picker Apply does NOT
-  // dispatch onto the shared Locus atom -- see ApplyScriptureRef's own doc
-  // comment / the batch report). Turns follow off as a side effect, exactly
-  // as it always has.
+  // D1 LAW: the world picker is not mounted while following, so follow is
+  // released FIRST (the chip) -- that is what brings the picker back, showing
+  // the reader's current chapter (SYNC-1's projection). Then the world-side
+  // picker jumps to something unrelated to the reader -- the pre-existing
+  // "look at something on the map" contract (World's own picker Apply does
+  // NOT dispatch onto the shared Locus atom -- see ApplyScriptureRef's own
+  // doc comment).
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0);
+  await page.getByTestId('follow-chip').click();
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
   await atlasPane.getByTestId('picker-book').selectOption('JOS');
   await atlasPane.getByTestId('picker-chapter').selectOption('6');
   await atlasPane.getByTestId('picker-apply').click();
@@ -137,7 +142,10 @@ test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual
   const readerRoot = page.getByTestId('reader-root');
   const atlasPane = page.getByTestId('split-pane-atlas');
 
-  // Diverge via the world picker (as the prior test), then re-toggle follow.
+  // Diverge via the world picker (as the prior test: release follow first,
+  // D1), then re-toggle follow.
+  await page.getByTestId('follow-chip').click(); // off (D1: brings the picker back)
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   await atlasPane.getByTestId('picker-book').selectOption('JOS');
   await atlasPane.getByTestId('picker-chapter').selectOption('6');
   await atlasPane.getByTestId('picker-apply').click();
@@ -154,9 +162,17 @@ test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual
   const scene = await api.sceneScripture('GEN.13');
   await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 
-  // THE REGRESSION LOCK (S-1): the world picker's own dropdowns re-converge
-  // to GEN.13 too -- not left stuck on the applied JOS.6 forever -- so both
-  // pickers genuinely agree again, matching the reader's own picker.
+  // D1: while following the atlas pane has no picker at all -- the reader's
+  // is the one selector, on GEN.13.
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0);
+  await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
+  await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
+
+  // THE REGRESSION LOCK (S-1), in its D1 form: releasing follow AGAIN brings
+  // the world picker back RE-CONVERGED to GEN.13 -- not stuck on the applied
+  // JOS.6 forever (the SyncToken fix) -- so both pickers genuinely agree.
+  await page.getByTestId('follow-chip').click(); // off again
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
   await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
   await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
@@ -175,7 +191,7 @@ test('SYNC-1: follow back ON re-converges the atlas pane to the reader\'s actual
 // disagreeing" -- they only ever disagree once follow has already, visibly,
 // turned itself off. This test pins that as a real, asserted contract
 // rather than leaving it implicit.
-test('SYNC-1/deliverable 7: applying the world picker while follow is ON turns follow off immediately, and the two pickers then legitimately diverge', async ({ page }) => {
+test('SYNC-1/deliverable 7 (D1 form): while follow is ON there is no world picker to apply; released, the two pickers legitimately diverge', async ({ page }) => {
   await page.goto('/read/GEN/12');
   await page.getByTestId('split-open-reader').click();
   await page.getByTestId('reader-next').click();
@@ -184,10 +200,18 @@ test('SYNC-1/deliverable 7: applying the world picker while follow is ON turns f
   const readerRoot = page.getByTestId('reader-root');
   const atlasPane = page.getByTestId('split-pane-atlas');
 
-  // Before: follow ON, both pickers agree on GEN.13.
+  // Before: follow ON -- D1 LAW: the reader's picker is the ONE selector on
+  // screen (GEN.13); the atlas pane has none, so "follow ON AND the two
+  // pickers disagree" is not merely a transient the Apply closes -- it is
+  // structurally unreachable now.
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true');
   await expect(readerRoot.getByTestId('picker-book')).toHaveValue('GEN');
   await expect(readerRoot.getByTestId('picker-chapter')).toHaveValue('13');
+  await expect(atlasPane.getByTestId('picker')).toHaveCount(0);
+
+  // Release follow: the world picker appears, agreeing (SYNC-1's projection).
+  await page.getByTestId('follow-chip').click();
+  await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   await expect(atlasPane.getByTestId('picker-book')).toHaveValue('GEN');
   await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('13');
 
@@ -195,10 +219,8 @@ test('SYNC-1/deliverable 7: applying the world picker while follow is ON turns f
   await atlasPane.getByTestId('picker-chapter').selectOption('6');
   await atlasPane.getByTestId('picker-apply').click();
 
-  // After: follow flipped OFF as an immediate, visible side effect of the
-  // Apply itself (never a state where follow reads ON while the two
-  // pickers disagree) -- and the divergence that follows is real and
-  // expected, not a bug: the reader stays exactly where it was.
+  // After: follow stays OFF and the divergence is real and expected, not a
+  // bug: the reader stays exactly where it was.
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
   await expect(atlasPane.getByTestId('picker-book')).toHaveValue('JOS');
   await expect(atlasPane.getByTestId('picker-chapter')).toHaveValue('6');

@@ -232,6 +232,26 @@ test('FOLLOW-1: toggling follow back on re-syncs to the current chapter\'s scene
   await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(scene.places.length);
 });
 
+// D1 LAW (owner, 2026-09-15, verbatim: "if we're following scripture on the
+// map, there is not an additional place to select scripture (the box at the
+// top right) on the map side of the screen"). One selector while following --
+// the reader's; the atlas picker returns the moment follow is released.
+test('D1 law: while following, the atlas pane has no scripture picker; releasing follow restores it', async ({ page }) => {
+  await page.goto('/read/JHN/3');
+  await page.getByTestId('split-open-reader').click();
+  await expect(page.getByTestId('split-view')).toBeVisible();
+  const atlas = page.getByTestId('split-pane-atlas');
+  await expect(atlas.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'true');
+  await expect(atlas.getByTestId('picker')).toHaveCount(0);
+  // the reader's own picker is untouched -- exactly one selector on screen
+  await expect(page.getByTestId('reader-root').getByTestId('picker')).toHaveCount(1);
+  await expect(page.getByTestId('picker')).toHaveCount(1);
+  await atlas.getByTestId('follow-chip').click();
+  await expect(atlas.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  await expect(atlas.getByTestId('picker')).toBeVisible();
+  await expect(page.getByTestId('picker')).toHaveCount(2);
+});
+
 // SPLIT-1's own "no nested-popup rule": a popover chip that would otherwise
 // open a second full /world (ExplorationTarget.NavigateWorld) instead
 // applies its query to the ALREADY-OPEN atlas pane in place.

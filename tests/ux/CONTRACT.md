@@ -1404,10 +1404,15 @@ Picker (ScripturePicker, shared by world and reader):
   a `ref=` navigation, decoupled from Locus by design -- it does NOT
   dispatch `SetLocus`, so a manual "look at something on the map" pick
   never overwrites the reader's own actual position; see FollowTextLink's
-  own doc comment and the ST-1 batch report for why). See state-sync.spec.ts
-  for the regression coverage (both pickers agree while following; a
-  world-picker Apply still works with follow off, undisturbing the reader;
-  follow back on re-converges to the reader's actual chapter).
+  own doc comment and the ST-1 batch report for why). D1 LAW (owner,
+  2026-09-15; landed 2026-09-18): the world and kretzmann pickers are NOT
+  MOUNTED while following (`!(SplitMode && _follow)` / `!(ctx.IsSplitOpen &&
+  Follow)` guards; ConformanceTests.OneScriptureSelectorLaw_... is the
+  source-scan law) -- ONE selector on screen, the reader's; each returns the
+  moment follow is released. See state-sync.spec.ts (the atlas pane has no
+  picker while following; a world-picker Apply still works once follow is
+  released, undisturbing the reader), split-view.spec.ts (D1 law) and
+  kretzmann.spec.ts (KRETZMANN-6, the mirror).
 Reader: `reader-frame` (NAV-FRAME-1, 2026-09-18: the always-present wrapper around `reader-root`; carries `split-pane-frame` in the host role -- the NON-SCROLLING containing block of the chapter-nav buttons, so `reader-prev`/`reader-next` are pure CSS `top: 50%` in every mode; `display:contents` otherwise), `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   book-name/chapter-numeral spans; opens the ExplorerPopover with a
   ChapterNode -- M-D3/U4/B3: that popover's own content is now the

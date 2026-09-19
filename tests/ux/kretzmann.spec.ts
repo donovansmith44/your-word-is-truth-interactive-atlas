@@ -104,25 +104,37 @@ test('KRETZMANN-5: declares its own "read-beside" hatch -- split opens with Kret
   await expect(page.getByTestId('kretzmann-follow-chip')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('KRETZMANN-6 (R2, the free win, still holds while FOLLOWING): Kretzmann\'s OWN picker while split moves BOTH panes, no link wired', async ({ page }) => {
+// D1 LAW (owner, 2026-09-15): one scripture selector while following -- the
+// reader's. Kretzmann hosting a reader guest with follow ON has NO picker of
+// its own (the guest reader's picker/arrows move both panes: KRETZMANN-6b/6c
+// below); releasing follow brings Kretzmann's own picker back, and it still
+// moves Kretzmann (R2's "free win", now exercised with follow OFF).
+test('KRETZMANN-6 (D1 law): while FOLLOWING the host has no picker; released, Kretzmann\'s OWN picker returns and moves Kretzmann', async ({ page }) => {
   await page.goto('/kretzmann');
   await page.getByTestId('split-open-kretzmann').click();
   await expect(page.getByTestId('split-view')).toBeVisible();
   await expect(page.getByTestId('reader-root')).toBeVisible();
   await expect(page.getByTestId('chapter-head')).toContainText('1');
+  await expect(page.getByTestId('kretzmann-follow-chip')).toHaveAttribute('aria-pressed', 'true');
 
   const kretzmannPane = page.getByTestId('kretzmann-page');
+  await expect(kretzmannPane.getByTestId('picker')).toHaveCount(0);
+  // exactly one selector on screen: the guest reader's
+  await expect(page.getByTestId('picker')).toHaveCount(1);
+  await expect(page.getByTestId('reader-root').getByTestId('picker')).toHaveCount(1);
+
+  await page.getByTestId('kretzmann-follow-chip').click();
+  await expect(page.getByTestId('kretzmann-follow-chip')).toHaveAttribute('aria-pressed', 'false');
+  await expect(kretzmannPane.getByTestId('picker')).toBeVisible();
+
   await kretzmannPane.getByTestId('picker-book').selectOption('EXO');
   await kretzmannPane.getByTestId('picker-chapter').selectOption('3');
   await kretzmannPane.getByTestId('picker-apply').click();
 
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('Exodus');
   await expect(page.getByTestId('kretzmann-chapter-head')).toContainText('3');
-
   await expect(page.getByTestId('reader-root')).toBeVisible();
-  await expect(page.getByTestId('chapter-head')).toContainText('Exodus');
-  await expect(page.getByTestId('chapter-head')).toContainText('3');
-  await expect(page).toHaveURL(/\/kretzmann\?split=reader&follow=1$/);
+  await expect(page).toHaveURL(/\/kretzmann\?split=reader$/); // follow OFF is the absent param
 });
 
 test('KRETZMANN-6b (R2, the reverse direction -- READER-GUEST-1): navigating the GUEST reader pane\'s own picker moves BOTH panes, split stays intact', async ({ page }) => {

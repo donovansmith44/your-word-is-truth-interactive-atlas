@@ -142,7 +142,17 @@
     <div class="@($"kretzmann-page{ctx.HostPaneClassSuffix}")" data-testid="kretzmann-page">
         <article class="kretzmann-column">
             <div class="kretzmann-controls">
-                <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
+                @* D1 LAW (owner, 2026-09-15): one scripture selector while
+                   following -- the reader's. Kretzmann hosting a reader guest
+                   with follow ON hides its own picker (the guest reader's
+                   picker and arrows move both panes -- KRETZMANN-6b/6c); it
+                   returns the moment follow is released. Same shape as
+                   World.razor's guard; the source-scan law in client.Tests
+                   accepts `!(SplitMode &&` or `!(ctx.IsSplitOpen &&`. *@
+                @if (!(ctx.IsSplitOpen && ViewArrangementAtom.Value.Follow))
+                {
+                    <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-parchment" CurrentBook="@_book" CurrentChapter="@_chapterNum" />
+                }
 
                 @if (!ctx.IsSplitOpen)
                 {

@@ -1082,4 +1082,42 @@ public class ConformanceTests
             "ViewArrangement.InitialDividerFraction must be referenced from EXACTLY ONE production site (CompositionSplit.razor's own OnAfterRenderAsync, SPLIT-5050's sole initial-width computation) -- found: " +
             (sites.Count == 0 ? "(none -- the site was removed or renamed)" : string.Join(", ", sites)));
     }
+
+    /// <summary>
+    /// D1 (owner, 2026-09-15): "if we're following scripture on the map, there is
+    /// not an additional place to select scripture on the map side of the screen."
+    /// The Reader is the canonical locus writer and keeps its picker unconditionally;
+    /// every OTHER page that mounts a ScripturePicker must do so inside a guard that
+    /// hides it while following. A source scan, because a runtime test can only
+    /// prove one page at one moment; the law is about every mount that exists.
+    /// Accepted guard shapes: `!(SplitMode &&` (World's own per-instance
+    /// predicate) or `!(ctx.IsSplitOpen &&` (a CompositionSplit host reading
+    /// its own context), each inside an `@if` within the six lines above the
+    /// mount.
+    /// </summary>
+    [Fact]
+    public void OneScriptureSelectorLaw_EveryNonReaderPickerMountIsFollowGuarded()
+    {
+        var pages = Directory.GetFiles(Path.Combine(RepoRoot(), "client", "Pages"), "*.razor");
+        var violations = new List<string>();
+        foreach (var page in pages)
+        {
+            if (Path.GetFileName(page) == "Reader.razor") continue;
+            var lines = File.ReadAllLines(page);
+            for (var i = 0; i < lines.Length; i++)
+            {
+                if (!lines[i].Contains("<ScripturePicker", StringComparison.Ordinal)) continue;
+                var window = string.Join("\n", lines.Skip(Math.Max(0, i - 6)).Take(6));
+                var guarded = window.Contains("@if", StringComparison.Ordinal)
+                    && (window.Contains("!(SplitMode &&", StringComparison.Ordinal)
+                        || window.Contains("!(ctx.IsSplitOpen &&", StringComparison.Ordinal));
+                if (!guarded)
+                {
+                    violations.Add($"{Path.GetFileName(page)}:{i + 1}");
+                }
+            }
+        }
+
+        Assert.True(violations.Count == 0, "ScripturePicker mounted without a follow guard at: " + string.Join(", ", violations));
+    }
 }
