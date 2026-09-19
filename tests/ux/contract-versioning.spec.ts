@@ -1,4 +1,11 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+// The client's own AQC version, read from its one declaration site so this
+// spec never goes stale on a contract bump (it sat at the DB-4a-era '0.1.0'
+// literal through five bumps).
+const clientVersion = /ClientVersion = "([^"]+)"/.exec(fs.readFileSync(path.resolve(__dirname, '../../client/AqcContract.cs'), 'utf8'))![1];
 
 // Batch AQC-1 (design spec §2's versioning law, the house fail-loud law):
 // the client's own startup check (App.razor -> AtlasClient.Contract() ->
@@ -32,7 +39,7 @@ test('mocked mismatch: an advertised range excluding this client build fails lou
   await page.goto('/');
   await expect(page.getByTestId('contract-mismatch')).toBeVisible();
   await expect(page.getByTestId('contract-mismatch-advertised')).toHaveText('0.2.0-0.5.0');
-  await expect(page.getByTestId('contract-mismatch-client')).toHaveText('0.1.0');
+  await expect(page.getByTestId('contract-mismatch-client')).toHaveText(clientVersion);
   // The visible, honest error state REPLACES the app shell -- never a
   // silent degrade alongside it.
   await expect(page.getByTestId('nav-world')).toHaveCount(0);
@@ -59,7 +66,7 @@ test('mocked malformed advertisement: a non-semver version string fails loud too
   await page.goto('/');
   await expect(page.getByTestId('contract-mismatch')).toBeVisible();
   await expect(page.getByTestId('contract-mismatch-advertised')).toHaveText('garbage-0.1.0');
-  await expect(page.getByTestId('contract-mismatch-client')).toHaveText('0.1.0');
+  await expect(page.getByTestId('contract-mismatch-client')).toHaveText(clientVersion);
   await expect(page.getByTestId('nav-world')).toHaveCount(0);
 });
 

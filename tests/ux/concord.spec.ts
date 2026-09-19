@@ -374,6 +374,11 @@ test('BOC-SCROLL-1: clicking a second ToC item after scrolling to the bottom of 
   await page.goto('/concord');
   await page.getByTestId('concord-toc-part-3').click(); // The Augsburg Confession
   await expect(page.getByTestId('concord-position')).toContainText('BoC 3.1.1');
+  // The position line lands before the document's paragraphs have all
+  // rendered (a debug-build harness makes the gap visible: the page read
+  // ~120 px tall at that instant and ~5,000 px three seconds later) --
+  // wait until there is genuinely something to scroll through.
+  await expect.poll(() => page.evaluate(() => document.body.scrollHeight - window.innerHeight), { timeout: 15_000 }).toBeGreaterThan(1000);
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const scrolledY = await page.evaluate(() => window.scrollY);
