@@ -802,10 +802,10 @@ specimen before any real data was written).
 | Compile, cold (ETL, corpus reads, build x2, admission, exports, five sections, admission through the source) | 6 m 16 s | **16 m 07 s** (admission #1 215.8 s; sections written in 95.9 s of which the lexicon blob 54.6 s; admission through the source 570.3 s) |
 | The lexicon blob vs the 104,857,600-byte ceiling | -- | **42,847,606 bytes** (210,845,696 uncompressed; 40.9 % of the ceiling); 13,548 nodes, 431,280 rows, 487,259 extra rows, 862,560 index entries |
 | Committed sections, total | 63.5 MB (4 blobs) | 106.3 MB (5 blobs); `data/compiled` 61 MB -> 102 MB |
-| `bibex verify` (cache cold, 5 sections) | 4.4 s (warm, 4) | 19.4 s cold (the lexicon blob unpacks once); warm see the standing block line in the ledger |
+| `bibex verify` (5 sections) | 4.4 s (warm, 4) | 19.4 s cold (the lexicon blob unpacks once); 0m9.002s warm |
 | Sections read back into a `Graph` (`reload_real_data`, 5 sections) | 4.0 s (7.9 s in-suite) | 13.95 s in-suite (106,742 nodes, 914,692 rows, 32 extra tables) |
 | A verse's `words` frontier (served path, John 3:16) | -- | 26 entries in token order over 21 distinct edge ids; the article's one edge has 5 rows behind it (`rows_behind`) |
-| Timing gates (10, serialized) | 10/10 (gate 8 sqlite admission 434.4 s of 960) | see the LEX-1 standing block line in the ledger; ceilings NOT loosened |
+| Timing gates (10, serialized) | 10/10 (gate 8 sqlite admission 434.4 s of 960; served startup 0.68 s of 4) | **10/10, no ceiling loosened** -- gate 8 sqlite admission **908.0 s of 960** (write 186.9 s incl. zstd-19 of the 210 MB lexicon file, dump re-derivation 7.8 s, assert_answers_match 539.6 s: the 862,560 new index entries and 431,280 rows are inside the port sweep now); served startup 0.83 s of 4 (from_sections 134 ms, scene priming 695 ms); conformance 19.6 s of 60; perf_smoke 23.8 / 11.8 / 25.8 ms + 2.31 / 1.90 / 3.42 ms; frontier p99 < 100 ms. DISCLOSED: gate 8's margin is now 5.4 % -- the DB-2b rule re-derives a ceiling only when it is exceeded, so it stays at 960 s; the next section, or a slower box, will trip it, and the honest fix is a faster admission sweep (the comparison is single-threaded), not a looser gate |
 
 Disclosed: the AQC fixtures are exported from the from-raw arm
 (`GraphService::build`, four corpora), so their `version` is that arm's root
