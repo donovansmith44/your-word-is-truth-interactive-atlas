@@ -212,9 +212,25 @@ fn main() -> Result<()> {
         red_letter_corpus.stats.not_found,
     );
 
+    // LEX-1: the lexicon corpus (spec 7) -- Strong's-keyed entries and the
+    // CoNLL-U morphology under the SAME vendored brain-fuel tree; hard-
+    // required like every other corpus here.
+    println!("atlas-graph-compile: reading vendored lexicon + morphology from {}...", brainfuel_root.display());
+    let lexicon_corpus = atlas_etl::lexicon::read_all(&brainfuel_root).with_context(|| format!("reading {}/lexicon,morph", brainfuel_root.display()))?;
+    println!(
+        "atlas-graph-compile: LEX-1 corpus {} Greek + {} Hebrew entries; {} NT + {} OT tokens ({} + {} unmatched, by design); {} chapter files",
+        lexicon_corpus.stats.entries_grc,
+        lexicon_corpus.stats.entries_hbo,
+        lexicon_corpus.stats.tokens_nt,
+        lexicon_corpus.stats.tokens_ot,
+        lexicon_corpus.stats.unmatched_nt,
+        lexicon_corpus.stats.unmatched_ot,
+        lexicon_corpus.stats.files,
+    );
+
     println!("atlas-graph-compile: building implementation #1 (from raw sources)...");
     let build_start = Instant::now();
-    let (graph_a, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
+    let (graph_a, stats, event_world_stats, chrono) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
         &kjv_json,
         &xrefs_tsv,
         &atlas,
@@ -223,6 +239,7 @@ fn main() -> Result<()> {
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
         Some(&red_letter_corpus),
+        Some(&lexicon_corpus),
     )
     .context("building the graph from raw sources")?;
     println!(
@@ -230,10 +247,14 @@ fn main() -> Result<()> {
         stats.kjv_verses, stats.cites_rows, event_world_stats.events, event_world_stats.dated_events, event_world_stats.places, event_world_stats.narratives, event_world_stats.anchors,
         build_start.elapsed()
     );
+    println!(
+        "atlas-graph-compile: LEX-1 -- {} LexiconEntry nodes, {} Occurs rows; skipped {} unmatched tokens, {} without an entry, {} off canon",
+        stats.lexicon.entries, stats.lexicon.occurs, stats.lexicon.tokens_unmatched, stats.lexicon.tokens_without_entry, stats.lexicon.tokens_off_canon
+    );
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");
-    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
+    let (mut graph_b, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
         &kjv_json,
         &xrefs_tsv,
         &atlas,
@@ -242,6 +263,7 @@ fn main() -> Result<()> {
         Some(&concord_bundle),
         Some(&kretzmann_corpus),
         Some(&red_letter_corpus),
+        Some(&lexicon_corpus),
     )
     .context("building the independent model graph")?;
     // NODE1-ROWS-1 (fix round 1): container membership/succession are
@@ -307,7 +329,7 @@ fn main() -> Result<()> {
         &std::fs::read_to_string(&sources_path).with_context(|| format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display()))?,
     )
     .with_context(|| format!("parsing {}", sources_path.display()))?;
-    let extras = atlas_graph::sqlite::extras::compute(&graph_a_indexed, &chronology.chrono, &red_letter_spans, &atlas, &sources)
+    let extras = atlas_graph::sqlite::extras::compute(&graph_a_indexed, &chronology.chrono, &red_letter_spans, &atlas, &sources, &lexicon_corpus.tokens)
         .map_err(|e| anyhow::anyhow!("{e}"))
         .context("folding the sidecars and projections (DB-4b/DB-5)")?;
     extras.attach(&mut graph_a_indexed);

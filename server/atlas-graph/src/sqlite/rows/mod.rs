@@ -12,12 +12,13 @@ pub mod concord;
 pub mod core;
 pub mod kjv;
 pub mod kretzmann;
+pub mod lexicon;
 
 use atlas_graph_types::canon::{Canon, RowFamily, Value as CanonValue};
 use atlas_graph_types::chrono::DatedBy;
 use atlas_graph_types::edge::{
     Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, Contains,
-    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, Mentions, NamedAfter, Quotes,
+    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, Mentions, NamedAfter, Occurs, Quotes,
     SpokenAt, SpokenBy, Succession, TemporalAdjacency, Typology,
 };
 use atlas_graph_types::text::{BibleTag, ConcordTag};
@@ -51,6 +52,7 @@ pub enum RowRef<'a> {
     Quotes(&'a Quotes),
     Confesses(&'a Confesses),
     CommentsOn(&'a CommentsOn),
+    Occurs(&'a Occurs),
 }
 
 /// Owned rows read back (the reader's output) -- the same 21 arms.
@@ -77,6 +79,7 @@ pub enum RowOwned {
     Quotes(Quotes),
     Confesses(Confesses),
     CommentsOn(CommentsOn),
+    Occurs(Occurs),
 }
 
 macro_rules! per_arm {
@@ -103,6 +106,7 @@ macro_rules! per_arm {
             Self::Quotes($r) => $body,
             Self::Confesses($r) => $body,
             Self::CommentsOn($r) => $body,
+            Self::Occurs($r) => $body,
         }
     };
 }
@@ -131,6 +135,7 @@ macro_rules! family_of {
             Self::Quotes(_) => RowFamily::Quotes,
             Self::Confesses(_) => RowFamily::Confesses,
             Self::CommentsOn(_) => RowFamily::CommentsOn,
+            Self::Occurs(_) => RowFamily::Occurs,
         }
     };
 }
@@ -166,7 +171,8 @@ impl<'a> RowRef<'a> {
             | Self::TemporalAdjacency(_)
             | Self::Analogue(_)
             | Self::CrossRefs(_)
-            | Self::Quotes(_) => None,
+            | Self::Quotes(_)
+            | Self::Occurs(_) => None,
         }
     }
 }
@@ -201,6 +207,7 @@ impl RowOwned {
             Self::Quotes(r) => RowRef::Quotes(r),
             Self::Confesses(r) => RowRef::Confesses(r),
             Self::CommentsOn(r) => RowRef::CommentsOn(r),
+            Self::Occurs(r) => RowRef::Occurs(r),
         }
     }
 }
@@ -229,6 +236,7 @@ pub fn insert_row(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row:
         RowRef::Quotes(r) => concord::insert_quotes(tx, ord, r),
         RowRef::Confesses(r) => concord::insert_confesses(tx, jw, ord, r),
         RowRef::CommentsOn(r) => kretzmann::insert_comments_on(tx, jw, ord, r),
+        RowRef::Occurs(r) => lexicon::insert_occurs(tx, ord, r),
     }
 }
 
@@ -261,6 +269,7 @@ pub fn read_rows(conn: &Connection, family: RowFamily) -> Result<Vec<(i64, RowOw
         RowFamily::Quotes => wrap(concord::read_quotes(conn)?, RowOwned::Quotes),
         RowFamily::Confesses => wrap(concord::read_confesses(conn)?, RowOwned::Confesses),
         RowFamily::CommentsOn => wrap(kretzmann::read_comments_on(conn)?, RowOwned::CommentsOn),
+        RowFamily::Occurs => wrap(lexicon::read_occurs(conn)?, RowOwned::Occurs),
     })
 }
 

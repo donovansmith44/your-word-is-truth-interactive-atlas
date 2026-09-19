@@ -177,6 +177,7 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
         kjv_verses: if has(Section::Kjv) { count(conn, "SELECT COUNT(*) FROM kjv.verse")? } else { 0 },
         cites_rows: if has(Section::Kjv) { count(conn, "SELECT COUNT(*) FROM kjv.cross_refs")? } else { 0 },
         cites_dropped_negative_votes: 0,
+        lexicon: Default::default(),
     };
     let ews = EventWorldStats {
         places: count_kind(conn, NodeKind::Place)?,

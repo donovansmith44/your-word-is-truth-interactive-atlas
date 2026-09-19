@@ -72,8 +72,8 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Ground, Justification};
-use atlas_graph_types::id::{AnchorId, SourceId};
+use atlas_graph_types::edge::{Ground, Justification, Occurs};
+use atlas_graph_types::id::{AnchorId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
 
@@ -438,6 +438,16 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         provenance: "curated/analogues".into(),
     });
 
+    // 22. occurs (LEX-1): two tokens of one entry in one verse (ONE edge,
+    // two rows behind it), and one Hebrew token on the next verse.
+    let word = |book: u8, chapter: u16, verse: u16, layer: &str, tok: u16| TextLocus {
+        at: TextRef::Bible(vr(book, chapter, verse)),
+        span: Some(TokenSpan::new(TranslationId(layer.into()), tok, tok).unwrap()),
+    };
+    g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 1), provenance: "stepbible-tagnt".into() });
+    g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 3), provenance: "stepbible-tagnt".into() });
+    g.occurs.push(Occurs { entry: LexiconEntryId::new("H0430"), locus: word(1, 1, 2, "hebrew_masoretic", 2), provenance: "stepbible-tahot".into() });
+
     // Nodes the rows can reach from an edge endpoint, and the two spines.
     let node = |kind: NodeKind, raw: &str, payload: NodePayload| Node {
         id: AnyNodeId { kind, raw: raw.to_string() },
@@ -473,6 +483,37 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
             NodePayload::Place { canonical: "Ur".into(), lat: 30.96, lon: 46.1, aliases: vec![], description: None },
         ),
         node(NodeKind::Era, "patriarchs", NodePayload::Era { label: "Patriarchs".into(), from_year: -2100, to_year: -1800 }),
+        // LEX-1: the two entries the occurs rows name (one with domains, one bare).
+        node(
+            NodeKind::LexiconEntry,
+            "G3056",
+            NodePayload::LexiconEntry {
+                strong: "G3056".into(),
+                lang: "grc".into(),
+                lemma: "λόγος".into(),
+                translit: Some("lógos".into()),
+                pos: Some("G:N-M".into()),
+                glosses: vec!["word".into()],
+                senses: vec!["something said".into()],
+                domains: vec!["13.115".into(), "33.98".into()],
+                root: Some("G3004".into()),
+            },
+        ),
+        node(
+            NodeKind::LexiconEntry,
+            "H0430",
+            NodePayload::LexiconEntry {
+                strong: "H0430".into(),
+                lang: "hbo".into(),
+                lemma: "אֱלֹהִים".into(),
+                translit: None,
+                pos: None,
+                glosses: vec![],
+                senses: vec![],
+                domains: vec![],
+                root: None,
+            },
+        ),
         node(
             NodeKind::Polity,
             "egypt",
@@ -547,6 +588,7 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::Quotes => out.extend(g.quotes.iter().map(RowRef::Quotes)),
             RowFamily::Confesses => out.extend(g.confesses.iter().map(RowRef::Confesses)),
             RowFamily::CommentsOn => out.extend(g.comments_on.iter().map(RowRef::CommentsOn)),
+            RowFamily::Occurs => out.extend(g.occurs.iter().map(RowRef::Occurs)),
         }
     }
     out
@@ -611,8 +653,8 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     for p in &parts {
         for e in &p.edges {
             if e.rel != justified_code {
-                let (fam, ord, raw) = &map[&e.edge_id];
-                assert_eq!((e.row_family, e.row_id), (*fam, *ord));
+                let rows = &map[&e.edge_id];
+                let (_, _, raw) = rows.iter().find(|(fam, ord, _)| (e.row_family, e.row_id) == (*fam, *ord)).unwrap_or_else(|| panic!("entry {:?} names a row that does not mint its id", (e.row_family, e.row_id)));
                 assert_eq!(atlas_graph::sections::section_of_justified_by(e.row_family, raw.as_deref()), p.section);
             } else {
                 saw_justified = true;
@@ -623,7 +665,7 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
                     atlas_graph_types::id::Position::Edge(id) => id,
                     other => panic!("justified-by source end must be an edge, got {other:?}"),
                 };
-                let (fam, ord, raw) = &map[source];
+                let (fam, ord, raw) = &map[source][0];
                 assert_eq!((e.row_family, e.row_id), (*fam, *ord));
                 assert_eq!(atlas_graph::sections::section_of_justified_by(*fam, raw.as_deref()), p.section);
             }
@@ -676,14 +718,14 @@ fn the_manifest_round_trips_and_its_root_is_over_the_section_lines_only() {
 }
 
 #[test]
-fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order() {
+fn the_writer_produces_five_files_named_by_logical_hash_and_a_manifest_in_order() {
     let mut g = specimen_graph();
     g.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut g);
     let dir = std::env::temp_dir().join(format!("db2b-writer-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
-    assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann"]);
+    assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann", "lexicon"]);
     for (w, ms) in written.iter().zip(&m.sections) {
         assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.sqlite", ms.logical), "the cache file is named by the logical hash");
         assert_eq!(w.blob_path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite.zst", ms.name, ms.logical));
@@ -703,7 +745,7 @@ fn the_writer_produces_four_files_named_by_logical_hash_and_a_manifest_in_order(
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         .filter(|f| f.ends_with(".sqlite.zst"))
         .collect();
-    assert_eq!(files.len(), 4, "stale blobs are deleted after a rewrite: {files:?}");
+    assert_eq!(files.len(), 5, "stale blobs are deleted after a rewrite: {files:?}");
 }
 
 // ---------------------------------------------------------------------
@@ -774,8 +816,30 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     let _ = std::fs::remove_dir_all(&dir);
     write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let snap = open_written(&dir).unwrap();
-    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann]);
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon]);
     assert_answers_match(&snap, &g);
+    // LEX-1: two rows behind ONE occurs-in edge (the leper lesson), the
+    // verse's `words` summary, and the inverse page back to the entry.
+    {
+        use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+        use atlas_graph_types::explore::EdgeQuery;
+        use atlas_graph_types::id::{AnyNodeId, NodeKind};
+        let entry = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
+        let verse = at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
+        let page = snap.edges_with_nodes(&entry, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 10 });
+        assert_eq!(page.entries.len(), 2, "two tokens of one entry in one verse: two index entries (one per row)...");
+        assert_eq!(page.entries[0].entry.edge, page.entries[1].entry.edge, "...under ONE edge id (the leper lesson)");
+        assert_eq!(page.entries[0].entry.node, verse);
+        let rows = snap.rows_behind(&page.entries[0].entry.edge);
+        assert_eq!(rows.len(), 2, "...with BOTH rows behind it");
+        assert_eq!(rows.iter().map(|r| (r.family, r.row_id)).collect::<Vec<_>>(), [(RowFamily::Occurs, 0), (RowFamily::Occurs, 1)]);
+        assert!(rows.iter().all(|r| r.provenance == "stepbible-tagnt"));
+        let summary = snap.edge_summary(&verse);
+        assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(2), "`words` at the verse: its two tagged tokens");
+        let back = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 10 });
+        assert_eq!(back.entries[0].entry.node, entry);
+        assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
+    }
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "SqliteSnapshot::version is the manifest root = the in-memory root");
 }
 
@@ -791,7 +855,7 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
     std::fs::remove_file(&kz.path).unwrap();
     std::fs::remove_file(&kz.blob_path).unwrap();
     let snap = open_written(&dir).unwrap();
-    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord]);
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Lexicon]);
     let item = g.comments_on[0].item.erase();
     assert!(snap.node(&item).is_none(), "the CommentaryItem node lives only in kretzmann");
     let verse_pos = atlas_graph_types::edge::at(&g.reading["bible"].order[0]);
@@ -801,6 +865,21 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
         atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::CommentsOn, _)
     )));
     drop(snap); // Windows holds an open section file locked
+    // LEX-1: the lexicon section is optional too -- absent, its entries are
+    // uninhabited and a verse has no `words`.
+    let lx = written.iter().find(|w| w.section == Section::Lexicon).unwrap();
+    std::fs::remove_file(&lx.path).unwrap();
+    std::fs::remove_file(&lx.blob_path).unwrap();
+    let snap = open_written(&dir).unwrap();
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord]);
+    let entry = atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::LexiconEntry, raw: "G3056".into() };
+    assert!(snap.node(&entry).is_none(), "the LexiconEntry node lives only in lexicon");
+    assert!(snap.nodes_of_kind(atlas_graph_types::id::NodeKind::LexiconEntry, None, 10).ids.is_empty());
+    assert!(!snap.edge_summary(&verse_pos).keys().any(|k| matches!(
+        k,
+        atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::Occurs, _)
+    )));
+    drop(snap);
     let kjv = written.iter().find(|w| w.section == Section::Kjv).unwrap();
     std::fs::remove_file(&kjv.path).unwrap();
     std::fs::remove_file(&kjv.blob_path).unwrap();
@@ -873,7 +952,7 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
         ["concord-ac", "concord-ac-1", "passage-creation"]
     );
     assert_eq!(rest.next, None);
-    assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 0, "uninhabited until LEX-1");
+    assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2, "LEX-1: the specimen carries two entries");
     assert_eq!(snap.nodes_of_kind(NodeKind::Container, Some(1), 0).next, Some(1), "limit 0 with more: next = cursor");
     // row_provenance: a directed row, a symmetric row, a justified-by edge
     // (None, judgment call 3), an unknown id (None).
@@ -1097,7 +1176,7 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
     let _ = std::fs::remove_dir_all(&dir);
     let layout = layout_under(&dir);
     let (m, written) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
-    assert_eq!(written.len(), 4);
+    assert_eq!(written.len(), 5);
     for w in &written {
         assert_eq!(w.path, layout.cache_path(&w.logical));
         assert_eq!(w.blob_path, layout.blob_path(w.section.name(), &w.logical));
@@ -1150,7 +1229,7 @@ fn a_corrupt_optional_blob_is_loud_where_a_missing_one_is_merely_absent() {
     assert!(err.contains("optional section concord") && err.contains("transport hash"), "a present-but-corrupt optional blob is refused (spec 11): {err}");
     std::fs::remove_file(&concord.blob_path).unwrap();
     let snap = open_written(&dir).unwrap();
-    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Kretzmann], "a missing optional blob is simply absent");
+    assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Kretzmann, Section::Lexicon], "a missing optional blob is simply absent");
 }
 
 #[test]

@@ -284,6 +284,22 @@ CREATE TABLE analogue (
 ";
 const IDX_ANALOGUE: &str = "CREATE UNIQUE INDEX analogue_ord ON analogue (ord);";
 
+// LEX-1 (spec 5.7): the lexicon section's family table. The LOCUS span
+// columns are NOT NULL here (a word locus always names its one token).
+const DDL_OCCURS: &str = "
+CREATE TABLE occurs (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  entry_id TEXT NOT NULL,
+  locus_corpus TEXT NOT NULL, locus_a INTEGER NOT NULL, locus_b INTEGER NOT NULL, locus_c INTEGER NOT NULL,
+  locus_layer TEXT NOT NULL, locus_start INTEGER NOT NULL, locus_end INTEGER NOT NULL,
+  provenance TEXT NOT NULL
+);
+";
+const IDX_OCCURS: &str = "
+CREATE UNIQUE INDEX occurs_ord ON occurs (ord);
+CREATE INDEX occurs_by_locus ON occurs (locus_a, locus_b, locus_c, locus_layer, locus_start);
+";
+
 const DDL_CROSS_REFS: &str = "
 CREATE TABLE cross_refs (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -511,13 +527,42 @@ const EXTRA_INDEX_DDL_CONCORD: &str = "
 CREATE UNIQUE INDEX concord_by_ref ON concord_unit (part, article, paragraph);
 ";
 
+// LEX-1 (spec 5.7): the entry projection, its domain codes, and the word
+// inventory (every token, matched or not; `strong` NULL when unmatched).
+const EXTRA_DDL_LEXICON: &str = "
+CREATE TABLE lexicon_entry (
+  node_id TEXT PRIMARY KEY,
+  strong TEXT NOT NULL, lang TEXT NOT NULL,
+  lemma TEXT NOT NULL, translit TEXT, pos TEXT, root_strong TEXT
+) WITHOUT ROWID;
+CREATE TABLE lexicon_domain (
+  node_id TEXT NOT NULL, ord INTEGER NOT NULL, code TEXT NOT NULL,
+  PRIMARY KEY (node_id, ord)
+) WITHOUT ROWID;
+CREATE TABLE token (
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
+  layer TEXT NOT NULL,
+  ord INTEGER NOT NULL,
+  form TEXT NOT NULL, lemma TEXT, xpos TEXT, translit TEXT,
+  strong TEXT,
+  aligned INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse, layer, ord)
+) WITHOUT ROWID;
+";
+const EXTRA_INDEX_DDL_LEXICON: &str = "
+CREATE UNIQUE INDEX lexicon_by_strong ON lexicon_entry (strong);
+CREATE INDEX lexicon_by_lemma ON lexicon_entry (lang, lemma);
+CREATE INDEX domain_by_code ON lexicon_domain (code, node_id);
+";
+
 /// DB-4b: the section's extra tables' `CREATE TABLE` text.
 pub fn extra_ddl(section: Section) -> &'static [&'static str] {
     match section {
         Section::Core => &[EXTRA_DDL_CORE_GRAPH, EXTRA_DDL_CORE_SIDECARS],
         Section::Kjv => &[EXTRA_DDL_KJV],
         Section::Concord => &[EXTRA_DDL_CONCORD],
-        Section::Kretzmann | Section::Lexicon => &[],
+        Section::Lexicon => &[EXTRA_DDL_LEXICON],
+        Section::Kretzmann => &[],
     }
 }
 
@@ -527,7 +572,8 @@ pub fn extra_index_ddl(section: Section) -> &'static [&'static str] {
         Section::Core => &[EXTRA_INDEX_DDL_CORE_GRAPH, EXTRA_INDEX_DDL_CORE_SIDECARS],
         Section::Kjv => &[EXTRA_INDEX_DDL_KJV],
         Section::Concord => &[EXTRA_INDEX_DDL_CONCORD],
-        Section::Kretzmann | Section::Lexicon => &[],
+        Section::Lexicon => &[EXTRA_INDEX_DDL_LEXICON],
+        Section::Kretzmann => &[],
     }
 }
 
@@ -555,6 +601,7 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::CorrespondsBible => DDL_CORRESPONDS_BIBLE,
         RowFamily::TemporalAdjacency => DDL_TEMPORAL_ADJACENCY,
         RowFamily::Analogue => DDL_ANALOGUE,
+        RowFamily::Occurs => DDL_OCCURS,
     }
 }
 
@@ -583,6 +630,7 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::CorrespondsBible => IDX_CORRESPONDS_BIBLE,
         RowFamily::TemporalAdjacency => IDX_TEMPORAL_ADJACENCY,
         RowFamily::Analogue => IDX_ANALOGUE,
+        RowFamily::Occurs => IDX_OCCURS,
     }
 }
 

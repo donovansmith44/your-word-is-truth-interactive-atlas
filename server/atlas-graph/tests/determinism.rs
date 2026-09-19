@@ -94,7 +94,7 @@ fn build_and_dump(kjv_json: &str, xrefs_tsv: &str, atlas: &atlas_core::data::Atl
     atlas_graph::event_world::add_justified_by(&mut graph);
     let sources_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/sources.json");
     let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(sources_path).expect("sources.json")).expect("sources.json parses");
-    let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &std::collections::HashMap::new(), atlas, &sources).expect("the fold");
+    let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &std::collections::HashMap::new(), atlas, &sources, &[]).expect("the fold");
     extras.attach(&mut graph);
     let root = atlas_graph_types::sections::version_root(&graph).hex();
     let dumps = atlas_graph_types::sections::Section::SHIPPED.iter().map(|s| atlas_graph_types::sections::logical_dump_section(&graph, *s)).collect();

@@ -154,6 +154,12 @@ pub struct BuildCtx<'a> {
     /// from before this batch). Reference, not owned: every real caller
     /// already has one living for the duration of the build.
     pub red_letter: Option<&'a atlas_etl::red_letter::RedLetterCorpus>,
+    /// LEX-1: `atlas_etl::lexicon::read_all`'s own pre-parsed corpus (13,548
+    /// entries + 452,689 tokens over the real vendored data) -- the SAME
+    /// "absent == an honestly empty build, not a placeholder" treatment
+    /// `red_letter`/`kretzmann`/`concord`/`brainfuel` above already get.
+    /// Reference, not owned, like its siblings.
+    pub lexicon: Option<&'a atlas_etl::lexicon::LexiconCorpus>,
     /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
     /// captured here (not just returned-and-discarded, unlike the other
     /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
@@ -284,6 +290,7 @@ impl<'a> BuildCtx<'a> {
             concord,
             kretzmann,
             red_letter,
+            lexicon: None,
             graph: Graph::default(),
             stats: BuildStats::default(),
             event_world_stats: EventWorldStats::default(),
@@ -291,6 +298,28 @@ impl<'a> BuildCtx<'a> {
             justified_by_count: 0,
             description_stats: crate::description_adapter::DescriptionStats::default(),
         }
+    }
+
+    /// LEX-1: the richest form -- the compile step's own, with the lexicon
+    /// corpus beside the red-letter one (see the `lexicon` field's doc
+    /// comment). Every narrower constructor above keeps `lexicon: None`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
+        kjv_canon: &'a Canon,
+        kjv_verses: &'a std::collections::HashMap<String, String>,
+        kjv_json_source: Option<&'a str>,
+        xrefs_tsv: &'a str,
+        atlas: &'a AtlasData,
+        eras: &'a [atlas_core::data::Era],
+        brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
+        concord: Option<&'a crate::concord_adapter::ConcordBundle>,
+        kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
+        red_letter: Option<&'a atlas_etl::red_letter::RedLetterCorpus>,
+        lexicon: Option<&'a atlas_etl::lexicon::LexiconCorpus>,
+    ) -> Self {
+        let mut ctx = Self::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter);
+        ctx.lexicon = lexicon;
+        ctx
     }
 }
 
@@ -355,6 +384,12 @@ impl Pass for NormalizePass {
         // adapter's own row construction only NAMES the Jesus PersonId
         // (referential integrity is checked at LAW-CHECK time, not here).
         crate::red_letter_adapter::normalize(ctx);
+        // LEX-1: LexiconEntry nodes + Occurs rows (one per aligned token,
+        // corpus reading order). Runs AFTER kjv_adapter (every verse node
+        // exists, so a token on a verse the graph lacks is counted, never
+        // dangling) and needs no other pass's output; self-contained like
+        // kretzmann/concord/brainfuel.
+        crate::lexicon_adapter::normalize(ctx);
         // PG-1a: PeopleGroup nodes (all three sources) + curated NamedAfter
         // rows -- runs AFTER person_adapter::normalize, deliberately (its
         // own module doc comment): the NamedAfter eponym-existence check

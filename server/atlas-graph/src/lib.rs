@@ -45,6 +45,7 @@ pub mod kjv_adapter;
 pub mod kretzmann_adapter;
 pub mod law_check;
 pub mod legacy;
+pub mod lexicon_adapter;
 pub mod peoples_adapter;
 pub mod person_adapter;
 pub mod pipeline;

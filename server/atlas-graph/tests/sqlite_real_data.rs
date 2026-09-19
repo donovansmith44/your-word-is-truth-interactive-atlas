@@ -47,7 +47,10 @@ fn committed_graph() -> &'static (Graph, Extras) {
         let data = data_dir().parent().unwrap().to_path_buf();
         let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
         let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
-        let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, &atlas, &sources).expect("the fold");
+        // LEX-1: the `token` inventory is not graph-derived; it rides in
+        // from the reader exactly as the compile feeds it.
+        let lexicon = atlas_etl::lexicon::read_all(&data.join("raw").join("brain-fuel-bible")).expect("the vendored lexicon + morphology");
+        let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, &atlas, &sources, &lexicon.tokens).expect("the fold");
         (graph, extras)
     })
 }

@@ -56,6 +56,7 @@ fn push_row(g: &mut Graph, ord: i64, row: RowOwned) -> Result<(), SqliteError> {
         RowOwned::CorrespondsBible(r) => push!(g.corresponds_bible, r, "corresponds_bible"),
         RowOwned::TemporalAdjacency(r) => push!(g.temporal_adjacency, r, "temporal_adjacency"),
         RowOwned::Analogue(r) => push!(g.analogue, r, "analogue"),
+        RowOwned::Occurs(r) => push!(g.occurs, r, "occurs"),
         RowOwned::CrossRefs(r) => push!(g.cross_refs, r, "cross_refs"),
         RowOwned::SpokenBy(r) => push!(g.spoken_by, r, "spoken_by"),
         RowOwned::SpokenAt(r) => push!(g.spoken_at, r, "spoken_at"),

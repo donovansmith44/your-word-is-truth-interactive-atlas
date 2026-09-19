@@ -82,6 +82,18 @@ pub static RED_LETTER_SPAN: TableSpec = TableSpec {
 };
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
+// LEX-1 (spec 5.7).
+pub static LEXICON_ENTRY: TableSpec = TableSpec {
+    name: "lexicon_entry",
+    columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
+    pk: &["node_id"],
+};
+pub static LEXICON_DOMAIN: TableSpec = TableSpec { name: "lexicon_domain", columns: &["node_id", "ord", "code"], pk: &["node_id", "ord"] };
+pub static TOKEN: TableSpec = TableSpec {
+    name: "token",
+    columns: &["book", "chapter", "verse", "layer", "ord", "form", "lemma", "xpos", "translit", "strong", "aligned"],
+    pk: &["book", "chapter", "verse", "layer", "ord"],
+};
 
 /// Core's specs: the five graph-derived tables, then the 21 folded
 /// sidecars (`sidecars::SIDECAR_SPECS`), in `extra_tables_of` order.
@@ -115,6 +127,7 @@ static CORE_SPECS: [&TableSpec; 26] = [
 ];
 static KJV_SPECS: [&TableSpec; 2] = [&VERSE, &RED_LETTER_SPAN];
 static CONCORD_SPECS: [&TableSpec; 1] = [&CONCORD_UNIT];
+static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
 
 /// The extra tables a section carries -- the same names, in the same
 /// order, as `sections::extra_tables_of` (a law pins it).
@@ -123,7 +136,8 @@ pub fn table_specs_of(section: Section) -> &'static [&'static TableSpec] {
         Section::Core => &CORE_SPECS,
         Section::Kjv => &KJV_SPECS,
         Section::Concord => &CONCORD_SPECS,
-        Section::Kretzmann | Section::Lexicon => &[],
+        Section::Lexicon => &LEXICON_SPECS,
+        Section::Kretzmann => &[],
     }
 }
 
@@ -227,6 +241,7 @@ impl Extras {
     ) -> Result<Extras, SqliteError> {
         let resolved = &chrono.resolved;
         let (mut place, mut era, mut polity_era, mut verse, mut concord) = (vec![], vec![], vec![], vec![], vec![]);
+        let (mut lexicon_entry, mut lexicon_domain) = (vec![], vec![]);
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
             match &n.payload {
@@ -245,6 +260,20 @@ impl Extras {
                             Col::Int(e.from_year as i64),
                             Col::Int(e.to_year as i64),
                         ]);
+                    }
+                }
+                NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, domains, root, .. } => {
+                    lexicon_entry.push(vec![
+                        Col::Text(id.clone()),
+                        Col::Text(strong.clone()),
+                        Col::Text(lang.clone()),
+                        Col::Text(lemma.clone()),
+                        opt_text(translit),
+                        opt_text(pos),
+                        opt_text(root),
+                    ]);
+                    for (i, code) in domains.iter().enumerate() {
+                        lexicon_domain.push(vec![Col::Text(id.clone()), Col::Int(i as i64), Col::Text(code.clone())]);
                     }
                 }
                 NodePayload::TextUnit { .. } => {
@@ -311,9 +340,40 @@ impl Extras {
             ExtraTable { spec: &VERSE, rows: verse },
             ExtraTable { spec: &RED_LETTER_SPAN, rows: red },
             ExtraTable { spec: &CONCORD_UNIT, rows: concord },
+            ExtraTable { spec: &LEXICON_ENTRY, rows: lexicon_entry },
+            ExtraTable { spec: &LEXICON_DOMAIN, rows: lexicon_domain },
         ]);
         Ok(out)
     }
+
+    /// LEX-1: the `token` inventory from the corpus (spec 5.7) -- every
+    /// token, matched or not; NOT graph-derived (the graph carries only the
+    /// aligned ones, as `Occurs` rows), so it rides in from the reader.
+    pub fn tokens(tokens: &[atlas_etl::lexicon::TokenRow]) -> ExtraTable {
+        let rows = tokens
+            .iter()
+            .map(|t| {
+                vec![
+                    Col::Int(t.book.0 as i64),
+                    Col::Int(t.chapter as i64),
+                    Col::Int(t.verse as i64),
+                    Col::Text(t.layer.to_string()),
+                    Col::Int(t.ord as i64),
+                    Col::Text(t.form.clone()),
+                    opt_text(&t.lemma),
+                    opt_text(&t.xpos),
+                    opt_text(&t.translit),
+                    opt_text(&t.strong),
+                    Col::Int(t.aligned as i64),
+                ]
+            })
+            .collect();
+        ExtraTable { spec: &TOKEN, rows }
+    }
+}
+
+fn opt_text(v: &Option<String>) -> Col {
+    v.as_ref().map(|s| Col::Text(s.clone())).unwrap_or(Col::Null)
 }
 
 fn opt_u8(v: Option<u8>) -> Col {
@@ -340,9 +400,11 @@ pub fn compute(
     red_letter: &HashMap<String, Vec<(usize, usize)>>,
     atlas: &atlas_core::data::AtlasData,
     sources: &atlas_core::sources::SourcesDocument,
+    tokens: &[atlas_etl::lexicon::TokenRow],
 ) -> Result<Extras, SqliteError> {
     let mut ex = Extras::graph_derived(g, chrono, red_letter)?;
     ex.extend(super::sidecars::fold_sidecars(atlas, sources)?);
+    ex.extend(vec![Extras::tokens(tokens)]);
     Ok(ex)
 }
 

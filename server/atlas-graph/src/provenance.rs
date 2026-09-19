@@ -147,6 +147,7 @@ impl ProvenanceIndex {
         sweep!("corresponds_bible", corresponds_bible);
         sweep!("temporal_adjacency", temporal_adjacency);
         sweep!(family::ANALOGUE, analogue);
+        sweep!("occurs", occurs);
 
         ProvenanceIndex { by_family }
     }

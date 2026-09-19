@@ -197,6 +197,17 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("analogue", "a", row.a.erase())?;
         check("analogue", "b", row.b.erase())?;
     }
+    // LEX-1: both ends of an `Occurs` row are node-typed once lowered --
+    // the entry, and the verse the word locus lowers to (the SAME
+    // `text_node` spelling `Graph::row_edges` uses).
+    for row in &graph.occurs {
+        check("occurs", "entry", row.entry.erase())?;
+        let raw = match &row.locus.at {
+            atlas_graph_types::text::TextRef::Bible(v) => format!("bible/{}.{}.{}", v.book, v.chapter, v.verse),
+            atlas_graph_types::text::TextRef::Concord(c) => format!("concord/{}.{}.{}", c.part, c.article, c.paragraph),
+        };
+        check("occurs", "locus", AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw })?;
+    }
 
     Ok(())
 }

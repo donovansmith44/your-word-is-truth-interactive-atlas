@@ -164,6 +164,7 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::CorrespondsBible => all(f, &g.corresponds_bible, RowRef::CorrespondsBible),
             RowFamily::TemporalAdjacency => all(f, &g.temporal_adjacency, RowRef::TemporalAdjacency),
             RowFamily::Analogue => all(f, &g.analogue, RowRef::Analogue),
+            RowFamily::Occurs => all(f, &g.occurs, RowRef::Occurs),
             RowFamily::CrossRefs => all(f, &g.cross_refs, RowRef::CrossRefs),
             RowFamily::SpokenBy => all(f, &g.spoken_by, RowRef::SpokenBy),
             RowFamily::SpokenAt => all(f, &g.spoken_at, RowRef::SpokenAt),
@@ -175,38 +176,42 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
     out
 }
 
-/// Edge id -> (family, global ord, container raw for `ContainsBible`
-/// rows): the map every index entry resolves its row through. Two rows
-/// minting the same id (identical `(rel, subject, object)`) keep the
-/// first -- they are indistinguishable to the index anyway.
-pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, (RowFamily, i64, Option<String>)> {
-    let mut map = BTreeMap::new();
+/// Edge id -> EVERY row minting it, in `row_edges` order, as (family,
+/// global ord, container raw for `ContainsBible` rows). LEX-1: two rows
+/// CAN mint one id (two tokens of one entry in one verse: identical
+/// `(rel, subject, object)`), and each has its own index entry -- so
+/// `partition` pairs the k-th index entry under an id with the k-th row,
+/// and `rows_behind` lists them all (the leper lesson). Before LEX-1 every
+/// Vec here had one element.
+pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> {
+    let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> = BTreeMap::new();
     for e in g.row_edges() {
         let id = Graph::edge_id_of(&e);
         let container = match e.family {
             RowFamily::ContainsBible => Some(g.contains_bible[e.row_ord].container.0.clone()),
             _ => None,
         };
-        map.entry(id).or_insert((e.family, e.row_ord as i64, container));
+        map.entry(id).or_default().push((e.family, e.row_ord as i64, container));
     }
     map
 }
 
-/// One partition per `Section::MANIFEST_ORDER` entry except `Lexicon`
-/// (no tables until LEX-1; a manifest lists shipped sections only).
+/// One partition per `Section::SHIPPED` entry (all five of
+/// `MANIFEST_ORDER` since LEX-1; a manifest lists shipped sections only).
 pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
-    let sections: Vec<Section> = Section::MANIFEST_ORDER.iter().copied().filter(|s| *s != Section::Lexicon).collect();
-    let slot = |s: Section| sections.iter().position(|x| *x == s).expect("every non-Lexicon section has a slot");
+    let sections: Vec<Section> = Section::SHIPPED.to_vec();
+    let slot = |s: Section| sections.iter().position(|x| *x == s).expect("every shipped section has a slot");
 
     let mut nodes: Vec<Vec<&Node>> = vec![Vec::new(); sections.len()];
     for n in g.nodes.values() {
         let section = section_of_node(n);
-        // DB-3: the lexicon vocabulary exists (NodeKind::LexiconEntry) but its
-        // section has no tables before LEX-1 -- a node routed there is an
-        // error, never a silent drop or a default into core.
+        // A node routed to a section that is not shipped is an error, never
+        // a silent drop or a default into core (DB-3's guard, kept: today
+        // every section ships, so this cannot fire; a future section added
+        // to MANIFEST_ORDER before SHIPPED would).
         let Some(i) = sections.iter().position(|x| *x == section) else {
             return Err(SqliteError(format!(
-                "node {} routes to the {:?} section, which has no tables before LEX-1",
+                "node {} routes to the {:?} section, which is not a shipped section",
                 any_node_id_str(&n.id),
                 section
             )));
@@ -218,18 +223,25 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     }
 
     let map = edge_row_map(g);
-    let row_of = |eid: &EdgeId| -> Result<&(RowFamily, i64, Option<String>), SqliteError> {
+    let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64, Option<String>)>, SqliteError> {
         map.get(eid).ok_or_else(|| SqliteError(format!("index entry {} names no row (edge_row_map)", eid.0)))
     };
+    // The k-th index entry under (edge id, direction, subject) is the k-th
+    // row minting that id: `build_indexes` pushes one entry per row, in
+    // `row_edges` order, and `place` walks each subject's entries in that
+    // same order. Keyed by subject too because a symmetric row's entries
+    // sit under BOTH ends.
+    let mut seen: BTreeMap<(EdgeId, i64, String), usize> = BTreeMap::new();
     let mut edges: Vec<Vec<EdgeEntryOut>> = vec![Vec::new(); sections.len()];
     let mut place = |subject: &Position, rel: i64, dir: i64, ord: usize, object: &Position, eid: &EdgeId, meta: &EdgeMeta, justified: bool| -> Result<(), SqliteError> {
         let (fam, row_id, container) = if justified {
             // A justified-by entry runs edge -> ground node; the forward
             // reading has the SOURCE edge as subject, the inverse reading
-            // has it as object. Either way the row is the source row.
+            // has it as object. Either way the row is the source row (the
+            // FIRST behind that id: grounds are synthesised per id).
             let source = if dir == DIR_FORWARD { subject } else { object };
             match source {
-                Position::Edge(source) => row_of(source)?,
+                Position::Edge(source) => &rows_of(source)?[0],
                 Position::Node(n) => {
                     return Err(SqliteError(format!(
                         "justified-by entry (dir {dir}) whose source end is a node {}",
@@ -238,7 +250,13 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
                 }
             }
         } else {
-            row_of(eid)?
+            let rows = rows_of(eid)?;
+            let k = seen.entry((eid.clone(), dir, position_str(subject))).or_insert(0);
+            let row = rows.get(*k).ok_or_else(|| {
+                SqliteError(format!("index entry {} (dir {dir}) is the {}th under its id but only {} rows mint it", eid.0, *k + 1, rows.len()))
+            })?;
+            *k += 1;
+            row
         };
         let section = section_of_justified_by(*fam, container.as_deref());
         edges[slot(section)].push(EdgeEntryOut {

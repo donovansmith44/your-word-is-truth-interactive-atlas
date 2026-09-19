@@ -28,6 +28,8 @@ pub struct BuildStats {
     pub kjv_verses: usize,
     pub cites_rows: usize,
     pub cites_dropped_negative_votes: usize,
+    /// LEX-1: the lexicon adapter's own counts (all zero without the corpus).
+    pub lexicon: crate::lexicon_adapter::LexiconAdapterStats,
 }
 
 /// Builds the graph from the two raw KJV/xrefs sources PLUS the event world
@@ -138,6 +140,24 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
     red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
+    build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(kjv_json, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter, None)
+}
+
+/// LEX-1: the richest form -- the compile step's own, with the lexicon
+/// corpus (`atlas_etl::lexicon::read_all`) beside the red-letter one. Every
+/// other caller keeps its narrower form and an honestly absent (`None`)
+/// lexicon, exactly as `red_letter`/`kretzmann`/`concord` before it.
+pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
+    kjv_json: &str,
+    xrefs_tsv: &str,
+    atlas: &AtlasData,
+    eras: &[atlas_core::data::Era],
+    brainfuel: Option<&atlas_etl::brainfuel::BrainFuelCorpus>,
+    concord: Option<&crate::concord_adapter::ConcordBundle>,
+    kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
+    red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+    lexicon: Option<&atlas_etl::lexicon::LexiconCorpus>,
+) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
     let (canon, verses) = atlas_etl::kjv::parse(kjv_json).context("parsing the KJV source (kjv.json)")?;
     // Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): restore the
     // Tetragrammaton LORD/Lord case distinction our canonical kjv.json
@@ -162,7 +182,7 @@ pub fn build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzman
         }
         None => &verses,
     };
-    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter)
+    run_pipeline_build_with_brainfuel(&canon, verses, Some(kjv_json), xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter, lexicon)
 }
 
 /// The same build, starting from an already-parsed `(Canon, verses)` pair
@@ -206,7 +226,7 @@ fn run_pipeline_build(
     atlas: &AtlasData,
     eras: &[atlas_core::data::Era],
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None, None)
+    run_pipeline_build_with_brainfuel(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, None, None, None, None, None)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -221,8 +241,9 @@ fn run_pipeline_build_with_brainfuel(
     concord: Option<&crate::concord_adapter::ConcordBundle>,
     kretzmann: Option<&atlas_etl::kretzmann::KretzmannCorpus>,
     red_letter: Option<&atlas_etl::red_letter::RedLetterCorpus>,
+    lexicon: Option<&atlas_etl::lexicon::LexiconCorpus>,
 ) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {
-    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter);
+    let mut ctx = crate::pipeline::BuildCtx::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(canon, verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, red_letter, lexicon);
     crate::pipeline::run_pipeline(&mut ctx, &crate::pipeline::pipeline())?;
     Ok((ctx.graph, ctx.stats, ctx.event_world_stats, ctx.chrono))
 }
