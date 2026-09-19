@@ -123,6 +123,13 @@ public static class FrontierMatrix
     public static readonly IReadOnlySet<FocusKind> Persons =
         new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
 
+    // D3 (2026-09-18): graph-types/src/frontier.rs now claims
+    // `(K::ConcordUnit, C::CatechismSupport) => true` (the paragraph end of
+    // the symmetric catechism-link, rendered by ConcordSmallCatechismSection)
+    // beside the item end it already claimed. THIS set is narrower on
+    // purpose: the client's conformance tests read it as "where
+    // CatechismSeamSection renders" (the VERSE end only), so the two new
+    // D3 sections carry their own AppliesTo and do not enter it. Disclosed.
     public static readonly IReadOnlySet<FocusKind> CatechismSupport =
         new HashSet<FocusKind> { FocusKind.Verse, FocusKind.Passage };
 

@@ -693,7 +693,11 @@ public sealed record TextUnitDto(
     // Batch RED-1: this unit's own aligned sub-verse red-letter spans --
     // see VerseOut.WordsOfChrist's own doc comment (identical shape;
     // always empty for a Concord unit, never the KJV).
-    List<WordsOfChristSpanDto> WordsOfChrist);
+    List<WordsOfChristSpanDto> WordsOfChrist,
+    // D3 (AQC 0.6.0, additive): the unit's own inhabited frontier kinds --
+    // NodeCardDto.EdgeSummary's shape -- so a corpus page can decide
+    // clickability without an N+1 of node-card calls.
+    List<EdgeSummaryEntryDto> EdgeSummary);
 
 public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string Version);
 
@@ -704,3 +708,14 @@ public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string
 // -----------------------------------------------------------------------
 
 public sealed record ContractDto(string MinVersion, string MaxVersion);
+
+// -----------------------------------------------------------------------
+// D4 (owner, 2026-09-15): GET /api/contents/{corpus} -- the containment
+// forest, two levels deep (server: atlas-server/src/contents.rs). `ref` maps
+// through Wire.Options's naming policy exactly as TextUnitDto.Ref does.
+// -----------------------------------------------------------------------
+public sealed record ContentsChildOut(string Id, string Title, string Kind, string Ref, int Count);
+
+public sealed record ContentsRootOut(string Id, string Title, string Kind, string? Group, string Ref, List<ContentsChildOut> Children);
+
+public sealed record ContentsOut(string Corpus, string Version, List<ContentsRootOut> Roots);

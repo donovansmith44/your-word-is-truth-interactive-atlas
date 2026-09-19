@@ -128,8 +128,8 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "max_version": "0.5.0",
-        "min_version": "0.5.0",
+        "max_version": "0.6.0",
+        "min_version": "0.6.0",
         "section_schema_version": 14
       },
       "status": 200
@@ -1430,7 +1430,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "479878962a236495dc42acea199a4cbe"
+        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
       },
       "status": 200
     },
@@ -1451,7 +1451,7 @@
         "kind": "Place",
         "label": "Hazor 1",
         "provenance": "curated-places",
-        "version": "479878962a236495dc42acea199a4cbe"
+        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
       },
       "status": 200
     },
@@ -1477,7 +1477,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "479878962a236495dc42acea199a4cbe"
+        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
       },
       "status": 200
     },

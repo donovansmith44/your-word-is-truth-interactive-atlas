@@ -302,6 +302,42 @@ public sealed class AtlasClient
         return await GetRequired<ContractDto>("api/contract", cancellationToken);
     }
 
+    /// <summary>
+    /// D3 (owner, 2026-09-15): one page of a node's frontier by edge kind --
+    /// the generic <c>GET /api/node/{id}/edges</c> the popover's own
+    /// <see cref="IExplorableClient"/> already speaks, reachable from a
+    /// section PROVIDER (which only ever sees this client). Used by the
+    /// catechism ↔ Book of Concord traversal sections.
+    /// </summary>
+    public Task<EdgePageDto> NodeEdges(string nodeId, string kind, int? cursor = null, int limit = 200) =>
+        GetRequired<EdgePageDto>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind)}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
+
+    /// <summary>
+    /// D3: one Book of Concord paragraph's own text, by citation
+    /// (<c>BoC 7.2.1</c>) -- the SAME <c>/api/text</c> window the Concord
+    /// page reads, narrowed to one unit, so a ConcordUnitNode reached from
+    /// a catechism item (which carries only the citation) can render.
+    /// </summary>
+    public Task<TextWindowDto> ConcordUnit(string citation) =>
+        GetRequired<TextWindowDto>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
+
+    /// <summary>
+    /// D4: the containment forest as a table of contents, two levels deep --
+    /// memoized per corpus (it changes only with the artifact's own version).
+    /// </summary>
+    public Task<ContentsOut> Contents(string corpus)
+    {
+        if (!_contentsCache.TryGetValue(corpus, out var memo))
+        {
+            memo = new Explore.AsyncMemo<ContentsOut>();
+            _contentsCache[corpus] = memo;
+        }
+
+        return memo.Get(() => GetRequired<ContentsOut>($"api/contents/{Uri.EscapeDataString(corpus)}"));
+    }
+
+    private readonly Dictionary<string, Explore.AsyncMemo<ContentsOut>> _contentsCache = new(StringComparer.Ordinal);
+
     private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
     {
         var result = await _http.GetFromJsonAsync<T>(relativeUrl, Wire.Options, cancellationToken);

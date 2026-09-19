@@ -402,4 +402,9 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 /// diff of core shows `source_entry`/`provenance_entry` as the only moved
 /// tables (LEX-1 ruling R-LEX1-10). (Captured value before:
 /// "14f1506783eedfc6ca3ef046c94fb16c".)
-const EXPECTED_VERSION_HEX: &str = "0e17d941b8e30bc421a4370fdc1ee392";
+/// MOVED AT D3 (2026-09-18, owner directive): the Book of Concord's document
+/// tier became document ⊃ article `Container` rows (the Bible's own shape),
+/// replacing the flat document-level paragraph union -- 125 more
+/// `contains_concord` rows in this four-corpus build too. (Captured value
+/// before: "0e17d941b8e30bc421a4370fdc1ee392".)
+const EXPECTED_VERSION_HEX: &str = "1cc29e59bd95c211add281d8afabaa84";

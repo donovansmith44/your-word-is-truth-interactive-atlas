@@ -3126,3 +3126,182 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
         return new PopoverSection("commentary-text", body);
     }
 }
+
+/// <summary>
+/// D3 (owner, 2026-09-15, verbatim: "On Genesis 1:1 there is Small Catechism
+/// linkage, but no way to reach the SC corpus from it ... a BIJECTIVE
+/// (symmetric) mapping across corpora"): a Small Catechism item's card reaches
+/// the Book of Concord paragraphs it is written in -- the item end of the
+/// symmetric <c>catechism-link</c> edge (the curated SC-overlap rows,
+/// concord_adapter::merge_alias), read through the generic frontier
+/// (<see cref="AtlasClient.NodeEdges"/>), never a bespoke endpoint.
+/// POPOVER-LAW-1: absent (null) when the item links to no paragraph.
+/// </summary>
+public sealed class CatechismInConcordSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not CatechismNode item)
+        {
+            return null;
+        }
+
+        List<NodeRefDto> units;
+        try
+        {
+            // The WHOLE frontier, not the first page: an item's catechism-link
+            // edges are mostly its proof verses (the First Commandment alone
+            // has 200+), and the Concord paragraphs sit after them.
+            units = (await CatechismLinks.AllTargetsAsync(api, $"CatechismItem:{item.Id}"))
+                .Where(n => n.Id.StartsWith("text-unit:BoC ", StringComparison.Ordinal))
+                .ToList();
+        }
+        catch (Exception)
+        {
+            return null; // fail soft -- the same graceful-degradation policy every other lazy fetch follows
+        }
+
+        if (units.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "catechism-in-concord-heading");
+            builder.AddContent(seq++, $"IN THE BOOK OF CONCORD ({units.Count})");
+            builder.CloseElement();
+
+            builder.OpenComponent<Components.ConcordUnitList>(seq++);
+            builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRefDto>)units);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("catechism-in-concord", body);
+    }
+}
+
+/// <summary>
+/// D3, the mirror direction: a Book of Concord paragraph's card reaches the
+/// Small Catechism item(s) it carries -- the paragraph end of the same
+/// symmetric <c>catechism-link</c> edge -- rendered with the SAME
+/// CatechismList the verse card uses (one component, parameterized), so
+/// from Genesis 1:1 → the item → its paragraph → back to the item is one
+/// round trip through real edges, no dead click anywhere on it.
+/// POPOVER-LAW-1: absent (null) for a paragraph with no item.
+/// </summary>
+public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not ConcordUnitNode unit)
+        {
+            return null;
+        }
+
+        List<CatechismRefDto> items;
+        try
+        {
+            items = (await CatechismLinks.AllTargetsAsync(api, unit.NodeId))
+                .Where(n => n.Kind == "CatechismItem")
+                .Select(n => new CatechismRefDto(n.Id.StartsWith("CatechismItem:", StringComparison.Ordinal) ? n.Id["CatechismItem:".Length..] : n.Id, n.Label))
+                .ToList();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (items.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = 0;
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "concord-small-catechism-heading");
+            builder.AddContent(seq++, $"THE SMALL CATECHISM ({items.Count})");
+            builder.CloseElement();
+
+            builder.OpenComponent<Components.CatechismList>(seq++);
+            builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRefDto>)items);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            builder.CloseComponent();
+        };
+        return new PopoverSection("concord-small-catechism", body);
+    }
+}
+
+/// <summary>
+/// D3: a Book of Concord paragraph's OWN text as a section (Order 214, first
+/// on its card). Before D3 a ConcordUnit had no provider at all and the
+/// popover fell back to <see cref="ConcordUnitNode.BodyAsync"/>; the moment
+/// <see cref="ConcordSmallCatechismSection"/> exists the fallback stops
+/// (sections replace the body), so the text moves here -- the SAME
+/// "focus text first" shape VerseTextSectionProvider gives a verse.
+/// </summary>
+public sealed class ConcordUnitTextSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not ConcordUnitNode unit)
+        {
+            return null;
+        }
+
+        string text;
+        try
+        {
+            text = await unit.TextAsync(api);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-concord-text");
+            builder.AddAttribute(2, "data-testid", "concord-unit-text");
+            builder.AddContent(3, text);
+            builder.CloseElement();
+        };
+        return new PopoverSection("concord-unit-text", body);
+    }
+}
+
+/// <summary>D3: every target of a node's symmetric <c>catechism-link</c> frontier, paging to the end.</summary>
+internal static class CatechismLinks
+{
+    public static async Task<List<NodeRefDto>> AllTargetsAsync(AtlasClient api, string nodeId)
+    {
+        var targets = new List<NodeRefDto>();
+        int? cursor = null;
+        do
+        {
+            var page = await api.NodeEdges(nodeId, "catechism-link", cursor: cursor, limit: 200);
+            targets.AddRange(page.Entries.Select(e => e.Node));
+            cursor = page.Next;
+        }
+        while (cursor is not null);
+        return targets;
+    }
+}

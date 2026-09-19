@@ -568,6 +568,17 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
             | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf
             | C::Analogues) => false,
 
+        // D3 (owner, 2026-09-15): `ConcordUnit` earns CatechismSupport --
+        // the paragraph end of the symmetric `CatechismLink` (the curated
+        // SC-overlap rows), the same capability `Verse`/`Passage` claim from
+        // the verse end and `Catechism` from the item end. One relation,
+        // three focus kinds.
+        (K::ConcordUnit, C::CatechismSupport) => true,
+        (K::ConcordUnit, C::CrossReferences | C::Parallels | C::EventMembership
+            | C::PassageMembership | C::Persons | C::Chronology | C::TimeAndPlace
+            | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf | C::Members
+            | C::Analogues) => false,
+
         // Not-yet-earned kinds: every capability opted out. `Author`,
         // `Year`, `TimeAndPlace`, `PolityDelta` are `ParameterizedView`/
         // `NodeDesignate` (see `FocusBacking`) with no capability
@@ -579,7 +590,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         // not named by any capability here).
         (
             K::Author | K::Year | K::TimeAndPlace | K::PolityDelta
-            | K::CommentaryItem | K::ConcordUnit,
+            | K::CommentaryItem,
             _,
         ) => false,
     }

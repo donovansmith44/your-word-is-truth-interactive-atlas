@@ -417,3 +417,57 @@ test('CONCORD-10 (explorable-reference law): a scripture reference inside confes
   // popover.
   await expect(page.getByTestId('popover-title')).toHaveText(/^[A-Z0-9]{2,3}\.\d+\.\d+/);
 });
+
+// ---------------------------------------------------------------------
+// D3 (owner, 2026-09-15, verbatim: "On Genesis 1:1 there is Small
+// Catechism linkage, but no way to reach the SC corpus from it. Owner wants
+// a BIJECTIVE (symmetric) mapping across corpora. BoC paragraphs are
+// currently 'pointlessly clickable'"). The catechism-link edge is walked
+// from BOTH ends through the generic frontier: a paragraph's card lists its
+// Small Catechism item(s); an item's card lists the paragraphs it is
+// written in; and a Concord row is clickable only where BOC-CLICK-1 allows
+// AND its own edge_summary is inhabited.
+// ---------------------------------------------------------------------
+
+test('D3: /concord?ref= deep-links to a paragraph, and its card reaches the Small Catechism item and back', async ({ page }) => {
+  await page.goto('/concord?ref=7.2.1');
+  await expect(page.getByTestId('concord-position')).toContainText('BoC 7.2.1');
+  const row = page.getByTestId('concord-unit-BoC-7-2-1');
+  await expect(row).toBeVisible();
+  await expect(row).toHaveAttribute('role', 'button');
+
+  await row.click();
+  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
+  const section = page.getByTestId('popover-section-concord-small-catechism');
+  await expect(section).toBeVisible();
+  await expect(section.getByTestId('concord-small-catechism-heading')).toContainText(/^THE SMALL CATECHISM \(\d+\)$/);
+  const item = section.locator('[data-testid^="catechism-item-"]').first();
+  const itemName = (await item.textContent())?.trim() ?? '';
+  expect(itemName.length).toBeGreaterThan(0);
+
+  // → the item
+  await item.click();
+  await expect(page.getByTestId('popover-title')).toContainText(itemName);
+  const back = page.getByTestId('popover-section-catechism-in-concord');
+  await expect(back).toBeVisible();
+  await expect(back.getByTestId('catechism-in-concord-heading')).toContainText(/^IN THE BOOK OF CONCORD \(\d+\)$/);
+
+  // → and back to the very paragraph we started from (symmetric)
+  await expect(back.getByTestId('concord-link-BoC-7-2-1')).toBeVisible();
+  await back.getByTestId('concord-link-BoC-7-2-1').click();
+  await expect(page.getByTestId('popover-title')).toContainText('BoC 7.2.1');
+  const ground = await api.reading('BoC 7.2.1', 1, { corpus: 'concord' });
+  await expect(page.getByTestId('popover-body')).toContainText(ground.units[0].text);
+});
+
+test('D3: from Genesis 1:1 the catechism card reaches the Book of Concord', async ({ page }) => {
+  await page.goto('/read/GEN/1');
+  await page.getByTestId('verse-line-1').click();
+  await expect(page.getByTestId('popover-title')).toContainText('GEN.1.1');
+  const item = page.locator('[data-testid^="catechism-item-"]').first();
+  await expect(item).toBeVisible();
+  await item.click();
+  const section = page.getByTestId('popover-section-catechism-in-concord');
+  await expect(section).toBeVisible();
+  expect(await section.locator('[data-testid^="concord-link-"]').count()).toBeGreaterThan(0);
+});

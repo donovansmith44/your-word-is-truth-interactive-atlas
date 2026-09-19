@@ -1,0 +1,31 @@
+@* D3 (owner, 2026-09-15: "a BIJECTIVE (symmetric) mapping across corpora").
+   The "IN THE BOOK OF CONCORD" list a Small Catechism item's card renders:
+   one button per linked Book of Concord paragraph, pushing a ConcordUnitNode
+   (citation only; the node fetches its own text). Same shape/classes as
+   CatechismList.razor's citing-item buttons -- the mirror direction. *@
+@using BibleAtlas.Client.Explore
+
+@if (Items.Count > 0)
+{
+    <div class="popover-catechism-list">
+        @foreach (var unit in Items)
+        {
+            var citation = CitationOf(unit);
+            <button type="button" class="popover-catechism-item explorable" data-testid="@($"concord-link-{Slug(citation)}")"
+                    @onclick="() => OnExplore.InvokeAsync(new ConcordUnitNode(citation))">
+                @citation
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<NodeRefDto> Items { get; set; } = Array.Empty<NodeRefDto>();
+    [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
+
+    /// <summary>The wire id is <c>text-unit:BoC 7.2.1</c>; the citation is what follows the prefix.</summary>
+    private static string CitationOf(NodeRefDto unit) =>
+        unit.Id.StartsWith("text-unit:", StringComparison.Ordinal) ? unit.Id["text-unit:".Length..] : unit.Label;
+
+    private static string Slug(string citation) => citation.Replace(' ', '-').Replace('.', '-');
+}

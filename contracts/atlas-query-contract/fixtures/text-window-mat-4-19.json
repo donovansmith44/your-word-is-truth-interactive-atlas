@@ -3,6 +3,36 @@
     "next": "MAT.4.20",
     "units": [
       {
+        "edge_summary": [
+          {
+            "count": 1,
+            "kind": "member-of"
+          },
+          {
+            "count": 1,
+            "kind": "attests"
+          },
+          {
+            "count": 14,
+            "kind": "cites"
+          },
+          {
+            "count": 11,
+            "kind": "cited-by"
+          },
+          {
+            "count": 1,
+            "kind": "commented-on-by"
+          },
+          {
+            "count": 1,
+            "kind": "spoken-by"
+          },
+          {
+            "count": 6,
+            "kind": "spoken-at"
+          }
+        ],
         "ref": "MAT.4.19",
         "text": "And he saith unto them, Follow me, and I will make you fishers of men.",
         "words_of_christ": [
@@ -13,7 +43,7 @@
         ]
       }
     ],
-    "version": "6f3d2dc7b5a50004563be6b65ea8a0c1"
+    "version": "7c4c8341cc761b73e374dc34586012a2"
   },
   "status": 200
 }

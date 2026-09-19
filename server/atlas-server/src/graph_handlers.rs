@@ -259,6 +259,18 @@ pub struct TextUnitOut {
     /// (a wholly different corpus, never the KJV -- decision 5's own
     /// sub-verse precision is KJV-specific by construction).
     pub words_of_christ: Vec<crate::handlers::WordsOfChristSpanOut>,
+    /// D3 (owner, 2026-09-15; additive, AQC 0.6.0): this unit's own
+    /// inhabited frontier kinds and counts -- the SAME `edge_summary`
+    /// shape `NodeCardOut` carries, so a corpus page can make ONLY units
+    /// with edges clickable (no dead clicks) without an N+1 of node-card
+    /// calls. The reader may ignore it.
+    pub edge_summary: Vec<EdgeSummaryEntryOut>,
+}
+
+/// The unit's frontier summary, in the port's own (EdgeKind) order --
+/// identical to `node_card`'s projection of the same call.
+fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<EdgeSummaryEntryOut> {
+    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect()
 }
 
 #[derive(Debug, Serialize)]
@@ -396,7 +408,7 @@ pub async fn text_window(
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new() })
+                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
             })
             .collect();
 
@@ -445,7 +457,7 @@ pub async fn text_window(
             // `handlers::verse` use, off the precomputed `graph.
             // red_letter_spans` companion.
             let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::handlers::WordsOfChristSpanOut { start, end }).collect()).unwrap_or_default();
-            Some(TextUnitOut { sref, text, words_of_christ })
+            Some(TextUnitOut { sref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 

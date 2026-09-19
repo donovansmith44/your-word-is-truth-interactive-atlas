@@ -1,4 +1,4 @@
-# AQC v0.5.0 (LEX-1; v0.4.0 DB-4c; v0.3.0 DB-4b; v0.2.0 DB-4a; v0.1.0 before) -- /api/contract advertisement + fail-loud mismatch (spec §2's
+# AQC v0.6.0 (D3; v0.5.0 LEX-1; v0.4.0 DB-4c; v0.3.0 DB-4b; v0.2.0 DB-4a; v0.1.0 before) -- /api/contract advertisement + fail-loud mismatch (spec §2's
 # versioning law, the house fail-loud law). This is the ONE new behavioral
 # surface this batch adds -- server/atlas-server/src/contract.rs::contract,
 # client/AqcContract.cs::Satisfies.
@@ -7,14 +7,14 @@ Feature: Versioning -- the server advertises its AQC range; the client fails lou
   Scenario: the server advertises the supported AQC version range
     When I query "/api/contract"
     Then the response is a valid "ContractOut"
-    And the server advertises AQC version "0.5.0" through "0.5.0"
+    And the server advertises AQC version "0.6.0" through "0.6.0"
 
   Scenario: a client whose version falls inside the advertised range is accepted
-    Given the server advertises AQC version "0.5.0" through "0.5.0"
+    Given the server advertises AQC version "0.6.0" through "0.6.0"
     Then the client accepts the advertised range
 
   Scenario: a client whose version falls outside the advertised range is rejected, loud
-    Given the server advertises AQC version "0.6.0" through "0.8.0"
+    Given the server advertises AQC version "0.7.0" through "0.9.0"
     Then the client rejects the advertised range
 
   # Fix round 1 (Q-4/§0, controller ruling): a MALFORMED advertisement is
@@ -25,7 +25,7 @@ Feature: Versioning -- the server advertises its AQC range; the client fails lou
   # mirror, both returning/raising a fail-loud result on a malformed
   # semver string).
   Scenario: a malformed advertised version is a mismatch, loud
-    Given the server advertises AQC version "garbage" through "0.5.0"
+    Given the server advertises AQC version "garbage" through "0.6.0"
     Then the malformed advertisement fails loud
 
   # Fix round 1 (Q-5/§0, controller ruling): Playwright-only (browser-level

@@ -4,6 +4,7 @@
 @using BibleAtlas.Client.Views
 @inject IExplorableClient Graph
 @inject AtlasClient Atlas
+@inject NavigationManager Nav
 @inject IJSRuntime JS
 
 @* Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
@@ -117,20 +118,39 @@
 
             <nav class="concord-sidebar-section" data-testid="concord-sidebar-toc" aria-label="Book of Concord contents">
                 <p class="concord-sidebar-label">Contents</p>
-                <ul class="concord-toc-list">
-                    @foreach (var doc in ConcordToc.Documents)
-                    {
-                        var isCurrent = doc.Part == CurrentPart;
-                        <li>
-                            <button type="button" class="@("concord-toc-item" + (isCurrent ? " concord-toc-item-current" : ""))"
-                                    data-testid="@($"concord-toc-part-{doc.Part}")"
-                                    aria-current="@(isCurrent ? "true" : null)"
-                                    @onclick="@(() => JumpToPartAsync(doc.Part))">
-                                @doc.Title
-                            </button>
-                        </li>
-                    }
-                </ul>
+                @* D4 (owner: "Contents is a tree ... stop at the level of ARTICLE"):
+                   the ten documents are the roots, their articles the leaves --
+                   /api/contents/concord, the graph's own containment forest (D3's
+                   document ⊃ article rows). A document row still jumps to its
+                   opening paragraph (CORPREAD-2's `concord-toc-part-{n}`, kept:
+                   same testid, same current-position highlight); its caret
+                   expands the articles; an article navigates to its first
+                   paragraph through the ?ref= deep link. Until the tree loads
+                   (or if it cannot), the flat list stands in. *@
+                @if (_contents is { } contentsModel)
+                {
+                    <ContentsTree Model="contentsModel" RootClickNavigates="true" TestId="concord-contents-tree"
+                                  RootTestId="@(n => $"concord-toc-part-{PartOfRef(n.Ref)}")"
+                                  RootClass="concord-toc-item" RootCurrentClass="concord-toc-item-current"
+                                  OnNavigate="OnContentsNavigate" />
+                }
+                else
+                {
+                    <ul class="concord-toc-list">
+                        @foreach (var doc in ConcordToc.Documents)
+                        {
+                            var isCurrent = doc.Part == CurrentPart;
+                            <li>
+                                <button type="button" class="@("concord-toc-item" + (isCurrent ? " concord-toc-item-current" : ""))"
+                                        data-testid="@($"concord-toc-part-{doc.Part}")"
+                                        aria-current="@(isCurrent ? "true" : null)"
+                                        @onclick="@(() => JumpToPartAsync(doc.Part))">
+                                    @doc.Title
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
             </nav>
         </aside>
 
@@ -187,7 +207,11 @@
                                conditional invented here. In-text scripture references
                                (ScriptureRefText below) are UNCHANGED and stay clickable on
                                EVERY row regardless. *@
-                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part))
+                            @* D3: ... AND the unit's own frontier is inhabited (its
+                               text-window edge_summary) -- BOC-CLICK-1 says which PARTS may
+                               be explorable (the owner's later, narrower order); D3 says a
+                               click must land on a real edge (no dead clicks). Both hold. *@
+                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.EdgeSummary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
                                      tabindex="0" role="button"
@@ -337,6 +361,83 @@
         return LoadWindowAsync(_currentRef, "onward");
     }
 
+    // D4: the sidebar's contents tree (documents ⊃ articles), loaded once;
+    // the document being read is marked current and kept expanded.
+    private ContentsTreeModel? _contents;
+
+    private static int PartOfRef(string sref) => ParseRef(sref).Part;
+
+    private async Task LoadContentsAsync()
+    {
+        try
+        {
+            _contents = ContentsTreeModel.From(await Atlas.Contents("concord"));
+            SyncContentsToPosition();
+        }
+        catch (Exception)
+        {
+            _contents = null; // the flat list stands in
+        }
+    }
+
+    /// <summary>Marks the document being read current (its opening article) and expands it.</summary>
+    private void SyncContentsToPosition()
+    {
+        if (_contents is not { } model)
+        {
+            return;
+        }
+
+        var doc = model.Roots.FirstOrDefault(r => PartOfRef(r.Ref) == CurrentPart);
+        if (doc is not null)
+        {
+            model.Expand(doc.Id);
+            model.ExpandPathTo(_currentRef);
+            if (model.CurrentId is null || !doc.Children.Any(c => c.Id == model.CurrentId))
+            {
+                model.ExpandPathTo(doc.Ref);
+            }
+        }
+    }
+
+    private Task OnContentsNavigate(ContentsTreeModel.Node node)
+    {
+        if (node.Kind == "document")
+        {
+            return JumpToPartAsync(PartOfRef(node.Ref));
+        }
+
+        // an article: its first paragraph, as a deep link (?ref=7.2.1)
+        var citation = node.Ref.StartsWith("BoC ", StringComparison.Ordinal) ? node.Ref["BoC ".Length..] : node.Ref;
+        Nav.NavigateTo($"/concord?ref={Uri.EscapeDataString(citation)}");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// D3: a deep link into one paragraph -- <c>/concord?ref=7.2.1</c> (or
+    /// <c>?ref=BoC%207.2.1</c>). Applied in OnInitializedAsync when already
+    /// supplied, and again in OnParametersSetAsync for a value that lands
+    /// AFTER the first render (the documented SupplyParameterFromQuery
+    /// timing quirk, CompositionSplit.razor RULING 4b); once per distinct
+    /// value.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "ref")]
+    public string? RefQuery { get; set; }
+
+    private string? _appliedRefQuery;
+
+    private static string CitationOfQuery(string r) => r.StartsWith("BoC ", StringComparison.Ordinal) ? r : $"BoC {r}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RefQuery is { Length: > 0 } r && r != _appliedRefQuery)
+        {
+            _appliedRefQuery = r;
+            _currentRef = CitationOfQuery(r);
+            await LoadWindowAsync(_currentRef, "onward");
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -350,7 +451,14 @@
             // short-circuit); the confession text itself still renders.
         }
 
+        if (RefQuery is { Length: > 0 } r)
+        {
+            _appliedRefQuery = r;
+            _currentRef = CitationOfQuery(r);
+        }
+
         await LoadWindowAsync(_currentRef, "onward");
+        await LoadContentsAsync();
     }
 
     private Task JumpToAsync()
@@ -436,6 +544,9 @@
                 StateHasChanged();
             }
         }
+
+        // D4: keep the sidebar tree on the document being read.
+        SyncContentsToPosition();
     }
 
     // BOC-SCROLL-1: consumes _scrollResetPending once loading genuinely

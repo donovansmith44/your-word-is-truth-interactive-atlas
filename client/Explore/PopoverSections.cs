@@ -318,6 +318,9 @@ public static class PopoverSectionRegistry
         (new CatechismExplanationSection(), 110),
         (new CatechismWhereWrittenSection(), 120),
         (new CatechismScripturesSection(), 130),
+        // D3: the item end of catechism-link -- "IN THE BOOK OF CONCORD",
+        // rendered right after THE SCRIPTURES (the verse end of the same edge).
+        (new CatechismInConcordSection(), 131),
         // EVT-META-TOP-1 (fix round 2, owner verbatim: "time + place block
         // should be moved to the top, right below the event header"):
         // SUPERSEDES CHRONO-MERGE-1's own "put chronology up top" ordering
@@ -390,6 +393,11 @@ public static class PopoverSectionRegistry
         // followed, now expressed as "the largest Order value" instead of
         // "the last array element."
         (new CommentaryItemProseSection(), 210),
+        // D3: a Book of Concord paragraph's own text first (sections replace
+        // the BodyAsync fallback once any provider claims the kind), then its
+        // catechism item(s) -- the paragraph end of catechism-link.
+        (new ConcordUnitTextSection(), 214),
+        (new ConcordSmallCatechismSection(), 215),
     };
 
     // OrderBy is a STABLE sort (documented LINQ guarantee) -- two entries

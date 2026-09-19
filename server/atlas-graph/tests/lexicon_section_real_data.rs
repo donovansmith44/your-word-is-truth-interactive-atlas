@@ -49,7 +49,7 @@ fn sections() -> &'static SqliteSnapshot {
 const PINNED: [(&str, &str); 4] = [
     ("core", "36c377d88a0f09869247b259242c681d"),
     ("kjv", "abec1ca14dacb605148520b8d59cb4ec"),
-    ("concord", "fd4aca72b284947585df39619d67261b"),
+    ("concord", "3ef8508fa6e6782f4aa96376674b6b7f"), // D3 (2026-09-18): document > article Container rows replaced the flat document loci (145 -> 270 rows)
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),
 ];
 

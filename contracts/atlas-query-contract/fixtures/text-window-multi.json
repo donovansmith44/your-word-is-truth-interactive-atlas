@@ -3,6 +3,32 @@
     "next": "JHN.3.19",
     "units": [
       {
+        "edge_summary": [
+          {
+            "count": 1,
+            "kind": "member-of"
+          },
+          {
+            "count": 1,
+            "kind": "attests"
+          },
+          {
+            "count": 2,
+            "kind": "mentions"
+          },
+          {
+            "count": 23,
+            "kind": "cites"
+          },
+          {
+            "count": 70,
+            "kind": "cited-by"
+          },
+          {
+            "count": 4,
+            "kind": "catechism-link"
+          }
+        ],
         "ref": "JHN.3.16",
         "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
         "words_of_christ": [
@@ -13,6 +39,28 @@
         ]
       },
       {
+        "edge_summary": [
+          {
+            "count": 1,
+            "kind": "member-of"
+          },
+          {
+            "count": 1,
+            "kind": "attests"
+          },
+          {
+            "count": 2,
+            "kind": "mentions"
+          },
+          {
+            "count": 28,
+            "kind": "cites"
+          },
+          {
+            "count": 23,
+            "kind": "cited-by"
+          }
+        ],
         "ref": "JHN.3.17",
         "text": "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
         "words_of_christ": [
@@ -23,6 +71,36 @@
         ]
       },
       {
+        "edge_summary": [
+          {
+            "count": 1,
+            "kind": "member-of"
+          },
+          {
+            "count": 1,
+            "kind": "attests"
+          },
+          {
+            "count": 2,
+            "kind": "mentions"
+          },
+          {
+            "count": 15,
+            "kind": "cites"
+          },
+          {
+            "count": 25,
+            "kind": "cited-by"
+          },
+          {
+            "count": 1,
+            "kind": "commented-on-by"
+          },
+          {
+            "count": 1,
+            "kind": "catechism-link"
+          }
+        ],
         "ref": "JHN.3.18",
         "text": "He that believeth on him is not condemned: but he that believeth not is condemned already, because he hath not believed in the name of the only begotten Son of God.",
         "words_of_christ": [
@@ -33,7 +111,7 @@
         ]
       }
     ],
-    "version": "6f3d2dc7b5a50004563be6b65ea8a0c1"
+    "version": "7c4c8341cc761b73e374dc34586012a2"
   },
   "status": 200
 }

@@ -24,14 +24,22 @@
 //! ref` doc comment names this same discipline).
 //!
 //! TWO-TIER CONTAINMENT (decision 3: "contains_concord rows build the
-//! document/article containers"): `Contains<C>` holds a FLAT `LocusSet`
-//! (no container-of-containers nesting in the type), so a document
-//! container's own `content` is the UNION of every one of its articles'
-//! own paragraphs, alongside each article's own, narrower `Contains` row
-//! -- both rows populate `graph.contains_concord`, both explorable
-//! through the SAME generic "contains"/"member-of" port (graph-types'
-//! `build_indexes` now lowers `contains_concord` -- see that crate's own
-//! `graph.rs` doc comment on the loop this batch added).
+//! document/article containers"), in the BIBLE'S OWN SHAPE since D3
+//! (owner, 2026-09-15: "new abstractions that are implementations of our
+//! container abstraction to group things in the BoC in an analogous way
+//! to how we did the Bible"): document ⊃ article as `ContainerContent::
+//! Container` rows, ONE ROW PER ARTICLE in article order (the pairwise
+//! edge `bible_container_adapter.rs` mints for book ⊃ chapter), and
+//! article ⊃ paragraphs as one `ContainerContent::Loci` row (chapter ⊃
+//! verses). Before D3 the document tier was a FLAT union of every
+//! article's paragraph loci -- a paragraph then answered "member-of" with
+//! BOTH its article and its document; now it answers with its article,
+//! and the article answers with its document, exactly as a verse's
+//! chapter answers with its book. Both tiers populate
+//! `graph.contains_concord`, explorable through the SAME generic
+//! "contains"/"member-of" port; the containment forest law
+//! (`law_check::container_containment_is_a_forest`) holds: documents are
+//! roots, every article has exactly one parent.
 
 use std::collections::BTreeSet;
 
@@ -130,7 +138,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
 
     for doc in &bundle.corpus.documents {
         stats.documents += 1;
-        let mut doc_content: BTreeSet<Locus<ConcordTag>> = BTreeSet::new();
+        let doc_container = doc_container_id(doc.key);
 
         for article in &doc.articles {
             stats.articles += 1;
@@ -147,9 +155,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 );
                 order.push(unit_id);
 
-                let locus = Locus::whole(ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph });
-                art_content.insert(locus.clone());
-                doc_content.insert(locus);
+                art_content.insert(Locus::whole(ConcordRef { part: doc.part, article: article.article, paragraph: p.paragraph }));
             }
 
             let art_container = article_container_id(doc.key, article.article);
@@ -162,24 +168,29 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             // flat loci, wrapped in `Loci(..)` (the doc/article tiers'
             // own shape is unchanged; only the type widened).
             ctx.graph.contains_concord.push(Contains {
-                container: art_container,
+                container: art_container.clone(),
                 content: ContainerContent::Loci(LocusSet(art_content)),
+                provenance: ProvenanceId::from("concord"),
+                justification: Default::default(),
+            });
+            // D3: document ⊃ article as a Container row -- the Bible's
+            // book ⊃ chapter shape. One row per article, in article order
+            // (order is load-bearing: contents trees and `member-of` pages
+            // read it). The FLAT paragraph-locus union the document tier
+            // used to carry is gone: paragraphs are reachable through
+            // their article, exactly as verses through their chapter.
+            ctx.graph.contains_concord.push(Contains {
+                container: doc_container.clone(),
+                content: ContainerContent::Container(art_container),
                 provenance: ProvenanceId::from("concord"),
                 justification: Default::default(),
             });
         }
 
-        let doc_container = doc_container_id(doc.key);
         ctx.graph.nodes.insert(
             doc_container.erase(),
             Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: "concord".to_string() },
         );
-        ctx.graph.contains_concord.push(Contains {
-            container: doc_container,
-            content: ContainerContent::Loci(LocusSet(doc_content)),
-            provenance: ProvenanceId::from("concord"),
-            justification: Default::default(),
-        });
     }
 
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
@@ -375,28 +386,30 @@ mod tests {
         normalize(&mut ctx);
         ctx.graph.build_indexes();
 
-        // The Augsburg Confession's own DOCUMENT container holds both of
-        // ITS paragraphs (both articles collapse into one document in
-        // this fixture's own single-article-per-document shape, so
-        // document == article content here; the article container proves
-        // the narrower tier separately below).
+        // D3 (the Bible's shape): the Augsburg Confession's own DOCUMENT
+        // container contains its ARTICLE container (one row per article --
+        // this fixture's document has one), not its paragraphs directly.
         let doc_container = doc_container_id("augsburg-confession");
+        let art_container = article_container_id("augsburg-confession", 4);
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
         let page = PositionRef(Position::Node(doc_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: forward, cursor: None, limit: 10 });
-        assert_eq!(page.entries.len(), 2, "the document container's own frontier lists both of its paragraphs");
+        assert_eq!(page.entries.len(), 1, "the document container's own frontier lists its one article container");
+        assert_eq!(page.entries[0].node, Position::Node(art_container.erase()));
 
-        let art_container = article_container_id("augsburg-confession", 4);
         let art_page = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: forward, cursor: None, limit: 10 });
-        assert_eq!(art_page.entries.len(), 2, "the article container's own frontier ALSO lists both (this fixture's one article holds its document's only paragraphs)");
+        assert_eq!(art_page.entries.len(), 2, "the article container's own frontier lists both of its paragraphs");
 
-        // Inverse: a paragraph's own 'member-of' frontier names its
-        // container(s) back -- both the article and the document contain
-        // it, so BOTH must appear (two separate Contains rows, decision
-        // 3's own "document/article containers", plural).
+        // Inverse: a paragraph's own 'member-of' frontier names its ARTICLE
+        // (exactly one parent), and the article's names its document --
+        // the same two-hop climb a verse makes to its book.
         let p1 = text_unit_id(3, 4, 1);
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
         let back = PositionRef(Position::Node(p1)).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
-        assert_eq!(back.entries.len(), 2, "paragraph 1 is a member of BOTH its article container and its document container");
+        assert_eq!(back.entries.len(), 1, "paragraph 1 is a member of its article container only");
+        assert_eq!(back.entries[0].node, Position::Node(art_container.erase()));
+        let up = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
+        assert_eq!(up.entries.len(), 1);
+        assert_eq!(up.entries[0].node, Position::Node(doc_container.erase()));
     }
 
     #[test]

@@ -34,6 +34,16 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.9.0** (Batch D3, owner directives) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The Book of Concord's containment takes the Bible's own shape: document
+  ⊃ article as `Contains` rows (one per article, `ContainerContent::
+  Container`), article ⊃ paragraphs as loci -- a paragraph's `member-of`
+  names its article, an article's names its document (the flat document-
+  level paragraph union is gone). The concord section's logical hash and
+  the version root moved; the `version-root` and `contract` fixtures (AQC
+  range 0.5.0 -> 0.6.0) are re-recorded. No edge id outside the concord
+  containment rows moved; no scenario text moved.
+
 - **0.8.0** (Batch LEX-1) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The fifth section, `lexicon`, ships: `Section::SHIPPED` grows to five, so
   the manifest carries a fifth line and the version root moves once (a

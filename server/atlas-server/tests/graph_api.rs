@@ -187,6 +187,97 @@ async fn text_window_bad_ref_and_missing_ref_are_400() {
 // fixture double.
 // ---------------------------------------------------------------------
 
+/// D4: the containment forest as a table of contents -- books then chapters,
+/// stopping there (owner: "stop at the level of article/topic"; a chapter's
+/// verses are the reader's own business).
+#[tokio::test]
+async fn contents_bible_is_books_then_chapters_and_stops_there() {
+    let app = compiled_app();
+    let (st, body, _) = get(&app, "/api/contents/bible").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["corpus"], "bible");
+    let roots = body["roots"].as_array().unwrap();
+    assert_eq!(roots.len(), 66);
+    assert_eq!(roots[0]["title"], "Genesis");
+    assert_eq!(roots[0]["kind"], "book");
+    assert_eq!(roots[0]["group"], "OT");
+    assert_eq!(roots[0]["ref"], "GEN.1");
+    let gen_ch = roots[0]["children"].as_array().unwrap();
+    assert_eq!(gen_ch.len(), 50);
+    assert_eq!(gen_ch[0]["kind"], "chapter");
+    assert_eq!(gen_ch[0]["title"], "1");
+    assert_eq!(gen_ch[0]["ref"], "GEN.1");
+    assert_eq!(gen_ch[0]["count"], 31, "Genesis 1 has 31 verses");
+    assert_eq!(gen_ch[49]["ref"], "GEN.50");
+    assert!(gen_ch[0].get("children").is_none(), "depth stops at chapter");
+    assert_eq!(roots[39]["title"], "Matthew");
+    assert_eq!(roots[39]["group"], "NT");
+    assert_eq!(roots[65]["children"].as_array().unwrap().len(), 22, "Revelation has 22 chapters");
+    let total: usize = roots.iter().map(|r| r["children"].as_array().unwrap().len()).sum();
+    assert_eq!(total, 1189, "1,189 chapters over the canon");
+}
+
+/// D4: the Concord's contents are documents then articles (D3's own shape),
+/// each article naming its first paragraph as the navigation target.
+#[tokio::test]
+async fn contents_concord_is_documents_then_articles() {
+    let app = compiled_app();
+    let (st, body, _) = get(&app, "/api/contents/concord").await;
+    assert_eq!(st, 200, "{body}");
+    let roots = body["roots"].as_array().unwrap();
+    assert_eq!(roots.len(), 10, "ten Concord documents");
+    let mut prev_part = 0u64;
+    for d in roots {
+        assert_eq!(d["kind"], "document");
+        assert!(d.get("group").is_none(), "no testament grouping for the Concord");
+        let arts = d["children"].as_array().unwrap();
+        assert!(!arts.is_empty(), "{} has articles", d["title"]);
+        for a in arts {
+            assert_eq!(a["kind"], "article");
+            let sref = a["ref"].as_str().unwrap();
+            assert!(sref.starts_with("BoC ") && sref.matches('.').count() == 2, "{sref}");
+            assert!(a["count"].as_u64().unwrap() > 0, "{sref} has paragraphs");
+        }
+        let part: u64 = arts[0]["ref"].as_str().unwrap()["BoC ".len()..].split('.').next().unwrap().parse().unwrap();
+        assert!(part >= prev_part, "documents in part order: {} after {prev_part}", part);
+        prev_part = part;
+        assert_eq!(d["ref"], arts[0]["ref"], "a document navigates to its first article's first paragraph");
+    }
+    let (st, body, _) = get(&app, "/api/contents/nope").await;
+    assert_eq!(st, 404);
+    assert_eq!(body["error"]["code"], "not_found");
+}
+
+/// D3: a text-window unit says what is on its frontier, so a reader page can
+/// make ONLY units with edges clickable (no dead clicks) without an N+1 of
+/// node-card calls. Additive field; the reader may ignore it.
+#[tokio::test]
+async fn text_window_units_carry_their_edge_summary() {
+    let app = compiled_app();
+    let (st, body, _) = get(&app, "/api/text?ref=BoC%207.2.1&n=3&corpus=concord").await;
+    assert_eq!(st, 200, "{body}");
+    let units = body["units"].as_array().expect("units");
+    assert!(!units.is_empty());
+    for u in units {
+        let es = u["edge_summary"].as_array().expect("edge_summary present on every unit");
+        assert!(!es.is_empty(), "every Concord paragraph is at least a member of its article: {u}");
+        for e in es {
+            assert!(e["kind"].is_string() && e["count"].as_u64().unwrap_or(0) > 0, "only inhabited kinds are listed: {e}");
+        }
+        let kinds: Vec<&str> = es.iter().map(|e| e["kind"].as_str().unwrap()).collect();
+        assert!(kinds.contains(&"member-of"), "a paragraph is a member of its article: {kinds:?}");
+    }
+    // A verse we know cites others and carries a catechism link:
+    let (st, jhn, _) = get(&app, "/api/text?ref=JHN.3.16&n=1").await;
+    assert_eq!(st, 200);
+    let kinds: Vec<&str> = jhn["units"][0]["edge_summary"].as_array().unwrap().iter().map(|e| e["kind"].as_str().unwrap()).collect();
+    assert!(kinds.contains(&"cites"), "JHN.3.16 cites others: {kinds:?}");
+    assert!(kinds.contains(&"catechism-link"), "JHN.3.16 is catechism-linked: {kinds:?}");
+    // The projection is node_card's own: same kinds, same counts.
+    let (_, card, _) = get(&app, "/api/node/text-unit:JHN.3.16").await;
+    assert_eq!(jhn["units"][0]["edge_summary"], card["edge_summary"]);
+}
+
 #[tokio::test]
 async fn text_window_concord_single_paragraph_is_the_real_sc_first_commandment() {
     let app = compiled_app();

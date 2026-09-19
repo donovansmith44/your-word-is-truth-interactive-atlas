@@ -413,6 +413,10 @@ test('REGISTRY-1: a PLACE popover shows dates and events, in order, no thin even
   await marker.hover({ force: true });
   await page.getByTestId('place-card-title').click();
   await expect(page.getByTestId('popover')).toBeVisible();
+  // Sections resolve asynchronously after the popover mounts (each provider's
+  // own fetch); wait for the first expected one before reading the ORDER
+  // (a debug-build API made the bare read race, 2026-09-19).
+  await expect(page.getByTestId('popover-section-place-dates')).toBeVisible();
 
   const sectionIds = await page.getByTestId(/^popover-section-/).evaluateAll(els => els.map(el => el.getAttribute('data-testid')));
   // description seam (Batch P, not yet registered) never contributes a

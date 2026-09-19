@@ -6758,3 +6758,134 @@ input:focus-visible,
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
+
+/* D4 (owner, 2026-09-15): the table of contents as a tree -- ContentsTree
+   (role=tree) inside the reader's Contents panel and the Concord sidebar.
+   Rows are plain buttons on the parchment (the same quiet-until-hover idiom
+   .concord-toc-item already uses); depth is indentation; the current row is
+   the bronze left rule .concord-toc-item-current already established. */
+.contents-open {
+    margin-left: .75rem;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    font-size: .8rem;
+    color: var(--ink-soft, var(--ink));
+    background: none;
+    border: 1px solid var(--rule, currentColor);
+    border-radius: .2rem;
+    padding: .15rem .5rem;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.contents-open:hover,
+.contents-open:focus-visible {
+    color: var(--lapis);
+    border-color: var(--lapis);
+}
+
+.contents-panel {
+    width: min(26rem, calc(100vw - 3rem));
+    max-height: min(80vh, 40rem);
+    overflow-y: auto;
+}
+
+.contents-current {
+    margin: 0 0 .5rem;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--bronze-ink);
+}
+
+.contents-tree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.contents-row {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    line-height: 1.5rem;
+}
+
+.contents-depth-1 {
+    padding-left: 1.6rem;
+}
+
+.contents-toggle {
+    flex: 0 0 1.2rem;
+    background: none;
+    border: none;
+    padding: .25rem 0;
+    line-height: 1.5rem;
+    color: var(--ink-soft, var(--ink));
+    cursor: pointer;
+    font-size: .9rem;
+    line-height: 1;
+}
+
+.contents-toggle:hover,
+.contents-toggle:focus-visible {
+    color: var(--lapis);
+}
+
+.contents-label {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    text-align: left;
+    font-family: var(--font-serif);
+    font-size: .95rem;
+    color: var(--ink);
+    background: none;
+    border: none;
+    padding: .25rem .3rem;
+    line-height: 1.5rem;
+    cursor: pointer;
+}
+
+.contents-label.explorable:hover,
+.contents-label.explorable:focus-visible {
+    color: var(--lapis);
+}
+
+.contents-row-current > .contents-label {
+    color: var(--bronze-ink);
+    font-weight: 600;
+    border-left: 2px solid var(--bronze);
+    padding-left: calc(.3rem - 2px);
+}
+
+.contents-count {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--ink-soft, var(--ink));
+    font-variant-numeric: tabular-nums;
+}
+
+.hamburger-contents {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-serif);
+    font-variant-caps: small-caps;
+    letter-spacing: .05em;
+    color: var(--ink);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--rule, currentColor);
+    padding: .5rem .3rem;
+    margin-bottom: .5rem;
+    cursor: pointer;
+}
+
+.hamburger-contents:hover,
+.hamburger-contents:focus-visible {
+    color: var(--lapis);
+}

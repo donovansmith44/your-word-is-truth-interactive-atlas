@@ -224,7 +224,7 @@ fn every_row_of_every_family_round_trips() {
     // when the committed artifact is recompiled from changed sources.
     let expected: Vec<(RowFamily, usize)> = vec![
         (RowFamily::ContainsBible, 2_378),
-        (RowFamily::ContainsConcord, 145),
+        (RowFamily::ContainsConcord, 270), // D3: 135 article rows + 135 document > article rows (was 145: 135 + 10 flat document rows)
         (RowFamily::Attests, 33_355),
         (RowFamily::Succession, 13),
         (RowFamily::CanonSuccession, 1_253),
@@ -247,7 +247,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::Occurs, 431_280),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 914_692, "the committed graph carries exactly 914,692 rows (483,412 + 431,280 Occurs at LEX-1)");
+    assert_eq!(total, 914_817, "the committed graph carries exactly 914,817 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3)");
 
     // M2-5. The three uninhabited families (artifact.rs refuses to dump a
     // non-empty one) are still real encoders. "An empty table round-trips

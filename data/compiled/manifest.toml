@@ -1,7 +1,7 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-09-19T00:27:36Z"
-root = "479878962a236495dc42acea199a4cbe"
+built = "2026-09-19T03:40:00Z"
+root = "946ba72fc7bc7801fba3efc4f0656ff8"
 
 [[section]]
 name = "core"
@@ -22,9 +22,9 @@ schema_version = 14
 [[section]]
 name = "concord"
 required = false
-logical = "fd4aca72b284947585df39619d67261b"
-blob = "84ad871f811ff7ce1076785a61e5716b11539c26840c11b6586696e9ddc9f5d5"
-bytes = 1091861
+logical = "3ef8508fa6e6782f4aa96376674b6b7f"
+blob = "ef3e4fc3be9379a4c5fe405c68c266c7f4c8a5cf45f2d53d0bec75dfa306be16"
+bytes = 904484
 schema_version = 14
 
 [[section]]

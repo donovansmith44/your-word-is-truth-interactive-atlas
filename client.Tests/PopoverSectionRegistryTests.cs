@@ -134,4 +134,22 @@ public class PopoverSectionRegistryTests
     {
         Assert.Single(PopoverSectionRegistry.Providers, p => p is EventProvenanceSection);
     }
+
+    /// <summary>
+    /// D3 (owner, 2026-09-15): the catechism ↔ Book of Concord traversal is
+    /// symmetric -- the item end ("IN THE BOOK OF CONCORD", right after THE
+    /// SCRIPTURES) and the paragraph end ("THE SMALL CATECHISM" on a
+    /// ConcordUnit) are each registered exactly once.
+    /// </summary>
+    [Fact]
+    public void CatechismItemAndConcordUnitHaveSymmetricCatechismLinkSections()
+    {
+        var providers = PopoverSectionRegistry.Providers.ToList();
+        Assert.Equal(1, providers.Count(p => p is CatechismInConcordSection));
+        Assert.Equal(1, providers.Count(p => p is ConcordSmallCatechismSection));
+        Assert.True(IndexOfProvider<CatechismScripturesSection>() < IndexOfProvider<CatechismInConcordSection>(), "the Book of Concord list follows THE SCRIPTURES on an item's card");
+        Assert.True(new CatechismInConcordSection().AppliesTo(new CatechismNode("first-commandment", "The First Commandment")));
+        Assert.True(new ConcordSmallCatechismSection().AppliesTo(new ConcordUnitNode("BoC 7.2.1")));
+        Assert.False(new ConcordSmallCatechismSection().AppliesTo(new CatechismNode("first-commandment", "The First Commandment")));
+    }
 }
