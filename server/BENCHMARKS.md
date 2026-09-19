@@ -825,3 +825,13 @@ word is tagged (upstream aligns the original-language surface only).
 | Compile (D3, sections + exports) | 16 m 07 s cold | 19 m 16 s (concord section 145 -> 270 rows, blob 1,091,861 -> 904,484 bytes; the four other blobs reused; source admission 713 s) |
 
 OPEN (for the owner): ADMIT-PERF-1 -- the admission sweep (`assert_answers_match`) is single-threaded and now takes ~11 min over the five sections; a per-family parallel sweep would return gate 8 to minutes. The ceiling is a disclosure device, not a target: every widening since DB-4b has been rows, not slower code.
+
+## D5 (owner directive: person cards -- years, events, family, the eternal exception) -- standing block on c23e25a, 2026-09-19
+
+| Measure | D3+D4 (eb9d730) | D5 (c23e25a) |
+|---|---|---|
+| Workspace suite | 1078 / 0 / 10 over 71 binaries | **1081 / 0 / 10** over 71 binaries (graph_api +2: Aaron's card, God is eternal; atlas-etl +1 kinship/timeline; frontier falsifiability counts the three D5 relations) |
+| graph-types | green OFF and ON | green OFF and ON (0.4.0: RelationId::ALL 20, three families appended last) |
+| Timing gates (10, serialized) | 9/10 (gate 8 1104.0 s of 960; re-derived to 2130 s in 41df66a) | **10/10** -- gate 8 sqlite admission **1103.7 s of 2130** (write 202.1 s incl. zstd-19, dump re-derivation 10.2 s, assert_answers_match 655.1 s: +2,594 rows and the Person payload columns cost nothing measurable); gate 9 served startup 0.89 s of 4 (from_sections 135 ms, scene priming 750 ms); gate 1 conformance 25.6 s of 60; perf_smoke and frontier inside their gates |
+| Compile (sections + exports) | 19 m 16 s | 19 m 55 s (core section rewritten: 36c377d8 -> f9294873, 7,920,147 bytes; four blobs reused; source admission 712 s) |
+| Rows in the committed graph | 914,817 | **917,411** (parent-of 1,776; partner-of 104; participates-in 714) |
