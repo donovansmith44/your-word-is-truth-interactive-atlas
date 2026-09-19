@@ -47,7 +47,10 @@ fn sections() -> &'static SqliteSnapshot {
 /// core table byte-identical: no node, row, projection or other sidecar of
 /// core changed.
 const PINNED: [(&str, &str); 4] = [
-    ("core", "36c377d88a0f09869247b259242c681d"),
+    // D5 (2026-09-19): core moved again (36c377d8... -> f9294873...) -- the
+    // Person payload columns and the parent_of/partners/participates tables
+    // (kjv/concord/kretzmann/lexicon byte-identical, as before).
+    ("core", "f92948735c4b4cc3e3934a85b44f4168"),
     ("kjv", "abec1ca14dacb605148520b8d59cb4ec"),
     ("concord", "3ef8508fa6e6782f4aa96376674b6b7f"), // D3 (2026-09-18): document > article Container rows replaced the flat document loci (145 -> 270 rows)
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),

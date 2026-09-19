@@ -128,8 +128,8 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "max_version": "0.6.0",
-        "min_version": "0.6.0",
+        "max_version": "0.7.0",
+        "min_version": "0.7.0",
         "section_schema_version": 14
       },
       "status": 200
@@ -1430,7 +1430,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
+        "version": "18c7546b435791ee9422be8f32fbb5fa"
       },
       "status": 200
     },
@@ -1451,7 +1451,7 @@
         "kind": "Place",
         "label": "Hazor 1",
         "provenance": "curated-places",
-        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
+        "version": "18c7546b435791ee9422be8f32fbb5fa"
       },
       "status": 200
     },
@@ -1477,7 +1477,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "946ba72fc7bc7801fba3efc4f0656ff8"
+        "version": "18c7546b435791ee9422be8f32fbb5fa"
       },
       "status": 200
     },
@@ -7171,6 +7171,16 @@
             "forward": "occurs-in",
             "inverse": "words",
             "name": "Occurs"
+          },
+          {
+            "forward": "parent-of",
+            "inverse": "child-of",
+            "name": "ParentOf"
+          },
+          {
+            "forward": "participates-in",
+            "inverse": "participants",
+            "name": "Participates"
           }
         ],
         "section_schema_version": 14,
@@ -7194,6 +7204,10 @@
           {
             "label": "temporal-adjacency",
             "name": "TemporalAdjacency"
+          },
+          {
+            "label": "partner-of",
+            "name": "Partners"
           }
         ]
       },

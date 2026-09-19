@@ -103,7 +103,12 @@ public static class PopoverChromeRegistry
         // verbatim) -- an EMPTY array is the deliberate declaration, not a
         // missing one.
         ["Catechism"] = Array.Empty<ChipDeclaration>(),
-        ["Person"] = Array.Empty<ChipDeclaration>(),
+        // D5 (owner, 2026-09-15: "years are explorable positions"): a
+        // Person's chips are its YEARS -- born / died when the source gives
+        // them, else the corpus-mention span -- each a /world window. An
+        // eternal person (God, the Holy Spirit; data/curated/people-eternal.toml)
+        // offers none.
+        ["Person"] = Exact("popover-chip-year-born", "popover-chip-year-died", "popover-chip-year-span"),
         ["CommentaryItem"] = Array.Empty<ChipDeclaration>(),
         ["ConcordUnit"] = Array.Empty<ChipDeclaration>(),
     };

@@ -107,7 +107,18 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // source). Reads the SAME `theo_dir`/`verses_json` already in scope
     // above -- one more sibling fact file, not a new source tree.
     let people_json = read(&theo_dir.join("people.json"))?;
-    let (people_list, people_stats) = people::parse_people(&people_json, &verses_json)?;
+    // D5: kinship + timeline resolved through the SAME events.json bytes
+    // parse_events read above.
+    let (mut people_list, people_stats) = people::parse_people_full(&people_json, &verses_json, Some(&events_json))?;
+    // D5: eternity is curated truth with grounds (data/curated/people-eternal.toml);
+    // every id must be a real person -- fail loud otherwise.
+    for (id, grounds) in curated::parse_people_eternal(&read(&curated_dir.join("people-eternal.toml"))?)? {
+        let Some(person) = people_list.iter_mut().find(|p| p.id == id) else {
+            anyhow::bail!("people-eternal.toml names '{id}', which is not a Theographic person");
+        };
+        person.eternal = true;
+        person.eternal_grounds = grounds;
+    }
 
     // ENT-1a: Easton's Bible Dictionary (1897, PD) -- the `AtlasData.easton`
     // sidecar (`description_adapter.rs`'s own graph-side source). Reuses the
@@ -303,6 +314,11 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     eprintln!(
         "THEOGRAPHIC PEOPLE: {} person record(s) compiled ({} with >=1 resolved verse link; {} of {} raw verse refs unresolved, dropped)",
         people_stats.total, people_stats.with_verses, people_stats.verse_refs_unresolved, people_stats.verse_refs_total
+    );
+    eprintln!(
+        "D5 PEOPLE KIN/TIMELINE: {} of {} kin record refs unresolved or self-linked (dropped); {} of {} timeline record refs unresolved (dropped); {} eternal person(s) from data/curated/people-eternal.toml",
+        people_stats.kin_refs_unresolved, people_stats.kin_refs_total, people_stats.timeline_refs_unresolved, people_stats.timeline_refs_total,
+        people_list.iter().filter(|p| p.eternal).count()
     );
     eprintln!(
         "EASTON'S DICTIONARY: {} entr(y/ies) parsed ({} dropped, no usable dictText) -- {} person-matched, {} place-matched ({} place slug(s) unresolved against places.json), {} multi, {} unmatched",

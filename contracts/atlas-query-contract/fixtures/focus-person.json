@@ -5,13 +5,39 @@
       {
         "count": 331,
         "kind": "mentioned-in"
+      },
+      {
+        "count": 4,
+        "kind": "parent-of"
+      },
+      {
+        "count": 2,
+        "kind": "child-of"
+      },
+      {
+        "count": 2,
+        "kind": "participates-in"
+      },
+      {
+        "count": 1,
+        "kind": "partner-of"
       }
     ],
     "id": "Person:aaron_1",
     "kind": "Person",
     "label": "Aaron",
+    "person": {
+      "also_called": [],
+      "birth_year": -1575,
+      "death_year": -1452,
+      "eternal": false,
+      "eternal_grounds": [],
+      "first_year": -1700,
+      "gender": "Male",
+      "last_year": 64
+    },
     "provenance": "theographic-people",
-    "version": "7c4c8341cc761b73e374dc34586012a2"
+    "version": "dd6b8af02ba03231cc4ff714822dafcb"
   },
   "status": 200
 }

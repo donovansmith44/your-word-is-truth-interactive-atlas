@@ -6889,3 +6889,24 @@ input:focus-visible,
 .hamburger-contents:focus-visible {
     color: var(--lapis);
 }
+
+/* D5: the person card -- LIFE / EVENTS / FAMILY / MENTIONED IN (collapsed).
+   Chips reuse .popover-catechism-item; the family groups are labelled rows. */
+.person-life-line {
+    margin: 0 0 .5rem;
+    font-family: var(--font-serif);
+    color: var(--ink);
+}
+
+.person-family-label {
+    margin: .4rem 0 .15rem;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .05em;
+    color: var(--bronze-ink);
+}
+
+.person-mentions-disclosure > summary {
+    cursor: pointer;
+    list-style: revert;
+}

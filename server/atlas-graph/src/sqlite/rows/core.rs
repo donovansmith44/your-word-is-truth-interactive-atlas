@@ -7,8 +7,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
     Analogue, Attests, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
-    MentionedEntity, Mentions, NamedAfter, Namesake, Succession, TemporalAdjacency, Typology,
-};
+    MentionedEntity, Mentions, NamedAfter, Namesake, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
 use atlas_graph_types::id::{AnchorId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
     BibleTag, ConcordRef, Corpus, Locus, LocusSet, TokenSpan, VerseRef,
@@ -492,5 +491,43 @@ pub fn insert_analogue(tx: &Transaction, ord: i64, row: &Analogue) -> Result<(),
 pub fn read_analogue(conn: &Connection) -> Result<Vec<(i64, Analogue)>, SqliteError> {
     read_all(conn, "analogue", COLS_ANALOGUE, |row| {
         Ok(Analogue { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
+    })
+}
+
+// ------------------------------------------------------ D5: kinship rows
+
+const COLS_PARENT_OF: &str = "parent_id, child_id, provenance";
+
+pub fn insert_parent_of(tx: &Transaction, ord: i64, row: &ParentOf) -> Result<(), SqliteError> {
+    insert(tx, "parent_of", COLS_PARENT_OF, ord, vec![text(&row.parent.0), text(&row.child.0), text(&row.provenance)])
+}
+
+pub fn read_parent_of(conn: &Connection) -> Result<Vec<(i64, ParentOf)>, SqliteError> {
+    read_all(conn, "parent_of", COLS_PARENT_OF, |row| {
+        Ok(ParentOf { parent: id_col(row, D, "parent_id")?, child: id_col(row, D + 1, "child_id")?, provenance: col(row, D + 2, "provenance")? })
+    })
+}
+
+const COLS_PARTNERS: &str = "a_id, b_id, provenance";
+
+pub fn insert_partners(tx: &Transaction, ord: i64, row: &Partners) -> Result<(), SqliteError> {
+    insert(tx, "partners", COLS_PARTNERS, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
+}
+
+pub fn read_partners(conn: &Connection) -> Result<Vec<(i64, Partners)>, SqliteError> {
+    read_all(conn, "partners", COLS_PARTNERS, |row| {
+        Ok(Partners { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
+    })
+}
+
+const COLS_PARTICIPATES: &str = "person_id, event_id, provenance";
+
+pub fn insert_participates(tx: &Transaction, ord: i64, row: &Participates) -> Result<(), SqliteError> {
+    insert(tx, "participates", COLS_PARTICIPATES, ord, vec![text(&row.person.0), text(&row.event.0), text(&row.provenance)])
+}
+
+pub fn read_participates(conn: &Connection) -> Result<Vec<(i64, Participates)>, SqliteError> {
+    read_all(conn, "participates", COLS_PARTICIPATES, |row| {
+        Ok(Participates { person: id_col(row, D, "person_id")?, event: id_col(row, D + 1, "event_id")?, provenance: col(row, D + 2, "provenance")? })
     })
 }

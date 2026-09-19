@@ -119,11 +119,36 @@ struct PersonFields {
     /// see `parse_people`'s own resolution below.
     #[serde(default)]
     dictionary_text: Option<String>,
+    /// D5: kinship as Airtable record-id lists (verified 2026-09-18 over the
+    /// real 3,067 records: father 1,584 / mother 200 / children 963 /
+    /// partners 173 carry one; `siblings` (944) is NOT read -- derived).
+    #[serde(default)]
+    father: Vec<String>,
+    #[serde(default)]
+    mother: Vec<String>,
+    #[serde(default)]
+    children: Vec<String>,
+    #[serde(default)]
+    partners: Vec<String>,
+    /// D5: every record carries both -- the corpus-mention span, not a life.
+    #[serde(default)]
+    min_year: Option<i64>,
+    #[serde(default)]
+    max_year: Option<i64>,
+    /// D5: event record ids (268 records carry one).
+    #[serde(default)]
+    timeline: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct PeopleStats {
     pub total: usize,
+    /// D5: kinship record links seen / dropped (no person behind the record, or a self-link).
+    pub kin_refs_total: usize,
+    pub kin_refs_unresolved: usize,
+    /// D5: `timeline` record links seen / dropped (no event behind the record).
+    pub timeline_refs_total: usize,
+    pub timeline_refs_unresolved: usize,
     pub with_verses: usize,
     pub verse_refs_total: usize,
     pub verse_refs_unresolved: usize,
@@ -137,8 +162,23 @@ pub struct PeopleStats {
 /// own "skip, don't panic, but count it" discipline for the identical class
 /// of raw-data gap.
 pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>, PeopleStats)> {
+    parse_people_full(people_json, verses_json, None)
+}
+
+/// D5: the full parse -- kinship resolved record-id -> person id through
+/// the file's own `personLookup`s, `timeline` resolved through
+/// `events_json` (`theographic::event_ids_by_record`) when supplied. A
+/// link whose target record has no person (or, for `timeline`, no event)
+/// is DROPPED and counted, never carried as a dangling record id.
+pub fn parse_people_full(people_json: &str, verses_json: &str, events_json: Option<&str>) -> Result<(Vec<Person>, PeopleStats)> {
     let people: Vec<Record<PersonFields>> =
         serde_json::from_str(people_json).context("theographic people.json is not valid JSON")?;
+    let person_id_by_record: HashMap<&str, String> =
+        people.iter().map(|r| (r.id.as_str(), r.fields.person_lookup.clone().unwrap_or_else(|| r.id.clone()))).collect();
+    let event_id_by_record: HashMap<String, String> = match events_json {
+        Some(json) => crate::theographic::event_ids_by_record(json)?,
+        None => HashMap::new(),
+    };
     let verses: Vec<Record<VerseFields>> =
         serde_json::from_str(verses_json).context("theographic verses.json is not valid JSON")?;
     let verse_osis_by_id: HashMap<&str, &str> =
@@ -215,6 +255,38 @@ pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>
             stats.with_verses += 1;
         }
 
+        let mut kin = |records: &[String]| -> Vec<String> {
+            let mut ids: Vec<String> = Vec::new();
+            for rec_id in records {
+                stats.kin_refs_total += 1;
+                match person_id_by_record.get(rec_id.as_str()) {
+                    Some(pid) if *pid != id => {
+                        if !ids.contains(pid) {
+                            ids.push(pid.clone());
+                        }
+                    }
+                    _ => stats.kin_refs_unresolved += 1,
+                }
+            }
+            ids
+        };
+        let father = kin(&f.father);
+        let mother = kin(&f.mother);
+        let children = kin(&f.children);
+        let partners = kin(&f.partners);
+        let mut timeline: Vec<String> = Vec::new();
+        for rec_id in &f.timeline {
+            stats.timeline_refs_total += 1;
+            match event_id_by_record.get(rec_id.as_str()) {
+                Some(eid) => {
+                    if !timeline.contains(eid) {
+                        timeline.push(eid.clone());
+                    }
+                }
+                None => stats.timeline_refs_unresolved += 1,
+            }
+        }
+
         out.push(Person {
             id,
             name,
@@ -224,6 +296,15 @@ pub fn parse_people(people_json: &str, verses_json: &str) -> Result<(Vec<Person>
             also_called,
             verse_links,
             dict_text,
+            father,
+            mother,
+            children,
+            partners,
+            first_year: f.min_year.and_then(|y| i32::try_from(y).ok()),
+            last_year: f.max_year.and_then(|y| i32::try_from(y).ok()),
+            timeline,
+            eternal: false,
+            eternal_grounds: Vec::new(),
         });
     }
 
@@ -403,5 +484,38 @@ mod tests {
         assert_eq!(stats.total, 2);
         let ids: std::collections::BTreeSet<_> = people.iter().map(|p| p.id.as_str()).collect();
         assert_eq!(ids.len(), 2);
+    }
+
+    /// D5: kinship and timeline resolve through record ids to PERSON and
+    /// EVENT ids; a dangling record is dropped and counted; a self-link is
+    /// dropped; minYear/maxYear ride as first/last year.
+    #[test]
+    fn kinship_and_timeline_resolve_to_person_and_event_ids() {
+        let people_json = r#"[
+            {"id": "recA", "fields": {"personLookup": "abraham_1", "name": "Abraham", "children": ["recI", "recGhost", "recA"], "partners": ["recS"], "minYear": -1997, "maxYear": -1821, "timeline": ["recE1", "recEGhost"]}},
+            {"id": "recI", "fields": {"personLookup": "isaac_1", "name": "Isaac", "father": ["recA"], "mother": ["recS"]}},
+            {"id": "recS", "fields": {"personLookup": "sarah_1", "name": "Sarah", "partners": ["recA"], "children": ["recI"]}}
+        ]"#;
+        let events_json = r#"[
+            {"id": "recE1", "fields": {"title": "Abraham called", "eventID": 12}}
+        ]"#;
+        let (people, stats) = parse_people_full(people_json, VERSES_FIXTURE, Some(events_json)).unwrap();
+        let abraham = people.iter().find(|p| p.id == "abraham_1").unwrap();
+        assert_eq!(abraham.children, vec!["isaac_1"]);
+        assert_eq!(abraham.partners, vec!["sarah_1"]);
+        assert_eq!((abraham.first_year, abraham.last_year), (Some(-1997), Some(-1821)));
+        assert_eq!(abraham.timeline, vec!["theo-12"]);
+        assert!(!abraham.eternal && abraham.eternal_grounds.is_empty(), "eternity is curated, never parsed");
+        let isaac = people.iter().find(|p| p.id == "isaac_1").unwrap();
+        assert_eq!(isaac.father, vec!["abraham_1"]);
+        assert_eq!(isaac.mother, vec!["sarah_1"]);
+        assert_eq!(stats.kin_refs_total, 8, "3 + 1 (Abraham) + 2 (Isaac) + 2 (Sarah)");
+        assert_eq!(stats.kin_refs_unresolved, 2, "the ghost record and the self-link");
+        assert_eq!(stats.timeline_refs_total, 2);
+        assert_eq!(stats.timeline_refs_unresolved, 1);
+        // without events_json, timeline is honestly empty (and counted)
+        let (people, stats) = parse_people(people_json, VERSES_FIXTURE).unwrap();
+        assert!(people.iter().all(|p| p.timeline.is_empty()));
+        assert_eq!(stats.timeline_refs_unresolved, 2);
     }
 }

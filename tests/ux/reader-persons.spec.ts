@@ -215,6 +215,8 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     // "honest count up front" law).
     await expect(page.getByTestId('popover-title')).toHaveText(person.name);
     await expect(page.getByTestId('person-mentions-heading')).toHaveText(`MENTIONED IN SCRIPTURE (${mentionedInCount})`);
+    // D5: the verse list is the card's LAST section and collapsed by default -- its summary is the heading; open it.
+    await page.getByTestId('person-mentions-heading').click();
     await expect(page.getByTestId(`person-mention-${firstVref}`)).toBeVisible();
 
     // ONE HOP FURTHER: click that first mentioned verse -- lands back on a
@@ -243,6 +245,8 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     await page.goto(`/read/${busy.book}/${busy.chapter}`);
     await page.getByTestId(`verse-mention-person-${busy.verse}-${busy.id}`).click();
     await expect(page.getByTestId('popover-title')).toHaveText(busy.label);
+    // D5: open the collapsed MENTIONED IN SCRIPTURE disclosure (see PERSONS-1).
+    await page.getByTestId('person-mentions-heading').click();
 
     // Fix round 1, self-caught (a real async-timing bug, the SAME class
     // M-D2's own fix round already named elsewhere in this app: "an async

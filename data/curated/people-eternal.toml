@@ -1,0 +1,19 @@
+# D5 (owner, 2026-09-15): "the exception is God because he is eternal."
+# A person listed here has NO lifespan: no birth, no death, no active years.
+# Theographic carries God and the Holy Spirit as person records with
+# minYear -4004 / maxYear 96 (the corpus span) -- that is the dataset's
+# bookkeeping, not a lifespan, and the card must never render it as one.
+# Jesus (jesus_905, born 4 BC, died AD 30) is NOT listed: His earthly life
+# has dates, and the card labels them "Earthly life".
+#
+# Every id must resolve to a real Theographic person (the compile fails
+# loud otherwise); `grounds` are the Scripture the card cites for eternity,
+# each a canonical dot-ref the reader can open.
+
+[[eternal]]
+id = "god_1324"
+grounds = ["PSA.90.2", "REV.1.8"]
+
+[[eternal]]
+id = "holy_spirit_7400"
+grounds = ["HEB.9.14"]

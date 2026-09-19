@@ -148,6 +148,9 @@ impl ProvenanceIndex {
         sweep!("temporal_adjacency", temporal_adjacency);
         sweep!(family::ANALOGUE, analogue);
         sweep!("occurs", occurs);
+        sweep!("parent_of", parent_of);
+        sweep!("partners", partners);
+        sweep!("participates", participates);
 
         ProvenanceIndex { by_family }
     }

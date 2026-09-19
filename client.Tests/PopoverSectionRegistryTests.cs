@@ -152,4 +152,24 @@ public class PopoverSectionRegistryTests
         Assert.True(new ConcordSmallCatechismSection().AppliesTo(new ConcordUnitNode("BoC 7.2.1")));
         Assert.False(new ConcordSmallCatechismSection().AppliesTo(new CatechismNode("first-commandment", "The First Commandment")));
     }
+
+    /// <summary>
+    /// D5 (owner, 2026-09-15): a person's card reads Life, Events, Family,
+    /// then the verse list -- each provider registered once, in that order.
+    /// </summary>
+    [Fact]
+    public void PersonCardReadsLifeEventsFamilyThenMentions()
+    {
+        var providers = PopoverSectionRegistry.Providers.ToList();
+        foreach (var t in new[] { typeof(PersonLifeSection), typeof(PersonEventsSection), typeof(PersonFamilySection), typeof(PersonCardAndMentionsSection) })
+        {
+            Assert.Equal(1, providers.Count(p => p.GetType() == t));
+        }
+        Assert.True(IndexOfProvider<PersonLifeSection>() < IndexOfProvider<PersonEventsSection>());
+        Assert.True(IndexOfProvider<PersonEventsSection>() < IndexOfProvider<PersonFamilySection>());
+        Assert.True(IndexOfProvider<PersonFamilySection>() < IndexOfProvider<PersonCardAndMentionsSection>());
+        var person = new PersonNode("abraham_1", "Abraham");
+        Assert.True(new PersonLifeSection().AppliesTo(person) && new PersonFamilySection().AppliesTo(person));
+        Assert.False(new PersonLifeSection().AppliesTo(new CatechismNode("commandment-1", "The First Commandment")));
+    }
 }

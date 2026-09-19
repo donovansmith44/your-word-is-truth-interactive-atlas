@@ -18,7 +18,7 @@ use atlas_graph_types::canon::{Canon, RowFamily, Value as CanonValue};
 use atlas_graph_types::chrono::DatedBy;
 use atlas_graph_types::edge::{
     Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, Contains,
-    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, Mentions, NamedAfter, Occurs, Quotes,
+    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, Mentions, NamedAfter, Occurs, ParentOf, Participates, Partners, Quotes,
     SpokenAt, SpokenBy, Succession, TemporalAdjacency, Typology,
 };
 use atlas_graph_types::text::{BibleTag, ConcordTag};
@@ -53,6 +53,9 @@ pub enum RowRef<'a> {
     Confesses(&'a Confesses),
     CommentsOn(&'a CommentsOn),
     Occurs(&'a Occurs),
+    ParentOf(&'a ParentOf),
+    Partners(&'a Partners),
+    Participates(&'a Participates),
 }
 
 /// Owned rows read back (the reader's output) -- the same 21 arms.
@@ -80,6 +83,9 @@ pub enum RowOwned {
     Confesses(Confesses),
     CommentsOn(CommentsOn),
     Occurs(Occurs),
+    ParentOf(ParentOf),
+    Partners(Partners),
+    Participates(Participates),
 }
 
 macro_rules! per_arm {
@@ -107,6 +113,9 @@ macro_rules! per_arm {
             Self::Confesses($r) => $body,
             Self::CommentsOn($r) => $body,
             Self::Occurs($r) => $body,
+            Self::ParentOf($r) => $body,
+            Self::Partners($r) => $body,
+            Self::Participates($r) => $body,
         }
     };
 }
@@ -136,6 +145,9 @@ macro_rules! family_of {
             Self::Confesses(_) => RowFamily::Confesses,
             Self::CommentsOn(_) => RowFamily::CommentsOn,
             Self::Occurs(_) => RowFamily::Occurs,
+            Self::ParentOf(_) => RowFamily::ParentOf,
+            Self::Partners(_) => RowFamily::Partners,
+            Self::Participates(_) => RowFamily::Participates,
         }
     };
 }
@@ -172,7 +184,10 @@ impl<'a> RowRef<'a> {
             | Self::Analogue(_)
             | Self::CrossRefs(_)
             | Self::Quotes(_)
-            | Self::Occurs(_) => None,
+            | Self::Occurs(_)
+            | Self::ParentOf(_)
+            | Self::Partners(_)
+            | Self::Participates(_) => None,
         }
     }
 }
@@ -208,6 +223,9 @@ impl RowOwned {
             Self::Confesses(r) => RowRef::Confesses(r),
             Self::CommentsOn(r) => RowRef::CommentsOn(r),
             Self::Occurs(r) => RowRef::Occurs(r),
+            Self::ParentOf(r) => RowRef::ParentOf(r),
+            Self::Partners(r) => RowRef::Partners(r),
+            Self::Participates(r) => RowRef::Participates(r),
         }
     }
 }
@@ -237,6 +255,9 @@ pub fn insert_row(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row:
         RowRef::Confesses(r) => concord::insert_confesses(tx, jw, ord, r),
         RowRef::CommentsOn(r) => kretzmann::insert_comments_on(tx, jw, ord, r),
         RowRef::Occurs(r) => lexicon::insert_occurs(tx, ord, r),
+        RowRef::ParentOf(r) => core::insert_parent_of(tx, ord, r),
+        RowRef::Partners(r) => core::insert_partners(tx, ord, r),
+        RowRef::Participates(r) => core::insert_participates(tx, ord, r),
     }
 }
 
@@ -270,6 +291,9 @@ pub fn read_rows(conn: &Connection, family: RowFamily) -> Result<Vec<(i64, RowOw
         RowFamily::Confesses => wrap(concord::read_confesses(conn)?, RowOwned::Confesses),
         RowFamily::CommentsOn => wrap(kretzmann::read_comments_on(conn)?, RowOwned::CommentsOn),
         RowFamily::Occurs => wrap(lexicon::read_occurs(conn)?, RowOwned::Occurs),
+        RowFamily::ParentOf => wrap(core::read_parent_of(conn)?, RowOwned::ParentOf),
+        RowFamily::Partners => wrap(core::read_partners(conn)?, RowOwned::Partners),
+        RowFamily::Participates => wrap(core::read_participates(conn)?, RowOwned::Participates),
     })
 }
 

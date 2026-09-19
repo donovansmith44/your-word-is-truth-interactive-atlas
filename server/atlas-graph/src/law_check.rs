@@ -208,6 +208,19 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         };
         check("occurs", "locus", AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw })?;
     }
+    // D5: kinship and participation -- every end is node-typed.
+    for row in &graph.parent_of {
+        check("parent_of", "parent", row.parent.erase())?;
+        check("parent_of", "child", row.child.erase())?;
+    }
+    for row in &graph.partners {
+        check("partners", "a", row.a.erase())?;
+        check("partners", "b", row.b.erase())?;
+    }
+    for row in &graph.participates {
+        check("participates", "person", row.person.erase())?;
+        check("participates", "event", row.event.erase())?;
+    }
 
     Ok(())
 }
@@ -282,6 +295,55 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
 /// unordered pair are caught here too -- the symmetric index would
 /// silently double the edge, exactly the defect the container-containment
 /// forest gate's own duplicate branch exists to name.
+/// D5 (owner, 2026-09-15): kinship is ACYCLIC -- nobody is their own
+/// ancestor -- and no `parent-of` pair is stated twice. Theographic states
+/// each link from both ends; the adapter merges them, and this law is what
+/// says the merge (and the source) never produced a loop. Fail-loud at
+/// compile, like the containment forest.
+pub fn kinship_is_acyclic(graph: &Graph) -> Result<(), String> {
+    use std::collections::{BTreeMap, BTreeSet};
+    let mut children: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    let mut seen_pairs: BTreeSet<(&str, &str)> = BTreeSet::new();
+    for row in &graph.parent_of {
+        let (p, c) = (row.parent.0.as_str(), row.child.0.as_str());
+        if p == c {
+            return Err(format!("kinship: '{p}' is stated as their own parent"));
+        }
+        if !seen_pairs.insert((p, c)) {
+            return Err(format!("duplicate parent-of row: '{p}' -> '{c}'"));
+        }
+        children.entry(p).or_default().push(c);
+    }
+    // iterative DFS with colours over every parent node
+    let mut colour: BTreeMap<&str, u8> = BTreeMap::new(); // 1 = on the stack, 2 = done
+    for start in children.keys().copied() {
+        if colour.get(start).is_some() {
+            continue;
+        }
+        let mut stack: Vec<(&str, usize)> = vec![(start, 0)];
+        colour.insert(start, 1);
+        while let Some((node, idx)) = stack.last_mut() {
+            let kids = children.get(node).map(|v| v.as_slice()).unwrap_or(&[]);
+            if *idx < kids.len() {
+                let next = kids[*idx];
+                *idx += 1;
+                match colour.get(next) {
+                    Some(1) => return Err(format!("kinship has a CYCLE: '{next}' is an ancestor of themselves (reached again from '{node}')")),
+                    Some(_) => {}
+                    None => {
+                        colour.insert(next, 1);
+                        stack.push((next, 0));
+                    }
+                }
+            } else {
+                colour.insert(node, 2);
+                stack.pop();
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn analogue_rows_join_two_distinct_events(graph: &Graph) -> Result<(), String> {
     let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
     for row in &graph.analogue {
@@ -509,6 +571,11 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.corresponds_bible = graph.corresponds_bible.clone();
     fresh.temporal_adjacency = graph.temporal_adjacency.clone();
     fresh.analogue = graph.analogue.clone();
+    fresh.occurs = graph.occurs.clone();
+    // D5: kinship, partnership and participation rows.
+    fresh.parent_of = graph.parent_of.clone();
+    fresh.partners = graph.partners.clone();
+    fresh.participates = graph.participates.clone();
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 
@@ -675,7 +742,7 @@ mod tests {
         let mut graph = Graph::default();
         let person_id = PersonId::new("jesus_905").erase();
         assert_eq!(person_id.kind, NodeKind::Person);
-        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() });
         let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
         graph.spoken_by.push(atlas_graph_types::edge::SpokenBy { locus: range, speaker: PersonId::new("jesus_905"), provenance: "test".into(), justification: Justification::default() });
 
@@ -777,7 +844,7 @@ mod tests {
         let group_id = PeopleGroupId::new("ammonites").erase();
         graph.nodes.insert(group_id.clone(), Node { id: group_id, payload: NodePayload::PeopleGroup { label: "Ammonites".into(), description: None }, provenance: "test".into() });
         let person_id = PersonId::new("ben-ammi_451").erase();
-        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Ben-ammi".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        graph.nodes.insert(person_id.clone(), Node { id: person_id, payload: NodePayload::Person { label: "Ben-ammi".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() });
         graph.named_after.push(atlas_graph_types::edge::NamedAfter {
             namesake: atlas_graph_types::edge::Namesake::PeopleGroup(PeopleGroupId::new("ammonites")),
             eponym: PersonId::new("ben-ammi_451"),

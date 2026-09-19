@@ -673,7 +673,10 @@ public sealed record EdgeSummaryEntryDto(string Kind, int Count);
 /// CommentaryItem (a Kretzmann unit's own prose, `NodePayload::
 /// CommentaryItem.text` -- `atlas_graph::legacy::node_description`'s own
 /// widened match) -- the SAME additive field, reused, not a new one.
-public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version, string? Description = null);
+public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version, string? Description = null, PersonLifeDto? Person = null);
+
+/// D5: a Person card's life facts (server: PersonLifeOut). first/last year are the corpus-mention span, never a lifespan.
+public sealed record PersonLifeDto(string? Gender, int? BirthYear, int? DeathYear, int? FirstYear, int? LastYear, bool Eternal, List<string> EternalGrounds, List<string> AlsoCalled);
 
 public sealed record NodeRefDto(string Id, string Kind, string Label);
 

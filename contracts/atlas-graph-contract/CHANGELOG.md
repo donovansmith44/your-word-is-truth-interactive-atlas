@@ -34,6 +34,16 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.10.0** (Batch D5, owner directives) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved; the vocabulary grew).**
+  Person cards: `RelationId` gains `ParentOf` and `Participates`, `SymRelationId`
+  gains `Partners` (all three APPENDED LAST -- positional codes unchanged for
+  every earlier relation); `NodePayload::Person` gains `first_year`/`last_year`
+  (the corpus-mention span), `eternal` + `eternal_grounds` (curated,
+  `data/curated/people-eternal.toml`); `RowFamily` gains `ParentOf`/`Partners`/
+  `Participates`. The core section's logical hash and the version root moved;
+  the `vocabulary`, `version-root` and `contract` fixtures (AQC range 0.6.0 ->
+  0.7.0) are re-recorded. No existing edge id moved; no scenario text moved.
+
 - **0.9.0** (Batch D3, owner directives) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The Book of Concord's containment takes the Bible's own shape: document
   ⊃ article as `Contains` rows (one per article, `ContainerContent::

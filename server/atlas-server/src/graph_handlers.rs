@@ -53,6 +53,24 @@ pub struct EdgeSummaryEntryOut {
     pub count: usize,
 }
 
+/// D5 (owner, 2026-09-15; additive, AQC 0.7.0): a Person card's life facts,
+/// straight off the payload. `birth_year`/`death_year` are the source's
+/// own life dates (75 / 64 of 3,067 persons carry one); `first_year`/
+/// `last_year` are the CORPUS-mention span, never a lifespan; `eternal`
+/// with its Scripture `eternal_grounds` is the curated exception ("God
+/// because he is eternal") -- an eternal person shows no years at all.
+#[derive(Debug, Serialize)]
+pub struct PersonLifeOut {
+    pub gender: Option<String>,
+    pub birth_year: Option<i32>,
+    pub death_year: Option<i32>,
+    pub first_year: Option<i32>,
+    pub last_year: Option<i32>,
+    pub eternal: bool,
+    pub eternal_grounds: Vec<String>,
+    pub also_called: Vec<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct NodeCardOut {
     pub id: String,
@@ -61,6 +79,9 @@ pub struct NodeCardOut {
     pub provenance: String,
     pub edge_summary: Vec<EdgeSummaryEntryOut>,
     pub version: String,
+    /// D5: present for a Person only (omitted, never null, otherwise).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub person: Option<PersonLifeOut>,
     /// ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,
     /// `None` until a match exists -- same additive-JSON, same held-client
     /// disclosure as `handlers::PlaceDetailOut::description`. This is the
@@ -146,6 +167,19 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
     // second, `Node`-taking overload for this one caller's own minor
     // optimization.
     let description = node_description(&node_id, &snap);
+    let person = match &node.payload {
+        atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(PersonLifeOut {
+            gender: gender.clone(),
+            birth_year: *birth_year,
+            death_year: *death_year,
+            first_year: *first_year,
+            last_year: *last_year,
+            eternal: *eternal,
+            eternal_grounds: eternal_grounds.clone(),
+            also_called: also_called.clone(),
+        }),
+        _ => None,
+    };
 
     Ok(Json(NodeCardOut {
         id: encode_node_id(&node_id),
@@ -154,6 +188,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
         provenance: node.provenance.clone(),
         edge_summary,
         version: atlas_graph::version_hex(graph.version()),
+        person,
         description,
     }))
 }

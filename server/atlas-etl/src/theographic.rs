@@ -133,6 +133,24 @@ pub(crate) fn parse_theo_year(raw: &str) -> Option<i32> {
 /// `latitude`/`longitude` (same lat/lon order as normal, unlike the
 /// openbible `lon,lat` convention) — those new places are returned
 /// alongside the events so the caller can merge them into the compiled set.
+/// D5: the Airtable record id -> atlas event id (`theo-{eventID}`, or
+/// `theo-{record id}` when the numeric id is absent) map, spelled ONCE --
+/// the SAME rule `parse_events` below uses to mint ids -- so the people
+/// parser's `timeline` resolution can never disagree with the events'.
+pub fn event_ids_by_record(events_json: &str) -> Result<HashMap<String, String>> {
+    let events: Vec<Record<EventFields>> = serde_json::from_str(events_json).context("theographic events.json is not valid JSON")?;
+    Ok(events
+        .iter()
+        .map(|rec| {
+            let id = match rec.fields.event_id {
+                Some(n) => format!("theo-{n}"),
+                None => format!("theo-{}", rec.id),
+            };
+            (rec.id.clone(), id)
+        })
+        .collect())
+}
+
 pub fn parse_events(
     places_json: &str,
     verses_json: &str,

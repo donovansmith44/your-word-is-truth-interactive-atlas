@@ -203,7 +203,7 @@ mod tests {
     use std::collections::HashMap;
 
     fn person(id: &str, name: &str, dict_text: Option<&str>) -> Person {
-        Person { id: id.into(), name: name.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], verse_links: vec![], dict_text: dict_text.map(str::to_string) }
+        Person { id: id.into(), name: name.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], verse_links: vec![], dict_text: dict_text.map(str::to_string), ..Default::default() }
     }
 
     fn easton(dict_lookup: &str, dict_text: &str, match_type: &str, match_slugs: &str, person_slug: Option<&str>, place_name: Option<&str>) -> EastonEntry {
@@ -224,7 +224,7 @@ mod tests {
     fn person_node(id: &str, label: &str) -> Node {
         Node {
             id: PersonId::new(id).erase(),
-            payload: NodePayload::Person { label: label.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None },
+            payload: NodePayload::Person { label: label.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] },
             provenance: ProvenanceId::from("test"),
         }
     }

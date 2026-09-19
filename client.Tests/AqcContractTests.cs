@@ -11,14 +11,14 @@ public class AqcContractTests {
         Assert.True(AqcContract.Satisfies(new ContractDto(AqcContract.ClientVersion, AqcContract.ClientVersion)));
 
     [Theory]
-    [InlineData("0.6.0", "0.6.0")]
-    [InlineData("0.5.9", "0.7.0")]
+    [InlineData("0.7.0", "0.7.0")]
+    [InlineData("0.6.9", "0.8.0")]
     public void AcceptsWhenClientVersionFallsWithinRange(string min, string max) =>
         Assert.True(AqcContract.Satisfies(new ContractDto(min, max)));
 
     [Theory]
-    [InlineData("0.7.0", "0.9.0")]
-    [InlineData("0.0.1", "0.5.9")]
+    [InlineData("0.8.0", "0.9.0")]
+    [InlineData("0.0.1", "0.6.9")]
     public void RejectsWhenClientVersionFallsOutsideRange(string min, string max) =>
         Assert.False(AqcContract.Satisfies(new ContractDto(min, max)));
 

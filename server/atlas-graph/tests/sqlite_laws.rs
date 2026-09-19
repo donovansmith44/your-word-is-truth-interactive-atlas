@@ -72,7 +72,7 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Ground, Justification, Occurs};
+use atlas_graph_types::edge::{Ground, Justification, Occurs, ParentOf, Participates, Partners};
 use atlas_graph_types::id::{AnchorId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
@@ -448,6 +448,12 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 3), provenance: "stepbible-tagnt".into() });
     g.occurs.push(Occurs { entry: LexiconEntryId::new("H0430"), locus: word(1, 1, 2, "hebrew_masoretic", 2), provenance: "stepbible-tahot".into() });
 
+    // 23-25. D5: kinship and participation -- Abraham > Isaac, Abraham + Sarah,
+    // Abraham takes part in the baptism-era event this specimen already has.
+    g.parent_of.push(ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() });
+    g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
+    g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
+
     // Nodes the rows can reach from an edge endpoint, and the two spines.
     let node = |kind: NodeKind, raw: &str, payload: NodePayload| Node {
         id: AnyNodeId { kind, raw: raw.to_string() },
@@ -589,6 +595,9 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::Confesses => out.extend(g.confesses.iter().map(RowRef::Confesses)),
             RowFamily::CommentsOn => out.extend(g.comments_on.iter().map(RowRef::CommentsOn)),
             RowFamily::Occurs => out.extend(g.occurs.iter().map(RowRef::Occurs)),
+            RowFamily::ParentOf => out.extend(g.parent_of.iter().map(RowRef::ParentOf)),
+            RowFamily::Partners => out.extend(g.partners.iter().map(RowRef::Partners)),
+            RowFamily::Participates => out.extend(g.participates.iter().map(RowRef::Participates)),
         }
     }
     out

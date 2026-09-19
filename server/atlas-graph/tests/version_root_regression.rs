@@ -407,4 +407,8 @@ fn version_root_matches_the_captured_pre_pipeline_baseline() {
 /// replacing the flat document-level paragraph union -- 125 more
 /// `contains_concord` rows in this four-corpus build too. (Captured value
 /// before: "0e17d941b8e30bc421a4370fdc1ee392".)
-const EXPECTED_VERSION_HEX: &str = "1cc29e59bd95c211add281d8afabaa84";
+/// MOVED AT D5 (2026-09-19, owner directive): person cards -- 1,776
+/// `parent_of`, 104 `partners` and 714 `participates` rows, and the Person
+/// payload's corpus-mention span + eternal columns, in this four-corpus
+/// build too. (Captured value before: "1cc29e59bd95c211add281d8afabaa84".)
+const EXPECTED_VERSION_HEX: &str = "11c50986e095373f3e1bd6ac2218ed28";

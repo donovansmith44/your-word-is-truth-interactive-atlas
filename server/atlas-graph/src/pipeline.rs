@@ -519,6 +519,10 @@ impl Pass for LawCheckPass {
         crate::law_check::container_containment_is_a_forest(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("NODE1-ROWS-1 container-containment forest law (acyclicity + single-parent)")?;
+        // D5: kinship is acyclic and each parent-of pair is stated once.
+        crate::law_check::kinship_is_acyclic(&ctx.graph)
+            .map_err(|e| anyhow::anyhow!("{e}"))
+            .context("D5 kinship law (acyclic, no duplicate parent-of pair)")?;
         // ATTEST-1 (owner-signed FAIL-LOUD; the softer warning option was
         // declined). L2: no verse belongs to the `Attests` set of two
         // distinct events, stated against the declared curation queue in

@@ -385,6 +385,12 @@ public static class PopoverSectionRegistry
         // OTHER half -- the verse's own entry point INTO persons) no
         // longer lives here -- M-D3/U6 moved it up to Order 30-40's
         // neighborhood historically; O4 above unregistered it entirely.
+        // D5: a person's card reads LIFE -> EVENTS -> FAMILY -> MENTIONED IN
+        // (collapsed, last) -- the owner's order; every year, event and name
+        // explorable.
+        (new PersonLifeSection(), 196),
+        (new PersonEventsSection(), 197),
+        (new PersonFamilySection(), 198),
         (new PersonCardAndMentionsSection(), 200),
         // Batch CORP-1b (owner authorization, resolving CORP-1's own
         // disclosed NEEDS_CONTEXT gap): the CommentaryItem node's own real

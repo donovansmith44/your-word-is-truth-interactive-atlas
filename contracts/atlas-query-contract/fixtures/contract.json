@@ -1,8 +1,8 @@
 {
   "body": {
     "manifest_schema": 1,
-    "max_version": "0.6.0",
-    "min_version": "0.6.0",
+    "max_version": "0.7.0",
+    "min_version": "0.7.0",
     "section_schema_version": 14
   },
   "status": 200

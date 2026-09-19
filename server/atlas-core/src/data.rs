@@ -86,7 +86,7 @@ pub struct Place {
 /// types-first, owner-approved decision, not an adapter-only one, and it
 /// is correctly outside batch-p-brief.md's own scope (card + mentions,
 /// requirement 2, verbatim). Ledgered for the owner, not silently built.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Person {
     pub id: String,
     pub name: String,
@@ -95,6 +95,36 @@ pub struct Person {
     pub death_year: Option<i32>,
     pub also_called: Vec<String>,
     pub verse_links: Vec<String>,
+    /// D5 (owner, 2026-09-15): Theographic kinship (`father`/`mother`/
+    /// `children`/`partners`), RESOLVED to person ids (never Airtable
+    /// record ids); a link to a record with no person is dropped and
+    /// counted. `siblings` is deliberately not carried: derived from
+    /// shared parents at read time, never stored.
+    #[serde(default)]
+    pub father: Vec<String>,
+    #[serde(default)]
+    pub mother: Vec<String>,
+    #[serde(default)]
+    pub children: Vec<String>,
+    #[serde(default)]
+    pub partners: Vec<String>,
+    /// D5: Theographic `minYear`/`maxYear` -- the span of the CORPUS's
+    /// mentions of this person, NOT a lifespan (God's is -4004..96).
+    #[serde(default)]
+    pub first_year: Option<i32>,
+    #[serde(default)]
+    pub last_year: Option<i32>,
+    /// D5: Theographic `timeline` -- the events this person takes part in,
+    /// resolved to this atlas's event ids (`theo-{n}`).
+    #[serde(default)]
+    pub timeline: Vec<String>,
+    /// D5: `data/curated/people-eternal.toml` -- "the exception is God
+    /// because he is eternal": no lifespan, ever; `eternal_grounds` are the
+    /// Scripture dot-refs the card cites.
+    #[serde(default)]
+    pub eternal: bool,
+    #[serde(default)]
+    pub eternal_grounds: Vec<String>,
     /// ENT-1a: see this struct's own doc comment above. `None` for the
     /// 1,250 of 3,067 real persons Easton's never covered (or attested with
     /// only empty text) -- never a fabricated placeholder.

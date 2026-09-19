@@ -312,6 +312,10 @@ public sealed class AtlasClient
     public Task<EdgePageDto> NodeEdges(string nodeId, string kind, int? cursor = null, int limit = 200) =>
         GetRequired<EdgePageDto>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind)}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
 
+    /// <summary>D5: a node's card (id/kind/label/provenance/edge_summary and, for a Person, its life facts) from a section provider.</summary>
+    public Task<NodeCardDto> NodeCard(string nodeId) =>
+        GetRequired<NodeCardDto>($"api/node/{Uri.EscapeDataString(nodeId)}");
+
     /// <summary>
     /// D3: one Book of Concord paragraph's own text, by citation
     /// (<c>BoC 7.2.1</c>) -- the SAME <c>/api/text</c> window the Concord

@@ -165,6 +165,9 @@ fn every_row_of_every_family_round_trips() {
         temporal_adjacency,
         analogue,
         occurs,
+        parent_of,
+        partners,
+        participates,
         reading: _,
         // DB-4b: the non-graph tables' canonical bodies -- not rows of a
         // family; their own round trip is `sqlite_laws.rs`/gate 9.
@@ -205,6 +208,9 @@ fn every_row_of_every_family_round_trips() {
     fam!(temporal_adjacency, RowFamily::TemporalAdjacency);
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
+    fam!(parent_of, RowFamily::ParentOf);
+    fam!(partners, RowFamily::Partners);
+    fam!(participates, RowFamily::Participates);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -245,9 +251,15 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
         (RowFamily::Occurs, 431_280),
+        // D5: Theographic kinship (parent links stated from both ends, minted once),
+        // partnerships (unordered pairs, minted once) and timeline participation
+        // (only where the event is a real Event node).
+        (RowFamily::ParentOf, 1_776),
+        (RowFamily::Partners, 104),
+        (RowFamily::Participates, 714),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 914_817, "the committed graph carries exactly 914,817 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3)");
+    assert_eq!(total, 917_411, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5)");
 
     // M2-5. The three uninhabited families (artifact.rs refuses to dump a
     // non-empty one) are still real encoders. "An empty table round-trips
@@ -478,6 +490,9 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(temporal_adjacency, RowFamily::TemporalAdjacency);
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
+    fam!(parent_of, RowFamily::ParentOf);
+    fam!(partners, RowFamily::Partners);
+    fam!(participates, RowFamily::Participates);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

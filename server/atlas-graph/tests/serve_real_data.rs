@@ -59,7 +59,7 @@ fn the_provenance_families_are_the_artifacts() {
     names.sort();
     let mut expected = a.provenance.families();
     expected.sort();
-    assert_eq!(names, expected, "the same 23 families");
+    assert_eq!(names, expected, "the same 26 families");
     for name in expected {
         let got: Vec<String> = fams[name].iter().cloned().collect();
         assert_eq!(got, a.provenance.by_family(name), "{name}");

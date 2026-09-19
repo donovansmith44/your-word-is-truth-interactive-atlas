@@ -30,7 +30,10 @@
         <p class="popover-meta" data-testid="popover-person-provenance">Source: @Provenance</p>
     }
 
-    <p class="catechism-section-heading" data-testid="person-mentions-heading">MENTIONED IN SCRIPTURE (@TotalCount)</p>
+    @if (ShowHeading)
+    {
+        <p class="catechism-section-heading" data-testid="person-mentions-heading">MENTIONED IN SCRIPTURE (@TotalCount)</p>
+    }
 
     @if (_entries.Count == 0)
     {
@@ -63,6 +66,8 @@
     [Parameter, EditorRequired] public List<EdgeEntryDto> InitialEntries { get; set; } = new();
     [Parameter] public int? InitialNext { get; set; }
     [Parameter] public int TotalCount { get; set; }
+    /// D5: false when the host renders the heading itself (the collapsed disclosure's own summary carries it), so the card never says it twice.
+    [Parameter] public bool ShowHeading { get; set; } = true;
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     // Real per-instance state a static section-provider closure cannot own

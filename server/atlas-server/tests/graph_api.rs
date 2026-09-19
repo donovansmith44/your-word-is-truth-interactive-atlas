@@ -1679,3 +1679,68 @@ async fn narrative_event_positions_has_adjacency_on_the_real_artifact_path() {
     assert!(tail_row["following"].is_null(), "{tail} is exodus's last leg -- no narrative `following`: {tail_body}");
     assert_eq!(tail_row["prior"]["id"], legs[legs.len() - 2], "{tail_body}");
 }
+
+// ---------------------------------------------------------------------
+// D5 (owner, 2026-09-15): a Person's card carries its LIFE (the source's
+// own life dates, or the corpus-mention span said as such), its KIN
+// (child-of / parent-of / partner-of) and its EVENTS (participates-in) --
+// every one a queried edge; and God is eternal: no years, with the
+// Scripture grounds on the wire.
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn person_card_carries_life_years_kin_and_events() {
+    let app = artifact_app();
+
+    let (st, body, _) = get(&app, "/api/node/Person:aaron_1").await;
+    assert_eq!(st, 200, "{body}");
+    assert_eq!(body["kind"], "Person");
+    let person = &body["person"];
+    // Theographic's "-1574"/"-1451" through `parse_theo_year` (the ETL's own
+    // pinned convention, people.rs: a BC year shifts by one to astronomical).
+    assert_eq!(person["birth_year"], -1575, "{person}");
+    assert_eq!(person["death_year"], -1452, "{person}");
+    assert_eq!(person["eternal"], false);
+    assert!(person["first_year"].is_i64() && person["last_year"].is_i64(), "the corpus-mention span is always computed: {person}");
+    assert!(person["first_year"].as_i64().unwrap() <= person["last_year"].as_i64().unwrap());
+
+    let count = |kind: &str| body["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == kind).map(|e| e["count"].as_u64().unwrap()).unwrap_or(0);
+    assert_eq!(count("child-of"), 2, "Amram and Jochebed: {}", body["edge_summary"]);
+    assert_eq!(count("parent-of"), 4, "Nadab, Abihu, Eleazar, Ithamar: {}", body["edge_summary"]);
+    assert_eq!(count("partner-of"), 1, "Elisheba: {}", body["edge_summary"]);
+    assert!(count("participates-in") >= 1, "Aaron's timeline must reach at least one real Event node: {}", body["edge_summary"]);
+
+    let (st2, parents, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=child-of").await;
+    assert_eq!(st2, 200, "{parents}");
+    let mut ids: Vec<String> = parents["entries"].as_array().unwrap().iter().map(|e| e["node"]["id"].as_str().unwrap().to_string()).collect();
+    ids.sort();
+    assert_eq!(ids, vec!["Person:amram_242", "Person:jochebed_1645"]);
+
+    // The traversal runs both ways: a parent's parent-of frontier names the child back.
+    let (st3, children, _) = get(&app, "/api/node/Person:amram_242/edges?kind=parent-of").await;
+    assert_eq!(st3, 200, "{children}");
+    assert!(children["entries"].as_array().unwrap().iter().any(|e| e["node"]["id"] == "Person:aaron_1"), "{children}");
+
+    // partner-of is symmetric: one minted edge, seen from either side.
+    let (st4, partners, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=partner-of").await;
+    assert_eq!(st4, 200, "{partners}");
+    assert_eq!(partners["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(partners["entries"][0]["node"]["id"], "Person:aaron_1");
+
+    // A non-person card carries no person block at all (omitted, never null).
+    let (_, event, _) = get(&app, "/api/node/Event:ab_ur").await;
+    assert!(event.get("person").is_none(), "{event}");
+}
+
+#[tokio::test]
+async fn god_is_eternal_and_the_card_says_why() {
+    let app = artifact_app();
+    let (st, body, _) = get(&app, "/api/node/Person:god_1324").await;
+    assert_eq!(st, 200, "{body}");
+    let person = &body["person"];
+    assert_eq!(person["eternal"], true, "{person}");
+    assert_eq!(person["birth_year"], serde_json::Value::Null);
+    assert_eq!(person["death_year"], serde_json::Value::Null);
+    let grounds: Vec<&str> = person["eternal_grounds"].as_array().unwrap().iter().map(|g| g.as_str().unwrap()).collect();
+    assert_eq!(grounds, vec!["PSA.90.2", "REV.1.8"]);
+}

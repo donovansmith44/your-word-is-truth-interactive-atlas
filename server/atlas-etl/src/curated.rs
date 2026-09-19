@@ -567,6 +567,41 @@ struct LandmarksFile {
 /// that's `validate::run_landmarks`'s job (needs the bbox, which this
 /// module doesn't own), matching the brief's "curated::parse_landmarks
 /// (pure) -> validate" pipeline.
+// --- D5: people-eternal.toml -----------------------------------------------
+
+#[derive(Deserialize)]
+struct PeopleEternalFile {
+    #[serde(default)]
+    eternal: Vec<EternalToml>,
+}
+
+#[derive(Deserialize)]
+struct EternalToml {
+    id: String,
+    #[serde(default)]
+    grounds: Vec<String>,
+}
+
+/// D5 (owner, 2026-09-15: "the exception is God because he is eternal"):
+/// `(person id, Scripture grounds)` per `[[eternal]]` entry. Existence of
+/// the person is the compile's check (it has the people in hand), not this
+/// parser's; an entry with no grounds is refused here -- eternity is a
+/// claim, and a claim carries its Scripture.
+pub fn parse_people_eternal(input: &str) -> Result<Vec<(String, Vec<String>)>> {
+    let f: PeopleEternalFile = toml::from_str(input).context("people-eternal.toml: invalid TOML or does not match the [[eternal]] schema")?;
+    let mut out = Vec::with_capacity(f.eternal.len());
+    for e in f.eternal {
+        if e.grounds.is_empty() {
+            anyhow::bail!("people-eternal.toml: '{}' claims eternity without Scripture grounds", e.id);
+        }
+        for g in &e.grounds {
+            atlas_core::refs::VerseId::parse_canonical(g).map_err(|err| anyhow::anyhow!("people-eternal.toml: '{}' ground {g:?} is not a canonical verse ref: {err}", e.id))?;
+        }
+        out.push((e.id, e.grounds));
+    }
+    Ok(out)
+}
+
 pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
     let f: LandmarksFile =
         toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;

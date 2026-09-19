@@ -61,9 +61,9 @@
 //! thesis data point, disclosed rather than duplicated.
 
 use atlas_core::data::AtlasData;
-use atlas_graph_types::edge::{Mentions, MentionedEntity};
+use atlas_graph_types::edge::{Mentions, MentionedEntity, ParentOf, Participates, Partners};
 use atlas_graph_types::graph::Graph;
-use atlas_graph_types::id::{NodeKind, PersonId};
+use atlas_graph_types::id::{EventId, NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef};
@@ -91,6 +91,12 @@ fn person_node(p: &atlas_core::data::Person) -> Node {
             death_year: p.death_year,
             also_called: p.also_called.clone(),
             description: None,
+            // D5: the corpus-mention span (never a lifespan) and the
+            // curated eternity claim with its grounds.
+            first_year: p.first_year,
+            last_year: p.last_year,
+            eternal: p.eternal,
+            eternal_grounds: p.eternal_grounds.clone(),
         },
         provenance: ProvenanceId::from(PROVENANCE),
     }
@@ -100,6 +106,14 @@ fn person_node(p: &atlas_core::data::Person) -> Node {
 pub struct PersonAdapterStats {
     pub person_nodes: usize,
     pub mentions_rows: usize,
+    /// D5: kinship and participation rows, and the links skipped because
+    /// their other end is not a Person node (a reclassified people group)
+    /// or not an Event node.
+    pub parent_of_rows: usize,
+    pub partners_rows: usize,
+    pub participates_rows: usize,
+    pub kin_links_skipped: usize,
+    pub timeline_links_skipped: usize,
 }
 
 /// NORMALIZE: one Person node per source record -- called from
@@ -162,6 +176,69 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
             stats.mentions_rows += 1;
         }
     }
+
+    // D5 (owner, 2026-09-15): kinship and participation as declared rows.
+    // Theographic states each parent link from BOTH ends (`father`/`mother`
+    // on the child, `children` on the parent), so the pairs are collected
+    // into ONE ordered set and minted once; partners the same, ordered a < b.
+    // A link whose other end is not a Person node (a reclassified people
+    // group) or, for the timeline, not an Event node is skipped and counted
+    // -- never a dangling row (`law_check::every_authored_edge_resolves`).
+    use std::collections::BTreeSet;
+    let is_person = |id: &str| !reclassified.contains(id) && ctx.graph.nodes.contains_key(&PersonId::new(id.to_string()).erase());
+    let mut parent_child: BTreeSet<(String, String)> = BTreeSet::new();
+    let mut partner_pairs: BTreeSet<(String, String)> = BTreeSet::new();
+    let mut participation: Vec<(String, String)> = Vec::new();
+    for p in &ctx.atlas.people {
+        if reclassified.contains(&p.id) {
+            continue;
+        }
+        for parent in p.father.iter().chain(p.mother.iter()) {
+            if is_person(parent) {
+                parent_child.insert((parent.clone(), p.id.clone()));
+            } else {
+                stats.kin_links_skipped += 1;
+            }
+        }
+        for child in &p.children {
+            if is_person(child) {
+                parent_child.insert((p.id.clone(), child.clone()));
+            } else {
+                stats.kin_links_skipped += 1;
+            }
+        }
+        for partner in &p.partners {
+            if is_person(partner) && *partner != p.id {
+                let (a, b) = if p.id < *partner { (p.id.clone(), partner.clone()) } else { (partner.clone(), p.id.clone()) };
+                partner_pairs.insert((a, b));
+            } else {
+                stats.kin_links_skipped += 1;
+            }
+        }
+        for event in &p.timeline {
+            if ctx.graph.nodes.contains_key(&EventId::new(event.clone()).erase()) {
+                participation.push((p.id.clone(), event.clone()));
+            } else {
+                stats.timeline_links_skipped += 1;
+            }
+        }
+    }
+    for (parent, child) in parent_child {
+        ctx.graph.parent_of.push(ParentOf { parent: PersonId::new(parent), child: PersonId::new(child), provenance: ProvenanceId::from(PROVENANCE) });
+        stats.parent_of_rows += 1;
+    }
+    for (a, b) in partner_pairs {
+        ctx.graph.partners.push(Partners { a: PersonId::new(a), b: PersonId::new(b), provenance: ProvenanceId::from(PROVENANCE) });
+        stats.partners_rows += 1;
+    }
+    for (person, event) in participation {
+        ctx.graph.participates.push(Participates { person: PersonId::new(person), event: EventId::new(event), provenance: ProvenanceId::from(PROVENANCE) });
+        stats.participates_rows += 1;
+    }
+    eprintln!(
+        "D5 PERSON KIN/PARTICIPATION: {} parent-of row(s), {} partner-of row(s), {} participates-in row(s); {} kin link(s) and {} timeline link(s) skipped (other end not a Person / Event node)",
+        stats.parent_of_rows, stats.partners_rows, stats.participates_rows, stats.kin_links_skipped, stats.timeline_links_skipped
+    );
     stats
 }
 
@@ -281,6 +358,7 @@ mod tests {
             also_called: vec![],
             verse_links: verses.iter().map(|s| s.to_string()).collect(),
             dict_text: None,
+            ..Default::default()
         }
     }
 
@@ -299,6 +377,7 @@ mod tests {
             also_called: vec!["Ahron".into()],
             verse_links: vec![],
             dict_text: None,
+            ..Default::default()
         }]);
         let canon = Canon { books: vec![] };
         let verses: HashMap<String, String> = HashMap::new();
@@ -310,7 +389,7 @@ mod tests {
         let node = ctx.graph.nodes.get(&id).expect("Aaron's own node must exist");
         assert_eq!(node.provenance, PROVENANCE);
         match &node.payload {
-            NodePayload::Person { label, gender, birth_year, death_year, also_called, description } => {
+            NodePayload::Person { label, gender, birth_year, death_year, also_called, description, .. } => {
                 assert_eq!(label, "Aaron");
                 assert_eq!(*description, None, "description stays None until the Easton's adapter fills it");
                 assert_eq!(gender.as_deref(), Some("Male"));

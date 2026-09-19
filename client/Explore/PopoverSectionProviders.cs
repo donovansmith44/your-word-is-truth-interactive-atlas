@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BibleAtlas.Client.Explore;
@@ -3040,7 +3041,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         EdgePageDto page;
         try
         {
-            var cardTask = ctx.Graph.Card(person.PersonId);
+            var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
             var pageTask = ctx.Graph.Edges(person.PersonId, spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
             await Task.WhenAll(cardTask, pageTask);
             card = cardTask.Result;
@@ -3056,16 +3057,30 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         // .Value is the one, explicit, disclosed crossing point between the two.
         var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind.Value)?.Count ?? page.Entries.Count;
 
+        // D5: the verse list is the LAST section and collapsed by default
+        // ("no point to just see every verse that name is mentioned") --
+        // still one click away, never gone.
         RenderFragment body = builder =>
         {
-            builder.OpenComponent<Components.PersonMentionsList>(0);
-            builder.AddAttribute(1, "PersonId", person.PersonId);
-            builder.AddAttribute(2, "Provenance", card.Provenance);
-            builder.AddAttribute(3, "InitialEntries", page.Entries);
-            builder.AddAttribute(4, "InitialNext", page.Next);
-            builder.AddAttribute(5, "TotalCount", total);
-            builder.AddAttribute(6, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
+            var seq = 0;
+            builder.OpenElement(seq++, "details");
+            builder.AddAttribute(seq++, "class", "person-mentions-disclosure");
+            builder.AddAttribute(seq++, "data-testid", "person-mentions-disclosure");
+            builder.OpenElement(seq++, "summary");
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
+            builder.AddAttribute(seq++, "data-testid", "person-mentions-heading");
+            builder.AddContent(seq++, $"MENTIONED IN SCRIPTURE ({total})");
+            builder.CloseElement();
+            builder.OpenComponent<Components.PersonMentionsList>(seq++);
+            builder.AddAttribute(seq++, "PersonId", person.PersonId);
+            builder.AddAttribute(seq++, "Provenance", card.Provenance);
+            builder.AddAttribute(seq++, "InitialEntries", page.Entries);
+            builder.AddAttribute(seq++, "InitialNext", page.Next);
+            builder.AddAttribute(seq++, "TotalCount", total);
+            builder.AddAttribute(seq++, "ShowHeading", false);
+            builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
+            builder.CloseElement();
         };
         return new PopoverSection("person-mentions", body);
     }
@@ -3303,5 +3318,216 @@ internal static class CatechismLinks
         }
         while (cursor is not null);
         return targets;
+    }
+}
+
+/// <summary>D5: shared rendering for the person sections -- a heading and a row of explorable person/event/verse chips.</summary>
+file static class PersonSectionRendering
+{
+    public static int Heading(RenderTreeBuilder builder, int seq, string text, string testid)
+    {
+        builder.OpenElement(seq++, "p");
+        builder.AddAttribute(seq++, "class", "catechism-section-heading");
+        builder.AddAttribute(seq++, "data-testid", testid);
+        builder.AddContent(seq++, text);
+        builder.CloseElement();
+        return seq;
+    }
+
+    public static int Chips(RenderTreeBuilder builder, int seq, string testidPrefix, IEnumerable<(string Id, string Label, IExplorable Node)> chips, IPopoverSectionContext ctx)
+    {
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "popover-catechism-list person-chips");
+        foreach (var (id, label, node) in chips)
+        {
+            var target = node;
+            builder.OpenElement(seq++, "button");
+            builder.AddAttribute(seq++, "type", "button");
+            builder.AddAttribute(seq++, "class", "popover-catechism-item explorable");
+            builder.AddAttribute(seq++, "data-testid", $"{testidPrefix}-{id.Replace(':', '-').Replace('.', '-')}");
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create<MouseEventArgs>(ctx, () => ctx.PushAsync(target)));
+            builder.AddContent(seq++, label);
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+        return seq;
+    }
+
+    public static string RawId(string wireId, string prefix) => wireId.StartsWith(prefix, StringComparison.Ordinal) ? wireId[prefix.Length..] : wireId;
+}
+
+/// <summary>
+/// D5: LIFE -- first on a person's card. Eternal: "Eternal" with the
+/// Scripture grounds as verse chips, no years. Otherwise the life dates
+/// when the source gives them ("Born c. 1997 BC · Died c. 1821 BC"), else
+/// the corpus-mention span said as exactly that. POPOVER-LAW-1: absent
+/// when there is nothing to say.
+/// </summary>
+public sealed class PersonLifeSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Person";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PersonNode person)
+        {
+            return null;
+        }
+
+        PersonLifeDto? life;
+        try
+        {
+            life = (await person.CardAsync(() => ctx.Graph.Card(person.PersonId))).Person;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (life is null)
+        {
+            return null;
+        }
+
+        string? line = null;
+        if (life.Eternal)
+        {
+            line = "Eternal";
+        }
+        else if (life.BirthYear is int b || life.DeathYear is int d0)
+        {
+            var parts = new List<string>();
+            if (life.BirthYear is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
+            if (life.DeathYear is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
+            line = string.Join(" \u00b7 ", parts);
+        }
+        else if (life.FirstYear is int first && life.LastYear is int last)
+        {
+            line = $"Mentioned across c. {PersonNode.Year(first)} \u2013 {PersonNode.Year(last)}";
+        }
+
+        if (line is null)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = PersonSectionRendering.Heading(builder, 0, person.Title == "Jesus" ? "EARTHLY LIFE" : "LIFE", "person-life-heading");
+            builder.OpenElement(seq++, "p");
+            builder.AddAttribute(seq++, "class", "person-life-line");
+            builder.AddAttribute(seq++, "data-testid", "person-life");
+            builder.AddContent(seq++, line);
+            builder.CloseElement();
+            if (life.Eternal && life.EternalGrounds.Count > 0)
+            {
+                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
+            }
+        };
+        return new PopoverSection("person-life", body);
+    }
+}
+
+/// <summary>D5: EVENTS (n) -- the person's own `participates-in` frontier, each an explorable event.</summary>
+public sealed class PersonEventsSection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Person";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PersonNode person)
+        {
+            return null;
+        }
+
+        List<NodeRefDto> events;
+        try
+        {
+            events = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("participates-in"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (events.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = PersonSectionRendering.Heading(builder, 0, $"EVENTS ({events.Count})", "person-events-heading");
+            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (PersonSectionRendering.RawId(e.Id, "Event:"), e.Label, (IExplorable)new EventNode(PersonSectionRendering.RawId(e.Id, "Event:"), e.Label))), ctx);
+        };
+        return new PopoverSection("person-events", body);
+    }
+}
+
+/// <summary>
+/// D5: FAMILY -- parents (`child-of`), partners (`partner-of`), children
+/// (`parent-of`), siblings DERIVED as the other children of the same
+/// parents; every name an explorable person. Absent when the person has no
+/// kin at all.
+/// </summary>
+public sealed class PersonFamilySection : IPopoverSectionProvider
+{
+    public bool AppliesTo(IExplorable node) => node.Kind == "Person";
+
+    public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
+    {
+        if (node is not PersonNode person)
+        {
+            return null;
+        }
+
+        List<NodeRefDto> parents, partners, children;
+        var siblings = new List<NodeRefDto>();
+        try
+        {
+            parents = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("child-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            partners = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("partner-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            children = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("parent-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            foreach (var parent in parents)
+            {
+                var theirs = (await ctx.Graph.Edges(parent.Id, new EdgeKindId("parent-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node);
+                foreach (var s in theirs)
+                {
+                    if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))
+                    {
+                        siblings.Add(s);
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (parents.Count + partners.Count + children.Count + siblings.Count == 0)
+        {
+            return null;
+        }
+
+        RenderFragment body = builder =>
+        {
+            var seq = PersonSectionRendering.Heading(builder, 0, "FAMILY", "person-family-heading");
+            foreach (var (label, testid, people) in new[] { ("Parents", "parents", parents), ("Partners", "partners", partners), ("Children", "children", children), ("Siblings", "siblings", siblings) })
+            {
+                if (people.Count == 0)
+                {
+                    continue;
+                }
+
+                builder.OpenElement(seq++, "p");
+                builder.AddAttribute(seq++, "class", "person-family-label");
+                builder.AddAttribute(seq++, "data-testid", $"person-family-{testid}");
+                builder.AddContent(seq++, $"{label} ({people.Count})");
+                builder.CloseElement();
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{testid}", people.Select(p => (PersonSectionRendering.RawId(p.Id, "Person:"), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
+            }
+        };
+        return new PopoverSection("person-family", body);
     }
 }

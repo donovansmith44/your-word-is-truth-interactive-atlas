@@ -136,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "atlas-graph-types"
-version = "0.3.0"
+version = "0.4.0"
 
 [[package]]
 name = "atlas-server"

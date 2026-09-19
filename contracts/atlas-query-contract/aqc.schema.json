@@ -3,7 +3,7 @@
   "$id": "https://bible-atlas.internal/contracts/atlas-query-contract/aqc.schema.json",
   "title": "Atlas Query Contract (AQC) v0.1.0",
   "description": "SNAPSHOT of today's actually-consumed wire shapes (spec §9 Q4, recommended scope). Every schema below is a field-for-field transcription of the real provider handler/DTO named in its own 'x-source' — this document does not redesign anything; it documents what already ships. Zero server behavior change accompanies this version; the ONLY new behavior in this batch is the /api/contract endpoint itself (ContractOut, §6 below).",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "x-queries": {
     "FocusQuery": {
       "description": "FocusQuery(descriptor) -> Focus. The node-card payload for one descriptor. The snapshot does NOT include Frontier/EscapeHatches as separate wire fields — today's real endpoint returns edge_summary (kind -> count) as the frontier signal and no escape-hatch data at all; those richer shapes are §4/§5 CLIENT-side constructs, not yet part of the wire (spec §9 Q5 is owner-gated).",
@@ -172,6 +172,10 @@
         "description": {
           "type": "string",
           "description": "OMITTED (not null) when no description match exists. Present for Place/Person/PeopleGroup/CommentaryItem kinds."
+        },
+        "person": {
+          "$ref": "#/$defs/PersonLifeOut",
+          "description": "D5: present for kind 'Person' only; omitted otherwise."
         }
       },
       "additionalProperties": false
@@ -733,6 +737,69 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/ContentsRootOut"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PersonLifeOut": {
+      "type": "object",
+      "x-source": "server/atlas-server/src/graph_handlers.rs::PersonLifeOut",
+      "description": "D5: a Person card's life facts. birth_year/death_year are the source's own life dates; first_year/last_year are the corpus-mention span (never a lifespan); eternal (with Scripture eternal_grounds) is the curated exception -- no years on the card.",
+      "required": [
+        "gender",
+        "birth_year",
+        "death_year",
+        "first_year",
+        "last_year",
+        "eternal",
+        "eternal_grounds",
+        "also_called"
+      ],
+      "properties": {
+        "gender": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "birth_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "death_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "first_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "last_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "eternal": {
+          "type": "boolean"
+        },
+        "eternal_grounds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "also_called": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       },

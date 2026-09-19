@@ -468,7 +468,7 @@ mod tests {
     }
 
     fn person(id: &str, name: &str, verses: &[&str]) -> Person {
-        Person { id: id.into(), name: name.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], verse_links: verses.iter().map(|s| s.to_string()).collect(), dict_text: None }
+        Person { id: id.into(), name: name.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], verse_links: verses.iter().map(|s| s.to_string()).collect(), dict_text: None, ..Default::default() }
     }
 
     fn ground(from: &str) -> ScriptureGroundSeed {
@@ -653,7 +653,7 @@ mod tests {
 
     fn person_node(ctx: &mut BuildCtx, slug: &str, label: &str) {
         let id = PersonId::new(slug).erase();
-        ctx.graph.nodes.insert(id.clone(), Node { id, payload: NodePayload::Person { label: label.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: ProvenanceId::from("test") });
+        ctx.graph.nodes.insert(id.clone(), Node { id, payload: NodePayload::Person { label: label.into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: ProvenanceId::from("test") });
     }
 
     #[test]

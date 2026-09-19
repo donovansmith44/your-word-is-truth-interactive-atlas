@@ -107,6 +107,16 @@
             "forward": "occurs-in",
             "inverse": "words",
             "name": "Occurs"
+        },
+        {
+            "forward": "parent-of",
+            "inverse": "child-of",
+            "name": "ParentOf"
+        },
+        {
+            "forward": "participates-in",
+            "inverse": "participants",
+            "name": "Participates"
         }
     ],
     "section_schema_version": 14,
@@ -130,6 +140,10 @@
         {
             "label": "temporal-adjacency",
             "name": "TemporalAdjacency"
+        },
+        {
+            "label": "partner-of",
+            "name": "Partners"
         }
     ]
 }

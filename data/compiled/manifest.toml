@@ -1,14 +1,14 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-09-19T03:40:00Z"
-root = "946ba72fc7bc7801fba3efc4f0656ff8"
+built = "2026-09-19T06:04:23Z"
+root = "18c7546b435791ee9422be8f32fbb5fa"
 
 [[section]]
 name = "core"
 required = true
-logical = "36c377d88a0f09869247b259242c681d"
-blob = "6479ffaea136b18f89ccfe2f43b38016aabb73ee5bf2ecee2b2c9280a12fbe70"
-bytes = 7564727
+logical = "f92948735c4b4cc3e3934a85b44f4168"
+blob = "1cd842c427c7f06c9f423460de0dda9e28c127235178e2ea913cab77f0d5876e"
+bytes = 7920147
 schema_version = 14
 
 [[section]]

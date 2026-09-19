@@ -290,7 +290,7 @@ mod tests {
         let id = PersonId::new(JESUS_PERSON_ID.to_string()).erase();
         ctx.graph.nodes.insert(
             id.clone(),
-            Node { id, payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() },
+            Node { id, payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() },
         );
     }
 
@@ -457,7 +457,7 @@ mod tests {
         let jesus_id = PersonId::new(JESUS_PERSON_ID.to_string()).erase();
         ctx.graph.nodes.insert(
             jesus_id.clone(),
-            Node { id: jesus_id.clone(), payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() },
+            Node { id: jesus_id.clone(), payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() },
         );
         let place_id = atlas_graph_types::id::PlaceId::new("mountain").erase();
         ctx.graph.nodes.insert(place_id.clone(), Node { id: place_id.clone(), payload: NodePayload::Place { canonical: "Mountain".into(), lat: 0.0, lon: 0.0, aliases: vec![], description: None }, provenance: "test".into() });
