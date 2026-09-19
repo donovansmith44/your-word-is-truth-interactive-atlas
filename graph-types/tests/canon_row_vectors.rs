@@ -25,11 +25,11 @@ use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis
 use atlas_graph_types::edge::{
     Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    Mentions, NamedAfter, Namesake, Quotes, SpokenAt, SpokenBy, Succession, TemporalAdjacency,
+    Mentions, NamedAfter, Namesake, Occurs, Quotes, SpokenAt, SpokenBy, Succession, TemporalAdjacency,
     Typology,
 };
 use atlas_graph_types::id::{
-    AnchorId, CatechismItemId, CommentaryItemId, ContainerNodeId, EraId, EventId, NarrativeId,
+    AnchorId, CatechismItemId, CommentaryItemId, ContainerNodeId, EraId, EventId, LexiconEntryId, NarrativeId,
     PeopleGroupId, PersonId, PlaceId, PolityId, SourceId,
 };
 use atlas_graph_types::text::{
@@ -129,7 +129,7 @@ fn golden_row<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily, golden: &s
 
 #[test]
 fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
-    assert_eq!(RowFamily::ALL.len(), 21, "spec 5 names 21 row tables");
+    assert_eq!(RowFamily::ALL.len(), 22, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7)");
     let names: Vec<&'static str> = RowFamily::ALL.iter().map(|f| f.name()).collect();
     let unique = {
         let mut n = names.clone();
@@ -137,7 +137,7 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
         n.dedup();
         n.len()
     };
-    assert_eq!(unique, 21, "table names must be distinct: {names:?}");
+    assert_eq!(unique, 22, "table names must be distinct: {names:?}");
     assert_eq!(
         names,
         vec![
@@ -162,14 +162,15 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
             "corresponds_bible",
             "temporal_adjacency",
             "analogue",
+            "occurs",
         ],
-        "the table names and their ORDER are the spec's own (spec 5); the order IS the ordinal"
+        "the table names and their ORDER are the spec's own (spec 5, then 5.7); the order IS the ordinal"
     );
     for (i, f) in RowFamily::ALL.iter().enumerate() {
         assert_eq!(f.ordinal() as usize, i, "{} sits at ordinal {i}", f.name());
         assert_eq!(RowFamily::from_ordinal(f.ordinal()), Some(*f));
     }
-    assert_eq!(RowFamily::from_ordinal(21), None, "the enum is closed at 21");
+    assert_eq!(RowFamily::from_ordinal(22), None, "the enum is closed at 22");
 }
 
 #[test]
@@ -457,6 +458,21 @@ fn every_row_family_round_trips_with_hand_built_data() {
         },
         RowFamily::Analogue,
         r#"{"a":"Event:leper-healed-galilee","b":"Event:leper-healed-capernaum","provenance":"curated/analogues"}"#
+    );
+
+    // 22. occurs (LEX-1) -- a ONE-token span on the Greek layer: John 3:16
+    // token 4 (the article before "God").
+    law!(
+        Occurs {
+            entry: LexiconEntryId::new("G3588"),
+            locus: TextLocus {
+                at: TextRef::Bible(vr(42, 3, 16)),
+                span: Some(TokenSpan::new(TranslationId("greek_textus_receptus".into()), 4, 4).unwrap()),
+            },
+            provenance: "stepbible-tagnt".into(),
+        },
+        RowFamily::Occurs,
+        r#"{"entry":"LexiconEntry:G3588","locus":{"at":{"Bible":{"book":42,"chapter":3,"verse":16}},"span":{"end":4,"layer":"greek_textus_receptus","start":4}},"provenance":"stepbible-tagnt"}"#
     );
 
     assert_eq!(

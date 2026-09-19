@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::id::{
     AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, ContainerNodeId, ContentAddressed,
-    EventId, Interned,
+    EventId, Interned, LexiconEntryId,
     NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
 use crate::ingest::ProvenanceId;
@@ -454,6 +454,23 @@ pub struct Mentions {
 pub struct Analogue {
     pub a: EventId,
     pub b: EventId,
+    pub provenance: ProvenanceId,
+}
+
+/// LEX-1 (spec 7.3): one aligned original-language token -- a lexicon
+/// entry occurring at ONE word locus. The locus is the verse plus a span
+/// of exactly one token (`span.start == span.end`, the upstream CoNLL-U
+/// token id within the verse, on the `greek_textus_receptus` /
+/// `hebrew_masoretic` layer). Imported, no justification: the alignment
+/// is the source's own assertion, provenance-tagged `stepbible-tagnt` /
+/// `stepbible-tahot`. Lowers to `entry --occurs-in--> verse` (inverse
+/// `words`); two tokens of one entry in one verse are two rows behind one
+/// edge (the leper lesson: `rows_behind` lists both, and each row's
+/// `locus.span` names its token).
+#[derive(Clone, Debug)]
+pub struct Occurs {
+    pub entry: LexiconEntryId,
+    pub locus: TextLocus,
     pub provenance: ProvenanceId,
 }
 

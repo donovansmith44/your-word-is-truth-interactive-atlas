@@ -52,11 +52,11 @@ use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
     Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    Mentions, NamedAfter, Namesake, Quotes, SpokenAt, SpokenBy, Succession, TemporalAdjacency,
+    Mentions, NamedAfter, Namesake, Occurs, Quotes, SpokenAt, SpokenBy, Succession, TemporalAdjacency,
     Typology,
 };
 use crate::id::{
-    AnchorTag, CatechismItemTag, CommentaryItemTag, ContainerTag, EraTag, EventTag, KindTag,
+    AnchorTag, CatechismItemTag, CommentaryItemTag, ContainerTag, EraTag, EventTag, KindTag, LexiconEntryTag,
     NarrativeTag, NodeId, PeopleGroupTag, PersonTag, PlaceTag, PolityTag, SourceTag,
 };
 use crate::text::{
@@ -100,10 +100,12 @@ pub enum RowFamily {
     CorrespondsBible,
     TemporalAdjacency,
     Analogue,
+    /// LEX-1: the lexicon section's one family (spec 5.7, 7.3).
+    Occurs,
 }
 
 impl RowFamily {
-    pub const ALL: [RowFamily; 21] = [
+    pub const ALL: [RowFamily; 22] = [
         RowFamily::ContainsBible,
         RowFamily::ContainsConcord,
         RowFamily::Attests,
@@ -125,6 +127,7 @@ impl RowFamily {
         RowFamily::CorrespondsBible,
         RowFamily::TemporalAdjacency,
         RowFamily::Analogue,
+        RowFamily::Occurs,
     ];
 
     /// The SQLite table name, verbatim from spec 5.
@@ -151,6 +154,7 @@ impl RowFamily {
             RowFamily::CorrespondsBible => "corresponds_bible",
             RowFamily::TemporalAdjacency => "temporal_adjacency",
             RowFamily::Analogue => "analogue",
+            RowFamily::Occurs => "occurs",
         }
     }
 
@@ -686,6 +690,7 @@ const CONFESSES_KEYS: &[&str] = &["confessed", "confessing", "justification", "p
 const CORRESPONDS_KEYS: &[&str] = &["a", "b", "provenance"];
 const TEMPORAL_ADJACENCY_KEYS: &[&str] = &["earlier", "later", "provenance"];
 const ANALOGUE_KEYS: &[&str] = &["a", "b", "provenance"];
+const OCCURS_KEYS: &[&str] = &["entry", "locus", "provenance"];
 
 impl<C: Corpus> Canon for Contains<C>
 where
@@ -1160,6 +1165,27 @@ impl Canon for Analogue {
     }
 }
 
+impl Canon for Occurs {
+    fn to_value(&self) -> Value {
+        let Self { entry, locus, provenance } = self;
+        obj(vec![
+            ("entry", id_value(entry)),
+            ("locus", locus.to_value()),
+            ("provenance", str_value(provenance)),
+        ])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, OCCURS_KEYS)?;
+        Ok(Occurs {
+            entry: field_id::<LexiconEntryTag>(m, ROOT, "entry")?,
+            locus: field_sub::<TextLocus>(m, ROOT, "locus")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
 /// DB-2b (RELMAP-1): the TOTAL family -> relation map. Every row family
 /// lowers into exactly one relation (directed or symmetric); this is
 /// the single spelling of that pairing, exhaustive by construction (no
@@ -1191,6 +1217,7 @@ impl RowFamily {
             RowFamily::CorrespondsBible => Symmetric(S::Corresponds),
             RowFamily::TemporalAdjacency => Symmetric(S::TemporalAdjacency),
             RowFamily::Analogue => Symmetric(S::Analogue),
+            RowFamily::Occurs => Directed(R::Occurs),
         }
     }
 }

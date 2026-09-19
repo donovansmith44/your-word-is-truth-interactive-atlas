@@ -47,9 +47,10 @@ impl Section {
     pub const MANIFEST_ORDER: [Section; 5] =
         [Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon];
 
-    /// The sections a manifest lists today: `MANIFEST_ORDER` minus
-    /// `Lexicon` (no tables before LEX-1). The version root is over these.
-    pub const SHIPPED: [Section; 4] = [Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann];
+    /// The sections a manifest lists today: all five of `MANIFEST_ORDER`
+    /// since LEX-1 (the lexicon section ships `Occurs` + its three extra
+    /// tables). The version root is over these.
+    pub const SHIPPED: [Section; 5] = [Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -171,6 +172,7 @@ pub fn section_of_family(f: RowFamily) -> Section {
         | RowFamily::CorrespondsBible
         | RowFamily::TemporalAdjacency
         | RowFamily::Analogue => Section::Core,
+        RowFamily::Occurs => Section::Lexicon,
     }
 }
 
@@ -264,7 +266,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
         ],
         Section::Concord => &[RowFamily::ContainsConcord, RowFamily::Quotes, RowFamily::Confesses],
         Section::Kretzmann => &[RowFamily::CommentsOn],
-        Section::Lexicon => &[],
+        Section::Lexicon => &[RowFamily::Occurs],
     }
 }
 
@@ -320,7 +322,10 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
         ],
         Section::Kjv => &["verse", "red_letter_span"],
         Section::Concord => &["concord_unit"],
-        Section::Kretzmann | Section::Lexicon => &[],
+        Section::Kretzmann => &[],
+        // LEX-1 (spec 5.7): the entry projection, its domain codes, and the
+        // word inventory (every token, matched or not).
+        Section::Lexicon => &["lexicon_entry", "lexicon_domain", "token"],
     }
 }
 
@@ -407,6 +412,7 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible),
             RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency),
             RowFamily::Analogue => rows!(f, g.analogue),
+            RowFamily::Occurs => rows!(f, g.occurs),
         }
     }
     if let Some(corpus) = spine_corpus(section) {
@@ -526,7 +532,8 @@ mod laws {
             .collect();
         let borrowed: Vec<(&str, &str, u32, bool)> = lines.iter().map(|(n, l, v, r)| (n.as_str(), l.as_str(), *v, *r)).collect();
         let text = String::from_utf8(manifest_lines(&borrowed)).unwrap();
-        assert_eq!(text.lines().count(), 4);
+        assert_eq!(text.lines().count(), 5);
+        assert!(text.ends_with(&format!("lexicon|{}|14|false\n", lines[4].1)), "the lexicon line is last and optional");
         assert!(text.starts_with(&format!("core|{}|14|true\n", lines[0].1)));
         assert!(text.contains("|14|false\n"), "concord and kretzmann are optional");
         assert_eq!(version_root(&g), root_of_lines(text.as_bytes()));
@@ -543,6 +550,7 @@ mod laws {
         assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span"]);
         assert_eq!(extra_tables_of(Section::Concord), &["concord_unit"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
+        assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "lexicon_domain", "token"]);
         assert_eq!(extra_tables_of(Section::Core).len(), 26);
         let order = logical_table_order(Section::Core);
         assert_eq!(order.last().copied(), Some("provenance_entry"));
@@ -584,8 +592,10 @@ mod laws {
         assert_eq!(section_of_family(RowFamily::CommentsOn), Section::Kretzmann);
         assert_eq!(section_of_justified_by(RowFamily::ContainsBible, Some("bible-chapter-GEN-1")), Section::Kjv);
         assert_eq!(section_of_justified_by(RowFamily::ContainsBible, Some("passage-creation")), Section::Core);
-        assert_eq!(row_tables_of(Section::Lexicon).len(), 0);
-        assert_eq!(Section::SHIPPED.len(), 4);
+        assert_eq!(row_tables_of(Section::Lexicon), &[RowFamily::Occurs]);
+        assert_eq!(section_of_family(RowFamily::Occurs), Section::Lexicon);
+        assert_eq!(Section::SHIPPED.len(), 5);
+        assert_eq!(Section::SHIPPED.to_vec(), Section::MANIFEST_ORDER.to_vec());
         // The closedness guard that replaces the retired whole-graph dump's
         // destructure: every family is written by exactly one shipped
         // section, ContainsBible by two.

@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Quotes, RelationId,
+    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, Quotes, RelationId,
     Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -64,6 +64,13 @@ pub struct Graph {
     /// (the CHRON-1 verse-jaccard sweep mistaking Matthew's own leper
     /// for Mark's/Luke's is exactly why).
     pub analogue: Vec<Analogue>,
+    /// LEX-1: imported `Occurs` rows (spec 7.3) -- one per aligned
+    /// original-language token, in canonical reading order (book, chapter,
+    /// verse, token), which is what makes a verse's `words` page read in
+    /// token order and an entry's `occurs-in` page a concordance in canon
+    /// order "by construction and nothing else". Empty in every build
+    /// without the lexicon corpus.
+    pub occurs: Vec<Occurs>,
 
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -158,7 +165,8 @@ impl Graph {
     /// succession, canon_succession, dated_by, comments_on, spoken_by,
     /// spoken_at, located_at, named_after, mentions, cross_refs, quotes,
     /// confesses, fulfills, typology, then symmetric: catechism,
-    /// temporal_adjacency, analogue. Order is load-bearing: `BiIndex` Vec
+    /// temporal_adjacency, analogue; then (LEX-1) occurs, appended LAST so
+    /// no pre-LEX-1 index entry moves. Order is load-bearing: `BiIndex` Vec
     /// order = cursor order = pinned scene bytes. (`corresponds_bible` has
     /// never been lowered by `build_indexes` and is not lowered here
     /// either -- the same zero-index gap it has always had.)
@@ -413,6 +421,16 @@ impl Graph {
                 M::None,
             ));
         }
+        // LEX-1: entry --occurs-in--> verse. The word locus lowers to its
+        // VERSE node (`text_node` ignores the span, as it does for every
+        // sub-verse Mentions locus); the token lives in the row.
+        for (i, row) in self.occurs.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Occurs, i, EdgeRel::Directed(RelationId::Occurs), (
+                at(&row.entry.erase()),
+                at(&text_node(&row.locus)),
+                M::None,
+            ));
+        }
         out
     }
 
@@ -466,6 +484,7 @@ impl Graph {
             F::CorrespondsBible => self.corresponds_bible.get(row_ord).map(|r| r.provenance.as_str()),
             F::TemporalAdjacency => self.temporal_adjacency.get(row_ord).map(|r| r.provenance.as_str()),
             F::Analogue => self.analogue.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Occurs => self.occurs.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 
@@ -1088,6 +1107,30 @@ mod row_edge_laws {
         let to = Locus::<BibleTag> { unit: VerseRef { book: 1, chapter: 1, verse: 3 }, span: None };
         g.attests.push(Attests { event: e1, attestation: LocusRange::new(from, to).unwrap(), provenance: "prov".into(), justification: Justification::default() });
         g
+    }
+
+    #[test]
+    fn an_occurs_row_lowers_to_one_entry_to_verse_edge_appended_last() {
+        use crate::edge::{Occurs, RelationId};
+        use crate::graph::EdgeRel;
+        use crate::id::{AnyNodeId, LexiconEntryId, NodeKind};
+        use crate::text::{TextLocus, TextRef, TokenSpan, TranslationId};
+        let mut g = g();
+        let before = g.row_edges().len();
+        g.occurs.push(Occurs {
+            entry: LexiconEntryId::new("G3056"),
+            locus: TextLocus { at: TextRef::Bible(VerseRef { book: 42, chapter: 1, verse: 1 }), span: Some(TokenSpan::new(TranslationId("greek_textus_receptus".into()), 7, 7).unwrap()) },
+            provenance: "stepbible-tagnt".into(),
+        });
+        let edges = g.row_edges();
+        assert_eq!(edges.len(), before + 1);
+        let e = edges.last().unwrap();
+        assert_eq!(e.family, crate::canon::RowFamily::Occurs);
+        assert_eq!(e.row_ord, 0);
+        assert_eq!(e.rel, EdgeRel::Directed(RelationId::Occurs));
+        assert_eq!(e.subject, crate::edge::at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() }));
+        assert_eq!(e.object, crate::edge::at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/42.1.1".into() }), "the word locus lowers to its VERSE node; the token stays in the row");
+        assert_eq!(g.row_provenance_of(crate::canon::RowFamily::Occurs, 0), Some("stepbible-tagnt"));
     }
 
     #[test]
