@@ -514,6 +514,10 @@ fn every_payload_variant_round_trips() {
                 death_year: None,
                 also_called: vec!["Moshe".into(), "the man of God".into()],
                 description: None,
+                first_year: Some(-1571),
+                last_year: Some(-1451),
+                eternal: false,
+                eternal_grounds: vec![],
             },
             provenance: "theographic".into(),
         },
@@ -783,11 +787,14 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
     use atlas_graph_types::edge::RelationId;
     assert_eq!(node_kind_str(NodeKind::LexiconEntry), "LexiconEntry");
     assert_eq!(parse_node_kind("LexiconEntry", "$.kind").unwrap(), NodeKind::LexiconEntry);
-    // Appended LAST among directed relations: `edge_index.rel` codes are positional.
-    assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::Occurs));
+    // Appended LAST among directed relations at LEX-1: `edge_index.rel` codes
+    // are positional. D5 appended ParentOf and Participates after it (the
+    // same rule); Occurs keeps its code because it keeps its position.
+    assert_eq!(RelationId::ALL.iter().position(|r| *r == RelationId::Occurs), Some(17));
+    assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::Participates));
     assert_eq!(RelationId::Occurs.forward_label(), "occurs-in");
     assert_eq!(RelationId::Occurs.inverse_label(), "words");
-    assert_eq!(RelationId::ALL.len(), 18);
+    assert_eq!(RelationId::ALL.len(), 20); // D5: + parent-of, participates-in
     assert_eq!(NodeKind::ALL.len(), 15);
     assert_eq!(NodeKind::ALL.last().copied(), Some(NodeKind::LexiconEntry));
     let full = Node {

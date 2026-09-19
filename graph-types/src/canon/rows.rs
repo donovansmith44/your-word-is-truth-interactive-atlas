@@ -52,8 +52,8 @@ use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
     Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    Mentions, NamedAfter, Namesake, Occurs, Quotes, SpokenAt, SpokenBy, Succession, TemporalAdjacency,
-    Typology,
+    Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, SpokenAt, SpokenBy,
+    Succession, TemporalAdjacency, Typology,
 };
 use crate::id::{
     AnchorTag, CatechismItemTag, CommentaryItemTag, ContainerTag, EraTag, EventTag, KindTag, LexiconEntryTag,
@@ -102,10 +102,14 @@ pub enum RowFamily {
     Analogue,
     /// LEX-1: the lexicon section's one family (spec 5.7, 7.3).
     Occurs,
+    /// D5: kinship and participation (Core), appended in this order.
+    ParentOf,
+    Partners,
+    Participates,
 }
 
 impl RowFamily {
-    pub const ALL: [RowFamily; 22] = [
+    pub const ALL: [RowFamily; 25] = [
         RowFamily::ContainsBible,
         RowFamily::ContainsConcord,
         RowFamily::Attests,
@@ -128,6 +132,9 @@ impl RowFamily {
         RowFamily::TemporalAdjacency,
         RowFamily::Analogue,
         RowFamily::Occurs,
+        RowFamily::ParentOf,
+        RowFamily::Partners,
+        RowFamily::Participates,
     ];
 
     /// The SQLite table name, verbatim from spec 5.
@@ -155,6 +162,9 @@ impl RowFamily {
             RowFamily::TemporalAdjacency => "temporal_adjacency",
             RowFamily::Analogue => "analogue",
             RowFamily::Occurs => "occurs",
+            RowFamily::ParentOf => "parent_of",
+            RowFamily::Partners => "partners",
+            RowFamily::Participates => "participates",
         }
     }
 
@@ -691,6 +701,9 @@ const CORRESPONDS_KEYS: &[&str] = &["a", "b", "provenance"];
 const TEMPORAL_ADJACENCY_KEYS: &[&str] = &["earlier", "later", "provenance"];
 const ANALOGUE_KEYS: &[&str] = &["a", "b", "provenance"];
 const OCCURS_KEYS: &[&str] = &["entry", "locus", "provenance"];
+const PARENT_OF_KEYS: &[&str] = &["child", "parent", "provenance"];
+const PARTNERS_KEYS: &[&str] = &["a", "b", "provenance"];
+const PARTICIPATES_KEYS: &[&str] = &["event", "person", "provenance"];
 
 impl<C: Corpus> Canon for Contains<C>
 where
@@ -1186,6 +1199,57 @@ impl Canon for Occurs {
     }
 }
 
+impl Canon for ParentOf {
+    fn to_value(&self) -> Value {
+        let Self { parent, child, provenance } = self;
+        obj(vec![("child", id_value(child)), ("parent", id_value(parent)), ("provenance", str_value(provenance))])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, PARENT_OF_KEYS)?;
+        Ok(ParentOf {
+            parent: field_id::<PersonTag>(m, ROOT, "parent")?,
+            child: field_id::<PersonTag>(m, ROOT, "child")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
+impl Canon for Partners {
+    fn to_value(&self) -> Value {
+        let Self { a, b, provenance } = self;
+        obj(vec![("a", id_value(a)), ("b", id_value(b)), ("provenance", str_value(provenance))])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, PARTNERS_KEYS)?;
+        Ok(Partners {
+            a: field_id::<PersonTag>(m, ROOT, "a")?,
+            b: field_id::<PersonTag>(m, ROOT, "b")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
+impl Canon for Participates {
+    fn to_value(&self) -> Value {
+        let Self { person, event, provenance } = self;
+        obj(vec![("event", id_value(event)), ("person", id_value(person)), ("provenance", str_value(provenance))])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, PARTICIPATES_KEYS)?;
+        Ok(Participates {
+            person: field_id::<PersonTag>(m, ROOT, "person")?,
+            event: field_id::<EventTag>(m, ROOT, "event")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
 /// DB-2b (RELMAP-1): the TOTAL family -> relation map. Every row family
 /// lowers into exactly one relation (directed or symmetric); this is
 /// the single spelling of that pairing, exhaustive by construction (no
@@ -1218,6 +1282,9 @@ impl RowFamily {
             RowFamily::TemporalAdjacency => Symmetric(S::TemporalAdjacency),
             RowFamily::Analogue => Symmetric(S::Analogue),
             RowFamily::Occurs => Directed(R::Occurs),
+            RowFamily::ParentOf => Directed(R::ParentOf),
+            RowFamily::Partners => Symmetric(S::Partners),
+            RowFamily::Participates => Directed(R::Participates),
         }
     }
 }

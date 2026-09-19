@@ -32,7 +32,7 @@ use crate::text::{BibleTag, ConcordTag, Corpus, LayerMap, TranslationId};
 use super::ids::{any_node_id_str, parse_any_node_id};
 use super::{
     expect_arr, expect_exact_keys, expect_obj, expect_str, expect_variant, field, field_arr,
-    field_f64, field_i32, field_obj, field_opt_i32, field_opt_str, field_opt_u8, field_str,
+    field_f64, field_i32, field_obj, field_bool, field_opt_i32, field_opt_str, field_opt_u8, field_str,
     field_u8, field_vec_str, join, obj, opt_i32, opt_str, opt_u8, str_value, variant, vec_str,
     Canon, CanonError, Value, ROOT,
 };
@@ -55,8 +55,18 @@ const EVENT_KEYS: &[&str] = &[
 ];
 const NARRATIVE_KEYS: &[&str] = &["color", "label"];
 const PLACE_KEYS: &[&str] = &["aliases", "canonical", "description", "lat", "lon"];
-const PERSON_KEYS: &[&str] =
-    &["also_called", "birth_year", "death_year", "description", "gender", "label"];
+const PERSON_KEYS: &[&str] = &[
+    "also_called",
+    "birth_year",
+    "death_year",
+    "description",
+    "eternal",
+    "eternal_grounds",
+    "first_year",
+    "gender",
+    "label",
+    "last_year",
+];
 const PEOPLE_GROUP_KEYS: &[&str] = &["description", "label"];
 const ANCHOR_KEYS: &[&str] = &["at", "citation"];
 const ERA_KEYS: &[&str] = &["from_year", "label", "to_year"];
@@ -151,6 +161,10 @@ fn payload_to_value(p: &NodePayload) -> Value {
             death_year,
             also_called,
             description,
+            first_year,
+            last_year,
+            eternal,
+            eternal_grounds,
         } => variant(
             "Person",
             obj(vec![
@@ -158,8 +172,12 @@ fn payload_to_value(p: &NodePayload) -> Value {
                 ("birth_year", opt_i32(birth_year)),
                 ("death_year", opt_i32(death_year)),
                 ("description", opt_str(description)),
+                ("eternal", Value::Bool(*eternal)),
+                ("eternal_grounds", vec_str(eternal_grounds)),
+                ("first_year", opt_i32(first_year)),
                 ("gender", opt_str(gender)),
                 ("label", str_value(label)),
+                ("last_year", opt_i32(last_year)),
             ]),
         ),
         NodePayload::PeopleGroup { label, description } => variant(
@@ -281,6 +299,10 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
                 death_year: field_opt_i32(m, &p, "death_year")?,
                 also_called: field_vec_str(m, &p, "also_called")?,
                 description: field_opt_str(m, &p, "description")?,
+                first_year: field_opt_i32(m, &p, "first_year")?,
+                last_year: field_opt_i32(m, &p, "last_year")?,
+                eternal: field_bool(m, &p, "eternal")?,
+                eternal_grounds: field_vec_str(m, &p, "eternal_grounds")?,
             })
         }
         "PeopleGroup" => {

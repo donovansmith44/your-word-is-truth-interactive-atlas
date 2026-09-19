@@ -323,6 +323,22 @@ pub enum Capability {
     /// ADJACENCY), not in this matrix. Event-to-Event, so `target` is
     /// genuinely single-kinded.
     Analogues,
+    /// D5 (owner, 2026-09-15: "a family tree whose names are all
+    /// explorable"): a Person's KIN -- `ParentOf` walked forward (the
+    /// children) and inverse (the parents) plus the symmetric `Partners`
+    /// row; siblings are DERIVED client-side as the other children of the
+    /// same parents, never a fourth row. Person-to-Person, so `target` is
+    /// single-kinded. Rendered by `PersonFamilySection`.
+    Kin,
+    /// D5 ("the events (explorable) in which they are mentioned"):
+    /// `Participates` forward, Person -> Event -- Theographic's own
+    /// per-person `timeline`, admitted only where the event is a real
+    /// `Event` node. Rendered by `PersonEventsSection`. The person's
+    /// YEARS are not a capability: they ride the card payload
+    /// (`NodePayload::Person::{birth_year, death_year, first_year,
+    /// last_year, eternal, eternal_grounds}`), the card half of
+    /// `CoreSection::PersonCard`.
+    Participation,
 }
 
 impl Capability {
@@ -344,6 +360,8 @@ impl Capability {
         Capability::Commentary,
         Capability::Members,
         Capability::Analogues,
+        Capability::Kin,
+        Capability::Participation,
     ];
 
     /// THE UNITY BRIDGE, executable (design review B3): returns real
@@ -409,6 +427,14 @@ impl Capability {
             }
             Capability::Analogues => {
                 &[FrontierEdge { kind: EK::Symmetric(S::Analogue), target: Some(G::Event) }]
+            }
+            Capability::Kin => &[
+                FrontierEdge { kind: EK::Directed(R::ParentOf, D::Forward), target: Some(G::Person) },
+                FrontierEdge { kind: EK::Directed(R::ParentOf, D::Inverse), target: Some(G::Person) },
+                FrontierEdge { kind: EK::Symmetric(S::Partners), target: Some(G::Person) },
+            ],
+            Capability::Participation => {
+                &[FrontierEdge { kind: EK::Directed(R::Participates, D::Forward), target: Some(G::Event) }]
             }
         }
     }
@@ -502,7 +528,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         (K::Verse, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Commentary) => true,
         (K::Verse, C::Chronology | C::TimeAndPlace | C::Accounts
-            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues) => false,
+            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues | C::Kin | C::Participation) => false,
 
         // Passage — verse-family, minus the verse-only memberships, and
         // minus Commentary (Kretzmann rows are verified Verse-anchored
@@ -512,7 +538,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
             | C::CatechismSupport) => true,
         (K::Passage, C::EventMembership | C::PassageMembership
             | C::Chronology | C::TimeAndPlace | C::Accounts | C::Commentary
-            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues) => false,
+            | C::EventsAt | C::MentionsOf | C::Members | C::Analogues | C::Kin | C::Participation) => false,
 
         // Event — the owner's calibration row: NO cross references until
         // event-level xref data exists ("we are not yet at the point of
@@ -528,18 +554,18 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
             | C::Analogues | C::MentionsOf) => true,
         (K::Event, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Commentary
-            | C::EventsAt | C::Members) => false,
+            | C::EventsAt | C::Members | C::Kin | C::Participation) => false,
 
         // Place — the EventsAt escapee (B5).
         (K::Place, C::EventsAt) => true,
         (K::Place, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Chronology
             | C::TimeAndPlace | C::Accounts | C::Commentary | C::MentionsOf | C::Members
-            | C::Analogues) => false,
+            | C::Analogues | C::Kin | C::Participation) => false,
 
         // Person — the MentionsOf escapee (B5); the card half is
         // `Section::Core(CoreSection::PersonCard)`, not a capability.
-        (K::Person, C::MentionsOf) => true,
+        (K::Person, C::MentionsOf | C::Kin | C::Participation) => true,
         (K::Person, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::Chronology
             | C::TimeAndPlace | C::Accounts | C::Commentary | C::EventsAt | C::Members
@@ -551,7 +577,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         (K::Catechism, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::Chronology | C::TimeAndPlace
             | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf | C::Members
-            | C::Analogues) => false,
+            | C::Analogues | C::Kin | C::Participation) => false,
 
         // Chapter/Book — LANDED (owner ruling: "chapters and books are
         // nodes... their frontier basically is the verses and event
@@ -566,7 +592,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         (K::Chapter | K::Book, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::CatechismSupport | C::TimeAndPlace
             | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf
-            | C::Analogues) => false,
+            | C::Analogues | C::Kin | C::Participation) => false,
 
         // D3 (owner, 2026-09-15): `ConcordUnit` earns CatechismSupport --
         // the paragraph end of the symmetric `CatechismLink` (the curated
@@ -577,7 +603,7 @@ pub const fn allows(kind: FocusKind, cap: Capability) -> bool {
         (K::ConcordUnit, C::CrossReferences | C::Parallels | C::EventMembership
             | C::PassageMembership | C::Persons | C::Chronology | C::TimeAndPlace
             | C::Accounts | C::Commentary | C::EventsAt | C::MentionsOf | C::Members
-            | C::Analogues) => false,
+            | C::Analogues | C::Kin | C::Participation) => false,
 
         // Not-yet-earned kinds: every capability opted out. `Author`,
         // `Year`, `TimeAndPlace`, `PolityDelta` are `ParameterizedView`/
@@ -723,6 +749,26 @@ mod tests {
         assert!(allows(FocusKind::Place, Capability::EventsAt));
         assert!(allows(FocusKind::Person, Capability::MentionsOf));
         assert!(allows(FocusKind::Catechism, Capability::CatechismSupport));
+    }
+
+    /// D5: the two Person-only capabilities (kin and participation) land on
+    /// Person and nowhere else, and walk exactly the three D5 relations.
+    #[test]
+    fn kin_and_participation_are_person_only_and_walk_the_d5_rows() {
+        use crate::edge::{Direction as D, EdgeKind as EK, RelationId as R, SymRelationId as S};
+        assert!(allows(FocusKind::Person, Capability::Kin));
+        assert!(allows(FocusKind::Person, Capability::Participation));
+        for kind in [FocusKind::Verse, FocusKind::Passage, FocusKind::ConcordUnit, FocusKind::Chapter, FocusKind::Book,
+                     FocusKind::Author, FocusKind::Place, FocusKind::Event, FocusKind::Catechism, FocusKind::Year,
+                     FocusKind::TimeAndPlace, FocusKind::PolityDelta, FocusKind::CommentaryItem] {
+            assert!(!allows(kind, Capability::Kin), "{kind:?} must not claim Kin");
+            assert!(!allows(kind, Capability::Participation), "{kind:?} must not claim Participation");
+        }
+        let kin: Vec<EK> = Capability::Kin.edges().iter().map(|e| e.kind).collect();
+        assert_eq!(kin, vec![EK::Directed(R::ParentOf, D::Forward), EK::Directed(R::ParentOf, D::Inverse), EK::Symmetric(S::Partners)]);
+        assert!(Capability::Kin.edges().iter().all(|e| e.target == Some(crate::id::NodeKind::Person)));
+        assert_eq!(Capability::Participation.edges()[0].kind, EK::Directed(R::Participates, D::Forward));
+        assert_eq!(Capability::Participation.edges()[0].target, Some(crate::id::NodeKind::Event));
         for kind in [FocusKind::Verse, FocusKind::Event, FocusKind::Chapter, FocusKind::Book] {
             assert!(!allows(kind, Capability::EventsAt), "{kind:?} must not claim EventsAt");
         }

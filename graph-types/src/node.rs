@@ -129,7 +129,25 @@ pub enum NodePayload {
     /// alternate-name list -- the SAME "payload, not a new relation kind"
     /// shape Place's own KJV aliases and Polity's own border data already
     /// use (a fact ABOUT the person, not a further explorable thing).
-    Person { label: String, gender: Option<String>, birth_year: Option<i32>, death_year: Option<i32>, also_called: Vec<String>, description: Option<String> },
+    /// D5 (owner, 2026-09-15): `first_year`/`last_year` are Theographic's
+    /// `minYear`/`maxYear` -- the span of the CORPUS's mentions of this
+    /// person, NOT a lifespan (God's is -4004..96; Jesus' minYear is -1689,
+    /// the earliest prophecy naming Him); the card says "mentioned across",
+    /// never "lived". `eternal` + `eternal_grounds` come from the curated
+    /// `data/curated/people-eternal.toml` (God, the Holy Spirit; Scripture
+    /// grounds): an eternal person has no lifespan and no years on the card.
+    Person {
+        label: String,
+        gender: Option<String>,
+        birth_year: Option<i32>,
+        death_year: Option<i32>,
+        also_called: Vec<String>,
+        description: Option<String>,
+        first_year: Option<i32>,
+        last_year: Option<i32>,
+        eternal: bool,
+        eternal_grounds: Vec<String>,
+    },
     /// PG-1 (owner order 2026-08-23: "we need a way to distinguish
     /// between the names of the twelve tribes and the people theyre
     /// named after"; "pull in Peoples or Nations info so I can find

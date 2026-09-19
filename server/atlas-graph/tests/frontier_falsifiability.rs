@@ -104,6 +104,10 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
         // ship a decorative cell for no reason. If this ever goes to zero
         // the sweep above fails loud, which is the point.
         EdgeKind::Symmetric(S::Analogue) => graph.analogue.len(),
+        // D5: kinship (ParentOf both ways, Partners) and participation.
+        EdgeKind::Directed(R::ParentOf, _) => graph.parent_of.len(),
+        EdgeKind::Symmetric(S::Partners) => graph.partners.len(),
+        EdgeKind::Directed(R::Participates, _) => graph.participates.len(),
         other => panic!(
             "frontier_falsifiability.rs's relation_row_count has no mapping for {other:?} -- \
              a new Capability::edges() cell names a relation this sweep doesn't know how to \

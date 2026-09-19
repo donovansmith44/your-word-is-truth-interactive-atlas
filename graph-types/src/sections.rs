@@ -171,7 +171,10 @@ pub fn section_of_family(f: RowFamily) -> Section {
         | RowFamily::Mentions
         | RowFamily::CorrespondsBible
         | RowFamily::TemporalAdjacency
-        | RowFamily::Analogue => Section::Core,
+        | RowFamily::Analogue
+        | RowFamily::ParentOf
+        | RowFamily::Partners
+        | RowFamily::Participates => Section::Core,
         RowFamily::Occurs => Section::Lexicon,
     }
 }
@@ -256,6 +259,9 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::CorrespondsBible,
             RowFamily::TemporalAdjacency,
             RowFamily::Analogue,
+            RowFamily::ParentOf,
+            RowFamily::Partners,
+            RowFamily::Participates,
         ],
         Section::Kjv => &[
             RowFamily::ContainsBible,
@@ -413,6 +419,9 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency),
             RowFamily::Analogue => rows!(f, g.analogue),
             RowFamily::Occurs => rows!(f, g.occurs),
+            RowFamily::ParentOf => rows!(f, g.parent_of),
+            RowFamily::Partners => rows!(f, g.partners),
+            RowFamily::Participates => rows!(f, g.participates),
         }
     }
     if let Some(corpus) = spine_corpus(section) {

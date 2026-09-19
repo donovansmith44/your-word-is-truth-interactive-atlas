@@ -236,6 +236,19 @@ pub fn expect_str(v: &Value, path: &str) -> Result<String, CanonError> {
     }
 }
 
+/// D5: a required boolean member.
+pub fn expect_bool(v: &Value, path: &str) -> Result<bool, CanonError> {
+    match v {
+        Value::Bool(b) => Ok(*b),
+        other => Err(CanonError::new(path, format!("expected bool, found {}", other.type_name()))),
+    }
+}
+
+pub fn field_bool(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<bool, CanonError> {
+    let (v, p) = field(m, path, key)?;
+    expect_bool(v, &p)
+}
+
 pub fn expect_opt_str(v: &Value, path: &str) -> Result<Option<String>, CanonError> {
     match v {
         Value::Null => Ok(None),

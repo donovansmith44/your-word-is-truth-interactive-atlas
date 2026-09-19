@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, Quotes, RelationId,
+    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
     Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -71,6 +71,13 @@ pub struct Graph {
     /// order "by construction and nothing else". Empty in every build
     /// without the lexicon corpus.
     pub occurs: Vec<Occurs>,
+    /// D5: Theographic kinship -- `parent --parent-of--> child`, one row per
+    /// (parent, child), imported. Siblings are derived, never stored.
+    pub parent_of: Vec<ParentOf>,
+    /// D5: spouses, symmetric, one row per pair.
+    pub partners: Vec<Partners>,
+    /// D5: `person --participates-in--> event` (Theographic `timeline`).
+    pub participates: Vec<Participates>,
 
     // -------- spines & indexes (built, never authored) --------
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -165,8 +172,9 @@ impl Graph {
     /// succession, canon_succession, dated_by, comments_on, spoken_by,
     /// spoken_at, located_at, named_after, mentions, cross_refs, quotes,
     /// confesses, fulfills, typology, then symmetric: catechism,
-    /// temporal_adjacency, analogue; then (LEX-1) occurs, appended LAST so
-    /// no pre-LEX-1 index entry moves. Order is load-bearing: `BiIndex` Vec
+    /// temporal_adjacency, analogue; then (LEX-1) occurs, then (D5)
+    /// parent_of, partners, participates -- each batch appended LAST so no
+    /// earlier index entry moves. Order is load-bearing: `BiIndex` Vec
     /// order = cursor order = pinned scene bytes. (`corresponds_bible` has
     /// never been lowered by `build_indexes` and is not lowered here
     /// either -- the same zero-index gap it has always had.)
@@ -431,6 +439,28 @@ impl Graph {
                 M::None,
             ));
         }
+        // D5: kinship and participation.
+        for (i, row) in self.parent_of.iter().enumerate() {
+            push_edge(&mut out, RowFamily::ParentOf, i, EdgeRel::Directed(RelationId::ParentOf), (
+                at(&row.parent.erase()),
+                at(&row.child.erase()),
+                M::None,
+            ));
+        }
+        for (i, row) in self.partners.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Partners, i, EdgeRel::Symmetric(S::Partners), (
+                at(&row.a.erase()),
+                at(&row.b.erase()),
+                M::None,
+            ));
+        }
+        for (i, row) in self.participates.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Participates, i, EdgeRel::Directed(RelationId::Participates), (
+                at(&row.person.erase()),
+                at(&row.event.erase()),
+                M::None,
+            ));
+        }
         out
     }
 
@@ -485,6 +515,9 @@ impl Graph {
             F::TemporalAdjacency => self.temporal_adjacency.get(row_ord).map(|r| r.provenance.as_str()),
             F::Analogue => self.analogue.get(row_ord).map(|r| r.provenance.as_str()),
             F::Occurs => self.occurs.get(row_ord).map(|r| r.provenance.as_str()),
+            F::ParentOf => self.parent_of.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Partners => self.partners.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Participates => self.participates.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 
@@ -986,7 +1019,7 @@ mod tests {
             },
         );
         let jesus_id = PersonId::new("jesus_905");
-        g.nodes.insert(jesus_id.erase(), Node { id: jesus_id.erase(), payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None }, provenance: "test".into() });
+        g.nodes.insert(jesus_id.erase(), Node { id: jesus_id.erase(), payload: NodePayload::Person { label: "Jesus".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() });
         let place_id = PlaceId::new("sea-of-galilee");
         g.nodes.insert(place_id.erase(), Node { id: place_id.erase(), payload: NodePayload::Place { canonical: "Sea of Galilee".into(), lat: 0.0, lon: 0.0, aliases: vec![], description: None }, provenance: "test".into() });
 

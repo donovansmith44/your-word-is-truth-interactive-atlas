@@ -103,7 +103,12 @@ relations! {
         DerivedFrom => "derived-from" / "derives",
         // DB-3 (spec 7.3): entry -> word locus (one token). Rows arrive at
         // LEX-1; appended LAST because `edge_index.rel` is positional.
-        Occurs      => "occurs-in" / "words"
+        Occurs      => "occurs-in" / "words",
+        // D5 (owner, 2026-09-15: person cards show life, events and
+        // family): Theographic kinship and event participation as DECLARED
+        // rows. Appended LAST (positional rel codes).
+        ParentOf     => "parent-of" / "child-of",
+        Participates => "participates-in" / "participants"
     }
     symmetric {
         // ATTEST-1 (owner ruling, verbatim: "let's call it Analogue;
@@ -113,7 +118,9 @@ relations! {
         CatechismLink     => "catechism-link",
         Corresponds       => "corresponds-to",
         Parallel          => "parallel",
-        TemporalAdjacency => "temporal-adjacency"
+        TemporalAdjacency => "temporal-adjacency",
+        // D5: partners (spouses) -- symmetric, appended LAST.
+        Partners          => "partner-of"
     }
 }
 
@@ -471,6 +478,41 @@ pub struct Analogue {
 pub struct Occurs {
     pub entry: LexiconEntryId,
     pub locus: TextLocus,
+    pub provenance: ProvenanceId,
+}
+
+/// D5 (owner, 2026-09-15, verbatim: "when clicking on a person, then i
+/// want to see the years that person is alive ... the events ... optionally
+/// a family tree whose names are all explorable"): one Theographic
+/// `father`/`mother` -> `children` link as a pairwise directed row,
+/// `parent --parent-of--> child` (inverse `child-of`). Imported (provenance
+/// `theographic-people`), no justification; `law_check::kinship_is_acyclic`
+/// holds over every row. Siblings are DERIVED (other children of the same
+/// parents), never stored.
+#[derive(Clone, Debug)]
+pub struct ParentOf {
+    pub parent: PersonId,
+    pub child: PersonId,
+    pub provenance: ProvenanceId,
+}
+
+/// D5: Theographic `partners` (spouses) -- symmetric, one row per pair
+/// (`a < b` by id so a pair is minted once), `partner-of` from either end.
+#[derive(Clone, Debug)]
+pub struct Partners {
+    pub a: PersonId,
+    pub b: PersonId,
+    pub provenance: ProvenanceId,
+}
+
+/// D5: Theographic `timeline` (the events a person takes part in) as
+/// `person --participates-in--> event` (inverse `participants`). Distinct
+/// from `Mentions` (a verse names the person) and `Attests` (a verse
+/// attests the event): this is the person's own place in the event.
+#[derive(Clone, Debug)]
+pub struct Participates {
+    pub person: PersonId,
+    pub event: EventId,
     pub provenance: ProvenanceId,
 }
 
