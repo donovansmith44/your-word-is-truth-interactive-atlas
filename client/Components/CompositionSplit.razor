@@ -256,6 +256,7 @@
 @using BibleAtlas.Client.Views
 @implements IDisposable
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
+@inject PaneScopes Panes
 @inject ViewRegistry Registry
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -276,10 +277,14 @@ else if (IsHost)
         @ChildContent(BuildContext())
         <SplitDivider WidthPx="_widthPx" WidthPxChanged="w => _widthPx = w" OnCommitted="OnDividerCommitted" />
         <div class="split-pane-guest">
-            @Registry.Get(Composition.Members[1].Name).Mount(new ViewMountContext(
-                SplitMode: true,
-                OnRequestClose: EventCallback.Factory.Create(this, RequestCloseAsync),
-                RegisterQueryHandler: h => _guestQueryHandler = h))
+            @* D2: the guest pane knows it is the guest -- a same-view guest
+               resolves its own private atoms through PaneScopes (R-D2-1). *@
+            <CascadingValue Value="@PaneId.Guest" IsFixed="true">
+                @Registry.Get(Composition.Members[1].Name).Mount(new ViewMountContext(
+                    SplitMode: true,
+                    OnRequestClose: EventCallback.Factory.Create(this, RequestCloseAsync),
+                    RegisterQueryHandler: h => _guestQueryHandler = h))
+            </CascadingValue>
         </div>
     </div>
 }
@@ -356,6 +361,10 @@ else
     [SupplyParameterFromQuery(Name = SplitUrlContract.SplitParam)]
     [Parameter]
     public string? SplitQuery { get; set; }
+
+    /// <summary>D2: the guest reader's own chapter (`?guest=EXO.20`) in an unfollowed reader‖reader split.</summary>
+    [SupplyParameterFromQuery(Name = SplitUrlContract.GuestParam)]
+    public string? GuestQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = SplitUrlContract.FollowParam)]
     [Parameter]
@@ -461,9 +470,85 @@ else
     // wiring.
     private void HandleArrangementChanged()
     {
+        ReconcilePane();
         SyncSplitUrl();
         StateHasChanged();
         OnArrangementChanged?.Invoke();
+    }
+
+    // D2: the same-view pane link (host -> guest mirror while the pair
+    // follows) and the guest-locus URL watch, owned by the HOST instance and
+    // reconciled on every arrangement change; the guest's private atoms are
+    // forgotten when the split closes.
+    private IDisposable? _paneLink;
+    private StateAtom<Locus>? _watchedGuestLocus;
+
+    private bool IsSameViewHost => !IsGuestMount && Composition.IsHostedBy(HostName) && PaneScopes.IsSameViewSplit(ViewArrangementAtom.Value);
+
+    private void ReconcilePane()
+    {
+        if (IsGuestMount)
+        {
+            return;
+        }
+
+        var sameView = IsSameViewHost;
+        var wantLink = sameView && ViewArrangementAtom.Value.Follow;
+        if (!wantLink && _paneLink is not null)
+        {
+            _paneLink.Dispose();
+            _paneLink = null;
+        }
+
+        if (wantLink && _paneLink is null)
+        {
+            var caps = Registry.CapabilitiesOf(HostName);
+            _paneLink = Panes.Link(PaneId.Host, PaneId.Guest, PaneScopes.LinkableVia(HostName, HostName, caps, caps));
+        }
+
+        if (sameView && (Registry.CapabilitiesOf(HostName) & ViewCapabilities.BearsLocus) != 0)
+        {
+            var guestLocus = Panes.For(PaneId.Guest).Locus;
+            if (!ReferenceEquals(_watchedGuestLocus, guestLocus))
+            {
+                UnwatchGuestLocus();
+                _watchedGuestLocus = guestLocus;
+                guestLocus.Changed += SyncSplitUrl;
+            }
+        }
+        else
+        {
+            UnwatchGuestLocus();
+        }
+
+        if (!IsSplitOpen)
+        {
+            Panes.ResetGuest();
+        }
+    }
+
+    private void UnwatchGuestLocus()
+    {
+        if (_watchedGuestLocus is not null)
+        {
+            _watchedGuestLocus.Changed -= SyncSplitUrl;
+            _watchedGuestLocus = null;
+        }
+    }
+
+    /// <summary>D2: `?guest=BOOK.N` seeds the guest reader's private locus on restore.</summary>
+    private void SeedGuestFromQuery()
+    {
+        if (GuestQuery is not { } q || !IsSameViewHost)
+        {
+            return;
+        }
+
+        var dot = q.LastIndexOf('.');
+        if (dot > 0 && int.TryParse(q[(dot + 1)..], out var chapter) && chapter > 0)
+        {
+            Panes.For(PaneId.Guest).Locus.Dispatch(new SetLocus(q[..dot], chapter));
+        }
     }
 
     // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): restore-once-on-load --
@@ -487,9 +572,13 @@ else
 
         _splitQueryConsumed = true;
 
-        if (SplitQuery is { } guestName && guestName != HostName && Registry.TryGet(guestName, out _))
+        // D2: `split={HostName}` is legal now (a same-view split), so the old
+        // `guestName != HostName` guard is gone.
+        if (SplitQuery is { } guestName && Registry.TryGet(guestName, out _))
         {
             ViewArrangementAtom.Dispatch(new EnterSplit(HostName, guestName, FollowQuery == SplitUrlContract.FollowTrueValue, DefaultDividerFraction: null));
+            ReconcilePane();
+            SeedGuestFromQuery();
         }
         else
         {
@@ -511,11 +600,15 @@ else
 
         var guestName = IsSplitOpen ? Composition.Members[1].Name : null;
         var follow = IsSplitOpen && ViewArrangementAtom.Value.Follow;
-
+        // D2: an unfollowed same-view reader guest carries its own chapter.
+        var guestRef = IsSameViewHost && !follow && (Registry.CapabilitiesOf(HostName) & ViewCapabilities.BearsLocus) != 0
+            ? Panes.For(PaneId.Guest).Locus.Value.Ref
+            : null;
         var uri = Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             [SplitUrlContract.SplitParam] = guestName,
             [SplitUrlContract.FollowParam] = follow ? SplitUrlContract.FollowTrueValue : null,
+            [SplitUrlContract.GuestParam] = guestRef,
         });
 
         // Fix round 1's own live, self-caught crash (this file's own
@@ -536,6 +629,9 @@ else
     public void Dispose()
     {
         ViewArrangementAtom.Changed -= HandleArrangementChanged;
+        _paneLink?.Dispose();
+        _paneLink = null;
+        UnwatchGuestLocus();
     }
 
     /// <summary>The composed "route a popover-originated scene query into my
@@ -555,10 +651,30 @@ else
         IsHost,
         EventCallback.Factory.Create(this, InvokeHatchAsync),
         EventCallback.Factory.Create(this, RequestCloseAsync),
-        IsSplitOpen && IsHost && !string.IsNullOrEmpty(HostPaneClass) ? $" {HostPaneClass}" : "");
+        IsSplitOpen && IsHost && !string.IsNullOrEmpty(HostPaneClass) ? $" {HostPaneClass}" : "",
+        EventCallback.Factory.Create<string>(this, InvokeHatchWithAsync),
+        EnterSplitHatchOf(HostName)?.PartnerViews,
+        EnterSplitHatchOf(HostName) is { } hatch ? hatch.GuestLabel : null,
+        IsSplitOpen && PaneScopes.IsSameViewSplit(ViewArrangementAtom.Value),
+        IsSplitOpen && ViewArrangementAtom.Value.Follow,
+        EventCallback.Factory.Create(this, ToggleFollowAsync));
+
+    /// <summary>D2: the pair's follow toggle, for a same-view guest's own chip (the arrangement's one Follow flag).</summary>
+    private Task ToggleFollowAsync()
+    {
+        ViewArrangementAtom.Dispatch(new ToggleFollow(!ViewArrangementAtom.Value.Follow));
+        return Task.CompletedTask;
+    }
+
+    private EnterSplitHatch? EnterSplitHatchOf(string view) =>
+        Registry.Get(view).EscapeHatches.OfType<EnterSplitHatch>().FirstOrDefault();
 
     private Task InvokeHatchAsync() =>
         Registry.Get(HostName).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
+
+    /// <summary>D2: enter the split with a chosen guest from the host's own menu.</summary>
+    private Task InvokeHatchWithAsync(string guest) =>
+        EnterSplitHatchOf(HostName)?.InvokeWith(guest) ?? Task.CompletedTask;
 
     private Task RequestCloseAsync()
     {

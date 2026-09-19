@@ -9,7 +9,7 @@
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
-@inject StateAtom<Locus> LocusAtom
+@inject PaneScopes Panes
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @* Batch CORPREAD-1a (SPLIT-PERSIST-1): the ViewRegistry injection fix
    round 2 (N-2) added here (SyncSplitUrl's own Registry.ComposeFrom(...)
@@ -131,6 +131,41 @@
                     @onclick="ctx.InvokeHatch">
                 Open the map beside the text
             </button>
+            @* D2: the guest menu -- the one-click button above keeps its
+               default (the map); the caret offers every guest the hatch
+               declares (map, another reader). *@
+            @if (ctx.Partners.Count > 1)
+            {
+                <button type="button" class="split-open split-open-parchment split-open-menu-toggle" data-testid="enter-split-menu-toggle"
+                        aria-label="Choose what to open beside the text" aria-expanded="@(_splitMenuOpen ? "true" : "false")"
+                        @onclick="() => _splitMenuOpen = !_splitMenuOpen">&#9662;</button>
+                @if (_splitMenuOpen)
+                {
+                    <div class="enter-split-menu enter-split-menu-parchment" data-testid="enter-split-menu" role="menu">
+                        @foreach (var guest in ctx.Partners)
+                        {
+                            var g = guest;
+                            <button type="button" role="menuitem" class="enter-split-menu-item" data-testid="@($"enter-split-guest-{g}")"
+                                    @onclick="async () => { _splitMenuOpen = false; await ctx.InvokeHatchWith.InvokeAsync(g); }">
+                                @ctx.LabelOf(g)
+                            </button>
+                        }
+                    </div>
+                }
+            }
+        }
+        else if (ctx.IsSameView && !ctx.IsHost)
+        {
+            @* D2: the guest of a reader‖reader split -- follow the host's chapter, or read independently
+               (role and follow both from ctx, CompositionSplit's one computed copy). *@
+            <div class="split-atlas-controls" data-testid="split-reader-guest-controls">
+                <button type="button" class="follow-chip" data-testid="reader-follow-chip"
+                        aria-pressed="@(ctx.Follow ? "true" : "false")" @onclick="() => ctx.ToggleFollow.InvokeAsync()">
+                    @(ctx.Follow ? "Following the other reader" : "Follow the other reader")
+                </button>
+                <button type="button" class="split-close split-close-parchment" data-testid="split-close-reader-guest"
+                        aria-label="Close this reader" @onclick="() => ctx.RequestClose.InvokeAsync()">&times;</button>
+            </div>
         }
         else if (ctx.IsHost)
         {
@@ -371,6 +406,17 @@
     // `@ref` (_compositionSplit below) for the few read sites outside
     // ctx's own lambda scope.
     [Parameter] public bool? SplitMode { get; set; }
+
+    /// <summary>D2: which pane this reader renders in (cascaded by CompositionSplit to its guest; Host otherwise).</summary>
+    [CascadingParameter] public PaneId Pane { get; set; } = PaneId.Host;
+
+    // D2 (R-D2-1): the locus atom is resolved ONCE per instance through the
+    // pane -- the DI singleton for the host and every cross-view guest, a
+    // private atom for the guest of a reader‖reader split.
+    private StateAtom<Locus>? _locusAtomBacking;
+    private StateAtom<Locus> LocusAtom => _locusAtomBacking ??= Panes.For(Pane).Locus;
+
+    private bool _splitMenuOpen;
 
     // Batch H (split-view study): local, in-memory split-open state -- NOT
     // query/route driven beyond CompositionSplit's own one-shot restore

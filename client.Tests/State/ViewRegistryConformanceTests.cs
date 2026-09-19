@@ -42,8 +42,11 @@ public class ViewRegistryConformanceTests
         }
     }
 
-    private static ViewRegistry BuildRegistry() => ViewRegistrySetup.Build(
-        new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default),
+    private static ViewRegistry BuildRegistry() => BuildRegistry(new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
+
+    /// <summary>D2: the same registry over a caller-owned arrangement atom, so a test can read what a hatch dispatched.</summary>
+    private static ViewRegistry BuildRegistry(StateAtom<ViewArrangement> arrangement) => ViewRegistrySetup.Build(
+        arrangement,
         new ViewStateService(),
         new StateAtom<Locus>(AtomNames.Locus, Locus.Default),
         new FakeNavigationManager());
@@ -168,9 +171,12 @@ public class ViewRegistryConformanceTests
 
                 Assert.True(registry.TryGet(hatch.OwnerView, out var owner), $"Hatch owner '{hatch.OwnerView}' does not resolve in the registry.");
                 Assert.Equal(view.Name, owner.Name);
-                Assert.True(registry.TryGet(hatch.PartnerView, out _), $"Hatch partner '{hatch.PartnerView}' does not resolve in the registry.");
+                foreach (var partner in hatch.PartnerViews)
+                {
+                    Assert.True(registry.TryGet(partner, out _), $"Hatch partner '{partner}' does not resolve in the registry.");
+                }
                 Assert.True(registry.TryGet(hatch.HostView, out _), $"Hatch HostView '{hatch.HostView}' does not resolve in the registry.");
-                Assert.NotEqual(hatch.OwnerView, hatch.PartnerView); // a hatch never partners a view with itself
+                Assert.NotEqual(hatch.OwnerView, hatch.PartnerView); // the DEFAULT guest is never the owner itself (D2: a later menu entry may be)
             }
         }
 
@@ -181,6 +187,39 @@ public class ViewRegistryConformanceTests
         // silently zero (a registry with no hatches at all would pass every
         // loop above vacuously).
         Assert.Equal(5, hatchesFound);
+    }
+
+    /// <summary>
+    /// D2 (owner: "multiple maps, multiple readers ... FOR NOW: map + reader
+    /// only"): the reader and the map each offer the other (default, first)
+    /// and themselves; every other host offers the reader alone.
+    /// </summary>
+    [Fact]
+    public void HatchConformance_D2_GuestMenus_ReaderAndWorldOfferEachOtherThenThemselves_OthersOfferReaderOnly()
+    {
+        var registry = BuildRegistry();
+        EnterSplitHatch Hatch(string view) => registry.Get(view).EscapeHatches.OfType<EnterSplitHatch>().Single();
+        Assert.Equal(new[] { ViewNames.World, ViewNames.Reader }, Hatch(ViewNames.Reader).PartnerViews);
+        Assert.Equal(new[] { ViewNames.Reader, ViewNames.World }, Hatch(ViewNames.World).PartnerViews);
+        foreach (var other in new[] { ViewNames.Sources, ViewNames.Kretzmann, ViewNames.Concord })
+        {
+            Assert.Equal(new[] { ViewNames.Reader }, Hatch(other).PartnerViews);
+        }
+        Assert.Throws<ArgumentException>(() => { Hatch(ViewNames.Concord).InvokeWith(ViewNames.World).GetAwaiter().GetResult(); });
+    }
+
+    /// <summary>D2: entering a same-view split through the hatch yields Members == [host, host], not following.</summary>
+    [Fact]
+    public void HatchConformance_D2_SameViewSplit_EntersWithMembersHostHost_NotFollowing()
+    {
+        var arrangement = new StateAtom<ViewArrangement>(BibleAtlas.Client.Contracts.AtomNames.ViewArrangement, ViewArrangement.Default);
+        var registry = BuildRegistry(arrangement);
+        registry.Get(ViewNames.Reader).EscapeHatches.OfType<EnterSplitHatch>().Single().InvokeWith(ViewNames.Reader).GetAwaiter().GetResult();
+        Assert.Equal(new[] { ViewNames.Reader, ViewNames.Reader }, arrangement.Value.Members);
+        Assert.Equal(LayoutKinds.SplitH, arrangement.Value.LayoutKind);
+        Assert.False(arrangement.Value.Follow);
+        registry.Get(ViewNames.World).EscapeHatches.OfType<EnterSplitHatch>().Single().InvokeWith(ViewNames.World).GetAwaiter().GetResult();
+        Assert.Equal(new[] { ViewNames.World, ViewNames.World }, arrangement.Value.Members);
     }
 
     [Fact]

@@ -149,8 +149,24 @@ public static class ViewRegistrySetup
         // still makes READER the host, byte-identical to pre-VC-1 (R7) --
         // see EnterSplitHatch.cs's own header for the OwnerView-vs-HostView
         // distinction this encodes.
-        var readerHatch = new EnterSplitHatch(ViewNames.Reader, ViewNames.World, hostView: ViewNames.Reader, EnterSplitReaderHostsWorld);
-        var worldHatch = new EnterSplitHatch(ViewNames.World, ViewNames.Reader, hostView: ViewNames.Reader, EnterSplitWorldRequestsReader);
+        // D2 (owner: "multiple maps, multiple readers ... FOR NOW: map + reader
+        // only"): the generic entry -- any (host, guest) pair over the registry
+        // is legal, the pair itself included; same-view pairs default to NOT
+        // following (two readers / two maps start alike and diverge).
+        Task EnterSplitAny(string host, string guest)
+        {
+            arrangement.Dispatch(new EnterSplit(host, guest, DefaultFollow: false, DefaultDividerFraction: null));
+            return Task.CompletedTask;
+        }
+        // The reader offers the map (its one-click default, unchanged) and
+        // another reader; the map offers the reader (unchanged: the reader
+        // hosts, by navigation) and another map.
+        var readerHatch = new EnterSplitHatch(ViewNames.Reader, new[] { ViewNames.World, ViewNames.Reader }, hostView: ViewNames.Reader,
+            guest => guest == ViewNames.World ? EnterSplitReaderHostsWorld() : EnterSplitAny(ViewNames.Reader, guest),
+            guestLabel: guest => guest == ViewNames.World ? "The map" : "Another reader");
+        var worldHatch = new EnterSplitHatch(ViewNames.World, new[] { ViewNames.Reader, ViewNames.World }, hostView: ViewNames.Reader,
+            guest => guest == ViewNames.Reader ? EnterSplitWorldRequestsReader() : EnterSplitAny(ViewNames.World, guest),
+            guestLabel: guest => guest == ViewNames.Reader ? "The text" : "Another map");
         var sourcesHatch = new EnterSplitHatch(ViewNames.Sources, ViewNames.Reader, hostView: ViewNames.Sources, EnterSplitSourcesHostsReader);
         var kretzmannHatch = new EnterSplitHatch(ViewNames.Kretzmann, ViewNames.Reader, hostView: ViewNames.Kretzmann, EnterSplitKretzmannHostsReader);
         var concordHatch = new EnterSplitHatch(ViewNames.Concord, ViewNames.Reader, hostView: ViewNames.Concord, EnterSplitConcordHostsReader);

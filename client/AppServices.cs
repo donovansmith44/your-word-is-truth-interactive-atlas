@@ -38,6 +38,11 @@ public static class AppServices
         services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindow, TimeWindow.Default));
         services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
         services.AddSingleton(_ => new StateAtom<FocusStack>(AtomNames.FocusStack, FocusStack.Empty));
+        // D2: per-pane atom resolution over the singletons above (R-D2-1).
+        services.AddSingleton(sp => new PaneScopes(
+            sp.GetRequiredService<StateAtom<ViewArrangement>>(),
+            sp.GetRequiredService<StateAtom<Locus>>(),
+            sp.GetRequiredService<StateAtom<TimeWindow>>()));
     }
 
     /// The Selection atom -- seeded from (and, once constructed, persisted

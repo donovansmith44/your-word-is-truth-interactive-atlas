@@ -45,23 +45,59 @@ namespace BibleAtlas.Client.Views;
 /// </summary>
 public sealed class EnterSplitHatch : IEscapeHatch
 {
-    private readonly Func<Task> _invoke;
+    private readonly Func<string, Task> _invokeWith;
+    private readonly Func<string, string>? _guestLabel;
+
+    /// <summary>D2: the menu label for a guest, declared here (the registry layer) so no page compares view identities.</summary>
+    public string GuestLabel(string guestView) => _guestLabel?.Invoke(guestView) ?? guestView;
 
     public EnterSplitHatch(string ownerView, string partnerView, string hostView, Func<Task> invoke)
+        : this(ownerView, new[] { partnerView }, hostView, _ => invoke())
     {
+    }
+
+    /// <summary>
+    /// D2: a hatch may offer several guests. <paramref name="partnerViews"/>
+    /// is the owner's guest MENU in display order; its first entry is the
+    /// default (<see cref="Invoke"/>, the one-click affordance every page
+    /// already had) and may never be the owner itself.
+    /// </summary>
+    public EnterSplitHatch(string ownerView, IReadOnlyList<string> partnerViews, string hostView, Func<string, Task> invokeWith, Func<string, string>? guestLabel = null)
+    {
+        _guestLabel = guestLabel;
+        if (partnerViews.Count == 0)
+        {
+            throw new ArgumentException("an enter-split hatch offers at least one guest", nameof(partnerViews));
+        }
+
         OwnerView = ownerView;
-        PartnerView = partnerView;
+        PartnerViews = partnerViews;
         HostView = hostView;
-        _invoke = invoke;
+        _invokeWith = invokeWith;
     }
 
     public string Kind => HatchKinds.EnterSplit;
 
     public string OwnerView { get; }
 
-    public string PartnerView { get; }
+    /// <summary>The default guest -- the first of <see cref="PartnerViews"/>.</summary>
+    public string PartnerView => PartnerViews[0];
+
+    /// <summary>D2: every guest this owner offers, default first.</summary>
+    public IReadOnlyList<string> PartnerViews { get; }
 
     public string HostView { get; }
 
-    public Task Invoke() => _invoke();
+    public Task Invoke() => _invokeWith(PartnerViews[0]);
+
+    /// <summary>D2: enter the split with a chosen guest from <see cref="PartnerViews"/>.</summary>
+    public Task InvokeWith(string guestView)
+    {
+        if (!PartnerViews.Contains(guestView))
+        {
+            throw new ArgumentException($"'{guestView}' is not a guest this hatch offers ({string.Join(", ", PartnerViews)})", nameof(guestView));
+        }
+
+        return _invokeWith(guestView);
+    }
 }

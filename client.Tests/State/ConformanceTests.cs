@@ -128,6 +128,12 @@ public class ConformanceTests
                 "The registry's OWN internal subscription -- this IS the infrastructure the rule protects; Materialize is invoked from inside this handler and nowhere else (see EffectRegistryTests.cs's own NoDirectAtomSubscriptionByEffects test)."),
             ("client\\State\\StateLinkRunner.cs", "_source.Changed += OnSourceChanged",
                 "Link infrastructure (ST-1) -- derives and dispatches into the link's own Target atom; not an IStateEffect<T> materialization (no fetch/JS interop, no registry involvement) at all."),
+            ("client\\State\\PaneScope.cs", "source.Locus.Changed += Mirror",
+                "D2 pane-link infrastructure (R-D2-1): the same-view host -> guest locus mirror -- dispatches the target atom's own SetLocus and nothing else (no fetch/JS interop); the sibling of StateLinkRunner's entry above."),
+            ("client\\State\\PaneScope.cs", "source.TimeWindow.Changed += MirrorWindow",
+                "D2 pane-link infrastructure (R-D2-1): the same-view host -> guest time-window mirror -- dispatches SetTimeWindow/SetScriptureWindow and nothing else."),
+            ("client\\Components\\CompositionSplit.razor", "guestLocus.Changed += SyncSplitUrl",
+                "D2: the unfollowed reader-guest's chapter is projected into `?guest=` by the SAME SyncSplitUrl the arrangement subscription above already runs -- a URL projection, not an effect."),
         }.ToArray();
 
         // Fix round 1 (S-8, trivia -- review): the allowlist's own File

@@ -6910,3 +6910,59 @@ input:focus-visible,
     cursor: pointer;
     list-style: revert;
 }
+
+/* D2: the map as a split HOST (world‖world) -- the same frame recipe the
+   reader host uses (NAV-FRAME-1): display:contents until hosting. */
+.world-frame {
+    display: contents;
+}
+
+.world-frame.split-pane-frame {
+    display: block;
+    flex: 0 0 var(--split-reader-width, 55%);
+    min-width: 0;
+    height: 100%;
+    contain: layout;
+    overflow: hidden;
+    position: relative;
+}
+
+.world-frame.split-pane-frame > .world-page {
+    height: 100%;
+    min-height: 0;
+}
+
+/* D2: the guest menu beside a split-open button. */
+.split-open-menu-toggle {
+    margin-left: .25rem;
+    padding-inline: .5rem;
+}
+
+.enter-split-menu {
+    position: absolute;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    margin-top: 2.4rem;
+    padding: .35rem;
+    border: 1px solid var(--rule, #c9bfae);
+    border-radius: .4rem;
+    background: var(--paper, #fbf7ef);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .15);
+}
+
+.enter-split-menu-item {
+    padding: .35rem .7rem;
+    border: 0;
+    border-radius: .3rem;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.enter-split-menu-item:hover,
+.enter-split-menu-item:focus-visible {
+    background: rgba(0, 0, 0, .06);
+}

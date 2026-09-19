@@ -68,4 +68,13 @@ public static class SplitUrlContract
     public const string SplitParam = "split";
     public const string FollowParam = "follow";
     public const string FollowTrueValue = "1";
+
+    /// <summary>
+    /// D2: `?guest={BOOK.N}` -- the GUEST pane's own chapter in a same-view
+    /// reader‖reader split while it is NOT following (a following guest
+    /// mirrors the host, whose chapter the route already carries). Absent
+    /// otherwise; a same-view world‖world guest's time window is not carried
+    /// (disclosed: the URL keeps one window, the host's).
+    /// </summary>
+    public const string GuestParam = "guest";
 }

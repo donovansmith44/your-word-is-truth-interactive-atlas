@@ -9,14 +9,17 @@
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
-@inject StateAtom<Locus> LocusAtom
-@inject StateAtom<TimeWindow> TimeWindowAtom
+@inject PaneScopes Panes
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @inject EffectRegistry Effects
 @inject ViewRegistry Registry
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
+@* D2: the map hosts too (world‖world) -- through the same CompositionSplit
+   every other host renders through; standalone and guest are unchanged. *@
+<CompositionSplit HostName="@ViewNames.World" SplitModeOverride="@(SplitMode ? true : (bool?)null)" HostPaneClass="split-pane-world" Context="ctx">
+<div class="@($"world-frame{(ctx.IsSplitOpen && ctx.IsHost ? " split-pane-frame" : "")}")" data-testid="world-frame">
 <div class="world-page @(SplitMode ? "split-pane-atlas" : null)" data-testid="@(SplitMode ? "split-pane-atlas" : null)">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
 
@@ -26,11 +29,31 @@
        !SplitMode (standalone /world, unchanged today) gets the "Read beside
        the map" affordance; SplitMode (embedded guest) gets the follow chip
        and its own close button instead -- see their own comments below. *@
-    @if (!SplitMode)
+    @if (!SplitMode && !ctx.IsSplitOpen)
     {
         <button type="button" class="split-open split-open-dusk" data-testid="split-open-world" @onclick="InvokeEnterSplitHatch">
             Read beside the map
         </button>
+        @* D2: the guest menu -- the reader (default, unchanged) or another map. *@
+        @if (ctx.Partners.Count > 1)
+        {
+            <button type="button" class="split-open split-open-dusk split-open-menu-toggle" data-testid="enter-split-menu-toggle"
+                    aria-label="Choose what to open beside the map" aria-expanded="@(_splitMenuOpen ? "true" : "false")"
+                    @onclick="() => _splitMenuOpen = !_splitMenuOpen">&#9662;</button>
+            @if (_splitMenuOpen)
+            {
+                <div class="enter-split-menu enter-split-menu-dusk" data-testid="enter-split-menu" role="menu">
+                    @foreach (var guest in ctx.Partners)
+                    {
+                        var g = guest;
+                        <button type="button" role="menuitem" class="enter-split-menu-item" data-testid="@($"enter-split-guest-{g}")"
+                                @onclick="async () => { _splitMenuOpen = false; await ctx.InvokeHatchWith.InvokeAsync(g); }">
+                            @ctx.LabelOf(g)
+                        </button>
+                    }
+                </div>
+            }
+        }
     }
     else
     {
@@ -41,14 +64,14 @@
            for; the flex wrapper lays them out naturally instead. *@
         <div class="split-atlas-controls" data-testid="split-atlas-controls">
             <button type="button" class="follow-chip" data-testid="follow-chip"
-                    aria-pressed="@(_follow ? "true" : "false")" @onclick="OnToggleFollowClick">
+                    aria-pressed="@(_followAny ? "true" : "false")" @onclick="OnAnyFollowClick">
                 @* Batch ST-1: reads the shared Locus atom's own Ref (via
                    _locus, the same Projection<Locus> the picker mount below
                    renders from) instead of the retired FollowRef parameter --
                    see this file's own top-of-code-block comment. Locus
                    always has a value (Locus.Default, never null), so the
                    old "FollowRef is not null" guard is gone with it. *@
-                @(_follow ? $"Following {_locus.Value.Ref}" : "Follow the text")
+                @(_sameViewSplit ? (_paneFollow ? "Sharing the time window" : "Share the time window") : (_follow ? $"Following {_locus.Value.Ref}" : "Follow the text"))
             </button>
             <button type="button" class="split-close split-close-dusk" data-testid="split-close-atlas"
                     aria-label="Close the map, keep reading" @onclick="() => OnRequestClose.InvokeAsync()">
@@ -83,7 +106,7 @@
        predicate as the mode-chip guard below; a source-scan law in
        client.Tests (ConformanceTests.OneScriptureSelectorLaw_...) fails if
        any non-Reader page ever mounts a picker without such a guard. *@
-    @if (!(SplitMode && _follow))
+    @if (!(SplitMode && _followAny))
     {
         <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
                           CurrentBook="@_locus.Value.Book" CurrentChapter="@_locus.Value.Chapter"
@@ -140,7 +163,7 @@
        manually-applied ref while free-browsing the pane) -- there the two
        chips say genuinely different things (which ref you're viewing vs.
        whether you're following) and both stay useful. *@
-    @if (_scriptureRef is not null && !(SplitMode && _follow))
+    @if (_scriptureRef is not null && !(SplitMode && _followAny))
     {
         <div class="mode-chip" data-testid="mode-chip">
             <span class="mode-chip-label">Scripture</span>
@@ -163,6 +186,8 @@
         </div>
     }
 </div>
+</div>
+</CompositionSplit>
 
 @* Rendered as a SIBLING of .world-page, not nested inside it -- same
    placement Reader.razor already uses for its own ExplorerPopover (see that
@@ -265,6 +290,40 @@
     // /world never sets this -- every behavior it gates is unreachable
     // there, so standalone behavior is untouched byte-for-byte.
     [Parameter] public bool SplitMode { get; set; }
+
+    /// <summary>D2: which pane this map renders in (cascaded by CompositionSplit to its guest; Host otherwise).</summary>
+    [CascadingParameter] public PaneId Pane { get; set; } = PaneId.Host;
+
+    // D2 (R-D2-1): both atoms resolved ONCE per instance through the pane --
+    // the DI singletons for the host and the reader‖world guest (World's own
+    // FollowTextLink keeps reading the shared locus exactly as before), a
+    // private pair for the guest of a world‖world split.
+    private StateAtom<Locus>? _locusAtomBacking2;
+    private StateAtom<Locus> LocusAtom => _locusAtomBacking2 ??= Panes.For(Pane).Locus;
+    private StateAtom<TimeWindow>? _timeWindowAtomBacking;
+    private StateAtom<TimeWindow> TimeWindowAtom => _timeWindowAtomBacking ??= Panes.For(Pane).TimeWindow;
+
+    private bool _splitMenuOpen;
+
+    /// <summary>D2: this map is one of two maps (world‖world).</summary>
+    private bool _sameViewSplit => PaneScopes.IsSameViewSplit(ViewArrangementAtom.Value); // a map only ever sits in a same-view split of maps
+
+    /// <summary>D2: the two maps share the time window (host -> guest mirror, PaneScopes.Link).</summary>
+    private bool _paneFollow => _sameViewSplit && ViewArrangementAtom.Value.Follow;
+
+    /// <summary>The ONE-SELECTOR LAW's guard reads this: following the text OR the other map.</summary>
+    private bool _followAny => _follow || _paneFollow;
+
+    private Task OnAnyFollowClick() => _sameViewSplit ? OnTogglePaneFollowClick() : OnToggleFollowClick();
+
+    private Task OnTogglePaneFollowClick()
+    {
+        ViewArrangementAtom.Dispatch(new ToggleFollow(!ViewArrangementAtom.Value.Follow));
+        return Task.CompletedTask;
+    }
+
+    private Task InvokeEnterSplitHatchWith(string guest) =>
+        Registry.Get(ViewNames.World).EscapeHatches.OfType<EnterSplitHatch>().First().InvokeWith(guest);
 
     // Batch ST-1: the FollowRef PARAMETER ("GEN.12", fed down by Reader.razor
     // on every _book/_chapterNum change) is RETIRED -- this was SYNC-1's own
@@ -781,13 +840,14 @@
             return;
         }
 
-        // Batch ST-2 (R4): asserts this standalone visit's own arrangement on
-        // every parameter-set pass (idempotent after the first -- a no-op
-        // dispatch once the atom already reads WorldOnly) -- the standalone
-        // counterpart to Reader.razor's own EnterReaderOnly/EnterSplit
-        // dispatch sites, so the atom always reflects reality regardless of
-        // whatever arrangement a PRIOR page/instance this session left it in.
-        ViewArrangementAtom.Dispatch(new EnterSingle(ViewNames.World));
+        // Batch ST-2 (R4) used to assert `EnterSingle(world)` here on EVERY
+        // parameter-set pass. D2: the map now renders through CompositionSplit
+        // (it hosts world‖world), and CompositionSplit owns that assertion --
+        // once, from the URL (`?split=`), exactly as it does for every other
+        // host; re-asserting single on every pass would close the split the
+        // instant it opened (it did: the first world‖world probe). A stale
+        // arrangement left by a prior page is corrected by CompositionSplit's
+        // own first OnParametersSet on this visit.
         await SyncFromQuery();
     }
 

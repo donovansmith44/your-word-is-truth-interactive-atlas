@@ -39,4 +39,11 @@ namespace BibleAtlas.Client.Components;
 /// role-driven read in this record already uses -- a host no longer
 /// hand-writes its own `ctx.IsSplitOpen &amp;&amp; ctx.IsHost ? "X" : ""`
 /// ternary at all.</param>
-public sealed record CompositionSplitContext(bool IsSplitOpen, bool IsHost, EventCallback InvokeHatch, EventCallback RequestClose, string HostPaneClassSuffix);
+public sealed record CompositionSplitContext(bool IsSplitOpen, bool IsHost, EventCallback InvokeHatch, EventCallback RequestClose, string HostPaneClassSuffix, EventCallback<string> InvokeHatchWith = default, IReadOnlyList<string>? PartnerViews = null, Func<string, string>? PartnerLabel = null, bool IsSameView = false, bool Follow = false, EventCallback ToggleFollow = default)
+{
+    /// <summary>D2: the guests this host's enter-split hatch offers, default first (empty when the host has no hatch).</summary>
+    public IReadOnlyList<string> Partners => PartnerViews ?? Array.Empty<string>();
+
+    /// <summary>D2: the menu label the registry declares for a guest (its name when none is declared).</summary>
+    public string LabelOf(string guest) => PartnerLabel?.Invoke(guest) ?? guest;
+}
