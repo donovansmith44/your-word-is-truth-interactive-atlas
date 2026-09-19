@@ -104,6 +104,26 @@
            now resolves against the TRUE viewport with zero JS/zero one-frame
            compositor lag; see app.css's own `.reader-page` header comment for
            the full mechanism/evidence this fix round found. *@
+        @* NAV-FRAME-1 (owner, 2026-09-18: "chapter navigation buttons are
+           perfect when not in split screen mode but are wonky on split
+           screen mode. Apply whatever is in non split screen mode so the
+           buttons work that way everywhere"): standalone's buttons are
+           `position:fixed` against a NON-SCROLLING containing block (the
+           viewport) -- pure CSS, no JS. Split used to make the SCROLLING
+           `.reader-page` itself the containing block (`contain:layout`) and
+           JS-compensate `top` on every scroll event (reader.js's retired
+           `watchChapterNavCenter`), which is exactly the one-frame lag the
+           owner saw. This frame is the split-view flex child now (host
+           role: `.split-pane-frame` carries the pane's width/height and
+           `contain:layout`; it never scrolls -- `.reader-page` inside it
+           does), so the buttons resolve against a box that holds still,
+           the same way the viewport does standalone. Always rendered (a
+           class toggle, never a render-tree shape change -- see
+           CompositionSplit's own RULING 4); `display:contents` outside the
+           host role, so standalone and guest layouts are byte-identical to
+           before. The guest pane (`.split-pane-guest`) becomes the frame
+           the same way in app.css. *@
+        <div class="@($"reader-frame{(ctx.IsSplitOpen && ctx.IsHost ? " split-pane-frame" : "")}")" data-testid="reader-frame">
         <div class="@($"reader-page{ctx.HostPaneClassSuffix}{(ctx.IsSplitOpen ? " reader-page-split-scope" : "")}")" data-testid="reader-root">
         @if (!ctx.IsSplitOpen)
         {
@@ -277,6 +297,7 @@
                 <p class="toast-message">@_errorMessage</p>
             </div>
         }
+        </div>
         </div>
     </CompositionSplit>
 
@@ -795,72 +816,28 @@
             await _readerJs.InvokeVoidAsync("watchShiftRelease", _selfRef);
         }
 
-        // Batch R requirement 6 (chapter nav always visible, middle-
-        // aligned, even as i scroll): see reader.js's own
-        // watchChapterNavCenter comment for why this needs a JS-side
-        // listener at all (a plain CSS `top` value can't, by itself,
-        // stay viewport-centered through `.reader-page`'s own pre-existing
-        // `contain: layout` containing-block substitution).
-        //
-        // Fix round 1 (a THIRD live, self-caught bug found while verifying
-        // the first two): moved OUT of the `if (firstRender)` block above
-        // and now called on EVERY render (guarded only by `_readerJs is not
-        // null`), not just the first. Root cause: `watchChapterNavCenter`
-        // captures a DIRECT DOM ELEMENT reference
-        // (`document.querySelector('[data-testid="reader-root"]')`) the
-        // instant it runs. Pre-fix-round-1, `.reader-page` and its outer
-        // wrapper were the SAME element carrying conditional CLASSES only
-        // (Reader.razor's own single top-level div) -- Blazor's diffing
-        // patches classes on an EXISTING node, never recreating it, so a
-        // reference captured on `firstRender` stayed valid forever. Now,
-        // CompositionSplit's own `@if (!IsSplitOpen) { @ChildContent(ctx) }
-        // else if (IsHost) { ... a NEW WRAPPING DIV ... }` branches are
-        // STRUCTURALLY different render trees -- on a query-driven fresh
-        // load (`?split=1`), Blazor's OWN first render commits BEFORE
-        // `[SupplyParameterFromQuery]` has actually supplied `SplitQuery`
-        // (a documented Blazor timing quirk), so the true FIRST render is
-        // "single" (bare ChildContent, no `.split-view` wrapper) and only
-        // the SECOND commits split-h -- Blazor's diffing sees the SHAPE
-        // change and discards+recreates `.reader-page` as a NEW DOM node.
-        // `watchChapterNavCenter`'s own OWN `firstRender`-only call had
-        // already bound to the FIRST (soon-orphaned) node, silently leaving
-        // the SECOND (live, visible) one with no listener at all --
-        // `--chapter-nav-top` never gets set, `reader-prev`/`reader-next`
-        // fall back to the CSS default `50vh` and never re-center on
-        // scroll. `watchChapterNavCenter`'s own implementation is already
-        // idempotent/self-cleaning (its own `_navCenterCleanup`, called at
-        // the top of every invocation) specifically so a REPEAT call is
-        // always safe and cheap -- calling it here, every render, is what
-        // makes it self-healing against this exact class of DOM-identity
-        // churn instead of depending on it never happening.
-        //
         // FIX ROUND 1 (review S-1, CRITICAL -- "watchScroll is bound once
         // at firstRender and never rebound; reader scroll capture in split
         // view is silently broken"): `watchScroll` (Batch H, view-state
         // round-trip -- continuously reports scroll position into
-        // ViewState.Reader, OnScroll below, NOT a dispose-time read; see
-        // reader.js's own watchScroll comment for the confirmed race a
-        // dispose-time read loses to) gets the IDENTICAL treatment as
-        // watchChapterNavCenter now, for the IDENTICAL reason -- it was
-        // previously called ONLY inside the `if (firstRender)` block above,
-        // so a split opened via a hatch click (no navigation, no fresh
-        // render pass) or a fresh `?split=world` load (the SAME
-        // SupplyParameterFromQuery timing quirk described above) left it
-        // permanently bound to `window` even once `.reader-page` became its
-        // own real scroll container (SPLIT-SCROLL-1) -- silently breaking
-        // the VIEWSTATE-1 reader-scroll round-trip in split (window scroll
-        // is now capped near the header's own height there, so the
-        // continuously-reported position collapsed to ≈0 regardless of the
-        // reader's real scroll depth). `watchScroll`'s own `_scrollCleanup`
-        // prologue already makes a repeat call safe and cheap, the
-        // identical argument this comment already makes for
-        // watchChapterNavCenter -- calling it here too is what actually
-        // rebinds it to the reader pane's own container once one exists,
-        // not merely makes it *capable* of doing so.
+        // ViewState.Reader, OnScroll below) is called on EVERY render
+        // (guarded only by `_readerJs is not null`), not just the first: a
+        // split opened via a hatch click, or a fresh `?split=world` load
+        // (the documented SupplyParameterFromQuery timing quirk -- the true
+        // first render is "single", the second commits split-h, and Blazor
+        // recreates `.reader-page` across that shape change), would
+        // otherwise leave it bound to `window` once `.reader-page` became
+        // its own scroll container. `watchScroll`'s own `_scrollCleanup`
+        // prologue makes a repeat call safe and cheap.
+        //
+        // NAV-FRAME-1 (2026-09-18): `watchChapterNavCenter` is RETIRED --
+        // the chapter-nav buttons are pure CSS in every mode now (see the
+        // `reader-frame` comment in the markup above and app.css's own
+        // `.reader-prev`/`.reader-next` rules); there is no JS-compensated
+        // `top` left to rebind.
         if (_readerJs is not null)
         {
             await _readerJs.InvokeVoidAsync("watchScroll", _selfRef);
-            await _readerJs.InvokeVoidAsync("watchChapterNavCenter");
         }
 
         // Batch VC-1 fix round 1: the divider-width restore-on-open block
@@ -1708,12 +1685,6 @@
                 // listener, same "unwire before disposing the module"
                 // ordering unwatchShiftRelease below already follows.
                 await _readerJs.InvokeVoidAsync("unwatchScroll");
-
-                // Batch R requirement 6: unwires watchChapterNavCenter's own
-                // scroll/resize listeners -- same "unwire before disposing
-                // the module" ordering every other reader.js watcher here
-                // already follows.
-                await _readerJs.InvokeVoidAsync("unwatchChapterNavCenter");
 
                 // Removes reader.js's own window/document-level blur and
                 // visibilitychange listeners (see watchShiftRelease's own

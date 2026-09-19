@@ -250,12 +250,9 @@ test('NAV-3: chapter-nav never overlaps the verse text column in split view at t
 
   const prev = page.getByTestId('reader-prev');
   const next = page.getByTestId('reader-next');
-  // --chapter-nav-top's own recompute is scroll-driven (reader.js's
-  // watchChapterNavCenter, rAF-throttled) -- wait for the REAL settled
-  // position (toBeInViewport, not a one-shot read) before trusting either
-  // box: a pre-recompute read produces a stale/off-screen Y that is a
-  // timing artifact, not a real bug (the exact red herring the review's own
-  // diagnostic flagged and warned future runs away from).
+  // NAV-FRAME-1: the buttons are pure CSS (`top: 50%` against the
+  // non-scrolling pane frame) -- toBeInViewport is kept as the settled-
+  // position read the rest of this test relies on.
   await expect(prev).toBeInViewport();
   await expect(next).toBeInViewport();
 
@@ -697,14 +694,13 @@ test('NAV-STUTTER-2: chapter nav buttons cause no real (browser-measured) layout
   const standalone = await measureNavCLS('/read/MAT/26', { x: 700, y: 450 });
   expect(standalone.totalCLS, `standalone nav-attributed CLS too high: ${JSON.stringify(standalone)}`).toBeLessThan(0.02);
 
-  // Split (host-in-split): NOT fixed this ticket (disclosed residual
-  // exposure, see this test's own header comment) -- a REGRESSION GUARD,
-  // not a fix proof. Pinned generously above the measured pre-fix value
-  // (~0.052-0.055) so a REAL further regression (e.g. the JS compensation
-  // breaking entirely) still fails this, without this test flaking on the
-  // already-known, disclosed residual jitter.
+  // Split (host-in-split): NAV-FRAME-1 (2026-09-18) -- now a FIX PROOF,
+  // held to the SAME 0.02 bar as standalone. The buttons' containing
+  // block is the non-scrolling pane frame (`.split-pane-frame`, app.css),
+  // pure CSS `top: 50%`, no JS-compensated `top` left to lag (the disclosed
+  // ~0.052-0.055 residual this assertion used to pin at < 0.15).
   const split = await measureNavCLS('/read/MAT/26?split=world&follow=0', { x: 400, y: 450 });
-  expect(split.totalCLS, `split nav-attributed CLS regressed further than the disclosed baseline: ${JSON.stringify(split)}`).toBeLessThan(0.15);
+  expect(split.totalCLS, `split nav-attributed CLS too high (NAV-FRAME-1 should hold it to the standalone bar): ${JSON.stringify(split)}`).toBeLessThan(0.02);
 
   // Kretzmann: structurally immune (plain in-flow nav, never fixed/JS-
   // positioned) -- proves it directly, not just by reading the comment.

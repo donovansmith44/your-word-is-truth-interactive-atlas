@@ -1408,7 +1408,7 @@ Picker (ScripturePicker, shared by world and reader):
   for the regression coverage (both pickers agree while following; a
   world-picker Apply still works with follow off, undisturbing the reader;
   follow back on re-converges to the reader's actual chapter).
-Reader: `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
+Reader: `reader-frame` (NAV-FRAME-1, 2026-09-18: the always-present wrapper around `reader-root`; carries `split-pane-frame` in the host role -- the NON-SCROLLING containing block of the chapter-nav buttons, so `reader-prev`/`reader-next` are pure CSS `top: 50%` in every mode; `display:contents` otherwise), `reader-root`, `chapter-head` (batch-g1-brief.md; button, wraps the
   book-name/chapter-numeral spans; opens the ExplorerPopover with a
   ChapterNode -- M-D3/U4/B3: that popover's own content is now the
   chapter's metadata-and-context card, `ChapterCardSection` -- see

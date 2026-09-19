@@ -400,7 +400,59 @@ input:focus-visible,
    role" predicate the NAV-STUTTER-2 fix round's own reader.js change reads
    via `ctx.IsSplitOpen` on the C# side; this is its CSS-side twin. */
 .reader-page.reader-page-split-scope {
+    /* NAV-FRAME-1 (2026-09-18): no longer the containing block -- the
+       FRAME is (`.split-pane-frame` for the host, `.split-pane-guest` for a
+       guest, both below). This element is the pane's SCROLLER in either
+       role now: the host's `.split-pane-reader` rule already gives it
+       height:100%/min-height:0/overflow-y:auto; the guest needs the same,
+       stated once here for both. */
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* NAV-FRAME-1 (owner, 2026-09-18: the chapter-nav buttons were "wonky" in
+   split view and "perfect" standalone; "apply whatever is in non split
+   screen mode ... everywhere"). Standalone's recipe is `position:fixed`
+   against a containing block that NEVER SCROLLS (the viewport), pure CSS.
+   Split's recipe used to be `contain:layout` on the SCROLLING `.reader-page`
+   plus reader.js's `watchChapterNavCenter` rewriting `--chapter-nav-top` on
+   every scroll event -- an inherent one-frame main-thread-vs-compositor
+   lag (NAV-STUTTER-2's own diagnosis) that no amount of synchronous JS can
+   close. The fix is the "genuinely separate, non-scrolling containing-block
+   ancestor" that diagnosis named as the real restructuring: `.reader-frame`
+   (Reader.razor, always rendered around `.reader-page`) is `display:contents`
+   -- no box at all -- everywhere EXCEPT as the split-view HOST pane, where
+   it becomes the flex child (`.split-pane-frame`: the pane's own width and
+   height, `contain:layout`, `overflow:hidden`) and `.reader-page` scrolls
+   INSIDE it. A `position:fixed` descendant then resolves against a box that
+   holds perfectly still, exactly as the viewport does standalone: `top:50%`
+   is the pane's vertical center, `left`/`right` its edges, no JS, no lag.
+   `contain:layout`'s own stacking-context side effect is the same one the
+   old `.reader-page` rule already had (the reader page has nothing that
+   competes with the header -- see the .reader-page comment above).
+   The GUEST role gets the identical treatment on the pane CompositionSplit
+   already renders (`.split-pane-guest`), gated with `:has()` to a Reader
+   guest specifically so a World guest keeps its own z-index arrangement
+   (the .world-page stacking hazard documented above). */
+.reader-frame {
+    display: contents;
+}
+
+.reader-frame.split-pane-frame {
+    display: block;
+    flex: 0 0 var(--split-reader-width, 55%);
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
     contain: layout;
+    overflow: hidden;
+}
+
+.split-pane-guest:has(> .reader-frame) {
+    contain: layout;
+    overflow: hidden;
 }
 
 .world-page {
@@ -1992,30 +2044,17 @@ input:focus-visible,
    floor binds; a hover color swap has always been treated as its own
    separate, momentary affordance throughout this file, never independently
    re-proven against the same static-text floor). */
-/* top: var(--chapter-nav-top, 50vh) -- deliberately NOT a bare `top: 50%`
-   or `top: 50vh`. `.reader-page`'s own pre-existing `contain: layout`
-   (Batch H, split-view) makes THIS PAGE'S OWN border box -- not the
-   viewport -- the CSS containing block for every position:fixed
-   descendant, including these two: correct and load-bearing for `left`/
-   `right` (this page's own width always tracks the viewport/pane width
-   regardless of content length, so it correctly confines them to the
-   reader PANE's own width in split view) but WRONG for any static `top`
-   value on a long chapter, where the page's own HEIGHT grows far past the
-   viewport's -- confirmed live: both a plain `50%` AND `50vh` centered
-   correctly only at scroll position 0, then drifted with the page (glued
-   to an absolute position on the PAGE, not the viewport) as soon as it
-   actually scrolled, the opposite of "middle-aligned... even as i scroll".
-   `--chapter-nav-top` is reader.js's own watchChapterNavCenter -- a small,
-   continuously-recomputed (scroll + resize) custom property set on
-   `.reader-page` itself, correcting JUST this one axis for the containing-
-   block substitution above (see that function's own comment for the exact
-   math) -- the `50vh` fallback only ever covers the brief instant before
-   its first call lands (or the JS-disabled case), and is itself already
-   correct at scroll position 0. */
+/* top: 50% (NAV-FRAME-1, 2026-09-18) -- the containing block is now a box
+   that never scrolls in EVERY mode: the viewport standalone, the pane frame
+   in split (`.split-pane-frame` / `.split-pane-guest:has(> .reader-frame)`,
+   above), so a plain percentage IS the vertical center of whatever the
+   reader occupies, with no JS. The old `var(--chapter-nav-top, 50vh)` and
+   its scroll-driven rewrite are gone with the scrolling containing block
+   that made them necessary. */
 .reader-prev {
     position: fixed;
     left: var(--nav-left, 1.5rem);
-    top: var(--chapter-nav-top, 50vh);
+    top: 50%;
     transform: translateY(-50%);
     z-index: 15;
     display: flex;
@@ -2042,7 +2081,7 @@ input:focus-visible,
 .reader-next {
     position: fixed;
     right: var(--nav-left, 1.5rem);
-    top: var(--chapter-nav-top, 50vh);
+    top: 50%;
     transform: translateY(-50%);
     z-index: 15;
     display: flex;
