@@ -4,7 +4,7 @@
 //! server or the real graph (both are PURE, fast):
 //!
 //! 1. The two `Scenario Outline`-bearing `.feature` files this repo
-//!    commits are byte-identical to what `atlas_server::aqc_export`'s own
+//!    commits are byte-identical to what `atlas_contract::aqc_export`'s own
 //!    generation functions produce RIGHT NOW -- catches drift the moment
 //!    someone hand-edits a committed feature file, or the SEEDS list
 //!    changes without re-running the exporter.
@@ -37,21 +37,21 @@ fn regenerated_features_match_the_committed_files() {
     let committed_focus = std::fs::read_to_string(features_dir.join("focus-query.feature")).expect("focus-query.feature must exist");
     assert_eq!(
         committed_focus,
-        atlas_server::aqc_export::focus_query_feature(),
+        atlas_contract::aqc_export::focus_query_feature(),
         "focus-query.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-server --bin export_aqc_examples` from server/ and commit the result"
     );
 
     let committed_roundtrip = std::fs::read_to_string(features_dir.join("exploration-roundtrip.feature")).expect("exploration-roundtrip.feature must exist");
     assert_eq!(
         committed_roundtrip,
-        atlas_server::aqc_export::exploration_roundtrip_feature(),
+        atlas_contract::aqc_export::exploration_roundtrip_feature(),
         "exploration-roundtrip.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-server --bin export_aqc_examples` from server/ and commit the result"
     );
 }
 
 #[test]
 fn every_seed_and_fixture_name_has_a_committed_file_and_vice_versa() {
-    use atlas_server::aqc_export::{FIXTURES, FOCUS_IDENTITY_EXTRA, SEEDS};
+    use atlas_contract::aqc_export::{FIXTURES, FOCUS_IDENTITY_EXTRA, SEEDS};
 
     let fixtures_dir = contract_dir().join("fixtures");
 
@@ -98,7 +98,7 @@ fn every_seed_and_fixture_name_has_a_committed_file_and_vice_versa() {
 
 #[test]
 fn index_json_matches_the_identity_declared_in_seeds_and_focus_identity_extra() {
-    use atlas_server::aqc_export::{FOCUS_IDENTITY_EXTRA, SEEDS};
+    use atlas_contract::aqc_export::{FOCUS_IDENTITY_EXTRA, SEEDS};
 
     let index_path = contract_dir().join("fixtures").join("index.json");
     let index: std::collections::BTreeMap<String, String> = serde_json::from_str(&std::fs::read_to_string(&index_path).expect("index.json must exist")).expect("index.json must be valid JSON");
@@ -130,8 +130,8 @@ fn version_file_and_schema_version_agree_with_the_compiled_server_constants() {
     let version = std::fs::read_to_string(&version_path).expect("VERSION must exist");
     let version = version.trim();
 
-    assert_eq!(version, atlas_server::contract::MIN_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MIN_SUPPORTED_VERSION");
-    assert_eq!(version, atlas_server::contract::MAX_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MAX_SUPPORTED_VERSION");
+    assert_eq!(version, atlas_contract::contract::MIN_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MIN_SUPPORTED_VERSION");
+    assert_eq!(version, atlas_contract::contract::MAX_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MAX_SUPPORTED_VERSION");
 
     let schema_path = contract_dir().join("aqc.schema.json");
     let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&schema_path).expect("aqc.schema.json must exist")).expect("aqc.schema.json must be valid JSON");

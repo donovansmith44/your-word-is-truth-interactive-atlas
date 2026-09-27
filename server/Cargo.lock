@@ -89,11 +89,32 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 name = "atlas-cli"
 version = "0.1.0"
 dependencies = [
+ "atlas-contract",
  "atlas-core",
  "atlas-graph",
  "atlas-graph-types",
- "atlas-server",
  "serde_json",
+]
+
+[[package]]
+name = "atlas-contract"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "atlas-core",
+ "atlas-etl",
+ "atlas-graph",
+ "atlas-graph-types",
+ "axum",
+ "criterion",
+ "cucumber",
+ "futures",
+ "http-body-util",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "tower-http",
 ]
 
 [[package]]
@@ -143,20 +164,11 @@ name = "atlas-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "atlas-core",
+ "atlas-contract",
  "atlas-etl",
  "atlas-graph",
- "atlas-graph-types",
  "axum",
- "criterion",
- "cucumber",
- "futures",
- "http-body-util",
- "serde",
- "serde_json",
  "tokio",
- "tower",
- "tower-http",
 ]
 
 [[package]]

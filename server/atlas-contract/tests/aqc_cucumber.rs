@@ -12,7 +12,7 @@
 //! (cucumber's own `World::run`), the crate's documented entry shape.
 //!
 //! Joins `cargo test --workspace` (the standing canonical count) as one
-//! more `atlas-server` test section, same as every `tests/*.rs` file here.
+//! more `atlas-contract` test section, same as every `tests/*.rs` file here.
 
 use std::path::Path;
 use std::sync::OnceLock;
@@ -20,7 +20,7 @@ use std::sync::OnceLock;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::dual;
-use atlas_server::graph_wire::parse_edge_kind;
+use atlas_contract::graph_wire::parse_edge_kind;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use cucumber::{given, then, when, World};
@@ -44,7 +44,7 @@ fn app() -> axum::Router {
                 .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first");
             let data: AtlasData = compiled.data;
             let graph = GraphService::build(&raw_dir, &data).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
-            atlas_server::app::build(std::sync::Arc::new(data), std::sync::Arc::new(graph), None)
+            atlas_contract::app::build(std::sync::Arc::new(data), std::sync::Arc::new(graph), None)
         })
         .clone()
 }

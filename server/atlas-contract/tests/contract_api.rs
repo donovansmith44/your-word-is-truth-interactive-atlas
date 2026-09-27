@@ -15,7 +15,7 @@ use tower::ServiceExt;
 fn app() -> axum::Router {
     let data = demo_fixture();
     let graph = atlas_graph::GraphService::from_canon_and_verses(&data.canon, &data.verses, "", &data).expect("fixture graph must build");
-    atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
+    atlas_contract::app::build(Arc::new(data), Arc::new(graph), None)
 }
 
 #[tokio::test]

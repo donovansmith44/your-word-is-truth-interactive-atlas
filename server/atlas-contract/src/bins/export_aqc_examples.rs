@@ -5,7 +5,7 @@
 //! (`focus-query.feature`, `exploration-roundtrip.feature`) in full,
 //! captures the committed pact-style fixtures, and writes the identity
 //! INDEX (fix round 1, S-1) -- all from the fixed, disclosed
-//! `atlas_server::aqc_export` module, which owns every PURE (no I/O)
+//! `atlas_contract::aqc_export` module, which owns every PURE (no I/O)
 //! generation function this binary calls. Each seed id is VERIFIED live
 //! against the real compiled graph before anything is written out. A seed
 //! id that no longer resolves (a curated record renamed/removed) makes
@@ -36,8 +36,8 @@ use std::sync::Arc;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 use atlas_graph_types::store::GraphQuery;
-use atlas_server::aqc_export::{self, FIXTURES, FOCUS_IDENTITY_EXTRA, SEEDS};
-use atlas_server::graph_wire::{decode_node_id, encode_node_id};
+use atlas_contract::aqc_export::{self, FIXTURES, FOCUS_IDENTITY_EXTRA, SEEDS};
+use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
 use axum::body::Body;
 use axum::http::Request;
 use tower::ServiceExt;
@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Fixtures: build the SAME real router (app::build) and capture real
     // HTTP responses -- one file per SEED kind, plus every FIXTURES entry.
-    let app = atlas_server::app::build(Arc::new(data), Arc::new(graph), None);
+    let app = atlas_contract::app::build(Arc::new(data), Arc::new(graph), None);
     let fixtures_dir = repo_root.join("contracts").join("atlas-query-contract").join("fixtures");
     std::fs::create_dir_all(&fixtures_dir)?;
 

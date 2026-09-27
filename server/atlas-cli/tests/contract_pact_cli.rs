@@ -10,7 +10,7 @@
 //!
 //! `env!("CARGO_BIN_EXE_bibex")` is defined only for the tests of the
 //! package that declares the binary. Reaching across the crate boundary
-//! would mean `cargo run`-ing bibex from atlas-server's test, which builds
+//! would mean `cargo run`-ing bibex from atlas-contract's test, which builds
 //! a second time and depends on the workspace layout. One recorder per
 //! crate that OWNS a transport is the smaller rule, and the runner merges
 //! every `*.json` in `contracts/pacts/`.
@@ -19,7 +19,7 @@
 //!
 //! It does not re-derive which bibex invocations the corpus asks for.
 //! Deciding what a step line means is one rule and it lives in ONE place
-//! (`atlas-server/tests/contract_pact.rs::request_key`), which publishes
+//! (`atlas-contract/tests/contract_pact.rs::request_key`), which publishes
 //! the result as `cli_keys` in the committed HTTP pact. This recorder
 //! reads that list. Two recorders parsing Gherkin two ways is exactly the
 //! kind of second, weaker path that eventually disagrees with itself.
@@ -59,7 +59,7 @@ fn cli_keys() -> Vec<String> {
     let path = http_pact_path();
     let raw = std::fs::read_to_string(&path).unwrap_or_else(|_| {
         panic!(
-            "no HTTP pact at {} -- it publishes the bibex request keys this recorder works from.\n  Generate it first with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-server --test contract_pact",
+            "no HTTP pact at {} -- it publishes the bibex request keys this recorder works from.\n  Generate it first with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-contract --test contract_pact",
             path.display()
         )
     });

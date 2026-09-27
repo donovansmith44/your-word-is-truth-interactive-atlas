@@ -1,7 +1,7 @@
 //! `bibex find <term>` -- case-insensitive substring match on the label of
 //! every node this crate can enumerate WITHOUT new parallel query logic:
 //! `GraphService`'s own `..._ids` companion fields (Place/Event/Narrative/
-//! Era/Polity, the same fields `atlas_server::handlers::{places,eras,
+//! Era/Polity, the same fields `atlas_contract::handlers::{places,eras,
 //! polities,narratives}` etc. read for their own listing endpoints; Person,
 //! BIBEX-1 addendum ticket 2, the SAME companion shape, see `GraphService::
 //! person_ids`'s own doc comment) plus `AtlasData.catechism` (already
@@ -13,7 +13,7 @@
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
-use atlas_server::graph_wire::{describe_node, encode_node_id};
+use atlas_contract::graph_wire::{describe_node, encode_node_id};
 
 use crate::error::CliError;
 

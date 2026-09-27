@@ -2,7 +2,7 @@
 //! `std::process::Command`, against the REAL committed
 //! `data/compiled/graph.bin` (the house real-data idiom -- the SAME
 //! `env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")` convention
-//! `atlas-server/tests/perf_smoke.rs`/`scene_byte_identity.rs` already use).
+//! `atlas-contract/tests/perf_smoke.rs`/`scene_byte_identity.rs` already use).
 //! Every subcommand's happy path, every CONTRACT.md error-taxonomy class,
 //! the tutorial smoke test, bare-invocation help, and exit-code assertions.
 
@@ -684,7 +684,7 @@ fn kinds_takes_no_arguments() {
 
 #[test]
 fn edges_never_surfaces_an_unresolvable_peoplegroup_neighbor() {
-    // S-3/Q-2: mirrors atlas_server::graph_handlers::node_edges's own
+    // S-3/Q-2: mirrors atlas_contract::graph_handlers::node_edges's own
     // PeopleGroup filter. This test only proves the filter code RUNS
     // without breaking the happy path (a PeopleGroup-carrying real id in
     // the committed graph, with a real edge to a PeopleGroup neighbor,
@@ -789,7 +789,7 @@ fn node_json_on_a_chapter_container_carries_the_same_card_shape() {
 fn verse_places_line_names_a_real_place_and_stays_none_for_a_verse_with_no_mention() {
     // GEN.13.18 -- "Abram... dwelt in the plain of Mamre, which is in
     // Hebron," one of the cleanest single-place mentions in the curated
-    // gazetteer. The SAME verse `atlas-server/tests/graph_api.rs::chapter_
+    // gazetteer. The SAME verse `atlas-contract/tests/graph_api.rs::chapter_
     // verse_places_name_real_places_from_the_graph_backed_scene_source`
     // asserts over HTTP, deliberately: one fact, both surfaces.
     let o = run_with_data_dir(&["verse", "GEN.13.18"]);

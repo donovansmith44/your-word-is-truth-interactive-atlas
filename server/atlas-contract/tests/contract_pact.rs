@@ -73,7 +73,7 @@ fn repo_root() -> PathBuf {
 /// `main.rs` and this recorder now call the SAME constructor and reach the
 /// Router through the SAME door, so there is no second copy to drift from.
 /// Divergence is not *detected*, it is unrepresentable. See
-/// `atlas_server::load`'s header for the two bugs that motivated it.
+/// `atlas_contract::load`'s header for the two bugs that motivated it.
 ///
 /// `static_dir: None` is the one deliberate difference and it cannot reach
 /// an `/api` handler -- it only mounts the published client's static files.
@@ -81,7 +81,7 @@ fn app() -> axum::Router {
     static ROUTER: OnceLock<axum::Router> = OnceLock::new();
     ROUTER
         .get_or_init(|| {
-            atlas_server::load::load_from_data_dir(&repo_root().join("data/compiled"))
+            atlas_contract::load::load_from_data_dir(&repo_root().join("data/compiled"))
                 .expect("data/compiled must load exactly as the server loads it")
                 .into_router(None)
         })
@@ -532,7 +532,7 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
 
     let committed = std::fs::read_to_string(&path).unwrap_or_else(|_| {
         panic!(
-            "no recorded pact at {}.\n  Generate it once with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-server --test contract_pact",
+            "no recorded pact at {}.\n  Generate it once with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-contract --test contract_pact",
             path.display()
         )
     });
@@ -548,7 +548,7 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
         "the provider drifted from the recorded pact.\n  {first_change}\n\
          \n  If this change is DELIBERATE, it is a contract change: bump the affected\n\
          suite's VERSION, add a CHANGELOG entry, and re-record with\n\
-         ATLAS_BLESS_PACT=1 cargo test -p atlas-server --test contract_pact\n\
+         ATLAS_BLESS_PACT=1 cargo test -p atlas-contract --test contract_pact\n\
          The semver gate classifies the bump from the diff and will refuse one that\n\
          is too small."
     );
@@ -591,7 +591,7 @@ fn first_differing_key(old: &Value, new: &Value) -> String {
 
 /// THE FIDELITY REGRESSION TEST (fix round 1, review C-3).
 ///
-/// Sharing `atlas_server::load` with `main.rs` makes an assembly divergence
+/// Sharing `atlas_contract::load` with `main.rs` makes an assembly divergence
 /// unrepresentable, which is the real fix. This is the belt to that braces:
 /// a law that fails if the assembled app is HOLLOW on any of the three
 /// surfaces whose emptiness has actually bitten this project.

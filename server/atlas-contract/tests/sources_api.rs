@@ -49,7 +49,7 @@ async fn get_api_sources_returns_every_real_curated_source_and_category() {
     let expected_categories = sources.categories.len();
     let expected_sources = sources.sources.len();
 
-    let app = atlas_server::app::build_with_sources(Arc::new(data), graph, sources, None);
+    let app = atlas_contract::app::build_with_sources(Arc::new(data), graph, sources, None);
 
     let (status, body) = get(&app, "/api/sources").await;
     assert_eq!(status, StatusCode::OK);
@@ -81,7 +81,7 @@ async fn api_sources_defaults_to_empty_when_build_called_without_sources() {
     // not just that it compiles.
     let data = demo_fixture();
     let graph = minimal_graph(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (status, body) = get(&app, "/api/sources").await;
     assert_eq!(status, StatusCode::OK);
@@ -101,7 +101,7 @@ async fn get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_
     let sources = Arc::new(real_sources_document());
     let expected = sources.provenances.len();
 
-    let app = atlas_server::app::build_with_sources(Arc::new(data), graph, sources, None);
+    let app = atlas_contract::app::build_with_sources(Arc::new(data), graph, sources, None);
     let (status, body) = get(&app, "/api/sources").await;
     assert_eq!(status, StatusCode::OK);
 

@@ -65,7 +65,7 @@ fn compiled_app() -> axum::Router {
     // construction (fix round 1) -- reaching this line already proves it
     // passed on the real committed KJV source.
     let graph = GraphService::build(&raw, &data).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
-    atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
+    atlas_contract::app::build(Arc::new(data), Arc::new(graph), None)
 }
 
 async fn get(app: &axum::Router, uri: &str) -> (StatusCode, serde_json::Value, axum::http::HeaderMap) {
@@ -1549,9 +1549,9 @@ fn artifact_app() -> axum::Router {
     let (data, graph, sources) = CACHED
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-            let (graph, data) = atlas_server::load::load_graph_and_data(&compiled)
+            let (graph, data) = atlas_contract::load::load_graph_and_data(&compiled)
                 .expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");
-            let sources = atlas_server::load::load_sources(&compiled)
+            let sources = atlas_contract::load::load_sources(&compiled)
                 .expect("data/compiled/sources.json must exist -- run `cargo run -p atlas-etl --bin gen_sources` first");
             assert!(
                 data.events.is_empty() && data.places.is_empty() && data.narratives.is_empty(),
@@ -1567,7 +1567,7 @@ fn artifact_app() -> axum::Router {
     // what `main.rs` serves (fix round 1, review M-1). Note the consequence:
     // unlike `artifact_app()`, this app serves the REAL compiled source
     // registry rather than a default-empty one.
-    atlas_server::load::LoadedAtlas { data, graph, sources }.into_router(None)
+    atlas_contract::load::LoadedAtlas { data, graph, sources }.into_router(None)
 }
 
 /// OVERLAY-1-HOTFIX-1 (the regression this hotfix exists for).

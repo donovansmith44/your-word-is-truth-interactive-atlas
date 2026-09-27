@@ -100,7 +100,7 @@ fn graph_fixture() -> Arc<atlas_graph::GraphService> {
 fn app() -> axum::Router {
     let data = demo_fixture();
     let graph = graph_fixture_for(&data);
-    atlas_server::app::build(Arc::new(data), graph, None)
+    atlas_contract::app::build(Arc::new(data), graph, None)
 }
 
 /// Fetches `uri` from `app` and parses the response body as JSON. Only for
@@ -444,7 +444,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g1").await;
     assert_eq!(st, 200);
@@ -507,7 +507,7 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
     });
     let data = data.finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g-hebron").await;
     assert_eq!(st, 200);
@@ -542,7 +542,7 @@ async fn data_hebron_period_name_still_resolves_for_a_real_event_kind_window() {
     });
     let data = data.finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/e-hebron-period").await;
     assert_eq!(st, 200);
@@ -572,7 +572,7 @@ async fn event_endpoint_carries_acts_section_when_present() {
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/a1").await;
     assert_eq!(st, 200);
@@ -611,7 +611,7 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/k1").await;
     assert_eq!(st, 200);
@@ -663,7 +663,7 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
     }];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], verses, HashMap::new()).finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/event/g_general_witnessed").await;
     assert_eq!(st, 200);
@@ -1043,7 +1043,7 @@ fn app_with_test_polities() -> axum::Router {
     ];
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
-    atlas_server::app::build(Arc::new(data), graph, None)
+    atlas_contract::app::build(Arc::new(data), graph, None)
 }
 
 #[tokio::test]
@@ -1166,7 +1166,7 @@ async fn polities_transition_and_fall_conditional_presence_on_the_wire() {
     }];
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
-    let app = atlas_server::app::build(Arc::new(data), graph, None);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
 
     let (st, body) = call(&app, "/api/polities?from=-1000&to=-600").await;
     assert_eq!(st, 200);
@@ -1232,7 +1232,7 @@ async fn static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_
     std::fs::write(dir.join("index.html"), "<html>shell</html>").unwrap();
     std::fs::write(dir.join("app.css"), "body{color:red}").unwrap();
 
-    let app = atlas_server::app::build(Arc::new(demo_fixture()), graph_fixture(), Some(dir.clone()));
+    let app = atlas_contract::app::build(Arc::new(demo_fixture()), graph_fixture(), Some(dir.clone()));
 
     let response = app
         .clone()

@@ -67,7 +67,7 @@ fn real_restored_verses(data: &AtlasData) -> std::collections::HashMap<String, S
 /// verbatim (pre-migration: `verses.get(&format!("{code}.{chapter}.{v}"))`,
 /// `v` from 1..=verse_count, skipping an absent verse rather than
 /// fabricating one) -- kept as a small local function, not a call into
-/// `atlas_server::handlers`, so this test independently re-derives the
+/// `atlas_contract::handlers`, so this test independently re-derives the
 /// "before" side rather than trusting the very code path it exists to
 /// check. Takes an already-case-restored verses map (`real_restored_
 /// verses` above), not `&AtlasData` directly, since Batch KJV-CASE.

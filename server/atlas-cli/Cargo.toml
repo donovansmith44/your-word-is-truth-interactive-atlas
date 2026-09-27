@@ -6,14 +6,14 @@ edition = "2021"
 [dependencies]
 # R1: no parallel query logic -- every graph question this crate answers
 # goes through atlas-graph's GraphService / atlas_graph_types::store::
-# GraphQuery, or atlas-server's own graph_wire id/edge-kind grammar
+# GraphQuery, or atlas-contract's own graph_wire id/edge-kind grammar
 # (reused as a library dependency, not re-parsed by hand).
 atlas-core = { path = "../atlas-core" }
 atlas-graph = { path = "../atlas-graph" }
 # DB-4a: canon-ids ON for the atlas -- SHA-256-128 pids, canonical edge ids, the
 # manifest root. graph-types' own default stays off for the sibling repo.
 atlas-graph-types = { path = "../../graph-types", features = ["canon-ids"] }
-atlas-server = { path = "../atlas-server" }
+atlas-contract = { path = "../atlas-contract" }
 
 # BIBEX-1 (--json flag, contract-first): serialization via what the
 # dependency tree already carries -- serde_json is already resolved in

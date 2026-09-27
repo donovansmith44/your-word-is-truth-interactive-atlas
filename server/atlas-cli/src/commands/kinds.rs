@@ -62,7 +62,7 @@ pub fn run_json() -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_server::graph_wire::parse_edge_kind;
+    use atlas_contract::graph_wire::parse_edge_kind;
 
     #[test]
     fn every_row_token_round_trips_through_parse_edge_kind() {

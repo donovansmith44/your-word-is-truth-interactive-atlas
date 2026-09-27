@@ -3,7 +3,7 @@
 //! way `atlas-server`'s own real startup loads it -- see `load_real` below,
 //! which mirrors `main.rs`'s default artifact-load path field for field).
 //!
-//! Own bench target (`cargo bench -p atlas-server`, or `cargo bench` from
+//! Own bench target (`cargo bench -p atlas-contract`, or `cargo bench` from
 //! server/) -- NOT part of `cargo test`'s own count (server/Cargo.toml's own
 //! STANDING COUNTING PROCEDURE comment). A fast SMOKE-TIER subset of these
 //! same queries also lives in `tests/perf_smoke.rs`, wired into the normal
@@ -51,7 +51,7 @@ use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
 use atlas_graph::GraphService;
-use atlas_server::{graph_handlers, handlers};
+use atlas_contract::{graph_handlers, handlers};
 
 fn repo_data_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
@@ -66,11 +66,11 @@ fn repo_data_dir() -> PathBuf {
 /// OVERLAY-1 Task 5: the overlay assignment that used to sit between
 /// `AtlasData::load` and `finish()` is gone from the real startup path, so
 /// it is gone from here too -- keeping this function field-for-field
-/// faithful to `atlas_server::load::load_graph_and_data` is the only reason
+/// faithful to `atlas_contract::load::load_graph_and_data` is the only reason
 /// it exists.
 fn load_real() -> (Arc<AtlasData>, Arc<GraphService>) {
     let compiled = repo_data_dir().join("compiled");
-    // DB-5: the sections, exactly as `atlas_server::load::load_all` opens them.
+    // DB-5: the sections, exactly as `atlas_contract::load::load_all` opens them.
     let (graph, data, _sources) = GraphService::from_sections(&compiled)
         .expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first (see README)");
     let data = data.finish();
@@ -118,7 +118,7 @@ fn bench_scene_pure(c: &mut Criterion) {
     group.finish();
 }
 
-/// The real axum handlers (`atlas_server::handlers`/`graph_handlers`) called
+/// The real axum handlers (`atlas_contract::handlers`/`graph_handlers`) called
 /// directly with hand-built extractors (`State`/`Path`/`Query` are public
 /// tuple structs -- this is the standard way to bench/unit-test an axum
 /// handler without a socket or even a `Router`), over real, valid,
@@ -178,7 +178,7 @@ fn bench_handlers(c: &mut Criterion) {
 }
 
 /// The generic typed-graph endpoints (design doc §5/§6): node card, node
-/// edges, text window -- `atlas_server::graph_handlers`, the newer surface
+/// edges, text window -- `atlas_contract::graph_handlers`, the newer surface
 /// the REFOUNDED typed-edge graph serves directly (not through `AtlasData`
 /// at all).
 fn bench_graph_handlers(c: &mut Criterion) {

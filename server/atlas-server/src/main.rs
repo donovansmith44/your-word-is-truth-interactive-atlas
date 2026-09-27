@@ -163,12 +163,12 @@ async fn main() -> Result<()> {
     } else {
         // CDC-1 fix round 1 (review C-3): this sequence used to be written
         // out here and hand-copied into the contract-pact recorder. It now
-        // lives in `atlas_server::load`, which the recorder calls too, so
+        // lives in `atlas_contract::load`, which the recorder calls too, so
         // the recorded evidence the contract gate runs against cannot drift
         // from what this binary actually serves. See that module's header
         // for the two fidelity bugs that made it necessary -- both of which
         // produced a GREEN contract suite over a wrong provider.
-        atlas_server::load::load_graph_and_data(&args.data_dir)?
+        atlas_contract::load::load_graph_and_data(&args.data_dir)?
     };
     let data = Arc::new(data);
     let load_elapsed = load_start.elapsed();
@@ -214,17 +214,17 @@ async fn main() -> Result<()> {
     // serve stale/absent data" discipline this binary already applies to
     // the sections above -- run `cargo run -p
     // atlas-etl --bin gen_sources` (from `server/`) to (re)generate it.
-    // CDC-1 fix round 1 (review C-3): read through `atlas_server::load`,
+    // CDC-1 fix round 1 (review C-3): read through `atlas_contract::load`,
     // the same call the pact recorder makes -- a recorder that built with
     // `SourcesDocument::default()` recorded an EMPTY registry while this
     // binary served 18 sources, and the contract suite went green over it.
-    let sources = atlas_server::load::load_sources(&args.data_dir)?;
+    let sources = atlas_contract::load::load_sources(&args.data_dir)?;
     println!("atlas-server: {} source categories, {} sources loaded from the core section under {}", sources.categories.len(), sources.sources.len(), args.data_dir.display());
 
     // The ONE door to a serving Router (`LoadedAtlas::into_router`), taken
     // by both startup branches and by the recorder. A new `AppState`
     // ingredient cannot be wired in here while quietly missing there.
-    let app = atlas_server::load::LoadedAtlas { data, graph, sources: Arc::new(sources) }
+    let app = atlas_contract::load::LoadedAtlas { data, graph, sources: Arc::new(sources) }
         .into_router(args.static_dir);
 
     let addr = format!("0.0.0.0:{}", args.port);

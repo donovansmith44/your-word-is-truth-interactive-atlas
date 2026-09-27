@@ -58,7 +58,7 @@ fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
     CACHED
         .get_or_init(|| {
             // DB-4c: the SERVED path -- the committed sections, exactly what
-            // `atlas_server::load::load_all` opens; the six ceilings below did
+            // `atlas_contract::load::load_all` opens; the six ceilings below did
             // not move (the composed bytes did not: scene_byte_identity.rs).
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
             let (graph, sidecars, _sources) = GraphService::from_sections(&compiled).expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");

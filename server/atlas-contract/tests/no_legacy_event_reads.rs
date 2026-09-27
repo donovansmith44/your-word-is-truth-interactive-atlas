@@ -5,7 +5,7 @@
 //!
 //! `AtlasData::load` has not read `places.json`/`events.json`/
 //! `narratives.json` since M-C2 -- it seeds all three with `Vec::new()`.
-//! Until OVERLAY-1 Task 5 (d31ac6c) `atlas_server::load` quietly re-filled
+//! Until OVERLAY-1 Task 5 (d31ac6c) `atlas_contract::load` quietly re-filled
 //! them at boot from `legacy::atlas_data_overlay`; Task 5 deleted that
 //! overlay, which is the whole point of the batch (the events the map
 //! composes from exist ONCE, in `GraphSceneSource`, not twice). Task 5's own
@@ -28,9 +28,9 @@
 //! thing that caught it.
 //!
 //! This is the grep that would have caught it in seconds, promoted to a
-//! standing test so it runs every time. It scans the two SERVING crates'
-//! sources (`atlas-server/src`, `atlas-cli/src`) for the exact shapes of
-//! that regression.
+//! standing test so it runs every time. It scans the SERVING crates'
+//! sources (`atlas-server/src`, `atlas-contract/src`, `atlas-cli/src`) for
+//! the exact shapes of that regression.
 //!
 //! # Its two companions, and the honest limit of each
 //!
@@ -218,6 +218,7 @@ fn serving_sources() -> Vec<PathBuf> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
     let mut out = Vec::new();
     rs_files(&root.join("atlas-server/src"), &mut out);
+    rs_files(&root.join("atlas-contract/src"), &mut out);
     rs_files(&root.join("atlas-cli/src"), &mut out);
     out.sort();
     out

@@ -104,7 +104,7 @@ pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
 
 /// BIBEX-1 (--json mode): an array of `{ref, text, words_of_christ}`
 /// objects, one per verse, in chapter order -- field names reused verbatim
-/// from `atlas_server::graph_handlers::TextUnitOut` (the SAME wire shape
+/// from `atlas_contract::graph_handlers::TextUnitOut` (the SAME wire shape
 /// `/api/text` already serves for a window of units). CONTRACT.md's own
 /// "--json mode" section has the full field table; no `next` field (unlike
 /// `/api/text`'s own paginated window) -- a chapter's own span is always

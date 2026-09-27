@@ -9,7 +9,7 @@ use atlas_core::history::resolve_display_name;
 use atlas_graph::window;
 use atlas_graph::GraphService;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
-use atlas_server::graph_wire::{decode_node_id, encode_node_id};
+use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
 
 use crate::error::CliError;
 

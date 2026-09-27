@@ -1,12 +1,12 @@
 //! `bibex node <id>` -- card + edge summary. Mirrors
-//! `atlas_server::graph_handlers::node_card` exactly (same id grammar,
+//! `atlas_contract::graph_handlers::node_card` exactly (same id grammar,
 //! same `GraphQuery` calls), minus the HTTP wire wrapping -- see
 //! CONTRACT.md's own "bibex node" section.
 
 use atlas_graph::GraphService;
 use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
-use atlas_server::graph_wire::{decode_node_id, describe_node};
+use atlas_contract::graph_wire::{decode_node_id, describe_node};
 
 use crate::error::CliError;
 
@@ -86,7 +86,7 @@ pub fn run(graph: &GraphService, id_raw: &str) -> Result<String, CliError> {
 
 /// BIBEX-1 (--json mode): `{id, kind, label, provenance, edge_summary:
 /// [{kind, count}]}` -- field names reused verbatim from
-/// `atlas_server::graph_handlers::NodeCardOut`/`EdgeSummaryEntryOut` (the
+/// `atlas_contract::graph_handlers::NodeCardOut`/`EdgeSummaryEntryOut` (the
 /// SAME wire shape `/api/node/{id}` already serves, minus `version`/
 /// `description`: this crate never computes either -- CONTRACT.md's own
 /// "--json mode" section has the full field table).

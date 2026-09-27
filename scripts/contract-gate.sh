@@ -564,7 +564,7 @@ if [ "$FAST" -eq 0 ]; then
   }
 
   http_log="$(mktemp)"; cli_log="$(mktemp)"
-  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-server --test contract_pact ) >"$http_log" 2>&1
+  ( cd server && env -u ATLAS_BLESS_PACT "$CARGO" test -p atlas-contract --test contract_pact ) >"$http_log" 2>&1
   check $? "provider drift: the HTTP pact no longer matches the live graph"
   require_named_tests "leg 3 (HTTP recorder)" "$http_log" \
     the_recorded_pact_still_matches_the_live_graph \

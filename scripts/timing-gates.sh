@@ -36,13 +36,13 @@ REASON='wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-
 GATES=(
   # DB-5: the artifact load gate retired with its subject (artifact.rs, graph.bin);
   # the served startup gate (sections_startup, below) is its successor.
-  "atlas-server|graph_conformance|the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly"
-  "atlas-server|perf_smoke|scene_time_full_span_completes_within_smoke_threshold"
-  "atlas-server|perf_smoke|scene_time_nt_window_completes_within_smoke_threshold"
-  "atlas-server|perf_smoke|scene_scripture_chapter_completes_within_smoke_threshold"
-  "atlas-server|perf_smoke|xrefs_for_verse_completes_within_smoke_threshold"
-  "atlas-server|perf_smoke|text_window_completes_within_smoke_threshold"
-  "atlas-server|perf_smoke|chapter_window_completes_within_smoke_threshold"
+  "atlas-contract|graph_conformance|the_full_real_graph_is_admitted_the_in_memory_store_answers_match_the_model_exactly"
+  "atlas-contract|perf_smoke|scene_time_full_span_completes_within_smoke_threshold"
+  "atlas-contract|perf_smoke|scene_time_nt_window_completes_within_smoke_threshold"
+  "atlas-contract|perf_smoke|scene_scripture_chapter_completes_within_smoke_threshold"
+  "atlas-contract|perf_smoke|xrefs_for_verse_completes_within_smoke_threshold"
+  "atlas-contract|perf_smoke|text_window_completes_within_smoke_threshold"
+  "atlas-contract|perf_smoke|chapter_window_completes_within_smoke_threshold"
   # DB-2b (gate 9): the real graph written to SQLite sections, admitted
   # through SqliteSnapshot, logical hashes re-derived from the tables.
   # Ceiling in the test = measured run x 2, rounded up to 30 s: measured
@@ -56,7 +56,7 @@ GATES=(
   "atlas-graph|sections_startup|the_served_path_starts_under_the_ceiling"
   # DB-4c (gate 11): spec 12's frontier p50/p99 stand-in -- the first edge page
   # of every inhabited kind at 736 fixed positions, both arms; served p99 < 100 ms.
-  "atlas-server|perf_smoke|frontier_page_latency_corpus_over_both_arms"
+  "atlas-contract|perf_smoke|frontier_page_latency_corpus_over_both_arms"
 )
 
 names_in_script() { printf '%s\n' "${GATES[@]}" | awk -F'|' '{print $3}' | sort; }

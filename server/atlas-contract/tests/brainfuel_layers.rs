@@ -58,7 +58,7 @@ fn real_graph() -> GraphService {
 fn real_app() -> axum::Router {
     let data = real_atlas_data();
     let graph = real_graph();
-    atlas_server::app::build(Arc::new(data), Arc::new(graph), None)
+    atlas_contract::app::build(Arc::new(data), Arc::new(graph), None)
 }
 
 async fn get_json(app: axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {

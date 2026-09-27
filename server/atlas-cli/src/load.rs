@@ -45,7 +45,7 @@ pub fn load(data_dir: &Path) -> Result<Loaded, CliError> {
     })?;
     let data = data.finish();
     // OVERLAY-1 Task 5: prime the graph-backed scene source, the SAME thing
-    // `atlas_server::load::load_graph_and_data` primes -- `bibex verse`'s
+    // `atlas_contract::load::load_graph_and_data` primes -- `bibex verse`'s
     // PLACES/EVENTS/PASSAGES sections read it, and doing it here keeps the
     // cost inside the load step this crate already reports as
     // `data_load_failed` on failure rather than inside a command.
