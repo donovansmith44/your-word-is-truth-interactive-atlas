@@ -146,7 +146,6 @@ pub struct SceneArrow {
 #[serde(deny_unknown_fields)]
 pub struct SceneNarrative {
     pub id: String,
-    /// The narrative's name.
     pub name: String,
     /// The colour its arrows are drawn in.
     pub color: String,

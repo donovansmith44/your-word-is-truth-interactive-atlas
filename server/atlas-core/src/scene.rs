@@ -245,10 +245,16 @@ pub fn to_scene_event(e: &Event) -> SceneEvent {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventWitness {
+    /// The book's three-letter code, such as `MAT`.
     pub book: String,
+    /// The verses of this account, grouped by chapter.
     pub verse_groups: Vec<VerseGroup>,
+    /// A note on how THIS account is cited -- not the event's own note about how its
+    /// date and grouping were arrived at. Absent when the account needed none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
+    /// The section of Robertson's Harmony of the Gospels this account falls in, sent
+    /// only where it differs from the event's own. Absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
 }

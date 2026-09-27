@@ -28,8 +28,8 @@ pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
         .merge(contents::routes())
 }
 
-/// The router's raw document. `document::openapi` is the one published form
-/// of it, so nothing outside this crate reads the raw one.
+/// `document::openapi` is the one published form of this, so nothing outside this
+/// crate reads the raw one.
 pub(crate) fn openapi() -> utoipa::openapi::OpenApi {
     openapi_router().split_for_parts().1
 }

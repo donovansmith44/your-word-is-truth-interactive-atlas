@@ -866,20 +866,9 @@ pub struct PolityDelta {
     pub verses: Vec<String>,
     /// The sources actually consulted for this event.
     pub ref_note: String,
-    /// Fix round 1 (I1): a curator-authored ECHO of the `from` year of the
-    /// era this delta block is meant to belong to -- required precisely
-    /// because TOML's array-of-tables rule silently attaches a nested
-    /// `[era.transition]`/`[era.fall]` table to whichever `[[era]]` element
-    /// was MOST RECENTLY OPENED, not whichever era a curator's own
-    /// surrounding prose comment describes. That exact mismatch shipped
-    /// live once (7 of this batch's own original 22 deltas, self-caught
-    /// only via a live diagnostic, not this field) before this field
-    /// existed. `atlas_etl::validate::run_polities` cross-checks this
-    /// against the ACTUAL hosting era's own `from` -- a curator who writes
-    /// the block in the wrong place now gets a loud, specific ETL error
-    /// instead of a silently-misattached delta. Never read by the client
-    /// (`skip_serializing` above keeps it off the wire) -- purely an authoring
-    /// safety net.
+    /// A curator-authored echo of the hosting era's `from`, cross-checked by the
+    /// ETL: TOML attaches a nested table to the most recently opened `[[era]]`, not
+    /// to whichever era the surrounding prose describes.
     #[serde(skip_serializing)]
     pub for_era_from: Year,
 }

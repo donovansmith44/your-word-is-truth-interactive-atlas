@@ -46,9 +46,15 @@ use crate::kjv_adapter::KJV_TRANSLATION;
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Heading {
+    /// The id of the event or titled passage that covers this verse and gives the
+    /// heading its words; `/api/event/{id}` fetches it.
     pub event_id: String,
+    /// The heading as a reader sees it.
     pub title: String,
+    /// `event` for a dated happening, `general` for a titled passage that has none.
     pub kind: String,
+    /// True when this verse carries on coverage that began in an earlier chapter
+    /// rather than opening it, so a reader can render it as a continued heading.
     pub is_continuation: bool,
 }
 

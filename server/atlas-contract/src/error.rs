@@ -71,13 +71,17 @@ impl IntoResponse for ApiError {
     }
 }
 
+const BAD_REQUEST: &str = "The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).";
+const NOT_FOUND: &str = "Nothing in this atlas answers to that reference.";
+const INTERNAL: &str = "The request was well formed but this atlas's own data for it is incomplete.";
+
 impl IntoResponses for ApiError {
     fn responses() -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
         let json = || ContentBuilder::new().schema(Some(ErrorBody::schema())).build();
         ResponsesBuilder::new()
-            .response("400", ResponseBuilder::new().description("bad_window | bad_ref | bad_kind | bad_dir | bad_corpus").content("application/json", json()))
-            .response("404", ResponseBuilder::new().description("not_found").content("application/json", json()))
-            .response("500", ResponseBuilder::new().description("internal").content("application/json", json()))
+            .response("400", ResponseBuilder::new().description(BAD_REQUEST).content("application/json", json()))
+            .response("404", ResponseBuilder::new().description(NOT_FOUND).content("application/json", json()))
+            .response("500", ResponseBuilder::new().description(INTERNAL).content("application/json", json()))
             .build()
             .into()
     }

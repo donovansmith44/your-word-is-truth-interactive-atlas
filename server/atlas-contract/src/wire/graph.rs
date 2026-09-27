@@ -95,8 +95,7 @@ pub struct NodeRef {
 }
 
 /// A frontier entry's position is not always a node: an edge takes focus too, so
-/// `Edge` is a kind of its own here. Consumers read this as one flat string enum
-/// -- see `NodeRef`, whose description the document publishes.
+/// `Edge` is a kind of its own here.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PositionKind {
     Node(NodeKind),

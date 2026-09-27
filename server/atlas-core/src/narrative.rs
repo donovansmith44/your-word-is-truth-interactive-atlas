@@ -74,7 +74,9 @@ use crate::wire::VerseGroup;
 pub struct NarrativeAdjacentEvent {
     pub id: String,
     pub label: String,
+    /// The ids of the places it touches.
     pub places: Vec<String>,
+    /// The passages it is narrated in, grouped by book and chapter.
     pub verse_groups: Vec<VerseGroup>,
 }
 

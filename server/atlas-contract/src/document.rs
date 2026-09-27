@@ -23,8 +23,6 @@ pub struct GeneratedDocument {
     pub render: fn() -> String,
 }
 
-/// Every document the exporter publishes. The exporter, the gate and the
-/// byte-identity test all read this list rather than restate it.
 pub const GENERATED_DOCUMENTS: [GeneratedDocument; 3] = [
     GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
     GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },

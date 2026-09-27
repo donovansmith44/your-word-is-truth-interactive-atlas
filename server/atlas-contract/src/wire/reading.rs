@@ -69,7 +69,7 @@ pub struct WordsOfChristSpan {
     pub end: usize,
 }
 
-/// Kretzmann's commentary for one chapter.
+/// Every verse of one chapter that carries commentary, in canon order.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct KretzmannChapter {

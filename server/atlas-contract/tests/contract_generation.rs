@@ -11,6 +11,40 @@ const MISUSE_EXIT: i32 = 2;
 const USAGE_LINE: &str = "usage: export_contract [--check]\n";
 const NOTHING: &str = "";
 
+const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
+    ".md",
+    ".rs",
+    "2026",
+    "atlas_contract",
+    "atlas_core",
+    "atlas_graph",
+    "batch",
+    "brief",
+    "controller",
+    "design doc",
+    "fix round",
+    "fixme",
+    "graph_wire",
+    "graphquery",
+    "hotfix",
+    "m-a",
+    "m-b",
+    "m-c",
+    "m-d",
+    "overlay-",
+    "owner",
+    "principles",
+    "prov-",
+    "q-",
+    "requirement ",
+    " review",
+    "ruling",
+    "spec ",
+    "task ",
+    "todo",
+    "\u{a7}",
+];
+
 #[derive(Debug, PartialEq)]
 enum Freshness {
     ByteIdenticalToWhatTheRustRenders,
@@ -22,6 +56,13 @@ enum Freshness {
 struct CommittedDocument {
     path: PathBuf,
     freshness: Freshness,
+}
+
+#[derive(Debug, PartialEq)]
+struct InternalHistoryHit {
+    line: usize,
+    token: &'static str,
+    text: String,
 }
 
 #[test]
@@ -175,47 +216,6 @@ fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTr
         serde_json::Value::Array(items) => items.iter().for_each(|item| collect_references(item, out)),
         _ => {}
     }
-}
-
-const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
-    ".md",
-    ".rs",
-    "2026",
-    "atlas_contract",
-    "atlas_core",
-    "atlas_graph",
-    "batch",
-    "brief",
-    "controller",
-    "design doc",
-    "fix round",
-    "fixme",
-    "graph_wire",
-    "graphquery",
-    "hotfix",
-    "m-a",
-    "m-b",
-    "m-c",
-    "m-d",
-    "overlay-",
-    "owner",
-    "principles",
-    "prov-",
-    "q-",
-    "requirement ",
-    " review",
-    "ruling",
-    "spec ",
-    "task ",
-    "todo",
-    "\u{a7}",
-];
-
-#[derive(Debug, PartialEq)]
-struct InternalHistoryHit {
-    line: usize,
-    token: &'static str,
-    text: String,
 }
 
 #[test]

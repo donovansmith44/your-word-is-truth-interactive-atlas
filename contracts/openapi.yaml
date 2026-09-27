@@ -41,7 +41,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CatechismItem'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -53,7 +53,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -65,7 +65,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -102,7 +102,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/CatechismRef'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -114,7 +114,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -126,7 +126,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -160,7 +160,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Chapter'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -172,7 +172,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -184,7 +184,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -218,7 +218,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Contents'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -230,7 +230,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -242,7 +242,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -305,7 +305,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventDetail'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -317,7 +317,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -329,7 +329,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -363,7 +363,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/KretzmannChapter'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -375,7 +375,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -387,7 +387,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -447,7 +447,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NarrativeEventPositions'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -459,7 +459,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -471,7 +471,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -521,7 +521,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NodeCard'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -533,7 +533,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -545,7 +545,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -598,7 +598,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EdgePage'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -610,7 +610,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -622,7 +622,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -684,7 +684,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlaceDetail'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -696,7 +696,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -708,7 +708,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -751,7 +751,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Polities'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -763,7 +763,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -775,7 +775,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -817,7 +817,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Scene'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -829,7 +829,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -841,7 +841,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -876,7 +876,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Scene'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -888,7 +888,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -900,7 +900,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -982,7 +982,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TextWindow'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -994,7 +994,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -1006,7 +1006,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -1040,7 +1040,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerseDetail'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -1052,7 +1052,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -1064,7 +1064,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -1100,7 +1100,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/CrossRef'
         '400':
-          description: bad_window | bad_ref | bad_kind | bad_dir | bad_corpus
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -1112,7 +1112,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '404':
-          description: not_found
+          description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
@@ -1124,7 +1124,7 @@ paths:
                     $ref: '#/components/schemas/ErrorInner'
                 additionalProperties: false
         '500':
-          description: internal
+          description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
@@ -1730,18 +1730,26 @@ components:
       properties:
         book:
           type: string
+          description: The book's three-letter code, such as `MAT`.
         ref_note:
           type:
           - string
           - 'null'
+          description: |-
+            A note on how THIS account is cited -- not the event's own note about how its
+            date and grouping were arrived at. Absent when the account needed none.
         robertson_section:
           type:
           - string
           - 'null'
+          description: |-
+            The section of Robertson's Harmony of the Gospels this account falls in, sent
+            only where it differs from the event's own. Absent otherwise.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
+          description: The verses of this account, grouped by chapter.
       additionalProperties: false
     Heading:
       type: object
@@ -1757,12 +1765,20 @@ components:
       properties:
         event_id:
           type: string
+          description: |-
+            The id of the event or titled passage that covers this verse and gives the
+            heading its words; `/api/event/{id}` fetches it.
         is_continuation:
           type: boolean
+          description: |-
+            True when this verse carries on coverage that began in an earlier chapter
+            rather than opening it, so a reader can render it as a continued heading.
         kind:
           type: string
+          description: '`event` for a dated happening, `general` for a titled passage that has none.'
         title:
           type: string
+          description: The heading as a reader sees it.
       additionalProperties: false
     History:
       type: object
@@ -1795,7 +1811,7 @@ components:
       additionalProperties: false
     KretzmannChapter:
       type: object
-      description: Kretzmann's commentary for one chapter.
+      description: Every verse of one chapter that carries commentary, in canon order.
       required:
       - verses
       - version
@@ -1935,10 +1951,12 @@ components:
           type: array
           items:
             type: string
+          description: The ids of the places it touches.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
+          description: The passages it is narrated in, grouped by book and chapter.
       additionalProperties: false
     NarrativeEventPositions:
       type: object
@@ -2549,7 +2567,6 @@ components:
           minimum: 0
         name:
           type: string
-          description: The narrative's name.
       additionalProperties: false
     ScenePlace:
       type: object

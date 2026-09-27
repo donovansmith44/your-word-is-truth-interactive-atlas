@@ -688,21 +688,25 @@
       "description": "One book's account of an event: the passage it narrates the event in, and any\nnote on the citation.",
       "properties": {
         "book": {
+          "description": "The book's three-letter code, such as `MAT`.",
           "type": "string"
         },
         "ref_note": {
+          "description": "A note on how THIS account is cited -- not the event's own note about how its\ndate and grouping were arrived at. Absent when the account needed none.",
           "type": [
             "string",
             "null"
           ]
         },
         "robertson_section": {
+          "description": "The section of Robertson's Harmony of the Gospels this account falls in, sent\nonly where it differs from the event's own. Absent otherwise.",
           "type": [
             "string",
             "null"
           ]
         },
         "verse_groups": {
+          "description": "The verses of this account, grouped by chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
@@ -720,15 +724,19 @@
       "description": "The pericope heading that belongs above one verse: the container it names,\nits title, that container's kind, and whether this verse merely continues\ncoverage that began in an earlier chapter rather than opening it.",
       "properties": {
         "event_id": {
+          "description": "The id of the event or titled passage that covers this verse and gives the\nheading its words; `/api/event/{id}` fetches it.",
           "type": "string"
         },
         "is_continuation": {
+          "description": "True when this verse carries on coverage that began in an earlier chapter\nrather than opening it, so a reader can render it as a continued heading.",
           "type": "boolean"
         },
         "kind": {
+          "description": "`event` for a dated happening, `general` for a titled passage that has none.",
           "type": "string"
         },
         "title": {
+          "description": "The heading as a reader sees it.",
           "type": "string"
         }
       },
@@ -785,7 +793,7 @@
     },
     "KretzmannChapter": {
       "additionalProperties": false,
-      "description": "Kretzmann's commentary for one chapter.",
+      "description": "Every verse of one chapter that carries commentary, in canon order.",
       "properties": {
         "verses": {
           "items": {
@@ -953,12 +961,14 @@
           "type": "string"
         },
         "places": {
+          "description": "The ids of the places it touches.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "verse_groups": {
+          "description": "The passages it is narrated in, grouped by book and chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
@@ -1736,7 +1746,6 @@
           "type": "integer"
         },
         "name": {
-          "description": "The narrative's name.",
           "type": "string"
         }
       },
