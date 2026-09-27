@@ -102,7 +102,7 @@ pub struct ErrorInner {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let body = ErrorBody { error: ErrorInner { code: self.code.to_string(), message: self.message.to_string() } };
+        let body = ErrorBody { error: ErrorInner { code: self.code.to_string(), message: self.message } };
         (self.status, Json(body)).into_response()
     }
 }

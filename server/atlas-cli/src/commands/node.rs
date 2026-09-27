@@ -38,8 +38,9 @@ struct ResolvedCard {
     /// BIBEX-1 addendum (ticket 2, ruling 3, "must show each kind's exact
     /// --kind TOKEN"): `kind.label()` (`EdgeKind::label()`) IS already the
     /// exact, copy-pasteable `--kind` value `EdgeKind::from_label`
-    /// accepts back (its own total inverse, `graph_wire.rs`'s own doc
-    /// comment) -- this was already true before this addendum; declared
+    /// accepts back (its own total inverse, declared with it in
+    /// graph-types' own `edge.rs`) -- this was already true before this
+    /// addendum; declared
     /// explicitly here and in CONTRACT.md, and proven by
     /// `kinds::tests::every_row_token_round_trips_through_from_label`
     /// plus this crate's own `node_edge_summary_kind_token_works_directly_

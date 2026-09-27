@@ -4,11 +4,8 @@
 //! edge-kind vocabulary `bibex edges --kind`/`bibex node <id>`'s own edge
 //! summary rows accept, straight off graph-types' own `relations!` manifest
 //! (`RelationId::ALL`/`SymRelationId::ALL`) -- the SAME total enumeration
-//! `EdgeKind::from_label` itself scans, so an added relation can never
-//! drift out of sync with what a `--kind` value is accepted. This listing
-//! shares that promise by construction
-//! (same `RelationId::ALL`/`SymRelationId::ALL` source), so it can never
-//! drift out of sync with what a real `--kind` value is actually accepted.
+//! `EdgeKind::from_label` itself scans, so this listing can never drift
+//! out of sync with the `--kind` values actually accepted.
 //! See CONTRACT.md's own "bibex kinds" section.
 
 use atlas_graph_types::edge::{RelationId, SymRelationId};

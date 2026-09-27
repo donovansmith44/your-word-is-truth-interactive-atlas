@@ -1747,10 +1747,6 @@ async fn god_is_eternal_and_the_card_says_why() {
     assert_eq!(grounds, vec!["PSA.90.2", "REV.1.8"]);
 }
 
-/// CONTRACT-1a: the byte-identity witness for one whole card, pinned
-/// before `NodeCard.kind`/`EdgeSummaryEntry.kind` stopped being `String`
-/// and asserted again after -- the retype is only honest if this exact
-/// document still comes back.
 const GENESIS_1: &str = "Container:bible-chapter-GEN-1";
 const VERSES_IN_GENESIS_1: usize = 31;
 
@@ -1789,29 +1785,35 @@ async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
 /// frontier).
 const DECLARED_NODE_KINDS: usize = 15;
 const THE_ONE_EDGE_POSITION: usize = 1;
+const EDGE_POSITION_NAME: &str = "Edge";
 
 #[test]
-fn a_position_kind_serialises_to_the_string_the_frontier_already_carried() {
+fn every_position_kind_serialises_to_the_string_the_frontier_already_carried() {
     // Arrange
-    let both_variants = [PositionKind::Node(NodeKind::Event), PositionKind::Edge];
+    let every_position_kind: Vec<PositionKind> = NodeKind::ALL.iter().copied().map(PositionKind::Node).chain(std::iter::once(PositionKind::Edge)).collect();
 
     // Act
-    let json = serde_json::to_value(both_variants).unwrap();
+    let json = serde_json::to_value(&every_position_kind).unwrap();
 
     // Assert
-    assert_eq!(json, serde_json::json!(["Event", "Edge"]));
+    let expected = every_position_kind_name();
+    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
+    assert_eq!(json, serde_json::json!(expected));
+}
+
+fn every_position_kind_name() -> Vec<&'static str> {
+    NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(EDGE_POSITION_NAME)).collect()
 }
 
 #[test]
 fn the_position_kind_schema_is_a_flat_string_enum_of_every_node_kind_then_edge() {
     // Arrange
-    let mut expected: Vec<&str> = NodeKind::ALL.iter().map(|kind| kind.name()).collect();
-    expected.push("Edge");
-    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
+    let expected = every_position_kind_name();
 
     // Act
     let schema = serde_json::to_value(<PositionKind as utoipa::PartialSchema>::schema()).unwrap();
 
     // Assert
+    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
     assert_eq!(schema, serde_json::json!({ "type": "string", "enum": expected }));
 }
