@@ -9,10 +9,14 @@
 //! unparseable / out of shape" into one of the typed `ApiError`s below
 //! instead.
 
+use std::collections::BTreeMap;
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Serialize;
+use utoipa::openapi::{ContentBuilder, RefOr, ResponseBuilder, ResponsesBuilder};
+use utoipa::{IntoResponses, PartialSchema};
 
 #[derive(Debug)]
 pub struct ApiError {
@@ -104,5 +108,17 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let body = ErrorBody { error: ErrorInner { code: self.code.to_string(), message: self.message } };
         (self.status, Json(body)).into_response()
+    }
+}
+
+impl IntoResponses for ApiError {
+    fn responses() -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
+        let json = || ContentBuilder::new().schema(Some(ErrorBody::schema())).build();
+        ResponsesBuilder::new()
+            .response("400", ResponseBuilder::new().description("bad_window | bad_ref | bad_kind | bad_dir | bad_corpus").content("application/json", json()))
+            .response("404", ResponseBuilder::new().description("not_found").content("application/json", json()))
+            .response("500", ResponseBuilder::new().description("internal").content("application/json", json()))
+            .build()
+            .into()
     }
 }

@@ -31,6 +31,7 @@ use crate::wire;
 /// `Arc<GraphService>`, and six handlers in this crate already take both.
 /// The aggregation itself is untouched; `AtlasData` is still where the
 /// business logic lives.
+#[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ApiError), tag = "catechism")]
 pub async fn catechism_for_span(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -61,6 +62,7 @@ pub async fn catechism_for_span(
 /// (a real, on-demand graph query), not the retired `AtlasData.verses` --
 /// this handler picks up a second extractor, `State<Arc<GraphService>>`,
 /// the same combined-state pattern `reading::verse` already uses.
+#[utoipa::path(get, path = "/api/catechism/item/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::CatechismItem), ApiError), tag = "catechism")]
 pub async fn catechism_item(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -116,4 +118,11 @@ pub async fn catechism_item(
         where_written: item.where_written.clone(),
         verses,
     }))
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(catechism_item))
+        .routes(routes!(catechism_for_span))
 }

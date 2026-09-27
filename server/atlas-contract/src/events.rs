@@ -77,6 +77,7 @@ use crate::wire;
 /// builder the OLD resolver used, so label/places/verse_group formatting
 /// cannot drift from what shipped before; only the TOPOLOGY (which ids are
 /// prior/following, in which narratives) now originates from the graph.
+#[utoipa::path(get, path = "/api/narrative/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NarrativeEventPositions), ApiError), tag = "events")]
 pub async fn narrative_event_positions(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -240,6 +241,7 @@ pub async fn narrative_event_positions(
 /// function) since this is a passage's own STANDALONE content --
 /// title/date/places/witnesses -- not anything scoped to a window or a
 /// narrative position.
+#[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), ApiError), tag = "events")]
 pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventDetail>, ApiError> {
     // M-C2 (definitive surface list): reconstructed from the graph's own
     // Event node (`NodePayload::Event`'s own M-C2 widening carries every
@@ -377,4 +379,11 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         witnesses_provenance: graph.attests_provenance(&e.id),
         mentions_provenance: graph.event_mentions_provenance(&e.id),
     }))
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(narrative_event_positions))
+        .routes(routes!(event))
 }

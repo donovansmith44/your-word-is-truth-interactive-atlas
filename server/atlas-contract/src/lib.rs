@@ -23,3 +23,19 @@ pub mod meta;
 pub mod places;
 pub mod reading;
 pub mod wire;
+
+pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
+    utoipa_axum::router::OpenApiRouter::new()
+        .merge(meta::routes())
+        .merge(map::routes())
+        .merge(reading::routes())
+        .merge(catechism::routes())
+        .merge(places::routes())
+        .merge(events::routes())
+        .merge(graph::routes())
+        .merge(contents::routes())
+}
+
+pub fn openapi() -> utoipa::openapi::OpenApi {
+    openapi_router().split_for_parts().1
+}

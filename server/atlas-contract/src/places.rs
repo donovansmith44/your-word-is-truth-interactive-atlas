@@ -36,6 +36,7 @@ use crate::wire;
 /// `place_history_for`/`place_name_alias_for` stay on `AtlasData`
 /// deliberately -- `place-history.json`/`place-names-kjv.json` are not
 /// this batch's deletion target.
+#[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), ("from" = Option<i32>, Query), ("to" = Option<i32>, Query)), responses((status = 200, body = wire::PlaceDetail), ApiError), tag = "places")]
 pub async fn place(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -87,4 +88,10 @@ pub async fn place(
     let description = crate::graph::node_description(&place_id, &snap);
 
     Ok(Json(wire::PlaceDetail { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(place))
 }

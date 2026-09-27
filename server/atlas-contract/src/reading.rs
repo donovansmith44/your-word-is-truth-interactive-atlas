@@ -24,6 +24,7 @@ use atlas_graph_types::text::VerseRef;
 use crate::error::ApiError;
 use crate::wire;
 
+#[utoipa::path(get, path = "/api/books", responses((status = 200, body = Vec<atlas_core::data::CanonBook>)), tag = "reading")]
 pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
     Json(data.canon.books.clone())
 }
@@ -65,6 +66,7 @@ pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
 /// mini-reader/split view, `ChapterNode`, `PlaceCard`'s hover verse text,
 /// `PassageBlock`, `PopoverSectionProviders`) now serves from the graph
 /// with NO client-side change and no reader-visible behavior change.
+#[utoipa::path(get, path = "/api/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::Chapter), ApiError), tag = "reading")]
 pub async fn chapter(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -198,6 +200,7 @@ pub async fn chapter(
 /// is additive, not a types-crate or artifact change: the underlying
 /// `CommentsOn`/`RelationId::CommentsOn` KRETZ-1 vocabulary is completely
 /// unchanged, this is a new READ path over data the graph already carries.
+#[utoipa::path(get, path = "/api/kretzmann/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::KretzmannChapter), ApiError), tag = "reading")]
 pub async fn kretzmann_chapter(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -253,6 +256,7 @@ pub async fn kretzmann_chapter(
 /// Cross-ref preview rows fail soft (ruling 4): ETL guarantees every
 /// compiled cross-ref target's first verse exists in the verses map, but if
 /// that's ever violated the row is skipped rather than panicking.
+#[utoipa::path(get, path = "/api/verse/{vref}", params(("vref" = String, Path)), responses((status = 200, body = wire::VerseDetail), ApiError), tag = "reading")]
 pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(vref): Path<String>) -> Result<Json<wire::VerseDetail>, ApiError> {
     let vid = VerseId::parse_canonical(&vref).map_err(|_| ApiError::bad_ref(&vref))?;
     let canonical = format!("{}.{}.{}", vid.book.code(), vid.chapter, vid.verse);
@@ -481,6 +485,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
 /// preview text now comes from `graph.verse_text_of` called per candidate
 /// key, on demand, instead of the retired `graph.verse_text` whole-spine
 /// companion. `AtlasData` is still not read anywhere in this handler.
+#[utoipa::path(get, path = "/api/xrefs/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CrossRef>), ApiError), tag = "reading")]
 pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {
         Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
@@ -544,4 +549,14 @@ pub(crate) fn drain_edges(
         }
     }
     out
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(books))
+        .routes(routes!(chapter))
+        .routes(routes!(kretzmann_chapter))
+        .routes(routes!(verse))
+        .routes(routes!(xrefs))
 }

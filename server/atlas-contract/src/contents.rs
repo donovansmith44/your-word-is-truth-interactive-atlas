@@ -28,6 +28,7 @@ use crate::wire;
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
 
+#[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), ApiError), tag = "contents")]
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let roots = match corpus.as_str() {
@@ -140,4 +141,10 @@ fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
         .collect();
     roots.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));
     roots.into_iter().map(|(_, r)| r).collect()
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(contents))
 }

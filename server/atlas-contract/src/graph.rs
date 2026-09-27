@@ -59,6 +59,7 @@ use crate::wire;
 /// `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
 /// Theographic id; any other kind prefix, or a real-shaped id this batch's
 /// event world doesn't carry, 400s/404s per the same convention).
+#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ApiError), tag = "graph")]
 pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::NodeCard>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
     let snap = graph.snapshot();
@@ -153,6 +154,7 @@ const MAX_EDGE_LIMIT: usize = 200;
 /// `bad_kind`; `cursor` is the opaque (here: plain integer) offset the
 /// previous page's own `next` returned; `limit` defaults to 20, capped at
 /// 200.
+#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), ("kind" = EdgeKind, Query), ("cursor" = Option<usize>, Query), ("limit" = Option<usize>, Query)), responses((status = 200, body = wire::EdgePage), ApiError), tag = "graph")]
 pub async fn node_edges(
     State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
@@ -248,6 +250,7 @@ pub async fn node_edges(
 /// onward. ETag/If-None-Match on the version stamp: since the graph is
 /// immutable for the process lifetime, the ETag is constant across every
 /// request until the next server restart.
+#[utoipa::path(get, path = "/api/text", params(("ref" = String, Query), ("n" = Option<usize>, Query), ("dir" = Option<String>, Query), ("scope" = Option<String>, Query), ("corpus" = Option<String>, Query)), responses((status = 200, body = wire::TextWindow), ApiError), tag = "graph")]
 pub async fn text_window(
     State(graph): State<Arc<GraphService>>,
     headers: HeaderMap,
@@ -419,4 +422,12 @@ fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
     let article: u16 = article.parse().map_err(|_| ApiError::bad_ref(raw))?;
     let paragraph: u16 = paragraph.parse().map_err(|_| ApiError::bad_ref(raw))?;
     Ok((part, article, paragraph))
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(node_card))
+        .routes(routes!(node_edges))
+        .routes(routes!(text_window))
 }

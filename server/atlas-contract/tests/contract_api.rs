@@ -41,3 +41,24 @@ async fn api_contract_carries_no_other_fields() {
     // DB-4c: + the manifest schema and the sections' user_version (additive, spec 9).
     assert_eq!(keys, vec!["manifest_schema", "max_version", "min_version", "section_schema_version"]);
 }
+
+#[test]
+fn every_served_route_is_documented() {
+    // Arrange
+    let expected = [
+        "/health", "/api/contract", "/api/scene", "/api/scene/scripture", "/api/books",
+        "/api/chapter/{cref}", "/api/kretzmann/chapter/{cref}", "/api/verse/{vref}", "/api/xrefs/{sref}",
+        "/api/catechism/item/{id}", "/api/catechism/{sref}", "/api/place/{id}", "/api/narratives",
+        "/api/narrative/event/{id}", "/api/event/{id}", "/api/eras", "/api/polities", "/api/landmarks",
+        "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/text",
+        "/api/contents/{corpus}",
+    ];
+    // Act
+    let doc = atlas_contract::openapi();
+    let mut paths: Vec<&str> = doc.paths.paths.keys().map(String::as_str).collect();
+    paths.sort_unstable();
+    // Assert
+    let mut want = expected.to_vec();
+    want.sort_unstable();
+    assert_eq!(paths, want);
+}

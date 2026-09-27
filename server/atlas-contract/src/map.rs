@@ -33,6 +33,7 @@ use crate::wire;
 /// curated-JSON sidecars through it (`place-history.json`,
 /// `place-names-kjv.json`). The composed bytes are unchanged -- `tests/
 /// scene_byte_identity.rs`'s 25 pinned hashes are the gate on that.
+#[utoipa::path(get, path = "/api/scene", params(("from" = i32, Query), ("to" = i32, Query)), responses((status = 200, body = atlas_core::wire::Scene), ApiError), tag = "map")]
 pub async fn scene_time(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -61,6 +62,7 @@ pub async fn scene_time(
 ///
 /// OVERLAY-1 Task 5: composes from `graph.scene_source(&data)`, exactly as
 /// `scene_time` above does -- see that handler's own doc comment.
+#[utoipa::path(get, path = "/api/scene/scripture", params(("ref" = String, Query)), responses((status = 200, body = atlas_core::wire::Scene), ApiError), tag = "map")]
 pub async fn scene_scripture(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -82,6 +84,7 @@ pub async fn scene_scripture(
 /// UNCHANGED: `Era { id, name, from_year, to_year }`, same order, same
 /// JSON -- `AtlasData.eras`/`eras.json` retire this batch (deletion
 /// inventory) with this endpoint as their only production reader.
+#[utoipa::path(get, path = "/api/eras", responses((status = 200, body = Vec<atlas_core::data::Era>)), tag = "map")]
 pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
     use atlas_graph_types::node::NodePayload;
 
@@ -115,6 +118,7 @@ pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
 /// `narrative_legs` (the `succession` relation's own row `chain`, the
 /// single source -- never duplicated onto the payload). WIRE SHAPE
 /// UNCHANGED: `atlas_core::data::Narrative { id, name, color, legs }`.
+#[utoipa::path(get, path = "/api/narratives", responses((status = 200, body = Vec<atlas_core::data::Narrative>)), tag = "map")]
 pub async fn narratives(State(graph): State<Arc<GraphService>>) -> Json<Vec<Narrative>> {
     let snap = graph.snapshot();
     let empty_legs: Vec<String> = Vec::new();
@@ -126,10 +130,12 @@ pub async fn narratives(State(graph): State<Arc<GraphService>>) -> Json<Vec<Narr
     Json(out)
 }
 
+#[utoipa::path(get, path = "/api/landmarks", responses((status = 200, body = Vec<atlas_core::data::Landmark>)), tag = "map")]
 pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>> {
     Json(data.landmarks.clone())
 }
 
+#[utoipa::path(get, path = "/api/land-mask", responses((status = 200, body = wire::LandMask)), tag = "map")]
 pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<wire::LandMask> {
     Json(wire::LandMask { rings: data.land_mask.clone() })
 }
@@ -162,6 +168,7 @@ pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<wire::LandMas
 /// standing (deliberately NOT this batch's deletion target: still the
 /// adapter's own curated source, same status as `event_world`'s own
 /// `atlas.events`/`.narratives`).
+#[utoipa::path(get, path = "/api/polities", params(("from" = i32, Query), ("to" = i32, Query)), responses((status = 200, body = wire::Polities), ApiError), tag = "map")]
 pub async fn polities(
     State(graph): State<Arc<GraphService>>,
     Query(params): Query<HashMap<String, String>>,
@@ -200,4 +207,16 @@ pub async fn polities(
 
 fn parse_year(params: &HashMap<String, String>, key: &str) -> Result<i32, ApiError> {
     params.get(key).and_then(|s| s.parse::<i32>().ok()).ok_or_else(ApiError::bad_window)
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(scene_time))
+        .routes(routes!(scene_scripture))
+        .routes(routes!(eras))
+        .routes(routes!(narratives))
+        .routes(routes!(landmarks))
+        .routes(routes!(land_mask))
+        .routes(routes!(polities))
 }

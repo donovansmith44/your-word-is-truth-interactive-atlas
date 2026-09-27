@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use axum::http::StatusCode;
-use axum::routing::get;
 use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
@@ -15,8 +14,6 @@ use tower_http::services::{ServeDir, ServeFile};
 use atlas_core::data::AtlasData;
 use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
-
-use crate::{catechism, contents, events, graph, map, meta, places, reading};
 
 /// Batch M-A (fix round 1, C1): the two pieces of server state every
 /// handler now draws from -- the pre-existing `AtlasData` (places/events/
@@ -129,48 +126,8 @@ pub fn build_with_sources(
 ) -> Router {
     let state = AppState { data, graph, sources };
 
-    let api = Router::new()
-        .route("/health", get(meta::health))
-        // Batch AQC-1 (design spec §2's versioning law): the AQC version
-        // advertisement -- the ONE new behavioral surface this batch adds;
-        // every other AQC-1 addition is a zero-behavior-change snapshot.
-        .route("/api/contract", get(meta::contract))
-        .route("/api/scene", get(map::scene_time))
-        .route("/api/scene/scripture", get(map::scene_scripture))
-        .route("/api/books", get(reading::books))
-        .route("/api/chapter/{cref}", get(reading::chapter))
-        // KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2, sanctioned server
-        // addition): the chapter-scoped commentary listing that replaces
-        // Kretzmann.razor's own retired per-verse fan-out. Additive-only --
-        // no existing route's behavior changes.
-        .route("/api/kretzmann/chapter/{cref}", get(reading::kretzmann_chapter))
-        .route("/api/verse/{vref}", get(reading::verse))
-        .route("/api/xrefs/{sref}", get(reading::xrefs))
-        .route("/api/catechism/item/{id}", get(catechism::catechism_item))
-        .route("/api/catechism/{sref}", get(catechism::catechism_for_span))
-        .route("/api/place/{id}", get(places::place))
-        .route("/api/narratives", get(map::narratives))
-        .route("/api/narrative/event/{id}", get(events::narrative_event_positions))
-        .route("/api/event/{id}", get(events::event))
-        .route("/api/eras", get(map::eras))
-        .route("/api/polities", get(map::polities))
-        .route("/api/landmarks", get(map::landmarks))
-        .route("/api/land-mask", get(map::land_mask))
-        // Batch S: the Sources page's own single source of truth --
-        // straight off `data/compiled/sources.json`, never a hardcoded
-        // duplicate list (requirement 3).
-        .route("/api/sources", get(meta::sources))
-        // Batch M-A: the two generic graph endpoints (design doc §5) + the
-        // text-window endpoint (design doc §6). Uniform across every
-        // node/edge kind the graph carries -- not bespoke per-feature shapes.
-        .route("/api/node/{id}", get(graph::node_card))
-        .route("/api/node/{id}/edges", get(graph::node_edges))
-        .route("/api/text", get(graph::text_window))
-        // D4: the containment forest, two levels deep (books/chapters,
-        // documents/articles) -- read through the port from Container
-        // nodes and contains edges, never a hand-maintained list.
-        .route("/api/contents/{corpus}", get(contents::contents))
-        .with_state(state);
+    let (api, _) = crate::openapi_router().split_for_parts();
+    let api = api.with_state(state);
 
     let router = match static_dir {
         Some(dir) => {

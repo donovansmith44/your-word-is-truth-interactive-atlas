@@ -26,6 +26,7 @@ use atlas_core::sources::SourcesDocument;
 
 use crate::wire;
 
+#[utoipa::path(get, path = "/health", responses((status = 200, body = String, content_type = "text/plain")), tag = "meta")]
 pub async fn health() -> &'static str {
     "ok"
 }
@@ -36,6 +37,7 @@ pub async fn health() -> &'static str {
 /// `atlas_etl::sources`'s own fail-loud drift check -- see the
 /// `gen_sources` binary). The client renders this directly; nothing here
 /// is a hardcoded duplicate list.
+#[utoipa::path(get, path = "/api/sources", responses((status = 200, body = atlas_core::sources::SourcesDocument)), tag = "meta")]
 pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<SourcesDocument> {
     Json((*sources).clone())
 }
@@ -47,6 +49,7 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
 pub const MIN_SUPPORTED_VERSION: &str = "0.7.0";
 pub const MAX_SUPPORTED_VERSION: &str = "0.7.0";
 
+#[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
     Json(wire::Contract {
         min_version: MIN_SUPPORTED_VERSION.to_string(),
@@ -54,6 +57,14 @@ pub async fn contract() -> Json<wire::Contract> {
         manifest_schema: atlas_graph::sqlite::manifest::MANIFEST_SCHEMA,
         section_schema_version: atlas_graph::sections::SECTION_SCHEMA_VERSION,
     })
+}
+
+pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
+    use utoipa_axum::routes;
+    utoipa_axum::router::OpenApiRouter::new()
+        .routes(routes!(health))
+        .routes(routes!(contract))
+        .routes(routes!(sources))
 }
 
 #[cfg(test)]
