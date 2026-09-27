@@ -1,6 +1,6 @@
 //! `bibex edges <id> [--kind K] [--limit N] [--cursor C]` -- one frontier
 //! page, the exact `(Position, EdgeQuery)` shape
-//! `atlas_contract::graph_handlers::node_edges` serves. See CONTRACT.md's
+//! `atlas_contract::graph::node_edges` serves. See CONTRACT.md's
 //! own "bibex edges" section.
 
 use atlas_graph::GraphService;
@@ -78,7 +78,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: args.cursor, limit });
 
     // FIX ROUND 1 (review S-3/Q-2): the SAME PeopleGroup filter
-    // `atlas_contract::graph_handlers::node_edges` applies (PG-1a, "the
+    // `atlas_contract::graph::node_edges` applies (PG-1a, "the
     // U5-rebinding seam") -- `graph_wire::decode_node_id` carries no
     // "PeopleGroup" arm, so a PeopleGroup-kind neighbor id handed back
     // here could never be resolved by `bibex node <id>`/`bibex edges <id>`
@@ -124,7 +124,7 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
 
 /// BIBEX-1 (--json mode): `{kind, entries: [{edge, node: {id, kind,
 /// label}}], next}` -- field names reused verbatim from
-/// `atlas_contract::graph_handlers::EdgePageOut`/`EdgeEntryOut`/`NodeRefOut`
+/// `atlas_contract::wire::EdgePage`/`EdgeEntry`/`NodeRef`
 /// (the SAME wire shape `/api/node/{id}/edges` already serves, minus
 /// `version`). CONTRACT.md's own "--json mode" section has the full field
 /// table.

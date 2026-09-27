@@ -493,7 +493,7 @@ async fn person_card_carries_a_real_easton_description_when_a_match_exists() {
 }
 
 /// ENT-1a: the SAME additive field, on the OTHER wire surface it was added
-/// to (`handlers::PlaceDetailOut`, the legacy `/api/place/{id}` endpoint,
+/// to (`wire::PlaceDetail`, the legacy `/api/place/{id}` endpoint,
 /// distinct code from the generic node card above) -- `hebron` is a real
 /// compiled geo place with a real tier-(b) Easton's match.
 #[tokio::test]
@@ -509,7 +509,7 @@ async fn place_detail_carries_a_real_easton_description_when_a_match_exists() {
 /// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
 /// NEEDS_CONTEXT gap: "no existing server query exposes a CommentaryItem's
 /// own prose"): the SAME additive `description` seam, widened to a FOURTH
-/// kind (`graph_handlers::node_description`'s CommentaryItem arm --
+/// kind (`graph::node_description`'s CommentaryItem arm --
 /// relocated from `atlas_graph::legacy` by batch-finalp2's own layering
 /// cleanup, ticket 10; behavior unchanged)
 /// -- over HTTP, over REAL compiled data, proving the wire actually carries
@@ -532,7 +532,7 @@ async fn commentary_item_card_carries_its_own_real_kretzmann_prose_via_descripti
 /// ENT-1a (additive-only, batch-ent1a-brief.md controller decision 3): when
 /// no description match exists, the JSON key is OMITTED entirely (never a
 /// present `null`) -- the SAME `skip_serializing_if` discipline every other
-/// optional field on this wire already uses (`PlaceDetailOut::history`,
+/// optional field on this wire already uses (`PlaceDetail::history`,
 /// `::canonical_name`), proven here rather than merely claimed. An Era node
 /// carries no `description` field on its `NodePayload` variant at all, so
 /// this also proves the OTHER kinds sharing the generic card never gain a
@@ -588,10 +588,10 @@ async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
 }
 
 /// The SAME real span, over the OTHER wire surface `words_of_christ` rides
-/// (`VerseOut`, `GET /api/chapter/{cref}` -- `handlers.rs`'s own doc
+/// (`Verse`, `GET /api/chapter/{cref}` -- `handlers.rs`'s own doc
 /// comment: "the SAME O(1) per-verse lookup... off the precomputed
 /// `graph.red_letter_spans` companion", identical shape/convention to
-/// `VerseDetailOut`'s sibling field the test above proves) -- confirms both
+/// `VerseDetail`'s sibling field the test above proves) -- confirms both
 /// server-side call sites of the SAME precomputed companion agree, not just
 /// one of the two.
 #[tokio::test]
@@ -627,8 +627,8 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
 /// row is REAL, present content in the built graph (the node card's own
 /// `edge_summary` proves it, unfiltered) -- but the generic entity-LIST
 /// page for that same relation must show none of it, the current client
-/// having no rendering surface for the new kind (`graph_handlers::
-/// node_edges`'s own filter, `graph_wire::decode_node_id`'s own missing
+/// having no rendering surface for the new kind (`graph::node_edges`'s
+/// own filter, `graph_wire::decode_node_id`'s own missing
 /// "PeopleGroup" arm). GEN.10.16 ("And the Jebusite, and the Amorite, and
 /// the Girgasite,") is a real reclassified-gentilic locus (decision 1c).
 #[tokio::test]
@@ -663,7 +663,7 @@ async fn peoplegroup_node_id_cannot_be_fetched_directly_yet() {
 }
 
 /// PG-1a decision 7 ("wire filter test: a chapter response containing a
-/// gentilic locus has NO peoplegroup-kind span"): `VerseOut` carries only
+/// gentilic locus has NO peoplegroup-kind span"): `Verse` carries only
 /// `places`/`persons` (no third, PeopleGroup-shaped field exists at all),
 /// so the only OBSERVABLE consequence is that the three gentilics named at
 /// this real locus no longer appear in `persons` -- verified directly
@@ -684,7 +684,7 @@ async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span(
     }
 }
 
-/// U5: the chapter view's own precomputed `persons` field (`VerseOut.persons`,
+/// U5: the chapter view's own precomputed `persons` field (`Verse.persons`,
 /// backed by `GraphService::persons_by_verse`) must agree with the generic
 /// mentions-frontier query for the SAME verse -- the same
 /// precomputed-index-agrees-with-live-query law `chapter_verse_xref_count_
@@ -692,7 +692,7 @@ async fn chapter_response_for_a_gentilic_locus_carries_no_peoplegroup_kind_span(
 /// proves for `xref_count`/`cites`. EXO.4.14 is this file's own established
 /// Aaron+Moses exemplar (see the mentions-frontier test above); a Person id
 /// only ever carries a bare id + curated label on the wire (no `kind`, unlike
-/// `PlaceRefOut`, since there is exactly one node kind this field can name).
+/// `PlaceRef`, since there is exactly one node kind this field can name).
 #[tokio::test]
 async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mentions_frontier() {
     let app = compiled_app();
@@ -819,7 +819,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
 
 // ---------------------------------------------------------------------
 // Batch M-D2 (the owner's cross-reference superscript directive, closed on
-// the graph platform): `VerseOut.xref_count` -- a NEW, additive field on the
+// the graph platform): `Verse.xref_count` -- a NEW, additive field on the
 // bespoke `/api/chapter/{cref}` response, sourced from THE PORT's own
 // `edge_summary` for the `cites` relation at each verse's TextUnit locus (the
 // exact same generic query `GET /api/node/{id}` itself answers, reused
@@ -836,7 +836,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
 /// Extracts a cross-reference target's own FIRST verse ref
 /// (`"COL.1.16-19"` -> `"COL.1.16"`, `"MAT.5.3-MAT.6.2"` -> `"MAT.5.3"`,
 /// `"JOB.26.13"` -> itself unchanged) -- mirrors the three-shape parse this
-/// whole codebase already duplicates a few times over (`handlers::
+/// whole codebase already duplicates a few times over (`reading::
 /// first_verse_of_target`, `atlas_core::xrefs::target_span`,
 /// `xref_adapter::target_span`), reimplemented locally here (test-only, no
 /// production `pub` surface to reuse) rather than exposing a fourth `pub fn`

@@ -13,7 +13,7 @@ use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 // Batch M-A: `/api/chapter` now sources its verse TEXT from the graph (see
-// handlers::chapter's own doc comment) while places/headings stay on
+// reading::chapter's own doc comment) while places/headings stay on
 // `AtlasData` -- so a test fixture's graph service MUST agree with whatever
 // `AtlasData` the same `app()` call uses about which chapters exist, or the
 // chapter endpoint silently comes back empty (a real drift bug this exact
@@ -38,7 +38,7 @@ use tower::ServiceExt;
 //
 // M-C2: was `""` (an empty xrefs TSV, "valid input -- an empty table, not
 // an error... tests that need real cites edges build their own richer
-// graph") -- no longer true once `handlers::xrefs`/`handlers::verse`'s own
+// graph") -- no longer true once `reading::xrefs`/`reading::verse`'s own
 // cross-ref sections moved onto `GraphService.cross_refs_by_from` (sourced
 // from the graph's own `cites` rows, never `AtlasData.cross_refs`
 // directly): a shared fixture whose GRAPH has no cites rows at all would
@@ -306,7 +306,7 @@ async fn verse_chapter_place_and_404() {
     assert!(events[0]["verse_groups"].as_array().unwrap().iter().any(|g| g["book"] == "JOS" && g["chapter"] == 6));
 
     // Batch T requirement 3 ("verse popover: event membership replaces
-    // prev/next"): `VerseDetailOut.narrative_positions` is RETIRED --
+    // prev/next"): `VerseDetail.narrative_positions` is RETIRED --
     // JOS.6.20's own chronological PRIOR (e2)/FOLLOWING (e4) now live
     // entirely on the EVENT node (`GET /api/narrative/event/e3`, see
     // `narrative_event_positions_endpoint`), never on the verse response.
@@ -332,7 +332,7 @@ async fn verse_chapter_place_and_404() {
     // (see demo_fixture()'s own comment for why this exact verse was
     // deliberately reused rather than an unrelated one). This is an
     // ITEM-level citation (demo-item-1's own `verses`) -- no `question` key
-    // at all (omitted, not null, per CatechismRefOut's own
+    // at all (omitted, not null, per CatechismRef's own
     // skip_serializing_if convention).
     let catechism = body["catechism"].as_array().unwrap();
     assert_eq!(catechism.len(), 1, "{body}");
@@ -352,7 +352,7 @@ async fn verse_chapter_place_and_404() {
 
     // A verse with zero catechism citations of EITHER kind still carries the
     // key, empty (always-an-array wire convention, same as `places` on
-    // ChapterOut/VerseOut).
+    // Chapter/Verse).
     let (st, body) = call(&app, "/api/verse/JOS.6.24").await;
     assert_eq!(st, 200);
     assert_eq!(body["catechism"], serde_json::json!([]));
@@ -630,7 +630,7 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
 /// "PARALLEL ACCOUNTS" (`EventWitnessesSection`, client-side, keyed only
 /// off `witnesses.len() >= 2`, never off `kind`). Nothing in this
 /// codebase's own witness-resolution path (`scene::witnesses_for`,
-/// `handlers::event`) branches on `kind` at all -- this test is the
+/// `events::event`) branches on `kind` at all -- this test is the
 /// live, wire-level proof of that, not merely an inspection of the source.
 #[tokio::test]
 async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_accounts() {
@@ -677,7 +677,7 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
 
 /// Batch N ("narratives as first-class graph structure"), retired
 /// verse-keyed half per Batch T requirement 3 ("verse popover: event
-/// membership replaces prev/next" -- `VerseDetailOut.narrative_positions`
+/// membership replaces prev/next" -- `VerseDetail.narrative_positions`
 /// is GONE; see `verse_chapter_place_and_404`'s own updated assertions for
 /// the verse popover's new "EVENT" membership, which reads the
 /// pre-existing `events` field instead). The event-id-keyed endpoint itself
@@ -886,7 +886,7 @@ async fn xrefs_span_aggregation_ok_and_bad_ref() {
 
     // Book/Chapter-shaped refs are structurally valid ScriptureRefs but not
     // one of this endpoint's two accepted shapes (Verse/Passage) -- also
-    // bad_ref (handlers::xrefs's own doc comment explains why).
+    // bad_ref (reading::xrefs's own doc comment explains why).
     for bad in ["/api/xrefs/JOS", "/api/xrefs/JOS.6"] {
         let (st, body) = call(&app, bad).await;
         assert_eq!(st, 400, "{bad}");
@@ -973,7 +973,7 @@ async fn catechism_span_and_item_endpoints() {
     assert_eq!(body["where_written"], "Demo where-written text.");
     // Batch F2: THE SCRIPTURES now lists BOTH the item-level verse (JOS.6.20,
     // no `question`) and the question-level one (JOS.6.21, `question` =
-    // "Demo Question") -- item-level first, per CatechismItemOut's own doc
+    // "Demo Question") -- item-level first, per CatechismItem's own doc
     // comment ("items keep their F-batch embedded-citation links too,"
     // listed as the primary source).
     let verses = body["verses"].as_array().unwrap();

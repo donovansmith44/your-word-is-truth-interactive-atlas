@@ -6,15 +6,20 @@
 
 pub mod app;
 pub mod aqc_export;
+pub mod catechism;
 pub mod contents;
-pub mod contract;
 pub mod error;
-pub mod graph_handlers;
+pub mod events;
+pub mod graph;
 pub mod graph_wire;
-pub mod handlers;
 /// CDC-1 fix round 1 (review C-3): the ONE assembly path from a `data_dir`
 /// to a serving `Router`, shared by `main.rs` and by the contract-pact
 /// recorder so the recorded evidence cannot drift from what the real server
 /// serves. See the module's own header for the two green-suite fidelity
 /// bugs that made it necessary.
 pub mod load;
+pub mod map;
+pub mod meta;
+pub mod places;
+pub mod reading;
+pub mod wire;

@@ -16,7 +16,7 @@ use atlas_core::data::AtlasData;
 use atlas_core::sources::SourcesDocument;
 use atlas_graph::GraphService;
 
-use crate::{contract, graph_handlers, handlers};
+use crate::{catechism, contents, events, graph, map, meta, places, reading};
 
 /// Batch M-A (fix round 1, C1): the two pieces of server state every
 /// handler now draws from -- the pre-existing `AtlasData` (places/events/
@@ -26,7 +26,7 @@ use crate::{contract, graph_handlers, handlers};
 /// `MemStore`/`MemSnapshot`, implementation #1). Every actual graph QUERY
 /// a handler performs goes through `atlas_graph_types::store::GraphQuery`'s
 /// own trait methods on an opened snapshot (`graph.snapshot()` -- see
-/// `graph_handlers.rs`/`handlers::chapter`), never a raw `Graph` field --
+/// `graph.rs`/`reading::chapter`), never a raw `Graph` field --
 /// `GraphService` itself is held concretely here only because
 /// `GraphStore`'s own associated type (`type Snapshot: GraphSnapshot`,
 /// owner-authored) is not `dyn`-safe, so there is no single erased handle
@@ -130,46 +130,46 @@ pub fn build_with_sources(
     let state = AppState { data, graph, sources };
 
     let api = Router::new()
-        .route("/health", get(handlers::health))
+        .route("/health", get(meta::health))
         // Batch AQC-1 (design spec §2's versioning law): the AQC version
         // advertisement -- the ONE new behavioral surface this batch adds;
         // every other AQC-1 addition is a zero-behavior-change snapshot.
-        .route("/api/contract", get(contract::contract))
-        .route("/api/scene", get(handlers::scene_time))
-        .route("/api/scene/scripture", get(handlers::scene_scripture))
-        .route("/api/books", get(handlers::books))
-        .route("/api/chapter/{cref}", get(handlers::chapter))
+        .route("/api/contract", get(meta::contract))
+        .route("/api/scene", get(map::scene_time))
+        .route("/api/scene/scripture", get(map::scene_scripture))
+        .route("/api/books", get(reading::books))
+        .route("/api/chapter/{cref}", get(reading::chapter))
         // KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2, sanctioned server
         // addition): the chapter-scoped commentary listing that replaces
         // Kretzmann.razor's own retired per-verse fan-out. Additive-only --
         // no existing route's behavior changes.
-        .route("/api/kretzmann/chapter/{cref}", get(handlers::kretzmann_chapter))
-        .route("/api/verse/{vref}", get(handlers::verse))
-        .route("/api/xrefs/{sref}", get(handlers::xrefs))
-        .route("/api/catechism/item/{id}", get(handlers::catechism_item))
-        .route("/api/catechism/{sref}", get(handlers::catechism_for_span))
-        .route("/api/place/{id}", get(handlers::place))
-        .route("/api/narratives", get(handlers::narratives))
-        .route("/api/narrative/event/{id}", get(handlers::narrative_event_positions))
-        .route("/api/event/{id}", get(handlers::event))
-        .route("/api/eras", get(handlers::eras))
-        .route("/api/polities", get(handlers::polities))
-        .route("/api/landmarks", get(handlers::landmarks))
-        .route("/api/land-mask", get(handlers::land_mask))
+        .route("/api/kretzmann/chapter/{cref}", get(reading::kretzmann_chapter))
+        .route("/api/verse/{vref}", get(reading::verse))
+        .route("/api/xrefs/{sref}", get(reading::xrefs))
+        .route("/api/catechism/item/{id}", get(catechism::catechism_item))
+        .route("/api/catechism/{sref}", get(catechism::catechism_for_span))
+        .route("/api/place/{id}", get(places::place))
+        .route("/api/narratives", get(map::narratives))
+        .route("/api/narrative/event/{id}", get(events::narrative_event_positions))
+        .route("/api/event/{id}", get(events::event))
+        .route("/api/eras", get(map::eras))
+        .route("/api/polities", get(map::polities))
+        .route("/api/landmarks", get(map::landmarks))
+        .route("/api/land-mask", get(map::land_mask))
         // Batch S: the Sources page's own single source of truth --
         // straight off `data/compiled/sources.json`, never a hardcoded
         // duplicate list (requirement 3).
-        .route("/api/sources", get(handlers::sources))
+        .route("/api/sources", get(meta::sources))
         // Batch M-A: the two generic graph endpoints (design doc §5) + the
         // text-window endpoint (design doc §6). Uniform across every
         // node/edge kind the graph carries -- not bespoke per-feature shapes.
-        .route("/api/node/{id}", get(graph_handlers::node_card))
-        .route("/api/node/{id}/edges", get(graph_handlers::node_edges))
-        .route("/api/text", get(graph_handlers::text_window))
+        .route("/api/node/{id}", get(graph::node_card))
+        .route("/api/node/{id}/edges", get(graph::node_edges))
+        .route("/api/text", get(graph::text_window))
         // D4: the containment forest, two levels deep (books/chapters,
         // documents/articles) -- read through the port from Container
         // nodes and contains edges, never a hand-maintained list.
-        .route("/api/contents/{corpus}", get(crate::contents::contents))
+        .route("/api/contents/{corpus}", get(contents::contents))
         .with_state(state);
 
     let router = match static_dir {

@@ -130,8 +130,8 @@ fn version_file_and_schema_version_agree_with_the_compiled_server_constants() {
     let version = std::fs::read_to_string(&version_path).expect("VERSION must exist");
     let version = version.trim();
 
-    assert_eq!(version, atlas_contract::contract::MIN_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MIN_SUPPORTED_VERSION");
-    assert_eq!(version, atlas_contract::contract::MAX_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from contract::MAX_SUPPORTED_VERSION");
+    assert_eq!(version, atlas_contract::meta::MIN_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from meta::MIN_SUPPORTED_VERSION");
+    assert_eq!(version, atlas_contract::meta::MAX_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from meta::MAX_SUPPORTED_VERSION");
 
     let schema_path = contract_dir().join("aqc.schema.json");
     let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&schema_path).expect("aqc.schema.json must exist")).expect("aqc.schema.json must be valid JSON");

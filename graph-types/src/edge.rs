@@ -561,7 +561,7 @@ pub struct TemporalAdjacency {
 /// approximate that check. `target_display` is the ORIGINAL citation
 /// string exactly as imported (openbible.info's own three canonical
 /// shapes) -- `to`/`to_last` are a lossless structured decomposition of
-/// it into typed loci, but the wire's own `CrossRefOut.target` field is
+/// it into typed loci, but the wire's own `CrossRef.target` field is
 /// this exact string, never a re-synthesized one (a source `COL.1.16-19`
 /// must never round-trip as `COL.1.16-COL.1.19`).
 #[derive(Clone, Debug)]

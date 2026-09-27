@@ -59,7 +59,7 @@ use atlas_graph::GraphService;
 
 /// OVERLAY-1 Task 5: the scene's data now comes from the PORT, through
 /// `GraphSceneSource` -- the same object `GraphService::scene_source`
-/// holds for `handlers::scene_time`/`scene_scripture`, built the same way
+/// holds for `map::scene_time`/`scene_scripture`, built the same way
 /// `load::load_graph_and_data` builds it (artifact + a bare, un-`finish()`ed
 /// `AtlasData::load` for the two curated sidecars it reads). The overlay
 /// (`legacy::atlas_data_overlay`) and `AtlasData::finish()`'s graph-derived
@@ -240,7 +240,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
 
 /// Sanity companion: every one of `AtlasData`'s HTTP-facing scene functions
 /// used above must actually be reachable with the SAME `HashMap` shape
-/// `handlers::scene_time`/`scene_scripture` parse `from`/`to`/`ref` out of --
+/// `map::scene_time`/`scene_scripture` parse `from`/`to`/`ref` out of --
 /// this doesn't test that directly (the handler-level equivalence is
 /// `atlas-contract/tests/api.rs`'s job), just documents the coupling so a
 /// future reader knows why this file calls `atlas_core::scene::*` directly

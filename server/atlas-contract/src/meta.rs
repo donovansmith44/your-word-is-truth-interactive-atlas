@@ -15,8 +15,28 @@
 //! pinning `min_version`/`max_version` to "0.7.0"/"0.7.0" (D5; 0.6.0 D3; 0.5.0 LEX-1; 0.4.0 DB-4c, 0.3.0 DB-4b, 0.2.0 DB-4a, 0.1.0 before) for the drift-
 //! failing mechanism the conformance corollary requires).
 
+use std::sync::Arc;
+
+use axum::extract::State;
 use axum::Json;
-use serde::Serialize;
+
+use atlas_core::sources::SourcesDocument;
+
+use crate::wire;
+
+pub async fn health() -> &'static str {
+    "ok"
+}
+
+/// `GET /api/sources` (batch-s-brief.md requirement 3): the Sources
+/// page's entire single source of truth, straight off
+/// `data/compiled/sources.json` (itself generated 1:1 from LICENSES.md by
+/// `atlas_etl::sources`'s own fail-loud drift check -- see the
+/// `gen_sources` binary). The client renders this directly; nothing here
+/// is a hardcoded duplicate list.
+pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<SourcesDocument> {
+    Json((*sources).clone())
+}
 
 /// The AQC version range THIS running server supports. Pre-launch (spec
 /// §2's semver law), min == max == the one version this codebase currently
@@ -25,19 +45,8 @@ use serde::Serialize;
 pub const MIN_SUPPORTED_VERSION: &str = "0.7.0";
 pub const MAX_SUPPORTED_VERSION: &str = "0.7.0";
 
-#[derive(Debug, Serialize)]
-pub struct ContractOut {
-    pub min_version: String,
-    pub max_version: String,
-    /// DB-4c: the served identity is the manifest's (spec §9): its schema
-    /// and the sections' `PRAGMA user_version`. Additive beside the graph
-    /// vocabulary's `artifact_format_version` (retired at DB-5).
-    pub manifest_schema: u32,
-    pub section_schema_version: u32,
-}
-
-pub async fn contract() -> Json<ContractOut> {
-    Json(ContractOut {
+pub async fn contract() -> Json<wire::Contract> {
+    Json(wire::Contract {
         min_version: MIN_SUPPORTED_VERSION.to_string(),
         max_version: MAX_SUPPORTED_VERSION.to_string(),
         manifest_schema: atlas_graph::sqlite::manifest::MANIFEST_SCHEMA,

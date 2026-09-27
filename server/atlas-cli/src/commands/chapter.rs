@@ -4,7 +4,7 @@
 //! NOT accepted here (CONTRACT.md's own "bibex chapter" section: a
 //! Concord article's own paragraph count varies too widely for a
 //! server-derived chapter span to mean anything consistent --
-//! `graph_handlers::text_window` rejects the identical combination for
+//! `graph::text_window` rejects the identical combination for
 //! the same reason, and this command inherits that disclosed scope
 //! limit rather than inventing its own answer).
 //!
@@ -104,7 +104,7 @@ pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
 
 /// BIBEX-1 (--json mode): an array of `{ref, text, words_of_christ}`
 /// objects, one per verse, in chapter order -- field names reused verbatim
-/// from `atlas_contract::graph_handlers::TextUnitOut` (the SAME wire shape
+/// from `atlas_contract::wire::TextUnit` (the SAME wire shape
 /// `/api/text` already serves for a window of units). CONTRACT.md's own
 /// "--json mode" section has the full field table; no `next` field (unlike
 /// `/api/text`'s own paginated window) -- a chapter's own span is always

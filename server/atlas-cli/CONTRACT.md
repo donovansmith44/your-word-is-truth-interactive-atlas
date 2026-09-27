@@ -154,7 +154,7 @@ plain bytes (was: `"Name, Name, ..."`; now: `"Name [wire-id], Name
 joined same as before, `(none)` unchanged when a section is empty. This
 is the CLI's own established node-id vocabulary (the same one `bibex
 edges`'s target-listing rows already used before this batch), not the
-REST API's per-domain `PlaceRefOut`/`PersonRefOut` id space (those ids are
+REST API's per-domain `PlaceRef`/`PersonRef` id space (those ids are
 bare curated ids meant for a DIFFERENT endpoint, `/api/place/{id}`, that
 this CLI has no equivalent of) — chosen so the loop the owner named always
 closes: copy the bracketed id, paste it straight into `bibex node`.
@@ -177,7 +177,7 @@ disclosed instance of.
 `<ref>` is a KJV chapter ref (`GEN.1`), parsed via
 `atlas_core::refs::ScriptureRef::parse` (rejects anything that isn't
 exactly a `Chapter`-shaped ref — a bare book or a verse-shaped ref is
-`bad_ref`). Concord is deliberately NOT accepted here: `graph_handlers.rs`
+`bad_ref`). Concord is deliberately NOT accepted here: `graph.rs`
 itself documents that a Concord article's own paragraph count varies too
 widely for a server-derived chapter span to mean anything consistent —
 this command inherits that same disclosed scope limit rather than
@@ -401,16 +401,16 @@ discipline as plain mode).
 field NAMES already established elsewhere in this app's own wire
 vocabulary — no novel synonyms for an established name:
 - `words_of_christ: [{start, end}]` — the identical shape/field name
-  `atlas_contract::handlers::WordsOfChristSpanOut`/the AQC corpus already
+  `atlas_contract::wire::WordsOfChristSpan`/the AQC corpus already
   use for a red-letter span.
-- Node references reuse `atlas_contract::graph_handlers::NodeCardOut`/
-  `NodeRefOut`/`EdgeSummaryEntryOut`/`EdgePageOut`/`EdgeEntryOut`'s own
+- Node references reuse `atlas_contract::wire::NodeCard`/
+  `NodeRef`/`EdgeSummaryEntry`/`EdgePage`/`EdgeEntry`'s own
   field names (`id`, `kind`, `label`, `provenance`, `edge_summary`,
   `entries`, `next`) — this crate's OWN generic node-id vocabulary
   (`graph_wire::encode_node_id`'s wire-encoded form, e.g. `Place:jericho`,
   `Person:aaron_1`), the one `bibex node`/`bibex edges` already speak, NOT
   the REST API's per-domain endpoints' own bare-id shapes
-  (`PlaceRefOut`/`PersonRefOut`'s `{id, name}`, meant for a DIFFERENT
+  (`PlaceRef`/`PersonRef`'s `{id, name}`, meant for a DIFFERENT
   wire surface, `/api/place/{id}`, that this CLI has no equivalent of) —
   a deliberate choice, so a printed `id` always round-trips through THIS
   binary's own `bibex node <id>`.

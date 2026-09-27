@@ -11,8 +11,8 @@ use crate::text::LayerMap;
 /// M-C2: one witness account of an Event -- a plain data mirror of
 /// `atlas_core::data::EventWitness`'s own load-bearing fields (book +
 /// translations + ref_note + robertson_section), kept FULLY STRUCTURED
-/// (not collapsed to a display string) so `handlers::event`'s own
-/// `EventDetailOut.witnesses` -- and any other consumer needing a real
+/// (not collapsed to a display string) so `events::event`'s own
+/// `EventDetail.witnesses` -- and any other consumer needing a real
 /// `atlas_core::data::Event` -- reconstructs losslessly from the payload
 /// alone, the SAME "real payload, not a stub" precedent M-C's Place/Polity
 /// widening already set (controller decision 2). `translations` is a
@@ -33,7 +33,7 @@ pub struct EventWitnessPayload {
 /// internal transition) -- a plain data mirror of
 /// `atlas_core::data::PolityDelta`'s own load-bearing fields, kept FULLY
 /// STRUCTURED (not collapsed to display prose) so the map's own wire
-/// response (`PolityDeltaOut { event, verses, ref_note }`) reconstructs
+/// response (`PolityDelta { event, verses, ref_note }`) reconstructs
 /// losslessly from the payload alone.
 #[derive(Clone, Debug)]
 pub struct PolityDeltaPayload {

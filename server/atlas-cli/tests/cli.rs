@@ -684,7 +684,7 @@ fn kinds_takes_no_arguments() {
 
 #[test]
 fn edges_never_surfaces_an_unresolvable_peoplegroup_neighbor() {
-    // S-3/Q-2: mirrors atlas_contract::graph_handlers::node_edges's own
+    // S-3/Q-2: mirrors atlas_contract::graph::node_edges's own
     // PeopleGroup filter. This test only proves the filter code RUNS
     // without breaking the happy path (a PeopleGroup-carrying real id in
     // the committed graph, with a real edge to a PeopleGroup neighbor,

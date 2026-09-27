@@ -21,56 +21,21 @@ use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 use axum::extract::{Path, State};
 use axum::Json;
-use serde::Serialize;
 
 use crate::error::ApiError;
 use crate::graph_wire::encode_node_id;
-
-#[derive(Debug, Serialize)]
-pub struct ContentsOut {
-    pub corpus: String,
-    pub version: String,
-    pub roots: Vec<ContentsRootOut>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ContentsRootOut {
-    pub id: String,
-    pub title: String,
-    /// `book` | `document`.
-    pub kind: String,
-    /// `OT` | `NT` for a Bible book; absent for a Concord document.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub group: Option<String>,
-    /// The navigation target: the root's own first child's ref.
-    #[serde(rename = "ref")]
-    pub sref: String,
-    pub children: Vec<ContentsChildOut>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ContentsChildOut {
-    pub id: String,
-    pub title: String,
-    /// `chapter` | `article`.
-    pub kind: String,
-    /// `GEN.1` for a chapter; `BoC 7.2.1` (its first paragraph) for an article.
-    #[serde(rename = "ref")]
-    pub sref: String,
-    /// The child's own members: verses of a chapter, paragraphs of an article.
-    pub count: usize,
-}
+use crate::wire;
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
 
-pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<ContentsOut>, ApiError> {
+pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let roots = match corpus.as_str() {
         "bible" => bible_roots(&snap),
         "concord" => concord_roots(&snap),
         _ => return Err(ApiError::not_found("corpus")),
     };
-    Ok(Json(ContentsOut { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
+    Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }
 
 /// Every `contains` target of `container`, in the port's own order (the
@@ -104,18 +69,18 @@ fn title_of<S: GraphQuery>(snap: &S, id: &AnyNodeId) -> String {
     }
 }
 
-fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
+fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
     let mut roots = Vec::with_capacity(66);
     for (i, book) in atlas_core::canon::BOOKS.iter().enumerate() {
         let id = atlas_graph::bible_container_adapter::book_container_id(book.code).erase();
         if snap.node(&id).is_none() {
             continue;
         }
-        let children: Vec<ContentsChildOut> = members(snap, &id)
+        let children: Vec<wire::ContentsChild> = members(snap, &id)
             .iter()
             .filter_map(|child| {
                 let (_, chapter) = atlas_graph::bible_container_adapter::decode_chapter_container(child)?;
-                Some(ContentsChildOut {
+                Some(wire::ContentsChild {
                     id: encode_node_id(child),
                     title: chapter.to_string(),
                     kind: "chapter".to_string(),
@@ -125,7 +90,7 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
             })
             .collect();
         let sref = children.first().map(|c| c.sref.clone()).unwrap_or_else(|| format!("{}.1", book.code));
-        roots.push(ContentsRootOut {
+        roots.push(wire::ContentsRoot {
             id: encode_node_id(&id),
             title: title_of(snap, &id),
             kind: "book".to_string(),
@@ -137,7 +102,7 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
     roots
 }
 
-fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
+fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
     // Every Concord document container, wherever the id-ordered node pages
     // put it; ordered below by its own first paragraph's part number.
     let mut docs: Vec<AnyNodeId> = Vec::new();
@@ -151,16 +116,16 @@ fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
         }
     }
 
-    let mut roots: Vec<(u8, ContentsRootOut)> = docs
+    let mut roots: Vec<(u8, wire::ContentsRoot)> = docs
         .iter()
         .map(|doc| {
             let mut part = u8::MAX;
-            let children: Vec<ContentsChildOut> = members(snap, doc)
+            let children: Vec<wire::ContentsChild> = members(snap, doc)
                 .iter()
                 .filter_map(|article| {
                     let first = members(snap, article).into_iter().find_map(|p| atlas_graph::concord_adapter::decode_text_unit(&p))?;
                     part = part.min(first.0);
-                    Some(ContentsChildOut {
+                    Some(wire::ContentsChild {
                         id: encode_node_id(article),
                         title: title_of(snap, article),
                         kind: "article".to_string(),
@@ -170,7 +135,7 @@ fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<ContentsRootOut> {
                 })
                 .collect();
             let sref = children.first().map(|c| c.sref.clone()).unwrap_or_default();
-            (part, ContentsRootOut { id: encode_node_id(doc), title: title_of(snap, doc), kind: "document".to_string(), group: None, sref, children })
+            (part, wire::ContentsRoot { id: encode_node_id(doc), title: title_of(snap, doc), kind: "document".to_string(), group: None, sref, children })
         })
         .collect();
     roots.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));

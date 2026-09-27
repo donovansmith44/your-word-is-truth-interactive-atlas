@@ -1,12 +1,12 @@
 //! EQUIVALENCE (M-A brief acceptance set): "for every chapter in canon, the
 //! window path's text == the pre-migration chapter endpoint's text" -- a
 //! server-side comparison across all 1,189 real KJV chapters. This is the
-//! committed regression guard for `handlers::chapter`'s own swap (M-A
+//! committed regression guard for `reading::chapter`'s own swap (M-A
 //! brief requirement 5: "re-implement the OLD /api/chapter handler as a
 //! VIEW over the window query"): it independently reproduces BOTH the
 //! pre-migration gathering logic (`data.verses.get(key)`, per verse, in
 //! order) and the post-migration one (`GraphService::chapter_span` +
-//! `window::window`, the SAME primitive `handlers::chapter` and
+//! `window::window`, the SAME primitive `reading::chapter` and
 //! `GET /api/text?scope=chapter` both call) over the real compiled/raw
 //! data, and asserts they produce the IDENTICAL sequence of verse texts for
 //! every chapter -- proving the swap changed nothing observable. The
@@ -77,7 +77,7 @@ fn old_chapter_texts(verses: &std::collections::HashMap<String, String>, code: &
 
 /// The NEW window-query path -- exactly `GraphService::chapter_span` +
 /// `window::window`/`window::render`, the same calls both
-/// `handlers::chapter` (after its M-A swap) and `GET /api/text?scope=chapter`
+/// `reading::chapter` (after its M-A swap) and `GET /api/text?scope=chapter`
 /// make. Ref-resolution (`chapter_span`) is `GraphService`'s own
 /// adapter-side companion; the actual window/render reads run against the
 /// opened snapshot through `&dyn GraphQuery` only.

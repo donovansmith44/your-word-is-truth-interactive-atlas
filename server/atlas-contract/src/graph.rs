@@ -30,7 +30,6 @@ use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use serde::Serialize;
 
 use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
@@ -42,63 +41,73 @@ use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
 use crate::graph_wire::{decode_node_id, describe_position, encode_node_id, parse_edge_kind};
+use crate::wire;
 
 // ---------------------------------------------------------------------
 // GET /api/node/{id}
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Serialize)]
-pub struct EdgeSummaryEntryOut {
-    pub kind: String,
-    pub count: usize,
-}
+/// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
+/// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
+/// `edge_summary` already lists only inhabited kinds) + the graph version
+/// stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
+/// malformed or unresolvable id is `bad_ref` (matches every other
+/// ref-shaped endpoint's own 400 convention), an id that parses but names
+/// no node in the built graph is `not_found` (six kinds resolve as of
+/// Batch M-B: `text-unit:BOOK.C.V` naming a real canon verse, and
+/// `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
+/// Theographic id; any other kind prefix, or a real-shaped id this batch's
+/// event world doesn't carry, 400s/404s per the same convention).
+pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::NodeCard>, ApiError> {
+    let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
+    let snap = graph.snapshot();
+    let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
-/// D5 (owner, 2026-09-15; additive, AQC 0.7.0): a Person card's life facts,
-/// straight off the payload. `birth_year`/`death_year` are the source's
-/// own life dates (75 / 64 of 3,067 persons carry one); `first_year`/
-/// `last_year` are the CORPUS-mention span, never a lifespan; `eternal`
-/// with its Scripture `eternal_grounds` is the curated exception ("God
-/// because he is eternal") -- an eternal person shows no years at all.
-#[derive(Debug, Serialize)]
-pub struct PersonLifeOut {
-    pub gender: Option<String>,
-    pub birth_year: Option<i32>,
-    pub death_year: Option<i32>,
-    pub first_year: Option<i32>,
-    pub last_year: Option<i32>,
-    pub eternal: bool,
-    pub eternal_grounds: Vec<String>,
-    pub also_called: Vec<String>,
-}
+    let summary = snap.edge_summary(&Position::Node(node_id.clone()));
+    let (label, _kind) = crate::graph_wire::describe_node(&node_id, &snap);
 
-#[derive(Debug, Serialize)]
-pub struct NodeCardOut {
-    pub id: String,
-    pub kind: String,
-    pub label: String,
-    pub provenance: String,
-    pub edge_summary: Vec<EdgeSummaryEntryOut>,
-    pub version: String,
-    /// D5: present for a Person only (omitted, never null, otherwise).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub person: Option<PersonLifeOut>,
-    /// ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,
-    /// `None` until a match exists -- same additive-JSON, same held-client
-    /// disclosure as `handlers::PlaceDetailOut::description`. This is the
-    /// ONLY "detail" surface a Person or PeopleGroup node has at all
-    /// (`graph_wire.rs`'s own doc comment: no dedicated per-kind endpoint
-    /// exists for either), so widening the generic card here is what
-    /// actually reaches them; it reaches Place/PeopleGroup for free too
-    /// (the same payload fact, whichever kind carries it).
-    ///
-    /// Batch CORP-1b: the SAME field, widened again -- a CommentaryItem's
-    /// own prose (`NodePayload::CommentaryItem.text`) rides here too now
-    /// (`atlas_graph::legacy::node_description`'s own updated match), for
-    /// the identical reason: no dedicated per-kind endpoint exists for
-    /// CommentaryItem either, and the prose was already sitting on the
-    /// compiled graph payload, just never read.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind: kind.label().to_string(), count }).collect();
+
+    // ENT-1a: whichever of the described kinds this node is (or `None` for
+    // every other kind, and `None` until a match exists even for those) --
+    // via this file's own `node_description` (batch-polish1-brief.md
+    // ENT1A-m4: this used to hand-roll its own copy of that exact
+    // NodePayload match on the already-fetched `node` above; unified,
+    // observable behavior unchanged; batch-finalp2's own layering cleanup
+    // relocated it here from `atlas_graph::legacy`, see its own doc
+    // comment). `node_description` re-fetches by id internally rather than
+    // taking `node` directly, a small redundant lookup -- disclosed,
+    // accepted: `GraphQuery::node` is a cheap in-memory lookup, and
+    // matching `places::place`'s own existing call shape (which never
+    // had `node` fetched separately to begin with) keeps the shared fn's
+    // own signature uniform across both callers rather than growing a
+    // second, `Node`-taking overload for this one caller's own minor
+    // optimization.
+    let description = node_description(&node_id, &snap);
+    let person = match &node.payload {
+        atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
+            gender: gender.clone(),
+            birth_year: *birth_year,
+            death_year: *death_year,
+            first_year: *first_year,
+            last_year: *last_year,
+            eternal: *eternal,
+            eternal_grounds: eternal_grounds.clone(),
+            also_called: also_called.clone(),
+        }),
+        _ => None,
+    };
+
+    Ok(Json(wire::NodeCard {
+        id: encode_node_id(&node_id),
+        kind: format!("{:?}", node_id.kind),
+        label,
+        provenance: node.provenance.clone(),
+        edge_summary,
+        version: atlas_graph::version_hex(graph.version()),
+        person,
+        description,
+    }))
 }
 
 /// Layering cleanup (batch-finalp2-brief.md ticket 10; origin: batch-
@@ -108,14 +117,14 @@ pub struct NodeCardOut {
 /// for a possible future relocation for tighter handler/domain layering").
 /// RELOCATED here from `atlas_graph::legacy::node_description`, byte-
 /// identical body (a clean move-only diff, confirmed by grep: its only two
-/// callers -- `node_card` below and `handlers::place` -- both already live
+/// callers -- `node_card` below and `places::place` -- both already live
 /// in THIS crate, so nothing outside atlas-contract ever called the old
 /// location; zero behavior change). A node's own Easton's/Kretzmann
 /// `description`, straight off the graph payload -- deliberately NOT
 /// threaded through `atlas_core::data::Place` (that struct is shared by
 /// every OTHER caller this fn's own history does not otherwise touch), so
-/// this stays a second, tiny, single-field reconstruction. `handlers::place`
-/// calls this via `crate::graph_handlers::node_description`.
+/// this stays a second, tiny, single-field reconstruction. `places::place`
+/// calls this via `crate::graph::node_description`.
 pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     let node = q.node(id)?;
     match node.payload {
@@ -130,96 +139,9 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
     }
 }
 
-/// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
-/// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
-/// `edge_summary` already lists only inhabited kinds) + the graph version
-/// stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
-/// malformed or unresolvable id is `bad_ref` (matches every other
-/// ref-shaped endpoint's own 400 convention), an id that parses but names
-/// no node in the built graph is `not_found` (six kinds resolve as of
-/// Batch M-B: `text-unit:BOOK.C.V` naming a real canon verse, and
-/// `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
-/// Theographic id; any other kind prefix, or a real-shaped id this batch's
-/// event world doesn't carry, 400s/404s per the same convention).
-pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<NodeCardOut>, ApiError> {
-    let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
-    let snap = graph.snapshot();
-    let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
-
-    let summary = snap.edge_summary(&Position::Node(node_id.clone()));
-    let (label, _kind) = crate::graph_wire::describe_node(&node_id, &snap);
-
-    let edge_summary = summary.into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect();
-
-    // ENT-1a: whichever of the described kinds this node is (or `None` for
-    // every other kind, and `None` until a match exists even for those) --
-    // via this file's own `node_description` (batch-polish1-brief.md
-    // ENT1A-m4: this used to hand-roll its own copy of that exact
-    // NodePayload match on the already-fetched `node` above; unified,
-    // observable behavior unchanged; batch-finalp2's own layering cleanup
-    // relocated it here from `atlas_graph::legacy`, see its own doc
-    // comment). `node_description` re-fetches by id internally rather than
-    // taking `node` directly, a small redundant lookup -- disclosed,
-    // accepted: `GraphQuery::node` is a cheap in-memory lookup, and
-    // matching `handlers::place`'s own existing call shape (which never
-    // had `node` fetched separately to begin with) keeps the shared fn's
-    // own signature uniform across both callers rather than growing a
-    // second, `Node`-taking overload for this one caller's own minor
-    // optimization.
-    let description = node_description(&node_id, &snap);
-    let person = match &node.payload {
-        atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(PersonLifeOut {
-            gender: gender.clone(),
-            birth_year: *birth_year,
-            death_year: *death_year,
-            first_year: *first_year,
-            last_year: *last_year,
-            eternal: *eternal,
-            eternal_grounds: eternal_grounds.clone(),
-            also_called: also_called.clone(),
-        }),
-        _ => None,
-    };
-
-    Ok(Json(NodeCardOut {
-        id: encode_node_id(&node_id),
-        kind: format!("{:?}", node_id.kind),
-        label,
-        provenance: node.provenance.clone(),
-        edge_summary,
-        version: atlas_graph::version_hex(graph.version()),
-        person,
-        description,
-    }))
-}
-
 // ---------------------------------------------------------------------
 // GET /api/node/{id}/edges?kind=&cursor=&limit=
 // ---------------------------------------------------------------------
-
-#[derive(Debug, Serialize)]
-pub struct NodeRefOut {
-    pub id: String,
-    pub kind: String,
-    pub label: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EdgeEntryOut {
-    /// The bijection witness travels on the wire (M-A brief requirement 4):
-    /// the SAME id a caller sees here is what the target's own inverse-kind
-    /// page carries back for this same connection.
-    pub edge: String,
-    pub node: NodeRefOut,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EdgePageOut {
-    pub kind: String,
-    pub entries: Vec<EdgeEntryOut>,
-    pub next: Option<usize>,
-    pub version: String,
-}
 
 const DEFAULT_EDGE_LIMIT: usize = 20;
 const MAX_EDGE_LIMIT: usize = 200;
@@ -234,7 +156,7 @@ pub async fn node_edges(
     State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<EdgePageOut>, ApiError> {
+) -> Result<Json<wire::EdgePage>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
     let snap = graph.snapshot();
     if snap.node(&node_id).is_none() {
@@ -272,83 +194,16 @@ pub async fn node_edges(
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
             let (id, kind, label) = describe_position(&e.node, &snap);
-            EdgeEntryOut { edge: e.edge.0.clone(), node: NodeRefOut { id, kind, label } }
+            wire::EdgeEntry { edge: e.edge.0.clone(), node: wire::NodeRef { id, kind, label } }
         })
         .collect();
 
-    Ok(Json(EdgePageOut { kind: kind.label().to_string(), entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind: kind.label().to_string(), entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 // ---------------------------------------------------------------------
 // GET /api/text?ref=&n=&dir=&scope=
 // ---------------------------------------------------------------------
-
-#[derive(Debug, Serialize)]
-pub struct TextUnitOut {
-    #[serde(rename = "ref")]
-    pub sref: String,
-    pub text: String,
-    /// Batch RED-1: this unit's own aligned sub-verse red-letter spans --
-    /// see `handlers::VerseOut.words_of_christ`'s own doc comment
-    /// (identical shape/convention). Always empty for `corpus=concord`
-    /// (a wholly different corpus, never the KJV -- decision 5's own
-    /// sub-verse precision is KJV-specific by construction).
-    pub words_of_christ: Vec<crate::handlers::WordsOfChristSpanOut>,
-    /// D3 (owner, 2026-09-15; additive, AQC 0.6.0): this unit's own
-    /// inhabited frontier kinds and counts -- the SAME `edge_summary`
-    /// shape `NodeCardOut` carries, so a corpus page can make ONLY units
-    /// with edges clickable (no dead clicks) without an N+1 of node-card
-    /// calls. The reader may ignore it.
-    pub edge_summary: Vec<EdgeSummaryEntryOut>,
-}
-
-/// The unit's frontier summary, in the port's own (EdgeKind) order --
-/// identical to `node_card`'s projection of the same call.
-fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<EdgeSummaryEntryOut> {
-    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| EdgeSummaryEntryOut { kind: kind.label().to_string(), count }).collect()
-}
-
-#[derive(Debug, Serialize)]
-pub struct TextWindowOut {
-    pub units: Vec<TextUnitOut>,
-    pub next: Option<String>,
-    pub version: String,
-}
-
-/// Parses `ref` against `scope`: `scope=chapter` accepts a Chapter- or
-/// Verse-shaped ref (either way, only the (book, chapter) pair is used --
-/// the chapter's OWN verse count is derived server-side from the graph
-/// itself, never from the ref); any other `scope` requires a Verse-shaped
-/// ref (the single-point cursor the window walks onward/backward from).
-fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
-    match ScriptureRef::parse(raw) {
-        Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
-        Ok(ScriptureRef::Chapter { book, chapter }) if scope == "chapter" => Ok((book.0, chapter, None)),
-        _ => Err(ApiError::bad_ref(raw)),
-    }
-}
-
-/// CORP-2a (decision 8): the Concord-corpus sibling of `parse_ref` above --
-/// `ref` is `ConcordTag::cite`'s own citation form, `"BoC {part}.
-/// {article}.{paragraph}"` (graph-types' text.rs; the SAME string
-/// `graph_wire::encode_node_id`/`describe_node` already produce and parse
-/// for a Concord TextUnit's own wire id). No `scope=chapter` equivalent --
-/// a Concord article's own paragraph count varies too widely (a Small
-/// Catechism commandment is one paragraph; the Apology's own Article IV is
-/// hundreds) for a single server-derived span to mean the same thing
-/// `scope=chapter` means for the Bible; `n` always governs, the same as
-/// every other non-chapter-scoped window.
-fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
-    let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
-    let mut parts = rest.split('.');
-    let (Some(part), Some(article), Some(paragraph), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
-        return Err(ApiError::bad_ref(raw));
-    };
-    let part: u8 = part.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    let article: u16 = article.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    let paragraph: u16 = paragraph.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    Ok((part, article, paragraph))
-}
 
 /// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=&corpus=` (design doc §6;
 /// M-A brief requirement 4): a window of `{ref, text}` units + next
@@ -438,12 +293,12 @@ pub async fn text_window(
         let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
 
         let ids = window::window(&snap, atlas_graph::concord_adapter::CONCORD_CORPUS, start, n, dir);
-        let units: Vec<TextUnitOut> = ids
+        let units: Vec<wire::TextUnit> = ids
             .iter()
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(TextUnitOut { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
+                Some(wire::TextUnit { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
             })
             .collect();
 
@@ -466,7 +321,7 @@ pub async fn text_window(
             }
         };
 
-        let body = Json(TextWindowOut { units, next, version: atlas_graph::version_hex(graph.version()) });
+        let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
         return Ok(([(header::ETAG, etag)], body).into_response());
     }
 
@@ -482,17 +337,17 @@ pub async fn text_window(
     };
 
     let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, dir);
-    let units: Vec<TextUnitOut> = ids
+    let units: Vec<wire::TextUnit> = ids
         .iter()
         .filter_map(|id| {
             let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
             let text = window::render(&snap, id)?;
             let sref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
-            // Batch RED-1: the SAME per-verse lookup `handlers::chapter`/
-            // `handlers::verse` use, off the precomputed `graph.
+            // Batch RED-1: the SAME per-verse lookup `reading::chapter`/
+            // `reading::verse` use, off the precomputed `graph.
             // red_letter_spans` companion.
-            let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::handlers::WordsOfChristSpanOut { start, end }).collect()).unwrap_or_default();
-            Some(TextUnitOut { sref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
+            let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
+            Some(wire::TextUnit { sref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 
@@ -520,6 +375,47 @@ pub async fn text_window(
         }
     };
 
-    let body = Json(TextWindowOut { units, next, version: atlas_graph::version_hex(graph.version()) });
+    let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
     Ok(([(header::ETAG, etag)], body).into_response())
+}
+
+/// The unit's frontier summary, in the port's own (EdgeKind) order --
+/// identical to `node_card`'s projection of the same call.
+fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
+    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind: kind.label().to_string(), count }).collect()
+}
+
+/// Parses `ref` against `scope`: `scope=chapter` accepts a Chapter- or
+/// Verse-shaped ref (either way, only the (book, chapter) pair is used --
+/// the chapter's OWN verse count is derived server-side from the graph
+/// itself, never from the ref); any other `scope` requires a Verse-shaped
+/// ref (the single-point cursor the window walks onward/backward from).
+fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
+    match ScriptureRef::parse(raw) {
+        Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
+        Ok(ScriptureRef::Chapter { book, chapter }) if scope == "chapter" => Ok((book.0, chapter, None)),
+        _ => Err(ApiError::bad_ref(raw)),
+    }
+}
+
+/// CORP-2a (decision 8): the Concord-corpus sibling of `parse_ref` above --
+/// `ref` is `ConcordTag::cite`'s own citation form, `"BoC {part}.
+/// {article}.{paragraph}"` (graph-types' text.rs; the SAME string
+/// `graph_wire::encode_node_id`/`describe_node` already produce and parse
+/// for a Concord TextUnit's own wire id). No `scope=chapter` equivalent --
+/// a Concord article's own paragraph count varies too widely (a Small
+/// Catechism commandment is one paragraph; the Apology's own Article IV is
+/// hundreds) for a single server-derived span to mean the same thing
+/// `scope=chapter` means for the Bible; `n` always governs, the same as
+/// every other non-chapter-scoped window.
+fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
+    let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
+    let mut parts = rest.split('.');
+    let (Some(part), Some(article), Some(paragraph), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
+        return Err(ApiError::bad_ref(raw));
+    };
+    let part: u8 = part.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    let article: u16 = article.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    let paragraph: u16 = paragraph.parse().map_err(|_| ApiError::bad_ref(raw))?;
+    Ok((part, article, paragraph))
 }

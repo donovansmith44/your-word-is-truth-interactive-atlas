@@ -11,7 +11,7 @@
 //! stable identity independent of any one citation scheme -- "names are
 //! refs, not identity," design doc §9b); this layer is where that internal
 //! identity is dressed up into the human/dot-ref form the REST of this
-//! app's wire already uses everywhere (`ChapterOut.ref`, `/api/chapter/{cref}`,
+//! app's wire already uses everywhere (`Chapter.ref`, `/api/chapter/{cref}`,
 //! ...), and back.
 //!
 //! BATCH M-B id grammar (extends M-A's, per the brief's own requirement 4):
@@ -114,7 +114,7 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         // pre-existing generic fallback ALREADY produces for Person
         // ("Person:aaron_1"), the identical one-arm pattern every prior
         // node-kind batch added here (M-B's four, M-C's three). Nothing
-        // else in `graph_handlers.rs`/`store.rs`/`explore.rs` needed a
+        // else in `graph.rs`/`store.rs`/`explore.rs` needed a
         // change for the two generic endpoints to serve Person nodes.
         "Person" => Some(AnyNodeId { kind: NodeKind::Person, raw: rest.to_string() }),
         // Batch CORP-1a: same one-arm round-trip completion for the six

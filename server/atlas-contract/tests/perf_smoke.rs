@@ -129,7 +129,7 @@ fn scene_scripture_chapter_completes_within_smoke_threshold() {
     assert!(elapsed < Duration::from_millis(50), "compose_scripture_scene(JHN.3) took {elapsed:?}, over the 50ms smoke gate");
 }
 
-/// `handlers::xrefs`'s own service-layer call
+/// `reading::xrefs`'s own service-layer call
 /// (`atlas_core::xrefs::aggregate_span_xrefs`) -- benched directly for the
 /// same "no unrelated network/DNS noise" reason the module doc comment
 /// gives; `graph.cross_refs_by_from` is the same companion index the real
@@ -153,7 +153,7 @@ fn xrefs_for_verse_completes_within_smoke_threshold() {
     assert!(elapsed < Duration::from_millis(30), "aggregate_span_xrefs(JHN.3.16) took {elapsed:?}, over the 30ms smoke gate");
 }
 
-/// `graph_handlers::text_window`'s own service-layer call chain
+/// `graph::text_window`'s own service-layer call chain
 /// (`window::window` + `window::render` per unit) -- a 20-verse onward
 /// window from a real anchor, the same shape a Reader.razor chapter-scroll
 /// fetch uses.
@@ -177,7 +177,7 @@ fn text_window_completes_within_smoke_threshold() {
     assert!(elapsed < Duration::from_millis(30), "text_window(JHN.3, n=20) took {elapsed:?}, over the 30ms smoke gate");
 }
 
-/// `handlers::chapter`'s own service-layer call chain (chapter_span +
+/// `reading::chapter`'s own service-layer call chain (chapter_span +
 /// window + per-verse place/person lookups) -- John 3 (JHN.3), 36 verses.
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]

@@ -33,8 +33,8 @@ impl ApiError {
 
     /// A scripture ref (`ref`, `{cref}`, or `{vref}`) that is missing or
     /// structurally malformed — not merely out-of-canon (see the
-    /// `ruling-3-policy` doc comments on `handlers::scene_scripture` /
-    /// `handlers::chapter` / `handlers::verse` for what counts as which).
+    /// `ruling-3-policy` doc comments on `map::scene_scripture` /
+    /// `reading::chapter` / `reading::verse` for what counts as which).
     pub fn bad_ref(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_ref", message: format!("invalid scripture reference: '{raw}'") }
     }

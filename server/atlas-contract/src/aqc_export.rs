@@ -91,7 +91,7 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("contents-bible", "/api/contents/bible"),
     ("contents-concord", "/api/contents/concord"),
     ("contents-bad-corpus", "/api/contents/nope"),
-    // Versioning -- the one new behavioral endpoint (contract.rs).
+    // Versioning -- the one new behavioral endpoint (meta.rs).
     ("contract", "/api/contract"),
 ];
 

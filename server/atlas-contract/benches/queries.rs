@@ -51,7 +51,7 @@ use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
 use atlas_graph::GraphService;
-use atlas_contract::{graph_handlers, handlers};
+use atlas_contract::{catechism, events, graph, map, places, reading};
 
 fn repo_data_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
@@ -92,7 +92,7 @@ fn qmap(pairs: &[(&str, &str)]) -> HashMap<String, String> {
 /// can never be masked or falsely blamed on handler-layer overhead.
 fn bench_scene_pure(c: &mut Criterion) {
     let (data, graph) = load_real();
-    // OVERLAY-1 Task 5: the exact object `handlers::scene_time`/
+    // OVERLAY-1 Task 5: the exact object `map::scene_time`/
     // `scene_scripture` compose from now.
     let source = graph.scene_source(&data);
     let mut group = c.benchmark_group("scene_pure");
@@ -118,7 +118,7 @@ fn bench_scene_pure(c: &mut Criterion) {
     group.finish();
 }
 
-/// The real axum handlers (`atlas_contract::handlers`/`graph_handlers`) called
+/// The real axum handlers (`atlas_contract`'s own route-family modules) called
 /// directly with hand-built extractors (`State`/`Path`/`Query` are public
 /// tuple structs -- this is the standard way to bench/unit-test an axum
 /// handler without a socket or even a `Router`), over real, valid,
@@ -131,54 +131,54 @@ fn bench_handlers(c: &mut Criterion) {
     let mut group = c.benchmark_group("handlers");
 
     group.bench_function("scene_time", |b| {
-        b.iter(|| rt.block_on(handlers::scene_time(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("from", "-5"), ("to", "100")])))))
+        b.iter(|| rt.block_on(map::scene_time(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("from", "-5"), ("to", "100")])))))
     });
     group.bench_function("scene_scripture", |b| {
-        b.iter(|| rt.block_on(handlers::scene_scripture(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("ref", "JHN.3")])))))
+        b.iter(|| rt.block_on(map::scene_scripture(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("ref", "JHN.3")])))))
     });
-    group.bench_function("books", |b| b.iter(|| rt.block_on(handlers::books(State(data.clone())))));
-    group.bench_function("eras", |b| b.iter(|| rt.block_on(handlers::eras(State(graph.clone())))));
-    group.bench_function("narratives", |b| b.iter(|| rt.block_on(handlers::narratives(State(graph.clone())))));
-    group.bench_function("landmarks", |b| b.iter(|| rt.block_on(handlers::landmarks(State(data.clone())))));
-    group.bench_function("land_mask", |b| b.iter(|| rt.block_on(handlers::land_mask(State(data.clone())))));
+    group.bench_function("books", |b| b.iter(|| rt.block_on(reading::books(State(data.clone())))));
+    group.bench_function("eras", |b| b.iter(|| rt.block_on(map::eras(State(graph.clone())))));
+    group.bench_function("narratives", |b| b.iter(|| rt.block_on(map::narratives(State(graph.clone())))));
+    group.bench_function("landmarks", |b| b.iter(|| rt.block_on(map::landmarks(State(data.clone())))));
+    group.bench_function("land_mask", |b| b.iter(|| rt.block_on(map::land_mask(State(data.clone())))));
     group.bench_function("polities", |b| {
-        b.iter(|| rt.block_on(handlers::polities(State(graph.clone()), AxQuery(qmap(&[("from", "-4004"), ("to", "100")])))))
+        b.iter(|| rt.block_on(map::polities(State(graph.clone()), AxQuery(qmap(&[("from", "-4004"), ("to", "100")])))))
     });
     group.bench_function("chapter", |b| {
-        b.iter(|| rt.block_on(handlers::chapter(State(data.clone()), State(graph.clone()), AxPath("JHN.3".to_string()))))
+        b.iter(|| rt.block_on(reading::chapter(State(data.clone()), State(graph.clone()), AxPath("JHN.3".to_string()))))
     });
     group.bench_function("verse", |b| {
-        b.iter(|| rt.block_on(handlers::verse(State(data.clone()), State(graph.clone()), AxPath("JHN.3.16".to_string()))))
+        b.iter(|| rt.block_on(reading::verse(State(data.clone()), State(graph.clone()), AxPath("JHN.3.16".to_string()))))
     });
-    group.bench_function("xrefs", |b| b.iter(|| rt.block_on(handlers::xrefs(State(graph.clone()), AxPath("JHN.3.16".to_string())))));
+    group.bench_function("xrefs", |b| b.iter(|| rt.block_on(reading::xrefs(State(graph.clone()), AxPath("JHN.3.16".to_string())))));
     group.bench_function("place", |b| {
-        b.iter(|| rt.block_on(handlers::place(State(data.clone()), State(graph.clone()), AxPath("hebron".to_string()), AxQuery(HashMap::new()))))
+        b.iter(|| rt.block_on(places::place(State(data.clone()), State(graph.clone()), AxPath("hebron".to_string()), AxQuery(HashMap::new()))))
     });
     group.bench_function("event", |b| {
-        b.iter(|| rt.block_on(handlers::event(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
+        b.iter(|| rt.block_on(events::event(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });
     group.bench_function("narrative_event_positions", |b| {
-        b.iter(|| rt.block_on(handlers::narrative_event_positions(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
+        b.iter(|| rt.block_on(events::narrative_event_positions(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });
     group.bench_function("catechism_for_span", |b| {
         // PROV-1 fix round 1 (review M-3): second extractor, carrying the
         // catechism family's own provenance -- one `BTreeMap` lookup off the
         // load-time companion index, which is why the call SHAPE is the only
         // thing that moved here.
-        b.iter(|| rt.block_on(handlers::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
+        b.iter(|| rt.block_on(catechism::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
     });
     group.bench_function("catechism_item", |b| {
         // OVERLAY-1 Task 2: second extractor, `State<Arc<GraphService>>` --
         // proof-verse text now comes from `graph.verse_text_of`, not the
         // retired `AtlasData.verses`.
-        b.iter(|| rt.block_on(handlers::catechism_item(State(data.clone()), State(graph.clone()), AxPath("commandment-1".to_string()))))
+        b.iter(|| rt.block_on(catechism::catechism_item(State(data.clone()), State(graph.clone()), AxPath("commandment-1".to_string()))))
     });
 
     group.finish();
 }
 
 /// The generic typed-graph endpoints (design doc §5/§6): node card, node
-/// edges, text window -- `atlas_contract::graph_handlers`, the newer surface
+/// edges, text window -- `atlas_contract::graph`, the newer surface
 /// the REFOUNDED typed-edge graph serves directly (not through `AtlasData`
 /// at all).
 fn bench_graph_handlers(c: &mut Criterion) {
@@ -187,11 +187,11 @@ fn bench_graph_handlers(c: &mut Criterion) {
     let mut group = c.benchmark_group("graph_handlers");
 
     group.bench_function("node_card", |b| {
-        b.iter(|| rt.block_on(graph_handlers::node_card(State(graph.clone()), AxPath("text-unit:JHN.3.16".to_string()))))
+        b.iter(|| rt.block_on(graph::node_card(State(graph.clone()), AxPath("text-unit:JHN.3.16".to_string()))))
     });
     group.bench_function("node_edges", |b| {
         b.iter(|| {
-            rt.block_on(graph_handlers::node_edges(
+            rt.block_on(graph::node_edges(
                 State(graph.clone()),
                 AxPath("text-unit:JHN.3.16".to_string()),
                 AxQuery(qmap(&[("kind", "cites")])),
@@ -199,7 +199,7 @@ fn bench_graph_handlers(c: &mut Criterion) {
         })
     });
     group.bench_function("text_window", |b| {
-        b.iter(|| rt.block_on(graph_handlers::text_window(State(graph.clone()), HeaderMap::new(), AxQuery(qmap(&[("ref", "JHN.3.16")])))))
+        b.iter(|| rt.block_on(graph::text_window(State(graph.clone()), HeaderMap::new(), AxQuery(qmap(&[("ref", "JHN.3.16")])))))
     });
 
     group.finish();
