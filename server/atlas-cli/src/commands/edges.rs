@@ -93,8 +93,8 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
-            let (id, kind_str, label) = describe_position(&e.node, &snap);
-            ResolvedEntry { edge: e.edge.0.clone(), id, kind: kind_str, label }
+            let (id, kind, label) = describe_position(&e.node, &snap);
+            ResolvedEntry { edge: e.edge.0.clone(), id, kind: kind.name().to_string(), label }
         })
         .collect();
 

@@ -17,8 +17,10 @@ use axum::http::{header, Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
+use atlas_contract::wire::PositionKind;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
+use atlas_graph_types::id::NodeKind;
 
 // M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
 // return empty now -- `atlas_etl::compile::compile` is this crate's own
@@ -1778,4 +1780,38 @@ async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
             "version": version,
         })
     );
+}
+
+/// Ruling R12: the frontier's `node.kind` is a closed vocabulary, not a
+/// bare string -- every node kind the graph declares, plus the one
+/// non-node position an entry can name (an edge takes focus too, design
+/// doc §0: a `justified-by` row reached through its own `justifies`
+/// frontier).
+const DECLARED_NODE_KINDS: usize = 15;
+const THE_ONE_EDGE_POSITION: usize = 1;
+
+#[test]
+fn a_position_kind_serialises_to_the_string_the_frontier_already_carried() {
+    // Arrange
+    let both_variants = [PositionKind::Node(NodeKind::Event), PositionKind::Edge];
+
+    // Act
+    let json = serde_json::to_value(both_variants).unwrap();
+
+    // Assert
+    assert_eq!(json, serde_json::json!(["Event", "Edge"]));
+}
+
+#[test]
+fn the_position_kind_schema_is_a_flat_string_enum_of_every_node_kind_then_edge() {
+    // Arrange
+    let mut expected: Vec<&str> = NodeKind::ALL.iter().map(|kind| kind.name()).collect();
+    expected.push("Edge");
+    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
+
+    // Act
+    let schema = serde_json::to_value(<PositionKind as utoipa::PartialSchema>::schema()).unwrap();
+
+    // Assert
+    assert_eq!(schema, serde_json::json!({ "type": "string", "enum": expected }));
 }

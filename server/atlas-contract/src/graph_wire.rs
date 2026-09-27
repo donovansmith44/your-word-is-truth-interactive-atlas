@@ -34,6 +34,8 @@
 //! relation manifest, so this module keeps no edge-kind table of its own.
 
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+
+use crate::wire::PositionKind;
 use atlas_graph_types::store::GraphQuery;
 
 /// Encodes any node id this batch's graph can produce. Only `NodeKind::TextUnit`
@@ -196,13 +198,13 @@ pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> (String, NodeKin
 /// variants, never a panic -- M-A's own `edges()` calls only ever surface
 /// `Position::Node` today (no edge-as-position query exists yet), but the
 /// type is `Position` so this stays honest about the full shape.
-pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> (String, String, String) {
+pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> (String, PositionKind, String) {
     match pos {
         Position::Node(id) => {
             let (label, kind) = describe_node(id, query);
-            (encode_node_id(id), kind.name().to_string(), label)
+            (encode_node_id(id), PositionKind::Node(kind), label)
         }
-        Position::Edge(eid) => (format!("edge:{}", eid.0), "Edge".to_string(), eid.0.clone()),
+        Position::Edge(eid) => (format!("edge:{}", eid.0), PositionKind::Edge, eid.0.clone()),
     }
 }
 

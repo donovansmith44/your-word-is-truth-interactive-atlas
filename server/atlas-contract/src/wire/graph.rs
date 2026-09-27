@@ -1,5 +1,8 @@
 use atlas_graph_types::{EdgeKind, NodeKind};
-use serde::Serialize;
+use serde::{Serialize, Serializer};
+use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
+use utoipa::openapi::{RefOr, Schema};
+use utoipa::{PartialSchema, ToSchema};
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -81,13 +84,45 @@ pub struct EdgeEntry {
 #[serde(deny_unknown_fields)]
 pub struct NodeRef {
     pub id: String,
-    /// A `String`, not a `NodeKind`: an edge takes focus too (design doc
-    /// §0), so a frontier entry's position can be an edge -- a
-    /// `justified-by` row reached through its own `justifies` frontier has
-    /// no node kind at all, and carries `"Edge"` here.
-    pub kind: String,
+    pub kind: PositionKind,
     pub label: String,
 }
+
+/// What a frontier entry's position IS: one of the node kinds the graph
+/// declares, or an edge -- an edge takes focus too (design doc §0), so a
+/// `justified-by` row reached through its own `justifies` frontier names
+/// no node kind at all.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PositionKind {
+    Node(NodeKind),
+    Edge,
+}
+
+impl PositionKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            PositionKind::Node(kind) => kind.name(),
+            PositionKind::Edge => "Edge",
+        }
+    }
+}
+
+impl Serialize for PositionKind {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.name())
+    }
+}
+
+/// A FLAT string enum, never a `oneOf`: the generated client turns this
+/// component into one C# enum.
+impl PartialSchema for PositionKind {
+    fn schema() -> RefOr<Schema> {
+        let names = NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(PositionKind::Edge.name()));
+        ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).enum_values(Some(names.collect::<Vec<_>>())).into()
+    }
+}
+
+impl ToSchema for PositionKind {}
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
