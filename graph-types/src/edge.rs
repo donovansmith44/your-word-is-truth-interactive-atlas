@@ -147,6 +147,21 @@ impl EdgeKind {
             EdgeKind::Symmetric(s) => s.label(),
         }
     }
+
+    pub fn all() -> impl Iterator<Item = EdgeKind> {
+        RelationId::ALL
+            .iter()
+            .flat_map(|r| [EdgeKind::Directed(*r, Direction::Forward), EdgeKind::Directed(*r, Direction::Inverse)])
+            .chain(SymRelationId::ALL.iter().map(|s| EdgeKind::Symmetric(*s)))
+    }
+
+    pub fn labels() -> impl Iterator<Item = &'static str> {
+        Self::all().map(EdgeKind::label)
+    }
+
+    pub fn from_label(label: &str) -> Option<EdgeKind> {
+        Self::all().find(|k| k.label() == label)
+    }
 }
 
 /// Entry identity: the SAME id reached from either end — the bijection's

@@ -18,27 +18,31 @@ pub type Interned = String;
 /// Closed node-kind vocabulary. Extending it is a deliberate act every
 /// exhaustive match must acknowledge. TextUnit's LEVEL (book / chapter /
 /// verse — or a Concord part / article / paragraph) is known to its
-/// corpus scheme, not to this enum (sweep F11).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum NodeKind {
-    TextUnit,
-    Container,
-    Event,
-    Narrative,
-    Place,
-    Person,
-    Anchor,
-    Era,
-    Polity,
-    CatechismItem,
-    Source,
-    Translation,
-    PeopleGroup,
-    /// KRETZ-1: a verse-anchored unit of a commentary work's prose
-    /// (annotation shape -- owner order 2026-08-24).
-    CommentaryItem,
-    /// DB-3 (spec 7.2): a Strong's-keyed lexicon entry; uninhabited until LEX-1.
-    LexiconEntry,
+/// corpus scheme, not to this enum (sweep F11). Every variant, in
+/// declaration order — appended, never reordered (`sqlite::partition::node_kind_ordinal`
+/// and the contract fixture `graph-vocabulary.json` are positional over it).
+macro_rules! node_kinds {
+    ( $($kind:ident),+ $(,)? ) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        pub enum NodeKind { $($kind),+ }
+
+        impl NodeKind {
+            pub const ALL: [NodeKind; [$(stringify!($kind)),+].len()] = [$(NodeKind::$kind),+];
+
+            pub fn name(self) -> &'static str {
+                match self { $(NodeKind::$kind => stringify!($kind)),+ }
+            }
+
+            pub fn from_name(name: &str) -> Option<NodeKind> {
+                Self::ALL.iter().copied().find(|k| k.name() == name)
+            }
+        }
+    };
+}
+
+node_kinds! {
+    TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
+    CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
 }
 
 /// Kind tag for phantom-typed ids: a cross-kind reference is a type
@@ -114,30 +118,6 @@ impl<K: KindTag> std::hash::Hash for NodeId<K> {
     }
 }
 
-impl NodeKind {
-    /// Every variant, in declaration order -- appended, never reordered
-    /// (`sqlite::partition::node_kind_ordinal` and the contract fixture
-    /// `graph-vocabulary.json` are positional over it). The compiler cannot
-    /// enumerate an enum; this is the ONE hand-written list, and the canon
-    /// vector test asserts its own array equals it.
-    pub const ALL: [NodeKind; 15] = [
-        NodeKind::TextUnit,
-        NodeKind::Container,
-        NodeKind::Event,
-        NodeKind::Narrative,
-        NodeKind::Place,
-        NodeKind::Person,
-        NodeKind::Anchor,
-        NodeKind::Era,
-        NodeKind::Polity,
-        NodeKind::CatechismItem,
-        NodeKind::Source,
-        NodeKind::Translation,
-        NodeKind::PeopleGroup,
-        NodeKind::CommentaryItem,
-        NodeKind::LexiconEntry,
-    ];
-}
 
 pub type TextUnitId = NodeId<TextUnitTag>;
 pub type ContainerNodeId = NodeId<ContainerTag>;
