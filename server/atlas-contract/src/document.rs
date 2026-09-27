@@ -19,13 +19,31 @@ const RELATIONS_EXTENSION: &str = "x-atlas-relations";
 const COMPONENT_REFERENCE: &str = "#/components/schemas/";
 const SHAPE_REFERENCE: &str = "#/$defs/";
 
+/// One published document: where it is committed, and the Rust that renders
+/// it. Pairing the two in one value is what keeps a document from being
+/// published to a path nothing renders, or rendered to no path at all.
+pub struct GeneratedDocument {
+    /// Relative to `contracts_root()`.
+    pub path: &'static str,
+    pub render: fn() -> String,
+}
+
+/// Every document the exporter publishes, declared once. A document that
+/// stops being generated is a promise quietly withdrawn, so this list is the
+/// one place it exists -- the exporter, the gate and the byte-identity test
+/// all read it rather than restate it.
+pub const GENERATED_DOCUMENTS: [GeneratedDocument; 3] = [
+    GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
+    GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },
+    GeneratedDocument { path: "atlas-graph-contract/fixtures/graph-vocabulary.json", render: graph_vocabulary_json },
+];
+
 pub fn generated_files() -> Vec<(PathBuf, String)> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../contracts");
-    vec![
-        (root.join("openapi.yaml"), openapi_yaml()),
-        (root.join("atlas-query-contract/aqc.schema.json"), aqc_schema_json()),
-        (root.join("atlas-graph-contract/fixtures/graph-vocabulary.json"), graph_vocabulary_json()),
-    ]
+    GENERATED_DOCUMENTS.iter().map(|document| (contracts_root().join(document.path), (document.render)())).collect()
+}
+
+pub fn contracts_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../contracts")
 }
 
 pub fn openapi_yaml() -> String {

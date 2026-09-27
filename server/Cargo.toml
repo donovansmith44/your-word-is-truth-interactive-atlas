@@ -49,25 +49,24 @@ resolver = "2"
 #
 # THE MUTATION LEG (CONTRACT-1a; PRINCIPLES 3, 100 % mutation coverage minus
 # recorded equivalents) is the FOURTH command of a full standing block, run
-# after the three above:
-#   cargo mutants --in-place                               # from server/
+# after the three above -- THREE invocations, and the graph-types pair is one
+# score, not either of them:
+#   cargo mutants --in-place                                              # from server/
 #   (cd ../graph-types && cargo mutants --in-place --features serde,openapi)
-# A run narrows the declared scope with `-e <file>`, never with `-f`: a
-# command-line `-f` is unioned with the config's own `examine_globs` instead
-# of replacing it, so it cannot narrow anything.
-# The configuration -- the examined scope, and every equivalent mutant with
-# its reason -- lives in `server/.cargo/mutants.toml` and
-# `graph-types/.cargo/mutants.toml` (`.cargo/` is where cargo-mutants 27
-# looks; a `mutants.toml` at a package root is silently ignored). graph-types
-# needs its own config and its own working directory because a file outside
-# the workspace root yields ZERO mutants however it is globbed from here.
-# cargo-mutants 27.1.0 was installed with scoop's gcc on PATH -- the pinned
-# x86_64-pc-windows-gnu toolchain ships no `dlltool`, so without it the
-# install's own dependencies do not link:
-#   PATH="$HOME/scoop/apps/gcc/current/bin:$PATH" cargo install cargo-mutants --locked
+#   (cd ../graph-types && cargo mutants --in-place --all-features)
+# The two graph-types runs are scored as their UNION: that crate keeps a
+# `canon-ids` arm and a `not(canon-ids)` arm of the same functions, and a
+# mutation of whichever arm is switched off is a no-op that survives every
+# test, so a mutant is alive only when BOTH runs miss it.
 # Every run reports mutants tested / caught / missed / unviable / timeout per
 # file; a missed mutant is killed by a test or recorded as an equivalent in
-# the relevant `mutants.toml`, never with an inline `#[mutants::skip]`.
+# the relevant config, never with an inline `#[mutants::skip]`.
+# Why `.cargo/`, why `--in-place`, why a run narrows with `-e`/`-F` and never
+# with `-f`, and how cargo-mutants was installed on this windows-gnu host:
+# `server/.cargo/mutants.toml`, which is also where the examined scope and
+# every equivalent mutant with its reason live. `graph-types` carries its own
+# `.cargo/mutants.toml` and is run from its own directory because a file
+# outside this workspace root yields ZERO mutants however it is globbed here.
 #
 # Batch CORP-2a (2026-08-25, the Book of Concord corpus, data half): moved
 # to 788 passed (767 + 21) across 39 sections. Workspace +35 across +2

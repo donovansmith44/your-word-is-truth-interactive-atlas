@@ -7,17 +7,7 @@
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-/// Every document the exporter publishes, under `contracts/`. A document that
-/// stops being generated is a promise quietly withdrawn, so the set is named
-/// here and not merely iterated.
-const GENERATED_DOCUMENTS: [&str; 3] = [
-    "openapi.yaml",
-    "atlas-query-contract/aqc.schema.json",
-    "atlas-graph-contract/fixtures/graph-vocabulary.json",
-];
-const BYTE_IDENTICAL: &str = "byte-identical to the committed file";
-const DIFFERS: &str = "DIFFERS from the committed file -- run `cargo run -p atlas-contract --bin export_contract`";
-const ABSENT: &str = "ABSENT -- no committed file at this path";
+use atlas_contract::document::{contracts_root, GENERATED_DOCUMENTS};
 
 const EXPORTER: &str = env!("CARGO_BIN_EXE_export_contract");
 const CHECK_ARGUMENT: &str = "--check";
@@ -27,28 +17,41 @@ const MISUSE_EXIT: i32 = 2;
 const USAGE_LINE: &str = "usage: export_contract [--check]\n";
 const NOTHING: &str = "";
 
+/// What the committed file at a published path is, against what the Rust
+/// renders today. A closed set of three answers, not a message.
+#[derive(Debug, PartialEq)]
+enum Freshness {
+    ByteIdenticalToWhatTheRustRenders,
+    DiffersFromWhatTheRustRenders,
+    NoCommittedFileAtThisPath,
+}
+
+#[derive(Debug, PartialEq)]
+struct CommittedDocument {
+    path: PathBuf,
+    freshness: Freshness,
+}
+
 #[test]
 fn every_generated_document_is_byte_identical_to_the_committed_one() {
     // Arrange
-    let expected: Vec<(PathBuf, &str)> = GENERATED_DOCUMENTS.iter().map(|name| (contracts_root().join(name), BYTE_IDENTICAL)).collect();
-    // Act
-    let actual: Vec<(PathBuf, &str)> = atlas_contract::document::generated_files()
-        .into_iter()
-        .map(|(path, generated)| {
-            let state = match std::fs::read_to_string(&path) {
-                Ok(committed) if committed == generated => BYTE_IDENTICAL,
-                Ok(_) => DIFFERS,
-                Err(_) => ABSENT,
-            };
-            (path, state)
-        })
+    let expected: Vec<CommittedDocument> = GENERATED_DOCUMENTS
+        .iter()
+        .map(|document| CommittedDocument { path: contracts_root().join(document.path), freshness: Freshness::ByteIdenticalToWhatTheRustRenders })
         .collect();
+    // Act
+    let actual: Vec<CommittedDocument> = atlas_contract::document::generated_files().into_iter().map(committed_document).collect();
     // Assert
-    assert_eq!(actual, expected);
+    assert_eq!(actual, expected, "run `cargo run -p atlas-contract --bin export_contract`");
 }
 
-fn contracts_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../contracts")
+fn committed_document((path, rendered): (PathBuf, String)) -> CommittedDocument {
+    let freshness = match std::fs::read_to_string(&path) {
+        Ok(committed) if committed == rendered => Freshness::ByteIdenticalToWhatTheRustRenders,
+        Ok(_) => Freshness::DiffersFromWhatTheRustRenders,
+        Err(_) => Freshness::NoCommittedFileAtThisPath,
+    };
+    CommittedDocument { path, freshness }
 }
 
 #[test]
@@ -59,7 +62,10 @@ fn the_exporter_asked_to_check_exits_clean_and_silent_while_every_document_is_cu
     // Act
     let run = exporter.output().expect("the export_contract binary runs");
     // Assert
-    assert_eq!(outcome(&run), (Some(CLEAN_EXIT), NOTHING.to_string(), NOTHING.to_string()));
+    assert_eq!(
+        outcome(&run),
+        ProcessOutcome { exit_code: Some(CLEAN_EXIT), stdout: NOTHING.to_string(), stderr: NOTHING.to_string() }
+    );
 }
 
 #[test]
@@ -70,15 +76,27 @@ fn the_exporter_refuses_an_unrecognised_argument_with_the_usage_line_rather_than
     // Act
     let run = exporter.output().expect("the export_contract binary runs");
     // Assert
-    assert_eq!(outcome(&run), (Some(MISUSE_EXIT), NOTHING.to_string(), USAGE_LINE.to_string()));
+    assert_eq!(
+        outcome(&run),
+        ProcessOutcome { exit_code: Some(MISUSE_EXIT), stdout: NOTHING.to_string(), stderr: USAGE_LINE.to_string() }
+    );
 }
 
-fn outcome(run: &Output) -> (Option<i32>, String, String) {
-    (
-        run.status.code(),
-        String::from_utf8_lossy(&run.stdout).into_owned(),
-        String::from_utf8_lossy(&run.stderr).into_owned(),
-    )
+/// `exit_code` is an `Option` because that is what a process status is: on
+/// Unix a signalled process has no code at all.
+#[derive(Debug, PartialEq)]
+struct ProcessOutcome {
+    exit_code: Option<i32>,
+    stdout: String,
+    stderr: String,
+}
+
+fn outcome(run: &Output) -> ProcessOutcome {
+    ProcessOutcome {
+        exit_code: run.status.code(),
+        stdout: String::from_utf8_lossy(&run.stdout).into_owned(),
+        stderr: String::from_utf8_lossy(&run.stderr).into_owned(),
+    }
 }
 
 #[test]

@@ -1,6 +1,11 @@
 # cargo-mutants, scoped to the contract crate (PRINCIPLES 3: 100 % mutation
-# coverage minus logical equivalents, every equivalent recorded HERE and
-# never in an inline comment).
+# coverage minus logical equivalents, every equivalent recorded in the tool's
+# own configuration and never in an inline comment).
+#
+# THIS FILE IS THE ONE STATEMENT OF THE HOUSE RULES for this tool. The
+# standing procedure in `server/Cargo.toml` carries the commands and points
+# here; `graph-types/.cargo/mutants.toml` adds only what is true of that
+# crate. Nothing below is repeated in either of them.
 #
 # WHY `.cargo/`: cargo-mutants 27 reads `.cargo/mutants.toml` and nothing
 # else. A `mutants.toml` at the package root is silently ignored -- the run

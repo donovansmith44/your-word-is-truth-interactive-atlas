@@ -1,9 +1,8 @@
-# cargo-mutants for the graph-types crate (PRINCIPLES 3: every surviving
-# mutant is killed by a test or recorded HERE as an equivalent with its
-# reason, never as an inline `#[mutants::skip]`).
-#
-# WHY `.cargo/`: cargo-mutants 27 reads `.cargo/mutants.toml` and nothing
-# else; a `mutants.toml` at the package root is silently ignored.
+# cargo-mutants for the graph-types crate. The house rules for this tool --
+# the `.cargo/` path, `--in-place`, narrowing a run with `-e`/`-F` and never
+# `-f`, the install line, and PRINCIPLES 3 itself -- are stated once, in
+# `server/.cargo/mutants.toml`. This file adds only what is true of THIS
+# crate: which files, which feature states, and its own equivalents.
 #
 # THE RUN IS TWO RUNS, from THIS directory, and the score is their UNION:
 #
@@ -18,11 +17,11 @@
 # misses in the OFF run, 20 in the ON run, every one of them an arm the other
 # run kills. A mutant is genuinely alive only when BOTH runs miss it.
 #
-# `--in-place` because `tests/toolchain_pin.rs` reads the repository's own
-# `rust-toolchain.toml`, which sits above this crate and so is absent from the
-# tree cargo-mutants would otherwise copy. `serde` and `openapi` are on in both
-# runs because they are the whole of `wire_form.rs` (both of its modules are
-# behind those cfgs); with the default feature set that file is empty.
+# `serde` and `openapi` are on in both runs because they are the whole of
+# `wire_form.rs` (both of its modules sit behind those cfgs); with the default
+# feature set that file is empty. This crate's own reason for `--in-place`:
+# `tests/toolchain_pin.rs` reads the repository's `rust-toolchain.toml`, which
+# sits above the tree cargo-mutants would otherwise copy.
 examine_globs = [
   "src/id.rs",
   "src/edge.rs",
