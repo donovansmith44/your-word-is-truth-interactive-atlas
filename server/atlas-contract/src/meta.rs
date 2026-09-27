@@ -14,7 +14,7 @@
 //! keeping this endpoint's own constants in lockstep with that file is a
 //! release-process discipline, the same as any other "generated from one
 //! source" pairing in this repo; see `versioning.feature`'s own scenario
-//! pinning `min_version`/`max_version` to "0.7.0"/"0.7.0" (D5; 0.6.0 D3; 0.5.0 LEX-1; 0.4.0 DB-4c, 0.3.0 DB-4b, 0.2.0 DB-4a, 0.1.0 before) for the drift-
+//! pinning `min_version`/`max_version` to "0.8.0"/"0.8.0" (CONTRACT-1a; 0.7.0 D5; 0.6.0 D3; 0.5.0 LEX-1; 0.4.0 DB-4c, 0.3.0 DB-4b, 0.2.0 DB-4a, 0.1.0 before) for the drift-
 //! failing mechanism the conformance corollary requires).
 
 use std::sync::Arc;
@@ -46,8 +46,8 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
 /// §2's semver law), min == max == the one version this codebase currently
 /// implements -- there is no "supports a range of prior versions" story
 /// yet; that becomes meaningful once a second AQC version ships.
-pub const MIN_SUPPORTED_VERSION: &str = "0.7.0";
-pub const MAX_SUPPORTED_VERSION: &str = "0.7.0";
+pub const MIN_SUPPORTED_VERSION: &str = "0.8.0";
+pub const MAX_SUPPORTED_VERSION: &str = "0.8.0";
 
 #[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
@@ -59,12 +59,21 @@ pub async fn contract() -> Json<wire::Contract> {
     })
 }
 
+/// The published contract itself, served from the same document
+/// `contracts/openapi.yaml` is generated from -- a consumer reads the
+/// running server's contract without reaching for the repository.
+#[utoipa::path(get, path = "/api/openapi.yaml", responses((status = 200, body = String, content_type = "application/yaml")), tag = "meta")]
+pub async fn openapi_yaml() -> ([(axum::http::HeaderName, &'static str); 1], String) {
+    ([(axum::http::header::CONTENT_TYPE, "application/yaml")], crate::document::openapi_yaml())
+}
+
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     use utoipa_axum::routes;
     utoipa_axum::router::OpenApiRouter::new()
         .routes(routes!(health))
         .routes(routes!(contract))
         .routes(routes!(sources))
+        .routes(routes!(openapi_yaml))
 }
 
 #[cfg(test)]
@@ -74,8 +83,8 @@ mod tests {
     #[tokio::test]
     async fn advertises_the_pinned_aqc_version_range() {
         let Json(body) = contract().await;
-        assert_eq!(body.min_version, "0.7.0");
-        assert_eq!(body.max_version, "0.7.0");
+        assert_eq!(body.min_version, "0.8.0");
+        assert_eq!(body.max_version, "0.8.0");
         assert_eq!((body.manifest_schema, body.section_schema_version), (1, 14));
     }
 }

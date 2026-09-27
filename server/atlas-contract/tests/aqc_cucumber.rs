@@ -314,7 +314,7 @@ fn then_every_frontier_is_a_relations_family(world: &mut AqcWorld) {
             assert!(EdgeKind::from_label(kind).is_some(), "edge_summary kind '{kind}' is not a relations! family label");
         }
     } else if let Some(kind) = world.body.get("kind").and_then(|v| v.as_str()) {
-        assert!(EdgeKind::from_label(kind).is_some(), "EdgePageOut kind '{kind}' is not a relations! family label");
+        assert!(EdgeKind::from_label(kind).is_some(), "EdgePage kind '{kind}' is not a relations! family label");
     } else {
         panic!("no frontier-bearing field (edge_summary or kind) on the last response: {}", world.body);
     }
@@ -343,7 +343,7 @@ fn then_round_trips(world: &mut AqcWorld) {
 
 #[then(expr = "every traversal target resolves to a live node")]
 async fn then_every_target_resolves(world: &mut AqcWorld) {
-    let entries = world.body["entries"].as_array().expect("EdgePageOut.entries must be an array");
+    let entries = world.body["entries"].as_array().expect("EdgePage.entries must be an array");
     assert!(!entries.is_empty(), "test needs at least one real entry to prove resolution over -- pick a richer seed if this fires");
     for entry in entries {
         let id = entry["node"]["id"].as_str().unwrap();
@@ -357,7 +357,7 @@ async fn then_bijection_witness(world: &mut AqcWorld, field: String) {
     assert_eq!(field, "edge");
     let kind = EdgeKind::from_label(&world.last_traversal_kind).expect("last TraversalQuery kind must be a real relations! family label");
     let inverse_label = dual(kind).label();
-    let entries = world.body["entries"].as_array().expect("EdgePageOut.entries must be an array").clone();
+    let entries = world.body["entries"].as_array().expect("EdgePage.entries must be an array").clone();
     assert!(!entries.is_empty(), "test needs at least one real entry to prove the bijection over");
     for entry in &entries {
         let target_id = entry["node"]["id"].as_str().unwrap();

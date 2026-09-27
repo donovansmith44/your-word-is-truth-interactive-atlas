@@ -1,8 +1,8 @@
 # AQC v0.1.0 -- FocusQuery(descriptor) -> Focus (spec §2, §3).
-# GET /api/node/{id} -- server/atlas-server/src/graph_handlers.rs::node_card.
+# GET /api/node/{id} -- server/atlas-contract/src/graph.rs::node_card.
 #
 # The Examples: table below is GENERATED, not hand-authored -- see
-# server/atlas-server/src/bins/export_aqc_examples.rs. It draws one seed id per
+# server/atlas-contract/src/bins/export_aqc_examples.rs. It draws one seed id per
 # NODE KIND the real committed graph materializes (spec §3: "every node kind
 # sampled from the graph"), verified live against that graph at export time
 # (a stale seed id fails the exporter loud, not silently). Re-running the
@@ -13,7 +13,7 @@ Feature: FocusQuery -- one node's card, by descriptor
   Scenario Outline: every sampled node kind resolves to a valid Focus card
     Given a node of kind "<kind>" with id "<id>"
     When I run FocusQuery for "<id>"
-    Then the response is a valid "NodeCardOut"
+    Then the response is a valid "NodeCard"
     And the response "id" field equals "<id>"
     And the response "kind" field equals "<kind>"
     And every frontier group is a relations! family

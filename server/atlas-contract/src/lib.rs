@@ -8,6 +8,7 @@ pub mod app;
 pub mod aqc_export;
 pub mod catechism;
 pub mod contents;
+pub mod document;
 pub mod error;
 pub mod events;
 pub mod graph;

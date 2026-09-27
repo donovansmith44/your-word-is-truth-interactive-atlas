@@ -14,3 +14,8 @@ atlas-etl = { path = "../atlas-etl" }
 anyhow = "1"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+
+[features]
+# CONTRACT-1a: `cargo run -p atlas-server --features dev-docs` serves the
+# Swagger UI; a released build has no docs page.
+dev-docs = ["atlas-contract/dev-docs"]

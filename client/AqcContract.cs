@@ -2,7 +2,7 @@ namespace BibleAtlas.Client;
 
 public static class AqcContract
 {
-    public const string ClientVersion = "0.7.0";
+    public const string ClientVersion = "0.8.0";
 
     public static bool Satisfies(ContractDto contract)
     {

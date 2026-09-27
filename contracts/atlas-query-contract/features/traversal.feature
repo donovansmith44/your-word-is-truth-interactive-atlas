@@ -6,14 +6,14 @@ Feature: TraversalQuery -- expand one frontier abstraction into traversable targ
   Scenario: a real edge kind expands to a page of live targets
     Given a node of kind "TextUnit" with id "text-unit:JHN.3.16"
     When I run TraversalQuery for "text-unit:JHN.3.16" frontier "cites"
-    Then the response is a valid "EdgePageOut"
+    Then the response is a valid "EdgePage"
     And the response "kind" field equals "cites"
     And every traversal target resolves to a live node
 
   Scenario: the bijection witness travels on the wire
     Given a node of kind "Event" with id "Event:ab_ur"
     When I run TraversalQuery for "Event:ab_ur" frontier "located-at"
-    Then the response is a valid "EdgePageOut"
+    Then the response is a valid "EdgePage"
     And every entry's "edge" id is present on the matching inverse-kind page of its own target node
 
   Scenario: pagination pages are windows over the total

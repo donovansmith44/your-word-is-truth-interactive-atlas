@@ -351,12 +351,12 @@ public class AqcSteps
         var json = _body.GetRawText();
         object? dto = shape switch
         {
-            "NodeCardOut" => JsonSerializer.Deserialize<NodeCardDto>(json, Wire.Options),
-            "EdgePageOut" => JsonSerializer.Deserialize<EdgePageDto>(json, Wire.Options),
-            "TextWindowOut" => JsonSerializer.Deserialize<TextWindowDto>(json, Wire.Options),
+            "NodeCard" => JsonSerializer.Deserialize<NodeCardDto>(json, Wire.Options),
+            "EdgePage" => JsonSerializer.Deserialize<EdgePageDto>(json, Wire.Options),
+            "TextWindow" => JsonSerializer.Deserialize<TextWindowDto>(json, Wire.Options),
             "Scene" => JsonSerializer.Deserialize<Scene>(json, Wire.Options),
-            "ContractOut" => JsonSerializer.Deserialize<ContractDto>(json, Wire.Options),
-            "ContentsOut" => JsonSerializer.Deserialize<ContentsOut>(json, Wire.Options),
+            "Contract" => JsonSerializer.Deserialize<ContractDto>(json, Wire.Options),
+            "Contents" => JsonSerializer.Deserialize<ContentsOut>(json, Wire.Options),
             _ => null,
         };
         Assert.NotNull(dto);

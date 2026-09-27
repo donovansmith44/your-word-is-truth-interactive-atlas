@@ -129,6 +129,11 @@ pub fn build_with_sources(
     let (api, _) = crate::openapi_router().split_for_parts();
     let api = api.with_state(state);
 
+    // A served docs page is a developer's convenience, not part of the API
+    // contract, so it ships only to a build that asks for it.
+    #[cfg(feature = "dev-docs")]
+    let api = api.merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api/openapi.json", crate::document::openapi()));
+
     let router = match static_dir {
         Some(dir) => {
             let index = dir.join("index.html");

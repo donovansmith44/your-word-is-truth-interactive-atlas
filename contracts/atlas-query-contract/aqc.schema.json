@@ -1,141 +1,1052 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bible-atlas.internal/contracts/atlas-query-contract/aqc.schema.json",
-  "title": "Atlas Query Contract (AQC) v0.1.0",
-  "description": "SNAPSHOT of today's actually-consumed wire shapes (spec §9 Q4, recommended scope). Every schema below is a field-for-field transcription of the real provider handler/DTO named in its own 'x-source' — this document does not redesign anything; it documents what already ships. Zero server behavior change accompanies this version; the ONLY new behavior in this batch is the /api/contract endpoint itself (ContractOut, §6 below).",
-  "version": "0.7.0",
-  "x-queries": {
-    "FocusQuery": {
-      "description": "FocusQuery(descriptor) -> Focus. The node-card payload for one descriptor. The snapshot does NOT include Frontier/EscapeHatches as separate wire fields — today's real endpoint returns edge_summary (kind -> count) as the frontier signal and no escape-hatch data at all; those richer shapes are §4/§5 CLIENT-side constructs, not yet part of the wire (spec §9 Q5 is owner-gated).",
-      "request": {
-        "method": "GET",
-        "path": "/api/node/{id}",
-        "x-source": "server/atlas-server/src/graph_handlers.rs::node_card"
-      },
-      "response": {
-        "$ref": "#/$defs/NodeCardOut"
-      },
-      "errors": {
-        "400": "bad_ref",
-        "404": "not_found"
-      }
-    },
-    "TraversalQuery": {
-      "description": "TraversalQuery(descriptor, frontierGroup, page?) -> [Focus refs]. Expands one frontier abstraction (an edge kind label off graph-types' relation manifest) into one page of traversable node references.",
-      "request": {
-        "method": "GET",
-        "path": "/api/node/{id}/edges",
-        "query": {
-          "kind": "string (required, an EdgeKind label e.g. 'cites'/'cited-by'/'mentions')",
-          "cursor": "usize (optional, opaque offset)",
-          "limit": "usize (optional, default 20, max 200)"
-        },
-        "x-source": "server/atlas-server/src/graph_handlers.rs::node_edges"
-      },
-      "response": {
-        "$ref": "#/$defs/EdgePageOut"
-      },
-      "errors": {
-        "400": "bad_ref | bad_kind",
-        "404": "not_found"
-      }
-    },
-    "TextWindowQuery": {
-      "description": "TextWindowQuery(ref, radius) -> verses. A window of {ref, text} reading-spine units, including per-verse annotation spans (words_of_christ is the first annotation layer; RED-1's alignment law: every span is within [0, text.length] of the SAME verse's text).",
-      "request": {
-        "method": "GET",
-        "path": "/api/text",
-        "query": {
-          "ref": "string (required, a dot-ref e.g. 'JHN.3.16', or a Concord citation 'BoC 7.2.1')",
-          "n": "usize (optional, default 1, max 500)",
-          "dir": "'onward' (default) | 'backward'",
-          "scope": "'verse' (default) | 'chapter'",
-          "corpus": "'bible' (default) | 'concord'"
-        },
-        "x-source": "server/atlas-server/src/graph_handlers.rs::text_window"
-      },
-      "response": {
-        "$ref": "#/$defs/TextWindowOut"
-      },
-      "errors": {
-        "400": "bad_ref | bad_dir | bad_corpus",
-        "404": "not_found"
-      }
-    },
-    "SceneQuery": {
-      "description": "SceneQuery(window) -> scene. The map composition query, in EITHER of its two real forms: a time-window scene or a scripture-ref scene. Both forms return the identical Scene shape (mode discriminates which).",
-      "request": {
-        "x-variants": [
-          {
-            "method": "GET",
-            "path": "/api/scene",
-            "query": {
-              "from": "i32 (required, year)",
-              "to": "i32 (required, year, >= from)"
-            },
-            "x-source": "server/atlas-server/src/handlers.rs::scene_time"
-          },
-          {
-            "method": "GET",
-            "path": "/api/scene/scripture",
-            "query": {
-              "ref": "string (required, a scripture ref)"
-            },
-            "x-source": "server/atlas-server/src/handlers.rs::scene_scripture"
-          }
-        ]
-      },
-      "response": {
-        "$ref": "#/$defs/Scene"
-      },
-      "errors": {
-        "400": "bad_window | bad_ref"
-      }
-    },
-    "ExplorationRoundTrip": {
-      "description": "ExplorationRoundTrip(descriptor) -- descriptor -> node -> descriptor identity (the G2 seam, wire-level). NodeCardOut.id is the bijection witness: encode_node_id(decode_node_id(s)) == s for every id this contract's FocusQuery/TraversalQuery ever hand back, and re-requesting FocusQuery with a card's own .id, or a TraversalQuery entry's own .node.id, always resolves the SAME node again. Not a separate wire shape — a LAW over NodeCardOut/EdgePageOut's own id fields.",
-      "x-source": "server/atlas-server/src/graph_wire.rs::encode_node_id / decode_node_id"
-    },
-    "ContentsQuery": {
-      "description": "ContentsQuery(corpus) -> the containment forest, two levels deep: books then chapters (bible), documents then articles (concord). D4 (owner, 2026-09-15: 'Contents is a tree ... stop at the level of article'). Read through the port from Container nodes and contains edges; a child's count is its own contains frontier (verses, paragraphs).",
-      "request": {
-        "method": "GET",
-        "path": "/api/contents/{corpus}",
-        "path-params": {
-          "corpus": "'bible' | 'concord'"
-        },
-        "x-source": "server/atlas-server/src/contents.rs::contents"
-      },
-      "response": {
-        "$ref": "#/$defs/ContentsOut"
-      },
-      "errors": {
-        "404": "not_found (an unknown corpus)"
-      }
-    }
-  },
   "$defs": {
-    "EdgeSummaryEntryOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgeSummaryEntryOut",
+    "BookMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "write_from": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "write_place": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "write_to": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "author"
+      ],
+      "type": "object"
+    },
+    "CanonBook": {
+      "description": "Verse counts per chapter for one book.",
+      "properties": {
+        "chapters": {
+          "items": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "code": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "chapters"
+      ],
+      "type": "object"
+    },
+    "CatechismItem": {
+      "additionalProperties": false,
+      "description": "`GET /api/catechism/item/{id}`'s own wire shape -- `part_title` alongside\nthe item's own fields so the client never needs a second fetch to show\n\"Baptism\" as this item's own chief-part context. `where_written` is\nomitted (not `null`) when absent -- same conditional-presence wire\nconvention `History.blurb`/`established`/`destroyed` already use.",
+      "properties": {
+        "explanation": {
+          "type": "string"
+        },
+        "explanation_heading": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "part_title": {
+          "type": "string"
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verses": {
+          "items": {
+            "$ref": "#/$defs/CatechismProofVerse"
+          },
+          "type": "array"
+        },
+        "where_written": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "part_title",
+        "explanation_heading",
+        "explanation",
+        "verses"
+      ],
+      "type": "object"
+    },
+    "CatechismProofVerse": {
+      "additionalProperties": false,
+      "description": "Batch F: one resolved proof verse -- `vref` + its own FULL KJV text\n(design-direction.md's house rendering, per requirement 4: \"THE\nSCRIPTURES -- the item's proof verses... full verse text per house\nrendering\" -- not a truncated preview the way `CrossRef.preview` is).\nBatch F2: `question` (omitted when absent, same convention as\n`CatechismRef.question`) names which question this proof verse came\nfrom, when it came from one -- `None` for Luther's own item-level\nembedded citations. This is requirement 4's own \"if cheap, highlight/\ndeep-link the question context\": a small caption next to the verse in\nTHE SCRIPTURES, cheap because it needs no new fetch or scroll machinery,\njust this one extra field already available at merge time.",
+      "properties": {
+        "question": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "vref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "vref",
+        "text"
+      ],
+      "type": "object"
+    },
+    "CatechismRef": {
+      "additionalProperties": false,
+      "description": "Batch F (\"the small catechism\"), extended Batch F2 (question-level\ncitations): one catechism item citing a verse/span, as embedded in\n`VerseDetail.catechism` AND returned (as a list) by `GET\n/api/catechism/{sref}` -- deliberately lean (id + display name + an\noptional question title, no preview text unlike `CrossRef`):\nrequirement 4's own UI description lists citing items (now\nquestion-aware, \"<Item> — <Question title>\") as plain named entries,\nnothing more, and the full item content is a separate fetch (`GET\n/api/catechism/item/{id}`, see `CatechismItem` below), made only once\nthe user actually opens one. `question` is omitted from the wire\nentirely (not null) when this hit came from Luther's own item-level\nembedded citation rather than a question -- same conditional-presence\nconvention `CatechismItem.where_written` below and `wire/places.rs`'s own\n`History.blurb` already use.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provenance": {
+          "description": "PROV-1 FIX ROUND 1 (review M-3): the `catechism` family's own\ndistinct provenance set, so a PASSAGE node's THE SMALL CATECHISM\nsection gets a \"?\" like a verse's. Same additive element-level move\nand same set-not-single-id reasoning as `CrossRef.provenance` --\nsee that field's doc comment.\n\nThe review judged deferring this half defensible because\n`catechism_for_span` took only `State<Arc<AtlasData>>`. Measured, it\nis not: `AppState` implements `FromRef` for `Arc<GraphService>` too,\nand six handlers in this crate already take BOTH extractors\n(`reading::verse` among them). So the second half was one extractor\naway, not a larger change, and it ships here.\n\nThis family is the genuinely MULTI-sourced one --\n`{concord-sc-overlap, curated-catechism}`, pinned -- which is exactly\nwhy the field is a `Vec` on both endpoints.\n\nGRANULARITY (fix round 2, review M-NEW-1): SECTION-level, carried on\nthe element because the endpoint is a bare array. Every element of\none response receives the identical set. Not per-row, and not to be\ndescribed as per-row -- see `CrossRef.provenance` for the full\nstatement and for why per-row is unavailable at these call sites.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "question": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "Chapter": {
+      "additionalProperties": false,
+      "properties": {
+        "book": {
+          "type": "string"
+        },
+        "chapter": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "verses": {
+          "items": {
+            "$ref": "#/$defs/Verse"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "book",
+        "chapter",
+        "verses"
+      ],
+      "type": "object"
+    },
+    "Contents": {
+      "additionalProperties": false,
+      "properties": {
+        "corpus": {
+          "type": "string"
+        },
+        "roots": {
+          "items": {
+            "$ref": "#/$defs/ContentsRoot"
+          },
+          "type": "array"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "corpus",
+        "version",
+        "roots"
+      ],
+      "type": "object"
+    },
+    "ContentsChild": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "description": "The child's own members: verses of a chapter, paragraphs of an article.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "`chapter` | `article`.",
+          "type": "string"
+        },
+        "ref": {
+          "description": "`GEN.1` for a chapter; `BoC 7.2.1` (its first paragraph) for an article.",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "ref",
+        "count"
+      ],
+      "type": "object"
+    },
+    "ContentsRoot": {
+      "additionalProperties": false,
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/$defs/ContentsChild"
+          },
+          "type": "array"
+        },
+        "group": {
+          "description": "`OT` | `NT` for a Bible book; absent for a Concord document.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "`book` | `document`.",
+          "type": "string"
+        },
+        "ref": {
+          "description": "The navigation target: the root's own first child's ref.",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "ref",
+        "children"
+      ],
+      "type": "object"
+    },
+    "Contract": {
+      "additionalProperties": false,
+      "properties": {
+        "manifest_schema": {
+          "description": "DB-4c: the served identity is the manifest's (spec §9): its schema\nand the sections' `PRAGMA user_version`. Additive beside the graph\nvocabulary's `artifact_format_version` (retired at DB-5).",
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_version": {
+          "type": "string"
+        },
+        "min_version": {
+          "type": "string"
+        },
+        "section_schema_version": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "min_version",
+        "max_version",
+        "manifest_schema",
+        "section_schema_version"
+      ],
+      "type": "object"
+    },
+    "CrossRef": {
+      "additionalProperties": false,
+      "properties": {
+        "preview": {
+          "type": "string"
+        },
+        "provenance": {
+          "description": "PROV-1 FIX ROUND 1 (review M-3): the attribution for the CROSS\nREFERENCES section these rows belong to, so a PASSAGE node's section\ngets a \"?\" like a verse's.\n\nGRANULARITY, SAID ONCE AND PLAINLY (fix round 2, review M-NEW-1):\nthis is a SECTION-level value carried on the ELEMENT because the\nendpoint is a bare array with no envelope to hang it on. Every\nelement of one response receives the identical set. It is NOT\nper-row attribution and must never be described as such -- a\ncomment in `reading::verse` did describe it that way and was\ncorrected. Per-row is not available here to be had:\n`graph.cross_refs_by_from` holds `atlas_core::data::CrossRef`, which\ncarries `target` and `votes` only; the graph-types row that does\ncarry `provenance` has it projected away before this call site sees\nit. Widening the companion index to keep it is a contract-shaped\ndecision this batch refused, and nothing here should imply it\nalready happened.\n\nTHE ORIGINAL DISCLOSURE GAVE A FALSE REASON and the review was right\nto say so: `GET /api/xrefs/{sref}` returns a bare `Vec<CrossRef>`,\nbut the array was never where the field goes -- the ELEMENT is a\nstruct with room for an additive field, which is precisely the move\nthis batch already made twice (`VerseEvent.provenance`,\n`EventAnalogue.provenance`). No existing field moves; the response\nstays an array.\n\nA SET (`Vec<String>`), never one collapsed id, and that is measured\nrather than stylistic: `atlas_core::xrefs::aggregate_span_xrefs`\nUNIONS the `cites` rows of every member verse of the span and sums\ntheir votes, so one `CrossRef` is an aggregate of several\nunderlying rows and there is no single row to attribute it to. The\nhonest key is the `cross_refs` family's own distinct set -- the\nidentical value `VerseDetail.cross_refs_provenance` already\ncarries, pinned as `{openbible.info-cross-references}` by\n`the_per_family_provenance_map_of_the_real_artifact_is_pinned`. A\nsecond source landing in `cites` would surface on every row instead\nof hiding behind the first, which is the leper lesson in a type.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "target": {
+          "type": "string"
+        },
+        "votes": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "target",
+        "votes",
+        "preview",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "DateClaim": {
+      "additionalProperties": false,
+      "description": "Batch E: one curated established/destroyed date claim, as served by\n`/api/place/{id}`. `when` reuses `TimeRange`'s own wire shape\n(`from_year`/`to_year`) rather than a separate \"year\" field -- the\nclient's `YearText.FormatRange` already collapses equal endpoints to a\nsingle-year display, so a genuine year and a range need no separate flag.",
+      "properties": {
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verses": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "when": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "when",
+        "verses"
+      ],
+      "type": "object"
+    },
+    "EdgeEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "edge": {
+          "description": "The bijection witness travels on the wire (M-A brief requirement 4):\nthe SAME id a caller sees here is what the target's own inverse-kind\npage carries back for this same connection.",
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
+        }
+      },
+      "required": [
+        "edge",
+        "node"
+      ],
+      "type": "object"
+    },
+    "EdgeKind": {
+      "enum": [
+        "contains",
+        "member-of",
+        "attested-in",
+        "attests",
+        "follows-in",
+        "precedes-in",
+        "dated-by",
+        "dates",
+        "located-at",
+        "site-of",
+        "mentions",
+        "mentioned-in",
+        "cites",
+        "cited-by",
+        "quotes",
+        "quoted-by",
+        "confesses",
+        "confessed-in",
+        "fulfilled-in",
+        "fulfills",
+        "prefigures",
+        "prefigured-by",
+        "named-after",
+        "namesake-of",
+        "justified-by",
+        "justifies",
+        "comments-on",
+        "commented-on-by",
+        "spoken-by",
+        "speech-of",
+        "spoken-at",
+        "site-of-speech",
+        "derived-from",
+        "derives",
+        "occurs-in",
+        "words",
+        "parent-of",
+        "child-of",
+        "participates-in",
+        "participants",
+        "analogous-to",
+        "catechism-link",
+        "corresponds-to",
+        "parallel",
+        "temporal-adjacency",
+        "partner-of"
+      ],
+      "type": "string"
+    },
+    "EdgePage": {
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/EdgeEntry"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "next": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "entries",
+        "version"
+      ],
+      "type": "object"
+    },
+    "EdgeSummaryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        }
+      },
       "required": [
         "kind",
         "count"
       ],
+      "type": "object"
+    },
+    "Era": {
+      "properties": {
+        "from_year": {
+          "$ref": "#/$defs/i32"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to_year": {
+          "$ref": "#/$defs/i32"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "from_year",
+        "to_year"
+      ],
+      "type": "object"
+    },
+    "EventAnalogue": {
+      "additionalProperties": false,
+      "description": "ATTEST-1: one end of an `Analogue` -- enough to render and to explore\n(`/api/event/{id}` takes this `id` straight back).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "provenance": {
+          "description": "Batch PROV-1: genuinely PER-ROW -- the `Analogue` row joining these\ntwo events carries its own provenance, and this is that value, not\neither end's node provenance and not the family's. An `Analogue` is\na curatorial CLAIM about two events (\"similar in form or content,\nnever two accounts of one event\"); attributing it to whoever\nsupplied the events would name the wrong asserter.",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "EventDetail": {
+      "additionalProperties": false,
+      "description": "`GET /api/event/{id}`'s own wire shape (Batch T requirement 4, \"EVENT\nnode popover\"): `title` (this event's own `Event::label`), `kind`\n(Batch T2: `\"event\"` | `\"general\"`, ALWAYS present -- the client's own\nsignal for which sections apply), `when`, every resolved place, every\nresolved witness (ALWAYS >=1 -- see `scene::witnesses_for`'s own doc\ncomment for the single-implicit-witness synthesis; requirement 4's\n\"single-witness events show the one passage, no parallel framing when\nn=1\" is a CLIENT-side rendering decision keyed off `witnesses.len()`,\nnot a server-side omission), and provenance (`robertson_section`/\n`ref_note`, each omitted, not null, when this event's own date/grouping\nneeded no note beyond the other).\n\nBatch T2: `when` is OMITTED (not null) for a `kind == \"general\"`\npassage -- the internal `Event::when` still holds\n`TimeRange::undated()` (a structurally-required field, see that\nfunction's own doc comment), but a general-kind passage has no\ndefensible date, so nothing here may ever present that sentinel to a\nreader as a real claim. `places` stays an always-present, possibly-\nempty array (unchanged pattern -- a general-kind passage's own\n`Event::places` is always empty by construction, so this needs no\nseparate gating).",
+      "properties": {
+        "acts_section": {
+          "description": "Batch T2 (Acts provenance): Acts's own sibling provenance field to\n`robertson_section` above -- see `atlas_core::data::Event::\nacts_section`'s own doc comment for why it's separate, not reused.\nOmitted (not null) when absent, same convention.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "analogues": {
+          "description": "ATTEST-1 (L4, \"Similar Accounts\"): events joined to this one by an\n`Analogue` row -- \"distinct events whose accounts are similar in\nform or content, NEVER two accounts of one event.\" Deliberately a\nSEPARATE field from `witnesses` rather than a flag on it: the\nowner's own report was that a similar-but-distinct story was being\nrendered as a parallel account, and one field cannot carry two\nclaims. Omitted when empty, same convention.",
+          "items": {
+            "$ref": "#/$defs/EventAnalogue"
+          },
+          "type": "array"
+        },
+        "atlas_section": {
+          "description": "Batch W1 (whole-Bible titled verse containers): the general,\nwhole-Bible sibling of `acts_section` above -- see\n`atlas_core::data::Event::atlas_section`'s own doc comment. Omitted\n(not null) when absent, same convention.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "kjv_superscription": {
+          "description": "Batch W3: the KJV's own literal-citation sibling of `robertson_section`/\n`acts_section`/`atlas_section` above -- see `atlas_core::data::Event::\nkjv_superscription`'s own doc comment. Omitted (not null) when absent,\nsame convention.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mentioned_in": {
+          "description": "ATTEST-1 (L3, \"Mentioned in\"): the verses that MENTION this event\nwithout narrating it -- canonical verse ids, ascending. Distinct\nfrom `witnesses` ON PURPOSE, and that distinction IS the batch: an\naccount NARRATES the event and belongs under PARALLEL ACCOUNTS; a\nmention merely REFERENCES it while narrating something else, and\nrendering one as the other is exactly the \"fundamental error\" the\nowner reported. An event whose whole scriptural basis is mentions\n(the Espousal of Mary) serves an EMPTY `witnesses` and a non-empty\nlist here -- a real node with a real frontier, never a fabricated\nparallel-accounts section.\n\nOMITTED (not `[]`) when empty, the same convention every optional\nfield above follows -- so an event with no mentions serves\nbyte-identically to before this batch.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mentions_provenance": {
+          "description": "Batch PROV-1: the same, for the \"Mentioned in\" section -- the\n`Mentions` rows naming THIS event.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "places": {
+          "items": {
+            "$ref": "#/$defs/EventPlace"
+          },
+          "type": "array"
+        },
+        "provenance": {
+          "description": "Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event\nnode's `provenance`, off `Node::provenance`\n(`event_world::event_provenance`: `\"theographic\"` for an imported\nevent, `\"curated\"` for one this project authored). The focus card's\nown attribution, and the TOTAL-CAPTURE HONESTY case in one field: a\nhand-authored event says `curated`, which resolves to the registry's\nown \"Our Own Curated Work\" category, and therefore cannot silently\nwear Theographic's clothes at the reader.",
+          "type": "string"
+        },
+        "ref_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "robertson_section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "when": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeRange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "witnesses": {
+          "items": {
+            "$ref": "#/$defs/EventWitness"
+          },
+          "type": "array"
+        },
+        "witnesses_provenance": {
+          "description": "Batch PROV-1: every distinct provenance id behind THIS EVENT's\nPARALLEL ACCOUNTS section -- the `Attests` rows for this event\nspecifically, not the family average.\n\nA list, and per-EVENT rather than per-family, even though the real\n`attests` table is single-sourced TODAY (`{event-witnesses}`,\nmeasured by `the_per_family_provenance_map_of_the_real_artifact_\nis_pinned`; ATTEST-1's `attestation-corrections` rows land on\n`mentions`/`analogue`, not here -- an earlier version of this\ncomment said otherwise and was wrong). Per-event is what keeps this\nTRUE if a second source ever lands in the table: a family average\nwould start lying the moment it did, and THE LEPER LESSON is exactly\nthat a hand-authored row must never be attributed to an importer.\n\nOmitted (not `[]`) when empty -- an event with no accounts (the\nEspousal of Mary) renders no PARALLEL ACCOUNTS section at all, so it\nneeds no attribution for one; same convention as `mentioned_in`\nabove, so such an event serves byte-identically to before this\nbatch but for the two unconditional fields.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "places",
+        "witnesses",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "EventPlace": {
+      "additionalProperties": false,
+      "description": "Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --\nid (to open a `PlaceNode`/target the map) + display name (so the client\nnever needs a second lookup just to label an explorable place row).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object"
+    },
+    "EventWitness": {
+      "additionalProperties": false,
+      "description": "Batch T requirement 4: one resolved witness -- \"book, verse-range,\ntranslation-mapped,\" the owner's own words verbatim, ALREADY resolved to\nthis app's one compiled translation (`atlas_core::translation::resolve`,\nreal fail-loud lookup, not a silent default) and grouped via the SAME\n`verse_groups_for` every other verse list on this wire already uses\n(`atlas_core::scene::witnesses_for` -- one function, so a heading's own\nanchor verse and this section's own witness list can never disagree).",
+      "properties": {
+        "book": {
+          "type": "string"
+        },
+        "ref_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "robertson_section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verse_groups": {
+          "items": {
+            "$ref": "#/$defs/VerseGroup"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "book",
+        "verse_groups"
+      ],
+      "type": "object"
+    },
+    "Heading": {
+      "additionalProperties": false,
+      "description": "Batch T requirement 5: one resolved pericope heading, folded onto its own\nanchor verse (`Verse.heading`) -- the SAME \"fold onto the already-\nshared fetch\" precedent `VerseDetail.catechism`/`.events` already\nestablish, here for the CHAPTER fetch instead of the verse-detail one\n(a reader rendering a whole chapter needs to know, per verse, whether a\nheading belongs above it -- a second per-verse round trip would be\nabsurd). `event_id` is what a click opens (a new `EventNode`, client-side);\n`title` is rendered directly, so the reader never needs a second fetch\njust to show the heading text itself.",
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "is_continuation": {
+          "description": "M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): true iff this\nverse is NOT the container's own true first-covered verse but a\nlater chapter its own coverage continues into -- lets the reader\nrender a quiet continuation marker BEFORE a click, the same\n\"affordance honesty travels as data, not inferred client-side\"\ndiscipline `kind` above already establishes. Always present\n(`false` for every ordinary, PRIMARY heading -- the overwhelming\nmajority), never omitted: unlike `heading` itself (conditional\npresence on `Verse`), once a heading exists at all its own\ncontinuation-ness is never in doubt.",
+          "type": "boolean"
+        },
+        "kind": {
+          "description": "Batch HOTFIX-4 requirement 6: see `HeadingEntry::kind`'s own doc\ncomment -- lets the reader's own heading rendering apply the quiet,\nnon-traversable styling BEFORE a click, for a general-kind heading.",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "title",
+        "kind",
+        "is_continuation"
+      ],
+      "type": "object"
+    },
+    "History": {
+      "additionalProperties": false,
+      "description": "Batch E: `/api/place/{id}`'s optional `history` payload, present only\nwhen this place has a curated `PlaceHistory` record at all (`when\ncurated`, per the brief). `display_name` and `blurb` are resolved\nagainst the request's `?from=&to=` window when given (else `display_name`\nfalls back to the place's own default `name` and `blurb` is omitted --\nsee `history::resolve_display_name`/`resolve_blurb`'s own doc comments);\n`established`/`destroyed` are window-independent static facts, always\nincluded verbatim whenever curated.",
+      "properties": {
+        "blurb": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "destroyed": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateClaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "established": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateClaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "display_name"
+      ],
+      "type": "object"
+    },
+    "KretzmannChapter": {
+      "additionalProperties": false,
+      "properties": {
+        "verses": {
+          "items": {
+            "$ref": "#/$defs/KretzmannChapterVerse"
+          },
+          "type": "array"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "verses",
+        "version"
+      ],
+      "type": "object"
+    },
+    "KretzmannChapterItem": {
+      "additionalProperties": false,
+      "description": "KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5,\nbatch-finalp1-brief.md ticket 2, SANCTIONED SERVER ADDITION): one\n`CommentaryItem` row within one verse of `GET /api/kretzmann/chapter/{cref}`'s\nown chapter-scoped response.",
+      "properties": {
+        "heading": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "KretzmannChapterVerse": {
+      "additionalProperties": false,
+      "description": "One verse's own commentary items, in document order. Only verses with\n>=1 item appear at all (mirrors `Kretzmann.razor`'s own retired\nclient-side \"if (items.Count > 0)\" filter).",
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/KretzmannChapterItem"
+          },
+          "type": "array"
+        },
+        "verse": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "verse",
+        "items"
+      ],
+      "type": "object"
+    },
+    "LandMask": {
+      "additionalProperties": false,
+      "description": "`GET /api/land-mask` (Batch R requirement 1, \"borders become part of the\nplate\"): the curated land/coastline mask (`data/curated/land-mask.toml`)\nused ONLY to clip polity washes so they never spill into open sea --\nstatic geometry, no query params, no time dependence (unlike\n`/api/polities`). `rings` is a flat `[[[lat,lon],...],...]` array -- every\nregion's own rings, already flattened at ETL time (see\n`AtlasData::land_mask`'s own doc comment) -- the client never needs\nregion names/ref_notes, only the raw geometry to build an SVG clipPath\nfrom.",
+      "properties": {
+        "rings": {
+          "items": {
+            "items": {
+              "items": false,
+              "prefixItems": [
+                {
+                  "format": "double",
+                  "type": "number"
+                },
+                {
+                  "format": "double",
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "rings"
+      ],
+      "type": "object"
+    },
+    "Landmark": {
+      "description": "A curated landmark label (river/sea/mountain/region) rendered always-on,\nnon-interactive, on the World map — the \"actual good and informative\nmap\" landmark-labels feature. `kind` is one of `\"water\"`, `\"mountain\"`,\n`\"region\"` (atlas-etl's `validate::run_landmarks` enforces the enum;\nthis struct itself accepts any string so a hand-authored curated file\nwith a typo fails ETL validation with a clear message rather than\nsilently refusing to deserialize with serde's own less-helpful error).\n\nBatch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,\n\"populated far field... broad standing regions... sized by geographic\nextent\"): `size` is an optional hint, one of `\"sm\"`, `\"md\"`, `\"lg\"`\n(also enum-checked by `validate::run_landmarks`, same friendlier-error\nreason as `kind`), `None` for every landmark curated before this batch.\nTwo effects, both in map.js: (1) font-size, mirroring BorderLayer's own\npolity-label `data-size` sm/md/lg tiers; (2) tier-0 visibility —\n`applyLabelTier` treats ANY landmark carrying an explicit size hint as a\ndeliberately-curated far-field context label, visible even at the FAR\n(zoomed-out) tier regardless of its `kind`'s own default tier rule,\nwhich otherwise only exempts `kind == \"water\"`. A landmark with no\n`size` at all keeps the exact PRE-Batch-C2 kind-based tier behavior —\nthis field only ever ADDS visibility, never removes any.",
       "properties": {
         "kind": {
           "type": "string"
         },
-        "count": {
-          "type": "integer",
-          "minimum": 0
+        "lat": {
+          "format": "double",
+          "type": "number"
+        },
+        "lon": {
+          "format": "double",
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "size": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
-      "additionalProperties": false
+      "required": [
+        "name",
+        "kind",
+        "lat",
+        "lon"
+      ],
+      "type": "object"
     },
-    "NodeCardOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::NodeCardOut",
+    "Narrative": {
+      "description": "An ordered chain of event ids (`legs`) that `scene::build_arrows` turns\ninto consecutive arrows. ETL validates legs are non-decreasing by\n`when.from_year`; scene composition trusts that invariant rather than\nre-deriving it.",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "legs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "color",
+        "legs"
+      ],
+      "type": "object"
+    },
+    "NarrativeAdjacentEvent": {
+      "additionalProperties": false,
+      "description": "Batch N: one event ADJACENT to a `NarrativePosition` (its own PRIOR or\nFOLLOWING leg) -- id/label/places/verse_groups, per requirement 1\nverbatim (\"each adjacent event carrying its id, label, place(s), and\nverse groups\"). `verse_groups` is built by\n`atlas_core::scene::to_scene_event` -- the SAME function every other\n\"an event's own verses on the wire\" case in this crate already calls\n(`reading::verse`'s own `VerseEvent` construction, `places::place`'s own\nevent list) -- so this\nis provably the same data a map arrow's own endpoint would show for the\nidentical event id, not a parallel re-derivation.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "places": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "verse_groups": {
+          "items": {
+            "$ref": "#/$defs/VerseGroup"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "places",
+        "verse_groups"
+      ],
+      "type": "object"
+    },
+    "NarrativeEventPositions": {
+      "additionalProperties": false,
+      "description": "Batch HOTFIX-4 requirement 1: `GET /api/narrative/event/{id}`'s own\nextended wire shape -- WAS a bare `Vec<NarrativePosition>` (Batch N);\nNOW an object, `narrative` carrying EXACTLY that same array (unchanged\nshape, unchanged rows, every existing narrative-scoped consumer keeps\nreading it unmodified) alongside the NEW `timeline` field. `timeline` is\nOMITTED (not `null`) entirely for a general-kind or unknown event id\n(requirement 2: \"general-kind containers... NOT part of time traversal\"),\npresent otherwise with `prior`/`following` each independently omitted\nonly at the atlas's own true first/last dated event (conditional\npresence, matching every other optional field on this wire). Every\nconsumer of the OLD bare-array shape is migrated in this same commit:\n`AtlasClient.NarrativeEventPositions` (client), `EventNode`/\n`INarrativeAware` (client), `PlaceCard.LoadNarrativePositions` (client,\nreads `.Narrative` — TRAVERSAL-1 logic unchanged), and the Playwright\nhelper call sites in `world-pin.spec.ts`/`popover-sections.spec.ts`.",
+      "properties": {
+        "narrative": {
+          "items": {
+            "$ref": "#/$defs/NarrativePosition"
+          },
+          "type": "array"
+        },
+        "timeline": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimelinePosition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "narrative"
+      ],
+      "type": "object"
+    },
+    "NarrativePosition": {
+      "additionalProperties": false,
+      "description": "Batch N: one (narrative, event) position a queried verse or event\ntouches -- `prior`/`following` omitted (not null) exactly at a\nnarrative's own first/last leg, same conditional-presence wire\nconvention `History.blurb`/`CatechismRef.question` etc. already\nuse throughout `wire/`. `event_id`/`event_label` are carried (map-\nfocus-sync + disambiguating two positions sharing one `narrative_id`)\neven though they restate something the CALLER usually already knows.",
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "event_label": {
+          "type": "string"
+        },
+        "following": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "narrative_id": {
+          "type": "string"
+        },
+        "narrative_name": {
+          "type": "string"
+        },
+        "prior": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "narrative_id",
+        "narrative_name",
+        "event_id",
+        "event_label"
+      ],
+      "type": "object"
+    },
+    "NodeCard": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,\n`None` until a match exists -- same additive-JSON, same held-client\ndisclosure as `wire::PlaceDetail::description`. This is the\nONLY \"detail\" surface a Person or PeopleGroup node has at all\n(`graph_wire.rs`'s own doc comment: no dedicated per-kind endpoint\nexists for either), so widening the generic card here is what\nactually reaches them; it reaches Place/PeopleGroup for free too\n(the same payload fact, whichever kind carries it).\n\nBatch CORP-1b: the SAME field, widened again -- a CommentaryItem's\nown prose (`NodePayload::CommentaryItem.text`) rides here too now\n(`atlas_graph::legacy::node_description`'s own updated match), for\nthe identical reason: no dedicated per-kind endpoint exists for\nCommentaryItem either, and the prose was already sitting on the\ncompiled graph payload, just never read.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "edge_summary": {
+          "items": {
+            "$ref": "#/$defs/EdgeSummaryEntry"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/NodeKind"
+        },
+        "label": {
+          "type": "string"
+        },
+        "person": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PersonLife",
+              "description": "D5: present for a Person only (omitted, never null, otherwise)."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
       "required": [
         "id",
         "kind",
@@ -144,644 +1055,67 @@
         "edge_summary",
         "version"
       ],
+      "type": "object"
+    },
+    "NodeKind": {
+      "enum": [
+        "TextUnit",
+        "Container",
+        "Event",
+        "Narrative",
+        "Place",
+        "Person",
+        "Anchor",
+        "Era",
+        "Polity",
+        "CatechismItem",
+        "Source",
+        "Translation",
+        "PeopleGroup",
+        "CommentaryItem",
+        "LexiconEntry"
+      ],
+      "type": "string"
+    },
+    "NodeRef": {
+      "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "string",
-          "description": "The wire node id, e.g. 'text-unit:JHN.3.16' or 'Event:ab_ur' — graph_wire::encode_node_id's own grammar."
+          "type": "string"
         },
         "kind": {
-          "type": "string",
-          "description": "The Rust NodeKind's Debug string, e.g. 'TextUnit', 'Event', 'Person'."
+          "$ref": "#/$defs/PositionKind"
         },
         "label": {
           "type": "string"
-        },
-        "provenance": {
-          "type": "string"
-        },
-        "edge_summary": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/EdgeSummaryEntryOut"
-          }
-        },
-        "version": {
-          "type": "string",
-          "description": "atlas_graph::version_hex(graph.version()) — a hex graph-version stamp, NOT the AQC version."
-        },
-        "description": {
-          "type": "string",
-          "description": "OMITTED (not null) when no description match exists. Present for Place/Person/PeopleGroup/CommentaryItem kinds."
-        },
-        "person": {
-          "$ref": "#/$defs/PersonLifeOut",
-          "description": "D5: present for kind 'Person' only; omitted otherwise."
         }
       },
-      "additionalProperties": false
-    },
-    "NodeRefOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::NodeRefOut",
       "required": [
         "id",
         "kind",
         "label"
       ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "label": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
+      "type": "object"
     },
-    "EdgeEntryOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgeEntryOut",
-      "required": [
-        "edge",
-        "node"
-      ],
+    "PersonLife": {
+      "additionalProperties": false,
+      "description": "D5 (owner, 2026-09-15; additive, AQC 0.7.0): a Person card's life facts,\nstraight off the payload. `birth_year`/`death_year` are the source's\nown life dates (75 / 64 of 3,067 persons carry one); `first_year`/\n`last_year` are the CORPUS-mention span, never a lifespan; `eternal`\nwith its Scripture `eternal_grounds` is the curated exception (\"God\nbecause he is eternal\") -- an eternal person shows no years at all.",
       "properties": {
-        "edge": {
-          "type": "string",
-          "description": "The bijection witness (M-A requirement 4): the SAME id the target's own inverse-kind page carries back for this connection."
-        },
-        "node": {
-          "$ref": "#/$defs/NodeRefOut"
-        }
-      },
-      "additionalProperties": false
-    },
-    "EdgePageOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::EdgePageOut",
-      "required": [
-        "kind",
-        "entries",
-        "version"
-      ],
-      "properties": {
-        "kind": {
-          "type": "string"
-        },
-        "entries": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/EdgeEntryOut"
-          }
-        },
-        "next": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 0
-        },
-        "version": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "WordsOfChristSpanOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/handlers.rs::WordsOfChristSpanOut",
-      "description": "Half-open CHAR-offset span [start,end) into the OWNING TextUnitOut/VerseOut's own .text — RED-1's alignment law: 0 <= start <= end <= text.length (char count) ALWAYS, for every verse this contract ever serves.",
-      "required": [
-        "start",
-        "end"
-      ],
-      "properties": {
-        "start": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "end": {
-          "type": "integer",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "TextUnitOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::TextUnitOut",
-      "required": [
-        "ref",
-        "text",
-        "words_of_christ",
-        "edge_summary"
-      ],
-      "properties": {
-        "ref": {
-          "type": "string"
-        },
-        "text": {
-          "type": "string"
-        },
-        "words_of_christ": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/WordsOfChristSpanOut"
-          }
-        },
-        "edge_summary": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/EdgeSummaryEntryOut"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "TextWindowOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::TextWindowOut",
-      "required": [
-        "units",
-        "version"
-      ],
-      "properties": {
-        "units": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/TextUnitOut"
-          }
-        },
-        "next": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "version": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "TimeRange": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/time.rs::TimeRange",
-      "required": [
-        "from_year",
-        "to_year"
-      ],
-      "properties": {
-        "from_year": {
-          "type": "integer"
-        },
-        "to_year": {
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
-    "VerseGroup": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::VerseGroup",
-      "required": [
-        "book",
-        "chapter",
-        "verses",
-        "count"
-      ],
-      "properties": {
-        "book": {
-          "type": "string"
-        },
-        "chapter": {
-          "type": "integer"
-        },
-        "verses": {
-          "type": "array",
+        "also_called": {
           "items": {
             "type": "string"
-          }
-        },
-        "count": {
-          "type": "integer",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "SceneEvent": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::SceneEvent",
-      "required": [
-        "id",
-        "label",
-        "when",
-        "verse_groups"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "label": {
-          "type": "string"
-        },
-        "when": {
-          "$ref": "#/$defs/TimeRange"
-        },
-        "verse_groups": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/VerseGroup"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "ScenePlace": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::ScenePlace",
-      "required": [
-        "id",
-        "name",
-        "display_name",
-        "lat",
-        "lon",
-        "brightness",
-        "events"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "display_name": {
-          "type": "string"
-        },
-        "lat": {
-          "type": "number"
-        },
-        "lon": {
-          "type": "number"
-        },
-        "brightness": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 255
-        },
-        "events": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SceneEvent"
-          }
-        },
-        "existence_from": {
-          "type": "integer"
-        },
-        "existence_to": {
-          "type": "integer"
-        },
-        "merged_ids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "QuietPlace": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::QuietPlace",
-      "required": [
-        "id",
-        "display_name",
-        "lat",
-        "lon",
-        "total_events"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "display_name": {
-          "type": "string"
-        },
-        "lat": {
-          "type": "number"
-        },
-        "lon": {
-          "type": "number"
-        },
-        "total_events": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "existence_from": {
-          "type": "integer"
-        },
-        "existence_to": {
-          "type": "integer"
-        },
-        "merged_ids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "SceneArrow": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::SceneArrow",
-      "required": [
-        "narrative",
-        "color",
-        "from_place",
-        "to_place",
-        "from_event",
-        "to_event",
-        "order"
-      ],
-      "properties": {
-        "narrative": {
-          "type": "string"
-        },
-        "color": {
-          "type": "string"
-        },
-        "from_place": {
-          "type": "string"
-        },
-        "to_place": {
-          "type": "string"
-        },
-        "from_event": {
-          "type": "string"
-        },
-        "to_event": {
-          "type": "string"
-        },
-        "order": {
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
-    "SceneNarrative": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::SceneNarrative",
-      "required": [
-        "id",
-        "name",
-        "color",
-        "legs_in_scene"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "color": {
-          "type": "string"
-        },
-        "legs_in_scene": {
-          "type": "integer"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Scene": {
-      "type": "object",
-      "x-source": "server/atlas-core/src/wire.rs::Scene",
-      "required": [
-        "mode",
-        "places",
-        "quiet_places",
-        "arrows",
-        "narratives"
-      ],
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": [
-            "time",
-            "scripture"
-          ]
-        },
-        "window": {
-          "$ref": "#/$defs/TimeRange"
-        },
-        "ref": {
-          "type": "string"
-        },
-        "places": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ScenePlace"
-          }
-        },
-        "quiet_places": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/QuietPlace"
           },
-          "description": "ALWAYS an array (never omitted); ALWAYS empty for mode='scripture' (E2/QUIET-1 law)."
-        },
-        "arrows": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SceneArrow"
-          }
-        },
-        "narratives": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/SceneNarrative"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "ContractOut": {
-      "type": "object",
-      "description": "GET /api/contract's own response -- the ONE new behavioral surface this batch adds. Advertises the AQC version range this running server supports (spec §2's versioning law).",
-      "x-source": "server/atlas-server/src/contract.rs::ContractOut",
-      "required": [
-        "min_version",
-        "max_version"
-      ],
-      "properties": {
-        "min_version": {
-          "type": "string",
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
-        },
-        "max_version": {
-          "type": "string",
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
-        },
-        "manifest_schema": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "DB-4c: the manifest.toml schema the served sections carry (spec 9: the served identity is the manifest's)."
-        },
-        "section_schema_version": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "DB-4c: every served section's PRAGMA user_version."
-        }
-      },
-      "additionalProperties": false
-    },
-    "ContentsChildOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/contents.rs::ContentsChildOut",
-      "required": [
-        "id",
-        "title",
-        "kind",
-        "ref",
-        "count"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string",
-          "enum": [
-            "chapter",
-            "article"
-          ]
-        },
-        "ref": {
-          "type": "string"
-        },
-        "count": {
-          "type": "integer",
-          "minimum": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    "ContentsRootOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/contents.rs::ContentsRootOut",
-      "required": [
-        "id",
-        "title",
-        "kind",
-        "ref",
-        "children"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string",
-          "enum": [
-            "book",
-            "document"
-          ]
-        },
-        "group": {
-          "type": "string",
-          "enum": [
-            "OT",
-            "NT"
-          ]
-        },
-        "ref": {
-          "type": "string"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ContentsChildOut"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "ContentsOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/contents.rs::ContentsOut",
-      "required": [
-        "corpus",
-        "version",
-        "roots"
-      ],
-      "properties": {
-        "corpus": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        },
-        "roots": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ContentsRootOut"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "PersonLifeOut": {
-      "type": "object",
-      "x-source": "server/atlas-server/src/graph_handlers.rs::PersonLifeOut",
-      "description": "D5: a Person card's life facts. birth_year/death_year are the source's own life dates; first_year/last_year are the corpus-mention span (never a lifespan); eternal (with Scripture eternal_grounds) is the curated exception -- no years on the card.",
-      "required": [
-        "gender",
-        "birth_year",
-        "death_year",
-        "first_year",
-        "last_year",
-        "eternal",
-        "eternal_grounds",
-        "also_called"
-      ],
-      "properties": {
-        "gender": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "array"
         },
         "birth_year": {
+          "format": "int32",
           "type": [
             "integer",
             "null"
           ]
         },
         "death_year": {
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "first_year": {
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "last_year": {
+          "format": "int32",
           "type": [
             "integer",
             "null"
@@ -791,19 +1125,1003 @@
           "type": "boolean"
         },
         "eternal_grounds": {
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "type": "array"
         },
-        "also_called": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "first_year": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gender": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_year": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
         }
       },
-      "additionalProperties": false
+      "required": [
+        "eternal",
+        "eternal_grounds",
+        "also_called"
+      ],
+      "type": "object"
+    },
+    "PersonRef": {
+      "additionalProperties": false,
+      "description": "M-D3 (owner ruling U5, \"in-text person and place name links,\nmentions-attested ONLY -- no free-text matching ever\"): one person the\ngraph's own `mentions` relation attests at a verse's own locus\n(`GraphService::persons_by_verse`, precomputed off `Graph.mentions`,\nNEVER a free-text/dictionary lookup against the verse's own rendered\nwords -- the exact \"Sin\"-the-city vs \"sin\"-the-noun hazard this\nwording guards against: a name is only ever offered as a link because\na CURATED edge attests that specific entity at that specific verse,\nnot because some word in the text happens to match a name string\nsomewhere in the graph). Deliberately lean, mirroring `PlaceRef`'s\nown \"no more than the consumer needs\" wire philosophy -- id (to open\nthe entity's own node popover) and display label (for the client's\nown plain-text search locating WHERE in the verse's already-attested\ntext this entity's own name appears, the SAME PlaceMentions.cs\nmechanism this batch generalizes rather than replaces -- attestation\nis what THIS field guards; locating the substring within an ALREADY-\nattested verse is a separate, later step, not a second matching\nhazard).",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object"
+    },
+    "PlaceDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_name": {
+          "description": "Batch E3 (requirement 2's quiet provenance note): the bare, stripped,\nun-aliased, un-period-resolved canonical name. ALWAYS COMPUTED --\nunlike `history`, which stays absent for a place with no curated\n`PlaceHistory` record at all (e.g. `cush-2`), this field's own\nresolution never depends on `history` existing -- but only ever\nSERIALIZED (`Some`) when it differs from whatever name is actually\nshowing this request (a curated period name OR a curated KJV alias\nresolved to something else). Omitted (`None`, not a repeat of the\ntitle) whenever this place's displayed name already IS its canonical\nname, so the client's own popover renders NO provenance note rather\nthan a vacuous \"known elsewhere as X\" that just repeats the title.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "description": "ENT-1a (owner order: \"we actually want meaningful information about\nwho or what someone is, having that be backed by scripture\"):\nEaston's Bible Dictionary (1897, public domain) prose, source-\nattested, `None` until a match exists -- never fabricated. ADDITIVE\nJSON (batch-ent1a-brief.md controller decision 3): the current\nclient ignores unknown/absent fields; the EntityProfile presentation\nhalf that renders this is HELD for the frontend-elegance brainstorm.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/SceneEvent"
+          },
+          "type": "array"
+        },
+        "history": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/History"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "lat": {
+          "format": "double",
+          "type": "number"
+        },
+        "lon": {
+          "format": "double",
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "lat",
+        "lon",
+        "events"
+      ],
+      "type": "object"
+    },
+    "PlaceRef": {
+      "additionalProperties": false,
+      "description": "Batch R requirement 5 (place-in-verse hover -> marker blink): one place\nmentioned in a verse, per `AtlasData::places_for_verse` (the reverse of\n`Place::verse_links`). Deliberately lean -- id (to target a map marker)\nand display name (for the client's own plain-text substring match against\nthe verse's rendered text, see `chapter`'s own doc comment for why there\nis no richer per-mention offset data) -- mirrors `QuietPlace`'s own\n\"no more than the consumer needs\" wire philosophy.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object"
+    },
+    "Polities": {
+      "additionalProperties": false,
+      "properties": {
+        "polities": {
+          "items": {
+            "$ref": "#/$defs/Polity"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "polities"
+      ],
+      "type": "object"
+    },
+    "Polity": {
+      "additionalProperties": false,
+      "properties": {
+        "color_key": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "fall": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PolityDelta"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "from": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "rings": {
+          "items": {
+            "items": {
+              "items": false,
+              "prefixItems": [
+                {
+                  "format": "double",
+                  "type": "number"
+                },
+                {
+                  "format": "double",
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "to": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "transition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PolityDelta",
+              "description": "Batch M requirement 1: this era's own delta metadata, OMITTED (not\nnull) when absent -- \"an uneventful boundary stays visible but gets\nthe minimal popover,\" so the client must be able to tell \"no\ntransition curated\" apart from \"transition curated with zero\nverses\" (the latter still shows the event/grounding-note sections,\njust no THE SCRIPTURES section — see `PolityDelta::verses`' own doc\ncomment). Mirrors `NarrativePosition.prior`/`.following`'s own\n`skip_serializing_if` precedent exactly."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "from",
+        "to",
+        "rings",
+        "color_key"
+      ],
+      "type": "object"
+    },
+    "PolityDelta": {
+      "additionalProperties": false,
+      "description": "Batch B2 (\"borders v2, the cartographer's edition\"): one polity-era row\non the wire, `{ id, name, from, to, rings, color_key }` per the batch\nbrief verbatim -- field names deliberately match\n`atlas_core::data::PolityEra`'s own (`from`/`to`, not `from_year`/\n`to_year`; see that struct's doc comment for why) so this is a plain\ncopy, not a rename. `id` is the POLITY's id (constant across every era\nrow this same polity contributes to a response), `name`/`from`/`to`/\n`rings` are this specific ERA's own fields, and `color_key` is the\npolity's own precomputed hash (`Polity::color_key` -- copied here\nunchanged, never rehashed per-request).\nBatch M requirement 1: the wire shape of one `atlas_core::data::PolityDelta`\n-- a plain field-for-field copy (`event`/`verses`/`ref_note`), same \"no\nrename, no reshaping\" convention `Polity` itself already follows for\n`PolityEra`.",
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "ref_note": {
+          "type": "string"
+        },
+        "verses": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "event",
+        "verses",
+        "ref_note"
+      ],
+      "type": "object"
+    },
+    "PositionKind": {
+      "enum": [
+        "TextUnit",
+        "Container",
+        "Event",
+        "Narrative",
+        "Place",
+        "Person",
+        "Anchor",
+        "Era",
+        "Polity",
+        "CatechismItem",
+        "Source",
+        "Translation",
+        "PeopleGroup",
+        "CommentaryItem",
+        "LexiconEntry",
+        "Edge"
+      ],
+      "type": "string"
+    },
+    "ProvenanceEntry": {
+      "description": "Batch PROV-1 (owner order 1, verbatim: \"one thing we definitely need\nfor EVERY PIECE OF DATA is the source from which it came. openbible,\netc.\"): THE JOIN ROW between a `ProvenanceId` as the graph actually\ncarries it -- the interned adapter-side string on every node and every\nauthored/imported row (`\"kjv\"`, `\"theographic\"`, `\"curated-eras\"`, ...)\n-- and the [`SourceEntry`] that names, describes and licenses it for a\nreader.\n\nThis table exists because the two vocabularies are genuinely DIFFERENT,\nand always were: an adapter's provenance id is an INGEST fact (which\npipeline stage asserted this row), while a source id is a PUBLICATION\nfact (which corpus a reader is being cited to). Several ingest ids\nlegitimately map to ONE source -- every hand-authored `curated-*` id is\nthis project's own work -- and rewriting the graph to carry publication\nids instead would erase that distinction. So the mapping is DECLARED\nhere, curated, and checked in BOTH directions\n(`atlas_etl::sources::validate_structure` for internal consistency;\n`atlas-graph/tests/provenance_registry_real_data.rs` for the real\nartifact), rather than guessed by string munging at the UI.\n\n[`confidence`](Self::confidence) is the reader-facing half of\n`atlas_graph_types::ingest::Confidence`, which the graph's own row\nstructs do NOT store (they carry the id alone -- and that enum's own\ndoc comment says why: confidence \"derives from its role at the\nregistry,\" and this IS the registry). Spelled exactly as that enum's\nvariants are: `\"CanonicalText\"` | `\"Curated\"` | `\"Imported\"` |\n`\"Derived\"`.",
+      "properties": {
+        "confidence": {
+          "description": "`atlas_graph_types::ingest::Confidence`, spelled as its own variant\nname -- see this struct's doc comment. Validated against the closed\nvocabulary by [`crate::sources::CONFIDENCE_VOCABULARY`].",
+          "type": "string"
+        },
+        "id": {
+          "description": "The `ProvenanceId` as the compiled graph carries it, verbatim.",
+          "type": "string"
+        },
+        "locator": {
+          "description": "The optional \"locator\" half of `ingest::Provenance`, at the level\nthis registry can honestly state it: WHAT INSIDE the named source\nthis id draws on (\"cross_references.txt\", \"Bible-Geocoding-Data\",\n...). Omitted (not an empty string) when the source's own\n`what_we_built` already says it and a locator would add nothing --\nnever a fabricated or padded string.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source": {
+          "description": "The [`SourceEntry::id`] this ingest id is a claim BY.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "confidence"
+      ],
+      "type": "object"
+    },
+    "QuietPlace": {
+      "additionalProperties": false,
+      "description": "Batch E2: one \"quiet\" place on a time-mode scene -- an event-bearing\nplace that isn't lit (in `Scene::places`) for this particular window.\nDeliberately LEAN -- no `events`/`verse_groups` at all, unlike\n`ScenePlace`: a quiet place has none active this window BY DEFINITION,\nso carrying an always-empty list would only bloat the payload.",
+      "properties": {
+        "display_name": {
+          "description": "Same window-resolution rules `ScenePlace::display_name` uses\n(`crate::history::resolve_display_name`) -- QUIET-1 requires this to\nnever contradict what the lit side would show for the SAME window\n(e.g. a place that crosses from quiet to lit as the window nudges by\na year must not also silently change its displayed name).",
+          "type": "string"
+        },
+        "existence_from": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/i32",
+              "description": "Batch H (existence gating): same fields, same rule, as\n`ScenePlace::existence_from`/`existence_to` -- see that doc comment.\nA quiet place is exactly where this matters most in practice (the\n\"ever-present graph\" shows a dot for every event-bearing place\nregardless of window, so a long-destroyed place's dot can otherwise\nsit on a plate captioned with a name it never bore at that time)."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "existence_to": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/i32"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "lat": {
+          "format": "double",
+          "type": "number"
+        },
+        "lon": {
+          "format": "double",
+          "type": "number"
+        },
+        "merged_ids": {
+          "description": "Batch HOTFIX-2: same field, same rule, as `ScenePlace::merged_ids`\nabove -- a quiet place is exactly where this can matter too (the\nsurvivor of a merge is quiet in any window neither absorbed record's\nown events intersect).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "total_events": {
+          "description": "This place's ALL-TIME event count (every event touching it, in ANY\nwindow) -- NOT scoped to the current scene's window, since a quiet\nplace has zero events IN this window by definition; a window-scoped\ncount would always read zero and tell the client nothing.",
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "display_name",
+        "lat",
+        "lon",
+        "total_events"
+      ],
+      "type": "object"
+    },
+    "Scene": {
+      "additionalProperties": false,
+      "properties": {
+        "arrows": {
+          "items": {
+            "$ref": "#/$defs/SceneArrow"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "narratives": {
+          "items": {
+            "$ref": "#/$defs/SceneNarrative"
+          },
+          "type": "array"
+        },
+        "places": {
+          "items": {
+            "$ref": "#/$defs/ScenePlace"
+          },
+          "type": "array"
+        },
+        "quiet_places": {
+          "description": "Batch E2 (the ever-present graph, user direction 2026-08-19: \"all of\nthe cities in our graph are available in any timerange rather than\njust loading those which are biblically active at the time\"): every\nevent-bearing place NOT in `places` for this window -- period\nrelevance is now expressed by GLOW (whether a place is in `places`),\nnot existence. QUIET-1: for every time-mode window, `places` union\n`quiet_places` equals the FULL event-bearing place set (fixed\ncardinality, derived from the data -- see\n`AtlasData::event_bearing_place_ids`), and the two are disjoint.\nALWAYS an array (never omitted) on both modes -- but always EMPTY for\nscripture-mode scenes, which never gain quiet places at all (chosen\nover an `Option`/omitted-key representation for wire regularity with\n`places` itself, which is likewise never optional; a client reading\n`quiet_places` needs no null-check either way).",
+          "items": {
+            "$ref": "#/$defs/QuietPlace"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "window": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeRange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "places",
+        "quiet_places",
+        "arrows",
+        "narratives"
+      ],
+      "type": "object"
+    },
+    "SceneArrow": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "from_event": {
+          "type": "string"
+        },
+        "from_place": {
+          "type": "string"
+        },
+        "narrative": {
+          "type": "string"
+        },
+        "order": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "to_event": {
+          "type": "string"
+        },
+        "to_place": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "narrative",
+        "color",
+        "from_place",
+        "to_place",
+        "from_event",
+        "to_event",
+        "order"
+      ],
+      "type": "object"
+    },
+    "SceneEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "verse_groups": {
+          "items": {
+            "$ref": "#/$defs/VerseGroup"
+          },
+          "type": "array"
+        },
+        "when": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "when",
+        "verse_groups"
+      ],
+      "type": "object"
+    },
+    "SceneNarrative": {
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "legs_in_scene": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "color",
+        "legs_in_scene"
+      ],
+      "type": "object"
+    },
+    "ScenePlace": {
+      "additionalProperties": false,
+      "properties": {
+        "brightness": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "display_name": {
+          "description": "Batch E: the period-true name resolved for this scene's own window\n(`crate::history::resolve_display_name`) -- `name`'s original,\nalways-present value unchanged; this is the ADDITIONAL field the\nclient renders on map labels / hover card title / arrow-tip text.\nEqual to `name` whenever this place has no curated history, or none\nof its curated ranges intersects the window.",
+          "type": "string"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/SceneEvent"
+          },
+          "type": "array"
+        },
+        "existence_from": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/i32",
+              "description": "Batch H (existence gating, deferred from E2): the curated\nestablished/destroyed bounds this place's name resolves against\n(`crate::history::resolve_existence`) -- plain years, never the full\nestablished/destroyed `PlaceDateClaim` (verses/note; that richer\nshape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire\ncost). Both omitted (not `null` -- see `skip_serializing_if`) when\nthis place has no curated history at all, or a curated history with\nneither claim -- the client's own gate never fires in that case\n(`existence_gates_label`'s own \"always labels\" reading). The map\nrenders every place regardless of these bounds (a lit place is only\never here because a real event justifies it THIS window -- see\n`scene::lit_places`); it's the client's own label -- never the\nmarker/dot -- that these bounds gate, and only in time mode (there is\nno window to test outside-ness against in scripture mode)."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "existence_to": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/i32"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "lat": {
+          "format": "double",
+          "type": "number"
+        },
+        "lon": {
+          "format": "double",
+          "type": "number"
+        },
+        "merged_ids": {
+          "description": "Batch HOTFIX-2 (same-place dedupe): ids of every OTHER compiled place\nrecord merged into this one at load time (`crate::merge::MERGE_PAIRS`)\n-- e.g. `[\"hazor_545\"]` on the place carrying id `hazor-1`. Wire\ntraceability only (no client behavior reads this today): the brief's\nown \"note the absorbed record's id in the wire for traceability\" --\nso a future investigation into \"why does hazor-1 carry events from\ntwo different upstream lineages\" doesn't have to go spelunking\nthrough source data by hand. Empty (and omitted -- `skip_serializing_if`,\nmatching `existence_from`/`_to`'s own lean-wire convention) for the\noverwhelming majority of places, which were never part of a merge.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "display_name",
+        "lat",
+        "lon",
+        "brightness",
+        "events"
+      ],
+      "type": "object"
+    },
+    "SourceCategory": {
+      "description": "One heading group on the Sources page (e.g. \"Scripture & Text\"). `id`\nis the join key [`SourceEntry::category`] points at.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "type": "object"
+    },
+    "SourceEntry": {
+      "description": "One row of LICENSES.md's own \"## Per-source table\", curated by hand\ninto page-ready prose (positive tone throughout, per the KJV inerrancy\ndirective; license wording copied from LICENSES.md, never\nembellished, per the citation-integrity rule).\n\n`licenses_row_key` is never rendered on the page -- it is a literal\nsubstring of this source's own row in LICENSES.md's Source column,\nread ONLY by `atlas_etl::sources::validate_against_licenses`'s own\nfail-loud drift check (requirement 3: \"a LICENSES.md row absent from\nthe page (or vice versa) fails the build or a test\").",
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "licenses_row_key": {
+          "type": "string"
+        },
+        "link": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "what_it_is": {
+          "type": "string"
+        },
+        "what_we_built": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "title",
+        "what_it_is",
+        "what_we_built",
+        "license",
+        "licenses_row_key"
+      ],
+      "type": "object"
+    },
+    "SourcesDocument": {
+      "description": "The whole compiled/curated shape. `data/curated/sources.toml`'s\n`[[category]]`/`[[source]]` arrays and `data/compiled/sources.json`'s\ntop-level object are the SAME shape (no per-format renaming), so one\nstruct serves both directions -- `atlas_etl::sources::parse_sources`\nreads the TOML shape, `gen_sources` writes this straight to JSON, and\n`GET /api/sources` serves that JSON back out unchanged.",
+      "properties": {
+        "categories": {
+          "items": {
+            "$ref": "#/$defs/SourceCategory"
+          },
+          "type": "array"
+        },
+        "provenances": {
+          "description": "Batch PROV-1: see [`ProvenanceEntry`]. `#[serde(default)]` so a\n`sources.json` written before this batch still deserializes (the\nsame additive-only discipline the HTTP wire follows) -- the\ncommitted one is regenerated with this table populated.",
+          "items": {
+            "$ref": "#/$defs/ProvenanceEntry"
+          },
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/SourceEntry"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "categories",
+        "sources"
+      ],
+      "type": "object"
+    },
+    "TextUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_summary": {
+          "description": "D3 (owner, 2026-09-15; additive, AQC 0.6.0): this unit's own\ninhabited frontier kinds and counts -- the SAME `edge_summary`\nshape `NodeCard` carries, so a corpus page can make ONLY units\nwith edges clickable (no dead clicks) without an N+1 of node-card\ncalls. The reader may ignore it.",
+          "items": {
+            "$ref": "#/$defs/EdgeSummaryEntry"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "words_of_christ": {
+          "description": "Batch RED-1: this unit's own aligned sub-verse red-letter spans --\nsee `wire::Verse.words_of_christ`'s own doc comment\n(identical shape/convention). Always empty for `corpus=concord`\n(a wholly different corpus, never the KJV -- decision 5's own\nsub-verse precision is KJV-specific by construction).",
+          "items": {
+            "$ref": "#/$defs/WordsOfChristSpan"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "text",
+        "words_of_christ",
+        "edge_summary"
+      ],
+      "type": "object"
+    },
+    "TextWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "next": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "units": {
+          "items": {
+            "$ref": "#/$defs/TextUnit"
+          },
+          "type": "array"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "units",
+        "version"
+      ],
+      "type": "object"
+    },
+    "TimeRange": {
+      "properties": {
+        "from_year": {
+          "$ref": "#/$defs/i32"
+        },
+        "to_year": {
+          "$ref": "#/$defs/i32"
+        }
+      },
+      "required": [
+        "from_year",
+        "to_year"
+      ],
+      "type": "object"
+    },
+    "TimelinePosition": {
+      "additionalProperties": false,
+      "description": "Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING\nfor one event id, independent of narrative membership -- see\n`atlas_core::narrative::TimelinePosition`'s own doc comment for the full\nordering rule. Reuses `NarrativeAdjacentEvent` (same shape, same\n\"id/label/places/verse_groups\" the narrative rows already send) -- one\ncomputation, one wire type, two consumers.",
+      "properties": {
+        "following": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prior": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Verse": {
+      "additionalProperties": false,
+      "properties": {
+        "heading": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Heading",
+              "description": "Batch T requirement 5: this verse's own pericope heading, when it is\na heading ANCHOR (`AtlasData::heading_for_verse`) -- omitted (not\nnull), matching `Polity.transition`/`.fall`'s own conditional-\npresence convention, since the overwhelming majority of verses never\nanchor a heading at all."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "persons": {
+          "description": "M-D3 (owner ruling U5): every person the graph's own `mentions`\nrelation attests at this verse's own locus, in wire (row-insertion)\norder -- see `PersonRef`'s own doc comment for the full\nmentions-attested-only reasoning. Always present, possibly empty\n(most verses mention zero persons by name) -- SAME conditional-\npresence-lives-client-side convention `places` immediately above\nalready establishes for this exact shape of field.",
+          "items": {
+            "$ref": "#/$defs/PersonRef"
+          },
+          "type": "array"
+        },
+        "places": {
+          "description": "Batch R requirement 5: every curated place whose OWN `verse_links`\nnames this verse, in place-id order (stable, not meaningful --\nthere is no \"primary mention\" concept). Always present, possibly\nempty (most verses geocode to zero places) -- conditional presence\nlives on the CLIENT side (a mini-reader renders no hoverable span at\nall when this is empty), not as an omitted wire key, matching every\nother \"always an array\" field in this app's own wire (e.g.\n`Scene.quiet_places`).",
+          "items": {
+            "$ref": "#/$defs/PlaceRef"
+          },
+          "type": "array"
+        },
+        "text": {
+          "type": "string"
+        },
+        "verse": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "words_of_christ": {
+          "description": "Batch RED-1: this verse's own aligned sub-verse red-letter spans\n(`GraphService.red_letter_spans`, precomputed once -- see that\nfield's own doc comment for why this ONE companion is not\ngraph-derivable), in ascending order. Always present, possibly\nempty -- SAME \"always an array\" convention `places`/`persons`\nabove already establish (most verses carry none). KJV-ONLY by\nconstruction (decision 5: sub-verse precision is KJV-specific;\nthis endpoint has never served any other translation -- ruling 5,\n\"M1 is KJV-only\").",
+          "items": {
+            "$ref": "#/$defs/WordsOfChristSpan"
+          },
+          "type": "array"
+        },
+        "xref_count": {
+          "description": "Batch M-D2 (owner's cross-reference superscript directive, closed on\nthe graph platform): this verse's own `cites` edge-summary COUNT at\nits TextUnit locus -- read straight off THE PORT (`GraphQuery::\nedge_summary`, design doc §5), the SAME generic query the `/api/node/\n{id}` handler itself calls (`graph::node_card`) -- never a\nsecond, bespoke tally. This is a genuinely NEW field (no bespoke\npredecessor existed), sourced NATIVELY from the generic contract from\nday one: the reader's own superscript markers ARE a query of the\ngraph, per the design's own P1/P4 laws, just batched onto the\nEXISTING per-chapter response (one HTTP round trip for a whole\nchapter) rather than issuing 20-30 individual `GET /api/node/{id}`\ncalls per chapter, which `client/IExplorableClient.cs`'s own concrete\nimplementation is what a SINGLE node's lookup uses (see that file's\nown doc comment + `GraphExplorableClientTests` for the direct,\nunbatched proof the same contract is correct in isolation). Always\npresent (0 for the overwhelming majority of verses, never omitted --\nthe client's own superscript decision is `count == 0` -> nothing,\nnever a missing-field special case).",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "verse",
+        "text",
+        "places",
+        "persons",
+        "xref_count",
+        "words_of_christ"
+      ],
+      "type": "object"
+    },
+    "VerseDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "book_meta": {
+          "$ref": "#/$defs/BookMeta"
+        },
+        "catechism": {
+          "description": "Batch F: catechism items citing this verse, via the SAME aggregation\ncore `GET /api/catechism/{sref}` uses for a passage\n(`AtlasData::catechism_items_for_span`, a single-verse span here) --\nfolded directly into this ALREADY-shared verse-detail fetch (rather\nthan requiring a second round trip) so `CatechismSeamSection`\n(client) reads it off the exact same memoized `AtlasClient.Verse`\ncall `VerseTextSectionProvider`/`CrossRefsSection` already share --\n\"one fetch, not three,\" now not four either. Always present, possibly\nempty (most verses cite none) -- conditional presence lives on the\nCLIENT side (no section at all when empty), matching every other\n\"always an array\" field in this app's own wire.",
+          "items": {
+            "$ref": "#/$defs/CatechismRef"
+          },
+          "type": "array"
+        },
+        "catechism_provenance": {
+          "description": "Batch PROV-1: the same, for THE SMALL CATECHISM section -- the\n`catechism` family's own distinct provenance set.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cross_refs": {
+          "items": {
+            "$ref": "#/$defs/CrossRef"
+          },
+          "type": "array"
+        },
+        "cross_refs_provenance": {
+          "description": "Batch PROV-1: every distinct provenance id behind the CROSS\nREFERENCES section -- the owner's own headline case (\"sourced from\nopenbible.com\"). A LIST, not a string, deliberately: the day a\nsecond cross-reference corpus lands, this section starts naming\nboth instead of quietly continuing to name the first. It is the\n`cross_refs` FAMILY's own distinct set (`ProvenanceIndex::\nby_family`), which is a true statement about every individual row\nexactly while the family is single-sourced -- pinned as such by\n`atlas-graph/tests/provenance_registry_real_data.rs`, and honest\neither way, since a family that gained a second source would serve\nboth here rather than pick one.\n\nAlways present, possibly empty (a verse with no cross references),\nsame \"always an array\" convention as `cross_refs` itself.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/VerseEvent"
+          },
+          "type": "array"
+        },
+        "provenance": {
+          "description": "Batch PROV-1 (owner order 1, \"the source from which it came\"): THIS\nVERSE's own source -- the provenance id of the `TextUnit` node\n`text` above was rendered from, read straight off `Node::provenance`\n(`kjv_adapter`: `\"kjv\"`). The focus card's own attribution: the\naffordance beside a verse says \"The King James Version\" because THIS\nfield said `kjv`, never because a client-side default assumed it.",
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "words_of_christ": {
+          "description": "Batch RED-1: this verse's own aligned sub-verse red-letter spans --\nsee `Verse.words_of_christ`'s own doc comment (identical shape/\nconvention, this endpoint's own single-verse sibling).",
+          "items": {
+            "$ref": "#/$defs/WordsOfChristSpan"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ref",
+        "text",
+        "words_of_christ",
+        "book_meta",
+        "events",
+        "cross_refs",
+        "catechism",
+        "provenance",
+        "cross_refs_provenance",
+        "catechism_provenance"
+      ],
+      "type": "object"
+    },
+    "VerseEvent": {
+      "additionalProperties": false,
+      "description": "The verse-detail endpoint's event shape: `SceneEvent`'s fields\n(id/label/when/verse_groups) plus the event's place ids, so the client\ncan jump from a verse to \"explore this event on the map\" without a\nsecond round trip.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "description": "Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): this EVENT-kind\nPASSAGE's own `Event::kind` (\"event\" | \"general\") -- same reason as\n`Heading::kind`, one surface over (a verse's own EVENT membership\nrow, not a reader heading): the client applies the quiet,\nnon-traversable styling to a general-kind row BEFORE the click, no\nsecond fetch needed to find out.",
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "places": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "provenance": {
+          "description": "Batch PROV-1 (owner order 1): THIS ROW's own source -- the\nprovenance id of the Event NODE this membership row points at, read\nstraight off `Node::provenance` (`event_world::event_provenance`:\n`\"theographic\"` for an imported event, `\"curated\"` for one this\nproject authored). Additive-only, the `words_of_christ` precedent --\nevery field above serves byte-identically to before this batch.\n\nDeliberately the TARGET NODE's provenance, not the `Attests` row's:\nthis row answers \"which event is this verse part of,\" and the honest\nattribution for THAT claim is whoever says the event exists. The\n`Attests` rows' own provenance is served where it is actually\nrendered -- `EventDetail::witnesses_provenance`, on the PARALLEL\nACCOUNTS section.\n\nThis field IS the genuinely mixed one: a verse belonging to both an\nimported event and a hand-authored one names BOTH sources on its own\nsection heading, which is the total-capture-honesty case at the\nverse frontier.",
+          "type": "string"
+        },
+        "verse_groups": {
+          "items": {
+            "$ref": "#/$defs/VerseGroup"
+          },
+          "type": "array"
+        },
+        "when": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeRange",
+              "description": "Batch HOTFIX-4 (drive-by fix, found while adding `kind` below):\nOMITTED (not the server's own internal undated placeholder) for a\ngeneral-kind passage -- matches `EventDetail.when`'s own\nestablished fabrication guard exactly (`to_scene_event`'s own `se.when`\nis `e.when` unconditionally, which for `kind == \"general\"` is\n`TimeRange::undated()`, never meant to be presented as a real date).\nDormant until now (this row's own CLIENT rendering only ever read\n`Id`/`Label`, never `When`), but a real gap against house doctrine\nnonetheless -- fixed here rather than left for a future reader of\nthis exact struct to copy the bad precedent forward."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "verse_groups",
+        "places",
+        "kind",
+        "provenance"
+      ],
+      "type": "object"
+    },
+    "VerseGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "book": {
+          "type": "string"
+        },
+        "chapter": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "count": {
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "verses": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "book",
+        "chapter",
+        "verses",
+        "count"
+      ],
+      "type": "object"
+    },
+    "WordsOfChristSpan": {
+      "additionalProperties": false,
+      "description": "Batch RED-1 (owner order 2026-08-25, \"Red letters on Jesus' words in\nevery translation\"): one sub-verse red-letter span, CHAR (not byte)\noffsets into this verse's own `text` field -- `graph.red_letter_spans`'s\nown doc comment has the full \"why char offsets\" (C# `string` indexing is\nUTF-16 code units; every character in this app's own KJV text is within\nthe Basic Multilingual Plane, so char count == UTF-16 code unit count\nhere, always). `start`/`end` are a half-open range (`text[start..end]`\nin C# `Substring(start, end-start)` terms) -- KJV display renders this\nEXACT sub-verse span; decision 5's own \"ONE render rule.\"",
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "i32": {
+      "format": "int32",
+      "type": "integer"
     }
-  }
+  },
+  "$id": "https://bible-atlas/contracts/atlas-query-contract/aqc.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
+  "title": "Atlas Query Contract -- shapes",
+  "version": "0.8.0"
 }

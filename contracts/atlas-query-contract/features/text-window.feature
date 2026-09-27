@@ -12,7 +12,7 @@ Feature: TextWindowQuery -- a window of verses with annotation spans
 
   Scenario: a single-verse window carries the real KJV text
     When I run TextWindowQuery for "JHN.3.16" radius 1
-    Then the response is a valid "TextWindowOut"
+    Then the response is a valid "TextWindow"
     And the response has exactly 1 unit
     And unit 1's "ref" field equals "JHN.3.16"
 

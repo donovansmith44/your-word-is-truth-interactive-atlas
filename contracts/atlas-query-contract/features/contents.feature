@@ -10,12 +10,12 @@ Feature: ContentsQuery -- the containment forest as a table of contents
 
   Scenario: the Bible's contents are books then chapters
     When I query "/api/contents/bible"
-    Then the response is a valid "ContentsOut"
+    Then the response is a valid "Contents"
     And the response "corpus" field equals "bible"
 
   Scenario: the Concord's contents are documents then articles
     When I query "/api/contents/concord"
-    Then the response is a valid "ContentsOut"
+    Then the response is a valid "Contents"
     And the response "corpus" field equals "concord"
 
   Scenario: an unknown corpus is not found

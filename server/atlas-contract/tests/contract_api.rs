@@ -24,8 +24,8 @@ async fn api_contract_advertises_the_pinned_aqc_version_range() {
     assert_eq!(response.status(), StatusCode::OK);
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(body["min_version"], "0.7.0");
-    assert_eq!(body["max_version"], "0.7.0");
+    assert_eq!(body["min_version"], "0.8.0");
+    assert_eq!(body["max_version"], "0.8.0");
     assert_eq!(body["manifest_schema"], 1);
     assert_eq!(body["section_schema_version"], 14);
 }
@@ -35,7 +35,7 @@ async fn api_contract_carries_no_other_fields() {
     let response = app().oneshot(Request::builder().uri("/api/contract").body(Body::empty()).unwrap()).await.unwrap();
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    let obj = body.as_object().expect("ContractOut must serialize as a JSON object");
+    let obj = body.as_object().expect("Contract must serialize as a JSON object");
     let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
     keys.sort();
     // DB-4c: + the manifest schema and the sections' user_version (additive, spec 9).
@@ -51,7 +51,7 @@ fn every_served_route_is_documented() {
         "/api/catechism/item/{id}", "/api/catechism/{sref}", "/api/place/{id}", "/api/narratives",
         "/api/narrative/event/{id}", "/api/event/{id}", "/api/eras", "/api/polities", "/api/landmarks",
         "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/text",
-        "/api/contents/{corpus}",
+        "/api/contents/{corpus}", "/api/openapi.yaml",
     ];
     // Act
     let doc = atlas_contract::openapi();
@@ -61,4 +61,22 @@ fn every_served_route_is_documented() {
     let mut want = expected.to_vec();
     want.sort_unstable();
     assert_eq!(paths, want);
+}
+
+#[tokio::test]
+async fn the_served_openapi_document_equals_the_committed_one() {
+    // Arrange
+    let app = app();
+    let committed = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../contracts/openapi.yaml")).expect("contracts/openapi.yaml must exist");
+    // Act
+    let served = get_text(&app, "/api/openapi.yaml").await;
+    // Assert
+    assert_eq!(served, committed);
+}
+
+async fn get_text(app: &axum::Router, path: &str) -> String {
+    let response = app.clone().oneshot(Request::builder().uri(path).body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK, "GET {path}");
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    String::from_utf8(bytes.to_vec()).expect("the body is UTF-8 text")
 }

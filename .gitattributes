@@ -26,6 +26,12 @@
 contracts/pacts/*.json      text eol=lf
 contracts/*/fixtures/*.json text eol=lf
 
+# CONTRACT-1a: `contracts/openapi.yaml` and the AQC schema derived from it are
+# compared byte for byte by `atlas-contract/tests/contract_generation.rs`,
+# which reads what the exporter wrote (LF) -- exactly the reason above.
+contracts/openapi.yaml      text eol=lf
+contracts/*/*.schema.json   text eol=lf
+
 # DB-4b: committed section blobs are binary; the manifest is LF like the
 # pacts (its root is over parsed values; the blob hashes are over the .zst
 # bytes, which autocrlf must never touch).

@@ -48,7 +48,6 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use atlas_graph_types::edge::{RelationId, SymRelationId};
-use atlas_graph_types::id::NodeKind;
 use axum::body::Body;
 use axum::http::Request;
 use http_body_util::BodyExt;
@@ -92,82 +91,15 @@ fn app() -> axum::Router {
 // THE GRAPH'S DECLARED VOCABULARY
 // ---------------------------------------------------------------------
 
-/// ONE definition site for the node-kind list, which is the whole point.
-///
-/// The macro's single list generates BOTH the published names AND an
-/// exhaustive `match` over `NodeKind`. Adding a variant to graph-types'
-/// `kind_tags!` manifest therefore fails to compile HERE, rather than
-/// silently omitting the new kind from the vocabulary the contract suite
-/// checks every other transport against. That is the same
-/// unrepresentable-drift discipline `relations!` itself uses, applied to
-/// the one list `relations!` does not generate.
-///
-/// The names are `format!("{:?}", ..)` because that is literally what the
-/// wire does (`graph::node_card`, `kind: format!("{:?}",
-/// node_id.kind)`) -- this publishes the vocabulary the server actually
-/// speaks, not a prettier one we would like it to speak.
-macro_rules! node_kind_manifest {
-    ($($v:ident),+ $(,)?) => {{
-        #[allow(dead_code)]
-        fn exhaustive(k: NodeKind) {
-            match k { $(NodeKind::$v => ()),+ }
-        }
-        vec![$(format!("{:?}", NodeKind::$v)),+]
-    }};
-}
-
+/// THE VOCABULARY IS READ FROM THE PUBLISHED DOCUMENT, not rebuilt here
+/// (spec D8). `contracts/openapi.yaml` is the one declaration of the
+/// graph's node kinds and edge families, `document::graph_vocabulary_json`
+/// is its derivation at the fixture's own path, and this recorder answers
+/// the suite's "read the graph's declared vocabulary" step from exactly
+/// that. `the_published_vocabulary_is_drawn_from_the_macros` below then
+/// proves the document still says what the macros say.
 fn graph_vocabulary() -> Value {
-    let node_kinds = node_kind_manifest![
-        TextUnit,
-        Container,
-        Event,
-        Narrative,
-        Place,
-        Person,
-        Anchor,
-        Era,
-        Polity,
-        CatechismItem,
-        Source,
-        Translation,
-        PeopleGroup,
-        CommentaryItem,
-        LexiconEntry,
-    ];
-
-    // These two DO come straight from the macro-generated tables -- there
-    // is no second list to drift from.
-    let relations: Vec<Value> = RelationId::ALL
-        .iter()
-        .map(|r| json!({ "name": format!("{r:?}"), "forward": r.forward_label(), "inverse": r.inverse_label() }))
-        .collect();
-    let symmetric: Vec<Value> = SymRelationId::ALL
-        .iter()
-        .map(|s| json!({ "name": format!("{s:?}"), "label": s.label() }))
-        .collect();
-
-    // THE ARTIFACT FORMAT WALL (fix round 1, review M-5).
-    //
-    // `artifact::load` refuses any graph.bin whose format_version is not
-    // exactly this number, so a bump refuses every holder of an older
-    // artifact outright -- the sharpest break this repo can make, and the
-    // one the gate could not see. Published here, from the same constant
-    // `load` enforces, so a 13 -> 14 bump now moves the vocabulary fixture
-    // and the semver gate classifies it MAJOR like any other removed
-    // guarantee.
-    // DB-5: the artifact is gone; the served identity is the manifest's
-    // (spec 9): its schema and every section's `PRAGMA user_version` --
-    // an unknown one is refused at open, exactly as an old graph.bin was.
-    let manifest_schema = atlas_graph::sqlite::manifest::MANIFEST_SCHEMA;
-    let section_schema_version = atlas_graph::sections::SECTION_SCHEMA_VERSION;
-
-    json!({
-        "manifest_schema": manifest_schema,
-        "section_schema_version": section_schema_version,
-        "node_kinds": node_kinds,
-        "relations": relations,
-        "symmetric": symmetric,
-    })
+    serde_json::from_str(&atlas_contract::document::graph_vocabulary_json()).expect("the published vocabulary is valid JSON")
 }
 
 // ---------------------------------------------------------------------
