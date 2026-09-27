@@ -34,3 +34,8 @@ tests/ux/playwright-report/
 # Publish output (dotnet publish client -o publish; see README's publish-path
 # section) -- a build artifact, never committed.
 publish/
+
+# IDE state and local publish output
+.idea/
+*.DotSettings.user
+publish-apphome/
