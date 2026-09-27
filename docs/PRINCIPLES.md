@@ -67,6 +67,16 @@ wrong; fix the spec.
     parallelism, incremental compilation) and the finding recorded. A
     ceiling is never raised to make a gate pass.
 
+14b. **Every review carries a D.R.Y. pass and the bar.** A task review, a
+    scoped re-review and the final whole-branch review each ask, as their own
+    step: is anything here declared twice (a type restating another, a list
+    or literal repeated, logic copied instead of called, a fact re-derived
+    that its declaration already holds)? And: would a Haskell programmer
+    scoff at it (a `String` where the vocabulary is closed, a tuple where a
+    record belongs, a partial function on input, a runtime check the type
+    system could carry)? A hit is a finding, at least Important, whatever
+    the plan said.
+
 ## Tests as documentation (owner, 2026-09-27)
 
 15. **Whole-body assertions.** A test asserts the entire result — the whole
