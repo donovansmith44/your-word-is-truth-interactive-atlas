@@ -152,7 +152,7 @@ pub struct GraphService {
     /// precomputed once here (not per-request), the same "O(1) per-verse
     /// lookup for a whole-chapter fetch" reasoning `bible_position` itself
     /// already established.
-    pub heading_index: BTreeMap<String, crate::heading::HeadingEntry>,
+    pub heading_index: BTreeMap<String, crate::heading::Heading>,
     /// M-C2 (requirement 2, unblocking `aggregate_span_xrefs`): FROM-verse
     /// dot-ref -> every `cites` row it authors, in the SAME
     /// `atlas_core::data::CrossRef { target, votes }` shape

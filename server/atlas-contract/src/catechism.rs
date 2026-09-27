@@ -43,7 +43,7 @@ pub async fn catechism_for_span(
     };
 
     let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
-    let out = data.catechism_items_for_span(&span).into_iter().map(|c| wire::CatechismRef::from_ref(c, &provenance)).collect();
+    let out = data.catechism_items_for_span(&span).into_iter().map(|c| wire::CatechismRef::attributed(c, &provenance)).collect();
     Ok(Json(out))
 }
 

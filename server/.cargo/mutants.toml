@@ -37,7 +37,7 @@
 examine_globs = [
   "atlas-contract/src/document.rs",
   "atlas-contract/src/error.rs",
-  "atlas-contract/src/wire/graph.rs",
+  "atlas-contract/src/wire/*.rs",
   "atlas-contract/src/bins/export_contract.rs",
   "atlas-contract/src/meta.rs", "atlas-contract/src/map.rs", "atlas-contract/src/reading.rs",
   "atlas-contract/src/catechism.rs", "atlas-contract/src/places.rs", "atlas-contract/src/events.rs",

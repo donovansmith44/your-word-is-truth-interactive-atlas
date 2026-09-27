@@ -8,7 +8,7 @@ use crate::history::{resolve_display_name, resolve_existence};
 use crate::refs::{ScriptureRef, VerseId};
 use crate::scene_source::SceneSource;
 use crate::time::TimeRange;
-use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneNarrative, ScenePlace, VerseGroup};
+use crate::wire::{QuietPlace, Scene, SceneArrow, SceneEvent, SceneMode, SceneNarrative, ScenePlace, VerseGroup};
 
 /// Time-mode scene: every event whose `when` intersects the window lights up
 /// all of its places; arrows connect each narrative's kept legs in order.
@@ -20,7 +20,7 @@ pub fn compose_time_scene(d: &dyn SceneSource, w: TimeRange) -> Scene {
     let quiet = quiet_places(d, &places, w);
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
-    Scene { mode: "time".into(), window: Some(w), sref: None, places, quiet_places: quiet, arrows, narratives }
+    Scene { mode: SceneMode::Time, window: Some(w), sref: None, places, quiet_places: quiet, arrows, narratives }
 }
 
 /// Scripture-mode scene: lit places are the union of (a) places touched by
@@ -88,7 +88,7 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
     // window exists here to resolve "not yet biblically active" against --
     // see wire.rs's own Scene::quiet_places doc comment for the "always an
     // array, always empty here" wire choice).
-    Scene { mode: "scripture".into(), window: None, sref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
+    Scene { mode: SceneMode::Scripture, window: None, sref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
 }
 
 /// Book matches book; Chapter matches book+chapter; Passage matches
@@ -249,11 +249,14 @@ pub fn to_scene_event(e: &Event) -> SceneEvent {
 /// already calls -- a witness's own verse list is provably rendered the
 /// identical way `to_scene_event`/`lit_places` already render any other
 /// verse list, not a parallel formatting path.
-#[derive(Debug, Clone, PartialEq)]
-pub struct ResolvedWitness {
+#[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EventWitness {
     pub book: String,
     pub verse_groups: Vec<VerseGroup>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
 }
 
@@ -266,14 +269,14 @@ pub struct ResolvedWitness {
 /// popover's own wire (`handlers::event`) call, so a heading's own anchor
 /// verse and the popover's own PARALLEL ACCOUNTS section can never disagree
 /// about how many witnesses an event has or which books they're in.
-pub fn witnesses_for(e: &Event) -> Vec<ResolvedWitness> {
+pub fn witnesses_for(e: &Event) -> Vec<EventWitness> {
     if !e.witnesses.is_empty() {
         return e
             .witnesses
             .iter()
             .map(|w| {
                 let verses = crate::translation::resolve(&w.translations, crate::translation::DEFAULT_TRANSLATION).unwrap_or(&[]);
-                ResolvedWitness {
+                EventWitness {
                     book: w.book.clone(),
                     verse_groups: verse_groups_for(verses, None),
                     ref_note: w.ref_note.clone(),
@@ -300,7 +303,7 @@ pub fn witnesses_for(e: &Event) -> Vec<ResolvedWitness> {
     }
     by_book
         .into_iter()
-        .map(|(book, verses)| ResolvedWitness {
+        .map(|(book, verses)| EventWitness {
             book,
             verse_groups: verse_groups_for(&verses, None),
             ref_note: None,
@@ -544,7 +547,7 @@ mod tests {
     fn scripture_scene_uses_links_not_dates() {
         let d = crate::data::demo_fixture();
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
-        assert_eq!(s.mode, "scripture");
+        assert_eq!(s.mode, SceneMode::Scripture);
         // hebron's real event (e5) is about GEN.23, not GEN.13.18, so it must
         // be lit solely via the geocoding link, i.e. a synthetic mention-*
         // pseudo-event, and its full shape must match the brief exactly.
@@ -569,7 +572,7 @@ mod tests {
         // place already lit by a real matching event.
         let d = crate::data::demo_fixture();
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("JOS").unwrap());
-        assert_eq!(s.mode, "scripture");
+        assert_eq!(s.mode, SceneMode::Scripture);
 
         let ids: Vec<&str> = s.places.iter().map(|p| p.id.as_str()).collect();
         assert!(ids.contains(&"gilgal") && ids.contains(&"jericho") && ids.contains(&"ai"));

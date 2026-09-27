@@ -1,7 +1,10 @@
 use serde::Serialize;
 
+use atlas_core::data::BookMeta;
 use atlas_core::time::TimeRange;
 use atlas_core::wire::VerseGroup;
+use atlas_core::xrefs::AggregatedXref;
+use atlas_graph::heading::Heading;
 
 use super::catechism::CatechismRef;
 
@@ -114,49 +117,6 @@ pub struct PersonRef {
     pub name: String,
 }
 
-/// Batch T requirement 5: one resolved pericope heading, folded onto its own
-/// anchor verse (`Verse.heading`) -- the SAME "fold onto the already-
-/// shared fetch" precedent `VerseDetail.catechism`/`.events` already
-/// establish, here for the CHAPTER fetch instead of the verse-detail one
-/// (a reader rendering a whole chapter needs to know, per verse, whether a
-/// heading belongs above it -- a second per-verse round trip would be
-/// absurd). `event_id` is what a click opens (a new `EventNode`, client-side);
-/// `title` is rendered directly, so the reader never needs a second fetch
-/// just to show the heading text itself.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Heading {
-    pub event_id: String,
-    pub title: String,
-    /// Batch HOTFIX-4 requirement 6: see `HeadingEntry::kind`'s own doc
-    /// comment -- lets the reader's own heading rendering apply the quiet,
-    /// non-traversable styling BEFORE a click, for a general-kind heading.
-    pub kind: String,
-    /// M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): true iff this
-    /// verse is NOT the container's own true first-covered verse but a
-    /// later chapter its own coverage continues into -- lets the reader
-    /// render a quiet continuation marker BEFORE a click, the same
-    /// "affordance honesty travels as data, not inferred client-side"
-    /// discipline `kind` above already establishes. Always present
-    /// (`false` for every ordinary, PRIMARY heading -- the overwhelming
-    /// majority), never omitted: unlike `heading` itself (conditional
-    /// presence on `Verse`), once a heading exists at all its own
-    /// continuation-ness is never in doubt.
-    pub is_continuation: bool,
-}
-
-// M-D3 (owner ruling R5): `impl From<&atlas_core::data::HeadingEntry> for
-// Heading` retired -- genuinely orphaned (grep-proven: no call site
-// anywhere in this workspace). `reading::chapter` has built `Heading`
-// directly from `graph.heading_index`'s own `atlas_graph::heading::
-// HeadingEntry` since M-C2; this conversion's OWN source type
-// (`atlas_core::data::HeadingEntry`, fed by `AtlasData::heading_for_verse`)
-// has had no live reader since, and carried no lockstep test of its own
-// (unlike `heading_for_verse` itself, which stays -- see that method's own
-// doc comment / heading.rs's own module doc comment for the "dead, tested
-// reference oracle" it remains). Recoverable from git history at the
-// commit immediately preceding this one.
-
 /// Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
 /// every translation"): one sub-verse red-letter span, CHAR (not byte)
 /// offsets into this verse's own `text` field -- `graph.red_letter_spans`'s
@@ -266,15 +226,6 @@ pub struct VerseDetail {
     // the richer id-keyed EVENT fetch that node also uses).
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct BookMeta {
-    pub author: String,
-    pub write_place: Option<String>,
-    pub write_from: Option<i32>,
-    pub write_to: Option<i32>,
-}
-
 /// The verse-detail endpoint's event shape: `SceneEvent`'s fields
 /// (id/label/when/verse_groups) plus the event's place ids, so the client
 /// can jump from a verse to "explore this event on the map" without a
@@ -370,4 +321,10 @@ pub struct CrossRef {
     /// second source landing in `cites` would surface on every row instead
     /// of hiding behind the first, which is the leper lesson in a type.
     pub provenance: Vec<String>,
+}
+
+impl CrossRef {
+    pub(crate) fn attributed(xref: AggregatedXref, provenance: &[String]) -> Self {
+        CrossRef { target: xref.target, votes: xref.votes, preview: xref.preview, provenance: provenance.to_vec() }
+    }
 }

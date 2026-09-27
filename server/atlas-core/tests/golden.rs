@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 
 fn sample_scene() -> Scene {
     Scene {
-        mode: "time".into(),
+        mode: SceneMode::Time,
         window: Some(TimeRange::new(-1450, -1400).unwrap()),
         sref: None,
         places: vec![ScenePlace {

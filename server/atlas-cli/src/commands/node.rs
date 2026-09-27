@@ -54,7 +54,7 @@ fn resolve(graph: &GraphService, id_raw: &str) -> Result<ResolvedCard, CliError>
     let snap = graph.snapshot();
     let node = snap.node(&node_id).ok_or_else(|| not_found_err(id_raw))?;
 
-    let (label, _kind) = describe_node(&node_id, &snap);
+    let label = describe_node(&node_id, &snap);
     let summary = snap.edge_summary(&Position::Node(node_id.clone()));
 
     Ok(ResolvedCard {

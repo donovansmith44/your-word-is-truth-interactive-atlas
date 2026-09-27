@@ -1,7 +1,10 @@
 use serde::Serialize;
 
+use atlas_core::narrative::{NarrativeAdjacentEvent, TimelinePosition};
+use atlas_core::scene::EventWitness;
 use atlas_core::time::TimeRange;
-use atlas_core::wire::VerseGroup;
+
+use super::reading::PlaceRef;
 
 /// Batch HOTFIX-4 requirement 1: `GET /api/narrative/event/{id}`'s own
 /// extended wire shape -- WAS a bare `Vec<NarrativePosition>` (Batch N);
@@ -46,62 +49,6 @@ pub struct NarrativePosition {
     pub following: Option<NarrativeAdjacentEvent>,
 }
 
-// M-D3 (owner ruling R5): `impl From<atlas_core::narrative::NarrativePosition>
-// for NarrativePosition` retired -- genuinely orphaned (grep-proven: no
-// call site). `events::narrative_event_positions` has built
-// `NarrativePosition` directly, from the graph's own succession-edge
-// topology, since M-B; this conversion's OWN source type
-// (`atlas_core::narrative::NarrativePosition`, produced only by the
-// now-retired `positions_for_events`) has had no live producer since.
-// Recoverable from git history at the commit immediately preceding this
-// one.
-
-/// Batch N: one event ADJACENT to a `NarrativePosition` (its own PRIOR or
-/// FOLLOWING leg) -- id/label/places/verse_groups, per requirement 1
-/// verbatim ("each adjacent event carrying its id, label, place(s), and
-/// verse groups"). `verse_groups` is built by
-/// `atlas_core::scene::to_scene_event` -- the SAME function every other
-/// "an event's own verses on the wire" case in this crate already calls
-/// (`reading::verse`'s own `VerseEvent` construction, `places::place`'s own
-/// event list) -- so this
-/// is provably the same data a map arrow's own endpoint would show for the
-/// identical event id, not a parallel re-derivation.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct NarrativeAdjacentEvent {
-    pub id: String,
-    pub label: String,
-    pub places: Vec<String>,
-    pub verse_groups: Vec<VerseGroup>,
-}
-
-impl From<atlas_core::narrative::NarrativeAdjacentEvent> for NarrativeAdjacentEvent {
-    fn from(e: atlas_core::narrative::NarrativeAdjacentEvent) -> Self {
-        NarrativeAdjacentEvent { id: e.id, label: e.label, places: e.places, verse_groups: e.verse_groups }
-    }
-}
-
-/// Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
-/// for one event id, independent of narrative membership -- see
-/// `atlas_core::narrative::TimelinePosition`'s own doc comment for the full
-/// ordering rule. Reuses `NarrativeAdjacentEvent` (same shape, same
-/// "id/label/places/verse_groups" the narrative rows already send) -- one
-/// computation, one wire type, two consumers.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct TimelinePosition {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub prior: Option<NarrativeAdjacentEvent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub following: Option<NarrativeAdjacentEvent>,
-}
-
-impl From<atlas_core::narrative::TimelinePosition> for TimelinePosition {
-    fn from(p: atlas_core::narrative::TimelinePosition) -> Self {
-        TimelinePosition { prior: p.prior.map(Into::into), following: p.following.map(Into::into) }
-    }
-}
-
 /// `GET /api/event/{id}`'s own wire shape (Batch T requirement 4, "EVENT
 /// node popover"): `title` (this event's own `Event::label`), `kind`
 /// (Batch T2: `"event"` | `"general"`, ALWAYS present -- the client's own
@@ -131,7 +78,7 @@ pub struct EventDetail {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub when: Option<TimeRange>,
-    pub places: Vec<EventPlace>,
+    pub places: Vec<PlaceRef>,
     pub witnesses: Vec<EventWitness>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
@@ -214,40 +161,6 @@ pub struct EventDetail {
     /// `Mentions` rows naming THIS event.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mentions_provenance: Vec<String>,
-}
-
-/// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
-/// id (to open a `PlaceNode`/target the map) + display name (so the client
-/// never needs a second lookup just to label an explorable place row).
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct EventPlace {
-    pub id: String,
-    pub name: String,
-}
-
-/// Batch T requirement 4: one resolved witness -- "book, verse-range,
-/// translation-mapped," the owner's own words verbatim, ALREADY resolved to
-/// this app's one compiled translation (`atlas_core::translation::resolve`,
-/// real fail-loud lookup, not a silent default) and grouped via the SAME
-/// `verse_groups_for` every other verse list on this wire already uses
-/// (`atlas_core::scene::witnesses_for` -- one function, so a heading's own
-/// anchor verse and this section's own witness list can never disagree).
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct EventWitness {
-    pub book: String,
-    pub verse_groups: Vec<VerseGroup>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ref_note: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub robertson_section: Option<String>,
-}
-
-impl From<atlas_core::scene::ResolvedWitness> for EventWitness {
-    fn from(w: atlas_core::scene::ResolvedWitness) -> Self {
-        EventWitness { book: w.book, verse_groups: w.verse_groups, ref_note: w.ref_note, robertson_section: w.robertson_section }
-    }
 }
 
 /// ATTEST-1: one end of an `Analogue` -- enough to render and to explore

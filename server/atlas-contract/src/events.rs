@@ -201,8 +201,8 @@ pub async fn narrative_event_positions(
                 narrative_name,
                 event_id: id.clone(),
                 event_label: event_label.clone(),
-                prior: prior.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)).map(Into::into),
-                following: following.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)).map(Into::into),
+                prior: prior.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)),
+                following: following.and_then(|pid| atlas_core::narrative::adjacent_event(src, &pid)),
             }
         })
         .collect();
@@ -223,9 +223,9 @@ pub async fn narrative_event_positions(
     // DB-3: through the port (`GraphService::temporal_neighbors_of`):
     // membership from the chronology order, adjacency from the
     // temporal-adjacency edges, direction from that order.
-    let timeline = graph.temporal_neighbors_of(&id).map(|(prior, following)| wire::TimelinePosition {
-        prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
-        following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)).map(Into::into),
+    let timeline = graph.temporal_neighbors_of(&id).map(|(prior, following)| atlas_core::narrative::TimelinePosition {
+        prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)),
+        following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)),
     });
 
     Ok(Json(wire::NarrativeEventPositions { narrative, timeline }))
@@ -274,12 +274,12 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .places
         .iter()
         .filter_map(|pid| atlas_graph::legacy::place_from_node(&atlas_graph::event_world::place_stub_node_id(pid), &snap))
-        .map(|p| wire::EventPlace {
+        .map(|p| wire::PlaceRef {
             id: p.id.clone(),
             name: resolve_display_name(&p.name, data.place_history_for(&p.id), window, data.place_name_alias_for(&p.id)),
         })
         .collect();
-    let witnesses = atlas_core::scene::witnesses_for(e).into_iter().map(wire::EventWitness::from).collect();
+    let witnesses = atlas_core::scene::witnesses_for(e);
     // Batch T2: never surface the undated() sentinel to the wire for a
     // general-kind passage -- see EventDetail's own doc comment.
     let when = window;

@@ -41,21 +41,22 @@ use atlas_graph_types::node::{EventWitnessPayload, NodePayload};
 use crate::kjv_adapter::KJV_TRANSLATION;
 
 /// Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus
-/// ONE field it does not carry -- `continuation` (M-D1 requirement 1,
+/// ONE field it does not carry -- `is_continuation` (M-D1 requirement 1,
 /// CHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading
-/// anchored at one verse, `continuation` true iff this verse is NOT the
+/// anchored at one verse, `is_continuation` true iff this verse is NOT the
 /// container's own true first-covered verse, but a LATER chapter this same
 /// container's coverage continues into. The atlas-core original has no
 /// counterpart field (this module's own doc comment already discloses why
 /// continuation headings are graph-side only: the atlas-core path is a
 /// dead, tested reference oracle for the base anchor law, never a live
 /// consumer this new law needs to reach).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HeadingEntry {
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Heading {
     pub event_id: String,
     pub title: String,
     pub kind: String,
-    pub continuation: bool,
+    pub is_continuation: bool,
 }
 
 type Precedence = (u8, u8, Reverse<i32>, Reverse<i32>, Reverse<String>);
@@ -257,10 +258,10 @@ pub fn narrative_leg_event_ids(graph: &Graph) -> BTreeSet<String> {
 /// precedence tuple), so continuations can only ever FILL gaps, never
 /// contest an already-decided verse. This is what keeps "decisive rule
 /// still yields exactly one label" true even with continuations in play.
-pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPlacement>) -> BTreeMap<String, HeadingEntry> {
+pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPlacement>) -> BTreeMap<String, Heading> {
     let narrative_legs = narrative_leg_event_ids(graph);
-    let mut winners: BTreeMap<String, (Precedence, HeadingEntry)> = BTreeMap::new();
-    let mut continuation_candidates: Vec<(String, Precedence, HeadingEntry)> = Vec::new();
+    let mut winners: BTreeMap<String, (Precedence, Heading)> = BTreeMap::new();
+    let mut continuation_candidates: Vec<(String, Precedence, Heading)> = Vec::new();
 
     for (id, node) in &graph.nodes {
         if id.kind != NodeKind::Event {
@@ -298,13 +299,13 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
                 Some((incumbent, _)) => prec > *incumbent,
             };
             if should_replace {
-                let entry = HeadingEntry { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), continuation: false };
+                let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), is_continuation: false };
                 winners.insert(anchor, (prec.clone(), entry));
             }
         }
 
         for cont in continuation_candidates_for(verses, witnesses) {
-            let entry = HeadingEntry { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), continuation: true };
+            let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), is_continuation: true };
             continuation_candidates.push((cont, prec.clone(), entry));
         }
     }
@@ -320,7 +321,7 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
     for (verse, prec, entry) in continuation_candidates {
         let should_replace = match winners.get(&verse) {
             None => true,
-            Some((_, existing)) if !existing.continuation => false,
+            Some((_, existing)) if !existing.is_continuation => false,
             Some((incumbent, _)) => prec > *incumbent,
         };
         if should_replace {

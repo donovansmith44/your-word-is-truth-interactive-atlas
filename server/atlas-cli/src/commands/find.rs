@@ -52,7 +52,7 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
     ];
     for (kind_name, kind) in kinds {
         for id in &graph.ids_of_kind(kind) {
-            let (label, _) = describe_node(id, &snap);
+            let label = describe_node(id, &snap);
             if label.to_lowercase().contains(&needle) {
                 out.push(Hit { kind: kind_name, id: encode_node_id(id), label });
             }

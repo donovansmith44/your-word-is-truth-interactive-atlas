@@ -77,7 +77,8 @@ use crate::wire::VerseGroup;
 /// batch's own client UI does not render them textually (the event's own
 /// `label` already names the moment in house prose; a future batch could
 /// use `places` to jump the map to it without a wire change here).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativeAdjacentEvent {
     pub id: String,
     pub label: String,
@@ -142,9 +143,12 @@ pub fn adjacent_event(src: &dyn SceneSource, event_id: &str) -> Option<Narrative
 /// `NarrativeAdjacentEvent` shape and the SAME `adjacent_event` builder
 /// this module's own narrative-scoped lookups use too (one graph, seen a
 /// second way -- never a parallel verse-groups derivation).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TimelinePosition {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prior: Option<NarrativeAdjacentEvent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub following: Option<NarrativeAdjacentEvent>,
 }
 

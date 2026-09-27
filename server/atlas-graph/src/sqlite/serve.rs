@@ -24,7 +24,7 @@ use super::partition::node_kind_ordinal;
 use super::SqliteError;
 use crate::build::BuildStats;
 use crate::event_world::{ChronologyDerivation, EventWorldStats, SourceEventMeta};
-use crate::heading::HeadingEntry;
+use crate::heading::Heading;
 use crate::kjv_adapter::dot_ref;
 use crate::sections::{row_tables_of, Section};
 
@@ -74,7 +74,7 @@ pub fn load_chronology(conn: &Connection) -> Result<ChronologyDerivation, Sqlite
 }
 
 /// `core.heading_index` -> dot-ref -> the one heading that wins there.
-pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, HeadingEntry>, SqliteError> {
+pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, Heading>, SqliteError> {
     let mut stmt = conn.prepare("SELECT book, chapter, verse, event_id, title, kind, continuation FROM heading_index")?;
     let mut rows = stmt.query([])?;
     let mut out = BTreeMap::new();
@@ -82,7 +82,7 @@ pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, HeadingE
         let (b, c, v): (i64, i64, i64) = (r.get(0)?, r.get(1)?, r.get(2)?);
         out.insert(
             dot_ref(b as u8, c as u16, v as u16),
-            HeadingEntry { event_id: r.get(3)?, title: r.get(4)?, kind: r.get(5)?, continuation: r.get::<_, i64>(6)? != 0 },
+            Heading { event_id: r.get(3)?, title: r.get(4)?, kind: r.get(5)?, is_continuation: r.get::<_, i64>(6)? != 0 },
         );
     }
     Ok(out)

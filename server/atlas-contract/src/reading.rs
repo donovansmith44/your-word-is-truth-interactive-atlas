@@ -13,7 +13,7 @@ use atlas_core::data::{AtlasData, CanonBook, Event};
 use atlas_core::history::resolve_display_name;
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene::to_scene_event;
-use atlas_core::xrefs::aggregate_span_xrefs;
+use atlas_core::xrefs::{aggregate_span_xrefs, AggregatedXref};
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
@@ -156,10 +156,7 @@ pub async fn chapter(
             // `data.heading_for_verse` -- see that module's own doc
             // comment for the full re-homing (kept in lockstep with
             // CONTRACT.md and the atlas-core original).
-            let heading = graph
-                .heading_index
-                .get(&key)
-                .map(|h| wire::Heading { event_id: h.event_id.clone(), title: h.title.clone(), kind: h.kind.clone(), is_continuation: h.continuation });
+            let heading = graph.heading_index.get(&key).cloned();
             // Batch M-D2: the generic port, inline -- `Position::Node` +
             // `GraphQuery::edge_summary` are the EXACT calls
             // `graph::node_card` makes for `GET /api/node/{id}`;
@@ -402,7 +399,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .filter_map(|cr| {
             let first = first_verse_of_target(&cr.target)?;
             let preview = graph.verse_text_of(&VerseRef { book: first.book.0, chapter: first.chapter, verse: first.verse })?;
-            Some(wire::CrossRef { target: cr.target.clone(), votes: cr.votes, preview, provenance: cross_refs_provenance.clone() })
+            Some(wire::CrossRef::attributed(AggregatedXref { target: cr.target.clone(), votes: cr.votes, preview }, &cross_refs_provenance))
         })
         .collect();
 
@@ -414,7 +411,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let catechism: Vec<wire::CatechismRef> = data
         .catechism_items_for_span(&ScriptureRef::Verse(vid))
         .into_iter()
-        .map(|c| wire::CatechismRef::from_ref(c, &catechism_provenance))
+        .map(|c| wire::CatechismRef::attributed(c, &catechism_provenance))
         .collect();
 
     // Batch RED-1: the SAME per-verse lookup `reading::chapter` uses, off
@@ -425,12 +422,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         sref: canonical,
         text,
         words_of_christ,
-        book_meta: wire::BookMeta {
-            author: book_meta.author,
-            write_place: book_meta.write_place,
-            write_from: book_meta.write_from,
-            write_to: book_meta.write_to,
-        },
+        book_meta,
         events,
         cross_refs,
         catechism,
@@ -503,7 +495,7 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<Stri
     let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
     let out = aggregated
         .into_iter()
-        .map(|x| wire::CrossRef { target: x.target, votes: x.votes, preview: x.preview, provenance: provenance.clone() })
+        .map(|x| wire::CrossRef::attributed(x, &provenance))
         .collect();
     Ok(Json(out))
 }

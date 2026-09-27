@@ -73,8 +73,8 @@ pub async fn place(
     let history = data.place_history_for(&id).map(|h| wire::History {
         display_name: display_name.clone(),
         blurb: window.and_then(|w| resolve_blurb(&h.blurbs, w)).map(|b| b.text.clone()),
-        established: h.established.as_ref().map(|c| wire::DateClaim { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
-        destroyed: h.destroyed.as_ref().map(|c| wire::DateClaim { when: c.when, verses: c.verses.clone(), note: c.note.clone() }),
+        established: h.established.clone(),
+        destroyed: h.destroyed.clone(),
     });
 
     // ENT-1a: a separate, tiny lookup (not threaded through `place`, the

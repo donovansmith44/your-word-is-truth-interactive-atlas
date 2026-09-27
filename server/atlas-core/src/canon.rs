@@ -65,6 +65,35 @@ pub const BOOKS: [BookInfo; 66] = [
     BookInfo{code:"JUD",osis:"Jude",name:"Jude"}, BookInfo{code:"REV",osis:"Rev",name:"Revelation"},
 ];
 
+/// Genesis..Malachi, the first `BOOKS_IN_THE_OLD_TESTAMENT` entries of
+/// `BOOKS`; Matthew..Revelation are the rest. The boundary is a property of
+/// this array's own order, so it is stated here once and read everywhere
+/// (`nt_calibration`'s NT predicate and the reader's own contents grouping
+/// both ask `Testament::of_book_index`).
+pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = 39;
+
+/// Which half of the canon a book belongs to -- the reader's own OT/NT
+/// grouping, served as `ContentsRoot.group`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
+pub enum Testament {
+    #[serde(rename = "OT")]
+    Old,
+    #[serde(rename = "NT")]
+    New,
+}
+
+impl Testament {
+    pub const ALL: [Testament; 2] = [Testament::Old, Testament::New];
+
+    pub fn of_book_index(index: usize) -> Testament {
+        if index < BOOKS_IN_THE_OLD_TESTAMENT {
+            Testament::Old
+        } else {
+            Testament::New
+        }
+    }
+}
+
 fn norm(s: &str) -> String {
     s.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>().to_ascii_lowercase()
 }
@@ -73,4 +102,34 @@ pub fn resolve_alias(s: &str) -> Option<crate::refs::BookId> {
     let n = norm(s);
     BOOKS.iter().position(|b| norm(b.code) == n || norm(b.osis) == n || norm(b.name) == n)
         .map(|i| crate::refs::BookId(i as u8))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_testament_serialises_as_the_two_group_labels_the_reader_sees() {
+        // Arrange
+        let every_variant = Testament::ALL;
+        // Act
+        let json = serde_json::to_string(&every_variant).unwrap();
+        // Assert
+        assert_eq!(json, r#"["OT","NT"]"#);
+    }
+
+    #[test]
+    fn the_testament_of_a_book_is_decided_by_its_position_in_the_canon() {
+        // Arrange
+        let malachi = BOOKS.iter().position(|b| b.code == "MAL").unwrap();
+        let matthew = BOOKS.iter().position(|b| b.code == "MAT").unwrap();
+        // Act
+        let testaments: Vec<(usize, Testament)> =
+            [0, malachi, matthew, BOOKS.len() - 1].iter().map(|&i| (i, Testament::of_book_index(i))).collect();
+        // Assert
+        assert_eq!(
+            testaments,
+            vec![(0, Testament::Old), (38, Testament::Old), (39, Testament::New), (65, Testament::New)]
+        );
+    }
 }

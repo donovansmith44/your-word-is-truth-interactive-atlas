@@ -31,10 +31,10 @@ const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::F
 #[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), ApiError), tag = "contents")]
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
-    let roots = match corpus.as_str() {
-        "bible" => bible_roots(&snap),
-        "concord" => concord_roots(&snap),
-        _ => return Err(ApiError::not_found("corpus")),
+    let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
+    let roots = match corpus {
+        wire::Corpus::Bible => bible_roots(&snap),
+        wire::Corpus::Concord => concord_roots(&snap),
     };
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }
@@ -84,7 +84,7 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
                 Some(wire::ContentsChild {
                     id: encode_node_id(child),
                     title: chapter.to_string(),
-                    kind: "chapter".to_string(),
+                    kind: wire::ContentsChildKind::Chapter,
                     sref: format!("{}.{chapter}", book.code),
                     count: member_count(snap, child),
                 })
@@ -94,8 +94,8 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
         roots.push(wire::ContentsRoot {
             id: encode_node_id(&id),
             title: title_of(snap, &id),
-            kind: "book".to_string(),
-            group: Some(if i < 39 { "OT" } else { "NT" }.to_string()),
+            kind: wire::ContentsRootKind::Book,
+            group: Some(atlas_core::canon::Testament::of_book_index(i)),
             sref,
             children,
         });
@@ -129,14 +129,14 @@ fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
                     Some(wire::ContentsChild {
                         id: encode_node_id(article),
                         title: title_of(snap, article),
-                        kind: "article".to_string(),
+                        kind: wire::ContentsChildKind::Article,
                         sref: format!("BoC {}.{}.{}", first.0, first.1, first.2),
                         count: member_count(snap, article),
                     })
                 })
                 .collect();
             let sref = children.first().map(|c| c.sref.clone()).unwrap_or_default();
-            (part, wire::ContentsRoot { id: encode_node_id(doc), title: title_of(snap, doc), kind: "document".to_string(), group: None, sref, children })
+            (part, wire::ContentsRoot { id: encode_node_id(doc), title: title_of(snap, doc), kind: wire::ContentsRootKind::Document, group: None, sref, children })
         })
         .collect();
     roots.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));

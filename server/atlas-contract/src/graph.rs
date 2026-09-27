@@ -66,7 +66,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
     let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
     let summary = snap.edge_summary(&Position::Node(node_id.clone()));
-    let (label, _kind) = crate::graph_wire::describe_node(&node_id, &snap);
+    let label = crate::graph_wire::describe_node(&node_id, &snap);
 
     let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect();
 
@@ -196,8 +196,7 @@ pub async fn node_edges(
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
-            let (id, kind, label) = describe_position(&e.node, &snap);
-            wire::EdgeEntry { edge: e.edge.0.clone(), node: wire::NodeRef { id, kind, label } }
+            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap) }
         })
         .collect();
 
@@ -268,17 +267,15 @@ pub async fn text_window(
     // caller (the client never sends this param) gets byte-identical
     // behavior; `concord` is the one other corpus `/api/text` now serves,
     // through this SAME route (design doc §6; no new bespoke endpoint).
-    let corpus = params.get("corpus").map(String::as_str).unwrap_or("bible");
-    if corpus != "bible" && corpus != "concord" {
-        return Err(ApiError::bad_corpus(corpus));
-    }
+    let requested_corpus = params.get("corpus").map(String::as_str).unwrap_or(wire::Corpus::Bible.id());
+    let corpus = wire::Corpus::named(requested_corpus).ok_or_else(|| ApiError::bad_corpus(requested_corpus))?;
 
     if scope == "chapter" && dir_raw == Some("backward") {
         return Err(ApiError::bad_dir(
             "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
         ));
     }
-    if corpus == "concord" && scope == "chapter" {
+    if corpus == wire::Corpus::Concord && scope == "chapter" {
         return Err(ApiError::bad_dir(
             "scope=chapter is not supported with corpus=concord -- a Concord article's own paragraph count varies too widely for one server-derived span; omit scope (or use scope=verse) and set n explicitly instead",
         ));
@@ -291,12 +288,12 @@ pub async fn text_window(
 
     let snap = graph.snapshot();
 
-    if corpus == "concord" {
+    if corpus == wire::Corpus::Concord {
         let (part, article, paragraph) = parse_concord_ref(raw_ref)?;
         let start = graph.concord_position_of(part, article, paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
         let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
 
-        let ids = window::window(&snap, atlas_graph::concord_adapter::CONCORD_CORPUS, start, n, dir);
+        let ids = window::window(&snap, corpus.id(), start, n, dir);
         let units: Vec<wire::TextUnit> = ids
             .iter()
             .filter_map(|id| {
@@ -307,7 +304,7 @@ pub async fn text_window(
             .collect();
 
         let unit_at = |pos: usize| {
-            snap.reading_window(atlas_graph::concord_adapter::CONCORD_CORPUS, pos, 1)
+            snap.reading_window(corpus.id(), pos, 1)
                 .into_iter()
                 .next()
                 .and_then(|id| atlas_graph::concord_adapter::decode_text_unit(&id))
@@ -340,7 +337,7 @@ pub async fn text_window(
         (start, n)
     };
 
-    let ids = window::window(&snap, atlas_graph::kjv_adapter::BIBLE_CORPUS, start, n, dir);
+    let ids = window::window(&snap, corpus.id(), start, n, dir);
     let units: Vec<wire::TextUnit> = ids
         .iter()
         .filter_map(|id| {
@@ -361,7 +358,7 @@ pub async fn text_window(
     // `reading_window` primitive (a 1-element window), never a direct
     // spine-slice reach.
     let unit_at = |pos: usize| {
-        snap.reading_window(atlas_graph::kjv_adapter::BIBLE_CORPUS, pos, 1)
+        snap.reading_window(corpus.id(), pos, 1)
             .into_iter()
             .next()
             .and_then(|id| atlas_graph::kjv_adapter::decode_text_unit(&id))

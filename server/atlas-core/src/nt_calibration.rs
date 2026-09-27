@@ -86,10 +86,10 @@ use crate::refs::VerseId;
 /// both verified correspondences, this module's own doc comment above).
 pub const NT_CALIBRATION_SHIFT: i32 = 3;
 
-/// `canon::BOOKS`'s own 0-based position of Matthew -- the OT/NT boundary
-/// (indices 0..38 are OT, 39..65 are NT). Not `pub`: callers should ask
+/// `canon::BOOKS`'s own 0-based position of Matthew -- the OT/NT boundary,
+/// read from the canon rather than restated. Not `pub`: callers should ask
 /// `is_uncalibrated_nt_event`/`touches_book`, not re-derive the boundary.
-const MAT_BOOK_INDEX: u8 = 39;
+const MAT_BOOK_INDEX: u8 = crate::canon::BOOKS_IN_THE_OLD_TESTAMENT as u8;
 
 /// Strictly greater than `pw_mount_of_olives`'s own real `order_key`
 /// (`11_000`, this app's own highest curated Passion-Week value, i.e. the

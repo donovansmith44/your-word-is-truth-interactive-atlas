@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use atlas_core::time::TimeRange;
+use atlas_core::data::PlaceDateClaim;
 use atlas_core::wire::SceneEvent;
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -52,20 +52,7 @@ pub struct History {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blurb: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub established: Option<DateClaim>,
+    pub established: Option<PlaceDateClaim>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub destroyed: Option<DateClaim>,
-}
-
-/// Batch E: one curated established/destroyed date claim, as served by
-/// `/api/place/{id}`. `when` reuses `TimeRange`'s own wire shape
-/// (`from_year`/`to_year`) rather than a separate "year" field -- the
-/// client's `YearText.FormatRange` already collapses equal endpoints to a
-/// single-year display, so a genuine year and a range need no separate flag.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct DateClaim {
-    pub when: TimeRange,
-    pub verses: Vec<String>,
-    pub note: Option<String>,
+    pub destroyed: Option<PlaceDateClaim>,
 }

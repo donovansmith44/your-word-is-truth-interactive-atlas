@@ -4,7 +4,7 @@ use std::sync::Arc;
 use axum::extract::{Query, State};
 use axum::Json;
 
-use atlas_core::data::{AtlasData, Era, Landmark, Narrative};
+use atlas_core::data::{AtlasData, Era, Landmark, Narrative, PolityDelta};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
@@ -194,8 +194,8 @@ pub async fn polities(
                     to: era.to_year,
                     rings: era.rings.clone(),
                     color_key,
-                    transition: era.transition.as_ref().map(|d| wire::PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }),
-                    fall: era.fall.as_ref().map(|d| wire::PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone() }),
+                    transition: era.transition.as_ref().map(|d| curated_delta(d, era.from_year)),
+                    fall: era.fall.as_ref().map(|d| curated_delta(d, era.from_year)),
                 });
             }
         }
@@ -203,6 +203,14 @@ pub async fn polities(
     out.sort_by(|a, b| a.id.cmp(&b.id).then(a.from.cmp(&b.from)));
 
     Ok(Json(wire::Polities { polities: out }))
+}
+
+/// `for_era_from` is the curator's own echo of the hosting era's `from`, which
+/// `atlas_etl::validate::run_polities` has already proved equal -- so the era
+/// this delta was read off names it, and no curated value is lost by the graph
+/// payload not carrying it.
+fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atlas_core::time::Year) -> PolityDelta {
+    PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone(), for_era_from: era_from }
 }
 
 fn parse_year(params: &HashMap<String, String>, key: &str) -> Result<i32, ApiError> {

@@ -47,7 +47,7 @@ pub struct CatechismRef {
 }
 
 impl CatechismRef {
-    pub(crate) fn from_ref(c: atlas_core::catechism::CatechismRef, provenance: &[String]) -> Self {
+    pub(crate) fn attributed(c: atlas_core::catechism::CatechismRef, provenance: &[String]) -> Self {
         CatechismRef { id: c.id, name: c.name, question: c.question, provenance: provenance.to_vec() }
     }
 }

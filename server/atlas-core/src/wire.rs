@@ -2,11 +2,26 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
+/// Which question a scene answers: what was happening in a span of years, or
+/// where a passage happens. Every scene is composed by exactly one of
+/// `scene::compose_time_scene`/`compose_scripture_scene`, so the pair is
+/// closed by construction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+pub enum SceneMode {
+    #[serde(rename = "time")]
+    Time,
+    #[serde(rename = "scripture")]
+    Scripture,
+}
+
+impl SceneMode {
+    pub const ALL: [SceneMode; 2] = [SceneMode::Time, SceneMode::Scripture];
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
-    /// `time` | `scripture`.
-    pub mode: String,
+    pub mode: SceneMode,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<TimeRange>,
     #[serde(rename = "ref", skip_serializing_if = "Option::is_none")]
@@ -51,7 +66,7 @@ pub struct ScenePlace {
     /// established/destroyed bounds this place's name resolves against
     /// (`crate::history::resolve_existence`) -- plain years, never the full
     /// established/destroyed `PlaceDateClaim` (verses/note; that richer
-    /// shape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire
+    /// shape is `/api/place/{id}`'s own `wire::History`, not a per-marker wire
     /// cost). Both omitted (not `null` -- see `skip_serializing_if`) when
     /// this place has no curated history at all, or a curated history with
     /// neither claim -- the client's own gate never fires in that case
@@ -167,9 +182,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_scene_mode_serialises_as_the_two_modes_a_scene_can_be_composed_in() {
+        // Arrange
+        let every_variant = SceneMode::ALL;
+        // Act
+        let json = serde_json::to_string(&every_variant).unwrap();
+        // Assert
+        assert_eq!(json, r#"["time","scripture"]"#);
+    }
+
+    #[test]
     fn populated_sref_serializes_as_ref_and_omits_window() {
         let scene = Scene {
-            mode: "scripture".into(),
+            mode: SceneMode::Scripture,
             window: None,
             sref: Some("GEN.1.1".into()),
             places: vec![],

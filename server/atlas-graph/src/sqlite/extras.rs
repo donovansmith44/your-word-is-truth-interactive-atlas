@@ -320,7 +320,7 @@ impl Extras {
                 Col::Text(h.event_id.clone()),
                 Col::Text(h.title.clone()),
                 Col::Text(h.kind.clone()),
-                Col::Int(h.continuation as i64),
+                Col::Int(h.is_continuation as i64),
             ]);
         }
         let mut red = Vec::new();

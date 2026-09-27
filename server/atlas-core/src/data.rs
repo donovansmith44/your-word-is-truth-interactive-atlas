@@ -609,8 +609,10 @@ pub struct Era {
     pub to_year: Year,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BookMeta {
+    /// Not on the wire: a caller already knows which book it asked about.
+    #[serde(skip_serializing)]
     pub book: String,
     pub author: String,
     pub write_place: Option<String>,
@@ -745,7 +747,7 @@ pub struct PlaceBlurbEntry {
 /// so no separate "was this a year or a range" flag is needed on the wire.
 /// `note` is a short qualifier (e.g. `"traditional"`) the client renders as
 /// a leading "c." on the date when present.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PlaceDateClaim {
     pub when: TimeRange,
     pub verses: Vec<String>,
@@ -881,10 +883,13 @@ pub struct PolityEra {
 ///   integrity rule (6+ prior incidents) -- see the batch report's own
 ///   delta-coverage table for exactly which boundaries got one and why the
 ///   rest were honestly omitted.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PolityDelta {
     pub event: String,
+    /// `default` governs reading the curated TOML only: the wire always
+    /// carries this list, empty or not.
     #[serde(default)]
+    #[schema(required = true)]
     pub verses: Vec<String>,
     pub ref_note: String,
     /// Fix round 1 (I1): a curator-authored ECHO of the `from` year of the
@@ -899,8 +904,9 @@ pub struct PolityDelta {
     /// against the ACTUAL hosting era's own `from` -- a curator who writes
     /// the block in the wrong place now gets a loud, specific ETL error
     /// instead of a silently-misattached delta. Never read by the client
-    /// (no wire/`PolityDeltaOut` field carries it) -- purely an authoring
+    /// (`skip_serializing` above keeps it off the wire) -- purely an authoring
     /// safety net.
+    #[serde(skip_serializing)]
     pub for_era_from: Year,
 }
 

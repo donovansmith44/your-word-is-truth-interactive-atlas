@@ -1455,7 +1455,6 @@ components:
           - integer
           - 'null'
           format: int32
-      additionalProperties: false
     CanonBook:
       type: object
       description: Verse counts per chapter for one book.
@@ -1627,7 +1626,7 @@ components:
       - roots
       properties:
         corpus:
-          type: string
+          $ref: '#/components/schemas/Corpus'
         roots:
           type: array
           items:
@@ -1651,14 +1650,22 @@ components:
         id:
           type: string
         kind:
-          type: string
-          description: '`chapter` | `article`.'
+          $ref: '#/components/schemas/ContentsChildKind'
         ref:
           type: string
           description: '`GEN.1` for a chapter; `BoC 7.2.1` (its first paragraph) for an article.'
         title:
           type: string
       additionalProperties: false
+    ContentsChildKind:
+      type: string
+      description: |-
+        What a second-level entry IS: a chapter of a book, or an article of a
+        document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC) or
+        TOPIC (Small Catechism)").
+      enum:
+      - chapter
+      - article
     ContentsRoot:
       type: object
       required:
@@ -1673,21 +1680,28 @@ components:
           items:
             $ref: '#/components/schemas/ContentsChild'
         group:
-          type:
-          - string
-          - 'null'
-          description: '`OT` | `NT` for a Bible book; absent for a Concord document.'
+          oneOf:
+          - $ref: '#/components/schemas/Testament'
+            description: Absent for a Concord document, which belongs to neither testament.
+          - type: 'null'
         id:
           type: string
         kind:
-          type: string
-          description: '`book` | `document`.'
+          $ref: '#/components/schemas/ContentsRootKind'
         ref:
           type: string
           description: 'The navigation target: the root''s own first child''s ref.'
         title:
           type: string
       additionalProperties: false
+    ContentsRootKind:
+      type: string
+      description: |-
+        What a top-level entry of a corpus's contents IS: a book of the Bible, or
+        a document of the Book of Concord.
+      enum:
+      - book
+      - document
     Contract:
       type: object
       required:
@@ -1715,6 +1729,15 @@ components:
           format: int32
           minimum: 1
       additionalProperties: false
+    Corpus:
+      type: string
+      description: |-
+        Every body of text this app serves a reading spine for. `id` is the
+        graph's own corpus key, so the wire label and the spine key can never
+        disagree.
+      enum:
+      - bible
+      - concord
     CrossRef:
       type: object
       required:
@@ -1772,29 +1795,6 @@ components:
         votes:
           type: integer
           format: int32
-      additionalProperties: false
-    DateClaim:
-      type: object
-      description: |-
-        Batch E: one curated established/destroyed date claim, as served by
-        `/api/place/{id}`. `when` reuses `TimeRange`'s own wire shape
-        (`from_year`/`to_year`) rather than a separate "year" field -- the
-        client's `YearText.FormatRange` already collapses equal endpoints to a
-        single-year display, so a genuine year and a range need no separate flag.
-      required:
-      - when
-      - verses
-      properties:
-        note:
-          type:
-          - string
-          - 'null'
-        verses:
-          type: array
-          items:
-            type: string
-        when:
-          $ref: '#/components/schemas/TimeRange'
       additionalProperties: false
     EdgeEntry:
       type: object
@@ -2039,7 +2039,7 @@ components:
         places:
           type: array
           items:
-            $ref: '#/components/schemas/EventPlace'
+            $ref: '#/components/schemas/PlaceRef'
         provenance:
           type: string
           description: |-
@@ -2094,31 +2094,18 @@ components:
             above, so such an event serves byte-identically to before this
             batch but for the two unconditional fields.
       additionalProperties: false
-    EventPlace:
-      type: object
-      description: |-
-        Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
-        id (to open a `PlaceNode`/target the map) + display name (so the client
-        never needs a second lookup just to label an explorable place row).
-      required:
-      - id
-      - name
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-      additionalProperties: false
     EventWitness:
       type: object
       description: |-
-        Batch T requirement 4: one resolved witness -- "book, verse-range,
-        translation-mapped," the owner's own words verbatim, ALREADY resolved to
-        this app's one compiled translation (`atlas_core::translation::resolve`,
-        real fail-loud lookup, not a silent default) and grouped via the SAME
-        `verse_groups_for` every other verse list on this wire already uses
-        (`atlas_core::scene::witnesses_for` -- one function, so a heading's own
-        anchor verse and this section's own witness list can never disagree).
+        Batch T requirement 1: one EVENT-kind PASSAGE's own resolved witness --
+        the "book, verse-range, translation-mapped" shape the owner's own words
+        describe, with the translation indirection already resolved to
+        [`crate::translation::DEFAULT_TRANSLATION`] (this app's only compiled
+        translation) and grouped into `VerseGroup`s via the SAME `verse_groups_for`
+        every other "an event's own verses on the wire" case in this module
+        already calls -- a witness's own verse list is provably rendered the
+        identical way `to_scene_event`/`lit_places` already render any other
+        verse list, not a parallel formatting path.
       required:
       - book
       - verse_groups
@@ -2141,15 +2128,16 @@ components:
     Heading:
       type: object
       description: |-
-        Batch T requirement 5: one resolved pericope heading, folded onto its own
-        anchor verse (`Verse.heading`) -- the SAME "fold onto the already-
-        shared fetch" precedent `VerseDetail.catechism`/`.events` already
-        establish, here for the CHAPTER fetch instead of the verse-detail one
-        (a reader rendering a whole chapter needs to know, per verse, whether a
-        heading belongs above it -- a second per-verse round trip would be
-        absurd). `event_id` is what a click opens (a new `EventNode`, client-side);
-        `title` is rendered directly, so the reader never needs a second fetch
-        just to show the heading text itself.
+        Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus
+        ONE field it does not carry -- `is_continuation` (M-D1 requirement 1,
+        CHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading
+        anchored at one verse, `is_continuation` true iff this verse is NOT the
+        container's own true first-covered verse, but a LATER chapter this same
+        container's coverage continues into. The atlas-core original has no
+        counterpart field (this module's own doc comment already discloses why
+        continuation headings are graph-side only: the atlas-core path is a
+        dead, tested reference oracle for the base anchor law, never a live
+        consumer this new law needs to reach).
       required:
       - event_id
       - title
@@ -2160,23 +2148,8 @@ components:
           type: string
         is_continuation:
           type: boolean
-          description: |-
-            M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): true iff this
-            verse is NOT the container's own true first-covered verse but a
-            later chapter its own coverage continues into -- lets the reader
-            render a quiet continuation marker BEFORE a click, the same
-            "affordance honesty travels as data, not inferred client-side"
-            discipline `kind` above already establishes. Always present
-            (`false` for every ordinary, PRIMARY heading -- the overwhelming
-            majority), never omitted: unlike `heading` itself (conditional
-            presence on `Verse`), once a heading exists at all its own
-            continuation-ness is never in doubt.
         kind:
           type: string
-          description: |-
-            Batch HOTFIX-4 requirement 6: see `HeadingEntry::kind`'s own doc
-            comment -- lets the reader's own heading rendering apply the quiet,
-            non-traversable styling BEFORE a click, for a general-kind heading.
         title:
           type: string
       additionalProperties: false
@@ -2200,13 +2173,13 @@ components:
           - 'null'
         destroyed:
           oneOf:
-          - $ref: '#/components/schemas/DateClaim'
+          - $ref: '#/components/schemas/PlaceDateClaim'
           - type: 'null'
         display_name:
           type: string
         established:
           oneOf:
-          - $ref: '#/components/schemas/DateClaim'
+          - $ref: '#/components/schemas/PlaceDateClaim'
           - type: 'null'
       additionalProperties: false
     KretzmannChapter:
@@ -2356,16 +2329,16 @@ components:
     NarrativeAdjacentEvent:
       type: object
       description: |-
-        Batch N: one event ADJACENT to a `NarrativePosition` (its own PRIOR or
-        FOLLOWING leg) -- id/label/places/verse_groups, per requirement 1
-        verbatim ("each adjacent event carrying its id, label, place(s), and
-        verse groups"). `verse_groups` is built by
-        `atlas_core::scene::to_scene_event` -- the SAME function every other
-        "an event's own verses on the wire" case in this crate already calls
-        (`reading::verse`'s own `VerseEvent` construction, `places::place`'s own
-        event list) -- so this
-        is provably the same data a map arrow's own endpoint would show for the
-        identical event id, not a parallel re-derivation.
+        One event ADJACENT to the position being described (the PRIOR or the
+        FOLLOWING leg) -- carries everything the popover needs to render it
+        (label + verses, via the shared passage-list component) and everything
+        needed to traverse further (its own `id`, for the event-id-keyed lookup
+        below). `places` are this event's own anchor-and-companion place ids
+        (`Event::places`, unchanged) -- carried for wire completeness (the
+        brief's own "id, label, place(s), and verse groups") even though this
+        batch's own client UI does not render them textually (the event's own
+        `label` already names the moment in house prose; a future batch could
+        use `places` to jump the map to it without a wire change here).
       required:
       - id
       - label
@@ -2609,6 +2582,31 @@ components:
         name:
           type: string
       additionalProperties: false
+    PlaceDateClaim:
+      type: object
+      description: |-
+        A biblically-supported established/destroyed date claim. `when` is
+        either a single year (`from_year == to_year`, the curated TOML's `year =
+        ...` shorthand) or a genuine range (`from = ...` / `to = ...`) --
+        collapsed to one `TimeRange` here since the client's own `YearText.
+        FormatRange` already renders an equal-endpoints range as a single year,
+        so no separate "was this a year or a range" flag is needed on the wire.
+        `note` is a short qualifier (e.g. `"traditional"`) the client renders as
+        a leading "c." on the date when present.
+      required:
+      - when
+      - verses
+      properties:
+        note:
+          type:
+          - string
+          - 'null'
+        verses:
+          type: array
+          items:
+            type: string
+        when:
+          $ref: '#/components/schemas/TimeRange'
     PlaceDetail:
       type: object
       required:
@@ -2696,6 +2694,13 @@ components:
       additionalProperties: false
     Polity:
       type: object
+      description: |-
+        One polity-era row: `id` is the POLITY's (constant across every era row
+        the same polity contributes to a response) and `color_key` its own
+        precomputed hash, while `name`/`from`/`to`/`rings` are this specific ERA's.
+        The field names deliberately match `atlas_core::data::PolityEra`'s own
+        (`from`/`to`, not `from_year`/`to_year` -- see that struct's doc comment
+        for why), so the era half is a plain copy, not a rename.
       required:
       - id
       - name
@@ -2751,20 +2756,31 @@ components:
     PolityDelta:
       type: object
       description: |-
-        Batch B2 ("borders v2, the cartographer's edition"): one polity-era row
-        on the wire, `{ id, name, from, to, rings, color_key }` per the batch
-        brief verbatim -- field names deliberately match
-        `atlas_core::data::PolityEra`'s own (`from`/`to`, not `from_year`/
-        `to_year`; see that struct's doc comment for why) so this is a plain
-        copy, not a rename. `id` is the POLITY's id (constant across every era
-        row this same polity contributes to a response), `name`/`from`/`to`/
-        `rings` are this specific ERA's own fields, and `color_key` is the
-        polity's own precomputed hash (`Polity::color_key` -- copied here
-        unchanged, never rehashed per-request).
-        Batch M requirement 1: the wire shape of one `atlas_core::data::PolityDelta`
-        -- a plain field-for-field copy (`event`/`verses`/`ref_note`), same "no
-        rename, no reshaping" convention `Polity` itself already follows for
-        `PolityEra`.
+        Batch M requirement 1: one Scripture-mapped historical delta -- the
+        event AT an era boundary (a polity's rise, an internal border/regime
+        change, or its fall), curated as `[era.transition]`/`[era.fall]` nested
+        under one `[[era]]` table (see `PolityEra::transition`/`PolityEra::fall`'s
+        own doc comments). Shape is deliberately flat and small, mirroring
+        `CatechismItem.ref_note`'s own "cite only what you actually consulted"
+        discipline:
+        - `event`: a short, sentence-cased prose description (e.g. "Assyria
+          carries Israel captive") -- house prose, never a bare citation.
+        - `verses`: individually-canonical verse refs (the SAME flat,
+          already-canonical-string convention `CatechismItem::verses`/
+          `Event::verses` already use -- no ranges, no re-expansion needed), each
+          independently explorable once on the wire (POLITY-DELTA's own THE
+          SCRIPTURES section, rendered through the shared passage-list
+          component). MAY be empty (an event grounded only in Church-traditional
+          history, with no single verse pinpointing it) -- the SCRIPTURES section
+          is then simply absent (conditional presence), never a fabricated ref.
+        - `ref_note`: names only the source(s) actually consulted -- 1911
+          Britannica (already the era ring's own grounding source in most
+          curated files), a specific scripture passage, or an explicit
+          "tradition only" disclosure when that's the honest state of the
+          evidence. Never invented, per this project's standing citation-
+          integrity rule (6+ prior incidents) -- see the batch report's own
+          delta-coverage table for exactly which boundaries got one and why the
+          rest were honestly omitted.
       required:
       - event
       - verses
@@ -2778,7 +2794,9 @@ components:
           type: array
           items:
             type: string
-      additionalProperties: false
+          description: |-
+            `default` governs reading the curated TOML only: the wire always
+            carries this list, empty or not.
     PositionKind:
       type: string
       enum:
@@ -2937,8 +2955,7 @@ components:
           items:
             $ref: '#/components/schemas/SceneArrow'
         mode:
-          type: string
-          description: '`time` | `scripture`.'
+          $ref: '#/components/schemas/SceneMode'
         narratives:
           type: array
           items:
@@ -3022,6 +3039,16 @@ components:
         when:
           $ref: '#/components/schemas/TimeRange'
       additionalProperties: false
+    SceneMode:
+      type: string
+      description: |-
+        Which question a scene answers: what was happening in a span of years, or
+        where a passage happens. Every scene is composed by exactly one of
+        `scene::compose_time_scene`/`compose_scripture_scene`, so the pair is
+        closed by construction.
+      enum:
+      - time
+      - scripture
     SceneNarrative:
       type: object
       required:
@@ -3079,7 +3106,7 @@ components:
             established/destroyed bounds this place's name resolves against
             (`crate::history::resolve_existence`) -- plain years, never the full
             established/destroyed `PlaceDateClaim` (verses/note; that richer
-            shape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire
+            shape is `/api/place/{id}`'s own `wire::History`, not a per-marker wire
             cost). Both omitted (not `null` -- see `skip_serializing_if`) when
             this place has no curated history at all, or a curated history with
             neither claim -- the client's own gate never fires in that case
@@ -3203,6 +3230,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SourceEntry'
+    Testament:
+      type: string
+      description: |-
+        Which half of the canon a book belongs to -- the reader's own OT/NT
+        grouping, served as `ContentsRoot.group`.
+      enum:
+      - OT
+      - NT
     TextUnit:
       type: object
       required:
@@ -3268,12 +3303,15 @@ components:
     TimelinePosition:
       type: object
       description: |-
-        Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
-        for one event id, independent of narrative membership -- see
-        `atlas_core::narrative::TimelinePosition`'s own doc comment for the full
-        ordering rule. Reuses `NarrativeAdjacentEvent` (same shape, same
-        "id/label/places/verse_groups" the narrative rows already send) -- one
-        computation, one wire type, two consumers.
+        Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
+        by time for every dated event"): the GLOBAL chronological PRIOR/
+        FOLLOWING for one event id, independent of narrative membership --
+        "the previous/next event is the one that is chronologically NEXT," the
+        owner's own law, applied to the FULL set of dated events rather than one
+        narrative's own leg chain. `prior`/`following` reuse the SAME
+        `NarrativeAdjacentEvent` shape and the SAME `adjacent_event` builder
+        this module's own narrative-scoped lookups use too (one graph, seen a
+        second way -- never a parallel verse-groups derivation).
       properties:
         following:
           oneOf:

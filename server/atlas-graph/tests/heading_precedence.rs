@@ -103,7 +103,7 @@ fn named_case_gen_6_1_anchors_canonically_first_not_curated_import_order() {
 
     let heading = index.get("GEN.6.1").expect("GEN.6.1 must anchor a heading -- theo-32's own canonically first covered verse (M-D1 req 1, owner live report #2)");
     assert_eq!(heading.event_id, "theo-32");
-    assert!(!heading.continuation, "GEN.6.1 is theo-32's own TRUE first-covered verse -- a PRIMARY anchor, not a continuation");
+    assert!(!heading.is_continuation, "GEN.6.1 is theo-32's own TRUE first-covered verse -- a PRIMARY anchor, not a continuation");
 
     // GEN.6.7 (the pre-fix anchor) must NOT still claim the heading --
     // theo-32's own real anchor moved to 6.1, so 6.7 is un-anchored by
@@ -129,12 +129,12 @@ fn named_case_ezr_temple_completed_spans_chapters_5_and_6_with_a_continuation_he
 
     let primary = index.get("EZR.5.1").expect("EZR.5.1 must anchor ezr_temple_completed's own PRIMARY heading");
     assert_eq!(primary.event_id, "ezr_temple_completed");
-    assert!(!primary.continuation, "the container's own true first-covered verse is a PRIMARY anchor");
+    assert!(!primary.is_continuation, "the container's own true first-covered verse is a PRIMARY anchor");
 
     let continuation = index.get("EZR.6.1").expect("EZR.6.1 -- a covered chapter's own opening verse, mid-container -- must render SOME heading (M-D1 req 1: 'no covered chapter may open with unlabeled verses')");
     assert_eq!(continuation.event_id, "ezr_temple_completed", "the SAME container continues at the chapter boundary");
     assert_eq!(continuation.title, primary.title, "one container, one title, true at both the anchor and its own continuation");
-    assert!(continuation.continuation, "EZR.6.1 is NOT ezr_temple_completed's own true first verse -- it must render as a CONTINUATION, not a second primary");
+    assert!(continuation.is_continuation, "EZR.6.1 is NOT ezr_temple_completed's own true first verse -- it must render as a CONTINUATION, not a second primary");
 }
 
 /// The every-covered-chapter assertion (M-D1 requirement 1, verbatim:

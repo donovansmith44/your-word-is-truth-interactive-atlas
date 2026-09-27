@@ -36,7 +36,7 @@
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 
-use crate::wire::PositionKind;
+use crate::wire::{NodeRef, PositionKind};
 
 /// Encodes any node id this batch's graph can produce. Only `NodeKind::TextUnit`
 /// is ever actually built in M-A; the fallback keeps this function total
@@ -166,45 +166,39 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
 /// stand-in awaiting real `CorpusScheme::cite`-driven citation strings
 /// (types doc §6); this is this DTO layer's own such computation, an
 /// EXTENSION (new conversion), not a change to graph-types' shipped `card()`.
-pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> (String, NodeKind) {
+pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> String {
     match id.kind {
         NodeKind::TextUnit => {
             if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
-                return (atlas_graph::kjv_adapter::dot_ref(book, chapter, verse), NodeKind::TextUnit);
+                return atlas_graph::kjv_adapter::dot_ref(book, chapter, verse);
             }
             // CORP-2a: the Concord sibling -- `ConcordTag::cite`'s own
             // citation format (graph-types' text.rs), reused verbatim
             // rather than a third hand-written "BoC ..." string.
             if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
                 use atlas_graph_types::text::Corpus;
-                return (atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph }), NodeKind::TextUnit);
+                return atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph });
             }
-            ("text unit".to_string(), NodeKind::TextUnit)
+            "text unit".to_string()
         }
-        _ => {
-            // Not TextUnit (M-A never materializes another kind): fall back
-            // to graph-types' own `card()` view assembly rather than
-            // re-deriving its match here -- one label computation, reused.
-            // Node lookup goes through THE PORT (design doc §9a; fix round
-            // 1, C1) -- `GraphQuery::node`, never a direct field reach.
-            let label = query.node(id).map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string());
-            (label, id.kind)
-        }
+        // Not TextUnit (M-A never materializes another kind): fall back
+        // to graph-types' own `card()` view assembly rather than
+        // re-deriving its match here -- one label computation, reused.
+        // Node lookup goes through THE PORT (design doc §9a; fix round
+        // 1, C1) -- `GraphQuery::node`, never a direct field reach.
+        _ => query.node(id).map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string()),
     }
 }
 
 /// A `Position` (a node or an edge -- edges take focus too, design doc §0)
-/// rendered as a wire node-reference: `(id, kind, label)`. Total over both
-/// variants, never a panic: an edge position really is served -- a
-/// `justified-by` row reached through its own `justifies` frontier -- and
-/// its kind is `PositionKind::Edge`.
-pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> (String, PositionKind, String) {
+/// rendered as the wire node-reference it becomes. Total over both variants,
+/// never a panic: an edge position really is served -- a `justified-by` row
+/// reached through its own `justifies` frontier -- and its kind is
+/// `PositionKind::Edge`.
+pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> NodeRef {
     match pos {
-        Position::Node(id) => {
-            let (label, kind) = describe_node(id, query);
-            (encode_node_id(id), PositionKind::Node(kind), label)
-        }
-        Position::Edge(eid) => (format!("edge:{}", eid.0), PositionKind::Edge, eid.0.clone()),
+        Position::Node(id) => NodeRef { id: encode_node_id(id), kind: PositionKind::Node(id.kind), label: describe_node(id, query) },
+        Position::Edge(eid) => NodeRef { id: format!("edge:{}", eid.0), kind: PositionKind::Edge, label: eid.0.clone() },
     }
 }
 
