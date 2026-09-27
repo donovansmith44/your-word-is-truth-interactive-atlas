@@ -15,8 +15,8 @@
 //! canonical book index (`atlas_core::refs::BookId(u8)` and every
 //! `"bible/{book}.{chapter}.{verse}"` TextUnit id ride it), and, as of
 //! Batch NODE-1, the array ORDER is the reader-facing navigation
-//! authority: "what comes after Malachi 4" is answered by this array
-//! (MAL is index 38, MAT is 39), compiled into the graph's own
+//! authority: "what comes after Malachi 4" is answered by this array,
+//! compiled into the graph's own
 //! `CanonSuccession` rows (chapter -> next chapter across book
 //! boundaries, book -> next book) by
 //! `atlas_graph::bible_container_adapter`. `code` is the canonical
@@ -65,26 +65,18 @@ pub const BOOKS: [BookInfo; 66] = [
     BookInfo{code:"JUD",osis:"Jude",name:"Jude"}, BookInfo{code:"REV",osis:"Rev",name:"Revelation"},
 ];
 
-/// Genesis..Malachi, the first `BOOKS_IN_THE_OLD_TESTAMENT` entries of
-/// `BOOKS`; Matthew..Revelation are the rest. The boundary is a property of
-/// this array's own order, so it is stated here once and read everywhere
-/// (`nt_calibration`'s NT predicate and the reader's own contents grouping
-/// both ask `Testament::of_book_index`).
-pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = 39;
-
-/// Which half of the canon a book belongs to -- the reader's own OT/NT
-/// grouping, served as `ContentsRoot.group`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
-pub enum Testament {
-    #[serde(rename = "OT")]
-    Old,
-    #[serde(rename = "NT")]
-    New,
+crate::vocabulary! {
+    /// Which half of the canon a book belongs to -- the reader's own OT/NT
+    /// grouping of the contents tree.
+    Testament {
+        Old => "OT",
+        New => "NT",
+    }
 }
 
 impl Testament {
-    pub const ALL: [Testament; 2] = [Testament::Old, Testament::New];
-
+    /// A book's testament is its POSITION in `BOOKS`, never a second list:
+    /// everything from `FIRST_NEW_TESTAMENT_BOOK` onward is the New Testament.
     pub fn of_book_index(index: usize) -> Testament {
         if index < BOOKS_IN_THE_OLD_TESTAMENT {
             Testament::Old
@@ -92,6 +84,43 @@ impl Testament {
             Testament::New
         }
     }
+}
+
+/// Matthew opens the New Testament. Naming the BOOK rather than a count is
+/// what keeps the boundary a single fact: the number below is found in
+/// `BOOKS`, so reordering the canon moves it without anyone editing it.
+const FIRST_NEW_TESTAMENT_BOOK: &str = "MAT";
+
+/// How many of `BOOKS` precede `FIRST_NEW_TESTAMENT_BOOK`.
+pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = books_before(FIRST_NEW_TESTAMENT_BOOK);
+
+/// `BOOKS.iter().position(..)` is not available in a `const`, so the same
+/// search is written out; `code_is` below is the `==` a const context lacks
+/// for `&str`.
+const fn books_before(code: &str) -> usize {
+    let mut index = 0;
+    while index < BOOKS.len() {
+        if code_is(BOOKS[index].code, code) {
+            return index;
+        }
+        index += 1;
+    }
+    panic!("FIRST_NEW_TESTAMENT_BOOK must name a book of BOOKS")
+}
+
+const fn code_is(a: &str, b: &str) -> bool {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
 }
 
 fn norm(s: &str) -> String {
@@ -109,27 +138,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_testament_serialises_as_the_two_group_labels_the_reader_sees() {
+    fn a_testament_round_trips_through_the_two_group_labels_the_reader_sees() {
         // Arrange
         let every_variant = Testament::ALL;
         // Act
         let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<Testament> = serde_json::from_str(&json).unwrap();
         // Assert
         assert_eq!(json, r#"["OT","NT"]"#);
+        assert_eq!(back, every_variant.to_vec());
     }
 
     #[test]
-    fn the_testament_of_a_book_is_decided_by_its_position_in_the_canon() {
+    fn a_books_testament_is_read_from_its_own_place_in_the_canon() {
         // Arrange
-        let malachi = BOOKS.iter().position(|b| b.code == "MAL").unwrap();
-        let matthew = BOOKS.iter().position(|b| b.code == "MAT").unwrap();
+        let books = ["GEN", "MAL", "MAT", "REV"];
         // Act
-        let testaments: Vec<(usize, Testament)> =
-            [0, malachi, matthew, BOOKS.len() - 1].iter().map(|&i| (i, Testament::of_book_index(i))).collect();
+        let testaments: Vec<(&str, Testament)> = books
+            .iter()
+            .map(|code| (*code, Testament::of_book_index(BOOKS.iter().position(|b| b.code == *code).unwrap())))
+            .collect();
         // Assert
         assert_eq!(
             testaments,
-            vec![(0, Testament::Old), (38, Testament::Old), (39, Testament::New), (65, Testament::New)]
+            vec![("GEN", Testament::Old), ("MAL", Testament::Old), ("MAT", Testament::New), ("REV", Testament::New)]
         );
     }
 }

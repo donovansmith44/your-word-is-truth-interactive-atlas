@@ -249,7 +249,7 @@ pub async fn node_edges(
 /// onward. ETag/If-None-Match on the version stamp: since the graph is
 /// immutable for the process lifetime, the ETag is constant across every
 /// request until the next server restart.
-#[utoipa::path(get, path = "/api/text", params(("ref" = String, Query), ("n" = Option<usize>, Query), ("dir" = Option<String>, Query), ("scope" = Option<String>, Query), ("corpus" = Option<String>, Query)), responses((status = 200, body = wire::TextWindow), ApiError), tag = "graph")]
+#[utoipa::path(get, path = "/api/text", params(("ref" = String, Query), ("n" = Option<usize>, Query), ("dir" = Option<String>, Query), ("scope" = inline(Option<wire::TextScope>), Query), ("corpus" = Option<String>, Query)), responses((status = 200, body = wire::TextWindow), ApiError), tag = "graph")]
 pub async fn text_window(
     State(graph): State<Arc<GraphService>>,
     headers: HeaderMap,
@@ -261,21 +261,23 @@ pub async fn text_window(
     }
 
     let raw_ref = params.get("ref").map(String::as_str).unwrap_or("");
-    let scope = params.get("scope").map(String::as_str).unwrap_or("verse");
+    // An unrecognised scope has always fallen through to the verse-anchored
+    // window rather than failing; `named` returning `None` reproduces that.
+    let scope = params.get("scope").and_then(|raw| wire::TextScope::named(raw)).unwrap_or(wire::TextScope::Verse);
     let dir_raw = params.get("dir").map(String::as_str);
     // CORP-2a (decision 8): `corpus` defaults to "bible" -- every EXISTING
     // caller (the client never sends this param) gets byte-identical
     // behavior; `concord` is the one other corpus `/api/text` now serves,
     // through this SAME route (design doc §6; no new bespoke endpoint).
-    let requested_corpus = params.get("corpus").map(String::as_str).unwrap_or(wire::Corpus::Bible.id());
+    let requested_corpus = params.get("corpus").map(String::as_str).unwrap_or(wire::Corpus::Bible.name());
     let corpus = wire::Corpus::named(requested_corpus).ok_or_else(|| ApiError::bad_corpus(requested_corpus))?;
 
-    if scope == "chapter" && dir_raw == Some("backward") {
+    if scope == wire::TextScope::Chapter && dir_raw == Some("backward") {
         return Err(ApiError::bad_dir(
             "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
         ));
     }
-    if corpus == wire::Corpus::Concord && scope == "chapter" {
+    if corpus == wire::Corpus::Concord && scope == wire::TextScope::Chapter {
         return Err(ApiError::bad_dir(
             "scope=chapter is not supported with corpus=concord -- a Concord article's own paragraph count varies too widely for one server-derived span; omit scope (or use scope=verse) and set n explicitly instead",
         ));
@@ -293,7 +295,7 @@ pub async fn text_window(
         let start = graph.concord_position_of(part, article, paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
         let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
 
-        let ids = window::window(&snap, corpus.id(), start, n, dir);
+        let ids = window::window(&snap, corpus.name(), start, n, dir);
         let units: Vec<wire::TextUnit> = ids
             .iter()
             .filter_map(|id| {
@@ -304,7 +306,7 @@ pub async fn text_window(
             .collect();
 
         let unit_at = |pos: usize| {
-            snap.reading_window(corpus.id(), pos, 1)
+            snap.reading_window(corpus.name(), pos, 1)
                 .into_iter()
                 .next()
                 .and_then(|id| atlas_graph::concord_adapter::decode_text_unit(&id))
@@ -328,7 +330,7 @@ pub async fn text_window(
 
     let (book, chapter, verse_opt) = parse_ref(raw_ref, scope)?;
 
-    let (start, n) = if scope == "chapter" {
+    let (start, n) = if scope == wire::TextScope::Chapter {
         graph.chapter_span(book, chapter).ok_or_else(|| ApiError::not_found("chapter"))?
     } else {
         let verse = verse_opt.ok_or_else(|| ApiError::bad_ref(raw_ref))?;
@@ -337,7 +339,7 @@ pub async fn text_window(
         (start, n)
     };
 
-    let ids = window::window(&snap, corpus.id(), start, n, dir);
+    let ids = window::window(&snap, corpus.name(), start, n, dir);
     let units: Vec<wire::TextUnit> = ids
         .iter()
         .filter_map(|id| {
@@ -358,7 +360,7 @@ pub async fn text_window(
     // `reading_window` primitive (a 1-element window), never a direct
     // spine-slice reach.
     let unit_at = |pos: usize| {
-        snap.reading_window(corpus.id(), pos, 1)
+        snap.reading_window(corpus.name(), pos, 1)
             .into_iter()
             .next()
             .and_then(|id| atlas_graph::kjv_adapter::decode_text_unit(&id))
@@ -391,10 +393,10 @@ fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atla
 /// the chapter's OWN verse count is derived server-side from the graph
 /// itself, never from the ref); any other `scope` requires a Verse-shaped
 /// ref (the single-point cursor the window walks onward/backward from).
-fn parse_ref(raw: &str, scope: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
+fn parse_ref(raw: &str, scope: wire::TextScope) -> Result<(u8, u16, Option<u16>), ApiError> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
-        Ok(ScriptureRef::Chapter { book, chapter }) if scope == "chapter" => Ok((book.0, chapter, None)),
+        Ok(ScriptureRef::Chapter { book, chapter }) if scope == wire::TextScope::Chapter => Ok((book.0, chapter, None)),
         _ => Err(ApiError::bad_ref(raw)),
     }
 }

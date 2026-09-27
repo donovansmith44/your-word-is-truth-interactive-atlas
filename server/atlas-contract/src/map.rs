@@ -205,10 +205,9 @@ pub async fn polities(
     Ok(Json(wire::Polities { polities: out }))
 }
 
-/// `for_era_from` is the curator's own echo of the hosting era's `from`, which
-/// `atlas_etl::validate::run_polities` has already proved equal -- so the era
-/// this delta was read off names it, and no curated value is lost by the graph
-/// payload not carrying it.
+/// `for_era_from` is UNOBSERVABLE here -- it is `skip_serializing`, so nothing
+/// reads what this writes. It is passed because the domain struct has the
+/// field, and `era_from` is the only value that could ever be right for it.
 fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atlas_core::time::Year) -> PolityDelta {
     PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone(), for_era_from: era_from }
 }

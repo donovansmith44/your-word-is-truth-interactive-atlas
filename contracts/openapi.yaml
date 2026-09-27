@@ -1211,6 +1211,12 @@ paths:
         required: false
         schema:
           type: string
+          description: |-
+            How much text one `/api/text` window covers: the `n` units around the
+            requested ref, or the whole chapter that ref names.
+          enum:
+          - verse
+          - chapter
       - name: corpus
         in: query
         required: false
@@ -1661,8 +1667,8 @@ components:
       type: string
       description: |-
         What a second-level entry IS: a chapter of a book, or an article of a
-        document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC) or
-        TOPIC (Small Catechism)").
+        document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC)
+        or TOPIC (Small Catechism)").
       enum:
       - chapter
       - article
@@ -1697,8 +1703,8 @@ components:
     ContentsRootKind:
       type: string
       description: |-
-        What a top-level entry of a corpus's contents IS: a book of the Bible, or
-        a document of the Book of Concord.
+        What a top-level entry of a corpus's contents IS: a book of the Bible,
+        or a document of the Book of Concord.
       enum:
       - book
       - document
@@ -1732,9 +1738,9 @@ components:
     Corpus:
       type: string
       description: |-
-        Every body of text this app serves a reading spine for. `id` is the
-        graph's own corpus key, so the wire label and the spine key can never
-        disagree.
+        Every body of text this app serves a reading spine for. Each name IS
+        the graph's own spine key, named here rather than re-typed, so a
+        request that resolves to a corpus reaches that corpus's own spine.
       enum:
       - bible
       - concord
@@ -2128,16 +2134,9 @@ components:
     Heading:
       type: object
       description: |-
-        Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus
-        ONE field it does not carry -- `is_continuation` (M-D1 requirement 1,
-        CHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading
-        anchored at one verse, `is_continuation` true iff this verse is NOT the
-        container's own true first-covered verse, but a LATER chapter this same
-        container's coverage continues into. The atlas-core original has no
-        counterpart field (this module's own doc comment already discloses why
-        continuation headings are graph-side only: the atlas-core path is a
-        dead, tested reference oracle for the base anchor law, never a live
-        consumer this new law needs to reach).
+        The pericope heading that belongs above one verse: the container it names,
+        its title, that container's kind, and whether this verse merely continues
+        coverage that began in an earlier chapter rather than opening it.
       required:
       - event_id
       - title
@@ -2666,13 +2665,8 @@ components:
     PlaceRef:
       type: object
       description: |-
-        Batch R requirement 5 (place-in-verse hover -> marker blink): one place
-        mentioned in a verse, per `AtlasData::places_for_verse` (the reverse of
-        `Place::verse_links`). Deliberately lean -- id (to target a map marker)
-        and display name (for the client's own plain-text substring match against
-        the verse's rendered text, see `chapter`'s own doc comment for why there
-        is no richer per-mention offset data) -- mirrors `QuietPlace`'s own
-        "no more than the consumer needs" wire philosophy.
+        A place named by something else on this response: its id, to explore or to
+        target on the map, and the name to show for it.
       required:
       - id
       - name
@@ -3042,10 +3036,8 @@ components:
     SceneMode:
       type: string
       description: |-
-        Which question a scene answers: what was happening in a span of years, or
-        where a passage happens. Every scene is composed by exactly one of
-        `scene::compose_time_scene`/`compose_scripture_scene`, so the pair is
-        closed by construction.
+        Which question a scene answers: what was happening in a span of years,
+        or where a passage happens.
       enum:
       - time
       - scripture
@@ -3234,7 +3226,7 @@ components:
       type: string
       description: |-
         Which half of the canon a book belongs to -- the reader's own OT/NT
-        grouping, served as `ContentsRoot.group`.
+        grouping of the contents tree.
       enum:
       - OT
       - NT

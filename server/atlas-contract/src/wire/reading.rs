@@ -78,13 +78,8 @@ pub struct Verse {
     pub words_of_christ: Vec<WordsOfChristSpan>,
 }
 
-/// Batch R requirement 5 (place-in-verse hover -> marker blink): one place
-/// mentioned in a verse, per `AtlasData::places_for_verse` (the reverse of
-/// `Place::verse_links`). Deliberately lean -- id (to target a map marker)
-/// and display name (for the client's own plain-text substring match against
-/// the verse's rendered text, see `chapter`'s own doc comment for why there
-/// is no richer per-mention offset data) -- mirrors `QuietPlace`'s own
-/// "no more than the consumer needs" wire philosophy.
+/// A place named by something else on this response: its id, to explore or to
+/// target on the map, and the name to show for it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlaceRef {

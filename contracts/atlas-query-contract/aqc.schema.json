@@ -242,7 +242,7 @@
       "type": "object"
     },
     "ContentsChildKind": {
-      "description": "What a second-level entry IS: a chapter of a book, or an article of a\ndocument. The tree stops here (D4: \"Stop at the level of ARTICLE (BoC) or\nTOPIC (Small Catechism)\").",
+      "description": "What a second-level entry IS: a chapter of a book, or an article of a\ndocument. The tree stops here (D4: \"Stop at the level of ARTICLE (BoC)\nor TOPIC (Small Catechism)\").",
       "enum": [
         "chapter",
         "article"
@@ -293,7 +293,7 @@
       "type": "object"
     },
     "ContentsRootKind": {
-      "description": "What a top-level entry of a corpus's contents IS: a book of the Bible, or\na document of the Book of Concord.",
+      "description": "What a top-level entry of a corpus's contents IS: a book of the Bible,\nor a document of the Book of Concord.",
       "enum": [
         "book",
         "document"
@@ -332,7 +332,7 @@
       "type": "object"
     },
     "Corpus": {
-      "description": "Every body of text this app serves a reading spine for. `id` is the\ngraph's own corpus key, so the wire label and the spine key can never\ndisagree.",
+      "description": "Every body of text this app serves a reading spine for. Each name IS\nthe graph's own spine key, named here rather than re-typed, so a\nrequest that resolves to a corpus reaches that corpus's own spine.",
       "enum": [
         "bible",
         "concord"
@@ -675,7 +675,7 @@
     },
     "Heading": {
       "additionalProperties": false,
-      "description": "Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus\nONE field it does not carry -- `is_continuation` (M-D1 requirement 1,\nCHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading\nanchored at one verse, `is_continuation` true iff this verse is NOT the\ncontainer's own true first-covered verse, but a LATER chapter this same\ncontainer's coverage continues into. The atlas-core original has no\ncounterpart field (this module's own doc comment already discloses why\ncontinuation headings are graph-side only: the atlas-core path is a\ndead, tested reference oracle for the base anchor law, never a live\nconsumer this new law needs to reach).",
+      "description": "The pericope heading that belongs above one verse: the container it names,\nits title, that container's kind, and whether this verse merely continues\ncoverage that began in an earlier chapter rather than opening it.",
       "properties": {
         "event_id": {
           "type": "string"
@@ -1243,7 +1243,7 @@
     },
     "PlaceRef": {
       "additionalProperties": false,
-      "description": "Batch R requirement 5 (place-in-verse hover -> marker blink): one place\nmentioned in a verse, per `AtlasData::places_for_verse` (the reverse of\n`Place::verse_links`). Deliberately lean -- id (to target a map marker)\nand display name (for the client's own plain-text substring match against\nthe verse's rendered text, see `chapter`'s own doc comment for why there\nis no richer per-mention offset data) -- mirrors `QuietPlace`'s own\n\"no more than the consumer needs\" wire philosophy.",
+      "description": "A place named by something else on this response: its id, to explore or to\ntarget on the map, and the name to show for it.",
       "properties": {
         "id": {
           "type": "string"
@@ -1603,7 +1603,7 @@
       "type": "object"
     },
     "SceneMode": {
-      "description": "Which question a scene answers: what was happening in a span of years, or\nwhere a passage happens. Every scene is composed by exactly one of\n`scene::compose_time_scene`/`compose_scripture_scene`, so the pair is\nclosed by construction.",
+      "description": "Which question a scene answers: what was happening in a span of years,\nor where a passage happens.",
       "enum": [
         "time",
         "scripture"
@@ -1790,7 +1790,7 @@
       "type": "object"
     },
     "Testament": {
-      "description": "Which half of the canon a book belongs to -- the reader's own OT/NT\ngrouping, served as `ContentsRoot.group`.",
+      "description": "Which half of the canon a book belongs to -- the reader's own OT/NT\ngrouping of the contents tree.",
       "enum": [
         "OT",
         "NT"

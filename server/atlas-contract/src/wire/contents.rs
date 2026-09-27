@@ -10,61 +10,6 @@ pub struct Contents {
     pub roots: Vec<ContentsRoot>,
 }
 
-/// Every body of text this app serves a reading spine for. `id` is the
-/// graph's own corpus key, so the wire label and the spine key can never
-/// disagree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, utoipa::ToSchema)]
-pub enum Corpus {
-    #[serde(rename = "bible")]
-    Bible,
-    #[serde(rename = "concord")]
-    Concord,
-}
-
-impl Corpus {
-    pub const ALL: [Corpus; 2] = [Corpus::Bible, Corpus::Concord];
-
-    pub fn named(name: &str) -> Option<Corpus> {
-        Corpus::ALL.into_iter().find(|corpus| corpus.id() == name)
-    }
-
-    pub fn id(self) -> &'static str {
-        match self {
-            Corpus::Bible => atlas_graph::kjv_adapter::BIBLE_CORPUS,
-            Corpus::Concord => atlas_graph::concord_adapter::CONCORD_CORPUS,
-        }
-    }
-}
-
-/// What a top-level entry of a corpus's contents IS: a book of the Bible, or
-/// a document of the Book of Concord.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, utoipa::ToSchema)]
-pub enum ContentsRootKind {
-    #[serde(rename = "book")]
-    Book,
-    #[serde(rename = "document")]
-    Document,
-}
-
-impl ContentsRootKind {
-    pub const ALL: [ContentsRootKind; 2] = [ContentsRootKind::Book, ContentsRootKind::Document];
-}
-
-/// What a second-level entry IS: a chapter of a book, or an article of a
-/// document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC) or
-/// TOPIC (Small Catechism)").
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, utoipa::ToSchema)]
-pub enum ContentsChildKind {
-    #[serde(rename = "chapter")]
-    Chapter,
-    #[serde(rename = "article")]
-    Article,
-}
-
-impl ContentsChildKind {
-    pub const ALL: [ContentsChildKind; 2] = [ContentsChildKind::Chapter, ContentsChildKind::Article];
-}
-
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ContentsRoot {
@@ -93,18 +38,49 @@ pub struct ContentsChild {
     pub count: usize,
 }
 
+atlas_core::vocabulary! {
+    /// Every body of text this app serves a reading spine for. Each name IS
+    /// the graph's own spine key, named here rather than re-typed, so a
+    /// request that resolves to a corpus reaches that corpus's own spine.
+    Corpus {
+        Bible => atlas_graph::kjv_adapter::BIBLE_CORPUS,
+        Concord => atlas_graph::concord_adapter::CONCORD_CORPUS,
+    }
+}
+
+atlas_core::vocabulary! {
+    /// What a top-level entry of a corpus's contents IS: a book of the Bible,
+    /// or a document of the Book of Concord.
+    ContentsRootKind {
+        Book => "book",
+        Document => "document",
+    }
+}
+
+atlas_core::vocabulary! {
+    /// What a second-level entry IS: a chapter of a book, or an article of a
+    /// document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC)
+    /// or TOPIC (Small Catechism)").
+    ContentsChildKind {
+        Chapter => "chapter",
+        Article => "article",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn a_corpus_serialises_as_the_graphs_own_reading_spine_keys() {
+    fn a_corpus_round_trips_through_the_graphs_own_reading_spine_keys() {
         // Arrange
         let every_variant = Corpus::ALL;
         // Act
         let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<Corpus> = serde_json::from_str(&json).unwrap();
         // Assert
         assert_eq!(json, r#"["bible","concord"]"#);
+        assert_eq!(back, every_variant.to_vec());
     }
 
     #[test]
@@ -118,22 +94,26 @@ mod tests {
     }
 
     #[test]
-    fn a_contents_root_kind_serialises_as_the_two_kinds_of_top_level_entry() {
+    fn a_contents_root_kind_round_trips_through_the_two_kinds_of_top_level_entry() {
         // Arrange
         let every_variant = ContentsRootKind::ALL;
         // Act
         let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<ContentsRootKind> = serde_json::from_str(&json).unwrap();
         // Assert
         assert_eq!(json, r#"["book","document"]"#);
+        assert_eq!(back, every_variant.to_vec());
     }
 
     #[test]
-    fn a_contents_child_kind_serialises_as_the_two_kinds_of_second_level_entry() {
+    fn a_contents_child_kind_round_trips_through_the_two_kinds_of_second_level_entry() {
         // Arrange
         let every_variant = ContentsChildKind::ALL;
         // Act
         let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<ContentsChildKind> = serde_json::from_str(&json).unwrap();
         // Assert
         assert_eq!(json, r#"["chapter","article"]"#);
+        assert_eq!(back, every_variant.to_vec());
     }
 }

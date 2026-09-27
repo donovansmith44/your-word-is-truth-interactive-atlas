@@ -1,0 +1,36 @@
+# cargo-mutants for atlas-core. The HOUSE RULES are stated once, in
+# `server/.cargo/mutants.toml`; this file adds only what is true here.
+#
+# WHY IT EXISTS: cargo-mutants discovers ONE config, the workspace root's
+# (`server/.cargo/mutants.toml`), whose `examine_globs` name atlas-contract
+# paths only. Nothing in this package matches them, and a command-line `-f`/
+# `-F` is UNIONED with the declared scope rather than narrowing it, so a run
+# for this crate found ZERO mutants however it was spelled -- silently, exit 0.
+#
+# THIS FILE IS NOT DISCOVERED. Being one level deeper than the workspace root,
+# it is read only when it is NAMED, which is what the command below does.
+# Measured, at cargo-mutants 27.1.0: without `--config` the run lists nothing;
+# with it, 29 mutants in the examined file. `--no-config -F atlas-core/src/
+# canon.rs` lists the same 29, but drops `additional_cargo_test_args` with the
+# rest of the config and so pays the whole 20-minute workspace suite per
+# mutant instead of this crate's own sub-second one.
+#
+# RUN FROM THIS DIRECTORY:
+#
+#     cd server/atlas-core && cargo mutants --in-place --config .cargo/mutants.toml
+#
+# The globs below are WORKSPACE-relative (`atlas-core/src/...`), the same
+# spelling the sibling config uses, even though this file sits one level
+# deeper: cargo-mutants resolves every path against the workspace root it
+# discovers, not against the config's own directory. A package-relative
+# `src/canon.rs` silently matches nothing.
+#
+# `--in-place` for the same reason the sibling states: this crate's tests are
+# fast, but its `golden.rs` fixture is read from a path above the workspace
+# root, which a copied tree does not carry.
+examine_globs = ["atlas-core/src/canon.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# This crate's own suite, not the workspace's: it is 220 tests in under a
+# second, and it is what covers the examined file.
+additional_cargo_test_args = ["-p", "atlas-core"]

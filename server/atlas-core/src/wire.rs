@@ -2,22 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
-/// Which question a scene answers: what was happening in a span of years, or
-/// where a passage happens. Every scene is composed by exactly one of
-/// `scene::compose_time_scene`/`compose_scripture_scene`, so the pair is
-/// closed by construction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
-pub enum SceneMode {
-    #[serde(rename = "time")]
-    Time,
-    #[serde(rename = "scripture")]
-    Scripture,
-}
-
-impl SceneMode {
-    pub const ALL: [SceneMode; 2] = [SceneMode::Time, SceneMode::Scripture];
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
@@ -44,6 +28,15 @@ pub struct Scene {
     pub quiet_places: Vec<QuietPlace>,
     pub arrows: Vec<SceneArrow>,
     pub narratives: Vec<SceneNarrative>,
+}
+
+crate::vocabulary! {
+    /// Which question a scene answers: what was happening in a span of years,
+    /// or where a passage happens.
+    SceneMode {
+        Time => "time",
+        Scripture => "scripture",
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -182,13 +175,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_scene_mode_serialises_as_the_two_modes_a_scene_can_be_composed_in() {
+    fn a_scene_mode_round_trips_through_the_two_modes_a_scene_can_be_composed_in() {
         // Arrange
         let every_variant = SceneMode::ALL;
         // Act
         let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<SceneMode> = serde_json::from_str(&json).unwrap();
         // Assert
         assert_eq!(json, r#"["time","scripture"]"#);
+        assert_eq!(back, every_variant.to_vec());
     }
 
     #[test]

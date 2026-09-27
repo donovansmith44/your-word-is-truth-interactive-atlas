@@ -40,16 +40,9 @@ use atlas_graph_types::node::{EventWitnessPayload, NodePayload};
 
 use crate::kjv_adapter::KJV_TRANSLATION;
 
-/// Mirrors `atlas_core::data::HeadingEntry` (event id + title + kind) plus
-/// ONE field it does not carry -- `is_continuation` (M-D1 requirement 1,
-/// CHAPTER-BOUNDARY CONTINUATION, below): the resolved pericope heading
-/// anchored at one verse, `is_continuation` true iff this verse is NOT the
-/// container's own true first-covered verse, but a LATER chapter this same
-/// container's coverage continues into. The atlas-core original has no
-/// counterpart field (this module's own doc comment already discloses why
-/// continuation headings are graph-side only: the atlas-core path is a
-/// dead, tested reference oracle for the base anchor law, never a live
-/// consumer this new law needs to reach).
+/// The pericope heading that belongs above one verse: the container it names,
+/// its title, that container's kind, and whether this verse merely continues
+/// coverage that began in an earlier chapter rather than opening it.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Heading {

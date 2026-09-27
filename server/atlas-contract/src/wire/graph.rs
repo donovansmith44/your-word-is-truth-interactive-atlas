@@ -124,6 +124,15 @@ impl PartialSchema for PositionKind {
 
 impl ToSchema for PositionKind {}
 
+atlas_core::vocabulary! {
+    /// How much text one `/api/text` window covers: the `n` units around the
+    /// requested ref, or the whole chapter that ref names.
+    TextScope {
+        Verse => "verse",
+        Chapter => "chapter",
+    }
+}
+
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TextWindow {
@@ -150,4 +159,31 @@ pub struct TextUnit {
     /// with edges clickable (no dead clicks) without an N+1 of node-card
     /// calls. The reader may ignore it.
     pub edge_summary: Vec<EdgeSummaryEntry>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_text_scope_round_trips_through_the_two_spans_a_window_can_cover() {
+        // Arrange
+        let every_variant = TextScope::ALL;
+        // Act
+        let json = serde_json::to_string(&every_variant).unwrap();
+        let back: Vec<TextScope> = serde_json::from_str(&json).unwrap();
+        // Assert
+        assert_eq!(json, r#"["verse","chapter"]"#);
+        assert_eq!(back, every_variant.to_vec());
+    }
+
+    #[test]
+    fn an_unrecognised_scope_names_no_span_at_all() {
+        // Arrange
+        let requested = ["verse", "chapter", "paragraph"];
+        // Act
+        let resolved: Vec<Option<TextScope>> = requested.iter().map(|name| TextScope::named(name)).collect();
+        // Assert
+        assert_eq!(resolved, vec![Some(TextScope::Verse), Some(TextScope::Chapter), None]);
+    }
 }
