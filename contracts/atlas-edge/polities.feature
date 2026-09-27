@@ -10,7 +10,7 @@ Feature: polities — the eras of governed ground we vendor
   a pixel of ours.
 
   Vocabulary:
-    | projection | any of: catechism-list, contract, edge-page, eras, event, export-format, gazetteer, land-mask, landmarks, narratives, node-card, polities, sources, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the whole polity book, as we consume it
     When I GET /api/polities?from=-4004&to=2000

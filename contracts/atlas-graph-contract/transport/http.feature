@@ -16,7 +16,7 @@ Feature: HTTP — the transport the Blazor client consumes
       atlas-edge.
 
   Vocabulary:
-    | projection | any of: catechism-list, contract, edge-page, eras, event, export-format, gazetteer, land-mask, landmarks, narratives, node-card, polities, sources, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the AQC version range the server advertises
     When I GET /api/contract

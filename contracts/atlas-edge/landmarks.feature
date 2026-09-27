@@ -4,7 +4,7 @@ Feature: landmarks — named waters and places we label by
   moves moves our label with it.
 
   Vocabulary:
-    | projection | any of: catechism-list, contract, edge-page, eras, event, export-format, gazetteer, land-mask, landmarks, narratives, node-card, polities, sources, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the whole landmark list, as we consume it
     When I GET /api/landmarks

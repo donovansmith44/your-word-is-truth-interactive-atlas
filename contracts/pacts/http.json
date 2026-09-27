@@ -4,6 +4,1596 @@
     "bibex node Place:hazor-1"
   ],
   "entries": {
+    "GET /api/books": {
+      "body": [
+        {
+          "chapters": [
+            31,
+            25,
+            24,
+            26,
+            32,
+            22,
+            24,
+            22,
+            29,
+            32,
+            32,
+            20,
+            18,
+            24,
+            21,
+            16,
+            27,
+            33,
+            38,
+            18,
+            34,
+            24,
+            20,
+            67,
+            34,
+            35,
+            46,
+            22,
+            35,
+            43,
+            55,
+            32,
+            20,
+            31,
+            29,
+            43,
+            36,
+            30,
+            23,
+            23,
+            57,
+            38,
+            34,
+            34,
+            28,
+            34,
+            31,
+            22,
+            33,
+            26
+          ],
+          "code": "GEN",
+          "name": "Genesis"
+        },
+        {
+          "chapters": [
+            22,
+            25,
+            22,
+            31,
+            23,
+            30,
+            25,
+            32,
+            35,
+            29,
+            10,
+            51,
+            22,
+            31,
+            27,
+            36,
+            16,
+            27,
+            25,
+            26,
+            36,
+            31,
+            33,
+            18,
+            40,
+            37,
+            21,
+            43,
+            46,
+            38,
+            18,
+            35,
+            23,
+            35,
+            35,
+            38,
+            29,
+            31,
+            43,
+            38
+          ],
+          "code": "EXO",
+          "name": "Exodus"
+        },
+        {
+          "chapters": [
+            17,
+            16,
+            17,
+            35,
+            19,
+            30,
+            38,
+            36,
+            24,
+            20,
+            47,
+            8,
+            59,
+            57,
+            33,
+            34,
+            16,
+            30,
+            37,
+            27,
+            24,
+            33,
+            44,
+            23,
+            55,
+            46,
+            34
+          ],
+          "code": "LEV",
+          "name": "Leviticus"
+        },
+        {
+          "chapters": [
+            54,
+            34,
+            51,
+            49,
+            31,
+            27,
+            89,
+            26,
+            23,
+            36,
+            35,
+            16,
+            33,
+            45,
+            41,
+            50,
+            13,
+            32,
+            22,
+            29,
+            35,
+            41,
+            30,
+            25,
+            18,
+            65,
+            23,
+            31,
+            40,
+            16,
+            54,
+            42,
+            56,
+            29,
+            34,
+            13
+          ],
+          "code": "NUM",
+          "name": "Numbers"
+        },
+        {
+          "chapters": [
+            46,
+            37,
+            29,
+            49,
+            33,
+            25,
+            26,
+            20,
+            29,
+            22,
+            32,
+            32,
+            18,
+            29,
+            23,
+            22,
+            20,
+            22,
+            21,
+            20,
+            23,
+            30,
+            25,
+            22,
+            19,
+            19,
+            26,
+            68,
+            29,
+            20,
+            30,
+            52,
+            29,
+            12
+          ],
+          "code": "DEU",
+          "name": "Deuteronomy"
+        },
+        {
+          "chapters": [
+            18,
+            24,
+            17,
+            24,
+            15,
+            27,
+            26,
+            35,
+            27,
+            43,
+            23,
+            24,
+            33,
+            15,
+            63,
+            10,
+            18,
+            28,
+            51,
+            9,
+            45,
+            34,
+            16,
+            33
+          ],
+          "code": "JOS",
+          "name": "Joshua"
+        },
+        {
+          "chapters": [
+            36,
+            23,
+            31,
+            24,
+            31,
+            40,
+            25,
+            35,
+            57,
+            18,
+            40,
+            15,
+            25,
+            20,
+            20,
+            31,
+            13,
+            31,
+            30,
+            48,
+            25
+          ],
+          "code": "JDG",
+          "name": "Judges"
+        },
+        {
+          "chapters": [
+            22,
+            23,
+            18,
+            22
+          ],
+          "code": "RUT",
+          "name": "Ruth"
+        },
+        {
+          "chapters": [
+            28,
+            36,
+            21,
+            22,
+            12,
+            21,
+            17,
+            22,
+            27,
+            27,
+            15,
+            25,
+            23,
+            52,
+            35,
+            23,
+            58,
+            30,
+            24,
+            42,
+            15,
+            23,
+            29,
+            22,
+            44,
+            25,
+            12,
+            25,
+            11,
+            31,
+            13
+          ],
+          "code": "1SA",
+          "name": "1 Samuel"
+        },
+        {
+          "chapters": [
+            27,
+            32,
+            39,
+            12,
+            25,
+            23,
+            29,
+            18,
+            13,
+            19,
+            27,
+            31,
+            39,
+            33,
+            37,
+            23,
+            29,
+            33,
+            43,
+            26,
+            22,
+            51,
+            39,
+            25
+          ],
+          "code": "2SA",
+          "name": "2 Samuel"
+        },
+        {
+          "chapters": [
+            53,
+            46,
+            28,
+            34,
+            18,
+            38,
+            51,
+            66,
+            28,
+            29,
+            43,
+            33,
+            34,
+            31,
+            34,
+            34,
+            24,
+            46,
+            21,
+            43,
+            29,
+            53
+          ],
+          "code": "1KI",
+          "name": "1 Kings"
+        },
+        {
+          "chapters": [
+            18,
+            25,
+            27,
+            44,
+            27,
+            33,
+            20,
+            29,
+            37,
+            36,
+            21,
+            21,
+            25,
+            29,
+            38,
+            20,
+            41,
+            37,
+            37,
+            21,
+            26,
+            20,
+            37,
+            20,
+            30
+          ],
+          "code": "2KI",
+          "name": "2 Kings"
+        },
+        {
+          "chapters": [
+            54,
+            55,
+            24,
+            43,
+            26,
+            81,
+            40,
+            40,
+            44,
+            14,
+            47,
+            40,
+            14,
+            17,
+            29,
+            43,
+            27,
+            17,
+            19,
+            8,
+            30,
+            19,
+            32,
+            31,
+            31,
+            32,
+            34,
+            21,
+            30
+          ],
+          "code": "1CH",
+          "name": "1 Chronicles"
+        },
+        {
+          "chapters": [
+            17,
+            18,
+            17,
+            22,
+            14,
+            42,
+            22,
+            18,
+            31,
+            19,
+            23,
+            16,
+            22,
+            15,
+            19,
+            14,
+            19,
+            34,
+            11,
+            37,
+            20,
+            12,
+            21,
+            27,
+            28,
+            23,
+            9,
+            27,
+            36,
+            27,
+            21,
+            33,
+            25,
+            33,
+            27,
+            23
+          ],
+          "code": "2CH",
+          "name": "2 Chronicles"
+        },
+        {
+          "chapters": [
+            11,
+            70,
+            13,
+            24,
+            17,
+            22,
+            28,
+            36,
+            15,
+            44
+          ],
+          "code": "EZR",
+          "name": "Ezra"
+        },
+        {
+          "chapters": [
+            11,
+            20,
+            32,
+            23,
+            19,
+            19,
+            73,
+            18,
+            38,
+            39,
+            36,
+            47,
+            31
+          ],
+          "code": "NEH",
+          "name": "Nehemiah"
+        },
+        {
+          "chapters": [
+            22,
+            23,
+            15,
+            17,
+            14,
+            14,
+            10,
+            17,
+            32,
+            3
+          ],
+          "code": "EST",
+          "name": "Esther"
+        },
+        {
+          "chapters": [
+            22,
+            13,
+            26,
+            21,
+            27,
+            30,
+            21,
+            22,
+            35,
+            22,
+            20,
+            25,
+            28,
+            22,
+            35,
+            22,
+            16,
+            21,
+            29,
+            29,
+            34,
+            30,
+            17,
+            25,
+            6,
+            14,
+            23,
+            28,
+            25,
+            31,
+            40,
+            22,
+            33,
+            37,
+            16,
+            33,
+            24,
+            41,
+            30,
+            24,
+            34,
+            17
+          ],
+          "code": "JOB",
+          "name": "Job"
+        },
+        {
+          "chapters": [
+            6,
+            12,
+            8,
+            8,
+            12,
+            10,
+            17,
+            9,
+            20,
+            18,
+            7,
+            8,
+            6,
+            7,
+            5,
+            11,
+            15,
+            50,
+            14,
+            9,
+            13,
+            31,
+            6,
+            10,
+            22,
+            12,
+            14,
+            9,
+            11,
+            12,
+            24,
+            11,
+            22,
+            22,
+            28,
+            12,
+            40,
+            22,
+            13,
+            17,
+            13,
+            11,
+            5,
+            26,
+            17,
+            11,
+            9,
+            14,
+            20,
+            23,
+            19,
+            9,
+            6,
+            7,
+            23,
+            13,
+            11,
+            11,
+            17,
+            12,
+            8,
+            12,
+            11,
+            10,
+            13,
+            20,
+            7,
+            35,
+            36,
+            5,
+            24,
+            20,
+            28,
+            23,
+            10,
+            12,
+            20,
+            72,
+            13,
+            19,
+            16,
+            8,
+            18,
+            12,
+            13,
+            17,
+            7,
+            18,
+            52,
+            17,
+            16,
+            15,
+            5,
+            23,
+            11,
+            13,
+            12,
+            9,
+            9,
+            5,
+            8,
+            28,
+            22,
+            35,
+            45,
+            48,
+            43,
+            13,
+            31,
+            7,
+            10,
+            10,
+            9,
+            8,
+            18,
+            19,
+            2,
+            29,
+            176,
+            7,
+            8,
+            9,
+            4,
+            8,
+            5,
+            6,
+            5,
+            6,
+            8,
+            8,
+            3,
+            18,
+            3,
+            3,
+            21,
+            26,
+            9,
+            8,
+            24,
+            13,
+            10,
+            7,
+            12,
+            15,
+            21,
+            10,
+            20,
+            14,
+            9,
+            6
+          ],
+          "code": "PSA",
+          "name": "Psalms"
+        },
+        {
+          "chapters": [
+            33,
+            22,
+            35,
+            27,
+            23,
+            35,
+            27,
+            36,
+            18,
+            32,
+            31,
+            28,
+            25,
+            35,
+            33,
+            33,
+            28,
+            24,
+            29,
+            30,
+            31,
+            29,
+            35,
+            34,
+            28,
+            28,
+            27,
+            28,
+            27,
+            33,
+            31
+          ],
+          "code": "PRO",
+          "name": "Proverbs"
+        },
+        {
+          "chapters": [
+            18,
+            26,
+            22,
+            16,
+            20,
+            12,
+            29,
+            17,
+            18,
+            20,
+            10,
+            14
+          ],
+          "code": "ECC",
+          "name": "Ecclesiastes"
+        },
+        {
+          "chapters": [
+            17,
+            17,
+            11,
+            16,
+            16,
+            13,
+            13,
+            14
+          ],
+          "code": "SNG",
+          "name": "Song of Solomon"
+        },
+        {
+          "chapters": [
+            31,
+            22,
+            26,
+            6,
+            30,
+            13,
+            25,
+            22,
+            21,
+            34,
+            16,
+            6,
+            22,
+            32,
+            9,
+            14,
+            14,
+            7,
+            25,
+            6,
+            17,
+            25,
+            18,
+            23,
+            12,
+            21,
+            13,
+            29,
+            24,
+            33,
+            9,
+            20,
+            24,
+            17,
+            10,
+            22,
+            38,
+            22,
+            8,
+            31,
+            29,
+            25,
+            28,
+            28,
+            25,
+            13,
+            15,
+            22,
+            26,
+            11,
+            23,
+            15,
+            12,
+            17,
+            13,
+            12,
+            21,
+            14,
+            21,
+            22,
+            11,
+            12,
+            19,
+            12,
+            25,
+            24
+          ],
+          "code": "ISA",
+          "name": "Isaiah"
+        },
+        {
+          "chapters": [
+            19,
+            37,
+            25,
+            31,
+            31,
+            30,
+            34,
+            22,
+            26,
+            25,
+            23,
+            17,
+            27,
+            22,
+            21,
+            21,
+            27,
+            23,
+            15,
+            18,
+            14,
+            30,
+            40,
+            10,
+            38,
+            24,
+            22,
+            17,
+            32,
+            24,
+            40,
+            44,
+            26,
+            22,
+            19,
+            32,
+            21,
+            28,
+            18,
+            16,
+            18,
+            22,
+            13,
+            30,
+            5,
+            28,
+            7,
+            47,
+            39,
+            46,
+            64,
+            34
+          ],
+          "code": "JER",
+          "name": "Jeremiah"
+        },
+        {
+          "chapters": [
+            22,
+            22,
+            66,
+            22,
+            22
+          ],
+          "code": "LAM",
+          "name": "Lamentations"
+        },
+        {
+          "chapters": [
+            28,
+            10,
+            27,
+            17,
+            17,
+            14,
+            27,
+            18,
+            11,
+            22,
+            25,
+            28,
+            23,
+            23,
+            8,
+            63,
+            24,
+            32,
+            14,
+            49,
+            32,
+            31,
+            49,
+            27,
+            17,
+            21,
+            36,
+            26,
+            21,
+            26,
+            18,
+            32,
+            33,
+            31,
+            15,
+            38,
+            28,
+            23,
+            29,
+            49,
+            26,
+            20,
+            27,
+            31,
+            25,
+            24,
+            23,
+            35
+          ],
+          "code": "EZK",
+          "name": "Ezekiel"
+        },
+        {
+          "chapters": [
+            21,
+            49,
+            30,
+            37,
+            31,
+            28,
+            28,
+            27,
+            27,
+            21,
+            45,
+            13
+          ],
+          "code": "DAN",
+          "name": "Daniel"
+        },
+        {
+          "chapters": [
+            11,
+            23,
+            5,
+            19,
+            15,
+            11,
+            16,
+            14,
+            17,
+            15,
+            12,
+            14,
+            16,
+            9
+          ],
+          "code": "HOS",
+          "name": "Hosea"
+        },
+        {
+          "chapters": [
+            20,
+            32,
+            21
+          ],
+          "code": "JOL",
+          "name": "Joel"
+        },
+        {
+          "chapters": [
+            15,
+            16,
+            15,
+            13,
+            27,
+            14,
+            17,
+            14,
+            15
+          ],
+          "code": "AMO",
+          "name": "Amos"
+        },
+        {
+          "chapters": [
+            21
+          ],
+          "code": "OBA",
+          "name": "Obadiah"
+        },
+        {
+          "chapters": [
+            17,
+            10,
+            10,
+            11
+          ],
+          "code": "JON",
+          "name": "Jonah"
+        },
+        {
+          "chapters": [
+            16,
+            13,
+            12,
+            13,
+            15,
+            16,
+            20
+          ],
+          "code": "MIC",
+          "name": "Micah"
+        },
+        {
+          "chapters": [
+            15,
+            13,
+            19
+          ],
+          "code": "NAM",
+          "name": "Nahum"
+        },
+        {
+          "chapters": [
+            17,
+            20,
+            19
+          ],
+          "code": "HAB",
+          "name": "Habakkuk"
+        },
+        {
+          "chapters": [
+            18,
+            15,
+            20
+          ],
+          "code": "ZEP",
+          "name": "Zephaniah"
+        },
+        {
+          "chapters": [
+            15,
+            23
+          ],
+          "code": "HAG",
+          "name": "Haggai"
+        },
+        {
+          "chapters": [
+            21,
+            13,
+            10,
+            14,
+            11,
+            15,
+            14,
+            23,
+            17,
+            12,
+            17,
+            14,
+            9,
+            21
+          ],
+          "code": "ZEC",
+          "name": "Zechariah"
+        },
+        {
+          "chapters": [
+            14,
+            17,
+            18,
+            6
+          ],
+          "code": "MAL",
+          "name": "Malachi"
+        },
+        {
+          "chapters": [
+            25,
+            23,
+            17,
+            25,
+            48,
+            34,
+            29,
+            34,
+            38,
+            42,
+            30,
+            50,
+            58,
+            36,
+            39,
+            28,
+            27,
+            35,
+            30,
+            34,
+            46,
+            46,
+            39,
+            51,
+            46,
+            75,
+            66,
+            20
+          ],
+          "code": "MAT",
+          "name": "Matthew"
+        },
+        {
+          "chapters": [
+            45,
+            28,
+            35,
+            41,
+            43,
+            56,
+            37,
+            38,
+            50,
+            52,
+            33,
+            44,
+            37,
+            72,
+            47,
+            20
+          ],
+          "code": "MRK",
+          "name": "Mark"
+        },
+        {
+          "chapters": [
+            80,
+            52,
+            38,
+            44,
+            39,
+            49,
+            50,
+            56,
+            62,
+            42,
+            54,
+            59,
+            35,
+            35,
+            32,
+            31,
+            37,
+            43,
+            48,
+            47,
+            38,
+            71,
+            56,
+            53
+          ],
+          "code": "LUK",
+          "name": "Luke"
+        },
+        {
+          "chapters": [
+            51,
+            25,
+            36,
+            54,
+            47,
+            71,
+            53,
+            59,
+            41,
+            42,
+            57,
+            50,
+            38,
+            31,
+            27,
+            33,
+            26,
+            40,
+            42,
+            31,
+            25
+          ],
+          "code": "JHN",
+          "name": "John"
+        },
+        {
+          "chapters": [
+            26,
+            47,
+            26,
+            37,
+            42,
+            15,
+            60,
+            40,
+            43,
+            48,
+            30,
+            25,
+            52,
+            28,
+            41,
+            40,
+            34,
+            28,
+            41,
+            38,
+            40,
+            30,
+            35,
+            27,
+            27,
+            32,
+            44,
+            31
+          ],
+          "code": "ACT",
+          "name": "Acts"
+        },
+        {
+          "chapters": [
+            32,
+            29,
+            31,
+            25,
+            21,
+            23,
+            25,
+            39,
+            33,
+            21,
+            36,
+            21,
+            14,
+            23,
+            33,
+            27
+          ],
+          "code": "ROM",
+          "name": "Romans"
+        },
+        {
+          "chapters": [
+            31,
+            16,
+            23,
+            21,
+            13,
+            20,
+            40,
+            13,
+            27,
+            33,
+            34,
+            31,
+            13,
+            40,
+            58,
+            24
+          ],
+          "code": "1CO",
+          "name": "1 Corinthians"
+        },
+        {
+          "chapters": [
+            24,
+            17,
+            18,
+            18,
+            21,
+            18,
+            16,
+            24,
+            15,
+            18,
+            33,
+            21,
+            14
+          ],
+          "code": "2CO",
+          "name": "2 Corinthians"
+        },
+        {
+          "chapters": [
+            24,
+            21,
+            29,
+            31,
+            26,
+            18
+          ],
+          "code": "GAL",
+          "name": "Galatians"
+        },
+        {
+          "chapters": [
+            23,
+            22,
+            21,
+            32,
+            33,
+            24
+          ],
+          "code": "EPH",
+          "name": "Ephesians"
+        },
+        {
+          "chapters": [
+            30,
+            30,
+            21,
+            23
+          ],
+          "code": "PHP",
+          "name": "Philippians"
+        },
+        {
+          "chapters": [
+            29,
+            23,
+            25,
+            18
+          ],
+          "code": "COL",
+          "name": "Colossians"
+        },
+        {
+          "chapters": [
+            10,
+            20,
+            13,
+            18,
+            28
+          ],
+          "code": "1TH",
+          "name": "1 Thessalonians"
+        },
+        {
+          "chapters": [
+            12,
+            17,
+            18
+          ],
+          "code": "2TH",
+          "name": "2 Thessalonians"
+        },
+        {
+          "chapters": [
+            20,
+            15,
+            16,
+            16,
+            25,
+            21
+          ],
+          "code": "1TI",
+          "name": "1 Timothy"
+        },
+        {
+          "chapters": [
+            18,
+            26,
+            17,
+            22
+          ],
+          "code": "2TI",
+          "name": "2 Timothy"
+        },
+        {
+          "chapters": [
+            16,
+            15,
+            15
+          ],
+          "code": "TIT",
+          "name": "Titus"
+        },
+        {
+          "chapters": [
+            25
+          ],
+          "code": "PHM",
+          "name": "Philemon"
+        },
+        {
+          "chapters": [
+            14,
+            18,
+            19,
+            16,
+            14,
+            20,
+            28,
+            13,
+            28,
+            39,
+            40,
+            29,
+            25
+          ],
+          "code": "HEB",
+          "name": "Hebrews"
+        },
+        {
+          "chapters": [
+            27,
+            26,
+            18,
+            17,
+            20
+          ],
+          "code": "JAS",
+          "name": "James"
+        },
+        {
+          "chapters": [
+            25,
+            25,
+            22,
+            19,
+            14
+          ],
+          "code": "1PE",
+          "name": "1 Peter"
+        },
+        {
+          "chapters": [
+            21,
+            22,
+            18
+          ],
+          "code": "2PE",
+          "name": "2 Peter"
+        },
+        {
+          "chapters": [
+            10,
+            29,
+            24,
+            21,
+            21
+          ],
+          "code": "1JN",
+          "name": "1 John"
+        },
+        {
+          "chapters": [
+            13
+          ],
+          "code": "2JN",
+          "name": "2 John"
+        },
+        {
+          "chapters": [
+            14
+          ],
+          "code": "3JN",
+          "name": "3 John"
+        },
+        {
+          "chapters": [
+            25
+          ],
+          "code": "JUD",
+          "name": "Jude"
+        },
+        {
+          "chapters": [
+            20,
+            29,
+            22,
+            11,
+            14,
+            17,
+            17,
+            13,
+            21,
+            11,
+            19,
+            17,
+            18,
+            20,
+            8,
+            21,
+            18,
+            24,
+            21,
+            15,
+            27,
+            21
+          ],
+          "code": "REV",
+          "name": "Revelation"
+        }
+      ],
+      "status": 200
+    },
     "GET /api/catechism/MAT.28.19": {
       "body": [
         {
@@ -125,6 +1715,1512 @@
       ],
       "status": 200
     },
+    "GET /api/catechism/item/commandment-1": {
+      "body": {
+        "explanation": "We should fear, love, and trust in God above all things.",
+        "explanation_heading": "What does this mean?",
+        "id": "commandment-1",
+        "name": "The First Commandment",
+        "part_title": "The Ten Commandments",
+        "text": "Thou shalt have no other gods.",
+        "verses": [
+          {
+            "question": "God Alone as Judge",
+            "text": "And one of the company said unto him, Master, speak to my brother, that he divide the inheritance with me.",
+            "vref": "LUK.12.13"
+          },
+          {
+            "question": "God Alone as Judge",
+            "text": "And he said unto him, Man, who made me a judge or a divider over you?",
+            "vref": "LUK.12.14"
+          },
+          {
+            "question": "Trusting God Above Created Things",
+            "text": "Assemble yourselves and come; draw near together, ye that are escaped of the nations: they have no knowledge that set up the wood of their graven image, and pray unto a god that cannot save.",
+            "vref": "ISA.45.20"
+          },
+          {
+            "question": "Trusting God Above Created Things",
+            "text": "He that trusteth in his riches shall fall: but the righteous shall flourish as a branch.",
+            "vref": "PRO.11.28"
+          },
+          {
+            "question": "Trusting God Above Created Things",
+            "text": "He that loveth father or mother more than me is not worthy of me: and he that loveth son or daughter more than me is not worthy of me.",
+            "vref": "MAT.10.37"
+          },
+          {
+            "question": "Worship God Alone",
+            "text": "I am the LORD: that is my name: and my glory will I not give to another, neither my praise to graven images.",
+            "vref": "ISA.42.8"
+          },
+          {
+            "question": "Worship God Alone",
+            "text": "Then saith Jesus unto him, Get thee hence, Satan: for it is written, Thou shalt worship the Lord thy God, and him only shalt thou serve.",
+            "vref": "MAT.4.10"
+          },
+          {
+            "question": "Worship God Alone",
+            "text": "Professing themselves to be wise, they became fools,",
+            "vref": "ROM.1.22"
+          },
+          {
+            "question": "Worship God Alone",
+            "text": "And changed the glory of the uncorruptible God into an image made like to corruptible man, and to birds, and fourfooted beasts, and creeping things.",
+            "vref": "ROM.1.23"
+          },
+          {
+            "question": "Worship God Alone",
+            "text": "As concerning therefore the eating of those things that are offered in sacrifice unto idols, we know that an idol is nothing in the world, and that there is none other God but one.",
+            "vref": "1CO.8.4"
+          },
+          {
+            "question": "Fear, Love, and Trust in God",
+            "text": "The fear of the Lord is the beginning of wisdom: a good understanding have all they that do his commandments: his praise endureth for ever.",
+            "vref": "PSA.111.10"
+          },
+          {
+            "question": "Fear, Love, and Trust in God",
+            "text": "And thou shalt love the LORD thy God with all thine heart, and with all thy soul, and with all thy might.",
+            "vref": "DEU.6.5"
+          },
+          {
+            "question": "Fear, Love, and Trust in God",
+            "text": "Trust in the LORD with all thine heart; and lean not unto thine own understanding.",
+            "vref": "PRO.3.5"
+          },
+          {
+            "question": "The One True God of All Nations",
+            "text": "All the ends of the world shall remember and turn unto the LORD: and all the kindreds of the nations shall worship before thee.",
+            "vref": "PSA.22.27"
+          },
+          {
+            "question": "The One True God of All Nations",
+            "text": "For in him we live, and move, and have our being; as certain also of your own poets have said, For we are also his offspring.",
+            "vref": "ACT.17.28"
+          },
+          {
+            "question": "The One True God of All Nations",
+            "text": "Forasmuch then as we are the offspring of God, we ought not to think that the Godhead is like unto gold, or silver, or stone, graven by art and man’s device.",
+            "vref": "ACT.17.29"
+          },
+          {
+            "question": "The One True God of All Nations",
+            "text": "For though there be that are called gods, whether in heaven or in earth, (as there be gods many, and lords many,)",
+            "vref": "1CO.8.5"
+          },
+          {
+            "question": "The One True God of All Nations",
+            "text": "But to us there is but one God, the Father, of whom are all things, and we in him; and one Lord Jesus Christ, by whom are all things, and we by him.",
+            "vref": "1CO.8.6"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "The fear of the LORD is to hate evil: pride, and arrogancy, and the evil way, and the froward mouth, do I hate.",
+            "vref": "PRO.8.13"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "And fear not them which kill the body, but are not able to kill the soul: but rather fear him which is able to destroy both soul and body in hell.",
+            "vref": "MAT.10.28"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "For the LORD is great, and greatly to be praised: he is to be feared above all gods.",
+            "vref": "PSA.96.4"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "For all the gods of the nations are idols: but the LORD made the heavens.",
+            "vref": "PSA.96.5"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Honour and majesty are before him: strength and beauty are in his sanctuary.",
+            "vref": "PSA.96.6"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Give unto the LORD, O ye kindreds of the people, give unto the LORD glory and strength.",
+            "vref": "PSA.96.7"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Give unto the LORD the glory due unto his name: bring an offering, and come into his courts.",
+            "vref": "PSA.96.8"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "O worship the LORD in the beauty of holiness: fear before him, all the earth.",
+            "vref": "PSA.96.9"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Say among the heathen that the LORD reigneth: the world also shall be established that it shall not be moved: he shall judge the people righteously.",
+            "vref": "PSA.96.10"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Let the heavens rejoice, and let the earth be glad; let the sea roar, and the fulness thereof.",
+            "vref": "PSA.96.11"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Let the field be joyful, and all that is therein: then shall all the trees of the wood rejoice",
+            "vref": "PSA.96.12"
+          },
+          {
+            "question": "Fearing God Above All",
+            "text": "Before the Lord: for he cometh, for he cometh to judge the earth: he shall judge the world with righteousness, and the people with his truth.",
+            "vref": "PSA.96.13"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "Whom have I in heaven but thee? and there is none upon earth that I desire beside thee.",
+            "vref": "PSA.73.25"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "My flesh and my heart faileth: but God is the strength of my heart, and my portion for ever.",
+            "vref": "PSA.73.26"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "If ye love me, keep my commandments.",
+            "vref": "JHN.14.15"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And when he was gone forth into the way, there came one running, and kneeled to him, and asked him, Good Master, what shall I do that I may inherit eternal life?",
+            "vref": "MRK.10.17"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And Jesus said unto him, Why callest thou me good? there is none good but one, that is, God.",
+            "vref": "MRK.10.18"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "Thou knowest the commandments, Do not commit adultery, Do not kill, Do not steal, Do not bear false witness, Defraud not, Honour thy father and mother.",
+            "vref": "MRK.10.19"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And he answered and said unto him, Master, all these have I observed from my youth.",
+            "vref": "MRK.10.20"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "Then Jesus beholding him loved him, and said unto him, One thing thou lackest: go thy way, sell whatsoever thou hast, and give to the poor, and thou shalt have treasure in heaven: and come, take up the cross, and follow me.",
+            "vref": "MRK.10.21"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And he was sad at that saying, and went away grieved: for he had great possessions.",
+            "vref": "MRK.10.22"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And Jesus looked round about, and saith unto his disciples, How hardly shall they that have riches enter into the kingdom of God!",
+            "vref": "MRK.10.23"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And the disciples were astonished at his words. But Jesus answereth again, and saith unto them, Children, how hard is it for them that trust in riches to enter into the kingdom of God!",
+            "vref": "MRK.10.24"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "It is easier for a camel to go through the eye of a needle, than for a rich man to enter into the kingdom of God.",
+            "vref": "MRK.10.25"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And they were astonished out of measure, saying among themselves, Who then can be saved?",
+            "vref": "MRK.10.26"
+          },
+          {
+            "question": "Loving God Above All",
+            "text": "And Jesus looking upon them saith, With men it is impossible, but not with God: for with God all things are possible.",
+            "vref": "MRK.10.27"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "For thus saith the Lord GOD, the Holy One of Israel; In returning and rest shall ye be saved; in quietness and in confidence shall be your strength: and ye would not.",
+            "vref": "ISA.30.15"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Humble yourselves therefore under the mighty hand of God, that he may exalt you in due time:",
+            "vref": "1PE.5.6"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Casting all your care upon him; for he careth for you.",
+            "vref": "1PE.5.7"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Let your moderation be known unto all men. The Lord is at hand.",
+            "vref": "PHP.4.5"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God.",
+            "vref": "PHP.4.6"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Trust in the LORD with all thine heart; and lean not unto thine own understanding.",
+            "vref": "PRO.3.5"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "In all thy ways acknowledge him, and he shall direct thy paths.",
+            "vref": "PRO.3.6"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Be not wise in thine own eyes: fear the LORD, and depart from evil.",
+            "vref": "PRO.3.7"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "It shall be health to thy navel, and marrow to thy bones.",
+            "vref": "PRO.3.8"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Honour the LORD with thy substance, and with the firstfruits of all thine increase:",
+            "vref": "PRO.3.9"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "So shall thy barns be filled with plenty, and thy presses shall burst out with new wine.",
+            "vref": "PRO.3.10"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "Their idols are silver and gold, the work of men’s hands.",
+            "vref": "PSA.115.4"
+          },
+          {
+            "question": "Trusting God Above All",
+            "text": "And when Jesus had cried with a loud voice, he said, Father, into thy hands I commend my spirit: and having said thus, he gave up the ghost.",
+            "vref": "LUK.23.46"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And the whole earth was of one language, and of one speech.",
+            "vref": "GEN.11.1"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And it came to pass, as they journeyed from the east, that they found a plain in the land of Shinar; and they dwelt there.",
+            "vref": "GEN.11.2"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And they said one to another, Go to, let us make brick, and burn them throughly. And they had brick for stone, and slime had they for morter.",
+            "vref": "GEN.11.3"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And they said, Go to, let us build us a city and a tower, whose top may reach unto heaven; and let us make us a name, lest we be scattered abroad upon the face of the whole earth.",
+            "vref": "GEN.11.4"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And the LORD came down to see the city and the tower, which the children of men builded.",
+            "vref": "GEN.11.5"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And the LORD said, Behold, the people is one, and they have all one language; and this they begin to do: and now nothing will be restrained from them, which they have imagined to do.",
+            "vref": "GEN.11.6"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Go to, let us go down, and there confound their language, that they may not understand one another’s speech.",
+            "vref": "GEN.11.7"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "So the LORD scattered them abroad from thence upon the face of all the earth: and they left off to build the city.",
+            "vref": "GEN.11.8"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Therefore is the name of it called Babel; because the LORD did there confound the language of all the earth: and from thence did the LORD scatter them abroad upon the face of all the earth.",
+            "vref": "GEN.11.9"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And he spake this parable unto certain which trusted in themselves that they were righteous, and despised others:",
+            "vref": "LUK.18.9"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Two men went up into the temple to pray; the one a Pharisee, and the other a publican.",
+            "vref": "LUK.18.10"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "The Pharisee stood and prayed thus with himself, God, I thank thee, that I am not as other men are, extortioners, unjust, adulterers, or even as this publican.",
+            "vref": "LUK.18.11"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "I fast twice in the week, I give tithes of all that I possess.",
+            "vref": "LUK.18.12"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And the publican, standing afar off, would not lift up so much as his eyes unto heaven, but smote upon his breast, saying, God be merciful to me a sinner.",
+            "vref": "LUK.18.13"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "I tell you, this man went down to his house justified rather than the other: for every one that exalteth himself shall be abased; and he that humbleth himself shall be exalted.",
+            "vref": "LUK.18.14"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And a certain ruler asked him, saying, Good Master, what shall I do to inherit eternal life?",
+            "vref": "LUK.18.18"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And Jesus said unto him, Why callest thou me good? none is good, save one, that is, God.",
+            "vref": "LUK.18.19"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Thou knowest the commandments, Do not commit adultery, Do not kill, Do not steal, Do not bear false witness, Honour thy father and thy mother.",
+            "vref": "LUK.18.20"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And he said, All these have I kept from my youth up.",
+            "vref": "LUK.18.21"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Now when Jesus heard these things, he said unto him, Yet lackest thou one thing: sell all that thou hast, and distribute unto the poor, and thou shalt have treasure in heaven: and come, follow me.",
+            "vref": "LUK.18.22"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And when he heard this, he was very sorrowful: for he was very rich.",
+            "vref": "LUK.18.23"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And when Jesus saw that he was very sorrowful, he said, How hardly shall they that have riches enter into the kingdom of God!",
+            "vref": "LUK.18.24"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "All things are lawful unto me, but all things are not expedient: all things are lawful for me, but I will not be brought under the power of any.",
+            "vref": "1CO.6.12"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Meats for the belly, and the belly for meats: but God shall destroy both it and them. Now the body is not for fornication, but for the Lord; and the Lord for the body.",
+            "vref": "1CO.6.13"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And God hath both raised up the Lord, and will also raise up us by his own power.",
+            "vref": "1CO.6.14"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Know ye not that your bodies are the members of Christ? shall I then take the members of Christ, and make them the members of an harlot? God forbid.",
+            "vref": "1CO.6.15"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "What? know ye not that he which is joined to an harlot is one body? for two, saith he, shall be one flesh.",
+            "vref": "1CO.6.16"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "But he that is joined unto the Lord is one spirit.",
+            "vref": "1CO.6.17"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "Flee fornication. Every sin that a man doeth is without the body; but he that committeth fornication sinneth against his own body.",
+            "vref": "1CO.6.18"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "What? know ye not that your body is the temple of the Holy Ghost which is in you, which ye have of God, and ye are not your own?",
+            "vref": "1CO.6.19"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "For ye are bought with a price: therefore glorify God in your body, and in your spirit, which are God’s.",
+            "vref": "1CO.6.20"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "He that loveth father or mother more than me is not worthy of me: and he that loveth son or daughter more than me is not worthy of me.",
+            "vref": "MAT.10.37"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "And he that taketh not his cross, and followeth after me, is not worthy of me.",
+            "vref": "MAT.10.38"
+          },
+          {
+            "question": "Idols of Pride and Self",
+            "text": "He that findeth his life shall lose it: and he that loseth his life for my sake shall find it.",
+            "vref": "MAT.10.39"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Lay not up for yourselves treasures upon earth, where moth and rust doth corrupt, and where thieves break through and steal:",
+            "vref": "MAT.6.19"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "For where your treasure is, there will your heart be also.",
+            "vref": "MAT.6.21"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And when the people saw that Moses delayed to come down out of the mount, the people gathered themselves together unto Aaron, and said unto him, Up, make us gods, which shall go before us; for as for this Moses, the man that brought us up out of the land of Egypt, we wot not what is become of him.",
+            "vref": "EXO.32.1"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And Aaron said unto them, Break off the golden earrings, which are in the ears of your wives, of your sons, and of your daughters, and bring them unto me.",
+            "vref": "EXO.32.2"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And all the people brake off the golden earrings which were in their ears, and brought them unto Aaron.",
+            "vref": "EXO.32.3"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And he received them at their hand, and fashioned it with a graving tool, after he had made it a molten calf: and they said, These be thy gods, O Israel, which brought thee up out of the land of Egypt.",
+            "vref": "EXO.32.4"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And when Aaron saw it, he built an altar before it; and Aaron made proclamation, and said, To morrow is a feast to the LORD.",
+            "vref": "EXO.32.5"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And they rose up early on the morrow, and offered burnt offerings, and brought peace offerings; and the people sat down to eat and to drink, and rose up to play.",
+            "vref": "EXO.32.6"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And the LORD said unto Moses, Go, get thee down; for thy people, which thou broughtest out of the land of Egypt, have corrupted themselves:",
+            "vref": "EXO.32.7"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "They have turned aside quickly out of the way which I commanded them: they have made them a molten calf, and have worshipped it, and have sacrificed thereunto, and said, These be thy gods, O Israel, which have brought thee up out of the land of Egypt.",
+            "vref": "EXO.32.8"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And the LORD said unto Moses, I have seen this people, and, behold, it is a stiffnecked people:",
+            "vref": "EXO.32.9"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Now therefore let me alone, that my wrath may wax hot against them, and that I may consume them: and I will make of thee a great nation.",
+            "vref": "EXO.32.10"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "For the wrath of God is revealed from heaven against all ungodliness and unrighteousness of men, who hold the truth in unrighteousness;",
+            "vref": "ROM.1.18"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Because that which may be known of God is manifest in them; for God hath shewed it unto them.",
+            "vref": "ROM.1.19"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "For the invisible things of him from the creation of the world are clearly seen, being understood by the things that are made, even his eternal power and Godhead; so that they are without excuse:",
+            "vref": "ROM.1.20"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Because that, when they knew God, they glorified him not as God, neither were thankful; but became vain in their imaginations, and their foolish heart was darkened.",
+            "vref": "ROM.1.21"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Professing themselves to be wise, they became fools,",
+            "vref": "ROM.1.22"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "And changed the glory of the uncorruptible God into an image made like to corruptible man, and to birds, and fourfooted beasts, and creeping things.",
+            "vref": "ROM.1.23"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Wherefore God also gave them up to uncleanness through the lusts of their own hearts, to dishonour their own bodies between themselves:",
+            "vref": "ROM.1.24"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "Who changed the truth of God into a lie, and worshipped and served the creature more than the Creator, who is blessed for ever. Amen.",
+            "vref": "ROM.1.25"
+          },
+          {
+            "question": "The Idolatry of the Heart",
+            "text": "For this ye know, that no whoremonger, nor unclean person, nor covetous man, who is an idolater, hath any inheritance in the kingdom of Christ and of God.",
+            "vref": "EPH.5.5"
+          },
+          {
+            "question": "Seeking God First",
+            "text": "But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.",
+            "vref": "MAT.6.33"
+          },
+          {
+            "question": "Seeking God First",
+            "text": "I call heaven and earth to record this day against you, that I have set before you life and death, blessing and cursing: therefore choose life, that both thou and thy seed may live:",
+            "vref": "DEU.30.19"
+          },
+          {
+            "question": "Seeking God First",
+            "text": "That thou mayest love the Lord thy God, and that thou mayest obey his voice, and that thou mayest cleave unto him: for he is thy life, and the length of thy days: that thou mayest dwell in the land which the Lord sware unto thy fathers, to Abraham, to Isaac, and to Jacob, to give them.",
+            "vref": "DEU.30.20"
+          },
+          {
+            "question": "Seeking God First",
+            "text": "He that trusteth in his riches shall fall: but the righteous shall flourish as a branch.",
+            "vref": "PRO.11.28"
+          },
+          {
+            "question": "No One Is Without Sin",
+            "text": "For there is not a just man upon earth, that doeth good, and sinneth not.",
+            "vref": "ECC.7.20"
+          },
+          {
+            "question": "No One Is Without Sin",
+            "text": "If we say that we have no sin, we deceive ourselves, and the truth is not in us.",
+            "vref": "1JN.1.8"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "In the beginning God created the heaven and the earth.",
+            "vref": "GEN.1.1"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+            "vref": "GEN.1.2"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "And God said, Let there be light: and there was light.",
+            "vref": "GEN.1.3"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "And Jesus, when he was baptized, went up straightway out of the water: and, lo, the heavens were opened unto him, and he saw the Spirit of God descending like a dove, and lighting upon him:",
+            "vref": "MAT.3.16"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "And lo a voice from heaven, saying, This is my beloved Son, in whom I am well pleased.",
+            "vref": "MAT.3.17"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "In the beginning was the Word, and the Word was with God, and the Word was God.",
+            "vref": "JHN.1.1"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "The same was in the beginning with God.",
+            "vref": "JHN.1.2"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "All things were made by him; and without him was not any thing made that was made.",
+            "vref": "JHN.1.3"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "Go ye therefore, and teach all nations, baptizing them in the name of the Father, and of the Son, and of the Holy Ghost:",
+            "vref": "MAT.28.19"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "The grace of the Lord Jesus Christ, and the love of God, and the communion of the Holy Ghost, be with you all. Amen. The second epistle to the Corinthians was written from Philippi, a city of Macedonia, by Titus and Lucas.",
+            "vref": "2CO.13.14"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "The LORD bless thee, and keep thee:",
+            "vref": "NUM.6.24"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "The LORD make his face shine upon thee, and be gracious unto thee:",
+            "vref": "NUM.6.25"
+          },
+          {
+            "question": "God the Holy Trinity",
+            "text": "The LORD lift up his countenance upon thee, and give thee peace.",
+            "vref": "NUM.6.26"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "The LORD is good to all: and his tender mercies are over all his works.",
+            "vref": "PSA.145.9"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "Gracious is the LORD, and righteous; yea, our God is merciful.",
+            "vref": "PSA.116.5"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "If we believe not, yet he abideth faithful: he cannot deny himself.",
+            "vref": "2TI.2.13"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "God is a Spirit: and they that worship him must worship him in spirit and in truth.",
+            "vref": "JHN.4.24"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "Now unto the King eternal, immortal, invisible, the only wise God, be honour and glory for ever and ever. Amen.",
+            "vref": "1TI.1.17"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "For I am the LORD, I change not; therefore ye sons of Jacob are not consumed.",
+            "vref": "MAL.3.6"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "But Jesus beheld them, and said unto them, With men this is impossible; but with God all things are possible.",
+            "vref": "MAT.19.26"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "To the chief Musician, A Psalm of David. O LORD, thou hast searched me, and known me.",
+            "vref": "PSA.139.1"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "Thou knowest my downsitting and mine uprising, thou understandest my thought afar off.",
+            "vref": "PSA.139.2"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "Thou compassest my path and my lying down, and art acquainted with all my ways.",
+            "vref": "PSA.139.3"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "For there is not a word in my tongue, but, lo, O LORD, thou knowest it altogether.",
+            "vref": "PSA.139.4"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "Can any hide himself in secret places that I shall not see him? saith the LORD. Do not I fill heaven and earth? saith the LORD.",
+            "vref": "JER.23.24"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "And one cried unto another, and said, Holy, holy, holy, is the LORD of hosts: the whole earth is full of his glory.",
+            "vref": "ISA.6.3"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "He is the Rock, his work is perfect: for all his ways are judgment: a God of truth and without iniquity, just and right is he.",
+            "vref": "DEU.32.4"
+          },
+          {
+            "question": "The Attributes of God",
+            "text": "He that loveth not knoweth not God; for God is love.",
+            "vref": "1JN.4.8"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "And God spake all these words, saying,",
+            "vref": "EXO.20.1"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "I am the LORD thy God, which have brought thee out of the land of Egypt, out of the house of bondage.",
+            "vref": "EXO.20.2"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "Thou shalt have no other gods before me.",
+            "vref": "EXO.20.3"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+            "vref": "JHN.3.16"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "Thou shalt not make unto thee any graven image, or any likeness of any thing that is in heaven above, or that is in the earth beneath, or that is in the water under the earth:",
+            "vref": "EXO.20.4"
+          },
+          {
+            "question": "The First Commandment",
+            "text": "Thou shalt not bow down thyself to them, nor serve them: for I the LORD thy God am a jealous God, visiting the iniquity of the fathers upon the children unto the third and fourth generation of them that hate me;",
+            "vref": "EXO.20.5"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For I am not ashamed of the gospel of Christ: for it is the power of God unto salvation to every one that believeth; to the Jew first, and also to the Greek.",
+            "vref": "ROM.1.16"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For therein is the righteousness of God revealed from faith to faith: as it is written, The just shall live by faith.",
+            "vref": "ROM.1.17"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For the wrath of God is revealed from heaven against all ungodliness and unrighteousness of men, who hold the truth in unrighteousness;",
+            "vref": "ROM.1.18"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Because that which may be known of God is manifest in them; for God hath shewed it unto them.",
+            "vref": "ROM.1.19"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For the invisible things of him from the creation of the world are clearly seen, being understood by the things that are made, even his eternal power and Godhead; so that they are without excuse:",
+            "vref": "ROM.1.20"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Because that, when they knew God, they glorified him not as God, neither were thankful; but became vain in their imaginations, and their foolish heart was darkened.",
+            "vref": "ROM.1.21"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Professing themselves to be wise, they became fools,",
+            "vref": "ROM.1.22"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And changed the glory of the uncorruptible God into an image made like to corruptible man, and to birds, and fourfooted beasts, and creeping things.",
+            "vref": "ROM.1.23"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Wherefore God also gave them up to uncleanness through the lusts of their own hearts, to dishonour their own bodies between themselves:",
+            "vref": "ROM.1.24"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Who changed the truth of God into a lie, and worshipped and served the creature more than the Creator, who is blessed for ever. Amen.",
+            "vref": "ROM.1.25"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then answered Jesus and said unto them, Verily, verily, I say unto you, The Son can do nothing of himself, but what he seeth the Father do: for what things soever he doeth, these also doeth the Son likewise.",
+            "vref": "JHN.5.19"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For the Father loveth the Son, and sheweth him all things that himself doeth: and he will shew him greater works than these, that ye may marvel.",
+            "vref": "JHN.5.20"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For as the Father raiseth up the dead, and quickeneth them; even so the Son quickeneth whom he will.",
+            "vref": "JHN.5.21"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For the Father judgeth no man, but hath committed all judgment unto the Son:",
+            "vref": "JHN.5.22"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "That all men should honour the Son, even as they honour the Father. He that honoureth not the Son honoureth not the Father which hath sent him.",
+            "vref": "JHN.5.23"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Search the scriptures; for in them ye think ye have eternal life: and they are they which testify of me.",
+            "vref": "JHN.5.39"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And ye will not come to me, that ye might have life.",
+            "vref": "JHN.5.40"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "I receive not honour from men.",
+            "vref": "JHN.5.41"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "But I know you, that ye have not the love of God in you.",
+            "vref": "JHN.5.42"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "I am come in my Father’s name, and ye receive me not: if another shall come in his own name, him ye will receive.",
+            "vref": "JHN.5.43"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "How can ye believe, which receive honour one of another, and seek not the honour that cometh from God only?",
+            "vref": "JHN.5.44"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Do not think that I will accuse you to the Father: there is one that accuseth you, even Moses, in whom ye trust.",
+            "vref": "JHN.5.45"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "For had ye believed Moses, ye would have believed me: for he wrote of me.",
+            "vref": "JHN.5.46"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "But if ye believe not his writings, how shall ye believe my words?",
+            "vref": "JHN.5.47"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And it was at Jerusalem the feast of the dedication, and it was winter.",
+            "vref": "JHN.10.22"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And Jesus walked in the temple in Solomon’s porch.",
+            "vref": "JHN.10.23"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then came the Jews round about him, and said unto him, How long dost thou make us to doubt? If thou be the Christ, tell us plainly.",
+            "vref": "JHN.10.24"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Jesus answered them, I told you, and ye believed not: the works that I do in my Father’s name, they bear witness of me.",
+            "vref": "JHN.10.25"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "But ye believe not, because ye are not of my sheep, as I said unto you.",
+            "vref": "JHN.10.26"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "My sheep hear my voice, and I know them, and they follow me:",
+            "vref": "JHN.10.27"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
+            "vref": "JHN.10.28"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "My Father, which gave them me, is greater than all; and no man is able to pluck them out of my Father’s hand.",
+            "vref": "JHN.10.29"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "I and my Father are one.",
+            "vref": "JHN.10.30"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And it came to pass in those days, that the Philistines gathered their armies together for warfare, to fight with Israel. And Achish said unto David, Know thou assuredly, that thou shalt go out with me to battle, thou and thy men.",
+            "vref": "1SA.28.1"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And David said to Achish, Surely thou shalt know what thy servant can do. And Achish said to David, Therefore will I make thee keeper of mine head for ever.",
+            "vref": "1SA.28.2"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Now Samuel was dead, and all Israel had lamented him, and buried him in Ramah, even in his own city. And Saul had put away those that had familiar spirits, and the wizards, out of the land.",
+            "vref": "1SA.28.3"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the Philistines gathered themselves together, and came and pitched in Shunem: and Saul gathered all Israel together, and they pitched in Gilboa.",
+            "vref": "1SA.28.4"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And when Saul saw the host of the Philistines, he was afraid, and his heart greatly trembled.",
+            "vref": "1SA.28.5"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And when Saul enquired of the LORD, the LORD answered him not, neither by dreams, nor by Urim, nor by prophets.",
+            "vref": "1SA.28.6"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then said Saul unto his servants, Seek me a woman that hath a familiar spirit, that I may go to her, and enquire of her. And his servants said to him, Behold, there is a woman that hath a familiar spirit at En–dor.",
+            "vref": "1SA.28.7"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And Saul disguised himself, and put on other raiment, and he went, and two men with him, and they came to the woman by night: and he said, I pray thee, divine unto me by the familiar spirit, and bring me him up, whom I shall name unto thee.",
+            "vref": "1SA.28.8"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the woman said unto him, Behold, thou knowest what Saul hath done, how he hath cut off those that have familiar spirits, and the wizards, out of the land: wherefore then layest thou a snare for my life, to cause me to die?",
+            "vref": "1SA.28.9"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And Saul sware to her by the LORD, saying, As the LORD liveth, there shall no punishment happen to thee for this thing.",
+            "vref": "1SA.28.10"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then said the woman, Whom shall I bring up unto thee? And he said, Bring me up Samuel.",
+            "vref": "1SA.28.11"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And when the woman saw Samuel, she cried with a loud voice: and the woman spake to Saul, saying, Why hast thou deceived me? for thou art Saul.",
+            "vref": "1SA.28.12"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the king said unto her, Be not afraid: for what sawest thou? And the woman said unto Saul, I saw gods ascending out of the earth.",
+            "vref": "1SA.28.13"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And he said unto her, What form is he of? And she said, An old man cometh up; and he is covered with a mantle. And Saul perceived that it was Samuel, and he stooped with his face to the ground, and bowed himself.",
+            "vref": "1SA.28.14"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And Samuel said to Saul, Why hast thou disquieted me, to bring me up? And Saul answered, I am sore distressed; for the Philistines make war against me, and God is departed from me, and answereth me no more, neither by prophets, nor by dreams: therefore I have called thee, that thou mayest make known unto me what I shall do.",
+            "vref": "1SA.28.15"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then said Samuel, Wherefore then dost thou ask of me, seeing the LORD is departed from thee, and is become thine enemy?",
+            "vref": "1SA.28.16"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the LORD hath done to him, as he spake by me: for the LORD hath rent the kingdom out of thine hand, and given it to thy neighbour, even to David:",
+            "vref": "1SA.28.17"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Because thou obeyedst not the voice of the LORD, nor executedst his fierce wrath upon Amalek, therefore hath the LORD done this thing unto thee this day.",
+            "vref": "1SA.28.18"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Moreover the LORD will also deliver Israel with thee into the hand of the Philistines: and to morrow shalt thou and thy sons be with me: the LORD also shall deliver the host of Israel into the hand of the Philistines.",
+            "vref": "1SA.28.19"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Then Saul fell straightway all along on the earth, and was sore afraid, because of the words of Samuel: and there was no strength in him; for he had eaten no bread all the day, nor all the night.",
+            "vref": "1SA.28.20"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the woman came unto Saul, and saw that he was sore troubled, and said unto him, Behold, thine handmaid hath obeyed thy voice, and I have put my life in my hand, and have hearkened unto thy words which thou spakest unto me.",
+            "vref": "1SA.28.21"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "Now therefore, I pray thee, hearken thou also unto the voice of thine handmaid, and let me set a morsel of bread before thee; and eat, that thou mayest have strength, when thou goest on thy way.",
+            "vref": "1SA.28.22"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "But he refused, and said, I will not eat. But his servants, together with the woman, compelled him; and he hearkened unto their voice. So he arose from the earth, and sat upon the bed.",
+            "vref": "1SA.28.23"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And the woman had a fat calf in the house; and she hasted, and killed it, and took flour, and kneaded it, and did bake unleavened bread thereof:",
+            "vref": "1SA.28.24"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "And she brought it before Saul, and before his servants; and they did eat. Then they rose up, and went away that night.",
+            "vref": "1SA.28.25"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "To the chief Musician, A Psalm of David. The fool hath said in his heart, There is no God. They are corrupt, they have done abominable works, there is none that doeth good.",
+            "vref": "PSA.14.1"
+          },
+          {
+            "question": "Unbelief and False Worship",
+            "text": "To the chief Musician upon Mahalath, Maschil, A Psalm of David. The fool hath said in his heart, There is no God. Corrupt are they, and have done abominable iniquity: there is none that doeth good.",
+            "vref": "PSA.53.1"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "Blessed is the man that walketh not in the counsel of the ungodly, nor standeth in the way of sinners, nor sitteth in the seat of the scornful.",
+            "vref": "PSA.1.1"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "But his delight is in the law of the LORD; and in his law doth he meditate day and night.",
+            "vref": "PSA.1.2"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "And he shall be like a tree planted by the rivers of water, that bringeth forth his fruit in his season; his leaf also shall not wither; and whatsoever he doeth shall prosper.",
+            "vref": "PSA.1.3"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "The ungodly are not so: but are like the chaff which the wind driveth away.",
+            "vref": "PSA.1.4"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "Therefore the ungodly shall not stand in the judgment, nor sinners in the congregation of the righteous.",
+            "vref": "PSA.1.5"
+          },
+          {
+            "question": "The Two Ways",
+            "text": "For the Lord knoweth the way of the righteous: but the way of the ungodly shall perish.",
+            "vref": "PSA.1.6"
+          },
+          {
+            "question": "The Deuteronomy 5 Parallel",
+            "text": "Thou shalt have none other gods before me.",
+            "vref": "DEU.5.7"
+          }
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/chapter/GEN.1": {
+      "body": {
+        "book": "Genesis",
+        "chapter": 1,
+        "ref": "GEN.1",
+        "verses": [
+          {
+            "heading": {
+              "event_id": "theo-1",
+              "is_continuation": false,
+              "kind": "event",
+              "title": "Creation of all things"
+            },
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "In the beginning God created the heaven and the earth.",
+            "verse": 1,
+            "words_of_christ": [],
+            "xref_count": 61
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              },
+              {
+                "id": "holy_spirit_7400",
+                "name": "Holy Spirit"
+              }
+            ],
+            "places": [],
+            "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+            "verse": 2,
+            "words_of_christ": [],
+            "xref_count": 7
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let there be light: and there was light.",
+            "verse": 3,
+            "words_of_christ": [],
+            "xref_count": 19
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God saw the light, that it was good: and God divided the light from the darkness.",
+            "verse": 4,
+            "words_of_christ": [],
+            "xref_count": 7
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
+            "verse": 5,
+            "words_of_christ": [],
+            "xref_count": 14
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters.",
+            "verse": 6,
+            "words_of_christ": [],
+            "xref_count": 19
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God made the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so.",
+            "verse": 7,
+            "words_of_christ": [],
+            "xref_count": 7
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God called the firmament Heaven. And the evening and the morning were the second day.",
+            "verse": 8,
+            "words_of_christ": [],
+            "xref_count": 1
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
+            "verse": 9,
+            "words_of_christ": [],
+            "xref_count": 15
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good.",
+            "verse": 10,
+            "words_of_christ": [],
+            "xref_count": 2
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
+            "verse": 11,
+            "words_of_christ": [],
+            "xref_count": 17
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
+            "verse": 12,
+            "words_of_christ": [],
+            "xref_count": 7
+          },
+          {
+            "persons": [],
+            "places": [],
+            "text": "And the evening and the morning were the third day.",
+            "verse": 13,
+            "words_of_christ": [],
+            "xref_count": 0
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for seasons, and for days, and years:",
+            "verse": 14,
+            "words_of_christ": [],
+            "xref_count": 40
+          },
+          {
+            "persons": [],
+            "places": [],
+            "text": "And let them be for lights in the firmament of the heaven to give light upon the earth: and it was so.",
+            "verse": 15,
+            "words_of_christ": [],
+            "xref_count": 0
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
+            "verse": 16,
+            "words_of_christ": [],
+            "xref_count": 20
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God set them in the firmament of the heaven to give light upon the earth,",
+            "verse": 17,
+            "words_of_christ": [],
+            "xref_count": 4
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good.",
+            "verse": 18,
+            "words_of_christ": [],
+            "xref_count": 2
+          },
+          {
+            "persons": [],
+            "places": [],
+            "text": "And the evening and the morning were the fourth day.",
+            "verse": 19,
+            "words_of_christ": [],
+            "xref_count": 0
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let the waters bring forth abundantly the moving creature that hath life, and fowl that may fly above the earth in the open firmament of heaven.",
+            "verse": 20,
+            "words_of_christ": [],
+            "xref_count": 10
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God created great whales, and every living creature that moveth, which the waters brought forth abundantly, after their kind, and every winged fowl after his kind: and God saw that it was good.",
+            "verse": 21,
+            "words_of_christ": [],
+            "xref_count": 16
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God blessed them, saying, Be fruitful, and multiply, and fill the waters in the seas, and let fowl multiply in the earth.",
+            "verse": 22,
+            "words_of_christ": [],
+            "xref_count": 14
+          },
+          {
+            "persons": [],
+            "places": [],
+            "text": "And the evening and the morning were the fifth day.",
+            "verse": 23,
+            "words_of_christ": [],
+            "xref_count": 0
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let the earth bring forth the living creature after his kind, cattle, and creeping thing, and beast of the earth after his kind: and it was so.",
+            "verse": 24,
+            "words_of_christ": [],
+            "xref_count": 13
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God made the beast of the earth after his kind, and cattle after their kind, and every thing that creepeth upon the earth after his kind: and God saw that it was good.",
+            "verse": 25,
+            "words_of_christ": [],
+            "xref_count": 4
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Let us make man in our image, after our likeness: and let them have dominion over the fish of the sea, and over the fowl of the air, and over the cattle, and over all the earth, and over every creeping thing that creepeth upon the earth.",
+            "verse": 26,
+            "words_of_christ": [],
+            "xref_count": 29
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "So God created man in his own image, in the image of God created he him; male and female created he them.",
+            "verse": 27,
+            "words_of_christ": [],
+            "xref_count": 13
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God blessed them, and God said unto them, Be fruitful, and multiply, and replenish the earth, and subdue it: and have dominion over the fish of the sea, and over the fowl of the air, and over every living thing that moveth upon the earth.",
+            "verse": 28,
+            "words_of_christ": [],
+            "xref_count": 22
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God said, Behold, I have given you every herb bearing seed, which is upon the face of all the earth, and every tree, in the which is the fruit of a tree yielding seed; to you it shall be for meat.",
+            "verse": 29,
+            "words_of_christ": [],
+            "xref_count": 20
+          },
+          {
+            "persons": [],
+            "places": [],
+            "text": "And to every beast of the earth, and to every fowl of the air, and to every thing that creepeth upon the earth, wherein there is life, I have given every green herb for meat: and it was so.",
+            "verse": 30,
+            "words_of_christ": [],
+            "xref_count": 10
+          },
+          {
+            "persons": [
+              {
+                "id": "god_1324",
+                "name": "God"
+              }
+            ],
+            "places": [],
+            "text": "And God saw every thing that he had made, and, behold, it was very good. And the evening and the morning were the sixth day.",
+            "verse": 31,
+            "words_of_christ": [],
+            "xref_count": 13
+          }
+        ]
+      },
+      "status": 200
+    },
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
@@ -242,6 +3338,269 @@
         "witnesses_provenance": [
           "event-witnesses"
         ]
+      },
+      "status": 200
+    },
+    "GET /api/kretzmann/chapter/GEN.1": {
+      "body": {
+        "verses": [
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.0"
+              }
+            ],
+            "verse": 1
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.1"
+              },
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.2"
+              },
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.3"
+              }
+            ],
+            "verse": 2
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.4"
+              }
+            ],
+            "verse": 3
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.5"
+              }
+            ],
+            "verse": 4
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.6"
+              },
+              {
+                "heading": "The Creation of the World.: The Creation of Chaos and Light",
+                "id": "CommentaryItem:kretzmann/0.1.7"
+              }
+            ],
+            "verse": 5
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Firmament",
+                "id": "CommentaryItem:kretzmann/0.1.8"
+              }
+            ],
+            "verse": 6
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Firmament",
+                "id": "CommentaryItem:kretzmann/0.1.9"
+              }
+            ],
+            "verse": 7
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Firmament",
+                "id": "CommentaryItem:kretzmann/0.1.10"
+              }
+            ],
+            "verse": 8
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Dry Land, Herbs, and Trees",
+                "id": "CommentaryItem:kretzmann/0.1.11"
+              }
+            ],
+            "verse": 9
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Dry Land, Herbs, and Trees",
+                "id": "CommentaryItem:kretzmann/0.1.12"
+              }
+            ],
+            "verse": 10
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Dry Land, Herbs, and Trees",
+                "id": "CommentaryItem:kretzmann/0.1.13"
+              }
+            ],
+            "verse": 11
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Dry Land, Herbs, and Trees",
+                "id": "CommentaryItem:kretzmann/0.1.14"
+              }
+            ],
+            "verse": 12
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Sun, Moon, and Stars",
+                "id": "CommentaryItem:kretzmann/0.1.15"
+              }
+            ],
+            "verse": 14
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Sun, Moon, and Stars",
+                "id": "CommentaryItem:kretzmann/0.1.16"
+              }
+            ],
+            "verse": 15
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Sun, Moon, and Stars",
+                "id": "CommentaryItem:kretzmann/0.1.17"
+              }
+            ],
+            "verse": 16
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Sun, Moon, and Stars",
+                "id": "CommentaryItem:kretzmann/0.1.18"
+              }
+            ],
+            "verse": 18
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Marine Animals and Birds",
+                "id": "CommentaryItem:kretzmann/0.1.19"
+              }
+            ],
+            "verse": 20
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Marine Animals and Birds",
+                "id": "CommentaryItem:kretzmann/0.1.20"
+              }
+            ],
+            "verse": 21
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of Marine Animals and Birds",
+                "id": "CommentaryItem:kretzmann/0.1.21"
+              }
+            ],
+            "verse": 22
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Land Animals",
+                "id": "CommentaryItem:kretzmann/0.1.22"
+              }
+            ],
+            "verse": 24
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation of the Land Animals",
+                "id": "CommentaryItem:kretzmann/0.1.23"
+              }
+            ],
+            "verse": 25
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.24"
+              }
+            ],
+            "verse": 26
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.25"
+              }
+            ],
+            "verse": 27
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.26"
+              }
+            ],
+            "verse": 28
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.27"
+              }
+            ],
+            "verse": 29
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.28"
+              }
+            ],
+            "verse": 30
+          },
+          {
+            "items": [
+              {
+                "heading": "The Creation of the World.: The Creation and Blessing of Man",
+                "id": "CommentaryItem:kretzmann/0.1.29"
+              }
+            ],
+            "verse": 31
+          }
+        ],
+        "version": "18c7546b435791ee9422be8f32fbb5fa"
       },
       "status": 200
     },
@@ -1047,6 +4406,90 @@
       ],
       "status": 200
     },
+    "GET /api/narrative/event/ab_ur": {
+      "body": {
+        "narrative": [
+          {
+            "event_id": "ab_ur",
+            "event_label": "Terah's family leaves Ur",
+            "following": {
+              "id": "ab_haran",
+              "label": "Sojourn in Haran; the call of Abram",
+              "places": [
+                "haran"
+              ],
+              "verse_groups": [
+                {
+                  "book": "GEN",
+                  "chapter": 11,
+                  "count": 1,
+                  "verses": [
+                    "GEN.11.31"
+                  ]
+                },
+                {
+                  "book": "GEN",
+                  "chapter": 12,
+                  "count": 2,
+                  "verses": [
+                    "GEN.12.1",
+                    "GEN.12.4"
+                  ]
+                }
+              ]
+            },
+            "narrative_id": "abraham-migration",
+            "narrative_name": "Abraham's Migration"
+          }
+        ],
+        "timeline": {
+          "following": {
+            "id": "ab_haran",
+            "label": "Sojourn in Haran; the call of Abram",
+            "places": [
+              "haran"
+            ],
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 11,
+                "count": 1,
+                "verses": [
+                  "GEN.11.31"
+                ]
+              },
+              {
+                "book": "GEN",
+                "chapter": 12,
+                "count": 2,
+                "verses": [
+                  "GEN.12.1",
+                  "GEN.12.4"
+                ]
+              }
+            ]
+          },
+          "prior": {
+            "id": "theo-61",
+            "label": "Lifetime of Terah",
+            "places": [],
+            "verse_groups": [
+              {
+                "book": "GEN",
+                "chapter": 11,
+                "count": 3,
+                "verses": [
+                  "GEN.11.26",
+                  "GEN.11.27",
+                  "GEN.11.28"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "status": 200
+    },
     "GET /api/narratives": {
       "body": [
         {
@@ -1478,6 +4921,57 @@
         "kind": "site-of",
         "next": null,
         "version": "18c7546b435791ee9422be8f32fbb5fa"
+      },
+      "status": 200
+    },
+    "GET /api/place/hazor-1": {
+      "body": {
+        "description": "A stronghold of the Canaanites in the mountains north of Lake Merom ([Josh. 11:1-5](/josh#Josh.11.1)). Jabin the king with his allied tribes here encountered Joshua in a great battle. Joshua gained a signal victory, which virtually completed his conquest of Canaan (11:10-13). This city was, however, afterwards rebuilt by the Canaanites, and was ruled by a king with the same hereditary name of Jabin. His army, under a noted leader of the name of Sisera, swept down upon the south, aiming at the complete subjugation of the country. This powerful army was met by the Israelites under Barak, who went forth by the advice of the prophetess Deborah. The result was one of the most remarkable victories for Israel recorded in the Old Testament ([Josh. 19:36](/josh#Josh.19.36); [Judg. 4:2](/judg#Judg.4.2); [1 Sam. 12:9](/1sam#1Sam.12.9)). The city of Hazor was taken and occupied by the Israelites. It was fortified by Solomon to defend the entrance into the kingdom from Syria and Assyria. When Tiglath-pileser, the Assyrian king, invaded the land, this was one of the first cities he captured, carrying its inhabitants captive into Assyria ([2 Kings 15:29](/2kgs#2Kgs.15.29)). It has been identified with Khurbet Harrah, 2 1/2 miles south-east of Kedesh.",
+        "events": [
+          {
+            "id": "cq_hazor",
+            "label": "Hazor is defeated and burned",
+            "verse_groups": [
+              {
+                "book": "JOS",
+                "chapter": 11,
+                "count": 2,
+                "verses": [
+                  "JOS.11.10",
+                  "JOS.11.11"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -1400,
+              "to_year": -1400
+            }
+          },
+          {
+            "id": "theo-138",
+            "label": "Subjugation by Jabin",
+            "verse_groups": [
+              {
+                "book": "JDG",
+                "chapter": 4,
+                "count": 3,
+                "verses": [
+                  "JDG.4.1",
+                  "JDG.4.2",
+                  "JDG.4.3"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": -1298,
+              "to_year": -1298
+            }
+          }
+        ],
+        "id": "hazor-1",
+        "lat": 33.018333,
+        "lon": 35.569167,
+        "name": "Hazor 1"
       },
       "status": 200
     },
@@ -6891,6 +10385,311 @@
             "title": "Our Own Curated Work",
             "what_it_is": "Everything this project authored directly: the historical polity borders, the coastline land mask, biblical landmarks, narrative threads, eras, and the titles, sectioning, and aliases that connect it all together.",
             "what_we_built": "Hand-authored under data/curated/ and compiled into narratives.json, eras.json, books-meta.json, landmarks.json, polities.json, and land-mask.json. Every displayed event title is this project's own phrasing, provenance-tagged (robertson_section, acts_section, kjv_superscription, theographic, atlas_section) back to whichever source above grounded it, so the mapping stays auditable."
+          }
+        ]
+      },
+      "status": 200
+    },
+    "GET /api/verse/JHN.3.16": {
+      "body": {
+        "book_meta": {
+          "author": "John",
+          "write_from": 85,
+          "write_place": "ephesus",
+          "write_to": 95
+        },
+        "catechism": [
+          {
+            "id": "commandment-1",
+            "name": "The First Commandment",
+            "provenance": [
+              "concord-sc-overlap",
+              "curated-catechism"
+            ],
+            "question": "The First Commandment"
+          },
+          {
+            "id": "commandments-close",
+            "name": "What Does God Say of All These Commandments?",
+            "provenance": [
+              "concord-sc-overlap",
+              "curated-catechism"
+            ],
+            "question": "Redemption in Christ"
+          },
+          {
+            "id": "creed-1",
+            "name": "The First Article — Of Creation",
+            "provenance": [
+              "concord-sc-overlap",
+              "curated-catechism"
+            ],
+            "question": "God Our Father"
+          },
+          {
+            "id": "creed-3",
+            "name": "The Third Article — Of Sanctification",
+            "provenance": [
+              "concord-sc-overlap",
+              "curated-catechism"
+            ],
+            "question": "The Riches of God's Grace"
+          }
+        ],
+        "catechism_provenance": [
+          "concord-sc-overlap",
+          "curated-catechism"
+        ],
+        "cross_refs": [
+          {
+            "preview": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "ROM.5.8",
+            "votes": 981
+          },
+          {
+            "preview": "In this was manifested the love of God toward us, because that God sent his only begotten Son into the world, that we might live through him.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "1JN.4.9-10",
+            "votes": 695
+          },
+          {
+            "preview": "He that spared not his own Son, but delivered him up for us all, how shall he not with him also freely give us all things?",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "ROM.8.32",
+            "votes": 507
+          },
+          {
+            "preview": "That whosoever believeth in him should not perish, but have eternal life.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.3.15",
+            "votes": 497
+          },
+          {
+            "preview": "Jesus said unto her, I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live:",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.11.25-26",
+            "votes": 455
+          },
+          {
+            "preview": "And this is the will of him that sent me, that every one which seeth the Son, and believeth on him, may have everlasting life: and I will raise him up at the last day.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.6.40",
+            "votes": 396
+          },
+          {
+            "preview": "He that believeth on the Son hath everlasting life: and he that believeth not the Son shall not see life; but the wrath of God abideth on him.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.3.36",
+            "votes": 374
+          },
+          {
+            "preview": "We love him, because he first loved us.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "1JN.4.19",
+            "votes": 349
+          },
+          {
+            "preview": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.10.28",
+            "votes": 317
+          },
+          {
+            "preview": "This is a faithful saying, and worthy of all acceptation, that Christ Jesus came into the world to save sinners; of whom I am chief.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "1TI.1.15-16",
+            "votes": 286
+          },
+          {
+            "preview": "For if, when we were enemies, we were reconciled to God by the death of his Son, much more, being reconciled, we shall be saved by his life.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "ROM.5.10",
+            "votes": 262
+          },
+          {
+            "preview": "The next day John seeth Jesus coming unto him, and saith, Behold the Lamb of God, which taketh away the sin of the world.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.1.29",
+            "votes": 237
+          },
+          {
+            "preview": "Now our Lord Jesus Christ himself, and God, even our Father, which hath loved us, and hath given us everlasting consolation and good hope through grace,",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "2TH.2.16",
+            "votes": 224
+          },
+          {
+            "preview": "To wit, that God was in Christ, reconciling the world unto himself, not imputing their trespasses unto them; and hath committed unto us the word of reconciliation.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "2CO.5.19-21",
+            "votes": 212
+          },
+          {
+            "preview": "But God, who is rich in mercy, for his great love wherewith he loved us,",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "EPH.2.4",
+            "votes": 202
+          },
+          {
+            "preview": "But go ye and learn what that meaneth, I will have mercy, and not sacrifice: for I am not come to call the righteous, but sinners to repentance.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "MAT.9.13",
+            "votes": 186
+          },
+          {
+            "preview": "And from Jesus Christ, who is the faithful witness, and the first begotten of the dead, and the prince of the kings of the earth. Unto him that loved us, and washed us from our sins in his own blood,",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "REV.1.5",
+            "votes": 171
+          },
+          {
+            "preview": "And he said, Lay not thine hand upon the lad, neither do thou any thing unto him: for now I know that thou fearest God, seeing thou hast not withheld thy son, thine only son from me.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "GEN.22.12",
+            "votes": 164
+          },
+          {
+            "preview": "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.1.14",
+            "votes": 164
+          },
+          {
+            "preview": "But after that the kindness and love of God our Saviour toward man appeared,",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "TIT.3.4",
+            "votes": 160
+          },
+          {
+            "preview": "No man hath seen God at any time; the only begotten Son, which is in the bosom of the Father, he hath declared him.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "JHN.1.18",
+            "votes": 148
+          },
+          {
+            "preview": "Having yet therefore one son, his wellbeloved, he sent him also last unto them, saying, They will reverence my son.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "MRK.12.6",
+            "votes": 137
+          },
+          {
+            "preview": "Glory to God in the highest, and on earth peace, good will toward men.",
+            "provenance": [
+              "openbible.info-cross-references"
+            ],
+            "target": "LUK.2.14",
+            "votes": 127
+          }
+        ],
+        "cross_refs_provenance": [
+          "openbible.info-cross-references"
+        ],
+        "events": [
+          {
+            "id": "rob_nicodemus",
+            "kind": "event",
+            "label": "Nicodemus comes to Jesus by night",
+            "places": [
+              "jerusalem"
+            ],
+            "provenance": "curated",
+            "verse_groups": [
+              {
+                "book": "JHN",
+                "chapter": 2,
+                "count": 3,
+                "verses": [
+                  "JHN.2.23",
+                  "JHN.2.24",
+                  "JHN.2.25"
+                ]
+              },
+              {
+                "book": "JHN",
+                "chapter": 3,
+                "count": 21,
+                "verses": [
+                  "JHN.3.1",
+                  "JHN.3.2",
+                  "JHN.3.3",
+                  "JHN.3.4",
+                  "JHN.3.5",
+                  "JHN.3.6",
+                  "JHN.3.7",
+                  "JHN.3.8",
+                  "JHN.3.9",
+                  "JHN.3.10",
+                  "JHN.3.11",
+                  "JHN.3.12",
+                  "JHN.3.13",
+                  "JHN.3.14",
+                  "JHN.3.15",
+                  "JHN.3.16",
+                  "JHN.3.17",
+                  "JHN.3.18",
+                  "JHN.3.19",
+                  "JHN.3.20"
+                ]
+              }
+            ],
+            "when": {
+              "from_year": 30,
+              "to_year": 30
+            }
+          }
+        ],
+        "provenance": "kjv",
+        "ref": "JHN.3.16",
+        "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
+        "words_of_christ": [
+          {
+            "end": 141,
+            "start": 0
           }
         ]
       },

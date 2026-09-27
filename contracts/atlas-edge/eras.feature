@@ -4,7 +4,7 @@ Feature: eras — the named periods that resolve standings
   without hardcoded years.
 
   Vocabulary:
-    | projection | any of: catechism-list, contract, edge-page, eras, event, export-format, gazetteer, land-mask, landmarks, narratives, node-card, polities, sources, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: the whole era table, as we consume it
     When I GET /api/eras

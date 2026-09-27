@@ -37,8 +37,16 @@
 --     tidiness than these five deliver, and saying so is cheaper than
 --     pretending otherwise.
 --
--- There is NO @place@ projection. @GET \/api\/place\/{id}@ is juncture
--- T-14 in the batch report's inventory, listed as uncovered.
+--   * WHOLE-BODY PINS of the atlas's own detail routes: @books@,
+--     @chapter@, @kretzmann-chapter@, @verse@, @catechism-item@, @place@,
+--     @narrative-event@. Each is @Keep@, because "pinned whole" IS the
+--     whole body: their only consumer today is the atlas's own client,
+--     which reads every field, and a @Fields@ list restating each route's
+--     shape would be a second declaration of what @contracts/openapi.yaml@
+--     already owns (spec D8) and would drift from it. They are named after
+--     the route rather than a graph thing, and that is the point -- they
+--     exist so FOCUS can retire them one at a time with a visible diff,
+--     and so that no route is published without a promise.
 --
 -- The six CARTOGRAPHIC entries at the bottom (@eras@, @event@,
 -- @land-mask@, @landmarks@, @narratives@, @polities@) are NOT ours to
@@ -331,6 +339,19 @@ projections = Map.fromList
     , Each (Fields
         [ field1 "id" Keep, field1 "name" Keep, field1 "question" Keep ])
     )
+
+  -- ---------------- THE DETAIL ROUTES, PINNED WHOLE ----------------
+  -- Seven routes whose only consumer today is the atlas's own client, which
+  -- reads all of them. @Keep@ rather than a field list: see the header's
+  -- entry-by-entry account. @graph\/detail-routes.feature@ is where they are
+  -- pinned, and retiring one is a fixture deletion a reviewer sees.
+  , ("books", Keep)
+  , ("chapter", Keep)
+  , ("kretzmann-chapter", Keep)
+  , ("verse", Keep)
+  , ("catechism-item", Keep)
+  , ("place", Keep)
+  , ("narrative-event", Keep)
 
   -- ------- CARTOGRAPHIC: map-generator's OWN consumed projection -------
   -- Ported field-for-field from map-generator/contracts/runner/src/

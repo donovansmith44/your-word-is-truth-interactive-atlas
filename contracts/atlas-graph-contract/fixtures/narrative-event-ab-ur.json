@@ -1,0 +1,81 @@
+{
+    "narrative": [
+        {
+            "event_id": "ab_ur",
+            "event_label": "Terah's family leaves Ur",
+            "following": {
+                "id": "ab_haran",
+                "label": "Sojourn in Haran; the call of Abram",
+                "places": [
+                    "haran"
+                ],
+                "verse_groups": [
+                    {
+                        "book": "GEN",
+                        "chapter": 11,
+                        "count": 1,
+                        "verses": [
+                            "GEN.11.31"
+                        ]
+                    },
+                    {
+                        "book": "GEN",
+                        "chapter": 12,
+                        "count": 2,
+                        "verses": [
+                            "GEN.12.1",
+                            "GEN.12.4"
+                        ]
+                    }
+                ]
+            },
+            "narrative_id": "abraham-migration",
+            "narrative_name": "Abraham's Migration"
+        }
+    ],
+    "timeline": {
+        "following": {
+            "id": "ab_haran",
+            "label": "Sojourn in Haran; the call of Abram",
+            "places": [
+                "haran"
+            ],
+            "verse_groups": [
+                {
+                    "book": "GEN",
+                    "chapter": 11,
+                    "count": 1,
+                    "verses": [
+                        "GEN.11.31"
+                    ]
+                },
+                {
+                    "book": "GEN",
+                    "chapter": 12,
+                    "count": 2,
+                    "verses": [
+                        "GEN.12.1",
+                        "GEN.12.4"
+                    ]
+                }
+            ]
+        },
+        "prior": {
+            "id": "theo-61",
+            "label": "Lifetime of Terah",
+            "places": [],
+            "verse_groups": [
+                {
+                    "book": "GEN",
+                    "chapter": 11,
+                    "count": 3,
+                    "verses": [
+                        "GEN.11.26",
+                        "GEN.11.27",
+                        "GEN.11.28"
+                    ]
+                }
+            ]
+        }
+    }
+}

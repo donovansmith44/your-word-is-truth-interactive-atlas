@@ -14,7 +14,7 @@ Feature: the declared vocabulary — the root of every other promise
   exactly what the semver gate classifies.
 
   Vocabulary:
-    | projection | any of: catechism-list, contract, edge-page, eras, event, export-format, gazetteer, land-mask, landmarks, narratives, node-card, polities, sources, version-root, vocabulary, xref-list |
+    | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
   Scenario: every node kind and edge family the graph declares
     When I read the graph's declared vocabulary

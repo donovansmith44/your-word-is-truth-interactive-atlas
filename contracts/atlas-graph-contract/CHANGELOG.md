@@ -34,6 +34,20 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.12.0** (Batch CONTRACT-1a) — **MINOR: expectations added.**
+  Detail routes pinned whole: `books`, `chapter`, `kretzmann-chapter`, `verse`,
+  `catechism-item`, `place`, `narrative-event`. `graph/detail-routes.feature`
+  adds seven scenarios and seven fixtures, so that no route
+  `contracts/openapi.yaml` publishes is served without a promise
+  (`atlas-contract/tests/contract_coverage.rs` is the law). Each is a
+  whole-body pin rather than a field list -- their only consumer today is the
+  atlas's own client, which reads every field -- so FOCUS can retire them one
+  at a time with a visible diff. The seven projection names join the runner's
+  registry, which regenerates every `Vocabulary:` table in this suite and in
+  `contracts/atlas-edge` (a generated description of the runner's parameter
+  space, not an expectation -- see that suite's RECEIVED.md). No existing
+  promise added to, removed or reworded; no fixture re-blessed.
+
 - **0.11.0** (Batch CONTRACT-1a) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The `contract` fixture follows the AQC 0.8.0 advertisement -- `min_version`/
   `max_version` 0.7.0 -> 0.8.0, the only two fields `transport/http.feature`'s
