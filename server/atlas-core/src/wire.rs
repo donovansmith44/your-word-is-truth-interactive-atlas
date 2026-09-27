@@ -184,9 +184,6 @@ mod tests {
         assert!(json.contains("\"ref\":\"GEN.1.1\""), "missing ref key: {json}");
         assert!(!json.contains("\"sref\""), "sref must never appear on the wire: {json}");
         assert!(!json.contains("\"window\""), "window must be omitted when None: {json}");
-        // Batch E2: `quiet_places` stays a present, empty array here -- NEVER
-        // an omitted key -- even for a scripture-mode scene (this fixture's
-        // own mode), per the doc comment's "always an array" wire choice.
         assert!(json.contains("\"quiet_places\":[]"), "quiet_places must be present (empty, not omitted): {json}");
 
         let back: Scene = serde_json::from_str(&json).unwrap();

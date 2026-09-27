@@ -1,79 +1,11 @@
-//! Batch HOTFIX-2: same-place dedupe. Two compiled `Place` records can
-//! independently geocode to the SAME real-world location -- a duplicate
-//! lineage (OpenBible vs Theographic, e.g. `hazor-1`/`hazor_545`) or two
-//! independent OpenBible identifications of the same site under different
-//! text-forms (e.g. `kedesh-4`/`kedesh-naphtali`, one for JDG.4.6's fully-
-//! qualified "Kedeshnaphtali", one for JDG.4.9-11's bare elliptical
-//! "Kedesh" back-reference to the same place in the same chapter). Left
-//! alone, a scene renders BOTH records as separate markers, and the
-//! close-marker screen-space nudge (map.js) then has to visually separate
-//! two dots that are really one place. User report 2026-08-20: Judges 4's
-//! Hazor/Kedesh-naphtali rendering in the Mediterranean -- see
-//! batch-hotfix2-report.md for the full root-cause chain (the OTHER half of
-//! that bug, the nudge itself moving a marker far enough to cross the
-//! coastline, is map.js's own fix, independent of this module).
-//!
-//! The fix: merge each CONFIRMED pair into one record before scene
-//! composition ever sees them (`AtlasData::finish`, before any scene is
-//! built), so the wire -- and therefore the popover, the quiet-place graph,
-//! and every other consumer of a place id -- agrees everywhere that they
-//! are one node. Applied here, in atlas-core, rather than per-scene in
-//! `scene.rs`: a place's identity must be the same fact regardless of which
-//! window or scripture ref happens to be asking (`/api/place/{id}`, arrow
-//! endpoints, `event_bearing_place_ids` -- QUIET-1's own "cities in our
-//! graph" -- all read `AtlasData::places`/`events` directly), so merging
-//! once at load time, upstream of every consumer, is the only layer that
-//! keeps all of them consistent with each other. Compare: merging only
-//! inside `scene::lit_places` would fix the map but leave `/api/place/
-//! hazor_545` resolving as its own, still-separate node.
-//!
-//! CURATED, NOT AUTOMATIC -- this is the one deliberate departure from a
-//! literal reading of "two places within 1.0km are one marker": a
-//! dataset-wide sweep at this batch's own 1.0km threshold (see the batch
-//! report's sweep section) found 4,516 place PAIRS that close together in
-//! `data/compiled/places.json` (1,375 places total), and the overwhelming
-//! majority are genuinely DISTINCT places that merely share an imprecise
-//! upstream geocode -- e.g. `mount-sinai`/`mount-horeb`/`mount-paran`/
-//! `wilderness-of-sinai`, four textually and traditionally distinct
-//! locations, all landing on the same approximate point because their real
-//! position is scholarly-disputed, not because they're the same place. This
-//! app's own `map.js` (`setScene`'s doc comment) already documents a
-//! load-bearing case of exactly this trap: Shittim and the "plains of Moab"
-//! camp sit at the IDENTICAL lat/lon (0km apart) and are "both real,
-//! distinct places" that a live test (`world-map.spec.ts`'s WORLD-3)
-//! requires to keep rendering as two separate, independently-addressable
-//! markers. Distance alone cannot tell these two situations apart -- there
-//! is no threshold that both merges `kedesh-4`/`kedesh-naphtali` (0km
-//! apart) and spares Shittim/Moab (also 0km apart). So `MERGE_PAIRS` below
-//! is a small, explicitly curated, individually-verified table -- hand-
-//! curated and trivially git-revertible in the same SPIRIT as every other
-//! judgment call in this app's data (`data/curated/*.toml`), though NOT the
-//! same edit ceremony (a `.toml` change needs no Rust knowledge/recompile;
-//! this does -- fix-round-1, review finding M-1) -- expressed as a Rust
-//! table rather than a new curated-file pipeline stage, since two rows
-//! don't earn a new ETL parser/validator/compiled-file stage under this
-//! batch's own "small, surgical... do not widen scope" instruction.
-//! `great_circle_km` still enforces the brief's own <=1.0km ceiling on every
-//! curated entry (`debug_assert!` in `apply_place_merges`, and this
-//! module's own unit tests) as a safety net against a future curation
-//! mistake -- it is a validation bound on curated entries, never the
-//! discovery mechanism.
-//!
-//! KNOWN LIMITATION for a future curator adding a pair here: if `absorbed`
-//! ever carries its own `data/curated/place-history.toml` entry, that
-//! history becomes unreachable after the merge (nothing in `AtlasData::places`
-//! keeps the absorbed id any more) -- migrate any such entry onto `survivor`
-//! by hand. None of the 17 pairs below (the original 2, plus Batch PLACE-1a's
-//! 15) has one (verified against `data/curated/place-history.toml`), so this
-//! is a documented caveat, not a bug fixed here.
+//! Distance alone cannot tell a duplicate record from two distinct places sharing an
+//! imprecise geocode, so the pairs below are curated one at a time and the threshold is
+//! only a validation bound on them, never the discovery mechanism.
 
 use crate::data::{Event, Place};
 
-/// Haversine great-circle distance in kilometers. Precise (not the
-/// equirectangular approximation map.js's own client-side pixel-collision
-/// check uses for a cheap, zoom-scale rendering decision) -- this threshold
-/// decides a semantic identity question (are these records the SAME
-/// PLACE), not a screen-space layout question, so it earns the extra trig.
+/// Exact haversine rather than the cheap approximation the client uses for layout: this
+/// distance decides a question of identity.
 pub fn great_circle_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     const EARTH_RADIUS_KM: f64 = 6371.0088;
     let (p1, p2) = (lat1.to_radians(), lat2.to_radians());
@@ -83,21 +15,15 @@ pub fn great_circle_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     2.0 * EARTH_RADIUS_KM * a.sqrt().asin()
 }
 
-/// The same-place threshold, per the brief verbatim: covers identical
-/// coordinates and the ~136m Hazor pair; a 2km-apart pair must NOT merge.
 pub const SAME_PLACE_THRESHOLD_KM: f64 = 1.0;
 
-/// One curated same-place pair: `absorbed` is folded into `survivor` --
-/// `absorbed`'s own `verse_links` are unioned onto `survivor` and every
-/// event referencing `absorbed` is repointed to `survivor` (`apply_place_merges`);
-/// `absorbed` itself is then dropped from `AtlasData::places` entirely.
-/// Both pairs below were verified live against `/world?ref=JDG.4`
-/// (batch-hotfix2-report.md) before being added here.
+/// `absorbed` is folded into `survivor` and then leaves `AtlasData::places` entirely, so
+/// a curated place-history entry on an absorbed id becomes unreachable -- move any such
+/// entry onto the survivor by hand before adding the pair.
 pub struct PlaceMerge {
     pub survivor: &'static str,
     pub absorbed: &'static str,
-    /// Why `survivor` (not `absorbed`) keeps the id -- for a future reader,
-    /// not read by any code.
+    /// For a future reader; no code reads it.
     pub reason: &'static str,
 }
 
@@ -127,34 +53,6 @@ pub const MERGE_PAIRS: &[PlaceMerge] = &[
             low-stakes tie-break: kedesh-4 carries more of the chapter's own verse evidence (3 \
             links vs 1) and keeps it, with kedesh-naphtali's own verse_links unioned on.",
     },
-    // Batch PLACE-1a (2026-08-27, place-alias-investigation.md's own §3 systematic sweep --
-    // the 20 confirmed Theographic `_NNN`-suffixed dual-lineage duplicates, mechanically
-    // re-derived against data/exports/gazetteer.json at this module's own 1.0km threshold: 39
-    // total Theographic-synthesized ids, 20 of which sit within 1.0km of an unrelated
-    // OpenBible-lineage sibling; the other 19 have no sibling at all, so they are not a merge
-    // question here). Each of the 15 pairs below was individually hand-verified against raw
-    // theographic-bible-metadata-master/CSV/{Places,Events}.csv, data/curated/events-extra.toml,
-    // and the compiled gazetteer's own verse-attestation lists before being added -- per this
-    // module's own "distance alone cannot tell identity from coincidence" warning above, 5 of
-    // the 20 candidates were judged NOT true duplicates on exactly that basis and are
-    // deliberately EXCLUDED (documented in batch-place1a-report.md, not silently dropped):
-    // `judea_657` (Theographic's own region record, landing in the ~95-member Jerusalem
-    // mega-cluster -- a region/city coincidence, the OTHER half of the owner's ask, out of this
-    // batch's scope); `jericho_634` (its own raw Theographic events -- Bartimaeus healed
-    // "leaving Jericho" MAT.20.29/MRK.10.46/LUK.18.35, Zacchaeus LUK.19.1 -- are unambiguously
-    // NT/Herodian-era, matching curated jericho-2's own verse set exactly, but jericho_634 sits
-    // 197m from jericho-1 -- the OT-era site data/curated/events-extra.toml curates separately --
-    // and 2.1km from jericho-2, past this module's own 1.0km ceiling; merging into the
-    // geographically-nearer-but-wrong-era jericho-1 would misattribute NT events onto the OT
-    // marker, exactly the class of error this module's own header warns proximity cannot
-    // resolve, so it is left unmerged, a genuine gap for PLACE-1b, not this batch's mechanism);
-    // `bethany_186` (its nearest OpenBible neighbor, en-shemesh, is JOS.15.7's unrelated OT
-    // boundary spring -- no shared name-root, no historical rename, plain geocoding-precision
-    // noise); `moab_815` (Theographic's own "Moab" region record -- its real OpenBible-lineage
-    // twins moab-1/moab-2 are 36km/39km away, nowhere near this threshold; its only within-1.0km
-    // neighbor, dibon-1, is a specific Moabite CITY, not a name-form alias of "Moab" the nation);
-    // `galilee_433` (Nazareth is a city IN Galilee, not another name for Galilee itself -- the
-    // same region/city shape as Judea and Chaldea, not a true alias).
     PlaceMerge {
         survivor: "ur-1",
         absorbed: "ur_1189",
@@ -333,44 +231,21 @@ pub const MERGE_PAIRS: &[PlaceMerge] = &[
     },
 ];
 
-/// Ids absorbed into `survivor_id`, if any -- for `scene::lit_places`/
-/// `scene::quiet_places`/`compose_scripture_scene`'s mention branch to stamp
-/// onto `ScenePlace::merged_ids`/`QuietPlace::merged_ids` (wire
-/// traceability, per the brief: "note the absorbed record's id in the wire
-/// for traceability"). `MERGE_PAIRS` is small enough (17 entries as of Batch
-/// PLACE-1a) that a linear scan per place costs nothing worth indexing.
+/// `MERGE_PAIRS` is small enough that a linear scan per place costs nothing worth indexing.
 pub fn absorbed_ids_for(survivor_id: &str) -> Vec<String> {
     MERGE_PAIRS.iter().filter(|m| m.survivor == survivor_id).map(|m| m.absorbed.to_string()).collect()
 }
 
-/// Applies `MERGE_PAIRS` to `places`/`events` in place -- called once by
-/// `AtlasData::finish()` (idempotent: a pair whose `absorbed` id is no
-/// longer present, e.g. `finish()` running a second time on already-merged
-/// data, is silently skipped rather than erroring, matching `finish()`'s
-/// own documented idempotence contract). For each pair still present:
-/// - `absorbed`'s own `verse_links` are unioned onto `survivor` (survivor's
-///   own links first, then any absorbed-only links, deduped) -- the
-///   "union of both records' verse groups" half of the brief's requirement.
-/// - every `Event.places` entry equal to `absorbed` is rewritten to
-///   `survivor` IN PLACE (same list position -- `Event`'s own doc comment:
-///   "`places[0]` is the anchor place used for arrow endpoints," so a
-///   remove-then-append would silently change an event's anchor if
-///   `absorbed` ever happened to be `places[0]`; today's two curated pairs
-///   don't hit that case, but nothing here should assume that stays true),
-///   then deduped keeping the FIRST occurrence (an event that already,
-///   separately, touched both ids under their old ids would otherwise list
-///   `survivor` twice). This alone gives `scene::lit_places`' own
-///   `HashMap<place_id, Vec<&Event>>` grouping the "union of both records'
-///   events" half of the brief's requirement, with no scene.rs change
-///   needed for the union itself.
-/// - `absorbed` is removed from `places` entirely.
+/// Idempotent: a pair whose `absorbed` id is already gone is skipped, so this may run more
+/// than once. An event's place entry is rewritten IN PLACE because `places[0]` is the
+/// anchor used for arrow endpoints, and a remove-then-append would move that anchor.
 pub fn apply_place_merges(places: &mut Vec<Place>, events: &mut [Event]) {
     for pair in MERGE_PAIRS {
         let Some(absorbed_idx) = places.iter().position(|p| p.id == pair.absorbed) else {
-            continue; // already merged (finish() re-run), or curation drifted -- no-op, not a panic
+            continue;
         };
         let Some(survivor_idx) = places.iter().position(|p| p.id == pair.survivor) else {
-            continue; // defensive: a curated survivor id that stopped existing -- never worth a runtime panic
+            continue;
         };
         debug_assert!(
             great_circle_km(
@@ -430,9 +305,6 @@ mod tests {
         }
     }
 
-    // --- great_circle_km / SAME_PLACE_THRESHOLD_KM (brief's own three cases,
-    // verbatim: "identical coords merge; 100m merges; 2km does NOT") -------
-
     #[test]
     fn identical_coordinates_are_zero_km_and_merge() {
         let d = great_circle_km(32.735, 35.55555, 32.735, 35.55555);
@@ -442,7 +314,6 @@ mod tests {
 
     #[test]
     fn a_100m_pair_is_inside_the_threshold() {
-        // hazor-1 / hazor_545's own real coordinates (data/compiled/places.json).
         let d = great_circle_km(33.018333, 35.569167, 33.01746212803129, 35.56813718);
         assert!(d < 0.2, "expected roughly 100-150m, got {d}km");
         assert!(d <= SAME_PLACE_THRESHOLD_KM);
@@ -450,7 +321,6 @@ mod tests {
 
     #[test]
     fn a_2km_pair_does_not_merge() {
-        // ~0.018 degrees latitude ≈ 2km.
         let d = great_circle_km(32.735, 35.55555, 32.753, 35.55555);
         assert!(d >= 1.9 && d <= 2.1, "expected roughly 2km, got {d}km");
         assert!(d > SAME_PLACE_THRESHOLD_KM);
@@ -458,87 +328,13 @@ mod tests {
 
     #[test]
     fn known_distinct_pair_shittim_moab_stays_above_merge_intent() {
-        // Not a threshold check (Shittim/Moab-2 are 0km apart, same as the
-        // Kedesh pair, by raw distance alone -- see this module's own header
-        // comment) -- this pins that they are simply ABSENT from MERGE_PAIRS,
-        // the actual mechanism that keeps them from merging.
         assert!(MERGE_PAIRS.iter().all(|m| m.survivor != "shittim" && m.absorbed != "shittim"));
         assert!(MERGE_PAIRS.iter().all(|m| m.survivor != "moab-2" && m.absorbed != "moab-2"));
     }
 
     proptest! {
-        // Property mirror of the three example cases above, at GENUINELY
-        // arbitrary headings (fix round 1, review M-4 -- the previous
-        // form moved only along the meridian, so `lat`/`lon` provably
-        // cancelled out of the haversine and only epsilon was live; this
-        // form generates a bearing and offsets BOTH coordinates, so the
-        // `cos(phi1)cos(phi2)` longitude term of `great_circle_km` is
-        // exercised at every generated case): a pair placed 99.9% of the
-        // threshold apart is inside; a pair placed any positive epsilon
-        // beyond it is outside.
-        //
-        // MERGE-BOUNDARY-1 (batch NODE-1, diagnosed from the checked-in
-        // proptest-regressions/merge.txt seed `lat=0.0, lon=0.0,
-        // epsilon_km=0.001`): the property as originally stated used
-        // `km_per_deg_lat = 111.32` -- a WGS84-ellipsoid-flavored constant
-        // -- while `great_circle_km`'s own sphere (EARTH_RADIUS_KM =
-        // 6371.0088) has exactly R*pi/180 = 111.19508 km per degree of
-        // latitude. That is a systematic 0.112% overstatement of the
-        // degrees-per-km conversion (~1.12m of shortfall per km), NOT the
-        // "well under 1m" the original comment claimed -- so for any
-        // epsilon_km < ~0.00112 the "outside" pair actually landed INSIDE
-        // the 1.0km threshold (at the seed: distance 0.9998767km <= 1.0)
-        // and the property failed. This was the PROPERTY stated too
-        // tightly, not a bug in the threshold logic: `great_circle_km` /
-        // `SAME_PLACE_THRESHOLD_KM` are compared directly in production
-        // (`apply_place_merges`' debug_assert and the unit tests above).
-        //
-        // EVIDENCE CORRECTION (fix round 1, review H-1 -- the sentence
-        // that stood here, "111.32 appeared nowhere outside this test
-        // (verified by grep)", was FALSE: the grep was scoped to server/,
-        // and ripgrep prints only "binary file matches" for map.js): the
-        // honest statement is that 111.32 appears nowhere in the SERVER
-        // WORKSPACE outside this test; `client/wwwroot/js/map.js`'s own
-        // `approxKm` (map.js:1730-1731) DOES use 111.32, in an
-        // equirectangular approximation feeding the client-side
-        // LANDMARK_DEDUPE_KM = 5 landmark-vs-lit-place dedupe. That use
-        // is immaterial there (0.112% of 5km = ~5.6m, orders of magnitude
-        // below the approximation's own model error at that scale) and is
-        // entirely outside this module's merge path -- the "property too
-        // tight, not a threshold bug" verdict is unchanged -- but the
-        // evidence text needed to say what was actually checked.
-        //
-        // CONSTRUCTION ACCURACY (why the margins below are honest): the
-        // displacement uses the sphere's own exact km/deg for latitude
-        // and scales longitude by cos(latitude) at the MIDPOINT latitude.
-        // Verified numerically across lat in [-60,60], all bearings, and
-        // distances up to 6km: the worst |haversine - intended| error of
-        // this construction is under 4e-9 km (micrometers), so the real
-        // margins are the full ~1m on both sides (0.999km vs 1.0km, and
-        // 1.0km vs 1.0+epsilon with epsilon >= 1m).
-        //
-        // ON THE CHECKED-IN SEED, HONESTLY (Batch ATTEST-1, closing the
-        // NODE-1 review's own NEW-2/L-A finding): `proptest-regressions/
-        // merge.txt` still replays its recorded RNG STATE first, every
-        // run, as proptest's convention intends -- but that state no
-        // longer reproduces the original MERGE-BOUNDARY-1 tuple, and the
-        // sentence that stood here calling it "the regression witness"
-        // had stopped being true. The recorded case shrank to a THREE-
-        // tuple (`lat = 0.0, lon = 0.0, epsilon_km = 0.001`); review M-4
-        // then added a FOURTH generator (`bearing`), so replaying the
-        // same RNG state now draws a different value tuple. A regression
-        // test that no longer reproduces its own bug is theatre, so the
-        // replay is RESTORED as a real, deterministic one:
-        // `merge_boundary_1_original_witness_replays_exactly` (below,
-        // outside this `proptest!` block) exercises the exact original
-        // tuple, at every quadrant bearing, with no RNG in the loop at
-        // all -- and it fails under the old 111.32 constant, which is
-        // what makes it a witness. THAT is this property's regression
-        // witness; the seed file is a bonus corpus entry, nothing more.
         #[test]
         fn threshold_boundary_property(lat in -60.0f64..60.0, lon in -170.0f64..170.0, bearing in 0.0f64..std::f64::consts::TAU, epsilon_km in 0.001f64..5.0) {
-            // `great_circle_km`'s own EARTH_RADIUS_KM, converted: km per
-            // degree of latitude on THAT sphere (R * pi / 180).
             let km_per_deg_lat = 6371.0088_f64 * std::f64::consts::PI / 180.0;
             let offset = |km: f64| -> (f64, f64) {
                 let dlat = km * bearing.cos() / km_per_deg_lat;
@@ -555,30 +351,6 @@ mod tests {
         }
     }
 
-    /// MERGE-BOUNDARY-1's ORIGINAL WITNESS, replayed exactly and
-    /// deterministically (Batch ATTEST-1, closing NODE-1 review NEW-2 /
-    /// dispatch L-A: "restore a seed that genuinely replays the original
-    /// boundary case (preferred -- a regression test that no longer
-    /// reproduces its bug is theatre)").
-    ///
-    /// The original shrunk case was `lat = 0.0, lon = 0.0, epsilon_km =
-    /// 0.001` -- a 3-tuple, drawn before the property gained its
-    /// `bearing` generator, so the committed proptest seed cannot replay
-    /// it any more (see the property's own comment above). This test
-    /// replays the tuple ITSELF instead of the RNG state that once
-    /// produced it, which is strictly stronger: no seed file, no
-    /// generator arity, nothing between the recorded boundary case and
-    /// the assertion.
-    ///
-    /// WHY IT IS A REAL WITNESS: with the defect's own constant
-    /// (`km_per_deg_lat = 111.32`, the WGS84-flavored value the property
-    /// used to carry) the "outside" pair at epsilon = 1m lands at
-    /// 0.9998767 km -- INSIDE the 1.0 km threshold -- and the second
-    /// assertion below fails. The first block of this test proves that
-    /// numerically, so the witness is checked, not merely asserted; the
-    /// second block then proves the shipped conversion passes the same
-    /// case at every quadrant bearing (the `bearing` axis M-4 added,
-    /// covered here at its extremes rather than sampled).
     #[test]
     fn merge_boundary_1_original_witness_replays_exactly() {
         const LAT: f64 = 0.0;
@@ -592,10 +364,6 @@ mod tests {
             (LAT + dlat, LON + dlon)
         };
 
-        // (a) THE BUG, reproduced: the retired WGS84-flavored constant
-        // puts the "outside" pair INSIDE the threshold at this exact
-        // tuple. If this ever stops holding, the witness has stopped
-        // witnessing and this test must be re-derived, not deleted.
         let bad_km_per_deg_lat = 111.32_f64;
         let (bad_lat, bad_lon) = offset(bad_km_per_deg_lat, 0.0, SAME_PLACE_THRESHOLD_KM + EPSILON_KM);
         let bad_d = great_circle_km(LAT, LON, bad_lat, bad_lon);
@@ -606,9 +374,6 @@ mod tests {
              this test is no longer witnessing the bug it claims to"
         );
 
-        // (b) THE FIX, at the same tuple, at every quadrant bearing: the
-        // sphere's own exact conversion satisfies both halves of the
-        // property.
         let good_km_per_deg_lat = 6371.0088_f64 * std::f64::consts::PI / 180.0;
         for quarter in 0..4 {
             let bearing = std::f64::consts::FRAC_PI_2 * quarter as f64;
@@ -626,8 +391,6 @@ mod tests {
         }
     }
 
-    // --- apply_place_merges -------------------------------------------------
-
     #[test]
     fn merges_verse_links_dedupes_and_drops_absorbed_place() {
         let mut places = vec![
@@ -642,7 +405,6 @@ mod tests {
         assert_eq!(places.len(), 2, "hazor_545 must be removed entirely");
         assert!(places.iter().all(|p| p.id != "hazor_545"));
         let hazor = places.iter().find(|p| p.id == "hazor-1").unwrap();
-        // union, deduped (JDG.4.2 appeared on both), survivor's own links first.
         assert_eq!(hazor.verse_links, vec!["JOS.11.1", "JDG.4.2", "1SA.12.9"]);
     }
 
@@ -651,8 +413,6 @@ mod tests {
         let mut places = vec![place("hazor-1", 33.018333, 35.569167, &[]), place("hazor_545", 33.01746212803129, 35.56813718, &[])];
         let mut events = vec![
             event("theo-138", &["canaan", "hazor_545"]),
-            // an event that (hypothetically) already touched BOTH ids under
-            // their old ids -- must collapse to survivor ONCE, not twice.
             event("both-old-ids", &["hazor-1", "hazor_545"]),
         ];
 
@@ -667,9 +427,6 @@ mod tests {
 
     #[test]
     fn preserves_anchor_position_when_absorbed_was_places_zero() {
-        // Event doc comment: places[0] is the anchor used for arrow
-        // endpoints -- renaming absorbed -> survivor in place must never
-        // silently move the anchor to a DIFFERENT place.
         let mut places = vec![place("hazor-1", 33.018333, 35.569167, &[]), place("hazor_545", 33.01746212803129, 35.56813718, &[])];
         let mut events = vec![event("e1", &["hazor_545", "canaan"])];
 
@@ -685,7 +442,7 @@ mod tests {
 
         apply_place_merges(&mut places, &mut events);
         let after_first = places.clone();
-        apply_place_merges(&mut places, &mut events); // must no-op, not panic or double-apply
+        apply_place_merges(&mut places, &mut events);
 
         assert_eq!(places, after_first);
         assert_eq!(events[0].places, vec!["hazor-1".to_string()]);
@@ -701,25 +458,13 @@ mod tests {
 
     #[test]
     fn absorbed_ids_for_reports_the_place1a_charter_case() {
-        // The owner's own repro (place-alias-investigation.md §1): ur_1189 ("Ur of the
-        // Chaldees") must fold onto ur-1, not remain a second, independently-rendering record.
         assert_eq!(absorbed_ids_for("ur-1"), vec!["ur_1189".to_string()]);
-        // chaldea is NOT a merge candidate -- a genuinely distinct, separately-attested region,
-        // not a duplicate-lineage record of Ur (place-alias-investigation.md §2.2).
         assert!(absorbed_ids_for("chaldea").is_empty());
         assert!(absorbed_ids_for("ur_1189").is_empty(), "the ABSORBED id itself was never a survivor");
     }
 
     #[test]
     fn place1a_excluded_candidates_never_entered_the_table() {
-        // The 5 of 20 mechanically-flagged candidates hand-judged NOT true duplicates
-        // (batch-place1a-report.md's own triage table) -- pinned here so a future curator
-        // cannot silently re-introduce one of these on distance alone. Judea/Galilee are
-        // region/city coincidences (the OTHER half of the owner's ask, a separate batch);
-        // Bethany is unrelated proximity noise; Moab has no true within-threshold twin at all;
-        // Jericho is a real duplicate but of the WRONG survivor by raw distance (its true
-        // semantic partner, jericho-2, sits past the 1.0km ceiling) -- see merge_pairs' own
-        // Batch PLACE-1a comment for the full reasoning on each.
         for excluded in ["judea_657", "jericho_634", "bethany_186", "moab_815", "galilee_433"] {
             assert!(
                 MERGE_PAIRS.iter().all(|m| m.survivor != excluded && m.absorbed != excluded),
@@ -730,16 +475,11 @@ mod tests {
 
     #[test]
     fn every_curated_pair_is_within_the_same_place_threshold() {
-        // Guards the curated table itself (not just apply_place_merges'
-        // debug_assert, which only fires in debug builds) against a future
-        // hand-edit that widens a pair past the threshold by mistake. Real
-        // coordinates, matching data/compiled/places.json.
         let known_coords: &[(&str, f64, f64)] = &[
             ("hazor-1", 33.018333, 35.569167),
             ("hazor_545", 33.01746212803129, 35.56813718),
             ("kedesh-4", 32.735, 35.55555),
             ("kedesh-naphtali", 32.735, 35.55555),
-            // Batch PLACE-1a (data/exports/gazetteer.json, verified at dispatch time).
             ("ur-1", 30.962222, 46.104444),
             ("ur_1189", 30.9625, 46.103056),
             ("rehoboth-ir", 36.3594, 43.1528),

@@ -22,7 +22,7 @@ pub struct VerseId {
 }
 
 impl VerseId {
-    /// Parse a strict canonical single-verse ref, e.g. `"GEN.1.1"`.
+    /// Strict canonical single-verse grammar: `BOOK.CH.V`, e.g. `GEN.1.1`.
     pub fn parse_canonical(s: &str) -> Result<Self, crate::CoreError> {
         match ScriptureRef::parse(s)? {
             ScriptureRef::Verse(v) => Ok(v),
@@ -44,7 +44,6 @@ impl<'de> Deserialize<'de> for VerseId {
     }
 }
 
-/// A scripture reference at book, chapter, verse, or verse-range granularity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScriptureRef {
     Book(BookId),
@@ -62,8 +61,8 @@ fn parse_positive(s: &str, whole: &str) -> Result<u16, crate::CoreError> {
 }
 
 impl ScriptureRef {
-    /// Strict canonical parse: `BOOK` | `BOOK.CH` | `BOOK.CH.V` | `BOOK.CH.V1-V2`.
-    /// Book codes match case-insensitively; the canonical `Display` form is always uppercase.
+    /// Strict canonical grammar: `BOOK` | `BOOK.CH` | `BOOK.CH.V` | `BOOK.CH.V1-V2`;
+    /// book codes match case-insensitively, the `Display` form is always uppercase.
     pub fn parse(s: &str) -> Result<Self, crate::CoreError> {
         let parts: Vec<&str> = s.split('.').collect();
         let book_code = parts[0];
@@ -127,7 +126,7 @@ mod tests {
         assert_eq!(ScriptureRef::parse("EXO.14.21-31").unwrap().to_string(), "EXO.14.21-31");
         assert!(ScriptureRef::parse("NOPE.1").is_err());
         assert!(ScriptureRef::parse("GEN.0.1").is_err());
-        assert!(ScriptureRef::parse("EXO.14.31-21").is_err()); // inverted range
+        assert!(ScriptureRef::parse("EXO.14.31-21").is_err());
     }
     #[test]
     fn empty_segment_rejected() {
@@ -153,8 +152,8 @@ mod tests {
             VerseId::parse_canonical("EXO.14.21").unwrap(),
             VerseId { book, chapter: 14, verse: 21 }
         );
-        assert!(VerseId::parse_canonical("GEN.1").is_err()); // chapter ref, not a verse
-        assert!(VerseId::parse_canonical("GEN.1.0").is_err()); // verse must be >= 1
+        assert!(VerseId::parse_canonical("GEN.1").is_err());
+        assert!(VerseId::parse_canonical("GEN.1.0").is_err());
     }
     #[test]
     fn parse_case_insensitive_book_code_displays_uppercase() {

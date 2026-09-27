@@ -1,31 +1,8 @@
-//! THE CANON-ORDER AUTHORITY (doc added NODE-1 fix round 1, review M-6 --
-//! the order became user-visible navigation and needed its disclosure at
-//! its source).
-//!
-//! `BOOKS` is the 66-book PROTESTANT canon in its traditional order --
-//! the same books, names, and sequence the King James Version itself
-//! prints: Old Testament 39 (Genesis .. Malachi, the Law / History /
-//! Wisdom / Prophets arrangement of the Christian OT, not the Tanakh's
-//! Torah/Nevi'im/Ketuvim order) followed by New Testament 27
-//! (Matthew .. Revelation). No deuterocanon/Apocrypha (excluded
-//! throughout this app -- see e.g. the red-letter adapter's own
-//! Apocrypha-exclusion guard).
-//!
-//! AUTHORITY SCOPE -- the ARRAY POSITION here is this codebase's one
-//! canonical book index (`atlas_core::refs::BookId(u8)` and every
-//! `"bible/{book}.{chapter}.{verse}"` TextUnit id ride it), and, as of
-//! Batch NODE-1, the array ORDER is the reader-facing navigation
-//! authority: "what comes after Malachi 4" is answered by this array,
-//! compiled into the graph's own
-//! `CanonSuccession` rows (chapter -> next chapter across book
-//! boundaries, book -> next book) by
-//! `atlas_graph::bible_container_adapter`. `code` is the canonical
-//! 3-character dot-ref code (`GEN.1.1`), `osis` the OSIS abbreviation
-//! (cross-reference/OSIS sources), `name` the display name the reader
-//! sees (`BookId::name()` / `ChapterOut.book`). Changing the ORDER of
-//! this array is therefore a data-visible, navigation-visible act --
-//! verse ids, the version root, and every canon-succession row would all
-//! move; it is pinned by `atlas-graph`'s own real-data tests.
+//! The 66-book Protestant canon in the order the King James Version prints it, no
+//! Apocrypha: a book's array POSITION is this codebase's book index (every
+//! `bible/{book}.{chapter}.{verse}` id rides it) and the array ORDER is the
+//! reader's navigation order, so reordering `BOOKS` moves verse ids and every
+//! canon-succession row with it.
 
 pub struct BookInfo { pub code: &'static str, pub osis: &'static str, pub name: &'static str }
 
@@ -85,16 +62,14 @@ impl Testament {
     }
 }
 
-/// Matthew opens the New Testament. Naming the BOOK rather than a count is
-/// what keeps the boundary a single fact: the number below is found in
+/// Naming the book rather than an index keeps the testament boundary derived from
 /// `BOOKS`, so reordering the canon moves it without anyone editing it.
 const FIRST_NEW_TESTAMENT_BOOK: &str = "MAT";
 
 pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = books_before(FIRST_NEW_TESTAMENT_BOOK);
 
-/// `BOOKS.iter().position(..)` is not available in a `const`, so the same
-/// search is written out; `code_is` below is the `==` a const context lacks
-/// for `&str`.
+/// `BOOKS.iter().position(..)` is not available in a `const`, so the search is
+/// written out; `code_is` is the `&str` `==` a const context lacks.
 const fn books_before(code: &str) -> usize {
     let mut index = 0;
     while index < BOOKS.len() {

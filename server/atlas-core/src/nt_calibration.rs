@@ -1,107 +1,23 @@
-//! HOTFIX-4 fix round 1 (review finding C-1, Critical: "the exact
-//! ordering-lie bug class this batch exists to fix is still live, reachable
-//! through completely ordinary Bible reading" -- `theo-460` "Resurrection
-//! and Ascension"'s own FOLLOWING-IN-TIME was `jm_cana`, Christ's FIRST
-//! miracle; Pentecost sorted 142 positions before the Crucifixion).
-//!
-//! ROOT CAUSE: HOTFIX-4's own Amendment A merged every CLEAN 1:1 Gospel-era
-//! duplicate (`event_merge::EVENT_MERGE_PAIRS`), but never touched the
-//! DATE of a surviving, un-merged Theographic-scale event -- the ~16
-//! Gospel mega-spans that bundle 2+ real pericopes
-//! (`event_merge::EVENT_DISTINCT_PAIRS`'s own Gospel-era entries, plus the
-//! Holy-Week cluster batch-hotfix4-report.md's own §2d already named:
-//! `theo-443`..`theo-460`) and the ~33 real, curated `acts_section` Acts
-//! events (`data/curated/acts-sections.toml`, `theo-304`..`theo-336`) all
-//! kept Theographic's own internal NT-era clock (Passion ~ year 30), never
-//! reconciled to this app's own AD-33 Passion anchor -- so, after HOTFIX-4
-//! requirement 1 wired EVERY dated event into one global timeline, they sat
-//! interleaved with real, AD-33-anchored content 3 years out of place.
-//!
-//! CONTROLLER RULING (binding, fix-round-1 brief, Fix 1): re-date, do not
-//! exclude -- excluding unreconciled events from the global timeline would
-//! manufacture new dead ends, which the owner's own traversal law forbids.
-//! Every surviving event still on Theographic's own internal NT clock gets
-//! the SAME principled +3 calibration (verified correspondences: Baptism
-//! 26->29, Crucifixion 30->33 -- Theographic's own NT chronology is
-//! internally self-consistent, just uniformly offset by 3 years from this
-//! app's own anchor). Provenance is stated POSITIVELY, as a calibration TO
-//! the AD-33 Passion anchor -- no scale-debate commentary anywhere
-//! (Amendment B, inerrancy doctrine).
-//!
-//! DERIVATION RULE (disclosed, not hand-picked -- `is_uncalibrated_nt_event`):
-//! every event where `id` starts with `"theo-"`, `when.from_year > 0`
-//! (strictly AD), and its own effective verses (`event_merge::effective_verses`)
-//! touch >=1 New Testament book (Matthew..Revelation, `canon::BOOKS`'s own
-//! canonical ordering). The `from_year > 0` guard matters: it excludes OT
-//! genealogy-stub events (e.g. `theo-7` "Birth of Seth," dated -3874) that
-//! merely CITE a NT cross-reference verse (Luke 3's own genealogy) while
-//! staying correctly dated on their own ancient scale -- verified against
-//! the real compiled data before this module was written: 133 events match
-//! this predicate, year range a clean 26..57 (Baptism through Paul's early
-//! ministry), zero outliers. Full before/after table in
-//! batch-hotfix4-report.md's own "Fix round 1" section.
-//!
-//! WHY THIS IS ETL-ONLY, NEVER `AtlasData::finish()`: `finish()` runs
-//! TWICE across the real pipeline (`atlas-etl::main` when WRITING
-//! `events.json`, `atlas-server::main` when LOADING it back) -- safe for
-//! `event_merge::apply_event_merges` because REMOVAL is naturally
-//! idempotent (an already-absorbed id is simply absent the second time),
-//! but a raw date SHIFT is not: re-running `is_uncalibrated_nt_event`
-//! against an ALREADY-calibrated event would still see `id` starting with
-//! `"theo-"`, `from_year > 0`, and NT verses -- and shift it a SECOND time.
-//! `apply_nt_calibration` therefore runs exactly once, called from
-//! `atlas_etl::main` on the RAW pre-`finish()` event set (the same timing
-//! `atlas_etl::validate::run_event_merges` already uses), never from
-//! `atlas_core` itself.
-//!
-//! ORDER_KEY, within the collision year (year 33, where the calibrated
-//! mega-spans/early-Acts content now lands squarely alongside the REAL,
-//! already densely-curated `pw_*`/`rob_*` Passion-Week order_key scheme,
-//! `0..11_000`, `pw_jerusalem_entry`..`pw_mount_of_olives`): two regimes,
-//! `calibrated_order_key` --
-//! - ACTS (an effective verse in book `ACT`): a mechanical formula,
-//!   `12_000 + chapter*100 + verse` from the event's own FIRST Acts verse.
-//!   `12_000` is chosen strictly greater than `pw_mount_of_olives`'s own
-//!   `11_000` (this app's own highest real Passion-Week order_key, i.e. the
-//!   Ascension) -- guaranteeing every Acts-witnessed event sorts after the
-//!   real Passion cluster, and, within Acts, follows Acts's own
-//!   chapter:verse order. PROVEN, not just asserted, by the era-boundary
-//!   gate test (`narrative.rs`) over the real compiled data.
-//! - GOSPEL mega-spans/late-ministry freebies still landing at year 33
-//!   (Acts-formula does not apply): hand-placed in
-//!   `GOSPEL_ORDER_KEY_OVERRIDES` below, each keyed to the REAL curated
-//!   event that marks its own first contained/nearest real pericope --
-//!   "never sorts before the real event(s) it bundles begin" (fix-round-1
-//!   brief, Fix 1) -- reasoning documented per row.
-//! Every OTHER calibrated event (the ~95 outside year 33) keeps its
-//! existing `order_key` (0, the atlas-wide default) -- verified against the
-//! real data that no other post-calibration year has a collision remotely
-//! resembling year 33's density.
+//! The imported corpus's own NT-era clock runs a fixed three years ahead of this atlas's
+//! Passion anchor, so every event still on it is shifted onto the one scale -- exactly
+//! once, ETL-side, because the shift is not idempotent.
 
 use crate::data::Event;
 use crate::refs::VerseId;
 
-/// Theographic's own internal NT-era clock runs exactly 3 years ahead of
-/// this app's AD-33 Passion anchor (Baptism 26->29, Crucifixion 30->33 --
-/// both verified correspondences, this module's own doc comment above).
+/// Verified correspondences: Baptism 26 -> 29, Crucifixion 30 -> 33.
 pub const NT_CALIBRATION_SHIFT: i32 = 3;
 
-/// `canon::BOOKS`'s own 0-based position of Matthew -- the OT/NT boundary,
-/// read from the canon rather than restated. Not `pub`: callers should ask
-/// `is_uncalibrated_nt_event`/`touches_book`, not re-derive the boundary.
+/// Read from the canon rather than restated, and private so callers ask the predicates
+/// below instead of re-deriving the boundary.
 const MAT_BOOK_INDEX: u8 = crate::canon::BOOKS_IN_THE_OLD_TESTAMENT as u8;
 
-/// Strictly greater than `pw_mount_of_olives`'s own real `order_key`
-/// (`11_000`, this app's own highest curated Passion-Week value, i.e. the
-/// Ascension) -- see this module's own doc comment for the full ACTS
-/// order_key regime.
+/// Strictly greater than the highest curated Passion-Week `order_key`, so every
+/// Acts-witnessed event sorts after that cluster.
 const ACTS_ORDER_KEY_BASE: i32 = 12_000;
 
-/// The derivation rule -- see this module's own doc comment for the full
-/// reasoning and the real-data verification (133 events, year range
-/// 26..57, zero outliers). `pub` so `atlas_etl::main` (the only caller of
-/// `apply_nt_calibration`) and this module's own tests share the identical
-/// predicate.
+/// The `from_year > 0` guard is load-bearing: it excludes an ancient event that merely
+/// cites a New Testament cross-reference and is already correctly dated.
 pub fn is_uncalibrated_nt_event(e: &Event) -> bool {
     if !e.id.starts_with("theo-") || e.when.from_year <= 0 {
         return false;
@@ -114,23 +30,8 @@ fn touches_nt(verse_id: &str) -> bool {
     matches!(crate::canon::resolve_alias(book_code), Some(id) if id.0 >= MAT_BOOK_INDEX)
 }
 
-/// This event's own EARLIEST `(chapter, verse)` among its effective verses
-/// (`event_merge::effective_verses`) that fall in `book_code` -- "this
-/// event's own first contained verse in this book," the same "first
-/// contained pericope" concept `GOSPEL_ORDER_KEY_OVERRIDES`'s own doc
-/// comment names. `None` if this event touches that book not at all.
-///
-/// `pub` (widened from `pub(crate)` at M-C2 -- fix round 1, Fix 1
-/// acceptance (b), originally): `narrative.rs`'s own era-boundary gate
-/// test ("every ACT-witnessed event sorts after the Passion cluster")
-/// reuses this EXACT predicate for "is this event ACT-witnessed" -- the
-/// calibration's own idea of "touches Acts" and the gate's own idea of it
-/// must never disagree. M-C2: that test relocated to `atlas-graph/tests/
-/// narrative_real_data.rs` (this crate cannot take a dev-dependency on
-/// atlas-etl -- see that file's own doc comment), so the caller is now
-/// outside this crate -- `pub(crate)` no longer reaches it, the SAME
-/// "widen visibility for a legitimate cross-crate reuse" precedent
-/// `atlas_core::narrative::adjacent_event` already set at M-B.
+/// `None` when the event does not touch that book at all. Public so "touches this book"
+/// means the same thing to the calibration and to the timeline gates that check it.
 pub fn first_verse_in_book(e: &Event, book_code: &str) -> Option<(u16, u16)> {
     let mut best: Option<(u16, u16)> = None;
     for v in crate::event_merge::effective_verses(e) {
@@ -147,13 +48,9 @@ pub fn first_verse_in_book(e: &Event, book_code: &str) -> Option<(u16, u16)> {
     best
 }
 
-/// Hand-placed `order_key` for the Gospel-witnessed (non-Acts) calibrated
-/// events that land at year 33 -- see this module's own doc comment for
-/// the two-regime rule. `(theo_id, order_key, reason)`. Every entry here
-/// was individually checked against the REAL compiled year-33 order_key
-/// landscape (`pw_*`/`rob_*`/`jm_*`, `0..11_000`) before being added --
-/// see batch-hotfix4-report.md's own "Fix round 1" section for the full
-/// derivation log.
+/// `(id, order_key, reason)`, hand-placed for the calibrated events that land in the
+/// crowded anchor year: each is keyed so a span never sorts before the curated events it
+/// bundles begin.
 pub const GOSPEL_ORDER_KEY_OVERRIDES: &[(&str, i32, &str)] = &[
     ("theo-294", 541, "\"Healing Multitudes\" (event_merge::EVENT_DISTINCT_PAIRS mega-span): its own extra Luke lead-in verses (LUK.6.17-19) share year 33 (post-calibration) with rob_sermon_on_the_mount (order_key 540) -- placed just after so it never sorts before that bundled pericope begins."),
     ("theo-394", 741, "\"Jesus Walks on Water\" (EVENT_DISTINCT_PAIRS mega-span) bundles rob_walks_on_water (order_key 740) -- placed just after."),
@@ -181,10 +78,7 @@ pub const GOSPEL_ORDER_KEY_OVERRIDES: &[(&str, i32, &str)] = &[
     ("theo-460", 8001, "\"Resurrection and Ascension\" -- its own first verse (MAT.28.1) is the empty tomb, matching pw_jerusalem_resurrection (order_key 8000) -- placed just after; this is the pairing review scenario 1 named directly (theo-460's own FOLLOWING must not be jm_cana)."),
 ];
 
-/// This event's own calibrated `order_key`, if the two-regime rule (this
-/// module's own doc comment) assigns one -- `None` means "keep whatever
-/// `order_key` this event already has" (the ~95 calibrated events outside
-/// the year-33 collision zone).
+/// `None` means keep whatever `order_key` the event already has.
 fn calibrated_order_key(e: &Event) -> Option<i32> {
     if let Some((chapter, verse)) = first_verse_in_book(e, "ACT") {
         return Some(ACTS_ORDER_KEY_BASE + chapter as i32 * 100 + verse as i32);
@@ -192,9 +86,7 @@ fn calibrated_order_key(e: &Event) -> Option<i32> {
     GOSPEL_ORDER_KEY_OVERRIDES.iter().find(|(id, _, _)| *id == e.id).map(|&(_, k, _)| k)
 }
 
-/// One row of `apply_nt_calibration`'s own audit trail -- the fix-round-1
-/// brief's own "disclose the derivation rule and a full before/after
-/// table" instruction. Not serialized to the wire; ETL-report-only.
+/// An audit trail for the ETL report; never serialized to the wire.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CalibrationLogEntry {
     pub id: String,
@@ -205,16 +97,8 @@ pub struct CalibrationLogEntry {
     pub new_order_key: i32,
 }
 
-/// Applies the `+3` shift and (for the year-33 collision set) the
-/// `order_key` placement to every event `is_uncalibrated_nt_event` selects,
-/// IN PLACE. Must run exactly once, on the RAW pre-`finish()` event set --
-/// see this module's own doc comment for why. Order relative to
-/// `event_merge::apply_event_merges` does not matter for correctness (that
-/// function is identity-only and never reads an absorbed event's own
-/// `when`/`order_key`, so calibrating a freebie a moment before it is
-/// merged away is harmless, not double-counted); called before it in
-/// `atlas_etl::main` purely to match `validate::run_event_merges`'s own
-/// existing pre-`finish()` timing.
+/// Must run exactly once, on the raw event set: the predicate still matches an
+/// already-calibrated event, so a second pass would shift it again.
 pub fn apply_nt_calibration(events: &mut [Event]) -> Vec<CalibrationLogEntry> {
     let mut log = Vec::new();
     for e in events.iter_mut() {
@@ -251,8 +135,6 @@ mod tests {
         Event { id: id.into(), label: id.into(), when: TimeRange::new(year, year).unwrap(), verses: verses.iter().map(|s| s.to_string()).collect(), ..Default::default() }
     }
 
-    // --- is_uncalibrated_nt_event (the derivation rule) ---------------------
-
     #[test]
     fn selects_an_ad_dated_theo_event_touching_a_nt_verse() {
         assert!(is_uncalibrated_nt_event(&theo("theo-460", 30, &["MAT.28.1"])));
@@ -260,10 +142,6 @@ mod tests {
 
     #[test]
     fn excludes_a_bc_dated_ot_genealogy_stub_even_if_it_cites_a_nt_cross_reference() {
-        // theo-7 "Birth of Seth," dated -3874, whose own verses include a
-        // NT genealogy cross-reference (LUK.3.38) -- must NOT be treated
-        // as "on the Theographic NT clock" (see this module's own doc
-        // comment: real, verified against the compiled data).
         assert!(!is_uncalibrated_nt_event(&theo("theo-7", -3874, &["GEN.4.25", "GEN.5.3", "LUK.3.38", "1CH.1.1"])));
     }
 
@@ -295,15 +173,8 @@ mod tests {
         assert!(is_uncalibrated_nt_event(&e));
     }
 
-    // --- apply_nt_calibration: the shift ------------------------------------
-
     #[test]
     fn red_then_green_resurrection_no_longer_sorts_adjacent_to_cana() {
-        // RED (pre-calibration, review scenario 1): theo-460 at year 30
-        // sits in the SAME neighborhood as jm_cana (an early-ministry real
-        // event, also ~year 30) -- global (from_year, order_key) sort would
-        // interleave them. GREEN: after calibration, theo-460 moves to
-        // year 33, order_key 8001 -- nowhere near jm_cana's own real year.
         let mut events = vec![theo("theo-460", 30, &["MAT.28.1", "MAT.28.2"]), theo("jm_cana", 30, &["JHN.2.1"])];
         events[1].id = "jm_cana".into();
 
@@ -326,21 +197,11 @@ mod tests {
 
     #[test]
     fn is_idempotent_by_construction_when_called_once_the_predicate_still_matches_but_apply_nt_calibration_itself_is_never_called_twice() {
-        // Documents the real safety mechanism (this module's own doc
-        // comment): the PREDICATE alone is not idempotent-safe (a
-        // calibrated event still matches it) -- what makes double-shifting
-        // impossible is that `apply_nt_calibration` is called exactly once,
-        // ETL-side, never from `AtlasData::finish()`. This test proves the
-        // predicate's own non-idempotence honestly (so nobody "fixes" this
-        // by calling apply_nt_calibration from finish() later without
-        // reading this comment first).
         let mut events = vec![theo("theo-460", 30, &["MAT.28.1"])];
         apply_nt_calibration(&mut events);
         assert_eq!(events[0].when.from_year, 33);
         assert!(is_uncalibrated_nt_event(&events[0]), "the predicate alone does NOT become false after one shift -- calling apply_nt_calibration a second time WOULD double-shift; see this module's own doc comment for why that never happens in the real pipeline");
     }
-
-    // --- calibrated_order_key: the two regimes ------------------------------
 
     #[test]
     fn acts_formula_places_every_acts_witnessed_event_above_the_acts_order_key_base() {
@@ -353,7 +214,7 @@ mod tests {
 
     #[test]
     fn acts_formula_preserves_within_acts_chapter_order() {
-        let mut events = vec![theo("theo-308", 30, &["ACT.2.14"]), theo("theo-307", 30, &["ACT.2.1"])]; // declared out of order
+        let mut events = vec![theo("theo-308", 30, &["ACT.2.14"]), theo("theo-307", 30, &["ACT.2.1"])];
         apply_nt_calibration(&mut events);
         let pentecost_comes = events.iter().find(|e| e.id == "theo-307").unwrap().order_key;
         let peter_preaches = events.iter().find(|e| e.id == "theo-308").unwrap().order_key;
@@ -383,8 +244,6 @@ mod tests {
             assert!(seen.insert(*id), "{id} listed twice in GOSPEL_ORDER_KEY_OVERRIDES");
         }
     }
-
-    // --- apply_nt_calibration: the audit log --------------------------------
 
     #[test]
     fn log_records_every_calibrated_event_with_before_and_after_values() {

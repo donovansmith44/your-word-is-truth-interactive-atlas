@@ -1,60 +1,12 @@
-//! THE TYPE-LEVEL LAW: **no new public function in `atlas-core` may take an
-//! `AtlasData` as a parameter.**
-//!
-//! # Why this file exists (OVERLAY-1-HOTFIX-1, fix round 1, review I-2)
-//!
-//! `AtlasData.events`/`.places`/`.narratives` are empty on every serving
-//! path and have been since OVERLAY-1 Task 5 deleted the boot-time overlay.
-//! `atlas-server/tests/no_legacy_event_reads.rs` scans the two SERVING
-//! crates for reads of them -- but the reader that actually shipped the
-//! regression was not in a serving crate at all. It was here, in
-//! `atlas-core`:
-//!
-//! ```text
-//! handlers.rs:  adjacent_event(&data, &pid)          <-- no `data.events` here
-//! narrative.rs: pub fn adjacent_event(d: &AtlasData, ..) { d.event_by_id(..)? }
-//! ```
-//!
-//! and that scan **cannot** be pointed at `atlas-core` to catch it: `scene.rs`
-//! legitimately names `d` for its `&dyn SceneSource` parameters, so a
-//! receiver-name scan here would be one long false positive. The property
-//! that distinguishes the regression from the correct code in this crate is
-//! not a spelling, it is a **type**: taking an `AtlasData` at all.
-//!
-//! So this law works on signatures instead. Every `pub fn`/`pub(crate) fn`
-//! in `atlas-core/src` whose PARAMETERS mention `AtlasData` (`&AtlasData`,
-//! `&Arc<AtlasData>`, or by value) must appear in [`ALLOWED`], which is a
-//! closed, documented list of the two remaining oracles. Set equality, not
-//! containment -- an entry that is deleted must also leave the list, so the
-//! list cannot rot into a blanket exemption.
-//!
-//! **Adding an entry is not the way to make this pass.** The two ways to
-//! make it pass are: delete the reader, or move it onto
-//! `crate::scene_source::SceneSource` the way `narrative::adjacent_event`
-//! was moved. A third entry means something serving-shaped grew a way to
-//! reach the empty vecs again.
-//!
-//! # What this law is NOT
-//!
-//! It is not compile-level enforcement, and the doc comments in
-//! `narrative.rs` no longer claim otherwise (review I-1). `impl SceneSource
-//! for AtlasData` exists (`data.rs`), so `adjacent_event(&*data, ..)` still
-//! compiles and still returns the old empty answer -- indeed
-//! `narrative::global_timeline_position` deliberately calls it that way.
-//! Changing `adjacent_event`'s signature removed the *accidental* spelling,
-//! not the possibility. This file and the serving-crate scan are the
-//! backstop. The actual cure is ETL-INPUT-1: delete
-//! `AtlasData.events`/`.places`/`.narratives` so there is nothing to read.
+//! No public function in `atlas-core` may take an `AtlasData` parameter: its
+//! `events`/`places`/`narratives` are empty on every serving path, so the way to pass
+//! is to delete the reader or move it onto `SceneSource`, never to extend `ALLOWED`.
 
 use std::path::{Path, PathBuf};
 
-/// The closed list: `(file, fn name, why it may still take an `AtlasData`)`.
-///
-/// Both entries are ORACLES -- they exist to be compared against the graph's
-/// own answer in a test, are never reached by a serving response, and are
-/// deliberately fed the hand-filled `AtlasData` a fixture or the ETL
-/// produces. Reading the (empty) serving vecs is not a hazard for them
-/// because they are never handed a serving `AtlasData`.
+/// Set equality, not containment: an entry that is deleted must also leave this list,
+/// so the list cannot rot into a blanket exemption. Both entries are oracles, never
+/// reached by a serving response.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "chronology.rs",
@@ -68,16 +20,9 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// Every `pub`/`pub(crate)` fn in `src` whose PARAMETER LIST mentions
-/// `AtlasData`, as `(fn name, parameter text)`.
-///
-/// Deliberately a text scan, not a compiler plugin: the parameter list is
-/// taken from the first `(` after the fn name to its matching `)`, counting
-/// parentheses only (a `Vec<&Event>` or a `-> T` inside a parameter carries
-/// no unbalanced paren, and an `Fn(..)` parameter is balanced), so generics
-/// and closure parameters are handled without a grammar. Return types are
-/// NOT scanned -- `demo_fixture() -> AtlasData` and `scene::big_fixture()`
-/// are constructors of the thing, not readers of a serving one.
+/// The parameter list is taken by counting parentheses, which handles generics and
+/// closure parameters without a grammar. Return types are deliberately not scanned:
+/// a constructor of an `AtlasData` is not a reader of a serving one.
 fn atlas_data_taking_public_fns(src: &str) -> Vec<(String, String)> {
     const HEADS: [&str; 2] = ["pub fn ", "pub(crate) fn "];
     let mut out = Vec::new();
@@ -189,9 +134,6 @@ fn every_public_atlas_data_taking_function_in_atlas_core_is_on_the_closed_list()
     }
 }
 
-/// The scan must be able to FAIL, or it is decoration. A planted reader of
-/// each forbidden shape must be found, and the correct replacement --
-/// `&dyn SceneSource` -- must not be.
 #[test]
 fn the_signature_scan_finds_a_planted_reader_and_ignores_the_correct_shape() {
     let planted = r#"

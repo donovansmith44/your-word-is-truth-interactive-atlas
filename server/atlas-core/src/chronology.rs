@@ -1,117 +1,6 @@
-//! Batch HOTFIX-6 (graph-wide chronology audit, owner live reports #8/#9,
-//! 2026-08-22: Solomon's dream at Gibeon rendered PRIOR/FOLLOWING neighbors
-//! from the Saul-persecution era -- "this is a lie... i'm sure these errors
-//! are graph-wide").
-//!
-//! ROOT CAUSE (controller-verified, confirmed not re-derived): the `df_*`
-//! ("David's Flight from Saul") narrative chain (9 events,
-//! `data/curated/events-extra.toml`) was authored ~48 years LATE relative to
-//! this atlas's own declared Ussher/traditional scale -- a wrong-anchor
-//! calibration error at original authoring time, the SAME defect class
-//! `nt_calibration` fixed for the NT Theographic import (that module's own
-//! doc comment has the full "why a uniform shift, why ETL-time" reasoning;
-//! this module does not repeat it). `1ki_solomon_gibeon` itself was always
-//! correctly dated -- the global timeline wiring (HOTFIX-4 requirement 1) is
-//! not at fault; the DATA it was handed was.
-//!
-//! THIS MODULE is the permanent guard the owner's own "i'm sure these
-//! errors are graph-wide" assertion earns: every dated event's own year must
-//! fall inside the NARRATION WINDOW (`data/curated/book-narration-
-//! windows.toml`) of every witness book it claims -- the tight, per-book
-//! bound that catches a wrong-era date the coarse, decade-spanning
-//! `data/curated/eras.toml` (map-UI-facing, unrelated purpose, untouched by
-//! this batch) structurally cannot: `united-kingdom` there spans
-//! -1050..-932, comfortably swallowing `df_ramah`'s own pre-fix -1014
-//! without complaint.
-//!
-//! FALSE-POSITIVE LESSON (the controller's own disclosed prior probe): a
-//! plain median-based statistical sweep over this same data flagged ~187
-//! events, overwhelmingly FALSE positives -- books narrating multi-
-//! millennium spans (Genesis) skew a median hard, and genealogy chapters (1
-//! Chronicles 1-9, Luke 3) legitimately RECOUNT events thousands of years
-//! before their own era (`theo-7` "Birth of Seth," -3874, correctly carries
-//! GEN + 1CH + LUK witnesses). This guard is anchor-table-driven, never
-//! statistical, and models RECOUNTING witnesses two ways:
-//! - `RECOUNTING_CHAPTERS`: a curated (book, chapter-range) list -- an
-//!   entire chapter is retrospective-by-genre (a genealogy, Stephen's speech
-//!   in Acts 7, Hebrews 11's "by faith" roll call) -- checked by VERSE, so it
-//!   applies uniformly whether the citing verse arrived via a curated
-//!   `[[witness]]` row or a bare top-level `Event.verses` entry (most
-//!   genealogy stubs, e.g. `theo-7`, are the latter -- a LAYER-0 Theographic
-//!   import with no curated witness rows at all, so a flag hung on
-//!   `EventWitness` specifically could never reach them).
-//! - `WINDOW_EXEMPTIONS`: the EVENT_DISTINCT_PAIRS-style pressure valve, one
-//!   row per (event, book), each with its own stated reason -- for a
-//!   single, non-general citation the chapter-range mechanism doesn't fit
-//!   (e.g. `theo-74`'s own Exodus-12:40/Galatians-3:17 sojourn-count
-//!   citations, or `theo-129`'s own already-disclosed stray GEN.34.1 tag,
-//!   batch-w1-report.md).
-//!
-//! `THEO_DATE_OVERRIDES` is a DIFFERENT, narrower mechanism: not a
-//! systematic scale offset (that shape is `nt_calibration`'s own, and the
-//! full-audit sample check below found NO such systematic OT offset) but
-//! isolated, genuinely-corrupt raw Theographic import rows, each corrected
-//! one at a time as found -- `theo-67` ("Judgeship of Jair," which the
-//! source data dated -1992 -- squarely mid-patriarchal-genealogy, its OWN
-//! id-neighbors' own era -- instead of the Judges era its label/book claim)
-//! found by HOTFIX-6's own full audit, re-derived from Judges 10:1-3's own
-//! stated reign lengths (Tola 23 years from `theo-143`'s own -1215, so Jair
-//! begins ~-1192; Jair's own 22 years then lands within one year of the very
-//! next entry, `theo-144`'s own already-correct -1170 "next oppression
-//! begins" value -- independent corroboration, not just arithmetic).
-//! Applied ETL-side, once, on the raw pre-`finish()` Theographic event set
-//! (the SAME timing `nt_calibration::apply_nt_calibration` already
-//! established, for the same reason: idempotency across `finish()`'s own two
-//! real call sites).
-//!
-//! Batch GAZ-1+CHRON-FIX (2026-08-24) added a second row: `theo-87`
-//! ("Nimrod's kingdom begins," GEN.10.8-12) shipped the raw Theographic
-//! `yearNum` value -1822, anachronistic on any traditional scheme --
-//! Genesis 10:10 states plainly "the beginning of his kingdom was Babel,"
-//! and this atlas's own declared Ussher/traditional scale dates the
-//! Babel/dispersion event to 2242 BC. See that entry's own reason string
-//! for the full citation; not repeated here.
-//!
-//! `ANCHOR_DEFERRALS` is a THIRD, still-DIFFERENT exemption kind from the
-//! two above -- and the two must never be confused (fix round 1, controller
-//! ruling + an owner sequencing redirect, both 2026-08-22). `RECOUNTING_
-//! CHAPTERS`/`WINDOW_EXEMPTIONS` are PERMANENT, by design: a genealogy
-//! citing an ancient birth is always going to do that. An anchor deferral
-//! is TIME-BOUNDED: four anchor-table rows (`jerusalem-falls`,
-//! `cyrus-decree`, `temple-finished`, `ezra-returns`) carry the table's own
-//! CANONICAL Ussher value while their bound event still ships an older,
-//! modern-scholarly value the controller's own fix-round-1 ruling already
-//! named as drift -- but the owner ruled that re-dating those events (and
-//! their own dependents) by hand now is wasted work, since HOTFIX-7's own
-//! single-feed migration will delete every inline year literal and resolve
-//! dates from `chronology-anchors.toml` directly. A deferral is never
-//! silent: `narrative.rs`'s own E1 test reports every one of them BY NAME,
-//! still verifying the deferral's own recorded `shipped_value` stays
-//! honest (matches the event's real current date) rather than either
-//! failing loud (a real E1 violation) or silently passing as if the
-//! canonical value were already live.
-//!
-//! FIX ROUND 2 (independent review, 2026-08-22): two more findings closed
-//! here. C-1 (Critical): `nehemiah-wall`'s own shipped "-444, Ussher's
-//! Annals of the World" was itself a mis-cited MODERN figure (the
-//! controller's own brief seeded it, since ledgered by the controller
-//! against the brief, not this batch) -- the real Ussher figure is -454
-//! (Annals paragraphs 1227/1234), confirmed against two independently
-//! uploaded primary-text scans AND this atlas's own internal arithmetic
-//! (ezra-returns -467 + Nehemiah's own textual 13-year gap, Neh 2:1 vs
-//! Ezra 7:7-8). Unlike the four `ANCHOR_DEFERRALS` rows above, this was a
-//! citation-accuracy correction to a value that was never genuinely
-//! Ussher's own, not disclosed W2-era drift on an already-correctly-cited
-//! figure -- so `ret_jerusalem_wall` and its own dependents were HAND-
-//! RE-DATED this round, not deferred; `nehemiah-wall` carries no
-//! `ANCHOR_DEFERRALS` entry. I-2 (Important): `anchor_equality_check`
-//! below is the shared predicate BOTH `atlas_etl::validate::
-//! run_chronology_anchor_equality` (the fail-loud ETL build gate, new this
-//! round) and `narrative.rs`'s own E1 property test now call -- one
-//! algorithm, two independent LAYERS, the same design `window_violations`/
-//! `era_boundary_violations` already established, so "the table and the
-//! data agree" is enforced on every build, not only when `cargo test`
-//! happens to run.
+//! Every dated event's year must fall inside the curated narration window of every
+//! witness book it cites, unless the citing verse is retrospective by genre or that one
+//! (event, book) citation is individually exempted.
 
 use std::collections::{HashMap, HashSet};
 
@@ -119,18 +8,9 @@ use crate::data::{AtlasData, BookNarrationWindow, ChronologyAnchor, Event};
 use crate::refs::VerseId;
 use crate::time::Year;
 
-// ---------------------------------------------------------------------
-// RECOUNTING_CHAPTERS -- the chapter-range recounting mechanism
-// ---------------------------------------------------------------------
-
-/// `(book, chapter_from, chapter_to, reason)`. A verse in one of these
-/// ranges never requires the event citing it to fall inside that BOOK's own
-/// narration window -- the citation is retrospective by genre, not a claim
-/// that the cited event happened during this book's own narrated era.
-/// Checked per-VERSE (not per-witness/per-event), so it applies uniformly
-/// regardless of how the citation reached the event (top-level
-/// `Event.verses` or a curated `[[witness]]` row) -- see this module's own
-/// doc comment for why that distinction matters.
+/// `(book, chapter_from, chapter_to, reason)`. A verse in one of these ranges never
+/// requires the event citing it to fall inside that book's narration window. Checked per
+/// VERSE, so it applies however the citation reached the event.
 pub const RECOUNTING_CHAPTERS: &[(&str, u16, u16, &str)] = &[
     (
         "1CH",
@@ -158,13 +38,7 @@ pub fn is_recounting(book: &str, chapter: u16) -> bool {
     RECOUNTING_CHAPTERS.iter().any(|(b, from, to, _)| *b == book && *from <= chapter && chapter <= *to)
 }
 
-// ---------------------------------------------------------------------
-// WINDOW_EXEMPTIONS -- the EVENT_DISTINCT_PAIRS-style pressure valve
-// ---------------------------------------------------------------------
-
-/// One curated (event, book) exemption from the window check -- mirrors
-/// `event_merge::EventDistinct`'s own shape exactly (a real reason per row,
-/// never a bare id list).
+/// Every row carries a real reason; an exemption is never a bare id.
 pub struct WindowExemption {
     pub event_id: &'static str,
     pub book: &'static str,
@@ -198,21 +72,9 @@ pub fn is_exempted(event_id: &str, book: &str) -> bool {
     WINDOW_EXEMPTIONS.iter().any(|x| x.event_id == event_id && x.book == book)
 }
 
-// ---------------------------------------------------------------------
-// ANCHOR_DEFERRALS -- the TYPED, TIME-BOUNDED anchor-equality deferral
-// (a DIFFERENT kind from RECOUNTING_CHAPTERS/WINDOW_EXEMPTIONS above --
-// see this module's own doc comment for the full distinction)
-// ---------------------------------------------------------------------
-
-/// One curated anchor-row deferral: `anchor_id` names a `ChronologyAnchor`
-/// row (`chronology-anchors.toml`) whose own `year` is the CANONICAL
-/// (Ussher/declared) value, bound to `event_id`, but whose compiled
-/// `from_year` still, honestly, reads `shipped_value` -- an OLDER,
-/// modern-scholarly value the fix-round-1 ruling already named as W2-era
-/// authoring drift, deliberately NOT hand-corrected per the owner's own
-/// sequencing redirect (HOTFIX-7's own single-feed migration will delete
-/// the inline literal and resolve it from the table directly, so a hand
-/// edit now would just be immediately overwritten there).
+/// An anchor whose `year` is the canonical value while its bound event still carries an
+/// older one. `shipped_value` records that older date, so the gap stays reported rather
+/// than silent, and goes stale the moment the event is re-dated.
 pub struct AnchorDeferral {
     pub anchor_id: &'static str,
     pub event_id: &'static str,
@@ -251,19 +113,9 @@ pub fn anchor_deferral(anchor_id: &str) -> Option<&'static AnchorDeferral> {
     ANCHOR_DEFERRALS.iter().find(|d| d.anchor_id == anchor_id)
 }
 
-// ---------------------------------------------------------------------
-// anchor_equality_check -- the SHARED anchor-equality predicate (fix
-// round 2, review finding I-2)
-// ---------------------------------------------------------------------
-
-/// One anchor-equality failure: either a non-deferred anchor's own `year`
-/// disagrees with its bound event's own compiled `from_year`
-/// (`is_stale_deferral == false`), or a DEFERRED anchor's own registered
-/// `ANCHOR_DEFERRALS::shipped_value` has gone stale -- the event was
-/// re-dated without updating/removing the deferral entry
-/// (`is_stale_deferral == true`). Both are real defects, reported the
-/// same way (never silently passed), just worded differently by the
-/// caller.
+/// Two failure shapes: a non-deferred anchor disagreeing with its bound event's year, or
+/// a deferral whose `shipped_value` has gone stale (`is_stale_deferral`). Both are real
+/// defects, never silently passed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnchorEqualityViolation {
     pub anchor_id: String,
@@ -273,11 +125,8 @@ pub struct AnchorEqualityViolation {
     pub is_stale_deferral: bool,
 }
 
-/// One entry in the (never-silent) deferral report: an anchor that is NOT
-/// a violation -- its `ANCHOR_DEFERRALS` entry's own `shipped_value` still
-/// honestly matches the event's real current date -- but is also not a
-/// plain equality pass; reported by name rather than folded silently into
-/// either bucket.
+/// An anchor that is neither a violation nor a plain equality pass, reported by name so
+/// a live deferral can never be folded silently into either bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnchorDeferralReport {
     pub anchor_id: String,
@@ -286,21 +135,9 @@ pub struct AnchorDeferralReport {
     pub shipped_value: Year,
 }
 
-/// THE shared anchor-equality predicate -- consulted by BOTH
-/// `atlas_etl::validate::run_chronology_anchor_equality` (the fail-loud
-/// ETL build gate) and `narrative.rs`'s own E1 property test (the
-/// compiled-JSON-independent layer), so "the table and the data agree" is
-/// enforced on every build, not only when `cargo test` happens to run --
-/// the SAME "one predicate, two independent LAYERS" design
-/// `window_violations`/`era_boundary_violations` already established, not
-/// two hand-written copies that could silently drift apart (this module's
-/// own doc comment, fix round 1 finding, has the original story).
-///
-/// Every anchor with a bound `event_id` is checked (a dangling `event_id`
-/// is `run_chronology_anchors`'s own job to report -- silently skipped
-/// here rather than duplicated). A deferred anchor never contributes a
-/// plain-equality violation; it contributes either a `AnchorDeferralReport`
-/// (honest) or a stale-deferral `AnchorEqualityViolation` (dishonest).
+/// Every anchor with a bound event is checked; a dangling `event_id` is another check's
+/// report, so it is skipped here rather than duplicated. A deferred anchor yields a
+/// deferral report or a stale-deferral violation, never a plain equality violation.
 pub fn anchor_equality_check(anchors: &[ChronologyAnchor], events: &[Event]) -> (Vec<AnchorEqualityViolation>, Vec<AnchorDeferralReport>) {
     let by_id: HashMap<&str, &Event> = events.iter().map(|e| (e.id.as_str(), e)).collect();
     let mut violations = Vec::new();
@@ -339,13 +176,8 @@ pub fn anchor_equality_check(anchors: &[ChronologyAnchor], events: &[Event]) -> 
     (violations, deferred)
 }
 
-// ---------------------------------------------------------------------
-// THEO_DATE_OVERRIDES -- isolated raw-import date corrections
-// ---------------------------------------------------------------------
-
-/// `(id, corrected_from_year, corrected_to_year, reason)` -- see this
-/// module's own doc comment for why this is a DIFFERENT mechanism from
-/// `nt_calibration` (isolated corrupt rows, not a systematic scale offset).
+/// `(id, corrected_from_year, corrected_to_year, reason)`: isolated corrupt import rows,
+/// not a systematic scale offset.
 pub const THEO_DATE_OVERRIDES: &[(&str, i32, i32, &str)] = &[
     (
         "theo-67",
@@ -361,8 +193,6 @@ pub const THEO_DATE_OVERRIDES: &[(&str, i32, i32, &str)] = &[
     ),
 ];
 
-/// One row of `apply_theo_date_overrides`'s own audit trail -- mirrors
-/// `nt_calibration::CalibrationLogEntry`'s own shape.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DateOverrideLogEntry {
     pub id: String,
@@ -373,12 +203,8 @@ pub struct DateOverrideLogEntry {
     pub new_to_year: Year,
 }
 
-/// Applies `THEO_DATE_OVERRIDES` in place -- same ETL-only, called-exactly-
-/// once-on-the-raw-pre-`finish()`-event-set timing as
-/// `nt_calibration::apply_nt_calibration`, for the identical reason
-/// (idempotency: `finish()` runs twice across the real pipeline, and a raw
-/// date write is not naturally idempotent the way `event_merge`'s removal-
-/// based identity merge is).
+/// Must be called exactly once, on the raw event set before it is finished: a date write
+/// is not idempotent, and finishing runs more than once over the real pipeline.
 pub fn apply_theo_date_overrides(events: &mut [Event]) -> Vec<DateOverrideLogEntry> {
     let mut log = Vec::new();
     for e in events.iter_mut() {
@@ -399,33 +225,13 @@ pub fn apply_theo_date_overrides(events: &mut [Event]) -> Vec<DateOverrideLogEnt
     log
 }
 
-// ---------------------------------------------------------------------
-// The window check itself
-// ---------------------------------------------------------------------
-
 pub fn window_for_book<'a>(windows: &'a [BookNarrationWindow], book: &str) -> Option<&'a BookNarrationWindow> {
     windows.iter().find(|w| w.book == book)
 }
 
-/// This event's own set of witness books that actually constrain its date
-/// (i.e. `effective_verses` grouped by book, EXCLUDING any verse that lands
-/// in a `RECOUNTING_CHAPTERS` range, AND excluding any book individually
-/// listed in `WINDOW_EXEMPTIONS` for this exact event) -- "the books whose
-/// narration window this event's own year must fall inside," per this
-/// module's own doc comment. A book every one of whose citing verses is
-/// recounting, or whose citation is individually exempted, contributes
-/// nothing here (fully exempted for this event), matching `theo-7`'s own
-/// 1CH/LUK witnesses (chapters 1-9/3, both wholly recounting) exactly.
-///
-/// Exemptions are folded in HERE, not left to each caller to re-check,
-/// deliberately: `era_boundary_violations` below reasons about "which books
-/// actually constrain this event's date" the identical way `window_violations`
-/// does (found live, batch-hotfix6: `theo-124` "Lifetime of Joshua," -1521,
-/// individually exempted from JDG's own window check, was STILL counted as
-/// JDG-witnessed by an earlier version of `era_boundary_violations` that
-/// re-derived book membership independently -- wrongly asserting it must
-/// sort after the exodus-wilderness era boundary. One shared predicate for
-/// "does this citation count," not two that can drift apart.
+/// The witness books that actually constrain this event's date: verses in a recounting
+/// chapter and books exempted for this event contribute nothing. Folded in here so every
+/// caller shares one answer to "does this citation count" instead of re-deriving it.
 pub fn window_check_books(e: &Event) -> HashSet<&'static str> {
     let mut out = HashSet::new();
     for v in crate::event_merge::effective_verses(e) {
@@ -439,8 +245,6 @@ pub fn window_check_books(e: &Event) -> HashSet<&'static str> {
     out
 }
 
-/// One window-check failure -- "`event_id`'s own year `year` falls outside
-/// `book`'s own narration window `window`."
 #[derive(Debug, Clone, PartialEq)]
 pub struct WindowViolation {
     pub event_id: String,
@@ -450,15 +254,8 @@ pub struct WindowViolation {
     pub window: (Year, Year),
 }
 
-/// The full sweep: every dated (`kind == "event"`) event, against every
-/// witness book `window_check_books` returns for it (already net of
-/// `WINDOW_EXEMPTIONS` -- see that function's own doc comment for why the
-/// exemption check lives there, shared with `era_boundary_violations`, not
-/// duplicated here). A book with NO curated `BookNarrationWindow` row is a
-/// SEPARATE structural problem (`missing_windows` below), not silently
-/// skipped here nor silently passed -- `atlas_etl::validate` fails loud on
-/// both independently, so a missing window is never mistaken for "nothing
-/// to check."
+/// A book with no curated narration window is a separate structural problem, reported by
+/// `missing_windows`: it is neither skipped nor passed here.
 pub fn window_violations(events: &[Event], windows: &[BookNarrationWindow]) -> Vec<WindowViolation> {
     let mut out = Vec::new();
     for e in events.iter().filter(|e| e.kind == "event") {
@@ -480,11 +277,8 @@ pub fn window_violations(events: &[Event], windows: &[BookNarrationWindow]) -> V
     out
 }
 
-/// Structural check: every book ANY dated event actually cites (via
-/// `window_check_books`, so a purely-recounting citation never demands a
-/// window) must have a real curated `BookNarrationWindow` row -- a book
-/// gaining its first dated event with no window authored for it yet is a
-/// curation gap, not a silent pass.
+/// A book gaining its first dated event before a window is authored for it is a curation
+/// gap, not a silent pass.
 pub fn missing_windows(events: &[Event], windows: &[BookNarrationWindow]) -> Vec<&'static str> {
     let known: HashSet<&str> = windows.iter().map(|w| w.book.as_str()).collect();
     let mut missing: HashSet<&'static str> = HashSet::new();
@@ -500,30 +294,16 @@ pub fn missing_windows(events: &[Event], windows: &[BookNarrationWindow]) -> Vec
     out
 }
 
-// ---------------------------------------------------------------------
-// E4 -- era-partition: dated events vs. `chronology_anchors`'s own
-// `era_boundary` rows
-// ---------------------------------------------------------------------
-
-/// One era-partition failure -- generalizes HOTFIX-4's own single NT
-/// era-boundary gate (Passion cluster vs. every ACT-witnessed event) to
-/// EVERY `era_boundary` anchor in the table: for boundary anchor `b`, an
-/// event whose own witness-book windows sit ENTIRELY at-or-before `b`'s own
-/// year must sort at-or-before `b` on the global timeline; one whose
-/// windows sit ENTIRELY after `b`'s own year must sort strictly after it. An
-/// event straddling the boundary (a witness book whose own window itself
-/// spans across `b`'s year) contributes no assertion for THAT boundary --
-/// the same honest carve-out HOTFIX-4's own gate already established for
-/// `pw_mount_of_olives`'s own legitimate Acts 1:9-12 citation.
+/// For each era-boundary anchor: an event whose witness-book windows sit entirely at or
+/// before the boundary year must sort there too, and one entirely after must sort after.
+/// An event whose window straddles the boundary asserts nothing for that boundary.
 #[derive(Debug, Clone, PartialEq)]
 pub struct EraBoundaryViolation {
     pub event_id: String,
     pub label: String,
     pub boundary_id: String,
     pub boundary_year: Year,
-    /// `"before"` (should sort at-or-before the boundary) or `"after"`
-    /// (should sort strictly after it) -- which side this event's own
-    /// witness-book windows placed it on.
+    /// `"before"` (sorts at or before the boundary) or `"after"` (strictly after it).
     pub side: &'static str,
 }
 
@@ -532,7 +312,7 @@ pub fn era_boundary_violations(d: &AtlasData) -> Vec<EraBoundaryViolation> {
     let boundaries: Vec<&ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.era_boundary).collect();
 
     for b in &boundaries {
-        let Some(b_event_id) = b.event_id.as_deref() else { continue }; // structurally guaranteed by validate::run_chronology_anchors; skip defensively rather than panic
+        let Some(b_event_id) = b.event_id.as_deref() else { continue };
         let Some(b_pos) = d.timeline_position(b_event_id) else { continue };
 
         for e in d.events.iter().filter(|e| e.kind == "event" && e.id != b_event_id) {
@@ -565,7 +345,7 @@ pub fn era_boundary_violations(d: &AtlasData) -> Vec<EraBoundaryViolation> {
             } else if all_after && !all_before {
                 "after"
             } else {
-                continue; // straddles this boundary -- no assertion, matches HOTFIX-4's own pw_mount_of_olives carve-out
+                continue;
             };
 
             let Some(e_pos) = d.timeline_position(&e.id) else { continue };
@@ -614,8 +394,6 @@ mod tests {
         BookNarrationWindow { book: book.into(), from_year: from, to_year: to, note: None }
     }
 
-    // --- RECOUNTING_CHAPTERS -------------------------------------------
-
     #[test]
     fn genealogy_chapter_is_recounting() {
         assert!(is_recounting("1CH", 1));
@@ -627,16 +405,13 @@ mod tests {
 
     #[test]
     fn narrative_chapter_is_not_recounting() {
-        assert!(!is_recounting("1CH", 10)); // Saul's death -- real narrative, not genealogy
+        assert!(!is_recounting("1CH", 10));
         assert!(!is_recounting("LUK", 24));
         assert!(!is_recounting("1SA", 19));
     }
 
-    // --- window_check_books ----------------------------------------------
-
     #[test]
     fn recounting_witness_is_excluded_from_window_check_books() {
-        // theo-7's own real shape: GEN (real narration) + 1CH.1/LUK.3 (both recounting).
         let e = event("theo-7", -3874, -3874, &["GEN.5.3", "1CH.1.1", "LUK.3.38"]);
         let books = window_check_books(&e);
         assert_eq!(books, HashSet::from(["GEN"]), "1CH/LUK are wholly recounting citations here and must not demand this event fall inside their own windows");
@@ -650,15 +425,13 @@ mod tests {
 
     #[test]
     fn witness_row_verses_count_same_as_top_level_verses() {
-        let e = witness_event("x", 33, 33, "ACT", &["ACT.7.2"]); // Stephen's speech opening -- recounting
+        let e = witness_event("x", 33, 33, "ACT", &["ACT.7.2"]);
         assert!(window_check_books(&e).is_empty(), "a witness-row citation into a recounting chapter must be excluded exactly like a top-level verses citation");
     }
 
-    // --- window_violations: red-then-green on the owner's own case -------
-
     #[test]
     fn red_df_ramah_pre_fix_date_fails_the_1sa_window() {
-        let events = vec![event("df_ramah", -1014, -1014, &["1SA.19.18"])]; // pre-fix date
+        let events = vec![event("df_ramah", -1014, -1014, &["1SA.19.18"])];
         let windows = vec![window("1SA", -1171, -1055)];
         let violations = window_violations(&events, &windows);
         assert_eq!(violations.len(), 1);
@@ -668,17 +441,13 @@ mod tests {
 
     #[test]
     fn green_df_ramah_post_fix_date_passes_the_1sa_window() {
-        let events = vec![event("df_ramah", -1062, -1062, &["1SA.19.18"])]; // post-fix date
+        let events = vec![event("df_ramah", -1062, -1062, &["1SA.19.18"])];
         let windows = vec![window("1SA", -1171, -1055)];
         assert!(window_violations(&events, &windows).is_empty());
     }
 
     #[test]
     fn green_theo7_passes_with_zero_exemption_spam() {
-        // The brief's own named acceptance: theo-7's correct -3874 with
-        // 1CH+LUK witnesses passes with ZERO exemption-list entries (not
-        // present anywhere in WINDOW_EXEMPTIONS) -- proven by the recounting
-        // mechanism alone.
         assert!(!WINDOW_EXEMPTIONS.iter().any(|x| x.event_id == "theo-7"), "theo-7 must pass via RECOUNTING_CHAPTERS alone, never an exemption-list entry");
         let events = vec![event("theo-7", -3874, -3874, &["GEN.5.3", "1CH.1.1", "LUK.3.38"])];
         let windows = vec![window("GEN", -4004, -1635), window("1CH", -1055, -1015), window("LUK", -6, 33)];
@@ -698,8 +467,6 @@ mod tests {
         let windows = vec![window("EXO", -1571, -1445), window("GAL", 48, 53)];
         assert!(window_violations(&events, &windows).is_empty());
     }
-
-    // --- THEO_DATE_OVERRIDES ----------------------------------------------
 
     #[test]
     fn red_then_green_theo67_override() {
@@ -739,8 +506,6 @@ mod tests {
         }
     }
 
-    // --- ANCHOR_DEFERRALS (fix round 1 + owner sequencing redirect) ------
-
     #[test]
     fn anchor_deferrals_table_has_no_duplicate_anchor_ids() {
         let mut seen = std::collections::HashSet::new();
@@ -759,17 +524,9 @@ mod tests {
 
     #[test]
     fn exactly_four_anchors_are_deferred_today() {
-        // A deliberate, named count -- per this module's own doc comment,
-        // a deferral is never silent: gaining or losing one (e.g. HOTFIX-7
-        // resolving one) must force a conscious edit here, not a silent
-        // drift. If this ever fails, update ANCHOR_DEFERRALS AND this
-        // count together, not one without the other.
         let ids: Vec<&str> = ANCHOR_DEFERRALS.iter().map(|d| d.anchor_id).collect();
         assert_eq!(ids, vec!["jerusalem-falls", "cyrus-decree", "temple-finished", "ezra-returns"]);
     }
-
-    // --- anchor_equality_check (fix round 2, I-2 -- the shared predicate
-    // both the ETL gate and E1 now call) ---------------------------------
 
     fn anchor(id: &str, year: Year, event_id: Option<&str>, era_boundary: bool) -> ChronologyAnchor {
         ChronologyAnchor { id: id.into(), label: id.into(), year, event_id: event_id.map(String::from), era_boundary, source: "test".into(), note: None }
@@ -779,7 +536,6 @@ mod tests {
     fn red_then_green_plain_anchor_equality() {
         let anchors = vec![anchor("solomon-crowned", -1015, Some("1ki_solomon_anointed"), false)];
 
-        // RED: table and event disagree.
         let wrong = vec![event("1ki_solomon_anointed", -1016, -1016, &[])];
         let (violations, deferred) = anchor_equality_check(&anchors, &wrong);
         assert!(deferred.is_empty());
@@ -789,7 +545,6 @@ mod tests {
         assert_eq!(violations[0].table_year, -1015);
         assert_eq!(violations[0].event_year, -1016);
 
-        // GREEN: table and event agree.
         let right = vec![event("1ki_solomon_anointed", -1015, -1015, &[])];
         let (violations, deferred) = anchor_equality_check(&anchors, &right);
         assert!(violations.is_empty());
@@ -798,8 +553,6 @@ mod tests {
 
     #[test]
     fn a_deferred_anchor_with_an_honest_shipped_value_is_reported_not_violated() {
-        // Mirrors the real jerusalem-falls row: table year -588, deferral's
-        // own recorded shipped_value -586, event still honestly at -586.
         let anchors = vec![anchor("jerusalem-falls", -588, Some("exl_jerusalem"), false)];
         let events = vec![event("exl_jerusalem", -586, -586, &[])];
         let (violations, deferred) = anchor_equality_check(&anchors, &events);
@@ -812,11 +565,8 @@ mod tests {
 
     #[test]
     fn a_stale_deferral_fails_loud_like_a_real_violation() {
-        // The event moved (e.g. a future hand-edit) without updating the
-        // ANCHOR_DEFERRALS entry -- the deferral's own shipped_value claim
-        // is now dishonest, which must fail loud, never silently pass.
         let anchors = vec![anchor("jerusalem-falls", -588, Some("exl_jerusalem"), false)];
-        let events = vec![event("exl_jerusalem", -580, -580, &[])]; // neither -588 nor the deferral's own -586
+        let events = vec![event("exl_jerusalem", -580, -580, &[])];
         let (violations, deferred) = anchor_equality_check(&anchors, &events);
         assert!(deferred.is_empty());
         assert_eq!(violations.len(), 1);
@@ -827,8 +577,6 @@ mod tests {
 
     #[test]
     fn an_unbound_anchor_and_a_dangling_event_id_are_both_silently_skipped() {
-        // Structural validity (dangling event_id) is run_chronology_anchors's
-        // own job -- duplicating that error here would be noise, not signal.
         let anchors = vec![anchor("exodus", -1491, None, false), anchor("ghost", -100, Some("does-not-exist"), false)];
         let (violations, deferred) = anchor_equality_check(&anchors, &[]);
         assert!(violations.is_empty());

@@ -1,47 +1,9 @@
-//! Batch E (time-accurate places): resolves a curated `PlaceHistory` record
-//! against a caller's window into the ONE display name / ONE blurb that
-//! should show for it, per the brief's resolution rules (batch-e-brief.md
-//! Requirement 3). Pure functions over `atlas_core::data` types -- no I/O,
-//! no `AtlasData` dependency beyond what's passed in, so both
-//! `scene::compose_time_scene` (per-scene-place display names) and
-//! atlas-server's `/api/place/{id}` handler (one place's full history
-//! payload) share exactly the same resolution logic.
-
 use crate::data::{year_index, PlaceBlurbEntry, PlaceHistory, PlaceNameAlias, PlaceNameEntry};
 use crate::time::{TimeRange, Year};
 
-/// Batch H (existence gating, deferred from E2): the `[from, to]` bounds
-/// within which curated evidence places `history` as EXISTING, derived from
-/// its `established`/`destroyed` date claims -- a DIFFERENT concept from
-/// `resolve_display_name`'s period-NAME ranges (a place can carry one, the
-/// other, both, or neither, independently). `established.when.from_year` is
-/// used (not `to_year`) because a range like "founded sometime between X and
-/// Y" means the place plausibly existed from as early as X; symmetrically
-/// `destroyed.when.to_year` is used because "destroyed sometime between X
-/// and Y" means it plausibly still stood as late as Y. Either half of the
-/// returned tuple is `None` when nothing is curated for that end (still
-/// standing / no known founding date) -- open-ended, never gates on that
-/// side. `history: None` (no `PlaceHistory` record at all for this place) or
-/// a record with neither claim curated both return `(None, None)`, meaning
-/// "always labels regardless of window" per the brief -- callers never need
-/// a separate has-history check.
-///
-/// WIDENING BY CURATED NAMES: `established` documents when a place became
-/// established AS ITS CURATED IDENTITY -- not necessarily when a settlement
-/// first stood on the ground. Jerusalem is the motivating case: its
-/// `established` claim is David's conquest (-1003, "traditional"), but its
-/// own curated name history separately carries "Jebus" from -4004 to -1004
-/// -- the SAME place, under an earlier name, for three thousand years
-/// `established` alone knows nothing about. Gating on `established` alone
-/// would hide Jerusalem's label during its own curated "Jebus" period, which
-/// defeats the entire point of `resolve_display_name`'s period-name
-/// resolution existing in the first place. So each bound present is widened
-/// (never narrowed, and never introduced from nothing -- a place with no
-/// `established` claim still returns `None` on that side even if it has
-/// curated names) to also cover every curated `[[place.name]]` entry's own
-/// range: the lower bound becomes `min(established, earliest name.from)`,
-/// the upper becomes `max(destroyed, latest name.to)`. A place with no name
-/// entries (e.g. Shiloh) is unaffected -- the widening is a no-op.
+/// `established.from_year` and `destroyed.to_year`: a curated range means the place
+/// plausibly existed from as early as the one and still stood as late as the other. A
+/// bound that is present widens (never narrows) to cover every curated name range.
 pub fn resolve_existence(history: Option<&PlaceHistory>) -> (Option<Year>, Option<Year>) {
     let Some(h) = history else { return (None, None) };
     let from = h.established.as_ref().map(|c| {
@@ -55,17 +17,9 @@ pub fn resolve_existence(history: Option<&PlaceHistory>) -> (Option<Year>, Optio
     (from, to)
 }
 
-/// Batch H: true when `window` falls ENTIRELY outside the `[existence_from,
-/// existence_to]` bounds `resolve_existence` produces -- the one place this
-/// rule is decided, so both the server (were it ever to gate server-side)
-/// and this file's own unit tests below share exactly one definition. The
-/// CLIENT (map.js) re-applies this same inclusive-both-ends comparison
-/// itself against the wire's `existence_from`/`existence_to` fields, since
-/// gating is a rendering decision (hide the LABEL, keep the dot) made at
-/// paint time, not a filter on which places even reach the wire -- see
-/// wire.rs's own `ScenePlace`/`QuietPlace` doc comments. Either bound absent
-/// never gates on that side, matching `resolve_existence`'s own "open-ended"
-/// reading; both absent always returns `false`.
+/// True only when `window` falls entirely outside the bounds; an absent bound never
+/// gates on its side. Gating hides the label and keeps the dot, so the client re-applies
+/// this same both-ends-inclusive comparison at paint time.
 pub fn existence_gates_label(existence_from: Option<Year>, existence_to: Option<Year>, window: TimeRange) -> bool {
     if let Some(from) = existence_from {
         if window.to_year < from {
@@ -80,12 +34,8 @@ pub fn existence_gates_label(existence_from: Option<Year>, existence_to: Option<
     false
 }
 
-/// The zero-aware "midpoint year" of a window: floors toward the earlier
-/// (more-BC) year when the window spans an even number of years, so there
-/// is always exactly one canonical midpoint year to test range coverage
-/// against (mirrors `AtlasData::nearest_border_year`'s own earlier-wins tie
-/// policy, applied here to picking a single midpoint instead of a nearest
-/// snapshot).
+/// Floors toward the earlier (more BC) year on an even-length window, so a window always
+/// has exactly one canonical midpoint to test range coverage against.
 fn window_midpoint(w: TimeRange) -> Year {
     let mid_idx = (year_index(w.from_year) + year_index(w.to_year)).div_euclid(2);
     if mid_idx >= 0 {
@@ -95,14 +45,9 @@ fn window_midpoint(w: TimeRange) -> Year {
     }
 }
 
-/// Shared by name and blurb resolution: among `candidates` that already all
-/// intersect `window` (callers filter first), picks the one the window's
-/// own rules prefer -- the entry covering the window's zero-aware midpoint
-/// year if one does, else the entry with the latest `from_year` ("the
-/// latest intersecting" per the brief). Entries within one candidate set
-/// never overlap each other (ETL-validated -- see `validate::run_place_history`),
-/// so "latest `from_year`" and "latest `to_year`" always agree and at most
-/// one candidate can ever cover the midpoint.
+/// `candidates` must already intersect `window` -- callers filter first. Entries within
+/// one candidate set never overlap (the ETL validates this), so at most one can cover
+/// the midpoint and "latest `from_year`" and "latest `to_year`" always agree.
 fn pick_by_window<T>(candidates: &[&T], window: TimeRange, when: impl Fn(&T) -> TimeRange) -> Option<usize> {
     match candidates.len() {
         0 => None,
@@ -121,40 +66,15 @@ fn pick_by_window<T>(candidates: &[&T], window: TimeRange, when: impl Fn(&T) -> 
     }
 }
 
-/// NAME-1: resolves the period-true display name for `history` (if any)
-/// over `window` (if any), THEN (Batch E3) falls back to `alias`'s own
-/// curated KJV name (if any) before ever falling all the way back to the
-/// bare, stripped `default_name`. `window` is `None` for scripture-mode
-/// scenes and for a plain `/api/place/{id}` call with no `from`/`to` -- both
-/// cases skip period-name resolution entirely (there is no window to
-/// resolve one against) but still reach the alias tier below: scripture
-/// mode lights a place via its geocoded verse links, and the owner's own
-/// bug report (batch-e3-brief.md) is exactly this case -- GEN.2.13 lights
-/// `cush-2` with no window at all, and its plain Theographic default name
-/// ("Cush") is NOT the name the KJV text actually uses there ("Ethiopia").
-/// A curated PERIOD name (when one resolves) is ALREADY the KJV-accurate
-/// name for its own era (Luz/Bethel are both real KJV wording, just for
-/// different centuries) -- `alias` is a DIFFERENT axis (translation, not
-/// time) and only ever fills the gap a period name leaves open, never
-/// overrides one that actually resolved. See `resolve_display_name_and_canonical`
-/// below for the sibling that also reports the canonical name, for the one
-/// caller (the place popover's quiet provenance note, Requirement 2) that
-/// needs to know whether an alias is the thing actually shown.
+/// Precedence: a curated period name for `window`, else the curated translation alias,
+/// else the stripped default. `window` is `None` when there is no span to resolve
+/// against, which skips period resolution but still reaches the alias tier.
 pub fn resolve_display_name(default_name: &str, history: Option<&PlaceHistory>, window: Option<TimeRange>, alias: Option<&PlaceNameAlias>) -> String {
     resolve_display_name_and_canonical(default_name, history, window, alias).0
 }
 
-/// Same resolution `resolve_display_name` performs, but also returns the
-/// CANONICAL (bare, stripped, un-aliased, un-period-resolved) name as a
-/// second value -- `Some` only when an alias is the reason the returned
-/// name differs from it (never when a curated period name won, and never
-/// when there's no alias at all: in both cases there is nothing for a
-/// "known elsewhere as" provenance note to disclose). Kept as a separate
-/// function (rather than making `resolve_display_name` itself return a
-/// tuple) so the three call sites that only ever want the plain string
-/// (`scene::lit_places`/`quiet_places`/`compose_scripture_scene`'s mention
-/// loop) stay exactly as simple as before; only `/api/place/{id}` needs the
-/// canonical half, for the popover's provenance note.
+/// The second value is `Some` only when an alias is the reason the returned name differs
+/// from the canonical one -- there is nothing else for a provenance note to disclose.
 pub fn resolve_display_name_and_canonical(
     default_name: &str,
     history: Option<&PlaceHistory>,
@@ -169,34 +89,16 @@ pub fn resolve_display_name_and_canonical(
         }
     }
     match alias.and_then(|a| crate::translation::resolve_name(&a.translations, crate::translation::DEFAULT_TRANSLATION).ok()) {
-        // A curated alias record that (defensively -- should never happen
-        // once ETL validation is in place) lacks a "kjv" entry degrades to
-        // the plain fallback rather than panicking, same as no alias at all.
+        // An alias record with no entry for the translation degrades to the plain
+        // fallback rather than panicking.
         Some(kjv_name) => (kjv_name.to_string(), Some(stripped_default.to_string())),
         None => (stripped_default.to_string(), None),
     }
 }
 
-/// Batch E2 folded-in fix 1: strips a trailing " <digits>" ETL slug-
-/// disambiguation suffix from a DEFAULT display name -- "Beersheba 2",
-/// "Succoth 2", "Moab 2" were leaking onto the plate verbatim (313 of 1375
-/// compiled places carry one, e.g. `beersheba-2`/name "Beersheba 2";
-/// atlas-etl::geo's own doc comment: upstream `friendly_id` values already
-/// disambiguate same-named real-world sites this way -- the suffix exists
-/// to keep two places' NAMES apart in the *source* data, mirrored into our
-/// own `-2`/`-3`... id suffixes, never meant for a user-facing label). Only
-/// ever applied to the plain `default_name` a caller passes in -- CURATED
-/// period names (`PlaceNameEntry::name`, hand-written) are already clean and
-/// never run through this, so a curated name that happens to end in a
-/// number (none do today, but nothing here would assume otherwise) is never
-/// touched. Two same-named places may now show identical labels on the
-/// plate after this strip -- that's correct cartography (their ids, e.g.
-/// `beersheba-1`/`beersheba-2`, stay distinct; only the DISPLAYED text
-/// converges). `pub` (Batch E3): `atlas_etl::validate::run_place_names_kjv`
-/// reuses this SAME stripping rule to detect a curated alias that's pure
-/// noise -- equal to what the place would already show with no alias at
-/// all (req 1's own named error case) -- rather than re-deriving a second,
-/// possibly-drifting copy of this exact suffix rule in a different crate.
+/// Strips the trailing " <digits>" the upstream geodata adds to keep same-named sites
+/// apart. Applied only to a default name: curated period names are already clean. `pub`
+/// because the ETL validator reuses this same rule instead of re-deriving it.
 pub fn strip_disambiguation_suffix(name: &str) -> &str {
     match name.rsplit_once(' ') {
         Some((base, suffix)) if !suffix.is_empty() && suffix.bytes().all(|b| b.is_ascii_digit()) => base,
@@ -204,24 +106,9 @@ pub fn strip_disambiguation_suffix(name: &str) -> &str {
     }
 }
 
-/// BLURB-1: resolves the ONE blurb (if any) that should show for `blurbs`
-/// over `window`. Both `TimeRange::intersects`/`contains_year` (and
-/// therefore every curated range below) are inclusive on BOTH ends -- the
-/// year model's general convention (see `time.rs`) -- so a range's own
-/// `to` year is itself covered, not excluded; a blurb whose text narrates a
-/// specific year must curate its range to REACH that year, not stop one
-/// short of it (fix round 1, M1: Jerusalem's own -586 destruction blurb had
-/// exactly this off-by-one -- see place-history.toml's own comment there
-/// and batch-e-report.md's "Fix round 1" section for the full fencepost
-/// sweep this bug prompted across every other curated range).
-///
-/// Era-breadth entries win whenever exactly one of them intersects
-/// `window`; when `window` spans MORE than one era-breadth range (>=2
-/// intersect), a broad-breadth entry is preferred instead (falling back to
-/// the era set, same `pick_by_window` tie rule, if no broad entry
-/// intersects either) -- "a broad period -> a broad blurb; don't stack
-/// everything" (user direction, 2026-08-19). Exactly one blurb or none,
-/// never a stack: every branch below returns at most one reference.
+/// Exactly one blurb or none, never a stack. Every curated range is inclusive on both
+/// ends, so a blurb whose text narrates a year must curate a range reaching that year.
+/// A window spanning two or more era ranges prefers a broad entry over an era one.
 pub fn resolve_blurb(blurbs: &[PlaceBlurbEntry], window: TimeRange) -> Option<&PlaceBlurbEntry> {
     let era: Vec<&PlaceBlurbEntry> = blurbs.iter().filter(|b| b.breadth == "era" && b.when.intersects(&window)).collect();
     let broad: Vec<&PlaceBlurbEntry> = blurbs.iter().filter(|b| b.breadth == "broad" && b.when.intersects(&window)).collect();
@@ -230,28 +117,14 @@ pub fn resolve_blurb(blurbs: &[PlaceBlurbEntry], window: TimeRange) -> Option<&P
         if let Some(e) = era.first() {
             return Some(e);
         }
-        // era.len() == 0: window touches NONE of this place's own
-        // era-breadth ranges (a genuine gap between curated eras, or a
-        // place with no era blurbs at all) -- deliberate design choice
-        // (fix round 1, M1, documented here because the reviewer correctly
-        // flagged this branch as unlabeled): fall back to a broad summary
-        // if one intersects, rather than showing no blurb. A window inside
-        // an unnarrated gap is still, truthfully, inside the place's whole
-        // history, and the broad blurb is written to be true of the whole
-        // span -- hiding it here would trade a correct, useful answer for
-        // a blank one. CONTRACT.md's BLURB-1 note documents this case
-        // explicitly (was previously silent on it, per the review).
+        // A window in a gap between curated eras is still inside the place's whole
+        // history, so a broad summary is a truer answer here than no blurb at all.
         return pick_by_window(&broad, window, |b| b.when).map(|i| broad[i]);
     }
 
-    // era.len() >= 2: window spans more than one of this place's own
-    // era-breadth ranges -> prefer a broad summary.
     if let Some(i) = pick_by_window(&broad, window, |b| b.when) {
         return Some(broad[i]);
     }
-    // No broad blurb curated/intersecting despite the multi-era span --
-    // degrade gracefully to the same era pick a narrower window would have
-    // used, rather than showing nothing at all.
     pick_by_window(&era, window, |b| b.when).map(|i| era[i])
 }
 
@@ -281,33 +154,19 @@ mod tests {
         PlaceNameAlias { id: "x".into(), translations: HashMap::from([("kjv".to_string(), kjv_name.to_string())]), verses: vec![] }
     }
 
-    // --- resolve_display_name ---------------------------------------------
-
     #[test]
     fn no_history_falls_back_to_default() {
-        // Batch E2 folded-in fix 1: this pinned "Bethel 1" verbatim before
-        // the fix (the exact leak the fix closes) -- now the fallback path
-        // ALWAYS strips the disambiguation suffix first, so the observable
-        // fallback is "Bethel", not the raw default. See this file's own
-        // `trailing_numeral_stripped_*` tests below for the fix in isolation.
         assert_eq!(resolve_display_name("Bethel 1", None, Some(range(-2000, -1900)), None), "Bethel");
     }
 
-    // --- Batch E3: KJV display-name alias layer -----------------------------
-
     #[test]
     fn scripture_mode_no_history_uses_alias_when_curated() {
-        // The exact owner bug report shape: cush-2 (no PlaceHistory record at
-        // all) in scripture mode (window: None) must show the curated KJV
-        // alias, not its plain Theographic default name.
         let a = alias("Ethiopia");
         assert_eq!(resolve_display_name("Cush 2", None, None, Some(&a)), "Ethiopia");
     }
 
     #[test]
     fn time_mode_no_history_uses_alias_too() {
-        // The alias is not time-windowed -- it applies in time mode exactly
-        // the same as scripture mode, whenever no curated period name wins.
         let a = alias("Ethiopia");
         assert_eq!(resolve_display_name("Cush 2", None, Some(range(-4004, -3000)), Some(&a)), "Ethiopia");
     }
@@ -319,10 +178,6 @@ mod tests {
 
     #[test]
     fn active_curated_period_name_wins_over_alias() {
-        // A place with BOTH a curated period-history name active for this
-        // window AND a curated alias: the period name is MORE specific (a
-        // real curated fact about THIS window) and wins -- the alias is only
-        // ever the fallback used when no period name is active.
         let h = history(vec![name("Luz", -4004, -2092)]);
         let a = alias("Some Alias");
         assert_eq!(resolve_display_name("Bethel", Some(&h), Some(range(-3000, -2500)), Some(&a)), "Luz");
@@ -330,10 +185,6 @@ mod tests {
 
     #[test]
     fn alias_wins_when_history_exists_but_no_range_is_active() {
-        // History IS curated for this place, but the window falls outside
-        // every one of its curated name ranges -- same "no period name
-        // resolved" fallback tier as no-history-at-all, so the alias still
-        // applies here too.
         let h = history(vec![name("Jebus", -4004, -1004)]);
         let a = alias("Some Alias");
         assert_eq!(resolve_display_name("Jerusalem", Some(&h), Some(range(-1000, -900)), Some(&a)), "Some Alias");
@@ -341,31 +192,18 @@ mod tests {
 
     #[test]
     fn alias_record_without_a_kjv_entry_falls_back_to_default_not_panic() {
-        // Defensive: an alias record that somehow lacks a "kjv" key (should
-        // never happen once ETL validation is in place, but this function
-        // must never panic regardless) falls back to the plain stripped
-        // default, exactly like no alias at all.
         let a = PlaceNameAlias { id: "x".into(), translations: HashMap::new(), verses: vec![] };
         assert_eq!(resolve_display_name("Cush 2", None, None, Some(&a)), "Cush");
     }
 
-    // --- Batch E2 folded-in fix 1: strip_disambiguation_suffix -------------
-
     #[test]
     fn trailing_numeral_stripped_from_default_name_with_no_history() {
-        // Real shapes from the compiled data (data/compiled/places.json):
-        // "Beersheba 2"/"Succoth 2" leaked onto the plate verbatim before
-        // this fix -- both must now resolve to the clean, unsuffixed name.
         assert_eq!(resolve_display_name("Beersheba 2", None, Some(range(-2000, -1900)), None), "Beersheba");
         assert_eq!(resolve_display_name("Succoth 2", None, None, None), "Succoth");
     }
 
     #[test]
     fn trailing_numeral_stripped_only_when_curated_name_does_not_apply() {
-        // A window inside the curated range still resolves to the curated
-        // name unchanged; a window OUTSIDE every curated range falls back to
-        // the stripped default -- the strip only ever touches the fallback
-        // branch, never a curated `PlaceNameEntry::name`.
         let h = history(vec![name("Luz", -4004, -2092)]);
         assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-3000, -2500)), None), "Luz");
         assert_eq!(resolve_display_name("Bethel 2", Some(&h), Some(range(-1000, -900)), None), "Bethel");
@@ -373,9 +211,9 @@ mod tests {
 
     #[test]
     fn multi_digit_and_no_suffix_cases() {
-        assert_eq!(resolve_display_name("Aphek 12", None, None, None), "Aphek"); // multi-digit suffix
-        assert_eq!(resolve_display_name("Jerusalem", None, None, None), "Jerusalem"); // no suffix: untouched
-        assert_eq!(resolve_display_name("Antioch of Pisidia", None, None, None), "Antioch of Pisidia"); // trailing word, not digits: untouched
+        assert_eq!(resolve_display_name("Aphek 12", None, None, None), "Aphek");
+        assert_eq!(resolve_display_name("Jerusalem", None, None, None), "Jerusalem");
+        assert_eq!(resolve_display_name("Antioch of Pisidia", None, None, None), "Antioch of Pisidia");
     }
 
     #[test]
@@ -407,33 +245,16 @@ mod tests {
     #[test]
     fn window_spanning_both_ranges_picks_the_one_covering_the_midpoint() {
         let h = history(vec![name("Luz", -4004, -2092), name("Bethel", -2091, 100)]);
-        // Window [-2093,-2090]: zero-aware midpoint is -2092 (or -2091,
-        // depending on rounding) -- either way exactly one of the two
-        // curated ranges covers it, so the result must be deterministic and
-        // equal to whichever one does.
         let got = resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090)), None);
         assert!(got == "Luz" || got == "Bethel");
-        // Re-resolving the SAME window must always produce the SAME name
-        // (API property: window -> name is a pure function).
         assert_eq!(got, resolve_display_name("Bethel 1", Some(&h), Some(range(-2093, -2090)), None));
     }
 
     #[test]
     fn several_intersecting_falls_back_to_latest_when_none_covers_midpoint() {
-        // Three disjoint name ranges; a window spanning the first two only
-        // (never reaching the third) with a midpoint that lands in the GAP
-        // between them (no curated range covers it) must resolve to the
-        // LATER (second) of the two it actually intersects.
         let h = history(vec![name("A", -300, -200), name("B", -50, 50)]);
-        // Window [-300,50] intersects BOTH; the gap [-199,-51] contains no
-        // curated range, but the true zero-aware midpoint of this window
-        // (index range covers -300..49 inclusive -> mid index near -125)
-        // falls inside that gap, so this must fall through to "latest
-        // intersecting" = B.
         assert_eq!(resolve_display_name("Default", Some(&h), Some(range(-300, 50)), None), "B");
     }
-
-    // --- resolve_blurb ------------------------------------------------------
 
     #[test]
     fn no_blurbs_returns_none() {
@@ -459,7 +280,6 @@ mod tests {
             blurb("second half", -538, 100, "era"),
             blurb("whole sweep", -4004, 100, "broad"),
         ];
-        // Spans both era ranges -> exactly the broad one shows.
         assert_eq!(resolve_blurb(&blurbs, range(-4004, 100)).map(|b| b.text.as_str()), Some("whole sweep"));
     }
 
@@ -476,87 +296,57 @@ mod tests {
     #[test]
     fn multi_era_span_with_no_broad_falls_back_to_an_era_pick() {
         let blurbs = vec![blurb("A", -300, -200, "era"), blurb("B", -50, 50, "era")];
-        // No broad entry at all -- exactly one blurb (not none, not both).
         let got = resolve_blurb(&blurbs, range(-300, 50));
         assert!(got.is_some());
     }
 
     #[test]
     fn blurb_range_is_inclusive_on_both_ends() {
-        // Fix round 1 (M1): pins the boundary semantics CONTRACT.md's
-        // BLURB-1 note now documents explicitly -- a blurb's own `to` (and
-        // `from`) year is itself covered, not excluded.
         let blurbs = vec![blurb("only", -200, -100, "era")];
-        assert_eq!(resolve_blurb(&blurbs, range(-200, -200)).map(|b| b.text.as_str()), Some("only")); // lower edge
-        assert_eq!(resolve_blurb(&blurbs, range(-100, -100)).map(|b| b.text.as_str()), Some("only")); // upper edge
-        assert_eq!(resolve_blurb(&blurbs, range(-201, -201)), None); // one before: excluded
-        assert_eq!(resolve_blurb(&blurbs, range(-99, -99)), None); // one after: excluded
+        assert_eq!(resolve_blurb(&blurbs, range(-200, -200)).map(|b| b.text.as_str()), Some("only"));
+        assert_eq!(resolve_blurb(&blurbs, range(-100, -100)).map(|b| b.text.as_str()), Some("only"));
+        assert_eq!(resolve_blurb(&blurbs, range(-201, -201)), None);
+        assert_eq!(resolve_blurb(&blurbs, range(-99, -99)), None);
     }
 
     #[test]
     fn zero_era_hits_falls_back_to_broad_by_design() {
-        // Fix round 1 (M1): the branch the review flagged as unlabeled --
-        // a window touching NONE of this place's era ranges but that a
-        // broad range still intersects shows the broad summary, not "no
-        // blurb" (see resolve_blurb's own doc comment for the reasoning).
-        // Locks the decision in: changing this requires deliberately
-        // updating this test, not an accidental behavior drift.
         let blurbs = vec![
             blurb("first half", -4004, -800, "era"),
             blurb("second half", -400, 100, "era"),
             blurb("whole sweep", -4004, 100, "broad"),
         ];
-        // [-799,-401] touches NEITHER era range (a genuine gap) but the
-        // broad range still covers it.
         assert_eq!(resolve_blurb(&blurbs, range(-799, -401)).map(|b| b.text.as_str()), Some("whole sweep"));
     }
 
     #[test]
     fn zero_era_hits_and_no_broad_curated_returns_none() {
-        // Symmetric counterpart to the test above: a gap with no broad
-        // entry at all curated for this place still correctly falls
-        // through to "no blurb" (the brief's own "fallback default/none"
-        // case), not a panic or a spurious pick.
         let blurbs = vec![blurb("first half", -4004, -800, "era"), blurb("second half", -400, 100, "era")];
         assert_eq!(resolve_blurb(&blurbs, range(-799, -401)), None);
     }
 
     #[test]
     fn narrated_boundary_year_resolves_to_the_specific_blurb_not_broad() {
-        // Fix round 1 (M1): a direct, synthetic reproduction of the exact
-        // shape of the shipped bug -- Jerusalem's own era-1 blurb text
-        // named "586 BC" as its own closing event, but its curated range
-        // stopped at -587, one year short, so the window reached via the
-        // shipped "Destroyed 586 BC" -> "Show this time on the map" link
-        // (from=-586&to=-586) fell into the zero-era-hits fallback and
-        // showed the generic broad summary instead. This pins the FIXED
-        // shape: a blurb's range reaching the exact year its own text
-        // narrates resolves to that specific blurb, never broad.
         let blurbs = vec![
             blurb("Once a stronghold, the city fell in 586 BC.", -4004, -586, "era"),
             blurb("Rebuilt after the exile.", -538, 100, "era"),
             blurb("The whole sweep, Canaanite era to today.", -4004, 100, "broad"),
         ];
-        let destroyed_year = range(-586, -586); // place.destroyed.when, mirrored
+        let destroyed_year = range(-586, -586);
         assert_eq!(resolve_blurb(&blurbs, destroyed_year).map(|b| b.text.as_str()), Some("Once a stronghold, the city fell in 586 BC."));
     }
 
     #[test]
     fn exactly_one_or_none_never_more() {
-        // BLURB-1 sanity: resolve_blurb's return type itself (Option<&T>)
-        // makes "more than one" structurally impossible, but exercise a
-        // busy, multi-breadth history to confirm no panic/ambiguity.
         let blurbs = vec![
             blurb("e1", -4004, -2167, "era"),
             blurb("e2", -586, -539, "era"),
             blurb("e3", -538, -536, "era"),
         ];
         for w in [range(-4004, 100), range(-600, -500), range(-4004, -2167), range(1, 50)] {
-            let _ = resolve_blurb(&blurbs, w); // must not panic for any window shape
+            let _ = resolve_blurb(&blurbs, w);
         }
     }
-
-    // --- Batch H: resolve_existence / existence_gates_label ----------------
 
     use crate::data::PlaceDateClaim;
 
@@ -581,11 +371,6 @@ mod tests {
 
     #[test]
     fn resolve_existence_reads_established_from_year_and_destroyed_to_year() {
-        // Shiloh's own real curated shape (data/curated/place-history.toml):
-        // established a single year (-1399, so from_year == to_year), destroyed
-        // a genuine range (-1104..-1050) -- from_year of the FIRST, to_year of
-        // the SECOND, per this function's own doc comment ("plausibly existed
-        // from as early as X" / "plausibly still stood as late as Y").
         let h = history_with_dates(Some(claim(-1399, -1399)), Some(claim(-1104, -1050)));
         assert_eq!(resolve_existence(Some(&h)), (Some(-1399), Some(-1050)));
     }
@@ -604,12 +389,6 @@ mod tests {
 
     #[test]
     fn resolve_existence_established_is_widened_by_an_earlier_curated_name() {
-        // Jerusalem's own real curated shape: established (as "Jerusalem",
-        // David's conquest) is -1003, but the SAME place carries an earlier
-        // curated name "Jebus" from -4004 to -1004. A window entirely inside
-        // the Jebus period (e.g. -1060..-1050) must NOT be gated -- the place
-        // demonstrably existed then, just under its earlier name, so the
-        // lower bound widens to the name's own earliest year.
         let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-586, -586)));
         h.names = vec![name("Jebus", -4004, -1004)];
         assert_eq!(resolve_existence(Some(&h)), (Some(-4004), Some(-586)));
@@ -617,28 +396,14 @@ mod tests {
 
     #[test]
     fn resolve_existence_never_widens_past_the_later_bound() {
-        // A curated name ending well before `destroyed` must not pull the
-        // upper bound backward -- widening is a max, never a replacement.
         let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-586, -586)));
         h.names = vec![name("Jebus", -4004, -1004)];
         let (_, to) = resolve_existence(Some(&h));
-        assert_eq!(to, Some(-586)); // NOT -1004
+        assert_eq!(to, Some(-586));
     }
 
     #[test]
     fn resolve_existence_destroyed_is_widened_by_a_later_curated_name() {
-        // The symmetric upper-bound case (review Minor-3: implemented,
-        // reachable, but previously untested directly -- no real curated
-        // place happens to have a name range outliving its own destroyed
-        // claim, per place-history.toml, so this is a synthetic shape,
-        // same treatment as several of this module's other pure-function
-        // tests). A curated name extending PAST `destroyed` means the place
-        // still carried SOME identity after its destroyed claim's own upper
-        // bound -- the upper bound widens to the name's own latest year,
-        // mirroring the lower-bound case above exactly. The lower bound
-        // (established, -1003) stays untouched -- this name's own `from`
-        // (-600) is later than established, so widening's `min` is a no-op
-        // on that side, isolating this test to the upper-bound branch alone.
         let mut h = history_with_dates(Some(claim(-1003, -1003)), Some(claim(-700, -600)));
         h.names = vec![name("Later Name", -600, -400)];
         assert_eq!(resolve_existence(Some(&h)), (Some(-1003), Some(-400)));
@@ -646,9 +411,6 @@ mod tests {
 
     #[test]
     fn resolve_existence_names_alone_never_introduce_a_bound() {
-        // A place with curated names but NEITHER established nor destroyed
-        // stays fully unbounded ("always labels") -- widening only ever
-        // widens an EXISTING bound, it never manufactures one from names.
         let mut h = history_with_dates(None, None);
         h.names = vec![name("Old Name", -4004, -1004)];
         assert_eq!(resolve_existence(Some(&h)), (None, None));
@@ -656,9 +418,6 @@ mod tests {
 
     #[test]
     fn resolve_existence_with_no_names_is_unaffected_by_widening() {
-        // Shiloh has no curated name entries -- widening is a no-op and the
-        // bounds are exactly the established/destroyed claims, matching
-        // resolve_existence_reads_established_from_year_and_destroyed_to_year.
         let h = history_with_dates(Some(claim(-1399, -1399)), Some(claim(-1104, -1050)));
         assert_eq!(resolve_existence(Some(&h)), (Some(-1399), Some(-1050)));
     }
@@ -671,49 +430,32 @@ mod tests {
 
     #[test]
     fn existence_gates_label_window_entirely_before_established() {
-        // Shiloh established -1399; a window ending before that gates.
         assert!(existence_gates_label(Some(-1399), Some(-1050), range(-2000, -1400)));
-        // The boundary year itself is INCLUSIVE (CONTRACT's own "every curated
-        // range is inclusive on both ends" rule) -- a window reaching exactly
-        // -1399 must NOT gate.
         assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-2000, -1399)));
     }
 
     #[test]
     fn existence_gates_label_window_entirely_after_destroyed() {
-        // Shiloh destroyed by -1050 (the range's own upper bound); a window
-        // starting after that gates -- this is the brief's own named UI case
-        // ("a destroyed-before-window place shows dot, no label").
         assert!(existence_gates_label(Some(-1399), Some(-1050), range(-900, -800)));
-        // Exactly -1050 is still inclusive: must NOT gate.
         assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1050, -900)));
     }
 
     #[test]
     fn existence_gates_label_window_overlapping_existence_never_gates() {
-        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1399, -1050))); // exact match
-        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-4004, 100))); // window contains it
-        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1200, -1100))); // window inside it
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1399, -1050)));
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-4004, 100)));
+        assert!(!existence_gates_label(Some(-1399), Some(-1050), range(-1200, -1100)));
     }
 
     #[test]
     fn existence_gates_label_open_ended_bound_never_gates_on_that_side() {
-        // established only (Some(-2000), None): a place with no curated
-        // destruction date is understood to still stand -- no window, however
-        // late, ever gates it on the destroyed side.
         assert!(!existence_gates_label(Some(-2000), None, range(1, 100)));
-        assert!(existence_gates_label(Some(-2000), None, range(-4004, -2001))); // still gates on the established side
-        // destroyed only (None, Some(-586)): no curated founding date -- no
-        // window, however early, ever gates it on the established side.
+        assert!(existence_gates_label(Some(-2000), None, range(-4004, -2001)));
         assert!(!existence_gates_label(None, Some(-586), range(-4004, -4004)));
-        assert!(existence_gates_label(None, Some(-586), range(-500, -400))); // still gates on the destroyed side
+        assert!(existence_gates_label(None, Some(-586), range(-500, -400)));
     }
 
     proptest! {
-        // API property: resolve_existence's own output, fed straight back
-        // into existence_gates_label, must never gate a window that genuinely
-        // intersects [existence_from, existence_to] (both bounds present) --
-        // the two functions must agree with TimeRange::intersects itself.
         #[test]
         fn existence_gating_agrees_with_time_range_intersects(
             est in -4004i32..=100, dest_delta in 0i32..500, w in window_strategy(),
@@ -728,8 +470,6 @@ mod tests {
         }
     }
 
-    // --- properties -----------------------------------------------------
-
     fn window_strategy() -> impl Strategy<Value = TimeRange> {
         (-4004i32..=100, -4004i32..=100)
             .prop_filter("no zero", |(a, b)| *a != 0 && *b != 0)
@@ -737,10 +477,6 @@ mod tests {
     }
 
     proptest! {
-        // API property (batch-e-brief.md Requirement 5): window -> name
-        // resolution is deterministic (same window always yields the same
-        // name) and, whenever it resolves to a curated name at all, that
-        // name's own range truly intersects the window.
         #[test]
         fn name_resolution_is_deterministic_and_intersecting(w in window_strategy()) {
             let h = history(vec![

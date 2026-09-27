@@ -1,5 +1,4 @@
-//! The atlas data model: the compiled-file schema that ETL writes and the
-//! server reads. Every record type derives `Serialize + Deserialize`.
+//! The compiled-file schema the ETL writes and the server reads.
 
 use std::collections::{HashMap, HashSet};
 
@@ -24,8 +23,8 @@ pub struct Canon {
     pub books: Vec<CanonBook>,
 }
 
-/// A geocoded place. `verse_links` are canonical verse ids attached by
-/// geocoding (not by event participation) and drive scripture-mode lighting.
+/// `verse_links` are attached by geocoding, not by event participation, and are what
+/// light a place for a scripture reference.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Place {
     pub id: String,
@@ -35,61 +34,6 @@ pub struct Place {
     pub verse_links: Vec<String>,
 }
 
-/// Batch P (the extensibility proof): a Theographic PERSON -- `atlas_etl::
-/// people::parse_people`'s own output, the Person adapter's SOURCE (mirrors
-/// `Place`'s own role for the place adapter exactly). `verse_links` are
-/// canonical verse ids, resolved AND explicitly canon-sorted at parse time
-/// (never trusted in Theographic's own upstream list order -- see
-/// `atlas_etl::people`'s own module doc comment); this is what lets the
-/// graph's own `mentioned-in` frontier be canon-ordered by construction.
-///
-/// DISCLOSED, kept vs. dropped (batch-p-brief.md requirement 1): kept --
-/// `name` (display name), `gender`/`birth_year`/`death_year` (as tagged by
-/// the source; life years use the SAME astronomical-to-historical
-/// conversion `atlas_etl::theographic::parse_theo_year` already established
-/// for events), `also_called` (comma-separated alternate names, split);
-/// dropped -- Easton's Bible Dictionary prose (`dictionaryText`/
-/// `dictionaryLink`, 19th-century external commentary, out of this batch's
-/// scope for the SAME reason the place adapter never carried Theographic's
-/// own richer place fields beyond canonical/lat/lon/aliases), `status`
-/// (Theographic's own "has a prose bio been finished" authoring-workflow
-/// flag -- verified NOT a notability signal: filtering to its `"publish"`
-/// value would silently drop Saul/Elijah/Jeremiah/Daniel/Job and dozens of
-/// other unmistakably major figures, so every person ships regardless of
-/// this field), `isProperName`/`ambiguous`/`surname`/`personID` (thin
-/// Theographic bookkeeping with no rendering surface this batch built).
-///
-/// ENT-1a: Easton's prose RETURNS, as `dict_text` -- the exact field the
-/// paragraph above once dropped. `atlas_etl::people::parse_people` resolves
-/// it at parse time (the SAME "resolve one ambiguity once, at parse time"
-/// discipline `name` itself already uses for `display_title.or(name)`):
-/// the source's own `dictText` (an array, Theographic's newer markdown-
-/// linked extraction, e.g. `[Ex. 6:20](/exod#Exod.6.20)`) wins when
-/// present, else its older plain-text sibling `dictionaryText` (only 1 of
-/// 3,067 real records has the latter without the former); empty/absent on
-/// both sides stays `None`, never `Some("")`. This is Batch P's own tier
-/// (a) source for the graph's `description_adapter` (batch-ent1a-brief.md's
-/// trust order) -- a per-person, source-attested match Theographic already
-/// resolved for us, kept RAW here (Easton's own inline scripture-ref
-/// markdown survives verbatim; linkifying it is a held client concern).
-///
-/// CORRECTED, fix round 1 (R-P2): the dropped list above was itself
-/// incomplete -- also present in the raw source and also dropped:
-/// `father`/`mother`/`children`/`siblings`/`partners` (each an array of
-/// foreign-key record ids resolving to OTHER real Person records in the
-/// SAME `people.json`, the identical "array of foreign-key ids" shape
-/// `verses` uses for mentions) and `birthPlace`/`deathPlace` (resolving to
-/// place-like records) plus `memberOf`/`timeline`. This is real,
-/// already-vendored relational data, not an absence -- the adapter that
-/// reads `verses` already knows how to turn that exact shape into typed
-/// edges. NOT built this batch: a genealogy/family edge, or a
-/// Person-to-Place `birthplace`/`deathplace` edge (`located-at`'s own
-/// shape, Person-sourced), is a NEW RELATION KIND -- design types doc §3's
-/// own relation-manifest law ("adding a relation = one manifest row + its
-/// Row type + a compiler rule + a display-policy row") makes this a
-/// types-first, owner-approved decision, not an adapter-only one, and it
-/// is correctly outside batch-p-brief.md's own scope (card + mentions,
-/// requirement 2, verbatim). Ledgered for the owner, not silently built.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Person {
     pub id: String,
@@ -99,11 +43,6 @@ pub struct Person {
     pub death_year: Option<i32>,
     pub also_called: Vec<String>,
     pub verse_links: Vec<String>,
-    /// D5 (owner, 2026-09-15): Theographic kinship (`father`/`mother`/
-    /// `children`/`partners`), RESOLVED to person ids (never Airtable
-    /// record ids); a link to a record with no person is dropped and
-    /// counted. `siblings` is deliberately not carried: derived from
-    /// shared parents at read time, never stored.
     #[serde(default)]
     pub father: Vec<String>,
     #[serde(default)]
@@ -112,63 +51,19 @@ pub struct Person {
     pub children: Vec<String>,
     #[serde(default)]
     pub partners: Vec<String>,
-    /// D5: Theographic `minYear`/`maxYear` -- the span of the CORPUS's
-    /// mentions of this person, NOT a lifespan (God's is -4004..96).
     #[serde(default)]
     pub first_year: Option<i32>,
     #[serde(default)]
     pub last_year: Option<i32>,
-    /// D5: Theographic `timeline` -- the events this person takes part in,
-    /// resolved to this atlas's event ids (`theo-{n}`).
     #[serde(default)]
     pub timeline: Vec<String>,
-    /// D5: `data/curated/people-eternal.toml` -- "the exception is God
-    /// because he is eternal": no lifespan, ever; `eternal_grounds` are the
-    /// Scripture dot-refs the card cites.
     #[serde(default)]
     pub eternal: bool,
     #[serde(default)]
     pub eternal_grounds: Vec<String>,
-    /// ENT-1a: see this struct's own doc comment above. `None` for the
-    /// 1,250 of 3,067 real persons Easton's never covered (or attested with
-    /// only empty text) -- never a fabricated placeholder.
     pub dict_text: Option<String>,
 }
 
-/// ENT-1a: one Easton's Bible Dictionary (1897, public domain) entry --
-/// `atlas_etl::easton::parse_easton`'s own output, reading `easton.json`
-/// (6,519 entries). This is the description adapter's tier (b)/(c) source
-/// (batch-ent1a-brief.md's own trust order; tier (a) is `Person::dict_text`
-/// above, resolved independently). `dict_lookup` is the entry's own
-/// headword; `dict_text` is its prose, KEPT VERBATIM (Easton's inline
-/// scripture-ref markdown survives as text -- linkification is a held
-/// client concern, per the KJV-inerrancy-adjacent "no fabricated/rewritten
-/// prose" law this batch is under).
-///
-/// `person_slug`/`place_name` are resolved ONCE, at parse time (the same
-/// "resolve at parse time" discipline `Person::name`/`dict_text` already
-/// use), from Theographic's OWN attested `matchType`/`matchSlugs` pair
-/// (kept too, for disclosure) -- tier (b)'s whole premise is that
-/// Theographic did this matching, not us:
-/// - `matchType == "person"`: `matchSlugs` IS a Theographic person-lookup
-///   slug already (e.g. "aaron_1") -- the EXACT SAME id space a compiled
-///   `PersonId` uses, so `person_slug` is directly comparable, no further
-///   resolution needed.
-/// - `matchType == "place"`: `matchSlugs` is a DIFFERENT id space (a
-///   Theographic-internal place slug, e.g. "ammon_58") than a compiled
-///   `PlaceId` (which is geo-derived, e.g. "ammon" or "hebron" with no
-///   numeric suffix) -- so `place_name` resolves the slug through
-///   `places.json`'s own `slug` field to that record's `displayTitle`
-///   (falling back to `kjvName`, the SAME preference order
-///   `atlas_etl::theographic::parse_events` already uses), lowercased, a
-///   NAME to join against a node's own canonical, never an id.
-/// - anything else (`"multi"`/`"unmatched"`): both stay `None` -- tier (b)
-///   only trusts a SINGLE-entity Theographic attestation; a `"multi"` entry
-///   (matching more than one entity) is exactly the "multi-candidate"
-///   ambiguity batch-ent1a-brief.md rules out ("no multi-candidate
-///   guessing -- ambiguity means None"). Such an entry's OWN `dict_lookup`
-///   remains eligible for tier (c) (a plain literal-name fallback,
-///   independent of Theographic's own match-type judgment).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EastonEntry {
     pub dict_lookup: String,
@@ -179,31 +74,6 @@ pub struct EastonEntry {
     pub place_name: Option<String>,
 }
 
-/// PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md
-/// controller decision 1a): one Theographic `peopleGroups.json` record (23
-/// real records -- 12 tribes + Nation of Israel + a handful of NT
-/// collectives: Apostles x3, Pharisees, Scribes, Sadducees, Chief Priests,
-/// Disciples of John, Genealogy of Jesus, Line of Cain). `atlas_etl::
-/// people_groups::parse_people_groups`'s own output, the PeopleGroup graph
-/// adapter's Theographic-sourced input (mirrors `Person`'s own role for
-/// `person_adapter.rs`).
-///
-/// `verse_links` CORRECTED, disclosed (PG-1B rider, batch-edge1a-brief.md
-/// controller decision 0: "the PG-1a review discovered the controller's
-/// scouting was wrong"): the PG-1a doc comment this replaces claimed the
-/// source ships NO per-verse attestation at all -- FALSE for 2 of the 23
-/// records. Tribe of Judah (1 verse, PRO.25.1) and Nation of Israel (12
-/// verses, the Ps 14/53/76/78/81/89/105/147 set) DO carry a real `verses`
-/// field, reciprocally back-referenced by `verses.json`'s own
-/// `peopleGroups` field on each of those 13 records (the Sin-guard's own
-/// "source-attested" bar) -- `atlas_etl::people_groups::parse_people_groups`
-/// resolves them the SAME way `Person.verse_links`/`people.rs` already
-/// does (join through `verses.json`, dedup, canon-sort). The OTHER 21
-/// records genuinely carry no `verses` field at all, so `verse_links` is
-/// empty for them, honestly -- `members` (person-record ids) and
-/// `events_dev` (event ids) remain unimported (still a noted, unbuilt
-/// owner option: a member-of relation); `id`/`label`/`verse_links` are the
-/// three facts the graph actually uses.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PeopleGroup {
     pub id: String,
@@ -211,48 +81,18 @@ pub struct PeopleGroup {
     pub verse_links: Vec<String>,
 }
 
-/// PG-1a (decision 1b): one CURATED PeopleGroup seed --
-/// `data/curated/people-groups.toml`'s own `[[group]]` rows -- a nation
-/// Theographic's own `peopleGroups.json` does not carry at all (Ammonites,
-/// Moabites, Edomites, Philistines, Amalekites, Canaanites), hand-authored
-/// per the controller's own decision. Deliberately minimal (id + label
-/// only, the SAME shape as the Theographic-sourced `PeopleGroup` above) --
-/// description arrives for free via ENT-1a's own fill pass; no per-locus
-/// verse data (decision 2: "NO invented per-locus senses" -- no source
-/// attests which loci mean the nation vs. anything else).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PeopleGroupSeed {
     pub id: String,
     pub label: String,
 }
 
-/// PG-1a (decision 1c): one CURATED reclassification row --
-/// `data/curated/people-groups.toml`'s own `[[reclassify]]` rows -- naming
-/// a Theographic PERSON record that is actually a Gen-10 gentilic
-/// collective, not an individual (the controller's own closed nine-slug
-/// list: Amorite/Arkite/Arvadite/Girgasite/Hamathite/Hivite/Jebusite/
-/// Sinite/Zemarite). `person_slug` names the EXISTING `Person::id` to
-/// re-home as a PeopleGroup node (same raw id, PeopleGroup kind instead of
-/// Person -- graph-types' own `AnyNodeId{kind, raw}` shape makes the two a
-/// distinct node-store key even though the raw string is identical);
-/// `reason` is the curator's own one-line justification, CURATED DATA
-/// (decision 1c, verbatim: "not code constants") so it is disclosed in
-/// the batch report as data, never buried in a Rust const array.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PeopleGroupReclassify {
     pub person_slug: String,
     pub reason: String,
 }
 
-/// PG-1a: one CURATED scripture ground for a `NamedAfterSeed` row -- a
-/// single verse (`to` omitted, defaulting to `from`) or an inclusive
-/// range (e.g. Edomites' own GEN 36:8-9 ground). Plain strings, parsed
-/// into a real `atlas_graph_types::edge::Ground::Scripture` at the graph
-/// adapter (`peoples_adapter.rs`) -- curated TOML stays free of
-/// `graph-types` shapes, the same "curated data is plain strings; the
-/// adapter is where typed graph values get built" discipline every other
-/// curated schema in this crate already follows (`curated.rs`'s own
-/// `EventToml`/`WitnessToml`/etc.).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScriptureGroundSeed {
     pub from: String,
@@ -260,22 +100,6 @@ pub struct ScriptureGroundSeed {
     pub to: Option<String>,
 }
 
-/// PG-1a (decision 3): one CURATED eponymy seed row --
-/// `data/curated/people-groups.toml`'s own `[[named_after]]` rows -- the
-/// controller's own decision-3 seed list (the 13 tribes-and-nation rows;
-/// Ammonites/Moabites/Edomites/Amalekites/Canaanites). Philistines
-/// deliberately has NO row here -- no crisp singular textual eponym
-/// parallel to Ammon/Moab/Esau/Amalek/Canaan exists in the source text
-/// (disclosed in the batch report). `namesake_kind` distinguishes which
-/// `atlas_graph_types::edge::Namesake` variant the graph adapter builds
-/// (`"people_group"` for every row this batch ships; `"place"`/`"polity"`
-/// accepted for schema completeness -- mirroring the crate's own
-/// three-variant enum -- unused today). `eponym` is the Theographic
-/// person slug (`Person::id`); a row whose `eponym` resolves to no real
-/// compiled person is OMITTED, never a forced edge (decision 3's own
-/// Philistines/Amalekites/Canaanites conditional), with the omission
-/// reason surfaced in `peoples_adapter::PeoplesAdapterStats::
-/// named_after_omitted`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NamedAfterSeed {
     pub namesake_kind: String,
@@ -286,19 +110,6 @@ pub struct NamedAfterSeed {
     pub grounds: Vec<ScriptureGroundSeed>,
 }
 
-/// EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md
-/// controller decision 1a): one CURATED explicit-formula fulfillment row --
-/// `data/curated/fulfillments.toml`'s own `[[fulfillment]]` rows. `prophecy`/
-/// `fulfillment` reuse `ScriptureGroundSeed`'s own `{from, to?}` shape
-/// (`to` defaults to `from`) for BOTH ends -- the same "curated data is
-/// plain strings; the adapter is where typed graph values get built"
-/// discipline `NamedAfterSeed.grounds` already establishes, one field wider
-/// (two locus pairs, not one). `text` is the KJV fulfillment-formula quote
-/// itself (required, never optional -- decision 1a's own "explicit-formula
-/// first" scope means every seeded row carries one), hand-verified against
-/// the real compiled KJV text; it becomes this row's own `Justification.text`
-/// AND the fulfillment passage self-attests as the row's `Ground::Scripture`
-/// (the adapter's own job, `atlas_graph::fulfillment_adapter`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FulfillmentSeed {
     pub prophecy: ScriptureGroundSeed,
@@ -306,12 +117,6 @@ pub struct FulfillmentSeed {
     pub text: String,
 }
 
-/// EDGE-1a (controller decision 1b): one CURATED Scripture-argued typology
-/// row -- `data/curated/typology.toml`'s own `[[typology]]` rows. Mirrors
-/// `FulfillmentSeed` above (`type_passage`/`antitype_passage` as
-/// `ScriptureGroundSeed` pairs, `text` required) plus `note`, the figure's
-/// own display name (`atlas_graph_types::edge::Typology.note`'s own doc
-/// comment: "the brasen serpent").
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TypologySeed {
     pub type_passage: ScriptureGroundSeed,
@@ -320,37 +125,13 @@ pub struct TypologySeed {
     pub text: String,
 }
 
-/// ATTEST-1: one CURATED account -> mention retype --
-/// `data/curated/attestation-corrections.toml`'s own `[[mention]]` rows.
-///
-/// THE ACCOUNT/MENTION LAW (L1, owner-diagnosed): an event's `Attests`
-/// edges carry ONLY narrative ACCOUNTS -- a passage that NARRATES the
-/// event. A verse that merely REFERENCES it while narrating something
-/// else is a MENTION. LUK 1:27 ("To a virgin espoused to a man whose
-/// name was Joseph") references the espousal inside Luke's account of
-/// the ANNUNCIATION; it is not an account of the espousal, and carrying
-/// it as one is what put a verse in two events' `Attests` sets and
-/// fabricated a parallel between them.
-///
-/// `verses` are this project's own curator-friendly single-verse-or-range
-/// strings, expanded by `curated::expand_verse_ref` exactly like
-/// `events-extra.toml`'s own `verses` field. `note` is the RULING --
-/// why this verse mentions rather than narrates, written against the KJV
-/// text -- and rides onto the compiled row's provenance trail.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EventMentionSeed {
     pub event_id: String,
-    /// Canonical verse ids, already expanded.
     pub verses: Vec<String>,
     pub note: String,
 }
 
-/// ATTEST-1: one CURATED `Analogue` row --
-/// `data/curated/attestation-corrections.toml`'s own `[[analogue]]` rows.
-/// The owner's own ratified idiom ("let's call it Analogue; that's ok for
-/// now.") for DISTINCT events whose accounts are similar in form or
-/// content -- NEVER two accounts of one event. Symmetric: `a`/`b` name
-/// two ends, not a subject and an object.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EventAnalogueSeed {
     pub a: String,
@@ -358,34 +139,9 @@ pub struct EventAnalogueSeed {
     pub note: String,
 }
 
-/// A datable happening. `places[0]` is the anchor place used for arrow
-/// endpoints; `places` may list more than one place (e.g. a campaign
-/// touching several locations), all of which light up in time mode.
-///
-/// Batch T ("events as the narrative nodes"): every `Event` IS the
-/// EVENT-kind half of the owner's own `PASSAGE` abstraction (batch-t-brief.md
-/// requirement 1, verbatim: "the Bible has a set of books and a set of
-/// passages... passages may be events, they may be general passages").
-/// `label` already serves as this passage's own TITLE (kept under its
-/// pre-existing field name, not renamed, to avoid a mechanical ~15-file
-/// rename with zero behavior change across code this batch does not
-/// otherwise touch -- see the batch report's own disclosed decision).
-/// `kind` is new (`"event"` for every real `Event` today -- structurally,
-/// an `Event` always carries `when`/`places`, so it cannot represent a
-/// dateless/placeless GENERAL-kind passage; that half of the owner's model
-/// is a future batch's own sibling table, not built here, per this batch's
-/// own scoped coverage decision) and ETL-validated against the two-value
-/// enum, same "plain String, checked at ETL time, friendlier error" pattern
-/// [`Landmark::kind`] already establishes.
-///
-/// Owner's own end-state (2026-08-21 ruling, fix-round-1): every verse in
-/// the Bible ultimately belongs to at least one titled container like this
-/// one -- today's Gospels+Acts+13-narratives coverage is a scoped subset,
-/// not the destination; the full migration is real future work, not this
-/// fix. `verses` is a CONTAINER's own verse SET, never mutated onto a verse
-/// record -- the empty set is a lawful identity, and two containers
-/// legitimately overlapping the same verse (see `heading_precedence`) is an
-/// expected, not exceptional, shape as the graph grows.
+/// `places[0]` is the anchor used for arrow endpoints; every listed place lights up.
+/// `verses` is a container's verse set, never written onto a verse: the empty set is
+/// lawful, and two containers covering one verse is expected, not an error.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub id: String,
@@ -393,134 +149,38 @@ pub struct Event {
     pub when: TimeRange,
     pub places: Vec<String>,
     pub verses: Vec<String>,
-    /// Batch T: `"event"` | `"general"` (validated by
-    /// `atlas_etl::validate::run`). `"event"` carries a real `when`/
-    /// `places` (traditional date + defensible place mapping); `"general"`
-    /// (Batch T2: now real curated data, not just a modeled-but-unused
-    /// enum value -- see `atlas_core::time::TimeRange::undated`'s own doc
-    /// comment) is a titled container with neither -- `when` holds the
-    /// undated sentinel and `places` stays empty, both supplied by the ETL
-    /// parser itself, never curator-typed (`atlas_etl::curated::
-    /// parse_events_extra` hard-errors if a curator writes `kind =
-    /// "general"` together with a `from_year`/`to_year`/`places`, so "do
-    /// not fabricate a date/place" is structural, not just a convention).
-    /// Defaults to `"event"` so every `events.json` written before Batch T
-    /// (and every existing test fixture) keeps deserializing with no
-    /// migration.
+    /// `"event"` or `"general"`. A general container has no date and no place: it carries
+    /// the undated sentinel and an empty `places`, both supplied by the ETL and never
+    /// curator-typed, so "do not fabricate a date" is structural.
     #[serde(default = "default_event_kind")]
     pub kind: String,
-    /// Batch T requirement 1: PARALLEL WITNESSES -- "the set of per-book
-    /// passages that recount the same event... one witness passage per
-    /// Gospel." Empty for the overwhelming majority of events (every one
-    /// this batch does not explicitly curate parallel accounts for) --
-    /// NOT an error, and not "zero witnesses" in the ETL-validated sense
-    /// (see `atlas_etl::validate::run`'s own witness-group check): an empty
-    /// list means "this event has exactly one IMPLICIT witness," resolved
-    /// server-side from `verses` grouped by book (`scene`/`handlers::event`'s
-    /// own synthesis) -- never a fabricated placeholder, and never a reason
-    /// to withhold this event's own reader heading or EVENT popover.
+    /// Empty means one IMPLICIT witness, synthesized from `verses` grouped by book -- never
+    /// zero witnesses, and never a reason to withhold this container's heading.
     #[serde(default)]
     pub witnesses: Vec<EventWitness>,
-    /// Batch T requirement 1: provenance -- which Robertson's *Harmony of
-    /// the Gospels* (1922, public domain) section grounds this event's own
-    /// title/date/grouping, when Robertson-sourced (OT/Acts events this
-    /// batch re-grounds without consulting Robertson leave this `None`,
-    /// honestly, rather than inventing a section number). Curator-facing
-    /// only -- carried onto the wire (`EventDetailOut::robertson_section`)
-    /// so the mapping stays auditable, per the ambiguity ruling: "keep a
-    /// robertson_section provenance field so the mapping stays auditable"
-    /// even where this app's own DISPLAYED title is our own clearer
-    /// phrasing (CC0), not Robertson's own archaic wording.
+    /// Which section of Robertson's Harmony of the Gospels grounds this title, date and
+    /// grouping. `None` where none was consulted, rather than an invented section number.
     #[serde(default)]
     pub robertson_section: Option<String>,
-    /// Batch T2 (Acts provenance, owner's own ambiguity ruling, verbatim:
-    /// "acts sections get their own provenance key, NOT robertson_section"):
-    /// Acts's own sibling provenance field to `robertson_section` above --
-    /// which Acts pericope-sectioning source grounds this event's own
-    /// title/grouping, when Acts-sourced. Robertson's own 1922 Harmony is
-    /// Gospels-only, so an Acts event's provenance is never claimed under
-    /// that field even though the SHAPE (a short auditable citation
-    /// string) is identical -- keeping the two fields separate means a
-    /// reader/curator can never mistake an Acts section for a
-    /// Robertson-verified one. `None` for every Gospel event (and for any
-    /// Acts event this project has not yet sectioned). Counts as a real
-    /// (layer-1) container in `heading_precedence`, exactly like
-    /// `robertson_section` does -- see that function's own doc comment.
+    /// The Acts sibling of `robertson_section`, kept a separate field so an Acts section
+    /// can never be mistaken for a Robertson-verified one.
     #[serde(default)]
     pub acts_section: Option<String>,
-    /// Batch W1 (whole-Bible titled verse containers, req 1's own provenance
-    /// vocabulary: "kjv_superscription | theographic | atlas_section (our
-    /// own sectioning, the sanctioned Acts-precedent fallback)"): the
-    /// general, whole-Bible sibling of `acts_section` above -- same shape (a
-    /// short auditable citation/disclosure string), same "counts as a real
-    /// layer-1 container in `heading_precedence`" treatment, used for every
-    /// book OUTSIDE the Gospels (`robertson_section`) and Acts
-    /// (`acts_section`) once this batch's own OT sectioning starts (and,
-    /// same mechanism, future non-Robertson/non-Acts books after it). Set
-    /// two ways, mirroring how `robertson_section`/`acts_section` are each
-    /// set: (a) inline, on a brand-new `[[event]]` row authored directly in
-    /// `data/curated/passages/*.toml` (this batch's own new one-file-per-book
-    /// directory, parsed by the SAME `EventToml`/`parse_events_extra`
-    /// `robertson_section` already uses), for a container with no
-    /// pre-existing compiled id to attach to; (b) via
-    /// `data/curated/atlas-sections.toml`, a flat `event_id`-keyed merge
-    /// file applied AFTER every event id is known (Theographic +
-    /// events-extra.toml + passages/*.toml combined) -- the SAME merge
-    /// timing/mechanism `acts-sections.toml` already established -- for
-    /// PROMOTING a pre-existing bare Theographic event (already real
-    /// title/date/place, CC BY-SA 4.0, already credited in LICENSES.md) to
-    /// heading-worthy without a duplicate `[[event]]` row. `None` for every
-    /// Gospel/Acts event and for any other book this project has not yet
-    /// sectioned.
+    /// The same provenance field for a book outside the Gospels and Acts: this atlas's own
+    /// sectioning.
     #[serde(default)]
     pub atlas_section: Option<String>,
-    /// Batch W3 (Job-Song of Solomon, Psalms granularity): the KJV's OWN
-    /// provenance key, req 1's own vocabulary verbatim: "kjv_superscription
-    /// | theographic | atlas_section" -- distinct from `atlas_section`
-    /// (our own sectioning) because this field's own citation IS literal
-    /// KJV text (public domain, redistributed per LICENSES.md's own "KJV
-    /// text" row), never our own phrasing -- e.g. Psalm 3's own "A Psalm of
-    /// David, when he fled from Absalom his son," quoted verbatim from
-    /// PSA.3.1 itself, or Psalm 119's own acrostic Hebrew-letter stanza
-    /// headers ("ALEPH.", "BETH.", ...), also literal verse-1-of-stanza
-    /// text. Same shape, same "counts as a real layer-1 container in
-    /// `heading_precedence`" treatment as `robertson_section`/
-    /// `acts_section`/`atlas_section` above -- set ONLY inline, on a
-    /// brand-new `[[event]]` row in `data/curated/passages/*.toml` (the
-    /// SAME `EventToml`/`parse_events_extra` schema those three already
-    /// use): every Batch W3 superscription-titled container is a brand-new
-    /// container (Theographic models no per-Psalm "event" to promote via a
-    /// merge file the way `atlas-sections.toml` promotes a bare Theographic
-    /// event -- verified against the real compiled data before this field
-    /// was added), so no `kjv-superscriptions.toml` merge-file sibling to
-    /// `atlas-sections.toml` exists (would be dead code -- nothing to
-    /// merge). `None` for every container whose own title is NOT itself a
-    /// literal KJV citation (our own CC0 phrasing instead uses
-    /// `atlas_section`, unchanged).
+    /// The same provenance field where the title IS literal KJV text -- a psalm's own
+    /// superscription, quoted verbatim -- never this atlas's phrasing.
     #[serde(default)]
     pub kjv_superscription: Option<String>,
-    /// Batch T requirement 1: citation-integrity note for THIS event's own
-    /// date/grouping (distinct from each witness's own, narrower
-    /// `EventWitness::ref_note`) -- names only sources actually consulted,
-    /// same discipline `PolityDelta::ref_note`/`CatechismItem::ref_note`
-    /// already establish. `None` is honest, not a gap, for an event whose
-    /// date/grouping needed no further note beyond `robertson_section`
-    /// itself (or needed neither).
+    /// Names only sources actually consulted for this container's date and grouping.
+    /// `None` is honest, not a gap.
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// Batch T requirement 2: sub-year chronological ordering. This atlas's
-    /// `Year` model is year-granular (`TimeRange`, signed i32) -- two
-    /// events genuinely a few days apart within the SAME traditional year
-    /// (Palm Sunday through Resurrection, all AD 33) would otherwise be
-    /// indistinguishable to `atlas_etl::validate::run`'s own chronological-
-    /// leg check, which trusts a narrative's own curated leg ORDER as the
-    /// chronology. `order_key` is that check's own explicit sub-year
-    /// tiebreak (never a fake year offset, per the brief's own explicit
-    /// instruction) -- within one calendar year, a narrative's legs must be
-    /// non-decreasing by `order_key` too, not just by `when.from_year`.
-    /// Defaults to 0 (meaningless, and never checked, for the vast majority
-    /// of events, which are the ONLY event of their own narrative dated to
-    /// their own year).
+    /// The sub-year tiebreak: the year model is year-granular, so two events days apart in
+    /// one year need this to order them, and a narrative's legs must be non-decreasing by it
+    /// within a year. Defaults to 0, which is never read for an event alone in its year.
     #[serde(default)]
     pub order_key: i32,
 }
@@ -529,16 +189,8 @@ fn default_event_kind() -> String {
     "event".to_string()
 }
 
-/// Manual (not derived) `Default`, purely so the many pre-existing
-/// hand-built `Event { id: ..., label: ..., when: ..., places: ...,
-/// verses: ... }` literals across this workspace's own tests/ETL (none of
-/// which need to say anything about this batch's own new fields) can add a
-/// single `..Default::default()` rather than each spelling out
-/// `kind`/`witnesses`/`robertson_section`/`ref_note`/`order_key` by hand --
-/// `#[derive(Default)]` isn't available here since `TimeRange` itself has
-/// no `Default` (it validates through the fallible `TimeRange::new`); the
-/// placeholder `when` below is never actually read by any site using this
-/// (every one of them still states its own `when` explicitly).
+/// Hand-written because `TimeRange` has no `Default` -- it validates through a fallible
+/// constructor. The placeholder `when` is never read: every user states its own.
 impl Default for Event {
     fn default() -> Self {
         Event {
@@ -559,34 +211,18 @@ impl Default for Event {
     }
 }
 
-/// Batch T requirement 1: one witness account of an EVENT-kind `PASSAGE` --
-/// "each witness a (book, verse-range, translation-mapped) record," the
-/// owner's own words verbatim. `translations` is a REAL mapping (not a
-/// single flat `Vec` with an implicit "it's KJV" comment) -- see
-/// `crate::translation`'s own module doc comment for the fail-loud lookup
-/// this indirection exists to support. `book` is a canonical 3-letter code
-/// (e.g. `"MAT"`) -- deliberately NOT re-derivable from the verse ids alone
-/// (a witness's own verses are always single-book by construction, but
-/// carrying `book` explicitly means a witness with a currently-empty/
-/// unresolvable translation entry still identifies WHICH Gospel it is,
-/// e.g. for the client's own "Matthew" caption).
+/// `book` is carried rather than derived from the verse ids, so a witness whose translation
+/// entry is empty still says which book it is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EventWitness {
     pub book: String,
-    /// translation code (lowercase, `crate::translation::DEFAULT_TRANSLATION`
-    /// == `"kjv"` today) -> flat, individually-canonical verse ids, same
-    /// convention `Event::verses`/`CatechismItem::verses` already use.
+    /// Lowercase translation code -> flat, individually canonical verse ids.
     pub translations: HashMap<String, Vec<String>>,
-    /// This WITNESS's own citation-integrity note (e.g. "Robertson §164;
-    /// Eusebian canon table I") -- distinct from the parent `Event::ref_note`,
-    /// which grounds the EVENT's own date/grouping as a whole, not this one
-    /// book's own account.
+    /// This account's own citation note, not the container's note about its date and
+    /// grouping as a whole.
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// This WITNESS's own Robertson Harmony section, when it differs from
-    /// (or the parent event carries none of) `Event::robertson_section` --
-    /// most witnesses share their parent event's own section and leave this
-    /// `None` rather than repeating it.
+    /// `None` where this account shares its container's section rather than repeating it.
     #[serde(default)]
     pub robertson_section: Option<String>,
 }
@@ -655,39 +291,18 @@ pub struct Landmark {
     pub size: Option<String>,
 }
 
-/// Batch HOTFIX-6 (graph-wide chronology audit, `data/curated/
-/// chronology-anchors.toml`'s own header has the full schema/design
-/// rationale): one authoritative date on this project's own declared
-/// traditional scale (Ussher's Annals of the World for the OT, this atlas's
-/// own already-established AD-33 Passion anchor for the NT) -- THE canonical
-/// chronology reference, consulted by both `atlas_etl::validate`'s own
-/// fail-loud ETL-time checks and (loaded straight back off
-/// `chronology-anchors.json`, the SAME compiled artifact, per the
-/// controller's own "single source, two enforcement layers" instruction)
-/// the property tests in `atlas_core::narrative` that assert the compiled
-/// atlas actually ADHERES to this table (Amendment E's E1/E3/E4).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChronologyAnchor {
-    /// Stable, machine-readable row key -- never renumbered/repositioned.
-    /// Forward-compatible per the controller's own "single-feed chronology"
-    /// end-state note: a future date-resolution table can reference this id
-    /// to compute an anchor-relative year arithmetically without this
-    /// file's own shape changing.
+    /// Never renumbered or repositioned: other tables reference this row by it.
     pub id: String,
     pub label: String,
-    /// The single authoritative year on this atlas's own declared scale.
     pub year: Year,
-    /// The real compiled event id this anchor equals, when one binds
-    /// CLEANLY (no disclosed scale tension) -- `None` where no single
-    /// compiled event corresponds, or where binding would misrepresent an
-    /// already-disclosed adjacency as a bug (an honest gap, not a
-    /// shortcut) -- see `chronology-anchors.toml`'s own "DISCLOSED
-    /// ADJACENCIES" header note.
+    /// `None` where no single compiled event corresponds, or where binding one would
+    /// misrepresent an already-disclosed adjacency. An honest gap, not a shortcut.
     #[serde(default)]
     pub event_id: Option<String>,
-    /// True for the anchors used as the E4 (era-partition) property test's
-    /// own structural era boundaries -- always carries `event_id` when true
-    /// (E4 needs a real timeline position to gate on).
+    /// Always carries an `event_id` when true: an era boundary needs a real timeline
+    /// position to gate on.
     #[serde(default)]
     pub era_boundary: bool,
     pub source: String,
@@ -695,14 +310,10 @@ pub struct ChronologyAnchor {
     pub note: Option<String>,
 }
 
-/// Batch HOTFIX-6: the widest span one canonical book's own narrative
-/// NARRATES (never the span it was written in) -- `data/curated/
-/// book-narration-windows.toml`'s own header has the full design rationale
-/// and the recounting-witness mechanism (`atlas_core::chronology`) this
-/// window check is paired with.
+/// The widest span a book's narrative NARRATES -- never the span it was written in.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BookNarrationWindow {
-    /// Canonical 3-letter book code (`canon::BOOKS`), e.g. `"GEN"`.
+    /// Canonical three-letter code, e.g. `"GEN"`.
     pub book: String,
     pub from_year: Year,
     pub to_year: Year,
@@ -710,11 +321,7 @@ pub struct BookNarrationWindow {
     pub note: Option<String>,
 }
 
-/// Batch E (time-accurate places): one curated period name for a place,
-/// e.g. "Luz" for `bethel-1` before Jacob's naming. `when` is the window
-/// this name applies for; `verses` are canonical refs SUPPORTING the name
-/// claim (etl-validated to exist in the compiled KJV text, same trust class
-/// `Event.verses`/`Place.verse_links` already have).
+/// `when` is the window this name applies over; `verses` are the refs supporting the claim.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceNameEntry {
     pub name: String,
@@ -722,14 +329,9 @@ pub struct PlaceNameEntry {
     pub verses: Vec<String>,
 }
 
-/// One curated hover blurb for a place, active over `when`. `breadth` is
-/// `"era"` (a period-specific blurb) or `"broad"` (a whole-sweep summary
-/// shown when the selected window spans more than one of this place's own
-/// `"era"` ranges) -- validated against that two-value enum by
-/// `atlas-etl::validate` (same "plain String, checked at ETL time" pattern
-/// [`Landmark::kind`] already uses, for the same friendlier-error reason).
-/// No `verses` field -- blurb text is curator-written prose (ours/CC0), not
-/// a claim keyed to a specific verse the way names/established/destroyed are.
+/// `breadth` is `"era"` (period-specific) or `"broad"` (a whole-sweep summary, shown when
+/// the window spans more than one of this place's era ranges). No verses: blurb text is
+/// prose, not a claim keyed to a verse the way a name or a date is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceBlurbEntry {
     pub text: String,
@@ -749,11 +351,7 @@ pub struct PlaceDateClaim {
     pub note: Option<String>,
 }
 
-/// One place's whole curated history record (`data/curated/place-history.toml`,
-/// compiled to `place-history.json`). `id` matches a real compiled `Place.id`
-/// (etl-validated -- an unknown id hard-fails, same trust class as
-/// `Event.places`). Not every place has one of these; `AtlasData::place_history`
-/// only holds entries for the ~15-25 places this batch actually curated.
+/// `id` matches a real compiled place id; most places have no record at all.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceHistory {
     pub id: String,
@@ -765,26 +363,9 @@ pub struct PlaceHistory {
     pub destroyed: Option<PlaceDateClaim>,
 }
 
-/// Batch E3 (KJV display-name alias layer -- owner bug report 2026-08-20:
-/// "there are two locations, cush and gihon, that are both lit up on
-/// genesis 2 even though cush isn't mentioned in gen 2:13"). ONE curated
-/// translation-keyed display-name override for a place whose plain default
-/// `Place.name` (Theographic's own canonical/modern name) is NOT the name
-/// the KJV text actually uses -- e.g. `cush-2` -> "Ethiopia" (GEN.2.13).
-/// Distinct axis from `PlaceHistory::names` (Batch E's period-accurate,
-/// TIME-windowed renames like Luz->Bethel): an alias is a single, flat,
-/// translation-keyed fact independent of any calendar window -- it is the
-/// FALLBACK `resolve_display_name` reaches for whenever no curated period
-/// name is active (including scripture mode, which has no window at all),
-/// never a competitor to an active period name. `translations` mirrors
-/// `EventWitness::translations`'s exact shape/philosophy (`crate::translation`'s
-/// own doc comment) -- `"kjv"` (`crate::translation::DEFAULT_TRANSLATION`)
-/// is the only key any curated alias carries today; the shape survives a
-/// future translation without restructuring. `verses` are the supporting
-/// citation(s) a curator checked this alias against (etl-validated: must
-/// parse and exist in the compiled KJV text) -- translation-agnostic (a
-/// canonical verse id names the same verse regardless of which
-/// translation's text is being read).
+/// A flat, translation-keyed display name for a place whose default name is not the one
+/// the text uses. Independent of any calendar window, and only ever the fallback when no
+/// curated period name is active -- never a competitor to one.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceNameAlias {
     pub id: String,
@@ -792,31 +373,9 @@ pub struct PlaceNameAlias {
     pub verses: Vec<String>,
 }
 
-/// Batch B2 ("borders v2, the cartographer's edition" -- supersedes the
-/// snapshot-year GeoJSON model Batch B/C2 shipped, `AtlasData::borders` +
-/// `nearest_border_year` below, both now deleted). One hand-authored
-/// timerange era of ONE polity: `name` is time-accurate (may differ across a
-/// single polity's own eras -- "Egypt" then later "Ptolemaic Egypt" is the
-/// SAME `Polity::id`, so it keeps one color across the rename, see
-/// `Polity::color_key`'s own comment), `from`/`to` are the (validated
-/// non-overlapping-within-one-polity, see `atlas_etl::validate::run_polities`)
-/// signed-year window this era's shape is drawn for, `ref_note` names only
-/// the public-domain/general-knowledge source actually consulted while
-/// drawing THIS era's rings (citation-integrity rule -- never a source that
-/// wasn't opened), and `rings` is one or more CLOSED (first point repeats as
-/// the last) simple polygon rings of `(lat, lon)` pairs -- deliberately
-/// `[lat, lon]`, NOT GeoJSON's own `[lon, lat]` convention, matching how
-/// every other coordinate pair in this app's curated data reads (`Place.lat`/
-/// `Place.lon`, `Landmark.lat`/`Landmark.lon`) and how Leaflet's own
-/// `L.latLng`/polygon APIs take points -- one less silent-transpose bug for a
-/// curator hand-typing coordinates. Field names are `from`/`to` (not
-/// `from_year`/`to_year`, unlike `Era`) and stay flat (no nested `TimeRange`)
-/// on purpose: the batch brief's own TOML example and wire contract both
-/// name them `from`/`to` verbatim, and keeping the curated TOML, the compiled
-/// JSON, and the wire response byte-identical in shape means zero rename
-/// mapping anywhere in the pipeline -- "easily reversible/modifiable"
-/// (the user's own words) starts with the data staying exactly what it looks
-/// like on disk.
+/// `from`/`to` are validated non-overlapping within one polity. `rings` are one or more
+/// CLOSED simple polygons of `(lat, lon)` pairs -- deliberately not GeoJSON's `[lon, lat]`,
+/// matching every other coordinate pair here and the map library's own point order.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PolityEra {
     pub name: String,
@@ -824,31 +383,12 @@ pub struct PolityEra {
     pub to: Year,
     pub ref_note: String,
     pub rings: Vec<Vec<(f64, f64)>>,
-    /// Batch M requirement 1 ("the DAG grows a node type: every era-boundary
-    /// delta inside a polity becomes a first-class DELTA with a Scripture-
-    /// mapped event"): the delta AT THIS ERA'S OWN START -- the change FROM
-    /// the previous era of the same [`Polity`], or, for a polity's very
-    /// first era, its own rise. Curated as a nested `[era.transition]` table
-    /// under this era's own `[[era]]` (TOML's standard "subtable of the most
-    /// recently opened array-of-tables element" shape -- no new top-level
-    /// array, no id-matching needed). `None` is a HONEST, curator-visible
-    /// choice, not a gap to paper over: "an uneventful boundary stays
-    /// visible but gets the minimal popover" (the batch brief, verbatim) --
-    /// see `atlas_etl::validate::run_polities`'s own delta checks for what
-    /// "present" must satisfy (non-empty event/ref_note, every verse
-    /// canonical AND real) and this crate's own `PolityDelta` doc comment
-    /// for the citation-integrity rule governing what's ALLOWED to be
-    /// `Some`.
+    /// The delta at this era's start -- for a polity's first era, its rise. `None` is a
+    /// deliberate "uneventful boundary", not a gap to paper over.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transition: Option<PolityDelta>,
-    /// Batch M requirement 1: the delta at this era's OWN END -- ONLY
-    /// meaningful (and only ever curated) on a polity's FINAL era, i.e. the
-    /// polity's own end/absorption/destruction. Curated as a nested
-    /// `[era.fall]` table, same mechanism as `transition` above. A polity
-    /// this app's own curated span (`[-4004,100]`) simply outlives (Rome,
-    /// Parthia, ...) legitimately has no `fall` on its last era -- absence
-    /// here does not imply an authoring gap the way an internal boundary's
-    /// missing `transition` might.
+    /// Only ever curated on a polity's final era. Absence where this atlas's span simply
+    /// outlives the polity is not an authoring gap.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fall: Option<PolityDelta>,
 }
@@ -873,16 +413,8 @@ pub struct PolityDelta {
     pub for_era_from: Year,
 }
 
-/// Batch R requirement 1 ("borders become part of the plate"): ONE named
-/// region of the curated land mask (`data/curated/land-mask.toml`) -- used
-/// ONLY to clip polity washes (map.js's `BorderLayer`) so they never spill
-/// into open sea, never rendered as its own visible layer. `rings` reuses
-/// `PolityEra::rings`'s own shape/convention exactly (`[lat, lon]`, one or
-/// more closed simple polygons; a curator's own comment lives on `ref_note`,
-/// same "cite what you actually consulted" discipline every other curated
-/// geometry file in this app already follows). No time dimension (a land
-/// mask doesn't change era to era) and no color -- this is geometry only,
-/// consumed purely as a clip path.
+/// Geometry only, used solely to clip polity washes so they never spill into open sea;
+/// never drawn as a layer of its own. `rings` follow `PolityEra::rings`' convention.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LandMaskRegion {
     pub name: String,
@@ -890,30 +422,9 @@ pub struct LandMaskRegion {
     pub rings: Vec<Vec<(f64, f64)>>,
 }
 
-/// Batch F ("the small catechism"): one item of one chief part of Luther's
-/// Small Catechism (`data/curated/catechism.toml`, compiled to
-/// `catechism.json`) -- id/name/text/explanation/where_written/verses per
-/// the batch brief's own schema verbatim, PLUS `explanation_heading` and
-/// `ref_note`, both well-justified additions (see `catechism.toml`'s own
-/// header comment for the full reasoning, and this batch's report for the
-/// short version):
-/// - `text` is `Option<String>` -- present only for items whose own
-///   commandment/creed-article/petition WORDING is a distinct prompt
-///   separate from its "what does this mean" gloss (every Ten-Commandments/
-///   Creed/Lord's-Prayer item); Baptism/Confession/Sacrament-of-the-Altar
-///   items pose and answer their own bespoke question directly with no
-///   separate prompt to quote first, so `text` is simply `None` there --
-///   conditional presence, matching this app's own "no content, no
-///   section" rule throughout, rather than a padded or duplicated value.
-/// - `explanation_heading` is Luther's own VERBATIM heading for the
-///   explanation that follows -- "What does this mean?" for the
-///   overwhelming majority of items (commandments/creed articles/Lord's
-///   Prayer petitions), but a distinct, real, bespoke question for
-///   Baptism/Confession/Sacrament-of-the-Altar items (e.g. "What does
-///   Baptism give or profit?"), where hardcoding the generic phrase would
-///   have silently misquoted Luther's own actual wording at those specific
-///   spots. Defaults to "What does this mean?" (`default_explanation_heading`)
-///   so the curated TOML only spells it out where it actually differs.
+/// `text` is `None` for an item that poses its own bespoke question with no separate
+/// prompt to quote first. `explanation_heading` is verbatim, defaulting to the common
+/// phrase so the curated file spells out only the items that really differ.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatechismItem {
     pub id: String,
@@ -929,19 +440,8 @@ pub struct CatechismItem {
     pub verses: Vec<String>,
     #[serde(default)]
     pub ref_note: Option<String>,
-    /// Batch F2 ("the user's own catechism verse mapping"): QUESTION-level
-    /// citations -- distinct from `verses` above (Luther's OWN embedded
-    /// citations, item-level, no question context) -- sourced from the
-    /// brain-fuel/catechism repo's own per-topic YAML (question titles +
-    /// refs) and, for the Ten Commandments, this project's own Deuteronomy 5
-    /// parallel supplement (`data/curated/catechism-deut5.toml`, requirement
-    /// 5b). Kept as a SEPARATE list rather than merged into `verses` -- see
-    /// this batch's own report for why ("items keep their F-batch
-    /// embedded-citation links too," requirement 3 verbatim -- two distinct
-    /// granularities, not a parallel implementation of the same concept).
-    /// `#[serde(default)]` so every catechism.json written before this batch
-    /// (and any test fixture that doesn't care about it) keeps deserializing
-    /// with an empty list, no schema migration needed.
+    /// Question-level citations, kept separate from the item-level `verses` above: two
+    /// granularities of citation, not a second copy of one.
     #[serde(default)]
     pub questions: Vec<CatechismQuestion>,
 }
@@ -950,18 +450,7 @@ fn default_explanation_heading() -> String {
     "What does this mean?".to_string()
 }
 
-/// Batch F2: one QUESTION-level catechism citation, attached to a
-/// `CatechismItem` via `CatechismItem::questions`. `verses` is a flat list
-/// of individually-canonical verse refs (never a range string) -- the SAME
-/// convention `CatechismItem::verses`/`curated::expand_verse_ref` already
-/// use, produced here by `atlas_etl::catechism_map::canonicalize_ref`.
-/// `source` is a plain provenance tag (`"brain-fuel/catechism"` or
-/// `"deut5-parallel"` today) -- requirement 5b's own "keep it separate...
-/// distinct source field so provenance stays clean," kept on the WIRE too
-/// (not curator-only documentation) so a future UI could distinguish them
-/// if ever useful, though this batch's own UI does not (see
-/// `catechism-section-heading`/`popover-catechism-verse` -- the client
-/// renders every question's own verses uniformly regardless of source).
+/// `verses` is a flat list of individually canonical refs, never a range string.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatechismQuestion {
     pub title: String,
@@ -969,11 +458,6 @@ pub struct CatechismQuestion {
     pub source: String,
 }
 
-/// Batch F: one chief part of the Small Catechism (`[[part]]` in
-/// `data/curated/catechism.toml`) -- id/title/items, the curated TOML's own
-/// nesting kept all the way to the compiled/wire shape (same "keep the
-/// curated shape the compiled shape" reasoning `Polity`/`PolityEra` already
-/// follow for polities).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatechismPart {
     pub id: String,
@@ -981,26 +465,9 @@ pub struct CatechismPart {
     pub items: Vec<CatechismItem>,
 }
 
-/// One hand-authored polity, `data/curated/polities/{id}.toml` (one file per
-/// polity, "easily reversible/modifiable... I'm expecting you to get this
-/// wrong" per the user's own direction -- a wrong shape is ONE file, ONE
-/// `[[era]]` table, plain coordinate lists, nothing derived). `color_key` is
-/// computed ONCE at ETL compile time -- based on `id` alone, never the era
-/// `name`, so a polity keeps its plate tint across a rename, e.g. Egypt
-/// staying the same hue through "Ptolemaic Egypt"; this REFINES Batch C2's
-/// own name-hash, which kept re-deriving the tint from whatever single name
-/// a snapshot-year feature happened to carry that year -- an index into
-/// map.js's own `POLITY_TINTS` palette (16 tints as of fix round 1, M1; 8
-/// through Batch C2/B2). Fix round 1 (M1): assignment is no longer a plain
-/// per-id hash computed by `curated::parse_polity` in isolation (that
-/// collided too often -- 11 of the original batch's 14 polities shared a
-/// hue) -- `curated::parse_polity` now leaves this field provisional (`0`),
-/// and `atlas_etl::main::process_polities` overwrites every polity's real,
-/// collision-free value in one pass, via `atlas_etl::polities::
-/// assign_color_keys`, once the full sorted roster is available (see that
-/// function's own doc comment for the linear-probing algorithm). Stored
-/// here either way (not recomputed per-request); `/api/polities` just
-/// copies it onto every emitted era row.
+/// `color_key` is derived from `id` alone, never an era name, so a polity keeps one tint
+/// across a rename; it is assigned in one pass over the whole roster so the values cannot
+/// collide, and stored rather than recomputed per request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Polity {
     pub id: String,
@@ -1008,35 +475,9 @@ pub struct Polity {
     pub eras: Vec<PolityEra>,
 }
 
-/// The whole compiled atlas: ETL builds one of these and calls `.finish()`
-/// before writing it to disk; the server deserializes the file and calls
-/// `.finish()` again to rebuild the derived indexes (they are `#[serde(skip)]`
-/// and therefore empty immediately after deserialization).
-///
-/// OVERLAY-1 Task 5 -- WHAT `places`/`events`/`narratives`/`verses` ARE NOW.
-/// They are COMPILE-TIME INPUTS and nothing else. `atlas_etl::compile::
-/// compile` fills them from the raw + curated sources and `atlas_etl::
-/// validate` inspects them (post-`finish()`, so it sees the merged,
-/// sorted, fully-derived value); `atlas_graph::event_world` reads them to
-/// build the graph's Event/Place/Narrative nodes; the whole-workspace test
-/// fixtures (`demo_fixture`, `atlas-etl/tests/etl.rs`, `atlas-core`'s own
-/// `scene.rs`/`golden.rs`) build them by hand. On every SERVING path they
-/// are EMPTY: `AtlasData::load` has not read the corresponding JSON files
-/// since the M-C2 deletion event, and OVERLAY-1 Task 5 deleted
-/// `atlas_graph::legacy::atlas_data_overlay`, the boot-time pass that used
-/// to reconstruct them from the graph. The server and `bibex` compose the
-/// map scene, and answer every per-verse place/event question, from
-/// `atlas_graph::scene_source::GraphSceneSource` instead -- one
-/// materialisation, on the graph side, instead of one there and another
-/// here. The derived indexes below that are built FROM these fields
-/// (`place_index`, `event_index`, `event_counts_by_place`,
-/// `event_bearing_place_ids`, `verse_heading`, `heading_anchor_collisions`)
-/// therefore also serve only the compile-time and fixture paths now --
-/// `heading_anchor_collisions` is read by `atlas_etl::validate::run`, and
-/// the four scene ones back this struct's own `impl SceneSource`, which is
-/// what `atlas-core`'s own scene tests and `tests/golden.rs` compose
-/// against. Deleting them would mean restructuring the ETL, which OVERLAY-1
-/// deliberately does not do.
+/// The derived indexes are `#[serde(skip)]`, so `finish()` must be called again after
+/// deserializing. `places`/`events`/`narratives`/`verses` are compile-time inputs only:
+/// they are empty on every serving path, which composes from the graph instead.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AtlasData {
     pub canon: Canon,
@@ -1045,353 +486,106 @@ pub struct AtlasData {
     pub narratives: Vec<Narrative>,
     pub eras: Vec<Era>,
     pub books_meta: Vec<BookMeta>,
-    /// OVERLAY-1 Task 2 ("one KJV in memory"): NO LONGER graph-derived at
-    /// server runtime -- the default (artifact-load) startup path used to
-    /// overwrite this with the (Task-5-deleted) boot-time overlay's own
-    /// `verses` (a whole-spine clone of `GraphService::verse_text`, itself
-    /// a whole-spine clone of the graph's own TextUnit nodes -- three
-    /// copies of the same ~31,102-verse KJV text in memory at once); that
-    /// overwrite is deleted, so on that path this field now simply stays
-    /// empty, and every server-side reader goes through `GraphService::
-    /// verse_text_of` instead, on demand, per verse. This field still has
-    /// a real, non-empty producer: `atlas_etl::compile::compile` (and
-    /// `AtlasData::new`'s own test-fixture callers) populate it as the
-    /// RAW SOURCE the graph itself is built FROM in the first place
-    /// (`GraphService::from_canon_and_verses`/`from_sources` et al.) -- a
-    /// precursor to graph truth, not a copy of it, and legitimately out of
-    /// this batch's "one KJV in memory at serving time" scope.
     pub verses: HashMap<String, String>,
     pub cross_refs: HashMap<String, Vec<CrossRef>>,
 
-    /// Batch B2: hand-authored per-polity timerange borders (supersedes the
-    /// snapshot-year GeoJSON model -- see `Polity`'s own doc comment).
-    /// `#[serde(skip)]` because -- like `landmarks`/`place_history` below --
-    /// this isn't populated via the struct-level derive: `AtlasData::load`
-    /// fills it in from its own `polities.json`, a plain `Vec<Polity>` on
-    /// disk (one entry per curated `data/curated/polities/{id}.toml` file).
-    /// `demo_fixture()` leaves this empty (no server test needs real polity
-    /// geometry); real data always has the full curated roster once
-    /// atlas-etl has run.
     #[serde(skip)]
     pub polities: Vec<Polity>,
-    /// Curated landmark labels (rivers/seas/mountains/regions). Same
-    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `borders` above,
-    /// for the same reason (loaded from its own `landmarks.json`, not part
-    /// of the original eight-file/eight-field pattern). `demo_fixture()`
-    /// leaves this empty too.
     #[serde(skip)]
     pub landmarks: Vec<Landmark>,
-    /// Batch E: curated place histories (period names, blurbs, established/
-    /// destroyed dates), keyed by place id. Same `#[serde(skip)]`-plus-
-    /// bespoke-`load()` treatment as `borders`/`landmarks` above -- loaded
-    /// from its own `place-history.json` (a plain `Vec<PlaceHistory>` on
-    /// disk, matching every sibling compiled file's array shape), indexed
-    /// into a map here since every lookup site wants it by place id.
-    /// `demo_fixture()` leaves this empty too (no scene test depends on it).
     #[serde(skip)]
     pub place_history: HashMap<String, PlaceHistory>,
 
-    /// Batch E3: curated KJV display-name aliases, GROUPED by place id.
-    /// Same `#[serde(skip)]`-plus-bespoke-`load()` treatment as
-    /// `place_history` immediately above -- loaded from its own
-    /// `place-names-kjv.json` (a plain `Vec<PlaceNameAlias>` on disk),
-    /// indexed into a map here since every lookup site (`scene`/`handlers`/
-    /// `event_world`) wants it by place id, same pattern.
-    ///
-    /// Batch GAZ-1-R1: widened from `HashMap<String, PlaceNameAlias>`
-    /// (exactly one alias per id -- true of every place through Batch E3)
-    /// to `HashMap<String, Vec<PlaceNameAlias>>`, in insertion (curated
-    /// TOML file) order, because `lebo-hamath` is the first place needing
-    /// more than one distinct verbatim KJV wording (the "entrance of
-    /// Hamath" boundary idiom appears in several different forms across
-    /// its own 11 attested verses). `place_name_alias_for` (below) keeps
-    /// returning a SINGLE alias -- the first-authored one, for display
-    /// purposes (`scene`/`handlers`' own single-name use, unchanged
-    /// behavior for every one of the pre-existing 37 single-alias places,
-    /// since a one-element `Vec`'s own first element IS that element) --
-    /// `place_name_aliases_for` (new) returns the FULL list, for
-    /// `event_world::place_node`'s own gazetteer-facing `aliases: Vec<String>`
-    /// payload field (already list-shaped -- this widening finally feeds
-    /// it more than 0-or-1 entries for the first time). `demo_fixture()`
-    /// leaves this empty too (no scene test depends on it).
+    /// In curated-file order; the first row for an id is the one single-name callers show.
     #[serde(skip)]
     pub place_name_aliases: HashMap<String, Vec<PlaceNameAlias>>,
 
-    /// Batch R requirement 1: the curated land mask (`data/curated/land-mask.toml`,
-    /// compiled to `land-mask.json`) -- every region's own rings, flattened
-    /// (region names/ref_notes are curator documentation only; the wire and
-    /// the client never need them, only the raw ring geometry to clip
-    /// against). Same `#[serde(skip)]`-plus-bespoke-`load()` treatment as
-    /// `polities`/`landmarks`/`place_history` above. `demo_fixture()` leaves
-    /// this empty (no server test needs real coastline geometry).
     #[serde(skip)]
     pub land_mask: Vec<Vec<(f64, f64)>>,
 
-    /// Batch F ("the small catechism"): curated catechism parts/items
-    /// (`data/curated/catechism.toml`, compiled to `catechism.json`), kept
-    /// in their own curated PART nesting (not flattened) -- same
-    /// `#[serde(skip)]`-plus-bespoke-`load()` treatment as `polities`/
-    /// `landmarks`/`place_history`/`land_mask` above. `demo_fixture()`
-    /// carries a small real entry (see below) so atlas-server's own
-    /// integration tests can exercise the real verse<->catechism pipeline
-    /// end to end, not just atlas_core's pure functions in isolation.
     #[serde(skip)]
     pub catechism: Vec<CatechismPart>,
 
-    /// Batch HOTFIX-6 (graph-wide chronology audit): the curated chronology
-    /// anchor table (`data/curated/chronology-anchors.toml`, compiled to
-    /// `chronology-anchors.json`) -- same `#[serde(skip)]`-plus-bespoke-
-    /// `load()` treatment as `polities`/`landmarks`/`place_history`/
-    /// `land_mask`/`catechism` above. `demo_fixture()` leaves this empty (no
-    /// scene/narrative-fixture test needs real anchor rows); the Amendment E
-    /// property tests (E1/E3/E4) load it via `load_real_compiled_data()`,
-    /// the SAME real-compiled-data helper the rest of `narrative.rs`'s own
-    /// test suite already uses -- one compiled artifact, read by both the
-    /// ETL-time validator and these tests, per the controller's own "single
-    /// source, two enforcement layers" instruction.
     #[serde(skip)]
     pub chronology_anchors: Vec<ChronologyAnchor>,
-    /// Batch HOTFIX-6: the curated per-book narration windows
-    /// (`data/curated/book-narration-windows.toml`, compiled to
-    /// `book-narration-windows.json`). Same `#[serde(skip)]`-plus-bespoke-
-    /// `load()` treatment as `chronology_anchors` immediately above.
     #[serde(skip)]
     pub book_narration_windows: Vec<BookNarrationWindow>,
 
-    /// Batch P (the extensibility proof): Theographic PERSONS
-    /// (`atlas_etl::people::parse_people`, reading `people.json`+
-    /// `verses.json`). Same `#[serde(skip)]`-plus-bespoke-populate treatment
-    /// as `polities`/`catechism`/etc. above, with ONE deliberate difference,
-    /// disclosed: there is no `people.json` compiled sidecar file, and never
-    /// will be -- unlike `places`/`events`/etc., Person was born AFTER the
-    /// graph became the one artifact (design doc P1), so it goes straight
-    /// from raw source into the graph with no intermediate JSON stage to
-    /// retire later. `atlas_etl::compile::compile` populates this field;
-    /// the graph's own `person_adapter.rs` is its only reader
-    /// (`ctx.atlas.people`). `demo_fixture()`/every other test fixture
-    /// leaves this empty for free (no test needs real person data; `Default`
-    /// already gives every OTHER existing `AtlasData::new(...)` call site
-    /// this exact same empty value with zero changes to any of them).
     #[serde(skip)]
     pub people: Vec<Person>,
 
-    /// ENT-1a: parsed Easton's Bible Dictionary entries (`atlas_etl::
-    /// easton::parse_easton`, reading `easton.json` + `places.json`'s own
-    /// `slug` field for tier-(b) place-name resolution). Same
-    /// `#[serde(skip)]`-plus-populate-in-`compile()` treatment as `people`
-    /// immediately above, for the identical reason: no compiled JSON
-    /// sidecar file exists or will -- this rides straight from raw source
-    /// into the graph. `atlas_etl::compile::compile` populates this field;
-    /// the graph's own `description_adapter.rs` is its only reader.
-    /// `demo_fixture()`/every other test fixture leaves this empty for free
-    /// (same `Default` argument `people`'s own doc comment already makes).
     #[serde(skip)]
     pub easton: Vec<EastonEntry>,
 
-    /// PG-1a: the 23 Theographic `peopleGroups.json` records
-    /// (`atlas_etl::people_groups::parse_people_groups`). Same
-    /// `#[serde(skip)]`-plus-populate-in-`compile()` treatment as
-    /// `people`/`easton` immediately above, for the identical reason: no
-    /// compiled JSON sidecar file exists or will -- this rides straight
-    /// from raw source into the graph. `atlas_etl::compile::compile`
-    /// populates this field; the graph's own `peoples_adapter.rs` is its
-    /// only reader.
     #[serde(skip)]
     pub people_groups: Vec<PeopleGroup>,
-    /// PG-1a: curated nation seeds (`data/curated/people-groups.toml`'s
-    /// own `[[group]]` rows) -- Ammonites/Moabites/Edomites/Philistines/
-    /// Amalekites/Canaanites, decision 1b. Same `#[serde(skip)]`-plus-
-    /// populate-in-`compile()` treatment as `people_groups` above.
     #[serde(skip)]
     pub people_group_seeds: Vec<PeopleGroupSeed>,
-    /// PG-1a: the nine curated Gen-10-gentilic reclassification rows
-    /// (`data/curated/people-groups.toml`'s own `[[reclassify]]` rows,
-    /// decision 1c). Same `#[serde(skip)]`-plus-populate-in-`compile()`
-    /// treatment as `people_groups` above; read by BOTH `person_adapter.rs`
-    /// (to EXCLUDE these ids from Person-node/mentions construction) and
-    /// `peoples_adapter.rs` (to build their PeopleGroup nodes/mentions) --
-    /// `peoples_adapter::reclassified_person_slugs` is the one shared view
-    /// over this field both adapters call, so the partition can never drift.
     #[serde(skip)]
     pub people_group_reclassify: Vec<PeopleGroupReclassify>,
-    /// PG-1a: curated eponymy seed rows (`data/curated/people-groups.toml`'s
-    /// own `[[named_after]]` rows, decision 3). Same `#[serde(skip)]`-plus-
-    /// populate-in-`compile()` treatment as `people_groups` above.
     #[serde(skip)]
     pub named_after_seeds: Vec<NamedAfterSeed>,
-    /// EDGE-1a: curated explicit-formula fulfillment seed rows
-    /// (`data/curated/fulfillments.toml`'s own `[[fulfillment]]` rows,
-    /// decision 1a). Same `#[serde(skip)]`-plus-populate-in-`compile()`
-    /// treatment as `people_groups` above -- no compiled JSON sidecar file
-    /// exists or will. `atlas_graph::fulfillment_adapter` is its only reader.
     #[serde(skip)]
     pub fulfillment_seeds: Vec<FulfillmentSeed>,
-    /// EDGE-1a: curated Scripture-argued typology seed rows
-    /// (`data/curated/typology.toml`'s own `[[typology]]` rows, decision
-    /// 1b). Same treatment as `fulfillment_seeds` immediately above.
     #[serde(skip)]
     pub typology_seeds: Vec<TypologySeed>,
-    /// ATTEST-1: curated ACCOUNT -> MENTION retype rows
-    /// (`data/curated/attestation-corrections.toml`'s own `[[mention]]`
-    /// rows). Same `#[serde(skip)]`-plus-populate-in-`compile()` treatment
-    /// as `typology_seeds` above. Each row names a verse that was being
-    /// carried as an ACCOUNT of an event (an `Attests` row) but which only
-    /// REFERENCES it -- `compile()` removes the verse from that event's own
-    /// `verses`/witness lists (so no `Attests` row is ever built for it)
-    /// and leaves the fact here for `atlas_graph::event_world` to emit as a
-    /// `Mentions` row instead. TOTAL CAPTURE: the fact is RETYPED, never
-    /// deleted.
     #[serde(skip)]
     pub event_mentions: Vec<EventMentionSeed>,
-    /// ATTEST-1: curated `Analogue` rows
-    /// (`data/curated/attestation-corrections.toml`'s own `[[analogue]]`
-    /// rows) -- distinct events whose accounts are similar in form or
-    /// content, NEVER two accounts of one event (the owner's own ratified
-    /// idiom). Same treatment as `event_mentions` immediately above;
-    /// `atlas_graph::event_world` is its only reader.
     #[serde(skip)]
     pub event_analogues: Vec<EventAnalogueSeed>,
 
-    /// Derived: place id -> index into `places`. Built by `finish()`.
     #[serde(skip)]
     place_index: HashMap<String, usize>,
-    /// Derived: event id -> index into `events`. Built by `finish()`.
     #[serde(skip)]
     event_index: HashMap<String, usize>,
-    /// Batch E2 (the ever-present graph): "cities in our graph" per the
-    /// user's own direction quoted in batch-e2-brief.md -- ids of every
-    /// place touched by >=1 event, ANY window (206 in the real compiled
-    /// data, but NEVER hardcoded -- always derived fresh from `events` by
-    /// `finish()`, so a future data change is picked up automatically).
-    /// `scene::quiet_places` subtracts a window's own lit set from this to
-    /// get that window's quiet places.
+    /// Every place touched by at least one event, in any window.
     #[serde(skip)]
     event_bearing_place_ids: HashSet<String>,
-    /// Batch E2: a place's ALL-TIME event count (every event touching it,
-    /// in ANY window, not just the scene's own) -- the source of
-    /// `QuietPlace::total_events`. Built alongside `event_bearing_place_ids`
-    /// by `finish()` in the same single pass over `events`.
+    /// All-time, in any window -- not the count for a scene's own window.
     #[serde(skip)]
     event_counts_by_place: HashMap<String, u32>,
 
-    /// Batch F, extended Batch F2: derived, canonical verse id -> ordered
-    /// `(item_id, question_title)` hits -- built in one pass over
-    /// `catechism` by `finish()`, same shape as `verse_to_events`/
-    /// `verse_to_places` above, but a PAIR per hit rather than a bare id:
-    /// `question_title` is `None` for a hit from `CatechismItem::verses`
-    /// (Luther's own item-level embedded citation, Batch F, unchanged) and
-    /// `Some(title)` for a hit from one of `CatechismItem::questions[]`
-    /// (Batch F2's own question-level citations). `catechism_items_for_span`
-    /// (and, through it, `handlers::verse`'s own `catechism` field and
-    /// `handlers::catechism_for_span`) is the only consumer.
+    /// The title is `None` for a citation embedded in the item itself and `Some` for one
+    /// carried by a question.
     #[serde(skip)]
     verse_to_catechism: HashMap<String, Vec<(String, Option<String>)>>,
-    /// Batch F: derived, catechism item id -> its own display `name` --
-    /// built alongside `verse_to_catechism` by `finish()`, so resolving a
-    /// cited item's display name never needs a second pass over `catechism`.
     #[serde(skip)]
     catechism_item_names: HashMap<String, String>,
-    /// Batch F: derived, catechism item id -> (part index, item index) --
-    /// built alongside `verse_to_catechism` by `finish()`; `catechism_item_by_id`
-    /// is the one lookup that needs this (item fetch by id, requirement 3).
     #[serde(skip)]
     catechism_item_index: HashMap<String, (usize, usize)>,
 
-    /// Batch T requirement 5: derived, canonical verse id -> the pericope
-    /// heading (if any) that should render immediately above THAT verse in
-    /// the reading flow. Built by `finish()` in one pass over `events` --
-    /// see `heading_for_verse`'s own doc comment for exactly which events
-    /// qualify ("heading-worthy") and how each one's own anchor verse is
-    /// chosen (one entry per WITNESS, via `scene::witnesses_for`, so a
-    /// multi-witness event gets one heading per Gospel book, each at that
-    /// witness's own first verse -- never just one heading in one book).
+    /// One entry per WITNESS, so a multi-witness container heads each book it appears in at
+    /// that account's own first verse -- never just one book.
     #[serde(skip)]
     verse_heading: HashMap<String, HeadingEntry>,
 
-    /// Batch T2 (owner's own "within-layer anchor collision is a curation
-    /// error your validation must catch" ruling): every case where TWO
-    /// DIFFERENT real (layer-1 -- curated `witnesses` non-empty and/or
-    /// `robertson_section` present) containers anchor the identical verse
-    /// -- `(anchor_verse, first_event_id, second_event_id)`. Distinct from
-    /// `verse_heading`'s own collision RESOLUTION (which decisively picks
-    /// a winner for DISPLAY via `heading_precedence`, and is fine with a
-    /// layer-1-vs-layer-0 collision, e.g. `pw_bethany`/`jm_bethany`): two
-    /// real, independently-curated containers should never both claim the
-    /// exact same anchor point in the first place -- curated sectioning
-    /// (Robertson or otherwise) is supposed to PARTITION, not overlap, at
-    /// its own boundary. Built alongside `verse_heading` in the SAME
-    /// `finish()` pass (one iteration over `events`, not a second derived
-    /// pass); `atlas_etl::validate::run` turns each entry here into a
-    /// hard, fail-loud ETL error via `heading_anchor_collisions()` below.
+    /// Two independently curated containers should never claim one anchor verse: curated
+    /// sectioning partitions, it does not overlap. Separate from the display resolution,
+    /// which legitimately picks a winner; the ETL fails loud on every entry here.
     #[serde(skip)]
     heading_anchor_collisions: Vec<(String, String, String)>,
 
-    /// Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal --
-    /// every dated event, not just narrative members"): every `kind ==
-    /// "event"` (dated) event's own id, in GLOBAL CHRONOLOGICAL ORDER --
-    /// the owner's own law verbatim, "the previous/next event is the one
-    /// that is chronologically NEXT." Built by `finish()` via a STABLE sort
-    /// by `(when.from_year, order_key)` ascending -- the SAME tuple
-    /// `heading_precedence`'s own chronology tier and the narrative-leg
-    /// validator both already use ("the T ordering"), `std::cmp::Reverse`
-    /// nowhere near this (ascending needs no reversal at all -- the
-    /// overflow bug fix-round-1 found was specific to a DESCENDING
-    /// max-tuple comparison, not relevant here). Same-`(from_year,
-    /// order_key)` runs are genuinely common (137 real groups in the
-    /// compiled data -- `order_key` defaults to 0 outside Passion Week's
-    /// own deliberate sub-sequencing) -- a STABLE sort resolves them by
-    /// original array order, the IDENTICAL "equal on all explicit tiers
-    /// keeps first-wins" precedent `heading_precedence` already establishes
-    /// and CONTRACT.md already documents, not a new invented rule.
-    /// General-kind events are excluded entirely (requirement 2: "NOT part
-    /// of time traversal... fabricating one is forbidden" -- they have no
-    /// real date to sort by). Built AFTER `event_merge::apply_event_merges`
-    /// (this function's own first step) has already removed every
-    /// duplicate identity, so the timeline never interleaves two scales for
-    /// the same real-world event.
+    /// A STABLE sort by `(from_year, order_key)`, so a tie keeps the original compiled
+    /// order. Undated containers are excluded -- there is no date to sort them by. Built
+    /// after the identity merges, so one occurrence never appears twice on two scales.
     #[serde(skip)]
     timeline_order: Vec<String>,
-    /// Derived: event id -> index into `timeline_order`. Built alongside it.
     #[serde(skip)]
     timeline_index: HashMap<String, usize>,
 }
 
-/// Batch T requirement 5: one resolved pericope heading -- an EVENT-kind
-/// PASSAGE's own id and title, anchored at one specific verse (the first
-/// verse of one of its own witnesses). See `AtlasData::heading_for_verse`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HeadingEntry {
     pub event_id: String,
     pub title: String,
-    /// Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY, owner's own law:
-    /// "if something isn't traversable it shouldn't look like other things
-    /// that are actually traversable"): this heading's own container's
-    /// `Event::kind` ("event" | "general") -- carried so the CLIENT can
-    /// tell, before ever clicking through, whether this heading leads to a
-    /// dated (traversable) or general-kind (NOT part of time traversal,
-    /// requirement 2) container, without a second fetch just to find out.
+    /// Carried so a reader can tell whether this heading leads to a dated, traversable
+    /// container or an undated one, without a second fetch to find out.
     pub kind: String,
 }
 
-/// Batch T: one anchor verse per witness of `e` -- GRACEFUL (never panics)
-/// equivalent of `scene::witnesses_for`'s own "first verse of each witness"
-/// concept, used ONLY by `AtlasData::finish()`'s own heading-index build
-/// (see that call site's own comment for why gracefulness matters there
-/// specifically). An unparseable verse is simply skipped, never a reason to
-/// crash the whole ETL binary -- `atlas_etl::validate` is what turns a bad
-/// witness verse into a loud, aggregated, curator-facing error; this
-/// function's only job is to not stand in its way by panicking first.
-/// M-D1 requirement 1 (owner live report #2, GEN.6 class, verbatim: "genesis
-/// 6 the first verses have no container label... i'm assuming this isn't an
-/// isolated case"): fixed IN LOCKSTEP with `atlas_graph::heading`'s own
-/// identical fix (this module's own doc comment on that crate has the full
-/// root-cause derivation) -- each anchor is now the CANONICALLY FIRST
-/// covered verse (minimum by book/chapter/verse, i.e. reading-spine order),
-/// never merely the first one this container's own curated/imported data
-/// happened to list first. Both branches had the identical defect (the
-/// witness branch via `.find(first parseable)`, the no-witness branch via
-/// `seen_books`'s own first-occurrence capture) -- both fixed here, the
-/// SAME "compare by content, not position" correction.
+/// Each anchor is the CANONICALLY FIRST covered verse, not whichever the data happened to
+/// list first. An unparseable verse is skipped rather than panicking: this runs before
+/// validation, whose job is to report a bad ref as an aggregated, curator-facing error.
 fn heading_anchors_for(e: &Event) -> Vec<String> {
     if !e.witnesses.is_empty() {
         return e
@@ -1408,12 +602,6 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
             .collect();
     }
 
-    // No explicit witnesses -- one anchor per book actually touched by
-    // `e.verses`: that book's own CANONICALLY FIRST verse, not merely the
-    // first one encountered in curated/imported array order. `seen_books`
-    // still preserves first-SEEN-book order for the returned Vec's own
-    // iteration order (harmless -- see the graph-native mirror's own doc
-    // comment for why inter-book order never decides a collision).
     let mut seen_books: Vec<String> = Vec::new();
     let mut best: std::collections::HashMap<String, (u16, u16, String)> = std::collections::HashMap::new();
     for v in &e.verses {
@@ -1433,53 +621,10 @@ fn heading_anchors_for(e: &Event) -> Vec<String> {
     seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
-/// Batch T fix-round-1 (Important-1, batch-t-review.md), amended by the
-/// owner's own 2026-08-21 "decisive container" ruling: the collision
-/// precedence `AtlasData::finish()`'s own `verse_heading` build uses when
-/// two heading-worthy events anchor the identical verse -- see that call
-/// site's own comment for the full rule and rationale. A 4-tuple, compared
-/// lexicographically (Rust's own derived tuple `Ord`); a STRICTLY GREATER
-/// tuple wins a collision, an EQUAL tuple keeps first-wins (unchanged from
-/// before this fix -- not expected to ever actually occur for two distinct
-/// real events, only reachable if every tier below ties exactly):
-///
-/// 1. LAYER (owner's own words: "T's existing-title freebie rule vs a real
-///    container") -- `1` when `e` is a genuine curated container for THIS
-///    grouping (`witnesses` non-empty and/or `robertson_section` present),
-///    `0` when `e` is heading-worthy ONLY because it happens to be a
-///    narrative leg riding its own pre-existing `Event::label` "freebie."
-///    This is the PRIMARY axis and, in every real case in today's curated
-///    data, decides the collision outright (e.g. `pw_bethany` real
-///    container vs. `jm_bethany` freebie, both anchoring JHN.12.1).
-/// 2. KIND -- `1` for `"event"`, `0` for `"general"`, a tiebreak that only
-///    matters "if both colliders are genuinely same-layer containers"
-///    (the owner's own words) -- LIVE as of Batch T2 (general-kind
-///    passages are now real curated data), though still rare in practice:
-///    curated sections are expected to PARTITION (see
-///    `heading_anchor_collisions`), so two same-layer containers colliding
-///    at all is uncommon; when it does happen (e.g. a general-kind
-///    "preface" container and a spine-narrative freebie both touching one
-///    verse -- a layer-0 freebie is not layer-1, so tier 1 already
-///    resolves that case) this tier is what remains to decide it.
-/// 3. CHRONOLOGY -- the EARLIER `(from_year, order_key)` wins, via
-///    `std::cmp::Reverse` (NOT `i32::MAX - year` -- this atlas's own years
-///    run deep negative, e.g. -4004 at the Ussher-consistent span floor,
-///    and `i32::MAX - (a very negative year)` overflows i32 outright;
-///    caught live by a debug-build panic across every fixture-based test
-///    the moment this landed, fixed before it could ship) -- the SAME
-///    `(from_year, order_key)` tuple `Narrative.legs`' own ETL-validated
-///    ordering already uses elsewhere ("narrative-leg order," the owner's
-///    own words). Only reached when two REAL containers of the same kind
-///    collide, which does not occur anywhere in today's curated data.
+/// Compared lexicographically: a strictly greater tuple wins a collision, an equal one
+/// keeps first-wins. Tiers are curated container over label-only, dated over undated, then
+/// earlier chronology -- via `Reverse`, because `i32::MAX - year` overflows on a BC year.
 fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>) {
-    // Batch T2: `acts_section` counts the SAME as `robertson_section` here
-    // -- Acts's own sibling provenance field (see `Event::acts_section`'s
-    // own doc comment for why it's a separate field, not a reused one).
-    // Batch W1: `atlas_section` (the whole-Bible sibling of both) counts
-    // identically -- see `Event::atlas_section`'s own doc comment.
-    // Batch W3: `kjv_superscription` (the KJV's own literal-citation
-    // sibling of all three) counts identically -- see
-    // `Event::kjv_superscription`'s own doc comment.
     let layer: u8 = if !e.witnesses.is_empty()
         || e.robertson_section.is_some()
         || e.acts_section.is_some()
@@ -1495,15 +640,7 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
 }
 
 impl AtlasData {
-    /// Builds an `AtlasData` from its eight schema fields, leaving the derived
-    /// indexes empty (call `.finish()` to populate them). This is the
-    /// ergonomic, one-expression way to construct one from outside this
-    /// module: the index fields are private, so a plain struct literal
-    /// naming them (including via `..Default::default()`, which still
-    /// requires visibility of every field it fills in) cannot be written
-    /// from another module. It is not the *only* way — `AtlasData::default()`
-    /// followed by per-field assignment on the public schema fields also
-    /// works, since those fields are all `pub`, just less conveniently.
+    /// Leaves the derived indexes empty; call `finish()` to populate them.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         canon: Canon,
@@ -1528,30 +665,13 @@ impl AtlasData {
         }
     }
 
-    /// Sorts `events` chronologically by `when.from_year` and (re)builds the
-    /// derived lookup indexes. Idempotent — safe to call more than once
-    /// (e.g. once in ETL before writing, once in the server after reading).
+    /// Idempotent: safe to call more than once -- the ETL calls it before writing and the
+    /// server again after reading.
     pub fn finish(mut self) -> Self {
-        // Batch HOTFIX-2 (same-place dedupe): applied FIRST, before every
-        // derived index below is built from `self.places`/`self.events` --
-        // so `place_index`, `event_bearing_place_ids`, `verse_to_places`,
-        // etc. all come out correct for free, already reflecting the merged
-        // graph, with no separate index-fixup pass needed. See
-        // `crate::merge`'s own doc comment for the full reasoning (why this
-        // layer, why curated rather than automatic). Idempotent itself (a
-        // pair already merged by an earlier `finish()` call is silently
-        // skipped), so calling `finish()` twice -- ETL then the server, or
-        // the server's own `AtlasData::load().finish()` -- never double-merges.
+        // Both merges run before any derived index below is built, so every index comes
+        // out already reflecting the merged graph, with no fixup pass.
         crate::merge::apply_place_merges(&mut self.places, &mut self.events);
 
-        // Batch HOTFIX-4 (duplicate event-identity rectification): applied
-        // immediately after the place merge and, like it, BEFORE every
-        // derived index below is built -- so `event_index`, `verse_to_events`,
-        // `verse_heading`, and the global timeline index (below) all come out
-        // correct for free, already reflecting the merged graph. See
-        // `event_merge`'s own module doc comment for the full root-cause
-        // chain and sweep methodology. Idempotent, same contract as
-        // `apply_place_merges`.
         crate::event_merge::apply_event_merges(&mut self.events, &mut self.narratives);
 
         self.events.sort_by_key(|e| e.when.from_year);
@@ -1569,24 +689,6 @@ impl AtlasData {
             .map(|(i, e)| (e.id.clone(), i))
             .collect();
 
-        // OVERLAY-1 Task 5: the two VERSE-WEB reverse indexes that used to
-        // be derived here -- `verse_to_events` (Batch T requirement 3, the
-        // "verse popover: event membership" union of an event's own verses
-        // with every witness's own verses) and `verse_to_places` (Batch R
-        // requirement 5, the reverse of `Place::verse_links`) -- are GONE
-        // from this struct. Their only readers were server/CLI runtime
-        // surfaces (`handlers::chapter`'s place-mention half, `bibex
-        // verse`'s PLACES/EVENTS/PASSAGES sections), and those now read
-        // `atlas_graph::scene_source::GraphSceneSource`, which rebuilds BOTH
-        // indexes from the graph-materialised collections in exactly these
-        // passes -- the witness-union rule included, with its own
-        // regression tests re-homed alongside it. Nothing here derived them
-        // for ETL-time validation, so nothing here still needs them.
-
-        // Batch E2: one pass over every event's `places` builds BOTH the
-        // event-bearing id set and each one's all-time event count -- "cities
-        // in our graph" is derived here, never hardcoded (see the two
-        // fields' own doc comments).
         let mut event_counts_by_place: HashMap<String, u32> = HashMap::new();
         for e in &self.events {
             for pid in &e.places {
@@ -1596,18 +698,6 @@ impl AtlasData {
         self.event_bearing_place_ids = event_counts_by_place.keys().cloned().collect();
         self.event_counts_by_place = event_counts_by_place;
 
-        // Batch F, extended Batch F2: one pass over every catechism item
-        // builds the reverse verse index, the id->name lookup, and the
-        // id->(part,item) index together -- see the three fields' own doc
-        // comments. Each item contributes TWO kinds of hit to the reverse
-        // index: its own item-level `verses` (question `None`, Batch F,
-        // unchanged order/behavior) THEN each of its `questions[]`, in
-        // curated order, each contributing its OWN verses tagged with its
-        // OWN question title (Batch F2) -- so a verse cited both ways for
-        // the SAME item (rare, but not assumed impossible) sees the
-        // item-level hit first, matching "items keep their F-batch
-        // embedded-citation links too" reading naturally as the primary,
-        // first-listed source.
         let mut verse_to_catechism: HashMap<String, Vec<(String, Option<String>)>> = HashMap::new();
         let mut catechism_item_names: HashMap<String, String> = HashMap::new();
         let mut catechism_item_index: HashMap<String, (usize, usize)> = HashMap::new();
@@ -1629,115 +719,34 @@ impl AtlasData {
         self.catechism_item_names = catechism_item_names;
         self.catechism_item_index = catechism_item_index;
 
-        // Batch T requirement 5 ("pericope headings render in the reading
-        // flow"): one pass over every EVENT-kind CONTAINER builds the
-        // anchor-verse index -- see `heading_for_verse`'s own doc comment
-        // for the heading-worthy rule AND the collision-precedence rule
-        // below. Runs AFTER `self.events.sort_by_key` above.
-        //
-        // DECISIVE-CONTAINER MODEL (owner's own 2026-08-21 ruling, verbatim:
-        // "we don't modify the verses because we lose composability... the
-        // Bible data structure fundamentally changes where these titled
-        // passages are containers for verses... identity is empty set. the
-        // set may have n verses. there may be sets that have overlapping
-        // verses as we grow the dag, which is fine, but we're decisive
-        // about the titles of verse groupings that we display on the
-        // reader"). `Event` IS a titled CONTAINER over a verse set, never
-        // the other way around -- this index is built by ITERATING
-        // containers and emitting anchors from their own content
-        // (`heading_anchors_for`), never by writing heading data onto a
-        // verse record (there is no such record to write onto -- verses
-        // stay plain, immutable atoms; `verses-kjv.json` is untouched by
-        // this or anything else in Batch T). Two containers legitimately
-        // overlapping on the same verse is EXPECTED, not an error, as the
-        // graph of containers grows (a real, live case already exists:
-        // `jm_bethany`/`pw_bethany` both anchor JHN.12.1) -- overlap lives
-        // in the DATA. The READER is what must be decisive: exactly one
-        // title heads any displayed verse grouping, chosen by the
-        // deterministic, principled precedence rule below
-        // (`heading_precedence`), never by incidental iteration/file
-        // order. The non-chosen container is NEVER unreachable -- a
-        // verse's own EVENT membership section (`events_for_verse`, above)
-        // lists every container touching that verse regardless of which
-        // one won the single heading slot, so it stays one click away at
-        // the identical verse.
-        //
-        // Fix-round-1 (Important-1, batch-t-review.md, then amended by the
-        // ruling above): the OLD code here used plain first-wins
-        // `entry().or_insert_with()`, with a comment claiming it
-        // "deterministically keeps the chronologically EARLIER event's own
-        // heading" -- never actually true for a same-year tie, since
-        // `self.events.sort_by_key` sorts by `from_year` ALONE, so two
-        // same-year events keep their pre-sort/file order under Rust's
-        // stable sort. Live-reproduced by the review: `jm_bethany` (a bare
-        // `jesus-ministry` leg, no witnesses/robertson_section -- heading-
-        // worthy ONLY via the "existing-title freebie" narrative-leg rule)
-        // sat earlier in `events-extra.toml` than `pw_bethany` (this
-        // batch's own flagship 3-witness, Robertson-grounded passion-week
-        // leg -- a REAL curated container for this exact grouping), so
-        // `jm_bethany` silently won JHN.12.1's heading by bare file
-        // position, dropping `pw_bethany`'s own John-witness heading
-        // entirely -- no warning, no ETL error, no test catching it (every
-        // existing heading test happened to exercise a collision-free
-        // event). See `heading_collision_tests` below for the pinned
-        // regression, and CONTRACT.md's own HEADING-WORTHY RULE paragraph
-        // (kept in lockstep -- if `heading_precedence` ever changes, that
-        // paragraph must change in the SAME commit).
-        //
-        // Every verse in the Bible ultimately belonging to at least one
-        // titled container is the owner's own stated end-state; today only
-        // Gospels+Acts+the-13-curated-narratives are covered (this batch's
-        // own scoped coverage decision) -- the total migration is real
-        // future work, not this fix.
-        //
-        // Deliberately does NOT call `scene::witnesses_for` here (a real,
-        // live-caught bug, self-caught via TDD before this shipped): that
-        // function -- like every other "verse groups on the wire" helper in
-        // `scene.rs` -- calls `VerseId::parse_canonical(v).expect(..)`, an
-        // invariant that holds everywhere else in this codebase because
-        // every OTHER caller only ever runs on ALREADY-VALIDATED compiled
-        // data (server-side, post-ETL). `finish()` is not that -- ETL's own
-        // `main.rs` calls `.finish()` BEFORE `validate::run`, specifically
-        // so validation can inspect the fully-derived `AtlasData`, which
-        // means a curator's own malformed witness verse would reach this
-        // loop BEFORE validation ever gets a chance to reject it loudly and
-        // reports it as a clean, aggregated error -- panicking here instead
-        // would crash the whole ETL binary on a single bad ref. `heading_anchors_for`
-        // below is a narrower, GRACEFUL equivalent (skip, never panic) --
-        // exactly the same "aggregate every violation, never fail fast on
-        // curator input" discipline `atlas_etl::validate` itself follows.
+        // Two containers covering one verse is expected; the READER is what must be
+        // decisive, so exactly one title heads a verse, chosen by `heading_precedence` and
+        // never by iteration order. The non-chosen container stays reachable elsewhere.
         let narrative_leg_ids: HashSet<&str> =
             self.narratives.iter().flat_map(|n| n.legs.iter().map(|s| s.as_str())).collect();
         let mut verse_heading: HashMap<String, HeadingEntry> = HashMap::new();
         let mut verse_heading_precedence: HashMap<String, (u8, u8, std::cmp::Reverse<i32>, std::cmp::Reverse<i32>)> = HashMap::new();
-        // Batch T2: tracks the FIRST real (layer-1) container to claim each
-        // anchor, purely to detect a SECOND, different real container
-        // claiming the identical anchor -- see `heading_anchor_collisions`'s
-        // own doc comment for why this is a separate, additional concern
-        // from `verse_heading_precedence`'s own decisive-winner resolution
-        // above (that one is fine with a layer-1-vs-layer-0 collision; this
-        // one only ever fires layer-1-vs-layer-1).
         let mut real_anchor_owner: HashMap<String, String> = HashMap::new();
         let mut heading_anchor_collisions: Vec<(String, String, String)> = Vec::new();
         for e in &self.events {
             let heading_worthy = narrative_leg_ids.contains(e.id.as_str())
                 || !e.witnesses.is_empty()
                 || e.robertson_section.is_some()
-                || e.acts_section.is_some() // Batch T2: Acts's own sibling provenance field
-                || e.atlas_section.is_some() // Batch W1: the whole-Bible sibling of both
-                || e.kjv_superscription.is_some(); // Batch W3: the KJV's own literal-citation sibling
+                || e.acts_section.is_some()
+                || e.atlas_section.is_some()
+                || e.kjv_superscription.is_some();
             if !heading_worthy {
                 continue;
             }
             let precedence = heading_precedence(e);
-            let is_real_container = precedence.0 == 1; // same LAYER bit heading_precedence itself uses
+            let is_real_container = precedence.0 == 1;
             for anchor in heading_anchors_for(e) {
                 if is_real_container {
                     match real_anchor_owner.get(&anchor) {
                         Some(owner) if owner != &e.id => {
                             heading_anchor_collisions.push((anchor.clone(), owner.clone(), e.id.clone()));
                         }
-                        Some(_) => {} // same event claims its own anchor more than once (e.g. two witnesses, same first verse) -- not a collision
+                        Some(_) => {}
                         None => {
                             real_anchor_owner.insert(anchor.clone(), e.id.clone());
                         }
@@ -1756,13 +765,6 @@ impl AtlasData {
         self.verse_heading = verse_heading;
         self.heading_anchor_collisions = heading_anchor_collisions;
 
-        // Batch HOTFIX-4 requirement 1: the global chronological timeline --
-        // see `timeline_order`'s own field doc comment for the full ordering
-        // rule. `self.events` is already `sort_by_key(|e| e.when.from_year)`-
-        // sorted (above), so this stable secondary sort's own tie-breaking
-        // (equal `(from_year, order_key)`) falls out to the ORIGINAL
-        // pre-any-sort compiled-array order, matching `heading_precedence`'s
-        // own documented "equal on all tiers keeps first-wins" precedent.
         let mut timeline_order: Vec<String> =
             self.events.iter().filter(|e| e.kind == "event").map(|e| e.id.clone()).collect();
         timeline_order.sort_by_key(|id| {
@@ -1783,143 +785,58 @@ impl AtlasData {
         self.place_index.get(id).map(|&i| &self.places[i])
     }
 
-    /// Batch E: this place's curated history record, if any (most places
-    /// have none -- `place_history` only covers the curated ~15-25).
     pub fn place_history_for(&self, id: &str) -> Option<&PlaceHistory> {
         self.place_history.get(id)
     }
 
-    /// Batch E3: this place's PRIMARY curated KJV display-name alias, if
-    /// any (most places have none -- `place_name_aliases` only covers the
-    /// places a curator hand-verified against the actual KJV text). "Primary"
-    /// (Batch GAZ-1-R1): the first-authored row for this id in
-    /// `data/curated/place-names-kjv.toml` -- for the 37 pre-existing
-    /// single-alias places this is simply THE alias, unchanged; for a
-    /// multi-alias place (`lebo-hamath`, the first) this is the one
-    /// `scene`/`handlers`' single-name display callers show. See
-    /// `place_name_aliases_for` for the full curated list (what the
-    /// gazetteer export's own `aliases` array carries).
+    /// The first-authored alias for this id. See `place_name_aliases_for` for the full list.
     pub fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
         self.place_name_aliases.get(id).and_then(|v| v.first())
     }
 
-    /// Batch GAZ-1-R1: this place's FULL curated KJV alias list (0 or more),
-    /// in curated-file order -- the source `event_world::place_node` reads
-    /// to build the graph payload's own `aliases: Vec<String>` field (and,
-    /// through it, the gazetteer export's `aliases` array). Empty slice,
-    /// never absent, for a place with none (same "honest empty, not a
-    /// special case" shape `event_bearing_place_ids`-adjacent lookups
-    /// already use elsewhere in this file).
     pub fn place_name_aliases_for(&self, id: &str) -> &[PlaceNameAlias] {
         self.place_name_aliases.get(id).map(Vec::as_slice).unwrap_or(&[])
     }
 
-    /// Batch E2: ids of every event-bearing place ("cities in our graph",
-    /// user direction 2026-08-19 quoted in batch-e2-brief.md) -- the fixed-
-    /// cardinality set QUIET-1 checks `places` union `quiet_places` against
-    /// for every time-mode window. Derived from `events` by `finish()`.
     pub fn event_bearing_place_ids(&self) -> &HashSet<String> {
         &self.event_bearing_place_ids
     }
 
-    /// Batch E2: a place's ALL-TIME event count (every event touching it, in
-    /// ANY window) -- `QuietPlace::total_events`'s source. 0 for a place
-    /// with no events at all; such a place is never actually looked up by
-    /// `scene::quiet_places` (it only iterates `event_bearing_place_ids`),
-    /// but 0 is a safe, honest default rather than panicking if ever called
-    /// directly.
     pub fn total_events_for(&self, id: &str) -> u32 {
         self.event_counts_by_place.get(id).copied().unwrap_or(0)
     }
 
-    /// Batch T2: every `(anchor_verse, event_id, event_id)` pair where two
-    /// DIFFERENT real (layer-1) curated containers anchor the identical
-    /// verse -- see the `heading_anchor_collisions` field's own doc comment
-    /// for what "real"/"layer-1" means and why this is checked separately
-    /// from `heading_precedence`'s own (legitimate) collision resolution.
-    /// Empty for well-formed curated data; `atlas_etl::validate::run` fails
-    /// loud on every entry here.
     pub fn heading_anchor_collisions(&self) -> &[(String, String, String)] {
         &self.heading_anchor_collisions
     }
 
-    /// Batch T requirement 5: the pericope heading (event id + title) that
-    /// should render immediately above this verse in the reading flow, if
-    /// any. A verse is a heading ANCHOR exactly when it is the FIRST verse
-    /// of some "heading-worthy" event's own witness (`scene::witnesses_for`)
-    /// -- "heading-worthy" means: a leg of one of the curated narratives
-    /// (OT included -- every existing narrative event already carries a
-    /// real title via `Event::label`, no new authoring needed for those),
-    /// OR explicitly curated with parallel witnesses (`Event::witnesses`
-    /// non-empty), OR explicitly Robertson-grounded (`Event::robertson_section`
-    /// is `Some`) -- i.e. "Gospels + Acts (full coverage) + narrative-event
-    /// passages elsewhere," per the owner's own coverage decision (verbatim:
-    /// "General-passage titles outside these come later" -- a Theographic
-    /// event this batch never touches, and that is a leg of no narrative,
-    /// correctly produces NO heading here). A multi-witness event anchors
-    /// ONE heading PER witness (one per Gospel book it's rendered in), never
-    /// just once overall. Two CONTAINERS legitimately overlapping on one
-    /// verse is expected, not an error (a real, live case -- `jm_bethany`/
-    /// `pw_bethany` both anchor JHN.12.1) -- the READER is decisive:
-    /// exactly one title heads that verse, chosen by `heading_precedence`'s
-    /// own 3-tier rule (own doc comment has the full chain) -- fixed in
-    /// fix-round-1, amended by the owner's own "decisive container" ruling,
-    /// batch-t-review.md's Important-1. The non-chosen container is never
-    /// unreachable -- see `events_for_verse`, which lists every container
-    /// touching a verse regardless of which one won the heading.
+    /// A verse is an anchor exactly when it is the first verse of a heading-worthy
+    /// container's account: a narrative leg, or one carrying curated witnesses or a
+    /// provenance section. A multi-witness container anchors one heading per account.
     pub fn heading_for_verse(&self, verse: &str) -> Option<&HeadingEntry> {
         self.verse_heading.get(verse)
     }
 
-    /// Batch HOTFIX-4 requirement 1: this event's own 0-based position in
-    /// the GLOBAL chronological timeline (`timeline_order`'s own doc
-    /// comment has the full ordering rule), if it's a dated (`kind ==
-    /// "event"`) event at all. `None` for a general-kind or unknown id --
-    /// requirement 2's own "NOT part of time traversal... fabricating a
-    /// date is forbidden," resolved here by simple absence from the index
-    /// this method reads, never a special-cased branch.
+    /// `None` for an undated or unknown id, by absence from the index rather than a branch.
     pub fn timeline_position(&self, id: &str) -> Option<usize> {
         self.timeline_index.get(id).copied()
     }
 
-    /// Batch HOTFIX-4 requirement 1: the dated event sitting at this
-    /// 0-based position in the global timeline, if any. Every real caller
-    /// derives `index` from `timeline_position` above (always in-bounds by
-    /// construction); `None` here only guards a hypothetical out-of-range
-    /// index rather than panicking.
     pub fn timeline_event_at(&self, index: usize) -> Option<&Event> {
         self.timeline_order.get(index).and_then(|id| self.event_by_id(id))
     }
 
-    /// Batch F: every catechism item cited by any member verse of `span`
-    /// (a single verse OR a same-chapter passage), in first-seen order, no
-    /// duplicates -- the pure aggregation core lives in
-    /// `crate::catechism::items_for_span` (mirrors
-    /// `crate::xrefs::aggregate_span_xrefs`'s own split: pure function takes
-    /// narrow borrowed inputs, this method is the thin "hand it this
-    /// instance's own derived indexes" wrapper `atlas-server::handlers` calls
-    /// directly, keeping business logic out of handlers.rs). Used for BOTH
-    /// `GET /api/catechism/{sref}` (passages) and `GET /api/verse/{vref}`'s
-    /// own embedded `catechism` field (a single-verse span) -- one function,
-    /// no duplicated logic between the two.
+    /// First-seen order, no duplicates.
     pub fn catechism_items_for_span(&self, span: &crate::refs::ScriptureRef) -> Vec<crate::catechism::CatechismRef> {
         crate::catechism::items_for_span(span, &self.verse_to_catechism, &self.catechism_item_names)
     }
 
-    /// Batch F: one catechism item's own full record, plus the `CatechismPart`
-    /// it belongs to (its `title` is part of the item-detail wire payload) --
-    /// `GET /api/catechism/item/{id}`'s own lookup, O(1) via
-    /// `catechism_item_index` rather than a linear scan of every part/item.
     pub fn catechism_item_by_id(&self, id: &str) -> Option<(&CatechismPart, &CatechismItem)> {
         let &(pi, ii) = self.catechism_item_index.get(id)?;
         Some((&self.catechism[pi], &self.catechism[pi].items[ii]))
     }
 }
 
-/// OVERLAY-1 Task 3: `AtlasData` implements the seam `atlas_core::scene`
-/// composes against by delegating straight to its own existing
-/// fields/methods -- no behaviour change, no new derivation. Every method
-/// here mirrors the exact `d.*` read `scene.rs` used to make directly.
 impl crate::scene_source::SceneSource for AtlasData {
     fn events_in_window(&self, w: &TimeRange) -> Vec<&Event> {
         self.events.iter().filter(|e| e.when.intersects(w)).collect()
@@ -1969,13 +886,8 @@ impl crate::scene_source::SceneSource for AtlasData {
     }
 }
 
-/// Maps a signed calendar year (never zero) onto a contiguous integer line
-/// with the zero-year gap removed: `..., -2, -1, 1, 2, ...` becomes
-/// `..., -2, -1, 0, 1, ...` (AD years shift down by one; BC years are
-/// unchanged, since they're already contiguous below zero). Used by
-/// `nearest_border_year`'s midpoint math above and, via `pub(crate)`, by
-/// `crate::history`'s own zero-aware window-midpoint math (same
-/// straddle-BC/AD problem, same fix -- one source of truth for it).
+/// Removes the zero-year gap: `..., -2, -1, 1, 2, ...` becomes `..., -2, -1, 0, 1, ...`, so
+/// midpoint arithmetic across the BC/AD boundary is off by nothing.
 pub(crate) fn year_index(y: Year) -> i64 {
     if y > 0 {
         (y - 1) as i64
@@ -1984,22 +896,9 @@ pub(crate) fn year_index(y: Year) -> i64 {
     }
 }
 
-/// A small, hand-built demo world. Originally
-/// `atlas_core::scene::tests::fixture()` (Task 3, `#[cfg(test)]`-only);
-/// promoted here as a normal `pub` function — not `#[cfg(test)]` — because
-/// `atlas-server`'s integration tests live in a different crate and need it
-/// at ordinary (non-test) compile time. `#[doc(hidden)]` keeps it out of
-/// generated docs since it is not part of the intended public API surface.
-///
-/// The `places`/`events`/`narratives` below are byte-for-byte the Task 3
-/// fixture: `scene.rs`'s own tests assert specific ids/links from this exact
-/// shape (`jericho`, `gilgal`, `hebron`+`GEN.13.18`, `e1..e5`, `conquest`,
-/// `patriarchs-demo`) and must keep passing unmodified. `canon`/`eras`/
-/// `books_meta`/`verses`/`cross_refs` were empty placeholders in the Task 3
-/// version (no scene test reads them); this promotion fills them with a
-/// small consistent demo dataset for atlas-server's endpoint tests, whose
-/// verses/cross-refs deliberately reuse ids already present above (e.g.
-/// `GEN.13.18`, `JOS.6.20`) so the two halves of the fixture cross-check.
+/// A hand-built demo world, `pub` rather than `#[cfg(test)]` because another crate's
+/// integration tests need it at ordinary compile time. Tests assert specific ids and links
+/// from this exact shape, so changing it changes them.
 #[doc(hidden)]
 pub fn demo_fixture() -> AtlasData {
     let places = vec![
@@ -2073,43 +972,7 @@ pub fn demo_fixture() -> AtlasData {
 
     let canon = Canon {
         books: vec![
-            // M-C2: widened from `vec![31]` (chapter 1 only) to also cover
-            // chapters 13/23, the SAME "canon must cover every verse this
-            // fixture actually has text/cross-refs for" fix as JOS below --
-            // `xref_adapter::normalize`'s own "target's first verse must
-            // exist" check (`atlas_etl::xrefs::filter_missing_first_verse`)
-            // is checked against the GRAPH's own rebuilt verse map (that
-            // module's own doc comment: "rebuilt by walking the
-            // JUST-NORMALIZED graph nodes"), so a cross-ref TARGET outside
-            // the declared canon (GEN.13.18, cited by JOS.6.20's own third
-            // cross-ref below) was silently dropped at graph-build time
-            // even though `data.verses`/`data.cross_refs` both carried it.
-            // `/api/books` reads `data.canon` directly (unaffected by
-            // which handler sources its OWN text from) so its own
-            // `books[0]["chapters"]` wire value changes with this fix --
-            // `health_books_eras_narratives_shapes`'s own assertion is
-            // updated in the SAME commit, per this file's own citation-
-            // integrity discipline (never let a wire assertion silently
-            // drift from the fixture it's supposed to pin).
             CanonBook { code: "GEN".into(), name: "Genesis".into(), chapters: vec![31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19] },
-            // M-C2: widened from `vec![3]` (chapter 1 only) to cover every
-            // JOS chapter this fixture's own `verses` map below actually
-            // has text for (1/4/6/8) -- a real, self-found fixture bug:
-            // `handlers::verse`/`handlers::chapter`'s own verse TEXT now
-            // comes from the graph's TextUnit node table, which
-            // `kjv_adapter::normalize` builds by walking `canon.books`'s
-            // own declared chapter/verse counts (`ordered_verses_from_canon`),
-            // NOT by scanning `verses` directly -- unlike the pre-M-C2
-            // `data.verses.get(key)` read, which never consulted `canon` at
-            // all. A `verses` entry for a chapter `canon` never declares
-            // (JOS.4/6/8 against the old `chapters: vec![3]`) was silently
-            // reachable through the old flat-map read but invisible to the
-            // graph -- exactly the kind of drift `graph_fixture_for`'s own
-            // doc comment above already warns this fixture must avoid.
-            // Interior chapters this fixture has no verses for (2/3/5/7)
-            // stay 0 (a lawful, honest "no verses this chapter" -- the
-            // graph simply never materializes nodes for them, same as any
-            // real book's own unwritten chapters would).
             CanonBook { code: "JOS".into(), name: "Joshua".into(), chapters: vec![3, 0, 0, 20, 0, 24, 0, 28] },
         ],
     };
@@ -2164,21 +1027,11 @@ pub fn demo_fixture() -> AtlasData {
     cross_refs.insert(
         "JOS.6.20".into(),
         vec![
-            CrossRef { target: "JOS.6.20-21".into(), votes: 9 }, // same-chapter span target
-            CrossRef { target: "JOS.1.3".into(), votes: 5 },     // plain single-verse target
-            CrossRef { target: "GEN.13.18".into(), votes: 2 },   // single-verse target, different book
+            CrossRef { target: "JOS.6.20-21".into(), votes: 9 },
+            CrossRef { target: "JOS.1.3".into(), votes: 5 },
+            CrossRef { target: "GEN.13.18".into(), votes: 2 },
         ],
     );
-    // Batch G1 (GET /api/xrefs/{sref}): JOS.6.21's own list, added so
-    // atlas-server's own endpoint test can exercise the REAL span-
-    // aggregation handler end to end against the span JOS.6.20-21, not just
-    // atlas_core::xrefs's pure unit/property tests. Deliberately overlaps
-    // JOS.6.20's own JOS.1.3 target (5 + 4 = 9, proving votes are SUMMED
-    // across member verses, not just taken from whichever verse is seen
-    // first) and cites JOS.6.20 itself (a self-target once the span is
-    // JOS.6.20-21, proving the drop rule) -- see
-    // verse_chapter_place_and_404's own JOS.6.20 assertions above, which
-    // this entry (a different map key) leaves completely untouched.
     cross_refs.insert(
         "JOS.6.21".into(),
         vec![
@@ -2188,14 +1041,6 @@ pub fn demo_fixture() -> AtlasData {
     );
 
     let mut data = AtlasData::new(canon, places, events, narratives, eras, books_meta, verses, cross_refs).finish();
-    // Batch E: one small curated history record (hebron -- already present
-    // above with a real event, e5, and its own GEN.23.* verses) so
-    // atlas-server's own integration tests can exercise the REAL
-    // `/api/place/{id}?from=&to=` resolution pipeline end to end, not just
-    // atlas_core::history's pure functions in isolation. Values are
-    // plausible, not independently curated the way data/curated/
-    // place-history.toml's real content is -- this fixture exists only to
-    // give the endpoint something to resolve.
     data.place_history.insert(
         "hebron".into(),
         PlaceHistory {
@@ -2217,17 +1062,6 @@ pub fn demo_fixture() -> AtlasData {
         },
     );
 
-    // Batch F: one small curated catechism entry, citing JOS.6.20 -- a verse
-    // already present above AND already carrying its own cross-refs (see the
-    // `cross_refs` map), deliberately reused rather than inventing an
-    // unrelated verse id: this proves a verse can carry cross-refs AND a
-    // catechism citation at once without either system disturbing the
-    // other, exactly the kind of layered content this batch's own wire
-    // (`VerseDetailOut.catechism` alongside `.cross_refs`) is built to
-    // support. `text` is `None` -- mirrors a REAL Baptism/Confession/
-    // Sacrament-of-the-Altar item's own shape (see `CatechismItem`'s doc
-    // comment), so this fixture exercises that conditional-presence branch
-    // too, not just the more common `Some(...)` case.
     data.catechism = vec![CatechismPart {
         id: "demo-part".into(),
         title: "Demo Part".into(),
@@ -2240,11 +1074,6 @@ pub fn demo_fixture() -> AtlasData {
             where_written: Some("Demo where-written text.".into()),
             verses: vec!["JOS.6.20".into()],
             ref_note: None,
-            // Batch F2: a QUESTION-level citation on the SAME item, citing a
-            // DIFFERENT already-real verse (JOS.6.21, already present above)
-            // -- exercises both citation granularities on one item, so
-            // server integration tests can assert a verse's own catechism
-            // hit carries the right `question` without a second fixture.
             questions: vec![CatechismQuestion {
                 title: "Demo Question".into(),
                 verses: vec!["JOS.6.21".into()],
@@ -2252,12 +1081,6 @@ pub fn demo_fixture() -> AtlasData {
             }],
         }],
     }];
-    // `finish()` is documented idempotent (safe to call more than once) --
-    // re-run here, exactly as the place_history insert above relies on NOT
-    // needing to, because unlike place_history, the catechism-derived
-    // indexes (`verse_to_catechism`/`catechism_item_names`/
-    // `catechism_item_index`) are only built INSIDE finish(), which already
-    // ran (empty) before `data.catechism` was ever populated.
     data.finish()
 }
 
@@ -2266,26 +1089,6 @@ mod heading_collision_tests {
     use super::*;
     use std::collections::HashMap;
 
-    // Batch T fix-round-1 (Important-1, batch-t-review.md), amended by the
-    // owner's own "decisive container" ruling: a real, live-reproduced
-    // defect -- two heading-worthy CONTAINERS anchoring the IDENTICAL verse
-    // (the real case: `jm_bethany`, a bare `jesus-ministry` leg with no
-    // witnesses/robertson_section -- heading-worthy only via the
-    // "existing-title freebie" narrative-leg rule -- and `pw_bethany`, a
-    // REAL curated container for this exact grouping, this batch's own
-    // flagship 3-witness passion-week leg, both anchor JHN.12.1) used to
-    // resolve via plain first-wins `or_insert_with`, which -- since both
-    // share one traditional year and the sort is merely stable -- meant
-    // bare FILE ORDER silently decided which container's heading rendered,
-    // dropping the other's entirely. Fixed: `heading_precedence`'s own
-    // 3-tier rule (layer, then kind, then chronology -- see its own doc
-    // comment for the full chain) now deterministically decides a
-    // collision, regardless of vec/file order. `bare_leg`/`rich_leg` below
-    // mirror `jm_bethany`/`pw_bethany`'s own real shape exactly (bare =
-    // narrative-leg-only "freebie" layer; rich = a real container, via
-    // witnesses) rather than using the real curated ids, so this test pins
-    // the MECHANISM, independent of any future edit to the real Bethany
-    // data.
     fn bare_leg() -> Event {
         Event {
             id: "bare_leg".into(),
@@ -2301,7 +1104,7 @@ mod heading_collision_tests {
             id: "rich_leg".into(),
             label: "A richer, witness-bearing event".into(),
             when: crate::time::TimeRange::new(33, 33).unwrap(),
-            verses: vec!["JHN.12.1".into()], // ALSO cites the identical anchor verse
+            verses: vec!["JHN.12.1".into()],
             witnesses: vec![EventWitness {
                 book: "JHN".into(),
                 translations: HashMap::from([("kjv".to_string(), vec!["JHN.12.1".to_string(), "JHN.12.2".to_string()])]),
@@ -2312,17 +1115,12 @@ mod heading_collision_tests {
         }
     }
 
-    // `bare_leg` needs a narrative leg to be heading-worthy at all (it has
-    // no witnesses/robertson_section of its own) -- mirrors jm_bethany's
-    // own real "leg of jesus-ministry" status exactly.
     fn narrative_for(leg_id: &str) -> Narrative {
         Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec![leg_id.to_string()] }
     }
 
     #[test]
     fn heading_collision_prefers_the_richer_event_when_bare_is_first_in_order() {
-        // Mirrors the EXACT real bug: bare event first in the events vec
-        // (jm_bethany's own file position), rich event second.
         let events = vec![bare_leg(), rich_leg()];
         let narratives = vec![narrative_for("bare_leg")];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2332,8 +1130,6 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_prefers_the_richer_event_regardless_of_vec_order() {
-        // Reverse of the above: rich event first this time -- proves the
-        // rule is content-driven (richness), never incidentally order-driven.
         let events = vec![rich_leg(), bare_leg()];
         let narratives = vec![narrative_for("bare_leg")];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2343,30 +1139,9 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_shadowed_event_stays_reachable_via_event_membership() {
-        // Important-1's own reason this is Important, not Critical: the
-        // LOSING event of a heading collision must remain fully reachable
-        // through the verse's own EVENT membership section, completely
-        // independent of which one won the single heading slot.
-        //
-        // OVERLAY-1 Task 5: the reverse index that serves that section --
-        // `verse_to_events`/`events_for_verse` -- moved off this struct onto
-        // `atlas_graph::scene_source::GraphSceneSource`, whose own tests pin
-        // the union rule and the no-double-listing rule. What THIS test
-        // still owns, and what the heading fix could actually have broken,
-        // is upstream of any index: resolving the collision must not remove
-        // or rewrite the losing container. So it is asserted here directly
-        // -- both events survive `finish()`, and both still claim the
-        // contested verse, which is exactly what makes the reverse index (an
-        // unconditional pass over these same events) list both.
         let events = vec![bare_leg(), rich_leg()];
         let narratives = vec![narrative_for("bare_leg")];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
-        // NOTE: this predicate unions `w.translations.values()` (every
-        // translation) where the real rule this test stands in for reads
-        // only `crate::translation::DEFAULT_TRANSLATION`. Inert here: this
-        // fixture is KJV-only (`bare_leg`/`rich_leg`'s witnesses carry no
-        // other translation key), so unioning over all translations and
-        // reading DEFAULT_TRANSLATION alone agree on this data.
         let mut ids: Vec<String> = data
             .events
             .iter()
@@ -2382,12 +1157,6 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_first_wins_when_richness_is_equal() {
-        // Two EQUALLY bare (both narrative-leg-only, no witnesses/
-        // robertson_section) events colliding is a narrower, lower-stakes
-        // case this fix deliberately leaves alone -- confirms the OLD
-        // stable-first-wins behavior is unchanged for ties, so this fix's
-        // blast radius is exactly the rich-vs-bare case it targets, nothing
-        // wider.
         let mut other_bare = bare_leg();
         other_bare.id = "other_bare_leg".into();
         other_bare.label = "Another bare event, same verse".into();
@@ -2400,39 +1169,20 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_tier3_earlier_chronology_wins_between_two_real_containers() {
-        // Owner's own ruling: "if both colliders are genuinely same-layer
-        // containers, tiebreak: event-kind over general, then narrative-leg
-        // order." Two REAL containers (both with witnesses -- same layer,
-        // same kind) colliding on the identical verse: the chronologically
-        // EARLIER one (by (from_year, order_key)) must win, not whichever
-        // sorts first in the vec. Currently vacuous in the real curated
-        // data (no two real containers collide today), but the rule must
-        // hold regardless.
         let mut earlier = rich_leg();
         earlier.id = "earlier_rich".into();
-        earlier.when = crate::time::TimeRange::new(30, 30).unwrap(); // earlier year
+        earlier.when = crate::time::TimeRange::new(30, 30).unwrap();
         let mut later = rich_leg();
         later.id = "later_rich".into();
-        later.when = crate::time::TimeRange::new(33, 33).unwrap(); // later year
-        // `later` placed FIRST in the vec -- proves the win is chronology-
-        // driven, not incidentally order-driven (mirrors the two order-
-        // independence tests above for tier 1).
+        later.when = crate::time::TimeRange::new(33, 33).unwrap();
         let events = vec![later, earlier];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         let heading = data.heading_for_verse("JHN.12.1").expect("JHN.12.1 must anchor SOME heading");
         assert_eq!(heading.event_id, "earlier_rich", "between two real containers of equal layer/kind, the chronologically earlier one must win");
     }
 
-    // --- M-D1 requirement 1: canonically-first anchoring (lockstep with
-    // atlas_graph::heading's own identical fix + real-data proof) ---------
-
     #[test]
     fn heading_anchor_canonically_first_not_curated_import_order_no_witnesses() {
-        // Mirrors theo-32's own real shape exactly (owner live report #2,
-        // GEN.6 class): the original Theographic verse link (GEN.6.7)
-        // appears FIRST in the array; W1's own enrichment pass APPENDED the
-        // earlier verses (6.1-6) afterward. No witnesses -- exercises the
-        // top-level `verses` branch.
         let mut e = bare_leg();
         e.id = "theo_32_mirror".into();
         e.verses = vec!["GEN.6.7".into(), "GEN.6.1".into(), "GEN.6.2".into(), "GEN.6.3".into(), "GEN.6.4".into(), "GEN.6.5".into(), "GEN.6.6".into()];
@@ -2445,8 +1195,6 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_anchor_canonically_first_not_curated_import_order_with_witnesses() {
-        // The witness branch had the identical defect (`.find(first
-        // parseable)` instead of the canonical minimum).
         let mut e = rich_leg();
         e.id = "witness_import_order_mirror".into();
         e.verses = vec![];
@@ -2463,21 +1211,12 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_tier1_event_kind_beats_general_kind() {
-        // Owner's own ruling's first tiebreak tier: "event-kind over
-        // general." Currently vacuous in real curated data (no
-        // kind="general" passage exists yet -- Batch T's own disclosed,
-        // scoped limitation), but the rule must hold: two otherwise-
-        // identical bare containers (same layer, same year/order_key),
-        // one `kind="event"`, one `kind="general"`, colliding on the same
-        // verse -- "event" must win.
         let mut event_kind = bare_leg();
         event_kind.id = "as_event".into();
         event_kind.kind = "event".into();
         let mut general_kind = bare_leg();
         general_kind.id = "as_general".into();
         general_kind.kind = "general".into();
-        // `general_kind` placed FIRST -- proves the win is kind-driven, not
-        // incidentally order-driven.
         let events = vec![general_kind, event_kind];
         let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_event".into(), "as_general".into()] }];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2487,21 +1226,11 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_acts_section_counts_as_a_real_layer1_container() {
-        // Batch T2 (Acts provenance): `acts_section` is Acts's own sibling
-        // to `robertson_section` -- a DIFFERENT field (per the owner's own
-        // ambiguity ruling, "acts sections get their own provenance key,
-        // NOT robertson_section"), but it must count the SAME way in
-        // `heading_precedence`'s own LAYER tier: a bare freebie (neither
-        // witnesses, robertson_section, NOR acts_section) must lose to a
-        // real container carrying acts_section alone, same as the existing
-        // robertson_section-only case already proven above.
         let mut with_acts_section = bare_leg();
         with_acts_section.id = "as_acts".into();
         with_acts_section.acts_section = Some("Acts pericope (this project's own sectioning)".into());
         let mut plain_bare = bare_leg();
         plain_bare.id = "as_bare".into();
-        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
-        // incidentally order-driven.
         let events = vec![plain_bare, with_acts_section];
         let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare".into(), "as_acts".into()] }];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2511,20 +1240,11 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_atlas_section_counts_as_a_real_layer1_container() {
-        // Batch W1 (whole-Bible titled verse containers): `atlas_section` is
-        // the general, whole-Bible sibling of `robertson_section`/
-        // `acts_section` (see `Event::atlas_section`'s own doc comment) --
-        // same LAYER-1 treatment, proven the same way the two siblings
-        // above already are: a bare freebie (none of the three provenance
-        // fields, no witnesses) must lose to a real container carrying
-        // atlas_section alone.
         let mut with_atlas_section = bare_leg();
         with_atlas_section.id = "as_atlas".into();
         with_atlas_section.atlas_section = Some("Atlas pericope (this project's own sectioning): GEN.1.1-2.3".into());
         let mut plain_bare = bare_leg();
         plain_bare.id = "as_bare2".into();
-        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
-        // incidentally order-driven.
         let events = vec![plain_bare, with_atlas_section];
         let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare2".into(), "as_atlas".into()] }];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2534,21 +1254,12 @@ mod heading_collision_tests {
 
     #[test]
     fn heading_collision_kjv_superscription_counts_as_a_real_layer1_container() {
-        // Batch W3 (Psalms granularity): `kjv_superscription` is the KJV's
-        // own literal-citation sibling of `robertson_section`/
-        // `acts_section`/`atlas_section` (see `Event::kjv_superscription`'s
-        // own doc comment) -- same LAYER-1 treatment, proven the same way
-        // the three siblings above already are: a bare freebie (none of the
-        // four provenance fields, no witnesses) must lose to a real
-        // container carrying kjv_superscription alone.
         let mut with_kjv_superscription = bare_leg();
         with_kjv_superscription.id = "as_kjv".into();
         with_kjv_superscription.kjv_superscription =
             Some("A Psalm of David, when he fled from Absalom his son (PSA.3.1).".into());
         let mut plain_bare = bare_leg();
         plain_bare.id = "as_bare3".into();
-        // `plain_bare` placed FIRST -- proves the win is layer-driven, not
-        // incidentally order-driven.
         let events = vec![plain_bare, with_kjv_superscription];
         let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_bare3".into(), "as_kjv".into()] }];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
@@ -2562,10 +1273,6 @@ mod catechism_tests {
     use super::*;
     use crate::refs::ScriptureRef;
 
-    // Batch F: `catechism_items_for_span`/`catechism_item_by_id` against
-    // `demo_fixture()`'s own small catechism entry (citing JOS.6.20 -- see
-    // that fixture's own comment for why that particular, already-busy
-    // verse was deliberately reused).
     #[test]
     fn catechism_items_for_span_resolves_a_cited_verse() {
         let data = demo_fixture();
@@ -2581,11 +1288,6 @@ mod catechism_tests {
         );
     }
 
-    // Batch F2: JOS.6.21 is cited only via demo-item-1's own QUESTION-level
-    // `questions` entry (not its item-level `verses`) -- the resulting hit
-    // must carry that question's own title, proving the new citation
-    // granularity flows end to end through AtlasData, not just through
-    // atlas_core::catechism's own unit tests.
     #[test]
     fn catechism_items_for_span_resolves_a_question_level_citation() {
         let data = demo_fixture();
@@ -2638,20 +1340,12 @@ mod catechism_tests {
 mod year_index_tests {
     use super::*;
 
-    // Batch B2: `nearest_border_year` (the snapshot-year model it served)
-    // and its own dedicated test module are gone -- see `Polity`'s doc
-    // comment. `year_index` itself survives (still used by
-    // `crate::history`'s zero-aware window-midpoint math), so its own unit
-    // coverage survives with it, just no longer nested under a
-    // border-flavored module name.
     #[test]
     fn year_index_is_contiguous_across_the_bc_ad_seam() {
         assert_eq!(year_index(-1), -1);
         assert_eq!(year_index(1), 0);
         assert_eq!(year_index(-2), -2);
         assert_eq!(year_index(2), 1);
-        // -1 and 1 (adjacent calendar years, matching time::next_year) must
-        // be exactly 1 apart in index space.
         assert_eq!(year_index(1) - year_index(-1), 1);
     }
 }
