@@ -1,68 +1,3 @@
-@* M-D3 owner ruling (U2), progress.md near-verbatim: "U2 xref expansion --
-   down: +2 refs; up: -2; double-down: all; double-up: collapse to
-   original." Extended by U6 to Catechism ("Catechism defaults to 2 shown
-   + U2 mechanics") -- ONE component, parameterized, backing BOTH lists
-   ("one component/behavior, parameterized -- never two implementations,"
-   the brief's own words, the identical discipline PASSAGE-1/
-   CAP-RECONCILE-1 already establish elsewhere in this popover platform).
-   PassageList.razor uses this INTERNALLY for its own cross-references/
-   THE SCRIPTURES/place est-dest reveal (REPLACES its retired binary
-   Cap/_showAll all-or-nothing toggle); CatechismSeamSection uses it
-   DIRECTLY (its own list is a plain button row, not a PassageList/
-   PassageSourceUnit consumer, so it cannot go through that component --
-   this one is deliberately shaped generically enough for either caller:
-   a total count, a floor, a step, and a currently-shown count, nothing
-   about WHAT is being shown).
-
-   M-D4 fix round 1, P2 (owner order, 2026-08-23, verbatim: "the down/
-   double down thing is really ugly and needs work. make a sensible
-   decision about how to achieve what i want: the ability to show a
-   little more with one click; the ability to show everything with
-   another click, and the ability to undo either of those operations
-   with a click"). CONTROLLER DESIGN DECISION (delegated by the owner,
-   ledgered progress.md "Owner: reveal controls REDESIGN ordered"): the
-   four-glyph arrow-button cluster this file used to render RETIRES
-   WHOLE -- replaced by ONE quiet inline text row, house `.explorable-quiet`
-   register (cursor:pointer, no ink-wash -- this control is a plain
-   utility, not a popover-opening explorable target), honest counts in
-   the visible label itself, STATE-ADAPTIVE:
-     collapsed (Shown == Default):  more (n) &middot; all (N)
-     partial (Default < Shown < Total): more (n) &middot; all (N) &middot; less
-     fully expanded (Shown == Total): less
-   "all (N)" is the list's own TRUE Total, always -- "the ability to show
-   EVERYTHING," never a shrinking "remaining" count that would just
-   duplicate what "more (n)" already says. Conditionally OMITTED (not
-   merely relabeled) whenever it would be IDENTICAL to "more" -- i.e.
-   whenever a single MORE click already reaches Total (`Total - Shown <=
-   Step`, see ShowAll below) -- "reveal everything" is only a genuinely
-   DIFFERENT action from "reveal a little more" when there is more than
-   one further step to jump past; this is also what naturally handles
-   MiniReaderExpand.razor's own binary Default=0/Total=1/Step=1 case
-   (its own single MORE click always already IS "everything") with no
-   special-casing of its own -- see that file's own usage, unchanged
-   from before this redesign.
-
-   LESS is a ONE-OP UNDO, not a plain decrement, per the owner's own
-   third ask ("undo either of those operations with a click"): after
-   ALL, LESS returns to the EXACT pre-ALL view (a one-deep memory,
-   _preAllShown below -- not a full history stack); after MORE (or once
-   that one-deep memory has already been spent), LESS steps back by
-   exactly Step, floored at Default -- "repeated LESS walks home."
-   _preAllShown is real, disclosed component-instance STATE (a
-   deliberate, small widening of this component's own prior "fully
-   stateless, Shown owned entirely by the caller" framing) -- safe by
-   the SAME "freshly instantiated per popover-section resolve, never
-   reused across genuinely different lists" discipline this file's own
-   Shown/_shown precedent already established one layer up in every
-   caller (PassageList.razor's own _shown field doc comment has the
-   fuller reasoning): a caller can only ever change Shown BY calling
-   ShownChanged, i.e. THROUGH this component's own click handlers, so
-   there is no external mutation path that could leave _preAllShown
-   stale relative to Shown.
-
-   CONDITIONAL PRESENCE (unchanged principle, new shape): renders nothing
-   at all when Total &lt;= Default (nothing to reveal, the SAME "no arrow
-   at all under the cap" rule XREF-1 always followed). *@
 @if (Total > Default)
 {
     <div class="popover-reveal-controls">
@@ -96,25 +31,12 @@
 }
 
 @code {
-    // The list's own true total size -- never re-derived from Shown/Step,
-    // always the caller's own ground truth (PassageList's own _blocks.Count,
-    // CatechismSeamSection's own items.Count).
     [Parameter, EditorRequired] public int Total { get; set; }
 
-    // The floor collapsing never crosses -- the SAME number the list's own
-    // initial render already shows (PassageList's existing Cap parameter,
-    // CatechismSeamSection's own new 2, F2/CAP-RECONCILE-1's 2-vs-3 xrefs
-    // rule) -- "never below the default," the owner's own words.
     [Parameter, EditorRequired] public int Default { get; set; }
 
     [Parameter] public int Step { get; set; } = 2;
 
-    // Two-way bound -- the caller owns the actual VISIBLE-COUNT state (its
-    // own _shown field), this component only ever proposes the next value
-    // via ShownChanged; _preAllShown below is the one piece of state this
-    // component DOES now own itself (see this file's own header comment
-    // for why that's safe) -- purely a UI-affordance memory, never
-    // something the caller needs to know about or persist.
     [Parameter, EditorRequired] public int Shown { get; set; }
     [Parameter, EditorRequired] public EventCallback<int> ShownChanged { get; set; }
 
@@ -122,43 +44,29 @@
     [Parameter] public string CollapseTestId { get; set; } = "reveal-collapse";
     [Parameter] public string RevealNoun { get; set; } = "entries";
 
-    // O2 (unchanged from before this redesign): verbatim label override for
-    // MiniReaderExpand.razor's own genuinely-binary case ("Read the whole
-    // chapter" doesn't fit the generic "{N} more {RevealNoun}" template --
-    // see that file's own comment). MoreLabel covers BOTH the "more" and
-    // "all" buttons when set (ShowAll is always false in the binary case
-    // that needs this override -- see this file's own header comment --
-    // so only "more" ever actually renders with it in practice). Null
-    // (every list-shaped caller: PassageList's own list-level Cap reveal,
-    // CatechismSeamSection) keeps the generated "more (N)"/"all (N)" copy.
+    // Covers both the "more" and "all" labels; only used by the binary (non-list) caller,
+    // where ShowAll is always false so only "more" ever actually renders with it.
     [Parameter] public string? MoreLabel { get; set; }
     [Parameter] public string? CollapseLabel { get; set; }
 
-    // How many MORE would be revealed by a single MORE click -- shown IN
-    // the visible label itself now (progress.md's own literal "more (2)"),
-    // not just the aria-label/title the old arrow-glyph design confined it to.
     private int MoreCount => Math.Min(Step, Total - Shown);
 
-    // "all" is a genuinely DIFFERENT action from "more" only when a single
-    // MORE click would not already reach Total -- see this file's own
-    // header comment for why this is a conditional-presence rule, not a
-    // special case, and how it subsumes MiniReaderExpand.razor's own binary
-    // usage with no caller-side change.
+    // "all" only differs from "more" when a single more click wouldn't already reach Total.
     private bool ShowAll => Total - Shown > Step;
 
-    // One-deep undo memory -- see this file's own header comment for the
-    // full "after ALL vs. after MORE" semantics.
+    // One-deep undo memory: after ALL, LESS returns to the exact pre-ALL Shown; otherwise
+    // LESS just steps back by Step.
     private int? _preAllShown;
 
     private Task OnMoreClick()
     {
-        _preAllShown = null; // a NEW forward step invalidates any earlier "undo the last ALL" memory
+        _preAllShown = null;
         return ShownChanged.InvokeAsync(Math.Min(Shown + Step, Total));
     }
 
     private Task OnAllClick()
     {
-        _preAllShown = Shown; // remember where we jumped FROM, for LESS's own one-deep undo
+        _preAllShown = Shown;
         return ShownChanged.InvokeAsync(Total);
     }
 
@@ -166,7 +74,7 @@
     {
         if (_preAllShown is int pre)
         {
-            _preAllShown = null; // consumed -- ONE-deep, not a full history stack
+            _preAllShown = null;
             return ShownChanged.InvokeAsync(pre);
         }
 

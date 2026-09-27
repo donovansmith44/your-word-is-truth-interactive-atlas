@@ -1,91 +1,21 @@
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// HOTFIX batch (batch-hotfix-brief.md requirement 1, user report "if there
-/// are locations at the top of the screen and you hover for your hover
-/// menu, the hover menu can be cut off by the top of the screen"): pure
-/// placement math for PlaceCard's own hover/pinned card. Given the marker's
-/// anchor point (the same containerPoint World.razor already feeds
-/// PlaceCard as X/Y -- see PlaceCard.razor's own file header), the card's
-/// just-measured render box, and its DOM parent's clientWidth/clientHeight
-/// (the map container -- .world-page standalone, .split-pane-atlas embedded
-/// -- PlaceCard is always a direct child of, see
-/// MapInterop.MeasureCardPlacement's own comment), this decides three things
-/// app.css's own CSS transform can't work out on its own:
-///   1. Flipped -- true when the card renders BELOW the marker instead of
-///      app.css's pre-existing default (above). The caller swaps which
-///      vertical `calc()` the --card-dy custom property carries (see
-///      PlaceCard.razor's own markup) -- CSS's native `-100%` transform
-///      percentage still does the "subtract my own height" arithmetic, this
-///      only supplies the BOOLEAN decision.
-///   2. DyAdjustPx -- fix round 1 (review finding, Important: a flipped card
-///      was never checked against the CONTAINER's own bottom edge, only
-///      "does it fit above" -- so a tall-enough card near the middle of a
-///      short viewport flipped below and overflowed the BOTTOM instead,
-///      live-reproduced at 1280x720 with a real marker ("Ai", exodus scene):
-///      122px past the bottom, the exact user-reported bug class on the
-///      opposite edge). Whichever orientation is chosen, if it STILL doesn't
-///      fully fit, this is the plain pixel nudge that clamps the card's own
-///      edge to stay within the container -- 0 whenever the chosen
-///      orientation already fits cleanly (the common case).
-///   3. DxPx -- a plain pixel nudge added on top of the native `-50%`
-///      horizontal centering transform, clamped so the card never crosses
-///      either side of the container (requirement 1's "clamp horizontally").
-///      Zero when the naive centered position already clears both edges
-///      with EdgeMarginPx to spare (the common case -- most cards need no
-///      correction at all).
-///
-/// Standalone (not a PlaceCard.razor @code member) specifically so it is
-/// unit-testable the same direct way YearText/SliderScale already are (see
-/// client.Tests/CardPlacementTests.cs) -- unlike PlaceCard's own private
-/// Groups/VisibleGroups (Playwright-verified black-box, tightly coupled to
-/// Place.Events), this is a plain numeric function with zero Blazor/
-/// component-state coupling, so a plain xunit Theory can exercise every
-/// edge case (flip boundary, clamp boundary, a container narrower/shorter
-/// than the card itself, both edges overflowing at once) far faster and
-/// more precisely than a browser round trip.
-/// </summary>
 public static class CardPlacement
 {
-    /// <summary>
-    /// Gap kept between the marker's own anchor point and the card's near
-    /// edge -- matches app.css's pre-existing 18px (Batch D's own
-    /// `calc(-100% - 18px)`), unchanged by this batch; only which SIDE of
-    /// the marker that 18px applies to now varies with <see cref="Flipped"/>.
-    /// </summary>
     public const double GapPx = 18;
 
-    /// <summary>
-    /// Minimum breathing room kept between the card's own edge and either
-    /// side of its container once clamping applies (horizontal always;
-    /// vertical too, as of fix round 1) -- "never leaves the viewport either
-    /// side" per the brief, with a little real margin rather than a
-    /// last-pixel fit.
-    /// </summary>
     public const double EdgeMarginPx = 8;
 
-    /// <param name="anchorX">The marker's own containerPoint X (PlaceCard's X parameter).</param>
-    /// <param name="anchorY">The marker's own containerPoint Y (PlaceCard's Y parameter).</param>
-    /// <param name="cardWidth">The card's own just-measured offsetWidth.</param>
-    /// <param name="cardHeight">The card's own just-measured offsetHeight.</param>
-    /// <param name="containerWidth">The card's DOM parent's own clientWidth (the map container this instance is currently rendered inside).</param>
-    /// <param name="containerHeight">Fix round 1: the card's DOM parent's own clientHeight -- the piece the original cut of this function was missing, per the review's own framing ("same function, one more parameter").</param>
     public static (double DxPx, double DyAdjustPx, bool Flipped) Compute(
         double anchorX, double anchorY, double cardWidth, double cardHeight, double containerWidth, double containerHeight)
     {
-        // Room actually available on each side of the marker, net of the
-        // fixed marker gap -- deliberately allowed to go negative (e.g.
-        // spaceAbove when the marker itself sits closer to the container's
-        // top than GapPx alone already accounts for). The comparisons below
-        // only ever ask "how much room, compared to what", never assume
-        // either figure is non-negative on its own.
+        // Deliberately allowed to go negative (e.g. spaceAbove when the marker sits closer to the
+        // container's top than GapPx alone accounts for); the comparisons below only compare, they
+        // never assume either figure is non-negative.
         var spaceAbove = anchorY - GapPx;
         var spaceBelow = containerHeight - anchorY - GapPx;
 
-        // `<=`, not `<`: a card that fits EXACTLY flush (zero pixels to
-        // spare) still counts as fitting, matching CSS's own boundary
-        // behavior for a box whose edge lands exactly at 0 (or exactly at
-        // the container's own far edge).
+        // <=, not <: a card that fits exactly flush (zero pixels to spare) still counts as fitting.
         var fitsAbove = cardHeight <= spaceAbove;
         var fitsBelow = cardHeight <= spaceBelow;
 
@@ -94,41 +24,19 @@ public static class CardPlacement
 
         if (fitsAbove)
         {
-            // The pre-existing default, unchanged. Because the marker's own
-            // anchorY always sits within [0, containerHeight] (it's a point
-            // somewhere on the plate) and GapPx > 0, fitting above also
-            // guarantees the card's own bottom edge (anchorY - GapPx) never
-            // exceeds containerHeight -- no vertical clamp is ever needed
-            // for this branch.
             flipped = false;
             dyAdjust = 0;
         }
         else if (fitsBelow)
         {
-            // Symmetric: fitting below guarantees the top edge
-            // (anchorY + GapPx) is already >= GapPx > 0 -- no clamp needed.
             flipped = true;
             dyAdjust = 0;
         }
         else
         {
-            // Fix round 1 (review finding, Important): NEITHER orientation
-            // fully fits -- the exact residual bug the brief's own
-            // `max-height` cap does not prevent on its own (max-height
-            // bounds the card's own SIZE, not how far past the CONTAINER's
-            // edge an unclamped placement can still reach; the two are
-            // independent, and the batch report's own claim that the cap
-            // alone made this safe was wrong -- see the fix-round-1 addendum
-            // for the live-reproduced 122px overflow this branch closes).
-            // Picks whichever side has strictly more room to show (ties
-            // keep the pre-existing "prefer above" bias, i.e. `flipped`
-            // stays false when the two are exactly equal), then clamps the
-            // resulting top edge into
-            // [EdgeMarginPx, containerHeight - cardHeight - EdgeMarginPx] --
-            // the exact same shape the horizontal clamp below already uses
-            // for a too-narrow container, just the vertical axis (mirrors
-            // CardPlacement.cs's own prior structure, per the review's own
-            // "same function, same shape" framing).
+            // Neither orientation fully fits: pick whichever side has strictly more room (ties
+            // keep the "prefer above" bias), then clamp the resulting top edge into
+            // [EdgeMarginPx, containerHeight - cardHeight - EdgeMarginPx].
             flipped = spaceBelow > spaceAbove;
             var naiveTop = flipped ? anchorY + GapPx : anchorY - GapPx - cardHeight;
             var minTop = EdgeMarginPx;
@@ -137,10 +45,8 @@ public static class CardPlacement
             double clampedTop;
             if (maxTop < minTop)
             {
-                // The card is taller than the container has room for at
-                // all (even ignoring the marker gap entirely) -- center
-                // within whatever room actually exists, same fallback the
-                // horizontal clamp already uses for a too-narrow container.
+                // Card taller than the container has room for at all (even ignoring the marker
+                // gap) -- Math.Clamp would throw with min > max, so center in whatever room exists.
                 clampedTop = (containerHeight - cardHeight) / 2;
             }
             else
@@ -151,11 +57,6 @@ public static class CardPlacement
             dyAdjust = clampedTop - naiveTop;
         }
 
-        // The native `-50%` transform already centers the card on anchorX
-        // using ITS OWN rendered width -- correct with zero input from
-        // here. This only computes the CORRECTIVE nudge on top of that
-        // native centering, so a card with room to spare on both sides
-        // (the common case) gets exactly 0 back, unchanged from today.
         var naiveLeft = anchorX - cardWidth / 2;
         var minLeft = EdgeMarginPx;
         var maxLeft = containerWidth - cardWidth - EdgeMarginPx;
@@ -163,10 +64,8 @@ public static class CardPlacement
         double clampedLeft;
         if (maxLeft < minLeft)
         {
-            // The container itself is narrower than the card plus both
-            // margins (a very small pane, or an oversized card) -- centering
-            // within whatever room actually exists beats an inverted clamp
-            // (Math.Clamp would throw if min > max) or pinning to one edge.
+            // Container narrower than the card plus both margins -- Math.Clamp would throw with
+            // min > max, so center in whatever room exists instead.
             clampedLeft = (containerWidth - cardWidth) / 2;
         }
         else

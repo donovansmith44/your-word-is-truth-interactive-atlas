@@ -7,97 +7,12 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
-@* Batch CORPREAD-1b (ticket C, owner order verbatim: "I want to be able ot
-   read it like the normal BoC. Everything doesn't need to be shown
-   visually as belonging to these boxes. It should be a smooth reading
-   experiecne like the Bible, except verses and verse fragements and
-   verse/passage references are explorable. I should have a menu through
-   which I can navigate to different parts in the BoC.") -- REBUILDS
-   CORP-1's own bordered-row list into a CONTINUOUS READING SURFACE: the
-   SAME reading-column register Kretzmann.razor and Reader.razor both now
-   share -- part/article STRUCTURE carried by TYPOGRAPHY (a part heading, an
-   article heading, each interleaved directly in the reading flow the
-   moment the window crosses into a new one -- BuildRenderRows below),
-   never a container.
-
-   Batch CORPREAD-2 (ticket C2, owner verdict, VERBATIM: "BoC: contents
-   should always be visible, not needed to click, to the left of the text.
-   search is also to the left of the text rather than always at the top of
-   the page.") -- REBUILDS CORPREAD-1b's own click-to-open "Contents" panel
-   (a collapsed-by-default toggle sitting ABOVE the reading column,
-   alongside the numeric picker also above it) into an ALWAYS-VISIBLE LEFT
-   SIDEBAR (.concord-sidebar below): the ten-document contents tree
-   (Explore/ConcordToc.cs, unchanged) plus the "search" affordance (the
-   pre-existing numeric part/article/paragraph jump form -- DISCLOSED: this
-   app carries no free-text search feature anywhere; the owner's own
-   "search... at the top of the page" plainly refers to this page's own
-   pre-existing find-your-way control, the one thing that used to sit above
-   the reading column and now moves into the sidebar alongside Contents,
-   per the same sentence's own "also to the left") -- both now render
-   UNCONDITIONALLY, no click-to-open toggle anywhere (`_tocOpen`/ToggleToc/
-   concord-toc-toggle/concord-toc-menu are RETIRED whole). Current position
-   highlighted in the tree (CurrentPart below). Clicking a document still
-   navigates via the SAME LoadWindowAsync every other navigation uses,
-   landing in full reading flow, never a bare fragment -- unchanged from
-   CORPREAD-1b.
-
-   LAYOUT: `.concord-page` becomes a two-column flex ROW (sidebar left,
-   sticky; reading area right, centered) instead of CORPREAD-1b's own
-   single centered flex COLUMN -- see app.css's own header comment on
-   `.concord-sidebar` for the sticky-vs-fixed reasoning (it works
-   correctly, by construction, in BOTH standalone and split-hosted mode,
-   because `position: sticky` resolves against whichever ancestor actually
-   scrolls -- the document body standalone, this page's own
-   `.split-pane-host` pane while split -- with no JS and no per-mode
-   branch). Narrow viewports (below the app's own established
-   1023.98px split-affordance floor, `@media (max-width: 1023.98px)` --
-   the SAME breakpoint `.split-open`/`.split-close` already hide behind, in
-   this SAME file, chosen so this page gains no NEW responsive vocabulary):
-   the sidebar collapses to the STACKED pattern (full-width, non-sticky,
-   ABOVE the reading column) -- the brief's own "drawer/stacked" alternative;
-   a slide-out drawer overlay was judged more UI surface than this batch's
-   own C2 ticket asked for and is not built this round (disclosed, not a
-   silent narrowing).
-
-   Split mode (Concord hosting, Reader guest -- CompositionSplit.razor's own
-   header, "official host recipe... follows Sources.razor verbatim"): the
-   sidebar belongs to the Concord PANE (a child of `.concord-page.
-   split-pane-host`, never the whole viewport) -- it compresses along with
-   the pane's own narrower width (the sidebar's own fixed 260px basis simply
-   consumes a larger fraction of a half-width pane; the reading column
-   keeps its own unchanged max-width:66ch measure, wrapping onto more
-   available height instead of overflowing) and never overlaps the guest
-   pane -- both panes keep their own independent scroll (the pinned-pane
-   law, unchanged, CompositionSplit.razor's own established guarantee).
-
-   SCRIPTURE REFS + QUOTED FRAGMENTS EXPLORABLE (ticket K/C, AFFIRMED-KEEP,
-   owner verdict 3 verbatim -- "i did like what you did where verse
-   references like In the beginning cp. John 1,1 got mapped to the actual
-   graph. That's good. Keep that."): every unit's own confession text still
-   renders through the SAME Components/ScriptureRefText.razor scanner
-   Kretzmann.razor uses -- UNCHANGED, carried over whole from CORPREAD-1b.
-
-   VIEW-LOCAL STATE, UNCHANGED (R3/ST-3 D2): `_currentRef` stays ordinary
-   component state, not an atom. *@
-
 <PageTitle>Bible Explorer &mdash; Concord</PageTitle>
 
 <CompositionSplit HostName="@ViewNames.Concord" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
     <div class="@($"concord-page{ctx.HostPaneClassSuffix}")" data-testid="concord-page">
-        @* Batch CORPREAD-2 (C2, "contents should always be visible, not
-           needed to click ... search is also to the left"): ONE always-
-           visible sidebar, no toggle -- see this file's own header comment. *@
         <aside class="concord-sidebar" data-testid="concord-sidebar">
             <div class="concord-sidebar-section" data-testid="concord-sidebar-search">
-                @* Fix round (S-6, TRIVIA -- review): "Search" is retired --
-                   this control is a numeric Part/Article/Paragraph jump
-                   form, never a free-text search (this app carries no
-                   free-text search feature anywhere, grep-verified, the
-                   report's own disclosed reading of the owner's "search"
-                   sentence). "Go to" tells the truth about what the control
-                   actually does while still satisfying the owner's own
-                   sentence ("search is also to the left of the text") just
-                   as fully as the label it replaces. *@
                 <p class="concord-sidebar-label">Go to</p>
                 <form class="concord-picker" data-testid="concord-picker" @onsubmit="JumpToAsync">
                     <label class="concord-picker-field">
@@ -118,15 +33,6 @@
 
             <nav class="concord-sidebar-section" data-testid="concord-sidebar-toc" aria-label="Book of Concord contents">
                 <p class="concord-sidebar-label">Contents</p>
-                @* D4 (owner: "Contents is a tree ... stop at the level of ARTICLE"):
-                   the ten documents are the roots, their articles the leaves --
-                   /api/contents/concord, the graph's own containment forest (D3's
-                   document ⊃ article rows). A document row still jumps to its
-                   opening paragraph (CORPREAD-2's `concord-toc-part-{n}`, kept:
-                   same testid, same current-position highlight); its caret
-                   expands the articles; an article navigates to its first
-                   paragraph through the ?ref= deep link. Until the tree loads
-                   (or if it cannot), the flat list stands in. *@
                 @if (_contents is { } contentsModel)
                 {
                     <ContentsTree Model="contentsModel" RootClickNavigates="true" TestId="concord-contents-tree"
@@ -199,18 +105,6 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            @* BOC-CLICK-1 (owner order, verbatim: "Articles/blocks of text
-                               needn't be clickable in the BoC right now... The exception
-                               should be the catechism and the creeds"): explorability is a
-                               DECLARED property of the document (ConcordToc.IsExplorablePart,
-                               the ONE place this is decided), read per row -- not a per-row
-                               conditional invented here. In-text scripture references
-                               (ScriptureRefText below) are UNCHANGED and stay clickable on
-                               EVERY row regardless. *@
-                            @* D3: ... AND the unit's own frontier is inhabited (its
-                               text-window edge_summary) -- BOC-CLICK-1 says which PARTS may
-                               be explorable (the owner's later, narrower order); D3 says a
-                               click must land on a real edge (no dead clicks). Both hold. *@
                             if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.EdgeSummary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
@@ -266,55 +160,29 @@
 
     [Parameter] public bool? SplitMode { get; set; }
 
-    // R3: view-local UI state -- see this file's own header for why this is
-    // deliberately NOT an atom.
     private string _currentRef = DefaultRef;
     private List<TextUnitDto> _units = new();
     private string? _nextRef;
-    private string? _prevRef; // the position this page's own window started FROM, kept for "Previous" -- see GoBackward's own comment
+    private string? _prevRef;
     private bool _loading = true;
     private string? _error;
     private int _requestId;
     private IExplorable? _activeNode;
 
-    // BOC-SCROLL-1 (owner order, verbatim: "if i click one of the items in
-    // table of contents and scroll to the bottom, and then click another
-    // item in the table of contents, i am taken to the bottom of that
-    // item"): every LoadWindowAsync call (ToC click, Go-to jump, Next,
-    // Previous -- the ONE choke point all four already share) sets this,
-    // consumed once loading finishes (OnAfterRenderAsync below) to reset
-    // scroll to the TOP of the reading flow -- this page's own navigation
-    // never triggers a Blazor ROUTE change (unlike Reader.razor's own
-    // chapter-to-chapter links), so the router's automatic scroll-to-(0,0)
-    // never fires here on its own; see reader.js's own scrollToTop doc
-    // comment for the shared mechanism this reuses.
+    // Navigation here never triggers a Blazor route change, so the router's
+    // automatic scroll-to-top never fires; this flag drives a manual reset instead.
     private bool _scrollResetPending;
 
     private int? _jumpPart;
     private int? _jumpArticle;
     private int? _jumpParagraph;
 
-    // Batch CORPREAD-1b (ticket C, "scripture refs ... explorable, same
-    // mechanism as ticket K"): the app's own canonical book TOC, fetched
-    // once, feeding ScriptureRefText's own scanner exactly like
-    // Kretzmann.razor does.
     private List<BookTocEntry>? _toc;
 
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 
-    // Batch CORPREAD-2 (C2, "current-position highlighted"): the sidebar's
-    // own tree entry for whatever document the CURRENT window's own first
-    // unit belongs to -- a plain computed property over `_currentRef`,
-    // never separately tracked state (so it can never drift out of sync
-    // with what the reading column is actually showing).
     private int CurrentPart => ParseRef(_currentRef).Part;
 
-    // Batch CORPREAD-1b (ticket C): part/article structure carried by
-    // TYPOGRAPHY -- a fresh part/article heading is emitted the instant the
-    // window's own ordered units cross into one, interleaved directly with
-    // the unit rows (never a container grouping them). Recomputed whenever
-    // `_units` changes (a plain property, not cached -- this window is at
-    // most PageSize=20 units, recomputation is immaterial).
     private List<ConcordRenderRow> RenderRows
     {
         get
@@ -349,20 +217,12 @@
         return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
     }
 
-    // Batch CORPREAD-1b (ticket C, "jump anywhere; landing position renders
-    // the target in reading flow"): jumps to the document's own opening
-    // paragraph -- the SAME LoadWindowAsync every other navigation uses, so
-    // the landing is a full reading-flow window, never a bare fragment.
-    // Batch CORPREAD-2 (C2): no more `_tocOpen = false` -- the sidebar is
-    // always visible, there is nothing left to close.
     private Task JumpToPartAsync(int part)
     {
         _currentRef = ConcordToc.StartRef(part);
         return LoadWindowAsync(_currentRef, "onward");
     }
 
-    // D4: the sidebar's contents tree (documents ⊃ articles), loaded once;
-    // the document being read is marked current and kept expanded.
     private ContentsTreeModel? _contents;
 
     private static int PartOfRef(string sref) => ParseRef(sref).Part;
@@ -376,11 +236,10 @@
         }
         catch (Exception)
         {
-            _contents = null; // the flat list stands in
+            _contents = null;
         }
     }
 
-    /// <summary>Marks the document being read current (its opening article) and expands it.</summary>
     private void SyncContentsToPosition()
     {
         if (_contents is not { } model)
@@ -407,20 +266,14 @@
             return JumpToPartAsync(PartOfRef(node.Ref));
         }
 
-        // an article: its first paragraph, as a deep link (?ref=7.2.1)
         var citation = node.Ref.StartsWith("BoC ", StringComparison.Ordinal) ? node.Ref["BoC ".Length..] : node.Ref;
         Nav.NavigateTo($"/concord?ref={Uri.EscapeDataString(citation)}");
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// D3: a deep link into one paragraph -- <c>/concord?ref=7.2.1</c> (or
-    /// <c>?ref=BoC%207.2.1</c>). Applied in OnInitializedAsync when already
-    /// supplied, and again in OnParametersSetAsync for a value that lands
-    /// AFTER the first render (the documented SupplyParameterFromQuery
-    /// timing quirk, CompositionSplit.razor RULING 4b); once per distinct
-    /// value.
-    /// </summary>
+    // SupplyParameterFromQuery can land after the first render, so this is
+    // applied in both OnInitializedAsync and OnParametersSetAsync;
+    // _appliedRefQuery guards against re-applying the same value twice.
     [SupplyParameterFromQuery(Name = "ref")]
     public string? RefQuery { get; set; }
 
@@ -446,9 +299,6 @@
         }
         catch (Exception)
         {
-            // Non-fatal -- ScriptureRefText simply renders no explorable
-            // refs until the TOC resolves (Scan's own toc.Count==0
-            // short-circuit); the confession text itself still renders.
         }
 
         if (RefQuery is { Length: > 0 } r)
@@ -472,10 +322,6 @@
 
     private Task GoForward() => _nextRef is { } next ? LoadWindowAsync(next, "onward") : Task.CompletedTask;
 
-    // "Previous" walks backward N units ENDING at this page's own first
-    // unit -- the reading spine's own `dir=backward` semantics (server:
-    // graph_handlers.rs's own text_window doc comment: "walks the window
-    // ending AT ref instead of starting from it").
     private Task GoBackward() => _prevRef is { } prev ? LoadWindowAsync(prev, "backward") : Task.CompletedTask;
 
     private async Task LoadWindowAsync(string fromRef, string dir)
@@ -484,7 +330,7 @@
         _loading = true;
         _error = null;
         _activeNode = null;
-        _scrollResetPending = true; // BOC-SCROLL-1 -- consumed in OnAfterRenderAsync once this window actually renders
+        _scrollResetPending = true;
         StateHasChanged();
 
         try
@@ -497,15 +343,9 @@
 
             _units = window.Units;
 
-            // CORP-1 trivia (batch-corp1-report.md §13): dir=backward's own
-            // server semantics walk a window ENDING AT fromRef, INCLUSIVE --
-            // so fromRef itself (the unit already shown as the page we're
-            // paging backward FROM) reappears as this window's own last row.
-            // Trim that one boundary duplicate here rather than displaying
-            // it twice; forward-paging from the trimmed page must then land
-            // back on fromRef (the unit we just removed), not on whatever
-            // `window.Next` the server computed past it -- otherwise Forward
-            // would skip the very unit Previous just hid.
+            // dir=backward's window ends at fromRef inclusive, so fromRef
+            // reappears as the last row here; trim the duplicate and point
+            // Next back at fromRef so paging forward doesn't skip it.
             if (dir == "backward" && _units.Count > 0 && _units[^1].Ref == fromRef)
             {
                 _units.RemoveAt(_units.Count - 1);
@@ -517,14 +357,7 @@
             }
 
             _currentRef = _units.Count > 0 ? _units[0].Ref : fromRef;
-            // "Previous" from here means: walk backward from THIS window's
-            // own first unit (exclusive of it) -- the same anchor the
-            // server's own dir=backward semantics already resolve against.
-            // No "Previous" from the corpus's own true first paragraph
-            // (the Preface's own BoC 1.1.1) -- there is nothing earlier to
-            // walk back to, and the reading spine has no "prev" field of its
-            // own to check this against (only Next); DefaultRef IS that one
-            // known fixed point.
+            // DefaultRef is the corpus's true first paragraph; there's nothing earlier to page back to.
             _prevRef = _units.Count > 0 && _units[0].Ref != DefaultRef ? _units[0].Ref : null;
         }
         catch (Exception)
@@ -545,16 +378,9 @@
             }
         }
 
-        // D4: keep the sidebar tree on the document being read.
         SyncContentsToPosition();
     }
 
-    // BOC-SCROLL-1: consumes _scrollResetPending once loading genuinely
-    // finished (guards against resetting scroll mid-fetch, while the
-    // "Loading…" placeholder is still showing) -- fail-soft, same
-    // graceful-degradation stance every other JS interop call in this app
-    // takes; a failed reset just leaves scroll wherever it was for that
-    // one navigation, never a crash.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_scrollResetPending || _loading)
@@ -570,7 +396,6 @@
         }
         catch (Exception)
         {
-            // Nicety, not load-bearing -- same graceful-degradation stance every other JS interop call in this app takes.
         }
     }
 
@@ -584,10 +409,6 @@
         }
     }
 
-    // Batch CORPREAD-1b (ticket C, "verses and verse fragments and
-    // verse/passage references are explorable"): ScriptureRefText's own
-    // OnExplore callback -- a plain VerseNode push, ONE-RULE, the same
-    // shape Kretzmann.razor's OnExploreNode already establishes.
     private void OnExploreNode(IExplorable node) => _activeNode = node;
 
     private void ClosePopover() => _activeNode = null;

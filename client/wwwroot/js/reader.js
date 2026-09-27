@@ -1,9 +1,3 @@
-// Scrolls a verse line into view for the reader's #v{n} anchor contract
-// (CONTRACT.md: "/read/{BOOK}/{chapter}#v{n} -- verse anchor"). Kept as its
-// own tiny module -- mirroring map.js's import-once pattern
-// (client/MapInterop.cs) -- rather than relying on Blazor's own
-// fragment-navigation heuristics, so the exact scroll target and timing are
-// deterministic and independent of framework version behavior.
 export function scrollToVerse(n) {
     const el = document.getElementById('v' + n);
     if (el) {
@@ -11,22 +5,9 @@ export function scrollToVerse(n) {
     }
 }
 
-// Batch R requirement 4 (expandable popover + in-context chapter reading):
-// scrolls the mini-reader's own focal verse row into view once its chapter
-// has actually rendered -- called by VerseTextSection.razor (client/
-// Components/) on expand, by a random per-instance DOM id (never the reader
-// page's own bare "v{n}", which this popover's mini-reader could easily
-// collide with -- see that component's own comment). `block: 'nearest'`
-// (not 'center', unlike scrollToVerse above) -- the mini-reader is a small,
-// already-bounded overflow:auto region (app.css's own .popover-reader), not
-// the whole viewport; 'nearest' scrolls the LEAST amount needed to bring the
-// focal row fully into that region, which for a verse already near the top
-// of a freshly-expanded, freshly-fetched chapter is often already true (a
-// true no-op scroll) rather than always re-centering it. No smooth-scroll
-// animation (an implicit, one-time instant jump, same "no unnecessary
-// motion" restraint every OTHER non-orchestrated-moment interaction in this
-// app already follows -- design-direction.md's own Motion section) --
-// nothing here needs its own prefers-reduced-motion guard as a result.
+// Uses a per-instance random DOM id, not the reader page's own "v{n}" anchor, so a popover's
+// mini-reader never collides with it. `block: 'nearest'` because the mini-reader is a small,
+// bounded overflow region, not the whole viewport.
 export function scrollFocalRowIntoView(domId) {
     const el = document.getElementById(domId);
     if (el) {
@@ -34,27 +15,9 @@ export function scrollFocalRowIntoView(domId) {
     }
 }
 
-// Fix round 1 (Task 15 finding): Reader.razor tracks whether Shift is
-// currently held (_shiftHeld) via plain @onkeydown/@onkeyup bindings, so
-// that ExplorerPopover's own click-outside-to-close backdrop can go
-// pointer-events:none for exactly as long as Shift is down (letting a
-// shift-click's second click reach the verse-num button underneath it --
-// see Reader.razor's own comments for the full story). Blazor has no
-// binding for either window.blur or document.visibilitychange, though, and
-// neither keydown NOR keyup ever reaches this page at all if Shift is
-// released while this tab/window isn't the focused one (alt-tab to a
-// different application, or switch to a different browser tab) -- without
-// this, _shiftHeld would stay stuck true and the backdrop would stay
-// permanently non-interactive (silently breaking click-outside-to-close)
-// until some LATER, unrelated Shift press+release cycle happened to clear
-// it. Both listeners call back into the SAME dotnetRef method
-// (ResetShiftHeld) -- resetting on either signal is always safe, per that
-// method's own comment.
-//
-// Module-scoped (not a class/closure returned to the caller) because
-// exactly one Reader.razor instance is ever mounted at a time in this
-// single-page app; watchShiftRelease replaces any prior listener pair
-// first so calling it twice (e.g. a future hot-reload) can't double-wire.
+// Shift-held tracking has no Blazor binding for window.blur/visibilitychange, and neither
+// keydown nor keyup fires if Shift is released while this tab isn't focused -- without this,
+// _shiftHeld would stay stuck true. Both listeners reset the same state; resetting on either is safe.
 let _shiftReleaseCleanup = null;
 
 export function watchShiftRelease(dotnetRef) {
@@ -79,33 +42,9 @@ export function unwatchShiftRelease() {
     }
 }
 
-// Batch CORPREAD-1a (SPLIT-SCROLL-1): app.css's own .split-view (that
-// rule's own header comment has the full pinned-pane design and its live
-// root-cause diagnosis) makes .split-pane-reader/.split-pane-host a REAL
-// overflow-y:auto scroll container of their own whenever Reader is genuinely
-// hosting a split -- the "whole document scrolls either way" assumption
-// setScrollY/watchScroll/watchChapterNavCenter used to document and rely on
-// (Batch H) no longer holds there. This is the ONE place "which element is
-// the reader's real scroll target right now" gets decided, from a REAL,
-// CURRENT layout fact (a computed style), never a guessed/hand-copied class
-// name -- so it stays correct even if a future batch renames or restructures
-// the split-pane classes, and degrades safely (falls back to window) if
-// nothing along the chain is actually a scroll container, which is exactly
-// what "standalone reader, whole document scrolls" IS. Starts from
-// `[data-testid="reader-root"]` itself (not one of its ancestors) so it
-// covers BOTH roles this element can play: HOST (the element itself is the
-// overflow:auto container -- .split-pane-reader/.split-pane-host, app.css)
-// and GUEST (a WRAPPER one level up -- .split-pane-guest -- is the real
-// container instead, e.g. Reader mounted under Sources/Kretzmann/Concord;
-// see .split-pane-guest's own app.css comment). Stops at document.body --
-// nothing above that is ever a meaningful scroll boundary for this app.
-// Batch UX-1 (BOC-SCROLL-1): generalized by root testid -- the exact same
-// walk findReaderScrollContainer below always did, just no longer hard-
-// bound to "reader-root" so a second reading surface (Concord.razor,
-// "concord-page") can reuse the identical real-overflow-container logic
-// instead of re-deriving its own copy. findReaderScrollContainer itself is
-// now a one-line wrapper so every EXISTING caller (setScrollY/watchScroll/
-// watchChapterNavCenter) is byte-for-byte unchanged.
+// Split view makes .split-pane-reader/.split-pane-host a real overflow-y:auto container of its
+// own, so window scroll is no longer a safe assumption. Walks up from the root testid to find
+// the real scrolling ancestor, falling back to window/document if none is found.
 function findScrollContainer(rootTestId) {
     let node = document.querySelector(`[data-testid="${rootTestId}"]`);
     while (node && node !== document.body) {
@@ -115,21 +54,13 @@ function findScrollContainer(rootTestId) {
         }
         node = node.parentElement;
     }
-    return null; // no real overflow container found -- window/document is genuinely the scroller (standalone)
+    return null;
 }
 
 function findReaderScrollContainer() {
     return findScrollContainer('reader-root');
 }
 
-// Batch UX-1 (BOC-SCROLL-1, owner order verbatim: "if i click one of the
-// items in table of contents and scroll to the bottom, and then click
-// another item in the table of contents, i am taken to the bottom of that
-// item"): a plain reset to the TOP of whichever container
-// findScrollContainer resolves for `rootTestId` -- the same real-overflow-
-// container-or-window fallback setScrollY already established, just
-// always targeting 0 rather than a restored value. Concord.razor is the
-// first (and, today, only) caller, keyed on "concord-page".
 export function scrollToTop(rootTestId) {
     const container = findScrollContainer(rootTestId);
     if (container) {
@@ -139,11 +70,6 @@ export function scrollToTop(rootTestId) {
     }
 }
 
-// Batch H (view-state round-trip). setScrollY is the restore half.
-// Batch CORPREAD-1a: rebound (see findReaderScrollContainer's own header
-// comment) -- a real internal scroll container gets its OWN scrollTop set;
-// its absence (standalone) falls through to the original plain
-// window-level scroll, UNCHANGED for that case.
 export function setScrollY(y) {
     const container = findReaderScrollContainer();
     if (container) {
@@ -153,46 +79,9 @@ export function setScrollY(y) {
     }
 }
 
-// watchScroll/unwatchScroll -- the CAPTURE half, and NOT a plain "read
-// window.scrollY once in DisposeAsync" the way it might look like it should
-// be: confirmed live (a real failing round-trip test, not a guess) that
-// Blazor's own router resets the window's scroll position to (0,0) as part
-// of committing a navigation to a new page -- BEFORE the outgoing
-// component's own DisposeAsync gets a chance to run, so a dispose-time
-// `getScrollY()` read reliably captures 0, not wherever the page actually
-// was. Continuously reporting the scroll position INTO ViewStateService
-// instead (throttled to one call per animation frame, same "cheap, no
-// missed final position" trade-off a scroll listener normally makes)
-// sidesteps the ordering question entirely: by the time ANYTHING reads
-// ViewStateService.Reader.ScrollY -- regardless of exactly when Blazor's
-// own reset fires relative to disposal -- the last real scroll position is
-// already sitting there, written well before navigation ever started.
-// Same module-scoped-single-cleanup shape as watchShiftRelease above (this
-// app never mounts more than one Reader.razor instance at a time).
-//
-// Batch CORPREAD-1a (SPLIT-SCROLL-1): rebound to
-// findReaderScrollContainer()'s own result -- REPORTS that container's own
-// scrollTop, not window.scrollY, whenever one is found. This FUNCTION is
-// idempotent/self-cleaning (re-resolves the target fresh on every call,
-// exactly like watchChapterNavCenter below does for its own DOM query) --
-// but being idempotent only means a REPEAT call is safe and correct; it
-// does not, by itself, cause one. FIX ROUND 1 (review S-1, CRITICAL): an
-// earlier draft of this comment claimed the re-resolution alone kept this
-// "rebinding correctly rather than staying latched onto a target that may
-// no longer be the real scroller" -- true of this function, false of the
-// SYSTEM: Reader.razor called this ONLY from `OnAfterRenderAsync`'s
-// `firstRender` branch, so nothing ever actually issued that later call --
-// a split opened via a hatch click, or a fresh `?split=world` load hitting
-// the SAME SupplyParameterFromQuery timing quirk watchChapterNavCenter's
-// own comment describes, left this permanently bound to `window` even
-// once `.reader-page` became a real scroll container, silently breaking
-// the VIEWSTATE-1 round-trip in split (window scroll is capped near the
-// header's own height there post-SPLIT-SCROLL-1, so the continuously-
-// reported position collapsed to ≈0). Reader.razor now calls this from the
-// SAME every-render block that already calls watchChapterNavCenter, for
-// the identical self-healing reason -- see that call site's own comment
-// for the full fix. Standalone (no container found) is BYTE-IDENTICAL to
-// the pre-CORPREAD-1a behavior -- window.scrollY, unchanged.
+// Reports scroll position continuously into ViewStateService rather than reading it once at
+// dispose time: Blazor's router resets window scroll to (0,0) as part of committing a navigation,
+// BEFORE the outgoing component's DisposeAsync runs, so a dispose-time read would reliably see 0.
 let _scrollCleanup = null;
 
 export function watchScroll(dotnetRef) {
@@ -229,46 +118,8 @@ export function unwatchScroll() {
     }
 }
 
-// NAV-FRAME-1 (2026-09-18): `watchChapterNavCenter`/`unwatchChapterNavCenter`
-// are RETIRED. They existed because split view made the SCROLLING
-// `.reader-page` the containing block of the chapter-nav buttons, so `top`
-// had to be rewritten from JS on every scroll event -- an inherent one-frame
-// main-thread-vs-compositor lag (NAV-STUTTER-2's diagnosis; HOTFIX-3 and
-// NAV-STABLE-1 before it). The containing block is now a NON-SCROLLING frame
-// in every mode (app.css: `.reader-frame.split-pane-frame`,
-// `.split-pane-guest:has(> .reader-frame)`; the viewport standalone), and
-// `.reader-prev`/`.reader-next` are pure CSS `top: 50%` -- the recipe that
-// was already "perfect" standalone, applied everywhere, as the owner asked.
-
-// Batch F2 requirement 6d ("if i am exploring anything on either side of
-// the split screen, the hover windows ought not be smack dab in the center
-// of the screen, but on the side of the screen where the hover exploration
-// originated"): the CURRENTLY VISIBLE portion of `selector`'s own element,
-// clamped to the viewport on every side -- called ONCE, at popover-open
-// time (ExplorerPopover.razor's own OnAfterRenderAsync, mirroring
-// CardPlacement's proven "measure once, on open" snapshot discipline, not a
-// continuous tracker), so the popover PANEL can center itself within
-// whichever PANE it opened from rather than the full viewport. O6
-// (2026-08-23): the BACKDROP no longer consumes this at all -- its own
-// one-shot-then-stale snapshot, left uncorrected across subsequent
-// scrolling, was the real cause of the owner's own reported bug; see
-// ExplorerPopover.razor's own header comment and app.css's own
-// .popover-backdrop comment for the fuller story. This function's own
-// PANEL-only contract is otherwise byte-for-byte unchanged.
-//
-// Viewport-clamped, not the element's own raw getBoundingClientRect(): the
-// reader pane (.split-pane-reader) is an ordinary in-flow box that can be
-// far taller than one screen (a long chapter), so its own raw rect's height
-// is the WHOLE scrollable content's height, not what's actually on screen
-// right now -- using that directly would center the popover somewhere in
-// the middle of off-screen content. Clamping to [0, innerWidth]/
-// [0, innerHeight] on every edge gives "the visible slice of this pane,
-// right now" instead, which is always a SUBSET of the pane's own real box
-// -- so anything positioned within it is automatically still "within the
-// pane" too, just additionally guaranteed on-screen. The atlas pane
-// (.split-pane-atlas) is `position: sticky` and always exactly one viewport
-// tall, so clamping is a no-op for it in practice -- the same function
-// works correctly for both without a pane-specific branch.
+// Viewport-clamped, not the element's raw rect: a pane can be an ordinary in-flow box taller
+// than one screen, so its raw rect height is the whole scrollable content, not what's on screen.
 export function getPaneRect(selector) {
     const el = document.querySelector(selector);
     if (!el) {
@@ -283,27 +134,9 @@ export function getPaneRect(selector) {
     return { left, top, width: Math.max(right - left, 0), height: Math.max(bottom - top, 0) };
 }
 
-// M-D3 (R3, the superscript rework): "the popover anchors OVER THE VERSE
-// (not pane-centered), ALWAYS VISIBLE, never cut off by other UI." Unlike
-// getPaneRect above (which only ever needs the target's own clamped rect --
-// the popover that reads it centers ON that rect and is deliberately
-// BOUNDED to it), a verse-anchored popover keeps its own ORDINARY preferred
-// size (same as the default, viewport-centered case) and must still never
-// spill off-screen regardless of where in the chapter the anchor verse
-// sits -- top-of-chapter, bottom-of-chapter, or (split view) hugging either
-// pane's own edge. That needs the viewport's own dimensions alongside the
-// verse's rect, which getPaneRect's own return shape doesn't carry (its
-// only consumer, PaneRectStyle, computes purely from the rect + a fixed
-// margin already known in CSS) -- returned here instead of added there so
-// getPaneRect's own existing contract/callers stay untouched.
-//
-// left/top are UNCLAMPED viewport-relative coordinates (getBoundingClientRect
-// itself, not getPaneRect's own "visible slice" clamp -- a verse can
-// legitimately sit just above/below the visible area for a frame during
-// scroll-into-view, and ExplorerPopover.razor's own clamping arithmetic
-// below needs the TRUE position to grow the popover away from the correct
-// edge, not a pre-clamped one that could already read as "at the edge"
-// when it truly isn't yet).
+// Unlike getPaneRect, returns unclamped coordinates: a verse can legitimately sit just off-screen
+// for a frame during scroll-into-view, and clamping here would make the anchor read as
+// "at the edge" before it truly is.
 export function getVerseAnchorRect(selector) {
     const el = document.querySelector(selector);
     if (!el) {
@@ -317,44 +150,9 @@ export function getVerseAnchorRect(selector) {
     };
 }
 
-// PEEK-TRUNC-1 (arrow-peek clipping defect, owner report 2026-08-24: "menus
-// appearing on hover from arrow hover are getting cut off. needs to be
-// truncated to an expandable menu limit one verse."): keyed off a real
-// ElementReference, not a CSS selector -- ArrowNav can have up to FOUR
-// simultaneous instances mounted on one popover (prior/following x
-// narrative/chronology), and none of their own wrapping elements carries a
-// unique id -- a selector naming their shared CSS class would only ever
-// resolve document.querySelector's own FIRST match, silently measuring the
-// wrong instance's anchor for every side but one. Same "pass the real
-// element, not a selector" fix capturePointer (below) already established
-// for SplitDivider's own analogous multi-instance concern -- this function
-// is the read-side equivalent of that write-side precedent.
-//
-// F1 fix round (reviewer live-repro, real bug -- not a hypothetical): the
-// first cut of this function returned window.innerWidth/innerHeight
-// alongside the wrapper's own rect, and ArrowNav.razor budgeted its own
-// flip/max-height math against THAT -- but the peek's own true clipping
-// boundary is never the viewport; it is the nearest `.popover` ancestor
-// (app.css: position:fixed, max-height:calc(100vh - 4rem), overflow-y:
-// auto), which is routinely SHORTER than the viewport (vertically centered,
-// never taller than 100vh-4rem) and clips every descendant once it exceeds
-// that box -- including a position:absolute one like the peek, since
-// overflow clipping is a PAINT-time ancestor relationship, independent of a
-// descendant's own positioning scheme. Measuring the viewport instead of
-// this real boundary is exactly why the owner's own original defect
-// ("cut off... needs to be truncated") could resurface once expanded: the
-// reviewer's own live repro clicked `all` on a many-verse peek and watched
-// it spill ~269px past the popover's own bottom edge while the peek's own
-// internal scrollbar (app.css's own overflow-y:auto) never engaged --
-// its budget had come from the wrong frame entirely, so it never thought
-// it was out of room. Now returns the wrapper's own rect PLUS the
-// enclosing .popover's own top/bottom (viewport-relative coordinates,
-// the SAME space getBoundingClientRect already uses, so ArrowNav.razor's
-// own arithmetic needs no unit conversion) -- falling back to the
-// viewport's own bounds only if no .popover ancestor is found at all
-// (never true in practice, this component's only rendering context IS
-// inside one, but a safe, honest degrade rather than a crash if that
-// assumption is ever wrong).
+// Keyed off a real element reference, not a CSS selector, because multiple ArrowNav instances
+// can be mounted at once and share a class. Returns the nearest enclosing .popover's bounds
+// (not the viewport) since that's the real clipping boundary the peek can spill past.
 export function getElementRect(el) {
     if (!el) {
         return null;
@@ -370,37 +168,11 @@ export function getElementRect(el) {
     };
 }
 
-// PEEK-TRUNC-1 fix round (real, live-caught bug -- Playwright-reproduced
-// AND root-caused, not guessed): clicking RevealControls' own `less`
-// inside ArrowNav's peek can remove the EXACT element the pointer is
-// resting on (Shown returns to Default, `less` itself -- and, moving back
-// under Step, one or more verses -- disappear from the DOM in the same
-// render that handled the click). Confirmed via an isolated repro
-// (DIAG-A/B/C/D, batch report has the full matrix): a bare hover-then-
-// leave dismisses correctly every time; hover-then-`more`(adds content,
-// nothing removed)-then-leave ALSO dismisses correctly; hover-then-`more`-
-// then-`less` (removes content under the pointer) leaves the peek stuck
-// open through a subsequent, genuinely-away `pointermove` -- UNTIL one
-// more, unrelated hover transition over a still-live element happens
-// somewhere in the subtree, after which leaving works again. Root cause:
-// the browser computes pointerenter/pointerleave for a listening ancestor
-// by comparing the transition's own OLD hit-test target against that
-// ancestor -- once that OLD target is DETACHED (removed, no parent chain
-// left to walk), the comparison silently reads "was never contained" for
-// every ancestor, so no leave is ever computed relative to it; the very
-// next VALID transition (a live element re-entered) gives the browser a
-// non-detached "old" reference again, which is why that one fix works.
-// ArrowNav.razor's own OnWrapperPointerDown/OnPeekShownChanged use this
-// function to independently re-verify, via a real geometric query (never
-// trusting the browser's own possibly-corrupted tracking) whether the
-// pointer's last known position is still inside the wrapper OR the peek
-// box -- x/y are viewport (clientX/clientY) coordinates, matching
-// PointerEventArgs' own ClientX/ClientY. Checks the peek box SEPARATELY
-// from the wrapper's own rect (not just the wrapper's) because the peek
-// is `position:absolute` and renders OUTSIDE the wrapper's own normal-flow
-// box (app.css's own comment on .popover-event-nav-side has the fuller
-// story) -- getBoundingClientRect() on the wrapper alone would never
-// include it.
+// The browser computes pointerenter/pointerleave for a listening ancestor by comparing against
+// the transition's old hit-test target; once that target is removed from the DOM mid-gesture,
+// the comparison silently reports "never contained," so a leave is never fired. This re-verifies
+// via a real geometric query instead of trusting that tracking. Checked separately from the
+// wrapper because the peek is position:absolute and renders outside the wrapper's own box.
 export function isPointInsideEither(el, x, y) {
     if (!el) {
         return false;
@@ -415,52 +187,17 @@ export function isPointInsideEither(el, x, y) {
     return peek ? within(peek.getBoundingClientRect()) : false;
 }
 
-// M-D3/U5+B2 (split-view drag-resize divider, Components/SplitDivider.razor):
-// setPointerCapture is a real DOM element method with no Blazor-side
-// equivalent (PointerEventArgs carries PointerId as plain data, not a
-// capturable handle) -- SplitDivider's own OnPointerDown calls this once,
-// at drag start, with its own @ref ElementReference and the fired event's
-// PointerId, so every subsequent pointermove/pointerup keeps targeting
-// the divider itself for the rest of the gesture even once the cursor
-// travels beyond its own (deliberately narrow, 13px) hit area -- e.g. a
-// fast drag toward one pane's own text/map content. Without this, the
-// gesture would silently stop tracking (Blazor's own pointerleave firing on
-// the divider) the instant the cursor left that narrow strip, which for a
-// horizontal-only drag intended to travel far in the X direction is the
-// common case, not an edge case. TimeSlider.razor's own drag mechanic gets
-// away with no equivalent because its own draggable surface (.slider-track)
-// is the FULL travel range already -- a single-purpose narrow strip like
-// this divider has no equally-wide native target to rely on instead.
+// setPointerCapture keeps subsequent pointermove/pointerup targeting the divider even once the
+// cursor travels beyond its narrow hit area -- without it, Blazor's pointerleave would silently
+// stop tracking the drag the instant the cursor left that strip.
 export function capturePointer(el, pointerId) {
     if (el && typeof el.setPointerCapture === 'function') {
         el.setPointerCapture(pointerId);
     }
 }
 
-// Batch CORPREAD-1a fix round 1 (review S-6, IMPORTANT -- "--app-header-height
-// is measured with a viewport-CLAMPING helper, so a scrolled hatch-open
-// under-measures it"): `CompositionSplit.razor`'s own `.split-view`
-// height:calc() (`app.css`'s own header comment on that rule) needs
-// `.app-header`'s TRUE, intrinsic rendered height -- getPaneRect above
-// deliberately clamps its own rect to [0, innerWidth]/[0, innerHeight] (the
-// CORRECT behavior for its own original purpose, bounding a pane-anchored
-// popover to "the visible slice of this pane, right now"), which is WRONG
-// for measuring an element's own height: `.app-header` is in NORMAL FLOW
-// (`.header-parchment` sets no `position`), so opening a split from a
-// standalone reader already scrolled down by even a small amount clamps
-// `top` to 0 and silently under-reports `bottom - top` by exactly that
-// scroll offset -- confirmed live (the review's own repro): at scrollY≈20,
-// a real 54.375px header measured as ≈34px, making `.split-view` ~20px
-// TALLER than the remaining viewport, reintroducing (for that session) the
-// exact "header-sized sliver stranded below the fold" failure class
-// iteration 1 of the SPLIT-SCROLL-1 fix was rejected for. `offsetHeight` is
-// the CSS layout height of the element's own border box -- entirely
-// independent of scroll position or viewport clipping, exactly what a
-// `calc(100vh - ...)` sizing computation needs. `el.offsetHeight` is `0`
-// for a `display:none`/detached element, matching this call site's own
-// existing "0/negative measurement -> fall back to the CSS default"
-// fail-soft handling (CompositionSplit.razor's own `if (h.Height > 0)`
-// still applies to whatever this returns).
+// offsetHeight, not a clamped/viewport rect: this element is in normal flow, so a scrolled page
+// would clamp `top` to 0 and under-report height by the scroll offset.
 export function getElementHeight(selector) {
     const el = document.querySelector(selector);
     return el ? el.offsetHeight : 0;

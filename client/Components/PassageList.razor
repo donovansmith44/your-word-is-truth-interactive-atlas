@@ -1,65 +1,3 @@
-@* Batch F2, 6-ARCH (user directive 2026-08-20, near-verbatim): "it should
-   use the same underlying data structure as the hover menu everywhere else
-   - showing sequential verses as passages (which can be expanded to read
-   the whole chapter at will) rather than just verses. reuse the bits that
-   we have! if you can't reuse them, then the bits need refactored for
-   composability."
-
-   THE shared, composable passage-list component: every verse LIST in the
-   popover platform renders through this one component --
-   CrossRefsSection (req 6), PlaceDatesSection's own est/dest supporting
-   verses (req 6b), and CatechismScripturesSection ("THE SCRIPTURES").
-   Sequential verses display as ONE passage entry (ref-range + contiguous
-   text), never N separate verse rows (Explore/PassageBlock.cs's own
-   PassageBlockBuilder, reusing Batch D's PlaceCard grouping algorithm --
-   see Explore/PassageGrouping.cs). Every entry is independently
-   expandable in place to read the whole chapter (MiniReaderExpand.razor,
-   the SAME mechanism Batch R's verse-text section already uses -- see that
-   component's own header). Truncation (Cap) counts PASSAGE ENTRIES, not
-   raw verses, per requirement 6/6b verbatim; a null Cap never truncates
-   (THE SCRIPTURES: no cap asked for). The down-arrow reveal/up-arrow
-   snap-back interaction mirrors Batch D's own place-card-more/-collapse
-   language (a plain ▾/▲ glyph, no incremental step -- "reveals the rest"
-   is req 6/6b's own wording, a binary show-all rather than PlaceCard's own
-   5/2-verse-at-a-time reveal, which is a DIFFERENT truncation model this
-   batch doesn't touch -- see PlaceCard.razor's own comment on why it stays
-   on its own mechanism).
-
-   Batch N2 requirement 2 (folded into Batch T's own event-witnesses work,
-   which needed the identical mechanism for PARALLEL ACCOUNTS -- "no more
-   than 2 verses of a passage at a time... a button to expand/collapse that
-   passage (and also read the whole chapter like we've already got)", the
-   owner verbatim): ClampVerses caps a PASSAGE entry's own COMPACT text at N
-   verses, independent of (and orthogonal to) Cap above, which counts whole
-   ENTRIES -- this clamps WITHIN one entry.
-
-   O2 (owner live-preview correction, 2026-08-23: "we have redundant
-   buttons, too. Show the rest of this passage and Read the whole
-   chapter"): the per-entry `popover-passage-clamp-expand{-ENTRY-ID}/
-   -collapse` TOGGLE that used to sit right here -- reveal/re-hide the rest
-   of THAT entry's own clamped text, independent of and alongside
-   MiniReaderExpand's own chapter-wide expand on the SAME entry -- is
-   RETIRED; it was exactly the "redundant pair" the owner named (two
-   different "show more" controls on one entry). ClampVerses' own STATIC
-   clamp -- how many verses of a passage entry's text show before either
-   arrow is ever touched -- is UNCHANGED and still computed below; only the
-   separate per-entry TOGGLE that used to grow it a little further (without
-   yet reaching the whole chapter) is gone. MiniReaderExpand's own control
-   (now a RevealControls-driven down/double-down/up/double-up arrow pair,
-   see its own O2 comment) is the SOLE remaining expansion affordance on a
-   clamped entry -- revealing more of it now always means the whole,
-   lazy-fetched chapter, never a partial reveal of just this entry's own
-   remaining verses; a disclosed simplification (the nuance the old
-   per-entry toggle offered is honestly lost) in service of "ONE expansion
-   idiom... passage text, cross-refs, catechism all use the identical
-   component," the controller's own words for this ruling. Implemented
-   ONCE here so every consumer (xrefs, THE SCRIPTURES, place est/dest,
-   PRIOR/FOLLOWING event sections, EVENT witnesses) inherits the static
-   clamp for free -- "parallel implementations are a defect," the owner's
-   own F2 6-ARCH decree, extended to this requirement too. A lone-verse
-   entry, or a passage entry whose own verse count is already <=
-   ClampVerses, is never clamped at all (conditional) -- unaffected,
-   unchanged. *@
 @using BibleAtlas.Client.Explore
 
 @if (_blocks.Count > 0)
@@ -67,38 +5,9 @@
     <div class="popover-passage-list">
         @foreach (var entry in Visible)
         {
-            @* The WHOLE entry -- ref label + caption + compact text -- is
-               ONE explorable target, matching PlaceCard.razor's own
-               .place-card-passage/.place-card-verse precedent exactly (ref
-               + text together inside one clickable container), not a
-               separate ref-only button beside a plain paragraph. A real,
-               live-caught fix: an earlier draft put the testid on a
-               ref-only <button>, which left `.toContainText(...)`
-               assertions against that testid seeing only the ref, never
-               the verse text sitting beside it -- see this batch's own
-               report for the full story. `@onclick:stopPropagation` on the
-               expand button/reader region below (MiniReaderExpand.razor)
-               is what keeps "expand to read the whole chapter" and
-               "explore this passage" as two independent gestures on the
-               SAME entry, mirroring ONE-RULE's own "the more specific
-               target always wins" rule for a passage's nested per-verse
-               spans. *@
             <div class="popover-passage-entry explorable" data-testid="@entry.TestId"
                  tabindex="0" role="button" aria-label="@($"Explore {entry.Block.Span}")"
                  @onclick="@(e => OnEntryClick(e, entry.Block))" @onkeydown="@(e => OnKeyDown(e, entry.Block))">
-                @* CAT-SCRIPT-1 (owner addendum, verbatim: "<TITLE> <Passage
-                   ref> and then verses below ... TITLE ... on the left, in
-                   bigger, more readable letters ... PASSAGE REF on the
-                   right and keep the font"): a captioned entry (today:
-                   CatechismScripturesSection's own question-titled proof
-                   verses -- see TitledPassageEntry.razor's own header
-                   comment) composes the reusable title+ref header row
-                   instead of this file's own former bare ref-label-then-
-                   caption stack. Every OTHER consumer (no Caption --
-                   cross-references, place est/dest, PRIOR/FOLLOWING,
-                   PARALLEL ACCOUNTS/PARALLELS) is byte-for-byte unchanged:
-                   still the bare .popover-passage-ref-label span, same
-                   class, same position. *@
                 @if (entry.Block.Caption is { } caption)
                 {
                     <TitledPassageEntry Title="@caption" Ref="@entry.Block.Span"
@@ -111,53 +20,10 @@
                 <MiniReaderExpand Book="@BookOf(entry.Block)" Chapter="@ChapterOf(entry.Block)" FocalFromVerse="@FocalFromOf(entry.Block)" FocalToVerse="@FocalToOf(entry.Block)"
                                    TestIdSuffix="@($"-{entry.TestId}")" TruncatedBy="@entry.Block.TruncatedBy" OnExplore="OnExplore">
                     <CompactContent>
-                        @* M-D1 requirement 3 (owner live report #4, verbatim:
-                           "it also is completely redundant to just show the
-                           verses associated with a container in the
-                           container's hover box. we should just see the
-                           passage span."): SpanOnly renders NOTHING here --
-                           the ref label above (@entry.Block.Span) is already
-                           the compact SPAN reference; the ONLY affordance
-                           left is MiniReaderExpand's own expand control
-                           below, which reuses the identical inline-expand
-                           mechanism every other passage entry already has
-                           (reuse, not a parallel implementation -- the
-                           requirement's own explicit instruction). No
-                           verse-list echo, no clamp (nothing to clamp when
-                           nothing renders by default). *@
                         @if (!SpanOnly)
                         {
-                            // Batch N2 requirement 2, STATIC half (the toggle
-                            // that used to grow this further -- O2's own
-                            // "redundant pair" -- is retired; see this file's
-                            // own header comment): clamp THIS entry's own
-                            // compact text to ClampVerses verses, independent
-                            // of MiniReaderExpand's own (unaffected) chapter
-                            // expand below. Only ever narrows a PASSAGE entry
-                            // (IsPassage, >=2 verses) whose own verse count
-                            // exceeds the clamp -- a lone verse, or a passage
-                            // already at or under it, is never clamped.
                             var clamps = entry.Block.IsPassage && ClampVerses is int clamp && entry.Block.Verses.Count > clamp;
                             var shown = clamps ? entry.Block.Verses.Take(ClampVerses!.Value) : entry.Block.Verses;
-                            @* M-D4 fix round 1 (R-M1, review Important-1 --
-                               decision 3, "name links everywhere... render
-                               wherever verse text renders"): every entry's
-                               own compact preview text now scans for in-text
-                               place/person mentions too, through the SAME
-                               MentionText.razor component VerseLine.razor/
-                               VerseTextSection.razor already use -- this was
-                               the one remaining bare, unscanned rendering of
-                               verse text client-wide (grep-confirmed by
-                               review). TestIdSuffix mirrors MiniReaderExpand's
-                               own established multi-instance disambiguation
-                               one line below it (this entry's own FULL
-                               testid), so two different entries citing the
-                               SAME verse number never collide. OnExplore is
-                               the SAME callback this entry's own outer click
-                               already uses -- a mention click stops
-                               propagation (MentionText's own contract) so it
-                               opens THAT entity, never ALSO this whole
-                               entry's own Explore(entry.Block). *@
                             <p class="popover-passage-text">
                                 @if (entry.Block.IsPassage)
                                 {
@@ -166,25 +32,9 @@
                                         <sup class="popover-passage-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())"
                                                      Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-passage-mention" TestIdSuffix="@($"-{entry.TestId}")" OnExplore="OnExplore" /><text> </text>
                                     }
-                                    @* XREF-CLAMP-1 (owner order, verbatim: "a quiet continuation
-                                       mark ... so the clamp is visible as a clamp, not mistaken
-                                       for the whole text"): the SAME truncation idiom the rest
-                                       of this app already reaches for (a bare ellipsis --
-                                       app.css's own "Loading…"/`text-overflow: ellipsis`
-                                       register), decorative only (aria-hidden -- the entry's
-                                       own accessible name, ONE-RULE's own outer explorable
-                                       label, is unaffected by this being present or absent). *@
-                                    @* Fix round (real, live-caught bug -- a full-suite run
-                                       exposed it, not guessed): the testid is PREFIXED with
-                                       "clamp-mark-", never SUFFIXED onto entry.TestId --
-                                       every existing "starts with {entry-prefix}-" locator
-                                       app-wide (getByTestId(/^xref-item-/), [data-testid^=
-                                       "event-witness-"], [data-testid^="verse-parallel-"],
-                                       reused by w1-4-passages.spec.ts among others) would
-                                       otherwise silently double-count this mark alongside
-                                       the real entry it decorates. *@
                                     @if (clamps)
                                     {
+                                        @* testid is PREFIXED with "clamp-mark-", never suffixed onto entry.TestId, so it never collides with any "starts with {entry-prefix}-" locator used app-wide *@
                                         <span class="popover-passage-clamp-mark" data-testid="@($"clamp-mark-{entry.TestId}")" aria-hidden="true">&hellip;</span>
                                     }
                                 }
@@ -201,20 +51,6 @@
             </div>
         }
     </div>
-    @* O3 (owner live-preview correction, 2026-08-23, xrefs named
-       specifically, ruled universal for the shared reveal component --
-       "that button should be below the list of xrefs, not above"): moved
-       from BEFORE the list to AFTER it. M-D3/U2's own original placement
-       here was a deliberate, disclosed WORKAROUND for a real, live-caught
-       bug -- a genuine rapid native DOUBLE-CLICK's second sub-click landing
-       on a newly-revealed entry instead of the (now-shifted) control, once
-       the list grew beneath a TRAILING control (RevealControls.razor's own
-       header comment has the full story) -- not a preference of its own.
-       R-D3 already retired the hazard that workaround existed for: "double"
-       is now a SECOND, STATIONARY arrow button beside the single one, never
-       a double-click gesture on one moving target, so there is no second
-       sub-click that could ever land on shifted content. Safe to honor the
-       owner's own placement now that the reason to defy it is gone. *@
     @if (Cap is int cap && EffectiveTotal > cap)
     {
         <RevealControls Total="@EffectiveTotal" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="OnShownChanged"
@@ -231,115 +67,26 @@
     [Parameter] public string RevealNoun { get; set; } = "entries";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // PERF-3 fix round 1 (review S-1/Q-1: a beyond-cap entry must NEVER
-    // lose its own real identity -- CrossRefsSection now only eagerly
-    // resolves the first few entries into `Units` for perf; these two
-    // parameters are the lazy-remainder hook that keeps the REST correct
-    // once actually asked for, instead of degrading them). Both null
-    // (every OTHER consumer -- EventWitnessesSection, VerseParallelsSection,
-    // PlaceDatesSection, CatechismScripturesSection -- Units.Count already
-    // IS each of their own true totals, no lazy remainder exists for any
-    // of them) is a complete no-op: EffectiveTotal falls back to
-    // `_blocks.Count` exactly as before, and OnShownChanged never has
-    // anything to resolve. TrueTotal: the list's REAL total entry count,
-    // when it's bigger than `Units.Count` (Units holds only the eagerly
-    // resolved subset) -- so "more (N)"/"all (N)" show the honest count
-    // even before the remainder is ever fetched. ResolveRemainingAsync:
-    // called ONCE, the first time a reveal press needs entries beyond what
-    // `Units` already carries -- resolves the REST with the SAME real
-    // data (text/Places/Persons/WordsOfChrist) `Units` itself carries,
-    // never a degraded stand-in.
     [Parameter] public int? TrueTotal { get; set; }
     [Parameter] public Func<Task<IReadOnlyList<PassageSourceUnit>>>? ResolveRemainingAsync { get; set; }
 
-    // Set once ResolveRemainingAsync has actually run (successfully or
-    // not -- a failed lazy fetch still counts as "asked for," fail-soft
-    // like every other lazy fetch in this popover platform, never retried
-    // in a loop). null beforehand; `_blocks` is built from `Units` alone
-    // until this lands, then from `Units` + this, merged.
     private IReadOnlyList<PassageSourceUnit>? _resolvedRemainder;
     private bool _resolvingRemainder;
 
-    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "inline
-    // cross-references... are NOT wired for this gesture"): the SAME
-    // Ctrl/Cmd-click toggle VerseLine.razor's own OnRowClick already
-    // gives the reader pane's verse rows. Optional (default: no-op
-    // EventCallback) -- every OTHER PassageList consumer (THE SCRIPTURES,
-    // place est/dest, PRIOR/FOLLOWING) is unaffected by this parameter
-    // simply existing; only CrossRefsSection wires it.
     [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
 
-    // Batch N2 requirement 2: when set, caps a PASSAGE entry's own compact
-    // text at this many verses -- see this file's own header comment.
     [Parameter] public int? ClampVerses { get; set; }
 
-    // Batch UX-1 (XREF-CLAMP-1, owner order verbatim: "be sure not to show
-    // more than two verses of each cross ref... that two-verse clamp ought
-    // to apply to all cross refs visually displayed for a frontier."
-    // CONTROLLER RULING: clamp = 2): THE ONE named constant every
-    // ClampVerses consumer points at -- changing the clamp app-wide (2->3)
-    // is this ONE line, THE COMPOSABILITY BAR's own standing requirement.
-    // EventWitnessesSection/VerseParallelsSection (PopoverSectionProviders.cs)
-    // already clamped at a literal `2` before this batch; both are
-    // re-pointed at this constant so there is exactly one number to change,
-    // not three literals to hunt down. CrossRefsSection is the newest
-    // consumer (previously unclamped).
     public const int StandardVerseClamp = 2;
 
-    // M-D1 requirement 3 (span-not-echo, owner live report #4): when true,
-    // every entry renders its own ref-label span ONLY -- no compact text --
-    // leaving MiniReaderExpand's own control (O2: a RevealControls-driven
-    // arrow pair, "Read the whole chapter" now living in its title/
-    // aria-label rather than visible button text) as the sole way to see
-    // the passage's own words. Default false: every OTHER consumer
-    // (cross-references, THE SCRIPTURES, place est/dest, PRIOR/FOLLOWING,
-    // multi-witness PARALLEL ACCOUNTS) is UNCHANGED by this batch -- see
-    // this file's own header comment block for the full rationale.
     [Parameter] public bool SpanOnly { get; set; }
 
-    // A real, live-caught regression (found by the full pre-existing suite,
-    // not guessed): CrossRefsSection's OWN pre-Batch-F2 click contract --
-    // every xref-item, REGARDLESS of whether its target spans more than one
-    // verse (~25% of real cross-ref targets do, e.g. "REV.8.3-5" -- common,
-    // not an edge case), always pushed a VerseNode at the target's own
-    // FIRST verse (CanonRef.FirstVerseOf), never a PassageNode -- reader.spec.ts's
-    // own READ-3 property test pins exactly this ("popover-title" ==
-    // the target's bare head ref after a click, for ANY sampled xref). The
-    // default below (PassageNode for a multi-verse block) is right for THE
-    // SCRIPTURES/place est-dest, where a question's or a claim's own cited
-    // passage genuinely IS the explorable unit -- but wrong for a single
-    // cross-reference, whose own identity is "where it points", not "the
-    // span its preview text happens to cover". CrossRefsSection sets this
-    // true to restore its own pre-existing, still-tested contract; every
-    // other consumer leaves it at the default.
     [Parameter] public bool ExploreAsVerse { get; set; }
 
-    // A block's own Span is not always unique WITHIN one list -- the same
-    // verse can legitimately be cited more than once from different
-    // SOURCES (e.g. a catechism item's own item-level embedded citation
-    // AND one or more of its own questions all naming the same verse --
-    // MAT.28.19 under baptism-1 is a real example, cited bare AND by four
-    // separate repo-derived questions). Real, caught live (not guessed):
-    // every block gets a testid built from `{RefTestIdPrefix}-{Span}`, and
-    // the SECOND and later block sharing the same Span gets a numbered
-    // suffix (`--2`, `--3`, ...) so it never collides with an earlier one
-    // -- same disambiguation shape CatechismSeamSection already applies to
-    // repeated `catechism-item-{ID}` rows, applied here generically so
-    // EVERY passage-list consumer (xrefs, THE SCRIPTURES, place est/dest)
-    // is protected, not just the one case that happened to be found first.
     private sealed record VisibleEntry(PassageBlockData Block, string TestId);
 
     private List<PassageBlockData> _blocks = new();
 
-    // M-D3/U2: how many blocks are currently revealed -- null until first
-    // touched, at which point it starts at Cap (the default view), same
-    // "starts at the collapsed default, never auto-resets on an unrelated
-    // re-render" risk profile the retired `_showAll` bool always had (this
-    // component is freshly instantiated per popover-section resolve, not
-    // reused across genuinely different Units -- see RevealControls.razor's
-    // own doc comment for the fuller reasoning). RevealControls owns the
-    // actual +2/-2/all/default arithmetic; this field is purely the
-    // CURRENT VALUE it proposes changes to via ShownChanged.
     private int? _shown;
 
     private int ShownCount(int cap) => _shown ??= cap;
@@ -349,23 +96,8 @@
         _blocks = PassageBlockBuilder.Build(_resolvedRemainder is null ? Units : Units.Concat(_resolvedRemainder).ToList());
     }
 
-    // PERF-3 fix round 1: the list's own real total -- TrueTotal when the
-    // caller set one bigger than what it eagerly resolved into Units
-    // (there's a lazy remainder waiting), otherwise _blocks.Count exactly
-    // as before (every consumer that never sets TrueTotal, or sets it
-    // no bigger than Units.Count, is byte-for-byte unaffected).
     private int EffectiveTotal => Math.Max(_blocks.Count, TrueTotal ?? 0);
 
-    // Intercepts RevealControls' own proposed Shown value: if there's a
-    // lazy remainder this caller hasn't resolved yet, resolve it FIRST
-    // (once -- `_resolvedRemainder is null` guards against a rapid double
-    // click re-firing the fetch while the first one is still in flight,
-    // same "one-shot" discipline lazyProse.js's own IntersectionObserver
-    // callback already documents), fold it into `_blocks`, THEN apply the
-    // proposed Shown -- so the newly-revealed rows are already correct on
-    // the very same render that reveals them, never a stale/incomplete
-    // flash. Every consumer without a lazy remainder (ResolveRemainingAsync
-    // null) skips straight to the plain `_shown = n` this always did.
     private async Task OnShownChanged(int n)
     {
         if (_resolvedRemainder is null && !_resolvingRemainder && ResolveRemainingAsync is not null)
@@ -377,10 +109,6 @@
             }
             catch (Exception)
             {
-                // Fail-soft, same graceful-degradation policy every other
-                // lazy fetch in this app follows -- an empty remainder
-                // just means the reveal shows only what was already eager,
-                // never a broken/blank section.
                 _resolvedRemainder = Array.Empty<PassageSourceUnit>();
             }
             _blocks = PassageBlockBuilder.Build(Units.Concat(_resolvedRemainder).ToList());
@@ -408,31 +136,7 @@
     private static int ChapterOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Chapter;
     private static int FocalFromOf(PassageBlockData b) => CanonRef.ParseVerse(b.FirstVref).Verse;
 
-    // ACCT-COALESCE-1: a coalesced witness account (PassageSourceUnit.CoalesceAcrossChapters,
-    // Explore/PassageBlock.cs) can genuinely span multiple chapters (e.g.
-    // MAT.5.1-7.29) -- MiniReaderExpand below only ever fetches/highlights
-    // ONE chapter (Book/ChapterOf above, always the block's own FIRST
-    // chapter), so a LastVref belonging to a DIFFERENT chapter than
-    // ChapterOf's own would name a verse NUMBER that has no honest meaning
-    // against the fetched (first) chapter. Left unbounded (int.MaxValue)
-    // instead -- MiniReaderExpand's own focal check (`v.Verse >=
-    // FocalFromVerse && v.Verse <= FocalToVerse`) already clips to
-    // whichever verses the fetched chapter genuinely has, so this degrades
-    // HONESTLY to "highlighted from where the account begins through the
-    // end of the chapter it begins in" -- never an out-of-range verse
-    // number silently attributed to the wrong chapter. Every OTHER block
-    // (FirstVref/LastVref always same-chapter, by PassageGrouping.Groups's
-    // own construction) is unaffected -- this branch is unreachable for
-    // them.
-    //
-    // Fix round 2 (N-1, secondary symptom): the highlight bound is the
-    // block's own FIRST CONTIGUOUS RANGE's true end
-    // (PassageBlockData.FirstRangeEndVref, set by BuildCoalescedBlock),
-    // not the whole block's LastVref -- a gapped same-chapter account
-    // (ab_ur's own GEN.11.28 + 31) must highlight only the verses its own
-    // first range actually contains, never straight through the gap into
-    // verses that belong to something else. Null (every grouped block)
-    // falls back to LastVref -- byte-identical behavior for them.
+    // MiniReaderExpand only ever fetches/highlights the block's FIRST chapter, but a coalesced witness (CoalesceAcrossChapters) can span multiple chapters -- when LastVref belongs to a different chapter, this leaves the bound unbounded (int.MaxValue) rather than naming a verse number that would have no honest meaning against the fetched chapter; MiniReaderExpand's own focal check then clips to whatever the fetched chapter really has. FirstRangeEndVref (not LastVref) bounds a same-chapter account with a real internal gap, so highlighting stops at the gap instead of running through it into verses belonging to something else.
     private static int FocalToOf(PassageBlockData b)
     {
         var first = CanonRef.ParseVerse(b.FirstVref);
@@ -440,24 +144,7 @@
         return last.Chapter == first.Chapter ? last.Verse : int.MaxValue;
     }
 
-    // Fix round 3 (review NEW-1, Moderate -- silent section loss): the ONE
-    // place a clicked block becomes an explorable node, for BOTH click
-    // paths below. A coalesced account's own Span can be a compound
-    // ("MRK.14.54, 66-72") or cross-chapter ("MAT.5.1-7.29") label that
-    // the server's ScriptureRef::parse REJECTS -- pushing it verbatim as a
-    // PassageNode sref made /api/xrefs/{sref} + /api/catechism/{sref} 400
-    // and the Cross References / Small Catechism sections silently vanish
-    // (167 of 1212 real accounts; PassageBlockData.ExploreSref's doc
-    // comment has the full story). Such a block now explores by its own
-    // FIRST contiguous same-chapter run -- parser-safe by construction --
-    // with the pushed node's text bounded to that run's own delivered
-    // verses (ExploreVerseCount), so the node never claims text beyond
-    // the sref it is keyed by. The DISPLAYED ref stays the honest
-    // compound Span, untouched. Grouped blocks (ExploreSref null) and
-    // single-chapter contiguous accounts (ExploreSref == Span,
-    // ExploreVerseCount == Verses.Count) behave byte-identically to
-    // before. A one-verse run degrades to a VerseNode -- the same
-    // "IsPassage" cardinality rule as ever, applied to the run.
+    // a coalesced account's Span can be compound ("MRK.14.54, 66-72") or cross-chapter ("MAT.5.1-7.29") -- the server's ScriptureRef parser rejects that shape, so pushing it verbatim as a PassageNode sref 400'd the Cross References / Small Catechism lookups into silently vanishing (167 of 1212 real accounts). Such a block explores by its own first contiguous same-chapter run instead (parser-safe by construction); the displayed ref stays the honest full Span.
     private IExplorable ExploreNodeOf(PassageBlockData block)
     {
         if (block.ExploreSref is string sref)
@@ -476,18 +163,11 @@
 
     private Task Explore(PassageBlockData block) => OnExplore.InvokeAsync(ExploreNodeOf(block));
 
-    // G2-m2: Ctrl/Cmd-click branches to OnToggleSelect instead of OnExplore
-    // -- same node, same VerseNode/PassageNode identity choice above, only
-    // the destination differs (mirrors VerseLine.razor's own OnRowClick).
     private Task OnEntryClick(MouseEventArgs e, PassageBlockData block)
     {
         var node = ExploreNodeOf(block);
         return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
     }
 
-    // Keyboard equivalent (design-direction.md: "Enter opens") -- same
-    // Enter-only scope every other explorable element in this app uses
-    // (Reader.razor's OnVerseLineKeyDown, PlaceCard's own OnVerseKeyDown/
-    // OnPassageKeyDown).
     private Task OnKeyDown(KeyboardEventArgs e, PassageBlockData block) => e.Key == "Enter" ? Explore(block) : Task.CompletedTask;
 }

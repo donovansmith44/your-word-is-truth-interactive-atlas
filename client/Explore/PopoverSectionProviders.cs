@@ -4,47 +4,12 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// M-D3 (owner rulings U4/B3): the chapter's own metadata-and-context card
-/// -- "when you're reading a chapter, you're in its focus. you can focus
-/// further by clicking chapter heading and you get metadata and context...
-/// container title, position in book, edge summary -- what the graph knows
-/// ABOUT the chapter" -- NEVER the chapter's own verse text (B3, the
-/// standing "first verse" bug; see <see cref="ChapterNode"/>'s own doc
-/// comment for the fuller history). Every fact below is read straight off
-/// the SAME <c>ChapterOut</c> the reading view itself already fetched
-/// (<see cref="ChapterNode.AlreadyLoaded"/>, reused via
-/// <see cref="ChapterNode.Load"/> -- zero new network cost for the common
-/// "open the heading of the chapter you're currently reading" case).
-/// Headings/places are deduplicated (a multi-witness container, or M-D1's
-/// own chapter-boundary continuation, can anchor more than one verse in
-/// this same chapter) and individually explorable via the SAME
-/// <see cref="IPopoverSectionContext.PushAsync"/> every other section-native
-/// row in this file already uses -- "outward connections," not a dead-end
-/// summary. Cross-references are a plain, non-explorable total (summing
-/// each verse's own already-on-the-wire XrefCount, never a fetch of its
-/// own) -- there is no single node a chapter-wide xref COUNT could push to.
-/// </summary>
 public sealed class ChapterCardSection : IPopoverSectionProvider
 {
-    // M-D3 fix round -- a real, live-caught bug, not a style preference:
-    // both lists below were rendered fully unbounded, and a long acrostic
-    // psalm (PSA.119, 22 Hebrew-letter sections -- CONTAINERS IN THIS
-    // CHAPTER alone runs to 22 rows) makes this card tall enough to cover
-    // chapter-head's OWN screen position while open. Since U4/B3 also
-    // opens this SAME card on hover (matching XSCRIPT-1's own "hover and
-    // click open the same popover" rule), that self-overlap means a
-    // genuine click gesture -- which always hovers the target FIRST -- can
-    // never actually land on chapter-head again once the hover-opened card
-    // already covers it: reader.spec.ts's own READ-2c property test caught
-    // this as an unrecoverable, indefinitely-retrying click specifically
-    // whenever it happened to sample PSA.119. A hard cap bounds the card's
-    // own height for every chapter, not just the pathological one found --
-    // a plain, honest "+N more" line (not yet the full RevealControls
-    // interactive mechanic U2 gives cross-refs/catechism elsewhere in this
-    // same batch) rather than silently dropping the rest; widening this to
-    // a real reveal control is a disclosed, deliberate follow-up, not
-    // pretended-finished here.
+    // Hard-capped: an unbounded list here can grow tall enough to cover chapter-head's
+    // own on-screen position while the card is open (e.g. PSA.119's 22 acrostic sections),
+    // and since this card also opens on hover, that self-overlap can make a click gesture
+    // (which hovers its target first) permanently unable to land on chapter-head again.
     private const int ListCap = 8;
 
     public bool AppliesTo(IExplorable node) => node.Kind == "Chapter";
@@ -110,9 +75,9 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", "chapter-card-headings");
                 foreach (var h in headings.Take(ListCap))
                 {
-                    var eventId = h.EventId; // local copies -- captured per-row by the onclick closure below
+                    var eventId = h.EventId;
                     var title = h.Title;
-                    var headingKind = h.Kind; // fix round 1 (S-1a/Q-1a): passed to EventNode's own knownKind below -- see that constructor param's own doc comment
+                    var headingKind = h.Kind;
                     builder.OpenElement(seq++, "button");
                     builder.AddAttribute(seq++, "type", "button");
                     builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
@@ -146,7 +111,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", "chapter-card-places");
                 foreach (var p in places.Take(ListCap))
                 {
-                    var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                    var placeId = p.Id;
                     var placeName = p.Name;
                     builder.OpenElement(seq++, "button");
                     builder.AddAttribute(seq++, "type", "button");
@@ -181,17 +146,6 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// EVT-3 Ticket 3: the thin registry-facing provider for <see cref="YearNode"/>
-/// (Kind == "Year", body-only/core) -- delegates straight through to
-/// <see cref="YearNode.ResolveFrontierAsync"/>, where the actual
-/// mode-branching logic (chronological year layout vs. the pre-EVT-3
-/// place-date-claim body) lives, alongside the state that decides it.
-/// Registering this is what gives EITHER YearNode mode a real
-/// <see cref="IPopoverSectionContext"/> to push explorable rows through --
-/// the retired BodyAsync fallback path's signature never carried one (see
-/// YearNode.cs's own doc comments on both methods for the fuller story).
-/// </summary>
 public sealed class YearFrontierSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Year";
@@ -200,41 +154,6 @@ public sealed class YearFrontierSection : IPopoverSectionProvider
         node is YearNode year ? year.ResolveFrontierAsync(api, ctx) : Task.FromResult<PopoverSection?>(null);
 }
 
-/// <summary>
-/// Batch R requirement 3(a)/4: the verse/passage's OWN text, with the
-/// expand-into-a-scrollable-mini-reader affordance requirement 4 asks for.
-/// Applies to Verse and Passage nodes; resolves the (book, chapter, focal
-/// verse range, compact text) tuple synchronously-ish (VerseNode's own text
-/// needs ONE memoized fetch, reused rather than duplicated -- see below) and
-/// hands the actual rendering to a real component (<c>VerseTextSection</c>,
-/// client/Components/) rather than a hand-built RenderFragment: unlike every
-/// OTHER section here, this one owns real interactive STATE (expanded/
-/// collapsed, a lazily-fetched chapter, a scroll target) that a closure-based
-/// fragment has no clean way to hold.
-///
-/// Batch M-D4 ("the recursive reader," decision 3, "name links everywhere...
-/// wire data needs: if any surface's data path lacks spans, EXTEND that
-/// fetch's DTO, disclosed, never a parallel path"): NEITHER VerseNode's own
-/// <c>GET /api/verse/{vref}</c> (<see cref="VerseDetail"/> carries no
-/// Places/Persons at all) NOR PassageNode's own pre-known <c>Text</c> (a
-/// flat, already-concatenated string, no per-verse breakdown) can feed
-/// <see cref="PlaceMentions"/> -- so this provider ALSO fetches the focal
-/// range's own chapter (<c>GET /api/chapter/{cref}</c>, the SAME
-/// LRU-cached, already-carries-Places/Persons/XrefCount endpoint
-/// MiniReaderExpand itself fetches on expand -- no server change, no
-/// graph-types touch, the client-side DTO extension the brief's own words
-/// anticipate) and slices out the focal verses, WITH their real mention
-/// data, as <see cref="Components.VerseTextSection.FocalVerses"/>. Fail-soft
-/// (house pattern): wrapped in its own try/catch, independent of the
-/// pre-existing compactText fetch immediately below, which stays exactly as
-/// it was -- a genuinely CHEAP safety net (VerseNode.DetailAsync is
-/// memoized, already re-fetched by CrossRefsSection/CatechismSeamSection/
-/// VerseEventMembershipSection/VerseParallelsSection on the SAME node this
-/// batch open, so calling it again here is a cache hit, never a second
-/// round trip; PassageNode.Text is a zero-cost property read) -- so a
-/// failed chapter fetch degrades to VerseTextSection's own pre-M-D4 plain
-/// text, never a broken or blank focal section.
-/// </summary>
 public sealed class VerseTextSectionProvider : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
@@ -249,40 +168,14 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
         switch (node)
         {
             case VerseNode v:
-                var (vBook, vChapter, vVerse) = CanonRef.ParseVerse(v.Title); // Title IS the vref
+                var (vBook, vChapter, vVerse) = CanonRef.ParseVerse(v.Title);
                 book = vBook;
                 chapter = vChapter;
                 focalFrom = focalTo = vVerse;
                 try
                 {
-                    var vDetail = await v.DetailAsync(api); // memoized -- CrossRefsSection shares this exact fetch, never a second one
+                    var vDetail = await v.DetailAsync(api);
                     compactText = vDetail.Text;
-                    // Batch PROV-1: THE FOCUS CARD's own attribution -- "the
-                    // source from which it came" for the very text being
-                    // read ("kjv" -> The King James Version). A PassageNode
-                    // gets none: its text comes from PassageNode.Text (a
-                    // shift-click span the reader assembled), which no
-                    // single wire field attributes -- honest absence, not a
-                    // guess.
-                    // FIX ROUND 1 (review H-1, HIGH) -- A FIFTH SITE, FOUND
-                    // BY THE FIX'S OWN TEST AND NOT BY THE REVIEW. The
-                    // review named four filters that turned a blank
-                    // provenance into silence; this ternary was a fifth,
-                    // here on the VERSE FOCUS CARD -- the most-read surface
-                    // in the app. `VerseDetail.Provenance` is an
-                    // UNCONDITIONAL wire field on a VerseNode (the server
-                    // always sends it, and since this fix round it 500s
-                    // rather than sending a blank), so there is no honest
-                    // reason to drop it: a blank arriving here means the
-                    // text we just rendered has no attribution, which is
-                    // exactly what a reader must be told. The affordance is
-                    // now unconditional for a verse.
-                    //
-                    // The PassageNode case below still contributes NOTHING,
-                    // and that is a different fact, not the same one: a
-                    // shift-click span's text is assembled by the reader and
-                    // no single wire field attributes it, so there is no
-                    // attribution section to render -- honest absence.
                     textProvenance = new[] { ProvenanceResolver.NormalizeId(vDetail.Provenance) };
                 }
                 catch (Exception)
@@ -296,22 +189,15 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 book = pBook;
                 chapter = pChapter;
                 focalFrom = pFromVerse;
-                // A passage's own span is same-chapter by construction (READ-5's
-                // own shift-click mechanic; PassageNode never crosses a chapter
-                // boundary) -- the LAST verse number is the tail of "GEN.12.1-4"'s
-                // own "1-4" segment.
                 var dash = p.Title.LastIndexOf('-');
                 focalTo = dash >= 0 && int.TryParse(p.Title[(dash + 1)..], out var toVerse) ? toVerse : focalFrom;
-                compactText = p.Text; // already known, no fetch (PassageNode's own doc comment)
+                compactText = p.Text;
                 break;
 
             default:
                 return null;
         }
 
-        // See this class's own doc comment -- fail-soft, independent of the
-        // compactText fetch above; empty (never thrown past this point)
-        // just means VerseTextSection's own markup falls back to compactText.
         List<VerseOut> focalVerses;
         try
         {
@@ -338,11 +224,6 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
 
-            // Batch PROV-1: BELOW the text, not above it -- the verse is
-            // the subject, its attribution is a footnote to it, and the
-            // "row" register is the quieter of the component's two (see
-            // ProvenanceAffordance.Register). Renders nothing at all for a
-            // Passage, where textProvenance is empty.
             seq = FrontierProvenance.Affordance(
                 builder, seq, textProvenance, registry, "verse-text-provenance",
                 "Source for this verse's text", Components.ProvenanceAffordance.RowRegister);
@@ -351,50 +232,13 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch PROV-1 (owner order 2: "add a ? button on our frontier interface
-/// that gives provenance"): the ONE place a frontier section mounts the "?"
-/// affordance. Every call site below goes through these two helpers rather
-/// than hand-rolling a component call, so the eyebrow-plus-"?" shape is one
-/// implementation, not nine near-identical copies that could drift -- the
-/// same reason <see cref="CatechismSectionRendering"/> exists for titled
-/// paragraphs.
-///
-/// <para>NO NEW FETCH. <see cref="RegistryOrNull"/> reads
-/// <c>AtlasClient.Sources()</c>, which is <see cref="AsyncMemo{T}"/>-backed
-/// (see <c>AtlasClient._sourcesCache</c>): the first section to ask starts
-/// ONE request; every other section on this popover, every later popover,
-/// and the Sources page itself await that same task. The sub-100ms frontier
-/// law is why this is not a per-popover fetch, and
-/// <c>tests/ux/provenance.spec.ts</c> asserts the single request by counting
-/// it rather than by trusting this paragraph.</para>
-///
-/// <para>FIX ROUND 1 (review M-4): the paragraph below was RIGHT about the
-/// two failures being different and WRONG about the rendering telling them
-/// apart. <c>RegistryOrNull</c> returning null made <c>Resolve</c> report
-/// every id as <c>Unresolved</c>, so one dropped <c>/api/sources</c>
-/// rendered <c>Unrecognized source "kjv". Please report it.</c> -- in the
-/// loudest register in the panel, on EVERY affordance on the popover -- for
-/// data that is perfectly well-formed and perfectly well registered.
-/// <c>ProvenanceStatus</c> now has a third state,
-/// <c>RegistryUnavailable</c>, which says the SOURCE LIST could not be
-/// loaded and leaves the corpus out of it. The split below is real; it just
-/// had to reach the DOM.</para>
-///
-/// <para>Fail-soft on the FETCH, fail-loud on the RESOLUTION -- the two are
-/// different failures and are treated differently on purpose. A registry
-/// that could not be fetched must not take a whole frontier section down
-/// with it (the graceful-degradation policy every lazy fetch in this file
-/// follows), so <see cref="RegistryOrNull"/> returns null and the section
-/// still renders its real content. An id the registry does NOT contain is
-/// the other thing entirely -- a piece of data with no source -- and
-/// <c>ProvenanceAffordance</c> says so out loud, naming the id.</para>
-/// </summary>
 internal static class FrontierProvenance
 {
-    /// <summary>The already-memoized registry, or null if it could not be
-    /// fetched at all -- see this class's own doc comment for why those two
-    /// failures are handled differently.</summary>
+    // Fail-soft on the fetch, fail-loud on the resolution: a registry that could not be
+    // fetched must not take a whole frontier section down with it, so this returns null
+    // and callers render their content anyway. An id the registry does NOT contain is a
+    // different fact (a piece of data with no source) and ProvenanceAffordance says so
+    // out loud rather than treating it the same as a fetch failure.
     internal static async Task<SourcesDocumentOut?> RegistryOrNull(AtlasClient api)
     {
         try
@@ -407,41 +251,11 @@ internal static class FrontierProvenance
         }
     }
 
-    /// <summary>A section eyebrow with its own "?" beside it -- the SAME
-    /// <c>.catechism-section-heading</c> small-caps treatment every section
-    /// heading in this file already uses. Returns the next sequence number,
-    /// the same convention <see cref="CatechismSectionRendering.TitledParagraphs"/>
-    /// follows with its <c>ref int seq</c>.
-    ///
-    /// <para>THE AFFORDANCE IS A SIBLING OF THE HEADING, NOT A CHILD OF IT,
-    /// and that is a correctness requirement rather than a layout
-    /// preference. The first version of this helper nested the "?" inside
-    /// the heading <c>&lt;p&gt;</c>; EXISTING Playwright assertions of the
-    /// form <c>expect(heading).toHaveText('SIMILAR ACCOUNTS')</c>
-    /// immediately went red with <c>"SIMILAR ACCOUNTS?"</c>, because
-    /// <c>textContent</c> is what <c>toHaveText</c> reads and the button's
-    /// own glyph is a text node. A section heading's accessible/text
-    /// content must be the heading, full stop -- for a screen reader
-    /// exactly as much as for a fixture. The <c>.popover-section-head</c>
-    /// wrapper (app.css) is what puts the two back on one line: the heading
-    /// goes <c>display: inline</c> inside it, so the "?" flows beside the
-    /// text and the block panel still breaks below.</para>
-    ///
-    /// <para>FIX ROUND 1 (review M-1) -- THE BLAST RADIUS, RE-MEASURED. This
-    /// comment said "nine". Grepped again at the moment of writing this
-    /// sentence -- <c>toHaveText</c> against the five heading strings the
-    /// affordance mounts on (SIMILAR ACCOUNTS / PARALLEL ACCOUNTS / EVENT /
-    /// PASSAGE / THE SMALL CATECHISM) across <c>tests/</c> -- it is
-    /// <b>16 assertions in 7 spec files</b>: <c>accounts-and-mentions</c> 2
-    /// (:167, :176), <c>event-timeline</c> 1 (:1003),
-    /// <c>popover-sections</c> 7 (:974, :1688, :1810, :1834, :1889, :2002,
-    /// :2271), <c>w1-passages</c> 1, <c>w2-passages</c> 2,
-    /// <c>w3-passages</c> 1, <c>w4-passages</c> 2. Ten of the sixteen sat
-    /// inside the range of the run that was stopped to fix this; six sat
-    /// past its stopping point. "Nine" was an eyeball count of one
-    /// interrupted run's red list that missed
-    /// <c>accounts-and-mentions.spec.ts:176</c> -- an unmeasured number
-    /// inside the paragraph that existed to own an unmeasured number.</para></summary>
+    // The affordance is a sibling of the heading element, not a child of it: nesting the "?"
+    // inside the heading <p> makes its text node part of the heading's accessible/text content
+    // (e.g. `toHaveText('SIMILAR ACCOUNTS')` would read "SIMILAR ACCOUNTS?"). The
+    // .popover-section-head wrapper (app.css) puts the two back on one line via `display: inline`
+    // on the heading.
     internal static int Heading(
         RenderTreeBuilder builder,
         int seq,
@@ -464,10 +278,6 @@ internal static class FrontierProvenance
         return seq;
     }
 
-    /// <summary>The affordance on its own, for a surface that is not a
-    /// section eyebrow (a focus card). Conditional presence is the
-    /// component's own job -- an empty id list renders nothing at all, so a
-    /// caller never has to guard the call.</summary>
     internal static int Affordance(
         RenderTreeBuilder builder,
         int seq,
@@ -487,72 +297,13 @@ internal static class FrontierProvenance
         return seq;
     }
 
-    /// <summary>The distinct provenance ids of a set of ROWS, in first-seen
-    /// order. Used where the wire carries provenance per row (an Analogue
-    /// row, an event-membership row) and the affordance sits on the section
-    /// heading: the heading then names every source ACTUALLY behind the
-    /// rows shown -- never a family average, and never just the first row's
-    /// (the leper lesson: two sources under one heading must both be
-    /// visible).
-    ///
-    /// <para>FIX ROUND 1 (review H-1, HIGH): the
-    /// <c>.Where(p =&gt; !string.IsNullOrWhiteSpace(p))</c> that used to
-    /// live here is GONE. It was the third of four filters that between
-    /// them turned a blank row provenance into NO AFFORDANCE AT ALL -- the
-    /// review's own failure scenario: an <c>Analogue</c> row whose pair key
-    /// stops matching the walked edge, the wire serving <c>""</c>, and
-    /// SIMILAR ACCOUNTS rendering a curatorial claim about two events with
-    /// no attribution and no sign that attribution was missing. A blank now
-    /// survives into the panel and shouts.</para>
-    ///
-    /// <para>ZERO ROWS still yields zero ids, and the component still
-    /// renders nothing for an empty list -- conditional presence, unchanged.
-    /// That is the distinction worth keeping: "no attribution section here"
-    /// and "an attribution we cannot read" are different facts.</para></summary>
+    // Deliberately does not filter out blank/whitespace provenance: a blank here means
+    // real data has no attribution, and that must reach the affordance rather than be
+    // silently treated as "no provenance at all" (which renders no affordance).
     internal static IReadOnlyList<string> Distinct(IEnumerable<string> rowProvenances) =>
         rowProvenances.Select(ProvenanceResolver.NormalizeId).Distinct().ToList();
 }
 
-/// <summary>
-/// Batch R requirement 3(b), rebuilt Batch F2 (6-ARCH + requirement 6): the
-/// existing <c>GET /api/xrefs/{sref}</c> list, rendered INLINE (no
-/// <c>popover-chip-xrefs</c> toggle press -- see VerseNode/PassageNode's
-/// own <c>ExploreAsync</c> comments for the retired chip) for BOTH Verse
-/// (unconditional fetch, same as before) and Passage (conditional -- absent
-/// whenever the span has zero cross-references). Each entry is explorable
-/// via the SHARED <c>PassageList</c> component (6-ARCH: "same underlying
-/// data structure as the hover menu... reuse the bits that we have") --
-/// sequential verses within one target's own span render as ONE passage
-/// entry with its own FULL text (fetched via the existing chapter/LRU-cache
-/// mechanism, <see cref="CanonRef.TargetSpan"/>/<see cref="Explore.PassageListVerse"/>,
-/// rather than <see cref="CrossRefOut.Preview"/>'s own first-verse-only
-/// text), never N separate verse rows.
-///
-/// Requirement 6 (truncation): capped at 3 entries when xrefs is the ONLY
-/// context section present, 2 when any OTHER context section (Batch F's
-/// own catechism seam today; any future provider automatically) also
-/// resolved -- <see cref="IPopoverSectionContext.OtherContextSectionCount"/>
-/// is read INSIDE the render fragment (at render time, after every sibling
-/// provider has already resolved), never captured during this method's own
-/// concurrent <c>ResolveAsync</c> call. A down-arrow (<c>xrefs-more</c>)
-/// reveals the rest; fewer entries than the cap means no arrow at all
-/// (conditional presence, per <c>PassageList.razor</c>'s own rule).
-///
-/// Batch M-D2 (owner's cross-reference superscript directive, ENTRY-POINT
-/// PARAMETER -- CAP RECONCILIATION, owner decree: "do not silently break
-/// F2... a parameter on the one abstraction, NOT a second interface"):
-/// <see cref="IPopoverSectionContext.XrefEntryPoint"/>, read the SAME way
-/// (render time, inside this closure) as <see cref="IPopoverSectionContext.OtherContextSectionCount"/>
-/// immediately above, OVERRIDES the F2 ternary entirely when true -- 3
-/// initial entries UNCONDITIONALLY (the owner's own words, "shows 3
-/// explorable verses to start"), regardless of whether catechism or any
-/// other context section is also present. F2's own 3-vs-2 rule governs the
-/// GENERAL (non-entry-point) popover UNCHANGED -- this is the reconciled
-/// parameter, not a fork: one `Cap` expression, one component, one section
-/// provider. Both branches' own "3" reads
-/// <see cref="EdgeSectionRegistry.Cites"/>'s own <c>InitialClamp</c> -- one
-/// constant, not two coincidentally-equal literals.
-/// </summary>
 public sealed class CrossRefsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
@@ -560,20 +311,6 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         List<CrossRefOut> xrefs;
-        // Batch PROV-1: the owner's own headline case ("sourced from
-        // openbible.com").
-        //
-        // FIX ROUND 1 (review M-3): NO LONGER VERSE-ONLY, and the reason
-        // the gap was disclosed with was FALSE. It said a PassageNode reads
-        // `GET /api/xrefs/{sref}`, "a bare `Vec<CrossRefOut>` array with no
-        // envelope to hang an additive field on." The array was never where
-        // the field goes: `CrossRefOut` is a struct, and this batch had
-        // already added an element-level `provenance` to two other arrays
-        // (`VerseEventOut`, `EventAnalogueOut`). Every cross-reference row
-        // now carries its own, on BOTH endpoints, and the response shape is
-        // byte-identical -- so a PASSAGE node (the most common way to
-        // arrive somewhere other than a verse: a cross-reference target
-        // span) gets the same "?" the verse one node earlier had.
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
         try
         {
@@ -581,20 +318,13 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             {
                 case VerseNode v:
                 {
-                    var detail = await v.DetailAsync(api); // memoized -- shares VerseTextSectionProvider's own fetch
+                    var detail = await v.DetailAsync(api);
                     xrefs = detail.CrossRefs;
                     xrefProvenance = detail.CrossRefsProvenanceOrEmpty;
                     break;
                 }
                 case PassageNode p:
-                    xrefs = await p.XrefsAsync(api); // memoized -- its own dedicated cache
-                    // The SECTION's attribution, which the wire carries on
-                    // each element because /api/xrefs is a bare array (fix
-                    // round 2, review M-NEW-1: every element carries the
-                    // identical set -- this is not per-row data). Deduped
-                    // the same way every other row-backed heading in this
-                    // file does it, which collapses those identical copies
-                    // back to the one value they always were.
+                    xrefs = await p.XrefsAsync(api);
                     xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.ProvenanceOrEmpty));
                     break;
                 default:
@@ -604,7 +334,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         if (xrefs.Count == 0)
@@ -612,55 +342,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             return null;
         }
 
-        // Resolve each target's own FULL member-verse text. Same-chapter
-        // targets (the overwhelming majority) fetch their whole chapter via
-        // the existing LRU-cached AtlasClient.Chapter (several targets
-        // sharing a chapter cost exactly one fetch); a cross-chapter/book
-        // target (CanonRef.TargetSpan returns null -- genuinely
-        // data-starved, no chapter fetch could ever answer this -- see
-        // ResolveUnits's own doc comment) falls back to its own first-verse
-        // preview text, the pre-existing behavior for that edge case.
-        //
-        // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall,
-        // measured live): THE dominant term. `xrefs` here is
-        // VerseDetail.CrossRefs -- unlike AtlasClient.Xrefs's own 20-item
-        // server cap, this list is not capped at all (GEN.1.1 carries 61),
-        // yet PassageList only ever shows the first 2-3 of them before
-        // "reveal more" (Cap, read below in the render fragment -- F2's own
-        // 2-vs-3 rule). This method used to eagerly fetch EVERY target's
-        // own chapter regardless -- confirmed live: GEN.1.1 fired 57
-        // concurrent `/api/chapter/*` requests (deduped from 61 xrefs) for
-        // content the popover would ever show at most 3 entries of.
-        //
-        // Fix round 1 (review S-1/Q-1, CRITICAL, corrected): the FIRST
-        // draft capped the EAGER fetch to the first Cites.InitialClamp (3)
-        // targets and let every target beyond that fall through to the
-        // SAME `x.Preview` single-verse fallback the genuinely-data-starved
-        // (null-Span) case uses -- conflating "no chapter fetch will ever
-        // answer this" with "just wasn't fetched yet," per the review's own
-        // Q-1 finding. That silently NARROWED a beyond-cap multi-verse
-        // target's own identity (GEN.10.15-19 rendered, and was addressed
-        // by Playwright, as "GEN.10.15" -- one verse, losing 4) and dropped
-        // its Places/Persons/WordsOfChrist links entirely -- a real
-        // regression (R-M1/XREF-1-regression, popover-sections.spec.ts),
-        // not a disclosed richness trade-off. CORRECTED: the eager fetch
-        // still resolves only the first InitialClamp (3) targets up front
-        // (same perf win, same request-count cap for the common "open and
-        // never reveal more" case -- Q-5's own finding that 3 >= the
-        // render-time cap (2 or 3) still holds). Every target BEYOND that
-        // position keeps its own full, correct identity always (never
-        // narrowed) -- its REAL text/Places/Persons/WordsOfChrist are
-        // resolved lazily, on first "reveal more"/"all" press
-        // (PassageList's own ResolveRemainingAsync hook, added this fix
-        // round), fetched via the exact SAME ResolveUnits logic, just
-        // deferred to interaction time instead of eager-open time. A
-        // reader who never presses "reveal more" (the overwhelming common
-        // case) pays zero extra requests; one who does gets the genuine,
-        // correctly-identified data, at the cost of one additional
-        // Task.WhenAll batch for the remainder -- exactly the SAME total
-        // network cost the pre-fix code paid eagerly, just deferred behind
-        // real user intent (the lazyProse.js "defer below-fold" precedent,
-        // applied to "defer beyond-cap" instead of "defer below-viewport").
+        // Only the first InitialClamp targets are fetched eagerly (xrefs here is uncapped --
+        // e.g. GEN.1.1 carries 61 -- and the popover only ever shows a few before "reveal
+        // more"); targets beyond that keep their full identity and are resolved lazily via
+        // ResolveUnits on first reveal, never narrowed to a single-verse preview.
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
         var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp).ToList();
         var lazySpans = spans.Skip(EdgeSectionRegistry.Cites.InitialClamp).ToList();
@@ -671,26 +356,12 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         {
             var seq = 0;
 
-            // P3 (owner, verbatim, 2026-08-23: "Also the xrefs block has no
-            // title. just give it a generic Cross References title") -- the
-            // SAME shared small-caps eyebrow every other section title in
-            // this popover platform uses (THE SMALL CATECHISM/EVENT/
-            // PARALLEL ACCOUNTS/PARALLELS precedent), not a new one.
             seq = FrontierProvenance.Heading(
                 builder, seq, "Cross References", "xrefs-section-heading",
                 xrefProvenance, registry, "xrefs-provenance", "Sources for these cross references");
 
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
-            // Fix round 1 (review S-1/Q-1): `units` above only ever holds the
-            // EAGERLY resolved (first InitialClamp) entries now -- TrueTotal
-            // tells PassageList/RevealControls the REAL total (all `xrefs`,
-            // not just `units.Count`) so "more (N)"/"all (N)" show the
-            // honest count even before the remainder is ever fetched, and
-            // ResolveRemainingAsync is PassageList's own lazy hook (added
-            // this fix round) that resolves `lazySpans` -- SAME ResolveUnits
-            // logic, deferred to the FIRST reveal press -- the instant a
-            // reader actually asks for them, never before, never narrowed.
             builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
             builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
@@ -698,41 +369,15 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
             builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
-            // XREF-CLAMP-1 (owner order, verbatim: "be sure not to show
-            // more than two verses of each cross ref ... that two-verse
-            // clamp ought to apply to all cross refs visually displayed for
-            // a frontier"): the SAME shared constant EventWitnessesSection/
-            // VerseParallelsSection below use -- see PassageList.razor's
-            // own StandardVerseClamp doc comment for the "one line changes
-            // it everywhere" story.
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            // A real, live-caught regression (reader.spec.ts READ-3, found by
-            // the full pre-existing suite): restores the pre-Batch-F2 click
-            // contract -- every xref-item pushes a VerseNode at the target's
-            // own FIRST verse, regardless of whether its preview text spans
-            // more than one verse (~25% of real targets do). See
-            // PassageList.razor's own ExploreAsVerse doc comment.
             builder.AddAttribute(seq++, "ExploreAsVerse", true);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
-            // G2-m2: the ONE PassageList consumer this batch wires for
-            // Ctrl/Cmd-click -- see that parameter's own doc comment.
             builder.AddAttribute(seq++, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
         return new PopoverSection("xrefs", body);
     }
 
-    // Fix round 1 (review S-1/Q-1): the ONE resolver both the eager (first
-    // InitialClamp) and lazy (reveal-triggered remainder) paths call --
-    // extracted so there is exactly one place that decides "same-chapter
-    // target -> real per-verse text/Places/Persons; genuinely cross-
-    // chapter/book target (CanonRef.TargetSpan is null -- no chapter fetch
-    // could EVER answer this) -> first-verse preview" -- never two
-    // near-duplicate copies that could drift. Fetches every DISTINCT
-    // chapter `targets` touches, concurrently (Task.WhenAll, same
-    // "independent fetches never serialize" house rule the pre-fix-round
-    // code already followed) -- callers control blast radius purely by how
-    // many targets they pass in, not by a second code path.
     private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRefOut Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
@@ -747,7 +392,6 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            // graceful degrade -- every target below falls back to its own preview text
         }
 
         var units = new List<PassageSourceUnit>();
@@ -758,9 +402,6 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 var verses = new List<PassageListVerse>();
                 for (var v = s.FromVerse; v <= s.ToVerse; v++)
                 {
-                    // M-D4 fix round 1 (R-M1): the whole VerseOut row, not
-                    // just its own .Text -- Places/Persons were already
-                    // sitting in this SAME already-fetched chapter, unread.
                     var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
                     if (cv is not null)
                     {
@@ -773,56 +414,12 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                     continue;
                 }
             }
-            // Reached only when CanonRef.TargetSpan(x.Target) is genuinely
-            // null (a cross-chapter/cross-book target -- no ChapterOut
-            // fetch could ever answer this, see this method's own doc
-            // comment) or the fetch above failed/came back empty for this
-            // target's own chapter -- the SAME first-verse preview fallback
-            // this file always had for the data-starved case, never used
-            // for "in range but not yet asked for" any more (that case is
-            // simply never in `targets` until the caller actually wants it
-            // resolved).
             units.Add(new PassageSourceUnit(new[] { new PassageListVerse(CanonRef.FirstVerseOf(x.Target), x.Preview) }));
         }
         return units;
     }
 }
 
-/// <summary>
-/// Batch F ("the small catechism"): fills Batch R's own seam (requirement
-/// 3(c)) with real content -- "THE SMALL CATECHISM" section for VERSE
-/// AND PASSAGE popovers (the seam's own doc comment scoped this to Verse
-/// only; the batch brief's own requirement 4 heading, "VERSE/PASSAGE
-/// popover," and requirement 3's "span/passage selections aggregate citing
-/// items the way xrefs already aggregate" both extend it to Passage too --
-/// same <c>AppliesTo</c> shape <see cref="CrossRefsSection"/> already uses).
-/// Same registry SLOT, same class NAME, per the task reviewer's own live
-/// verification that this batch needs only this one provider's
-/// <c>ResolveAsync</c> body replaced -- no other registry/ExplorerPopover
-/// change.
-///
-/// Lists citing items as explorable entries named by the item's own
-/// (curated) display name -- "The First Commandment", "Baptism — Part the
-/// Fourth" -- clicking one pushes a <see cref="CatechismNode"/> (the SAME
-/// drill-in <see cref="IPopoverSectionContext.PushAsync"/> mechanism every
-/// other section-native explorable row already uses). Conditional presence:
-/// a verse/passage citing nothing shows no section at all (no placeholder
-/// text), same rule <see cref="CrossRefsSection"/> already follows.
-///
-/// Batch F2 requirement 4 ("verse -&gt; catechism lookup now returns
-/// question-level hits"): a row whose own <see cref="CatechismRefDto.Question"/>
-/// is present reads "&lt;Item&gt; — &lt;Question title&gt;" (e.g. "The First
-/// Commandment — God the Holy Trinity"); a bare item-level hit (no
-/// question, Luther's own embedded citation) keeps the plain item name,
-/// unchanged since Batch F. The SAME item can legitimately appear more than
-/// once (via two different questions, or a question plus the bare
-/// citation) -- <c>catechism-item-{ID}</c> stays the testid for the FIRST
-/// occurrence of a given id (so every existing single-occurrence assertion,
-/// e.g. Baptism's own items, is untouched); a SECOND+ occurrence of the
-/// SAME id gets a numbered suffix (<c>catechism-item-{ID}--q2</c>,
-/// <c>--q3</c>, ...) so every row still has its own unique, addressable
-/// testid rather than colliding.
-/// </summary>
 public sealed class CatechismSeamSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
@@ -830,11 +427,6 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
         List<CatechismRefDto> items;
-        // Batch PROV-1, FIX ROUND 1 (review M-3): NO LONGER VERSE-ONLY --
-        // the identical gap CrossRefsSection carried, closed the identical
-        // way and for the identical (measured) reason. `catechism_for_span`
-        // needed one extra `State<Arc<GraphService>>` extractor, which six
-        // handlers in that file already take.
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
         try
         {
@@ -842,13 +434,13 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
             {
                 case VerseNode v:
                 {
-                    var detail = await v.DetailAsync(api); // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
+                    var detail = await v.DetailAsync(api);
                     items = detail.Catechism;
                     catechismProvenance = detail.CatechismProvenanceOrEmpty;
                     break;
                 }
                 case PassageNode p:
-                    items = await p.CatechismAsync(api); // memoized -- its own dedicated cache, mirrors XrefsAsync
+                    items = await p.CatechismAsync(api);
                     catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.ProvenanceOrEmpty));
                     break;
                 default:
@@ -858,7 +450,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         if (items.Count == 0)
@@ -875,10 +467,6 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
                 builder, seq, "THE SMALL CATECHISM", "catechism-section-heading",
                 catechismProvenance, registry, "catechism-provenance", "Sources for this catechism mapping");
 
-            // M-D3 (U2/U6, owner: "Catechism defaults to 2 shown + U2
-            // mechanics"): CatechismList.razor owns the actual rendering +
-            // reveal state (a genuine component instance, unlike this
-            // stateless provider) -- see that component's own doc comment.
             builder.OpenComponent<Components.CatechismList>(seq++);
             builder.AddAttribute(seq++, "Items", items);
             builder.AddAttribute(seq++, "Cap", CatechismDefaultCap);
@@ -888,23 +476,9 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
         return new PopoverSection("catechism", body);
     }
 
-    // Owner, verbatim (progress.md, U6): "Catechism defaults to 2 shown."
     private const int CatechismDefaultCap = 2;
 }
 
-/// <summary>
-/// Batch F: shared rendering helper for every "Catechism" node-kind section
-/// below -- an optional small-caps title (Luther's own verbatim heading, or
-/// this app's own invented section chrome like "THE SCRIPTURES") followed by
-/// the body text, split on a literal blank line ("\n\n") into one
-/// &lt;p&gt; per paragraph. The blank-line split matters specifically for
-/// Lord's-Prayer/Confession items, whose curated `explanation` deliberately
-/// concatenates TWO of Luther's own answers (e.g. "What does this
-/// mean?" + "How is this done?") under one heading -- see
-/// data/curated/catechism.toml's own header comment -- rendering them as
-/// two separate paragraphs preserves that structure visually rather than
-/// running them together as one wall of text.
-/// </summary>
 file static class CatechismSectionRendering
 {
     public static void TitledParagraphs(RenderTreeBuilder builder, ref int seq, string? title, string bodyClass, string body)
@@ -928,17 +502,6 @@ file static class CatechismSectionRendering
     }
 }
 
-/// <summary>
-/// Batch F: a <see cref="CatechismNode"/>'s own primary-source TEXT --
-/// the commandment/creed-article/Lord's-Prayer-petition wording itself,
-/// unlabeled (no heading precedes it -- requirement 4 lists it first,
-/// bare: "sections = the item's text"). Conditional presence: Baptism/
-/// Confession/Sacrament-of-the-Altar items have no separate prompt distinct
-/// from their own Q&amp;A (<c>CatechismItemDetail.Text</c> is null there --
-/// see that record's own doc comment), so this section is simply absent for
-/// them -- "no Explore/map section... conditional presence applies to
-/// affordances too" extends here too, one layer further in.
-/// </summary>
 public sealed class CatechismTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
@@ -953,7 +516,7 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
         CatechismItemDetail detail;
         try
         {
-            detail = await item.DetailAsync(api); // memoized -- shared with the three sibling providers below
+            detail = await item.DetailAsync(api);
         }
         catch (Exception)
         {
@@ -976,14 +539,6 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch F: a <see cref="CatechismNode"/>'s own explanation -- Luther's OWN
-/// verbatim heading (<c>CatechismItemDetail.ExplanationHeading</c>, "What
-/// does this mean?" for the overwhelming majority of items, a distinct real
-/// question for Baptism/Confession/Sacrament-of-the-Altar items) as the
-/// section's own small-caps title, per requirement 4 verbatim. Always
-/// present -- every curated item has a non-empty explanation.
-/// </summary>
 public sealed class CatechismExplanationSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
@@ -1014,15 +569,6 @@ public sealed class CatechismExplanationSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch F: a <see cref="CatechismNode"/>'s own "Where is this written?"
-/// proof text -- present only for the items where Luther's own text poses
-/// that exact question (Baptism Part the First/Second/Fourth, the
-/// Sacrament of the Altar's institution words); conditional presence,
-/// absent otherwise (e.g. Baptism Part the Third's own Titus citation is
-/// embedded inline in its explanation instead -- see that item's own
-/// curated `ref_note`).
-/// </summary>
 public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
@@ -1058,29 +604,6 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch F: "THE SCRIPTURES" -- a <see cref="CatechismNode"/>'s own proof
-/// verses, each rendered with its OWN FULL KJV text (house rendering, not a
-/// truncated preview) and explorable: clicking one pushes a fresh
-/// <see cref="VerseNode"/> (or <see cref="PassageNode"/> for a grouped
-/// passage entry), so onward navigation keeps working exactly as it does
-/// everywhere else in this app (verse -&gt; catechism -&gt; proof verse -&gt; its
-/// OWN cross-references -&gt; ..., requirement 4 verbatim). Conditional
-/// presence: absent for an item with zero curated proof verses.
-///
-/// Batch F2, 6-ARCH: rebuilt on the shared <see cref="Components.PassageList"/>
-/// -- sequential proof verses now display as ONE passage entry, never N
-/// separate rows (a real, common case since a range citation like "EXO.20.5-6"
-/// expands to individual verses on the wire). <c>CatechismItemDetail.Verses</c>
-/// is split into contiguous same-<see cref="CatechismProofVerseDto.Question"/>
-/// runs FIRST (item-level verses -- question null, Luther's own embedded
-/// citation, always listed first -- then each question's own verses, in
-/// curated order) -- each run becomes its own <see cref="PassageSourceUnit"/>,
-/// so passage-grouping never silently spans two different questions' worth
-/// of proof text, and each block's own question title renders as a caption
-/// (requirement 4's own "if cheap, highlight/deep-link the question
-/// context"). No cap -- items rarely have enough proof verses to need one.
-/// </summary>
 public sealed class CatechismScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
@@ -1107,19 +630,6 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        // M-D4 fix round 1 (R-M1, review Important-1): unlike CrossRefsSection/
-        // VerseTextResolver, this provider's own source (CatechismProofVerseDto,
-        // curated citation data) never carried Places/Persons at all -- it is
-        // not ChapterOut-sourced the way every OTHER PassageListVerse producer
-        // already is. Fail-soft, own try/catch (independent of the DetailAsync
-        // fetch above, the house pattern): fetches each proof verse's own
-        // chapter (GET /api/chapter/{cref}, LRU-cached -- the SAME endpoint
-        // VerseTextSectionProvider's own compact-focus extension already
-        // established this exact pattern for) and reads Places/Persons off
-        // the matching VerseOut row. A failed/missing lookup just leaves that
-        // verse's own mention data absent -- MentionText.razor already treats
-        // an empty pair as "resolved, attests nothing," the same honest
-        // degrade every other mention-aware surface in this app has.
         var mentionData = new Dictionary<string, VerseOut>();
         try
         {
@@ -1135,7 +645,6 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            // fail soft -- proof verses still render, just without mention links this time
         }
 
         var units = new List<PassageSourceUnit>();
@@ -1179,33 +688,6 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch R requirement 3 named this registry slot THE SEAM for a future
-/// Theographic place description (same treatment as
-/// <see cref="CatechismSeamSection"/>, one registry slot earlier -- PLACE's
-/// own ordering: description, dates, blurb, events) and left it a no-op
-/// stub pending that content. Batch E3 fills it -- with requirement 2's
-/// quiet provenance note, not the originally-envisioned description (owner
-/// bug report 2026-08-20, root cause: a map label showing the Theographic
-/// canonical name where the KJV text uses a different word entirely). "The
-/// canonical/Theographic name appears at most ONCE, quietly, inside the
-/// place popover as provenance" -- decisive display (map/hover-card/
-/// popover title all show the SAME resolved KJV name, per NAME-1/the
-/// scene's own `display_name`) never loses the ORIGINAL name entirely; it
-/// just moves it here, one quiet line, non-interactive, immediately under
-/// the title. Conditional presence, same idiom every other section here
-/// follows: <see cref="PlaceDetail.CanonicalName"/> is `null` whenever this
-/// place's displayed name already IS its canonical name (server-decided --
-/// <c>resolve_display_name_and_canonical</c> only ever returns `Some` when
-/// a curated KJV alias is the reason the two differ, never for a curated
-/// period-history rename, e.g. Luz/Bethel, which is itself already
-/// KJV-accurate for its own era and has nothing to disclose) -- this
-/// provider trusts that server-side decision rather than re-deriving it
-/// from a string comparison against <see cref="IExplorable.Title"/>
-/// client-side (the "no client-side rename map" rule applies to this
-/// comparison too, not just the alias resolution itself). A future Batch P
-/// place description, if authored, would need its own registry slot.
-/// </summary>
 public sealed class PlaceDescriptionSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Place";
@@ -1220,7 +702,7 @@ public sealed class PlaceDescriptionSection : IPopoverSectionProvider
         PlaceDetail detail;
         try
         {
-            detail = await place.DetailAsync(api); // memoized -- shared with PlaceDatesSection/PlaceBlurbSection/PlaceEventsSection
+            detail = await place.DetailAsync(api);
         }
         catch (Exception)
         {
@@ -1245,27 +727,6 @@ public sealed class PlaceDescriptionSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch R requirement 3, rebuilt Batch F2 requirement 6b (user direction
-/// 2026-08-20: "on the established/destroyed buttons just display
-/// verses/passages how we do on every other hover menu... rather than the
-/// stupid buttons i have to click to see"): established/destroyed, with
-/// their supporting verses/passages rendered INLINE, immediately -- no
-/// click-to-reveal step. The date LABEL itself is no longer a button that
-/// gates the verses behind a YearNode push (that "reveal button" role is
-/// retired, per the requirement's own wording) -- it is now a plain,
-/// non-interactive instrument-face line, same house treatment
-/// PlaceCard.razor's own established/destroyed line already uses one hop
-/// further OUT. The verses/passages themselves are what stay explorable
-/// ("the refs themselves stay explorable entries (click a ref -&gt; its
-/// verse node, as everywhere)"), rendered via the SHARED
-/// <see cref="Components.PassageList"/> component (6-ARCH), capped at 2
-/// passage entries per date (est and dest each -- "the place popover always
-/// has sibling sections," so this cap is unconditional, not context-
-/// dependent the way requirement 6's xref cap is) with the same down-arrow
-/// reveal/up-arrow snap-back language. Conditional presence: absent when
-/// this place has neither claim curated.
-/// </summary>
 public sealed class PlaceDatesSection : IPopoverSectionProvider
 {
     private const int SupportingVersesCap = 2;
@@ -1282,7 +743,7 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
         PlaceDetail detail;
         try
         {
-            detail = await place.DetailAsync(api); // memoized -- shared with PlaceBlurbSection/PlaceEventsSection
+            detail = await place.DetailAsync(api);
         }
         catch (Exception)
         {
@@ -1296,8 +757,6 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             return null;
         }
 
-        // Both dates' own supporting verses resolve concurrently (independent
-        // fetches, same "never serialize" rule this app follows throughout).
         var establishedVersesTask = established is { } est ? VerseTextResolver.ResolveAsync(api, est.Verses) : Task.FromResult(new List<PassageListVerse>());
         var destroyedVersesTask = destroyed is { } dest ? VerseTextResolver.ResolveAsync(api, dest.Verses) : Task.FromResult(new List<PassageListVerse>());
         await Task.WhenAll(establishedVersesTask, destroyedVersesTask);
@@ -1356,15 +815,6 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch R requirement 3: the place's own period blurb, resolved against the
-/// SAME window <see cref="PlaceNode"/> was constructed with (see that
-/// class's own constructor comment) -- same BLURB-1 resolution
-/// (CONTRACT.md) PlaceCard's own <c>place-card-blurb</c> already uses.
-/// Conditional presence: absent whenever the API returned none for this
-/// window (no window at all, or a window matching neither an "era" nor a
-/// "broad" curated range).
-/// </summary>
 public sealed class PlaceBlurbSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Place";
@@ -1404,24 +854,6 @@ public sealed class PlaceBlurbSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch R requirement 3: "events (verse groups)" -- this place's own event
-/// rows, each pushing a fresh <see cref="TimeAndPlaceNode"/> on click (the
-/// SAME drill-in <see cref="PlaceNode"/>'s own retired-as-primary
-/// <c>BodyAsync</c>/<c>OnSelectEvent</c> mechanism already offered -- see
-/// that node's own doc comment for why BodyAsync survives, unused, as a
-/// defensive fallback). Reuses the existing <c>place-event-{id}</c> testid
-/// (already shipped, simply undocumented in CONTRACT.md before this batch --
-/// see this batch's own CONTRACT amendment). Conditional presence: absent
-/// for a place with zero recorded events (impossible for a REAL lit/quiet
-/// place opened via its own card -- SCENE-2/QUIET-1 -- but a place explored
-/// some other way, e.g. a future search feature, could still have none).
-/// M-D1 requirement 4 (TRUNCATION AUDIT): the row list itself is now
-/// CAPPED (<see cref="Components.PlaceEventsList"/>, cap 10, down-arrow
-/// reveal) -- a real, live-verified gap this batch found and fixed
-/// (Jerusalem alone real-carries 236 located-at events, unbounded by any
-/// time window, previously rendered with no cap or disclosure at all).
-/// </summary>
 public sealed class PlaceEventsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Place";
@@ -1450,13 +882,6 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 
         var placeName = place.Title;
         var events = detail.Events;
-        // M-D1 requirement 4 (TRUNCATION AUDIT): a real, live-verified gap
-        // -- this list previously had NO cap at all (Jerusalem alone: 236
-        // located-at events across the whole atlas). Delegated to a real
-        // component (PlaceEventsList.razor) rather than a hand-built
-        // RenderFragment here, mirroring VerseTextSectionProvider's own
-        // established "a provider instance is shared/static and cannot own
-        // per-popover expand state; a component can" precedent.
         RenderFragment body = builder =>
         {
             builder.OpenComponent<Components.PlaceEventsList>(0);
@@ -1464,7 +889,6 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
             builder.AddAttribute(2, "PlaceName", placeName);
             builder.AddAttribute(3, "Events", events);
             builder.AddAttribute(4, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
-            // G2-m2: closes this section's own named gap in the parked report.
             builder.AddAttribute(5, "OnToggleSelect", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.ToggleSelectAsync(n)));
             builder.CloseComponent();
         };
@@ -1472,23 +896,6 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is not
-/// an event. fix this error and others like it"): the exhaustive,
-/// drift-failing kind-&gt;heading mapping <see cref="VerseEventMembershipSection"/>/
-/// <see cref="VersePassageMembershipSection"/> both read, rather than each
-/// hand-rolling its own ternary/ternary-of-a-ternary (the pre-PERI-1 shape
-/// this class replaces, which silently defaulted an unrecognized kind to
-/// "EVENT" instead of failing loud). Pinned directly by
-/// client.Tests/Explore/EventMembershipHeadingTests.cs -- "event" -&gt;
-/// "EVENT", "general" -&gt; "PASSAGE" (this project's own pre-existing
-/// PASSAGE noun, reused per the register law -- see CONTRACT.md's own
-/// PRESENTATION CATEGORY LAW section for the full cross-surface rule this
-/// mapping is one instance of), anything else throws
-/// <see cref="NotSupportedException"/> rather than defaulting -- the
-/// "cheapest honest structural check" the batch brief's own conformance
-/// corollary asks for.
-/// </summary>
 public static class EventMembershipHeading
 {
     public static string For(string kind) => kind switch
@@ -1499,33 +906,6 @@ public static class EventMembershipHeading
     };
 }
 
-/// <summary>
-/// Batch T requirement 3 ("verse popover: event membership replaces
-/// prev/next"): the VERSE popover's own "EVENT" section -- one row per
-/// EVENT-kind PASSAGE citing this verse (the pre-existing
-/// <see cref="VerseDetail.Events"/> list, already fetched by
-/// <see cref="VerseTextSectionProvider"/>/<see cref="CrossRefsSection"/>,
-/// zero new network cost), each a small-caps, explorable title that pushes
-/// a fresh <see cref="EventNode"/>. REPLACES Batch N's own verse-level
-/// PRIOR/FOLLOWING sections (the owner, verbatim: "rather than putting the
-/// next/previous event on every verse, add titles of events that
-/// correspond to passages") -- traversal (PRIOR/FOLLOWING) now lives
-/// entirely on the EVENT node itself, reached by clicking one of these
-/// rows. Conditional presence: absent for a verse touching zero titled
-/// events (the overwhelming majority of verses outside Gospels/Acts/the
-/// curated narratives).
-///
-/// Batch PERI-1 (PRESENTATION CATEGORY LAW): SPLIT by
-/// <see cref="VerseEventDto.Kind"/> -- this section now renders ONLY
-/// `kind == "event"` rows, under the unchanged "EVENT" heading/testid/row
-/// shape; a `kind == "general"` PASSAGE (a Psalm acrostic stanza, an
-/// epistle outline pericope -- the owner's own PSA.119.105/GAL.1.8 repros)
-/// renders instead under <see cref="VersePassageMembershipSection"/>, a
-/// sibling section immediately below in the registry, never under this
-/// one. The two sections share <see cref="RenderRows"/> (below) --
-/// identical row markup/testid/click behavior either way, only the
-/// grouping heading/PopoverSection testid differs.
-/// </summary>
 public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
@@ -1540,7 +920,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
         List<VerseEventDto> events;
         try
         {
-            events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseTextSectionProvider's own fetch
+            events = (await v.DetailAsync(api)).Events;
         }
         catch (Exception)
         {
@@ -1556,25 +936,13 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
         return new PopoverSection("event-membership", RenderRows("event", dated, ctx, await FrontierProvenance.RegistryOrNull(api)));
     }
 
-    /// Shared by <see cref="VersePassageMembershipSection"/> below -- ONE
-    /// row-rendering implementation for both sibling sections (identical
-    /// button/testid/click/quiet-styling shape either way; only the
-    /// heading text and the PopoverSection's own testid differ, both
-    /// derived from <paramref name="kind"/> via
-    /// <see cref="EventMembershipHeading"/> above).
     internal static RenderFragment RenderRows(string kind, IReadOnlyList<VerseEventDto> events, IPopoverSectionContext ctx, SourcesDocumentOut? registry) => builder =>
     {
         var seq = 0;
-        // Batch PROV-1: PER-ROW provenance (each row's own Event NODE says
-        // "theographic" or "curated"), gathered to the one heading that
-        // covers them. A verse belonging to both an imported event and a
-        // hand-authored one names BOTH sources here -- TOTAL-CAPTURE
-        // HONESTY: our own curated work must say so, and cannot hide inside
-        // a Theographic-looking list.
         seq = FrontierProvenance.Heading(
             builder, seq,
             EventMembershipHeading.For(kind),
-            "event-section-heading", // the SAME house small-caps eyebrow every section-registry heading shares (CATECH-1/NARRATIVE-1/DELTA-1) -- not a fifth copy
+            "event-section-heading",
             FrontierProvenance.Distinct(events.Select(e => e.Provenance)),
             registry,
             "event-membership-provenance-" + kind,
@@ -1582,19 +950,11 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
 
         foreach (var e in events)
         {
-            var id = e.Id; // local copies -- captured per-row by the onclick closure below
+            var id = e.Id;
             var label = e.Label;
-            var rowKind = e.Kind; // fix round 1 (S-1a/Q-1a): passed to EventNode's own knownKind below -- see that constructor param's own doc comment
-            // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): a
-            // general-kind event is NOT part of time traversal (req 2)
-            // -- its own row here must not look like a dated event's
-            // (which DOES traverse, after req 1). `.explorable-quiet`
-            // REPLACES `.explorable` (never both) -- same class,
-            // everywhere a non-traversable node's own identity renders,
-            // per that class's own app.css comment. Unchanged by PERI-1
-            // (this section's own events are now single-kind, but the
-            // per-row check stays -- cheaper than threading `kind` through
-            // a second parameter, and correct either way).
+            var rowKind = e.Kind;
+            // .explorable-quiet replaces .explorable (never both): a general-kind event
+            // is not part of time traversal, so its row must not look traversable.
             var explorableClass = e.Kind == "general" ? "explorable-quiet" : "explorable";
             builder.OpenElement(seq++, "button");
             builder.AddAttribute(seq++, "type", "button");
@@ -1607,15 +967,6 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
     };
 }
 
-/// <summary>
-/// Batch PERI-1 (PRESENTATION CATEGORY LAW): the VERSE popover's own
-/// "PASSAGE" section -- <see cref="VerseEventMembershipSection"/>'s own
-/// sibling, header comment above, restricted to `kind == "general"` rows
-/// (a dateless pericope/literary-structure PASSAGE) -- NEVER rendered
-/// under the "EVENT" heading. Conditional presence: absent for a verse
-/// touching zero general-kind passages (the overwhelming majority --
-/// PSA.119.105/GAL.1.8 are the owner's own two named exceptions).
-/// </summary>
 public sealed class VersePassageMembershipSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Verse";
@@ -1630,7 +981,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
         List<VerseEventDto> events;
         try
         {
-            events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseEventMembershipSection's/VerseTextSectionProvider's own fetch
+            events = (await v.DetailAsync(api)).Events;
         }
         catch (Exception)
         {
@@ -1647,44 +998,6 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch PROV-1 (owner order 1, "one thing we definitely need for EVERY
-/// PIECE OF DATA is the source from which it came", applied to an EVENT
-/// node's own focus card): the "?" for the EVENT ITSELF -- not for any one
-/// of its sections, but for the claim that this event exists at all.
-///
-/// <para>ITS OWN PROVIDER, and that is the point. Every other candidate
-/// home for it is CONDITIONAL: <see cref="EventDateAndPlacesSection"/>
-/// returns null for an undated, placeless event; <see cref="EventWitnessesSection"/>
-/// returns null when there are fewer than two accounts; the Espousal of
-/// Mary (ATTEST-1's founding case) has neither. An event's SOURCE is not
-/// conditional on any of that -- the node exists, so somebody asserted it,
-/// so the reader can always ask who. Registered at Order 134, immediately
-/// above <see cref="EventDateAndPlacesSection"/>'s 135, which puts it
-/// directly under the event header -- the same "right below the event
-/// header" placement EVT-META-TOP-1 won for the time/place block, one line
-/// higher.</para>
-///
-/// <para>TOTAL-CAPTURE HONESTY lives here (brief requirement 4, and the
-/// ATTEST-1 leper lesson): a hand-authored event's node provenance is
-/// literally <c>"curated"</c>, which the registry maps to "Our Own Curated
-/// Work" -- so this affordance is exactly where a curated row stops being
-/// able to wear an imported source's clothes. An imported one says
-/// Theographic, and the two cannot look alike.</para>
-///
-/// <para>FIX ROUND 1 (review H-1, HIGH): this used to say "renders NOTHING
-/// when the event carries no provenance at all," implemented as an explicit
-/// <c>if (string.IsNullOrEmpty(detail.Provenance)) return null;</c>. That
-/// was the FOURTH of the four sites that turned a blank provenance into
-/// silence, and it is the worst of them, because -- as the paragraph above
-/// says -- an event's SOURCE is never conditional: the node exists, so
-/// somebody asserted it. Rendering nothing there meant an event popover
-/// with no "?" at all, indistinguishable from a page that simply had not
-/// loaded, for exactly the case a reader most needs told. The event is now
-/// ALWAYS attributed, and a blank arriving anyway (which the server can no
-/// longer produce -- <c>handlers::event</c> 500s instead) renders the loud
-/// notice.</para>
-/// </summary>
 public sealed class EventProvenanceSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -1699,17 +1012,12 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
         EventDetail detail;
         try
         {
-            detail = await ev.DetailAsync(api); // memoized -- the SAME fetch EventDateAndPlacesSection/EventWitnessesSection share, never a second one
+            detail = await ev.DetailAsync(api);
         }
         catch (Exception)
         {
-            return null; // fail soft, same policy as every sibling Event section
+            return null;
         }
-
-        // FIX ROUND 1 (review H-1): the `if (string.IsNullOrEmpty(...))
-        // return null;` that stood here is GONE -- see this class's own doc
-        // comment. An event ALWAYS has an asserter, so it always gets a "?",
-        // and a blank one shouts rather than disappearing.
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
         RenderFragment body = builder =>
@@ -1722,83 +1030,6 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch T requirement 4: an <see cref="EventNode"/>'s own date + place(s) --
-/// "title + traditional date + place(s) (each explorable -- place opens the
-/// place node; the date line quiet, with ref_note provenance on hover or a
-/// quiet note)," the brief verbatim. ONE section (not two) since both are
-/// small, header-adjacent facts about the SAME subject, rendered together
-/// immediately below the popover's own title.
-///
-/// Batch T2 (general-kind PASSAGEs): a `Kind == "general"` passage has no
-/// defensible date (<see cref="EventDetail.When"/> is `null`, never the
-/// server's own internal placeholder -- see that DTO's doc comment) and,
-/// by construction, no places either -- "do not fabricate a date/place"
-/// extends to this section: the date line renders ONLY when
-/// <c>detail.When</c> is present, and the whole section is ABSENT
-/// (returns `null`, same conditional-presence idiom every other
-/// zero-content section in this file already follows -- e.g.
-/// <see cref="VerseEventMembershipSection"/> above) when there is neither
-/// a date NOR any places to show.
-/// </summary>
-/// <summary>
-/// M-D3 owner ruling ("MORNING ADDRESS", 2026-08-23), decision 6 (U1): an
-/// EVENT node's own FOCUS section -- date, place(s), AND (owner UI spec,
-/// near-verbatim, progress.md: "immediately below focus, left arrow w/
-/// PRIOR event name, right arrow w/ FOLLOWING (narrative); explorable;
-/// hover = normal focus+frontier; those foci truncated to ONE VERSE") the
-/// narrative prior/following traversal -- now rendered INSIDE this one
-/// section (a compact flanking row per qualifying narrative), not as two
-/// separate "PRIOR EVENT"/"FOLLOWING EVENT" registry sections underneath
-/// PARALLEL ACCOUNTS. RETIRES Batch N/T's own EventPriorSection/
-/// EventFollowingSection/NarrativeDirectionSection -- their per-narrative
-/// fetch + same-name disambiguation logic lives on here (see
-/// <c>occurrences</c> below); their own big-headed, multi-verse-list
-/// rendering does not ("one-verse foci": only the adjacent event's OWN
-/// first vref across its VerseGroups is ever resolved, never the whole
-/// group). LEFT/RIGHT, never "prior in time" -- this is strictly
-/// NARRATIVE (succession-relation) order, the doubly-linked-list the owner
-/// named; the GLOBAL CHRONOLOGICAL adjacency
-/// (<see cref="EventChronologySection"/>, below, its own separate,
-/// headed "CHRONOLOGY" block) is out of U1's own stated scope ("never
-/// chronological").
-/// "hover = normal focus+frontier": true of the ARROW ROW itself (the
-/// ink-wash `.explorable` state every explorable element in this popover
-/// platform gets) -- TRAV-1 (controller decision 4) layers a bespoke
-/// DWELL-hover on top, entirely inside <see cref="Components.ArrowNav"/>
-/// (a sustained hover reveals a transient verse-text peek; a quick pass
-/// stays exactly this "normal focus+frontier" ink-wash and nothing more).
-/// </summary>
-/// <summary>
-/// M-D4 fix round 1/P4 (owner, live off demo36, verbatim: "we straight up
-/// should not have [the verse text]. you get that when you traverse.") --
-/// retires U1's own "those foci truncated to ONE VERSE" caption entirely
-/// (no count, no content preview of ANY kind in the arrow affordance
-/// itself; the click is what YIELDS the event, not what the affordance
-/// previews). In its place, each arrow now carries a static small-caps
-/// role caption beneath it -- "PRIOR EVENT"/"FOLLOWING EVENT" -- naming
-/// the DIRECTION only, never the destination's own content. The event
-/// NAME (inside the button, unchanged) is the only per-event text left;
-/// <see cref="Components.ArrowNav"/>'s own doc comment has the rest.
-/// </summary>
-
-/// <summary>
-/// CHRONO-MERGE-1 (owner NOD 2026-08-24: "put chronology up top... nix the
-/// narrative thing from hover menu"; POPOVER-LAW-1's own first
-/// application): RETIRES the narrative prior/following nav this section
-/// used to fold in (M-D3/U1, immediately above) WHOLE -- controller
-/// measurement found 72% of narrative rows byte-identical to the SAME
-/// event's own global-timeline row (<see cref="EventChronologySection"/>),
-/// so a dedicated per-narrative nav duplicated the Chronology block's own
-/// arrows for the overwhelming majority of events; the 28% that genuinely
-/// differ now surface as <see cref="EventChronologySection"/>'s own
-/// divergence-only story-thread line instead (that class's own doc
-/// comment has the full rule) -- ONE traversal block survives, not two.
-/// This section is left holding exactly what its own name always said:
-/// an EVENT's date + place(s), nothing else. `RenderArrowNav` below stays
-/// -- <see cref="EventChronologySection"/>'s own arrows (block AND, new
-/// this batch, inline story-thread legs) are its one remaining caller.
-/// </summary>
 public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -1813,48 +1044,18 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         EventDetail detail;
         try
         {
-            detail = await ev.DetailAsync(api); // memoized -- shared with EventWitnessesSection and EventChronologySection's own map-focus-sync read
+            detail = await ev.DetailAsync(api);
         }
         catch (Exception)
         {
-            return null; // CHRONO-MERGE-1: date/places is this section's ONLY content now -- a failed fetch leaves nothing to fail soft INTO
+            return null;
         }
 
         if (detail.When is null && detail.Places.Count == 0)
         {
-            return null; // conditional presence: nothing this section can honestly show
+            return null;
         }
 
-        // EVT-3 Ticket 3 / EVT-META-TOP-1 (fix round 2, owner verbatim:
-        // "time + place block should be moved to the top, right below the
-        // event header. we don't need to have TIME: and PLACE:. just put
-        // the actual values; AD 31 and Galilee for The Sermon on the
-        // Mount." Amended verbatim: "have the time and place next to each
-        // other; not stacked."): ONE reusable FrontierMetadataRow, Label
-        // OMITTED (bare values only), whose own ChildContent holds the
-        // time value chip THEN every place value chip as SIBLINGS in the
-        // SAME flex row -- "next to each other" falls out of that single
-        // composition, never a second stacked row. TestId stays "event-time"
-        // (the row's own established wrapper id; the individual value
-        // testids -- event-time-value/event-place-{id} -- are unchanged,
-        // so existing per-value assertions keep working). Time: click ->
-        // that YEAR's own chronology (YearNode's new event-time
-        // constructor, YearFrontierSection); Place: click -> the
-        // map-focus-at-time hatch (MapFocusHatch.Query,
-        // IPopoverSectionContext.NavigateWorldAsync) -- "exploration of
-        // places belonging to events is a function of that location and
-        // the event's time... a side effect of the map opening with the
-        // appropriate state," the owner's own words, verbatim. Places are
-        // nested INSIDE the `When` branch: Place: is structurally
-        // reachable only when When is too (EventDetail.cs's own doc
-        // comment -- a general-kind passage's own Places is always empty
-        // by construction), so `when` is captured once here for the
-        // Place: chip's own map-hatch query, never re-derived. Ordering
-        // (registry): this provider's own Order moved ABOVE
-        // EventChronologySection's -- "right below the event header" means
-        // FIRST among Event sections now, not second (CHRONO-MERGE-1's own
-        // "Chronology, always on top" is superseded by this later, more
-        // specific ruling -- see PopoverSections.cs's own registry comment).
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -1873,21 +1074,15 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                     valueBuilder.AddAttribute(vseq++, "data-testid", "event-time-value");
                     if (detail.RefNote is { } refNote)
                     {
-                        valueBuilder.AddAttribute(vseq++, "title", refNote); // quiet, hover-revealed provenance -- a native tooltip, no extra affordance/click needed
+                        valueBuilder.AddAttribute(vseq++, "title", refNote);
                     }
                     valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when))));
                     valueBuilder.AddContent(vseq++, dateText);
                     valueBuilder.CloseElement();
 
-                    // NAV-2 law (deliverability): no located place -> no
-                    // Place: value AT ALL -- conditional presence, not a
-                    // quiet/disabled state (HATCH-DELIVERABLE-1's own §4e
-                    // ruling, applied here identically). Rendered as
-                    // SIBLINGS of the time chip immediately above, inside
-                    // this SAME ChildContent -- "next to each other."
                     foreach (var p in detail.Places)
                     {
-                        var placeId = p.Id; // local copies -- captured per-row by the onclick closure below
+                        var placeId = p.Id;
                         var placeName = p.Name;
                         var query = MapFocusHatch.Query(placeId, when);
                         valueBuilder.OpenElement(vseq++, "button");
@@ -1905,28 +1100,6 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    // Opens a real <see cref="Components.ArrowNav"/> component instance
-    // (never raw elements built by hand here anymore) from this
-    // RenderTreeBuilder body, the SAME "open a real component from
-    // imperative RenderTreeBuilder code" pattern this file already
-    // established for <see cref="Components.PassageList"/>. TRAV-1
-    // (controller decision 3, "same arrow-traversal component"): this is
-    // that reuse, realized -- see ArrowNav.razor's own doc comment for why
-    // the rendering moved out of a static helper into a genuine component
-    // (decision 4's dwell-hover peek needs per-arrow state that survives
-    // across renders, which a RenderFragment closure cannot hold).
-    //
-    // CHRONO-MERGE-1: this section's own former narrative-nav loop (the
-    // "called twice per row" caller this comment used to name) is retired
-    // -- <see cref="EventChronologySection"/> is now the ONLY caller,
-    // twice for its own single GLOBAL block row (block mode, unchanged)
-    // and again, up to twice per diverging narrative, for the story-thread
-    // line's own inline leg affordances (<paramref name="inline"/> true,
-    // <paramref name="inlinePrefixText"/> the sentence-level word a
-    // following-direction leg needs -- see ArrowNav.razor's own doc
-    // comment for the full Inline-mode story). Both trailing parameters
-    // default to the block-mode shape so neither existing call site needed
-    // to change.
     internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
@@ -1943,48 +1116,10 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// M-D3/U6 (extracted from the former inline body of
-/// <see cref="EventWitnessesSection"/>, unchanged logic): resolves a
-/// (possibly FILTERED) witness list into <see cref="PassageSourceUnit"/>s
-/// with real KJV text, one unit per witness -- the shared step BOTH an
-/// EVENT node's own "PARALLEL ACCOUNTS" (<see cref="EventWitnessesSection"/>,
-/// every witness) and a VERSE node's own "PARALLELS"
-/// (<see cref="VerseParallelsSection"/>, EVERY OTHER witness -- excluding
-/// the one the current verse itself belongs to) need identically -- "one
-/// component/behavior, parameterized -- never two implementations," the
-/// SAME discipline U2's own RevealControls.razor follows for the reveal
-/// mechanic, applied here to witness-resolution.
-///
-/// M-D4 fix round 1/P5 (owner, verbatim, of EventWitnessesSection's own
-/// "PARALLEL ACCOUNTS": "we're wasting real estate... it's obvious where
-/// they're coming from already"): units carry NO caption now. This
-/// resolver used to book-display-name every unit (an extra
-/// <see cref="AtlasClient.Books"/> read) on the reasoning that the
-/// caption was "genuinely load-bearing" for EventWitnessesSection
-/// specifically -- retired outright, since PassageList.razor's own
-/// ref-label (e.g. "MRK.6.1-6") already names the book; a caption line
-/// under it was always a second header for the same one fact.
-/// <see cref="VerseParallelsSection"/>'s own O5 ruling (below) had
-/// already reached the identical conclusion for "PARALLELS" one fix
-/// round earlier via a per-call-site null-out -- this makes it true at
-/// the SOURCE instead, so both consumers agree by construction, not by
-/// two separate call sites each remembering to null a field.
-/// </summary>
 file static class WitnessUnitsResolver
 {
     public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitnessDto> witnesses)
     {
-        // Fix round 2 (N-1): the canon's own chapter lengths -- what lets
-        // BuildCoalescedBlock join a chapter boundary ONLY where genuinely
-        // contiguous (Versification's own doc comment has the whole story).
-        // api.Books() is the app-lifetime-memoized TOC (AsyncMemo) --
-        // effectively free after first touch anywhere in the app. Fail-soft
-        // to null: coalescing then degrades CONSERVATIVELY (no boundary
-        // ever joins -- honest compound rendering, never a guessed join).
-        // Note this is NOT the P5-retired Books() read (that one fetched
-        // display NAMES for a caption this list no longer renders); this
-        // one feeds span CORRECTNESS, a different fact entirely.
         Versification? canon = null;
         try
         {
@@ -1992,34 +1127,14 @@ file static class WitnessUnitsResolver
         }
         catch (Exception)
         {
-            // conservative degrade, see above
         }
 
         var units = witnesses.Select(w =>
         {
-            // Batch HOTFIX-4 requirement 7: GroupCount carries each
-            // VerseGroup's own TRUE total (server-side `take(20)` cap,
-            // scene::verse_groups_for) so a truncated witness group shows
-            // the "+N more" signal instead of silently ending at 20.
-            // Fix round 2 (N-6): flattening now lives in ONE place,
-            // PassageBlockBuilder.FlattenWitness -- shared with ArrowNav's
-            // own refs derivation so "one derivation, two render sites"
-            // (ACCT-SET-MISMATCH-1) is structural, not conventional.
             var verses = PassageBlockBuilder.FlattenWitness(w);
-            // ACCT-COALESCE-1: ONE witness (curated as ONE `[[witness]]`
-            // TOML row) is ALWAYS one account -- one unit, one block --
-            // though its REF may render as a compound list where the row's
-            // own verse ranges have real gaps (PassageSourceUnit's own
-            // CoalesceAcrossChapters doc comment has the corrected,
-            // fix-round-2 rule).
             return new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon);
         }).ToList();
 
-        // The witnesses' own verse TEXT isn't on VerseGroup (ids only, same
-        // as every other VerseGroup on this wire) -- resolve it the SAME way
-        // every other section in this file resolves a curated verse list
-        // (VerseTextResolver, the existing chapter fetch + LRU cache), then
-        // re-pair it back onto each unit's own PassageListVerse list.
         List<PassageListVerse> resolvedFlat;
         try
         {
@@ -2030,52 +1145,18 @@ file static class WitnessUnitsResolver
         {
             resolvedFlat = new List<PassageListVerse>();
         }
-        // GroupBy + first-wins (not a raw ToDictionary) -- defensive against a
-        // duplicate Vref across two witnesses, which server-side validation
-        // (validate::run's own overlap check) already prevents for real
-        // compiled data, but this is client code reading a network response,
-        // not something to assume well-formed a second time.
-        //
-        // M-D4 fix round 1 (R-M1): keyed by the WHOLE resolved PassageListVerse
-        // now, not just its own .Text -- VerseTextResolver.ResolveAsync
-        // already carries Places/Persons (the same already-fetched ChapterOut
-        // row), so re-pairing below must not silently re-drop them the way a
-        // text-only dictionary would.
+        // GroupBy + first-wins, not a raw ToDictionary: defensive against a duplicate Vref
+        // across two witnesses in the network response (which ToDictionary would throw on).
         var resolvedByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First());
         return units.Select(u => new PassageSourceUnit(
-            // v.GroupCount carried through from the FIRST construction
-            // above -- resolving text must never silently drop it.
             u.Verses.Select(v =>
             {
                 var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
                 return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
-                // no Caption -- P5, see this class's own doc comment.
-                // ACCT-COALESCE-1: CoalesceAcrossChapters (and, fix round
-                // 2, Canon) carried through from `u` (the FIRST
-                // construction, immediately above) -- re-wrapping into a
-                // fresh PassageSourceUnit here must never silently drop
-                // either.
             }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters, Canon: u.Canon)).ToList();
     }
 }
 
-/// <summary>
-/// Batch T requirement 4: "PARALLEL ACCOUNTS -- one short passage per
-/// witness (Gospel name + passage ref), each clamped to 2 verses with
-/// per-passage expand/collapse... Single-witness events show the one
-/// passage (no 'parallel' framing when n=1 -- conditional presence)." One
-/// <see cref="Components.PassageList"/> unit per witness (never merged --
-/// PASSAGE-1's own "a source unit never blurs into its neighbor's," applied
-/// here across Gospels). "Gospel name + passage ref" falls out of
-/// PassageList's own ref-label ALONE (e.g. "MRK.6.1-6" already names the
-/// book) -- <see cref="WitnessUnitsResolver"/>'s own doc comment has the
-/// M-D4 fix round 1/P5 history of why a separate book-name Caption
-/// retired instead of spelling the same book out a second time
-/// underneath it. <see cref="Components.PassageList.ClampVerses"/>
-/// (batch-n2 req 2, generalized here to every consumer of the shared
-/// component) is what realizes "clamped to 2 verses... per-passage
-/// expand/collapse."
-/// </summary>
 public sealed class EventWitnessesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -2099,7 +1180,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
 
         if (detail.Witnesses.Count == 0)
         {
-            return null; // defensive -- scene::witnesses_for always synthesizes >=1 server-side, but never assume a network response is well-formed
+            return null;
         }
 
         List<PassageSourceUnit> units;
@@ -2120,15 +1201,6 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             var seq = 0;
             if (multi)
             {
-                // Batch PROV-1: this event's OWN Attests rows, not the
-                // family's. `attests` is single-sourced in the corpus TODAY
-                // (measured -- `the_per_family_provenance_map_of_the_real_
-                // artifact_is_pinned`; an earlier version of this comment
-                // claimed otherwise and was wrong), so per-event costs
-                // nothing today and is what keeps this TRUE the moment a
-                // second source lands there. THE LEPER LESSON is that a
-                // hand-authored row must never wear an imported source's
-                // clothes, and a family average is how that happens.
                 seq = FrontierProvenance.Heading(
                     builder, seq, "PARALLEL ACCOUNTS", "event-section-heading",
                     detail.WitnessesProvenanceOrEmpty, registry, "event-witnesses-provenance",
@@ -2138,23 +1210,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             builder.OpenComponent<Components.PassageList>(seq++);
             builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
             builder.AddAttribute(seq++, "RefTestIdPrefix", "event-witness");
-            // XREF-CLAMP-1: re-pointed at the shared constant -- was a
-            // literal `2` (this consumer predates the ruling); see
-            // PassageList.razor's own StandardVerseClamp doc comment.
             builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-            // EVT-3 Ticket 2 (owner ruling, supersedes M-D1 req 3's own
-            // "span-not-echo" -- verbatim: "i should see the passage, and
-            // it should be explorable like everything else" -- not just ref
-            // + read-whole-chapter): the landed event's own frontier shows
-            // its account PASSAGES, visible text, explorable, ALWAYS --
-            // SpanOnly is gone (was `!multi`; M-D1 req 3's own single-
-            // witness "span only, no text" rule is retired whole here). A
-            // single-witness event now renders exactly like a multi-witness
-            // one's own per-entry text: clamped, expandable preview, never
-            // a bare ref. Only the "PARALLEL ACCOUNTS" EYEBROW stays
-            // conditional on `multi` (a single account genuinely isn't
-            // "parallel" to anything) -- see this method's own `multi`
-            // branch above; the content underneath is unconditional now.
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
@@ -2162,31 +1218,9 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch ATTEST-1 (owner order 2, the account/mention distinction; law L3).
-/// An EVENT node's "MENTIONED IN" section: the verses that REFERENCE this
-/// event without narrating it.
-///
-/// WHY IT IS ITS OWN SECTION, and not more rows under
-/// <see cref="EventWitnessesSection"/>'s own "PARALLEL ACCOUNTS": the
-/// owner's report -- "I'm seeing a fundamental error. The Espousal of Mary
-/// event has parallel accounts Mat.1.18 + Luke.1.27, and that's a distinct
-/// event from The Angel Gabriel Announces Jesus'" -- was precisely that
-/// mentions were being rendered as accounts. LUK 1:27 mentions the espousal
-/// inside Luke's account of the ANNUNCIATION; it is not an account of the
-/// espousal. Two claims, two headings.
-///
-/// A MENTION-ONLY event (the espousal, after this batch's retype) therefore
-/// renders THIS section and NO parallel-accounts section at all -- the
-/// smart-frontier law's own biconditional, unchanged: a section shows iff
-/// instances exist for the focus AND the focus kind allows the capability
-/// (<c>allows(Event, MentionsOf)</c>, graph-types/src/frontier.rs).
-///
-/// Refs only, never verse text -- the SAME <c>RefsList</c> component (and
-/// the same owner ruling behind it: "not showing the verse contents, just
-/// the list of refs") <c>ArrowNav</c> already uses for adjacent-event
-/// account refs.
-/// </summary>
+// A mention (a verse referencing this event without narrating it) is deliberately
+// distinct from a witness/account (EventWitnessesSection's "PARALLEL ACCOUNTS") --
+// rendering a mention as an account would misrepresent it as a parallel narration.
 public sealed class EventMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -2211,7 +1245,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
         var mentions = detail.MentionedInOrEmpty;
         if (mentions.Count == 0)
         {
-            return null; // exists(instances, focus) == false -- the smart-frontier law's own left conjunct
+            return null;
         }
 
         var refs = mentions.Select(v => new Components.RefsList.RefDescriptor(v, (IExplorable)new VerseNode(v))).ToList();
@@ -2236,34 +1270,6 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch ATTEST-1 (owner order 1, verbatim: "let's call it Analogue; that's
-/// ok for now."; law L4). An EVENT node's "SIMILAR ACCOUNTS" section:
-/// events joined to this one by an <c>Analogue</c> row -- "distinct events
-/// whose accounts are similar in form or content, NEVER two accounts of one
-/// event."
-///
-/// HEADING AND PLACEMENT ARE BOTH THE OWNER'S, verbatim (placement
-/// amendment): "let's have a 'Similar Accounts' or something similar added
-/// to the frontier part of the UI where it was getting pulled in as a
-/// parallel account. Have that section be right below the 'Parallel ..'
-/// section." So the heading is SIMILAR ACCOUNTS -- deliberately not
-/// "parallel" anything, because the owner's report was that a
-/// similar-but-distinct story WAS being shown as a parallel account ("A
-/// leper healed; a great popular excitement is given a parallel where
-/// there shouldn't be from Mat.8.1-4; another leprosy story") -- and it
-/// renders IMMEDIATELY BELOW PARALLEL ACCOUNTS, so the wrongly-placed row
-/// moves down exactly one section into a heading that tells the truth,
-/// rather than disappearing from where the reader last saw it. The
-/// adjacency is registered at Order 161 (PARALLEL ACCOUNTS is 160) and
-/// asserted as ADJACENCY, not as a number, in
-/// <c>PopoverSectionRegistryTests</c>.
-///
-/// Each row is an explorable <see cref="EventNode"/>: the wire carries the
-/// neighbour's id AND title, so pushing it needs no second fetch (the same
-/// "no fetch just to render the header" discipline EventNode's own
-/// constructor already documents).
-/// </summary>
 public sealed class EventAnaloguesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -2288,21 +1294,14 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
         var analogues = detail.AnaloguesOrEmpty;
         if (analogues.Count == 0)
         {
-            return null; // exists(instances, focus) == false
+            return null;
         }
 
         var refs = analogues
-            // Display the TITLE, key the testid off the stable event ID
-            // (RefDescriptor's own `TestIdSuffix`) -- a curator improving a
-            // label must not break a fixture.
             .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, "event"), a.Id))
             .ToList();
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
-        // Batch PROV-1: PER-ROW provenance, gathered to the heading -- an
-        // `Analogue` row carries its own asserter (a curatorial CLAIM about
-        // two events, not a fact about either), so the heading names every
-        // source actually behind the rows shown, never a family average.
         var analogueProvenance = FrontierProvenance.Distinct(analogues.Select(a => a.Provenance));
 
         RenderFragment body = builder =>
@@ -2323,38 +1322,6 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// M-D3/U6, owner verbatim order (progress.md): "Header / Verse (focus) /
-/// Event / Parallels / Small Catechism / cross references LAST." A VERSE
-/// (or PASSAGE) node's own quick peek at OTHER witnesses of an event it
-/// belongs to -- "reading John 12, glance and see Matthew/Mark/Luke also
-/// witnessed this," without a click into the EVENT node first. Reuses
-/// <see cref="WitnessUnitsResolver"/> (the SAME resolve step
-/// <see cref="EventWitnessesSection"/> uses), just fed a FILTERED witness
-/// list -- every witness EXCEPT the one the current verse itself already
-/// belongs to (there is no reason to preview a verse's own text back to
-/// itself; the verse-text section above already shows it). Conditional
-/// presence, doubly: absent when the verse cites no titled event at all
-/// (the SAME `.Events` VerseEventMembershipSection already reads, memoized,
-/// zero extra fetch), and absent per-event when that event turns out to
-/// have no OTHER witness once the current one is excluded (a real
-/// EventDetail fetch is still needed per event to know its own full
-/// witness list -- VerseEventDto's own membership-list shape carries no
-/// sibling-witness information). A verse touching >1 QUALIFYING event
-/// (genuinely rare, but not impossible) renders one block per event, named
-/// by that event's own label when there is more than one -- the SAME
-/// "single entry needs no name, multiple entries each get named" rule
-/// EventDateAndPlacesSection's own narrative nav (U1) already establishes.
-///
-/// O5 (owner live-preview correction, 2026-08-23, "parallels has double
-/// headers... 1Ki.3.1-15 and 1 kings right below it... get rid of the
-/// second header"): unlike <see cref="EventWitnessesSection"/>'s own
-/// "PARALLEL ACCOUNTS" (which keeps <see cref="WitnessUnitsResolver"/>'s
-/// own book-name Caption -- genuinely load-bearing there, telling several
-/// Gospels apart at a glance), this section strips it to null before
-/// handing units to <see cref="Components.PassageList"/> -- one header
-/// (the ref-label, which already carries the book CODE) per entry, not two.
-/// </summary>
 public sealed class VerseParallelsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
@@ -2366,14 +1333,10 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
         switch (node)
         {
             case VerseNode v:
-                events = (await v.DetailAsync(api)).Events; // memoized -- shares VerseTextSectionProvider's/CrossRefsSection's own fetch
-                ownVref = v.Title; // VerseNode's own doc comment: Title IS the vref
+                events = (await v.DetailAsync(api)).Events;
+                ownVref = v.Title;
                 break;
             case PassageNode p:
-                // A passage's own event membership is read at its FIRST
-                // verse -- the same "first verse anchors the locus"
-                // convention CrossRefsSection/VersePersonsSection already
-                // establish for a passage's own onward identity.
                 ownVref = CanonRef.FirstVerseOf(p.Title);
                 try
                 {
@@ -2390,15 +1353,9 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 
         if (events.Count == 0)
         {
-            return null; // conditional presence -- most verses cite no titled event at all
+            return null;
         }
 
-        // One real fetch per candidate event (EventDetail carries the FULL
-        // witness list; VerseEventDto's own slim membership shape does not)
-        // -- run concurrently, same "don't serialize independent fetches"
-        // discipline NarrativeDirectionSection's own retired resolver and
-        // EventDateAndPlacesSection's own one-verse-focus resolve already
-        // followed.
         EventDetail?[] details;
         try
         {
@@ -2416,7 +1373,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         var qualifying = new List<(string Label, List<EventWitnessDto> OtherWitnesses)>();
@@ -2435,39 +1392,14 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 
         if (qualifying.Count == 0)
         {
-            return null; // conditional presence -- no cited event has any OTHER witness once this verse's own is excluded
+            return null;
         }
 
         List<List<PassageSourceUnit>> unitsPerEvent;
         try
         {
-            // PERF-3 (owner: verse-click frontier <100ms; PHASE 0 waterfall):
-            // was a sequential `foreach` with an `await` inside -- event 2's
-            // own witness chapters never even started fetching until event
-            // 1's had fully resolved, a real "sequential per-item fetch"
-            // (the brief's own named suspect class), independent of the
-            // CrossRefsSection over-fetch immediately above. Every OTHER
-            // multi-item resolve in this file runs concurrently
-            // (Task.WhenAll); this one now does too. Task.WhenAll preserves
-            // input order, so `unitsPerEvent[i]` still lines up with
-            // `qualifying[i]` in the render fragment below.
-            //
-            // O5 (owner live-preview correction, 2026-08-23, verbatim:
-            // "parallels has double headers. for instance we have
-            // 1Ki.3.1-15 and 1 kings right below it when focused on
-            // 2ch.1.2. Get rid of the second header"): originally fixed
-            // here with a per-call-site null-out of WitnessUnitsResolver's
-            // own book-name Caption (PassageList.razor's own ref-label,
-            // "1Ki.3.1-15," already carries the book CODE, so spelling
-            // the same book out a second time right below it read as two
-            // headers on one entry, not one). M-D4 fix round 1/P5
-            // (owner: "we're wasting real estate... it's obvious where
-            // they're coming from already") reached the SAME conclusion
-            // for EventWitnessesSection's own "PARALLEL ACCOUNTS" -- once
-            // BOTH consumers agreed no caption belongs on screen, the
-            // null-out moved to the SOURCE (WitnessUnitsResolver's own
-            // doc comment has that history); units arrive already
-            // caption-free here, no per-call-site projection needed.
+            // Task.WhenAll preserves input order, so unitsPerEvent[i] lines up with
+            // qualifying[i] in the render fragment below.
             unitsPerEvent = (await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherWitnesses)))).ToList();
         }
         catch (Exception)
@@ -2494,16 +1426,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
                 builder.OpenComponent<Components.PassageList>(seq++);
                 builder.AddAttribute(seq++, "Units", (IReadOnlyList<PassageSourceUnit>)units);
                 builder.AddAttribute(seq++, "RefTestIdPrefix", multiEvent ? $"verse-parallel-{Slugify(label)}" : "verse-parallel");
-                // XREF-CLAMP-1: re-pointed at the shared constant -- was a
-                // literal `2` (this consumer predates the ruling); see
-                // PassageList.razor's own StandardVerseClamp doc comment.
                 builder.AddAttribute(seq++, "ClampVerses", Components.PassageList.StandardVerseClamp);
-                // Always the full clamped preview (never SpanOnly) -- unlike
-                // EventWitnessesSection's own single-witness case, THIS
-                // section only ever renders when there genuinely IS an
-                // other witness to preview; "just the span, no text" would
-                // defeat the section's own purpose (a quick peek at what
-                // the parallel account actually says).
                 builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
                 builder.CloseComponent();
             }
@@ -2511,8 +1434,6 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
         return new PopoverSection("parallels", body);
     }
 
-    // Same slug shape VersePersonsSection's own Slug helper already
-    // establishes for a display label -> stable DOM-safe testid fragment.
     private static string Slugify(string label)
     {
         var chars = label.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
@@ -2525,110 +1446,6 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// TRAV-1 (controller decisions 2+3, owner verbatim, progress.md: "the
-/// prior and time and following in time basically get condensed into one
-/// Chronological block with the arrow traversal that is separate from the
-/// narrative block"). RETIRES Batch HOTFIX-4's own
-/// EventTimelineDirectionSection/EventTimelinePriorSection/
-/// EventTimelineFollowingSection whole (the former "PRIOR IN TIME"/
-/// "FOLLOWING IN TIME" sections -- two separate headed rows, each with a
-/// full verse-text preview inline via <see cref="Components.PassageList"/>,
-/// per HOTFIX-4 requirement 1): this ONE section replaces both. "Traverse
-/// them in essentially the same way" (the owner's own words) is realized
-/// structurally, not just in spirit -- the SAME arrow-traversal component
-/// the Narrative nav uses (<see cref="Components.ArrowNav"/>, opened via
-/// <see cref="EventDateAndPlacesSection.RenderArrowNav"/>), reused here for
-/// the GLOBAL chronological adjacency instead of narrative-leg adjacency.
-/// P4's own "name only, no verse text in the arrow itself" rule is
-/// satisfied by <c>ArrowNav</c> itself now (unchanged, not re-proven here)
-/// -- the verse text this section's own predecessor used to show inline is
-/// now decision 4's dwell-hover PEEK instead, never inline.
-///
-/// Two differences from the Narrative rows this reuses the SAME rendering
-/// for: (1) exactly ONE row, always (the global timeline has one
-/// prior/following pair, never "one block per qualifying narrative" --
-/// no name-collision disambiguation needed, so `IdSuffix` is the fixed
-/// literal `"global"`, never a real narrative id); (2) a quiet
-/// "CHRONOLOGY" eyebrow heading names the block (the SAME shared
-/// `catechism-section-heading`/`event-timeline-heading` classes the
-/// retired "IN TIME" sections already used for their own headings) -- the
-/// Narrative nav itself renders headerless, immediately below focus, by
-/// M-D3/U1's own established design (unchanged by this batch); this
-/// section is a brand-new, separate block, so it announces its own
-/// identity, matching the owner's own "we have two sections: Narrative and
-/// Chronology."
-///
-/// Conditional presence: renders whenever this event genuinely has a
-/// `Timeline` position at all (i.e. it is dated -- `Timeline` is the wire
-/// key OMITTED, not null, for a general-kind/unknown event, HOTFIX-4
-/// requirement 2, unchanged) -- INCLUDING the degenerate case where BOTH
-/// `Prior` and `Following` are independently absent (the atlas's own true
-/// first-AND-last dated event, or the rare single-dated-event atlas):
-/// `GraphService.temporal_neighbors` (service.rs) still returns `Some`
-/// there (seeded from the chronology's own order, not merely from row
-/// presence -- see that field's own doc comment), so this section
-/// honestly renders a real Chronology position with two empty-placeholder
-/// arrows, never silently omitting the block just because this one event
-/// happens to have no neighbor on either side.
-///
-/// CHRONO-MERGE-1 (owner NOD 2026-08-24 -- the design question: "is there
-/// a meaningful disjunction between chronology and narrative order? It's
-/// looking like they're basically the same and we can nix the narrative
-/// thing from hover menu and put chronology up top"; the nod, verbatim:
-/// "yes I agree but just don't clutter with story line where story
-/// doesn't exist"; POPOVER-LAW-1's own first application -- "we only pull
-/// in anything if there's something non-redundant to pull"): this block
-/// is now Batch T's ENTIRE surviving traversal surface -- the narrative
-/// nav <see cref="EventDateAndPlacesSection"/> used to fold in (M-D3/U1)
-/// is retired whole (that class's own doc comment), and this section
-/// MOVES UP to occupy the vacated top position (<see cref="PopoverSectionRegistry"/>'s
-/// own doc comment has the registration-order change) -- "Chronology,
-/// always on top," the owner's own words.
-///
-/// A controller sweep of all 255 real narrative events found 72% of rows
-/// byte-identical to this SAME event's own global-timeline row (a
-/// dedicated per-narrative nav was pure duplication for those), 28%
-/// genuinely diverging (always because a DIFFERENT narrative's own event
-/// interleaves chronologically between two of THIS narrative's legs --
-/// df_adullam's own following is a real, worked example: `david-flight`'s
-/// next leg is df_keilah, but the global-timeline next event is
-/// 1ch_ziklag_warriors, a Chronicles genealogy entry that happens to fall
-/// between them in time). The STORY-THREAD line below is what survives of
-/// the narrative nav -- ONLY for that 28%, "just don't clutter with story
-/// line where story doesn't exist."
-///
-/// THE DIVERGENCE TEST (<see cref="Diverges"/>): a client-side id
-/// comparison, per direction, of a `<see cref="NarrativePositionDto"/>`
-/// row's own Prior/Following against THIS SAME event's `Timeline`
-/// Prior/Following (both halves of the identical, already-memoized
-/// `NarrativePositionsAsync` fetch -- one network call, zero new cost). A
-/// null/absent narrative-side leg is the narrative's own first/last leg
-/// -- a chain END, never a divergence (nothing to show for that
-/// direction, the brief's own words) -- so `Diverges` short-circuits
-/// false there regardless of what the timeline says. An event belonging
-/// to >1 narrative (a real but, per the controller's own live sweep,
-/// currently EMPTY case -- zero of the 255) renders one line per
-/// DIVERGING narrative, stacked, the same "guard the rare case, common
-/// case stays simple" discipline <see cref="EventDateAndPlacesSection"/>'s
-/// own retired multi-narrative handling already established.
-///
-/// DISPLAY: one `.popover-meta` line per diverging narrative (the SAME
-/// quiet-provenance register <see cref="PlaceDescriptionSection"/>'s own
-/// "Known in modern atlases as..." line already established) reading
-/// "in &lt;narrative&gt;: " followed by ONLY the diverging direction(s) --
-/// `&lt;- &lt;prior leg&gt;` alone, `next -&gt; &lt;leg&gt;` alone, or both
-/// joined by " &middot; " when BOTH directions diverge (pw_jerusalem_entry
-/// is a real, worked example of the dual case: passion-week's own prior
-/// AND following both differ from the global timeline's). The leg name(s)
-/// are <see cref="Components.ArrowNav"/>'s own new `Inline` rendering mode
-/// (<see cref="EventDateAndPlacesSection.RenderArrowNav"/>) -- the SAME
-/// click-commits/dwell-peeks affordance the block arrows above give,
-/// reusing the identical dwell timer/peek-fetch/placement-measurement
-/// machinery (never re-derived) -- so a diverging leg is exactly as
-/// traversable as a chronological one, just named inline rather than in
-/// its own arrow button.
-/// </summary>
 public sealed class EventChronologySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Event";
@@ -2643,26 +1460,19 @@ public sealed class EventChronologySection : IPopoverSectionProvider
         NarrativeEventPositionsResult positions;
         try
         {
-            positions = await aware.NarrativePositionsAsync(api); // ONE fetch -- .Narrative feeds the story-thread line below, .Timeline the block arrows, memoized on the node instance either way
+            positions = await aware.NarrativePositionsAsync(api);
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         var timeline = positions.Timeline;
         if (timeline is null)
         {
-            return null; // general-kind or unknown event -- NOT part of time traversal, this class's own doc comment
+            return null;
         }
 
-        // CHRONO-MERGE-1: which of this event's own narrative membership(s),
-        // if any, genuinely diverge from the SAME event's global-timeline
-        // row -- see this class's own "THE DIVERGENCE TEST" doc paragraph.
-        // A non-narrative event (positions.Narrative empty) or a
-        // fully-agreeing one filters down to zero rows here, same as each
-        // other -- both correctly render NO story-thread line at all,
-        // never a hollow wrapper.
         var storyThreadRows = positions.Narrative
             .Where(p => Diverges(p.Prior, timeline.Prior) || Diverges(p.Following, timeline.Following))
             .ToList();
@@ -2684,18 +1494,14 @@ public sealed class EventChronologySection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "class", "popover-event-nav-row");
             builder.AddAttribute(seq++, "data-testid", "event-chronology-row");
 
-            // Arrows live in their OWN inner flex row -- same reason
-            // EventDateAndPlacesSection's own (now-retired) narrative rows
-            // kept this one level of nesting (space-between across exactly
-            // these two items, nothing else sharing that flex line).
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-event-nav-arrows");
             EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "prior", "event-chrono-prior-event", "event-chrono-prior-label", "global", timeline.Prior, "◂");
             EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-chrono-following-event", "event-chrono-following-label", "global", timeline.Following, "▸");
-            builder.CloseElement(); // .popover-event-nav-arrows
+            builder.CloseElement();
 
-            builder.CloseElement(); // .popover-event-nav-row
-            builder.CloseElement(); // .popover-event-nav-list
+            builder.CloseElement();
+            builder.CloseElement();
 
             if (storyThreadRows.Count > 0)
             {
@@ -2725,39 +1531,20 @@ public sealed class EventChronologySection : IPopoverSectionProvider
                         EventDateAndPlacesSection.RenderArrowNav(builder, ref seq, ctx, "following", "event-story-thread-following-event", "event-story-thread-following-label", row.NarrativeId, row.Following, "→", inline: true, inlinePrefixText: "next ");
                     }
 
-                    builder.CloseElement(); // p.popover-meta (event-story-thread-{narrativeId})
+                    builder.CloseElement();
                 }
-                builder.CloseElement(); // .popover-story-thread
+                builder.CloseElement();
             }
         };
         return new PopoverSection("event-chronology", body);
     }
 
-    // A narrative-side leg that is null is that narrative's OWN first/last
-    // leg -- a chain end there, never a divergence (the brief's own words:
-    // "nothing to show for that direction") -- so this short-circuits
-    // false before ever comparing ids. Otherwise a plain id comparison:
-    // the SAME event both sides name is agreement (false); a different id,
-    // OR the timeline having no leg at all in that direction while the
-    // narrative genuinely does (the atlas's own true first/last dated
-    // event, vanishingly rare in practice), both read as divergence (true)
-    // -- "the divergence test is an id comparison client-side," the
-    // brief's own words, generalized to both of its null-handling edges.
+    // A null narrative-side leg is that narrative's own chain end, never a divergence,
+    // so this short-circuits false before comparing ids.
     private static bool Diverges(NarrativeAdjacentEventDto? narrativeLeg, NarrativeAdjacentEventDto? timelineLeg)
         => narrativeLeg is not null && narrativeLeg.Id != timelineLeg?.Id;
 }
 
-/// <summary>
-/// Batch M requirement 4: a <see cref="PolityDeltaNode"/>'s own event text
-/// -- the "event title + years" content beneath the popover's own Title
-/// header (which already carries "{polity}, {from} -&gt; {to}"). A plain
-/// <c>.popover-meta</c> line (the same quiet-secondary-text treatment
-/// <c>TimeAndPlaceNode</c>/<c>NarrativeEventTextSection</c> already use for
-/// an analogous "what is this node, in prose" line), present ONLY when
-/// <see cref="PolityDeltaNode.EventText"/> is non-null -- the minimal-
-/// popover case (an honestly uneventful boundary) renders NOTHING here,
-/// conditional presence, never a placeholder like "No event recorded."
-/// </summary>
 public sealed class PolityDeltaEventSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
@@ -2780,19 +1567,6 @@ public sealed class PolityDeltaEventSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch M requirement 4: "THE SCRIPTURES" -- the delta's own curated
-/// verses, via the SAME shared <see cref="Components.PassageList"/>
-/// component every other verse list in this app renders through
-/// (PASSAGE-1) -- grouped, truncation-free (no cap asked for, same as
-/// CATECH-1's own THE SCRIPTURES and NARRATIVE-1's own event-text
-/// section), each entry independently expandable. Conditional presence:
-/// absent when <see cref="PolityDeltaNode.Verses"/> is empty (a delta MAY
-/// be grounded only in Church-traditional history, with no single verse to
-/// pinpoint it -- see the batch report's own delta-coverage table) OR when
-/// none of the curated refs actually resolve (a graceful-degrade floor
-/// every other verse-list section in this file already shares).
-/// </summary>
 public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
@@ -2822,7 +1596,7 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
         {
             var seq = 0;
             builder.OpenElement(seq++, "p");
-            builder.AddAttribute(seq++, "class", "catechism-section-heading"); // the SAME "THE SCRIPTURES" small-caps eyebrow treatment CATECH-1/NARRATIVE-1 already establish -- one shared testid/class for one house convention, not a fourth copy
+            builder.AddAttribute(seq++, "class", "catechism-section-heading");
             builder.AddAttribute(seq++, "data-testid", "catechism-section-heading");
             builder.AddContent(seq++, "THE SCRIPTURES");
             builder.CloseElement();
@@ -2838,16 +1612,6 @@ public sealed class PolityDeltaScripturesSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch M requirement 4: "grounding note (ref_note, quiet)" -- the
-/// curator's own citation for this delta (which source(s) were actually
-/// consulted, or an honest "tradition only" disclosure), rendered plainly
-/// and quietly (the SAME <c>.popover-meta</c> treatment as
-/// <see cref="PolityDeltaEventSection"/> above -- both are secondary,
-/// quiet-register text, not a second style). Conditional presence: absent
-/// when <see cref="PolityDeltaNode.RefNote"/> is null (the minimal-popover
-/// case).
-/// </summary>
 public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "PolityDelta";
@@ -2870,45 +1634,8 @@ public sealed class PolityDeltaGroundingSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// O4 (owner live-preview correction, 2026-08-23: "remove persons from
-/// hover menus for now") UNREGISTERED this class from
-/// <see cref="PopoverSectionRegistry.Providers"/> -- it is never
-/// constructed anywhere today, so nothing below actually runs. Kept intact
-/// rather than deleted per the ruling's own explicit words ("machinery
-/// retained"), a deliberate, disclosed exception to this codebase's usual
-/// dead-code law; see <see cref="PopoverSectionRegistry"/>'s own comment
-/// for the fuller story and reader-persons.spec.ts's own header comment for
-/// how its test coverage moved to the surviving in-text-mention entry path
-/// (M-D3/U5) instead. The doc comment below describes this class's own
-/// pre-O4 behavior, unchanged, for whenever it is re-registered.
-///
-/// Batch P (the extensibility proof; M-D2 ruling): the VERSE/PASSAGE
-/// popover's own PERSONS section -- mentioned persons, conditional
-/// presence. THE FIRST <see cref="IExplorableClient"/> CONSUMER: reads the
-/// generic <c>mentions</c> edge (<see cref="IPopoverSectionContext.Graph"/>)
-/// directly, never <c>AtlasClient</c>/<c>VerseDetail</c> -- "NO parallel
-/// client data path," the brief's own words, verbatim. A verse's own
-/// `mentions` frontier carries BOTH Place and Person entities under the
-/// SAME edge kind (server-side: one `mentions` relation, `PlaceOrPerson`-
-/// typed rows -- `graph_types::edge::Mentions`); this section filters to
-/// <c>Kind == "Person"</c> client-side (design doc §7's own CHAIN
-/// HOMOGENEITY law: "a frontier SECTION renders entries of ONE kind-shape"
-/// -- a mixed Place+Person list would violate it, so filtering here, not
-/// interleaving, is what the law itself requires).
-///
-/// Fetch scope, disclosed: ONE page at <see cref="EdgeSectionRegistry.Mentions"/>'s
-/// own <c>InitialClamp</c> (50) -- a real verse's own total mentions
-/// (places+persons combined) is always small in the real compiled data;
-/// spot-checked, no verse comes remotely close. If the true total somehow
-/// exceeds this one page (<c>page.Next is not null</c>), a plain,
-/// non-interactive "+ more mentions" line discloses it honestly (design
-/// doc §7's own "+N more" law: a visible signal with the true count) --
-/// no second fetch is wired for this direction, since the realistic case
-/// this would ever fire is effectively zero and a person's own SEPARATE
-/// "mentioned-in" direction (<see cref="PersonCardAndMentionsSection"/>
-/// below) is where genuine large-count pagination actually matters.
-/// </summary>
+// Unregistered from PopoverSectionRegistry.Providers (nothing constructs this class
+// today), but deliberately kept rather than deleted -- do not remove as dead code.
 public sealed class VersePersonsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind is "Verse" or "Passage";
@@ -2919,13 +1646,9 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         switch (node)
         {
             case VerseNode v:
-                wireId = $"text-unit:{v.Title}"; // v.Title IS the vref (VerseNode's own doc comment)
+                wireId = $"text-unit:{v.Title}";
                 break;
             case PassageNode p:
-                // A passage's own mentions render at its FIRST verse -- the
-                // same "first verse anchors the locus" convention this
-                // file's own CrossRefsSection/PassageList.ExploreAsVerse
-                // already establish for a passage's own onward identity.
                 wireId = $"text-unit:{CanonRef.FirstVerseOf(p.Title)}";
                 break;
             default:
@@ -2939,16 +1662,16 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         var persons = page.Entries.Where(e => e.Node.Kind == "Person").ToList();
         if (persons.Count == 0)
         {
-            return null; // conditional presence -- most verses mention no person at all
+            return null;
         }
 
-        var mayHaveMore = page.Next is not null; // see this class's own doc comment
+        var mayHaveMore = page.Next is not null;
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -2960,7 +1683,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
 
             foreach (var entry in persons)
             {
-                var id = entry.Node.Id; // local copies -- captured per-row by the onclick closure below
+                var id = entry.Node.Id;
                 var label = entry.Node.Label;
                 builder.OpenElement(seq++, "button");
                 builder.AddAttribute(seq++, "type", "button");
@@ -2983,12 +1706,6 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         return new PopoverSection("persons", body);
     }
 
-    // A stable, DOM-safe testid fragment from a person's own display name
-    // ("Simon Peter" -> "simon-peter") -- names are never guaranteed
-    // ASCII-simple (this app's own broader KJV-name vocabulary isn't), so
-    // this narrows to the same safe alphanumeric-plus-dash shape
-    // `EventNode`/`PlaceNode` ids already are, rather than assuming Theographic's
-    // own personLookup-derived label is always dash-safe.
     private static string Slug(string label)
     {
         var chars = label.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
@@ -3001,30 +1718,6 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch P (the extensibility proof): the PERSON popover's own card +
-/// "mentioned-in" frontier -- BOTH via <see cref="IExplorableClient"/>
-/// (<see cref="IPopoverSectionContext.Graph"/>), the generic contract, zero
-/// bespoke endpoints (the batch's own thesis). "Card" here means exactly
-/// what the generic <c>GET /api/node/{id}</c> wire shape carries -- label
-/// (already the popover's own title, via <see cref="PersonNode.Title"/>)
-/// and <c>Provenance</c> (a genuinely new field this batch is the first to
-/// render anywhere in this app, disclosed) -- richer payload facts
-/// (gender/birth_year/death_year/also_called) ride the SERVER-side graph
-/// payload but are NOT projected onto the generic card wire this batch
-/// (<c>NodeCardOut.Label</c> is one string, matching every OTHER kind's
-/// own card label precedent exactly -- Place's canonical name carries no
-/// lat/lon, Event's label carries no date -- see graph_types::node::card's
-/// own match arms); a future batch's own decision to widen the generic
-/// card wire is real, disclosed follow-up, not attempted here.
-/// "Mentioned in Scripture" (every mention, canon order) is
-/// <c>mentioned-in</c>'s own edges page, handed to
-/// <see cref="Components.PersonMentionsList"/> (the one component in this
-/// batch that owns real per-popover fetch state, for the SAME
-/// "a provider instance is shared/static, a component can hold state"
-/// reason <c>VerseTextSectionProvider</c>/<c>PlaceEventsList</c> already
-/// establish).
-/// </summary>
 public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
@@ -3049,17 +1742,11 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
-        // spec.EdgeKind is EdgeKindId (Batch P fix round 1, R-P1); card.EdgeSummary[].Kind
-        // is a plain string straight off the wire (EdgeSummaryEntryDto, unvalidated JSON) --
-        // .Value is the one, explicit, disclosed crossing point between the two.
         var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind.Value)?.Count ?? page.Entries.Count;
 
-        // D5: the verse list is the LAST section and collapsed by default
-        // ("no point to just see every verse that name is mentioned") --
-        // still one click away, never gone.
         RenderFragment body = builder =>
         {
             var seq = 0;
@@ -3086,25 +1773,6 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// Batch CORP-1b (owner authorization, resolving CORP-1's own disclosed
-/// NEEDS_CONTEXT gap): a Kretzmann CommentaryItem's own real prose, fetched
-/// through the generic graph client's <c>Card()</c> call -- the SAME
-/// additive <c>description</c> field ENT-1a built for Place/Person/
-/// PeopleGroup (server: <c>atlas_graph::legacy::node_description</c>'s
-/// widened match), reused rather than a new endpoint. Conditional presence:
-/// a unit with no resolvable description (never true for a real compiled
-/// CommentaryItem, but the wire's own <c>skip_serializing_if</c> makes this
-/// honestly possible) renders no section at all, matching this app's
-/// standing "nothing registered / nothing to show = no placeholder" rule.
-/// ANY embedded verse text inside the prose (Kretzmann's own inline quotes,
-/// KRETZ-1's lemma-excision design: "inline verse-fragment quotes inside
-/// the prose are content, kept verbatim") is already part of this same
-/// plain-text string -- there is no separately-marked-up sub-span to route
-/// through a second render path, so the ONE render rule here is simply:
-/// this text, verbatim, in one paragraph (the same shape <c>VerseNode.
-/// BodyAsync</c> already uses for its own verse text).
-/// </summary>
 public sealed class CommentaryItemProseSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "CommentaryItem";
@@ -3123,7 +1791,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
         }
         catch (Exception)
         {
-            return null; // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            return null;
         }
 
         if (string.IsNullOrWhiteSpace(card.Description))
@@ -3142,16 +1810,6 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// D3 (owner, 2026-09-15, verbatim: "On Genesis 1:1 there is Small Catechism
-/// linkage, but no way to reach the SC corpus from it ... a BIJECTIVE
-/// (symmetric) mapping across corpora"): a Small Catechism item's card reaches
-/// the Book of Concord paragraphs it is written in -- the item end of the
-/// symmetric <c>catechism-link</c> edge (the curated SC-overlap rows,
-/// concord_adapter::merge_alias), read through the generic frontier
-/// (<see cref="AtlasClient.NodeEdges"/>), never a bespoke endpoint.
-/// POPOVER-LAW-1: absent (null) when the item links to no paragraph.
-/// </summary>
 public sealed class CatechismInConcordSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Catechism";
@@ -3166,16 +1824,16 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
         List<NodeRefDto> units;
         try
         {
-            // The WHOLE frontier, not the first page: an item's catechism-link
-            // edges are mostly its proof verses (the First Commandment alone
-            // has 200+), and the Concord paragraphs sit after them.
+            // The whole frontier, not the first page: an item's catechism-link edges are
+            // mostly its proof verses (the First Commandment alone has 200+), and the
+            // Concord paragraphs sit after them.
             units = (await CatechismLinks.AllTargetsAsync(api, $"CatechismItem:{item.Id}"))
                 .Where(n => n.Id.StartsWith("text-unit:BoC ", StringComparison.Ordinal))
                 .ToList();
         }
         catch (Exception)
         {
-            return null; // fail soft -- the same graceful-degradation policy every other lazy fetch follows
+            return null;
         }
 
         if (units.Count == 0)
@@ -3201,15 +1859,6 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// D3, the mirror direction: a Book of Concord paragraph's card reaches the
-/// Small Catechism item(s) it carries -- the paragraph end of the same
-/// symmetric <c>catechism-link</c> edge -- rendered with the SAME
-/// CatechismList the verse card uses (one component, parameterized), so
-/// from Genesis 1:1 → the item → its paragraph → back to the item is one
-/// round trip through real edges, no dead click anywhere on it.
-/// POPOVER-LAW-1: absent (null) for a paragraph with no item.
-/// </summary>
 public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
@@ -3257,14 +1906,9 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// D3: a Book of Concord paragraph's OWN text as a section (Order 214, first
-/// on its card). Before D3 a ConcordUnit had no provider at all and the
-/// popover fell back to <see cref="ConcordUnitNode.BodyAsync"/>; the moment
-/// <see cref="ConcordSmallCatechismSection"/> exists the fallback stops
-/// (sections replace the body), so the text moves here -- the SAME
-/// "focus text first" shape VerseTextSectionProvider gives a verse.
-/// </summary>
+// Registering ANY section for Kind == "ConcordUnit" (see ConcordSmallCatechismSection)
+// makes sections replace ConcordUnitNode.BodyAsync entirely rather than supplement it,
+// so this section carries the paragraph's own text or it would silently disappear.
 public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "ConcordUnit";
@@ -3303,7 +1947,6 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>D3: every target of a node's symmetric <c>catechism-link</c> frontier, paging to the end.</summary>
 internal static class CatechismLinks
 {
     public static async Task<List<NodeRefDto>> AllTargetsAsync(AtlasClient api, string nodeId)
@@ -3321,7 +1964,6 @@ internal static class CatechismLinks
     }
 }
 
-/// <summary>D5: shared rendering for the person sections -- a heading and a row of explorable person/event/verse chips.</summary>
 file static class PersonSectionRendering
 {
     public static int Heading(RenderTreeBuilder builder, int seq, string text, string testid)
@@ -3356,13 +1998,6 @@ file static class PersonSectionRendering
     public static string RawId(string wireId, string prefix) => wireId.StartsWith(prefix, StringComparison.Ordinal) ? wireId[prefix.Length..] : wireId;
 }
 
-/// <summary>
-/// D5: LIFE -- first on a person's card. Eternal: "Eternal" with the
-/// Scripture grounds as verse chips, no years. Otherwise the life dates
-/// when the source gives them ("Born c. 1997 BC · Died c. 1821 BC"), else
-/// the corpus-mention span said as exactly that. POPOVER-LAW-1: absent
-/// when there is nothing to say.
-/// </summary>
 public sealed class PersonLifeSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
@@ -3428,7 +2063,6 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>D5: EVENTS (n) -- the person's own `participates-in` frontier, each an explorable event.</summary>
 public sealed class PersonEventsSection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";
@@ -3464,12 +2098,6 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
     }
 }
 
-/// <summary>
-/// D5: FAMILY -- parents (`child-of`), partners (`partner-of`), children
-/// (`parent-of`), siblings DERIVED as the other children of the same
-/// parents; every name an explorable person. Absent when the person has no
-/// kin at all.
-/// </summary>
 public sealed class PersonFamilySection : IPopoverSectionProvider
 {
     public bool AppliesTo(IExplorable node) => node.Kind == "Person";

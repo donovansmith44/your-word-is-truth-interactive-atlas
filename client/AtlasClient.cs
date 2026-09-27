@@ -5,54 +5,18 @@ using Microsoft.Extensions.Configuration;
 
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// Typed HTTP client for atlas-server's <c>/api/*</c> endpoints. Registered
-/// as a DI singleton (see Program.cs). Scene responses (the hot path -- one
-/// call per slider/dropdown change) are cached in a capacity-48 LRU keyed by
-/// request shape; the canon table of contents and eras list are small,
-/// stable, and needed by nearly every page, so they are fetched once and
-/// cached for the lifetime of the app. Chapters (fetched by PlaceCard's
-/// hover-verse-text block -- design-direction.md's "Hover place card --
-/// REVISED": "Verse text loads via the chapter endpoint, LRU-cached, so
-/// hovers stay instant after first touch") get their own smaller capacity-24
-/// LRU: a hover's whole point is instant repeat-visits, and a scene's places
-/// tend to cluster into a much smaller set of distinct chapters than the
-/// 48-scene cache is sized for.
-/// </summary>
 public sealed class AtlasClient
 {
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
     private readonly LruCache<string, ChapterOut> _chapterCache = new(capacity: 24);
-    // Capacity ~12: keyed by the requested "{from}:{to}" window -- a
-    // low-traffic cache (one call per debounced time-mode window change,
-    // not a hot per-hover path like scenes/chapters), so caching every
-    // distinct requested window costs nothing meaningful in practice while
-    // being a one-line, obviously-correct key.
     private readonly LruCache<string, PolitiesOut> _politiesCache = new(capacity: 12);
-    // Batch E: PlaceCard's hover-lazy history fetch (place id + window),
-    // same "instant on repeat hover" rationale and capacity ballpark as
-    // _chapterCache above -- a scene's lit places cluster into a much
-    // smaller set of distinct (place, window) pairs than 24 in practice.
     private readonly LruCache<string, PlaceDetail> _placeHistoryCache = new(capacity: 24);
-    // Batch G1 requirement 2: PassageNode's own cross-references chip, keyed
-    // by sref -- same "instant on repeat visits/re-opens" rationale as
-    // _chapterCache/_placeHistoryCache above.
     private readonly LruCache<string, List<CrossRefOut>> _xrefsCache = new(capacity: 24);
-    // Batch F: PassageNode's own catechism citation list, keyed by sref --
-    // same rationale/capacity as _xrefsCache above (its own direct sibling:
-    // CatechismSeamSection reads this exactly where CrossRefsSection reads
-    // Xrefs, for the SAME PassageNode).
     private readonly LruCache<string, List<CatechismRefDto>> _catechismSpanCache = new(capacity: 24);
-    // PERF-3 re-review fix round 2 (tripwire ruling 3 -- "the class dies
-    // completely, not mostly," applied to every raw `??= await` site in
-    // client/, not just Explore/'s own node types): AsyncMemo-backed, same
-    // dedup + reset-on-fault fix as every Explore/ node this batch touched.
-    // These five ARE reachable from more than one concurrent caller in
-    // practice (several pages/components can independently call Books()/
-    // Eras()/etc. around app startup, before any one of them has resolved)
-    // -- the same race SHAPE this whole batch exists to kill, just scoped
-    // to app-startup rather than a per-click hot path.
+    // AsyncMemo, not a plain cache: several callers can independently invoke Books()/Eras()/etc.
+    // concurrently before any has resolved (e.g. around app startup), so a plain cache would
+    // double-fetch without in-flight dedup.
     private readonly Explore.AsyncMemo<List<BookTocEntry>> _booksCache = new();
     private readonly Explore.AsyncMemo<List<EraDto>> _erasCache = new();
     private readonly Explore.AsyncMemo<List<LandmarkDto>> _landmarksCache = new();
@@ -64,22 +28,16 @@ public sealed class AtlasClient
         _http = http;
     }
 
-    /// <summary>
-    /// Resolves the API origin from configuration's "ApiBase" key (set in
-    /// wwwroot/appsettings.Development.json for local dev, where the Blazor
-    /// dev server and atlas-server run on different ports), falling back to
-    /// the host's own base address -- the single-binary release deployment,
-    /// where atlas-server serves both the API and the published client from
-    /// the same origin, needs no override.
-    /// </summary>
+    // ApiBase config overrides for local dev (Blazor dev server + atlas-server on different
+    // ports); falls back to the host's own base address for the single-binary release deployment
+    // (API and client served from the same origin).
     public static Uri ResolveBaseAddress(IConfiguration configuration, IWebAssemblyHostEnvironment hostEnvironment)
     {
         var apiBase = configuration["ApiBase"];
         var raw = string.IsNullOrWhiteSpace(apiBase) ? hostEnvironment.BaseAddress : apiBase;
-        // Uri's relative-combination rules replace the last path segment of a
-        // base that doesn't end in '/'; force the trailing slash so every
-        // relative request path below (e.g. "api/scene") appends cleanly
-        // instead of clobbering part of a configured ApiBase.
+        // Uri's relative-combination rules replace the last path segment of a base that doesn't
+        // end in '/'; force the trailing slash so a relative request path (e.g. "api/scene")
+        // appends cleanly instead of clobbering part of a configured ApiBase.
         return new Uri(raw.EndsWith('/') ? raw : raw + "/");
     }
 
@@ -129,37 +87,15 @@ public sealed class AtlasClient
     public Task<VerseDetail> Verse(string vref) =>
         GetRequired<VerseDetail>($"api/verse/{vref}");
 
-    /// <summary>
-    /// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): <c>GET
-    /// /api/kretzmann/chapter/{book}.{chapter}</c> -- the chapter-scoped
-    /// commentary listing that replaces Kretzmann.razor's own retired
-    /// per-verse fan-out. No LRU cache here (unlike <see cref="Chapter"/>):
-    /// this app's own "independent fetches never serialize" house pattern
-    /// still applies (this is a single fetch, not a fan-out to memoize
-    /// away), and Kretzmann re-fetches fresh on every real locus change
-    /// regardless (LoadCommentaryAsync's own request-id guard already
-    /// discards a stale in-flight response) -- a curator-added commentary
-    /// unit should be visible on the very next chapter visit, not held
-    /// stale behind a cache with no invalidation path.
-    /// </summary>
+    // No cache here (unlike Chapter): Kretzmann re-fetches fresh on every locus change by design
+    // (LoadCommentaryAsync's own request-id guard discards stale in-flight responses), so a
+    // curator-added commentary unit is visible on the very next chapter visit.
     public Task<KretzmannChapterOut> KretzmannChapter(string book, int chapter) =>
         GetRequired<KretzmannChapterOut>($"api/kretzmann/chapter/{book}.{chapter}");
 
     public Task<PlaceDetail> Place(string id) =>
         GetRequired<PlaceDetail>($"api/place/{id}");
 
-    /// <summary>
-    /// Batch E: <c>GET /api/place/{id}?from=&amp;to=</c> -- the window-scoped
-    /// history payload (resolved display name, the one blurb for this
-    /// window, established/destroyed) PlaceCard fetches lazily on hover.
-    /// <paramref name="from"/>/<paramref name="to"/> are optional (null in
-    /// scripture mode, where there is no time window to resolve a blurb
-    /// against -- see <c>atlas_core::history::resolve_display_name</c>'s own
-    /// doc comment for why; established/destroyed still come back, being
-    /// window-independent). LRU-cached like <see cref="Chapter"/>, keyed by
-    /// (id, window) so a re-hover of the same place under the same window
-    /// never re-fetches.
-    /// </summary>
     public async Task<PlaceDetail> PlaceHistory(string id, int? from, int? to)
     {
         var key = from is int f && to is int t ? $"{id}:{f}:{t}" : id;
@@ -174,18 +110,6 @@ public sealed class AtlasClient
         return result;
     }
 
-    /// <summary>
-    /// Batch G1 requirement 2: <c>GET /api/xrefs/{sref}</c> -- aggregated
-    /// cross-references for a verse or same-chapter passage span (union of
-    /// member verses' own xrefs, votes summed, self-targets dropped, sorted
-    /// desc, capped at 20). Reuses <see cref="CrossRefOut"/> -- the wire
-    /// shape is identical to <see cref="VerseDetail.CrossRefs"/>'s own
-    /// per-item shape. LRU-cached like <see cref="Chapter"/>/
-    /// <see cref="PlaceHistory"/>: PassageNode's own popover reads this
-    /// twice per open (once to decide the chip's conditional presence, once
-    /// again if the chip is actually clicked) and this cache is what makes
-    /// the second read free.
-    /// </summary>
     public async Task<List<CrossRefOut>> Xrefs(string sref)
     {
         if (_xrefsCache.TryGet(sref, out var cached))
@@ -198,15 +122,6 @@ public sealed class AtlasClient
         return result;
     }
 
-    /// <summary>
-    /// Batch F ("the small catechism"): <c>GET /api/catechism/{sref}</c> --
-    /// catechism items citing a verse or same-chapter passage span (union
-    /// across member verses, no "votes" -- an item is cited or it isn't).
-    /// Mirrors <see cref="Xrefs"/> exactly, same LRU-cached-by-sref
-    /// treatment (PassageNode's own popover can read this twice per open --
-    /// once to decide the section's conditional presence, once again if
-    /// re-resolved -- the cache is what makes the second read free).
-    /// </summary>
     public async Task<List<CatechismRefDto>> Catechism(string sref)
     {
         if (_catechismSpanCache.TryGet(sref, out var cached))
@@ -219,47 +134,15 @@ public sealed class AtlasClient
         return result;
     }
 
-    /// <summary>
-    /// Batch F: <c>GET /api/catechism/item/{id}</c> -- one catechism item's
-    /// full content (text/explanation/where-written/proof verses). Uncached
-    /// at this layer, same as <see cref="Verse"/>/<see cref="Place(string)"/>
-    /// -- <see cref="Explore.CatechismNode"/> memoizes its own single fetch
-    /// per node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s own
-    /// reasoning exactly).
-    /// </summary>
     public Task<CatechismItemDetail> CatechismItem(string id) =>
         GetRequired<CatechismItemDetail>($"api/catechism/item/{id}");
 
     public Task<List<NarrativeOut>> Narratives() =>
         GetRequired<List<NarrativeOut>>("api/narratives");
 
-    /// <summary>
-    /// Batch N requirement 1's own event-id-keyed lookup half, extended
-    /// Batch HOTFIX-4 requirement 1: <c>GET /api/narrative/event/{id}</c> --
-    /// every narrative position the given event id occupies, PLUS its own
-    /// global-timeline position (mirrors <see cref="CatechismItem"/>'s own
-    /// id-keyed precedent). Uncached at this layer, same as
-    /// <see cref="Verse"/>/<see cref="CatechismItem"/> --
-    /// <see cref="Explore.EventNode"/> memoizes its own single fetch per
-    /// node instance instead (mirrors <c>VerseNode.DetailAsync</c>'s own
-    /// reasoning exactly). Never called with a user-typed id -- always an
-    /// id a PRIOR response (this same endpoint's own, a reader heading, or
-    /// a verse's own EVENT membership row) already handed back.
-    /// </summary>
     public Task<NarrativeEventPositionsResult> NarrativeEventPositions(string eventId) =>
         GetRequired<NarrativeEventPositionsResult>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
 
-    /// <summary>
-    /// Batch T requirement 4: <c>GET /api/event/{id}</c> -- an EVENT-kind
-    /// PASSAGE's own rich content (title/date/places/witnesses/provenance).
-    /// Uncached at this layer, same as <see cref="Verse"/>/
-    /// <see cref="CatechismItem"/> -- <see cref="Explore.EventNode"/>
-    /// memoizes its own single fetch per node instance instead (mirrors
-    /// <c>VerseNode.DetailAsync</c>'s own reasoning exactly). Never called
-    /// with a user-typed id -- always one a prior response (a reader
-    /// heading, a verse's own EVENT membership row, a PRIOR/FOLLOWING
-    /// traversal) already handed back.
-    /// </summary>
     public Task<EventDetail> Event(string id) =>
         GetRequired<EventDetail>($"api/event/{Uri.EscapeDataString(id)}");
 
@@ -276,59 +159,26 @@ public sealed class AtlasClient
         return result;
     }
 
-    // Curated landmarks never change within a running session -- fetched
-    // once and cached forever, same treatment as Books()/Eras() above.
     public Task<List<LandmarkDto>> Landmarks() => _landmarksCache.Get(() => GetRequired<List<LandmarkDto>>("api/landmarks"));
 
-    // Batch R requirement 1: the curated land mask (clip geometry only, no
-    // from/to) never changes within a running session either -- same
-    // fetch-once-cache-forever treatment as Landmarks() above.
     public Task<LandMaskOut> LandMask() => _landMaskCache.Get(() => GetRequired<LandMaskOut>("api/land-mask"));
 
-    // Batch S: the Sources page's own single source of truth -- curated,
-    // never changes within a running session, same fetch-once-cache-forever
-    // treatment as Landmarks()/LandMask() above.
     public Task<SourcesDocumentOut> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocumentOut>("api/sources"));
 
-    // Batch AQC-1 (design spec §2's versioning law): GET /api/contract --
-    // the AQC version range this running server supports. No cache -- the
-    // ONE call site is the startup fail-loud check (App.razor), which by
-    // definition runs exactly once per app load. Fix round 1 (Q-5): takes
-    // a CancellationToken so the caller can bound how long first paint is
-    // gated on this round trip -- an UNREACHABLE/hanging /api/contract
-    // must not leave the app blank indefinitely.
     public async Task<ContractDto> Contract(CancellationToken cancellationToken = default)
     {
         return await GetRequired<ContractDto>("api/contract", cancellationToken);
     }
 
-    /// <summary>
-    /// D3 (owner, 2026-09-15): one page of a node's frontier by edge kind --
-    /// the generic <c>GET /api/node/{id}/edges</c> the popover's own
-    /// <see cref="IExplorableClient"/> already speaks, reachable from a
-    /// section PROVIDER (which only ever sees this client). Used by the
-    /// catechism ↔ Book of Concord traversal sections.
-    /// </summary>
     public Task<EdgePageDto> NodeEdges(string nodeId, string kind, int? cursor = null, int limit = 200) =>
         GetRequired<EdgePageDto>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind)}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
 
-    /// <summary>D5: a node's card (id/kind/label/provenance/edge_summary and, for a Person, its life facts) from a section provider.</summary>
     public Task<NodeCardDto> NodeCard(string nodeId) =>
         GetRequired<NodeCardDto>($"api/node/{Uri.EscapeDataString(nodeId)}");
 
-    /// <summary>
-    /// D3: one Book of Concord paragraph's own text, by citation
-    /// (<c>BoC 7.2.1</c>) -- the SAME <c>/api/text</c> window the Concord
-    /// page reads, narrowed to one unit, so a ConcordUnitNode reached from
-    /// a catechism item (which carries only the citation) can render.
-    /// </summary>
     public Task<TextWindowDto> ConcordUnit(string citation) =>
         GetRequired<TextWindowDto>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
 
-    /// <summary>
-    /// D4: the containment forest as a table of contents, two levels deep --
-    /// memoized per corpus (it changes only with the artifact's own version).
-    /// </summary>
     public Task<ContentsOut> Contents(string corpus)
     {
         if (!_contentsCache.TryGetValue(corpus, out var memo))

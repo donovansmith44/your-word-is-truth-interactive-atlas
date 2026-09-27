@@ -1,11 +1,3 @@
-@* D4 (owner, 2026-09-15): the reader's Contents panel -- the SAME popover
-   chrome the hamburger panel uses (backdrop + .popover), holding one
-   ContentsTree over /api/contents/{Corpus}. The current chapter's book is
-   expanded on open (ExpandPathTo(CurrentRef)); a root label toggles, a
-   chapter navigates. The expanded set is a per-viewer CONVENIENCE kept in
-   localStorage ("contents-expanded-{corpus}") -- never state anyone else
-   needs; every access is guarded, and the panel renders correctly without
-   it. *@
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -36,7 +28,6 @@
 
 @code {
     [Parameter, EditorRequired] public string Corpus { get; set; } = "bible";
-    /// <summary>The chapter/paragraph being read now (<c>JHN.3</c>); its book opens on load.</summary>
     [Parameter] public string? CurrentRef { get; set; }
     [Parameter, EditorRequired] public EventCallback<string> OnNavigate { get; set; }
     [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
@@ -103,7 +94,6 @@
         }
         catch (Exception)
         {
-            // a per-viewer convenience only -- a blocked store changes nothing
         }
     }
 

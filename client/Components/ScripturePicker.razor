@@ -1,35 +1,3 @@
-@* Reusable book -> chapter -> verse-range picker (design-direction.md:
-   "picker (top-right): dusk-glass panels" describes its mount on the World
-   page; Task 14 adds a second, parchment-context mount in the reader
-   header). Purely a controlled emitter: it knows nothing about scripture
-   mode, /world, /read, or NavigateWorld/NavigateReader -- it only composes
-   a canonical ref from the current selections and hands it to whatever
-   OnApply the mounting page wired up.
-
-   ThemeClass is the ONLY thing that differs between mounts: World.razor
-   passes "picker-dusk", Reader.razor passes "picker-parchment". Markup and
-   behavior stay identical -- app.css's .picker carries every rule that's
-   the SAME in both contexts, reading the material/color/position specifics
-   from custom properties the theme class sets (the same --header-fg-style
-   inheritance .app-header + .header-parchment/.header-dusk already use),
-   so no selector ever combines two classes.
-
-   Batch M-D4, owner bug B4 (verbatim): "the chapter nav box in the top
-   right of the reader is always stuck on genesis and doesn't follow the
-   focus chapter." CurrentBook/CurrentChapter (both optional, default null)
-   are the fix: Reader.razor is the ONLY mounting page that supplies them
-   (its own _book/_chapterNum), so this component still "knows nothing
-   about /world" -- World.razor's own mount leaves both null and this stays
-   a plain, unsynced emitter there, byte-for-byte the pre-existing
-   behavior. OnParametersSet (see below) only re-syncs the book/chapter
-   dropdowns when CurrentBook/CurrentChapter actually CHANGE from what was
-   last synced -- Reader.razor re-renders this component on every one of
-   its OWN re-renders (a popover opening, a hover, ...), most of which
-   never touch _book/_chapterNum at all, and clobbering the user's own
-   in-progress verse-from/-to typing (or a book/chapter they're mid-browsing
-   toward a DIFFERENT jump target) on every one of those unrelated
-   re-renders would be a real, avoidable regression this guard exists to
-   prevent. *@
 @inject AtlasClient Atlas
 
 <div class="picker @ThemeClass" data-testid="picker">
@@ -70,29 +38,14 @@
     [Parameter, EditorRequired] public EventCallback<string> OnApply { get; set; }
     [Parameter, EditorRequired] public string ThemeClass { get; set; } = "";
 
-    // B4 -- see this file's own header comment. Null (World.razor's own
-    // mount) means "don't sync at all," the pre-existing behavior.
+    // Null (World.razor's mount) means "don't sync at all."
     [Parameter] public string? CurrentBook { get; set; }
     [Parameter] public int? CurrentChapter { get; set; }
 
-    // Batch ST-1 fix round 1 (review finding S-1, CRITICAL): the B4 "don't
-    // clobber in-progress typing" guard below (`_synced`) only re-syncs when
-    // CurrentBook/CurrentChapter actually CHANGE -- correct when the ONLY
-    // possible external event is a genuine locus change, which was true
-    // pre-ST-1 (Reader was the only mount that ever set these). It is no
-    // longer sufficient: World.razor's own follow chip can flip OFF-then-ON
-    // while the shared Locus atom never moves at all (a world-picker Apply
-    // deliberately does not touch Locus, by design -- see World.razor's own
-    // ApplyScriptureRef doc comment), leaving CurrentBook/CurrentChapter
-    // byte-identical across the whole OFF/ON cycle -- so `_synced` never
-    // invalidates and the dropdowns keep showing the stale applied ref even
-    // after "re-syncing" is supposed to have happened, resurrecting SYNC-1.
-    // SyncToken is the fix the review recommended: an opaque counter the
-    // MOUNTING PAGE bumps on exactly the transition that needs a forced
-    // resync regardless of whether CurrentBook/CurrentChapter changed
-    // (World.razor's ToggleFollow, on the false->true edge) -- optional,
-    // defaults to 0, so Reader's own mount (which never needs this) is
-    // completely unaffected.
+    // An opaque counter the mounting page bumps to force a resync even when
+    // CurrentBook/CurrentChapter haven't changed -- needed because a toggle (e.g. World's
+    // follow chip flipping off then back on) can leave those values byte-identical across
+    // the cycle while still needing the dropdowns re-synced.
     [Parameter] public int SyncToken { get; set; }
     private int _syncedToken;
 
@@ -102,41 +55,15 @@
     private string _verseFromText = "";
     private string _verseToText = "";
 
-    // B4's own "already reflects this" guard -- the LAST (book, chapter)
-    // this component actually synced the dropdowns TO, distinct from
-    // _bookCode/_chapterText (the user's own live selection, which OnApply
-    // reads and which a book/chapter dropdown CHANGE handler mutates
-    // independently of this field). Null until the first real sync.
+    // The last (book, chapter) actually synced to the dropdowns -- distinct from
+    // _bookCode/_chapterText, which the user's own live selection also mutates.
     private (string Book, int Chapter)? _synced;
 
-    // B4: a real, live-caught race, not a theoretical one -- found by this
-    // batch's own new Playwright coverage, not guessed. Reader.razor's own
-    // FIRST-ever render (mid its own OnInitializedAsync, before route
-    // params have been applied) still carries _book/_chapterNum's plain
-    // field-initializer defaults ("GEN"/1) -- this component's OWN first
-    // SetParametersAsync call sees CurrentBook="GEN" for that one instant.
-    // Blazor does NOT wait for THIS method's own in-flight Atlas.Books()
-    // fetch before invoking a LATER SetParametersAsync call on the SAME
-    // instance (the `_initialized` guard in ComponentBase.SetParametersAsync
-    // is set synchronously, before OnInitializedAsync's await even starts,
-    // so a second call always takes the "already initialized" branch
-    // straight into OnParametersSet, regardless of whether this method's
-    // own continuation has resolved yet) -- so Reader's OWN real, routed
-    // CurrentBook/CurrentChapter ("EXO"/3) can arrive and correctly sync
-    // (OnParametersSet below) WHILE this fetch is still pending. Without
-    // reading CurrentBook/CurrentChapter HERE too, the unconditional
-    // `_bookCode = _toc[0].Code` fallback below would then fire AFTER that
-    // correct sync and silently clobber it back to "GEN" the instant this
-    // await finally resolves -- confirmed live: the picker settled on "GEN"
-    // even though OnParametersSet's own _synced bookkeeping believed it was
-    // already showing "EXO" (CurrentBook, a shared mutable property on this
-    // SAME instance, already read "EXO" by the time this continuation ran,
-    // so _synced was never wrong -- only _bookCode/_chapterText were,
-    // clobbered by this method AFTER OnParametersSet's own correct write).
-    // Reading CurrentBook/CurrentChapter fresh here (never a value
-    // captured before the await) closes the race in both possible
-    // orderings: whichever of this fetch or Reader's own route-driven
-    // update resolves LAST simply confirms the same already-correct sync.
+    // Blazor does not wait for this method's in-flight Atlas.Books() fetch before invoking a
+    // later SetParametersAsync/OnParametersSet on the same instance, so Reader's real routed
+    // CurrentBook/CurrentChapter can arrive and correctly sync while this fetch is still
+    // pending. Reading CurrentBook/CurrentChapter fresh here (not a value captured before the
+    // await) keeps the unconditional _toc[0] fallback below from clobbering that sync once this resolves.
     protected override async Task OnInitializedAsync()
     {
         _toc = await Atlas.Books();
@@ -158,30 +85,13 @@
         }
     }
 
-    // B4: runs on EVERY Reader.razor re-render (this component is an
-    // unconditional child of its own mounting page), by design -- see this
-    // file's own header comment for why _synced (not a bare "did the
-    // parameter change" Blazor doesn't track for you) is what keeps this a
-    // no-op on the overwhelming majority of those. CAN fire while _toc is
-    // still null/loading (a genuine re-render of an ALREADY-initialized
-    // instance never re-runs OnInitializedAsync, and can arrive before this
-    // component's own FIRST OnInitializedAsync call has resolved at all --
-    // see that method's own header comment for the real race this app once
-    // hit) -- harmless here, since this method never reads _toc; the
-    // dropdown's own options simply populate once OnInitializedAsync's
-    // fetch eventually does resolve, correctly showing whatever _bookCode/
-    // _chapterText already hold by then.
     protected override void OnParametersSet()
     {
         if (CurrentBook is not { } book || CurrentChapter is not { } chapter)
         {
-            return; // World.razor's own mount -- stays unsynced, unchanged
+            return; // World.razor's mount -- stays unsynced
         }
 
-        // Batch ST-1 fix round 1 (S-1): a bumped SyncToken forces a resync
-        // even when (book, chapter) is byte-identical to `_synced` -- the
-        // ONE case the pre-existing guard alone can't catch (see SyncToken's
-        // own doc comment above for the exact scenario).
         var forced = _syncedToken != SyncToken;
 
         if (!forced && _synced is { } prior && prior.Book == book && prior.Chapter == chapter)
@@ -205,9 +115,6 @@
 
     private int MaxVerse => SelectedChapter is int c ? SelectedBookEntry!.Chapters[c - 1] : 0;
 
-    // A new book invalidates any chapter chosen against the old one (chapter
-    // counts differ book to book) and, transitively, any verse range (bounded
-    // by that now-stale chapter).
     private void OnBookChanged()
     {
         _chapterText = "";
@@ -215,8 +122,6 @@
         _verseToText = "";
     }
 
-    // A new chapter invalidates any verse range chosen against the old one --
-    // verse bounds are per-chapter (TOC's Chapters[chapter-1]).
     private void OnChapterChanged()
     {
         _verseFromText = "";
@@ -226,12 +131,6 @@
     private void OnVerseFromInput(ChangeEventArgs e) => _verseFromText = e.Value?.ToString() ?? "";
     private void OnVerseToInput(ChangeEventArgs e) => _verseToText = e.Value?.ToString() ?? "";
 
-    // Composes the canonical ref per the exact CONTRACT shapes: book only
-    // ("GEN"), +chapter ("GEN.1"), +verse-from alone or verse-from==verse-to
-    // ("GEN.1.5"), or a strict from<to range ("GEN.1.5-9"). Each step only
-    // extends the ref if the step before it is itself present and in range,
-    // so a blank or out-of-bounds verse box just truncates the ref back to
-    // whatever's still valid instead of composing a broken one.
     private async Task Apply()
     {
         if (string.IsNullOrEmpty(_bookCode))

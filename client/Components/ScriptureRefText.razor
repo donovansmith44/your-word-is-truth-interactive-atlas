@@ -1,20 +1,6 @@
-@* Batch CORPREAD-1b (ticket K/C): the shared "explorable-reference" render
-   primitive -- given a run of corpus prose (Kretzmann commentary, Book of
-   Concord confession text) plus the app's own canonical book TOC, renders
-   plain text interleaved with clickable scripture-reference spans, one per
-   Explore/ScriptureRefScan.cs match. Genuinely ONE component, used by BOTH
-   Kretzmann.razor and Concord.razor (the brief's own "same mechanism as
-   ticket K -- do not fork the scanner"), mirroring MentionScan.razor's own
-   "the ONE place a scan actually renders" shape for its own domain.
-
-   Each match opens the SAME VerseNode/ExplorerPopover every other verse
-   reference in this app already uses (Reader's own verse-num click,
-   MentionText's own place/person mentions) -- ONE-RULE, no bespoke citation
-   popover. A range collapses to its own first verse (ScriptureRefScan's own
-   disclosed limitation) -- the popover opens on that verse; the visible
-   TEXT still shows the full matched citation string verbatim (e.g. "John
-   1, 1-5"), so nothing about what the reader SEES is ever altered, only
-   what a click resolves to. *@
+@* A range collapses to its own first verse (ScriptureRefScan's disclosed limitation) -- the
+   popover opens on that verse, but the visible text still shows the full matched citation
+   string verbatim (e.g. "John 1, 1-5"). *@
 @using BibleAtlas.Client.Explore
 
 @foreach (var seg in _segments)
@@ -39,27 +25,12 @@
     [Parameter, EditorRequired] public IReadOnlyList<BookTocEntry> Toc { get; set; } = default!;
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
 
-    // A stable, per-owner disambiguator for the testid (the commentary
-    // item's own slug, the Concord unit's own ref slug) -- mirrors
-    // MentionText's own Verse-number role, just keyed to whichever owner
-    // this run of prose belongs to (there is no single "verse number" in
-    // Concord's own case).
     [Parameter, EditorRequired] public string OwnerSlug { get; set; } = default!;
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // Fix round (Q-1, CRITICAL -- review, second half): this used to be a
-    // plain computed property, re-scanning `Text` on EVERY render pass (the
-    // `@foreach` above reads it fresh every time) -- ScriptureRefScan.Scan's
-    // own regex/dictionary build is now memoized (Explore/ScriptureRefScan.cs's
-    // own header), but re-running Regex.Matches over the same string on
-    // every unrelated re-render (a sibling popover open/close, an unrelated
-    // StateHasChanged upstream) is still wasted work this component alone
-    // can avoid. OnParametersSet runs on every render regardless of whether
-    // parameters actually changed (Blazor does not diff parameter equality
-    // for you) -- the explicit `_lastText`/`_lastToc` check below is what
-    // makes this "recompute only when Text/Toc actually change," not merely
-    // "recompute once per lifetime."
+    // OnParametersSet runs on every render regardless of whether parameters actually changed;
+    // this guard avoids re-scanning Text on every unrelated re-render.
     private string? _lastText;
     private IReadOnlyList<BookTocEntry>? _lastToc;
     private IReadOnlyList<Segment> _segments = Array.Empty<Segment>();
@@ -68,7 +39,7 @@
     {
         if (_lastText == Text && ReferenceEquals(_lastToc, Toc))
         {
-            return; // unchanged since the last render -- keep the cached segments
+            return; // unchanged -- keep cached segments
         }
 
         _lastText = Text;

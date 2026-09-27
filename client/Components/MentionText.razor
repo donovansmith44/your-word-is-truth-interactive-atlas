@@ -1,78 +1,3 @@
-@* Batch M-D4 ("the recursive reader"): the ONE in-text mention-scan-and-
-   render primitive -- before this batch, Reader.razor's own verse text and
-   MiniReaderExpand.razor's own verse text each ran an IDENTICAL
-   `@foreach (var seg in PlaceMentions.Scan(...))` loop with near-identical
-   markup (differing only in CSS class/testid prefixes and each file's own
-   copy of the `Blink`/mention-open one-liners) -- two hand-copies of the
-   exact same rendering, the "forbidden parallel-path disease" the batch
-   brief names, one layer further in than the verse LINE itself. This
-   component is that loop, extracted once: given a verse's text plus its own
-   attested places/persons (`GET /api/chapter/{cref}`'s per-verse `places`/
-   `persons` arrays, `VerseOut`), it renders the SAME plain-prose/place-span/
-   person-span sequence `Explore/PlaceMentions.cs`'s `PlaceMentions.Scan`
-   already computes -- see that file's own doc comment for the full
-   scan/overlap/Sin-guard rule (case-sensitive, whole-word, longest-match-
-   wins, Place-before-Person tie-break); nothing about THAT rule changes
-   here, only where the rendering loop over its result lives.
-
-   VerseLine.razor (the canonical verse-ROW renderer) uses this for its own
-   verse-text span; VerseTextSection.razor's own one-verse/passage FOCUS
-   preview (previously bare, unscanned text -- decision 3, "name links...
-   render wherever verse text renders") now ALSO uses this directly, with no
-   verse-num/xref-marker/row wrapper of its own to bring along -- this
-   component renders ONLY the text-and-mentions sequence, never a wrapping
-   element OF THE WHOLE (Batch RED-1 below is the one narrow exception, over
-   a red-letter SUB-RANGE only, never the whole output), so either caller
-   supplies whatever container (a `<span>` inside a clickable row, or a bare
-   `<p>`) fits its own context.
-
-   ClassPrefix doubles as BOTH the CSS class root and the data-testid root
-   (true in both pre-existing implementations: "verse-mention"/"verse-
-   mention-person" restyled onto ONE token, "popover-reader-mention"/
-   "popover-reader-mention-person" the same way) -- callers keep their own
-   PRE-EXISTING prefix (testids follow existing conventions; house pattern)
-   so no existing Playwright locator changes: Reader.razor passes
-   "verse-mention", MiniReaderExpand.razor passes "popover-reader-mention"
-   (plus its own established TestIdSuffix, unchanged), VerseTextSection's
-   new compact-view usage passes the new "popover-verse-mention" (its own
-   distinct identity -- a compact FOCUS preview is not a mini-reader row,
-   see that file's own comment -- reusing `.popover-reader-mention`'s exact
-   CSS via a compound selector in app.css, not a re-derived rule).
-
-   M-D4 fix round 1 (R-M1, review Important-1): PassageList.razor's own
-   compact preview text -- cross-refs, THE SCRIPTURES, place est/dest,
-   event witnesses, every consumer of that shared component -- was the one
-   remaining bare/unscanned rendering of verse text left client-wide once
-   this batch's own unification otherwise finished; it now calls this
-   component too, passing "popover-passage-mention" plus its own
-   pre-existing per-entry TestIdSuffix (the SAME disambiguation
-   MiniReaderExpand passes one level up, reused rather than re-derived).
-
-   Blink (BLINK-1) is consolidated here too -- both pre-existing copies were
-   the identical one-liner (`MapInterop.BlinkPlace(JS, placeId, active)`),
-   kept as two copies only because neither file wanted a THIRD shared file
-   for one line each (Reader.razor's own prior comment, verbatim) -- now
-   moot, since this component already exists for the mention markup itself.
-
-   BATCH RED-1 ("Red letters on Jesus' words in every translation," owner
-   order 2026-08-25): the actual place/person scan-and-render loop moved to
-   MentionScan.razor (see that file's own doc comment) so THIS component
-   could wrap a red-letter sub-RANGE in a `.words-of-christ` span without
-   duplicating that markup. `ComputeRuns` below splits `Text` at the
-   (already sorted, non-overlapping -- `red_letter_spans.rs`'s own
-   alignment law) `WordsOfChrist` char-offset boundaries into an ordered
-   list of RUNS, each either red or not; each run is scanned for mentions
-   INDEPENDENTLY (`MentionScan` over just that run's own substring) and, if
-   red, wrapped in one `.words-of-christ` span. The overwhelmingly common
-   case (`WordsOfChrist` empty -- most verses, and every non-KJV
-   corpus/edition) returns exactly ONE non-red run covering the whole text,
-   so NO extra wrapper element is ever added for a verse that carries no
-   red-letter span at all -- byte-identical rendering to before this batch.
-   A mention name that happens to straddle a red/narration boundary (never
-   observed in the real committed data) would not be detected as one whole
-   span in the affected half -- a disclosed, accepted approximation, the
-   same class `PlaceMentions.cs`'s own header comment already establishes
-   for pronouns/en-dashes. *@
 @using BibleAtlas.Client.Explore
 
 @foreach (var run in ComputeRuns(Text, WordsOfChrist))
@@ -94,56 +19,21 @@
     [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
     [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
 
-    // Batch RED-1: optional (default empty) so every PRE-EXISTING caller
-    // this batch does not touch (none, as of this batch -- every real
-    // caller is updated in the same commit -- but a future one) still
-    // compiles and renders exactly as before: zero spans means
-    // ComputeRuns returns one whole-text, non-red run, identical to this
-    // component's own pre-RED-1 behavior.
     [Parameter] public IReadOnlyList<WordsOfChristSpanDto> WordsOfChrist { get; set; } = Array.Empty<WordsOfChristSpanDto>();
 
-    // The verse number this text belongs to -- testid interpolation only
-    // (`{ClassPrefix}-{Verse}-{id}`); this component itself is otherwise
-    // verse-number-agnostic (VerseTextSection's own multi-verse passage
-    // compact view calls this once PER VERSE in a loop, each with ITS OWN
-    // Verse -- see that file's own comment).
     [Parameter, EditorRequired] public int Verse { get; set; }
 
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
 
-    // MiniReaderExpand's own established multi-instance disambiguation --
-    // see MentionText.razor's own comment on this identical parameter.
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
-    // Threaded straight to whichever popover-stack/active-node mechanism
-    // the caller owns (ctx.PushAsync inside a popover; Reader.razor's own
-    // OnLineExplore at the top level) -- this component never decides HOW a
-    // node opens, only WHICH node a mention click means, same "a
-    // caller/provider supplies the real push, this component only ever
-    // proposes a node" contract every other explorable row in this popover
-    // platform already follows (MiniReaderExpand.razor's own prior doc
-    // comment on OnExplore, verbatim precedent).
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // G2-m2: forwarded straight through to MentionScan, same "this
-    // component only ever proposes a node, never decides how it opens"
-    // contract OnExplore above already documents -- optional (default
-    // no-op) so a caller that never wires it (none currently pass through
-    // a Ctrl/Cmd-click surface) still compiles and renders unchanged.
     [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
 
-    /// Batch RED-1: one contiguous slice of `text`, either wholly INSIDE a
-    /// red-letter span or wholly outside every one -- module doc comment
-    /// has the full "why" and the one disclosed approximation.
     public readonly record struct TextRun(string Text, bool IsRed);
 
-    /// Pure; covered end-to-end by tests/ux/reader-red-letters.spec.ts
-    /// rather than a client.Tests unit test. `spans` is
-    /// trusted sorted/non-overlapping (the server's own alignment walk
-    /// guarantees this -- `red_letter.rs`'s `align_verse`: "a cursor that
-    /// advances past each successful match"), but this function still
-    /// defends against a malformed/out-of-range span (a clamp, never a
-    /// throw) rather than trusting the wire blindly.
+    /// <summary>Pure. <paramref name="spans"/> is trusted sorted/non-overlapping (the server's alignment walk guarantees this), but this still clamps a malformed/out-of-range span rather than trusting the wire blindly.</summary>
     public static List<TextRun> ComputeRuns(string text, IReadOnlyList<WordsOfChristSpanDto> spans)
     {
         if (spans.Count == 0)

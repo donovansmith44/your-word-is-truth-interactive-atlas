@@ -1,256 +1,3 @@
-@* Batch VC-1 fix round 1 (Adjudication F, controller ruling 1 -- REJECTS the
-   original CompositionHost's per-host wrapper trade "as shipped," adopts the
-   reviewer's third option verbatim): a ChildContent-taking wrapper. The
-   HOST page's own outer keydown/keyup div (Reader's shift-tracking
-   ancestor) stays exactly where it always was -- the PARENT of this
-   component -- so the DOM ancestor relation the shift-tracking mechanism
-   depends on (a common ancestor of .reader-page and ExplorerPopover) is
-   preserved byte-for-byte; this component learns nothing about keyboards.
-   See the batch report's own Adjudication F section for the full trade
-   discussion this replaces.
-
-   This component now owns EVERYTHING R3 named and Adjudication F's own
-   duplication inventory listed as copied: role determination (self-routed
-   vs. registry-guest-mounted; host vs. guest), the split-view flex
-   container + `--split-reader-width` custom property + its own testid
-   contract, the SplitDivider (width state, restore-on-open, the SetDivider
-   commit), hatch invocation, and close plumbing (CloseGuest). Reader.razor's
-   and Sources.razor's OWN `_splitOpen`-style branches are RETIRED -- BOTH of
-   them (S-2) -- replaced by this ONE shared component, used by both.
-
-   Controller ruling 2: "no separate CanHost flag" -- there is deliberately
-   no `CanHost` capability anywhere in this codebase. The declared
-   enter-split HATCH (EnterSplitHatch.HostView) IS the hosting declaration --
-   one vocabulary, not two. The tripwire against a future "pasted wrapper"
-   host is client.Tests' own hatch-conformance test: every hatch's own
-   HostView must be found using this component, by name
-   (`<CompositionSplit HostName="@ViewNames.X"`), in that view's own source --
-   a fourth host with no CompositionSplit usage fails that test, loudly.
-
-   Controller ruling 3 (S-1, CRITICAL): every render decision below is driven
-   by a REAL `IViewComposition`/`ICompositionLayout` (`Composition`, via
-   `ViewRegistry.ComposeFrom`) -- `Layout.Kind`/`Members` are read off the
-   COMPILED CONTRACT TYPES, not `ViewArrangement`'s own bare strings
-   directly. Unrecognized `Layout.Kind` fails LOUD (a visible toast,
-   `data-testid="composition-error"`) -- and, fix round 1 (Q-6): renders
-   INSTEAD of the normal split content, not alongside it, now that
-   "loud" is cheap to get right while already rewriting this file.
-
-   ============================================================
-   FIX ROUND 2 (re-review "GAPS REMAIN" -- Adjudication F's own unfinished
-   tail). Read this section before touching this file OR adding a new host.
-   ============================================================
-
-   RULING 3 -- "HOW TO BECOME A HOST," THE OFFICIAL RECIPE (verbatim, per
-   controller ruling): after this round, a host that needs NOTHING beyond
-   the ordinary case (Sources.razor is the reference example -- read it
-   alongside this) carries ONLY:
-     1. the `<CompositionSplit HostName="@ViewNames.X">` tag, wrapping its
-        own content as `ChildContent` (`Context="ctx"`);
-     2. a `[Parameter] public bool? SplitMode { get; set; }` IF its own
-        route can be reached as a routed page at all (threaded straight
-        into `SplitModeOverride` below) -- a host that is NEVER reached by
-        Blazor's own router (impossible for any `@page`-declared component,
-        so this applies to every real host so far) still needs this;
-     3. a class conditional driven by `ctx` -- as of this round, literally
-        just string interpolation against `ctx.HostPaneClassSuffix` (see
-        `HostPaneClass` below), never a hand-written
-        `ctx.IsSplitOpen &amp;&amp; ctx.IsHost ? "X" : ""` ternary of its own;
-     4. a route-level `EnterSingle`/`EnterSplit` dispatch, once, at mount
-        (asserting its OWN arrangement -- see Sources.razor's own
-        `OnInitializedAsync`).
-   THAT IS DECLARATION, NOT DUPLICATED BEHAVIOR -- nothing above re-derives
-   role, re-implements close plumbing, or re-subscribes to the arrangement
-   atom. A host does NOT need its own `ViewArrangementAtom.Changed`
-   subscription, its own `StateHasChanged()` call, or its own
-   `IDisposable`/unsubscribe -- see RULING 1 immediately below for why, and
-   Reader.razor for the ONE documented exception a host takes on ONLY when
-   it genuinely has markup or a side effect this component's own re-render
-   cannot reach.
-
-   RULING 1 -- the arrangement subscription lives HERE, exactly once. Fix
-   round 1 left the atom's own subscribe/unsubscribe pair duplicated in BOTH
-   Reader.razor and Sources.razor (the re-review's own row #12, "not
-   consolidated") -- this component now owns the ENTIRE subscribe /
-   `StateHasChanged` / unsubscribe trio itself (`OnInitialized`/
-   `HandleArrangementChanged`/`Dispose` below). Both host pages DELETED
-   their own copies. Since THIS component's own `StateHasChanged()` only
-   marks ITS OWN render subtree dirty -- which includes `ChildContent`,
-   re-invoked with a freshly computed `ctx` every time -- any host whose
-   ENTIRE markup lives inside `ChildContent` (Sources: "declare a hatch,
-   nothing else," per the recipe above) needs nothing more; its content
-   re-renders for free.
-
-   THE ONE DOCUMENTED EXCEPTION (Reader.razor): a host can have markup OR a
-   side effect that lives OUTSIDE `ChildContent`'s own lambda scope (Reader's
-   `ExplorerPopover`, a sibling of `<CompositionSplit>`, reads `_compositionSplit`
-   directly -- see that `@ref`'s own read sites) or that is a genuine side
-   effect tied to the SAME trigger, not a rendering concern at all (Reader's
-   `SyncSplitUrl`, a `Nav.NavigateTo` call keeping ITS OWN route's split
-   query truthful -- an arrangement change ELSEWHERE, e.g. World's own hatch
-   or a guest's `CloseGuest`, must still resync Reader's URL the next time
-   Reader itself is the one routed here). PRE-CORPREAD-1a history: at the
-   time this ruling was written, `SyncSplitUrl` was Reader.razor's OWN
-   method; RULING 5 (below) subsequently absorbed it into THIS component
-   directly for every host, not just Reader -- the documented EXCEPTION
-   itself (a host needing a hook for markup/side effects outside
-   `ChildContent`) is otherwise unaffected. For exactly this case -- and ONLY this
-   case -- `OnArrangementChanged` (an optional `Action?` parameter, below) is
-   the sanctioned hook: it fires from THIS component's OWN single owned
-   subscription, so the trio itself is STILL never duplicated; the host
-   supplies one callback, not a second subscribe/unsubscribe pair. This is
-   the SAME established shape `OnFractionCommitted` already set (fix round
-   1's own "the ONE genuinely per-host behavior") for a second genuinely
-   per-host need. A future host that thinks it needs this should double-check
-   first: does the need live INSIDE `ChildContent`? If so, it already works
-   for free -- do not reach for this hook.
-
-   RULING 2 -- `IsSplitOpen`'s own host-role law (below) now reads
-   `Composition.IsHostedBy(HostName)`, an EXTENSION METHOD on the compiled
-   `IViewComposition` contract (`client/Views/ViewRegistry.cs`), not an
-   inline formula written here. `Reader.razor`'s own `SyncSplitUrl` -- which
-   cannot reach `ctx` (it runs from the `OnArrangementChanged` hook above,
-   OUTSIDE `ChildContent`'s lambda) -- calls the SAME extension method
-   against its own `Registry.ComposeFrom(...)` call, so the "who is host"
-   law has exactly ONE definition anywhere in this codebase, never
-   re-derived by hand at a second call site (the re-review's own N-2
-   finding: Reader.razor:520's pre-fix-round-2 hand copy of this exact
-   formula). See `ViewRegistryConformanceTests.cs`'s own
-   `RoleFormulaRederivation_*` tests for the tripwire against a FUTURE
-   hand-copy of this shape.
-
-   RULING 4 -- two hazard classes, now documented where a future host
-   author will actually read them (not buried in a 30-line
-   `Reader.razor` comment or a batch report's own "concerns" bullet):
-
-   (a) THIS COMPONENT'S OWN `@if`/`else if`/`else` BRANCHES CHANGE
-   RENDER-TREE SHAPE, NOT JUST CSS CLASSES. Going from "single" (bare
-   `ChildContent`) to "split-h host" (`ChildContent` wrapped in a NEW
-   `.split-view` div) is a STRUCTURALLY different render tree -- Blazor's
-   diffing algorithm DISCARDS and RECREATES every DOM node inside
-   `ChildContent` across that transition (it does not patch classes onto
-   the SAME node the way the pre-VC-1 single-div design did). Any JS
-   interop that captures a DIRECT DOM ELEMENT REFERENCE inside `ChildContent`
-   (e.g. `document.querySelector(...)`, closed over by a `recompute`
-   callback) and binds it ONLY on `firstRender` will silently end up bound
-   to an ORPHANED node the instant this component's own branch flips --
-   this is EXACTLY what happened to `reader.js`'s own `watchChapterNavCenter`
-   (fix round 1's own THIRD self-caught live regression, NAV-3/NAV-6: a
-   `?split=1` fresh load genuinely renders "single" first, "split-h" second,
-   a documented `[SupplyParameterFromQuery]` timing quirk, orphaning a
-   `firstRender`-only binding). THE FIX PATTERN: bind on EVERY render
-   (guarded only by "is my JS module loaded," never `firstRender`), relying
-   on the JS side being IDEMPOTENT and SELF-CLEANING -- unbind/re-query/
-   rebind every call, the way `watchChapterNavCenter` already does via its
-   own `_navCenterCleanup` (see `reader.js`'s own header). A JS watcher that
-   captures a DOM node inside content this component renders and does NOT
-   already follow that pattern will break the same way, silently, with no
-   compiler or test signal (the re-review's own N-7: there is still no
-   automated guard for this class of bug -- `composition.spec.ts`'s own
-   `page.on('pageerror')` fixture, added fix round 2, catches a hard CRASH
-   from this class, not a silent stale-binding symptom like NAV-3/NAV-6 was).
-
-   (b) NEVER CALL `Nav.NavigateTo` FROM A COMPONENT'S OWN LIFECYCLE
-   SYNCHRONOUS PREFIX (the code that runs BEFORE the first genuine `await`
-   in `OnInitializedAsync`/`OnParametersSetAsync`) -- not even to the
-   CURRENT URL. Fix round 1's own SECOND self-caught live regression: a
-   same-URL `Nav.NavigateTo` fired from exactly this window reproduced live
-   as `System.InvalidOperationException: InvalidOperation_EnumFailedVersion`
-   INSIDE BLAZOR'S OWN `SupplyParameterFromQueryValueProvider.OnLocationChanged`
-   -- a framework-internal collection mutated while a location-changed
-   notification was still enumerating it. Blazor's navigation pipeline is
-   not safe to RE-ENTER from a component's own lifecycle synchronous prefix,
-   full stop; a same-URL call is not a safe special case, it still re-enters
-   the pipeline. `Reader.razor`'s own `SyncSplitUrl` closes the ONE reachable
-   instance of this with a no-op guard (`if (uri == Nav.Uri) return;`) --
-   correct today because every reachable path into it happens to yield a
-   same-URL no-op, NOT because the guard makes a genuinely different-URL
-   call safe from this window. A FUTURE arrangement dispatch reachable from
-   a lifecycle synchronous prefix that yields a genuinely DIFFERENT URL
-   would reopen this crash with no guard and no red test (re-review's own
-   finding, "hazard-class open") -- the real rule is the one stated in this
-   sentence, not the narrower guard that happens to satisfy it today.
-
-   ============================================================
-   BATCH CORPREAD-1a, RULING 5 -- the split-URL projection trio, owned HERE,
-   for EVERY host. Read this section before touching the SplitQuery/
-   FollowQuery parameters or SyncSplitUrl below.
-   ============================================================
-
-   SPLIT-PERSIST-1 (owner order, verbatim: "when i refresh in split screen
-   mode it takes me out of split screen") generalizes what was, pre-
-   CORPREAD-1a, a Reader.razor-only mechanism (its own retired `SplitQuery`
-   parameter + `SyncSplitUrl` method, and Sources/Kretzmann/Concord's own
-   disclosed "does not survive refresh" limitation) into this component,
-   the ONE place every host-capable page already gets its role/close/
-   divider machinery from -- see this file's own RULING 3, "the official
-   host recipe." A host declares NOTHING extra to get URL persistence; it
-   already had none to declare for the Adjudication-F machinery this
-   mirrors.
-
-   MECHANISM (see `client/Views/SplitUrlContract.cs` for the declared
-   grammar this reads/writes):
-     - RESTORE-ONCE-ON-LOAD: `SplitQuery`/`FollowQuery` are
-       `[SupplyParameterFromQuery]` parameters -- Blazor's router supplies
-       them from the CURRENT URL regardless of which component declares
-       them (no `@page` requirement). `OnParametersSet` below consumes them
-       EXACTLY ONCE per component instance (`_splitQueryConsumed`, never
-       re-armed by a later, unrelated parameter set -- the SAME one-shot
-       discipline Reader's own retired `_splitQueryConsumed` field used),
-       ONLY when NOT guest-mounted (a guest has no route/query of its own
-       -- reads the ambient URL of whatever page embeds it, which is
-       meaningless here). A known, non-self guest name dispatches
-       `EnterSplit`; anything else (absent, unknown, self-referential)
-       dispatches `EnterSingle(HostName)` -- this ALWAYS asserts the
-       instance's own arrangement, not just on a present split param, so
-       the atom correctly reflects reality regardless of whatever a PRIOR
-       page/instance this session left it in (mirrors Reader's own retired
-       comment on this exact point, generalized to every host).
-     - PROJECT-ON-CHANGE: `SyncSplitUrl` (below) runs from
-       `HandleArrangementChanged` -- THIS component's own single owned
-       subscription (RULING 1), so it fires for every dispatch site
-       (a hatch click, a guest's own close, the restore dispatch itself)
-       with no second subscription anywhere. Guarded by the SAME `uri ==
-       Nav.Uri` no-op check Reader's own retired `SyncSplitUrl` used --
-       RULING 4(b)'s hazard (Nav.NavigateTo from a lifecycle synchronous
-       prefix) applies here too: the restore dispatch above runs from
-       `OnParametersSet`'s own synchronous body, and its own resync target
-       is BY CONSTRUCTION the URL just arrived at (same-URL, a no-op) in
-       the overwhelming majority of reachable cases.
-       FIX ROUND 1 (review Q-6, TRIVIA -- the disclosure previously named
-       here overstated the WRONG parameter): a garbage/unrecognized split
-       value (`?split=xyz`, or the retired `?split=1`) is PROVABLY BENIGN,
-       not a corner case at all -- on a fresh document load the atom is
-       always `ViewArrangement.Default`, `Registry.TryGet` fails,
-       `EnterSingle(HostName)` no-ops against that SAME default
-       (`ViewArrangement.cs`'s own `EnterSingle.Apply`), and a no-op
-       `StateAtom.Dispatch` never raises `Changed` at all -- `SyncSplitUrl`
-       never runs, so there is no resync call to be unsafe in the first
-       place. The genuinely reachable divergent-URL case is a non-`1`
-       `follow` value on an OTHERWISE-VALID split (e.g.
-       `?split=world&amp;follow=0`): `EnterSplit(..., Follow: false)` DOES
-       change the atom, and the resync target (`?split=world`, follow
-       stripped) genuinely differs from `Nav.Uri` -- firing one
-       `Nav.NavigateTo` from this method's own synchronous body. Traced and
-       found SAFE, not merely disclosed: a fresh document load has no
-       in-flight `OnLocationChanged` enumeration to re-enter (RULING 4(b)'s
-       own crash class needs one), and `_splitQueryConsumed` stops any
-       second pass -- a single, self-healing cleanup navigation, not the
-       `EnumFailedVersion` crash. Inherited, not newly introduced: Reader's
-       own pre-CORPREAD-1a implementation carried the identical shape for
-       its own single boolean `follow` source; see the batch report's own
-       concerns list for the full trace.
-
-   Every hatch closure (`ViewRegistrySetup.cs`) that dispatches `EnterSplit`
-   from a PLAIN CLICK HANDLER (not a lifecycle synchronous prefix) needs NO
-   manual `Nav.NavigateTo` of its own any more -- this component's own
-   subscription resyncs the URL as a side effect of the dispatch,
-   automatically, for every host. The ONE exception is
-   `EnterSplitWorldRequestsReader`: World has no live CompositionSplit of
-   its OWN to resync through (it never hosts) -- it navigates to Reader's
-   route directly, building the target URL from `SplitUrlContract` so
-   Reader's own restore-on-load (this same mechanism) picks it up on
-   arrival. *@
 @using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
@@ -273,12 +20,11 @@ else if (!IsSplitOpen)
 }
 else if (IsHost)
 {
+    @* branching here changes render-tree shape, not just CSS classes -- any JS that captures a DOM node inside ChildContent must rebind on every render (idempotent, self-cleaning), never firstRender-only, or it will silently end up bound to an orphaned node the instant this branch flips *@
     <div class="split-view" style="--split-reader-width:@(_widthPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;--app-header-height:@(_headerHeightPx.ToString(System.Globalization.CultureInfo.InvariantCulture))px;" data-testid="split-view">
         @ChildContent(BuildContext())
         <SplitDivider WidthPx="_widthPx" WidthPxChanged="w => _widthPx = w" OnCommitted="OnDividerCommitted" />
         <div class="split-pane-guest">
-            @* D2: the guest pane knows it is the guest -- a same-view guest
-               resolves its own private atoms through PaneScopes (R-D2-1). *@
             <CascadingValue Value="@PaneId.Guest" IsFixed="true">
                 @Registry.Get(Composition.Members[1].Name).Mount(new ViewMountContext(
                     SplitMode: true,
@@ -294,75 +40,28 @@ else
 }
 
 @code {
-    /// <summary>Which registered view is asking. Required: without an
-    /// identity, this component cannot tell "I am currently hosting" from
-    /// "some OTHER view hosts, I have nothing extra to render here."</summary>
     [Parameter, EditorRequired]
     public string HostName { get; set; } = null!;
 
-    /// <summary>null = self-determine from the shared atom (the common
-    /// case: this view was reached by ordinary Blazor routing, and is
-    /// therefore either single or host). Explicit true = this instance is
-    /// being mounted as a GUEST via the registry (ViewRegistrySetup's own
-    /// mount closures always pass true here, never false -- a
-    /// registry-mounted component is, by this batch's own design, ALWAYS a
-    /// guest).</summary>
     [Parameter]
     public bool? SplitModeOverride { get; set; }
 
     [Parameter, EditorRequired]
     public RenderFragment<CompositionSplitContext> ChildContent { get; set; } = null!;
 
-    /// <summary>Optional -- the ONE genuinely per-host behavior Adjudication
-    /// F's own inventory named (Reader's own `ViewState.Map.DividerFraction`
-    /// persistence; Sources has no such slot and leaves this unbound).
-    /// Fired alongside (never instead of) the unconditional `SetDivider`
-    /// dispatch below, whenever a real fraction commits.</summary>
     [Parameter]
     public EventCallback<double> OnFractionCommitted { get; set; }
 
-    /// <summary>Fix round 2 (Q-1, Important -- "the review's recommended
-    /// HostPaneClass parameter was not built"): the class NAME this host's
-    /// OWN outer page-root element should carry while it is genuinely the
-    /// live split-h host -- e.g. Reader passes "split-pane-reader", Sources
-    /// passes "split-pane-host" (see app.css's own header comments on both:
-    /// they genuinely differ in body, Reader's own column-width custom
-    /// properties vs. the generic fallback shape, so this cannot be a single
-    /// wrapper-computed constant). Left null/empty for a host with no such
-    /// class (none exist today, but nothing requires one). Combined with the
-    /// `IsSplitOpen &amp;&amp; IsHost` condition -- computed HERE, once -- into
-    /// <see cref="CompositionSplitContext.HostPaneClassSuffix"/>, so a host
-    /// never hand-writes that ternary itself; see this file's own header,
-    /// RULING 3's recipe.</summary>
     [Parameter]
     public string? HostPaneClass { get; set; }
 
-    /// <summary>Fix round 2 (ruling 1, N-1): the SANCTIONED hook for a host
-    /// with a genuine need beyond what `ChildContent`'s own re-render already
-    /// gives it for free -- see this file's own header, "THE ONE DOCUMENTED
-    /// EXCEPTION." Fires from this component's OWN single owned
-    /// `ViewArrangementAtom.Changed` subscription (<see cref="HandleArrangementChanged"/>
-    /// below) -- a host binding this does NOT get a second subscription of
-    /// its own; it gets a callback into the ONE this component already
-    /// owns. Plain `Action`, not `EventCallback` -- `ViewArrangementAtom.Changed`
-    /// is itself a plain, synchronous `event Action?`
-    /// (`client/State/StateAtom.cs`), so the honest shape for whatever it
-    /// invokes is the same: synchronous, no `Task` to await, no UI-event
-    /// rendering integration `EventCallback` exists for. Reader.razor's own
-    /// `SyncSplitUrl` is the ONE real binder today.</summary>
     [Parameter]
     public Action? OnArrangementChanged { get; set; }
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5 -- see this file's own
-    // header): the split-URL grammar's two halves, supplied by Blazor's
-    // router from the CURRENT URL regardless of which component declares
-    // them (no @page requirement) -- consumed once, below, in
-    // OnParametersSet.
     [SupplyParameterFromQuery(Name = SplitUrlContract.SplitParam)]
     [Parameter]
     public string? SplitQuery { get; set; }
 
-    /// <summary>D2: the guest reader's own chapter (`?guest=EXO.20`) in an unfollowed reader‖reader split.</summary>
     [SupplyParameterFromQuery(Name = SplitUrlContract.GuestParam)]
     public string? GuestQuery { get; set; }
 
@@ -372,44 +71,15 @@ else
 
     private bool _splitQueryConsumed;
 
-    // Batch CORPREAD-1a (SPLIT-5050): this literal 704px is no longer the
-    // PRIMARY no-stored-fraction path (see OnAfterRenderAsync below, which
-    // now always attempts a live 50/50 measurement first) -- it survives
-    // only as the last-resort value if that measurement itself fails
-    // (JS interop error, `.split-view` not yet in the DOM), the same
-    // fail-soft floor every other measured-width computation in this file
-    // already falls back to.
     private double _widthPx = 704;
     private bool _dividerRestoreAttempted;
-    // PERF-3 re-review fix round 2 (tripwire ruling 3 -- "the class dies
-    // completely, not mostly"): AsyncMemo-backed like every node in
-    // Explore/, even though this component's own single guarded call site
-    // (`OnAfterRenderAsync`, gated by `_dividerRestoreAttempted`) never
-    // actually raced -- cheap insurance, same reasoning as ChapterNode's
-    // own migration this round.
     private readonly AsyncMemo<IJSObjectReference> _js = new();
     private Func<string, Task>? _guestQueryHandler;
 
-    // Batch CORPREAD-1a (SPLIT-SCROLL-1): the ONE source `.split-view`'s own
-    // `--app-header-height` custom property (markup below) is written from
-    // -- matches app.css's own CSS fallback (`var(--app-header-height,
-    // 56px)`) exactly, so a genuinely failed measurement (see
-    // OnAfterRenderAsync below) degrades to the SAME value the stylesheet
-    // would already have used on its own, never a mismatched second guess.
     private double _headerHeightPx = 56;
 
     private bool IsGuestMount => SplitModeOverride == true;
 
-    // Fix round 2 (N-4, trivia -- re-review, cheap fix, not parked):
-    // memoized for the duration of one render pass, keyed on the ATOM
-    // VALUE'S OWN REFERENCE (a real, immutable `record` -- the atom only
-    // ever swaps in a genuinely NEW instance on a real change, never mutates
-    // one in place, so reference equality is exact, not an approximation).
-    // Was previously a plain property recomputing (N registry lookups + two
-    // LINQ materializations) on EVERY read -- 3-5 times in a single render
-    // (the fail-loud condition, IsSplitOpen via BuildContext, the guest
-    // Mount call). ComposeFrom itself stays uncached (see its own doc
-    // comment) -- this is the one caller-side cache, not a second one.
     private ViewArrangement? _lastArrangement;
     private IViewComposition? _lastComposition;
 
@@ -417,16 +87,9 @@ else
     {
         get
         {
+            // the atom swaps in a new instance on every real change, never mutating one in place -- reference equality is exact here, not an approximation
             if (!ReferenceEquals(_lastArrangement, ViewArrangementAtom.Value))
             {
-                // Fix round 2: written as `_lastArrangement =
-                // ViewArrangementAtom.Value` (not staged through a local
-                // first) DELIBERATELY -- this is the exact shape
-                // `ConformanceTests.cs`'s own S-3 no-copy scan
-                // (`ArrangementStateAssignmentPattern`) is written to catch,
-                // keeping this the ONE sanctioned atom read the scan's own
-                // allowlist names, not a second, differently-shaped read
-                // that would silently evade it.
                 _lastArrangement = ViewArrangementAtom.Value;
                 _lastComposition = Registry.ComposeFrom(_lastArrangement);
             }
@@ -435,39 +98,15 @@ else
         }
     }
 
-    /// <summary>Public -- read via `@ref` by a host page's OWN markup/methods
-    /// that sit OUTSIDE this component's own ChildContent lambda scope (e.g.
-    /// Reader's ExplorerPopover, its picker-jump handler) so EVERY read site
-    /// uses this ONE unambiguous, already-computed value instead of
-    /// re-deriving a hand-copied formula (fix round 1, S-4). Fix round 2
-    /// (ruling 2, N-2): the host-role half now reads
-    /// <see cref="ViewCompositionExtensions.IsHostedBy"/> -- the ONE shared
-    /// law, also the exact call Reader.razor's own SyncSplitUrl makes
-    /// against its own `Registry.ComposeFrom(...)` where `ctx` is out of
-    /// reach -- rather than an inline formula written only here.</summary>
     public bool IsSplitOpen => IsGuestMount || Composition.IsHostedBy(HostName);
 
-    /// <summary>Public, same reasoning as <see cref="IsSplitOpen"/>. Only
-    /// meaningful while <see cref="IsSplitOpen"/>.</summary>
     public bool IsHost => !IsGuestMount;
 
-    // Fix round 2 (ruling 1, N-1 -- re-review, binding): the arrangement
-    // subscription, OWNED HERE, exactly once -- see this file's own header,
-    // RULING 1, for the full reasoning and the one documented exception
-    // (OnArrangementChanged above). Both Reader.razor and Sources.razor
-    // DELETED their own copies of this trio this round.
     protected override void OnInitialized()
     {
         ViewArrangementAtom.Changed += HandleArrangementChanged;
     }
 
-    // Batch CORPREAD-1a (RULING 5): resyncs the URL (SyncSplitUrl, a no-op
-    // when guest-mounted) alongside the pre-existing re-render/hook pair --
-    // fires from THIS component's own single owned subscription, so every
-    // dispatch site (a hatch click, a guest's own close, the restore
-    // dispatch in OnParametersSet below) keeps whichever host page is
-    // currently routed here truthful, for every host, with no per-host
-    // wiring.
     private void HandleArrangementChanged()
     {
         ReconcilePane();
@@ -476,10 +115,6 @@ else
         OnArrangementChanged?.Invoke();
     }
 
-    // D2: the same-view pane link (host -> guest mirror while the pair
-    // follows) and the guest-locus URL watch, owned by the HOST instance and
-    // reconciled on every arrangement change; the guest's private atoms are
-    // forgotten when the split closes.
     private IDisposable? _paneLink;
     private StateAtom<Locus>? _watchedGuestLocus;
 
@@ -536,7 +171,6 @@ else
         }
     }
 
-    /// <summary>D2: `?guest=BOOK.N` seeds the guest reader's private locus on restore.</summary>
     private void SeedGuestFromQuery()
     {
         if (GuestQuery is not { } q || !IsSameViewHost)
@@ -551,18 +185,6 @@ else
         }
     }
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): restore-once-on-load --
-    // see this file's own header for the full mechanism (FIX ROUND 1,
-    // review Q-6: a garbage/unrecognized split value is provably benign
-    // here -- EnterSingle no-ops against the fresh-load default, so
-    // SyncSplitUrl below never even runs; the one genuinely reachable
-    // divergent-resync case is a non-`1` follow value on an otherwise-valid
-    // split, traced safe in the header's own RULING 5 section). Guarded on `IsGuestMount`
-    // (a registry-mounted guest has no route/query of its own to restore
-    // from -- reads whatever page embeds it, meaningless here) and
-    // `_splitQueryConsumed` (never re-armed by a LATER, unrelated parameter
-    // set -- e.g. Reader.razor's own SplitMode/HostPaneClass parameters
-    // being re-passed by its parent on an unrelated re-render).
     protected override void OnParametersSet()
     {
         if (IsGuestMount || _splitQueryConsumed)
@@ -572,8 +194,6 @@ else
 
         _splitQueryConsumed = true;
 
-        // D2: `split={HostName}` is legal now (a same-view split), so the old
-        // `guestName != HostName` guard is gone.
         if (SplitQuery is { } guestName && Registry.TryGet(guestName, out _))
         {
             ViewArrangementAtom.Dispatch(new EnterSplit(HostName, guestName, FollowQuery == SplitUrlContract.FollowTrueValue, DefaultDividerFraction: null));
@@ -586,11 +206,6 @@ else
         }
     }
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1, RULING 5): project-on-change --
-    // see this file's own header for the full mechanism. `IsGuestMount`
-    // guard first (a guest has no route/query of its own to keep in sync);
-    // reads `IsSplitOpen`/`Composition` AFTER the atom's own Changed event
-    // has already fired, so both already reflect the NEW value.
     private void SyncSplitUrl()
     {
         if (IsGuestMount)
@@ -600,7 +215,6 @@ else
 
         var guestName = IsSplitOpen ? Composition.Members[1].Name : null;
         var follow = IsSplitOpen && ViewArrangementAtom.Value.Follow;
-        // D2: an unfollowed same-view reader guest carries its own chapter.
         var guestRef = IsSameViewHost && !follow && (Registry.CapabilitiesOf(HostName) & ViewCapabilities.BearsLocus) != 0
             ? Panes.For(PaneId.Guest).Locus.Value.Ref
             : null;
@@ -611,13 +225,7 @@ else
             [SplitUrlContract.GuestParam] = guestRef,
         });
 
-        // Fix round 1's own live, self-caught crash (this file's own
-        // header, RULING 4(b)) -- a genuine no-op guard, not just an
-        // optimization: skips the Nav.NavigateTo call entirely whenever
-        // nothing would actually change, which is what makes it safe to
-        // call unconditionally from HandleArrangementChanged even when that
-        // fires from OnParametersSet's own synchronous prefix (the restore
-        // dispatch above).
+        // Nav.NavigateTo must never be called from a component lifecycle's synchronous prefix (before the first await) -- doing so can re-enter Blazor's navigation pipeline and throw inside its own location-changed handling. This no-op check keeps every reachable call site here safe.
         if (uri == Nav.Uri)
         {
             return;
@@ -634,16 +242,6 @@ else
         UnwatchGuestLocus();
     }
 
-    /// <summary>The composed "route a popover-originated scene query into my
-    /// currently-mounted guest" delegate -- null while no split-h guest is
-    /// mounted, or while the mounted guest never called
-    /// <see cref="ViewMountContext.RegisterQueryHandler"/> (i.e. it doesn't
-    /// support being a query-routing target at all, e.g. Sources). The host
-    /// page reads this via its own `@ref` on this component and forwards it
-    /// to its OWN popover's `OnNavigateWorldInSplit` parameter -- the
-    /// generalized "no nested-popup rule" (Batch H), unchanged behavior for
-    /// reader+world, generically available to any future query-routable
-    /// guest.</summary>
     public Func<string, Task> NavigateGuestInSplit => query => _guestQueryHandler?.Invoke(query) ?? Task.CompletedTask;
 
     private CompositionSplitContext BuildContext() => new(
@@ -659,7 +257,6 @@ else
         IsSplitOpen && ViewArrangementAtom.Value.Follow,
         EventCallback.Factory.Create(this, ToggleFollowAsync));
 
-    /// <summary>D2: the pair's follow toggle, for a same-view guest's own chip (the arrangement's one Follow flag).</summary>
     private Task ToggleFollowAsync()
     {
         ViewArrangementAtom.Dispatch(new ToggleFollow(!ViewArrangementAtom.Value.Follow));
@@ -672,25 +269,15 @@ else
     private Task InvokeHatchAsync() =>
         Registry.Get(HostName).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
 
-    /// <summary>D2: enter the split with a chosen guest from the host's own menu.</summary>
     private Task InvokeHatchWithAsync(string guest) =>
         EnterSplitHatchOf(HostName)?.InvokeWith(guest) ?? Task.CompletedTask;
 
     private Task RequestCloseAsync()
     {
-        // Correct regardless of who mounted this instance -- CloseGuest's
-        // own Apply is "if split-h, single(Members[0])," which needs no
-        // knowledge of which guest is asking (client/State/ViewArrangement.cs).
         ViewArrangementAtom.Dispatch(new CloseGuest());
         return Task.CompletedTask;
     }
 
-    // Fix round 1 (Adjudication C's own mechanism, relocated here): fires
-    // ONCE per completed drag/keyboard-nudge gesture ("commits on drag END
-    // only"). _widthPx -- the ACTUAL render source for the divider's pixel
-    // position -- is updated unconditionally; the atom (and the optional
-    // OnFractionCommitted) only receive the fraction when SplitDivider's own
-    // measurement succeeded.
     private async Task OnDividerCommitted((double WidthPx, double? Fraction) result)
     {
         _widthPx = result.WidthPx;
@@ -704,54 +291,6 @@ else
         }
     }
 
-    // Fix round 1 (relocated from Reader.razor's own RestoreDividerWidthFromAtom):
-    // restores _widthPx from the atom's own DividerFraction once per
-    // split-open transition, via a LIVE measurement of `.split-view`'s own
-    // content-box width (the same `getPaneRect` SplitDivider.razor already
-    // uses for its own clamp ceiling) -- this component now owns its OWN JS
-    // import rather than depending on a host page's cached module reference,
-    // since divider-width ownership itself moved here.
-    //
-    // Batch CORPREAD-1a (SPLIT-5050, owner order verbatim: "by default
-    // whatever opens up to the right when you split screen is way bigger.
-    // make it so that it's 50/50 by default"): this used to run the live
-    // measurement ONLY when `DividerFraction is { } fraction` -- a
-    // no-stored-value split (every FIRST-ever open this session, for any
-    // pairing) skipped it entirely and fell through to the field default
-    // above (`_widthPx = 704`, a bare pixel guess with no relationship to
-    // the pane's own actual measured width, let alone 50/50 of it). Now
-    // ALWAYS attempts the measurement once split-open (dropping the
-    // `is {} fraction` gate), reading `ViewArrangement.InitialDividerFraction`
-    // (the ONE named 0.5 constant, deliverable 0b) whenever no stored
-    // fraction exists yet -- so the FIRST open of ANY pairing lands at a
-    // real, measured 50/50 split, and only a genuinely FAILED/unavailable
-    // measurement (JS interop error, `.split-view` not yet in the DOM) ever
-    // falls back to the 704px field default, same fail-soft stance as
-    // before.
-    //
-    // Batch CORPREAD-1a (SPLIT-SCROLL-1): ALSO measures `.app-header`'s own
-    // real rendered height here, in the SAME pass (one shared JS import,
-    // one shared "once per split-open transition" guard) -- app.css's own
-    // `.split-view` header comment has the full design this feeds
-    // (`height: calc(100vh - var(--app-header-height))`, written below as
-    // an inline custom property alongside `--split-reader-width`, which
-    // already works this exact way). Failing soft here means keeping
-    // whatever `_headerHeightPx` already holds -- the field default (56)
-    // matches the CSS fallback exactly, so a failed measurement degrades to
-    // the SAME value the stylesheet would have used on its own anyway.
-    //
-    // FIX ROUND 1 (review S-6, IMPORTANT -- "measured with a viewport-
-    // CLAMPING helper, so a scrolled hatch-open under-measures it"): reads
-    // `getElementHeight` (reader.js's own new export, its doc comment has
-    // the full live-repro'd root cause), NOT `getPaneRect` -- `getPaneRect`
-    // deliberately clamps its own rect to the CURRENTLY VISIBLE viewport
-    // (correct for its own original purpose, bounding a pane-anchored
-    // popover), which silently under-measures a normal-flow element like
-    // `.app-header` the instant the page is scrolled even slightly at the
-    // moment the hatch opens (reachable: the hatch performs no navigation
-    // and does not reset window scroll). `getElementHeight` returns the
-    // element's own `offsetHeight` -- its real CSS layout height,
-    // independent of scroll position or viewport clipping entirely.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (IsSplitOpen && IsHost && !_dividerRestoreAttempted)
@@ -771,16 +310,8 @@ else
                 var rect = await js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
                 if (rect is { Width: > 0 } r)
                 {
-                    // Same light sanity floor as the pre-fix-round-1 code
-                    // this replaces -- SplitDivider's own next real
-                    // drag/nudge re-clamps to its own exact bounds
-                    // regardless. ST2-m1: order the bounds so a
-                    // sub-400px container (r.Width - 200 < 200) can never
-                    // invert min/max into a Math.Clamp throw -- the
-                    // ceiling floors at the same 200 the lower bound
-                    // uses, instead of relying on the surrounding
-                    // try/catch to swallow the exception.
                     var minWidthPx = 200.0;
+                    // the ceiling floors at the same 200 the lower bound uses, so a sub-400px container can never invert min/max into a Math.Clamp throw
                     var maxWidthPx = Math.Max(minWidthPx, r.Width - 200);
                     _widthPx = Math.Clamp(fraction * r.Width, minWidthPx, maxWidthPx);
                     StateHasChanged();
@@ -788,9 +319,6 @@ else
             }
             catch (Exception)
             {
-                // Fail soft -- keep whatever _widthPx/_headerHeightPx already
-                // hold, same graceful-degrade stance SplitDivider's own
-                // EnsureMaxWidthAsync takes.
             }
         }
         else if (!IsSplitOpen)
@@ -799,9 +327,5 @@ else
         }
     }
 
-    // reader.js's own getPaneRect return shape -- a second, independently
-    // declared copy of SplitDivider.razor's own private PaneRectDto (that
-    // one is file-scoped private too -- same "one shape, many callers, no
-    // shared type" precedent that file's own header already establishes).
     private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 }

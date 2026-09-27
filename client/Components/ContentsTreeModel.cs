@@ -1,31 +1,14 @@
 namespace BibleAtlas.Client.Components;
 
-/// <summary>
-/// D4 (owner, 2026-09-15, verbatim: "Table of contents = a tree. ...
-/// Contents is a tree; clicking a node toggles visibility of its children.
-/// Stop at the level of ARTICLE (BoC) or TOPIC (Small Catechism). Pages are
-/// not a meaningful way of thinking about things."): the PURE, testable model
-/// behind <c>ContentsTree.razor</c> -- the two-level containment forest
-/// <c>GET /api/contents/{corpus}</c> serves (books ⊃ chapters; documents ⊃
-/// articles), plus which roots are expanded and which node is current.
-/// <see cref="Flatten"/> is the one projection the component renders: the
-/// visible rows, in order, with their depth. Toggling an id twice always
-/// restores the rows (an involution -- <c>ContentsTreeModelTests</c> pins
-/// it); leaves never expand.
-/// </summary>
 public sealed class ContentsTreeModel
 {
     public sealed class Node
     {
         public required string Id { get; init; }
         public required string Title { get; init; }
-        /// <summary><c>book</c> | <c>chapter</c> | <c>document</c> | <c>article</c>.</summary>
         public required string Kind { get; init; }
-        /// <summary><c>OT</c> | <c>NT</c> for a Bible book; null otherwise.</summary>
         public string? Group { get; init; }
-        /// <summary>The navigation target (<c>GEN.2</c>, <c>BoC 7.2.1</c>).</summary>
         public required string Ref { get; init; }
-        /// <summary>A leaf's own member count (verses, paragraphs); null for a root.</summary>
         public int? Count { get; init; }
         public IReadOnlyList<Node> Children { get; init; } = Array.Empty<Node>();
         public bool Expandable => Children.Count > 0;
@@ -43,7 +26,6 @@ public sealed class ContentsTreeModel
 
     public string Corpus { get; }
     public IReadOnlyList<Node> Roots { get; }
-    /// <summary>The id of the node <see cref="ExpandPathTo"/> last landed on, or null.</summary>
     public string? CurrentId { get; private set; }
 
     public static ContentsTreeModel From(ContentsOut contents) =>
@@ -61,10 +43,8 @@ public sealed class ContentsTreeModel
 
     public bool IsExpanded(string id) => _expanded.Contains(id);
 
-    /// <summary>The ids currently expanded, for a per-viewer persistence convenience.</summary>
     public IReadOnlyCollection<string> ExpandedIds => _expanded;
 
-    /// <summary>Expands or collapses one root; a leaf (nothing to show) is a no-op.</summary>
     public void Toggle(string id)
     {
         var node = Roots.FirstOrDefault(r => r.Id == id);
@@ -79,7 +59,6 @@ public sealed class ContentsTreeModel
         }
     }
 
-    /// <summary>Opens one root (a leaf or unknown id is a no-op).</summary>
     public void Expand(string id)
     {
         if (Roots.Any(r => r.Id == id && r.Expandable))
@@ -100,11 +79,6 @@ public sealed class ContentsTreeModel
         }
     }
 
-    /// <summary>
-    /// Opens exactly the ancestors of the node whose <c>Ref</c> is
-    /// <paramref name="sref"/> (a child first; a root when only a root
-    /// matches) and makes it current. Unknown refs change nothing.
-    /// </summary>
     public void ExpandPathTo(string sref)
     {
         foreach (var root in Roots)
@@ -129,7 +103,6 @@ public sealed class ContentsTreeModel
         }
     }
 
-    /// <summary>The visible rows, in order: every root; each expanded root's children right after it.</summary>
     public IReadOnlyList<Row> Flatten()
     {
         var rows = new List<Row>();

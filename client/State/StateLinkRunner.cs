@@ -2,70 +2,6 @@ using BibleAtlas.Client.Contracts;
 
 namespace BibleAtlas.Client.State;
 
-/// <summary>
-/// Batch ST-1: the link RUNNER -- subscribes a declared <see cref="IStateLink{A,B}"/>
-/// to its own <see cref="IStateLink{A,B}.Source"/> and dispatches derived
-/// intents into its own <see cref="IStateLink{A,B}.Target"/> while
-/// <see cref="IStateLink{A,B}.Active"/>, per the contract's own ALGEBRA
-/// section. The <c>IStateLink&lt;A,B&gt;</c> passed in is the pure
-/// declaration (Derive/Active); this class is the IMPERATIVE half (the
-/// subscription, the dispatch) -- kept separate so a link's own Derive stays
-/// trivially unit-testable with no event wiring at all.
-///
-/// LAW 3 (no-echo): the mechanism a bidirectional link PAIR needs to avoid
-/// oscillating. Concretely: this runner refuses to derive at all when its
-/// own Source atom's <see cref="StateAtom{T}.LastOrigin"/> is non-null --
-/// i.e., when the change that just fired <see cref="IStateAtom{T}.Changed"/>
-/// on Source was ITSELF a link-derived update (dispatched via
-/// <see cref="LinkDerivedIntent{T}"/>, which always stamps Origin), not a
-/// genuine user gesture. Trace why this is sufficient for a real
-/// bidirectional pair -- Link("ab", Source=A, Target=B) and
-/// Link("ba", Source=B, Target=A), both Active:
-///   1. A user dispatches into A with Origin=null. A.Changed fires.
-///   2. Runner("ab") sees A.LastOrigin == null -> derives, dispatches into
-///      B via LinkDerivedIntent(Origin: "ab"). B.Changed fires (assuming the
-///      derived value actually differs -- law 2's own no-op guard).
-///   3. Runner("ba") (subscribed to B.Changed, since B is ITS Source) checks
-///      B.LastOrigin -- it's "ab" (non-null) -- and refuses to derive.
-///   The chain stops after exactly one hop; A is never written to again for
-///   this gesture. Without this guard, step 3 would derive from B back into
-///   A, potentially re-triggering Runner("ab") in an unbounded loop whenever
-///   Derive isn't a true fixed point.
-/// SCOPE NOTE (disclosed in the batch report): this is a coarse, SAFE rule
-/// -- "never re-derive across ANY link-derived change," not just a change
-/// traceable to one's own reverse counterpart -- which is more than
-/// sufficient to prevent oscillation but would also suppress a genuine,
-/// intentional multi-hop derivation CHAIN (A -&gt; B -&gt; C, all real links) after
-/// its first hop. No such chain exists in this app as of ST-1 (the only
-/// link landing this batch, Locus -&gt; TimeWindow, is one hop); a future batch
-/// that needs real chaining should revisit this rule specifically, not the
-/// atom/projection layer around it.
-///
-/// SHARPER EDGE (fix round 1, review finding Q-4 -- amendment only, no code
-/// change: correct and safe for ST-1's own topology): <see cref="StateAtom{T}.LastOrigin"/>
-/// is STICKY, not momentary -- <see cref="StateAtom{T}.Dispatch"/> only ever
-/// updates it on a dispatch that actually changes Value, so it retains
-/// whichever intent's Origin caused the LAST real change INDEFINITELY, not
-/// just for the instant of this Changed invocation. The guard above therefore
-/// reads "was the source's last EFFECTIVE change link-derived", not "did the
-/// source just now echo a derivation" -- those coincide for ST-1 (Locus is
-/// written only by Reader, always with Origin: null, so LastOrigin can never
-/// be sticky-poisoned here) but would NOT coincide in a future topology where
-/// an atom is BOTH a link's target and an independently-linked source: that
-/// atom's own first hop as a source could be wrongly suppressed by an origin
-/// stamped by an unrelated, earlier gesture that happens to still be the last
-/// thing sitting in LastOrigin. That is a strictly larger hazard than "chains
-/// stop after one hop." The real fix, when chaining arrives: pass the
-/// triggering Origin THROUGH the notification itself (an
-/// <c>event Action&lt;string?&gt;</c> seam on Changed, rather than reading it
-/// back off sticky atom state) -- named here as the intended direction, not
-/// implemented, since no topology in this app needs it yet.
-/// </summary>
-// Fix round 1 (Q-8): `where A : notnull, where B : notnull` propagates from
-// StateAtom<T>'s own new constraint (StateAtom.cs) -- this class holds
-// concrete StateAtom<A>/StateAtom<B> fields (not the bare interface), so the
-// compiler requires the same constraint here; there is no weaker option that
-// still lets this class name those fields' types.
 public sealed class StateLinkRunner<A, B> : IDisposable
     where A : notnull
     where B : notnull
@@ -76,20 +12,6 @@ public sealed class StateLinkRunner<A, B> : IDisposable
     private readonly StateAtom<B> _target;
     private bool _disposed;
 
-    /// <summary>
-    /// <paramref name="name"/> is taken explicitly, NOT read off
-    /// <paramref name="link"/> -- the compiled <see cref="IStateLink{A,B}"/>
-    /// contract declares Source/Target/Derive/Active only, no Name member
-    /// (its own header prose describes "the link's name," but that member
-    /// isn't in the interface itself, and Contracts/ types are extend-only:
-    /// this runner can't add one). Callers that want a link's name
-    /// discoverable on the link object itself (as <see cref="FollowTextLink"/>
-    /// does, for its own test/telemetry vocabulary -- the same role
-    /// <see cref="IIntent{T}.Name"/> plays for intents) are free to add a
-    /// `Name` property to their OWN concrete type and pass it through here
-    /// explicitly; the runner itself stays correct for any
-    /// <see cref="IStateLink{A,B}"/> implementation, named or not.
-    /// </summary>
     public StateLinkRunner(string name, IStateLink<A, B> link, StateAtom<A> source, StateAtom<B> target)
     {
         if (!ReferenceEquals(link.Source, source))
@@ -116,29 +38,25 @@ public sealed class StateLinkRunner<A, B> : IDisposable
             return;
         }
 
+        // No-echo: if Source's last effective change was itself link-derived, refuse to
+        // re-derive -- otherwise a bidirectional link pair (A<->B, both Active) would oscillate
+        // forever on a single user gesture. LastOrigin is sticky (holds the last real change's
+        // origin indefinitely, not just for this instant), so this guard would misfire if an atom
+        // is ever both a link's target and an independently-linked source -- not a case that
+        // exists in this app today.
         if (_source.LastOrigin is not null)
         {
-            return; // law 3 (no-echo) -- see this class's own header comment
+            return;
         }
 
         var derived = _link.Derive(_source.Value, _target.Value);
         _target.Dispatch(new LinkDerivedIntent<B>(_name, derived));
     }
 
-    /// <summary>
-    /// Forces one derive-and-dispatch pass right now, regardless of whether
-    /// Source just changed -- for the one real UX case a pure Changed
-    /// subscription can't cover: a link's OWN <see cref="IStateLink{A,B}.Active"/>
-    /// flag flipping from false to true (e.g. the follow chip being clicked
-    /// back on) must re-sync the Target to the CURRENT Source value
-    /// immediately, not wait for the next unrelated Source mutation. Mirrors
-    /// FOLLOW-1's own pre-existing "toggling follow back on re-syncs to the
-    /// current chapter's scene" behavior -- see World.razor's ToggleFollow.
-    /// Still routes through the SAME no-echo guard (skipped here -- a
-    /// caller-invoked SyncNow is by definition not a reaction to a Source
-    /// echo) and the SAME Dispatch, so it stays law-2/law-3 consistent with
-    /// every other path into Target.
-    /// </summary>
+    // Deliberately skips the no-echo guard: a caller-invoked sync is not a reaction to a Source
+    // echo, and this covers the case a Changed subscription alone can't -- Active flipping
+    // false->true (e.g. the follow toggle) needs to resync Target to Source's current value
+    // immediately, not wait for the next unrelated Source mutation.
     public void SyncNow()
     {
         if (_disposed || !_link.Active)

@@ -1,12 +1,3 @@
-@* Batch G2 decision 5: one row in the hamburger panel's own saved-
-   explorations list -- a real component (not a hand-built RenderFragment
-   in MainLayout.razor) because it owns genuine per-item interactive state
-   (expanded/collapsed, an in-progress rename value, a pending delete
-   confirm) MainLayout's own shared, persistent instance has no clean way to
-   hold per-item -- the same "a provider instance is shared/static and
-   cannot own per-item state; a component can" precedent VerseTextSection/
-   PlaceEventsList already established (see those files' own header
-   comments). *@
 @using BibleAtlas.Client.Explore
 
 <li class="hamburger-exploration" data-testid="@($"exploration-item-{Item.Id}")">
@@ -51,17 +42,11 @@
         <ol class="hamburger-exploration-trail">
             @for (var i = 0; i < Item.Nodes.Count; i++)
             {
-                var idx = i; // local copy -- captured per-row by the onclick closure below
+                var idx = i;
                 var node = Item.Nodes[idx];
                 <li>
                     <button type="button" class="hamburger-exploration-trail-node explorable" data-testid="@($"exploration-node-{idx}")"
                             @onclick="() => OnContinue.InvokeAsync(Item.Nodes.Take(idx + 1).ToList())">
-                        @* Batch PERI-1 (PRESENTATION CATEGORY LAW): a
-                           general-kind Event descriptor (NUN/GAL.1.8-shaped
-                           -- see ExplorationDescriptor.cs's own header)
-                           reads "Passage" here, never "Event" -- every
-                           other descriptor kind (IsGeneralKind always
-                           false) is byte-identical to before. *@
                         <span class="hamburger-node-kind">@(node.IsGeneralKind ? "Passage" : node.Kind)</span>
                         <span class="hamburger-node-title">@node.Title</span>
                     </button>
@@ -74,12 +59,6 @@
 @code {
     [Parameter, EditorRequired] public SavedExploration Item { get; set; } = default!;
 
-    // Batch G2 decision 5 ("continue"): fires with the trail TRUNCATED to
-    // [0..clickedIndex] (the clicked node last, the trail's own PRECEDING
-    // nodes before it, in order) -- MainLayout reconstructs each descriptor
-    // via ExplorationDescriptor.Reconstruct and opens the popover seeded
-    // with exactly that sub-stack (ExplorerPopover.SeedStack), so Back walks
-    // the saved journey up to the clicked point.
     [Parameter, EditorRequired] public EventCallback<List<ExplorationDescriptor>> OnContinue { get; set; }
     [Parameter, EditorRequired] public EventCallback<(string Id, string Name)> OnRename { get; set; }
     [Parameter, EditorRequired] public EventCallback<string> OnDelete { get; set; }
@@ -91,12 +70,7 @@
     private ElementReference _renameInputRef;
     private bool _focusRenamePending;
 
-    // Guards against the input's own @onblur firing a SECOND commit after
-    // Escape has already cancelled -- removing a focused element from the
-    // DOM (which _renaming=false triggers, on the very next render) can
-    // itself dispatch a blur event; without this guard that blur would
-    // re-fire CommitRename and silently save the very edit Escape was meant
-    // to discard.
+    // guards against the rename input's own @onblur firing a SECOND commit after Escape already cancelled -- removing a focused element from the DOM (which _renaming=false triggers) can itself dispatch a blur event, which would otherwise re-save the exact edit Escape was meant to discard
     private bool _cancelling;
 
     private void ToggleExpanded() => _expanded = !_expanded;
@@ -158,8 +132,6 @@
         }
         catch (Exception)
         {
-            // Non-fatal -- same graceful-degradation stance every other
-            // focus-after-open call in this app already takes.
         }
     }
 }

@@ -1,30 +1,8 @@
-@* Batch G2 decision 6 (multi-select v1, RULED per batch-r-report.md §7): a
-   small, dismissible parchment strip -- one removable chip per selected
-   node, a count, a "clear." HIDDEN WHEN EMPTY (decision 6, verbatim) --
-   this component renders nothing at all rather than an empty shell, the
-   same "conditional presence, never an empty placeholder" discipline this
-   app's own popover sections already follow. A plain presentational
-   component (no state of its own beyond what SelectionTrayService already
-   holds) -- MainLayout mounts exactly one instance, on every page, so the
-   tray itself persists across reader<->world navigation the same way the
-   header does. Purposely carries the SAME parchment material every other
-   shared artifact in this app uses regardless of page theme (the popover's
-   own "One popover style everywhere," design-direction.md) -- batch-r-
-   report.md §7's own "parchment strip" proposal, verbatim. NO ACTION VERBS
-   here (decision 6's own explicit scoping) -- every chip does exactly one
-   thing, remove itself; there is no per-chip "do something with this node"
-   control at all. *@
 @using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @implements IDisposable
 
-@* Batch ST-3 (R2): renders a PROJECTION of the shared Selection atom --
-   Items below reads SelectionAtom.Value directly (never a copy); every
-   control dispatches (RemoveSelection/ClearSelection) instead of calling a
-   service method. SelectionTrayService itself is no longer injected here --
-   this component never needed Available (decision 6 never asked the TRAY
-   to hide on storage unavailability, only the SAVE affordance elsewhere). *@
 @{
     var items = SelectionAtom.Value;
 }
@@ -53,16 +31,8 @@
 }
 
 @code {
-    // Batch ST-3 (R2): the Selection atom is a DI singleton shared with
-    // every page's own Ctrl/Cmd-click gesture handler (Reader.razor's
-    // VerseLine wiring, World.razor's OnPlaceToggleSelect) -- a dispatch
-    // made from EITHER never automatically re-renders THIS separate
-    // component instance on its own (Blazor only re-renders a component in
-    // response to ITS OWN parameter changes or explicit StateHasChanged),
-    // so this subscribes to the atom's own Changed event (law 5, agreement,
-    // is what GUARANTEES this subscription is enough -- every projection of
-    // one atom reads the same Value at read time, so there's nothing left
-    // to keep separately in sync).
+    // A dispatch from another component's handler onto this shared atom doesn't automatically
+    // re-render this separate instance, so it subscribes to the atom's Changed event instead.
     protected override void OnInitialized() => SelectionAtom.Changed += OnChanged;
 
     private void OnChanged() => InvokeAsync(StateHasChanged);

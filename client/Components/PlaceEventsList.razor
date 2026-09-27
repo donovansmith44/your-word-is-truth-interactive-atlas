@@ -1,21 +1,3 @@
-@* M-D1 requirement 4 (TRUNCATION AUDIT, owner priority statement 2026-08-21:
-   truncating hover-menu output "we need that to improve user experience" --
-   ranked ABOVE new features): a place's own EVENTS section
-   (PlaceEventsSection, Explore/PopoverSectionProviders.cs) rendered every
-   located-at event with NO cap at all -- a real, live-verified gap (a
-   central place like Jerusalem carries 236 events across the whole atlas'
-   own timeline; the popover would have rendered all 236 rows). This is now
-   the ONE place that list renders, following VerseTextSectionProvider's own
-   established precedent ("hand the actual rendering to a real component...
-   unlike a hand-built RenderFragment, this owns real interactive STATE a
-   closure has no clean way to hold") -- PlaceEventsSection itself is a
-   static, provider-instance-shared RenderFragment builder and cannot safely
-   own a per-popover "expanded" bool; this component can.
-
-   Same down-arrow reveal AFFORDANCE/CSS class (.popover-passage-reveal) and
-   glyphs (▾/▲) PassageList.razor's own Cap mechanism already established --
-   "reuse the shared bits" even where the CONTENT shape (event summary rows,
-   not passage text blocks) does not fit PassageList itself. *@
 @using BibleAtlas.Client.Explore
 
 @{
@@ -23,7 +5,7 @@
 }
 @foreach (var e in shown)
 {
-    var ev = e; // local copy -- captured per-row by the onclick closure below
+    var ev = e;
     <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"place-event-{ev.Id}")"
             @onclick="@(e => OnRowClick(e, ev))">
         <span class="popover-event-label">@ev.Label</span>
@@ -46,22 +28,12 @@
 }
 
 @code {
-    // Batch G2 decision 3: threaded through so this component's own
-    // TimeAndPlaceNode construction can carry a stable "{placeId}|{eventId}"
-    // descriptor key (ExplorationDescriptor.Capture) -- see
-    // TimeAndPlaceNode.cs's own doc comment. The caller (PlaceEventsSection,
-    // Explore/PopoverSectionProviders.cs) already has the enclosing
-    // PlaceNode's own PlaceId on hand, so this costs it nothing new.
     [Parameter, EditorRequired] public string PlaceId { get; set; } = default!;
     [Parameter, EditorRequired] public string PlaceName { get; set; } = default!;
     [Parameter, EditorRequired] public List<SceneEvent> Events { get; set; } = new();
     [Parameter] public int Cap { get; set; } = 10;
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "place-event
-    // rows... are NOT wired for this gesture"): the SAME Ctrl/Cmd-click
-    // toggle VerseLine.razor's own OnRowClick already gives the reader
-    // pane's verse rows.
     [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
 
     private bool _showAll;

@@ -3,55 +3,6 @@
 @using BibleAtlas.Client.Views
 @inject AtlasClient Atlas
 
-@* Batch S ("document our sources for everything and give it a dedicated
-   page on the site"): the app's ONE decisive home for attribution --
-   MainLayout's own "Credits" header link now points straight here (see
-   MainLayout.razor's `attribution` anchor), replacing the popover it used
-   to open. This page renders ENTIRELY from `AtlasClient.Sources()` (`GET
-   /api/sources`, itself generated 1:1 from LICENSES.md -- see
-   `server/atlas-etl/src/sources.rs`'s own doc comment): no hardcoded
-   duplicate credit list lives anywhere in this client (requirement 3).
-
-   Styling: design-direction.md's "quiet parchment" direction -- this is
-   reading material, not a legal dump, so it gets its own page-root class
-   (never combined with .reader-page/.world-page -- "each page's root
-   element carries one of these two classes" governs THOSE two; a third
-   distinct page root is the correct, single-class-selector way to add a
-   third material, not stacking a second class onto an existing one).
-
-   Batch VC-1 (R4, the generality proof): Sources declares its own
-   enter-split hatch ("read-beside," Kind "enter-split," partner
-   ViewNames.Reader) and, when it wins ownership of the split-h HOST slot,
-   embeds a CompositionSplit of its own -- the SAME mechanism Reader.razor
-   already uses, not a bespoke copy. This is genuinely the generality proof
-   the owner ordered: Sources was never privileged as a host before this
-   batch (it had no split awareness at all); now it hosts exactly the same
-   way Reader always could, proving "no privileged split host" for real,
-   not just in the type system. No follow chip/link renders here at all --
-   Sources declares no BearsWindow (or BearsLocus) capability, so
-   World.razor's own _follow predicate (the ONE place that capability query
-   runs) is unreachable for this pairing by construction; see that
-   property's own comment.
-
-   Fix round 1 (Adjudication F): the SplitDivider/width-state/role-
-   determination glue this page used to duplicate from Reader.razor is
-   GONE -- CompositionSplit owns all of it now, shared, not copied. This
-   page's own remaining job is exactly what it always should have been:
-   render its OWN content, and tell CompositionSplit which role-specific
-   button to show via `ctx`.
-
-   Fix round 2 (ruling 1/3, N-1 -- re-review): the ViewArrangementAtom
-   subscription this page used to carry (`Changed += / -= OnViewArrangementChanged`,
-   `@implements IDisposable`) is GONE too -- CompositionSplit now owns that
-   subscription exactly once (see its own header, RULING 1) and this page's
-   ENTIRE markup lives inside `<CompositionSplit>`'s own ChildContent, so
-   its re-render already covers everything Sources needs; there was never a
-   genuine per-host need here (unlike Reader.razor -- see that page's own
-   comment for the one documented exception). This IS the "declare a hatch,
-   nothing else" minimal host CompositionSplit.razor's own header now
-   documents as the official recipe -- read this page as that reference
-   example. *@
-
 <PageTitle>Bible Explorer &mdash; Sources</PageTitle>
 
 <CompositionSplit HostName="@ViewNames.Sources" SplitModeOverride="@SplitMode" HostPaneClass="split-pane-host" Context="ctx">
@@ -114,50 +65,17 @@
     private SourcesDocumentOut? _doc;
     private string? _error;
 
-    // Batch VC-1: null = self-determine (Sources is always routed directly
-    // -- there is no scenario in this batch where Sources is mounted as
-    // someone ELSE's guest). Fix round 1: no longer paired with an IsHost/
-    // OnRequestClose parameter -- CompositionSplit computes both internally
-    // from SplitMode alone now (see that component's own header).
-    //
-    // Fix round 2 (Q-4, trivia -- re-review, PARTIAL, "Sources.SplitMode
-    // remains dead ... with no test keeping it coherent. Symmetry argument
-    // unchanged and still defensible"): true today -- ViewRegistrySetup's
-    // own Sources mount closure (the ONE thing that would ever set this
-    // non-null) is registered but never invoked, since no shipped pairing
-    // hosts Sources as ITS guest yet. Kept anyway, deliberately: Reader and
-    // World BOTH carry this identical parameter/null-check shape (a routed
-    // view is either self-determined or registry-mounted, the SAME two
-    // cases for every registered view by construction, per R1), and Sources
-    // is registered in that SAME registry (ViewRegistrySetup.Build) with
-    // the SAME mount-closure machinery -- omitting this parameter here
-    // would special-case Sources out of a pattern every OTHER registered
-    // view honors, for a "currently unreachable" reason that stops being
-    // true the instant a future view hosts Sources. One-line-justified per
-    // the ruling; not cheap enough to prove with a test today (there is no
-    // fourth host to mount it FROM).
+    // Currently unreachable (no shipped pairing mounts Sources as a guest
+    // yet), but kept: Reader and World both carry this identical
+    // parameter/null-check shape, and Sources is registered in the same
+    // view registry with the same mount-closure machinery.
     [Parameter] public bool? SplitMode { get; set; }
 
-    // Batch CORPREAD-1a (SPLIT-PERSIST-1): the standalone EnterSingle
-    // reconciliation this method used to assert directly (mount-time, when
-    // SplitMode is null) is RETIRED -- CompositionSplit's own OnParametersSet
-    // performs the identical assert now (EnterSingle when no valid split
-    // query is present, EnterSplit when one is -- see that component's own
-    // header, RULING 5), generalized so Sources gets the SAME refresh-
-    // survives-split guarantee Reader always had, not just the standalone
-    // reset.
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _doc = await Atlas.Sources();
-            // S-m1 (batch-s-review.md trivia): group once, here, rather than
-            // re-scanning the full source list with a fresh LINQ `Where` on
-            // every render for every category (the markup's own @foreach
-            // over categories was calling `SourcesFor` once per category,
-            // per render). Immaterial at today's 18-source/5-category size
-            // (as the review itself noted), but memoizing costs nothing and
-            // removes the re-scan entirely.
             _byCategory = _doc.Sources
                 .GroupBy(s => s.Category)
                 .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntryDto>)g.ToList());

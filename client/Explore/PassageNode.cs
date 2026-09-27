@@ -2,22 +2,6 @@ using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// A verse range within a single chapter (READ-5/Task 15's shift-click
-/// passage selection). The reader already has every verse's text on hand
-/// (it just rendered the chapter to let the user shift-click it), so unlike
-/// VerseNode/ChapterNode this node needs no AtlasClient fetch of its own for
-/// its body -- the caller hands over the already-known sref and concatenated
-/// text directly at construction, avoiding a second network round-trip for
-/// content already in memory. Reader.razor owns the actual shift-click
-/// wiring (Task 15).
-///
-/// The map chip that used to live here -- <see cref="ExplorationTarget.ShowMiniMap"/>
-/// (Task 15), "chips: map/context like VerseNode" per the brief -- is gone as
-/// of O1 (owner live-preview correction, 2026-08-23: "explore geotemporally
-/// ... it's not serving us right now"). Dead-code law took ShowMiniMap and
-/// MiniWorld.razor with it; see ExplorerPopover.razor's own header comment.
-/// </summary>
 public sealed class PassageNode : IExplorable
 {
     private readonly string _sref;
@@ -34,23 +18,8 @@ public sealed class PassageNode : IExplorable
     public string Title => _sref;
     public string Kind => "Passage";
 
-    /// Batch R requirement 4 (the verse-text section's own compact view):
-    /// the passage's own already-known text, exposed publicly so
-    /// VerseTextSectionProvider (Explore/PopoverSectionProviders.cs) can
-    /// read it without a second network round trip -- the SAME text
-    /// <see cref="BodyAsync"/> already rendered pre-Batch-R, now surfaced
-    /// as a plain property since BodyAsync itself is no longer the
-    /// popover's own rendering path for this node kind (see the registry's
-    /// own doc comment for why BodyAsync survives regardless, as a fallback).
     public string Text => _text;
 
-    // Every chip below is derivable from the sref string alone. Batch R
-    // requirement 3: cross-references are no longer a CONDITIONAL chip here
-    // (Batch G1's own original behavior) -- they render INLINE now via the
-    // registry's own CrossRefsSection (Explore/PopoverSections.cs), which
-    // does its own presence-checking fetch (reusing XrefsAsync below) rather
-    // than this method eagerly fetching just to decide a chip's presence --
-    // see CONTRACT.md's own amendment for this batch.
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(CanonRef.FirstVerseOf(_sref));
@@ -64,32 +33,10 @@ public sealed class PassageNode : IExplorable
         return Task.FromResult(list);
     }
 
-    // Public + memoized (mirrors VerseNode.DetailAsync's own reasoning
-    // exactly) so ExploreAsync's own presence check above and
-    // ExplorerPopover's later popover-chip-xrefs click share ONE fetch, not
-    // two -- the chip would otherwise re-request the exact same data it
-    // just used to decide whether to render itself at all.
-    //
-    // PERF-3: AsyncMemo-backed (Explore/AsyncMemo.cs), not value-memoized --
-    // see VerseNode.DetailAsync's own PERF-3 comment for why a
-    // value-memoizing `??= await` races under ExplorerPopover.LoadCurrent's
-    // concurrent Task.WhenAll dispatch. DISCLOSED AS PREEMPTIVE (fix round
-    // 1, review Q-2/Q-3): only ONE provider calls each of these two methods
-    // today, so there is no LIVE duplicate-fetch race here (unlike
-    // EventNode.DetailAsync/PlaceNode.DetailAsync, both proven live races
-    // this same fix round -- see their own files) -- the exact same
-    // landmine is primed the moment a second caller is added, so this is
-    // hardened alongside its live-bug siblings rather than left as a "fix
-    // it when it actually breaks" trap. The reset-on-fault half of
-    // AsyncMemo (review Q-2's real finding) benefits this even without a
-    // concurrency race: a transient fetch failure now self-heals on the
-    // next call, same as every other AsyncMemo-backed node in this file.
+    // AsyncMemo-backed rather than a value-memoizing `??= await`: the latter races when
+    // ExplorerPopover.LoadCurrent's concurrent Task.WhenAll dispatch calls this more than once.
     public Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(_sref));
 
-    // Batch F: PassageNode's own catechism citation list -- CatechismSeamSection's
-    // (Explore/PopoverSectionProviders.cs) exact PassageNode counterpart to
-    // XrefsAsync above, same memoize-once-per-instance reasoning (and the
-    // same PERF-3 AsyncMemo fix, same preemptive disclosure).
     public Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(_sref));
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)

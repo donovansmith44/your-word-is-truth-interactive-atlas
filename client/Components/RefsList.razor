@@ -1,28 +1,3 @@
-@* EVT-3 Ticket 2 (owner verbatim, EVENT-ACCOUNTS-1: "events are keys that
-   map to sets of Biblical accounts"; chronological traversal returns a SET
-   of passage refs per hop, cardinality 1 valid): ONE reusable component for
-   rendering a SET of passage refs with NO verse contents -- explorable
-   (click pushes the ref's own node), reusable anywhere a set of passage
-   refs renders (the owner's own composability bar: "make sure all the new
-   bits made for this are composable and reusable").
-
-   Retires ArrowNav.razor's own former EV-1 "always-visible primary-witness-
-   verse line" (ref + first-verse REAL TEXT) -- the owner's later, more
-   specific ruling on the SAME surface (UX-2 feedback, 2026-09-06, verbatim:
-   "it does not appear to me that you did what i told you for the
-   chronological thing (not showing the verse contents, just the list of
-   refs)") supersedes EV-1's own "see the actual event-mapped verse" -- see
-   ArrowNav.razor's own header comment for the fuller retirement story.
-
-   Consumes DESCRIPTORS (<see cref="RefDescriptor"/>) rather than raw ref
-   strings so callers stay fully in charge of what a ref's own click target
-   actually is -- a VerseNode for a lone verse, a PassageNode for a genuine
-   multi-verse span with its own already-known text (PassageList.Explore's
-   own VerseNode/PassageNode identity choice, just pre-decided by the
-   caller here instead of re-derived, since THIS component fetches/holds no
-   verse text at all to re-derive it from). One-line knob: TestIdPrefix is
-   the ONE parameter that changes which surface's own testid grammar a
-   given RefsList instance uses. *@
 @using BibleAtlas.Client.Explore
 
 @if (Refs.Count > 0)
@@ -37,17 +12,8 @@
 }
 
 @code {
-    /// One explorable ref -- the display text (a span like "MAT.9.27-34" or
-    /// a bare "MAT.9.27") paired with the node it opens. The caller decides
-    /// the target's own identity (VerseNode vs. PassageNode) -- this
-    /// component never re-derives it from the ref string alone.
-    /// Batch ATTEST-1: <paramref name="TestIdSuffix"/> defaults to
-    /// <paramref name="Ref"/>, so every pre-existing caller is unchanged
-    /// byte-for-byte. It exists because ATTEST-1's own "SIMILAR ACCOUNTS"
-    /// rows display an event TITLE ("A leper healed; great popular
-    /// excitement") -- fine to read, a poor testid, and one that would
-    /// churn every time a curator improves a label. Those rows pass the
-    /// stable event id instead.
+    // TestIdSuffix defaults to Ref; callers whose display text is a curated label rather than
+    // the ref itself (and so could churn) pass a stable id instead.
     public sealed record RefDescriptor(string Ref, IExplorable Target, string? TestIdSuffix = null);
 
     [Parameter, EditorRequired] public IReadOnlyList<RefDescriptor> Refs { get; set; } = Array.Empty<RefDescriptor>();

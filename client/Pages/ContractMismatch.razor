@@ -1,9 +1,5 @@
-﻿@* Batch AQC-1 (design spec §2's versioning law, the house fail-loud law):
-    the visible, honest error state a real AQC version mismatch renders --
-    NEVER a silent degrade. Rendered by App.razor INSTEAD OF the ordinary
-    Router the moment the startup check (AqcContract.Satisfies) fails; not
-    itself a routed page (no @page directive -- App.razor swaps it in
-    directly, so a mismatch is caught before any route even resolves). *@
+﻿@* No @page directive: App.razor swaps this in directly in place of the
+   Router when the startup contract check fails, before any route resolves. *@
 
 <div data-testid="contract-mismatch" style="max-width:640px;margin:4rem auto;padding:2rem;font-family:sans-serif;text-align:center;">
     <h1>This build of Bible Atlas can't talk to its server</h1>
@@ -20,7 +16,6 @@
 </div>
 
 @code {
-    /// <summary>The advertised range, rendered as "min-max" (e.g. "0.2.0-0.5.0").</summary>
     [Parameter, EditorRequired]
     public string Advertised { get; set; } = "";
 

@@ -2,16 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// Small parsing/formatting helpers shared across Explore/* node types over
-/// canonical scripture ref strings and place-id slugs. Implementation
-/// plumbing only -- not part of the IExplorable/ExplorationTarget contract.
-/// </summary>
 internal static class CanonRef
 {
-    // The brief's own firstVerseOf definition, verbatim: the leading
-    // canonical verse of either span form (GEN.1.1-5 -> GEN.1.1;
-    // GEN.1.1-GEN.2.3 -> GEN.1.1).
     private static readonly Regex HeadPattern = new(@"^[A-Z0-9]{3}\.\d+\.\d+", RegexOptions.Compiled);
 
     public static string FirstVerseOf(string target)
@@ -26,19 +18,8 @@ internal static class CanonRef
         return (parts[0], int.Parse(parts[1]), int.Parse(parts[2]));
     }
 
-    /// Batch F2, requirement 6: a cross-reference TARGET's own same-chapter
-    /// span bounds, mirroring the server's own `atlas_core::xrefs::target_span`
-    /// three-shape parse (single verse / same-chapter range / cross-chapter-
-    /// or-book range) -- used so <c>CrossRefsSection</c> can fetch each
-    /// target's OWN full member-verse text (via the existing chapter
-    /// fetch + LRU cache) rather than relying on <c>CrossRefOut.Preview</c>'s
-    /// first-verse-only text. Returns null for a cross-chapter/book target
-    /// (e.g. `"MAT.5.3-MAT.6.2"`) -- rare in practice, and this app's own
-    /// "passage" concept is always single-chapter (PassageNode's own doc
-    /// comment), so such a target has no single-chapter span to report;
-    /// the caller falls back to the target's own first-verse preview text
-    /// for that case (a disclosed, pre-existing limitation, not a
-    /// regression -- see batch-f2-report.md).
+    /// Returns null for a cross-chapter or cross-book target (e.g. "MAT.5.3-MAT.6.2");
+    /// callers fall back to a first-verse-only preview in that case.
     public static (string Book, int Chapter, int FromVerse, int ToVerse)? TargetSpan(string target)
     {
         var parts = target.Split('.');
@@ -65,10 +46,6 @@ internal static class CanonRef
         return fromOk && toOk ? (book, chapter, fromVerse, toVerse) : null;
     }
 
-    // Curated write_place/place-id slugs are kebab-case (e.g. "en-gedi",
-    // "mount-sinai"). Used only as a fallback when a slug fails to resolve
-    // via AtlasClient.Place, which normally supplies the real,
-    // already-presentation-ready display Name.
     public static string Humanize(string slug) =>
         string.Join(' ', slug.Split('-', StringSplitOptions.RemoveEmptyEntries)
             .Select(w => char.ToUpperInvariant(w[0]) + w[1..]));

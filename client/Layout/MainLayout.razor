@@ -12,10 +12,6 @@
     <nav class="app-nav" aria-label="Primary">
         <a class="nav-link" href="/" data-testid="nav-reader">Reader</a>
         <a class="nav-link" href="/world" data-testid="nav-world">World</a>
-        @* Batch CORP-1 (R1, owner order 2026-08-27: "obviously Kretzmann and
-           Concord each get their own tabs"): top-level tabs alongside
-           Reader/World, matching this SAME .nav-link idiom exactly -- no new
-           nav paradigm. Sources stays reachable only via Credits, unchanged. *@
         <a class="nav-link" href="/kretzmann" data-testid="nav-kretzmann">Kretzmann</a>
         <a class="nav-link" href="/concord" data-testid="nav-concord">Concord</a>
     </nav>
@@ -25,67 +21,28 @@
         <select id="translation-select" class="translation-select" data-testid="translation-select">
             <option value="kjv">KJV</option>
         </select>
-        @* Batch G2 decision 5: "hamburger menu top-right on ALL pages" --
-           MainLayout wraps every page (design-direction.md/Batch G ledger
-           spec, verbatim), so one instance here reaches both without either
-           page needing its own copy. Reuses .header-tools' own existing
-           top-right slot, alongside Credits -- same shared chrome, same
-           placement discipline. *@
-        @* Batch G2 decision 4's own "feature hides if storage unavailable"
-           extended here too -- the ENTIRE hamburger feature (decision 5) is
-           a view onto SavedExplorationsService's own localStorage-backed
-           list; with no durable store behind it, there is nothing honest
-           for this button to open. *@
         @if (SavedExplorations.Available)
         {
             <button type="button" class="hamburger-menu" data-testid="hamburger-menu" aria-label="Explorations menu"
                     aria-expanded="@(_showHamburger ? "true" : "false")" @onclick="ToggleHamburger">&#9776;</button>
         }
-        @* Batch S ("document our sources for everything and give it a
-           dedicated page on the site"): "the existing Credits nav link
-           becomes/points to it -- one page, one decisive home for
-           attribution, no duplicate partial credit lists left behind"
-           (requirement 1). This used to be a <button> that toggled a
-           popover carrying its own hardcoded <ul> of credits (see git
-           history) -- that popover, and its hardcoded list, are gone;
-           the SAME `attribution` testid now sits on a plain nav-style
-           link straight to /sources, the app's one decisive home for
-           attribution. *@
         <a class="attribution" data-testid="attribution" href="/sources">Credits</a>
     </div>
 </header>
 
 <SelectionTray />
 
-@* Batch G2 decision 5: the hamburger panel -- the same shared
-   parchment-popover markup/testids ExplorerPopover.razor establishes
-   (backdrop click / Close / Escape all close it), NOT reusing the generic
-   `popover`/`popover-backdrop` testids themselves (decision 5's own fixed
-   ids: hamburger-menu/hamburger-panel) -- this is chrome for MANAGING saved
-   explorations, not an ExplorerPopover rendering one IExplorable node, so it
-   deliberately does not ride that component's own machinery. (Batch S: the
-   Credits popover this comment used to also point at is gone -- Credits is
-   a plain link to /sources now.) *@
 @if (_showHamburger)
 {
     <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="CloseHamburger"></div>
     <div class="popover hamburger-panel" data-testid="hamburger-panel" tabindex="-1" @ref="_hamburgerPanelRef" @onkeydown="OnHamburgerKeyDown">
         <div class="popover-head">
             <p class="popover-title" data-testid="popover-title" data-ref="false">Explorations</p>
-            @* CHROME-2 (Batch UX-1): the SAME shared `title` tooltip
-               affordance ExplorerPopover.razor's own popover-close adopts
-               -- this is the identical class/testid/glyph pattern, kept
-               consistent. *@
             <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="CloseHamburger">&times;</button>
         </div>
-        @* D4: the table of contents is reachable from every page's own
-           hamburger -- the Bible's books-then-chapters tree; a chapter row
-           navigates to /read/{book}/{chapter}. *@
         <button type="button" class="hamburger-contents explorable" data-testid="hamburger-contents" @onclick="OpenContentsFromMenu">Contents</button>
         @if (SavedExplorations.Items.Count == 0)
         {
-            @* House copy law: direction, not mood -- "Save an exploration
-               from any popover" class of copy, per the brief, verbatim. *@
             <p class="hamburger-empty" data-testid="hamburger-empty">
                 Save an exploration from any popover to see it here.
             </p>
@@ -124,8 +81,6 @@
 </main>
 
 @code {
-    // D4: the hamburger's Contents entry -- opens the Bible's contents tree;
-    // a chapter row navigates like a deep link.
     private bool _contentsOpen;
 
     private void OpenContentsFromMenu()
@@ -142,34 +97,19 @@
         Nav.NavigateTo($"/read/{parts[0]}/{chapter}");
     }
 
-    // The header is shared chrome (MainLayout wraps every page), but its
-    // material -- parchment vs dusk glass -- depends on which page is
-    // active, per design-direction.md. NavigationManager.Uri is the only
-    // signal available here (MainLayout never sees the child page's own
-    // markup/classes), so route-prefix drives the theme class directly.
+    // MainLayout never sees the child page's own markup, so route-prefix on the URL
+    // is the only signal available here for which header theme to show.
     private bool IsWorld => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("world", StringComparison.OrdinalIgnoreCase);
     private string HeaderThemeClass => IsWorld ? "header-dusk" : "header-parchment";
 
-    // Batch S: the Credits popover (and its own _showAttribution/
-    // _focusPending/_panelRef state, ToggleAttribution/CloseAttribution/
-    // OnAttributionKeyDown handlers) is gone -- `attribution` is a plain
-    // link to /sources now (see the header markup above).
     private bool _showHamburger;
     private bool _focusHamburgerPending;
     private ElementReference _hamburgerPanelRef;
 
-    // "Continue" (ExplorationListItem.OnContinue): the hamburger-opened
-    // ExplorerPopover's own Root/SeedStack -- see ExplorerPopover.razor's
-    // own SeedStack doc comment for why Root is always SeedStack's own last
-    // element when both are set.
     private IExplorable? _hamburgerActiveNode;
     private IReadOnlyList<IExplorable>? _hamburgerSeedStack;
     private string? _hamburgerError;
 
-    // Batch G2 decision 5: opening the hamburger panel used to also close
-    // an open Credits popover (never two chrome backdrops stacked at
-    // once) -- the popover is gone (Batch S), so there is nothing left to
-    // close here.
     private void ToggleHamburger()
     {
         _showHamburger = !_showHamburger;
@@ -193,24 +133,12 @@
 
     private void Delete(string id) => SavedExplorations.Delete(id);
 
-    // Batch G2 decision 5 ("continue"): reconstructs every descriptor in
-    // the clicked trail-prefix (ExplorationDescriptor.Reconstruct, decision
-    // 3) CONCURRENTLY -- same "independent fetches never serialize" rule
-    // this app follows throughout (ExplorerPopover.LoadCurrent's own doc
-    // comment) -- then seeds a fresh ExplorerPopover with all of them, in
-    // order, via SeedStack. A descriptor whose underlying curated data has
-    // since disappeared throws (see Reconstruct's own doc comment); caught
-    // here and surfaced via the same .toast affordance every page already
-    // uses for a failed fetch, never a crash.
     private async Task Continue(List<ExplorationDescriptor> trailPrefix)
     {
         CloseHamburger();
         _hamburgerError = null;
         try
         {
-            // Batch CORP-1: Reconstruct now also takes the generic graph
-            // client (IExplorableClient) -- needed to reconstruct a saved
-            // "ConcordUnit" descriptor; see that method's own header.
             var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas, Graph)));
             _hamburgerSeedStack = nodes;
             _hamburgerActiveNode = nodes[^1];
@@ -227,18 +155,10 @@
         _hamburgerSeedStack = null;
     }
 
-    // Fix round 1 (M1): mirrors ExplorerPopover's FocusAsync-after-open
-    // exactly (@ref + tabindex="-1" on the panel, FocusAsync in
-    // OnAfterRenderAsync, non-fatal try/catch) -- MainLayout is the
-    // persistent layout (never recreated across navigations), so "have we
-    // focused yet" has to be re-armed on every open rather than spent
-    // permanently after the first; ToggleHamburger sets
-    // _focusHamburgerPending on each open, and this clears it after the
-    // resulting render actually focuses the panel. (Batch S: the Credits
-    // popover this pattern originally described alongside is gone; the
-    // hamburger panel below is the sole remaining user.)
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // MainLayout is never recreated across navigations, so "have we focused yet" must be
+        // re-armed on every open (ToggleHamburger) rather than spent once and forgotten.
         if (_focusHamburgerPending)
         {
             _focusHamburgerPending = false;
@@ -248,7 +168,6 @@
             }
             catch (Exception)
             {
-                // Non-fatal -- same graceful-degradation stance as above.
             }
         }
     }
@@ -256,33 +175,16 @@
     protected override void OnInitialized()
     {
         Nav.LocationChanged += OnLocationChanged;
-        // Batch G2 decision 2/5: ExplorerPopover's own save button lives
-        // under Reader.razor/World.razor's render tree, a SIBLING of
-        // MainLayout, not a descendant -- Blazor's automatic post-EventCallback
-        // re-render only reaches the component that OWNS the callback
-        // delegate, so a save made there does not, on its own, tell an
-        // ALREADY-OPEN hamburger panel here to refresh. Subscribing to the
-        // service's own Changed event closes that gap -- same "one owner
-        // mutates, every reader re-renders on notice" shape SelectionTray.razor
-        // already uses for SelectionTrayService.Changed.
+        // The save button lives under Reader/World's render tree, a sibling of MainLayout rather
+        // than a descendant, so Blazor's automatic post-callback re-render never reaches an
+        // already-open hamburger panel here -- subscribing to Changed closes that gap.
         SavedExplorations.Changed += OnSavedExplorationsChanged;
     }
 
     private void OnSavedExplorationsChanged() => InvokeAsync(StateHasChanged);
 
-    // MainLayout persists across client-side navigations (Blazor doesn't
-    // recreate the layout per route), so the theme class needs an explicit
-    // re-render hook -- otherwise switching / <-> /world would leave the
-    // header stuck in its first-rendered theme. (Batch S: the Credits
-    // popover this used to also close on navigation is gone -- Credits is
-    // a plain link to /sources now, nothing left floating to close.)
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        // Batch G2 decision 5: a hamburger panel, or a
-        // popover it opened via "continue," left floating here would
-        // otherwise persist over the next page too (MainLayout itself
-        // survives client-side navigation; neither of these do the pages'
-        // own per-navigation reset today).
         _showHamburger = false;
         _hamburgerActiveNode = null;
         _hamburgerSeedStack = null;

@@ -1,18 +1,3 @@
-@* Batch RED-1 ("Red letters on Jesus' words in every translation"): the
-   place/person mention-scan-and-render loop, extracted OUT of
-   MentionText.razor so that component can wrap it in a `.words-of-christ`
-   span for a red-letter sub-range without duplicating this markup (the
-   SAME "forbidden parallel-path disease" MentionText.razor's own header
-   comment already names) -- this is now the ONE place `PlaceMentions.Scan`
-   actually renders; MentionText.razor calls it once per red/non-red RUN of
-   one verse's own text, never copies its own body.
-
-   Byte-for-byte the SAME markup MentionText.razor rendered directly before
-   this batch (component boundaries add no DOM of their own in Blazor), so
-   moving the loop here changes nothing for the overwhelming majority of
-   verses (no red-letter span at all -- MentionText's own ComputeRuns
-   returns exactly one non-red run, calling this component once over the
-   verse's own FULL text, identical output to before). *@
 @using BibleAtlas.Client.Explore
 @inject IJSRuntime JS
 
@@ -49,14 +34,6 @@
     [Parameter] public string TestIdSuffix { get; set; } = "";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "in-text
-    // mentions... are NOT wired for this gesture"): the SAME Ctrl/Cmd-click
-    // toggle VerseLine.razor's own OnRowClick already gives the reader
-    // pane's verse rows -- reached here too, since this component is the
-    // ONE place `PlaceMentions.Scan` actually renders (this file's own
-    // header comment), so every in-text mention span (Reader.razor's live
-    // text AND any popover section reusing this component) gets the
-    // gesture from this one change.
     [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
 
     private Task Blink(string placeId, bool active) => MapInterop.BlinkPlace(JS, placeId, active);

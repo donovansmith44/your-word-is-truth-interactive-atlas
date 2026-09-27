@@ -1,12 +1,6 @@
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// A small fixed-capacity least-recently-used cache. <see cref="Put"/> evicts
-/// the least recently touched entry once <c>capacity</c> distinct keys are
-/// exceeded; <see cref="TryGet"/> refreshes an entry's recency on every hit,
-/// so a hot entry is never evicted just because it was inserted first.
-/// Not thread-safe (the Blazor WASM runtime this backs is single-threaded).
-/// </summary>
+// Not thread-safe -- relies on the single-threaded Blazor WASM runtime this backs.
 public sealed class LruCache<TKey, TValue> where TKey : notnull
 {
     private readonly int _capacity;
@@ -24,7 +18,6 @@ public sealed class LruCache<TKey, TValue> where TKey : notnull
         _index = new Dictionary<TKey, LinkedListNode<(TKey Key, TValue Payload)>>(capacity);
     }
 
-    /// <summary>Looks up <paramref name="key"/> and, on a hit, marks it as the most recently used entry.</summary>
     public bool TryGet(TKey key, out TValue value)
     {
         if (_index.TryGetValue(key, out var node))
@@ -39,7 +32,6 @@ public sealed class LruCache<TKey, TValue> where TKey : notnull
         return false;
     }
 
-    /// <summary>Inserts or refreshes <paramref name="key"/> as the most recently used entry, evicting the least recently used entry if this is a new key that would exceed capacity.</summary>
     public void Put(TKey key, TValue value)
     {
         if (_index.TryGetValue(key, out var existing))

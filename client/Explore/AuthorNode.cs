@@ -2,14 +2,6 @@ using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// A book's author/provenance (fetched via BookMeta on "{book}.1.1").
-/// Title is the book code -- IExplorable requires Title synchronously, and
-/// the real author NAME is only known after the fetch, so the popover
-/// header shows the (already ref-shaped) book code the instant this node is
-/// pushed, while BodyAsync's prose names the actual author underneath once
-/// it resolves.
-/// </summary>
 public sealed class AuthorNode : IExplorable
 {
     private readonly string _bookCode;
@@ -20,21 +12,6 @@ public sealed class AuthorNode : IExplorable
     public string Title => _bookCode;
     public string Kind => "Author";
 
-    // HATCH-DELIVERABLE-1 (2026-09-07, deliverability audit -- see
-    // EventNode.ExploreAsync's own header comment for the law): the guard
-    // below already gates on WritePlace/WriteFrom/WriteTo all being present
-    // -- a genuine, existing deliverability check, not merely a display
-    // one. DISCLOSED, narrower residual than EventNode's own fixed case:
-    // the chip's own query (`from={from}&to={to}`) is a bare TIME window,
-    // not `place={WritePlace}` -- it does not GUARANTEE the resulting
-    // `/world` scene shows THIS write-place specifically (only that SOME
-    // window exists), and confirming that would need a `/api/scene` probe
-    // this method does not otherwise make. Not fixed this round, per the
-    // ticket's own "do NOT add fetches for this" instruction -- the
-    // existing three-field guard is the cheap, honest check already
-    // available without one, and materially narrows the gap EventNode had
-    // (a bare `When` with zero Places guard at all) even if it does not
-    // close it completely.
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var meta = (await Load(api)).BookMeta;
@@ -63,11 +40,6 @@ public sealed class AuthorNode : IExplorable
             }
             catch (Exception)
             {
-                // The write-place slug should always resolve (the ETL warns
-                // and drops unknown ones before compiling) -- this fallback
-                // only guards against an unexpected fetch failure so the
-                // popover still shows something readable instead of blowing
-                // up the whole body.
                 placeName = CanonRef.Humanize(slug);
             }
         }
@@ -100,17 +72,5 @@ public sealed class AuthorNode : IExplorable
         return fragment;
     }
 
-    // PERF-3 re-review fix round 2 (Major, new -- found by the re-review's
-    // own grep sweep after this batch's fix round 1 claimed uniform
-    // application and missed this one): this was still the pre-batch
-    // value-memoizing idiom, and IS a live race -- ExplorerPopover.LoadCurrent's
-    // own non-registry fallback path (Author is one of the node kinds with
-    // no section-registry providers) dispatches ExploreAsync and BodyAsync
-    // via ONE Task.WhenAll (ExplorerPopover.razor's own `explorationsTask`/
-    // `bodyTask`), and BOTH independently call Load -- the exact same
-    // synchronous-prefix-then-first-await race this batch's own VerseNode
-    // fix was built around, just reached through the ExploreAsync+BodyAsync
-    // fallback shape instead of the section-registry Task.WhenAll shape.
-    // AsyncMemo-backed now, same fix as every other node in this file.
     private Task<VerseDetail> Load(AtlasClient api) => _detail.Get(() => api.Verse($"{_bookCode}.1.1"));
 }

@@ -1,202 +1,3 @@
-@* TRAV-1 (controller decisions 3+4): the ONE arrow-traversal component both
-   the Narrative block (EventDateAndPlacesSection) and the new Chronology
-   block (EventChronologySection, PopoverSectionProviders.cs) render --
-   "you can traverse them in essentially the same way," the owner's own
-   words, realized as literally the same component rather than two
-   near-identical renderings. Extracted from EventDateAndPlacesSection's own
-   former `RenderNavArrow` static helper (a RenderTreeBuilder-only method,
-   with no state of its own that could survive across renders) into a real
-   component for exactly one reason: decision 4's dwell-hover verse peek
-   needs a timer that OUTLIVES a single render (started on pointer-enter,
-   fired ~350-400ms later unless cancelled first) -- a RenderFragment
-   closure is rebuilt fresh every render (see EventDateAndPlacesSection's
-   own "Fresh every render... a dictionary declared outside this closure
-   would keep accumulating" doc comment for why that discipline exists),
-   but a genuine Blazor component instance persists across them, which is
-   what a live CancellationTokenSource needs. Both callers open this via
-   `builder.OpenComponent<ArrowNav>(...)` from their own RenderTreeBuilder
-   bodies -- EventTimelineDirectionSection (now retired) already
-   established that exact "open a real component from imperative
-   RenderTreeBuilder code" pattern in this same file, for PassageList.
-
-   DWELL GRAMMAR (decision 4, "quick pass-over -> nothing; dwell -> a small
-   hover box with the target event's verse text; click still traverses"):
-   pointer-enter starts a fresh timer (DwellTiming.PeekDelayMs, the ONE
-   constant CHAP-HOVER-1's own chapter-head peek also uses -- see that
-   file's own doc comment); pointer-leave before it fires cancels outright
-   (no peek ever shown -- "not super sensitive, so some delay so that
-   you're not accidentally getting hover boxes all the time," the owner's
-   own words). CLICK is wired completely independently (`Commit`, below) --
-   it never reads or waits on dwell state at all, so a genuine click always
-   commits immediately regardless of whether the peek happened to be
-   mid-dwell, already showing, or never touched at all.
-
-   PEEK-TRUNC-1 (owner defect report, 2026-08-24, verbatim: "menus appearing
-   on hover from arrow hover are getting cut off. needs to be truncated to
-   an expandable menu limit one verse."): the peek's own CONTENT, DISMISS
-   grammar, and PLACEMENT all change here; the OPEN side immediately above
-   is untouched.
-   - CONTENT: the target event's FULL title (Adjacent.Label -- TITLE-WRAP-1's
-     own "the complete name is one dwell away, always") as a header, plus
-     exactly ONE resolved verse by default, plus the house quiet reveal
-     affordance (RevealControls -- "more (n) . all (N) . less") once more
-     than one verse resolved. Used DIRECTLY here rather than through
-     PassageList/PassageBlockBuilder: that component's own two truncation
-     axes count/cut at the wrong granularity for this box -- Cap counts
-     whole PASSAGE ENTRIES (a single contiguous block can itself hold many
-     verses, so capping at one ENTRY is not "exactly one VERSE"), and
-     ClampVerses is a STATIC per-entry clamp whose only further reveal is
-     the WHOLE CHAPTER (MiniReaderExpand), never a graduated one-more-verse
-     step. RevealControls itself -- already its own generic, standalone
-     component (Total/Default/Shown/Step, nothing about WHAT is being
-     shown) -- IS the shared piece the owner's own spec asks to reuse, so
-     it is used directly, verse-by-verse, rather than contorting a caller
-     whose own grouping doesn't fit. Nothing is duplicated: RevealControls
-     is still the ONE implementation of "more/all/less," just with a
-     second direct consumer alongside PassageList's own internal one.
-   - DISMISS: pointer-leave used to dismiss the peek immediately, no grace
-     period, because a non-interactive box never needed the pointer to
-     travel INTO it. Now that `more`/`less` live INSIDE the box, the
-     pointer must cross the small visual gap between the arrow/role-caption
-     stack and the peek (margin .4rem, app.css) to reach them. The SAME
-     @onpointerenter/@onpointerleave pair on this component's own wrapping
-     element (unchanged below) already covers that whole subtree -- the
-     peek box is a DOM DESCENDANT of the wrapper, not a sibling, see the
-     markup below -- but the browser still fires a transient leave+enter
-     PAIR on the wrapper mid-transit (real pixels in that gap that the
-     wrapper's own un-padded box doesn't cover, so hit-testing there
-     resolves to something outside the wrapper's subtree for an instant).
-     ScheduleDismiss/CancelDismiss below give that transit a short GRACE
-     PERIOD before actually hiding -- the same shape Reader.razor's own
-     xref marker-to-panel transit already proved out
-     (ScheduleHoverClose/DelayedHoverClose there; that method's own doc
-     comment has the two real, tuned-the-hard-way timing failures at
-     250ms/500ms). PeekDismissGraceMs below reuses that exact, hard-won
-     1000ms figure rather than re-deriving a smaller number empirically
-     only to risk rediscovering the identical race -- this box's own
-     transit gap is smaller, but the same real-cursor-speed +
-     Playwright-synthetic-move-overhead reasoning applies regardless of
-     gap size. Once truly gone (no re-entry before the grace period
-     elapses), the peek still dismisses on its own -- "pointer-leave (of
-     arrow+box combined) dismisses," the owner's own spec, just not
-     necessarily on the exact tick a true departure is first detected.
-     Mid-dwell pointer-leave (the peek not shown YET) is UNCHANGED: still
-     cancels outright, no grace -- PEEK-1's own "quick pass-over -> nothing"
-     law never needed a grace period and still doesn't; a grace period only
-     ever makes sense for something that's already showing and might
-     legitimately be travelled INTO.
-   - PLACEMENT: never clipped by its own real clipping boundary -- the
-     enclosing `.popover` (F1 fix round below has the full "why not the
-     viewport" story). OnAfterRenderAsync below measures this component's
-     own wrapper, once per peek OPEN (never re-measured while it stays
-     open -- the SAME "measure once, on open" discipline ExplorerPopover's
-     own verse/pane anchoring already established, see that file's own
-     header comment), via reader.js's new getElementRect -- an
-     ElementReference-keyed sibling of that file's own selector-keyed
-     getVerseAnchorRect. A selector would only ever resolve
-     document.querySelector's own FIRST match: up to FOUR ArrowNav
-     instances can be mounted at once (prior x following, narrative x
-     chronology), so a shared CSS-class selector would silently measure
-     the wrong instance's anchor for every side but one -- the same "pass
-     the real element, not a selector" reasoning reader.js's own
-     capturePointer already established for SplitDivider's analogous
-     multi-instance concern. Whichever side (above/below the wrapper) has
-     more real room wins, and that side's own max-height is capped to
-     exactly the room available -- "never clipped" without needing to
-     predict content height up front: genuine overflow (an expanded,
-     many-verse peek) degrades to app.css's own `overflow-y: auto`, an
-     internal scroll, never an off-screen spill. A quick pass-over that
-     never dwells long enough to show a peek never measures anything (no
-     JS interop call) -- matching this component's own pre-existing
-     "never a fetch until the dwell actually fires" discipline one layer
-     further out.
-
-   FIX ROUND 1 (controller review, PASS/PASS, one Important + two Minors):
-   - F1 (Important, reviewer live-repro): the original placement math
-     budgeted against window.innerHeight. The peek's own real clipping
-     boundary is the enclosing `.popover` (position:fixed, its own
-     max-height:calc(100vh - 4rem), routinely SHORTER than the viewport,
-     clips every descendant including a position:absolute one like this
-     peek) -- reader.js's own getElementRect now measures THAT ancestor
-     directly (PopoverTop/PopoverBottom, ElementRectDto below) and
-     OnAfterRenderAsync's own flip/max-height math budgets against it,
-     never the viewport. The owner's own original defect ("cut off...
-     needs to be truncated") could otherwise resurface once expanded --
-     confirmed live by the reviewer: the default one-verse peek fit fine,
-     but clicking `all` on a many-verse peek spilled ~269px past the
-     popover's own bottom edge, its internal overflow-y:auto scrollbar
-     never engaging because its budget had come from the wrong frame.
-     PEEK-3b (tests/ux/event-timeline.spec.ts) pins this permanently.
-   - F2 (Minor, reviewer finding): the server's own 20-verse-per-chapter
-     cap (HOTFIX-4's GroupCount) is disclosed again -- ComputeTruncatedBy
-     below computes it directly from _peekVerses' own already-flowing
-     GroupCount field (VerseTextResolver.ResolveGroupsAsync always
-     attaches it; nothing new to fetch), rendered as a small, honest,
-     non-interactive `.popover-arrow-peek-truncated` note whenever it's
-     nonzero -- RevealControls' own Total/"all (N)" stays honest about
-     what THIS peek actually holds (never inflated to a count it can't
-     really reveal); the separate note is what tells the truth about
-     verses the wire never sent at all.
-   - F3 (Minor): Dispose() now also calls HidePeekState(), matching
-     Commit()'s own symmetry -- every disposal path leaves this instance's
-     fields fully reset, not just its two cancellation tokens (verified
-     harmless before this fix; correct regardless).
-
-   CHRONO-MERGE-1 (owner NOD 2026-08-24, "put chronology up top... don't
-   clutter with story line where story doesn't exist"): a SECOND rendering
-   MODE, `Inline` -- the divergence-only story-thread line's own leg
-   affordance ("in <narrative>: next -> <leg>", EventChronologySection's
-   own doc comment has the full divergence rule) needs the identical
-   click-commits/dwell-peeks contract this component already gives the
-   block-mode arrows, living instead as ONE clickable run inside a running
-   sentence, never a second arrow-button+role-caption grid. Rather than a
-   parallel component (this file's own header above already explains why
-   the dwell timer/peek machinery needs a real component instance, not a
-   closure) or a second peek implementation, `Inline` branches ONLY the
-   "what does the clickable content look like" fragment of the markup
-   below -- every timer, the F1/F2 placement/truncation math, and the
-   PEEK-TRUNC-1 corridor all stay the untouched, single implementation
-   they already were ("do not re-derive placement math," the batch
-   brief's own words). `InlinePrefixText` carries the sentence-level word
-   a leg needs ("next ", following only -- the same asymmetry the brief's
-   own worked example uses: "<-" alone for a diverging prior, "next ->"
-   for a diverging following), so the CALLER (EventChronologySection)
-   never has to reach into this component's own markup to compose it.
-   `Glyph` for an inline leg is the ordinary prose arrow (&lt;-/-&gt;),
-   never the block mode's own triangle glyphs (the same deliberately
-   different register a sentence needs versus a button). The role caption
-   (`RoleTestIdPrefix`) and TITLE-WRAP-1's own two-line clamp are both
-   BLOCK-mode-only -- a story-thread leg shows its full name unclamped,
-   never truncated: it is not squeezed into a 47%-width column the way a
-   block arrow is, so there is nothing here for that clamp to solve.
-
-   EV-1 (owner, verbatim: "when traversing events, i should be able to see
-   the actual event-mapped verse, rather than just the event title when
-   going through the chronology.") shipped block-mode rows an ALWAYS-
-   VISIBLE primary-witness-verse line -- ref plus first-verse REAL TEXT.
-   RETIRED by EVT-3 Ticket 2 (owner's own later, more specific ruling on
-   this exact surface, UX-2 feedback 2026-09-06, verbatim: "it does not
-   appear to me that you did what i told you for the chronological thing
-   (not showing the verse contents, just the list of refs)" -- and
-   EVENT-ACCOUNTS-1's own governing law, "events are keys that map to SETS
-   of Biblical accounts... chronological traversal can return a set of
-   passages with each hop"): block-mode rows now render the SET of this
-   adjacent event's own account refs -- via the shared, reusable RefsList
-   component (client/Components/RefsList.razor) -- NEVER verse contents,
-   under the arrow. Two differences from EV-1's own retired shape: (1)
-   EVERY VerseGroup contributes its own ref (not just the first -- "a set,"
-   never "the primary one"), and (2) no text at all, anywhere outside the
-   dwell peek (TRAV-1/PEEK-TRUNC-1 above; that peek is UNCHANGED, still the
-   ONE place a hover reveals real passage text). SelectRefs below is the
-   pure selection logic (one ref per group, via PassageGrouping.SpanRef,
-   each paired with a VerseNode target at that group's own first vref),
-   covered directly by client.Tests/ArrowNavTests.cs. Genuinely CHEAPER
-   than EV-1's own eager fetch, not merely different: refs are computed
-   straight off Adjacent.VerseGroups (already on the wire), no network
-   round trip at all -- the dwell peek remains the ONE fetch this
-   component ever makes. POPOVER-LAW-1 (chrome vs content) is satisfied by
-   construction: this is content the owner explicitly ordered rendered,
-   not chrome pulled in speculatively. *@
 @using System.Globalization
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -206,11 +7,6 @@
      @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave" @onpointerdown="OnWrapperPointerDown">
 @if (Adjacent is null)
 {
-    @* CHRONO-MERGE-1: the inline story-thread leg is only ever rendered by
-       its caller when Adjacent is genuinely present (a diverging narrative
-       leg is never null by construction -- see EventChronologySection's
-       own Diverges doc comment) -- no empty-placeholder markup for a case
-       this mode never reaches. *@
     @if (!Inline)
     {
         <span class="popover-event-nav-arrow popover-event-nav-arrow-@Direction popover-event-nav-arrow-empty"></span>
@@ -233,11 +29,6 @@ else
         {
             <span class="popover-event-nav-glyph">@Glyph</span>
         }
-        @* TITLE-WRAP-1: LabelIsLong picks the two-line-clamp/smaller-size
-           treatment (app.css's own .popover-event-nav-label-long) instead
-           of the base one-line/ellipsis rule -- see that property's own
-           doc comment below for the threshold, and app.css's own comment
-           on the base rule for how the two stay grid-aligned regardless. *@
         <span class="popover-event-nav-label @(LabelIsLong ? "popover-event-nav-label-long" : null)" title="@Adjacent.Label">@Adjacent.Label</span>
         @if (Direction == "following")
         {
@@ -247,42 +38,13 @@ else
 
     <p class="popover-event-nav-role" data-testid="@($"{RoleTestIdPrefix}-{IdSuffix}")">@RoleText</p>
 
-    @* EVT-3 Ticket 2 (owner ruling, supersedes EV-1 -- see this file's own
-       header comment for the retirement story): the SET of this adjacent
-       event's own account refs, via the shared RefsList component -- NO
-       verse contents, ever, under the arrow (the peek below is the ONE
-       place a dwell can still see real text). Pure/synchronous
-       (RefDescriptors reads straight off Adjacent.VerseGroups, no fetch --
-       genuinely cheaper than EV-1's own eager text fetch, not just
-       different). Conditional presence: Adjacent with zero verse groups
-       (never reached by a real dated event, defended against regardless)
-       renders nothing extra. *@
     <RefsList Refs="@RefDescriptors" TestIdPrefix="@($"{EventTestIdPrefix}-{IdSuffix}-refs")" OnExplore="OnExplore" />
 }
 
-@* CHRONO-MERGE-1: hoisted out of the block-only `else` above -- the peek
-   itself is IDENTICAL regardless of which mode opened it (the whole point
-   of reusing this component rather than re-deriving a second one), so it
-   is written ONCE and shared by both. `_showPeek` is never true while
-   `Adjacent` is null (OnPointerEnter returns early in that case), but the
-   guard is repeated here defensively now that this fragment no longer
-   sits inside the `else` branch C#'s own flow analysis used to narrow it
-   through. *@
 @if (_showPeek && Adjacent is not null)
 {
     <div class="popover-arrow-peek @(_peekFlipAbove ? "popover-arrow-peek-above" : null)" style="@PeekStyle"
          data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek")" @onkeydown="OnPeekKeyDown">
-        @* EVENT-HOVER-HATCH-1 (owner order, verbatim: "when I click an
-           event and see the chronological forward/backward stuff, and
-           hover over the buttons, the displayed window has no escape
-           hatch"): one close affordance, reachable by click AND by
-           Escape (OnPeekKeyDown above -- keydown bubbles from any focused
-           descendant, e.g. this button itself or a mention span inside
-           the peek, up to this div). Reuses the SAME immediate-hide
-           primitives the peek's own pointer-leave path already calls
-           (CancelDwell/CancelDismiss/HidePeekState, ClosePeek below) --
-           no new dwell/grace timer, per this house's own hover-chrome
-           discipline (DwellTiming.cs's own doc comment). *@
         <div class="popover-arrow-peek-head">
             <p class="popover-arrow-peek-title" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-title")">@Adjacent.Label</p>
             <button type="button" class="popover-arrow-peek-close" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-close")"
@@ -301,15 +63,6 @@ else
             <RevealControls Total="@_peekVerses.Count" Default="1" Shown="@_peekShown" ShownChanged="OnPeekShownChanged"
                              MoreTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-more")" CollapseTestId="@($"{EventTestIdPrefix}-{IdSuffix}-peek-collapse")"
                              RevealNoun="verses" />
-            @* F2 fix round: RevealControls' own Total above is honest
-               about what this peek actually HOLDS (_peekVerses.Count)
-               -- "all (N)" never overclaims something more/all can't
-               actually reveal. This separate, non-interactive note is
-               the disclosure for verses the SERVER itself never sent
-               at all (ComputeTruncatedBy's own doc comment has the
-               full mechanism) -- present regardless of _peekShown, a
-               standing fact about this chapter, not something tied to
-               the current reveal state. *@
             @if (_peekTruncatedBy > 0)
             {
                 <p class="popover-arrow-peek-truncated" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-truncated")"
@@ -321,18 +74,8 @@ else
 </div>
 
 @code {
-    // "prior" | "following" -- the ONE distinction every glyph/role/class
-    // decision below reads off (never a bool: a third direction is not
-    // conceivable here, but the string reads the same as the marker
-    // testid/aria-label prefixes it feeds, one fewer translation to keep
-    // in sync).
     [Parameter, EditorRequired] public string Direction { get; set; } = default!;
 
-    // Base testid PREFIXES -- this instance's own `IdSuffix` (below) is
-    // appended by every render site (`{prefix}-{suffix}`), the SAME
-    // disambiguation convention the retired RenderNavArrow established
-    // (a real narrative id for Narrative rows; "global" for the one
-    // Chronology row -- see EventChronologySection's own call site).
     [Parameter, EditorRequired] public string EventTestIdPrefix { get; set; } = default!;
     [Parameter, EditorRequired] public string RoleTestIdPrefix { get; set; } = default!;
     [Parameter, EditorRequired] public string IdSuffix { get; set; } = default!;
@@ -340,67 +83,13 @@ else
     [Parameter] public NarrativeAdjacentEventDto? Adjacent { get; set; }
     [Parameter, EditorRequired] public string Glyph { get; set; } = default!;
 
-    // CHRONO-MERGE-1: see this file's own header comment (the paragraph
-    // immediately above the markup) for the full "why a mode, not a
-    // second component" story. Both default false/null -- every
-    // pre-existing call site (the block-mode narrative/Chronology arrows)
-    // is unaffected without needing to pass either.
     [Parameter] public bool Inline { get; set; }
     [Parameter] public string? InlinePrefixText { get; set; }
 
-    // The SAME "a caller/provider supplies the real push, this component
-    // only ever proposes a node" contract MentionText/PericopeHeading
-    // already follow -- reused for BOTH the arrow's own commit (click) and
-    // a mention link resolved INSIDE the dwell peek's own verse text (a
-    // peek is read-only in the sense that dwelling never itself commits,
-    // but a place/person name within the peeked verse stays explorable
-    // like it is everywhere else text renders -- decision 4 never asked
-    // for THAT to be disabled, only for the ARROW's own hover to stop
-    // short of traversing).
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     private string RoleText => Direction == "prior" ? "PRIOR EVENT" : "FOLLOWING EVENT";
 
-    // ACCT-SET-MISMATCH-1 (fix round 2, owner bug report, verbatim: "when
-    // i see Jesus selects the twelve apostles after a night of prayer,
-    // MRK.3.13-19 shows below the button, but when i press it theres a
-    // parallel from LUKE. So the mapping between the passages below the
-    // button and what's actually there when you navigate doesnt work" --
-    // plus the amendment: "make sure that the verses being shown below the
-    // buttons are shown in the same order in which they appear once you
-    // traverse"). DIAGNOSIS: `Adjacent.VerseGroups` (the narrative/timeline
-    // wire shape, `to_scene_event` server-side -- the SAME derivation a
-    // map ARROW uses) is NOT guaranteed to carry every one of an event's
-    // own witnesses -- `rob_twelve_apostles` is a real, live-confirmed
-    // instance: TWO curated witnesses (LUK.6.12-16, MRK.3.13-19,
-    // data/curated/event-witnesses.toml), but the narrative endpoint's own
-    // VerseGroups carried only the Mark one. `EventWitnessesSection`'s own
-    // PARALLEL ACCOUNTS list (the landed frontier), by contrast, reads the
-    // FULL `EventDetail.Witnesses` (`GET /api/event/{id}`) -- two different
-    // derivations of "this event's own accounts," never reconciled,
-    // exactly what let the owner's own repro diverge. FIXED: eagerly (not
-    // dwell-gated -- the SAME EV-1-precedent identity guard, keyed on
-    // Adjacent?.Id, that OnParametersSetAsync below already establishes)
-    // fetches the adjacent event's own FULL EventDetail and derives refs
-    // from `.Witnesses` via `SelectRefsFromWitnesses` below -- the
-    // IDENTICAL `PassageBlockBuilder.BuildCoalescedBlock` coalescing
-    // `EventWitnessesSection` itself uses, in `Witnesses`' own SERVER
-    // ORDER (never re-sorted), so SET and ORDER both match the landed
-    // frontier by construction, not by convention. `_fetchedRefs` is null
-    // until that fetch resolves (or if it fails) -- `RefDescriptors` falls
-    // back to the narrower `Adjacent.VerseGroups`-derived `SelectRefs`
-    // during that window, upgrading to the FULL, correct set the instant
-    // the fetch lands (never a worse-than-before regression, even
-    // mid-flight).
-    //
-    // FIX ROUND 2 (N-1): both derivations below now run each group's own
-    // delivered verses through PassageBlockBuilder.BuildCoalescedBlock's
-    // gap-honest run math, so a witness (or group) with a REAL internal
-    // gap (rob_peter_denies's own MRK.14.54 + 66-72) renders the honest
-    // compound ref ("MRK.14.54, 66-72"), never the fabricated envelope
-    // ("MRK.14.54-61") the old first+Count-1 arithmetic produced -- which
-    // both CLAIMED verses belonging to a different event and DROPPED
-    // delivered ones.
     private string? _lastAdjacentId;
     private List<RefsList.RefDescriptor>? _fetchedRefs;
 
@@ -408,7 +97,7 @@ else
     {
         if (Inline || Adjacent?.Id == _lastAdjacentId)
         {
-            return; // Inline rows never render RefsList at all (this file's own header comment); an unchanged Adjacent needs no re-fetch
+            return;
         }
         var capturedId = Adjacent?.Id;
         _lastAdjacentId = capturedId;
@@ -419,27 +108,9 @@ else
         }
         try
         {
-            // Fix round 3 (review NEW-3, Low): both fetches START before
-            // either is awaited -- the house's own "independent fetches
-            // never serialize" rule (round 2 had serialized the memoized
-            // Books() behind the Event fetch: one avoidable round trip on
-            // a cold TOC, on the PERF-3 frontier path).
             var detailTask = Atlas.Event(capturedId);
             var booksTask = Atlas.Books();
             var detail = await detailTask;
-            // Fix round 2 (N-1) + round 3 (NEW-3): the canon's chapter
-            // lengths, for versification-aware coalescing (Versification's
-            // own doc comment). A Books() failure now degrades to
-            // Canon: null in ITS OWN catch -- the IDENTICAL conservative
-            // degrade WitnessUnitsResolver applies on the landed frontier
-            // -- instead of aborting to the per-group fallback, which left
-            // the refs under the arrow showing a DIFFERENT shape than the
-            // frontier (per-chapter entries vs one compound account) for
-            // as long as the TOC stayed unreachable: a permanent
-            // violation of ACCT-SET-MISMATCH-1's one-source law, in
-            // exactly the degraded condition where nobody would suspect
-            // it. Both surfaces now disagree with each other in NO canon
-            // outcome.
             Versification? canon = null;
             try
             {
@@ -447,58 +118,23 @@ else
             }
             catch (Exception)
             {
-                // conservative degrade, identical to the frontier's own
             }
             if (_lastAdjacentId != capturedId)
             {
-                return; // a NEWER Adjacent already landed while this fetch was in flight -- never overwrite its own state with a stale result
+                // a newer Adjacent may have already landed while this fetch was in flight -- never overwrite its state with a stale result
+                return;
             }
-            // Fix round 2 (N-5): an EMPTY witness list (never real --
-            // scene::witnesses_for always synthesizes >=1 server-side, but
-            // never assume a network response is well-formed, the SAME
-            // stated policy EventWitnessesSection's own guard follows) must
-            // NOT replace the fallback refs this component is already
-            // correctly showing from Adjacent.VerseGroups -- an empty
-            // _fetchedRefs would win the ?? in RefDescriptors permanently
-            // and silently DELETE the whole refs list.
+            // an empty witness list must never replace the fallback refs already showing -- it is never a real state to switch to
             _fetchedRefs = detail.Witnesses.Count > 0 ? SelectRefsFromWitnesses(detail.Witnesses, canon) : null;
             StateHasChanged();
         }
         catch (Exception)
         {
-            // fail soft -- RefDescriptors below falls back to Adjacent.VerseGroups, same graceful-degradation policy every other lazy fetch in this app follows
         }
     }
 
     private List<RefsList.RefDescriptor> RefDescriptors => _fetchedRefs ?? SelectRefs(Adjacent?.VerseGroups);
 
-    /// Pure: this event's own SET of account refs, computed FLATLY off
-    /// `Adjacent.VerseGroups` -- one <see cref="RefsList.RefDescriptor"/>
-    /// per <see cref="VerseGroup"/>, never coalesced across chapters
-    /// (`Adjacent.VerseGroups` carries no per-witness grouping to coalesce
-    /// WITHIN -- see <see cref="SelectRefsFromWitnesses"/> below for the
-    /// witness-aware, coalescing version). FIX ROUND 2 (ACCT-SET-MISMATCH-1):
-    /// demoted from the PRIMARY path to the FALLBACK -- `Adjacent.VerseGroups`
-    /// is not guaranteed to carry every one of an event's own witnesses
-    /// (this method's own doc comment used to claim "the set," which
-    /// turned out false; `RefDescriptors`'s own doc comment above has the
-    /// full diagnosis) -- used only until `OnParametersSetAsync`'s own
-    /// fetch resolves, or if it fails outright. Each descriptor's own Ref
-    /// is the group's HONEST full span -- computed from the group's own
-    /// `Count` (the server's own TRUE total for that group, HOTFIX-4),
-    /// never from `Verses[^1]` alone, so a server-capped delivery (the
-    /// 20-verse-per-chapter cap) never silently NARROWS a ref's own
-    /// identity (PERF-3's own "identity never narrows -- clamp is
-    /// visible-text truncation only" ruling, extended to a refs-only
-    /// surface that shows no text to truncate at all). Each descriptor's
-    /// own Target is a VerseNode at the group's own FIRST vref -- "where it
-    /// points," never a fabricated/empty PassageNode (this component holds
-    /// no verse TEXT to construct one honestly with; CrossRefsSection's own
-    /// ExploreAsVerse=true establishes the identical "ref identity, not
-    /// preview span" precedent for the same reason). `null`/empty groups,
-    /// or a group with an empty `Verses` list (never real, defended
-    /// against), contribute nothing. Covered directly by
-    /// client.Tests/ArrowNavTests.cs.
     public static List<RefsList.RefDescriptor> SelectRefs(IReadOnlyList<VerseGroup>? groups)
     {
         var result = new List<RefsList.RefDescriptor>();
@@ -512,14 +148,7 @@ else
             {
                 continue;
             }
-            // Fix round 2 (N-1): per-group span via the SAME gap-honest run
-            // math as everything else (BuildCoalescedBlock over a one-group
-            // unit; a single (book,chapter) group needs no Canon -- no
-            // chapter boundary can exist inside it). The old inline
-            // first+Count-1 arithmetic fabricated an envelope over any
-            // real gap in the delivered verses (see the field comment
-            // above); Count still corrects the wire-capped tail exactly as
-            // before (PERF-3, "identity never narrows").
+            // span computed via the coalesced run math, not first+Count-1 arithmetic, so a real internal gap in the delivered verses is never fabricated into a contiguous envelope
             var verses = g.Verses.Select(v => new PassageListVerse(v, "", g.Count)).ToList();
             var block = PassageBlockBuilder.BuildCoalescedBlock(new PassageSourceUnit(verses, CoalesceAcrossChapters: true));
             result.Add(new RefsList.RefDescriptor(block.Span, new VerseNode(block.FirstVref)));
@@ -527,31 +156,11 @@ else
         return result;
     }
 
-    /// ACCT-SET-MISMATCH-1: the CORRECT, witness-aware refs derivation --
-    /// one <see cref="RefsList.RefDescriptor"/> PER WITNESS (never per
-    /// VerseGroup -- a witness spanning multiple chapters coalesces into
-    /// ONE ref, the IDENTICAL <see cref="PassageBlockBuilder.BuildCoalescedBlock"/>
-    /// logic <c>WitnessUnitsResolver</c> uses for the landed frontier's own
-    /// PARALLEL ACCOUNTS list, ACCT-COALESCE-1), in `witnesses`' own
-    /// SERVER ORDER (never re-sorted) -- so the SET and the ORDER shown
-    /// under a prior/following button are, by construction, the SAME ones
-    /// the landed frontier will show, never two independently-derived
-    /// opinions that could silently diverge. No verse TEXT is resolved
-    /// here (`PassageListVerse`'s own `Text` stays empty) -- this method
-    /// exists purely for the SPAN, matching this whole component's own
-    /// "no verse contents under prior/following" law (EVENT-ACCOUNTS-1).
-    /// A witness with zero verses (never real, defended against) is
-    /// skipped. <paramref name="canon"/> (fix round 2, N-1) is the
-    /// chapter-length lookup versification-aware coalescing needs -- null
-    /// degrades conservatively (no chapter boundary ever joins), same as
-    /// the frontier's own resolver.
     public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitnessDto> witnesses, Versification? canon)
     {
         var result = new List<RefsList.RefDescriptor>();
         foreach (var w in witnesses)
         {
-            // N-6: the ONE shared flattening (see FlattenWitness's own doc
-            // comment) -- never a second, drift-prone copy of it here.
             var verses = PassageBlockBuilder.FlattenWitness(w);
             if (verses.Count == 0)
             {
@@ -563,14 +172,6 @@ else
         return result;
     }
 
-    // CHRONO-MERGE-1: the ONE thing that actually differs about the
-    // wrapper element between the two modes -- Inline drops the block
-    // grid's own 47%-capped, direction-suffixed column class in favor of
-    // a plain relatively-positioned inline-block (app.css's own
-    // .popover-story-thread-leg-wrap), just enough to anchor the SAME
-    // .popover-arrow-peek below it (position:relative is all the peek's
-    // own absolute positioning ever needed from this wrapper, block or
-    // inline alike).
     private string WrapperClass => Inline ? "popover-story-thread-leg-wrap" : $"popover-event-nav-side popover-event-nav-side-{Direction}";
 
     private Task Commit()
@@ -580,125 +181,41 @@ else
             return Task.CompletedTask;
         }
 
-        // CHAP-HOVER-1's own "a click always supersedes any peek still
-        // showing/mid-dwell -- never both at once" law, mirrored here: in
-        // the ordinary case this instance is about to be disposed anyway
-        // (the popover re-resolves its sections for the newly-pushed
-        // node), which would cancel these same timers via Dispose below,
-        // but there is no reason to leave a stale peek/timer alive for
-        // even one extra render on the way there.
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        // PERI-1 fix round 1 (S-1a/Q-1a): the literal "event" is a
-        // STRUCTURAL fact here, not a guess -- Adjacent is a
-        // NarrativeAdjacentEventDto, which carries no Kind field at all,
-        // but this component only ever renders for a PRIOR/FOLLOWING
-        // narrative/timeline position (EventChronologySection's own
-        // "general-kind or unknown event -- NOT part of time traversal"
-        // rule, PopoverSectionProviders.cs), so every Adjacent this class
-        // ever resolves is, by construction, kind=="event". See
-        // EventNode.cs's own _knownKind doc comment.
+        // Adjacent is always a narrative/timeline event by construction here (NarrativeAdjacentEventDto carries no Kind field) -- not a guessed literal
         return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, "event"));
     }
 
-    // TITLE-WRAP-1 (owner report, 2026-08-24, verbatim: "i don't like that
-    // arrow titles are getting cut off with elipses... we need to find a
-    // way to have a nice presentation while showing a relatively full
-    // title."): a character-count threshold, not a JS-measured pixel
-    // check -- this is a cosmetic layout decision, not something worth a
-    // round trip for. Measured against the real curated event-label corpus
-    // (data/curated/events-extra.toml, 265 labels): median length 39,
-    // only ~9% are <=24 characters, so 24 is picked as "reliably fits the
-    // button's own ~200px column on one line at standard size" -- the
-    // overwhelming majority of real names DO wrap, which matches the
-    // owner's own complaint (routine, not rare, truncation). The two-line
-    // clamp at the smaller size (app.css's own
-    // .popover-event-nav-label-long) comfortably holds labels up to
-    // ~60-65 characters at that size; only the longest ~4% of the same
-    // corpus would ever reach its own ellipsis-past-two-lines backstop.
     private const int LongLabelThreshold = 24;
     private bool LabelIsLong => Adjacent is not null && Adjacent.Label.Length > LongLabelThreshold;
 
     private bool _showPeek;
     private List<PassageListVerse> _peekVerses = new();
 
-    // F2 fix round -- how many MORE verses the server's own true count
-    // says exist beyond what actually resolved into _peekVerses (the
-    // server's own 20-verse-per-chapter cap, HOTFIX-4), computed once per
-    // dwell session by ComputeTruncatedBy below. 0 (the overwhelming
-    // majority of real events) renders nothing extra; >0 renders the
-    // honest disclosure paragraph in the markup above.
     private int _peekTruncatedBy;
 
-    // PEEK-TRUNC-1: RevealControls' own two-way-bound Shown state -- the
-    // ONE-verse floor is Default="1" below (the markup), never re-derived
-    // here; this field is purely "how many of _peekVerses are currently
-    // revealed," reset to the floor every time a FRESH peek opens (never
-    // remembers a prior session's own expansion -- HidePeekState below).
     private int _peekShown = 1;
 
     private CancellationTokenSource? _dwellCts;
 
-    // PEEK-TRUNC-1 corridor -- see this file's own header comment for the
-    // full "why a grace period, why 1000ms" story.
     private CancellationTokenSource? _dismissCts;
+    // grace period before hiding the peek: the browser fires a spurious pointerleave+enter pair while the pointer crosses the small visual gap between the arrow and the peek box
     private const int PeekDismissGraceMs = 1000;
 
-    // PEEK-TRUNC-1 placement -- see this file's own header comment.
-    // _peekMeasured guards OnAfterRenderAsync's own measurement to ONCE
-    // per peek OPEN (reset alongside _showPeek itself, both in
-    // DwellThenPeek -- a fresh open -- and HidePeekState -- a dismiss, so
-    // the NEXT open always re-measures rather than reusing a stale rect
-    // from wherever the page happened to be scrolled to last time).
     private ElementReference _sideRef;
     private bool _peekMeasured;
     private bool _peekFlipAbove;
     private double? _peekMaxHeightPx;
 
-    // Breathing room between the peek's own far edge and the CLIPPING
-    // boundary -- F1 fix round (reviewer live-repro): that boundary is the
-    // enclosing `.popover`'s own edge, never the viewport (see
-    // reader.js's own getElementRect doc comment for the full "why" --
-    // .popover is routinely shorter than the viewport, vertically
-    // centered with its own max-height:calc(100vh - 4rem), so budgeting
-    // against window.innerHeight silently OVER-estimates real room and
-    // lets an expanded peek spill past the popover's own bottom edge with
-    // its internal scrollbar never engaging). Deliberately a little more
-    // generous than the CSS .4rem (6.4px) gap between the wrapper and the
-    // peek itself (app.css), so this estimate errs toward a SLIGHTLY
-    // smaller max-height than the theoretical maximum rather than risking
-    // a hairline clip; the only visible cost of erring small is that the
-    // internal scroll (app.css's own overflow-y:auto) engages a few px
-    // sooner than strictly necessary, never an actual overflow.
     private const double PeekMarginPx = 12;
 
     private string? PeekStyle => _peekMaxHeightPx is double h
         ? $"--peek-max-height:{h.ToString(CultureInfo.InvariantCulture)}px;"
         : null;
 
-    // PEEK-TRUNC-1 fix round -- a real, live-caught bug (reproduced and
-    // root-caused via an isolated repro, not guessed; reader.js's own
-    // isPointInsideEither has the full mechanism writeup): clicking
-    // RevealControls' own `less` can remove the EXACT element the pointer
-    // is resting on (Shown returns to Default, `less` itself -- and,
-    // moving back under Step, one or more verses -- disappear in the same
-    // render). That breaks the BROWSER's own pointerenter/pointerleave
-    // transition tracking for this component's wrapper: the next genuine
-    // departure silently never fires OnPointerLeave at all, leaving the
-    // peek stuck open. _pointerDownX/Y capture WHERE the pointer was for
-    // whatever gesture is currently in flight; _recentPointerDown gates
-    // OnPeekShownChanged's own re-verification to ONLY a genuine, JUST-
-    // happened MOUSE interaction (a keyboard activation -- Enter/Space on
-    // a focused reveal-control button -- dispatches no pointer event at
-    // all, so this never fires for one) -- "keyboard/commit paths
-    // unaffected" extends to this fallback too, not only the ordinary
-    // dwell/commit paths decision 3 already names; without this gate, a
-    // keyboard user's own unrelated, stationary mouse position could
-    // wrongly read as "moved away" and schedule a dismiss out from under
-    // them. Consumed exactly once per pointerdown (reset immediately in
-    // OnPeekShownChanged) so a LATER, unrelated render is never
-    // re-checked against a stale position.
+    // clicking RevealControls' own "less" can remove the element the pointer is resting on, which breaks the browser's pointerenter/pointerleave tracking for this wrapper; these fields re-verify pointer position after such a change before scheduling a dismiss
     private double? _pointerDownX;
     private double? _pointerDownY;
     private bool _recentPointerDown;
@@ -710,15 +227,6 @@ else
         _recentPointerDown = true;
     }
 
-    // RevealControls' own ShownChanged target -- see this property's
-    // sibling fields immediately above for the full "why re-verify at
-    // all" story. Never dismisses immediately on its own finding: a
-    // content-shrink landing the STATIONARY pointer just outside the
-    // peek's own new, smaller bounds schedules the SAME ordinary grace-
-    // period dismiss a real pointerleave would (ScheduleDismiss, not
-    // HidePeekState directly) -- reads to the user as "you moved away,"
-    // never an abrupt snap-shut the instant their own click happens to
-    // shrink the box out from under a pointer that never actually moved.
     private async Task OnPeekShownChanged(int shown)
     {
         _peekShown = shown;
@@ -727,7 +235,7 @@ else
         {
             return;
         }
-        _recentPointerDown = false; // consumed -- see the field's own doc comment
+        _recentPointerDown = false;
 
         try
         {
@@ -740,26 +248,12 @@ else
         }
         catch (Exception)
         {
-            // Nicety, not load-bearing -- same graceful-degradation stance
-            // every other measurement in this component already takes.
         }
     }
 
     private void OnPointerEnter()
     {
-        // HOVER-KILL-1 (fix round 2, owner verbatim: "get rid of the box
-        // that comes up when hovering over prior/following event
-        // buttons"): an OWNER REVERSAL of UX-1's own hover-preview, scoped
-        // to BLOCK-mode arrows ONLY -- "these buttons" names the Chronology
-        // block's own PRIOR/FOLLOWING buttons, not the story-thread line's
-        // own Inline legs (a different surface, per the coordinator's own
-        // "don't rip the mechanism out of other surfaces that use it"
-        // instruction; PEEK-1/CHRONO-MERGE-1's own test, unchanged, keeps
-        // proving Inline's peek still works). The dwell/peek MACHINERY
-        // itself (DwellThenPeek, ScheduleDismiss, the whole
-        // PEEK-TRUNC-1 corridor) is left completely intact below -- only
-        // its OWN block-mode entry point is gated off here, never called
-        // for `!Inline`.
+        // the hover/dwell peek is Inline-only; block-mode prior/following arrows had it removed at the owner's request
         if (!Inline)
         {
             return;
@@ -767,17 +261,13 @@ else
 
         if (Adjacent is null)
         {
-            return; // the empty-placeholder side (this narrative/direction has no neighbor) -- nothing to peek at
+            return;
         }
 
-        // Corridor: re-entering the wrapper -- which fires for the arrow
-        // itself, the peek box (a DOM descendant, see this file's own
-        // header comment), or the transit gap's own leave+enter blip alike
-        // -- always cancels any pending grace-close first.
         CancelDismiss();
         if (_showPeek)
         {
-            return; // already showing -- nothing else to (re-)start
+            return;
         }
 
         CancelDwell();
@@ -790,11 +280,11 @@ else
     {
         if (_showPeek)
         {
-            ScheduleDismiss(); // PEEK-TRUNC-1 corridor -- give a real transit into the box a moment to land before hiding it
+            ScheduleDismiss();
             return;
         }
 
-        CancelDwell(); // still just mid-dwell, never shown yet -- PEEK-1's own "quick pass-over -> nothing" law, unchanged, no grace needed here
+        CancelDwell();
     }
 
     private void CancelDwell()
@@ -811,7 +301,7 @@ else
         }
         catch (TaskCanceledException)
         {
-            return; // left before the dwell delay elapsed -- exactly "quick pass-over -> nothing"
+            return;
         }
 
         if (cts.IsCancellationRequested || Adjacent is null)
@@ -825,17 +315,17 @@ else
         }
         catch (Exception)
         {
-            _peekVerses = new List<PassageListVerse>(); // fail soft -- same graceful-degradation policy every other lazy fetch in this app follows
+            _peekVerses = new List<PassageListVerse>();
         }
 
         if (cts.IsCancellationRequested)
         {
-            return; // the pointer left WHILE the verse text was in flight -- never flip a dismissed peek back on
+            return;
         }
 
-        _peekShown = 1; // PEEK-TRUNC-1: every fresh peek starts back at the one-verse floor
-        _peekTruncatedBy = ComputeTruncatedBy(_peekVerses); // F2 fix round -- see that method's own doc comment
-        _peekMeasured = false; // a fresh measurement for THIS open -- see OnAfterRenderAsync
+        _peekShown = 1;
+        _peekTruncatedBy = ComputeTruncatedBy(_peekVerses);
+        _peekMeasured = false;
         _showPeek = true;
         StateHasChanged();
     }
@@ -862,7 +352,7 @@ else
         }
         catch (TaskCanceledException)
         {
-            return; // re-entered (arrow or box) before the grace period elapsed -- CancelDismiss already ran
+            return;
         }
 
         if (cts.IsCancellationRequested)
@@ -874,11 +364,6 @@ else
         StateHasChanged();
     }
 
-    // EVENT-HOVER-HATCH-1: the escape hatch's own click target -- an
-    // ordinary Blazor event handler (Blazor auto-re-renders the component
-    // whose bound event fired, same as OnWrapperPointerDown above; no
-    // explicit StateHasChanged needed here, unlike DelayedDismiss's own
-    // Task.Delay continuation which runs OUTSIDE that render cycle).
     private void ClosePeek()
     {
         CancelDwell();
@@ -886,9 +371,6 @@ else
         HidePeekState();
     }
 
-    // EVENT-HOVER-HATCH-1: Escape closes the peek from the keyboard too --
-    // fires on this div (keydown bubbles here from any focused descendant,
-    // the close button included).
     private void OnPeekKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Escape")
@@ -905,30 +387,9 @@ else
         _peekMeasured = false;
         _peekFlipAbove = false;
         _peekMaxHeightPx = null;
-        _recentPointerDown = false; // a fresh peek session never re-verifies against a pointerdown from a PRIOR one
+        _recentPointerDown = false;
     }
 
-    // PEEK-TRUNC-1 placement -- see this file's own header comment for the
-    // full "why getElementRect, why once per open" story. Runs after EVERY
-    // render (ordinary Blazor lifecycle), but the _peekMeasured guard makes
-    // it a real no-op except for the one render immediately after a fresh
-    // peek opens.
-    //
-    // F1 fix round (reviewer live-repro, real bug -- default one-verse peek
-    // was fine, but clicking `all` on a many-verse peek spilled the peek
-    // ~269px past the enclosing .popover's own bottom edge, its internal
-    // scrollbar never engaging because its budget had come from
-    // window.innerHeight instead): spaceBelow/spaceAbove now budget
-    // against r.PopoverBottom/r.PopoverTop (reader.js's own getElementRect,
-    // measured off the .popover ancestor -- see that function's own doc
-    // comment for why THAT, not the viewport, is the real clipping
-    // boundary), never r.ViewportHeight. Both the FLIP decision and the
-    // max-height budget read off the SAME corrected boundary, so a
-    // subsequently-expanded peek (more/all clicked after the initial
-    // flip/cap decision already landed) still fits: max-height is set to
-    // the FULL room available on the chosen side up front, not derived
-    // from the one-verse default's own smaller natural height, so
-    // expanding never needs a second measurement.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_showPeek || _peekMeasured || Adjacent is null)
@@ -941,13 +402,9 @@ else
         {
             var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
             var rect = await readerJs.InvokeAsync<ElementRectDto?>("getElementRect", _sideRef);
-            // Re-check _showPeek -- the pointer may already have left (and
-            // HidePeekState already run, see ScheduleDismiss/CancelDismiss
-            // above) while this measurement was in flight; never flip a
-            // dismissed peek back on just because a stale measurement
-            // landed late.
             if (rect is { } r && _showPeek)
             {
+                // budget against the enclosing .popover's own edges, not the viewport: .popover is routinely shorter than the viewport (its own max-height), so budgeting off the viewport would let an expanded peek spill past the popover's bottom edge
                 var spaceBelow = r.PopoverBottom - (r.Top + r.Height) - PeekMarginPx;
                 var spaceAbove = r.Top - r.PopoverTop - PeekMarginPx;
                 _peekFlipAbove = spaceBelow < spaceAbove;
@@ -957,38 +414,9 @@ else
         }
         catch (Exception)
         {
-            // Positioning is a nicety, not load-bearing -- same graceful-
-            // degradation stance ExplorerPopover's own verse/pane rect
-            // measurement takes (see that file's own comment): a failed
-            // measurement just leaves the peek at its default below/
-            // unbounded rendering for that one instant instead of flipping
-            // or capping it.
         }
     }
 
-    // F2 fix round (reviewer finding: the server's own 20-verse-per-chapter
-    // cap -- HOTFIX-4's GroupCount field, already flowing through every
-    // _peekVerses entry via VerseTextResolver.ResolveGroupsAsync, just
-    // never READ here -- was silently dropped once the peek stopped
-    // rendering through PassageList/PassageBlockBuilder, which is the ONLY
-    // other place in this app that turns GroupCount into an honest
-    // disclosure). Mirrors PassageBlockBuilder's OWN computation
-    // (Explore/PassageBlock.cs: "find, per distinct (book,chapter)
-    // GroupCount actually present... the block reaching that group's own
-    // HIGHEST verse number"), applied FLATLY here since the peek has no
-    // block grouping of its own to hang a per-block TruncatedBy off --
-    // for each distinct (book,chapter) origin actually represented among
-    // _peekVerses, the server's own true count (GroupCount -- identical on
-    // every verse from that one group, VerseTextResolver's own doc comment
-    // has the full "attached from whichever VerseGroup it came from"
-    // story) minus how many of that group's own verses actually made it
-    // into this list is real, permanently missing text this peek can never
-    // reveal via more/all -- the WIRE itself never sent it
-    // (scene::verse_groups_for's own take(20) truncates server-side,
-    // before this component ever asks). Summed across every distinct
-    // group actually present, in case an event's own verse groups ever
-    // span more than one chapter (rare, but this must stay honest either
-    // way, not just for the single-group common case).
     private static int ComputeTruncatedBy(IReadOnlyList<PassageListVerse> verses)
     {
         var byGroup = new Dictionary<(string Book, int Chapter), (int Delivered, int? TrueCount)>();
@@ -1011,32 +439,8 @@ else
         return missing;
     }
 
-    // Mirrors ExplorerPopover's own VerseAnchorRectDto/PaneRectDto -- a
-    // small, file-scoped, PRIVATE DTO per consumer rather than a shared
-    // type, the same "these overlap but stay separate" call SplitDivider's
-    // own PaneRectDto already makes (see that file's own comment) for the
-    // identical reasoning: nothing outside this file needs this shape, and
-    // a shared type would only couple two otherwise-independent
-    // measurement call sites for no real benefit.
-    //
-    // F1 fix round: PopoverTop/PopoverBottom replace the original
-    // ViewportWidth/ViewportHeight -- see reader.js's own getElementRect
-    // doc comment for why the enclosing .popover, not the viewport, is
-    // this box's real clipping boundary. ViewportWidth was never actually
-    // read anywhere in this file (this peek is left/right-anchored by CSS
-    // off the arrow's own side, never viewport-centered, unlike
-    // ExplorerPopover's own verse-anchoring) -- dropped rather than kept
-    // unused.
     private sealed record ElementRectDto(double Left, double Top, double Width, double Height, double PopoverTop, double PopoverBottom);
 
-    // F3 fix round (reviewer, verified harmless today, fixed for symmetry
-    // anyway): Commit() already calls HidePeekState() before tearing down
-    // via navigation; Dispose() -- the OTHER path this component's own
-    // state can end on (the popover re-resolving its sections for a
-    // DIFFERENT reason, e.g. a mention click elsewhere pushing a new node)
-    // -- now does too, so every disposal path leaves this instance's own
-    // fields in the identical, fully-reset shape, not just its two
-    // cancellation tokens.
     public void Dispose()
     {
         CancelDwell();

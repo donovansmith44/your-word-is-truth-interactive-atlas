@@ -16,25 +16,16 @@
 
 <PageTitle>Bible Explorer &mdash; World</PageTitle>
 
-@* D2: the map hosts too (world‖world) -- through the same CompositionSplit
-   every other host renders through; standalone and guest are unchanged. *@
 <CompositionSplit HostName="@ViewNames.World" SplitModeOverride="@(SplitMode ? true : (bool?)null)" HostPaneClass="split-pane-world" Context="ctx">
 <div class="@($"world-frame{(ctx.IsSplitOpen && ctx.IsHost ? " split-pane-frame" : "")}")" data-testid="world-frame">
 <div class="world-page @(SplitMode ? "split-pane-atlas" : null)" data-testid="@(SplitMode ? "split-pane-atlas" : null)">
     <div id="world-map" class="world-map" data-testid="world-map" @ref="_mapEl"></div>
 
-    @* Batch H: the split affordances -- mutually exclusive by construction
-       (SplitMode is only ever true for the pane a HOST already embedded, so
-       "open" and "close/follow" never both apply to the same instance).
-       !SplitMode (standalone /world, unchanged today) gets the "Read beside
-       the map" affordance; SplitMode (embedded guest) gets the follow chip
-       and its own close button instead -- see their own comments below. *@
     @if (!SplitMode && !ctx.IsSplitOpen)
     {
         <button type="button" class="split-open split-open-dusk" data-testid="split-open-world" @onclick="InvokeEnterSplitHatch">
             Read beside the map
         </button>
-        @* D2: the guest menu -- the reader (default, unchanged) or another map. *@
         @if (ctx.Partners.Count > 1)
         {
             <button type="button" class="split-open split-open-dusk split-open-menu-toggle" data-testid="enter-split-menu-toggle"
@@ -57,20 +48,9 @@
     }
     else
     {
-        @* A shared positioning wrapper -- not just the two buttons placed
-           independently -- because their combined width depends on
-           FollowRef's own text ("Following GEN.12" vs "Following EXO.3"),
-           which a fixed pixel offset for the second button can't account
-           for; the flex wrapper lays them out naturally instead. *@
         <div class="split-atlas-controls" data-testid="split-atlas-controls">
             <button type="button" class="follow-chip" data-testid="follow-chip"
                     aria-pressed="@(_followAny ? "true" : "false")" @onclick="OnAnyFollowClick">
-                @* Batch ST-1: reads the shared Locus atom's own Ref (via
-                   _locus, the same Projection<Locus> the picker mount below
-                   renders from) instead of the retired FollowRef parameter --
-                   see this file's own top-of-code-block comment. Locus
-                   always has a value (Locus.Default, never null), so the
-                   old "FollowRef is not null" guard is gone with it. *@
                 @(_sameViewSplit ? (_paneFollow ? "Sharing the time window" : "Share the time window") : (_follow ? $"Following {_locus.Value.Ref}" : "Follow the text"))
             </button>
             <button type="button" class="split-close split-close-dusk" data-testid="split-close-atlas"
@@ -80,32 +60,10 @@
         </div>
     }
 
-    @* Batch ST-1 (SYNC-1 fix): this mount used to pass NO CurrentBook/
-       CurrentChapter at all -- SYNC-1's own root mechanism ("the world-side
-       box structurally cannot track the followed locus"). Now renders FROM
-       the SAME Locus projection Reader.razor's own mount uses (_locus,
-       wrapping the shared, DI-injected LocusAtom) -- both boxes are
-       projections of the ONE atom, so they cannot disagree about what it
-       currently holds. This is the ONE user-visible change this batch
-       permits/requires: the world-side picker shows the current chapter and
-       stays in sync, standalone or split alike (Locus is a single
-       app-lifetime singleton, not split-scoped). Apply's own behavior
-       (jump the ATLAS to a ref) is UNCHANGED -- see ApplyScriptureRef's own
-       doc comment for why it deliberately does NOT dispatch SetLocus.
-
-       Fix round 1 (review finding S-1, CRITICAL): SyncToken -- see that
-       parameter's own doc comment (ScripturePicker.razor) and
-       _pickerSyncToken's own comment below -- closes the gap where a
-       follow OFF->ON cycle left this picker showing a stale applied ref
-       even though CurrentBook/CurrentChapter never changed. *@
-    @* D1 LAW (owner, 2026-09-15, verbatim: "if we're following scripture on
-       the map, there is not an additional place to select scripture (the box
-       at the top right) on the map side of the screen"): while the atlas
-       FOLLOWS the reader there is ONE scripture selector on screen -- the
-       reader's. The picker returns the moment follow is released. Same
-       predicate as the mode-chip guard below; a source-scan law in
-       client.Tests (ConformanceTests.OneScriptureSelectorLaw_...) fails if
-       any non-Reader page ever mounts a picker without such a guard. *@
+    @* One scripture selector while following the reader -- this picker
+       returns once follow is released. Keep this condition shaped as
+       `!(SplitMode && ...)`: a client.Tests source scan requires that
+       exact form on any non-Reader page. *@
     @if (!(SplitMode && _followAny))
     {
         <ScripturePicker OnApply="ApplyScriptureRef" ThemeClass="picker-dusk"
@@ -130,9 +88,6 @@
                    OnGoToPlace="GoToAdjacent" OnClosePin="ClosePinnedCard" />
     }
 
-    @* Batch C3 decision 2: mutually exclusive with PlaceCard above --
-       OnPlaceHover clears _chooserPlaces, OnPlaceHoverAmbiguous clears
-       _hoverPlace, so at most one of the two @if blocks ever renders. *@
     @{ var chooserPlaces = _chooserPlaces; }
     @if (chooserPlaces is not null)
     {
@@ -155,14 +110,6 @@
                     Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" OnWindowDrag="HandleWindowDrag" />
     }
 
-    @* Batch H: suppressed while following -- the follow-chip above is
-       already the ONE control for "you're locked to the reader's chapter,
-       click to stop" in that state; showing mode-chip's OWN "Return to
-       time" alongside it would be a second, redundant way to do the exact
-       same thing. Not suppressed when SplitMode but NOT following (a
-       manually-applied ref while free-browsing the pane) -- there the two
-       chips say genuinely different things (which ref you're viewing vs.
-       whether you're following) and both stay useful. *@
     @if (_scriptureRef is not null && !(SplitMode && _followAny))
     {
         <div class="mode-chip" data-testid="mode-chip">
@@ -189,21 +136,6 @@
 </div>
 </CompositionSplit>
 
-@* Rendered as a SIBLING of .world-page, not nested inside it -- same
-   placement Reader.razor already uses for its own ExplorerPopover (see that
-   file's own header comment on why: keydown/keyup bubbling to one shared
-   handler pair, and a position:fixed backdrop/panel that must reach the
-   full viewport). Historically ALSO load-bearing for a second reason now
-   retired: a mini-map (Task 15's <MiniWorld>, reachable via WORLD-8's
-   place-history flow into a VerseNode's own map chip) was meant to stay a
-   "daylight" figure regardless of which page opened it -- nesting the
-   popover inside .world-page would have made its embedded Leaflet tile pane
-   a DOM descendant of ".world-page .leaflet-tile-pane", picking up the dusk
-   page's own sepia warmth filter by CSS accident. O1 (2026-08-23) retired
-   that mini-map entirely (MiniWorld.razor gone with it -- see
-   ExplorerPopover.razor's own header comment), so this placement is kept
-   for the FIRST reason alone now, not reverted -- it is correct on its own
-   terms regardless. *@
 @if (_activeNode is not null)
 {
     <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
@@ -211,37 +143,6 @@
 }
 
 @code {
-    // No window specified at all (bare "/world"): Batch C / CONTRACT
-    // amendment (design-direction.md + user feedback 2026-08-19) -- default
-    // to a Gospel-era window, replacing the old full-span default. The full
-    // 10-era timeline lights up to 167 places at once (see
-    // tests/ux/playwright.config.ts's own WORLD-1 timing comment) -- an
-    // overwhelming first screen, and exactly what the zoom-tiered label
-    // density (map.js) exists to soften but shouldn't have to paper over on
-    // the very first paint. Gospels is a small, richly-narrated, broadly-
-    // recognizable window -- a focused start rather than an arbitrary
-    // slice. Deep links with an explicit ?from=&to=/?ref= are completely
-    // untouched by this (SyncFromQuery only ever reads these two constants
-    // when BOTH FromQuery and ToQuery are absent), so this is purely a
-    // "what a bare /world shows" change.
-    //
-    // FIX ROUND 1 CORRECTION (review finding I-1): DefaultTo was 29,
-    // originally chosen to match data/curated/eras.toml's own "gospels"
-    // era EXACTLY ([-5, 29]) -- calibrated to the OLD, mixed Theographic/
-    // AD-33 dating scale. Now that HOTFIX-4's own nt_calibration reconciles
-    // every surviving Theographic-scale NT event onto the single AD-33
-    // Passion anchor, the Gospel narrative's own real end (the Ascension,
-    // pw_mount_of_olives) is year 33, not 29 -- a default window ending at
-    // 29 silently excluded the entire Passion Week/Resurrection/Ascension
-    // from the very first screen a visitor sees, which is also why Sidon
-    // (anchored, post-calibration, only by rob_syrophoenician_woman at year
-    // 32 -- inside [-5, 29] only by coincidence before this fix, and by
-    // design now) went dark under a merge that moved its own anchor's year.
-    // Extended to 33 -- the real, calibrated Gospel-era end -- not
-    // re-coupled to eras.toml's own "gospels" preset (unconsumed by any
-    // client UI today, verified; decoupling here avoids widening this
-    // fix's own blast radius into a file/concept this fix round did not
-    // audit for other consumers).
     private const int DefaultFrom = -5;
     private const int DefaultTo = 33;
 
@@ -253,51 +154,18 @@
     [Parameter]
     public string? ToQuery { get; set; }
 
-    // Scripture mode (Task 13, WORLD-6/NAV-1). Non-null exactly when a
-    // scripture ref -- not a time window -- is driving the scene; every
-    // other piece of mode state (TimeSlider's Disabled, mode-chip's render,
-    // which fetch SyncFromQuery kicks below) branches on this one field.
     [SupplyParameterFromQuery(Name = "ref")]
     [Parameter]
     public string? RefQuery { get; set; }
 
-    // EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
-    // one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds
-    // instance (fix round 2, Q-1/N-3) -- Explore/MapFocusHatch.cs's
-    // own doc comment has both the full "why an additive query param, not
-    // a new ExplorationTarget case" story and the genuine-conflict
-    // reasoning for why it is not formalized): non-null exactly when this /world
-    // visit (standalone OR the split-pane ApplyExternalQuery hand-off
-    // below) carries a place id to focus, alongside the time window --
-    // read once, in SyncFromQuery/ApplyExternalQuery, and threaded through
-    // EnterTimeMode/DebouncedLoadScene's own optional `focusPlaceId`
-    // parameter to pan the camera AFTER the window's own scene loads
-    // (that scene already carries the place's real Lat/Lon -- no second
-    // fetch).
     [SupplyParameterFromQuery(Name = "place")]
     [Parameter]
     public string? PlaceQuery { get; set; }
 
-    // Batch H (split-view study): true exactly when this instance is the
-    // embedded ATLAS PANE of a split (always hosted by Reader.razor, per
-    // this batch's own design -- see the report's layout section for why
-    // Reader is always the split's host/orchestrator, never World). Gates
-    // every split-specific behavior below: the follow chip/close button
-    // (markup), which half of OnParametersSetAsync runs (query-string
-    // SyncFromQuery vs. FollowRef-reactive SyncFollowRef), and the
-    // ApplyScriptureRef/HandleWindowChange/ReturnToTime SplitMode branches
-    // (the pane's host URL never carries ref=/from=/to= at all). Standalone
-    // /world never sets this -- every behavior it gates is unreachable
-    // there, so standalone behavior is untouched byte-for-byte.
     [Parameter] public bool SplitMode { get; set; }
 
-    /// <summary>D2: which pane this map renders in (cascaded by CompositionSplit to its guest; Host otherwise).</summary>
     [CascadingParameter] public PaneId Pane { get; set; } = PaneId.Host;
 
-    // D2 (R-D2-1): both atoms resolved ONCE per instance through the pane --
-    // the DI singletons for the host and the reader‖world guest (World's own
-    // FollowTextLink keeps reading the shared locus exactly as before), a
-    // private pair for the guest of a world‖world split.
     private StateAtom<Locus>? _locusAtomBacking2;
     private StateAtom<Locus> LocusAtom => _locusAtomBacking2 ??= Panes.For(Pane).Locus;
     private StateAtom<TimeWindow>? _timeWindowAtomBacking;
@@ -305,13 +173,10 @@
 
     private bool _splitMenuOpen;
 
-    /// <summary>D2: this map is one of two maps (world‖world).</summary>
-    private bool _sameViewSplit => PaneScopes.IsSameViewSplit(ViewArrangementAtom.Value); // a map only ever sits in a same-view split of maps
+    private bool _sameViewSplit => PaneScopes.IsSameViewSplit(ViewArrangementAtom.Value);
 
-    /// <summary>D2: the two maps share the time window (host -> guest mirror, PaneScopes.Link).</summary>
     private bool _paneFollow => _sameViewSplit && ViewArrangementAtom.Value.Follow;
 
-    /// <summary>The ONE-SELECTOR LAW's guard reads this: following the text OR the other map.</summary>
     private bool _followAny => _follow || _paneFollow;
 
     private Task OnAnyFollowClick() => _sameViewSplit ? OnTogglePaneFollowClick() : OnToggleFollowClick();
@@ -325,33 +190,8 @@
     private Task InvokeEnterSplitHatchWith(string guest) =>
         Registry.Get(ViewNames.World).EscapeHatches.OfType<EnterSplitHatch>().First().InvokeWith(guest);
 
-    // Batch ST-1: the FollowRef PARAMETER ("GEN.12", fed down by Reader.razor
-    // on every _book/_chapterNum change) is RETIRED -- this was SYNC-1's own
-    // "own copy #2" (see the batch report's divergent-copy retirement
-    // table). World now reads the reader's current chapter straight off the
-    // shared Locus atom (_locus below, LocusAtom injected), which needs no
-    // parameter at all: a DI singleton is already the SAME instance on both
-    // pages, always current, with no propagation-order/staleness window a
-    // parameter chain has. See OnLocusChanged/_followLink/_followRunner
-    // below for the mechanism that replaces SyncFollowRef.
-
-    // Batch H: the atlas pane's own close button (data-testid
-    // split-close-atlas) invokes this -- Reader.razor wires it to set its
-    // own _splitOpen = false, returning to "full reader" per the brief.
-    // World itself has no notion of what closing even means beyond "tell
-    // whoever embedded me."
     [Parameter] public EventCallback OnRequestClose { get; set; }
 
-    // Batch VC-1: the generalized "no nested-popup rule" plumbing (see
-    // ViewRegistry.cs's own ViewMountContext header) -- while SplitMode, this
-    // instance hands its OWN ApplyExternalQuery straight to whichever
-    // CompositionSplit mounted it (fix round 2, N-6 doc rot: this used to
-    // name the retired CompositionHost), so a popover chip on the HOST side
-    // (e.g. Reader's own) can route into this ALREADY-EMBEDDED pane. Not
-    // invoked at all for a standalone /world mount (CompositionSplit never
-    // sets it there -- see World's own ViewRegistrySetup mount closure,
-    // which passes it unconditionally, harmlessly unused when SplitMode is
-    // false since nothing calls it).
     [Parameter] public Action<Func<string, Task>>? RegisterQueryHandler { get; set; }
 
     private List<EraDto>? _eras;
@@ -359,62 +199,17 @@
     private string? _errorMessage;
     private string? _scriptureRef;
 
-    // Atlas plate detail (design-direction.md, ADDED PER USER FEEDBACK
-    // 2026-08-18; data model replaced by Batch B2's own per-polity
-    // timerange borders): the last successfully-fetched polity list and
-    // the curated landmark list (fetched once in OnInitializedAsync,
-    // pushed to the map once it exists). Both stay null until their first
-    // successful fetch and are never reset to null afterward -- a later
-    // failed refetch just leaves the prior (still-honest, if slightly
-    // stale) value in place, same "last good state stays" philosophy the
-    // toast already uses for _scene.
     private PolitiesOut? _polities;
     private List<LandmarkDto>? _landmarks;
 
-    // Guards PushLandmarksIfReady below against double-pushing -- unlike
-    // _scene/_polities (each refetched on every window change, with their
-    // own natural "only apply if this fetch is still current" logic),
-    // landmarks are fetched exactly ONCE, so the race between "the fetch
-    // resolves" and "the map gets created" needs an explicit once-only
-    // flag instead of reusing that machinery.
     private bool _landmarksPushed;
 
-    // Batch R requirement 1 ("borders become part of the plate"): the
-    // curated land mask, fetched once (like _landmarks above) and pushed to
-    // the map exactly once -- same "whichever of the fetch or the map's own
-    // creation resolves second" race/guard as _landmarksPushed.
     private LandMaskOut? _landMask;
     private bool _landMaskPushed;
 
-    // Batch M requirement 3a: the FULL, unfiltered polity roster (every era
-    // of every polity -- the whole atlas span necessarily intersects every
-    // one of them) the morph engine's own client-side `lookup` needs to
-    // answer an arbitrary drag-time window with zero network latency. Same
-    // "fetch once, push once, whichever of the fetch/map-creation race
-    // resolves second" shape as _landMask/_landMaskPushed immediately
-    // above -- deliberately a SEPARATE fetch from the per-window
-    // Atlas.Polities(from, to) call LoadPolitiesFor already makes (that one
-    // drives the SETTLED display only; this one is static for the life of
-    // the page, like the land mask).
     private PolitiesOut? _polityRoster;
     private bool _polityRosterPushed;
 
-    // Batch ST-2 (controller ruling R3): _from/_to/_scriptureRef are now
-    // PROJECTIONS of TimeWindowAtom's current arm -- SyncTimeWindowProjection
-    // below is the ONE place any of the three is ever assigned (called from
-    // OnTimeWindowChanged, the atom's own Changed subscriber, AND directly
-    // from RunTimeModeEffect/RunScriptureModeEffect for the one case Changed
-    // can't cover -- a dispatch that turns out to be a no-op because the
-    // requested value already matched the atom's current value, e.g. a bare
-    // first /world visit already sitting at TimeWindow.Default). No method
-    // below writes any of the three directly anymore; every writer dispatches
-    // an intent (SetTimeWindow/SetScriptureWindow) via EnterTimeMode/
-    // EnterScriptureMode instead -- see those two methods' own comments.
-    // The field initializers here are a defensive fallback only (overwritten
-    // synchronously by OnInitializedAsync's own SyncTimeWindowProjection call
-    // before the very first render, matching whatever TimeWindowAtom -- a
-    // DI singleton that may already hold a NON-default value from an earlier
-    // page/instance this session -- actually holds at construction time).
     private int _from = DefaultFrom;
     private int _to = DefaultTo;
     private CancellationTokenSource? _fetchCts;
@@ -422,287 +217,76 @@
     private ElementReference _mapEl;
     private MapInterop? _mapInterop;
 
-    // Fit-camera policy (fix round 1: replaces a plain "has any scene ever
-    // been fit" bool, which caused a real bug -- see the finding this
-    // fixes). null = nothing fit yet; "time"/"scripture" = the mode of the
-    // MOST RECENT fit. A load re-fits the camera when its own mode differs
-    // from _lastFitMode (covers both "first scene of the page's life" --
-    // null never equals either mode -- and "the mode just changed", which
-    // is exactly what mode-chip-return needs: after any scripture visit,
-    // returning to time mode must re-fit even though a time-mode scene had
-    // already been fit once before, earlier in the session) OR when the
-    // load itself is scripture mode (DebouncedLoadScriptureScene always
-    // fits, unconditionally, on every load -- see its own comment; it also
-    // stamps this field so a LATER return to time mode is correctly
-    // detected as a mode change). Ordinary same-mode time-window changes
-    // (slider drag, era click, readout Enter) still never re-fit -- Task
-    // 10's original policy, preserved for that one case.
     private string? _lastFitMode;
 
-    // Hover-card state. IMapEvents.OnPlaceHover/OnPlaceLeave below are
-    // invoked from map.js (via MapEventsSink), not through Blazor's own
-    // event dispatch, so each one calls StateHasChanged() itself.
     private ScenePlace? _hoverPlace;
     private double _hoverX;
     private double _hoverY;
     private CancellationTokenSource? _closeCts;
 
-    // Batch C3 decision 2 (dense-marker disambiguation): the chooser's own
-    // state, mirroring _hoverPlace/_hoverX/_hoverY's shape exactly -- see
-    // OnPlaceHoverAmbiguous below. Non-null exactly when the chooser flyout
-    // is showing; ALWAYS mutually exclusive with _hoverPlace (each setter
-    // clears the other) so World.razor's markup never has to decide which
-    // of the two "wins" -- there is only ever one to show.
     private List<ScenePlace>? _chooserPlaces;
     private double _chooserX;
     private double _chooserY;
 
-    // Batch G1 requirement 3 (click-to-pin): non-null exactly when a marker
-    // (lit or quiet) has been clicked and its card should stay open
-    // regardless of hover state, closing only via Escape, the card's own
-    // close button, or a click elsewhere on the map. _hoverPlace/_hoverX/
-    // _hoverY are STILL what the card actually renders from (unchanged
-    // rendering path) -- this field is purely the "is the currently-shown
-    // card pinned, and to what" flag every close/hover path below checks.
-    // OnPlaceHover/OnPlaceClick/GoToAdjacent are the only writers; CloseCardNow
-    // is the ONE place that clears it, so a fully-closed card can never
-    // leave this field pointing at nothing shown (see its own comment).
     private string? _pinnedPlaceId;
 
-    // Requirement 0c (user 2026-08-19: "hover interactions on both the map
-    // and the Bible are extremely fickle. FIX IT."): the real, root-caused
-    // bug behind that report -- reproduced properly here, in source, not
-    // the demo-only hotpatch's document-query workaround. The pointer's
-    // physical journey off a marker and onto the card it's already
-    // pointing at is TWO separate DOM events on TWO separate elements
-    // (Leaflet's marker `mouseout`, dispatched to .NET via an async JS
-    // interop call -- MapInterop/map.js's wireEvents -- and PlaceCard's own
-    // `@onpointerenter`, dispatched through Blazor's own, also-async event
-    // pipeline) with NO ordering guarantee between them. The marker's own
-    // leave can resolve in C# AFTER the card's enter already ran: if
-    // OnPlaceLeave always scheduled a close regardless, that LATE-arriving
-    // schedule has nothing left to cancel it (the card's own enter, which
-    // would have cancelled it, already fired in the past), and the card
-    // closes out from under a pointer that is legitimately still sitting on
-    // it. `_pointerOverCard` closes that race: it's the one piece of state
-    // both sides can check that doesn't depend on event ORDER, only on
-    // where the pointer physically is RIGHT NOW -- see OnPlaceLeave and
-    // CardPointerEnter/CardPointerLeave below for the two halves of the fix.
+    // A marker's mouseout and the card's own pointerenter are two separate,
+    // unordered async events; if the marker's leave resolves after the
+    // card's enter already ran, an unconditional close would race a
+    // pointer that's still legitimately over the card. This flag tracks
+    // physical position instead of event order to close that race.
     private bool _pointerOverCard;
 
-    // arrow-tip state (WORLD-4/contract "arrow-tip"). Text is precomputed
-    // (rather than a place/arrow reference resolved in markup) so a stale
-    // key that no longer resolves against the current scene just clears the
-    // tip instead of throwing mid-render.
     private string? _hoverArrowText;
     private double _arrowX;
     private double _arrowY;
 
-    // Legend isolate (WORLD-4). Legend.razor is a controlled component --
-    // this is the single source of truth it renders aria-pressed from, and
-    // the value HandleIsolate below forwards to MapInterop.SetIsolate.
-    // Reset to null whenever a new scene loads (DebouncedLoadScene) so the
-    // legend never shows a narrative "pressed" after a window change wipes
-    // out whatever isolate the user had set on the PREVIOUS scene. The
-    // arrows' own data-faded attributes are reset back to "false" the same
-    // way, independently -- ArrowLayer.setArrows (map.js) does that
-    // unconditionally for every existing path, including ones that survive
-    // the change under the same narrative:order key, so the two stay in
-    // sync without this field needing to call MapInterop.SetIsolate(null)
-    // itself on every load.
     private string? _isolated;
 
-    // WORLD-8/Task 15: PlaceCard's title promotes the hover card's content
-    // into a real ExplorerPopover -- same @key-per-instance pattern
-    // Reader.razor already uses so a different node always remounts a
-    // fresh popover (breadcrumb stack included) rather than diffing into
-    // an existing one. Batch D removed PlaceCard's OTHER, older route into
-    // a popover (the verse-group index rows) along with the rows
-    // themselves -- see PlaceCard.razor's own file header.
     private IExplorable? _activeNode;
 
-    // Batch ST-2 (controller ruling R4): "_follow migrates INTO the Split
-    // arm" -- no longer an independent field. A pure projection of the
-    // shared ViewArrangement atom: true exactly when the atom's current arm
-    // is Split AND that arm's own Follow flag is set. Standalone /world
-    // (atom == WorldOnly) always reads false here, matching "standalone
-    // /world never reads or writes it" -- true by construction now, not by
-    // convention (there is no WorldOnly.Follow field to have EVER read).
-    // Batch VC-1 (R5): the capability query REPLACES the pre-VC-1 "is Split"
-    // shape-check -- Active is now genuinely "does the CURRENT split-h pair
-    // contain a BearsLocus member and a BearsWindow member," read via the
-    // registry, never a "== ViewNames.Reader"/"== ViewNames.World" name
-    // check. reader+world (the only split-h pairing this batch's own
-    // ViewCapabilities data makes true) behaves EXACTLY as before;
-    // sources+reader (no BearsWindow member at all) reads false here by
-    // construction -- R4's own "degrade cleanly, no chip, no link active"
-    // falls out of this ONE definition, not a separate check anywhere else
-    // (FollowTextLink.Active and the follow-scene effect's own claim
-    // decision both read THIS property, unchanged, below).
     private bool _follow =>
         ViewArrangementAtom.Value is { LayoutKind: LayoutKinds.SplitH, Follow: true } a
         && a.Members.Any(m => (Registry.CapabilitiesOf(m) & ViewCapabilities.BearsLocus) != 0)
         && a.Members.Any(m => (Registry.CapabilitiesOf(m) & ViewCapabilities.BearsWindow) != 0);
 
-    // Fix round 1 (S-2/Adjudication A, review, CRITICAL-adjacent): the ONE
-    // shared predicate every side-effecting subscription/closure that could
-    // touch shared atom state now reads -- `FollowTextLink.Active`,
-    // `OnTimeWindowChanged`, `OnViewArrangementChanged`. Restores the
-    // pre-ST-2 `SplitMode && _follow` instance-scoping conjunct that R4's
-    // own re-plumbing of `Active` (correctly, per the ruling's own letter)
-    // dropped -- `_follow` alone is a read of the GLOBAL ViewArrangement
-    // atom with no instance scoping, so a STALE, still-subscribed instance
-    // (the exact hazard already found and partially fixed for two of three
-    // sites in the prior round) reads it as true the moment ANY page
-    // dispatches Follow=true, not just this one. `SplitMode` is the
-    // per-instance fact no atom read can spoof. One predicate, three call
-    // sites, zero forks -- the ST-3 ownership-claim rule (reviewer
-    // Adjudication A part 2, accepted, see the report's own fix-round
-    // addendum) is expected to replace this predicate's own definition
-    // wholesale, not each of its three call sites independently.
+    // ViewArrangementAtom is a shared, page-independent DI singleton:
+    // without this guard, a standalone /world instance's own subscription
+    // would also fire -- and claim "follow-scene" -- whenever ANY page
+    // dispatches Follow=true, not just this one.
     private bool _followEffectsLive => SplitMode;
 
     private bool _splitInitialized;
 
-    // Batch ST-1: _locus is this page's own Projection<Locus> over the
-    // shared, DI-injected LocusAtom -- the picker mount above and the
-    // follow-chip label both render from it (see their own markup
-    // comments). _followLink/_followRunner realize "follow-text IS
-    // Link(Locus -> TimeWindow)" (spec §4d) -- Active now bound to the
-    // ViewArrangement projection (controller ruling R4: "Split && Follow"),
-    // not the retired SplitMode && _follow field closure. Batch ST-2 (R2):
-    // FollowTextLink's Derive is now REAL (ScriptureMode(locus.Ref)), not
-    // identity -- see that class's own header comment for the full
-    // mechanism, and OnTimeWindowChanged below for the effect (async fetch)
-    // it drives.
-    //
-    // Fix round 1 (Q-6, trivia): a lazy property over a nullable backing
-    // field, not a `null!`-then-assigned-in-OnInitializedAsync field --
-    // LocusAtom is available the instant DI injection completes (before
-    // ANY lifecycle method runs), so this is safe on first access
-    // regardless of exactly which lifecycle method that first access
-    // happens from, rather than depending on "OnInitializedAsync's own
-    // synchronous prefix runs before the first render" (three framework
-    // facts deep, per the review). Projection<T> has no side effects of
-    // its own to defer, unlike _followLink/_followRunner just below (whose
-    // constructor genuinely subscribes to Changed) -- those stay
-    // constructed exactly once, in OnInitializedAsync, on purpose.
     private Projection<Locus>? _locusBacking;
     private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
     private FollowTextLink _followLink = null!;
     private StateLinkRunner<Locus, TimeWindow> _followRunner = null!;
 
-    // Fix round 1 (S-1, CRITICAL): bumped on the ViewArrangement Follow
-    // false->true transition -- see ScripturePicker's own SyncToken
-    // parameter doc comment for the exact SYNC-1-resurrection gap this
-    // closes (a world-picker Apply turns follow off without touching Locus;
-    // if the reader's chapter ALSO hasn't changed while follow was off,
-    // toggling follow back on leaves CurrentBook/CurrentChapter
-    // byte-identical to what the picker was already showing, so the
-    // picker's own "did the parameter change" guard alone can never re-sync
-    // it). Batch ST-2 (R4, "re-seat its trigger on the atom transition,
-    // don't fork it"): the BUMP itself now lives in OnViewArrangementChanged
-    // below, not inline in ToggleFollow -- any future writer of the Follow
-    // flag gets the same re-sync for free, not just this one call site.
     private int _pickerSyncToken;
 
-    // Batch ST-2: edge-detection state for OnViewArrangementChanged below --
-    // the LAST Follow value this instance observed, so a ViewArrangement
-    // change that ISN'T a false->true Follow edge (a DividerFraction commit,
-    // an arrangement transition unrelated to Follow) doesn't spuriously
-    // re-trigger the SyncToken bump/re-sync. Seeded from the live projection
-    // in OnInitializedAsync, before the subscription that reads it starts.
     private bool _lastKnownFollow;
 
-    // Batch ST-3 (R1): the follow-text link's own async fetch, RE-SEATED as
-    // an owned effect ("follow-scene") -- replaces ST-2's own
-    // `_pendingLinkEffect`/`TriggerFollowSync` mechanism entirely. Source =
-    // TimeWindowAtom; AppliesTo gates on ScriptureMode only (the SAME shape
-    // IStateEffect<T>'s own doc comment example gives, "e.g. only
-    // ScriptureMode windows" -- client/Contracts/State.cs); Materialize
-    // wraps RunScriptureModeEffectAndSurfaceFaults. Lazy, same pattern as
-    // _locus below -- constructed on first access, no side effects of its
-    // own (DelegateEffect is a plain data holder; EffectRegistry.Claim is
-    // what actually subscribes).
     private DelegateEffect<TimeWindow>? _followSceneEffectBacking;
     private DelegateEffect<TimeWindow> _followSceneEffect => _followSceneEffectBacking ??= new DelegateEffect<TimeWindow>(
         EffectNames.FollowScene, TimeWindowAtom, value => value is ScriptureMode, value => RunScriptureModeEffectAndSurfaceFaults(((ScriptureMode)value).Ref));
 
-    // Batch ST-3 (R1): non-null exactly while THIS instance currently owns
-    // the "follow-scene" effect -- claimed by EnableFollowScene (mount with
-    // follow already on, ToggleFollow's ON branch, OnViewArrangementChanged's
-    // own edge trigger -- the SAME three call sites ST-2's own
-    // TriggerFollowSync served), released by DisableFollowScene (ToggleFollow's
-    // OFF branch, ApplyExternalQuery, OnViewArrangementChanged's own OFF
-    // edge) and defensively in DisposeAsync. AppliesTo/Materialize/claim-
-    // time reconcile (EffectRegistry.Claim's own mechanism) is what replaces
-    // TriggerFollowSync's hand-rolled "run the effect anyway if the dispatch
-    // was a law-2 no-op" logic -- see EnableFollowScene's own comment.
     private EffectClaim? _followSceneClaim;
 
-    // Batch H (view-state round-trip): non-null exactly when a saved camera
-    // (center/zoom) is waiting to be applied once the map instance exists --
-    // set by RestoreMapState, consumed by PushPendingCameraIfReady. Mirrors
-    // _landmarks/_landmarksPushed's own "whichever resolves second" pattern
-    // for the identical underlying race: OnAfterRenderAsync's own
-    // MapInterop.Create call is asynchronous, so a restore decided in
-    // OnInitializedAsync/OnParametersSetAsync can easily land before the map
-    // itself exists yet.
     private (double Lat, double Lon, double Zoom)? _pendingCamera;
 
     protected override async Task OnInitializedAsync()
     {
-        // Batch VC-1: hands this instance's own ApplyExternalQuery up to
-        // whichever CompositionSplit mounted it, if any (fix round 2, N-6
-        // doc rot: this used to name the retired CompositionHost -- see
-        // ViewMountContext's own header) -- a safe no-op call site
-        // regardless of SplitMode, since RegisterQueryHandler is only ever
-        // non-null when this instance IS a genuinely embedded guest.
         RegisterQueryHandler?.Invoke(ApplyExternalQuery);
 
-        // Batch ST-2 (R3): seeds _from/_to/_scriptureRef from whatever
-        // TimeWindowAtom -- a DI singleton that outlives any one page visit
-        // -- ALREADY holds, before this instance's very first render (this
-        // runs synchronously, in OnInitializedAsync's own synchronous prefix,
-        // ahead of every await below). Matters now that the atom is a real,
-        // meaningfully-mutated store across navigations (unlike ST-1, where
-        // TimeWindow was practically inert) -- without this, a fresh World
-        // instance mounting after e.g. a prior split session left the atom in
-        // ScriptureMode would flash the hardcoded field-initializer defaults
-        // for one frame.
         SyncTimeWindowProjection();
 
-        // Batch ST-1: LocusAtom/TimeWindowAtom are available now (DI-injected
-        // properties are set before any lifecycle method runs). Subscribes
-        // for this component instance's whole lifetime -- unsubscribed in
-        // DisposeAsync below (_followRunner.Dispose() + Changed -=). _locus
-        // itself is a lazy property (see its own field comment) -- nothing
-        // to construct here for it. Batch ST-2 (R4) / fix round 1 (S-2,
-        // Adjudication A): Active reads `_followEffectsLive && _follow` --
-        // the ViewArrangement projection (R4's own "Split && Follow"), PLUS
-        // the instance-scoping conjunct R4 asked to move OFF this closure's
-        // wording but never asked to be dropped as a SAFETY conjunct (the
-        // ruling's own letter: "reads the projection instead of the old
-        // field closure" -- not "stops checking SplitMode"). Without it,
-        // `StateLinkRunner`'s own `LocusAtom.Changed` subscription is the
-        // ONE side-effecting path this app has that a bare `SplitMode &&`
-        // guard on `OnTimeWindowChanged`/`OnViewArrangementChanged` alone
-        // does not reach -- see `_followEffectsLive`'s own doc comment for
-        // the full trace.
         _followLink = new FollowTextLink(LocusAtom, TimeWindowAtom, () => _followEffectsLive && _follow);
         _followRunner = new StateLinkRunner<Locus, TimeWindow>(_followLink.Name, _followLink, LocusAtom, TimeWindowAtom);
         LocusAtom.Changed += OnLocusChanged;
 
-        // Batch ST-2 (R2): the follow-text link's own async fetch EFFECT lives
-        // here now -- see OnTimeWindowChanged's own comment for the full
-        // mechanism, and FollowTextLink's header comment for why it can't
-        // live in Derive itself.
         TimeWindowAtom.Changed += OnTimeWindowChanged;
 
-        // Batch ST-2 (R4): seeds the edge-detector BEFORE subscribing, so the
-        // subscription's own first invocation (if any) correctly compares
-        // against this instance's actual starting Follow state, not a
-        // meaningless default.
         _lastKnownFollow = _follow;
         ViewArrangementAtom.Changed += OnViewArrangementChanged;
 
@@ -712,8 +296,6 @@
         }
         catch (Exception)
         {
-            // No eras means no usable slider; surface it the same way as any
-            // other fetch failure rather than crashing the page.
             _errorMessage = "Couldn't load the timeline eras -- check your connection and try again.";
         }
 
@@ -723,9 +305,6 @@
         }
         catch (Exception)
         {
-            // Landmarks are map decoration, not load-bearing -- same silent,
-            // non-fatal treatment as borders (design-direction.md's Atlas
-            // plate detail): the map still works fine with no labels.
         }
 
         try
@@ -734,50 +313,21 @@
         }
         catch (Exception)
         {
-            // Batch R requirement 1: a failed land-mask fetch degrades to NO
-            // clip at all (BorderLayer.setLandMask is simply never called --
-            // see PushLandMaskIfReady below) -- washes fall back to their
-            // pre-Batch-R, unclipped rendering rather than the page breaking.
         }
 
         try
         {
-            // Batch M requirement 3a: the full atlas span -- every era of
-            // every polity necessarily intersects [-4004,100] (the same
-            // span PlaceNode's own "Show on /world" chip already uses,
-            // Explore/PlaceNode.cs), so this single call returns the
-            // COMPLETE roster the morph engine needs, via the exact same
-            // endpoint/DTO LoadPolitiesFor's own per-window fetch already
-            // uses.
             _polityRoster = await Atlas.Polities(-4004, 100);
         }
         catch (Exception)
         {
-            // Not load-bearing for the settled display (LoadPolitiesFor's
-            // own per-window fetch is independent) -- a failed roster fetch
-            // just means the morph engine has nothing to scrub with; a drag
-            // simply shows no live morph until the NEXT settle, same
-            // graceful-degrade spirit as a failed land-mask fetch above.
         }
 
-        // If OnInitializedAsync's own await above didn't complete
-        // synchronously (the normal case -- it's a real network fetch),
-        // Blazor already rendered once with _mapInterop still unset, so
-        // OnAfterRenderAsync(firstRender: true) can fire and find
-        // _mapInterop non-null BEFORE this line ever runs (confirmed: this
-        // is exactly the race a naive "OnInitializedAsync always finishes
-        // before the first render" assumption misses -- Blazor's own
-        // contract is the opposite: an incomplete OnInitializedAsync task
-        // gets an interim render, not a delayed one). Covers that case;
-        // OnAfterRenderAsync's own call covers the reverse ordering.
         await PushLandmarksIfReady();
         await PushLandMaskIfReady();
         await PushPolityRosterIfReady();
     }
 
-    // Batch R requirement 1: pushes the curated land mask to the map exactly
-    // once -- same "whichever of the fetch or the map's own creation
-    // resolves second" race/guard as PushLandmarksIfReady just below.
     private async Task PushLandMaskIfReady()
     {
         if (_landMaskPushed || _landMask is null || _mapInterop is null)
@@ -789,8 +339,6 @@
         await _mapInterop.SetLandMask(_landMask.Rings);
     }
 
-    // Batch M requirement 3a: pushes the full polity roster to the map
-    // exactly once -- same race/guard shape as PushLandMaskIfReady above.
     private async Task PushPolityRosterIfReady()
     {
         if (_polityRosterPushed || _polityRoster is null || _mapInterop is null)
@@ -802,9 +350,6 @@
         await _mapInterop.SetPolitiesRoster(_polityRoster.Polities);
     }
 
-    // Pushes the curated landmark list to the map exactly once, whichever
-    // of OnInitializedAsync's fetch or OnAfterRenderAsync's map-creation
-    // happens to resolve second (see _landmarksPushed's own comment).
     private async Task PushLandmarksIfReady()
     {
         if (_landmarksPushed || _landmarks is null || _mapInterop is null)
@@ -823,53 +368,15 @@
             return;
         }
 
-        // Batch H: SplitMode branches to a COMPLETELY separate path --
-        // InitializeSplitModeIfNeeded below, never SyncFromQuery -- since
-        // this instance's host URL (/read/{Book}/{Chapter}) never carries
-        // ref=/from=/to= at all. Standalone (!SplitMode) behavior below this
-        // check is completely untouched. Batch ST-1: the ONGOING (not just
-        // first-call) reactivity SyncFollowRef used to provide here --
-        // reacting to a changed FollowRef parameter on every re-render -- is
-        // GONE from this method entirely; OnLocusChanged below (a genuine
-        // Locus.Changed subscription, not a parameter push) now owns that,
-        // so repeated OnParametersSetAsync calls in SplitMode have nothing
-        // left to do beyond the one-time init.
         if (SplitMode)
         {
             await InitializeSplitModeIfNeeded();
             return;
         }
 
-        // Batch ST-2 (R4) used to assert `EnterSingle(world)` here on EVERY
-        // parameter-set pass. D2: the map now renders through CompositionSplit
-        // (it hosts world‖world), and CompositionSplit owns that assertion --
-        // once, from the URL (`?split=`), exactly as it does for every other
-        // host; re-asserting single on every pass would close the split the
-        // instant it opened (it did: the first world‖world probe). A stale
-        // arrangement left by a prior page is corrected by CompositionSplit's
-        // own first OnParametersSet on this visit.
         await SyncFromQuery();
     }
 
-    // Batch ST-1 (replaces SyncFollowRef): the SplitMode counterpart to
-    // SyncFromQuery, now purely a ONE-TIME initializer -- restores follow/
-    // window state on this instance's first parameter-set pass
-    // (_splitInitialized guards repeats, same as before), reading the
-    // reader's current chapter straight off the shared Locus atom instead of
-    // a FollowRef parameter. Ongoing reactivity to a LATER chapter change
-    // now lives in the follow-text link itself (OnLocusChanged/
-    // OnTimeWindowChanged below), correct regardless of whether this
-    // component instance's own OnParametersSetAsync ever runs again (it
-    // won't, in practice: SplitMode/OnRequestClose are this instance's only
-    // parameters, and neither changes across an ordinary chapter nav).
-    //
-    // Batch ST-2 (R4): _follow is no longer restored from ViewState.Map.Follow
-    // directly here -- by the time THIS method runs, Reader.razor (the split
-    // HOST) has already dispatched EnterSplit (with ViewState.Map.Follow as
-    // ITS OWN restoration source, the exact same pattern RestoreMapState
-    // below already uses for TimeWindow) into the shared ViewArrangement
-    // atom, so _follow already reads correctly the moment this instance
-    // constructs it -- nothing to assign here at all.
     private async Task InitializeSplitModeIfNeeded()
     {
         if (_splitInitialized)
@@ -881,20 +388,6 @@
 
         if (_follow)
         {
-            // Batch ST-2 (R2): re-syncs THROUGH the link -- the same
-            // mechanism ToggleFollow's own true-branch uses below -- rather
-            // than a direct EnterScriptureMode call, now that Derive is real
-            // and genuinely does this work.
-            //
-            // Batch ST-3 (R1): EnableFollowScene REPLACES TriggerFollowSync --
-            // claiming "follow-scene" RECONCILES against TimeWindowAtom's
-            // CURRENT value unconditionally (EffectRegistry.Claim's own
-            // mechanism), which is exactly the guarantee ST-2's own
-            // TriggerFollowSync had to hand-roll to fix S-1 (a split reopened
-            // at the same followed ref -- TimeWindowAtom is a DI SINGLETON
-            // that outlives the page, so finding it already holding
-            // `ScriptureMode(locus.Ref)` is an ORDINARY case, not an edge
-            // one -- see EnableFollowScene's own comment for the full trace).
             await EnableFollowScene();
         }
         else if (ViewState.Map.HasData)
@@ -907,61 +400,17 @@
         }
     }
 
-    // Batch ST-1: fired by LocusAtom.Changed (subscribed in
-    // OnInitializedAsync, unsubscribed in DisposeAsync) -- the reason both
-    // ScripturePicker mounts stay live-in-sync (SYNC-1's fix): a plain C#
-    // event, not a Blazor parameter, so it fires regardless of whether THIS
-    // component would otherwise have re-rendered for any other reason.
-    //
-    // Batch ST-2 (R2): the re-scening side effect this handler used to carry
-    // (a direct, Active-gated EnterScriptureMode call) is RETIRED -- see
-    // FollowTextLink's own header comment. FollowTextLink.Derive is now
-    // real, so a Locus change already flows into TimeWindowAtom on its own,
-    // through _followRunner's OWN independent subscription to LocusAtom.Changed
-    // (wired in its constructor -- a SEPARATE subscription from this one,
-    // both fired by the SAME Dispatch call). OnTimeWindowChanged below is
-    // what performs the actual fetch now, keyed off the TARGET atom's own
-    // Changed event, not this SOURCE one. This handler's only remaining job
-    // is re-rendering the picker boxes (_locus.Value is read live by both
-    // ScripturePicker mounts) -- Blazor WASM is single-threaded, so this
-    // fires synchronously on the correct sync context, same as
-    // OnPlaceHover/OnArrowHover elsewhere in this file -- no InvokeAsync
-    // needed.
     private void OnLocusChanged()
     {
         StateHasChanged();
     }
 
-    // Batch ST-2 (R2/R3): TimeWindowAtom's own Changed subscriber -- the ONE
-    // place _from/_to/_scriptureRef get kept in sync with the atom's current
-    // arm (via SyncTimeWindowProjection). Always runs (harmless/idempotent,
-    // correct even on an about-to-be-disposed instance) -- every instance,
-    // SplitMode or not, needs its own picker/chip rendering to reflect the
-    // shared atom's current value regardless of who wrote it.
-    //
-    // Batch ST-3 (R1): the follow-text link's own async fetch EFFECT this
-    // handler used to also carry (gated on TimeWindowAtom.LastOrigin ==
-    // _followLink.Name, a law-3 echo-tag check) is RETIRED from here
-    // entirely -- it now lives in EffectRegistry's own internal Changed
-    // subscription, wired by EnableFollowScene's own Claim call, which
-    // checks OWNERSHIP (a claim token, immune to Blazor's undocumented
-    // dispose-vs-mount ordering) rather than this handler's own
-    // `_followEffectsLive`/LastOrigin double-check. See EffectRegistry.cs's
-    // own header for why token-based supersession is strictly stronger than
-    // the SplitMode-guard-plus-LastOrigin-check this replaces.
     private void OnTimeWindowChanged()
     {
         SyncTimeWindowProjection();
         StateHasChanged();
     }
 
-    // Batch ST-2 (R3): the ONE place _from/_to/_scriptureRef are ever
-    // assigned -- always read fresh off TimeWindowAtom.Value, never
-    // independently. Called both from OnTimeWindowChanged (covers a
-    // genuinely NEW value) and directly from RunTimeModeEffect/
-    // RunScriptureModeEffect (covers a Dispatch that turned out to be a
-    // no-op, which never fires Changed at all -- see those methods' own
-    // comments).
     private void SyncTimeWindowProjection()
     {
         switch (TimeWindowAtom.Value)
@@ -977,74 +426,6 @@
         }
     }
 
-    // Batch ST-2 (R4): ViewArrangementAtom's own Changed subscriber. Its ONE
-    // job is re-seating the SyncToken/re-sync trigger ST-1 fix round 1 (S-1)
-    // put inline in ToggleFollow -- the controller ruling asks for this to
-    // live on "the atom transition" itself, not be forked/duplicated at
-    // every future writer of the Follow flag. Edge-detected against
-    // _lastKnownFollow (seeded in OnInitializedAsync) so a DividerFraction-only
-    // commit doesn't spuriously re-trigger this.
-    //
-    // Live, self-caught bug (this batch's own Playwright verification): an
-    // earlier draft had NO `!SplitMode` guard, reasoning "this subscription
-    // doesn't exist yet at the moment a fresh split-open's own EnterSplit
-    // dispatch happens." That reasoning only covered the NEW split
-    // instance's own subscription timing -- it missed that ViewArrangementAtom
-    // is a GLOBAL, page-independent DI singleton, and a STANDALONE
-    // (`!SplitMode`) World instance's OWN subscription is still very much
-    // wired at the moment a DIFFERENT page's navigation dispatches EnterSplit
-    // into it, because Blazor gives NO ordering guarantee between an
-    // outgoing component's DisposeAsync and an incoming one's own
-    // OnParametersSetAsync (the exact, already-documented hazard
-    // SyncViewState's own header comment describes for a different field --
-    // same root cause, newly hit here). Observed live: opening a split from
-    // /world fired THIS handler on the dying standalone instance, whose own
-    // `_follow` projection reads the SAME global Split(true, ...) the
-    // NEW instance was about to use, tripping the false->true edge and
-    // calling SyncNow() -- which, because Derive is REAL now (R2), genuinely
-    // overwrote the shared TimeWindowAtom with ScriptureMode(the standalone
-    // page's own stale default Locus) before the new split instance's own
-    // (correctly-ordered) InitializeSplitModeIfNeeded ever ran. `_follow` is
-    // only ever MEANINGFUL while SplitMode (this file's own pre-existing
-    // field comment, before ST-2 too) -- the guard below makes that
-    // semantic actually true for this handler, not just documented.
-    //
-    // Fix round 1 (S-3 -- IMPORTANT, review): CORRECTED comment. An earlier
-    // draft claimed the `_followEffectsLive &&` guard on the line below was
-    // "GONE" -- FALSE, and the report's own §1 repeated the same false
-    // claim. `_followEffectsLive` (== `SplitMode`) SURVIVES here, on
-    // purpose, and is LOAD-BEARING: `ViewArrangementAtom` is a shared,
-    // page-independent DI singleton, so a STANDALONE `/world` instance's own
-    // `OnViewArrangementChanged` ALSO fires on the ON edge whenever ANY page
-    // dispatches `EnterSplit(Follow: true)` into it (the exact ST-2 hazard
-    // class this predicate has guarded against since ST-2's own fix round).
-    // Without it, a standalone instance would claim "follow-scene" too, and
-    // EffectRegistry's own latest-claim-wins would hand ownership to
-    // whichever instance's `EnableFollowScene` happened to run LAST --
-    // `SplitMode` is the one per-instance fact no shared-atom read can
-    // spoof, so it is what keeps the CLAIM decision itself scoped to a
-    // genuinely embedded pane. What ownership retires is narrower than the
-    // original draft claimed: the EFFECT'S OWN invocation (Materialize)
-    // no longer needs a SECOND, redundant guard the way `OnTimeWindowChanged`'s
-    // old `LastOrigin`/`_followEffectsLive` double-check did -- see that
-    // handler's own comment. R1's own ruling ("ownership gates EFFECTS, not
-    // link derivation") is why the SAME predicate legitimately gates BOTH
-    // the link's `Active` closure and this claim decision: both are,
-    // structurally, "is this a genuinely embedded pane" checks, and there is
-    // exactly one per-instance fact that answers it honestly.
-    //
-    // The OFF edge below is intentionally asymmetric (unguarded by
-    // `_followEffectsLive`) -- harmless, not an oversight: `DisableFollowScene`
-    // on an instance that was never claimed (standalone /world) is a no-op
-    // (`_followSceneClaim` is already null), so gating the OFF edge would
-    // only add a redundant check, never change behavior.
-    //
-    // The SyncToken bump stays exactly where R4 (ST-2) put it -- "re-seat
-    // its trigger on the atom transition, don't fork it" -- now paired with
-    // the OFF-edge release just described (there was no OFF-edge branch
-    // pre-ST-3 because the old mechanism had no persistent ownership state
-    // to release -- TriggerFollowSync ran fresh, self-contained, on every ON
-    // edge only).
     private void OnViewArrangementChanged()
     {
         var nowFollowing = _follow;
@@ -1062,46 +443,6 @@
         StateHasChanged();
     }
 
-    // Batch ST-3 (R1): claims the "follow-scene" effect and re-syncs THROUGH
-    // the link -- the ONE place this instance ever calls `_followRunner.SyncNow()`
-    // (InitializeSplitModeIfNeeded's `_follow` branch, ToggleFollow's ON
-    // branch, OnViewArrangementChanged's own edge trigger above all route
-    // through this, replacing ST-2's own TriggerFollowSync/`_pendingLinkEffect`
-    // pair entirely).
-    //
-    // WHY CLAIMING SUBSUMES ST-2's OWN HAND-ROLLED FIX (S-1, the
-    // blank-atlas-pane regression): `SyncNow()`'s own dispatch is silent
-    // whenever the derived `ScriptureMode(locus.Ref)` already equals
-    // `TimeWindowAtom.Value` (law 2) -- no `Changed`, so a bare Changed
-    // SUBSCRIPTION alone would never fire. `EffectRegistry.Claim` does not
-    // depend on Changed firing at all for this case: claiming RECONCILES --
-    // it runs `Materialize` against the atom's CURRENT value UNCONDITIONALLY
-    // at claim time (client/State/EffectRegistry.cs's own header), which is
-    // exactly "the effect must still run regardless of whether the dispatch
-    // changed anything" (`EnterScriptureMode`'s own pre-existing rule),
-    // built into the registry's own claim mechanism instead of hand-rolled
-    // per call site. Order matters: SyncNow() runs FIRST (so the atom
-    // already holds the CORRECT, current locus's ScriptureMode by the time
-    // Claim reconciles against it) -- claiming BEFORE syncing would reconcile
-    // against a possibly-stale value, then redundantly re-materialize once
-    // SyncNow's own dispatch (now claimed) fires Changed.
-    //
-    // Fix round 1 (Q-1 -- IMPORTANT, review): disposes any PRIOR claim
-    // FIRST, THEN syncs, THEN claims -- an earlier draft synced BEFORE
-    // disposing the prior claim, which is one line too late: if a claim was
-    // ALREADY held when this runs, `SyncNow()`'s own dispatch would fire the
-    // OLD (still-subscribed) claim's own handler (Materialize #1) before the
-    // NEW claim's own reconcile runs (Materialize #2) -- a structural
-    // double-materialize window, not merely an argument-backed absence of
-    // one ("no real call site invokes this while already claimed" was true
-    // but was an argument, not a structure -- this batch's whole thesis is
-    // that structure beats argument). With no owner held at the moment
-    // `SyncNow()` runs, its own dispatch (if any) fires no claimed handler
-    // at all, and `Claim` immediately below reconciles exactly once against
-    // the fresh, now-current value -- the property becomes unconditional,
-    // not merely true-by-discipline. See EffectRegistryTests.cs's own
-    // `TwoRapidReClaims...` test for the registry-level proof this exact
-    // reordering is what closes.
     private async Task EnableFollowScene()
     {
         _followSceneClaim?.Dispose();
@@ -1110,31 +451,16 @@
 
         if (_followSceneClaim.ReconcileTask is { } task)
         {
-            await task; // RunScriptureModeEffectAndSurfaceFaults already catches/surfaces its own faults -- nothing further to catch here
+            await task;
         }
     }
 
-    // Batch ST-3 (R1): releases the "follow-scene" claim -- called whenever
-    // this instance stops being the live follow session (ToggleFollow's OFF
-    // branch, ApplyExternalQuery's explicit-navigation-supersedes-follow
-    // dispatch, OnViewArrangementChanged's own OFF edge above) and
-    // defensively in DisposeAsync. A no-op if nothing is currently claimed
-    // (EffectClaim.Dispose is itself idempotent, but the null-check here
-    // avoids allocating/disposing a claim reference this instance never
-    // held).
     private void DisableFollowScene()
     {
         _followSceneClaim?.Dispose();
         _followSceneClaim = null;
     }
 
-    // Batch ST-2 (R2) -- see OnTimeWindowChanged's own comment for why this
-    // wrapper exists instead of a bare fire-and-forget call (same reasoning
-    // ST-1's now-retired EnterScriptureModeAndSurfaceFaults gave: every OTHER
-    // caller of RunScriptureModeEffect is already awaited from inside a
-    // Blazor-lifecycle-aware async method, so only the link-derived path --
-    // driven by a plain C# event, not a lifecycle method -- needs its own
-    // explicit fault handling).
     private async Task RunScriptureModeEffectAndSurfaceFaults(string sref)
     {
         try
@@ -1143,35 +469,16 @@
         }
         catch (Exception)
         {
-            // Same message shape DebouncedLoadScriptureScene's own catch
-            // already uses for a scripture-mode load failure -- one honest
-            // toast, not a second, differently-worded one.
             _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
             StateHasChanged();
         }
     }
 
-    // Batch H fix round 2 (review Critical-1, take 2): pushes THIS instance's
-    // current window/ref/follow into the shared ViewState the MOMENT they
-    // change, rather than only at dispose time. Fix round 2's first attempt
-    // reordered DisposeAsync so these same five fields were written into
-    // ViewState BEFORE the method's own first await (the camera's, since
-    // removed -- see DisposeAsync's own comment) -- sound C# async
-    // reasoning (a synchronous prefix of an async method runs inline, in
-    // the caller's own call stack), but EMPIRICALLY still lost the exact
-    // same race live (a regression test written against that fix stayed
-    // red): Blazor's renderer does not guarantee an outgoing component's
-    // DisposeAsync is even CALLED before an incoming component's own
-    // OnParametersSetAsync reads shared state, on a navigation that
-    // disposes one component and mounts another in the same step --
-    // ordering between the two is simply undocumented/unguaranteed, so no
-    // fix confined to DisposeAsync (sync or not) can close it. Removing the
-    // dispose-time write from the critical path entirely -- syncing
-    // continuously instead -- is what actually works, because it no longer
-    // matters when, or even whether, DisposeAsync gets called relative to
-    // the new instance's mount. Exactly the same fix shape already proven
-    // for OnCameraChanged (map.js's moveend/zoomend) and reader.js's own
-    // watchScroll/OnScroll.
+    // Writes continuously, on every change, rather than once at dispose
+    // time: Blazor gives no ordering guarantee between an outgoing
+    // component's DisposeAsync and an incoming one's OnParametersSetAsync,
+    // so capturing state only at dispose can lose it entirely on a
+    // same-step navigation.
     private void SyncViewState()
     {
         ViewState.Map.HasData = true;
@@ -1180,74 +487,14 @@
         ViewState.Map.ScriptureRef = _scriptureRef;
         if (SplitMode)
         {
-            // Follow is a split-only concept -- a standalone /world visit
-            // has no toggle chip to ever change it FROM, so only a
-            // SplitMode instance writes this half of the state, keeping
-            // whatever the user last explicitly set even across an
-            // intervening standalone visit (see MapViewState.Follow's own
-            // doc comment).
             ViewState.Map.Follow = _follow;
         }
     }
 
-    // Batch H: the shared "enter scripture mode" sequence every direct
-    // (non-URL) scene-loading call site below needs. Batch ST-2 (R3): "every
-    // writer dispatches intents instead" -- this is now THE choke point
-    // every scripture-mode entry funnels through (including SyncFromQuery's
-    // own ref-branch, which used to inline an identical three-step copy of
-    // this -- fix round 1's own comment on that duplication is retired along
-    // with the duplication itself: SyncFromQuery now just calls this).
-    // Dispatches SetScriptureWindow (Origin: null -- every call site here is
-    // a direct, user-driven entry, never link-derived) THEN runs the effect
-    // unconditionally via RunScriptureModeEffect -- not by relying on
-    // TimeWindowAtom.Changed to trigger it, because a dispatch that happens
-    // to already match the atom's current value is a LAW-2 no-op (no Changed
-    // fires at all), and the effect must still run (e.g. re-entering the
-    // exact scripture ref already showing, or a fresh mount already sitting
-    // at TimeWindow.Default).
-    //
-    // Fix round 1 (S-4 -- IMPORTANT, review): "release-before-direct-write"
-    // INVARIANT, enforced HERE, at the one choke point, rather than trusted
-    // to each caller individually. `EffectRegistry`'s own contract is
-    // origin-blind by design (`AppliesTo` only ever sees the VALUE, never
-    // which write produced it) -- while "follow-scene" is claimed, ANY
-    // change to `TimeWindowAtom` that lands in `ScriptureMode` also
-    // materializes through the registry, so a direct dispatch here would
-    // double-fetch (this method's own unconditional `RunScriptureModeEffect`
-    // call, PLUS the registry's own claimed Materialize) unless the claim is
-    // released first. `SyncFromQuery`/`RestoreMapState` reach this method
-    // too, today unreachable in SplitMode only because Blazor's own
-    // `[SupplyParameterFromQuery]` doesn't feed a non-routed child -- a
-    // reachability ACCIDENT, not a structural guarantee -- so this release
-    // must hold for EVERY direct entry point, present and future, not just
-    // whichever caller happens to arrange it today.
-    //
-    // Fix round 2 (N-1 -- IMPORTANT, re-review): releases at the REGISTRY
-    // level (`Effects.Release`, by NAME), not through this instance's own
-    // `_followSceneClaim` handle. An earlier draft (fix round 1) called
-    // `DisableFollowScene()` here, gated on `SplitMode` -- the re-review
-    // proved BOTH halves of that wrong: (1) the gate was a semantic NO-OP
-    // (`_followSceneClaim` is provably always null on a `!SplitMode`
-    // instance -- every assignment path is itself `SplitMode`-gated, and
-    // `SplitMode` never flips on a live instance, so the gated and
-    // ungated builds are the SAME PROGRAM on every path that reaches here;
-    // the flake this batch bisected against it was independently
-    // attributed to a pre-existing, unrelated race -- see SPLITCLOSE-1 in
-    // the batch report), so removing the gate costs nothing; (2) even
-    // ungated, `DisableFollowScene()` can only ever release THIS
-    // instance's own claim -- the registry slot and `TimeWindowAtom` are
-    // DI singletons, so a direct writer that does not happen to BE the
-    // current owner could never release someone ELSE's claim, meaning
-    // "materializes exactly once" held only when writer == owner, an
-    // instance-local accident, not a structural guarantee (reachable in
-    // principle: `/world?ref=X` mounting, or `SyncFromQuery` running,
-    // while a DIFFERENT, still-live SplitMode pane owns "follow-scene").
-    // `EffectRegistry.Release(name)` closes both: it is UNCONDITIONAL (no
-    // gate needed -- releasing an unclaimed or already-unowned name is a
-    // safe no-op, proven at
-    // `EffectRegistryTests.cs`'s own `ReleaseByName_OnAnUnclaimedNameIsASafeNoOp`)
-    // and it releases WHOEVER currently owns the name, regardless of which
-    // instance's own field would have pointed at it.
+    // Releases any "follow-scene" claim before dispatching directly: while
+    // that effect is claimed, any change landing in ScriptureMode also
+    // materializes through the registry, so skipping this release would
+    // double-fetch.
     private Task EnterScriptureMode(string sref)
     {
         Effects.Release(EffectNames.FollowScene);
@@ -1255,15 +502,6 @@
         return RunScriptureModeEffect(sref);
     }
 
-    // Batch ST-2: the actual scripture-mode EFFECT (sync view-state, hide the
-    // polity layer, fetch) -- called unconditionally from EnterScriptureMode
-    // above (every direct writer). Batch ST-3 (R1): the OTHER, link-derived
-    // caller this comment used to name (`OnTimeWindowChanged`'s own
-    // `RunScriptureModeEffectAndSurfaceFaults` path) is RETIRED -- the
-    // follow-derived path now runs through `DelegateEffect`'s own
-    // `Materialize` (`_followSceneEffect`, which wraps
-    // `RunScriptureModeEffectAndSurfaceFaults` directly), invoked only by
-    // `EffectRegistry`, never by this handler.
     private async Task RunScriptureModeEffect(string sref)
     {
         SyncTimeWindowProjection();
@@ -1276,22 +514,12 @@
         await DebouncedLoadScriptureScene(sref);
     }
 
-    // Batch H: the time-mode counterpart to EnterScriptureMode above -- same
-    // ST-2 dispatch-then-effect shape (R3).
-    // EVT-3 Ticket 3: `focusPlaceId` is additive and optional -- every
-    // pre-existing call site (the picker, slider, era-click, mode-chip
-    // return) passes none and is byte-for-byte unaffected; only
-    // SyncFromQuery/ApplyExternalQuery's own `place=` parsing ever sets it.
     private Task EnterTimeMode(int from, int to, string? focusPlaceId = null)
     {
         TimeWindowAtom.Dispatch(new SetTimeWindow(from, to));
         return RunTimeModeEffect(from, to, focusPlaceId);
     }
 
-    // Batch ST-2: the actual time-mode EFFECT. Unlike scripture mode, no
-    // extra polities call is needed here -- DebouncedLoadScene's own
-    // LoadPolitiesFor already unconditionally restores SetPolitiesVisible(true)
-    // before its fetch even starts (see that method's own doc comment).
     private Task RunTimeModeEffect(int from, int to, string? focusPlaceId = null)
     {
         SyncTimeWindowProjection();
@@ -1299,20 +527,6 @@
         return DebouncedLoadScene(from, to, focusPlaceId);
     }
 
-    // Batch H (view-state round-trip): restores whatever the LAST live
-    // World instance -- standalone OR the split pane, ONE shared map state,
-    // per the brief -- left behind, in place of a fresh default. A saved
-    // scripture ref restores into scripture mode via the SAME
-    // DebouncedLoadScriptureScene every /world?ref= visit already uses,
-    // which always fits/recenters on its own (a scripture jump is a
-    // deliberate destination, not a snapshot to recreate pixel-for-pixel --
-    // its own camera is deliberately NOT restored, matching a fresh
-    // /world?ref= deep link's own behavior). A saved time window restores
-    // via DebouncedLoadScene with _lastFitMode pre-stamped "time" so its
-    // usual auto-fit is suppressed -- see that field's own comment for why
-    // "the load's own mode already equals _lastFitMode" is what skips it --
-    // then the saved camera (center/zoom) is queued via _pendingCamera
-    // instead, applied once the map instance actually exists.
     private async Task RestoreMapState()
     {
         if (ViewState.Map.ScriptureRef is { } sref)
@@ -1321,7 +535,7 @@
             return;
         }
 
-        _lastFitMode = "time"; // suppress the load's own usual auto-fit -- see this field's own comment
+        _lastFitMode = "time";
         await EnterTimeMode(ViewState.Map.From, ViewState.Map.To);
 
         if (ViewState.Map.CenterLat is double lat && ViewState.Map.CenterLon is double lon && ViewState.Map.Zoom is double zoom)
@@ -1331,9 +545,6 @@
         }
     }
 
-    // Consumes _pendingCamera the moment the map instance actually exists --
-    // see that field's own comment for the exact race this covers (the same
-    // "whichever resolves second" shape PushLandmarksIfReady already uses).
     private async Task PushPendingCameraIfReady()
     {
         if (_pendingCamera is not { } cam || _mapInterop is null)
@@ -1345,31 +556,6 @@
         await _mapInterop.SetCamera(cam.Lat, cam.Lon, cam.Zoom);
     }
 
-    // follow-chip (Batch H). Toggling OFF frees the pane to full time-mode --
-    // reloads the last-applied time window (_from/_to) exactly like
-    // ReturnToTime's own effect, via EnterTimeMode. Toggling back ON re-syncs
-    // to the reader's CURRENT chapter -- both directions reuse the one
-    // system-wide scene-loading primitive, never a parallel path.
-    //
-    // Batch ST-2 (R2/R4): the true-branch no longer calls EnterScriptureMode
-    // directly -- ViewArrangementAtom.Dispatch below (SetSplitFollow) is what
-    // flips Follow true, which synchronously fires OnViewArrangementChanged
-    // (subscribed in OnInitializedAsync), which is what now performs BOTH the
-    // SyncToken bump AND (Batch ST-3, R1) the EnableFollowScene claim/re-sync
-    // (per the controller ruling, "re-seat its trigger on the atom
-    // transition, don't fork it" -- see that handler's own comment).
-    // `_followSceneClaim` -- assigned by EnableFollowScene's own SYNCHRONOUS
-    // prefix (up to its first await), which the Dispatch call above already
-    // ran to completion before returning (Blazor WASM is single-threaded, no
-    // interleaving) -- is what lets THIS method still AWAIT the actual
-    // fetch's completion via `.ReconcileTask`, preserving the exact
-    // async-timing contract every pre-ST-3 caller of ToggleFollow already
-    // depended on, even though the fetch is now triggered indirectly,
-    // through the atom AND the effect registry.
-    // Batch VC-1: renamed from ToggleFollow (the method) to avoid colliding
-    // with the new ToggleFollow INTENT (client/State/ViewArrangement.cs) --
-    // same method, same markup binding site (follow-chip's own @onclick,
-    // updated), byte-identical behavior otherwise.
     private async Task OnToggleFollowClick()
     {
         var newFollow = !_follow;
@@ -1388,37 +574,10 @@
         }
     }
 
-    // Batch H ("no nested-popup rule" + the SplitMode ApplyScriptureRef/
-    // HandleWindowChange/ReturnToTime branches): applies a NavigateWorld-
-    // shaped query string ("ref=X" or "from=X&to=Y", the EXACT shape
-    // ExplorationTarget.NavigateWorld.Query already carries, values already
-    // escaped) directly to THIS pane's own state, bypassing the URL
-    // entirely -- the mechanism a SplitMode instance needs for every manual
-    // "look at something specific" action, since its own OnParametersSetAsync
-    // never reads the URL's query string at all (see SyncFollowRef's own
-    // comment: there is no ref=/from=/to= on /read's route to read).
-    // Reused identically by ExplorerPopover's own OnNavigateWorldInSplit
-    // callback (a popover chip clicked from EITHER pane while a split is
-    // showing) and by this component's own picker/slider/mode-chip-return
-    // handlers once SplitMode -- one method, every manual-override path.
-    // Turns follow OFF first: an explicit "go look at this" action always
-    // supersedes following (mirrors ToggleFollow's own "toggling off frees
-    // the pane" semantics) -- there is nothing left to stay synced to once
-    // the pane shows something the reader didn't ask for; a later chapter
-    // change leaves it off until the user turns following back on
-    // themselves, per the brief's own explicit-toggle precedence.
     public async Task ApplyExternalQuery(string query)
     {
-        // Batch ST-2 (R4): dispatches instead of a direct field write (Follow
-        // has no setter anymore -- it lives in the ViewArrangement atom's
-        // Split arm). OnViewArrangementChanged (subscribed in
-        // OnInitializedAsync) re-renders on this; the explicit StateHasChanged
-        // below stays for the SAME "snappy chip feedback ahead of the load's
-        // own debounce" reason this method's own doc comment already gives --
-        // harmless if it turns out redundant with that subscription's own
-        // re-render.
         ViewArrangementAtom.Dispatch(new ToggleFollow(false));
-        StateHasChanged(); // snappy chip feedback -- see this method's own doc comment; the load below still runs its own debounce/fetch on top of this
+        StateHasChanged();
 
         var parts = query.Split('&')
             .Select(p => p.Split('=', 2))
@@ -1434,105 +593,14 @@
         if (parts.TryGetValue("from", out var fromText) && parts.TryGetValue("to", out var toText)
             && int.TryParse(fromText, out var from) && int.TryParse(toText, out var to))
         {
-            // EVT-3 Ticket 3: the map-focus-at-time hatch's own SPLIT-aware
-            // path -- MapFocusHatch.Query's own additive `place=` param,
-            // read here exactly like `from=`/`to=` already are.
             parts.TryGetValue("place", out var placeId);
             await EnterTimeMode(from, to, placeId);
         }
     }
 
-    // "Read beside the map" (Batch H, standalone /world only -- SplitMode
-    // never renders this button). Lands directly in split, per the brief
-    // ("both land in the same split layout"): the split-URL query (Batch
-    // CORPREAD-1a: `?split=world`, superseding the retired `?split=1`
-    // boolean -- see SplitUrlContract.cs) tells the destination Reader
-    // instance's own CompositionSplit to restore a reader-hosts-world split
-    // on arrival (CompositionSplit.razor's own header, RULING 5 -- the
-    // mechanism Reader's own retired SplitQuery param used to own directly).
-    //
-    // Fix round 1 (S-5, IMPORTANT): reads the reader's last-known position
-    // off the shared Locus atom (_locus.Value), NOT ViewState.Reader --
-    // deliverable 5's "locus persistence reads/writes go through the
-    // atoms' values" was satisfied on the WRITE side only (Reader.OnScroll
-    // writes ViewState.Reader.Book/Chapter from the atom-derived _book/
-    // _chapterNum) but this READ still went straight to the persistence
-    // layer, which can lag the atom whenever a chapter was navigated
-    // without a scroll event landing. Newly visible this batch: standalone
-    // /world now shows the atom's locus directly in its own picker (this
-    // page's own SYNC-1 fix), so a stale ViewState.Reader could jump to a
-    // chapter that visibly contradicts the picker rendered one line above
-    // this button. Locus.Default (GEN, 1) matches ReaderViewState's own
-    // defaults exactly, so "never visited the reader this session" still
-    // opens GEN 1, unchanged.
-    // Batch ST-2 (R4): does NOT dispatch EnterSplit here, despite the
-    // controller ruling's own dispatch-site list naming OpenReadBesideMap
-    // alongside OpenSplit/CloseSplitAtlas/ToggleFollow -- a live, self-caught
-    // bug during this batch's own Playwright verification proved that
-    // reading is unsafe. Tracing why: this standalone instance's own
-    // ViewArrangementAtom.Changed subscription (OnViewArrangementChanged) is
-    // STILL WIRED at the moment this method runs (DisposeAsync hasn't fired
-    // yet -- Nav.NavigateTo below hasn't even been called). A dispatch here
-    // (Follow false->true, since standalone's own _follow projection is
-    // always false) synchronously triggers THIS instance's own
-    // OnViewArrangementChanged -> (what is now) TriggerFollowSync() -> a
-    // REAL Locus->TimeWindow derive-and-dispatch (Derive is real now, R2,
-    // not ST-1's identity) into the SHARED (DI-singleton) TimeWindowAtom --
-    // observed live: it overwrote a just-committed TimeMode(window) with
-    // ScriptureMode(locus.Ref) BEFORE the destination Reader.razor/embedded
-    // World instance ever mounted, so the new instance's own
-    // SyncTimeWindowProjection (OnInitializedAsync) read the CORRUPTED
-    // value, not the one the user actually just set. This is a genuine
-    // correctness defect, not merely "wasted work" as an earlier draft of
-    // this comment claimed -- reverted. The destination Reader.razor
-    // instance's own SplitQuery-consumption dispatch (Reader.razor's
-    // OnParametersSetAsync) is sufficient on its own -- it runs on a FRESH
-    // instance with no such side-effecting subscription wired yet.
-    //
-    // ADJUDICATION B (review, fix round 1): this reading is ACCEPTED as-is
-    // -- traced independently by the reviewer, no path found where the atom
-    // misses or mis-orders the Split transition (the destination's own
-    // dispatch runs in Reader.OnParametersSetAsync's synchronous prefix,
-    // strictly before the embedded World ever renders). Two caveats carried
-    // forward, neither changing the verdict: (1) the destination's dispatch
-    // is sufficient BECAUSE `?split=1` is on this method's own target URL --
-    // this URL and Reader's own SplitQuery consumption are now a coupled
-    // pair; a future caller reaching `/read/...` without that query would
-    // leave the arrangement at whatever a prior page left it. (2) this is
-    // one of S-1's own doors: when Locus and the atom's held ScriptureMode
-    // ref coincide, the pane arriving here fetches nothing UNLESS S-1's own
-    // fix (TriggerFollowSync, above) is in place -- it is, as of this same
-    // fix round.
-    //
-    // Batch ST-3 ADDENDUM: `TriggerFollowSync` above is now `EnableFollowScene`
-    // (R1's effect-registry re-seat) -- the trace and verdict are otherwise
-    // UNCHANGED; ownership (EffectRegistry.Claim's own token supersession)
-    // would in fact make a dispatch HERE safe today the way it wasn't under
-    // ST-2's own SplitMode-guard mechanism (a stale standalone instance's
-    // own claim, if it somehow re-triggered, would simply be superseded the
-    // moment the destination instance claims) -- not re-enabled this batch
-    // regardless: R1 scopes ownership to EFFECTS, not the LINK derivation
-    // this reading is actually about (`_followRunner.SyncNow`'s own
-    // dispatch into the SHARED TimeWindowAtom), which is unchanged, still
-    // `_followEffectsLive`-guarded, and still carries the SAME S-2-class
-    // residual risk ST-2's own review named. Revisiting this reading is
-    // future-batch scope, not implied by R1.
-    //
-    // Batch VC-1 (R4): OpenReadBesideMap (the pre-VC-1 direct method) is
-    // RETIRED as a separate method -- its exact body (this trace's own
-    // subject) lives on as EnterSplitWorldRequestsReader inside
-    // ViewRegistrySetup, invoked below via InvokeEnterSplitHatch, so there
-    // is exactly ONE copy of this navigation, not two.
     private Task InvokeEnterSplitHatch() =>
         Registry.Get(ViewNames.World).EscapeHatches.First(h => h.Kind == HatchKinds.EnterSplit).Invoke();
 
-    // The Leaflet map can only be created once #world-map is actually in
-    // the DOM, i.e. after the component's first render. If a scene fetch
-    // already resolved by then (DebouncedLoadScene below skips pushing it
-    // because _mapInterop was still null at the time), push it now instead
-    // -- whichever of the two finishes second is the one that actually
-    // calls SetScene/FitScene, so a scene is never dropped and never
-    // applied twice.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -1544,30 +612,7 @@
         if (_scene is not null)
         {
             await _mapInterop.SetScene(_scene);
-            // _scriptureRef is already set (SyncFromQuery sets it synchronously,
-            // before either fetch method's first await) by the time a scene can
-            // possibly be non-null here, so it accurately names which mode
-            // produced _scene.
             var thisMode = _scriptureRef is not null ? "scripture" : "time";
-            // Batch H fix (self-review, a real bug the view-state round-trip
-            // test itself caught): this branch used to fit UNCONDITIONALLY,
-            // regardless of _lastFitMode -- correct under the ORIGINAL
-            // assumption that a scene already loaded by first-render could
-            // only mean "the very first scene of the page's life" (nothing
-            // else ever set _scene before this ran). RestoreMapState breaks
-            // that assumption: it pre-stamps _lastFitMode to the mode it's
-            // ABOUT to load, specifically so DebouncedLoadScene's OWN
-            // fit-check skips its auto-fit and a restored camera (applied
-            // via _pendingCamera below) isn't immediately overwritten by
-            // one -- but this race can land the OTHER way too (the scene
-            // finishes loading, via that same debounced fetch, before this
-            // method's own await MapInterop.Create resolves), reaching this
-            // branch instead with _lastFitMode already correctly set and
-            // the fit already correctly skipped once. Fitting AGAIN here,
-            // unconditionally, undid that -- confirmed live: a restored
-            // time-mode camera came back at a different zoom than what was
-            // saved. Same "skip when this mode already fit" check
-            // DebouncedLoadScene's own branch uses.
             if (_lastFitMode != thisMode)
             {
                 await _mapInterop.FitScene();
@@ -1576,56 +621,19 @@
             _lastFitMode = thisMode;
         }
 
-        // Same "already resolved before the map existed" race as _scene
-        // above, for polities: only push them if we're not (by now) in
-        // scripture mode -- a deep link straight into scripture mode must
-        // never show a polity-border layer it never asked for, matching
-        // DebouncedLoadScriptureScene's own SetPolitiesVisible(false).
         if (_polities is not null && _scriptureRef is null)
         {
             await _mapInterop.SetPolitiesVisible(true);
             await _mapInterop.SetPolities(_polities.Polities, _from, _to);
         }
 
-        // Landmarks: same "whichever resolves second" race as _scene/
-        // _polities above, just fetched once in OnInitializedAsync instead
-        // of on every window change -- see PushLandmarksIfReady/
-        // _landmarksPushed's own comments for why a naive "OnInitializedAsync
-        // always finishes before the first render" assumption is wrong.
         await PushLandmarksIfReady();
-        // Batch R requirement 1: same "whichever resolves second" race, for
-        // the land mask.
         await PushLandMaskIfReady();
-        // Batch M requirement 3a: same race, for the morph engine's own roster.
         await PushPolityRosterIfReady();
 
-        // Batch H: same race, for a restored camera (view-state round-trip)
-        // -- see _pendingCamera's own comment.
         await PushPendingCameraIfReady();
     }
 
-    // Single path for every window/ref change, whether it comes from the
-    // user (slider drag / era click / readout Enter / picker apply / mode-
-    // chip-return, via HandleWindowChange/ApplyScriptureRef/ReturnToTime
-    // below) or directly from a URL (deep link, browser reload,
-    // back/forward): all of them change the query string, which re-supplies
-    // FromQuery/ToQuery/RefQuery and re-runs this method through
-    // OnParametersSetAsync. RefQuery wins whenever present -- applying the
-    // picker/deep-linking into scripture mode REPLACES from/to in the URL
-    // (never both at once, see ApplyScriptureRef/ReturnToTime), so checking
-    // it first is enough to fully separate the two branches below.
-    // Batch ST-2 (R3): both branches below now call EnterScriptureMode/
-    // EnterTimeMode -- ST-1 fix round 2 deliberately left this method's own
-    // logic inlined (a byte-for-byte copy of what those two methods do),
-    // reasoning it was "battle-tested, unrelated to this batch's own risk
-    // surface." That reasoning doesn't survive R3's own mandate ("every
-    // writer dispatches intents instead"): keeping the duplicate would mean
-    // maintaining TWO separate copies of the dispatch-then-effect wiring,
-    // doubling the surface a future bug/drift could hide in. Collapsing onto
-    // the shared methods is confirmed behavior-preserving -- the inlined
-    // steps were IDENTICAL to EnterScriptureMode/EnterTimeMode's own bodies
-    // already (compared line-for-line before this change), so this is pure
-    // deduplication, not a new code path.
     private async Task SyncFromQuery()
     {
         if (!string.IsNullOrEmpty(RefQuery))
@@ -1638,14 +646,6 @@
         {
             if (_scene is null)
             {
-                // Batch H (view-state round-trip): a bare /world visit
-                // restores wherever the LAST live World instance (this
-                // session) left the atlas, rather than always defaulting to
-                // the Gospels era -- "full-page /world and the split pane
-                // share ONE map state" (the brief). A deep link WITH an
-                // explicit from=/to=/ref= (below/above) is completely
-                // unaffected -- this only ever applies to the truly bare
-                // "/world" case, unchanged from before this batch otherwise.
                 if (ViewState.Map.HasData)
                 {
                     await RestoreMapState();
@@ -1677,50 +677,16 @@
             return;
         }
 
-        // EVT-3 Ticket 3: a standalone `/world?from=&to=&place=` deep link
-        // (the map-focus-at-time hatch's own non-split fallback) honors
-        // PlaceQuery exactly like ApplyExternalQuery's own `place=` parsing
-        // below does.
         await EnterTimeMode(from, to, PlaceQuery);
     }
 
-    // Batch M requirement 3a: true for exactly the duration of an in-
-    // progress drag-morph gesture -- set by HandleWindowDrag's own first
-    // call since the last settle, cleared by HandleWindowChange below
-    // (release, or -- harmlessly, since it's simply already false there --
-    // an era click/readout Enter that never had a morph running at all).
     private bool _dragMorphing;
 
-    // Batch M requirement 3a: fired on EVERY pointermove while a slider
-    // handle is down (TimeSlider.razor's own OnWindowDrag) -- drives the
-    // morph engine's own rAF-throttled evaluator (map.js's BorderLayer,
-    // requestMorphFrame/_evaluateMorphFrame -- see that file's own comment
-    // for the full CPU evaluator interface / GPU swap seam). Never touches
-    // the URL or _from/_to (those stay "the last COMMITTED window," per
-    // their own field comment, until release) -- this is a purely visual,
-    // transient scrub.
-    //
-    // Fix round 1 (Critical C1): `window` IS the full, current live window
-    // already -- TimeSlider.razor's own OnHandlePointerDown seeds BOTH
-    // `_dragFrom`/`_dragTo` from the last committed From/To at drag start,
-    // and only the actively-dragged one ever moves on subsequent
-    // pointermoves (OnTrackPointerMove) -- so `window.From`/`window.To`
-    // here are exactly the pair to hand the morph engine every frame, the
-    // same pair HandleWindowChange below already correctly passes to
-    // SettleMorph on release. The pre-fix-round code instead derived an
-    // "anchor" from `_from`/`_to` -- the SAME handle's own PRE-DRAG value,
-    // not the OTHER handle's current one -- so the per-frame lookup window
-    // silently excluded anything beyond the still-committed edge for the
-    // whole gesture (six of twelve real polities in the review's own
-    // live-verified replay; see the batch report's own "Fix round 1"
-    // section). `probeYear` (still needed, separately from the full pair)
-    // is specifically whichever edge is actually moving -- the one
-    // `animate` sweeps against.
     private async Task HandleWindowDrag((int From, int To) window)
     {
         if (_mapInterop is null || _polityRoster is null)
         {
-            return; // morph engine has nothing to scrub with yet -- degrades to no live morph, same graceful-degrade spirit as a failed roster fetch
+            return;
         }
 
         int probeYear;
@@ -1734,7 +700,7 @@
         }
         else
         {
-            return; // no-op drag tick (e.g. the very first pointerdown before any real movement) -- nothing changed
+            return;
         }
 
         if (!_dragMorphing)
@@ -1745,20 +711,8 @@
         await _mapInterop.MorphFrame(window.From, window.To, probeYear);
     }
 
-    // Batch H: SplitMode has no ref=/from=/to= on its own host URL at all
-    // (/read's route never carries them -- see SyncFollowRef's own comment)
-    // -- so a SplitMode instance applies a window/ref change DIRECTLY via
-    // ApplyExternalQuery instead of a Nav.NavigateTo that nothing would ever
-    // read back. Standalone (!SplitMode) behavior is completely unchanged.
     private async Task HandleWindowChange((int From, int To) window)
     {
-        // Batch M requirement 3a: "on release, settle into the static
-        // layered-era presentation" -- settles INSTANTLY, locally, before
-        // this method's own navigation/URL-driven reload even starts (see
-        // MapInterop.SettleMorph's own comment for why the two can never
-        // disagree). A no-op whenever this window change ISN'T the tail end
-        // of a drag (era click, readout Enter) -- _dragMorphing is simply
-        // already false there.
         if (_dragMorphing)
         {
             _dragMorphing = false;
@@ -1782,29 +736,6 @@
         Nav.NavigateTo(uri, replace: true);
     }
 
-    // ScripturePicker.OnApply (Task 13/WORLD-6). The picker itself is
-    // world-agnostic (see its own file header) -- this is the one place
-    // that decides applying it means entering /world's scripture mode.
-    // `ref` REPLACES from/to in the URL (both explicitly nulled out, not
-    // just left stale/ignored) so the two modes are never simultaneously
-    // present in the query string -- SyncFromQuery's own RefQuery-first
-    // check depends on that invariant. Batch H: SplitMode branch, same
-    // reasoning as HandleWindowChange above.
-    //
-    // Batch ST-1, DISCLOSED: deliberately does NOT dispatch SetLocus onto
-    // the shared Locus atom, unlike Reader.razor's own picker Apply. This
-    // action's own EXISTING contract (ApplyExternalQuery, just below) is
-    // "look at something on the map, decoupled from the reader" -- it turns
-    // follow OFF unconditionally first, precisely because it may show a ref
-    // that has nothing to do with where the reader actually is. Were this to
-    // ALSO overwrite Locus, it would clobber the one shared record of "the
-    // reader's real position" that a LATER follow-chip re-toggle needs to
-    // re-converge to (FOLLOW-1's own "ON re-syncs to the reader's current
-    // chapter" contract) -- so Locus stays reader-owned; only the atlas
-    // pane's own (unmigrated, pre-existing) `_scriptureRef`/scene state
-    // changes here. This is exactly the "world picker stops tracking [while
-    // follow is off], but a world-picker Apply still works" case the
-    // batch's own SYNC-1 regression test (state-sync.spec.ts) pins.
     private Task ApplyScriptureRef(string sref)
     {
         if (SplitMode)
@@ -1822,13 +753,6 @@
         return Task.CompletedTask;
     }
 
-    // mode-chip-return (WORLD-6). _from/_to are already exactly "the last
-    // applied time-mode window" (see their own field comment) -- restoring
-    // it is just navigating back to it, symmetric with ApplyScriptureRef
-    // above (ref explicitly nulled out this time). Batch H: SplitMode
-    // branch, same reasoning as HandleWindowChange above -- reachable there
-    // only while SplitMode && !_follow (the mode-chip itself is suppressed
-    // while following, see its own markup comment).
     private Task ReturnToTime()
     {
         if (SplitMode)
@@ -1846,21 +770,6 @@
         return Task.CompletedTask;
     }
 
-    // WORLD-4: Legend.razor already decided the new value (null = clear,
-    // otherwise the narrative to isolate) -- this just stores it (so Legend
-    // re-renders aria-pressed correctly, per the IsolatedId parameter below)
-    // and forwards it to the map. No explicit StateHasChanged() needed here
-    // (unlike OnPlaceHover/OnArrowHover/etc. below, which DO need it): this
-    // handler is invoked through Blazor's own EventCallback machinery
-    // (Legend's button click -> Legend.Toggle -> OnIsolate.InvokeAsync,
-    // still routed through IHandleEvent even though the InvokeAsync call
-    // itself is nested inside Legend's handler rather than a raw DOM
-    // dispatch), which re-renders the receiving component -- World -- on
-    // its own; OnPlaceHover/OnArrowHover are invoked from map.js via plain
-    // JS interop, entirely outside that pipeline, which is why those need
-    // the explicit call instead. Confirmed by removing it and polling
-    // aria-pressed with a throwaway Playwright script: it still updated
-    // correctly (~8ms after the click).
     private async Task HandleIsolate(string? narrativeId)
     {
         _isolated = narrativeId;
@@ -1870,33 +779,6 @@
         }
     }
 
-    // Debounced (60ms), latest-wins: a burst of window changes (fast
-    // dragging, rapid era clicks) cancels any fetch still in its debounce
-    // wait, and a fetch that was already in flight when superseded has its
-    // result discarded on return rather than clobbering newer state -- there
-    // is no way to cancel the HTTP call itself (AtlasClient.SceneTime takes
-    // no CancellationToken), only to ignore a stale response.
-    //
-    // Batch PERF-2a: was 150ms. Server-side re-measurement (127.0.0.1,
-    // bypassing this machine's own slow "localhost" hostname resolution --
-    // see batch-perf2a-report.md) found compose_time_scene + JSON + loopback
-    // transfer already at ~4-8ms for real windows (up to the 456KB full-span
-    // payload), not the ~220ms the controller's own probe had attributed to
-    // it -- that reading was the SAME hostname-resolution artifact, not
-    // server cost (a live release-mode server has always measured ~5ms avg/
-    // ~8ms worst case over loopback -- see this repo's own playwright.config.ts
-    // comment, unchanged by this batch). With the fetch itself effectively
-    // free, 150ms of the felt lag was pure debounce wait for no benefit;
-    // 60ms -- the low end of the brief's 50-75ms range -- still comfortably
-    // coalesces a fast drag's own per-frame window changes (each still lands
-    // well under 60ms apart) into one fetch, same coalescing behavior as
-    // before, just a shorter wait before it fires.
-    // EVT-3 Ticket 3 (the map-focus-at-time hatch): `focusPlaceId` is
-    // additive/optional -- see EnterTimeMode's own doc comment. When set,
-    // this method pans/focuses the camera on that ONE place AFTER the
-    // window's own scene loads, overriding the ordinary FitScene-to-
-    // everything camera below (a focused Place: click wants the specific
-    // location centered, not the whole window's bounding box).
     private async Task DebouncedLoadScene(int from, int to, string? focusPlaceId = null)
     {
         await JS.InvokeVoidAsync("performance.mark", "atlas:scene-start");
@@ -1928,44 +810,14 @@
             if (_mapInterop is not null)
             {
                 await _mapInterop.SetScene(scene);
-                // Batch PERF-2a: additive-only browser perf mark -- the "scene
-                // rendered" end of the end-to-end slider-adjustment timing
-                // measured against "atlas:scene-start" above (see
-                // batch-perf2a-report.md). Placed here (not after the
-                // FitScene branch below) because an ordinary same-mode window
-                // change -- the only case a real slider tick ever hits --
-                // never runs FitScene at all (see that branch's own doc
-                // comment), so this is already the last map-affecting step of
-                // a normal adjustment. Never read by any CONTRACT test; pure
-                // Performance-API bookkeeping, invisible to the DOM.
                 await JS.InvokeVoidAsync("performance.mark", "atlas:scene-rendered");
 
-                // Fix round 1: re-fit whenever the LAST fit was a different
-                // mode -- covers both "first scene ever" (_lastFitMode is
-                // still null) and "just returned from scripture mode"
-                // (_lastFitMode is "scripture"). An ordinary same-mode
-                // window change (slider drag, era click, readout Enter)
-                // leaves _lastFitMode == "time" already, so this correctly
-                // stays a no-op there, preserving Task 10's original
-                // "don't yank the camera on every slider tick" policy.
                 if (_lastFitMode != "time")
                 {
                     await _mapInterop.FitScene();
                     _lastFitMode = "time";
                 }
 
-                // EVT-3 Ticket 3: the map-focus-at-time hatch's own actual
-                // camera side effect -- the owner's own words, "exploration
-                // of places belonging to events... yields a side effect of
-                // the map opening with the appropriate state." Looked up
-                // straight off THIS SAME already-fetched `scene` (real
-                // Lat/Lon, no second fetch) -- deliverability (NAV-2 law)
-                // is the CALLER's own job (MapFocusHatch.cs's own doc
-                // comment), so a place genuinely absent from this window's
-                // own scene (a defensive edge case, never reached via the
-                // declared hatch's own real call site) just leaves the
-                // ordinary FitScene camera above untouched -- fail soft,
-                // never an error toast over a cosmetic camera miss.
                 if (focusPlaceId is not null)
                 {
                     var focusPlace = scene.Places.FirstOrDefault(p => p.Id == focusPlaceId);
@@ -1980,7 +832,6 @@
         {
             if (!cts.IsCancellationRequested)
             {
-                // Keep the last good _scene as-is -- never blank the page.
                 _errorMessage = $"Couldn't load {YearText.FormatRange(from, to)} -- check your connection and try again.";
             }
         }
@@ -1989,36 +840,14 @@
             StateHasChanged();
         }
 
-        // Polities share this same debounce/cancellation (`cts`) but are a
-        // fully independent try/catch from the scene fetch above -- a
-        // polities failure must never surface as the scene's own error
-        // toast (design-direction.md's Atlas plate detail: "failures
-        // NON-fatal -- no toast, just skip borders, log-free"). Skipped
-        // entirely (not just skipped-on-map-push) when this call was
-        // already superseded, same as the scene fetch would have been.
         if (!cts.IsCancellationRequested)
         {
             await LoadPolitiesFor(from, to, cts);
         }
     }
 
-    // Fetches the polity-border list for [from,to] and pushes it to the
-    // map. Unconditionally restores the layer's visibility FIRST, before
-    // the fetch even starts: entering/being in time mode should always
-    // show *some* polity layer (the last successfully fetched list, stale
-    // or not) rather than staying hidden from a previous scripture-mode
-    // visit just because this particular refresh failed. Silent on failure
-    // per the batch brief -- no toast, no logging, just keep showing
-    // whatever was already there.
     private async Task LoadPolitiesFor(int from, int to, CancellationTokenSource cts)
     {
-        // Fix round 1 (finding 3, carried from the retired border-tag
-        // model): this restore used to run AFTER the fetch resolved,
-        // inside the try's success branch only -- so a transient fetch
-        // failure right after returning from scripture mode left the layer
-        // hidden with nothing left to un-hide it until the NEXT successful
-        // fetch. Unconditional, before the fetch even starts, matching
-        // MapInterop.SetPolitiesVisible's own doc comment.
         if (_mapInterop is not null)
         {
             await _mapInterop.SetPolitiesVisible(true);
@@ -2041,10 +870,6 @@
         }
         catch (Exception)
         {
-            // Silent per design-direction.md's Atlas plate detail -- skip
-            // this update, keep showing whatever polities (if any) are
-            // already on the map. Visibility was already restored above,
-            // independent of this failure.
         }
         finally
         {
@@ -2052,16 +877,6 @@
         }
     }
 
-    // Same debounce/latest-wins/toast machinery as DebouncedLoadScene above,
-    // sharing the SAME _fetchCts field -- entering scripture mode cancels
-    // whatever time-mode fetch was still in flight (its debounce delay or
-    // its own await Atlas.SceneTime), and vice versa, so a slower fetch from
-    // the mode the user just left can never resolve later and clobber the
-    // scene the user actually switched to. Unlike DebouncedLoadScene, FitScene
-    // runs on EVERY successful load here, not just the first ever -- a
-    // scripture pick is a deliberate jump to a specific (often distant)
-    // place, the same spirit as a fresh deep link, not a continuous slider
-    // tick that should leave the user's current pan/zoom alone.
     private async Task DebouncedLoadScriptureScene(string sref)
     {
         _fetchCts?.Cancel();
@@ -2094,19 +909,6 @@
                 await _mapInterop.SetScene(scene);
                 await _mapInterop.FitScene();
 
-                // Atlas plate detail: "Scripture mode: hide the border
-                // layer AND the tag (no time context)" -- the tag hides
-                // itself via the @if in the markup (keyed off _scriptureRef,
-                // already non-null by now); the layer's hide now happens in
-                // SyncFromQuery, unconditionally, the moment _scriptureRef
-                // is set (fix round 1, finding 5 -- see that comment), so it
-                // still happens even when this fetch fails. DebouncedLoadScene's
-                // LoadBordersFor restores the layer on a later return to time mode.
-
-                // Stamp the mode even though this branch always fits
-                // regardless of the PRIOR value -- a later time-mode load
-                // needs to see "scripture" here to know IT must re-fit too
-                // (see DebouncedLoadScene's own _lastFitMode check).
                 _lastFitMode = "scripture";
             }
         }
@@ -2114,7 +916,6 @@
         {
             if (!cts.IsCancellationRequested)
             {
-                // Keep the last good _scene as-is -- never blank the page.
                 _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
             }
         }
@@ -2124,20 +925,8 @@
         }
     }
 
-    // IMapEvents -- called from map.js via MapEventsSink, so these run
-    // outside Blazor's own UI-event dispatch and must trigger their own
-    // re-render.
     public void OnPlaceHover(string id, double x, double y)
     {
-        // Batch G1 requirement 3: "hover behavior unchanged for UNPINNED
-        // browsing" -- once a card is pinned it OWNS the display slot
-        // exclusively; an ordinary hover on some OTHER marker while pinned
-        // does nothing (no preview swap) until the pin itself changes
-        // (clicking a different marker re-pins to it, per OnPlaceClick
-        // below) or is explicitly closed. Simpler and more predictable than
-        // a transient hover-preview-over-a-pin, and keeps this method's own
-        // pre-existing hover-persistence logic completely untouched for the
-        // unpinned case this guard doesn't touch.
         if (_pinnedPlaceId is not null)
         {
             return;
@@ -2157,23 +946,6 @@
         StateHasChanged();
     }
 
-    // Batch C3 decision 2 (dense-marker disambiguation): fired INSTEAD of
-    // OnPlaceHover above whenever map.js's own resolveHoverTarget decided
-    // the pointer's nearest candidate is genuinely coincident (at the
-    // current zoom) with one or more others, or whenever a marker-
-    // cluster-{n} glyph itself was hovered -- `ids` is that cluster's own
-    // full member list (map.js's wireClusterEvents). Same pinned-guard,
-    // same _closeCts cancel, same StateHasChanged discipline as
-    // OnPlaceHover -- the only difference is WHAT gets shown (a
-    // PlaceChooser listing every candidate, instead of a single PlaceCard).
-    // Resolves each id the SAME way OnPlaceHover/OnPlaceClick already do
-    // (lit ScenePlace, or a synthetic QuietAsScenePlace) so a chooser row's
-    // content (name, lit-vs-quiet dot) is never inconsistent with what
-    // hovering or clicking that SAME place directly would show. `ids`
-    // arrives already ascending-sorted by place id (map.js's own
-    // determinism law) -- preserved here via `ids.Select`, never re-sorted
-    // by anything else (decision 4: chooser candidate order is
-    // deterministic).
     public void OnPlaceHoverAmbiguous(string[] ids, double x, double y)
     {
         if (_pinnedPlaceId is not null)
@@ -2199,38 +971,15 @@
         StateHasChanged();
     }
 
-    // Batch E2: a quiet dot (map.js's own quiet-marker-{id}) reports through
-    // the SAME OnPlaceHover interop call a lit marker's own marker-{id} does
-    // (map.js's wireEvents is shared between the two icon kinds -- see its
-    // own comment) -- this is the one place that decides what "the SAME
-    // place card" (batch-e2-brief.md Requirement 3) means for an id that
-    // isn't in _scene.Places: a synthetic ScenePlace built from the scene's
-    // own QuietPlaces entry, with Events left empty. PlaceCard.razor reads
-    // that empty list as its own signal to render the quiet line instead of
-    // verse content (see its own comment) -- SCENE-2 guarantees every REAL
-    // lit ScenePlace already has >=1 event, so an empty Events list can only
-    // ever mean this synthetic path, never a genuinely lit place. Name is
-    // set to DisplayName (QuietPlace carries no separate plain "name" field
-    // at all -- the wire payload stays deliberately lean, see wire.rs's own
-    // QuietPlace comment) and Brightness to 0 (an unlit place has no glow to
-    // report, and nothing downstream of this synthetic object -- PlaceCard,
-    // OpenPlaceFromCard's PlaceNode -- ever reads Brightness off it anyway).
+    // A synthetic ScenePlace for a quiet (unlit) marker: Events is always
+    // empty here, which PlaceCard relies on to render the quiet line
+    // instead of verse content -- a real lit place always has >=1 event.
     private ScenePlace? QuietAsScenePlace(string id)
     {
         var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
         return quiet is null ? null : new ScenePlace(quiet.Id, quiet.DisplayName, quiet.DisplayName, quiet.Lat, quiet.Lon, 0, new List<SceneEvent>());
     }
 
-    // Requirement 0c: does NOT unconditionally schedule a close anymore --
-    // see _pointerOverCard's own comment for the exact race this guards
-    // against. If the pointer is (as far as this component currently
-    // knows) already over the card, a marker-leave arriving late tells us
-    // nothing new: the card's own eventual OnPointerLeave (CardPointerLeave
-    // below) is what will actually close it once the pointer leaves THAT.
-    // Batch G1: while pinned, this still schedules exactly as before (no
-    // extra guard needed here) -- ScheduleCardClose itself is the ONE choke
-    // point that refuses to actually close a pinned card, so every caller
-    // (this one and CardPointerLeave below) stays simple.
     public void OnPlaceLeave()
     {
         if (_pointerOverCard)
@@ -2241,17 +990,6 @@
         ScheduleCardClose();
     }
 
-    // Batch G1 requirement 3: click a marker (lit or quiet) -> pin its card
-    // open. WORLD-1/WORLD-2's own original hover-only design (and Batch
-    // E2's own "click is a no-op today, deferred to Batch G1" note on the
-    // quiet side) is superseded by this -- the click IS now the pinning
-    // gesture, for both marker kinds identically. Resolves the place the
-    // exact same way OnPlaceHover does (lit ScenePlace, or a synthetic
-    // QuietAsScenePlace) so a pinned card renders with identical content to
-    // a hovered one, per CONTRACT's own hover/pin content-parity promise.
-    // Clicking a DIFFERENT marker while one is already pinned simply
-    // re-pins to the new one -- no special-casing needed, this assignment
-    // is unconditional.
     public void OnPlaceClick(string id, double x, double y)
     {
         var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
@@ -2269,28 +1007,12 @@
         StateHasChanged();
     }
 
-    // PlaceChooser.OnPick (Batch C3 decision 2): "click a row = exactly
-    // what clicking that place's marker does today" -- the brief's own
-    // wording, verbatim -- so this just closes the chooser and forwards
-    // straight into OnPlaceClick, the SAME pin-and-show path a direct
-    // marker click already takes, anchored at the chooser's own X/Y (every
-    // tied candidate a chooser can ever list rendered within, at most,
-    // HIT_RADIUS_PX or CLUSTER_D_PX of that point -- close enough that
-    // re-anchoring the resulting card there, rather than hunting down the
-    // picked place's own individual marker position, is imperceptible and
-    // not worth a second round trip through MapInterop).
     private void PickChooserPlace(string id)
     {
         _chooserPlaces = null;
         OnPlaceClick(id, _chooserX, _chooserY);
     }
 
-    // Batch G2 decision 6: map.js's own isToggleSelectClick branch (marker
-    // AND label, per that function's own comment) -- never pins, never
-    // opens a popover; resolves the place the SAME way OnPlaceClick/
-    // OnPlaceHover do (lit ScenePlace or a synthetic QuietAsScenePlace) so
-    // the tray chip's own Title always matches whatever name this same
-    // place shows everywhere else in the current scene.
     public void OnPlaceToggleSelect(string id)
     {
         var place = _scene?.Places.FirstOrDefault(p => p.Id == id) ?? QuietAsScenePlace(id);
@@ -2299,15 +1021,9 @@
             return;
         }
 
-        // Batch ST-3 (R2): dispatches directly onto the shared Selection atom.
         SelectionAtom.Dispatch(new ToggleSelection(new ExplorationDescriptor("Place", id, place.DisplayName)));
     }
 
-    // arrow-tip (WORLD-4/contract "arrow-tip"). `key` is "{narrative}:{order}"
-    // per the ArrowLayer contract (map.js), matching the
-    // arrow-{narrative}-{order} testid exactly -- split on the LAST colon
-    // (never the first) so this stays correct even if a narrative id ever
-    // contained one; `order` itself never does.
     public void OnArrowHover(string key, double x, double y)
     {
         var split = key.LastIndexOf(':');
@@ -2324,11 +1040,6 @@
         }
 
         var narrativeName = _scene?.Narratives.FirstOrDefault(n => n.Id == arrow.Narrative)?.Name ?? arrow.Narrative;
-        // Batch E: DisplayName (the scene's own period-resolved name), not
-        // the place's default Name -- same swap as the marker label/card
-        // title, so this text never contradicts what's shown elsewhere in
-        // the SAME scene (e.g. never "The Conquest: Luz -> Jericho" when
-        // the map itself currently labels that marker "Bethel").
         var fromName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.FromPlace)?.DisplayName ?? arrow.FromPlace;
         var toName = _scene?.Places.FirstOrDefault(p => p.Id == arrow.ToPlace)?.DisplayName ?? arrow.ToPlace;
 
@@ -2344,23 +1055,10 @@
         StateHasChanged();
     }
 
-    // Arrow clicks are reported by map.js per the interop contract but have
-    // no behavior yet -- out of scope for WORLD-3/WORLD-4 (hover only).
-    // Documented no-op rather than omitted so the IMapEvents contract stays
-    // satisfied without silently swallowing future intent -- unlike
-    // OnPlaceClick (Batch G1 gave marker clicks real behavior: pinning),
-    // arrow clicks remain exactly as they were.
     public void OnArrowClick(string key, double x, double y)
     {
     }
 
-    // Batch G1 requirement 3: a genuine map-background click (map.js's own
-    // stopPropagation on every marker/arrow click guarantees this never
-    // ALSO fires for one of those in the same gesture -- see map.js's own
-    // comment) closes a pinned card, per the brief's "closes via Escape, an
-    // X, or clicking elsewhere on the map." A no-op when nothing is pinned
-    // (an ordinary click on empty map/terrain/borders has never had any
-    // effect, and still doesn't).
     public void OnMapClick()
     {
         if (_pinnedPlaceId is null)
@@ -2372,15 +1070,6 @@
         StateHasChanged();
     }
 
-    // Batch G1 requirement 3: Escape closes a pinned card -- but ONLY when
-    // no popover is currently open, so a single Escape press closes exactly
-    // the TOPMOST layer: ExplorerPopover already has its own Escape handler
-    // (OnKeyDown -> RequestClose, scoped to the popover panel); this method
-    // deliberately steps aside while _activeNode is non-null rather than
-    // ALSO closing the pin in the same keypress, so a user backing out of a
-    // popover opened from a pinned card's own content (a verse, a date, the
-    // title) doesn't lose the pin underneath it in the same press. A SECOND
-    // Escape, once the popover is gone, closes the pin.
     public void OnEscapePressed()
     {
         if (_activeNode is not null || _pinnedPlaceId is null)
@@ -2392,16 +1081,6 @@
         StateHasChanged();
     }
 
-    // Batch H fix round 2 (view-state round-trip, review Critical-1): fired
-    // on every Leaflet moveend/zoomend (map.js's init()) -- keeps
-    // ViewState.Map's camera fields continuously current instead of reading
-    // them once, awaited, at dispose time (see DisposeAsync's own comment
-    // for the exact race that read lost). Purely a write-through into the
-    // shared service, nothing on THIS component's own render output depends
-    // on it, so no StateHasChanged() -- same shape as Reader.razor's own
-    // OnScroll. Fires for the very first auto-fit too, not just user drags/
-    // zooms (map.js's own comment on why), so there's no gap for "opened
-    // and closed without ever touching the map."
     public void OnCameraChanged(double lat, double lon, double zoom)
     {
         ViewState.Map.CenterLat = lat;
@@ -2409,14 +1088,6 @@
         ViewState.Map.Zoom = zoom;
     }
 
-    // Batch M requirement 4: a delta-bearing polity-era-boundary ring was
-    // clicked (or Enter-activated) -- map.js's own BorderLayer._makeDeltaHit
-    // already resolved every field this needs (its own in-memory roster),
-    // so this is a direct construction, no fetch. Opens the SAME
-    // ExplorerPopover every other explorable element on this page opens
-    // (OpenExploreNode's own "close any pinned card, push the node" shape),
-    // even though a delta ring has no hover-card precursor to close --
-    // CloseCardNow is harmless when nothing is pinned.
     public void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
     {
         _activeNode = new PolityDeltaNode(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
@@ -2424,21 +1095,10 @@
         StateHasChanged();
     }
 
-    // PlaceCard.OnOpenPlace (WORLD-8/Task 15): closes the hover card
-    // immediately (rather than leaving it to the pointer-leave timer) since
-    // its content is now shown, promoted, inside the popover that's about
-    // to open -- avoids two parchment artifacts (hover card + popover)
-    // ever visibly overlapping for the delay window.
     private Task OpenPlaceFromCard()
     {
         if (_hoverPlace is { } place)
         {
-            // Batch R requirement 3 (PlaceDatesSection/PlaceBlurbSection):
-            // the SAME WindowFrom/WindowTo the <PlaceCard> markup above
-            // already computes for its own blurb/dates fetch -- the popover's
-            // own PlaceNode resolves against the identical window so its
-            // blurb section never contradicts what the hover card it was
-            // promoted from just showed.
             var windowFrom = _scriptureRef is null ? _from : (int?)null;
             var windowTo = _scriptureRef is null ? _to : (int?)null;
             _activeNode = new PlaceNode(place.Id, place.DisplayName, windowFrom, windowTo);
@@ -2448,17 +1108,6 @@
         return Task.CompletedTask;
     }
 
-    // Batch E: PlaceCard.OnExploreNode -- a date affordance (established/
-    // destroyed) was activated. Same "promote into a real popover, close
-    // the hover card so the two parchment artifacts never overlap" pattern
-    // as OpenPlaceFromCard above, just with a caller-supplied node (a
-    // YearNode PlaceCard already constructed, having the DateClaimOut in
-    // hand) instead of building a PlaceNode here. Batch G1 requirement 1b
-    // reuses this SAME callback for card verse/passage clicks (VerseNode/
-    // PassageNode) -- "follow that exact pattern for layering/close
-    // behavior" per the brief -- so a pinned card is superseded (fully
-    // closed, including its own pin, via CloseCardNow) exactly the same way
-    // an unpinned one already was; no separate handling needed for either.
     private Task OpenExploreNode(IExplorable node)
     {
         _activeNode = node;
@@ -2472,28 +1121,12 @@
         return Task.CompletedTask;
     }
 
-    // PlaceCard.OnClosePin (Batch G1 requirement 3): the card's own "X" --
-    // present only while pinned (see PlaceCard.razor's own Pinned param) --
-    // and CONTRACT's own Escape/click-elsewhere paths (OnEscapePressed/
-    // OnMapClick below) all funnel here.
     private Task ClosePinnedCard()
     {
         CloseCardNow();
         return Task.CompletedTask;
     }
 
-    // PlaceCard.OnGoToPlace (Batch G1 requirement 3, narrative traversal):
-    // fired with the adjacent place's own id by a ‹ previous event / next
-    // event › control. Resolves it the same way a marker click would (lit
-    // or quiet -- arrows only ever connect LIT places per ARROW-1, so in
-    // practice this always resolves via the lit branch, but mirroring
-    // OnPlaceClick's own full resolution costs nothing and stays correct
-    // even if that invariant ever loosens) and, if it resolves, pans the
-    // map there and re-pins. A place that doesn't resolve at all (off-
-    // window -- e.g. a scripture-mode scene whose own lit set doesn't
-    // include the adjacent place, or theoretically any other gap) no-ops
-    // gracefully, per the brief: "if the adjacent place is off-window...
-    // no-op gracefully."
     private async Task GoToAdjacent(string placeId)
     {
         var place = _scene?.Places.FirstOrDefault(p => p.Id == placeId) ?? QuietAsScenePlace(placeId);
@@ -2508,50 +1141,21 @@
         _hoverPlace = place;
         _hoverX = x;
         _hoverY = y;
-        _chooserPlaces = null; // Batch C3: defensive symmetry with OnPlaceClick -- see its own comment (unreachable in practice: the chooser only ever shows unpinned, per OnPlaceHoverAmbiguous's own pinned-guard)
+        _chooserPlaces = null;
     }
 
-    // The one choke point for "the card is now fully gone" -- ALWAYS clears
-    // _pinnedPlaceId alongside _hoverPlace (Batch G1), never just one or the
-    // other: a fully-closed card can never stay "pinned" underneath nothing
-    // shown (a real, latent bug this guards against -- see _pinnedPlaceId's
-    // own field comment -- OnPlaceHover's own pinned-guard would otherwise
-    // silently ignore every future hover on ANY marker, forever, the moment
-    // something closed the card via a path that forgot to also clear this).
+    // The one choke point for "the card is fully gone": always clears
+    // _pinnedPlaceId alongside _hoverPlace. Clearing only one would leave
+    // OnPlaceHover's pinned-guard silently ignoring every future hover.
     private void CloseCardNow()
     {
         _closeCts?.Cancel();
         _hoverPlace = null;
-        _chooserPlaces = null; // Batch C3: the ONE choke point covers the chooser too -- see its own field comment
+        _chooserPlaces = null;
         _pointerOverCard = false;
         _pinnedPlaceId = null;
     }
 
-    // The place card stays open while the pointer is over the marker OR
-    // the card itself: leaving either one schedules a close (OnPlaceLeave
-    // above / CardPointerLeave below), entering either one (OnPlaceHover
-    // above / CardPointerEnter below) cancels a pending close. This gives
-    // the pointer room to cross the gap between a marker and its card --
-    // which never sit at the same screen point -- without the card
-    // flickering shut.
-    //
-    // Requirement 0c: the grace window is 350ms, up from 150ms -- the
-    // SECOND half of the fickleness fix, alongside _pointerOverCard itself.
-    // 150ms was tight enough that an ordinary, unhurried pointer move
-    // across the marker-to-card gap could occasionally still lose the
-    // race even with _pointerOverCard's own fix in place (the card's own
-    // OnPointerEnter has to actually finish its async Blazor dispatch
-    // before the close fires); 350ms gives that real margin without
-    // reading as a delay a user would ever notice on a deliberate
-    // pointer-leaves-both close (CONTRACT's own "closes within ~1s" bar
-    // for requirement 0c's acceptance test).
-    // Batch G1 requirement 3: the ONE choke point that refuses to schedule
-    // a close at all while pinned ("stays through mouse-leave" -- a marker's
-    // own real mouseout still fires OnPlaceLeave regardless of pin state,
-    // map.js has no notion of pinning; this is where that gets stopped).
-    // Both of this method's own callers (OnPlaceLeave, CardPointerLeave)
-    // stay unchanged/unguarded themselves -- simpler than duplicating the
-    // same check at every call site.
     private void ScheduleCardClose()
     {
         if (_pinnedPlaceId is not null)
@@ -2565,23 +1169,12 @@
         _ = CloseCardAfterDelay(cts);
     }
 
-    // PlaceCard.OnPointerEnter: the pointer has physically entered the
-    // card. Cancels any pending close (same as the pre-0c CancelCardClose
-    // this replaces) AND records that fact in _pointerOverCard, so a
-    // late-arriving marker-leave (OnPlaceLeave above) knows not to
-    // schedule a fresh close out from under it -- see _pointerOverCard's
-    // own comment for the full race this closes.
     private void CardPointerEnter()
     {
         _pointerOverCard = true;
         _closeCts?.Cancel();
     }
 
-    // PlaceCard.OnPointerLeave: the pointer has physically left the card.
-    // Clears _pointerOverCard (a later marker-leave, if one arrives, is
-    // now free to schedule its own close again) and schedules the close
-    // itself -- same as the pre-0c ScheduleCardClose wiring this replaces,
-    // just also keeping _pointerOverCard honest.
     private void CardPointerLeave()
     {
         _pointerOverCard = false;
@@ -2605,61 +1198,22 @@
         }
 
         _hoverPlace = null;
-        _chooserPlaces = null; // Batch C3: the delayed-close path covers the chooser too -- see CloseCardNow's own comment
+        _chooserPlaces = null;
         _pointerOverCard = false;
         StateHasChanged();
     }
 
-    // Batch H (view-state round-trip), fix round 2 (review Critical-1):
-    // ViewState.Map is NOT captured here at all anymore -- neither the
-    // window/ref/follow fields nor the camera. Fix round 2's FIRST attempt
-    // moved the five non-camera fields into this method's own synchronous
-    // prefix (before its one await, _mapInterop.DisposeAsync()), reasoning
-    // that a synchronous prefix of an async method always runs inline in
-    // the caller's own call stack -- sound in isolation, but EMPIRICALLY
-    // still lost the exact race it was meant to close (a regression test
-    // written against that fix stayed red): Blazor's renderer does not
-    // guarantee an outgoing component's DisposeAsync is even CALLED before
-    // an incoming component's own OnParametersSetAsync reads shared state,
-    // on a navigation that disposes one component and mounts another in
-    // the same step. No fix confined to DisposeAsync, sync or not, can
-    // close a race whose losing side is "not yet invoked at all." The
-    // actual fix -- SyncViewState(), called continuously the moment
-    // _scriptureRef/_from/_to/_follow change (EnterScriptureMode/
-    // EnterTimeMode/SyncFromQuery's own inline branches -- see
-    // SyncViewState's own comment) and OnCameraChanged below (a Leaflet
-    // moveend/zoomend listener, map.js's init()) for the camera -- removes
-    // DisposeAsync from the critical path entirely, mirroring reader.js's
-    // own watchScroll/OnScroll exactly. By the time ANY instance disposes,
-    // whatever it had worth capturing is already in ViewState.
     public async ValueTask DisposeAsync()
     {
         _fetchCts?.Cancel();
         _closeCts?.Cancel();
 
-        // Batch ST-1: unsubscribe from the SHARED (app-lifetime) Locus atom
-        // before this instance goes away -- LocusAtom outlives this
-        // component (it's a DI singleton), so leaving the subscription wired
-        // would call back into a disposed component on every future
-        // navigation's SetLocus dispatch. _followRunner.Dispose() unwires
-        // its own Source.Changed subscription the same way (see that
-        // class's own Dispose).
         LocusAtom.Changed -= OnLocusChanged;
         _followRunner.Dispose();
 
-        // Batch ST-2: same reasoning, for the two app-lifetime atoms this
-        // batch adds subscriptions on.
         TimeWindowAtom.Changed -= OnTimeWindowChanged;
         ViewArrangementAtom.Changed -= OnViewArrangementChanged;
 
-        // Batch ST-3 (R1): defensive release -- ordinarily already null by
-        // the time DisposeAsync runs (ToggleFollow's OFF branch/
-        // OnViewArrangementChanged's own OFF edge already call
-        // DisableFollowScene whenever follow is turned off before a close),
-        // but a split pane closed WHILE still following (CloseSplitAtlas,
-        // Reader's own "X" button) never fires that edge -- disposing here
-        // is what guarantees this instance can never remain the "follow-
-        // scene" owner after it's gone, regardless of which path led here.
         DisableFollowScene();
 
         if (_mapInterop is not null)

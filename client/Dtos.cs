@@ -2,23 +2,11 @@ using System.Text.Json;
 
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// Wire DTOs mirroring the JSON shapes atlas-server serves (see
-/// server/atlas-core/src/wire.rs, server/atlas-core/src/data.rs and
-/// server/atlas-server/src/handlers.rs). Deserialize/serialize these with
-/// <see cref="Wire.Options"/> (snake_case property names) -- never per-call
-/// options. Every record name and shape here is pinned by the Task 7 brief;
-/// later client tasks depend on these exact names.
-/// </summary>
 public sealed record Scene(
     string Mode,
     TimeRangeDto? Window,
     string? Ref,
     List<ScenePlace> Places,
-    // Batch E2 (the ever-present graph): every event-bearing place NOT in
-    // Places for this window -- always present (never null), always empty
-    // for a scripture-mode scene (server: wire.rs's own Scene::quiet_places
-    // doc comment has the full "always an array" rationale).
     List<QuietPlace> QuietPlaces,
     List<SceneArrow> Arrows,
     List<SceneNarrative> Narratives);
@@ -28,42 +16,20 @@ public sealed record TimeRangeDto(int FromYear, int ToYear);
 public sealed record ScenePlace(
     string Id,
     string Name,
-    // Batch E: the period-true name resolved for the scene's own window
-    // (server: atlas_core::history::resolve_display_name). Always present
-    // -- equal to Name whenever this place has no curated history or none
-    // of its curated name ranges intersects the window.
     string DisplayName,
     double Lat,
     double Lon,
     int Brightness,
     List<SceneEvent> Events,
-    // Batch H (existence gating, deferred from E2): curated established/
-    // destroyed YEARS (server: atlas_core::history::resolve_existence) --
-    // not the richer PlaceDateClaim shape (that's PlaceHistoryOut's own
-    // Established/Destroyed, with verses/note; this is deliberately lean,
-    // matching QuietPlace's own "no events on the wire unless load-bearing"
-    // philosophy). Both null when this place has no curated history, or a
-    // curated history with neither claim -- "always labels" per the brief.
-    // Trailing + optional so every existing positional-record construction
-    // site (e.g. World.razor's QuietAsScenePlace) keeps compiling unchanged.
     int? ExistenceFrom = null,
     int? ExistenceTo = null);
 
-/// Batch E2: one "quiet" place -- an event-bearing place not lit (not in
-/// <see cref="Scene.Places"/>) for this window. Deliberately lean (no
-/// events/verse groups at all -- server: wire.rs's own QuietPlace doc
-/// comment). <see cref="DisplayName"/> uses the SAME window-resolution
-/// rules as <see cref="ScenePlace.DisplayName"/>; <see cref="TotalEvents"/>
-/// is the place's ALL-TIME count, not scoped to this window.
 public sealed record QuietPlace(
     string Id,
     string DisplayName,
     double Lat,
     double Lon,
     int TotalEvents,
-    // Batch H: same fields, same rule, as ScenePlace.ExistenceFrom/-To above
-    // -- a quiet place is exactly where this matters most (the ever-present
-    // graph shows a dot for every event-bearing place regardless of window).
     int? ExistenceFrom = null,
     int? ExistenceTo = null);
 
@@ -92,173 +58,46 @@ public sealed record EraDto(string Id, string Name, int FromYear, int ToYear);
 
 public sealed record ChapterOut(string Ref, string Book, int Chapter, List<VerseOut> Verses);
 
-/// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): the chapter-scoped
-/// commentary listing <c>GET /api/kretzmann/chapter/{cref}</c> returns --
-/// one row per verse that carries >=1 real commentary item (an
-/// uncommented verse contributes no row at all, mirroring the server's own
-/// "if (items.Count > 0)" filter). Replaces Kretzmann.razor's own retired
-/// per-verse fan-out (one <c>commented-on-by</c> edges call per verse,
-/// concurrently) with ONE fetch.
 public sealed record KretzmannChapterItemOut(string Id, string? Heading);
 
 public sealed record KretzmannChapterVerseOut(int Verse, List<KretzmannChapterItemOut> Items);
 
 public sealed record KretzmannChapterOut(List<KretzmannChapterVerseOut> Verses, string Version);
 
-/// Batch R requirement 5 (place-in-verse hover -> marker blink):
-/// <see cref="Places"/> is the reverse-index list <c>GET /api/chapter/{cref}</c>
-/// now carries per verse -- every curated place whose own <c>verse_links</c>
-/// names this verse. Always present (possibly empty); the mini-reader
-/// (Explore/VerseTextSection) is what decides, per verse, whether to wrap any
-/// substring as a hoverable mention -- see that file's own comment for why a
-/// plain-text name search against <see cref="PlaceRefDto.Name"/> is this
-/// app's only mention-detection mechanism (there is no richer per-mention
-/// character-offset data anywhere in this pipeline).
-/// Batch T requirement 5: the reader-heading Reader.razor renders directly
-/// above this verse's own line, when this verse is a heading ANCHOR (server:
-/// `AtlasData::heading_for_verse`) -- `EventId` is what a click opens (a
-/// fresh `EventNode`); `Title` is rendered immediately, no second fetch
-/// needed just to show the heading text.
-/// Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): <see cref="Kind"/>
-/// ("event" | "general") lets Reader.razor apply the quiet, non-traversable
-/// styling to a general-kind heading BEFORE the click -- "if something
-/// isn't traversable it shouldn't look like other things that are actually
-/// traversable," the owner's own law.
-/// M-D1 requirement 1 (CHAPTER-BOUNDARY CONTINUATION): <see cref="IsContinuation"/>
-/// -- true when this verse is NOT the container's own true first-covered
-/// verse but a later chapter its own coverage continues into -- lets
-/// Reader.razor render a quiet continuation marker, distinct from an
-/// ordinary primary heading, BEFORE the click (same affordance-honesty-as-
-/// data discipline <see cref="Kind"/> above already establishes).
 public sealed record HeadingDto(string EventId, string Title, string Kind, bool IsContinuation = false);
 
-/// Batch M-D2 (the owner's cross-reference superscript directive): <see cref="XrefCount"/>
-/// is this verse's own `cites` edge-summary COUNT (design spec §5), read
-/// straight off the generic graph port server-side and folded onto the
-/// per-chapter response -- see <c>handlers::chapter</c>'s own doc comment for
-/// why (one round trip for the whole chapter, not N). ALWAYS present (0, not
-/// omitted) -- Reader.razor's own superscript decision is a pure function of
-/// this one integer (see <c>Pages.Reader.XrefMarkerText</c>): 0 -> no
-/// marker, 1-3 -> that many lettered superscripts, &gt;3 -> the many-marker.
-/// U5 (in-text mentions-attested links): <see cref="Persons"/> is
-/// <see cref="Places"/>'s own sibling reverse-index -- every Person entity
-/// the graph's own <c>mentions</c> table attests for this verse (server:
-/// <c>GraphService.persons_by_verse</c>), same "always present, possibly
-/// empty" shape. <see cref="PlaceMentions"/> (Explore/PlaceMentions.cs) is
-/// what turns this list, together with <see cref="Places"/>, into in-text
-/// hoverable/clickable spans over <see cref="Text"/>.
 public sealed record VerseOut(int Verse, string Text, List<PlaceRefDto> Places, List<PersonRefDto> Persons, List<WordsOfChristSpanDto> WordsOfChrist, HeadingDto? Heading = null, int XrefCount = 0);
 
 public sealed record PlaceRefDto(string Id, string Name);
 
-/// U5's own Person sibling of <see cref="PlaceRefDto"/> -- an id + curated
-/// label, nothing more (no `Kind` field: unlike a place mention, which can
-/// resolve to a place OR a period-scoped polity name, a person mention only
-/// ever names exactly one node kind).
 public sealed record PersonRefDto(string Id, string Name);
 
-/// Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
-/// every translation"): one sub-verse red-letter span, CHAR offsets into
-/// the owning verse's own <see cref="VerseOut.Text"/>/<see cref="VerseDetail.Text"/>/
-/// <see cref="TextUnitDto.Text"/> -- server: <c>WordsOfChristSpanOut</c>'s
-/// own doc comment has the full "char offsets, not byte offsets, so
-/// <c>string.Substring</c> stays correct" reasoning. Half-open:
-/// <c>text[Start..End]</c> (<c>text.Substring(Start, End - Start)</c>).
 public sealed record WordsOfChristSpanDto(int Start, int End);
 
-/// <summary>
-/// The verse-detail endpoint's own event shape -- <see cref="SceneEvent"/>'s
-/// own four fields (id/label/verse_groups, <see cref="When"/> nullable
-/// here, see below) plus <see cref="Places"/>. Batch HOTFIX-4: given its
-/// OWN dedicated type (was a reuse of <see cref="SceneEvent"/> -- the map
-/// scene's own shape, which sends an extra <c>places</c> field this record
-/// silently dropped, and a NON-nullable <c>when</c>, which would have
-/// silently carried the server's own internal undated-sentinel placeholder
-/// for a general-kind event's row -- dormant only because this type's own
-/// renderer never read either field) -- disclosed drive-by fix, found
-/// while adding <see cref="Kind"/> below, not otherwise in this
-/// requirement's own scope.
-/// </summary>
 public sealed record VerseEventDto(string Id, string Label, TimeRangeDto? When, List<VerseGroup> VerseGroups, List<string> Places,
-    // Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): "event" | "general"
-    // -- lets VerseEventMembershipSection apply the quiet, non-traversable
-    // styling to a general-kind row before the click.
     string Kind,
-    // Batch PROV-1 (owner order 1, "the source from which it came"): THIS
-    // ROW's own source -- the provenance id of the Event NODE this
-    // membership row points at ("theographic" | "curated"). Resolved
-    // against the already-fetched /api/sources document by
-    // ProvenanceResolver; rendered by the "?" affordance on the row.
-    // Non-nullable with a "" default because the server always sends it
-    // (an unconditional field, never omitted) -- the default exists only
-    // so a hand-built test fixture need not restate it.
-    //
-    // FIX ROUND 1 (review H-1, HIGH): this comment used to end "and "" is
-    // what ProvenanceResolver renders as a LOUD unresolved notice." THAT
-    // WAS FALSE when written -- four client sites filtered whitespace ids
-    // out before resolution, so a blank rendered as no "?" at all. It is
-    // TRUE now, and true twice over: the filters are gone (a blank id
-    // handed to the affordance renders the loud notice), and the server
-    // no longer emits a blank in the first place -- handlers::verse's
-    // membership-row read is an ApiError::internal, not an
-    // unwrap_or_default.
+    // Defaults to "" only so a hand-built test fixture need not restate it -- the server always
+    // sends a real value, and a blank one is meaningful: it renders a loud unresolved-provenance
+    // notice, not silence.
     string Provenance = "");
 
-/// <summary>
-/// <c>GET /api/verse/{vref}</c>.
-/// </summary>
-/// Batch T requirement 3 ("verse popover: event membership replaces
-/// prev/next"): Batch N's own `NarrativePositions` field is RETIRED here --
-/// verse-level chronological PRIOR/FOLLOWING no longer exists (it lives
-/// entirely on the EVENT node now, `GET /api/narrative/event/{id}`/
-/// `GET /api/event/{id}`, both id-keyed). `Events` (unchanged since before
-/// Batch N) is what the client's own NEW "EVENT" section reads instead --
-/// it already names every EVENT-kind PASSAGE citing this verse, which is
-/// exactly "event membership."
 public sealed record VerseDetail(
     string Ref,
     string Text,
-    // Batch RED-1: this verse's own aligned sub-verse red-letter spans --
-    // see VerseOut.WordsOfChrist's own doc comment (identical shape).
     List<WordsOfChristSpanDto> WordsOfChrist,
     BookMetaDto BookMeta,
     List<VerseEventDto> Events,
     List<CrossRefOut> CrossRefs,
-    // Batch F ("the small catechism"): catechism items citing this verse --
-    // shares this ALREADY-fetched verse-detail response (server:
-    // handlers::verse's own doc comment) rather than a second round trip,
-    // "one fetch, not four." Always present, possibly empty.
     List<CatechismRefDto> Catechism,
-    // Batch PROV-1: THIS VERSE's own source -- the provenance id of the
-    // TextUnit node Text was rendered from ("kjv"). The focus card's own
-    // attribution; VerseTextSectionProvider hands it to the "?" affordance.
     string Provenance = "",
-    // Batch PROV-1: every distinct provenance id behind the CROSS
-    // REFERENCES section (the owner's own headline case, "sourced from
-    // openbible.com") and behind THE SMALL CATECHISM section. Lists, not
-    // strings -- see handlers::VerseDetailOut's own doc comments for why a
-    // section that gains a second source must start naming both.
     List<string>? CrossRefsProvenance = null,
     List<string>? CatechismProvenance = null)
 {
-    /// <summary>Batch PROV-1: the two section-level attributions, read
-    /// safely -- every consumer goes through these rather than
-    /// null-checking at each call site (the same shape
-    /// <see cref="EventDetail.MentionedInOrEmpty"/> already established for
-    /// an omitted-when-empty wire list).</summary>
     public IReadOnlyList<string> CrossRefsProvenanceOrEmpty => CrossRefsProvenance ?? new List<string>();
 
     public IReadOnlyList<string> CatechismProvenanceOrEmpty => CatechismProvenance ?? new List<string>();
 }
 
-/// Batch N: one (narrative, event) position a verse or event touches --
-/// mirrors <c>atlas_core::narrative::NarrativePosition</c> exactly. Shared
-/// shape for <see cref="VerseDetail.NarrativePositions"/> (verse-keyed) and
-/// <c>GET /api/narrative/event/{id}</c>'s own array response (event-id-keyed,
-/// requirement 1's own "traversal steps resolve by event, not by
-/// re-searching verses" half). <see cref="Prior"/>/<see cref="Following"/>
-/// are null exactly at the narrative's own first/last leg -- conditional
-/// presence, never a disabled stub.
 public sealed record NarrativePositionDto(
     string NarrativeId,
     string NarrativeName,
@@ -267,71 +106,20 @@ public sealed record NarrativePositionDto(
     NarrativeAdjacentEventDto? Prior,
     NarrativeAdjacentEventDto? Following);
 
-/// Batch N: one event ADJACENT to a <see cref="NarrativePositionDto"/> (its
-/// own prior or following leg) -- id (for the event-id-keyed traversal
-/// lookup), label, place ids (wire-complete per requirement 1, not
-/// rendered textually by this batch's own UI -- the event's own label
-/// already names the moment), and its verse groups via the SAME
-/// <c>to_scene_event</c> a map arrow's own endpoint uses server-side (the
-/// one-graph property).
 public sealed record NarrativeAdjacentEventDto(string Id, string Label, List<string> Places, List<VerseGroup> VerseGroups);
 
-/// Batch HOTFIX-4 requirement 1: the GLOBAL chronological PRIOR/FOLLOWING
-/// for one event id, independent of narrative membership -- "traversal by
-/// time for every dated event, not just narrative members," the owner's
-/// own law. Reuses <see cref="NarrativeAdjacentEventDto"/> (same shape the
-/// narrative rows already send -- one wire type, two consumers).
-/// <see cref="Prior"/>/<see cref="Following"/> are null exactly at the
-/// atlas's own true first/last dated event -- conditional presence, never
-/// a disabled stub.
 public sealed record TimelinePositionDto(NarrativeAdjacentEventDto? Prior, NarrativeAdjacentEventDto? Following);
 
-/// Batch HOTFIX-4 requirement 1: <c>GET /api/narrative/event/{id}</c>'s own
-/// extended wire shape -- WAS a bare <c>List&lt;NarrativePositionDto&gt;</c>
-/// (Batch N); NOW an object. <see cref="Narrative"/> carries EXACTLY that
-/// same array, unchanged shape/rows -- every pre-existing narrative-scoped
-/// consumer (map-focus-sync, the narrative PRIOR/FOLLOWING sections,
-/// PlaceCard's own TRAVERSAL-1 row) keeps reading it, just via <c>.Narrative</c>
-/// now instead of the bare top-level list. <see cref="Timeline"/> is
-/// <c>null</c> (the key OMITTED on the wire, not sent as JSON <c>null</c>)
-/// exactly for a general-kind or unknown event id -- requirement 2's own
-/// "general-kind containers: NOT part of time traversal," resolved by
-/// simple absence, never a fabricated stub.
 public sealed record NarrativeEventPositionsResult(List<NarrativePositionDto> Narrative, TimelinePositionDto? Timeline = null);
 
-/// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
-/// id (to open a `PlaceNode`) + display name.
 public sealed record EventPlaceDto(string Id, string Name);
 
-/// Batch T requirement 4: one resolved witness -- "book, verse-range,
-/// translation-mapped" (the owner's own words), already resolved to this
-/// app's one compiled translation server-side. `RefNote`/`RobertsonSection`
-/// are this WITNESS's own provenance, distinct from the parent
-/// `EventDetail`'s own (which grounds the event's date/grouping as a whole).
 public sealed record EventWitnessDto(
     string Book,
     List<VerseGroup> VerseGroups,
     string? RefNote = null,
     string? RobertsonSection = null);
 
-/// <c>GET /api/event/{id}</c> (Batch T requirement 4, "EVENT node
-/// popover"). <see cref="Witnesses"/> is ALWAYS non-empty (>=1) -- see
-/// `scene::witnesses_for`'s own doc comment for the single-implicit-witness
-/// synthesis when no parallel accounts were explicitly curated;
-/// requirement 4's own "single-witness events show the one passage, no
-/// parallel framing when n=1" is realized client-side by branching on
-/// <c>Witnesses.Count</c>, not by a server-side omission.
-///
-/// Batch T2 (general-kind PASSAGEs): <see cref="Kind"/> is `"event"` |
-/// `"general"`, ALWAYS present. <see cref="When"/> is `null` (the key is
-/// OMITTED on the wire, not sent as a JSON `null`) exactly when
-/// <c>Kind == "general"</c> -- a general-kind passage has no defensible
-/// date, so nothing client-side may ever render one; see
-/// <see cref="Explore.EventDateAndPlacesSection"/>. <see cref="Places"/>
-/// stays an ordinary possibly-empty list (a general-kind passage's own
-/// `Places` is always empty by construction, same "always an array,
-/// conditional presence is a client concern" convention every other list
-/// on this DTO already follows).
 public sealed record EventDetail(
     string Id,
     string Title,
@@ -340,161 +128,49 @@ public sealed record EventDetail(
     List<EventPlaceDto> Places,
     List<EventWitnessDto> Witnesses,
     string? RobertsonSection = null,
-    // Batch T2 (Acts provenance): Acts's own sibling field to
-    // RobertsonSection -- see Event::acts_section's own doc comment
-    // (server, atlas-core/src/data.rs) for why it's separate. Wire-only,
-    // like RobertsonSection itself -- no UI element renders either today.
     string? ActsSection = null,
-    // Batch W1 (whole-Bible titled verse containers): the general,
-    // whole-Bible sibling of ActsSection -- see Event::atlas_section's own
-    // doc comment (server, atlas-core/src/data.rs). Wire-only, like its two
-    // siblings -- no UI element renders any of the three today.
     string? AtlasSection = null,
-    // Batch W3 (Job-Song of Solomon, Psalms granularity): the KJV's own
-    // literal-citation sibling of the three provenance fields above -- see
-    // Event::kjv_superscription's own doc comment (server,
-    // atlas-core/src/data.rs). Wire-only, like its three siblings -- no UI
-    // element renders any of the four today.
     string? KjvSuperscription = null,
     string? RefNote = null,
-    // Batch ATTEST-1 (owner order 2, the account/mention distinction):
-    // canonical verse ids that MENTION this event without narrating it.
-    // Rendered by EventMentionsSection as "Mentioned in" -- deliberately
-    // NOT under Witnesses' own "PARALLEL ACCOUNTS" eyebrow, because a
-    // mention is not an account and rendering one as the other is exactly
-    // the error the owner reported. Nullable-with-null-default because
-    // the server OMITS the key when empty (a `Vec::is_empty` skip, so
-    // every event without mentions serves byte-identically to before this
-    // batch); read it through the MentionedInOrEmpty helper below.
     List<string>? MentionedIn = null,
-    // Batch ATTEST-1 (owner order 1, "let's call it Analogue; that's ok
-    // for now."): distinct events whose accounts are similar in form or
-    // content -- NEVER two accounts of one event. Rendered by
-    // EventAnaloguesSection as "Similar Accounts", directly below PARALLEL
-    // ACCOUNTS (the owner's own placement amendment). Same omitted-when-empty
-    // convention as MentionedIn.
     List<EventAnalogueDto>? Analogues = null,
-    // Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event
-    // node's provenance ("theographic" for an imported event, "curated"
-    // for one this project authored). The focus card's own attribution,
-    // and the TOTAL-CAPTURE HONESTY case in one field: a hand-authored
-    // event resolves to "Our Own Curated Work" and therefore cannot
-    // silently wear Theographic's clothes at the reader.
     string Provenance = "",
-    // Batch PROV-1: every distinct provenance id behind THIS EVENT's
-    // PARALLEL ACCOUNTS and "Mentioned in" sections -- the Attests /
-    // Mentions rows for THIS event, never a family average. Multi-valued
-    // and per-EVENT because `mentions` genuinely IS multi-source in the
-    // real corpus (five kinds, ATTEST-1's own attestation-corrections among
-    // four Theographic ones) and because `attests`, single-sourced today,
-    // is not guaranteed to stay so -- a family average would start lying
-    // the moment a second source landed. THE LEPER LESSON: a hand-authored
-    // row must never be attributed to an importer. Omitted-when-empty on
-    // the wire; read via the *OrEmpty helpers below.
     List<string>? WitnessesProvenance = null,
     List<string>? MentionsProvenance = null)
 {
-    /// <summary>Batch ATTEST-1: the omitted-when-empty wire fields, read
-    /// safely. Every consumer goes through these two rather than
-    /// null-checking at each call site.</summary>
     public IReadOnlyList<string> MentionedInOrEmpty => MentionedIn ?? new List<string>();
 
     public IReadOnlyList<EventAnalogueDto> AnaloguesOrEmpty => Analogues ?? new List<EventAnalogueDto>();
 
-    /// <summary>Batch PROV-1: the two section-level attributions, read
-    /// safely -- same shape as the two ATTEST-1 helpers above.</summary>
     public IReadOnlyList<string> WitnessesProvenanceOrEmpty => WitnessesProvenance ?? new List<string>();
 
     public IReadOnlyList<string> MentionsProvenanceOrEmpty => MentionsProvenance ?? new List<string>();
 }
 
-/// Batch ATTEST-1: one end of an `Analogue` -- id + title, enough to render
-/// an explorable row without a second fetch.
-/// Batch PROV-1: plus the joining row's OWN provenance -- genuinely
-/// per-row, not either end's node provenance and not the family's. An
-/// Analogue is a curatorial CLAIM about two events; attributing it to
-/// whoever supplied the events would name the wrong asserter.
 public sealed record EventAnalogueDto(string Id, string Title, string Provenance = "");
 
 public sealed record BookMetaDto(string Author, string? WritePlace, int? WriteFrom, int? WriteTo);
 
-/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> is the
-/// attribution for the CROSS REFERENCES section this row belongs to -- the
-/// `cross_refs` family's distinct SET, SECTION-level, carried on the element
-/// because the endpoint is a bare array with no envelope (fix round 2,
-/// review M-NEW-1: NOT per-row, and never to be described as per-row; every
-/// element of one response carries the identical set, and the server cannot
-/// supply per-row values here at all -- see `CrossRefOut.provenance`'s own
-/// doc comment in handlers.rs). So a
-/// PASSAGE node, which reads <c>GET /api/xrefs/{sref}</c> (a bare array)
-/// rather than <c>VerseDetail.CrossRefsProvenance</c>, gets a "?" too. The
-/// batch disclosed that gap with a FALSE reason ("no envelope to hang an
-/// additive field on"): the array was never where the field goes -- the
-/// ELEMENT is a record, and the response is still an array. Nullable with a
-/// null default so a hand-built fixture need not restate it; an ABSENT list
-/// means "no attribution section here" and renders nothing, which is not
-/// the same fact as a blank id in a present list (see
-/// ProvenanceResolver.ResolveAll's own fix-round note).
+// Provenance is section-level, not per-row: every element of one response carries the identical
+// set (the server cannot supply per-row values here). An absent list means "no attribution
+// section here," which is not the same as a blank id in a present list.
 public sealed record CrossRefOut(string Target, int Votes, string Preview, List<string>? Provenance = null)
 {
     public IReadOnlyList<string> ProvenanceOrEmpty => Provenance ?? new List<string>();
 }
 
-/// Batch F: one catechism item citing a verse/span -- id + display name
-/// (no preview text, unlike <see cref="CrossRefOut"/>: requirement 4's own
-/// UI lists citing items as plain named entries). Shared shape for
-/// <see cref="VerseDetail.Catechism"/> and <c>GET /api/catechism/{sref}</c>'s
-/// own array response.
-///
-/// Batch F2 (requirement 4, "verse -&gt; catechism lookup now returns
-/// question-level hits"): <see cref="Question"/> is the QUESTION title this
-/// citation came from (e.g. "God the Holy Trinity"), null for a citation
-/// from Luther's own item-level embedded citation (Batch F, unchanged).
-/// The SAME item can legitimately appear more than once in one response if
-/// a passage span cites it via two DIFFERENT questions (or one question
-/// plus the bare embedded citation) -- see
-/// <c>CatechismSeamSection</c>'s own doc comment for how the client
-/// disambiguates their testids.
-///
-/// Batch PROV-1 FIX ROUND 1 (review M-3): <see cref="Provenance"/> carries
-/// the `catechism` family's own distinct set -- the genuinely MULTI-sourced
-/// one (`concord-sc-overlap` + `curated-catechism`, measured and pinned),
-/// which is why it is a list and never one collapsed id. Same element-level
-/// additive move as <see cref="CrossRefOut.Provenance"/>, and the same
-/// SECTION-level granularity: carried on the element for transport, identical
-/// across every element of one response, never per-row (fix round 2, review
-/// M-NEW-1).
+// Provenance here is likewise section-level: identical across every element of one response,
+// never per-row.
 public sealed record CatechismRefDto(string Id, string Name, string? Question = null, List<string>? Provenance = null)
 {
     public IReadOnlyList<string> ProvenanceOrEmpty => Provenance ?? new List<string>();
 }
 
-/// Batch F: one resolved proof verse -- <see cref="AtlasClient.CatechismItem"/>'s
-/// own <see cref="CatechismItemDetail.Verses"/> entries, each carrying its
-/// OWN FULL KJV text (design-direction.md's house rendering, not a
-/// truncated preview). Property named <see cref="Vref"/> (one leading
-/// capital, not "VRef") deliberately -- mirrors <c>ChapterOut.Ref</c>'s own
-/// naming exactly, since <c>Wire.Options</c>' snake_case policy maps a
-/// two-capital acronym-like run ("VRef") to "v_ref", not the server's own
-/// literal `vref` JSON key (a real bug caught live: the proof-verse button
-/// silently rendered with an EMPTY testid/ref before this fix, since a
-/// missing JSON property just deserializes to the type's default, `null`
-/// for a string, and interpolating `null` produces no text at all rather
-/// than throwing).
-/// Batch F2: <see cref="Question"/> names which question (if any) this
-/// proof verse came from -- see <see cref="CatechismRefDto.Question"/>'s
-/// own doc comment for the same convention. Requirement 4's own "if cheap,
-/// highlight/deep-link the question context": rendered as a small caption
-/// next to the verse in THE SCRIPTURES (<c>PassageList.razor</c>'s own
-/// <c>Caption</c>).
+// Vref, not VRef: Wire.Options's snake_case policy maps a two-capital acronym run ("VRef") to
+// "v_ref", not the server's literal `vref` JSON key -- a mismatch that deserializes silently to
+// null/empty rather than throwing, so the casing here is load-bearing, not a style choice.
 public sealed record CatechismProofVerseDto(string Vref, string Text, string? Question = null);
 
-/// <c>GET /api/catechism/item/{id}</c>. <see cref="Text"/> is null for an
-/// item with no separate prompt distinct from its own explanation (every
-/// Baptism/Confession/Sacrament-of-the-Altar item -- server:
-/// <c>CatechismItem.text</c>'s own doc comment); <see cref="WhereWritten"/>
-/// is null when Luther's text has no distinct "Where is this written?"
-/// proof-citation for this item.
 public sealed record CatechismItemDetail(
     string Id,
     string Name,
@@ -511,109 +187,25 @@ public sealed record PlaceDetail(
     double Lat,
     double Lon,
     List<SceneEvent> Events,
-    // Batch E: present only when this place has a curated history record
-    // (`GET /api/place/{id}?from=&to=`'s optional `history`).
     PlaceHistoryOut? History,
-    // Batch E3 (requirement 2's quiet provenance note): the bare canonical
-    // (un-aliased, un-period-resolved) name, present ONLY when it differs
-    // from whatever name is actually showing this popover (a curated period
-    // name OR a curated KJV alias) -- unlike History, this does NOT depend
-    // on a curated PlaceHistory record existing at all (e.g. cush-2 has
-    // none). Trailing + optional so this stays source-compatible with any
-    // existing positional-record construction site.
     string? CanonicalName = null);
 
-/// Batch E: `PlaceDetail.History`'s shape. <see cref="Blurb"/> is null
-/// whenever the request carried no window, or the window matched none of
-/// the place's curated blurb ranges (PlaceCard renders NO blurb section in
-/// either case -- conditional presence, never an empty placeholder).
 public sealed record PlaceHistoryOut(string DisplayName, string? Blurb, DateClaimOut? Established, DateClaimOut? Destroyed);
 
-/// One established/destroyed date claim. <see cref="When"/> reuses
-/// <see cref="TimeRangeDto"/>'s own shape -- <see cref="YearText.FormatRange"/>
-/// already collapses equal endpoints to a single-year display, so a plain
-/// year and a genuine range need no separate wire flag.
 public sealed record DateClaimOut(TimeRangeDto When, List<string> Verses, string? Note);
 
 public sealed record NarrativeOut(string Id, string Name, string Color, List<string> Legs);
 
-/// <c>GET /api/polities?from=&amp;to=</c> array element (Batch B2, "borders
-/// v2, the cartographer's edition" -- supersedes <c>BordersOut</c>'s own
-/// snapshot-year GeoJSON shape entirely). One polity ERA row: <see cref="Id"/>
-/// is the polity's own stable id (constant across every era it contributes
-/// to a response -- <see cref="ColorKey"/> is hashed from THIS, never the
-/// era name, so a polity keeps one plate hue across a rename); <see cref="Name"/>/
-/// <see cref="From"/>/<see cref="To"/>/<see cref="Rings"/> are this specific
-/// era's own fields. <see cref="Rings"/> stays a raw <see cref="JsonElement"/>
-/// (a `[[[lat,lon],...],...]` array of rings) rather than a typed geometry
-/// model -- the client never inspects ring coordinates, only forwards them
-/// to map.js (mirrors the retired <c>BordersOut.Geojson</c>'s own
-/// <see cref="JsonElement"/> pass-through pattern).
-/// Batch M requirement 1: the wire shape of one <c>atlas_core::data::PolityDelta</c>
-/// -- a Scripture-mapped event at a polity era boundary (its rise, an
-/// internal transition, or its fall). Plain field-for-field copy of the
-/// Rust struct via <see cref="Wire.Options"/>'s own snake_case policy
-/// (<c>Event</c>/<c>Verses</c>/<c>RefNote</c> -&gt; <c>event</c>/<c>verses</c>/
-/// <c>ref_note</c>), same "no rename, no reshaping" convention every other
-/// DTO in this file already follows.
 public sealed record PolityDeltaDto(string Event, List<string> Verses, string RefNote);
 
-/// <c>GET /api/polities?from=&amp;to=</c> array element (Batch B2, "borders
-/// v2, the cartographer's edition" -- supersedes <c>BordersOut</c>'s own
-/// snapshot-year GeoJSON shape entirely). One polity ERA row: <see cref="Id"/>
-/// is the polity's own stable id (constant across every era it contributes
-/// to a response -- <see cref="ColorKey"/> is hashed from THIS, never the
-/// era name, so a polity keeps one plate hue across a rename); <see cref="Name"/>/
-/// <see cref="From"/>/<see cref="To"/>/<see cref="Rings"/> are this specific
-/// era's own fields. <see cref="Rings"/> stays a raw <see cref="JsonElement"/>
-/// (a `[[[lat,lon],...],...]` array of rings) rather than a typed geometry
-/// model -- the client never inspects ring coordinates, only forwards them
-/// to map.js (mirrors the retired <c>BordersOut.Geojson</c>'s own
-/// <see cref="JsonElement"/> pass-through pattern). <see cref="Transition"/>/
-/// <see cref="Fall"/> (Batch M requirement 1) are <c>null</c> -- OMITTED on
-/// the wire, per <c>Option::is_none</c>'s own `skip_serializing_if`, which
-/// System.Text.Json deserializes to a plain absent-property default -- when
-/// a curator honestly left that boundary uneventful (see
-/// <c>Explore/PolityDeltaNode.cs</c>'s own conditional-presence handling).
 public sealed record PolityEraOut(string Id, string Name, int From, int To, JsonElement Rings, int ColorKey, PolityDeltaDto? Transition, PolityDeltaDto? Fall);
 
-/// <c>GET /api/polities?from=&amp;to=</c>'s own top-level wire shape --
-/// every era (of every polity) whose own <c>[from,to]</c> intersects the
-/// requested window, deterministically ordered by id then <c>from</c> (see
-/// the server's own <c>handlers::polities</c> doc comment) -- the exact
-/// order <see cref="MapInterop.SetPolities"/>/map.js's <c>BorderLayer</c>
-/// need to paint an older era under a newer one without re-sorting.
 public sealed record PolitiesOut(List<PolityEraOut> Polities);
 
-/// <c>GET /api/landmarks</c> array element. <see cref="Size"/> is the
-/// optional Batch C2 far-field size hint ("sm"/"md"/"lg", null for every
-/// landmark curated before that batch) -- see atlas-core's
-/// <c>Landmark::size</c> doc comment. Forwarded to map.js verbatim by
-/// <see cref="MapInterop.SetLandmarks"/>; the client itself never inspects it.
 public sealed record LandmarkDto(string Name, string Kind, double Lat, double Lon, string? Size);
 
-/// <c>GET /api/land-mask</c> (Batch R requirement 1, "borders become part of
-/// the plate"): the curated land/coastline mask, used ONLY to clip polity
-/// washes (map.js's <c>BorderLayer</c>) so they never spill into open sea --
-/// static geometry (no <c>from</c>/<c>to</c>, unlike <see cref="PolitiesOut"/>),
-/// fetched once and cached forever, same treatment as <see cref="LandmarkDto"/>.
-/// <see cref="Rings"/> stays a raw <see cref="JsonElement"/> -- a flat
-/// <c>[[[lat,lon],...],...]</c> array -- same "the client never inspects ring
-/// coordinates, only forwards them to map.js" reasoning as
-/// <see cref="PolityEraOut.Rings"/>.
 public sealed record LandMaskOut(JsonElement Rings);
 
-/// <c>GET /api/sources</c> (batch-s-brief.md): the Sources page's entire
-/// single source of truth, mirroring <c>atlas_core::sources::
-/// SourcesDocument</c> field for field. The Sources page renders this
-/// directly -- no hardcoded duplicate prose anywhere in this client.
-/// Batch PROV-1: <see cref="Provenances"/> is the join table between a
-/// provenance id as the graph carries it and the <see cref="SourceEntryDto"/>
-/// that names/describes/licenses it -- see
-/// <c>atlas_core::sources::ProvenanceEntry</c> (server) for why the two
-/// vocabularies are genuinely different and the mapping is declared rather
-/// than guessed. Nullable-with-null-default only so a hand-built test
-/// fixture need not restate it; the real endpoint always sends the array.
 public sealed record SourcesDocumentOut(
     List<SourceCategoryDto> Categories,
     List<SourceEntryDto> Sources,
@@ -622,15 +214,6 @@ public sealed record SourcesDocumentOut(
     public IReadOnlyList<ProvenanceEntryDto> ProvenancesOrEmpty => Provenances ?? new List<ProvenanceEntryDto>();
 }
 
-/// Batch PROV-1: one row of the provenance join table -- mirrors
-/// <c>atlas_core::sources::ProvenanceEntry</c> field for field.
-/// <see cref="Id"/> is the registry KEY (the provenance id up to its first
-/// '/', see <see cref="Explore.ProvenanceResolver"/>), <see cref="Source"/>
-/// names a <see cref="SourceEntryDto.Id"/>, <see cref="Confidence"/> is
-/// spelled as <c>atlas_graph_types::ingest::Confidence</c>'s own variant
-/// ("CanonicalText" | "Curated" | "Imported" | "Derived"), and
-/// <see cref="Locator"/> is what inside the source this id draws on, when
-/// the registry can say so honestly.
 public sealed record ProvenanceEntryDto(string Id, string Source, string Confidence, string? Locator = null);
 
 public sealed record SourceCategoryDto(string Id, string Label);
@@ -645,37 +228,10 @@ public sealed record SourceEntryDto(
     string? Link,
     string LicensesRowKey);
 
-// -----------------------------------------------------------------------
-// Batch M-D2 (P7 closure, "CLIENT ACCESS" -- design spec §5/§8): wire DTOs
-// for the two generic graph endpoints + the text-window endpoint. "Wire
-// DTOs: deliberately NOT a further seam -- HTTP itself is the interface;
-// the DTOs are its schema" (design doc §2) -- these mirror
-// `graph_handlers::{NodeCardOut,EdgeSummaryEntryOut,EdgePageOut,
-// EdgeEntryOut,NodeRefOut,TextWindowOut,TextUnitOut}` field for field, the
-// SAME "one wire form, no codec layer" convention every other DTO in this
-// file already follows. Node ids/edge kinds stay plain STRINGS (the wire
-// form `graph_wire::encode_node_id`/`EdgeKind::label()` already produce,
-// e.g. `"text-unit:JHN.3.16"`/`"cites"`) rather than a parallel C# type
-// hierarchy for `AnyNodeId`/`EdgeKind`/`Direction` -- this client already
-// treats every ref as a plain string everywhere (`VerseNode.Title` IS the
-// vref, `CanonRef` parses strings, never a typed ref object), so a richer
-// client-side id/kind type would be a SECOND representation of the exact
-// same thing this app already has one of. See <see cref="IExplorableClient"/>.
-// -----------------------------------------------------------------------
-
 public sealed record EdgeSummaryEntryDto(string Kind, int Count);
 
-/// Batch ENT-1a: <see cref="Description"/> is OMITTED on the wire (never a
-/// present JSON `null`) whenever no description match exists for this
-/// node's own kind/id -- server: `graph_handlers::NodeCardOut.description`'s
-/// own `skip_serializing_if`. Populated for Place/Person/PeopleGroup
-/// (Easton's Bible Dictionary prose) and, since Batch CORP-1b, for
-/// CommentaryItem (a Kretzmann unit's own prose, `NodePayload::
-/// CommentaryItem.text` -- `atlas_graph::legacy::node_description`'s own
-/// widened match) -- the SAME additive field, reused, not a new one.
 public sealed record NodeCardDto(string Id, string Kind, string Label, string Provenance, List<EdgeSummaryEntryDto> EdgeSummary, string Version, string? Description = null, PersonLifeDto? Person = null);
 
-/// D5: a Person card's life facts (server: PersonLifeOut). first/last year are the corpus-mention span, never a lifespan.
 public sealed record PersonLifeDto(string? Gender, int? BirthYear, int? DeathYear, int? FirstYear, int? LastYear, bool Eternal, List<string> EternalGrounds, List<string> AlsoCalled);
 
 public sealed record NodeRefDto(string Id, string Kind, string Label);
@@ -685,38 +241,15 @@ public sealed record EdgeEntryDto(string Edge, NodeRefDto Node);
 public sealed record EdgePageDto(string Kind, List<EdgeEntryDto> Entries, int? Next, string Version);
 
 public sealed record TextUnitDto(
-    // `[JsonPropertyName]` not needed: `ref` collides with the C# keyword,
-    // so the wire's own `ref` key needs an explicit override the same way
-    // `ChapterOut.Ref`/`VerseDetail.Ref` already read the identical wire key
-    // via ordinary snake_case mapping (`ref` has no case variants to map,
-    // so `Wire.Options`'s naming policy alone already resolves it) -- no
-    // attribute needed, consistent with those two existing records.
     string Ref,
     string Text,
-    // Batch RED-1: this unit's own aligned sub-verse red-letter spans --
-    // see VerseOut.WordsOfChrist's own doc comment (identical shape;
-    // always empty for a Concord unit, never the KJV).
     List<WordsOfChristSpanDto> WordsOfChrist,
-    // D3 (AQC 0.6.0, additive): the unit's own inhabited frontier kinds --
-    // NodeCardDto.EdgeSummary's shape -- so a corpus page can decide
-    // clickability without an N+1 of node-card calls.
     List<EdgeSummaryEntryDto> EdgeSummary);
 
 public sealed record TextWindowDto(List<TextUnitDto> Units, string? Next, string Version);
 
-// -----------------------------------------------------------------------
-// Batch AQC-1 (design spec §2's versioning law): the AQC version-
-// advertisement wire shape -- GET /api/contract, server:
-// contract::ContractOut, field for field.
-// -----------------------------------------------------------------------
-
 public sealed record ContractDto(string MinVersion, string MaxVersion);
 
-// -----------------------------------------------------------------------
-// D4 (owner, 2026-09-15): GET /api/contents/{corpus} -- the containment
-// forest, two levels deep (server: atlas-server/src/contents.rs). `ref` maps
-// through Wire.Options's naming policy exactly as TextUnitDto.Ref does.
-// -----------------------------------------------------------------------
 public sealed record ContentsChildOut(string Id, string Title, string Kind, string Ref, int Count);
 
 public sealed record ContentsRootOut(string Id, string Title, string Kind, string? Group, string Ref, List<ContentsChildOut> Children);

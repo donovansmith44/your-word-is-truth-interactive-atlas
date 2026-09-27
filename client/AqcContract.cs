@@ -1,29 +1,9 @@
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// Batch AQC-1 (design spec §2's versioning law): the client's own
-/// compiled AQC version, and the ONE semver-range check the fail-loud
-/// startup gate (<see cref="Pages.ContractMismatch"/> / <c>App.razor</c>'s
-/// own startup check) and the C# contract harness (client.ContractTests,
-/// versioning.feature) both call -- one implementation, not a duplicate
-/// per caller. <see cref="ClientVersion"/> is a compile-time constant,
-/// hand-kept in lockstep with <c>contracts/atlas-query-contract/VERSION</c>
-/// (the SAME release-process discipline
-/// <c>server/atlas-server/src/contract.rs</c>'s own
-/// <c>MIN_SUPPORTED_VERSION</c>/<c>MAX_SUPPORTED_VERSION</c> constants
-/// carry -- see that file's own doc comment).
-/// </summary>
 public static class AqcContract
 {
     public const string ClientVersion = "0.7.0";
 
-    /// <summary>
-    /// True iff <see cref="ClientVersion"/> falls within the server's own
-    /// advertised <c>[MinVersion, MaxVersion]</c> range (inclusive),
-    /// compared as MAJOR.MINOR.PATCH triples -- the same semver-range
-    /// check the Rust cucumber harness's own <c>satisfies</c> fn proves
-    /// independently (glossary.md's own phrase-parity pairing).
-    /// </summary>
     public static bool Satisfies(ContractDto contract)
     {
         var client = ParseSemver(ClientVersion);

@@ -1,99 +1,3 @@
-@* The shared parchment popover (design-direction.md: "popovers and hover
-   cards are parchment artifacts on both pages... One popover style
-   everywhere -- it renders the same ExplorerPopover -- the design mirrors
-   the architecture"). Renders ANY IExplorable: title, a body built from the
-   Batch R section-provider REGISTRY (Explore/PopoverSections.cs), the
-   pre-existing exploration chips, and a breadcrumb Stack for drilling in
-   (Push) and walking back out.
-
-   Batch R requirement 3 ("the popover becomes a content-first section
-   platform"): the body is no longer one node-specific IExplorable.BodyAsync
-   fragment. LoadCurrent asks PopoverSectionRegistry.Providers which ones
-   apply to the CURRENT node's own Kind (Verse/Passage/Place, today); each
-   applicable one resolves independently (conditional presence -- null means
-   no section), and every non-null result renders, IN REGISTRY ORDER, inside
-   .popover-body. A node kind NO provider claims (Chapter/Book/Author/
-   TimeAndPlace/Year) falls back to that node's own BodyAsync, UNCHANGED --
-   this file's pre-Batch-R rendering path for those five kinds, byte-for-byte.
-   This component implements IPopoverSectionContext itself (PushAsync below)
-   -- a provider's own section can drill into a new node the exact same way
-   a chip already could, without ExplorerPopover growing a bespoke callback
-   per provider ("no popover surgery" for Batch F/P, whichever content they
-   add).
-
-   O1 (owner live-preview correction, 2026-08-23: "explore geotemporally
-   ... it's not serving us right now") RETIRED a node-specific behavior that
-   used to be special-cased here (unrelated to the registry): VerseNode/
-   PassageNode's own "Explore geo-temporally" chip used to reveal a mini-map
-   area IN PLACE (no stack push) via any ShowMiniMap-targeted chip --
-   CONTRACT's mini-map testid used to live inside the still-open popover
-   beside its own chips/breadcrumb, not as a separate node, rendering a real
-   <MiniWorld> (Task 15). Dead-code law took the whole mechanism with the
-   chip: ExplorationTarget.ShowMiniMap (the chip's only producers were
-   VerseNode/PassageNode), this file's own ShowMiniMap case/_miniMapSref
-   field/<MiniWorld> render block, MiniWorld.razor itself (its only
-   consumer), and its dedicated .popover-mini-map/.mini-world-map/
-   .mini-world-open-world CSS -- all gone, not kept behind a flag. (Genuinely
-   distinct: EventNode's OWN "Show on the map" chip also carries the shared
-   popover-chip-map testid but targets NavigateWorld, not ShowMiniMap -- it
-   leaves the popover for /world entirely and is UNCHANGED by O1; see
-   ExplorationTarget.cs's own doc comment on the shared testid.) (The old
-   popover-chip-xrefs toggle -- VerseNode/PassageNode's own retired chip --
-   and its ToggleXrefs/_xrefs machinery are GONE: cross-references render
-   inline now, via the registry's own CrossRefsSection, "no extra button
-   press" per requirement 3(b). Same for PlaceNode's own OnSelectEvent wiring
-   -- PlaceEventsSection pushes TimeAndPlaceNode via PushAsync directly now,
-   so PlaceNode's own BodyAsync/OnSelectEvent survive only as its defensive,
-   never-called-in-practice IExplorable fallback -- see that class's own
-   comment.)
-
-   Backdrop is a sibling element, not a wrapper, so clicking the popover
-   itself never needs stopPropagation to avoid closing through a parent
-   listener -- a click on the popover simply never reaches the backdrop's
-   own @onclick at all.
-
-   Batch F2 requirement 6d ("the hover windows ought not be smack dab in
-   the center of the screen, but on the side of the screen where the hover
-   exploration originated"): PaneAnchor (set by Reader.razor/World.razor
-   from their own split state -- "reader"/"atlas"/null) anchors the PANEL
-   to the ORIGINATING PANE's currently-visible region instead of the full
-   viewport, while a split is open. Measured ONCE, on this instance's first
-   render (mirrors PlaceCard/CardPlacement's own proven "snapshot at open,
-   never re-measure on scroll/resize" discipline -- see that file's own
-   comment for why a continuous tracker isn't needed here either) via
-   reader.js's getPaneRect (viewport-clamped, so it's correct even when the
-   reader pane's own content is taller than one screen -- see that
-   function's own comment). Full-page (non-split) behavior is byte-for-byte
-   unchanged: PaneAnchor is null there, so .popover-pane-anchored is never
-   applied and every rule falls back to its pre-existing, viewport-centered
-   base.
-
-   O6 (owner live-preview correction, 2026-08-23, verbatim: "when you focus
-   on something the background behind the hover menu gets greyed, which is
-   okay, but it should be over the whole reader, rather than some weird box
-   that follows your scroll and inconsistently moves around"): the
-   BACKDROP used to pane-anchor too (see this file's own now-superseded
-   comment, immediately above its own markup below) -- exactly the ONE-SHOT
-   "measured at open, never re-measured on scroll" snapshot this paragraph
-   already documents, applied to a box meant to dim EVERYTHING behind an
-   open popover. That measurement going stale the instant the user
-   scrolled the reader pane's own content afterward (nothing prevents
-   scrolling while a popover is open) is the real, live-caught bug behind
-   the owner's own report: the backdrop stayed frozen at wherever the pane
-   happened to be on screen at open time -- a fixed rectangle the page then
-   scrolled past/around, landing in a different, seemingly arbitrary spot
-   on every fresh open depending on scroll position at that moment ("some
-   weird box... inconsistently moves around"). FIX: the backdrop no longer
-   reads PaneRect/PaneRectStyle at all -- always the plain, unconditional
-   full-viewport `.popover-backdrop` rule (`position:fixed; inset:0`),
-   split view or not, so there is no measurement left to go stale. Disclosed
-   trade-off: split view's own "explore on both sides independently, the
-   OTHER pane stays undimmed and clickable" (the SAME requirement 6d)
-   is retired along with it -- both panes now dim together, matching every
-   other popover in this app, one rule, no split-specific exception. The
-   PANEL itself (pane-anchored POSITION, immediately below) is completely
-   unaffected -- a popover opened from a pane still appears beside that
-   pane, only the backdrop's own coverage changed. *@
 @using System.Globalization
 @using BibleAtlas.Client.Contracts
 @using BibleAtlas.Client.State
@@ -106,90 +10,26 @@
 @inject StateAtom<FocusStack> FocusStackAtom
 @inject OwnershipRegistry FocusOwnership
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
-@* Fix round 1 (review S-2, IMPORTANT): injected so the NavigateReader case
-   below can carry the LIVE Follow state forward, the same way
-   Reader.razor's own SplitQuerySuffix does -- see that method's own doc
-   comment and this file's own NavigateReader case below. *@
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @implements IPopoverSectionContext
 @implements IDisposable
 
-@* M-D3 (R3): ShowBackdrop=false (Reader.razor passes this while the
-   current popover is hover-only -- see that parameter's own doc comment)
-   OMITS the backdrop ENTIRELY, not just makes it invisible/inert. This is
-   the real fix for a genuine, live-caught bug: the backdrop is a
-   full-viewport `position:fixed` element that appears SYNCHRONOUSLY as
-   part of opening the popover, so by the time a real "click" gesture's own
-   mousedown/mouseup/click/focus events fire (all AFTER the mouseenter that
-   opened it), the backdrop is already covering the marker and swallows
-   them -- `.reader-page`'s own `contain:layout` traps the marker's
-   stacking context below the backdrop's, so no z-index fix on the marker
-   alone can win that fight. Without a backdrop at all, a hover-only
-   popover's own marker stays fully interactive for exactly as long as it
-   remains hover-only -- a genuine click/focus reaches it cleanly, flips
-   _hoverOnlyOpen false (Reader.razor), and the NEXT render correctly grows
-   a backdrop for the now-persistent popover, same as clicking any other
-   explorable element in this app. Also a happy side effect, not just a
-   workaround: a mere hover no longer dims the whole screen at all -- "no
-   auto-modal," even more literally than dismiss-timing alone would give. *@
-@* O6 (owner live-preview correction, 2026-08-23): plain, unconditional
-   full-viewport backdrop now -- no PaneRect/PaneRectStyle, no
-   .popover-pane-anchored class, ever. See this file's own header comment
-   for the full story (the retired pane-scoped variant's own ONE-SHOT
-   measurement going stale on scroll is the real bug the owner reported);
-   the base `.popover-backdrop` rule in app.css (`position:fixed; inset:0`)
-   is now the ONLY rule that ever applies to this element. *@
 @if (ShowBackdrop)
 {
     <div class="popover-backdrop" data-testid="popover-backdrop" @onclick="RequestClose"></div>
 }
 
-@* M-D3 (R3), O6 UPDATE (2026-08-23): pane-anchoring no longer reaches the
-   BACKDROP at all (see that element's own comment immediately above) --
-   verse- and pane-anchoring now only ever compose on the PANEL, which is
-   the ONLY reason they were ever said to be "mutually exclusive" in the
-   first place; that finding, and the fix below, are both unaffected by O6
-   and still fully apply here. A real, live-caught bug in an earlier draft:
-   `.popover-pane-anchored`'s own `width`/`max-height` rule and
-   `.popover-verse-anchored`'s own `top`/`left`/`max-height` rule, both at
-   equal specificity, would otherwise BOTH apply to the same element (CSS
-   applies every declaration from every matching rule; only same-PROPERTY
-   collisions are decided by source order) -- `left`/`top` correctly came
-   from verse-anchoring (declared later in app.css), but `width` has no
-   verse-anchoring declaration to override it, so the panel silently
-   rendered at the PANE's own width while positioned by VerseAnchorStyle's
-   math (which assumes the base rule's ordinary width) -- confirmed live: a
-   verse near a narrow split pane's own edge rendered with its LEFT edge
-   off-screen. Verse-anchoring wins outright when present (VerseAnchorStyle
-   is checked first below). *@
+@* ShowBackdrop=false omits the backdrop entirely rather than making it inert: a backdrop that merely APPEARED inert would still be a full-viewport position:fixed element sitting over the marker, swallowing the mousedown/mouseup/click/focus of the very click meant to persist a hover-only popover (.reader-page's own contain:layout traps the marker below the backdrop's stacking context, so no z-index fix on the marker alone can win). Without a backdrop at all, a hover-only popover's marker stays genuinely clickable. *@
 <div class="popover @(_verseAnchorRect is not null ? "popover-verse-anchored" : _paneRect is not null ? "popover-pane-anchored" : null)"
      style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
      @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
     <div class="popover-head">
         @if (FocusValue.Stack.Count > 1)
         {
-            @* CHROME-2 (owner order, verbatim: "the remaining two buttons
-               on the top right are hard to understand. If I hover over
-               them I should see one of those small dialog boxes that give
-               me the name of the button"): the SAME shared tooltip
-               affordance this popover's own chips/save button already use
-               one line below -- a native `title` attribute, this house's
-               pre-existing idiom (TimeSlider.razor's own era buttons cite
-               the same one) -- adopted here (was aria-label only). *@
             <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
                     aria-label="Back" title="Back" @onclick="Back">&lsaquo;</button>
         }
         <p class="popover-title" data-testid="popover-title" data-ref="@(IsRefKind(Current.Kind) ? "true" : "false")">@Current.Title</p>
-        @* M-D3 (U3', owner: "the buttons... should be right next to the
-           header... make sure it's ergonomic and fits well"): MOVED here
-           from a separate .popover-chips row beneath the whole body (see
-           this file's own git history for the prior markup) -- same
-           _explorations/Activate wiring, unchanged CONTRACT testids
-           (ex.ChipTestId), just relocated and rendered icon-scale
-           (ChipGlyph below) instead of a full-text pill. The accessible
-           name is still ex.Label verbatim, via aria-label + a native
-           title tooltip -- an icon-only control needs both, not just the
-           glyph. *@
         @if (_explorations.Count > 0)
         {
             <div class="popover-head-actions" data-testid="popover-head-actions">
@@ -200,48 +40,15 @@
                 }
             </div>
         }
-        @* Batch G2 decision 2: the save affordance -- chrome, not content
-           (POPOVER-LAW-1), beside close/back per the brief. Hidden outright
-           (not merely disabled) when localStorage genuinely isn't available
-           (SavedExplorationsService.Available, LocalStore.Probe's own
-           one-time round-trip check) -- "feature hides if storage
-           unavailable," per the brief, verbatim: an affordance whose whole
-           point is durable persistence has no honest disabled-but-visible
-           state to offer instead. *@
         @if (SavedExplorations.Available)
         {
             <button type="button" class="popover-save-exploration@(_justSaved ? " popover-save-exploration-saved" : "")"
                     data-testid="popover-save-exploration" aria-label="Save this exploration" title="Save this exploration"
                     @onclick="SaveExploration">&#9733;</button>
         }
-        @* CHROME-2: same fix, same shared `title` affordance -- live-DOM-
-           verified as the one always-present chrome button with no
-           tooltip at all before this batch (CONTRACT.md's own CHROME-2
-           row has the full trace). *@
         <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="RequestClose">&times;</button>
     </div>
 
-    @* Batch R requirement 3: keyed by the CURRENT node's own Title (changes
-       on every push/pop -- every node kind's Title is unique to what it
-       names, e.g. a vref, a place name, a composed label) so every section's
-       own rendered subtree -- INCLUDING any child component a section opens
-       (VerseTextSection's own expanded/fetched-chapter state, in
-       particular) -- is torn down and rebuilt fresh on every navigation,
-       never silently reused across two different nodes that happen to
-       render a same-shaped section in the same registry slot. A "body:"
-       prefix (NOT the bare Title) -- fix, a real bug caught live, now
-       HISTORICAL (O1, 2026-08-23, retired the mini-map entirely -- see this
-       file's own header comment): a VerseNode's own Title and its
-       since-removed ShowMiniMap chip's own SRef were routinely the EXACT
-       SAME string (e.g. both "GEN.1.1"), and the since-removed <MiniWorld>
-       element used to render as THIS element's own SIBLING, not a
-       descendant -- Blazor's own key-uniqueness check is scoped to the
-       sibling group being diffed regardless of element/component type, so
-       two unrelated siblings sharing the bare "GEN.1.1" key crashed the
-       renderer outright ("More than one sibling... has the same key
-       value") the instant a mini-map was opened. Left prefixed rather than
-       reverted to the bare Title -- correct either way now that the sibling
-       is gone, and reverting would be pure churn for no behavior change. *@
     <div class="popover-body" data-testid="popover-body" @key="@($"body:{Current.Title}")">
         @if (_usingSectionRegistry)
         {
@@ -263,130 +70,26 @@
     [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
 
-    // Batch G2 decision 5 ("continue" -- the hamburger panel's own
-    // trail-node click): when present, SEEDS the whole back-stack in order
-    // (index 0 pushed first, ..., the LAST entry pushed last and therefore
-    // Current) instead of the ordinary single-Root push -- "reopens the
-    // popover at that node... with the trail's PRECEDING nodes as the
-    // back-stack (so back works through the saved journey)," per the brief,
-    // verbatim. Null (every pre-existing caller) is the ordinary single-Root
-    // path, byte-for-byte unchanged. Callers that DO pass this still also
-    // pass Root (EditorRequired stays satisfied) -- by convention, the LAST
-    // element of this list, matching what ends up on top of the stack; this
-    // component itself never reads Root when SeedStack is non-null (see
-    // OnInitializedAsync below), so it's fine that they'd otherwise be
-    // redundant.
     [Parameter] public IReadOnlyList<IExplorable>? SeedStack { get; set; }
 
-    // Batch H (split-view study, "no nested-popup rule"): true when this
-    // popover instance is currently sharing the screen with the OTHER pane
-    // (Reader.razor passes its own _splitOpen; World.razor passes its own
-    // SplitMode) -- the one signal Activate's NavigateWorld case below needs
-    // to know "a second full atlas must never open here; target the pane
-    // that's already showing instead." OnNavigateWorldInSplit only needs a
-    // delegate when InSplit is true (Reader.razor supplies one; standalone
-    // Reader/World never do, and InSplit stays false there, so the fallback
-    // Nav.NavigateTo branch is exactly today's unchanged behavior).
     [Parameter] public bool InSplit { get; set; }
     [Parameter] public EventCallback<string> OnNavigateWorldInSplit { get; set; }
 
-    // Batch F2 requirement 6d: "reader" | "atlas" | null (the host page's
-    // own split state -- see this file's own header). Which CSS selector
-    // PaneRectMeasured below measures is derived from this, never hardcoded
-    // -- see PaneSelector.
     [Parameter] public string? PaneAnchor { get; set; }
 
-    // M-D3 (R3, the superscript rework): a CSS selector naming the specific
-    // verse-line element this popover should anchor OVER (Reader.razor
-    // passes "#v{n}" when opened via a superscript entry point; null for
-    // every other entry point -- click on the verse LINE, a chip drill-in,
-    // etc. -- which keep the pre-existing viewport/pane-centered behavior
-    // unchanged). Measured the SAME one-shot-on-first-render way PaneAnchor
-    // already is (see OnAfterRenderAsync below) -- never re-measured on
-    // scroll/resize, matching PlaceCard/CardPlacement's own proven
-    // "snapshot at open" discipline this file's own header already cites.
     [Parameter] public string? VerseAnchorSelector { get; set; }
 
-    // M-D3 (R3): true (the default) for every popover except a HOVER-only
-    // superscript one -- see the backdrop markup's own doc comment above
-    // for the real bug this fixes (a click/focus that should PERSIST the
-    // popover instead gets swallowed by the backdrop's own synchronous
-    // appearance). Read on every render (not measured once) -- Reader.razor
-    // binds it straight to its own `!_hoverOnlyOpen` field, so the backdrop
-    // grows in on the SAME render that a click flips that field, no
-    // separate signal needed.
     [Parameter] public bool ShowBackdrop { get; set; } = true;
 
-    // M-D3 (R3): "no auto-modal that must be X'd out" -- the owner's own
-    // complaint was specific to the HOVER path (a popover that appeared
-    // without a click still demanded an explicit click to dismiss). Wired
-    // by Reader.razor (the only caller that knows whether THIS open was a
-    // genuine hover or a click/keyboard-focus -- see that file's own
-    // OnXrefMarker*/CancelHoverClose comments) to cancel/reschedule its own
-    // debounced auto-close as the pointer moves between the marker and this
-    // panel. Harmless no-ops when unbound (every other entry point, and a
-    // superscript popover that has since been made persistent by a click).
     [Parameter] public EventCallback OnPanelPointerEnter { get; set; }
     [Parameter] public EventCallback OnPanelPointerLeave { get; set; }
 
-    // Fix round 1 (S-2 -- CRITICAL, review): "components never hold copies --
-    // they render PROJECTIONS and emit INTENTS" (client/Contracts/State.cs's
-    // own header, verbatim). The ORIGINAL ST-3 draft kept a permanent local
-    // `_focus` field as the ONLY render source and treated the shared atom as
-    // write-only (nothing ever read `FocusStackAtom.Value`) -- correctly
-    // flagged as failing that sentence outright. Fixed: `FocusValue` below IS
-    // the render source, and it reads the ATOM (via `_focusProjection`)
-    // whenever this instance currently owns "focus-stack"; `_frozenSnapshot`
-    // exists ONLY for the disclosed R4(b) exception -- a SUPERSEDED instance
-    // (the ownership claim lost to a later-opened popover, R4's own
-    // multi-instance reality: Reader.razor/World.razor's embedded pane/
-    // MainLayout.razor's hamburger "continue" can each mount one, none
-    // cross-clearing another) must keep rendering/functioning correctly with
-    // ZERO visual regression for its own session, which the shared atom can
-    // no longer promise it once another session owns it. `_frozenSnapshot` is
-    // kept CONTINUOUSLY in sync with the atom while this instance IS current
-    // (see `FocusValue`'s own getter) -- not captured once at supersession
-    // time -- so it is always exactly this instance's own last-known-correct
-    // state the instant ownership is lost, with no separate transition-
-    // detection code needed.
-    //
-    // Fix round 1 (Adjudication D, item 3): restoring the G2 decision-1
-    // distinction the pre-ST-3 `_trail` field's own doc comment stated and
-    // this file's ST-3 migration dropped -- `FocusValue.Trail` is "every
-    // node VISITED this popover session, in order" (initial open, every
-    // Push, every Back LANDING per G2's own shipped rule), distinct from
-    // `FocusValue.Stack` ("where back goes"; Back pops the stack but never
-    // removes a trail entry). "Where I've been" vs. "where back goes" --
-    // the two halves of ONE atom value now (`FocusStack.cs`'s own header),
-    // mutating together per R3, rather than two independent fields.
     private Projection<FocusStack>? _focusProjectionBacking;
     private Projection<FocusStack> _focusProjection => _focusProjectionBacking ??= new Projection<FocusStack>(FocusStackAtom);
     private FocusStack _frozenSnapshot = FocusStack.Empty;
 
-    // Fix round 2 (N-3, trivia -- REQUIRED this round, re-review: "getters
-    // must be pure -- move the side effect to an explicit path"). An
-    // earlier draft's own `FocusValue` getter WROTE `_frozenSnapshot` as a
-    // side effect of being READ -- correct today only because every render
-    // and every mutating method happens to read it at least once while
-    // current, but "snapshot warmth" depended on read/render ORDERING
-    // rather than being asserted at the point the atom actually changes
-    // (the ownership-handoff test harness needed an extra, undocumented
-    // `_ = Value;` call purely to reproduce that ordering -- a real sign the
-    // dependency was implicit). `FocusValue` is a plain, pure forward now;
-    // `SyncSnapshot()` below is the ONE explicit write path, called at
-    // every point this instance's own view of "current" data could have
-    // just changed.
     private FocusStack FocusValue => _frozenSnapshot;
 
-    // Fix round 2 (N-3): the explicit sync -- while this instance currently
-    // owns "focus-stack", `_frozenSnapshot` is set to the atom's own live
-    // value; a superseded instance is a no-op (nothing to sync FROM -- its
-    // own `_frozenSnapshot` stays whatever it already was, by design).
-    // Called from `ApplyLocally` (right after a dispatch this instance's
-    // own claim made) and from `OnFocusStackChanged` (right after a
-    // reclaim, and on every OTHER Changed while still current -- covering
-    // any future writer of this atom that isn't this instance itself, not
-    // just self-triggered notifications).
     private void SyncSnapshot()
     {
         if (_claim?.IsCurrent == true)
@@ -397,37 +100,10 @@
 
     private IExplorable Current => FocusValue.Current!.Node;
 
-    // Batch ST-3 (R4): claims "focus-stack" ownership on open (below),
-    // releases on close (Dispose, below) -- R4's own literal wording,
-    // "claim/release follows the effect-ownership pattern on open/close."
-    // `_claim.IsCurrent` decides BOTH which render source `FocusValue` reads
-    // from AND which write path `ApplyLocally` takes below -- see each of
-    // their own comments. The shared atom is "the ACTIVE session" (R4 option
-    // (b)): whichever popover most recently claimed it, not a merge of every
-    // simultaneously-open session (there is no single correct "the" focus
-    // stack when more than one is legitimately open at once).
     private OwnershipClaim? _claim;
 
-    // Batch G2 decision 2: a brief, quiet acknowledgment (CSS-only pulse,
-    // .popover-save-exploration-saved) that a save just landed -- cleared on
-    // the NEXT navigation (fix round 1, S-5: inside ApplyLocally now, for any
-    // non-Reset intent -- see that method's own comment) rather than a
-    // timer, so it never lingers or fights a fast double-save.
     private bool _justSaved;
 
-    // Fix round 1 (S-2): the ONE place any mutating intent is applied --
-    // dispatches onto the SHARED atom when this instance currently owns
-    // "focus-stack" (the atom stays the single source of truth for the
-    // session that matters, satisfying the compiled authority's own render-
-    // a-projection rule for the owning case); applies LOCALLY to
-    // `_frozenSnapshot` otherwise (a superseded instance keeps functioning
-    // off its own last-known state, never touching a shared atom another,
-    // now-current session owns -- R4(b)'s own disclosed exception, not a
-    // silent reintroduction of "components hold copies"). Fix round 1 (S-5):
-    // also clears `_justSaved` for any REAL navigation (everything except
-    // `Reset`, which is a close, not a navigation) -- `RecordTrailVisit`'s
-    // own retired responsibility, restored here since this is now the one
-    // choke point every navigation-shaped intent passes through.
     private void ApplyLocally(IIntent<FocusStack> intent)
     {
         if (intent is not Reset)
@@ -438,7 +114,7 @@
         if (_claim?.IsCurrent == true)
         {
             FocusStackAtom.Dispatch(intent);
-            SyncSnapshot(); // fix round 2, N-3: explicit -- the dispatch above already changed the atom (or was a law-2 no-op), either way this is the authoritative point to (re)assert `_frozenSnapshot`'s own warmth, not a side effect of some LATER read
+            SyncSnapshot();
         }
         else
         {
@@ -446,59 +122,20 @@
         }
     }
 
-    // Fix round 1 (Adjudication E residual, S-2 -- CRITICAL, review): the
-    // ownership HAND-OFF. Closing the ACTIVE session Resets the shared atom
-    // to Empty (Dispose, below) -- without this, EVERY other still-mounted,
-    // superseded popover would be permanently desynced from the atom for the
-    // rest of its own lifetime (an `OwnershipClaim`, once lost, never
-    // reacquires itself). Fired on EVERY atom change (this instance's own
-    // dispatches included -- harmless, see the guard below), so this is also
-    // this component's only source of "someone ELSE changed shared state,
-    // re-render" notifications, matching law 5 (agreement).
-    //
-    // "Claim = reconcile," mirroring EffectRegistry.Claim's own reconcile-
-    // on-claim shape: when THIS instance is (a) not currently the owner, (b)
-    // the atom just went Empty (the one value ONLY `Reset` ever produces --
-    // `SeedFromTrail`/`Visit` always leave at least one entry given the
-    // non-empty inputs every real caller supplies), and (c) this instance
-    // still has a real session of its own to offer (`_frozenSnapshot` isn't
-    // itself Empty) -- it reclaims and re-seeds the atom from ITS OWN
-    // session, verbatim, via `Reseed`. Otherwise (no other live instance is
-    // listening, or this instance's own session is also empty), nothing
-    // reclaims and the atom simply stays Reset -- exactly the controller's
-    // own ruling: "if another live popover instance exists it CLAIMS and
-    // re-seeds ... otherwise reset."
-    //
-    // Multi-superseded-instance race, resolved by ordinary C# event
-    // ordering + re-entrant Dispatch (proven safe generically by
-    // ConfluenceAgreementLawTests' own re-entrant-dispatch test, ST-1):
-    // Blazor WASM is single-threaded, so `Changed`'s subscriber list is
-    // invoked strictly in order; the FIRST superseded subscriber to run
-    // reclaims via a Dispatch(Reseed) call that is ITSELF synchronous and
-    // re-entrant (it fires Changed again, immediately, nested inside this
-    // very invocation) -- every OTHER subscriber, whether visited by that
-    // nested re-entrant pass or later by the ORIGINAL outer pass, reads the
-    // atom's value AFTER the reclaim has already landed (no longer Empty),
-    // so this guard is false for them and they correctly do nothing.
+    // "Claim = reconcile": whenever the shared atom goes Empty (only Reset ever produces that) and this instance is not the current owner but still holds a real session of its own, it reclaims and re-seeds the atom from that session -- otherwise the atom simply stays Reset. Safe under multiple simultaneously-superseded instances because Blazor WASM is single-threaded: the first subscriber to reclaim does so via a synchronous, re-entrant Dispatch, so every other subscriber (nested or later in the original pass) reads the atom AFTER the reclaim already landed and correctly no-ops.
     private void OnFocusStackChanged()
     {
         if (_claim?.IsCurrent != true && FocusStackAtom.Value == FocusStack.Empty && _frozenSnapshot != FocusStack.Empty)
         {
             _claim?.Dispose();
-            _claim = FocusOwnership.Claim(AtomNames.FocusStack); // fix round 1, Q-4: the ownership claim key reuses the atom's own name (client/Contracts/State.cs) -- both name the same claim scope, "this session's FocusStack" -- rather than a second, independently-spelled magic string
+            _claim = FocusOwnership.Claim(AtomNames.FocusStack);
             FocusStackAtom.Dispatch(new Reseed(_frozenSnapshot));
         }
 
-        SyncSnapshot(); // fix round 2, N-3: explicit -- covers both the reclaim branch just above (the atom now holds exactly this instance's own re-seeded value) and the ordinary case (some OTHER dispatch changed the atom while this instance was ALREADY current, not just this instance's own dispatches)
+        SyncSnapshot();
         StateHasChanged();
     }
 
-    // Batch G2 decision 2: snapshots the CURRENT trail (not the stack --
-    // Back-visited-then-abandoned nodes stay in the saved record, per "the
-    // trail is where I've been"). Does not close the popover; a later save
-    // (this trail having grown further since) is a brand-new entry, never an
-    // update to this one -- SavedExplorationsService.Save's own "snapshot,
-    // not live link" doc comment.
     private void SaveExploration()
     {
         SavedExplorations.Save(FocusValue.Trail);
@@ -507,91 +144,27 @@
 
     public void Dispose()
     {
-        // Fix round 2 (N-4, trivia -- REQUIRED this round, re-review):
-        // unsubscribe FIRST, before dispatching. An earlier draft dispatched
-        // `Reset` (below) BEFORE unsubscribing -- since this instance is
-        // still `_claim.IsCurrent` at that exact instant, `Reset`'s own
-        // Dispatch synchronously invoked THIS instance's own
-        // `OnFocusStackChanged`, calling `StateHasChanged()` on a component
-        // Blazor is in the middle of tearing down. Harmless in practice
-        // (the reclaim guard is false for a still-current instance, so no
-        // OTHER side effect ran), but dispose re-entering its own live
-        // event handler is exactly the hazard class this whole layer exists
-        // to kill by construction, not merely by argument -- unsubscribing
-        // first removes the path entirely rather than relying on the guard.
-        // Every OTHER live (superseded) subscriber is UNAFFECTED by this
-        // reordering -- only THIS instance's own handler is removed before
-        // its own Reset fires; the hand-off (OnFocusStackChanged, above)
-        // still runs normally on whichever OTHER instance reclaims.
+        // unsubscribe before dispatching Reset: dispatching first would synchronously re-enter this instance's own OnFocusStackChanged (still _claim.IsCurrent at that instant) while Blazor is mid-teardown of this component
         FocusStackAtom.Changed -= OnFocusStackChanged;
 
-        // Batch ST-3 (R3): "close resets both" -- dispatched from HERE
-        // (Blazor's own IDisposable teardown, fired for EVERY path that
-        // removes this component from the tree -- RequestClose's own
-        // OnClose.InvokeAsync callback chain AND every OTHER direct
-        // `_activeNode = null`/equivalent site in Reader.razor/World.razor/
-        // MainLayout.razor that bypasses RequestClose entirely, e.g. a
-        // chapter navigation) rather than inside RequestClose itself, so
-        // EVERY close path gets the reset uniformly, not just the one this
-        // component's own markup happens to route through. ApplyLocally
-        // dispatches this onto the atom ONLY while still current -- see
-        // OnFocusStackChanged above for what happens next when another live
-        // popover is listening (the ownership hand-off).
         ApplyLocally(new Reset());
         _claim?.Dispose();
     }
 
     private IReadOnlyList<Exploration> _explorations = Array.Empty<Exploration>();
     private RenderFragment _body = _ => { };
-    // Batch R requirement 3: true when >=1 registered provider claims the
-    // CURRENT node's own Kind -- Verse/Passage/Place today (see
-    // PopoverSectionRegistry's own doc comment for exactly which). Decides
-    // which of _sections/_body the markup above renders; a node kind no
-    // provider claims (Chapter/Book/Author/TimeAndPlace/Year) leaves this
-    // false and _body is exactly this file's own pre-Batch-R rendering.
     private bool _usingSectionRegistry;
     private IReadOnlyList<PopoverSection> _sections = Array.Empty<PopoverSection>();
     private ElementReference _panelRef;
     private bool _focused;
 
-    // Batch F2 requirement 6d: the originating pane's own currently-visible
-    // rect, in px, measured ONCE (PaneMeasured guards this, same one-shot
-    // shape _focused already uses just below) -- null whenever PaneAnchor
-    // is null (full-page, unchanged behavior) OR the measurement hasn't
-    // landed yet (the popover renders at its ordinary viewport-centered
-    // default for that one instant, same graceful-degrade-to-default
-    // discipline PlaceCard/CardPlacement already established).
     private PaneRectDto? _paneRect;
     private bool _paneMeasured;
 
-    // M-D3 (R3): the verse-anchor's own measured rect (reader.js's
-    // getVerseAnchorRect), same one-shot-on-first-render discipline as
-    // _paneRect/_paneMeasured immediately above -- null whenever
-    // VerseAnchorSelector is null (every non-superscript entry point) or
-    // the measurement hasn't landed yet (graceful degrade to the ordinary
-    // viewport/pane-centered default for that one instant, same as
-    // _paneRect's own comment already establishes).
     private VerseAnchorRectDto? _verseAnchorRect;
     private bool _verseAnchorMeasured;
 
-    // Real, live-caught bug (fixed before this ever shipped, not guessed):
-    // Reader.razor's own split-pane root always carries data-testid
-    // "reader-root" (its OWN CSS class toggles between "reader-page" and
-    // "reader-page split-pane-reader", but the TESTID attribute never
-    // changes) -- a selector targeting `[data-testid="split-pane-reader"]`
-    // matches NOTHING, ever. World.razor's own root is the opposite: BOTH
-    // its class AND its testid switch to "split-pane-atlas" together while
-    // SplitMode. reader-root only ever needs measuring while PaneAnchor is
-    // "reader" -- Reader.razor sets that whenever CompositionSplit's own
-    // IsSplitOpen is true, in EITHER role, not host-only (fix round 2, N-6
-    // doc rot: corrected from "while _splitOpen is true on the host" --
-    // Reader's own PaneAnchor read has never been host-gated; only InSplit,
-    // a genuinely different property, is). The reader-root element only
-    // ever carries the split-pane-reader CLASS in the HOST role specifically
-    // (a guest-mounted Reader's own outer div never gets that class --
-    // see Reader.razor's own HostPaneClassSuffix use), but that class is
-    // irrelevant here: this selector targets the TESTID, which is stable
-    // ("reader-root") across every role.
+    // reader-root's own testid never changes with its class (unlike split-pane-atlas, whose class AND testid switch together) -- a selector targeting "split-pane-reader" would match nothing, ever, so this targets the stable "reader-root" testid instead.
     private string PaneSelector => PaneAnchor switch
     {
         "reader" => "[data-testid=\"reader-root\"]",
@@ -599,11 +172,6 @@
         _ => "",
     };
 
-    // Centers the popover ON the pane's own rect (transform: translate(-50%,-50%)
-    // already applies, same as the base rule) by treating the rect's own
-    // midpoint as the anchor point, and bounds its max-width/max-height to
-    // the pane's own size (minus the SAME margins the base, full-viewport
-    // rule already subtracts) so it can never overflow into the other pane.
     private string? PaneRectStyle => _paneRect is { } r
         ? $"--pane-center-x:{(r.Left + r.Width / 2).ToString(CultureInfo.InvariantCulture)}px;" +
           $"--pane-center-y:{(r.Top + r.Height / 2).ToString(CultureInfo.InvariantCulture)}px;" +
@@ -611,23 +179,11 @@
           $"--pane-height:{r.Height.ToString(CultureInfo.InvariantCulture)}px;"
         : null;
 
-    // M-D3 (R3): "anchors OVER THE VERSE... ALWAYS VISIBLE, never cut off."
-    // Horizontally: centered on the verse's own midpoint (translateX(-50%)
-    // in CSS), clamped so the popover's OWN ordinary width (base .popover
-    // rule: min(34rem, 100vw-3rem) -- mirrored here as a fixed px estimate
-    // purely for this clamp's own arithmetic, never overriding that CSS
-    // value itself) can never spill past either viewport edge. Vertically:
-    // "grow away from the nearer edge" (this property's own doc comment on
-    // .popover-verse-anchored in app.css has the full reasoning) -- a verse
-    // in the top half sets --verse-anchor-top (grows down); bottom half
-    // sets --verse-anchor-bottom (grows up) -- with --verse-anchor-max-height
-    // computed to fit exactly the space available on whichever side was
-    // picked, so real overflow degrades to the base rule's own
-    // overflow-y:auto scroll, never an off-screen spill.
     private const double VerseAnchorGapPx = 10;
     private const double VerseAnchorMarginPx = 16;
-    private const double VerseAnchorEstimatedWidthPx = 544; // 34rem @ 16px root -- the base .popover rule's own min(34rem, ...) width, mirrored for horizontal clamp math only
+    private const double VerseAnchorEstimatedWidthPx = 544;
 
+    // verse- and pane-anchoring's CSS rules sit at equal specificity, so BOTH would otherwise apply to the same element (a real live bug: width came from pane-anchoring while top/left came from verse-anchoring, rendering the panel at the pane's width but positioned by verse math meant for the base width). Verse-anchoring wins outright when present, checked first here.
     private string? VerseAnchorStyle
     {
         get
@@ -668,44 +224,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Batch ST-3 (R4): claim BEFORE seeding -- this instance is
-        // guaranteed to be the CURRENT owner the moment Claim returns
-        // (single-threaded WASM, nothing else can supersede it synchronously
-        // in between), so the seed dispatch immediately below is always
-        // safe (never appending onto whatever a PREVIOUS session's own
-        // claim left in the shared atom). Subscribed BEFORE any dispatch
-        // too, so this instance hears its own claim's reconcile-equivalent
-        // seeding the same way every other live subscriber would (see
-        // OnFocusStackChanged's own header).
-        _claim = FocusOwnership.Claim(AtomNames.FocusStack); // fix round 1, Q-4: the ownership claim key reuses the atom's own name (client/Contracts/State.cs) -- both name the same claim scope, "this session's FocusStack" -- rather than a second, independently-spelled magic string
+        _claim = FocusOwnership.Claim(AtomNames.FocusStack);
         FocusStackAtom.Changed += OnFocusStackChanged;
 
-        // Fix round 1 (live, self-caught bug found while writing this
-        // batch's OWN ownership-handoff tests): seeds via ONE atomic
-        // dispatch, `SeedFromTrail` (which ignores `current` entirely, the
-        // exact same overwrite shape a separate Reset-then-Visit pair
-        // achieves) -- NEVER a separate `Reset` dispatch followed by a
-        // second `Visit`/`SeedFromTrail` dispatch. An earlier draft did
-        // exactly that two-dispatch sequence, and it is unsafe: `Reset`
-        // alone makes the atom OBSERVABLY Empty for the (synchronous, but
-        // still separately-invoked) instant between the two dispatches --
-        // long enough for OnFocusStackChanged's own Adjudication-E hand-off
-        // logic (fired synchronously by the Reset dispatch, on every OTHER
-        // live subscriber) to see "Empty" and conclude the ACTIVE session
-        // just closed, reclaiming ownership AWAY from this brand-new
-        // instance before it ever reaches its own seed dispatch. Folding
-        // both steps into one dispatch means the atom's OWN Changed event
-        // never fires an intermediate "Empty" at all during a fresh open --
-        // only the FINAL, fully-seeded value, which is never mistaken for a
-        // close. See client.Tests/State/FocusStackOwnershipHandoffTests.cs's
-        // own header for the full trace (caught there, before this ever
-        // reached the live app).
+        // seeded via ONE atomic dispatch (SeedFromTrail), never a separate Reset followed by a second Visit/SeedFromTrail: two dispatches would make the atom observably Empty in between, long enough for another live popover's own reclaim logic to see "Empty" and steal ownership away from this brand-new instance before it ever seeds.
         if (SeedStack is { Count: > 0 } seed)
         {
-            // Batch ST-3 (R3, G2 decision 5 "continue"): SeedFromTrail builds
-            // the WHOLE session (stack + trail) from the seed list in one
-            // pure Apply call, exactly mirroring the pre-atom per-node
-            // Push+RecordTrailVisit loop this replaces.
             ApplyLocally(new SeedFromTrail(seed));
         }
         else
@@ -716,11 +240,6 @@
         await LoadCurrent();
     }
 
-    // Focuses the panel exactly once, on the FIRST render of this instance
-    // (a fresh ExplorerPopover is created per "opening" -- see Reader.razor's
-    // @key -- so this naturally re-runs for every new popover without ever
-    // stealing focus back on an internal push/pop/xrefs-expand within an
-    // already-open one).
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_paneMeasured && PaneAnchor is not null)
@@ -737,17 +256,9 @@
             }
             catch (Exception)
             {
-                // Positioning is a nicety, not load-bearing -- same graceful-
-                // degradation stance CardPlacement's own measurement takes: a
-                // failed measurement just leaves the popover at its default,
-                // full-viewport-centered placement.
             }
         }
 
-        // M-D3 (R3): the SAME one-shot-on-first-render discipline as
-        // _paneMeasured immediately above, independently gated (both can
-        // run on the same instance -- see this file's own header comment on
-        // why verse- and pane-anchoring compose).
         if (!_verseAnchorMeasured && VerseAnchorSelector is not null)
         {
             _verseAnchorMeasured = true;
@@ -762,9 +273,6 @@
             }
             catch (Exception)
             {
-                // Same graceful-degradation stance as _paneRect's own catch
-                // immediately above -- a failed measurement leaves the
-                // popover at its ordinary viewport-centered default.
             }
         }
 
@@ -780,47 +288,12 @@
         }
         catch (Exception)
         {
-            // Non-fatal -- focus is a nicety (keyboard Escape-to-close, a
-            // visible focus ring on open), never load-bearing for the
-            // popover's own functionality.
         }
     }
 
-    // Batch R requirement 3: builds this node's own popover body. Two
-    // disjoint paths, decided by whether ANY registered provider claims the
-    // current node's Kind at all (_usingSectionRegistry):
-    //   - Verse/Passage/Place: every APPLICABLE provider's own ResolveAsync
-    //     runs CONCURRENTLY (Task.WhenAll, same "independent fetches never
-    //     serialize" rule Batch G1 already established for
-    //     ExploreAsync/BodyAsync below), and every non-null result becomes
-    //     one _sections entry, IN REGISTRY ORDER (List.FindAll/Select
-    //     preserve source order; Task.WhenAll resolves all of them before
-    //     this method returns, so the ORDER the results are READ back in --
-    //     the original applicable list's own order -- is what actually
-    //     renders, regardless of which fetch happened to finish first).
-    //   - every other kind (Chapter/Book/Author/TimeAndPlace/Year): the
-    //     exact pre-Batch-R path, byte-for-byte -- Current.BodyAsync.
-    // ExploreAsync (the chips row) runs in EITHER case, alongside whichever
-    // path is taken, same concurrency reasoning.
     private async Task LoadCurrent()
     {
-        // Fix, a real bug caught live (diagnostic script against the actual
-        // running app, not static review): Blazor's own event-dispatch
-        // machinery renders once at THIS method's first genuine await (the
-        // fetches below) regardless of how far LoadCurrent has gotten --
-        // Current.Title already reflects the NEW node by then (_stack.Push
-        // always happens synchronously, before LoadCurrent is ever called),
-        // but _sections/_explorations/_body were, before this fix, still
-        // whatever the PREVIOUS node left behind, so that intermediate
-        // render showed the new title beside the WRONG node's content for
-        // the full duration of the fetch -- reproduced live via a
-        // cross-reference chain: HAB.1.7's own 6-item xref list stayed on
-        // screen under a "JER.52.25" title (a verse with only 3) until the
-        // real fetch resolved. Clearing here makes that intermediate frame
-        // EMPTY instead of WRONG -- the same "loading, then filled" shape
-        // this method's very first caller (OnInitializedAsync) already had,
-        // now applied uniformly to every push/pop, not just the initial
-        // open.
+        // cleared before the fetches below (not left holding the PREVIOUS node's content): Current.Title already reflects the new node synchronously, so without this clear, Blazor's own render-on-first-await would show the new title beside the wrong node's stale sections for the whole fetch duration (a real live-caught bug, an xref chain showing HAB.1.7's title over JER.52.25's own six-item list).
         _sections = Array.Empty<PopoverSection>();
         _explorations = Array.Empty<Exploration>();
         _body = _ => { };
@@ -837,17 +310,6 @@
                 var sectionTasks = applicable.Select(p => p.ResolveAsync(Current, Atlas, this)).ToList();
                 await Task.WhenAll(sectionTasks.Cast<Task>().Append(explorationsTask));
                 var resolved = sectionTasks.Select(t => t.Result).Where(s => s is not null).Select(s => s!).ToList();
-                // Batch M-D2 (owner's cross-reference superscript directive,
-                // entry-point parameter): "xrefs section LEADING" -- when
-                // this popover was opened via a verse's own superscript, the
-                // xrefs section moves to the FRONT of the already-resolved
-                // list (a stable reorder over the SAME registry-ordered
-                // result every other open produces, never a second
-                // registry/ordering rule). One small, disclosed special
-                // case living directly in this file, matching its own
-                // established precedent immediately below (map-focus sync)
-                // for a cross-cutting concern the per-node registry itself
-                // has no business modeling.
                 _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
                 _explorations = explorationsTask.Result;
             }
@@ -877,43 +339,12 @@
         await SyncNarrativeFocusAsync();
     }
 
-    // Batch N requirement 3 ("map focus sync -- the same graph, seen
-    // twice"): a small, node-specific special case in this file (O1,
-    // 2026-08-23, retired the ONLY other one that used to sit alongside it
-    // here -- ShowMiniMap; see this file's own header comment) -- map-focus
-    // is a cross-cutting concern (it targets the MAP, not this popover's
-    // own body), not a section, so
-    // it does not belong in the registry the way PRIOR/FOLLOWING's own
-    // CONTENT does (see Explore/PopoverSectionProviders.cs). Runs at the
-    // end of EVERY LoadCurrent (the initial open, every push, every pop,
-    // every chip Activate that re-resolves Current in place) -- HOUSE
-    // PATTERN: synced continuously at the point Current actually changes,
-    // never captured lazily at dispose time. `INarrativeAware` (a small,
-    // focused interface -- Explore/EventNode.cs, retargeted Batch T; lived
-    // in the now-deleted Explore/NarrativeEventNode.cs before) is how this
-    // stays decoupled from concrete node types: EventNode is the ONLY
-    // opt-in today (Batch T retired VerseNode's own implementation --
-    // verse-level narrative-awareness moved entirely to EVENT membership,
-    // see VerseNode's own doc comment); every other node kind (Place/
-    // Chapter/Book/Author/TimeAndPlace/Year/Passage/Catechism/Verse) falls
-    // into the `else` branch and clears focus, so navigating away from an
-    // open EventNode to anything else never leaves stale emphasis on the
-    // map. Reads the SAME memoized
-    // NarrativePositionsAsync the Prior/Following section providers
-    // already call for THIS SAME Current node -- when both run (the common
-    // case), this is a cache hit, not a second network round trip.
     private async Task SyncNarrativeFocusAsync()
     {
         try
         {
             if (Current is INarrativeAware aware)
             {
-                // Batch HOTFIX-4: reads `.Narrative` only -- map focus sync
-                // stays scoped to NARRATIVE arrows (there is no "timeline
-                // arrow" to dim/amplify; a global-timeline-only Current
-                // correctly clears focus via the `narrativeIds`/`eventIds`
-                // empty-list path below, req 3's own "shared code path, no
-                // special case," unmodified from Batch N).
                 var result = await aware.NarrativePositionsAsync(Atlas);
                 var narrativeIds = result.Narrative.Select(p => p.NarrativeId).Distinct().ToList();
                 var eventIds = result.Narrative.Select(p => p.EventId).Distinct().ToList();
@@ -926,25 +357,9 @@
         }
         catch (Exception)
         {
-            // Map focus is a nicety layered on top of an already-rendered
-            // popover, never load-bearing for the popover's own
-            // functionality -- same graceful-degradation stance
-            // PaneRectMeasured/BlinkPlace already take for their own JS
-            // interop calls.
         }
     }
 
-    // IPopoverSectionContext: a provider's own section (VerseTextSection's
-    // xref/date/event rows, etc.) drills into a new node THIS SAME way an
-    // ExplorationTarget.Push chip already does. Explicit StateHasChanged()
-    // -- load-bearing, not defensive, per the EXACT same reasoning
-    // PlaceNode.OnSelectEvent's own (now-retired-as-primary) closure already
-    // documented: a provider's own onclick is bound via
-    // EventCallback.Factory.Create(ctx, ...) where ctx is passed as the
-    // IPopoverSectionContext INTERFACE reference -- the underlying object IS
-    // this component (so automatic re-render should, in principle, already
-    // fire), but this call removes any doubt rather than leaning on that
-    // subtlety a second time.
     public async Task PushAsync(IExplorable node)
     {
         ApplyLocally(new Visit(node));
@@ -952,60 +367,21 @@
         StateHasChanged();
     }
 
-    // G2-m2: the popover-internal half of the Ctrl/Cmd-click toggle
-    // gesture -- same intent, same atom, same ExplorationDescriptor.Capture
-    // call VerseLine's own OnLineToggleSelect (Reader.razor) and map.js's
-    // marker/label toggle (World.razor) already dispatch through. Never
-    // touches the popover's own stack/Current -- no push, no pop, no
-    // StateHasChanged (SelectionAtom's own Changed subscribers, e.g.
-    // SelectionTray.razor, re-render themselves; this popover has nothing
-    // of its own that depends on selection state).
     public Task ToggleSelectAsync(IExplorable node)
     {
         SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
         return Task.CompletedTask;
     }
 
-    // Batch F2 requirement 6: see IPopoverSectionContext.OtherContextSectionCount's
-    // own doc comment for why this reads `_sections` live (render time),
-    // never a value snapshotted during the concurrent ResolveAsync phase.
-    // "verse-text" (the subject) and "xrefs" (asking about its OWN
-    // siblings, not itself) are excluded; every other resolved section
-    // counts, generically -- no hardcoded catechism check.
     public int OtherContextSectionCount => _sections.Count(s => s.Testid is not ("verse-text" or "xrefs"));
 
-    // Batch M-D2: read live off Current (render time, same as
-    // OtherContextSectionCount immediately above) -- never captured into a
-    // field at push time, so it always reflects whichever node is CURRENTLY
-    // on top of the stack (a drill-in from an entry-point-opened popover
-    // pushes an ordinary VerseNode with XrefEntryPoint defaulted false, per
-    // that class's own doc comment, so the emphasis correctly does not
-    // propagate past the one hop that opened it).
     public bool XrefEntryPoint => Current is VerseNode { XrefEntryPoint: true };
 
-    // Batch P: IPopoverSectionContext.Graph's own concrete backing --
-    // the injected singleton (Program.cs, M-D2), never a new instance.
     public IExplorableClient Graph => GraphClient;
 
-    // EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
-    // one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds
-    // instance; fix round 2, Q-1/N-3 -- MapFocusHatch.cs's own doc comment
-    // has the full genuine-conflict reasoning): the SAME
-    // "the split IS the atlas" NavigateWorld hand-off an Exploration chip
-    // already gives (Activate's own case, below) -- extracted so a section
-    // provider can reach it too, via IPopoverSectionContext.NavigateWorldAsync,
-    // without duplicating this branch's own InSplit/OnNavigateWorldInSplit
-    // logic a second time.
     private async Task NavigateWorld(string query)
     {
         await RequestClose();
-        // Batch H: "the split IS the atlas" -- while a split is
-        // showing, a chip that would otherwise open a SECOND full
-        // /world instead hands its exact query (a scripture ref or a
-        // from/to window, unescaped from ExplorationTarget's own
-        // ready-to-append shape) to whichever pane is already
-        // showing the atlas, in place. InSplit false (every
-        // standalone page) keeps today's behavior byte-for-byte.
         if (InSplit && OnNavigateWorldInSplit.HasDelegate)
         {
             await OnNavigateWorldInSplit.InvokeAsync(query);
@@ -1016,9 +392,6 @@
         }
     }
 
-    // EVT-3 Ticket 3: IPopoverSectionContext's own concrete backing for the
-    // map-focus-at-time hatch -- see that interface member's own doc
-    // comment.
     public Task NavigateWorldAsync(string query) => NavigateWorld(query);
 
     private async Task Activate(Exploration ex)
@@ -1036,36 +409,6 @@
 
             case ExplorationTarget.NavigateReader reader:
                 await RequestClose();
-                // Batch F2 requirement 6c: preserves an open split across
-                // this navigation too (SPLIT-1's own "reader navigation
-                // keeps the split open" promise, extended to this chip --
-                // InSplit is true for EITHER pane's own popover while a
-                // split is showing, so this is correct for a chip clicked
-                // from the atlas pane's own popover as well). Query BEFORE
-                // fragment, same reasoning as Reader.razor's own ChapterHref/
-                // ApplyScriptureRef. Batch CORPREAD-1a (SPLIT-PERSIST-1):
-                // built from the ONE declared split-URL vocabulary
-                // (SplitUrlContract), not a hand-rolled "?split=1" literal --
-                // InSplit is ONLY ever true when Reader.razor supplies it
-                // (this component's own doc comment on that parameter), and
-                // Reader's only reachable host pairing is World, the SAME
-                // disclosed narrowing Reader.razor's own SplitQuerySuffix
-                // uses.
-                //
-                // FIX ROUND 1 (review S-2, IMPORTANT -- "drops &follow=1,
-                // leaving the projection untruthful"): this navigation
-                // targets Reader's OWN route from a page already showing
-                // Reader, so Blazor reuses the SAME CompositionSplit
-                // instance -- its own restore-on-load is already spent
-                // (_splitQueryConsumed) and the arrangement atom does not
-                // change, so nothing re-syncs the URL afterward either. Omitting
-                // `&follow=1` here therefore left the URL saying "follow off"
-                // while the atom still held "follow on," silently flipping
-                // Follow off on the next refresh -- breaking the ticket's own
-                // "Refresh in split ⇒ ... same follow state" promise. Reads
-                // the LIVE Follow value directly off the shared arrangement
-                // atom (now injected above), the SAME source
-                // Reader.SplitQuerySuffix reads.
                 var query = InSplit
                     ? $"?{SplitUrlContract.SplitParam}={ViewNames.World}" +
                       (ViewArrangementAtom.Value.Follow ? $"&{SplitUrlContract.FollowParam}={SplitUrlContract.FollowTrueValue}" : "")
@@ -1084,21 +427,10 @@
             return;
         }
 
-        // Fix round 1 (Adjudication D, S-1): the Back intent itself now
-        // restores G2's own "a Back landing is a visit" trail-append rule --
-        // see FocusStack.cs's own Back record doc comment for the full
-        // history/fix.
-        ApplyLocally(new BibleAtlas.Client.State.Back()); // fully qualified -- this method is ALSO named Back()
+        ApplyLocally(new BibleAtlas.Client.State.Back());
         await LoadCurrent();
     }
 
-    // Batch N requirement 3: "Popover closes / context ends -> arrows
-    // return to normal." Cleared HERE, synchronously at the close ACTION
-    // itself (the genuine mutation point), rather than in a DisposeAsync
-    // this component doesn't have and, per HOUSE PATTERN, must not gain
-    // for this purpose -- RequestClose is the one choke point every close
-    // path (backdrop click, the close button, Escape) already funnels
-    // through, same as it always was.
     private async Task RequestClose()
     {
         try
@@ -1107,7 +439,6 @@
         }
         catch (Exception)
         {
-            // Same graceful-degradation stance SyncNarrativeFocusAsync above takes.
         }
         await OnClose.InvokeAsync();
     }
@@ -1120,32 +451,8 @@
         }
     }
 
-    // Verse/Passage/Chapter/Book titles are canonical refs (GEN.1.1,
-    // GEN.1.1-5, GEN.1, GEN) -- design-direction.md's "canonical refs...
-    // set them like instrument readouts" applies to popover-title too, via
-    // this attribute (see .popover-title[data-ref] in app.css). Place/
-    // Author/TimeAndPlace titles are proper names/composed labels, styled
-    // as ordinary prose headings instead.
     private static bool IsRefKind(string kind) => kind is "Verse" or "Passage" or "Chapter" or "Book";
 
-    // M-D3 (U3'): the icon-scale glyph for a head action, keyed by its own
-    // CONTRACT testid -- exactly the THREE distinct ids every IExplorable's
-    // own ExploreAsync actually emits today (grep-confirmed across every
-    // Explore/*.cs node type): popover-chip-map (EventNode's own "Show on
-    // the map" -- O1, 2026-08-23, retired VerseNode/PassageNode's own
-    // "Explore geo-temporally", the OTHER chip that used to share this same
-    // testid; see this file's own header comment), popover-chip-book
-    // ("About this book"), popover-chip-context ("Read in context"). Chosen
-    // from this file's own
-    // established "quiet Unicode instrument glyph, never an emoji" register
-    // (breadcrumb-back's ‹, close's ×, PassageList's ▾/▲) -- a small dot-
-    // in-crosshairs for a map/location action, a fleuron for "about the
-    // book" (a printer's ornament, at home beside this app's own serif/
-    // small-caps chrome), a pilcrow for "read the surrounding text." The
-    // glyph is decorative ONLY -- aria-label/title (the markup above) carry
-    // the real accessible name; an unrecognized id (defensive -- nothing
-    // constructs one today) falls back to a plain bullet rather than
-    // rendering empty.
     private static string ChipGlyph(string chipTestId) => chipTestId switch
     {
         "popover-chip-map" => "⌖",
@@ -1154,13 +461,7 @@
         _ => "•",
     };
 
-    // Batch F2 requirement 6d: reader.js's own getPaneRect return shape --
-    // deserialized via Blazor's DEFAULT (camelCase) JS-interop JSON options,
-    // not Wire.Options (this never crosses the real HTTP API either, same
-    // reasoning as MapInterop.cs's own CardMeasurementDto).
     private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 
-    // M-D3 (R3): reader.js's own getVerseAnchorRect return shape -- same
-    // deserialization reasoning as PaneRectDto immediately above.
     private sealed record VerseAnchorRectDto(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
 }

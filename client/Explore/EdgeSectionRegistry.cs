@@ -1,162 +1,45 @@
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// Batch M-D2 (P7 closure, "the popover section registry keys sections by
-/// EDGE KIND with per-kind display rules" -- the controller brief's own
-/// words): a small, REAL C# realization of the design spec's own
-/// <c>SectionSpec</c> shape (§7: <c>{ kind, renderer, style, initial,
-/// order }</c>) -- per-edge-kind display POLICY, keyed by the wire's own
-/// edge-kind label string (<c>"cites"</c>, ...), consulted by
-/// <see cref="CrossRefsSection"/> for the ONE number ("3") both its general
-/// xrefs-only cap (F2, unchanged) and its NEW entry-point cap (this batch)
-/// must agree on -- one source of truth for "how many xref entries show
-/// initially," read from a registry, not duplicated as two separate
-/// integer literals in two separate branches of one ternary.
-///
-/// STRANGLER SCOPE, disclosed (batch brief controller decision 1, "surfaces
-/// not touched this batch may stay bespoke"): this registry governs DISPLAY
-/// POLICY (cap/order/style) for the ONE edge kind the superscript work
-/// actually touches (<c>cites</c>). It does NOT (yet) drive
-/// <see cref="CrossRefsSection"/>'s own DATA FETCH -- that stays on the
-/// existing bespoke path (<c>VerseDetail.CrossRefs</c> /
-/// <c>PassageNode.XrefsAsync</c>), which resolves each target's own FULL
-/// member-verse text for a same-chapter range (F2's own enrichment, e.g.
-/// "COL.1.16-19" renders all four verses' real text). The generic
-/// <c>cites</c> edge (design doc §4: "verse-level today, loci by design")
-/// stores only a target's FIRST verse -- `to_last`/`target_display` live on
-/// the AUTHORED `CrossRef` row, never lowered into the generic edge index's
-/// `EdgeMeta` (only `Votes` is). Migrating the FETCH to the generic contract
-/// this batch would silently truncate ~25% of real cross-reference previews
-/// (F2's own measured figure) from their full range down to one verse --
-/// widening `EdgeMeta` to carry range data is a real relation-shape decision
-/// ("reviewed like any relation change," graph-types' own law), correctly
-/// bigger than this batch's own scope, not attempted here. What DOES move to
-/// the generic contract this batch: the superscript's own COUNT
-/// (<c>VerseOut.XrefCount</c>, server-side, via <c>GraphQuery::edge_summary</c>
-/// -- a genuinely NEW capability with no bespoke predecessor) and this
-/// display-policy registry itself. See CONTRACT.md's own M-D2 strangler
-/// inventory for the full, itemized list.
-/// </summary>
 public enum SectionStyle
 {
     Standard,
 
-    /// A superscript-marker-capable section: quiet accent styling
-    /// (>=7:1 floor, not body-text's >=10:1), and eligible to serve as an
-    /// ENTRY POINT (owner decree: the superscript is an entry point into
-    /// THE one composable popover, never a parallel interface).
+    // >=7:1 contrast floor (not body text's >=10:1); eligible to serve as a
+    // superscript entry point into the popover.
     Quiet,
 }
 
 public enum SectionOrder
 {
-    /// The edge's own ranking metadata already determines page order
-    /// server-side (design types doc §3: <c>EdgeMeta::Votes</c>) -- entries
-    /// arrive PRE-ORDERED; no client-side re-sort is ever needed or
-    /// performed (server_atlas_server/tests/graph_api.rs's own
-    /// `generic_cites_edges_are_already_votes_descending_...` test pins
-    /// this as a tested fact, not an assumed one).
+    // The server already delivers entries votes-ranked; never re-sort here.
     VotesRanked,
 
-    /// Batch P: the design types doc's own §7 vocabulary
-    /// (<c>votes-ranked | chain | canonical | resolved-date</c>) --
-    /// "canonical" realized for the first time. `mentioned-in` (a Person's
-    /// own frontier of every verse mentioning them) is canon-ordered BY
-    /// CONSTRUCTION, not by client-side sorting: `atlas_etl::people::
-    /// parse_people` explicitly canon-sorts each person's own resolved
-    /// verse_links before the graph adapter ever sees them, and the
-    /// generic port's own BiIndex preserves row-insertion order end to
-    /// end -- no re-sort exists anywhere on this path, server or client
-    /// (server_atlas_graph's own person_adapter tests pin the row order as
-    /// a tested fact). `mentions` (a verse's own forward frontier of
-    /// places+persons) shares this label too: a single locus has no
-    /// canon-ORDER distinction to violate among its own entries (there is
-    /// only one locus), so "canonical" is vacuously true there, not a
-    /// second, different ranking scheme.
+    // Order comes from the server (canon-sorted before the graph adapter sees
+    // it), or is vacuously true for a single-locus list; never re-sorted client-side.
     Canonical,
 }
 
-/// One edge kind's own display policy -- style/initial-clamp/order, per the
-/// design spec's <c>SectionSpec</c> shape. <see cref="Renderer"/> is
-/// deliberately NOT modeled here: every kind this registry governs today
-/// renders through the SAME shared <see cref="Components.PassageList"/>
-/// entry-list renderer (design doc §7's own "entry-list | text-flow |
-/// map-pins | timeline-rows" vocabulary has exactly one member in live use
-/// client-side so far) -- adding a field with only ever one value would be
-/// ceremony, not a real seam; a second renderer kind, when one is actually
-/// needed, is the moment to add it.
-/// Batch P fix round 1 (R-P1): <c>EdgeKind</c> is <see cref="EdgeKindId"/>
-/// (`BibleAtlas.Client`, the root namespace -- visible here with no extra
-/// `using`, the same free child-sees-parent lookup this file already
-/// relies on for `IExplorableClient`/`NodeCardDto`/etc.), not a bare
-/// <c>string</c> -- see that struct's own doc comment for the full
-/// reasoning (closes M-D2 Minor-2's own named id/kind-transposition risk
-/// at compile time).
+/// One edge kind's own display policy -- style/initial-clamp/order.
+/// <see cref="Renderer"/> is deliberately not modeled: every kind this
+/// registry governs today renders through the same shared entry-list renderer.
 public sealed record EdgeSectionSpec(EdgeKindId EdgeKind, SectionStyle Style, int InitialClamp, SectionOrder Order);
 
-/// The registry itself: a flat map, edge-kind label -> its own display
-/// policy. Registering a new kind here is the whole of teaching a NEW
-/// edge-kind-driven section its own display rules (P5: "a new node/edge
-/// kind is a record + compiler rule + display rule," realized client-side).
 public static class EdgeSectionRegistry
 {
-    /// The <c>cites</c> relation's own policy: quiet-accent styling
-    /// (superscript-eligible), 3 initial entries (the owner's own words,
-    /// "shows 3 explorable verses to start" -- also F2's pre-existing
-    /// xrefs-only general-popover cap, so this ONE number correctly serves
-    /// BOTH the entry-point case and the unchanged general case), votes-
-    /// ranked order (already the wire's own order -- see
-    /// <see cref="SectionOrder.VotesRanked"/>'s own doc comment).
+    // 3 serves both the general xrefs-only cap and the superscript entry-point
+    // cap -- keep these in sync if either changes.
     public static readonly EdgeSectionSpec Cites = new(new EdgeKindId("cites"), SectionStyle.Quiet, InitialClamp: 3, SectionOrder.VotesRanked);
 
-    /// Batch P: the verse/passage popover's own PERSONS section
-    /// (<c>VersePersonsSection</c>) reads this for its ONE fetch's `limit`
-    /// -- a real verse's own total mentions (places+persons combined) is
-    /// always small (spot-checked against the real compiled data: no
-    /// verse comes remotely close to this), so a single generous page
-    /// safely captures the complete set for virtually every real verse;
-    /// see that provider's own doc comment for the honest, disclosed
-    /// fallback on the rare chance it somehow doesn't.
+    // Assumes a verse's total mentions (places+persons) never exceeds this;
+    // no pagination if it ever does.
     public static readonly EdgeSectionSpec Mentions = new(new EdgeKindId("mentions"), SectionStyle.Standard, InitialClamp: 50, SectionOrder.Canonical);
 
-    /// Batch P: a Person's own "mentioned-in" frontier
-    /// (<c>PersonCardAndMentionsSection</c>/<c>PersonMentionsList</c>) --
-    /// FIRST page size only (a busy person, e.g. real committed data's own
-    /// "David" at 896 mentions, needs genuine server-side pagination, not
-    /// a client-side reveal over an already-fully-fetched list -- see
-    /// <c>PersonMentionsList.razor</c>'s own header comment for why this
-    /// is the one section in this app that fetches a SECOND real page on
-    /// reveal instead of just un-hiding already-held rows).
+    // First page only -- a busy person (e.g. ~900 mentions) needs real
+    // server-side pagination; PersonMentionsList.razor fetches a second page on reveal.
     public static readonly EdgeSectionSpec MentionedIn = new(new EdgeKindId("mentioned-in"), SectionStyle.Standard, InitialClamp: 12, SectionOrder.Canonical);
 
-    /// Batch CORP-1 (R2, Kretzmann): a verse/passage TextUnit's own inverse
-    /// frontier of CommentaryItems anchored to it (`comments-on`'s own
-    /// inverse label -- graph-types/src/edge.rs; ALREADY lowered into the
-    /// generic directed edge index by the KRETZ-1 "pre-authorized exception"
-    /// -- graph-types/src/graph.rs's own `comments_on` loop). InitialClamp
-    /// generous (20): a real verse very rarely carries more than a handful
-    /// of Kretzmann units (one per lemma span), so one page safely captures
-    /// the whole set for virtually every real verse -- the SAME "single
-    /// generous page" reasoning EdgeSectionRegistry.Mentions already
-    /// establishes for its own per-locus frontier.
-    ///
-    /// KRETZ-SCALE-1 (batch-finalp1-brief.md ticket 2): Kretzmann.razor's
-    /// own LoadCommentaryAsync -- this spec's one real caller -- no longer
-    /// issues a per-verse `commented-on-by` edges call at all (replaced by
-    /// one chapter-scoped `GET /api/kretzmann/chapter/{cref}` fetch; see
-    /// that page's own header comment). This display-policy entry is kept,
-    /// not deleted -- the `commented-on-by` relation itself is unchanged,
-    /// still real KRETZ-1 vocabulary, and remains the correct place to look
-    /// up this edge kind's own display policy for any future consumer
-    /// (e.g. a CommentaryItem popover section reading "what verses does
-    /// this comment on" the other direction) -- disclosed here so an
-    /// unused entry reads as a deliberate seam, not an oversight.
     public static readonly EdgeSectionSpec CommentedOnBy = new(new EdgeKindId("commented-on-by"), SectionStyle.Standard, InitialClamp: 20, SectionOrder.Canonical);
 
-    // Batch P fix round 1: keyed by EdgeKindId now (a record struct --
-    // value equality/GetHashCode come free, a fully valid Dictionary key),
-    // not a bare string, for the same reason EdgeSectionSpec.EdgeKind
-    // itself is typed.
     public static readonly IReadOnlyDictionary<EdgeKindId, EdgeSectionSpec> ByKind =
         new Dictionary<EdgeKindId, EdgeSectionSpec>
         {

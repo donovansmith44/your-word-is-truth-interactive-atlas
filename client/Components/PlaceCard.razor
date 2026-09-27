@@ -1,134 +1,8 @@
 @using System.Globalization
 @using BibleAtlas.Client.Explore
-@* Batch F2, 6-ARCH ("reuse the bits that we have! if you can't reuse them,
-   then the bits need refactored for composability"): this card's own
-   passage-grouping algorithm (Batch D) now lives in Explore/PassageGrouping.cs
-   -- Groups()/SpanRef() below delegate to it so the popover platform's own
-   shared passage-list component (PassageList.razor) reuses the EXACT same
-   "what counts as a passage" rule rather than a second, parallel
-   implementation. This alias keeps every VerseRun call site in this file
-   (the @foreach markup below included) unchanged. *@
 @using VerseRun = BibleAtlas.Client.Explore.PassageGrouping.VerseRun
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
-@* A parchment hover card floating over the atlas plate (design-direction.md's
-   "popovers and hover cards are parchment artifacts on both pages" --
-   lamplit paper over the world). World.razor owns the hover/close-delay
-   state machine and just feeds this component whichever place is currently
-   showing plus the screen point to anchor at (map.js reports that point as
-   e.containerPoint, which lines up with this card's positioning context
-   because #world-map fills .world-page via `inset: 0` with no border/
-   padding -- see app.css).
-
-   Batch D (batch-d-brief.md) rebuilt this card from direct, binding user
-   feedback: no more bookkeeping. The per-(book,chapter) count-row index
-   (the old MergedVerseGroups/verse-group-{BOOK}-{chapter} rows, WORLD-2/
-   WORLD-8) is GONE -- the card is place name + verse content + controls,
-   nothing else. This SUPERSEDES design-direction.md's "Hover place card --
-   REVISED" section (which still describes that count-row index and a flat
-   single-shot "Show N more") wherever the two disagree; that section is now
-   stale prose, not a contract -- CONTRACT.md is.
-
-   Batch E (batch-e-brief.md, time-accurate places) adds two more sections
-   BELOW Batch D's verse content and controls, never disturbing them: a
-   quiet blurb line and an instrument-face established/destroyed line, each
-   date its own explorable node (Explore/YearNode.cs) opened via
-   OnExploreNode. Title now reads Place.DisplayName (the scene's own
-   period-resolved name), not Place.Name -- map.js/World.razor/PlaceNode
-   follow the same swap; see wire.rs's ScenePlace.display_name.
-
-   Verse content is now passage-aware rather than a flat capped list.
-   MergedVerses() (unchanged -- every event's verse_groups' verse ids,
-   flattened in event order then each event's own already book/chapter/
-   verse-ascending group order, deduped) is the list this file and
-   design-direction.md have both long called "canonical order". Groups()
-   splits THIS list, by list position, into maximal runs of numerically-
-   consecutive same-book/chapter verses: a run of length >=2 is a passage
-   (renders as ONE block -- flowing KJV text, small inline mono verse
-   numbers, a single span ref like "GEN.12.1-4"); a run of length 1 is a
-   lone verse (its own mono ref line + serif text, same shape as before
-   this batch). Grouping by LIST POSITION rather than a fresh global sort
-   is deliberate: two verses that are numerically back-to-back but arrived
-   via non-adjacent events never merge into one passage -- "the scene's
-   activating verse list... canonical order" (the brief's own phrase) is
-   this codebase's existing name for MergedVerses()'s own order, not an
-   instruction to re-sort it (world-hover-text.spec.ts's black-box
-   mergedVerses() mirror flattens the same way and calls it the same
-   thing).
-
-   _shownCount replaces the old boolean _expanded: how many of
-   MergedVerses(), from the start, are currently rendered. It always starts
-   at InitialShownCount() -- up to 4 verses if the FIRST group is a
-   passage, up to 2 if it's a lone verse (CONTRACT's 4/2-initial rule) --
-   and grows by PassageStep (5) or LoneStep (2) verses per place-card-more
-   click, whichever kind of group contains the next not-yet-shown verse.
-   The step is a flat verse count, not capped at that group's own remaining
-   length, so one click can finish a passage AND spill into the next
-   group's first verse(s) in the same step -- safe because rendering
-   (VisibleGroups) recomputes fresh from _shownCount every time: a group
-   only 1 verse into its reveal renders as a lone verse now and upgrades to
-   a passage block automatically once a later click reveals a 2nd verse of
-   it, with no separate reveal-history state to keep in sync. place-card-
-   collapse snaps _shownCount back to InitialShownCount() in one click.
-
-   Because World.razor renders this with no @key, hovering from one marker
-   straight to another (no gap where hoverPlace goes null) reuses THIS SAME
-   component instance with a new Place parameter, rather than
-   destroying/recreating it -- OnParametersSetAsync's _lastPlaceId guard
-   below is what resets expand/verse-text state for the new place instead
-   of silently showing the previous place's already-fetched text.
-
-   HOTFIX batch (batch-hotfix-brief.md requirement 1, user report: "if there
-   are locations at the top of the screen and you hover for your hover
-   menu, the hover menu can be cut off by the top of the screen" -- the card
-   ALWAYS rendered above its marker before this batch, per app.css's own
-   pre-existing `calc(-100% - 18px)` transform, with nothing to catch a
-   marker too close to the container's own top edge). X/Y stay the raw
-   marker anchor point, unchanged; app.css's `.place-card` transform now
-   reads CSS custom properties this file sets inline -- --card-dx/--card-dy/
-   --card-dy-adjust -- computed by CardPlacement.Compute (client/
-   CardPlacement.cs, a standalone pure function -- see its own header for
-   why it isn't a method here) from a JS-measured render box
-   (MapInterop.MeasureCardPlacement). Deliberately a SNAPSHOT decision, not
-   a continuously-tracked one ("Flip decision at open time... recompute on
-   re-open, not on pan" -- the brief's own words): OnAfterRenderAsync below
-   only measures once per genuinely NEW place (keyed off the same Place.Id
-   change OnParametersSetAsync's own _lastPlaceId guard already detects),
-   and only once this place's own chapter-text/history fetches have BOTH
-   settled (_contentReady) -- measuring any earlier would size against
-   not-yet-loaded content (LoadHistory's blurb/dates sections specifically,
-   entirely absent from the DOM until it resolves) and risk exactly the
-   under-measurement this fix exists to prevent. Until that first
-   measurement lands, CardDxCss/CardDyCss/CardDyAdjustCss below (Blazor-
-   side, not a CSS var() fallback -- see app.css's own comment on
-   .place-card for why) return the exact pre-batch values, so the card
-   renders at its ORIGINAL default position (a plain center-above placement
-   byte-identical to today) -- so the common,
-   fast-cache case (LoadChaptersFor/LoadHistory both resolve well inside a
-   single frame) never shows anything BUT the final, correct placement, and
-   even a slow-network open only ever shows a BRIEF default-placed frame
-   before self-correcting, never a permanently wrong one. The existing
-   hover-persistence/grace machinery below (_pointerOverCard et al, owned by
-   World.razor) is completely unaware of any of this -- OnPointerEnter/
-   OnPointerLeave fire off this component's OWN root element regardless of
-   which side of the marker it currently renders on, so the corridor works
-   identically in both orientations with no changes needed here or there.
-
-   Fix round 1 (review finding, Important): the initial cut of this fix
-   only ever asked "does the card fit ABOVE the marker" -- a flipped card
-   was never checked against the container's own BOTTOM edge, so a tall
-   enough card near the vertical middle of a short viewport (e.g. 1280x720,
-   Playwright's own default) could flip below and overflow past the
-   bottom -- live-reproduced by review at 122px, a real marker ("Ai",
-   exodus scene), the exact user-reported bug class on the opposite edge.
-   CardPlacement.Compute now takes containerHeight too and, when NEITHER
-   orientation fully fits, picks whichever shows more of the card and
-   clamps it inside the container (--card-dy-adjust, a plain pixel nudge
-   layered on top of --card-dy the same way --card-dx layers on top of the
-   native -50% horizontal centering) -- see that class's own header for the
-   full decision table. Still a snapshot, decided at the same single
-   measurement point as the flip/horizontal-clamp decisions above -- no new
-   timing/re-measurement concerns introduced. *@
 
 <div class="place-card"
      data-testid="place-card"
@@ -141,11 +15,6 @@
     <div class="place-card-scroll">
         <div class="place-card-head">
             <button type="button" class="place-card-title explorable" data-testid="place-card-title" @onclick="() => OnOpenPlace.InvokeAsync()">@Place.DisplayName</button>
-            @* Batch G1 requirement 3: present only while pinned -- a hover-
-               only card already closes itself on pointer-leave, so an
-               explicit close control would be redundant/confusing there;
-               CONTRACT's own "closes via Escape, an X, or clicking
-               elsewhere on the map" is specifically about the pinned case. *@
             @if (Pinned)
             {
                 <button type="button" class="place-card-close" data-testid="place-card-close"
@@ -159,34 +28,10 @@
         }
         @if (verses.Count == 0)
         {
-            @* Batch E2 (the ever-present graph): Place.Events is empty ONLY
-               for a quiet place -- World.razor's QuietAsScenePlace is the
-               one path that ever constructs a ScenePlace with no events;
-               SCENE-2 guarantees every REAL lit place has >=1, so this
-               branch can never fire for one. Exact text, CONTRACT-documented
-               (batch-e2-brief.md Requirement 3). *@
             <p class="place-card-quiet" data-testid="place-card-quiet">No recorded events in this window &mdash; drag the timeline.</p>
         }
         else
         {
-            @* Batch G1 requirement 1b (user 2026-08-19: "verses/passages
-               viewed in the map are not explorable... this is all one big
-               dag that we can explore from anywhere"): every hover-verse-
-               {VREF}/hover-passage-{SPAN} element becomes explorable under
-               the SAME one rule (.explorable, app.css) -- hover/focus
-               darkens, click (or Enter) opens the ExplorerPopover via
-               OnExploreNode, the EXACT SAME callback/mechanism Batch E's
-               date affordances already use (World.razor's OpenExploreNode:
-               push the node, close this hover card the way a promoted
-               popover always supersedes it). A passage block nests its own
-               per-verse spans inside the block-level passage row -- clicking
-               a SPECIFIC verse's span opens just that VerseNode and stops
-               the click from also bubbling into the passage row's own
-               handler (@onclick:stopPropagation); clicking anywhere else in
-               the row (the ref label, or the block's own whitespace) opens
-               the whole PassageNode instead. place-card-more/-collapse
-               (below, outside this loop) stay non-explorable controls,
-               unchanged. *@
             @foreach (var g in visible)
             {
                 @if (g.IsPassage)
@@ -240,11 +85,6 @@
         </div>
     }
 
-    @* Batch E additions -- strictly BELOW Batch D's verse content and
-       controls above (nothing renders after this), per batch-e-brief.md
-       Requirement 4. Conditional presence throughout: no blurb section
-       when the API returned none for this window; no dates section when
-       neither established nor destroyed is curated for this place. *@
     @if (_history?.Blurb is { } blurb)
     {
         <p class="place-card-blurb" data-testid="place-card-blurb">@blurb</p>
@@ -286,26 +126,8 @@
         </div>
     }
 
-    @* Batch G1 requirement 3 (narrative traversal) -- strictly LAST, below
-       every Batch D/E section above, same "later batches append below,
-       never disturb" layering. One row per narrative that has >=1 arrow
-       touching THIS place in the CURRENT scene; entirely absent when
-       Arrows/Narratives are null (scripture mode, or a scene not yet
-       loaded) or this place has no leg of any narrative here.
-
-       Fix round 1 (batch-g1-review.md M1): also gated on Pinned. NarrativeRows()
-       is a pure function of Arrows/Narratives/Place alone -- it doesn't know or
-       care whether this card is pinned -- and World.razor passes Arrows/
-       Narratives into this component unconditionally (see its PlaceCard
-       invocation), same as every other parameter. Without an explicit Pinned
-       check here, a plain unpinned HOVER over a place with narrative legs
-       rendered the exact same fully-functional traversal controls a deliberate
-       click-to-pin is supposed to unlock -- verified live by the reviewer
-       (hovering marker-rameses in the exodus window left data-pinned="false"
-       but card-next-event-exodus present and clickable), and a direct
-       contradiction of this file's own place-card-close gate a few lines above
-       (~85) plus CONTRACT.md's already-correct "present ONLY when the pinned
-       place has >=1 narrative leg" text. *@
+    @* NarrativeRows() itself doesn't check Pinned; gating here is required or an
+       unpinned hover shows the same traversal controls a click-to-pin should unlock. *@
     @{ var narrativeRows = NarrativeRows(); }
     @if (Pinned && narrativeRows.Count > 0)
     {
@@ -340,154 +162,54 @@
     [Parameter] public EventCallback OnPointerEnter { get; set; }
     [Parameter] public EventCallback OnPointerLeave { get; set; }
 
-    // Batch E: the scene's own active window (time mode) or null (scripture
-    // mode / not yet applied) -- forwarded to AtlasClient.PlaceHistory so
-    // the fetched blurb/display-name resolve against the SAME window the
-    // map itself is currently showing. World.razor is the source of truth
-    // (its own _from/_to fields), same "page owns state, card just renders
-    // it" split every other PlaceCard parameter already follows.
     [Parameter] public int? WindowFrom { get; set; }
     [Parameter] public int? WindowTo { get; set; }
 
-    // Batch E: fires with a freshly-constructed YearNode when a date
-    // affordance (place-card-date-established/-destroyed) is activated --
-    // World.razor wires this to push the node onto its own ExplorerPopover,
-    // the same "card promotes into a real popover" pattern OnOpenPlace
-    // already uses for the title/PlaceNode.
     [Parameter] public EventCallback<IExplorable> OnExploreNode { get; set; }
 
-    // WORLD-8/Task 15: the title still promotes this hover card's content
-    // into a real ExplorerPopover -- World.razor already has Place.Id/
-    // Place.Name in hand from _hoverPlace, the same source this
-    // component's own Place parameter comes from, so this stays
-    // parameterless rather than passing a whole node instance across the
-    // component boundary. Batch D removed this card's OTHER, older route
-    // into a popover -- the verse-group index rows' click-to-open-a-verse
-    // affordance -- along with the rows themselves; the brief's own content
-    // list for this card is closed ("place name + verse content +
-    // controls, nothing else"), so there is no replacement for it here.
     [Parameter] public EventCallback OnOpenPlace { get; set; }
 
-    // Batch G1 requirement 3 (click-to-pin/narrative traversal). Pinned:
-    // World.razor's own source of truth (its _pinnedPlaceId field) for
-    // whether THIS currently-shown card is pinned -- drives the close
-    // button's conditional presence and the place-card data-pinned
-    // attribute. Narratives: the current scene's own legend list (null in
-    // scripture mode / before the first scene loads) -- read-only, used
-    // solely for each narrative's own swatch Color now (see NarrativeRows()
-    // below); never mutated here, World.razor owns the scene. OnGoToPlace
-    // fires with the ADJACENT place's own id when a ‹ previous event / next
-    // event › control is clicked; OnClosePin fires when the card's own "X"
-    // is clicked.
-    //
-    // Fix round 1 (batch-n-review.md Critical-1): the Arrows parameter
-    // (the current scene's own WINDOWED arrow list) that NarrativeRows()
-    // used to derive prev/next adjacency from is GONE -- the review proved
-    // that windowed derivation can disagree with the verse popover's own
-    // unwindowed positions_for_events resolver (batch-n-brief.md) for an
-    // entirely ordinary time-slider window (see LoadNarrativePositions'
-    // own comment below for the full mechanism and the real curated-data
-    // repro). World.razor's own <PlaceCard> call site no longer passes it.
     [Parameter] public bool Pinned { get; set; }
     [Parameter] public List<SceneNarrative>? Narratives { get; set; }
     [Parameter] public EventCallback<string> OnGoToPlace { get; set; }
     [Parameter] public EventCallback OnClosePin { get; set; }
 
-    // CONTRACT's 4/2-initial + 5/2-step rule (batch-d-brief.md Requirement 2).
     private const int PassageInitialMax = 4;
     private const int PassageStep = 5;
     private const int LoneInitialMax = 2;
     private const int LoneStep = 2;
 
-    // Identifies which place the fetched/fetching _verseText belongs to, so
-    // a hover that moves marker-to-marker (see the file-header comment)
-    // resets rather than showing stale text/reveal-state under the new
-    // place's name.
     private string? _lastPlaceId;
     private int _shownCount;
     private int _initialShownCount;
     private readonly Dictionary<string, string> _verseText = new();
 
-    // Batch E: this place's window-scoped history payload (null while
-    // loading, still-loaded, or simply absent for a place with no curated
-    // history -- all three render the same "no blurb/dates section" way,
-    // per CONTRACT's conditional-presence rule).
     private PlaceHistoryOut? _history;
 
-    // Fix round 1 (batch-n-review.md Critical-1): every narrative position
-    // (atlas_core::narrative::NarrativePosition, wire NarrativePositionDto)
-    // touching any event CURRENTLY shown at this place -- populated by
-    // LoadNarrativePositions below, consumed synchronously by
-    // NarrativeRows(). Empty (not null) both before the first fetch settles
-    // and for a place with no narrative-leg events, same "always a list,
-    // conditional presence via emptiness" convention _verseText/_history
-    // already follow.
     private List<NarrativePositionDto> _narrativePositions = new();
 
-    // HOTFIX batch (requirement 1, flip-below-when-cut-off): the card's own
-    // root element, measured post-render by OnAfterRenderAsync below via
-    // MapInterop.MeasureCardPlacement -- see the file header comment for
-    // the full mechanism and why this is a deliberate one-shot-per-open
-    // snapshot, not a continuous tracker.
     private ElementReference _cardEl;
 
-    // True once BOTH LoadChaptersFor and LoadHistory have settled for the
-    // CURRENT place (OnParametersSetAsync's own Task.WhenAll below) -- the
-    // earliest point at which this card's own rendered height reflects
-    // every CONDITIONALLY-present section (blurb/dates specifically) it
-    // will ever have for this open, so the earliest point a measurement can
-    // be trusted. Reset to false alongside _lastPlaceId on every genuinely
-    // new place.
+    // Card height isn't final until verse text, history, and narrative fetches all settle
+    // (blurb/dates are conditionally present) -- placement measurement waits for this.
     private bool _contentReady;
 
-    // Which place _dxPx/_dyAdjustPx/_flipped's own numbers were measured
-    // FOR -- distinct from _lastPlaceId (that one gates the verse-text/
-    // history fetch reset; this one gates the separate, async-JS-interop-
-    // driven measurement below, which can legitimately still be in flight
-    // after _lastPlaceId has already moved on to a newer place -- see
-    // OnAfterRenderAsync's own stale-result guard). Null (never measured
-    // yet) renders at the default CSS placement -- see CardDxCss/CardDyCss
-    // below.
+    // Distinct from _lastPlaceId: this measurement is async and can still be in flight for
+    // an older place after _lastPlaceId has already moved on (see OnAfterRenderAsync's stale-result guard).
     private string? _placedForId;
     private double _dxPx;
     private bool _flipped;
 
-    // Fix round 1 (review finding, Important): the vertical counterpart of
-    // _dxPx -- a plain pixel nudge CardPlacement.Compute returns whenever
-    // the CHOSEN orientation (above or below, per _flipped) still doesn't
-    // fully fit the container's own edge on that side (e.g. a flipped card
-    // near the vertical middle of a short viewport, which the pre-fix-
-    // round-1 code never checked at all -- see CardPlacement.cs's own
-    // header for the live-reproduced 122px overflow this closes). Zero for
-    // the overwhelming common case (the chosen side already fits cleanly).
     private double _dyAdjustPx;
 
-    // app.css's `.place-card` transform (its resting state) AND its
-    // `@keyframes place-card-in` (its entrance animation, both stops --
-    // see that rule's own comment for why it needs the SAME custom
-    // properties, not the flat hardcoded expression it used to) read
-    // --card-dx/--card-dy/--card-dy-from/--card-dy-adjust unconditionally,
-    // no CSS-side var() fallback -- these four always supply a concrete
-    // value, "0" / the pre-batch default vertical calc() before the first
-    // real measurement lands, so a not-yet-measured card renders EXACTLY
-    // where every card always rendered before this batch.
+    // app.css reads these four vars unconditionally with no CSS-side var() fallback,
+    // so each must always resolve to a concrete value even before the first measurement.
     private bool IsFlippedNow => _placedForId == Place.Id && _flipped;
     private string CardDxCss => (_placedForId == Place.Id ? _dxPx : 0).ToString(CultureInfo.InvariantCulture);
     private string CardDyCss => VerticalCss(CardPlacement.GapPx);
 
-    // The entrance animation's OWN "from" stop -- Batch D's original
-    // pop-in settled down 8px (10px -> 18px, above the marker); this
-    // mirrors that exact nuance for a flipped card too (10px -> 18px,
-    // BELOW the marker instead), keyed off the SAME flip decision as
-    // CardDyCss, just a smaller gap.
     private string CardDyFromCss => VerticalCss(CardPlacement.GapPx - 8);
 
-    // Fix round 1: layered on top of BOTH --card-dy and --card-dy-from
-    // (see app.css's own `calc(var(--card-dy) + var(--card-dy-adjust))`) --
-    // applying the SAME adjustment to both keeps the animation's own
-    // "settle down 8px" motion intact while sliding the whole thing (start
-    // and end alike) into the clamped, fully-on-screen final position, so
-    // there's no visible overshoot/snap once the entrance animation ends.
     private string CardDyAdjustCss => (_placedForId == Place.Id ? _dyAdjustPx : 0).ToString(CultureInfo.InvariantCulture);
 
     private string VerticalCss(double gapPx)
@@ -496,16 +218,8 @@
         return IsFlippedNow ? $"{gap}px" : $"calc(-100% - {gap}px)";
     }
 
-    // The flat, deduped verse-id list the card renders from -- unchanged
-    // since before this batch: event order, then each event's own already
-    // (book,chapter)-then-verse-number sorted VerseGroups (see atlas-core's
-    // verse_groups_for), deduped (a verse can legitimately anchor more than
-    // one event at the same place, e.g. two narrative beats both citing the
-    // crossing verse) so neither a hover-verse-{VREF} testid nor a human
-    // ever sees the same verse twice. This is the list design-direction.md
-    // and this file have both long called "canonical order" -- Groups()
-    // below groups THIS list's own order, not a fresh sort (see file
-    // header).
+    // A verse can legitimately anchor more than one event at the same place
+    // (e.g. two narrative beats both citing the crossing verse), so dedupe by id.
     private List<string> MergedVerses()
     {
         var seen = new HashSet<string>();
@@ -528,22 +242,9 @@
         return result;
     }
 
-    // Splits `verses` into maximal runs of numerically-consecutive same-
-    // book/chapter verses (Requirement 2: "same book+chapter, verse
-    // numbers n, n+1, ..."). Adjacency is checked purely by LIST POSITION
-    // -- see the file header's note on why that's the deliberate reading
-    // of "the scene's activating verse list... canonical order", not a
-    // fresh sort.
+    // Adjacency is checked purely by list position, never a fresh sort of the verses.
     private static List<VerseRun> Groups(List<string> verses) => PassageGrouping.Groups(verses);
 
-    // Requirement 2's 4/2-initial rule: up to the first 4 verses of the
-    // FIRST group if it's a passage; otherwise (the first group is a lone
-    // verse -- by construction non-consecutive with whatever comes next)
-    // the first 2 verses of the flat list, "2 non-consecutive verses" per
-    // the brief. Only ever looks at the first group -- a short first
-    // passage never pads out into the second group, a lone first verse
-    // never reaches for a 3rd ("Only the first group (passage) or first
-    // two lone verses appear initially -- never a wall").
     private static int InitialShownCount(List<string> verses)
     {
         if (verses.Count == 0)
@@ -555,14 +256,9 @@
         return first.IsPassage ? Math.Min(PassageInitialMax, first.Length) : Math.Min(LoneInitialMax, verses.Count);
     }
 
-    // Clips `groups` to however many verses are currently shown: every
-    // group that starts before _shownCount is included, its own Length
-    // clipped down to whatever portion of it is actually visible yet. A
-    // pure function of (groups, shownCount), recomputed fresh every render
-    // -- so a group that's only 1 verse into its reveal renders as a lone
-    // verse now (visible Length 1, IsPassage false) and upgrades to a
-    // passage block automatically once a later click reveals a 2nd verse
-    // of it, with no separate reveal-history state to keep in sync.
+    // A pure function of (groups, shownCount), recomputed fresh every render: a group only
+    // 1 verse into its reveal renders as a lone verse and upgrades to a passage block
+    // automatically once a later click reveals a 2nd verse, with no reveal-history state to keep in sync.
     private static List<VerseRun> VisibleGroups(List<VerseRun> groups, int shownCount)
     {
         var visible = new List<VerseRun>();
@@ -579,31 +275,15 @@
         return visible;
     }
 
-    // The single ref label for a passage block (Requirement 2: "one ref
-    // label for the block (span form, e.g. GEN.12.1-4)"). first/last are
-    // always same book+chapter by construction (Groups only ever runs
-    // within one book+chapter) -- reflects only whatever portion of the
-    // underlying group is currently visible, so a partially-revealed 8-verse
-    // passage shown 4-deep correctly spans "...1-4", not "...1-8".
     private static string SpanRef(string firstVref, string lastVref) => PassageGrouping.SpanRef(firstVref, lastVref);
 
     private static int VerseNumOf(string vref) => CanonRef.ParseVerse(vref).Verse;
 
     private string VerseText(string vref) => _verseText.TryGetValue(vref, out var text) ? text : "";
 
-    // Fires on every parameter push, including this component's very first
-    // render (Place.Id vacuously differs from the null _lastPlaceId then
-    // too) -- the _lastPlaceId guard makes both cases, and an X/Y-only
-    // update from the SAME place (no re-fetch needed), converge correctly.
-    // Awaiting the fetch here (rather than firing it off unobserved) is
-    // deliberate: Blazor renders once synchronously right after parameters
-    // are applied and this method's synchronous prefix runs, THEN again
-    // when the awaited task completes -- so the place name and every
-    // hover-verse-{VREF}/hover-passage-{SPAN} ref (MergedVerses/Groups/
-    // VisibleGroups are pure, synchronous) paint immediately, and
-    // VerseText(vref) simply reads "" until the second render fills it in.
-    // Same pattern ExplorerPopover's OnInitializedAsync/LoadCurrent already
-    // relies on for its own body.
+    // Awaiting the fetch here (rather than firing it unobserved) is deliberate: Blazor renders
+    // once synchronously right after this method's synchronous prefix runs, then again when the
+    // awaited task completes -- so refs paint immediately and VerseText(vref) reads "" until then.
     protected override async Task OnParametersSetAsync()
     {
         if (Place.Id == _lastPlaceId)
@@ -614,51 +294,20 @@
         _lastPlaceId = Place.Id;
         _verseText.Clear();
         _history = null;
-        // HOTFIX batch: a genuinely new place always starts back at the
-        // default (unmeasured) placement -- see CardDxCss/CardDyCss's own
-        // _placedForId comparison, which already treats "not yet measured
-        // for THIS place" as the default regardless of whatever _dxPx/
-        // _flipped happen to still hold from the PREVIOUS place, so those
-        // two don't need resetting here too. _contentReady DOES need an
-        // explicit reset: OnAfterRenderAsync's own guard checks it directly
-        // (not via an id comparison), so leaving it true from a previous
-        // place would let a measurement fire against THIS place's
-        // synchronous-prefix-only render, before its own blurb/dates have
-        // had any chance to load -- exactly the under-measurement this
-        // batch exists to prevent.
+        // _contentReady must reset explicitly: leaving it true from a previous place would let
+        // a measurement fire against this place's synchronous-prefix-only render, before its
+        // own blurb/dates have had any chance to load.
         _contentReady = false;
         var verses = MergedVerses();
         _initialShownCount = InitialShownCount(verses);
         _shownCount = _initialShownCount;
-        // Independent fetches (verse text vs. Batch E history vs. fix-round-1's
-        // own narrative positions) run concurrently -- none depends on
-        // another, and a slow/failed one must not delay or break the others
-        // (each has its own try/catch, see LoadChaptersFor's/LoadHistory's/
-        // LoadNarrativePositions' own comments).
         await Task.WhenAll(LoadChaptersFor(verses.Take(_shownCount)), LoadHistory(), LoadNarrativePositions());
 
-        // HOTFIX batch: only NOW does this place's own rendered content
-        // (verse text filled in, blurb/dates sections present-or-absent per
-        // LoadHistory's own result) reflect what it will actually settle
-        // at -- the earliest safe point for OnAfterRenderAsync's own
-        // post-render measurement to trust what it sees. Setting this here
-        // (rather than leaving it to a separate lifecycle hook) means
-        // Blazor's own implicit re-render-after-this-method-completes is
-        // what carries the news to OnAfterRenderAsync, the same "state
-        // change in an async lifecycle method triggers its own render, no
-        // manual StateHasChanged needed" shape as every other WhenAll-await
-        // in this codebase.
         _contentReady = true;
     }
 
-    // HOTFIX batch (requirement 1): fires after EVERY render, including the
-    // two (at least) a genuinely new place always produces -- see
-    // OnParametersSetAsync's own comment for exactly which one this must
-    // wait for. Measures ONCE per place (the _placedForId guard below) and
-    // never again for that same open, matching the brief's own "flip
-    // decision at open time... recompute on re-open, not on pan": nothing
-    // here re-fires just because ShowMore/Collapse/a later render changes
-    // this card's own height afterward, by design.
+    // Measures once per place (the _placedForId guard) and never again for that open: placement
+    // is a snapshot decided at open time, not re-measured just because ShowMore/Collapse changes height.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_contentReady || _placedForId == Place.Id)
@@ -666,20 +315,8 @@
             return;
         }
 
-        // Captured before the await below -- if a NEWER place supersedes
-        // this one while MeasureCardPlacement is still in flight (a fast
-        // marker-to-marker hover, or GoToAdjacent's own re-pin),
-        // OnParametersSetAsync above has already reset _contentReady for
-        // that newer place by the time this continuation resumes; comparing
-        // against the CURRENT Place.Id after the await (not this captured
-        // copy) is what actually detects that and drops the now-stale
-        // result -- same "compare a captured id against current state after
-        // an await" shape World.razor's own GoToAdjacent/OpenPlaceFromCard
-        // already uses elsewhere in this codebase for the identical class
-        // of race (MiniWorld.razor's own _disposed dance used to be a
-        // second example of the same pattern; retired along with the rest
-        // of that component by O1, 2026-08-23 -- see ExplorerPopover.razor's
-        // own header comment).
+        // Captured before the await: if a newer place supersedes this one while measuring is
+        // still in flight, comparing against the current Place.Id below detects that and drops the stale result.
         var placeId = Place.Id;
         CardMeasurementDto measurement;
         try
@@ -688,20 +325,11 @@
         }
         catch (Exception)
         {
-            // Positioning is a nicety, not load-bearing -- same graceful-
-            // degradation stance every other JS interop call on this card
-            // takes (LoadChaptersFor/LoadHistory's own try/catch): a failed
-            // measurement just leaves the card at its default above-anchor
-            // placement, exactly what every card rendered before this
-            // batch, never an unhandled exception taking down the card.
             return;
         }
 
         if (placeId != Place.Id)
         {
-            // Stale -- a newer place already superseded this measurement
-            // while it was in flight. Drop it; THAT place's own
-            // OnAfterRenderAsync (once ITS content settles) measures fresh.
             return;
         }
 
@@ -713,11 +341,6 @@
         StateHasChanged();
     }
 
-    // Batch E: fetches this place's window-scoped history (blurb/dates) via
-    // AtlasClient's own LRU cache. A nicety, not load-bearing -- same
-    // graceful degradation as LoadChaptersFor: a failure just leaves
-    // _history null, i.e. no blurb/dates section, never an unhandled
-    // exception taking down the card.
     private async Task LoadHistory()
     {
         try
@@ -730,42 +353,11 @@
         }
     }
 
-    // Fix round 1 (batch-n-review.md Critical-1): fetches this place's own
-    // narrative position(s) via the SAME full-chain resolver
-    // (atlas_core::narrative::positions_for_events, reached here through
-    // AtlasClient.NarrativeEventPositions -- GET /api/narrative/event/{id})
-    // the verse popover's own PRIOR/FOLLOWING sections already consume --
-    // keyed by EVERY event id currently shown at this place (Place.Events),
-    // since the endpoint is event-id-keyed, not place-keyed (one call per
-    // event; typically 1-3 per place, the same order of magnitude as the
-    // per-hover Chapter/PlaceHistory fetches this card already makes).
-    //
-    // This REPLACES the pre-fix-round-1 windowed-Arrows/PickAdjacent
-    // adjacency derivation entirely (see NarrativeRows() below). The review
-    // proved the old approach could disagree with the popover: a real,
-    // ordinary time-slider window can end inside the exodus narrative's own
-    // documented 37-year gap between ex_kadesh (-1445..-1444) and ex_moab
-    // (-1407..-1406) (data/curated/events-extra.toml) -- scene.rs's
-    // build_arrows filters each narrative's legs down to the window BEFORE
-    // pairing adjacent ones (`kept.windows(2)`), so an out-of-window leg is
-    // silently dropped from the card's own "next event" even though the
-    // SAME window's verse popover (server-side positions_for_events,
-    // deliberately unwindowed -- narrative.rs's own doc comment) still finds
-    // it. Reading the identical full-chain resolver here means the two
-    // surfaces can no longer disagree on order -- "one adjacency
-    // computation, both surfaces consume it," per the owner's own "traverse
-    // arbitrarily far... recursively" framing of the graph.
-    //
-    // Skips any synthetic "mention-{place}" pseudo-event id (scripture-mode
-    // only -- see scene::compose_scripture_scene's own doc comment): never a
-    // real event, so /api/narrative/event/{id} would 404 for it. Harmless
-    // even without this filter (a place lit via a mention-* event is, by
-    // that same function's own construction, never ALSO lit by a real one,
-    // so Place.Events there is that single synthetic id alone, and the
-    // catch below would just leave _narrativePositions empty -- correct
-    // either way, since a mention-* pseudo-event is never a narrative leg)
-    // -- filtered explicitly anyway so the common scripture-mode case never
-    // relies on an exception for its own control flow.
+    // Reads narrative positions via the same full-chain resolver the verse popover uses (not
+    // the scene's windowed Arrows): a windowed derivation can disagree with the popover on
+    // adjacency when a narrative's legs straddle an out-of-window gap.
+    // Skips synthetic "mention-{place}" event ids (scripture-mode placeholders) since they're
+    // not real events and the endpoint would 404 for them.
     private async Task LoadNarrativePositions()
     {
         var eventIds = Place.Events.Select(e => e.Id).Where(id => !id.StartsWith("mention-", StringComparison.Ordinal)).ToList();
@@ -777,78 +369,38 @@
 
         try
         {
-            // Batch HOTFIX-4: each result now also carries a `.Timeline`
-            // half (unused here -- TRAVERSAL-1's own `place-card-narratives`
-            // row is narrative-scoped only, req 3's own map-side traversal
-            // lives on the EVENT POPOVER, a separate surface; see TRAV-1's
-            // own EventChronologySection, PopoverSectionProviders.cs) --
-            // `.Narrative` is the exact same list this method already read.
             var results = await Task.WhenAll(eventIds.Select(Atlas.NarrativeEventPositions));
             _narrativePositions = results.SelectMany(r => r.Narrative).ToList();
         }
         catch (Exception)
         {
-            // A nicety, not load-bearing -- same graceful degradation as
-            // LoadHistory/LoadChaptersFor: a failed fetch just leaves no
-            // narrative rows for this open, never an unhandled exception
-            // taking down the card.
             _narrativePositions = new List<NarrativePositionDto>();
         }
     }
 
-    // Shared with Explore.YearNode's own title text (via YearText.FormatClaim)
-    // so the card's instrument-face line and the popover it opens always
-    // agree on exactly the same date text.
     private static string DateText(DateClaimOut claim) => YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
 
     private static string ExploreLabel(string label, DateClaimOut claim) => $"Explore {label.ToLowerInvariant()} date: {DateText(claim)}";
 
-    // Two named wrappers (rather than one Explore(label, claim) called
-    // inline with a string-literal argument) -- Razor's @onclick="..."
-    // attribute-value parser cannot handle an embedded double-quoted C#
-    // string literal inside the lambda (confirmed: it broke the generated
-    // code, consuming the closing quote early). Named methods sidestep it
-    // entirely; no inline string literals appear in the markup at all.
+    // Named wrappers, not an inline Explore(label, claim) call: Razor's @onclick attribute-value
+    // parser cannot handle an embedded double-quoted string literal inside the lambda.
     private Task ExploreEstablished(DateClaimOut claim) =>
         OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Established", claim.When, claim.Verses, claim.Note));
 
     private Task ExploreDestroyed(DateClaimOut claim) =>
         OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Destroyed", claim.When, claim.Verses, claim.Note));
 
-    // Batch G1 requirement 1b: card verses/passages become explorable via
-    // the SAME OnExploreNode callback Batch E's dates already use (World
-    // .razor's OpenExploreNode -- push the node, close this hover card the
-    // way a promoted popover always supersedes it; see this callback's own
-    // parameter comment).
     private Task ExploreVerse(string vref) => OnExploreNode.InvokeAsync(new VerseNode(vref));
 
-    // The passage's own text, concatenated in verse order -- same "already-
-    // in-memory, no second network round-trip" approach Reader.razor's own
-    // OpenPassage/PassageNode already use (see PassageNode.cs's doc
-    // comment); this card already fetched every visible verse's text via
-    // LoadChaptersFor.
     private Task ExplorePassage(string span, List<string> blockVerses) =>
         OnExploreNode.InvokeAsync(new PassageNode(span, string.Join(" ", blockVerses.Select(VerseText))));
 
-    // Keyboard equivalents (design-direction.md: "Enter opens" -- see
-    // Reader.razor's OnVerseLineKeyDown for why Enter only, not Space, is
-    // this batch's deliberate scope everywhere the interaction rule
-    // applies).
     private Task OnVerseKeyDown(KeyboardEventArgs e, string vref) =>
         e.Key == "Enter" ? ExploreVerse(vref) : Task.CompletedTask;
 
     private Task OnPassageKeyDown(KeyboardEventArgs e, string span, List<string> blockVerses) =>
         e.Key == "Enter" ? ExplorePassage(span, blockVerses) : Task.CompletedTask;
 
-    // place-card-more: reveals the next chunk. Step size is +5 if the next
-    // not-yet-shown verse belongs to a passage-sized group (Length >= 2,
-    // "...continuing inside a passage" -- true whether that group was
-    // already partway open or this click starts it fresh, the two read the
-    // same from here), +2 if it's a lone verse's group -- Requirement 2's
-    // 5/2-step rule. A flat verse-count step, not capped at the group's own
-    // remaining length, so one click can finish a passage and spill into
-    // the next group's first verse or two in the same step; see
-    // VisibleGroups' own comment for why that's safe to render.
     private async Task ShowMore()
     {
         var verses = MergedVerses();
@@ -864,48 +416,17 @@
         await LoadChaptersFor(verses.Skip(oldShown).Take(_shownCount - oldShown));
     }
 
-    // place-card-collapse: snaps back to the initial 4/2-count state in one
-    // click (Requirement 2's up-arrow rule) -- no fetch needed, every verse
-    // in the initial range was already loaded by OnParametersSetAsync (or
-    // an earlier ShowMore).
     private void Collapse()
     {
         _shownCount = _initialShownCount;
     }
 
-    // Batch G1 requirement 3: one row per narrative (colored swatch + name)
-    // with its own prev/next adjacency.
-    //
-    // Fix round 1 (batch-n-review.md Critical-1): now reads _narrativePositions
-    // (LoadNarrativePositions above) -- the SAME full-chain resolver the
-    // verse popover's own PRIOR/FOLLOWING sections consume -- instead of the
-    // current scene's WINDOWED Arrows list. Row EXISTENCE is therefore also
-    // "this place has >=1 currently-shown event that's a narrative leg,"
-    // rather than "this place has >=1 arrow endpoint in the current window"
-    // -- a strict improvement: a genuinely isolated in-window leg whose
-    // immediate chain-neighbors are BOTH out of window produced zero arrows
-    // at all under the old scheme (build_arrows needs two CONSECUTIVE kept
-    // legs to ever emit one), which silently hid the row entirely even
-    // though the event itself was plainly on screen.
-    //
-    // Tie-break for a place revisited more than once by the SAME narrative
-    // (a real, documented case -- see the pre-fix-round-1 version of this
-    // comment/PickAdjacent for the old rule): FIRST-ENCOUNTERED wins, in
-    // Place.Events' own display order. Simpler than the old "prefer the
-    // shown event, else lowest arrow order" rule, and sufficient now that
-    // EVERY candidate position already corresponds to a currently-shown
-    // event by construction (each was fetched BY one of Place.Events' own
-    // ids) -- the old rule's first clause no longer discriminates anything.
+    // Tie-break for a place revisited more than once by the same narrative: first-encountered
+    // wins, in Place.Events' own display order.
     private sealed record NarrativeAdjacency(string NarrativeId, string Name, string Color, string? PrevPlaceId, string? NextPlaceId);
 
-    // Legend/SceneNarrative color is scoped to narratives with >=1 arrow
-    // SOMEWHERE in the current scene (scene.rs's own legend()) -- true for
-    // every narrative reachable through this method's own repro window, but
-    // not guaranteed for a genuinely isolated single in-window leg whose
-    // neighbors are both out of window (see the header comment above). This
-    // neutral fallback keeps the row rendering -- name and traversal both
-    // still work, neither depends on Narratives -- rather than losing real
-    // PRIOR/FOLLOWING data over a missing swatch color.
+    // Legend color only covers narratives with an arrow somewhere in-window; this fallback
+    // keeps an isolated leg's row rendering (name/traversal) even without a color match.
     private const string DefaultNarrativeColor = "#8A8A8A";
 
     private List<NarrativeAdjacency> NarrativeRows()
@@ -919,7 +440,7 @@
             {
                 if (!seenNarratives.Add(position.NarrativeId))
                 {
-                    continue; // first-encountered wins -- see header comment
+                    continue; // first-encountered wins
                 }
 
                 var color = Narratives?.FirstOrDefault(n => n.Id == position.NarrativeId)?.Color ?? DefaultNarrativeColor;
@@ -935,26 +456,11 @@
         return rows;
     }
 
-    // NarrativeAdjacentEventDto.Places mirrors scene.rs's build_arrows' own
-    // "a.places[0] is the anchor place" convention (see the Rust
-    // NarrativeAdjacentEvent's own doc comment) -- the FIRST place is where
-    // the card's own ‹ previous event / next event › control jumps to, same
-    // as an arrow's own from_place/to_place always resolves today. Null (no
-    // button, conditional presence) only if the adjacent event genuinely
-    // carries no place at all -- unreachable in the real compiled data
-    // (every curated event has >=1 place) but guarded rather than assumed,
-    // the same "trust but verify" stance this codebase already takes for an
-    // identical shape server-side (narrative.rs's own adjacent_event).
     private static string? AdjacentPlaceId(NarrativeAdjacentEventDto? adjacent) =>
         adjacent?.Places is { Count: > 0 } places ? places[0] : null;
 
-    // Resolves every (book, chapter) pair the given verses span via
-    // AtlasClient's own Chapter LRU cache -- a hover that revisits a place,
-    // or a show-more that reopens a chapter an earlier step already
-    // touched, never re-hits the network. Populates every verse FROM each
-    // fetched chapter, not just the ones asked for: harmless (VerseText
-    // only ever reads keys it knows to look up) and means several
-    // requested verses sharing a chapter cost exactly one fetch.
+    // Populates every verse from each fetched chapter, not just the requested ones --
+    // several requested verses sharing a chapter then cost exactly one fetch.
     private async Task LoadChaptersFor(IEnumerable<string> vrefs)
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
@@ -968,15 +474,9 @@
             var chapters = await Task.WhenAll(pairs.Select(p => Atlas.Chapter(p.Book, p.Chapter)));
             foreach (var chapter in chapters)
             {
-                // chapter.Ref is the CODE-based "JDG.3" (atlas-server's
-                // ChapterOut.sref, built from book.code()); chapter.Book is
-                // the human-readable display NAME ("Judges", book.name()) --
-                // a real, deliberate API distinction (VerseGroup.Book is the
-                // code; ChapterOut.Book is the name), not interchangeable.
-                // Building the key from Book here silently produced
-                // "Judges.3.7" instead of "JDG.3.7", so it could never match
-                // a hover-verse-{VREF} testid -- caught by
-                // world-hover-text.spec.ts (verse text never appeared).
+                // chapter.Ref is the code-based ref (e.g. "JDG.3"); chapter.Book is the display
+                // name (e.g. "Judges") -- keying off Book here silently produces "Judges.3.7",
+                // which never matches a verse ref like "JDG.3.7".
                 foreach (var v in chapter.Verses)
                 {
                     _verseText[$"{chapter.Ref}.{v.Verse}"] = v.Text;
@@ -985,11 +485,6 @@
         }
         catch (Exception)
         {
-            // A hover card's verse text is a nicety, not load-bearing -- the
-            // ref already rendered synchronously above; leaving its text
-            // blank on a flaky-network failure degrades gracefully instead
-            // of an unhandled exception from this lifecycle continuation
-            // taking down the whole app.
         }
     }
 }

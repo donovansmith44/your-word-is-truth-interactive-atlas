@@ -1,16 +1,3 @@
-@* M-D3 (U2/U6, owner: "Catechism defaults to 2 shown + U2 mechanics"): the
-   citing-item button list "THE SMALL CATECHISM" renders (CatechismSeamSection's
-   own former inline rendering, extracted here) -- a genuine, stateful
-   component (unlike that plain C# provider, which has no persistent
-   instance to hold reveal state across re-renders) so it can own its own
-   `_shown` field exactly the way PassageList.razor already owns one for
-   its own, differently-shaped list. RevealControls.razor (the shared
-   +2/-2/all/default mechanic, "one component/behavior, parameterized --
-   never two implementations," the owner's own words) is a controlled,
-   stateless child of BOTH this component and PassageList.razor -- this is
-   the OTHER half of that contract: the list-owning component, one per
-   list SHAPE (passage blocks vs. plain citing-item buttons), each
-   delegating the reveal UI to the one shared mechanic. *@
 @using BibleAtlas.Client.Explore
 @if (Items.Count > 0)
 {
@@ -23,14 +10,6 @@
             </button>
         }
     </div>
-    @* O3 (owner live-preview correction, 2026-08-23): moved from BEFORE the
-       item list to AFTER it -- see PassageList.razor's own matching O3
-       comment (and RevealControls.razor's own doc comment) for the full
-       history: M-D3/U2's original leading placement was a deliberate
-       workaround for a real, live-caught double-click hazard that R-D3
-       already retired ("double" is a second, stationary arrow button now,
-       never a double-click gesture on one moving target), so it's safe to
-       honor the owner's own placement here too. *@
     @if (Cap is int cap && Items.Count > cap)
     {
         <RevealControls Total="@Items.Count" Default="@cap" Shown="@ShownCount(cap)" ShownChanged="@(n => _shown = n)"
@@ -45,23 +24,9 @@
     [Parameter] public string CollapseTestId { get; set; } = "catechism-collapse";
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // Same "starts at the collapsed default, lazily initialized, never
-    // auto-resets on an unrelated re-render" risk profile PassageList.razor's
-    // own _shown field carries -- see that field's own doc comment and
-    // RevealControls.razor's own header for the fuller reasoning (this
-    // component is freshly instantiated per popover-section resolve, not
-    // reused across genuinely different Items).
     private int? _shown;
     private int ShownCount(int cap) => _shown ??= cap;
 
-    // Same shape as CatechismSeamSection's own retired inline disambiguation
-    // (a citing item can legitimately produce >1 row -- an item-level hit
-    // AND one or more question-level hits -- the FIRST occurrence of a
-    // given id keeps the bare testid, later ones get a numbered --q2/--q3
-    // suffix), now applied only to the CURRENTLY VISIBLE (capped) slice,
-    // freshly recomputed each access (PassageList.razor's own Visible
-    // getter follows the identical discipline, for the identical reason:
-    // a Dictionary captured across renders would keep accumulating).
     private sealed record VisibleEntry(CatechismRefDto Item, string TestId, string Label);
 
     private IEnumerable<VisibleEntry> Visible

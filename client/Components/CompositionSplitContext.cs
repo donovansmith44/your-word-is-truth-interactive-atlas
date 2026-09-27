@@ -2,48 +2,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Components;
 
-/// <summary>
-/// Batch VC-1 fix round 1 (Adjudication F): what <see cref="CompositionSplit"/>
-/// hands its own <c>ChildContent</c> template every render -- the SAME
-/// role/callback data every host-glue duplication site used to hand-derive
-/// independently (Adjudication F's own inventory rows #1/#2/#11/#12), now
-/// computed exactly ONCE, by the one component that owns the atom read.
-/// </summary>
-/// <param name="IsSplitOpen">Mirrors <see cref="CompositionSplit.IsSplitOpen"/>
-/// -- true whenever this HostName is part of a live split-h pairing, in
-/// EITHER role.</param>
-/// <param name="IsHost">Mirrors <see cref="CompositionSplit.IsHost"/> --
-/// meaningful only while <paramref name="IsSplitOpen"/>.</param>
-/// <param name="InvokeHatch">Invokes this HostName's own declared
-/// enter-split hatch (looked up by name through the registry) -- bind a
-/// page's own "Open the map beside the text"/"Read beside the reader"
-/// button directly to this, no page-local lookup method needed anymore.</param>
-/// <param name="RequestClose">"Close ME" -- meaningful only while
-/// <paramref name="IsSplitOpen"/> and NOT <paramref name="IsHost"/> (a
-/// guest's own close button); dispatches <c>CloseGuest</c>. A host's own
-/// self-close (e.g. Reader's "close the reader, keep the map," a real
-/// navigation) is NOT this -- it stays each host's own bespoke method,
-/// wired directly, since it is genuinely per-host behavior.</param>
-/// <param name="HostPaneClassSuffix">Fix round 2 (Q-1, Important --
-/// re-review, "the review's recommended HostPaneClass parameter was not
-/// built"): the ready-to-append class-name fragment for a host's own outer
-/// page-root element -- `" split-pane-reader"`/`" split-pane-host"` (a
-/// leading space, ready to concatenate onto a base class name) while this
-/// HostName is genuinely the live split-h host, or `""` otherwise. Computed
-/// ONCE here from <see cref="CompositionSplit.HostPaneClass"/> (the class
-/// NAME each host supplies as a parameter, since <c>.split-pane-reader</c>
-/// and <c>.split-pane-host</c> genuinely differ in BODY -- Reader's own
-/// column-width custom properties vs. the generic fallback shape, see
-/// app.css's own header comments on both) combined with the SAME
-/// <see cref="IsSplitOpen"/>/<see cref="IsHost"/> condition every other
-/// role-driven read in this record already uses -- a host no longer
-/// hand-writes its own `ctx.IsSplitOpen &amp;&amp; ctx.IsHost ? "X" : ""`
-/// ternary at all.</param>
 public sealed record CompositionSplitContext(bool IsSplitOpen, bool IsHost, EventCallback InvokeHatch, EventCallback RequestClose, string HostPaneClassSuffix, EventCallback<string> InvokeHatchWith = default, IReadOnlyList<string>? PartnerViews = null, Func<string, string>? PartnerLabel = null, bool IsSameView = false, bool Follow = false, EventCallback ToggleFollow = default)
 {
-    /// <summary>D2: the guests this host's enter-split hatch offers, default first (empty when the host has no hatch).</summary>
     public IReadOnlyList<string> Partners => PartnerViews ?? Array.Empty<string>();
 
-    /// <summary>D2: the menu label the registry declares for a guest (its name when none is declared).</summary>
     public string LabelOf(string guest) => PartnerLabel?.Invoke(guest) ?? guest;
 }

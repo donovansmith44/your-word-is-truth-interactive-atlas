@@ -1,25 +1,3 @@
-@* M-D3/B2 ("reader halfway-toggle parity with the map" -- owner morning
-   address, verbatim: "map toggles halfway into view, reader can't --
-   parity ('not good')"; brief: "the split-view drag affordance works from
-   the reader side too"): a real, live drag-resize handle for the
-   reader/atlas split -- previously a static 1px line (app.css's own
-   `.split-divider`, unchanged visual now nested one level inside this
-   component), zero interactivity. ONE shared component, not built inline
-   in Reader.razor, so a future second split host inherits the identical
-   mechanic for free -- the same "one component/behavior, parameterized"
-   discipline this batch's own RevealControls/CatechismList already follow
-   (Reader.razor is this mechanism's only real caller today, same as
-   RevealControls' own doc comment discloses for ITS own current
-   single-caller reality).
-
-   Pointer-drag mechanics mirror TimeSlider.razor's own established,
-   largely JS-free pattern (pointerdown seeds ephemeral drag-start state;
-   pointermove recomputes a live value from it; pointerup ends the
-   gesture) -- widened here with reader.js's own new `capturePointer` (see
-   that function's own doc comment for exactly why: unlike TimeSlider's
-   own full-track-width draggable surface, THIS divider's own hit area is
-   deliberately narrow and a horizontal drag routinely needs to travel far
-   past it without losing tracking). *@
 @inject IJSRuntime JS
 
 <div class="split-divider-hit" data-testid="split-divider"
@@ -34,46 +12,19 @@
 </div>
 
 @code {
-    // A reading column narrower than this stops being comfortably
-    // readable long before it stops being technically possible -- the
-    // same floor spirit as SplitDivider's own atlas-pane counterpart
-    // below, just for the OTHER side of the same drag.
     private const double MinWidthPx = 320;
 
-    // ArrowLeft/ArrowRight nudge amount -- an arbitrary but generous single
-    // step (TimeSlider.razor's own OnHandleKeyDown nudges by exactly 1
-    // YEAR per press because individual years are its own meaningful unit;
-    // this divider has no equivalently-natural discrete unit, so a plain,
-    // visible-per-press pixel step is the honest equivalent).
     private const double KeyboardStepPx = 24;
 
-    // app.css's own `.split-divider-hit { flex: 0 0 13px; }` -- MUST match
-    // exactly, the same "a JS-measured container width and a CSS constant
-    // both feed one clamp calculation, so they have to agree" reasoning
-    // TimeSlider.razor's own TrackWidthPx comment gives (there, the OTHER
-    // way around -- a fixed CSS width feeding C# math with no measurement
-    // at all; here, a REAL measurement that must still account for a
-    // second fixed CSS quantity alongside it). Without subtracting this,
-    // EnsureMaxWidthAsync's own clamp silently shorted the atlas pane's own
-    // floor by exactly 13px (a real, live-caught discrepancy: 320 became
-    // 307) -- the divider's own hit-area width is real space inside
-    // .split-view that neither pane's own flex-basis accounts for.
+    // Must match app.css's `.split-divider-hit { flex: 0 0 13px; }` exactly: without
+    // subtracting this, EnsureMaxWidthAsync's clamp silently shorts the atlas pane's floor
+    // (a real bug: 320 became 307) since the divider's own hit-area width is real space
+    // inside .split-view that neither pane's flex-basis accounts for.
     private const double DividerWidthPx = 13;
 
     [Parameter] public double WidthPx { get; set; }
     [Parameter] public EventCallback<double> WidthPxChanged { get; set; }
 
-    // Batch ST-2 (controller ruling R4): fires ONCE per completed gesture --
-    // pointer-up (drag end) or immediately after a keyboard nudge (already a
-    // complete, atomic gesture on its own, unlike a drag) -- never on a live
-    // drag frame the way WidthPxChanged above does. Carries the SAME final
-    // px WidthPxChanged's own last call already reported, plus the
-    // normalized fraction of the measured `.split-view` container width at
-    // that moment (null if the measurement failed/unavailable -- same
-    // fail-soft spirit EnsureMaxWidthAsync below already uses) -- this
-    // component already measures that container for its own clamp ceiling,
-    // so reporting the fraction here avoids Reader.razor needing a second,
-    // duplicate JS round-trip just to compute one.
     [Parameter] public EventCallback<(double WidthPx, double? Fraction)> OnCommitted { get; set; }
 
     private ElementReference _hitRef;
@@ -81,56 +32,17 @@
     private double _dragStartClientX;
     private double _dragStartWidthPx;
 
-    // The LAST value this drag actually computed (OnPointerMove), NOT the
-    // WidthPx PARAMETER -- Blazor parameter updates only land on the NEXT
-    // render, so reading WidthPx from inside OnPointerUp (fired in the same
-    // synchronous burst as the drag's own final OnPointerMove) risks reading
-    // a stale pre-drag value depending on exact render timing. Reset to the
-    // drag's own starting width at OnPointerDown, so a click-then-release
-    // with zero actual movement still commits a well-defined (unchanged)
-    // value rather than carrying over a PRIOR gesture's leftover number.
+    // The last value this drag actually computed, not the WidthPx parameter: Blazor parameter
+    // updates only land on the next render, so reading WidthPx from OnPointerUp (fired in the
+    // same synchronous burst as the drag's final OnPointerMove) risks reading a stale value.
     private double _lastDraggedWidthPx;
 
-    // The total `.split-view` width EnsureMaxWidthAsync below most recently
-    // measured -- cached alongside _maxWidthPx (which is a CLAMP CEILING
-    // derived from this, not the raw total itself) specifically so
-    // OnPointerUp/OnKeyDown can compute a normalized fraction without a
-    // second JS round-trip. Null on a failed/unavailable measurement, same
-    // as _maxWidthPx's own double.MaxValue fallback conceptually means "no
-    // real measurement to divide by."
     private double? _lastMeasuredTotalWidthPx;
 
-    // Re-measured at the START of every gesture (drag OR keyboard), never
-    // cached across gestures -- a browser window resize between two
-    // separate resize gestures is a real, ordinary thing to happen, and a
-    // stale max from before it would either wrongly refuse a now-valid
-    // width or wrongly permit one that now leaves the atlas pane with no
-    // room at all. double.MaxValue until the first real measurement lands
-    // (or if it fails -- see EnsureMaxWidthAsync) -- EffectiveMaxWidthPx
-    // is what every caller actually reads, never this field directly.
     private double _maxWidthPx = double.MaxValue;
 
-    // The aria-valuemax fallback, and OnKeyDown's own clamp ceiling,
-    // before any real measurement has ever landed (component just
-    // mounted, keyboard-only user, never dragged) -- WidthPx itself
-    // (implying "no room to grow yet known") rather than double.MaxValue
-    // (which would render as a meaningless, enormous aria value).
     private double EffectiveMaxWidthPx => _maxWidthPx == double.MaxValue ? WidthPx : _maxWidthPx;
 
-    // Batch H's own .split-pane-atlas is this divider's own drag partner
-    // -- MinWidthPx again (a live map is just as uncomfortable to actually
-    // use once squeezed much narrower than this): the reader pane may
-    // grow only until the atlas pane would be pushed below its own floor.
-    // getPaneRect (reader.js, already used by ExplorerPopover.razor's own
-    // pane-anchoring) measures `.split-view`'s real, current content-box
-    // width -- there is no fixed constant to hardcode the way TimeSlider's
-    // own TrackWidthPx can (that track has a literal CSS `width: 520px`;
-    // this container is genuinely viewport-responsive) -- a failed/null
-    // measurement (JS interop error, or `.split-view` not yet in the DOM)
-    // leaves _maxWidthPx at its own double.MaxValue default, same
-    // graceful-degrade-to-permissive stance MapInterop/PaneRectMeasured
-    // already take elsewhere in this app for a failed measurement: the
-    // drag still works, just without an upper clamp for that one gesture.
     private async Task EnsureMaxWidthAsync()
     {
         try
@@ -143,14 +55,10 @@
         catch (Exception)
         {
             _lastMeasuredTotalWidthPx = null;
-            _maxWidthPx = double.MaxValue; // fail soft -- see this method's own header comment
+            _maxWidthPx = double.MaxValue; // fail soft
         }
     }
 
-    // Batch ST-2: the shared fraction computation OnPointerUp/OnKeyDown both
-    // need for their own OnCommitted call -- null whenever the most recent
-    // EnsureMaxWidthAsync measurement failed/never ran, or (defensively)
-    // came back as a non-positive width.
     private double? FractionOf(double px) =>
         _lastMeasuredTotalWidthPx is { } total && total > 0 ? px / total : null;
 
@@ -178,15 +86,6 @@
         await WidthPxChanged.InvokeAsync(next);
     }
 
-    // pointercancel routes here too (same handler both testids bind to,
-    // above) -- an interrupted gesture (e.g. a browser-level gesture
-    // taking over mid-drag) simply stops updating at whatever width the
-    // last successful pointermove already committed, never left visually
-    // "stuck" mid-drag the way leaving _dragging true would risk. Batch
-    // ST-2 (R4): fires OnCommitted here -- drag END, never a live frame --
-    // with _lastDraggedWidthPx (NOT the WidthPx parameter; see that field's
-    // own comment for why) and the fraction computed from the SAME
-    // measurement OnPointerDown's own EnsureMaxWidthAsync already took.
     private async Task OnPointerUp(PointerEventArgs e)
     {
         if (!_dragging)
@@ -198,9 +97,6 @@
         await OnCommitted.InvokeAsync((_lastDraggedWidthPx, FractionOf(_lastDraggedWidthPx)));
     }
 
-    // Batch ST-2 (R4): a keyboard nudge is already a complete, atomic gesture
-    // (unlike a drag) -- fires OnCommitted immediately after WidthPxChanged,
-    // in the same call, no separate "end" event to wait for.
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
         var delta = e.Key switch { "ArrowLeft" => -KeyboardStepPx, "ArrowRight" => KeyboardStepPx, _ => 0.0 };
@@ -215,15 +111,5 @@
         await OnCommitted.InvokeAsync((next, FractionOf(next)));
     }
 
-    // reader.js's own getPaneRect return shape -- deserialized via
-    // Blazor's default (camelCase) JS-interop JSON options, not
-    // Wire.Options (this never crosses the real HTTP API either). A
-    // second, independently-declared copy of ExplorerPopover.razor's own
-    // private PaneRectDto -- that one is file-scoped private, and this
-    // file only actually needs Width, but keeping the full, real shape
-    // (rather than a single bare double return from JS) matches
-    // getPaneRect's own one-shape-many-callers contract, the same
-    // reasoning that file's own VerseAnchorRectDto sits right beside an
-    // overlapping PaneRectDto rather than trying to unify them.
     private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 }

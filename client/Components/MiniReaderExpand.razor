@@ -1,79 +1,3 @@
-@* Batch F2, 6-ARCH ("every passage entry is expandable IN PLACE to read the
-   whole chapter -- REUSE Batch R's mini-reader... not a reimplementation"):
-   the expand/collapse + lazy chapter-fetch + auto-scroll + place-mention
-   blink MECHANISM Batch R's VerseTextSection.razor introduced, extracted
-   here so every passage entry in the popover platform (cross-references,
-   THE SCRIPTURES, place est/dest -- PassageList.razor) can open its OWN
-   independent mini-reader, not just the verse-text section's single
-   instance. VerseTextSection.razor itself now wraps THIS component (see
-   its own comment) -- one mechanism, every caller.
-
-   O2 (owner live-preview correction, 2026-08-23: "we have redundant
-   buttons... Show the rest of this passage and Read the whole chapter...
-   get rid of the read the whole chapter and replace with just a down/
-   double down arrow that manages expansion/collapsing"): the expand
-   trigger below used to be a single `popover-verse-expand` TEXT button
-   (one element, three labels depending on state -- "Read the whole
-   chapter"/"+N more -- read the chapter"/"Show just this verse"),
-   toggling `_expanded` itself. That button, and PassageList.razor's own
-   SEPARATE per-entry `popover-passage-clamp-expand/-collapse` toggle that
-   used to sit alongside it on the SAME entry (the "redundant pair" the
-   owner named), are BOTH retired -- replaced by ONE RevealControls
-   instance below, the SAME shared reveal component U2/R-D3 already
-   established for xrefs/catechism, reused here (not reimplemented) for a
-   genuinely BINARY case: Default=0/Total=1/Step=1, so "Shown" is just
-   `_expanded` as 0-or-1. This is the one place the underlying "how many
-   verses of the passage's own CLAMPED text are showing" nuance
-   PassageList's old per-entry clamp toggle offered is honestly lost --
-   revealing ANY more now always means the full lazy-fetched chapter, never
-   a partial reveal of just the clamped entry's own remaining verses -- a
-   disclosed simplification in service of "ONE expansion idiom," not an
-   oversight (PassageList.razor's own STATIC clamp -- how many verses show
-   BEFORE either arrow is ever touched -- is unaffected; see that file's
-   own comment). RevealNoun/MoreLabel/CollapseLabel below supply this
-   binary case's own verbatim copy -- see RevealControls.razor's own O2
-   paragraph for why the generic "{N} more {RevealNoun}" template doesn't
-   fit a chapter. TestIdSuffix, PassageList.razor's own multi-instance
-   discipline (see below), extends naturally to the new CollapseTestId too.
-
-   TestIdSuffix lets multiple instances coexist in one popover without
-   colliding testids: "" (VerseTextSection's own usage) reproduces the
-   EXACT original bare testids (popover-verse-expand/-reader/-reader-verse-{n})
-   byte for byte, so nothing that already asserts against those breaks;
-   a non-empty suffix (PassageList.razor passes "-{entry.TestId}", that
-   entry's own FULL already-prefixed testid, e.g. "-xref-item-GEN.1.1-3" --
-   NOT a bare span; fix-round-1 correction, this comment previously said
-   "each block's own span" -- see CONTRACT.md's own popover-verse-expand
-   note) scopes a NEW instance's own controls uniquely, and carries that
-   entry's own repeated-span disambiguation (--2/--3) along with it.
-
-   Batch M-D4 ("the recursive reader", the owner's own defect report:
-   "the Bible I get when I click read the whole chapter is of a
-   fundamentally different kind - location hovering works. verses are
-   not clickable [...] no-go"): the EXPANDED body below (every verse of
-   the lazily-fetched chapter) now renders through VerseLine.razor +
-   PericopeHeading.razor -- the SAME two components Reader.razor's own
-   chapter body uses, never a second implementation. Three affordances
-   this mini-reader never had before this batch, all now universal with
-   the main reader: (1) a verse LINE itself is clickable/Enter-able,
-   pushing a fresh VerseNode via OnExplore (the SAME ctx.PushAsync this
-   component's own mention clicks already used -- "reuse the popover's
-   EXISTING push stack," decision 2's own words, not a new mechanism);
-   (2) the xref superscript cluster renders here too, gated by the SAME
-   FeatureFlags.XrefSuperscripts/XrefCount>0 rule Reader.razor's own
-   verse line uses (decision 4's own parity law) -- click/Enter/focus
-   push a VerseNode with XrefEntryPoint=true, same as the main reader's
-   own commit path; the HOVER-preview micro-behavior deliberately stays
-   Reader-page-only (VerseLine.razor's own header comment has the full
-   disclosed reasoning -- a bare mouseover jumping THIS popover's own
-   stack around, one level already deep, would be a real UX regression
-   decision 6's scope discipline rules out); (3) pericope headings
-   interleave here too (PericopeHeading.razor), a real, disclosed
-   asymmetry decision 1 names directly ("heading interleaving where
-   applicable") -- a chapter-body reading flow missing headings the SAME
-   chapter's own main-reader rendering shows is another dead-end-by-
-   omission, the identical defect class this batch cures for verse
-   clickability and mention links. *@
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -96,18 +20,6 @@ else
         }
         else
         {
-            @* Batch M-D4 ("the recursive reader"): every verse now renders
-               through VerseLine.razor, the SAME canonical component
-               Reader.razor's own chapter body uses (see that file's own
-               call site) -- REPLACES this block's own prior hand-built
-               verse-num/mention markup, which never made a verse LINE
-               clickable at all (the owner's own defect report: "verses are
-               not clickable [...] no-go"). PericopeHeading.razor
-               (interleaved the SAME way Reader.razor's own loop does)
-               brings the mini-reader's own pericope headings, absent
-               before this batch entirely -- see each shared component's
-               own header comment for the full "why" behind every
-               container-specific parameter below. *@
             var xrefLetters = VerseLine.ComputeXrefLetters(_chapter.Verses);
             @foreach (var v in _chapter.Verses)
             {
@@ -129,17 +41,6 @@ else
     </div>
 }
 
-@* M-D3/U6, owner verbatim: "'read the whole chapter' affordance REMOVED
-   when already reading that chapter" -- conditional presence, not a
-   disabled stub: when the reader is ACTIVELY showing this exact
-   Book/Chapter right now (ViewStateService.MountedReaderChapter's own doc
-   comment has the full "why not the persistent ViewState.Reader" story),
-   the whole control is absent, never merely inert -- reading the SAME
-   content it would open is already on screen, so there is nothing left for
-   it to honestly offer (the compact preview above still renders exactly as
-   before; only this one affordance disappears). _expanded can never become
-   true in this state, by construction -- this control is the only thing
-   that ever sets it. *@
 @if (!AlreadyInCurrentReaderChapter)
 {
     <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
@@ -157,77 +58,20 @@ else
     [Parameter, EditorRequired] public RenderFragment CompactContent { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
-    // M-D3/U5 (in-text mentions-attested links): the SAME "a provider/caller
-    // supplies ctx.PushAsync, this component only ever calls OnExplore"
-    // contract PassageList.razor's own OnExplore already establishes --
-    // required, not optional, matching that precedent (both of this
-    // component's two real callers, PassageList.razor and
-    // VerseTextSection.razor, always have a real ctx.PushAsync in hand to
-    // supply). Batch M-D4: widened from "a mention click only" to EVERY
-    // explorable target the chapter body below renders -- VerseLine's own
-    // row click/mention clicks (via MentionText, forwarded through) AND
-    // PericopeHeading's own click -- decision 2's own "verses clickable
-    // everywhere... reuse the popover's EXISTING push stack": there is no
-    // second push mechanism to build, this SAME parameter (already wired
-    // straight to ctx.PushAsync by VerseTextSectionProvider/PassageList's
-    // own callers) is the reuse.
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // M-D3/U6: read fresh at RENDER time (a computed property, not cached
-    // state) -- the mounted-chapters signal can change out from under an
-    // already-open popover (e.g. chapter navigation while a split-view
-    // popover sits open on the atlas pane), and this must always reflect
-    // the CURRENT truth, the same "read live context at render time, never
-    // captured once" discipline CAP-RECONCILE-1's own OtherContextSectionCount/
-    // XrefEntryPoint already establish elsewhere in this popover platform.
-    //
-    // Batch CORPREAD-2 fix round (Q-1/Q-2, review): reads
-    // ViewState.IsReaderChapterMounted (a ref-counted multiset membership
-    // check) rather than comparing against a single last-writer-wins
-    // value -- correct now that Reader.razor AND Kretzmann.razor can both
-    // be simultaneously, legitimately "the reader" for this signal's
-    // purposes (see ViewStateService's own doc comment).
     private bool AlreadyInCurrentReaderChapter => ViewState.IsReaderChapterMounted(Book, Chapter);
 
-    // Batch HOTFIX-4 requirement 7 (honest truncation signal, W2 review
-    // Important-1: "VerseGroup.Count ships on the wire but the client
-    // never reads it"): when >0, the COLLAPSED control's own MoreLabel
-    // becomes "+{N} more — read the chapter" instead of the plain "Read
-    // the whole chapter" -- SAME control, SAME testid, SAME click handler
-    // (opens the identical full-chapter reader below; "wired to the
-    // existing MiniReaderExpand," no parallel affordance). The
-    // EXPANDED-state label ("Show just this verse") is unaffected -- once
-    // the reader is open, the true content is already visible, nothing
-    // left to signal.
     [Parameter] public int TruncatedBy { get; set; }
 
     private bool _expanded;
     private ChapterOut? _chapter;
     private string? _error;
     private bool _scrolledThisExpand;
-    // PERF-3 re-review fix round 2 (tripwire ruling 3): AsyncMemo-backed,
-    // same "cheap insurance" reasoning as ChapterNode/CompositionSplit's
-    // own migration this round -- this component's single call site
-    // (OnAfterRenderAsync below) never actually raced.
     private readonly AsyncMemo<IJSObjectReference> _readerJs = new();
 
-    // A random, per-component-instance DOM id for the focal row -- see
-    // VerseTextSection.razor's own original comment (preserved verbatim in
-    // spirit): collision-safe by construction (a fresh GUID per instance),
-    // never needs TestIdSuffix.
     private readonly string _focalDomId = $"popover-reader-focal-{Guid.NewGuid():N}";
 
-    // "Fetch on expand, not before" -- the whole chapter is only ever
-    // requested once the user actually asks to read it, via AtlasClient's
-    // own Chapter LRU cache (so re-expanding after a collapse, or a later
-    // expand of a DIFFERENT block in the same chapter, is free).
-    //
-    // O2: RevealControls' own ShownChanged always proposes a fully-
-    // determined target (0 or 1 here, this component's own binary case --
-    // see this file's own header comment), never a relative toggle, so this
-    // is `shown == 1` directly rather than the old `!_expanded` inversion --
-    // otherwise byte-for-byte the same fetch-on-expand body the retired
-    // ToggleExpand() always had.
     private async Task OnShownChanged(int shown)
     {
         _expanded = shown == 1;
@@ -246,7 +90,7 @@ else
 
         if (_expanded)
         {
-            _scrolledThisExpand = false; // OnAfterRenderAsync below performs the actual scroll once the focal row exists in the DOM
+            _scrolledThisExpand = false;
         }
     }
 
@@ -265,17 +109,6 @@ else
         }
         catch (Exception)
         {
-            // The auto-scroll is a nicety, not load-bearing -- the mini-reader
-            // still renders and is manually scrollable either way.
         }
     }
-
-    // Batch M-D4: Blink/OpenPlace/OpenPerson/OnPlaceMentionKeyDown/
-    // OnPersonMentionKeyDown all deleted from this component -- MentionText.razor
-    // (used by VerseLine.razor's own verse-text span above) is now the ONE
-    // place BLINK-1/MENTION-1's mention markup, click, and blink wiring
-    // lives, replacing this file's own prior copy exactly the way
-    // Reader.razor's near-identical prior copy was also replaced. Grep-
-    // proven dead: no remaining reference to any of these five names in
-    // this file.
 }

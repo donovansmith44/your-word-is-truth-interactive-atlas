@@ -1,39 +1,22 @@
 namespace BibleAtlas.Client;
 
-/// <summary>
-/// Maps between a calendar year and a horizontal pixel position on the
-/// TimeSlider's era-segmented strip, and back. The strip is divided into one
-/// segment per <see cref="EraDto"/>, laid out left to right in era order.
-/// Each era's segment width is proportional to how many years it spans, with
-/// a floor of <c>width / (eras.Count * 2)</c> so a short era (Exile, Return,
-/// Gospels) never collapses to an unusable sliver -- see <see cref="EraWidths"/>.
-///
-/// There is no year zero (1 BC is immediately followed by AD 1), so a plain
-/// <c>year - era.FromYear</c> offset would miscount any era straddling the
-/// boundary: era "gospels" (-5..29) spans 34 distinct years, not 35. All
-/// position math below goes through an era-local, zero-aware year&lt;-&gt;index
-/// conversion (<see cref="YearToLocalIndex"/> / <see cref="LocalIndexToYear"/>)
-/// instead of raw year subtraction, so every year in an era maps to its own
-/// 0-based index and vice versa, with index 0 never landing on year 0.
-///
-/// Consecutive eras' nominal segments are edge-to-edge (segment N's right
-/// edge is exactly segment N+1's left edge), so the segments tile the full
-/// strip width with no gap. If a year's x position were spread across the
-/// segment's *full* nominal width, the last year of one era and the first
-/// year of the next would land on the exact same pixel (both equal the
-/// shared boundary) -- YearToX would stop being injective and XToYear
-/// couldn't invert it. To keep every valid year's position distinct, each
-/// era reserves a fixed, tiny <see cref="Epsilon"/> off the right end of its
-/// own segment purely for spacing out its years -- far too small to affect
-/// the "every era gets a usable width" guarantee, but enough that no two
-/// years, in any two eras, ever share a pixel.
-/// </summary>
+// Maps between a calendar year and a horizontal pixel position on the TimeSlider's era-segmented
+// strip, and back.
+//
+// There is no year zero (1 BC is immediately followed by AD 1), so a plain `year - era.FromYear`
+// offset would miscount any era straddling the boundary: era "gospels" (-5..29) spans 34 distinct
+// years, not 35. All position math below goes through an era-local, zero-aware year<->index
+// conversion (YearToLocalIndex / LocalIndexToYear) instead of raw year subtraction.
+//
+// Consecutive eras' nominal segments are edge-to-edge. If a year's x position were spread across
+// the segment's full nominal width, the last year of one era and the first year of the next would
+// land on the exact same pixel (both equal the shared boundary), and YearToX would stop being
+// invertible. Each era reserves a fixed, tiny Epsilon off the right end of its own segment purely
+// so no two years, in any two eras, ever share a pixel.
 public static class SliderScale
 {
-    // Reserved off the right edge of every era's segment purely so adjacent
-    // eras' year positions never collide (see class doc). Comfortably above
-    // double precision noise at these magnitudes (~1e-13) and comfortably
-    // below the width tolerance callers should use (1e-6).
+    // Comfortably above double precision noise at these magnitudes (~1e-13) and comfortably below
+    // the width tolerance callers should use (1e-6).
     private const double Epsilon = 1e-7;
 
     public static double YearToX(int year, IReadOnlyList<EraDto> eras, double width)
@@ -74,36 +57,15 @@ public static class SliderScale
         return LocalIndexToYear(index, era);
     }
 
-    /// <summary>
-    /// Each era's width: the larger of an equal floor share
-    /// (<c>width / (eras.Count * 2)</c> -- half of an "average" share, so
-    /// even the shortest era stays usable) and its proportional share of
-    /// <paramref name="width"/> by year count. A straight max() over both
-    /// can over-allocate (the floor lifting several short eras above their
-    /// natural share adds up to more than <paramref name="width"/>), so eras
-    /// pinned to the floor are set aside and the rest re-share the leftover
-    /// width, repeating until no remaining era's proportional share falls
-    /// under the floor. The returned widths sum to exactly
-    /// <paramref name="width"/> and never fall below the floor.
-    ///
-    /// PUBLIC (Batch C fix round, was private): TimeSlider.razor's era
-    /// bands used to be plain CSS flex children (flex-grow proportional to
-    /// year span, min-width via a percentage) on the ASSUMPTION that native
-    /// flexbox's own min-width-then-proportional-remainder resolution would
-    /// land on the same per-era widths this method computes for the
-    /// handles' pixel math. It doesn't, exactly -- flexbox's own algorithm
-    /// for resolving flex-grow against a min-width constraint is a
-    /// DIFFERENT iterative procedure, and the drift between the two (a few
-    /// px at TrackWidthPx=800) was large enough at the smaller 520px track
-    /// (Batch C's own "de-cramped" resize) to put a released handle's exact
-    /// pixel position past its own band's CSS-rendered edge and onto the
-    /// NEXT era button's clickable center -- caught by WORLD-7's exhaustive
-    /// era-click property test hanging on a blocked click, not assumed.
-    /// TimeSlider.razor now calls this directly and renders each band at an
-    /// EXACT fixed pixel width (`flex: 0 0 {width}px`), making the visual
-    /// band and the handle math the same numbers by construction instead of
-    /// two independent approximations that happen to be close.
-    /// </summary>
+    // Each era's width is the larger of an equal floor share (width / (eras.Count * 2)) and its
+    // proportional share of width by year count. A single max() pass can over-allocate (floor-
+    // lifted short eras can sum past width), so eras pinned to the floor are set aside and the
+    // remainder re-shares the leftover width, repeating until stable. The returned widths sum to
+    // exactly width and never fall below the floor.
+    //
+    // Public so TimeSlider.razor can render each band at this exact pixel width -- the visual band
+    // and the handle math must use the same numbers, not two independent approximations (CSS flex
+    // resolution does not land on the same per-era widths this computes).
     public static double[] EraWidths(IReadOnlyList<EraDto> eras, double width)
     {
         var n = eras.Count;
@@ -158,9 +120,8 @@ public static class SliderScale
         }
         else if (remainingWidth > 0)
         {
-            // Degenerate case (every era's fair share undercuts the floor --
-            // not reachable with real era data, but keep the total honest
-            // rather than silently losing pixels if it ever happens).
+            // Not reachable with real era data, but keeps the total honest instead of silently
+            // losing pixels if every era's fair share ever undercuts the floor.
             var extra = remainingWidth / n;
             for (var i = 0; i < n; i++)
             {
@@ -212,22 +173,13 @@ public static class SliderScale
         return widths.Count - 1;
     }
 
-    /// <summary>
-    /// Number of distinct (non-zero) years the era spans: <c>ToYear -
-    /// FromYear + 1</c> for an era that doesn't straddle year zero, or one
-    /// fewer when it does (FromYear &lt; 0 &lt; ToYear), since year 0 is
-    /// skipped -- era "gospels" (-5..29) is 34 years, not 35.
-    /// </summary>
+    // ToYear - FromYear + 1 for an era that doesn't straddle year zero, or one fewer when it does
+    // (FromYear < 0 < ToYear), since year 0 is skipped -- era "gospels" (-5..29) is 34 years, not 35.
     private static int EraYearCount(EraDto era) =>
         era.ToYear - era.FromYear + (era.FromYear < 0 && era.ToYear > 0 ? 0 : 1);
 
-    /// <summary>
-    /// 0-based position of <paramref name="year"/> within its era. For an
-    /// era that straddles zero, years &lt;= -1 keep the plain offset from
-    /// FromYear, and years &gt;= 1 continue the sequence one slot earlier
-    /// than the raw offset would put them, since index 0 -- 1 was never
-    /// spent on the nonexistent year 0.
-    /// </summary>
+    // For an era that straddles zero, years <= -1 keep the plain offset from FromYear, and years
+    // >= 1 continue one slot earlier than the raw offset would put them, since year 0 is skipped.
     private static int YearToLocalIndex(int year, EraDto era)
     {
         if (era.FromYear < 0 && era.ToYear > 0)
@@ -238,12 +190,11 @@ public static class SliderScale
         return year - era.FromYear;
     }
 
-    /// <summary>Inverse of <see cref="YearToLocalIndex"/>.</summary>
     private static int LocalIndexToYear(int index, EraDto era)
     {
         if (era.FromYear < 0 && era.ToYear > 0)
         {
-            var negativeCount = -era.FromYear; // how many negative years (FromYear..-1) precede the skip
+            var negativeCount = -era.FromYear; // negative years (FromYear..-1) preceding the skip
             return index < negativeCount ? era.FromYear + index : index - negativeCount + 1;
         }
 

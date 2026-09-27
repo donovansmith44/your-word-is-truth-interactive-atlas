@@ -2,14 +2,6 @@ using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
-/// <summary>
-/// One Book of Concord paragraph as a popover node. Constructed with its
-/// citation (<c>BoC 7.2.1</c>, also its display title) and, when the caller
-/// already has it, its text; a node reached through an edge (D3: from a
-/// Small Catechism item's "IN THE BOOK OF CONCORD" section) carries only the
-/// citation and fetches its own text once, on first render
-/// (<see cref="AtlasClient.ConcordUnit"/>).
-/// </summary>
 public sealed class ConcordUnitNode : IExplorable
 {
     private readonly string? _givenText;
@@ -24,7 +16,6 @@ public sealed class ConcordUnitNode : IExplorable
     public string Title { get; }
     public string Kind => "ConcordUnit";
 
-    /// <summary>The graph's own id for this paragraph (graph_wire's Concord grammar).</summary>
     public string NodeId => $"text-unit:{Title}";
 
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>

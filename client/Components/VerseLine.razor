@@ -1,99 +1,3 @@
-@* Batch M-D4 ("the recursive reader") -- the owner's defect report,
-   near-verbatim: "the hovering over place names is not universal... the
-   Bible I get when I click read the whole chapter is of a fundamentally
-   different kind - location hovering works. verses are not clickable
-   (therefore explorations hit deadends)." Diagnosis: the popover's own
-   mini-reader was a SECOND, WEAKER implementation of "render a verse line"
-   -- Reader.razor's chapter body and MiniReaderExpand.razor's expanded
-   chapter body rendered near-identical markup (verse number + text +
-   in-text mention links + xref superscript) through two independent
-   `@foreach` loops, forked just enough that affordances drifted: a verse
-   LINE opened its own popover in the main reader but did nothing at all
-   when clicked inside the mini-reader.
-
-   THIS is the one canonical verse-line renderer, decision 1's own words:
-   "verse number + text + in-text mention links + superscript marker...
-   parameterized by container context (page vs popover; density/
-   compactness), NEVER forked." Reader.razor and MiniReaderExpand.razor's
-   own expanded body both render every verse of a chapter through THIS
-   component now -- see each file's own comment at its call site. Heading
-   interleaving (decision 1's own "where applicable") is the CALLER's own
-   job (PericopeHeading.razor, rendered immediately before this component
-   whenever a verse is a heading anchor) -- a verse LINE's own identity
-   doesn't include the heading that happens to sit above it.
-
-   CLICKABILITY (decision 2, "verses clickable everywhere... reuse the
-   popover's EXISTING push stack"): every container's own row click/Enter
-   calls the SAME `OnExplore.InvokeAsync(new VerseNode(vref))` -- Reader.razor
-   wires this to a plain "reset xref-entry state, replace _activeNode"
-   handler (opens a FRESH top-level popover, unchanged from the pre-M-D4
-   OpenVerse shape); MiniReaderExpand wires the identical parameter straight
-   to `ctx.PushAsync` (via VerseTextSectionProvider's own pre-existing
-   OnExplore wiring -- the push machinery ALREADY existed, per the brief's
-   own instruction: "reuse it, don't build a second one"). Mention clicks
-   (MentionText.razor, embedded below) go through the SAME OnExplore --
-   never a second callback shape.
-
-   XREF SUPERSCRIPT (decision 4's own parity law, "same superscript
-   behavior, per current flag state"): `ShowXrefMarker` reads
-   `FeatureFlags.XrefSuperscripts`/`Verse.XrefCount` directly -- a pure
-   function of data already on hand, no per-render mutable accumulator
-   ANYWHERE (the exact shape the house pattern/Batch N lesson warns
-   against) -- so the marker renders identically, universally, regardless
-   of container. CLICK/Enter/focus always commit (OnXrefClick); the
-   HOVER-preview micro-behavior (OpenVerseXrefEntryHover's own debounced
-   auto-dismiss, tuned across several M-D3 fix rounds specifically for a
-   TOP-LEVEL popover's own pane-anchored open/dismiss dance) is a
-   disclosed, Reader-page-only enhancement, not part of the tested parity
-   law -- MiniReaderExpand leaves OnXrefHoverEnter/OnXrefHoverLeave
-   unbound (a harmless no-op EventCallback): pushing a NEW popover-stack
-   entry on a bare mouseover, already nested one popover deep, would make
-   hovering across chapter text unpredictably jump the stack around -- a
-   UX regression this batch's own scope discipline (decision 6: no new
-   exploration features) rules out inventing.
-
-   M-D4 fix round 1, P1 (owner CORRECTION, 2026-08-23, verbatim: "i didnt
-   literally mean i,j,k superscripts. i mean ordered alphabetical letters
-   that modulate around a chapter (i.e., first letter is a)"): the
-   marker's own GLYPH is now the verse's own ORDINAL among the CHAPTER's
-   xref-bearing verses, in reading order, "a" for the first -- RETIRES the
-   old per-verse-COUNT scheme (i/ij/ijk + the "…" many-marker) whole; no
-   count signal at the marker at all (count already lives inside the
-   popover once opened -- controller default, ledgered). This is
-   INHERENTLY a per-CHAPTER computation (verse 5's own letter depends on
-   how many EARLIER verses in the SAME chapter also had xrefs) -- VerseLine
-   itself has no visibility into sibling verses to derive that from on its
-   own, so XrefMarkerGlyph is now a CALLER-supplied parameter, not a
-   property computed from Verse.XrefCount alone. ComputeXrefLetters below
-   is the shared, PURE function both callers (Reader.razor,
-   MiniReaderExpand.razor) call ONCE, before their own verse loop starts,
-   over the chapter's own already-in-hand verse list -- a fresh local
-   lookup per render, never a mutable counter incremented across foreach
-   iterations (the SAME "sidesteps the Batch N closure-capture defect
-   class by construction" discipline this component's own original
-   XrefMarkerText already established, just scoped one level up now that
-   the scheme itself needs chapter-wide context). Chapter-scoped, not
-   container-scoped -- a verse's own letter is therefore IDENTICAL whether
-   shown in the main reader or the mini-reader for the same chapter,
-   preserving decision 4's parity law by construction, not by coincidence.
-
-   M-D4 fix round 2, P1b (owner, verbatim: "well there might be more than
-   26. if there are then we still need to be in mod26 land but have a
-   system for new superscripts beyond a-z"): fix round 1's own bare
-   `ordinal % 26` wraparound is RETIRED -- it collided the 27th
-   xref-bearing verse's own letter back onto the 1st's ("a" again), a
-   real ambiguity a >26-xref-bearing chapter (a long acrostic psalm, e.g.
-   PSA.119) can actually hit. Replaced by BIJECTIVE base-26 numeration
-   (the same scheme spreadsheet column names use -- A, B, ..., Z, AA, AB,
-   ..., AZ, BA, ..., ZZ, AAA, ...): ordinal 1->"a", 26->"z", 27->"aa",
-   52->"az", 53->"ba", 702->"zz", 703->"aaa". `BijectiveBase26` below is
-   the pure, directly unit-tested (BibleAtlas.Client.Tests) integer-to-
-   letters conversion; ComputeXrefLetters itself is otherwise unchanged
-   -- same per-chapter ordinal tracking, just 1-based now and fed through
-   this new conversion instead of a raw `'a' + ordinal % 26` cast. No
-   count semantics return -- the letter is still a pure ordinal, "mod26
-   land" describing the DIGIT ALPHABET (26 symbols per position), not a
-   wraparound back to a shorter, ambiguous, already-used letter. *@
 @using BibleAtlas.Client.Explore
 
 <div class="@RowClass" data-testid="@RowTestId" data-focal="@(Focal ? "true" : "false")" id="@Id"
@@ -125,82 +29,32 @@
 </div>
 
 @code {
-    // The verse's own full row data -- Verse/Text/Places/Persons/XrefCount,
-    // exactly the `ChapterOut.Verses[i]` shape both Reader.razor and
-    // MiniReaderExpand already iterate (Heading is read by the CALLER, not
-    // here -- see this file's own header comment).
     [Parameter, EditorRequired] public VerseOut Verse { get; set; } = default!;
     [Parameter, EditorRequired] public string Book { get; set; } = default!;
     [Parameter, EditorRequired] public int Chapter { get; set; }
 
-    // Row click, mention clicks (via MentionText, forwarded straight
-    // through) -- see this file's own header comment for the two
-    // containers' own different wiring.
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // Batch G2 decision 6 (multi-select v1): Ctrl/Cmd-click on the row
-    // toggles this verse into the Selection Tray INSTEAD of opening a
-    // popover -- "plain click keeps ONE-RULE explore/pin semantics
-    // everywhere... Ctrl/Cmd-click never opens a popover," per the brief,
-    // verbatim. Optional (default unbound, a harmless no-op EventCallback)
-    // -- MiniReaderExpand's own mini-reader rows leave this unwired, same
-    // "declutter/scope" stance XrefHoverEnter/-Leave already establish for
-    // that container (this file's own header comment): the tray gesture's
-    // v1 scope is the MAIN reader surface, not a nested popover's own
-    // secondary rendering of the same chapter.
     [Parameter] public EventCallback<VerseNode> OnToggleSelect { get; set; }
 
-    // G2-m2 (batch-g2-report.md's own disclosed v1-scope gap, "in-text
-    // mentions... are NOT wired for this gesture"): a mention SPAN's own
-    // node (PlaceNode/PersonNode) is never a VerseNode, so it cannot share
-    // OnToggleSelect above (typed to this row's own VerseNode identity) --
-    // a second, generic callback, forwarded straight through to MentionText
-    // below exactly the way OnExplore already is. Optional (default
-    // no-op), same "MiniReaderExpand's own rows leave the row-level toggle
-    // unwired too" v1-scope stance immediately above.
     [Parameter] public EventCallback<IExplorable> OnMentionToggleSelect { get; set; }
 
-    // Splits the row's own single onclick into the three-gesture grammar
-    // batch-r-report.md §7 proposes: Ctrl/Cmd-click toggles selection (never
-    // opens a popover, never touches OnExplore); every other click keeps its
-    // pre-existing, UNCHANGED meaning (open this verse's popover). Shift is
-    // deliberately not read here at all -- shift-click's own range-extend
-    // meaning lives entirely on verse-NUM (a different element, OnVerseNumClick
-    // below), never on this row.
+    // Ctrl/Cmd-click toggles selection instead of opening a popover; shift's range-extend
+    // meaning lives on verse-num (OnVerseNumClick), not here.
     private Task OnRowClick(MouseEventArgs e) =>
         e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(new VerseNode(Vref)) : OnExplore.InvokeAsync(new VerseNode(Vref));
 
-    // MiniReaderExpand only: is this verse inside the popover's own focal
-    // range (`data-focal`, READER-1's calm static highlight)? Reader.razor
-    // never sets this (default false on every row -- the main reader has no
-    // "focal verse" concept of its own; a harmless, uniform attribute
-    // rather than a container-conditional one, simpler to reason about).
     [Parameter] public bool Focal { get; set; }
 
-    // DOM id -- Reader.razor sets "v{n}" on EVERY row (reader.js's
-    // scrollToVerse/#v{n} deep links, ExplorerPopover's own
-    // VerseAnchorSelector="#v{n}"); MiniReaderExpand sets its own
-    // collision-safe GUID ONLY on the focal row (scrollFocalRowIntoView) --
-    // null omits the attribute entirely (standard Blazor null-attribute
-    // behavior), matching MiniReaderExpand's own pre-existing conditional.
     [Parameter] public string? Id { get; set; }
 
     [Parameter, EditorRequired] public string RowClass { get; set; } = default!;
     [Parameter, EditorRequired] public string RowTestIdPrefix { get; set; } = default!;
 
-    // MiniReaderExpand's own established multi-instance disambiguation --
-    // see MentionText.razor's own comment on this identical parameter.
     [Parameter] public string TestIdSuffix { get; set; } = "";
 
     [Parameter, EditorRequired] public string VerseNumClass { get; set; } = default!;
 
-    // True (Reader.razor) renders a REAL <button> -- the anchor+extend
-    // passage-range mechanic (shift-click, READ-5), a selection gesture
-    // deliberately excluded from ONE-RULE, own target/own testid, unaffected
-    // by this batch (scope discipline: no new exploration features). False
-    // (MiniReaderExpand, the default) renders a plain, non-interactive
-    // <span> -- the popover mini-reader never had passage-range selection
-    // and this batch does not add it there.
     [Parameter] public bool ShowVerseNumButton { get; set; }
     [Parameter] public string? VerseNumTestIdPrefix { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> OnVerseNumClick { get; set; }
@@ -208,60 +62,22 @@
     [Parameter, EditorRequired] public string TextClass { get; set; } = default!;
     [Parameter, EditorRequired] public string MentionClass { get; set; } = default!;
 
-    // "verse-xref-marker" (default) reproduces Reader.razor's own
-    // pre-existing bare `verse-xref-marker-{n}` testid byte for byte (no
-    // caller override needed there); MiniReaderExpand passes
-    // "popover-reader-xref-marker" -- a NEW testid (this marker never
-    // rendered in the popover before this batch), named to match its own
-    // sibling family (`popover-reader-verse-*`/`popover-reader-mention-*`),
-    // not the reader's own unrelated "verse-*" family -- see CONTRACT.md.
     [Parameter] public string XrefMarkerTestIdPrefix { get; set; } = "verse-xref-marker";
 
-    // M-D4 fix round 1, P1: this verse's own PRE-COMPUTED letter (see
-    // ComputeXrefLetters below) -- "" for a verse with no xrefs (never
-    // read, since ShowXrefMarker is false there). Required, not defaulted:
-    // both real callers always compute and supply it.
     [Parameter, EditorRequired] public string XrefMarkerGlyph { get; set; } = default!;
 
     [Parameter, EditorRequired] public EventCallback<int> OnXrefClick { get; set; }
 
-    // Optional -- see this file's own header comment for why MiniReaderExpand
-    // deliberately leaves these two unbound (a no-op EventCallback; Blazor's
-    // own safe default for an unwired callback).
     [Parameter] public EventCallback<int> OnXrefHoverEnter { get; set; }
     [Parameter] public EventCallback OnXrefHoverLeave { get; set; }
 
     private string Vref => $"{Book}.{Chapter}.{Verse.Verse}";
     private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
 
-    // Batch CORPREAD-2 (deliverable 0a, THE SHARED-CONTAINER LAW): the ONLY
-    // reader-component parameter change this batch makes, per the brief's
-    // own "if reuse genuinely requires a parameter addition ... follow the
-    // house pattern" instruction -- TestIdSuffix is a PRE-EXISTING parameter
-    // (RowTestId/XrefMarkerTestId already thread it), just never applied to
-    // this ONE testid. Kretzmann.razor now renders a SECOND, simultaneous
-    // VerseLine instance for the same verse whenever it hosts a split with
-    // Reader as guest (both following the same chapter) -- without this fix,
-    // both instances would emit a LITERALLY duplicate "verse-num-{n}"
-    // testid, breaking Playwright's own strict-mode single-match locators.
-    // Every pre-existing caller (Reader.razor, MiniReaderExpand.razor) still
-    // passes TestIdSuffix="" (the default) and is therefore byte-for-byte
-    // unaffected -- this string is identical to before whenever the suffix
-    // is empty.
     private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}{TestIdSuffix}" : null;
 
-    // M-D4 fix round 1, P1 (owner correction, verbatim in this file's own
-    // header comment): each xref-bearing verse's own ORDINAL among the
-    // CHAPTER's xref-bearing verses, in reading order -- "a" for the
-    // first. A PURE function of the chapter's own already-in-hand verse
-    // list (never a mutable counter incremented across foreach iterations
-    // -- see this file's own header comment for the full house-pattern
-    // reasoning); callers compute this ONCE, before their own verse loop,
-    // and pass each verse's own letter in via XrefMarkerGlyph above.
-    // M-D4 fix round 2, P1b: `ordinal` is now 1-based (incremented BEFORE
-    // use, not after) and fed through BijectiveBase26 below instead of a
-    // raw `'a' + ordinal % 26` cast -- see this file's own header comment
-    // for why bare modulo-26 wraparound was retired.
+    // Ordinal among the chapter's xref-bearing verses, in reading order ("a" for the first) --
+    // computed once per chapter, never a mutable counter incremented during this row's own render.
     public static Dictionary<int, string> ComputeXrefLetters(IReadOnlyList<VerseOut> verses)
     {
         var map = new Dictionary<int, string>();
@@ -277,21 +93,8 @@
         return map;
     }
 
-    // M-D4 fix round 2, P1b (owner, verbatim in this file's own header
-    // comment): BIJECTIVE base-26 numeration -- 1-based `n`, the digit
-    // alphabet is 'a'..'z' (26 symbols), but UNLIKE plain base-26 there is
-    // no digit for zero, so "aa" (27) is genuinely distinct from "a" (1)
-    // rather than colliding with it the way plain modulo/positional base-26
-    // would. Algorithm (standard bijective numeration, the same one
-    // spreadsheet column names use): peel off one LEAST-significant digit
-    // at a time (`n - 1`, so the digit range is 0..25 instead of 1..26,
-    // matching 'a'..'z'), prepend its letter, then move to the next digit
-    // (`n / 26`); repeat until `n` reaches 0. Boundary values (26->"z",
-    // 27->"aa", 52->"az", 53->"ba", 702->"zz", 703->"aaa") are unit-tested
-    // directly in BibleAtlas.Client.Tests -- see that project's own
-    // VerseLineTests. `n <= 0` returns "" (never reached by
-    // ComputeXrefLetters above, which only ever calls this with `n >= 1`,
-    // ordinal incremented before use).
+    // Bijective base-26 (like spreadsheet column names): unlike plain base-26 there's no zero
+    // digit, so "aa" (27) is genuinely distinct from "a" (1) rather than colliding with it.
     public static string BijectiveBase26(int n)
     {
         var letters = "";
@@ -306,17 +109,9 @@
 
     private bool ShowXrefMarker => FeatureFlags.XrefSuperscripts && Verse.XrefCount > 0;
 
-    // P1: no count language at all -- the owner's own "no count signal at
-    // the marker" extends to the accessible name too, not just the visual
-    // glyph (a sighted user and a screen-reader user should learn the SAME
-    // thing from this control; count already lives inside the popover once
-    // opened, same as the visual marker itself no longer showing it).
     private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Verse}";
     private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
 
-    // Enter only, not Space -- design-direction.md's own "Enter opens" (see
-    // Reader.razor's own prior OnVerseLineKeyDown comment for the full
-    // Space-vs-Tab reasoning, preserved verbatim in spirit).
     private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new VerseNode(Vref)) : Task.CompletedTask;
     private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Verse) : Task.CompletedTask;
 }

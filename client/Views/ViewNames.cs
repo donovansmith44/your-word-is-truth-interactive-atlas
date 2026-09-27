@@ -1,44 +1,16 @@
 namespace BibleAtlas.Client.Views;
 
-/// <summary>
-/// Batch VC-1 (R1): the generalization seam's own vocabulary of stable view
-/// NAMES -- "reader" | "world" | "sources" -- extend-only, the same
-/// discipline <see cref="Contracts.AtomNames"/> already established for atom
-/// names. Every <see cref="ViewArrangement"/> member, every
-/// <see cref="ViewRegistry"/> registration key, and every
-/// <see cref="EnterSplitHatch"/>'s Owner/Partner reference one of these
-/// constants -- never a bare string literal (conformance-tested, see
-/// client.Tests/State/ViewRegistryConformanceTests.cs).
-/// </summary>
 public static class ViewNames
 {
     public const string Reader = "reader";
     public const string World = "world";
     public const string Sources = "sources";
 
-    /// <summary>Batch CORP-1 (R1/R2): the Kretzmann Popular Commentary
-    /// browser -- locus-keyed, declares <see cref="ViewCapabilities.BearsLocus"/>
-    /// (see <see cref="ViewRegistrySetup.Build"/>'s own registration).</summary>
     public const string Kretzmann = "kretzmann";
 
-    /// <summary>Batch CORP-1 (R1/R3): the Book of Concord structure browser
-    /// -- navigates the corpus's own part/article/paragraph shape, NOT
-    /// scripture locus (declares no capability -- see
-    /// <see cref="ViewRegistrySetup.Build"/>'s own registration).</summary>
     public const string Concord = "concord";
 }
 
-/// <summary>
-/// R1: "declared CAPABILITIES as data ... capability flags are contract
-/// data, the §4c pattern" -- the same "declare it as data, never a name
-/// check" discipline <c>client/Contracts/Interactions.cs</c>'s own
-/// <c>IInteractionContract</c>/<c>TimingDiscipline</c> already establish for
-/// gestures. <see cref="BearsLocus"/> (reader: "I have a chapter/verse
-/// position the follow link can read") and <see cref="BearsWindow"/> (world:
-/// "I have a time/scripture window the follow link can write") are the two
-/// R5 needs -- FollowTextLink.Active queries THESE flags via the registry,
-/// never a "== ViewNames.Reader"/"== ViewNames.World" check.
-/// </summary>
 [Flags]
 public enum ViewCapabilities
 {
@@ -47,15 +19,9 @@ public enum ViewCapabilities
     BearsWindow = 1 << 1,
 }
 
-/// <summary>R4: the one Kind every enter-split hatch declares -- contract
-/// data (<see cref="Contracts.IEscapeHatch.Kind"/>), never a per-hatch bespoke
-/// string.</summary>
 public static class HatchKinds
 {
     public const string EnterSplit = "enter-split";
 
-    /// <summary>Batch CORPREAD-1b, deliverable 0a -- the follow-release law's
-    /// own declared hatch Kind (design spec §5). See
-    /// <see cref="ToggleFollowHatch"/>'s own header for the full "why."</summary>
     public const string ToggleFollow = "toggle-follow";
 }

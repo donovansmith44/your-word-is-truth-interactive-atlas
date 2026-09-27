@@ -1,56 +1,3 @@
-@* Batch PROV-1, owner order 2 verbatim: "add a ? button on our frontier
-   interface that gives provenance (i.e., sourced from openbible.com) or
-   whatever."
-
-   ONE small component, parameterized by the provenance it explains, usable
-   on ANY frontier section and on the focus card itself -- the composability
-   bar ("make sure all the new bits made for this are composable and
-   reusable"), the same bar FrontierMetadataRow.razor already answers for
-   time/place. It is NOT event-only markup, NOT section-only markup, and
-   knows nothing about which surface mounted it: it takes a list of
-   provenance ids plus a label, and renders what the registry says about
-   them. THE KNOB TABLE is in batch-prov1-report.md; each parameter carries
-   its own reason at the bottom of this file.
-
-   NOT AN OVERLAY, ON PURPOSE (the §5 escape-hatch question, answered rather
-   than labelled -- EVT-3's Q-1 lesson is that a label without the machinery
-   is a finding, and the converse trap is inventing machinery to justify a
-   label). This is an INLINE DISCLOSURE: the panel renders in normal flow
-   directly beneath its own button, inside the section that owns it, and
-   pushes the popover's subsequent content down. Nothing floats, nothing is
-   positioned over anything, there is no focus trap, no backdrop and no
-   scroll lock -- so §5's escape-hatch law, which governs surfaces a reader
-   can get STUCK in, does not bind here, and saying so plainly is more
-   honest than ceremonially registering an IEscapeHatch whose Invoke()
-   could not carry this panel's parameters anyway. MapFocusHatch.cs's own
-   header documents that exact conflict: every real IEscapeHatch in this app
-   is constructed ONCE at ViewRegistrySetup.Build() time over DI singletons
-   with a PARAMETERLESS Invoke(), and this panel's content is per-surface
-   DATA varying per invocation -- the same shape that ruled MapFocusHatch
-   out of the formal machinery.
-
-   ESC still closes it and the button keeps focus -- not because a hatch
-   contract demands it, but because a keyboard user must be able to undo any
-   toggle they made.
-
-   HOVER-KILL-1 IS LAW HERE. This opens on CLICK / ENTER / SPACE and on
-   nothing else; there is no hover handler anywhere in this file.
-   HOVER-KILL-1 retired hover boxes on event buttons for exactly the reason
-   that binds again here -- the owner reads on touch devices, where "hover"
-   is a tap that fires once and then cannot be dismissed. The hit target is
-   a touch-friendly 44x24 (app.css's own .popover-provenance-button rule),
-   for the same reason. FIX ROUND 1 (review L-6): that rule used to read
-   44x44, and the vertical half of it was measured stealing clicks from the
-   verse text beneath -- provenance.spec.ts's own L-6 fixture failed against
-   it. FIX ROUND 2 (review M-NEW-2): the overhang figures were re-measured
-   in the browser -- on the ROW register's own 16px mark a 44px overlay
-   reaches 14px above the mark's TOP EDGE and 22px above its CENTRE, a 24px
-   one 4px and 12px -- and the fixture was re-aimed at the mark's CENTRE so
-   that it discriminates by 4-6px instead of by 1px, then proven RED against
-   a restored 44px rule. app.css carries the full measurement, the WCAG
-   reading (SC 2.5.8 AA at 24x24, not SC 2.5.5 AAA at 44x44) and the bounded
-   trade. *@
-
 @if (_ids.Count > 0)
 {
     <span class="@RootClass" data-testid="@TestId">
@@ -73,16 +20,8 @@
                 {
                     @if (p.Status == Explore.ProvenanceStatus.RegistryUnavailable)
                     {
-                        @* FIX ROUND 1 (review M-4): AN INFRASTRUCTURE FAULT,
-                           SAID AS ONE. /api/sources did not load, so nothing
-                           has been learned about this data -- it is not
-                           "unrecognized," it is unchecked. Before this, one
-                           dropped request rendered the red "Unrecognized
-                           source" accusation on EVERY affordance on the
-                           popover, telling the reader the atlas had
-                           unattributed data and asking them to report a bug
-                           that did not exist. The id is still named, because
-                           it is the one true thing we can say. *@
+                        @* An infrastructure fault (the source list failed to load), not an
+                           unrecognized id -- said as one, not the other. *@
                         <span class="popover-provenance-unavailable" data-testid="@UnavailableTestId">
                             The source list could not be loaded, so this cannot be named right now.
                             Its source id is &quot;@p.Id&quot;.
@@ -90,14 +29,6 @@
                     }
                     else if (p.Status == Explore.ProvenanceStatus.Unresolved)
                     {
-                        @* THE FAIL-LOUD LAW, visibly. Never a silent blank,
-                           never a fabricated label -- the offending id is
-                           named so it can actually be fixed. A BLANK id
-                           reaches here too (fix round 1, review H-1): the
-                           four filters that used to drop it before
-                           resolution are gone, so "we were handed nothing to
-                           attribute this with" now SHOUTS instead of
-                           rendering as no "?" at all. *@
                         <span class="popover-provenance-error" data-testid="@UnresolvedTestId">
                             @if (string.IsNullOrWhiteSpace(p.Id))
                             {
@@ -116,12 +47,6 @@
                             <span class="popover-provenance-what">@p.WhatItIs</span>
                             @if (ProvenanceResolver.ConfidenceNote(p.Confidence) is { } note)
                             {
-                                @* Shown only when it is NOT the obvious
-                                   default -- a CanonicalText claim and a
-                                   Derived claim must not look alike. See
-                                   ProvenanceResolver.ConfidenceNote for the
-                                   rule and why "Imported" is the silent
-                                   one. *@
                                 <span class="popover-provenance-confidence" data-testid="@ConfidenceTestId(p)">@note</span>
                             }
                             @if (!string.IsNullOrWhiteSpace(p.Locator))
@@ -138,70 +63,20 @@
 }
 
 @code {
-    // ---------------------------------------------------------------
-    // THE KNOBS. Four presentation/behavior knobs plus one data
-    // dependency, and every one is genuinely varied by a live call site
-    // today -- no knob is here "for later" (the composability bar cuts
-    // both ways: reusable, but never speculative).
-    // ---------------------------------------------------------------
-
-    /// <summary>KNOB 1 -- WHAT IT EXPLAINS. The provenance ids behind this
-    /// surface, in order. ONE id for a node or a single row; SEVERAL for a
-    /// section genuinely drawing on several sources -- THE SMALL CATECHISM
-    /// really does (`curated-catechism` + `concord-sc-overlap`, measured),
-    /// and so does an "Mentioned in" section, and so does a verse belonging
-    /// to both an imported and a hand-authored event -- and ALL of them
-    /// render, because collapsing them is precisely the leper failure mode
-    /// this affordance exists to make visible. An empty or null list renders NOTHING at all -- not an
-    /// empty button, not a placeholder -- which is the same "return null
-    /// when empty" conditional-presence discipline every section provider
-    /// in this app already follows.
-    ///
-    /// <para>FIX ROUND 1 (review H-1): an empty LIST and a list holding a
-    /// BLANK ID are different facts and now look different. Empty list =
-    /// this surface has no attribution to make (honest absence). A blank id
-    /// in the list = something claimed an attribution and handed over
-    /// nothing, which renders the LOUD notice. The blank used to be
-    /// filtered out here and in three other places, making them
-    /// indistinguishable and the "never a silent blank" law false.</para></summary>
+    // An empty/null list renders nothing at all; a list containing a blank id is still one
+    // entry (not filtered out), so a promised-but-missing attribution renders the loud notice
+    // rather than silently vanishing.
     [Parameter, EditorRequired] public IReadOnlyList<string>? Provenance { get; set; }
 
-    /// <summary>KNOB 2 -- IDENTITY. The stable test/CSS hook, exactly like
-    /// <c>FrontierMetadataRow.TestId</c>. Button and panel derive theirs
-    /// from it ("{TestId}-button", "{TestId}-panel"), so a fixture never
-    /// has to guess a second name.</summary>
     [Parameter, EditorRequired] public string TestId { get; set; } = default!;
 
-    /// <summary>KNOB 3 -- THE ACCESSIBLE NAME. "?" means nothing to a
-    /// screen reader (or to a touch user with no hover), so every call site
-    /// says what THIS "?" is about: "Sources for cross references",
-    /// "Source for this event". Required rather than defaulted on purpose
-    /// -- one generic default would be silently wrong on most surfaces, and
-    /// a WRONG accessible name is worse than a missing one.</summary>
     [Parameter, EditorRequired] public string ButtonLabel { get; set; } = default!;
 
-    /// <summary>KNOB 4 -- REGISTER. "header" (the default) sits on a
-    /// section eyebrow beside a small-caps heading; "row" sits inline in a
-    /// list row, one step smaller and tighter. A pure presentation knob
-    /// with two live values today (see app.css's own
-    /// <c>.popover-provenance--row</c> modifier). An unrecognized value
-    /// falls back to the header register rather than throwing: a styling
-    /// mistake is not a reason to break a reader's page.</summary>
     [Parameter] public string Register { get; set; } = HeaderRegister;
 
-    /// <summary>THE DATA DEPENDENCY (not a knob). The already-fetched
-    /// registry, PASSED IN rather than injected, which is what keeps this
-    /// component pure and synchronously renderable: the caller -- a section
-    /// provider -- has already awaited <c>AtlasClient.Sources()</c>, which
-    /// is <see cref="AsyncMemo{T}"/>-backed, so the whole app shares ONE
-    /// fetch and this component can never start a second one (the sub-100ms
-    /// frontier law). Null means the registry is not available -- either it
-    /// has not resolved yet or its fetch failed -- and FIX ROUND 1 (review
-    /// M-4) is that this no longer resolves every id as "unrecognized". It
-    /// resolves them as <c>RegistryUnavailable</c>, which says the SOURCE
-    /// LIST could not be loaded instead of accusing perfectly
-    /// well-registered data of having no source on every affordance on the
-    /// popover.</summary>
+    // Passed in rather than injected so this component stays pure and synchronously
+    // renderable off the caller's already-awaited fetch. Null means the registry hasn't
+    // resolved yet or failed to load -- resolved as RegistryUnavailable, not "unrecognized".
     [Parameter] public SourcesDocumentOut? Sources { get; set; }
 
     public const string HeaderRegister = "header";
@@ -226,28 +101,8 @@
 
     protected override void OnParametersSet()
     {
-        // Resolution is a pure in-memory join over an ALREADY-fetched
-        // document -- no fetch here, by construction (see
-        // ProvenanceResolver's own doc comment and the sub-100ms frontier
-        // law it cites). `_ids` is deduped the same way ResolveAll dedupes,
-        // so the render gate and the rendered list can never disagree about
-        // whether there is anything to say.
-        //
-        // FIX ROUND 1 (review H-1, HIGH): the `.Where(id =>
-        // !string.IsNullOrWhiteSpace(id))` that used to sit here is GONE.
-        // It, plus the identical filter in ResolveAll, plus two more in
-        // PopoverSectionProviders, made an empty provenance render as NO "?"
-        // AT ALL -- while this file's own comments claimed it rendered a
-        // loud notice. THE GATE BELOW IS UNCHANGED and is where the honest
-        // distinction lives: an empty LIST is still nothing at all
-        // (conditional presence -- there is no attribution section here),
-        // but a list containing a blank id is one entry, so the button
-        // renders and the panel shouts. "Nothing to say" and "something
-        // illegible to say" must not look the same.
-        // FIX ROUND 2 (review L-NEW-3): NormalizeId, not `?? ""`, so "" and
-        // "  " -- different strings, same fact -- collapse to ONE loud entry
-        // instead of two identical notices. Still not a filter: the blank
-        // survives and still opens the button.
+        // A blank/whitespace id is normalized, not filtered out -- it still renders as one
+        // loud entry rather than disappearing or being confused with a genuinely empty list.
         _ids = (Provenance ?? Array.Empty<string>()).Select(Explore.ProvenanceResolver.NormalizeId).Distinct().ToList();
         _resolved = ProvenanceResolver.ResolveAll(Sources, _ids);
     }
@@ -256,9 +111,6 @@
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        // Enter/Space are already what a native <button> does; only Escape
-        // needs handling, so a keyboard user can undo the toggle without
-        // hunting for the button again.
         if (e.Key == "Escape")
         {
             _open = false;
