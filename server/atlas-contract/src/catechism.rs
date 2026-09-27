@@ -22,13 +22,13 @@ use crate::wire;
 /// Business logic (the union-across-member-verses aggregation) lives in
 /// `atlas_core::catechism::items_for_span`, reached here via
 /// `AtlasData::catechism_items_for_span` -- this handler is pure
-/// response-shape assembly, same as every other handler in this file.
+/// response-shape assembly, same as every other handler in this crate.
 ///
 /// PROV-1 FIX ROUND 1 (review M-3): now takes `State<Arc<GraphService>>`
 /// too, purely to attribute each row. That is the SECOND extractor the
 /// review thought would make this half "a genuinely larger change" -- it is
 /// not: `AppState` already implements `FromRef<AppState>` for
-/// `Arc<GraphService>`, and six handlers in this file already take both.
+/// `Arc<GraphService>`, and six handlers in this crate already take both.
 /// The aggregation itself is untouched; `AtlasData` is still where the
 /// business logic lives.
 pub async fn catechism_for_span(

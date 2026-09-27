@@ -103,7 +103,7 @@ fn app() -> axum::Router {
 /// the one list `relations!` does not generate.
 ///
 /// The names are `format!("{:?}", ..)` because that is literally what the
-/// wire does (`graph.rs:152`, `kind: format!("{:?}",
+/// wire does (`graph::node_card`, `kind: format!("{:?}",
 /// node_id.kind)`) -- this publishes the vocabulary the server actually
 /// speaks, not a prettier one we would like it to speak.
 macro_rules! node_kind_manifest {

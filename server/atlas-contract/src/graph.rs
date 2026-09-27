@@ -117,7 +117,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 /// for a possible future relocation for tighter handler/domain layering").
 /// RELOCATED here from `atlas_graph::legacy::node_description`, byte-
 /// identical body (a clean move-only diff, confirmed by grep: its only two
-/// callers -- `node_card` below and `places::place` -- both already live
+/// callers -- `node_card` above and `places::place` -- both already live
 /// in THIS crate, so nothing outside atlas-contract ever called the old
 /// location; zero behavior change). A node's own Easton's/Kretzmann
 /// `description`, straight off the graph payload -- deliberately NOT

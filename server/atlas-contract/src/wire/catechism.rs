@@ -12,7 +12,8 @@ use serde::Serialize;
 /// the user actually opens one. `question` is omitted from the wire
 /// entirely (not null) when this hit came from Luther's own item-level
 /// embedded citation rather than a question -- same conditional-presence
-/// convention `where_written`/`blurb` etc. already use throughout this file.
+/// convention `CatechismItem.where_written` below and `wire/places.rs`'s own
+/// `History.blurb` already use.
 #[derive(Debug, Serialize)]
 pub struct CatechismRef {
     pub id: String,
@@ -28,7 +29,7 @@ pub struct CatechismRef {
     /// The review judged deferring this half defensible because
     /// `catechism_for_span` took only `State<Arc<AtlasData>>`. Measured, it
     /// is not: `AppState` implements `FromRef` for `Arc<GraphService>` too,
-    /// and six handlers in this file already take BOTH extractors
+    /// and six handlers in this crate already take BOTH extractors
     /// (`reading::verse` among them). So the second half was one extractor
     /// away, not a larger change, and it ships here.
     ///

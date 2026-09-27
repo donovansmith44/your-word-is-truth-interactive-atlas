@@ -15,7 +15,7 @@
 //! behind a function boundary in another crate --
 //!
 //! ```text
-//! handlers.rs:  adjacent_event(&data, &pid)          <-- no `data.events` here
+//! events.rs:    adjacent_event(&data, &pid)          <-- no `data.events` here
 //! narrative.rs: pub fn adjacent_event(d: &AtlasData, ..) { d.event_by_id(..)? }
 //! ```
 //!
@@ -322,7 +322,7 @@ fn the_scan_actually_matches_the_regression_and_not_its_correct_replacement() {
         "    let e = loaded.event_by_id(&id)?;",
         "    let n = wrapped.total_events_for(&id);",
         // ...and the same forbidden text, but in a comment: prose about the
-        // regression (this file, and handlers.rs, are both full of it) must
+        // regression (this file, and events.rs, are both full of it) must
         // not fail the law.
         "    // all (it replaces `data.event_by_id(&id).label`, which the deleted",
         "    // AtlasData.events is empty -- data.events must not be read",

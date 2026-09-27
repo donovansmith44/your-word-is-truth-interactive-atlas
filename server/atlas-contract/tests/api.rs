@@ -175,7 +175,7 @@ async fn scene_scripture_ok_and_bad_ref() {
         assert_eq!(body["error"]["code"], "bad_ref", "{bad}: {body}");
     }
 
-    // Ruling 3 policy choice (documented in handlers.rs): a structurally
+    // Ruling 3 policy choice (documented on `map::scene_scripture`): a structurally
     // valid ref whose chapter number is out of range for the loaded canon
     // does NOT error — it composes a (here, empty) scene, same as an
     // out-of-span time window. Chapter 99 of Genesis matches no event/place

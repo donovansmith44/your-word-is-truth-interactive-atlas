@@ -119,7 +119,7 @@ pub struct AqcWorld {
 /// them or extend the cross-check to all five" hand-kept "0.1.0" copies):
 /// this one is SINGLE-SOURCED, not hand-kept -- read from `contracts/
 /// atlas-query-contract/VERSION` at test-run time (this is a TEST binary,
-/// unlike `contract.rs`'s own compiled server constants, which genuinely
+/// unlike `meta.rs`'s own compiled server constants, which genuinely
 /// cannot read a repo-relative file at runtime once deployed) rather than
 /// duplicated as a literal a future VERSION bump could silently leave
 /// stale.

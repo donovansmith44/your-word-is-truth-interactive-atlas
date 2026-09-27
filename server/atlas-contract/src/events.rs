@@ -27,8 +27,9 @@ use crate::wire;
 /// /api/catechism/item/{id}`'s own precedent exactly (an id-keyed follow-on
 /// lookup). Reached by the client ONLY with an event id already handed back
 /// by a prior response (never typed by a user), so an id that names no real
-/// event at all is a genuine "not found," same `place`/`catechism_item`
-/// precedent as every other exact-identifier lookup in this file;
+/// event at all is a genuine "not found," same `places::place`/
+/// `catechism::catechism_item` precedent as every other exact-identifier
+/// lookup in this crate;
 /// ruling-3-policy still applies one layer in -- a REAL event that simply
 /// isn't a leg of any narrative 200s with an empty array (the "no results"
 /// case, not the "bad identifier" case), same as `positions_for_events`
@@ -283,7 +284,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
 
     // ATTEST-1: the two new frontier sections, both read straight off the
     // graph's own indexes through the SAME generic `drain_edges` walk
-    // every other relation in this file uses -- no second path, no
+    // every other relation in this crate's handlers uses -- no second path, no
     // re-derivation from AtlasData.
     let event_pos = Position::Node(atlas_graph::event_world::event_node_id(&e.id));
     // (L3) "Mentioned in": `Mentions` INVERSE, event -> the text units
@@ -322,7 +323,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                 //
                 // FIX ROUND 1 (review H-1, HIGH): this used to be
                 // `.unwrap_or_default()`, defended by the same false claim
-                // corrected at `VerseEvent` above -- the client filtered
+                // corrected at `reading::verse`'s own `VerseEvent` row -- the client filtered
                 // the blank into silence rather than shouting about it. The
                 // miss IS unreachable for a pair we just WALKED an Analogue
                 // edge to reach, which is exactly why a 500 costs nothing

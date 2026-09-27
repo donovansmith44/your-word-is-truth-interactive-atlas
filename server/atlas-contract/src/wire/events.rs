@@ -29,7 +29,7 @@ pub struct NarrativeEventPositions {
 /// touches -- `prior`/`following` omitted (not null) exactly at a
 /// narrative's own first/last leg, same conditional-presence wire
 /// convention `History.blurb`/`CatechismRef.question` etc. already
-/// use throughout this file. `event_id`/`event_label` are carried (map-
+/// use throughout `wire/`. `event_id`/`event_label` are carried (map-
 /// focus-sync + disambiguating two positions sharing one `narrative_id`)
 /// even though they restate something the CALLER usually already knows.
 #[derive(Debug, Serialize)]
@@ -46,7 +46,7 @@ pub struct NarrativePosition {
 
 // M-D3 (owner ruling R5): `impl From<atlas_core::narrative::NarrativePosition>
 // for NarrativePosition` retired -- genuinely orphaned (grep-proven: no
-// call site). `narrative_event_positions` (below) has built
+// call site). `events::narrative_event_positions` has built
 // `NarrativePosition` directly, from the graph's own succession-edge
 // topology, since M-B; this conversion's OWN source type
 // (`atlas_core::narrative::NarrativePosition`, produced only by the
@@ -59,8 +59,9 @@ pub struct NarrativePosition {
 /// verbatim ("each adjacent event carrying its id, label, place(s), and
 /// verse groups"). `verse_groups` is built by
 /// `atlas_core::scene::to_scene_event` -- the SAME function every other
-/// "an event's own verses on the wire" case in this file already calls
-/// (`to_scene_event` above, `VerseEvent`'s own construction) -- so this
+/// "an event's own verses on the wire" case in this crate already calls
+/// (`reading::verse`'s own `VerseEvent` construction, `places::place`'s own
+/// event list) -- so this
 /// is provably the same data a map arrow's own endpoint would show for the
 /// identical event id, not a parallel re-derivation.
 #[derive(Debug, Serialize)]

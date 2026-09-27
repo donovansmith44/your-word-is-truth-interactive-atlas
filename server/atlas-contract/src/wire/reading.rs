@@ -142,7 +142,7 @@ pub struct Heading {
 
 // M-D3 (owner ruling R5): `impl From<&atlas_core::data::HeadingEntry> for
 // Heading` retired -- genuinely orphaned (grep-proven: no call site
-// anywhere in this workspace). `chapter` (below) has built `Heading`
+// anywhere in this workspace). `reading::chapter` has built `Heading`
 // directly from `graph.heading_index`'s own `atlas_graph::heading::
 // HeadingEntry` since M-C2; this conversion's OWN source type
 // (`atlas_core::data::HeadingEntry`, fed by `AtlasData::heading_for_verse`)
@@ -252,7 +252,7 @@ pub struct VerseDetail {
     // which is exactly "event membership" -- no new wire field needed for
     // that half. Chronological PRIOR/FOLLOWING now lives entirely on the
     // EVENT node (`GET /api/narrative/event/{id}`, unchanged plumbing,
-    // called by a new client-side caller -- see `events::event` below for
+    // called by a new client-side caller -- see `events::event` for
     // the richer id-keyed EVENT fetch that node also uses).
 }
 

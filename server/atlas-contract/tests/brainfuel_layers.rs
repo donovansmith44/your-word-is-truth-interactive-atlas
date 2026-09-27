@@ -3,7 +3,7 @@
 //! that projection exactly as is and prove the layers are present in the
 //! graph via a server-side/HTTP test instead."
 //!
-//! Verified first (module doc comments on `window.rs`/`handlers.rs`): both
+//! Verified first (module doc comments on `window.rs`/`reading.rs`): both
 //! `window::render` (backing `/api/text`) and `/api/verse/{vref}` project
 //! ONLY the KJV canonical rendering (`TranslationId("kjv")`) off a
 //! TextUnit's own `renderings` LayerMap -- neither was touched this batch.

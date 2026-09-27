@@ -551,7 +551,7 @@ async fn node_card_omits_description_for_a_kind_that_never_carries_one() {
 // + Playwright E2E coverage exists; add when handlers next touched)"; this
 // batch, batch-finalp2-brief.md ticket 1): a real verse with a known,
 // ledgered span, asserted end-to-end through the REAL handler over the REAL
-// compiled data -- `handlers.rs`'s own unit tests exercise the wire SHAPE
+// compiled data -- `reading.rs`'s own unit tests exercise the wire SHAPE
 // against synthetic fixtures, and Playwright's own red-letter specs prove
 // the CLIENT renders red text, but neither proves the HTTP handler itself
 // serves the correct span over the real committed data; this test is that
@@ -588,7 +588,7 @@ async fn verse_endpoint_serves_the_real_words_of_christ_span_for_mat_4_19() {
 }
 
 /// The SAME real span, over the OTHER wire surface `words_of_christ` rides
-/// (`Verse`, `GET /api/chapter/{cref}` -- `handlers.rs`'s own doc
+/// (`Verse`, `GET /api/chapter/{cref}` -- `reading.rs`'s own doc
 /// comment: "the SAME O(1) per-verse lookup... off the precomputed
 /// `graph.red_letter_spans` companion", identical shape/convention to
 /// `VerseDetail`'s sibling field the test above proves) -- confirms both

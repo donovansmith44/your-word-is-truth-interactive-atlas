@@ -1,3 +1,5 @@
+//! The meta family -- `GET /health`, `GET /api/contract`, `GET /api/sources`.
+//!
 //! `GET /api/contract` -- Batch AQC-1's own ONE new behavioral surface
 //! (design spec §2's versioning law: "The server advertises its supported
 //! contract range at `/api/contract` (new, tiny endpoint); the client

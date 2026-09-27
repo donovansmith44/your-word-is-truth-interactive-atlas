@@ -402,8 +402,8 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         })
         .collect();
 
-    // Batch F: same aggregation core `catechism_for_span` below uses for a
-    // passage, called here with a single-verse span -- see
+    // Batch F: same aggregation core `catechism::catechism_for_span` uses for
+    // a passage, called here with a single-verse span -- see
     // `VerseDetail.catechism`'s own doc comment for why this is folded
     // into the already-shared verse-detail fetch rather than a second call.
     let catechism_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
