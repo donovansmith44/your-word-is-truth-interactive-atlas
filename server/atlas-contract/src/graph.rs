@@ -328,7 +328,7 @@ pub async fn text_window(
         return Ok(([(header::ETAG, etag)], body).into_response());
     }
 
-    let (book, chapter, verse_opt) = parse_ref(raw_ref, scope)?;
+    let (book, chapter, verse_opt) = parse_ref(raw_ref)?;
 
     let (start, n) = if scope == wire::TextScope::Chapter {
         graph.chapter_span(book, chapter).ok_or_else(|| ApiError::not_found("chapter"))?
@@ -388,15 +388,17 @@ fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atla
     snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
 
-/// Parses `ref` against `scope`: `scope=chapter` accepts a Chapter- or
-/// Verse-shaped ref (either way, only the (book, chapter) pair is used --
-/// the chapter's OWN verse count is derived server-side from the graph
-/// itself, never from the ref); any other `scope` requires a Verse-shaped
-/// ref (the single-point cursor the window walks onward/backward from).
-fn parse_ref(raw: &str, scope: wire::TextScope) -> Result<(u8, u16, Option<u16>), ApiError> {
+/// Parses `ref` into `(book, chapter, verse)`, `verse` present only for a
+/// Verse-shaped ref. WHICH shapes a request may use is not decided here: a
+/// chapter-scoped window uses only the (book, chapter) pair -- that chapter's
+/// own verse count comes from the graph, never from the ref -- and every other
+/// window requires the verse, so a chapter-shaped ref fails as `bad_ref` at the
+/// one place that asks for it. Re-checking the scope here would state the same
+/// rule a second time, and a mutation run proved the second copy unobservable.
+fn parse_ref(raw: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
-        Ok(ScriptureRef::Chapter { book, chapter }) if scope == wire::TextScope::Chapter => Ok((book.0, chapter, None)),
+        Ok(ScriptureRef::Chapter { book, chapter }) => Ok((book.0, chapter, None)),
         _ => Err(ApiError::bad_ref(raw)),
     }
 }

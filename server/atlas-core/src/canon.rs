@@ -150,6 +150,15 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "FIRST_NEW_TESTAMENT_BOOK must name a book of BOOKS")]
+    fn a_code_naming_no_book_of_the_canon_fails_loud_rather_than_counting_every_book() {
+        // Arrange
+        let not_a_book = "XXX";
+        // Act
+        books_before(not_a_book);
+    }
+
+    #[test]
     fn a_books_testament_is_read_from_its_own_place_in_the_canon() {
         // Arrange
         let books = ["GEN", "MAL", "MAT", "REV"];

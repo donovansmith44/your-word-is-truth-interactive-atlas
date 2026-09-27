@@ -169,6 +169,17 @@ async fn text_window_etag_round_trips_via_if_none_match() {
     assert!(bytes.is_empty(), "a 304 must carry no body");
 }
 
+/// The `scope` a request asks for decides which ref SHAPES are legal, so the
+/// same chapter ref is a window under `scope=chapter` and a bad ref without it.
+#[tokio::test]
+async fn a_chapter_shaped_ref_is_a_window_only_under_scope_chapter_and_a_bad_ref_without_it() {
+    let app = compiled_app();
+    let (chapter_scoped, _, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter").await;
+    let (verse_scoped, body, _) = get(&app, "/api/text?ref=JHN.3").await;
+    assert_eq!((chapter_scoped, verse_scoped), (StatusCode::OK, StatusCode::BAD_REQUEST), "{body}");
+    assert_eq!(body["error"]["code"], "bad_ref", "{body}");
+}
+
 #[tokio::test]
 async fn text_window_bad_ref_and_missing_ref_are_400() {
     let app = compiled_app();
