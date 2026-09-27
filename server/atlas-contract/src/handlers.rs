@@ -1008,7 +1008,7 @@ pub struct NarrativeEventPositionsOut {
 }
 
 /// Mirrors atlas-etl's private `xrefs::first_verse_of_target` (duplicated,
-/// not shared, because atlas-server does not and should not depend on
+/// not shared, because atlas-contract does not and should not depend on
 /// atlas-etl — that crate is a build-time-only ETL binary, not a runtime
 /// library). Extracts the first verse id referenced by an
 /// already-canonicalized cross-ref target string, which is either a single

@@ -1,4 +1,4 @@
-//! atlas-server library crate: the axum HTTP API over a loaded `AtlasData`.
+//! atlas-contract library crate: the axum HTTP API over a loaded `AtlasData`.
 //! `main.rs` is a thin binary shell (CLI parsing + startup) around
 //! `app::build`; integration tests (`tests/api.rs`) exercise the same
 //! `app::build` directly via `tower::ServiceExt::oneshot`, which is why this

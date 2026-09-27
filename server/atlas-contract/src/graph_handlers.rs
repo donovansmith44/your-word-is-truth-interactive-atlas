@@ -103,13 +103,13 @@ pub struct NodeCardOut {
 
 /// Layering cleanup (batch-finalp2-brief.md ticket 10; origin: batch-
 /// corp1-review.md S-3/placement note, "the widened `node_description`
-/// match lives in `atlas-graph`, not `atlas-server`, arguably outside the
+/// match lives in `atlas-graph`, not `atlas-contract`, arguably outside the
 /// strict wording of the CORP-1b authorization... worth a controller note
 /// for a possible future relocation for tighter handler/domain layering").
 /// RELOCATED here from `atlas_graph::legacy::node_description`, byte-
 /// identical body (a clean move-only diff, confirmed by grep: its only two
 /// callers -- `node_card` below and `handlers::place` -- both already live
-/// in THIS crate, so nothing outside atlas-server ever called the old
+/// in THIS crate, so nothing outside atlas-contract ever called the old
 /// location; zero behavior change). A node's own Easton's/Kretzmann
 /// `description`, straight off the graph payload -- deliberately NOT
 /// threaded through `atlas_core::data::Place` (that struct is shared by

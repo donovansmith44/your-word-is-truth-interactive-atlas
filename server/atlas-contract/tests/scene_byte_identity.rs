@@ -105,7 +105,7 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     // this data batch deliberately changes scene content (fewer duplicate
     // events, restored boundary-verse coverage), so the former BASE
     // (7c32200) hashes are expected to differ; these are the new baseline,
-    // captured via `cargo test -p atlas-contract --test scene_byte_identity
+    // captured via `cargo test -p atlas-server --test scene_byte_identity
     // -- --nocapture` against the freshly-regenerated artifact.
     //
     // Re-pinned AGAIN, fix round 1 (S-1's real fix + I-3/I-4's re-triage --
@@ -120,7 +120,7 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     // listing is gone, folded onto its survivor's `merged_ids` instead), but
     // no scripture_refs() hash below changed (none of GEN.1/JHN.3.16/
     // PSA.23/EXO.20/REV.22 touches an absorbed id) -- captured via
-    // `cargo test -p atlas-contract --test scene_byte_identity -- --nocapture`
+    // `cargo test -p atlas-server --test scene_byte_identity -- --nocapture`
     // against the freshly-regenerated artifact (atlas_version_root
     // 82bac0bde5a53ec2).
     //
@@ -156,7 +156,7 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     // No `scripture_refs()` hash below changed (none of GEN.1/JHN.3.16/
     // PSA.23/EXO.20/REV.22 touches an affected event), which is itself
     // corroboration: the change is confined to the two events this batch
-    // is about. Captured via `cargo test -p atlas-contract --test
+    // is about. Captured via `cargo test -p atlas-server --test
     // scene_byte_identity -- --nocapture` against the freshly-regenerated
     // artifact (atlas_version_root dfcf6ee4c2a39965).
     vec![
@@ -242,7 +242,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
 /// used above must actually be reachable with the SAME `HashMap` shape
 /// `handlers::scene_time`/`scene_scripture` parse `from`/`to`/`ref` out of --
 /// this doesn't test that directly (the handler-level equivalence is
-/// `atlas-server/tests/api.rs`'s job), just documents the coupling so a
+/// `atlas-contract/tests/api.rs`'s job), just documents the coupling so a
 /// future reader knows why this file calls `atlas_core::scene::*` directly
 /// rather than going through `axum`.
 #[test]

@@ -11,7 +11,7 @@
 //! writing files to disk -- all I/O, none of it here.
 //!
 //! Run the exporter from `server/`:
-//! `cargo run -p atlas-server --bin export_aqc_examples`.
+//! `cargo run -p atlas-contract --bin export_aqc_examples`.
 
 /// One (NodeKind Debug string, wire id) seed per real node kind this
 /// contract samples -- SAME id list `graph_wire.rs`'s own round-trip unit

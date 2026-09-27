@@ -35,14 +35,14 @@ companions (`position_of`, `chapter_span`, `era_ids`/`polity_ids`/
 `atlas_graph::scene_source::GraphSceneSource`'s own inherent accessors
 (`places_for_verse`, `place`, `events_for_verse`, `event`), which OVERLAY-1
 Task 5 moved off `AtlasData` when it deleted the boot-time overlay. They are
-the identical fields/methods `atlas-server`'s handlers already read. Ref
+the identical fields/methods `atlas-contract`'s handlers already read. Ref
 grammar (both `GEN.1.1` and `"BoC 1.2.3"`) is decoded via
-`atlas_server::graph_wire::{decode_node_id, encode_node_id, parse_edge_kind,
-describe_node, describe_position}` (this crate depends on `atlas-server` as
+`atlas_contract::graph_wire::{decode_node_id, encode_node_id, parse_edge_kind,
+describe_node, describe_position}` (this crate depends on `atlas-contract` as
 a library, reusing its wire-identity layer verbatim) plus
 `atlas_core::refs::ScriptureRef::parse` for chapter refs — never a new,
 hand-rolled parser. Zero parallel query logic; zero changes to
-`atlas-server`, `atlas-graph`, `atlas-core`, or `graph-types`.
+`atlas-contract`, `atlas-graph`, `atlas-core`, or `graph-types`.
 
 ## Command vocabulary
 
@@ -401,9 +401,9 @@ discipline as plain mode).
 field NAMES already established elsewhere in this app's own wire
 vocabulary — no novel synonyms for an established name:
 - `words_of_christ: [{start, end}]` — the identical shape/field name
-  `atlas_server::handlers::WordsOfChristSpanOut`/the AQC corpus already
+  `atlas_contract::handlers::WordsOfChristSpanOut`/the AQC corpus already
   use for a red-letter span.
-- Node references reuse `atlas_server::graph_handlers::NodeCardOut`/
+- Node references reuse `atlas_contract::graph_handlers::NodeCardOut`/
   `NodeRefOut`/`EdgeSummaryEntryOut`/`EdgePageOut`/`EdgeEntryOut`'s own
   field names (`id`, `kind`, `label`, `provenance`, `edge_summary`,
   `entries`, `next`) — this crate's OWN generic node-id vocabulary

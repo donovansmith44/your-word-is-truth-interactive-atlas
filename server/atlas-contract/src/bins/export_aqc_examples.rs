@@ -28,7 +28,7 @@
 //! `src/bins/export_aqc_examples.rs`, declared explicitly in this crate's
 //! `Cargo.toml` `[[bin]]` table.
 //!
-//! Run from `server/`: `cargo run -p atlas-server --bin export_aqc_examples`.
+//! Run from `server/`: `cargo run -p atlas-contract --bin export_aqc_examples`.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -52,7 +52,7 @@ async fn capture(app: &axum::Router, uri: &str) -> serde_json::Value {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Repo layout: server/atlas-server (this crate) -> ../../data,
+    // Repo layout: server/atlas-contract (this crate) -> ../../data,
     // ../../contracts -- same relative shape `tests/graph_api.rs`'s own
     // `real_app()` already uses for `data/`.
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));

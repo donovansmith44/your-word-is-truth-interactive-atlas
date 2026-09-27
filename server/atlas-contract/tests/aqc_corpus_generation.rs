@@ -38,14 +38,14 @@ fn regenerated_features_match_the_committed_files() {
     assert_eq!(
         committed_focus,
         atlas_contract::aqc_export::focus_query_feature(),
-        "focus-query.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-server --bin export_aqc_examples` from server/ and commit the result"
+        "focus-query.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-contract --bin export_aqc_examples` from server/ and commit the result"
     );
 
     let committed_roundtrip = std::fs::read_to_string(features_dir.join("exploration-roundtrip.feature")).expect("exploration-roundtrip.feature must exist");
     assert_eq!(
         committed_roundtrip,
         atlas_contract::aqc_export::exploration_roundtrip_feature(),
-        "exploration-roundtrip.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-server --bin export_aqc_examples` from server/ and commit the result"
+        "exploration-roundtrip.feature has drifted from what export_aqc_examples would regenerate -- run `cargo run -p atlas-contract --bin export_aqc_examples` from server/ and commit the result"
     );
 }
 
