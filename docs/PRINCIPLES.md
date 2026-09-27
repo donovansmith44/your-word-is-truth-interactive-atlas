@@ -15,9 +15,11 @@ wrong; fix the spec.
    mutant is either killed by a test or recorded as an equivalent mutant
    with its reason, in the mutation tool's configuration, never in an
    inline comment. Tooling: Stryker.NET for C#, cargo-mutants for Rust.
-3a. **Mutation runs once per batch, at its close, concurrently.** A task
-   proves itself with its tests and the pacts; the mutation run is a
-   batch-level gate over every line the batch changed, like the timing
+3a. **Mutation runs once per batch, at its close, concurrently.** A batch is
+   the program's unit as the owner names it (CONTRACT-1 is 1a and 1b
+   together), not a plan or a task. A task proves itself with its tests and
+   the pacts; the mutation run is a batch-level gate over every line the
+   batch changed, Rust and C# in one pass, like the timing
    gates, and it is sharded across cores or worktrees so it finishes in
    minutes, not hours. Surviving mutants get one fix dispatch of tests;
    equivalents go in the tool's configuration with their reasons.
