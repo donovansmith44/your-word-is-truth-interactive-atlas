@@ -170,15 +170,15 @@ with a parallel build):
 
 ```powershell
 cd server
-cargo test --workspace              # parallel; the 8 wall-clock gates show as "ignored" here
-cargo test -p atlas-graph-types     # graph-types is a path dep, not a workspace member
-bash ../scripts/timing-gates.sh     # the 8 gates, serialized, one process each -> "TIMING GATES: 8/8 passed"
+cargo test --workspace              # parallel; the 10 wall-clock gates show as "ignored" here
+cd ../graph-types; cargo test --all-features   # a path dep, not a workspace member; run from its own directory
+cd ../server; bash ../scripts/timing-gates.sh  # the 10 gates, serialized, one process each -> "TIMING GATES: 10/10 passed"
 ```
 
 The timing gates (artifact load ≤ 4 s, full-graph conformance ≤ 60 s,
 six perf_smoke thresholds) live in the tests themselves and are never
 loosened; `scripts/timing-gates.sh check` refuses any `#[ignore]` under
-`server/` and `graph-types/` that is not one of the eight, and
+`server/` and `graph-types/` that is not one of the ten, and
 `scripts/timing-gates-selftest.sh` attempts the bypasses. Report a
 full-suite count as the three per-command numbers, never a bare total
 (see the `STANDING COUNTING PROCEDURE` comment in `server/Cargo.toml`).
@@ -201,7 +201,7 @@ dotnet run --project client --launch-profile http   # http://localhost:5000
 
 The client's `wwwroot/appsettings.Development.json` points `ApiBase` at
 `http://localhost:8000`; the dev server doesn't proxy API calls, so the
-server's permissive CORS (`server/atlas-server/src/app.rs`) is what makes
+server's permissive CORS (`server/atlas-contract/src/app.rs`) is what makes
 the client's cross-origin `fetch` calls from `:5000` to `:8000` work in dev.
 
 **Port hygiene**: free 8000/5000 by looking up the PID that actually owns the
@@ -212,15 +212,15 @@ other port (e.g. 8080) must never be touched.
 ## Tests
 
 ```powershell
-# Rust workspace (from server/) -- two commands, summed. `-p atlas-graph-types`
-# is a real sibling crate `--workspace` alone can't reach (server/Cargo.toml's
-# own "STANDING COUNTING PROCEDURE" comment has the why); both count toward
-# the canonical total.
+# Rust workspace (from server/) -- two commands, summed. graph-types is a real
+# sibling crate `--workspace` alone can't reach, and since it gained a
+# dev-dependency `-p atlas-graph-types` from server/ refuses outright, so it is
+# run from its own directory (server/Cargo.toml's own "STANDING COUNTING
+# PROCEDURE" comment has the why); both count toward the canonical total.
 cargo test --workspace
-cargo test -p atlas-graph-types
-# -> 828 tests total (806 + 22), 0 failed. The full real-data corpus makes
-#    `cargo test --workspace` alone slow -- budget 20-25 minutes for a
-#    clean run, not seconds; `-p atlas-graph-types` alone is fast.
+cd ../graph-types; cargo test --all-features
+# -> The full real-data corpus makes `cargo test --workspace` alone slow --
+#    budget 20-25 minutes for a clean run, not seconds; graph-types alone is fast.
 
 # Blazor xunit (from repo root)
 dotnet test client.Tests
@@ -320,7 +320,7 @@ calls, no CORS round trip needed. SPA deep links (`/world?from=...&to=...`,
 HTTP `200`, not tower-http's native `404` for its `not_found_service`
 single-page-app idiom — see `app.rs`'s `build()` doc comment and the
 `static_dir_serves_files_api_still_wins_and_falls_back_to_index_for_spa_routes`
-test in `server/atlas-server/tests/api.rs` for why that fix exists and how
+test in `server/atlas-contract/tests/api.rs` for why that fix exists and how
 it's pinned.
 
 `publish/` is gitignored — it's a build artifact, not source; regenerate it,

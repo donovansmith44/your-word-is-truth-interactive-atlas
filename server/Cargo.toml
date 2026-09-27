@@ -9,37 +9,65 @@
 # marker is still removed (graph-types/Cargo.toml) so it has no competing
 # workspace of its own; atlas-graph's plain `path = "../../graph-types"`
 # dependency below pulls it into THIS workspace's resolution/lockfile the
-# same way any path dependency does -- one workspace, one Cargo.lock, and
-# `cargo test -p atlas-graph-types` from server/ still runs its own 13 law
-# tests (Cargo resolves `-p` against every package reachable from the
-# workspace, member or not). This is a build-tooling-level adjustment, not
-# a type-shape change -- the outcome the ruling asked for (one lockfile,
-# `-p atlas-graph-types` works) is unaffected.
+# same way any path dependency does -- one workspace, one Cargo.lock. This
+# is a build-tooling-level adjustment, not a type-shape change -- the
+# outcome the ruling asked for (one lockfile) is unaffected. Its own law
+# tests are run from its own directory; see THE STANDING COUNTING PROCEDURE
+# below for why `-p atlas-graph-types` from here no longer works at all.
 members = ["atlas-core", "atlas-etl", "atlas-server", "atlas-contract", "atlas-graph", "atlas-cli"]
 resolver = "2"
 
 # STANDING COUNTING PROCEDURE (established by review at f988f1b, restated by
 # every batch that reports a full-suite total; amended by CONTENTION-1,
-# 2026-09-14): a full-suite count is THREE commands, ALL run from server/,
-# the third AFTER the first two finish --
+# 2026-09-14, and by CONTRACT-1a, 2026-09-27): a full-suite count is THREE
+# commands, the first run from server/, the third AFTER the first two finish --
 #   cargo test --workspace
-#   cargo test -p atlas-graph-types
-#   bash ../scripts/timing-gates.sh      # the 8 wall-clock gates, serialized
-# The eight gates are `#[ignore = "wall-clock gate: ..."]` in the first
+#   (cd ../graph-types && cargo test --all-features)
+#   bash ../scripts/timing-gates.sh      # the 10 wall-clock gates, serialized
+# The ten gates are `#[ignore = "wall-clock gate: ..."]` in the first
 # command (they show as "ignored" there, never as passed) and are counted
-# ONLY from the third command's own summary line, `TIMING GATES: N/8
+# ONLY from the third command's own summary line, `TIMING GATES: N/10
 # passed`. Report all three per-command numbers and the section count;
-# `bash ../scripts/timing-gates.sh check` must print "8 gates reconcile"
+# `bash ../scripts/timing-gates.sh check` must print "10 gates reconcile"
 # in the same report, or the count is not a count.
-# `-p atlas-graph-types` is required separately because of the non-member
-# status explained above: `--workspace` alone never reaches it. Sum every
-# "test result: ok. N passed" line printed by the FIRST TWO commands (one
-# line per test binary/section) -- the third, timing-gates.sh, prints no
-# `test result` lines of its own, only its own `TIMING GATES: N/8 passed`
-# summary counted separately above -- to get the canonical total; report
-# the per-command split (workspace N + atlas-graph-types N) alongside the grand total and
+# graph-types is counted separately because of the non-member status
+# explained above: `--workspace` alone never reaches it. It is run FROM ITS
+# OWN DIRECTORY, not as `cargo test -p atlas-graph-types` from here: since
+# CONTRACT-1a gave the crate a dev-dependency, `-p` from this workspace
+# refuses outright ("requires dev-dependencies and is not a member of the
+# workspace") -- a non-member's dev-dependencies are not in this lockfile to
+# resolve. `--all-features` is what makes the count total: it turns on
+# `canon-ids` (the state the atlas builds) plus `serde` and `openapi`, whose
+# cfgs are the whole of `wire_form.rs`. Sum every "test result: ok. N
+# passed" line printed by the FIRST TWO commands (one line per test
+# binary/section) -- the third, timing-gates.sh, prints no `test result`
+# lines of its own, only its own `TIMING GATES: N/10 passed` summary counted
+# separately above -- to get the canonical total; report the per-command
+# split (workspace N + graph-types N) alongside the grand total and
 # the section count, not the grand total alone. Canonical ground truth at
 # f988f1b: 747 passed (727 + 20) across 37 sections.
+#
+# THE MUTATION LEG (CONTRACT-1a; PRINCIPLES 3, 100 % mutation coverage minus
+# recorded equivalents) is the FOURTH command of a full standing block, run
+# after the three above:
+#   cargo mutants --in-place                               # from server/
+#   (cd ../graph-types && cargo mutants --in-place --features serde,openapi)
+# A run narrows the declared scope with `-e <file>`, never with `-f`: a
+# command-line `-f` is unioned with the config's own `examine_globs` instead
+# of replacing it, so it cannot narrow anything.
+# The configuration -- the examined scope, and every equivalent mutant with
+# its reason -- lives in `server/.cargo/mutants.toml` and
+# `graph-types/.cargo/mutants.toml` (`.cargo/` is where cargo-mutants 27
+# looks; a `mutants.toml` at a package root is silently ignored). graph-types
+# needs its own config and its own working directory because a file outside
+# the workspace root yields ZERO mutants however it is globbed from here.
+# cargo-mutants 27.1.0 was installed with scoop's gcc on PATH -- the pinned
+# x86_64-pc-windows-gnu toolchain ships no `dlltool`, so without it the
+# install's own dependencies do not link:
+#   PATH="$HOME/scoop/apps/gcc/current/bin:$PATH" cargo install cargo-mutants --locked
+# Every run reports mutants tested / caught / missed / unviable / timeout per
+# file; a missed mutant is killed by a test or recorded as an equivalent in
+# the relevant `mutants.toml`, never with an inline `#[mutants::skip]`.
 #
 # Batch CORP-2a (2026-08-25, the Book of Concord corpus, data half): moved
 # to 788 passed (767 + 21) across 39 sections. Workspace +35 across +2
@@ -348,7 +376,7 @@ resolver = "2"
 # all 5 exclusions against a future distance-only re-introduction).
 # `atlas-graph-types` unchanged (+0) -- this batch never touched that crate
 # (standing veto honored). AQC corpus unchanged (44/184) -- fixtures
-# regenerated (`cargo run -p atlas-server --bin export_aqc_examples`)
+# regenerated (`cargo run -p atlas-contract --bin export_aqc_examples`)
 # against the recompiled artifact but the corpus's own scenario/step
 # STRUCTURE is untouched. Recompile: `data/compiled/graph.bin` moved
 # (places 1373 -> 1358, `atlas_version_root` 2a45127ba3b91af4 ->
@@ -421,7 +449,7 @@ resolver = "2"
 # "test result:" lines today -- 45 with tests plus five 0-test unittest
 # stubs (both counted, as always) plus four 0-test Doc-tests lines (NOT
 # counted) -- AND one section that prints NO "test result:" line at all:
-# aqc_cucumber (harness = false; atlas-server/Cargo.toml's own comment:
+# aqc_cucumber (harness = false; atlas-contract/Cargo.toml's own comment:
 # it "still shows up under `cargo test --workspace` as one more
 # section"). CORRECTED AGAIN by Batch ATTEST-1 (NODE-1 review NEW-4 /
 # dispatch L-D: L-1's own fix chained two correct sums across a single

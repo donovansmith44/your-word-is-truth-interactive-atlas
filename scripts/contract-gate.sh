@@ -485,6 +485,12 @@ for d in "${CHECK_ROOTS[@]:-}"; do
   "$RUNNER" check "$d"; check $? "totality: $d"
 done
 
+# The published documents are generated (PRINCIPLES 13): a hand edit to
+# contracts/openapi.yaml, aqc.schema.json or graph-vocabulary.json must not
+# survive this gate. `--check` writes nothing and exits non-zero on drift.
+step "leg 1b/8: generated contract documents are current"
+( cd server && "$CARGO" run -q -p atlas-contract --bin export_contract -- --check ); check $? "export_contract --check"
+
 step "leg 2/8: vocabulary drift (vocab)"
 for d in "${CHECK_ROOTS[@]:-}"; do
   [ -z "$d" ] && continue
@@ -756,7 +762,7 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 if [ "$FAST" -eq 1 ]; then
-  echo "CONTRACT GATE (--fast): legs 0, 1, 2, 4, 5, 6, 7, 8 passed; leg 3 NOT RUN."
+  echo "CONTRACT GATE (--fast): legs 0, 1, 1b, 2, 4, 5, 6, 7, 8 passed; leg 3 NOT RUN."
   echo "  Run without --fast before pushing." >&2
   exit 3
 fi

@@ -768,6 +768,31 @@ mod laws {
         assert_eq!(id.0.len(), "LocatedAt:".len() + 32);
     }
 
+    /// A symmetric relation's two ends are interchangeable, so the id is
+    /// taken over the pair SORTED by `Position`'s own `Ord` -- the lower
+    /// end first. Pinned rather than re-derived, because "the same id
+    /// either way round" is also true of the wrong sort order: only a
+    /// fixed value says WHICH end was hashed first. The digest widens with
+    /// `canon-ids` (16 hex chars OFF, 32 ON), so each of this crate's two
+    /// gates reads its own spelling of the one law.
+    const PARALLEL_ID_WITHOUT_CANON_IDS: &str = "Parallel:5d66728a994d8f39";
+    const PARALLEL_ID_WITH_CANON_IDS: &str = "Parallel:6e8a07c6798657c8680765038904c648";
+
+    #[test]
+    fn a_symmetric_edge_id_is_taken_over_the_lower_end_first_whichever_end_a_caller_names() {
+        // Arrange
+        let event = Position::Node(EventId::new("e1").erase());
+        let place = Position::Node(PlaceId::new("jordan").erase());
+        let pinned = if cfg!(feature = "canon-ids") { PARALLEL_ID_WITH_CANON_IDS } else { PARALLEL_ID_WITHOUT_CANON_IDS };
+        // Act
+        let ids = (
+            crate::edge::entry_id_symmetric(crate::edge::SymRelationId::Parallel, &event, &place),
+            crate::edge::entry_id_symmetric(crate::edge::SymRelationId::Parallel, &place, &event),
+        );
+        // Assert
+        assert_eq!(ids, (crate::edge::EdgeId(pinned.into()), crate::edge::EdgeId(pinned.into())));
+    }
+
     #[test]
     fn conformance_snapshot_matches_the_graph_itself() {
         let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));

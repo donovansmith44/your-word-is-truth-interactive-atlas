@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # CONTENTION-1 (docs/superpowers/specs/2026-09-14-relational-artifact-design.md §8):
-# the nine wall-clock gates, run SERIALIZED -- one `cargo test` process per
+# the ten wall-clock gates, run SERIALIZED -- one `cargo test` process per
 # gate, `--test-threads=1`, never concurrently with the parallel suite.
 # The ceilings live in the tests and are NOT touched here.
 #
-#   bash scripts/timing-gates.sh          run all nine; exit 1 on any failure
+#   bash scripts/timing-gates.sh          run all ten; exit 1 on any failure
 #   bash scripts/timing-gates.sh check    reconcile this list against the tree
 #   bash scripts/timing-gates.sh list     print the gate names, one per line
 #
@@ -15,9 +15,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # The scanned roots are a LIST -- the standing count's second command,
-# `cargo test -p atlas-graph-types`, is sourced from graph-types/, a sibling
-# of server/, not a descendant (F1: a bare #[ignore] there used to pass
-# `check` silently). Two overrides exist, self-test only:
+# `(cd ../graph-types && cargo test --all-features)`, is sourced from
+# graph-types/, a sibling of server/, not a descendant (F1: a bare #[ignore]
+# there used to pass `check` silently). Two overrides exist, self-test only:
 #   TIMING_GATES_TREE  -- replaces the list with ONE synthetic root.
 #   TIMING_GATES_ROOTS -- space-separated, replaces the list with SEVERAL
 #                         synthetic roots (selftest case 9: proves the

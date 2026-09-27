@@ -4,18 +4,81 @@
 //! `contracts/openapi.yaml`, `aqc.schema.json` or `graph-vocabulary.json`
 //! cannot survive (PRINCIPLES.md 13).
 
+use std::path::PathBuf;
+use std::process::{Command, Output};
+
+/// Every document the exporter publishes, under `contracts/`. A document that
+/// stops being generated is a promise quietly withdrawn, so the set is named
+/// here and not merely iterated.
+const GENERATED_DOCUMENTS: [&str; 3] = [
+    "openapi.yaml",
+    "atlas-query-contract/aqc.schema.json",
+    "atlas-graph-contract/fixtures/graph-vocabulary.json",
+];
+const BYTE_IDENTICAL: &str = "byte-identical to the committed file";
+const DIFFERS: &str = "DIFFERS from the committed file -- run `cargo run -p atlas-contract --bin export_contract`";
+const ABSENT: &str = "ABSENT -- no committed file at this path";
+
+const EXPORTER: &str = env!("CARGO_BIN_EXE_export_contract");
+const CHECK_ARGUMENT: &str = "--check";
+const UNRECOGNISED_ARGUMENT: &str = "--write";
+const CLEAN_EXIT: i32 = 0;
+const MISUSE_EXIT: i32 = 2;
+const USAGE_LINE: &str = "usage: export_contract [--check]\n";
+const NOTHING: &str = "";
+
 #[test]
 fn every_generated_document_is_byte_identical_to_the_committed_one() {
     // Arrange
-    let files = atlas_contract::document::generated_files();
+    let expected: Vec<(PathBuf, &str)> = GENERATED_DOCUMENTS.iter().map(|name| (contracts_root().join(name), BYTE_IDENTICAL)).collect();
     // Act
-    let stale: Vec<String> = files
-        .iter()
-        .filter(|(path, expected)| std::fs::read_to_string(path).ok().as_deref() != Some(expected.as_str()))
-        .map(|(path, _)| path.display().to_string())
+    let actual: Vec<(PathBuf, &str)> = atlas_contract::document::generated_files()
+        .into_iter()
+        .map(|(path, generated)| {
+            let state = match std::fs::read_to_string(&path) {
+                Ok(committed) if committed == generated => BYTE_IDENTICAL,
+                Ok(_) => DIFFERS,
+                Err(_) => ABSENT,
+            };
+            (path, state)
+        })
         .collect();
     // Assert
-    assert!(stale.is_empty(), "stale: {stale:?} -- run `cargo run -p atlas-contract --bin export_contract`");
+    assert_eq!(actual, expected);
+}
+
+fn contracts_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../contracts")
+}
+
+#[test]
+fn the_exporter_asked_to_check_exits_clean_and_silent_while_every_document_is_current() {
+    // Arrange
+    let mut exporter = Command::new(EXPORTER);
+    exporter.arg(CHECK_ARGUMENT);
+    // Act
+    let run = exporter.output().expect("the export_contract binary runs");
+    // Assert
+    assert_eq!(outcome(&run), (Some(CLEAN_EXIT), NOTHING.to_string(), NOTHING.to_string()));
+}
+
+#[test]
+fn the_exporter_refuses_an_unrecognised_argument_with_the_usage_line_rather_than_writing() {
+    // Arrange
+    let mut exporter = Command::new(EXPORTER);
+    exporter.arg(UNRECOGNISED_ARGUMENT);
+    // Act
+    let run = exporter.output().expect("the export_contract binary runs");
+    // Assert
+    assert_eq!(outcome(&run), (Some(MISUSE_EXIT), NOTHING.to_string(), USAGE_LINE.to_string()));
+}
+
+fn outcome(run: &Output) -> (Option<i32>, String, String) {
+    (
+        run.status.code(),
+        String::from_utf8_lossy(&run.stdout).into_owned(),
+        String::from_utf8_lossy(&run.stderr).into_owned(),
+    )
 }
 
 #[test]

@@ -83,13 +83,13 @@ printf '#[test] #[ignore]\nfn quietly_disabled_same_line() {}\n' >> "$tmp/t7/src
 expect_refused env TIMING_GATES_TREE="$tmp/t7" bash "$GATES" check
 
 # 8. The README and the workspace manifest must name the serialized step,
-#    or the standing counting procedure silently drops 8 gates.
+#    or the standing counting procedure silently drops every gate.
 expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/README.md"
 expect_ok grep -qF 'scripts/timing-gates.sh' "$ROOT/server/Cargo.toml"
 
 # 9. ATTEMPT (F1): a stray bare #[ignore] lands in the SECOND default root,
-#    graph-types/ (the standing count's second command, `cargo test -p
-#    atlas-graph-types`, is sourced from there) -- not server/. `check`
+#    graph-types/ (the standing count's second command, `(cd ../graph-types
+#    && cargo test --all-features)`, is sourced from there) -- not server/. `check`
 #    must scan BOTH default roots, not just server/. Proven here via
 #    TIMING_GATES_ROOTS (space-separated), pointing at two temp dirs that
 #    mimic the real server/ + graph-types/ layout: t9-server reconciles

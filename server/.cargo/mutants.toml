@@ -1,0 +1,47 @@
+# cargo-mutants, scoped to the contract crate (PRINCIPLES 3: 100 % mutation
+# coverage minus logical equivalents, every equivalent recorded HERE and
+# never in an inline comment).
+#
+# WHY `.cargo/`: cargo-mutants 27 reads `.cargo/mutants.toml` and nothing
+# else. A `mutants.toml` at the package root is silently ignored -- the run
+# then examines the whole workspace and no equivalent recorded below applies.
+#
+# Install (cargo-mutants 27.1.0): the pinned x86_64-pc-windows-gnu toolchain
+# ships no `dlltool`, so the build of cargo-mutants' own dependencies fails
+# until scoop's gcc is on PATH --
+#   PATH="$HOME/scoop/apps/gcc/current/bin:$PATH" cargo install cargo-mutants --locked
+#
+# Run, from server/:
+#   cargo mutants --in-place                                    # the whole scope
+#   cargo mutants --in-place -e atlas-contract/src/reading.rs    # all but one file
+#
+# `--in-place` is not a preference. atlas-contract's tests anchor the real
+# corpus and the published contracts at `env!("CARGO_MANIFEST_DIR")/../../data`
+# and `/../../contracts`, both of which sit ABOVE the workspace root that
+# cargo-mutants otherwise copies, so in a copied tree every one of them fails
+# and the baseline is red before a single mutant is applied.
+#
+# `examine_globs` is the DECLARED scope and a run narrows it with `-e`, never
+# with `-f`: a command-line `-f` is UNIONED with this list rather than
+# replacing it (verified against 27.1.0 -- `-f one/file.rs` still listed all
+# 310 mutants of the declared scope), so `-f` cannot narrow a run at all.
+#
+# graph-types is NOT reachable from here: a file outside the workspace root
+# yields zero mutants however it is globbed, so that crate carries its own
+# `graph-types/.cargo/mutants.toml` and is run from its own directory.
+examine_globs = [
+  "atlas-contract/src/document.rs",
+  "atlas-contract/src/error.rs",
+  "atlas-contract/src/wire/graph.rs",
+  "atlas-contract/src/bins/export_contract.rs",
+  "atlas-contract/src/meta.rs", "atlas-contract/src/map.rs", "atlas-contract/src/reading.rs",
+  "atlas-contract/src/catechism.rs", "atlas-contract/src/places.rs", "atlas-contract/src/events.rs",
+  "atlas-contract/src/graph.rs", "atlas-contract/src/contents.rs",
+]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# The crate that OWNS the examined files, not the workspace: the workspace
+# suite is ~20 minutes and would be paid once per mutant. atlas-contract's own
+# suite carries the byte-identity, coverage and pact tests that kill these
+# files' mutants.
+additional_cargo_test_args = ["-p", "atlas-contract"]

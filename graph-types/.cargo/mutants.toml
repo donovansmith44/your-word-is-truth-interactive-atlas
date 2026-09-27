@@ -1,0 +1,46 @@
+# cargo-mutants for the graph-types crate (PRINCIPLES 3: every surviving
+# mutant is killed by a test or recorded HERE as an equivalent with its
+# reason, never as an inline `#[mutants::skip]`).
+#
+# WHY `.cargo/`: cargo-mutants 27 reads `.cargo/mutants.toml` and nothing
+# else; a `mutants.toml` at the package root is silently ignored.
+#
+# THE RUN IS TWO RUNS, from THIS directory, and the score is their UNION:
+#
+#   cd graph-types && cargo mutants --in-place --features serde,openapi   # canon-ids OFF
+#   cd graph-types && cargo mutants --in-place --all-features             # canon-ids ON
+#
+# Both are required, and neither alone is a score. `id.rs`, `edge.rs` and
+# `ContentAddressed::pid` each carry a `#[cfg(feature = "canon-ids")]` arm and
+# a `#[cfg(not(...))]` arm, and cargo-mutants mutates the source text of BOTH
+# while only one is compiled. A mutation of the arm that is switched off is a
+# no-op, so it survives every test and is reported as MISSED -- 26 such false
+# misses in the OFF run, 20 in the ON run, every one of them an arm the other
+# run kills. A mutant is genuinely alive only when BOTH runs miss it.
+#
+# `--in-place` because `tests/toolchain_pin.rs` reads the repository's own
+# `rust-toolchain.toml`, which sits above this crate and so is absent from the
+# tree cargo-mutants would otherwise copy. `serde` and `openapi` are on in both
+# runs because they are the whole of `wire_form.rs` (both of its modules are
+# behind those cfgs); with the default feature set that file is empty.
+examine_globs = [
+  "src/id.rs",
+  "src/edge.rs",
+  "src/wire_form.rs",
+]
+
+# EQUIVALENT MUTANTS -- alive in both feature states, and observationally
+# indistinguishable from the code they replace:
+#
+#   src/id.rs: `impl Hash for NodeId<K>::hash` replaced with `()`. A `Hash`
+#   impl that writes nothing to the hasher is still a CORRECT one: equal ids
+#   still hash equally, so every `HashMap`/`HashSet` keyed by a NodeId answers
+#   exactly as before, and no id, pid or version root is derived from this
+#   impl (the OFF-state `pid` hashes `canonical_bytes()`, never a NodeId). The
+#   mutant degrades hash distribution, which no test can observe and no
+#   behaviour depends on.
+exclude_re = [
+  "wall-clock gate",
+  "replace <impl std::hash::Hash for NodeId<K>>::hash with \\(\\)",
+]
+test_tool = "cargo"

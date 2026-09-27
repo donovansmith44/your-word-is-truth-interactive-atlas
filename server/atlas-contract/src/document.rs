@@ -108,3 +108,37 @@ fn blessed_fixture(value: &Value) -> String {
     value.serialize(&mut serializer).expect("a fixture serialises");
     String::from_utf8(rendered).expect("serde_json emits UTF-8")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_component_reference_becomes_a_defs_reference_at_every_depth() {
+        // Arrange
+        let mut shapes = json!({
+            "NodeCard": { "properties": { "kind": { "$ref": "#/components/schemas/NodeKind" } } },
+            "Position": { "oneOf": [{ "$ref": "#/components/schemas/PositionKind" }] },
+        });
+        // Act
+        point_references_at_shapes(&mut shapes);
+        // Assert
+        assert_eq!(
+            shapes,
+            json!({
+                "NodeCard": { "properties": { "kind": { "$ref": "#/$defs/NodeKind" } } },
+                "Position": { "oneOf": [{ "$ref": "#/$defs/PositionKind" }] },
+            })
+        );
+    }
+
+    #[test]
+    fn a_value_that_is_not_a_reference_keeps_the_component_path_it_merely_names() {
+        // Arrange
+        let mut shapes = json!({ "NodeCard": { "description": "the same shape OpenAPI keeps at #/components/schemas/NodeCard" } });
+        // Act
+        point_references_at_shapes(&mut shapes);
+        // Assert
+        assert_eq!(shapes, json!({ "NodeCard": { "description": "the same shape OpenAPI keeps at #/components/schemas/NodeCard" } }));
+    }
+}
