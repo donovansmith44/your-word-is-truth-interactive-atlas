@@ -15,6 +15,12 @@ wrong; fix the spec.
    mutant is either killed by a test or recorded as an equivalent mutant
    with its reason, in the mutation tool's configuration, never in an
    inline comment. Tooling: Stryker.NET for C#, cargo-mutants for Rust.
+3a. **Mutation runs once per batch, at its close, concurrently.** A task
+   proves itself with its tests and the pacts; the mutation run is a
+   batch-level gate over every line the batch changed, like the timing
+   gates, and it is sharded across cores or worktrees so it finishes in
+   minutes, not hours. Surviving mutants get one fix dispatch of tests;
+   equivalents go in the tool's configuration with their reasons.
 4. **Zero lines of dead code.** No unreachable branches, no unused members,
    no "kept for later", no commented-out code, no backwards-compatibility
    shims for callers that no longer exist.
