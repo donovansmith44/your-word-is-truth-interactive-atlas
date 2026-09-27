@@ -1,5 +1,4 @@
-//! Nodes: identity + payload (NodeData), with Card demoted to a view
-//! function — capability and presentation deliberately separated.
+//! Node identity and payload; a card is a view assembled from them, not a capability.
 
 use std::collections::BTreeMap;
 
@@ -8,19 +7,9 @@ use crate::id::{AnyNodeId, ContentAddressed, PositionKind};
 use crate::ingest::ProvenanceId;
 use crate::text::LayerMap;
 
-/// M-C2: one witness account of an Event -- a plain data mirror of
-/// `atlas_core::data::EventWitness`'s own load-bearing fields (book +
-/// translations + ref_note + robertson_section), kept FULLY STRUCTURED
-/// (not collapsed to a display string) so `events::event`'s own
-/// `EventDetail.witnesses` -- and any other consumer needing a real
-/// `atlas_core::data::Event` -- reconstructs losslessly from the payload
-/// alone, the SAME "real payload, not a stub" precedent M-C's Place/Polity
-/// widening already set (controller decision 2). `translations` is a
-/// `BTreeMap` (the source `EventWitness.translations` is a `HashMap`) --
-/// deliberately, for serialization determinism (M-C2 requirement 3: the
-/// serialized graph artifact must be byte-deterministic; a `HashMap`'s
-/// randomized iteration order has no place riding into a payload that gets
-/// dumped to bytes).
+/// Kept fully structured rather than collapsed to a display string, so a consumer
+/// reconstructs the account losslessly from the payload alone. `translations` is a
+/// `BTreeMap` for determinism: a hashed order must never ride into bytes that get hashed.
 #[derive(Clone, Debug)]
 pub struct EventWitnessPayload {
     pub book: String,
@@ -29,11 +18,7 @@ pub struct EventWitnessPayload {
     pub robertson_section: Option<String>,
 }
 
-/// One Scripture-mapped historical delta at an era boundary (rise/fall/
-/// internal transition) -- a plain data mirror of
-/// `atlas_core::data::PolityDelta`'s own load-bearing fields, kept FULLY
-/// STRUCTURED (not collapsed to display prose) so the map's own wire
-/// response (`PolityDelta { event, verses, ref_note }`) reconstructs
+/// Kept fully structured rather than collapsed to prose, so the wire reconstructs it
 /// losslessly from the payload alone.
 #[derive(Clone, Debug)]
 pub struct PolityDeltaPayload {
@@ -42,11 +27,6 @@ pub struct PolityDeltaPayload {
     pub ref_note: String,
 }
 
-/// One time-ranged, colored, bordered ERA of one Polity node's own
-/// lifetime (M-C: "border data as node payloads — the map consumes
-/// payloads, not new relation kinds," controller decision 2). A plain
-/// data mirror of `atlas_core::data::PolityEra`'s own load-bearing fields
-/// (name/from/to/rings/ref_note/transition/fall).
 #[derive(Clone, Debug)]
 pub struct PolityEraPayload {
     pub name: String,
@@ -60,27 +40,13 @@ pub struct PolityEraPayload {
 
 #[derive(Clone, Debug)]
 pub enum NodePayload {
-    /// ONE node per skeleton position; ALL layer renderings as payload
-    /// (canonical layer required, others optional) — chains stay
-    /// homogeneous (sweep F1).
+    /// One node per position in the reading spine, carrying every layer's rendering as
+    /// payload (the canonical layer required, the rest optional), so chains stay homogeneous.
     TextUnit { corpus: &'static str, renderings: LayerMap },
     Container { title: String },
-    /// M-C2 widened this to a real payload (controller decision 2); M-D3
-    /// NARROWED it to narrative-only by owner order (2026-08-23, ledgered
-    /// R1: "we don't need to have both narrative and chronological stuff
-    /// in the payload right now. only keep narrative"). Chronology lives
-    /// in ONE place: `dated-by` edges resolved through `DatePlacement` ->
-    /// `ResolvedPlacement` (chrono.rs) -- the payload carries NO
-    /// `from_year`/`to_year`/`order_key` mirror, so an Event's date can
-    /// never disagree with its placement (the M-C2 verified-cache law
-    /// retired WITH the duplicate fields it existed to police; deleting
-    /// the copy is the stronger fix). `places` rides `located-at` edges,
-    /// order-preserved; witness/attestation verses ride `attested-in`
-    /// edges, one row per verse -- both explorable relations, not payload
-    /// facts. `verses` here is the CONTAINER's own top-level verse set
-    /// (`Event.verses`, distinct from witness verses -- scene
-    /// composition's scripture-mode filtering needs this exact set, not a
-    /// derived one).
+    /// No date rides here: chronology lives only on `dated-by` edges, so an event's date can
+    /// never disagree with its placement. Places and witness verses ride edges too. `verses`
+    /// is the container's own top-level set, which is distinct from its witnesses'.
     Event {
         label: String,
         kind: String,
@@ -92,50 +58,16 @@ pub enum NodePayload {
         kjv_superscription: Option<String>,
         ref_note: Option<String>,
     },
-    /// M-C2: `color` joins `label` -- a narrative's own map-arrow color is a
-    /// fact ABOUT the narrative, not an explorable relation (mirrors
-    /// Polity's own `color_key`). `legs` deliberately does NOT ride here --
-    /// the `succession` relation (`follows-in`/`precedes-in` edges, tagged
-    /// by this narrative) is already the single, authoritative ordered
-    /// chain; duplicating it onto the payload would be exactly the
-    /// "second, weaker path" this migration's own discipline forbids.
+    /// `legs` deliberately does not ride here: the succession edges are the one authoritative
+    /// ordered chain, and a payload copy would be a second, weaker path.
     Narrative { label: String, color: String },
-    /// M-C: real payload, not a stub (controller decision 2) — geographic
-    /// coordinates join the canonical name so the map can plot a Place
-    /// node directly from its own payload, with no companion lookup.
-    /// `aliases` (E3 KJV naming) rides here as payload: a bare alias
-    /// string has no `Position` representation to index through the
-    /// generic port -- the payload is where a fact ABOUT a place, not a
-    /// further explorable thing, belongs. (M-D3, owner ruling R2: the
-    /// vacant `named` relation -- manifest row, `Named` row struct, and
-    /// `graph.named` table -- was RETIRED outright; this payload field
-    /// was already the sole serving path, so the parallel authored rows
-    /// were exactly the "second, weaker path" the discipline forbids.)
-    /// ENT-1 (owner order 2026-08-23: "we actually want meaningful
-    /// information about who or what someone is, having that be backed
-    /// by scripture"): `description` is Easton's PD prose ABOUT the
-    /// entity -- a payload FACT (the aliases/border-data precedent);
-    /// key-passage SELECTION stays a law-computed query (P4:
-    /// presentation = selection), never stored. `None` until the
-    /// Easton's adapter fills a source-attested match -- NO fabricated
-    /// prose, ever.
+    /// Coordinates ride the payload so a map plots a place with no companion lookup. An alias
+    /// has no position to index through the port, so it is a payload fact rather than a
+    /// further explorable thing. `description` stays `None` until a source attests one.
     Place { canonical: String, lat: f64, lon: f64, aliases: Vec<String>, description: Option<String> },
-    /// Batch P (the extensibility proof): widened the SAME way M-C widened
-    /// Place/Polity (controller decision 2) -- real payload, not a stub.
-    /// `label` is the display name; `gender`/`birth_year`/`death_year` ride
-    /// verbatim as tagged by the Theographic source (life years absent for
-    /// the overwhelming majority of real persons -- `Option`, never a
-    /// fabricated sentinel); `also_called` is the source's own comma-split
-    /// alternate-name list -- the SAME "payload, not a new relation kind"
-    /// shape Place's own KJV aliases and Polity's own border data already
-    /// use (a fact ABOUT the person, not a further explorable thing).
-    /// D5 (owner, 2026-09-15): `first_year`/`last_year` are Theographic's
-    /// `minYear`/`maxYear` -- the span of the CORPUS's mentions of this
-    /// person, NOT a lifespan (God's is -4004..96; Jesus' minYear is -1689,
-    /// the earliest prophecy naming Him); the card says "mentioned across",
-    /// never "lived". `eternal` + `eternal_grounds` come from the curated
-    /// `data/curated/people-eternal.toml` (God, the Holy Spirit; Scripture
-    /// grounds): an eternal person has no lifespan and no years on the card.
+    /// Life years are absent for most persons: `Option`, never a fabricated sentinel.
+    /// `first_year`/`last_year` are the span of the corpus's MENTIONS of the person, not a
+    /// lifespan. An eternal person has no lifespan and shows no years.
     Person {
         label: String,
         gender: Option<String>,
@@ -148,48 +80,22 @@ pub enum NodePayload {
         eternal: bool,
         eternal_grounds: Vec<String>,
     },
-    /// PG-1 (owner order 2026-08-23: "we need a way to distinguish
-    /// between the names of the twelve tribes and the people theyre
-    /// named after"; "pull in Peoples or Nations info so I can find
-    /// out who the ammonites are"). A people group (tribe/nation/
-    /// clan) is its OWN kind of thing -- not a Person, not a Place --
-    /// so a mention can attest WHICH sense a name carries, and "who
-    /// are the Ammonites?" has a node to answer from. ENT-1 widened
-    /// `description` here the same hour it widened Place/Person -- see
-    /// their shared doc note above.
+    /// A people group is its own kind of thing -- not a person, not a place -- so a mention
+    /// can attest which sense a name carries.
     PeopleGroup { label: String, description: Option<String> },
-    /// Explorable "why this date?" — day-capable (sweep F4).
     Anchor { at: TimePoint, citation: String },
-    /// M-C: a time-range boundary node for the map/era selector — payload
-    /// carries the range directly (no separate edge kind for "when,"
-    /// matching the Polity payload's own border-data-as-payload
-    /// precedent).
+    /// The range rides the payload: there is no edge kind for "when".
     Era { label: String, from_year: i32, to_year: i32 },
-    /// M-C: every era of this polity's own lifetime, as payload (border
-    /// data as node payloads — controller decision 2). `color_key` is
-    /// constant across the polity's own eras (one hue for its whole
-    /// lifetime, even as `eras[].name` changes, e.g. "Egypt" ->
-    /// "Ptolemaic Egypt").
+    /// `color_key` is constant across a polity's eras, even as an era's name changes.
     Polity { label: String, color_key: u8, eras: Vec<PolityEraPayload> },
     CatechismItem { label: String },
-    /// KRETZ-1 (owner order 2026-08-24: "pull kretzmann commentary
-    /// (public domain version) into our corpora"; ruled the ANNOTATION
-    /// shape: "a comprehensive commentary without the verses interleaved
-    /// into it, and it's indexed so that each verse mapped bit of
-    /// commentary is mapped to the appropriate verse in our graph").
-    /// One node per verse-anchored unit of the work's prose; the bold
-    /// KJV lemma is the parser's join key and is EXCISED -- verse text
-    /// has ONE source (the canonical layer); verse + commentary compose
-    /// at render. `work` is the commentary work's Source node; `heading`
-    /// carries the pericope context where the source printed one.
+    /// One node per verse-anchored unit of a work's prose. The bold lemma the parser joins on
+    /// is EXCISED: verse text has one source, and verse and commentary compose at render.
     CommentaryItem { work: crate::id::SourceId, heading: Option<String>, text: String },
     Source { label: String },
     Translation { label: String },
-    /// DB-3 (spec 7.2): a lexicon entry keyed by its Strong's number
-    /// (`id.raw` = `strong`, e.g. "G3056"). `glosses`/`senses` in source
-    /// order, `domains` sorted atomic codes, `root` the Strong's id of the
-    /// root entry. Uninhabited until LEX-1; the vocabulary lands here so
-    /// the port and every closed match learn it once (spec 4).
+    /// Keyed by its Strong's number, which is the node id's raw part. `glosses`/`senses` in
+    /// source order, `domains` sorted.
     LexiconEntry {
         strong: String,
         lang: String,
@@ -210,8 +116,7 @@ pub struct Node {
     pub provenance: ProvenanceId,
 }
 
-/// What a node IS — every node has this trivially. (What exploration
-/// means lives in `Explorable`; the split is deliberate.)
+/// What a node IS; what exploring it means lives in `Explorable`, deliberately apart.
 pub trait NodeData {
     fn id(&self) -> AnyNodeId;
     fn payload(&self) -> &NodePayload;
@@ -231,18 +136,15 @@ impl NodeData for Node {
 }
 
 impl ContentAddressed for Node {
-    /// OFF: the skeleton's debug print — unstable in principle (a `{:?}`
-    /// shape is not a promise) but pinned in practice by the fixtures, so
-    /// it must not move while the feature is off.
+    /// A debug print is not a promise in principle, but the fixtures pin this one, so it
+    /// must not move while the feature is off.
     #[cfg(not(feature = "canon-ids"))]
     fn canonical_bytes(&self) -> Vec<u8> {
         format!("{:?}|{:?}", self.id, self.payload_discriminant()).into_bytes()
     }
 
-    /// ON: the canonical JSON of DB-2a — one value, one byte spelling,
-    /// and decodable back into the very `Node` that produced it, which is
-    /// what makes `derive` a real self-verifying store rather than a
-    /// lookup that happens to agree.
+    /// One value, one byte spelling, and decodable back into the node that produced it --
+    /// which is what makes the store self-verifying rather than merely agreeing.
     #[cfg(feature = "canon-ids")]
     fn canonical_bytes(&self) -> Vec<u8> {
         crate::canon::Canon::encode(self)
@@ -253,8 +155,7 @@ impl ContentAddressed for Node {
     }
 }
 
-/// Lives and dies with the OFF `canonical_bytes` above: it is that
-/// encoding's payload spelling and has no other caller.
+/// That encoding's payload spelling, with no other caller.
 #[cfg(not(feature = "canon-ids"))]
 impl Node {
     fn payload_discriminant(&self) -> String {
@@ -262,8 +163,6 @@ impl Node {
     }
 }
 
-/// Card is a VIEW, not a capability: assembled from NodeData plus
-/// law-computed selections, rendered via Presentable.
 #[derive(Clone, Debug)]
 pub struct Card {
     pub id: AnyNodeId,

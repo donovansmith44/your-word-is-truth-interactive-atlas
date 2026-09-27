@@ -1,23 +1,3 @@
-//! DB-2a golden vectors for the ROW encodings (all 21 families).
-//!
-//! The sibling `canon_real_data.rs` (in `atlas-graph`) proves the encoders
-//! total over the real committed corpus; this file does the other half --
-//! it PINS the bytes. The byte strings asserted here are the law, not a
-//! description: a row's spelling is what its edge id and its section's
-//! logical hash are taken over, so a silent change to one is a silent
-//! change to every id derived from it.
-//!
-//! `std` only -- `graph-types` is a zero-dependency crate and its tests
-//! keep that promise.
-//!
-//! FINAL REVIEW item 14 (parked minor M2-1): all 21 families now carry a
-//! one-line byte golden. Seven did before; the other fourteen were
-//! round-trip only, which proves the encoder and the decoder agree with
-//! EACH OTHER but pins no byte. Each of the fourteen was generated from
-//! the encoder as it stood at commit f6722f7, BEFORE the row `to_value`s
-//! were rewritten to destructure -- so the goldens staying green IS the
-//! proof that the destructuring changed nothing.
-
 use std::collections::BTreeSet;
 
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily, Value, ROOT};
@@ -36,8 +16,6 @@ use atlas_graph_types::text::{
     BibleLocus, BibleLocusRange, BibleTag, ConcordLocus, ConcordRef, ConcordTag, Locus, LocusRange,
     LocusSet, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef,
 };
-
-// ------------------------------------------------------------- tiny builders
 
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
@@ -64,7 +42,6 @@ fn span(start: u16, end: u16) -> TokenSpan {
     TokenSpan::new(TranslationId("kjv".into()), start, end).expect("test span must be ordered")
 }
 
-/// A justification exercising all three `Ground` variants and the prose.
 fn full_justification() -> Justification {
     let grounds: BTreeSet<Ground> = [
         Ground::Scripture(blr((40, 3, 13), (40, 3, 17))),
@@ -76,11 +53,6 @@ fn full_justification() -> Justification {
     Justification { text: Some("Jordan, at Bethabara".into()), grounds }
 }
 
-// ---------------------------------------------------------------- the laws
-
-/// One family's law: the bytes are a fixed point, the decode gives back
-/// the same content, and the family wrapper is exactly the row's bytes
-/// inside `{"family":…,"row":…}`.
 fn round_trip<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily) -> String {
     let bytes = row.encode();
     let text = String::from_utf8(bytes.clone()).expect("canonical bytes are UTF-8");
@@ -97,24 +69,6 @@ fn round_trip<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily) -> String 
     text
 }
 
-/// One family's BYTE GOLDEN, on top of the round-trip law: the encoder's
-/// output IS this exact byte string, and this byte string decodes BACK to
-/// the row.
-///
-/// The second half is the half that matters. `round_trip` decodes what
-/// the encoder just produced, so encoder and decoder could drift together
-/// and still agree; the golden is written down here, independent of both,
-/// so `T::decode(golden)` is a decode of bytes NOTHING in this process
-/// generated. Once DB-2b mints ids from these bytes, a silent change to
-/// either direction is a silent change to every id derived from it --
-/// which is why all 21 families are pinned, not just the seven that were.
-///
-/// What makes it fail: any change to a row's `to_value` key set, key
-/// order, value spelling or nesting; any change to the shared parts those
-/// rows embed (`Justification`, `Locus`, `LocusRange`, `TokenSpan`,
-/// `TextLocus`, `Duration`, `DatePlacement`); and, for the decode half, a
-/// member the decoder no longer accepts or a validating constructor that
-/// no longer admits the specimen.
 fn golden_row<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily, golden: &str) {
     assert_eq!(round_trip(row, family), golden, "{} golden bytes moved", family.name());
     let back = T::decode(golden.as_bytes())
@@ -188,8 +142,6 @@ fn located_at_row_golden_bytes() {
         round_trip(&row, RowFamily::LocatedAt),
         r#"{"event":"Event:jesus-baptized","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"place":"Place:jordan-river","provenance":"curated/events"}"#
     );
-    // The hashed form (spec 3.4): the family rides OUTSIDE the row, so
-    // two families that share a row shape can never share an id.
     assert!(String::from_utf8(encode_row_in_family(RowFamily::LocatedAt, row.to_value()))
         .unwrap()
         .starts_with(r#"{"family":"located_at","row":{"event":"#));
@@ -206,7 +158,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         }};
     }
 
-    // 1. contains_bible -- the flat-loci content, a non-empty set.
     law!(
         Contains::<BibleTag> {
             container: ContainerNodeId::new("bible/GEN.1"),
@@ -220,7 +171,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"container":"Container:bible/GEN.1","content":{"Loci":[{"span":null,"unit":{"book":1,"chapter":1,"verse":1}},{"span":null,"unit":{"book":1,"chapter":1,"verse":2}}]},"justification":{"grounds":[],"text":null},"provenance":"kjv"}"#
     );
 
-    // 2. contains_concord -- the recursive child-container content.
     law!(
         Contains::<ConcordTag> {
             container: ContainerNodeId::new("concord/ac"),
@@ -232,7 +182,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"container":"Container:concord/ac","content":{"Container":"Container:concord/ac.1"},"justification":{"grounds":[],"text":null},"provenance":"concord"}"#
     );
 
-    // 3. attests
     law!(
         Attests {
             event: EventId::new("jesus-baptized"),
@@ -244,7 +193,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"attestation":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}},"event":"Event:jesus-baptized","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"provenance":"curated/events"}"#
     );
 
-    // 4. succession -- the chain goes through the validating constructor.
     law!(
         Succession::new(
             NarrativeId::new("life-of-christ"),
@@ -257,7 +205,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"chain":["Event:nativity","Event:jesus-baptized"],"justification":{"grounds":[],"text":null},"narrative":"Narrative:life-of-christ","provenance":"curated/narratives"}"#
     );
 
-    // 5. canon_succession
     law!(
         CanonSuccession {
             prior: ContainerNodeId::new("bible/GEN.50"),
@@ -269,7 +216,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"justification":{"grounds":[],"text":null},"next":"Container:bible/EXO.1","prior":"Container:bible/GEN.50","provenance":"canon"}"#
     );
 
-    // 6. dated_by
     law!(
         DatedBy {
             event: EventId::new("exodus"),
@@ -285,7 +231,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"basis":{"Textual":null},"event":"Event:exodus","justification":{"grounds":[],"text":null},"placement":{"AnchorBinding":{"anchor":"Anchor:abraham-called","offset":{"days":0,"months":0,"years":430}}},"provenance":"ussher"}"#
     );
 
-    // 7. located_at (its own golden above)
     law!(
         LocatedAt {
             event: EventId::new("jesus-baptized"),
@@ -297,7 +242,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"event":"Event:jesus-baptized","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"place":"Place:jordan-river","provenance":"curated/events"}"#
     );
 
-    // 8. fulfills
     law!(
         Fulfills {
             prophecy: blr((23, 7, 14), (23, 7, 14)),
@@ -309,7 +253,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"fulfillment":{"from":{"span":null,"unit":{"book":40,"chapter":1,"verse":22}},"to":{"span":null,"unit":{"book":40,"chapter":1,"verse":23}}},"justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"prophecy":{"from":{"span":null,"unit":{"book":23,"chapter":7,"verse":14}},"to":{"span":null,"unit":{"book":23,"chapter":7,"verse":14}}},"provenance":"curated/fulfillment"}"#
     );
 
-    // 9. typology -- `note` present.
     law!(
         Typology {
             type_passage: blr((4, 21, 8), (4, 21, 9)),
@@ -322,7 +265,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"antitype_passage":{"from":{"span":null,"unit":{"book":43,"chapter":3,"verse":14}},"to":{"span":null,"unit":{"book":43,"chapter":3,"verse":14}}},"justification":{"grounds":[],"text":null},"note":"the brasen serpent","provenance":"curated/typology","type_passage":{"from":{"span":null,"unit":{"book":4,"chapter":21,"verse":8}},"to":{"span":null,"unit":{"book":4,"chapter":21,"verse":9}}}}"#
     );
 
-    // 10. named_after
     law!(
         NamedAfter {
             namesake: Namesake::PeopleGroup(PeopleGroupId::new("tribe-of-judah")),
@@ -334,7 +276,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"eponym":"Person:judah","justification":{"grounds":[],"text":null},"namesake":{"PeopleGroup":"PeopleGroup:tribe-of-judah"},"provenance":"curated/peoples"}"#
     );
 
-    // 11. catechism -- a Concord-side TextLocus.
     law!(
         CatechismLink {
             locus: TextLocus { at: TextRef::Concord(ConcordRef { part: 1, article: 2, paragraph: 3 }), span: None },
@@ -346,7 +287,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"item":"CatechismItem:sc/1st-commandment","justification":{"grounds":[],"text":null},"locus":{"at":{"Concord":{"article":2,"paragraph":3,"part":1}},"span":null},"provenance":"small-catechism"}"#
     );
 
-    // 12. comments_on
     law!(
         CommentsOn {
             item: CommentaryItemId::new("kretzmann/JHN.3.16"),
@@ -358,7 +298,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"item":"CommentaryItem:kretzmann/JHN.3.16","justification":{"grounds":[],"text":null},"on":{"from":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}}},"provenance":"kretzmann"}"#
     );
 
-    // 13. spoken_by
     law!(
         SpokenBy {
             locus: blr((43, 3, 16), (43, 3, 21)),
@@ -370,7 +309,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"justification":{"grounds":[],"text":null},"locus":{"from":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":43,"chapter":3,"verse":21}}},"provenance":"red-letter","speaker":"Person:jesus"}"#
     );
 
-    // 14. spoken_at
     law!(
         SpokenAt {
             locus: blr((43, 3, 16), (43, 3, 21)),
@@ -382,7 +320,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"justification":{"grounds":[],"text":null},"locus":{"from":{"span":null,"unit":{"book":43,"chapter":3,"verse":16}},"to":{"span":null,"unit":{"book":43,"chapter":3,"verse":21}}},"place":"Place:jerusalem","provenance":"red-letter"}"#
     );
 
-    // 15. mentions -- a locus WITH a token span (the layer-tagged case).
     law!(
         Mentions {
             locus: TextLocus { at: TextRef::Bible(vr(7, 1, 2)), span: Some(span(3, 5)) },
@@ -393,7 +330,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"entity":{"PeopleGroup":"PeopleGroup:tribe-of-judah"},"locus":{"at":{"Bible":{"book":7,"chapter":1,"verse":2}},"span":{"end":5,"layer":"kjv","start":3}},"provenance":"theographic"}"#
     );
 
-    // 16. cross_refs -- `to_last` present, votes carried.
     law!(
         CrossRef {
             from: tl(51, 1, 15),
@@ -407,7 +343,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"from":{"at":{"Bible":{"book":51,"chapter":1,"verse":15}},"span":null},"provenance":"openbible-xrefs","target_display":"COL.1.16-19","to":{"at":{"Bible":{"book":51,"chapter":1,"verse":16}},"span":null},"to_last":{"at":{"Bible":{"book":51,"chapter":1,"verse":19}},"span":null},"votes":7}"#
     );
 
-    // 17. quotes -- uninhabited in the shipped graph; the encoder is real.
     law!(
         Quotes {
             quoting: tl(40, 4, 4),
@@ -418,7 +353,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"provenance":"curated/quotes","quoted":{"from":{"span":null,"unit":{"book":5,"chapter":8,"verse":3}},"to":{"span":null,"unit":{"book":5,"chapter":8,"verse":3}}},"quoting":{"at":{"Bible":{"book":40,"chapter":4,"verse":4}},"span":null}}"#
     );
 
-    // 18. confesses -- uninhabited today; a Concord locus confessing Scripture.
     law!(
         Confesses {
             confessing: cl(1, 2, 3),
@@ -430,7 +364,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"confessed":{"from":{"span":null,"unit":{"book":45,"chapter":3,"verse":28}},"to":{"span":null,"unit":{"book":45,"chapter":3,"verse":28}}},"confessing":{"span":null,"unit":{"article":2,"paragraph":3,"part":1}},"justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"provenance":"concord"}"#
     );
 
-    // 19. corresponds_bible -- uninhabited today; span-level alignment.
     law!(
         Corresponds::<BibleTag> {
             a: Locus { unit: vr(43, 3, 16), span: Some(span(0, 4)) },
@@ -441,7 +374,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"a":{"span":{"end":4,"layer":"kjv","start":0},"unit":{"book":43,"chapter":3,"verse":16}},"b":{"span":{"end":9,"layer":"kjv","start":5},"unit":{"book":43,"chapter":3,"verse":16}},"provenance":"alignment"}"#
     );
 
-    // 20. temporal_adjacency
     law!(
         TemporalAdjacency {
             earlier: EventId::new("nativity"),
@@ -452,7 +384,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"earlier":"Event:nativity","later":"Event:jesus-baptized","provenance":"derived/chronology"}"#
     );
 
-    // 21. analogue
     law!(
         Analogue {
             a: EventId::new("leper-healed-galilee"),
@@ -463,8 +394,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"a":"Event:leper-healed-galilee","b":"Event:leper-healed-capernaum","provenance":"curated/analogues"}"#
     );
 
-    // 22. occurs (LEX-1) -- a ONE-token span on the Greek layer: John 3:16
-    // token 4 (the article before "God").
     law!(
         Occurs {
             entry: LexiconEntryId::new("G3588"),
@@ -478,21 +407,18 @@ fn every_row_family_round_trips_with_hand_built_data() {
         r#"{"entry":"LexiconEntry:G3588","locus":{"at":{"Bible":{"book":42,"chapter":3,"verse":16}},"span":{"end":4,"layer":"greek_textus_receptus","start":4}},"provenance":"stepbible-tagnt"}"#
     );
 
-    // 23. parent_of (D5) -- Abraham is the father of Isaac.
     law!(
         ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() },
         RowFamily::ParentOf,
         r#"{"child":"Person:isaac_1","parent":"Person:abraham_1","provenance":"theographic-people"}"#
     );
 
-    // 24. partners (D5) -- symmetric, minted once with a < b.
     law!(
         Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() },
         RowFamily::Partners,
         r#"{"a":"Person:abraham_1","b":"Person:sarah_1","provenance":"theographic-people"}"#
     );
 
-    // 25. participates (D5) -- a person's own place in an event.
     law!(
         Participates { person: PersonId::new("abraham_1"), event: EventId::new("theo-12"), provenance: "theographic-people".into() },
         RowFamily::Participates,
@@ -508,7 +434,6 @@ fn every_row_family_round_trips_with_hand_built_data() {
 
 #[test]
 fn every_variant_of_every_shared_part_round_trips() {
-    // DatePlacement x PlacementBasis: all four placements, both bases.
     let placements = [
         DatePlacement::AnchorBinding {
             anchor: AnchorId::new("abraham-called"),
@@ -548,7 +473,6 @@ fn every_variant_of_every_shared_part_round_trips() {
         r#"{"Traditional":null}"#
     );
 
-    // Namesake: all three named things.
     for namesake in [
         Namesake::PeopleGroup(PeopleGroupId::new("moabites")),
         Namesake::Place(PlaceId::new("dan")),
@@ -565,7 +489,6 @@ fn every_variant_of_every_shared_part_round_trips() {
         );
     }
 
-    // MentionedEntity: all four attested senses.
     for entity in [
         MentionedEntity::Place(PlaceId::new("jerusalem")),
         MentionedEntity::Person(PersonId::new("judah")),
@@ -578,7 +501,6 @@ fn every_variant_of_every_shared_part_round_trips() {
         );
     }
 
-    // Ground: all three, and the empty justification.
     for grounds in [
         BTreeSet::new(),
         [Ground::Scripture(blr((1, 1, 1), (1, 1, 2)))].into_iter().collect(),
@@ -598,7 +520,6 @@ fn every_variant_of_every_shared_part_round_trips() {
         }
     }
 
-    // ContainerContent: the empty locus set is lawful identity.
     round_trip(
         &Contains::<ConcordTag> {
             container: ContainerNodeId::new("concord/ac"),
@@ -609,7 +530,6 @@ fn every_variant_of_every_shared_part_round_trips() {
         RowFamily::ContainsConcord,
     );
 
-    // CrossRef with no `to_last`.
     round_trip(
         &CrossRef {
             from: tl(1, 1, 1),
@@ -623,11 +543,6 @@ fn every_variant_of_every_shared_part_round_trips() {
     );
 }
 
-// --------------------------------------------------------------- malformed
-
-/// Corrupt one canonical spelling into another. The replacement keeps the
-/// object's key order canonical -- the point of each case below is the
-/// DECODER's own check, not the byte parser's.
 fn corrupt(bytes: &[u8], from: &str, to: &str) -> Vec<u8> {
     let s = String::from_utf8(bytes.to_vec()).unwrap();
     assert!(s.contains(from), "corruption target `{from}` is not in {s}");
@@ -644,8 +559,6 @@ fn simple_located_at() -> Vec<u8> {
     .encode()
 }
 
-/// Every malformed-row case asserts its EXACT path, that the path is
-/// root-anchored (R10), and that the message says something.
 macro_rules! bad {
     ($ty:ty, $bytes:expr, $path:expr) => {{
         let bytes = $bytes;
@@ -661,23 +574,18 @@ macro_rules! bad {
 fn row_decode_reports_the_failing_path() {
     let base = simple_located_at();
 
-    // R9: an unknown member, at the row and inside a nested object.
     bad!(LocatedAt, corrupt(&base, r#""provenance":"prov""#, r#""provenance":"prov","zz":1"#), "$.zz");
     bad!(
         LocatedAt,
         corrupt(&base, r#""grounds":[],"text":null"#, r#""grounds":[],"text":null,"zz":1"#),
         "$.justification.zz"
     );
-    // A missing member reports under its own key, not the object's.
     bad!(LocatedAt, corrupt(&base, r#""justification":{"grounds":[],"text":null},"#, ""), "$.justification");
-    // A typed id whose KIND disagrees with the field -- the whole reason
-    // ids carry their kind in the bytes.
     bad!(LocatedAt, corrupt(&base, r#""place":"Place:p""#, r#""place":"Event:p""#), "$.place");
     bad!(LocatedAt, corrupt(&base, r#""place":"Place:p""#, r#""place":"Nope:p""#), "$.place");
     bad!(LocatedAt, corrupt(&base, r#""place":"Place:p""#, r#""place":"nokind""#), "$.place");
     bad!(LocatedAt, corrupt(&base, r#""place":"Place:p""#, r#""place":42"#), "$.place");
     bad!(LocatedAt, corrupt(&base, r#""text":null"#, r#""text":42"#), "$.justification.text");
-    // A ground variant nobody knows, and a ground id of the wrong kind.
     bad!(
         LocatedAt,
         corrupt(&base, r#""grounds":[]"#, r#""grounds":[{"Nope":null}]"#),
@@ -688,8 +596,6 @@ fn row_decode_reports_the_failing_path() {
         corrupt(&base, r#""grounds":[]"#, r#""grounds":[{"Anchor":"Event:a"}]"#),
         "$.justification.grounds.0.Anchor"
     );
-    // A set is spelled strictly increasing -- a repeat or a re-ordering
-    // would decode to a set that re-encodes to different bytes.
     bad!(
         LocatedAt,
         corrupt(&base, r#""grounds":[]"#, r#""grounds":[{"Anchor":"Anchor:a"},{"Anchor":"Anchor:a"}]"#),
@@ -700,10 +606,8 @@ fn row_decode_reports_the_failing_path() {
         corrupt(&base, r#""grounds":[]"#, r#""grounds":[{"Source":"Source:s"},{"Anchor":"Anchor:a"}]"#),
         "$.justification.grounds.1"
     );
-    // R10c: a root-level type failure is still located.
     bad!(LocatedAt, b"null".to_vec(), ROOT);
 
-    // The validating constructors, re-run on the way in.
     let attests = Attests {
         event: EventId::new("e"),
         attestation: blr((40, 3, 13), (40, 3, 17)),
@@ -802,8 +706,6 @@ fn the_row_family_wrapper_is_the_hashed_form() {
         String::from_utf8(encode_row_in_family(RowFamily::LocatedAt, Value::Null)).unwrap(),
         r#"{"family":"located_at","row":null}"#
     );
-    // Two families whose ROWS are byte-identical still hash differently,
-    // because the family is inside the bytes.
     let a = Analogue {
         a: EventId::new("x"),
         b: EventId::new("y"),
@@ -822,8 +724,6 @@ fn the_row_family_wrapper_is_the_hashed_form() {
 
 #[test]
 fn the_row_goldens_stay_control_character_free() {
-    // The same discipline the node goldens keep (R5): a golden that gains
-    // a control character must be re-pinned deliberately.
     let goldens: &[&[u8]] = &[
         br#"{"event":"Event:jesus-baptized","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":40,"chapter":3,"verse":13}},"to":{"span":null,"unit":{"book":40,"chapter":3,"verse":17}}}},{"Anchor":"Anchor:ussher-4004bc"},{"Source":"Source:openbible-geo"}],"text":"Jordan, at Bethabara"},"place":"Place:jordan-river","provenance":"curated/events"}"#,
         br#"{"basis":{"Textual":null},"event":"Event:exodus","justification":{"grounds":[],"text":null},"placement":{"AnchorBinding":{"anchor":"Anchor:abraham-called","offset":{"days":0,"months":0,"years":430}}},"provenance":"ussher"}"#,

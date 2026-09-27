@@ -1,7 +1,3 @@
-//! The laws, run: monad laws, dual involution, bijection witness,
-//! temporal totality — over a toy graph. If these pass, the design
-//! composes.
-
 use std::collections::BTreeSet;
 
 use crate::chrono::{
@@ -29,7 +25,6 @@ fn brange(b: u8, c: u16, v1: u16, v2: u16) -> BibleLocusRange {
     BibleLocusRange::new(BibleLocus::whole(vr(b, c, v1)), BibleLocus::whole(vr(b, c, v2))).unwrap()
 }
 
-/// Toy graph: a three-event chain, each attested, two located.
 fn toy() -> Graph {
     let mut g = Graph::default();
     g.succession.push(
@@ -179,9 +174,6 @@ fn pooled_two_hop_what_happened_where_this_happened() {
 
 #[test]
 fn edge_summary_includes_symmetric_kinds() {
-    // M-C review I-1 pin: a node with real symmetric-relation edges
-    // must report them in its summary — omitting them would let the
-    // honesty policy (render iff count > 0) hide real connections.
     use crate::edge::{CatechismLink, Justification};
     use crate::text::{TextLocus, TextRef};
 
@@ -222,11 +214,11 @@ fn temporal_order_is_total_and_antisymmetric() {
         seq: SeqKey(seq),
         basis: PlacementBasis::Traditional,
     };
-    let a = rp(y(-1015), 1); // coup
-    let b = rp(y(-1015), 2); // anointing
-    let c = rp(y(-1015), 3); // charge
-    let d = rp(y(-1015), 4); // death
-    let e = rp(y(-1014), 0); // gibeon dream
+    let a = rp(y(-1015), 1);
+    let b = rp(y(-1015), 2);
+    let c = rp(y(-1015), 3);
+    let d = rp(y(-1015), 4);
+    let e = rp(y(-1014), 0);
     let all = [a, b, c, d, e];
     for (i, x) in all.iter().enumerate() {
         for (j, y2) in all.iter().enumerate() {

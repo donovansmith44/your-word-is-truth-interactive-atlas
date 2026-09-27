@@ -1,24 +1,6 @@
-//! `Canon for Node`: the node encoding.
-//!
-//! Shape: `{"id":"Place:jerusalem","payload":{"Place":{…}},"provenance":"…"}`.
-//! The payload is a one-key enum object whose key is the `NodePayload`
-//! variant name and whose members are the Rust field names -- so the
-//! encoding reads like the type, and adding a variant is a compile error
-//! here until it is encoded.
-//!
-//! Every object is CLOSED (ruling R9): each decoder declares its exact
-//! member set through `expect_exact_keys`, so a key nobody asked for is a
-//! located error rather than something silently dropped. Decoding starts
-//! at the shared `ROOT`, so a failure reads as one continuous trail --
-//! `$.payload.Place.lat` -- from the byte parser straight through to the
-//! field that refused.
-//!
-//! Every arm is mechanical on purpose. The interesting decisions live in
-//! the small helpers below: `corpus_from_value` (a `&'static str` field
-//! can only decode to one of the two known literals), `time_point_from_value`
-//! (the `Year` and `TimePoint` invariants are re-checked on the way in, so
-//! a bad artifact cannot smuggle year zero or a day without a month past
-//! the constructors), and `number` (f64 members).
+//! The payload is a one-key object whose key is the variant name and whose members are the
+//! Rust field names, so adding a variant is a compile error here until it is encoded; every
+//! object is closed, and a key nobody asked for is a located error rather than a silent drop.
 
 use std::collections::BTreeMap;
 
@@ -38,7 +20,6 @@ use super::{
 };
 
 /// The member set of every closed object in the node encoding, named once
-/// so the encoder and the decoder cannot drift apart.
 const NODE_KEYS: &[&str] = &["id", "payload", "provenance"];
 const TEXT_UNIT_KEYS: &[&str] = &["corpus", "renderings"];
 const CONTAINER_KEYS: &[&str] = &["title"];
@@ -101,8 +82,6 @@ impl Canon for Node {
         Ok(Node { id, payload, provenance })
     }
 }
-
-// ------------------------------------------------------------------- payload
 
 fn payload_to_value(p: &NodePayload) -> Value {
     match p {
@@ -379,27 +358,13 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
     }
 }
 
-// ------------------------------------------------------------------- helpers
-
 /// An f64 member. `NodePayload`'s doubles are finite by construction
-/// upstream; a non-finite one has NO canonical spelling, so it encodes as
-/// `null` and `expect_f64` then refuses it BY PATH on the way back in --
-/// a located decode error instead of a silent corruption. (`to_value` has
-/// no `Result` to return, which is why the check lands here.)
 fn number(f: f64) -> Value {
     Value::float(f).unwrap_or(Value::Null)
 }
 
-/// `TextUnit.corpus` is a `&'static str`, so decoding cannot mint one:
-/// the string must match a corpus literal the binary already owns. Those
-/// are `Corpus::ID` for the two corpora (`BibleTag`, `ConcordTag`).
-///
-/// FINAL REVIEW item 9: it now says that in code as well as in prose --
-/// the arms ARE `BibleTag::ID`/`ConcordTag::ID`, not two copies of their
-/// text, so a corpus that renamed its `ID` could not leave a stale
-/// literal behind here. The consts are exactly `"bible"` and `"concord"`,
-/// so the bytes do not move; `canon_row_vectors`/`canon_vectors`'
-/// existing goldens are the proof.
+/// A corpus is a `&'static str`, so decoding cannot mint one: the string must match a literal
+/// the binary already owns, and the arms name those constants rather than copying their text.
 fn corpus_from_value(
     m: &BTreeMap<String, Value>,
     path: &str,
@@ -420,8 +385,6 @@ fn corpus_from_value(
 }
 
 /// A `LayerMap` is an OPEN map -- its keys are translation ids, not a
-/// fixed schema -- so `expect_exact_keys` deliberately does not apply
-/// here. Same for a witness's `translations`.
 fn layer_map_to_value(map: &LayerMap) -> Value {
     Value::Obj(map.iter().map(|(k, v)| (k.0.clone(), Value::Str(v.clone()))).collect())
 }
@@ -452,7 +415,6 @@ fn time_point_from_value(
     expect_exact_keys(m, path, TIME_POINT_KEYS)?;
     let raw_year = field_i32(m, path, "year")?;
     // Both constructors are re-run, not bypassed: no year zero, no day
-    // without a month, however the bytes were written.
     let year = Year::new(raw_year).map_err(|e| {
         CanonError::new(join(path, "year"), format!("invalid year {raw_year}: {e:?}"))
     })?;
@@ -537,7 +499,6 @@ fn polity_era_to_value(e: &PolityEraPayload) -> Value {
         ("name", str_value(&e.name)),
         ("ref_note", str_value(&e.ref_note)),
         // A ring point is the tuple `(f64, f64)` -- a 2-element array in
-        // the tuple's OWN order, never reordered into lon/lat.
         (
             "rings",
             Value::Arr(

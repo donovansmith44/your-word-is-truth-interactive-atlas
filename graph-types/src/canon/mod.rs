@@ -1,37 +1,6 @@
-//! DB-2a: the canonical, versioned, DECODABLE encoding every node and
-//! edge of the graph gets before it is written to the SQLite artifact.
-//!
-//! Two promises hold this module together:
-//!
-//! 1. **Canonical.** One value has exactly ONE byte spelling. Object keys
-//!    ride in UTF-8 byte order (a `BTreeMap<String, _>` gives that for
-//!    free), there is no whitespace anywhere, escapes are the shortest
-//!    legal ones, and numbers are spelled the way Rust's `Display` spells
-//!    them. So `serialize` is a function of the value alone -- safe to
-//!    hash, safe to compare, safe to diff.
-//! 2. **Decodable.** Whatever `encode` produced, `decode` reads back.
-//!    Anything else is an `Err(CanonError)` carrying the PATH to the
-//!    offending spot (`payload.Place.lat`) -- never a panic, at any depth.
-//!
-//! Nothing in the crate calls this yet; DB-2b wires it to the artifact.
-//!
-//! ## The number law
-//!
-//! * `Value::Int(i64)` is spelled by `i64`'s `Display` -- plain decimal,
-//!   a leading `-` for negatives, no leading zeros.
-//! * `Value::Float(f64)` is spelled by `f64`'s **`{}` Display**, and
-//!   whatever `{}` yields IS the law. Rust's `Display` for `f64` emits the
-//!   SHORTEST decimal string that round-trips back to the same bit
-//!   pattern, never uses exponent notation, and drops a `.0` tail -- so
-//!   `1.0_f64` prints `1`, `0.1 + 0.2` prints `0.30000000000000004`, and
-//!   `-0.0` prints `-0`. This has one consequence worth naming: a
-//!   whole-valued float and the equal integer share a spelling, so
-//!   `parse` hands `1` back as `Value::Int(1)`. Every f64 field decoder in
-//!   this module therefore accepts `Int` or `Float` (`expect_f64`), which
-//!   is what keeps decode total on what encode produced.
-//! * NaN and +/-inf have no canonical spelling and are refused at
-//!   construction: `Value::float` returns `Err`, so `serialize` cannot
-//!   fail.
+//! One value has exactly one byte spelling -- keys in byte order, no whitespace, shortest
+//! escapes, numbers as `Display` spells them -- and whatever `encode` produced, `decode`
+//! reads back or returns an error carrying the path to the offending spot, never a panic.
 
 use std::collections::BTreeMap;
 
@@ -44,24 +13,16 @@ pub use json::{parse, serialize};
 pub use rows::{encode_row_in_family, RowFamily};
 
 /// The encoding's version. Bump ONLY for a breaking byte change; every
-/// stored artifact records the version it was written under.
 pub const CANON_VERSION: u32 = 1;
 
 /// Domain separation for any hash taken over canonical bytes: prefix the
-/// bytes with this so a digest of a node can never collide with a digest
-/// of the same bytes meaning something else.
 pub const DOMAIN_PREFIX: &[u8] = b"bible-atlas/canon/1\n";
 
-/// The ONE path root, shared by `parse` and by every `Canon::from_value`
-/// (ruling R10c). Both sides start here, so a decode error reads as one
-/// continuous location -- `$.payload.Place.lat` -- whether the byte
-/// parser or a field decoder raised it, and NO error ever carries an
-/// empty path.
+/// The one path root, shared by the byte parser and by every field decoder, so a decode error
+/// reads as one continuous location whichever side raised it and no error carries an empty path.
 pub const ROOT: &str = "$";
 
 /// The canonical JSON data model. Deliberately small: no integer/float
-/// unification, no object ordering choice, no room for two spellings of
-/// one value.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Null,
@@ -75,8 +36,6 @@ pub enum Value {
 
 impl Value {
     /// The ONLY way to build a `Value::Float`: non-finite doubles have no
-    /// canonical spelling, so they are refused here rather than at
-    /// serialization time. That is what lets `serialize` be infallible.
     pub fn float(f: f64) -> Result<Value, CanonError> {
         if f.is_finite() {
             Ok(Value::Float(f))
@@ -85,7 +44,6 @@ impl Value {
         }
     }
 
-    /// The variant name, for error messages.
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::Null => "null",
@@ -99,12 +57,8 @@ impl Value {
     }
 }
 
-/// A decode failure, located. `path` is a dotted trail from `ROOT` (`$`)
-/// down to the offending spot -- `$.payload.Place.lat`,
-/// `$.payload.Polity.eras.0.rings.0.2` -- so a bad artifact row names its
-/// own bad field. The root is shared by the byte parser and by every
-/// `from_value`, which is what lets the two compose into one trail; a
-/// `CanonError` is therefore NEVER built with an empty path.
+/// `path` is a dotted trail from the root down to the offending spot -- `$.payload.Place.lat`
+/// -- so a bad artifact row names its own bad field. It is never empty.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CanonError {
     pub path: String,
@@ -124,8 +78,6 @@ impl std::fmt::Display for CanonError {
 }
 
 /// A type with a canonical JSON form. `encode`/`decode` are the byte
-/// surface; `to_value`/`from_value` are the shape surface, so nested
-/// types compose without going through bytes.
 pub trait Canon: Sized {
     fn to_value(&self) -> Value;
     fn from_value(v: &Value) -> Result<Self, CanonError>;
@@ -137,10 +89,7 @@ pub trait Canon: Sized {
     }
 }
 
-// ------------------------------------------------------------- build helpers
-
 /// Extend a path with one more segment. An empty side contributes
-/// nothing, so `join` never yields a leading, trailing or doubled dot.
 pub fn join(path: &str, seg: &str) -> String {
     if path.is_empty() {
         seg.to_string()
@@ -152,13 +101,11 @@ pub fn join(path: &str, seg: &str) -> String {
 }
 
 /// An object from `(key, value)` pairs -- the one spelling every
-/// `to_value` impl in this module uses.
 pub fn obj(pairs: Vec<(&str, Value)>) -> Value {
     Value::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
 }
 
 /// A single-variant enum object: `{"Variant": payload}` (unit variants
-/// pass `Value::Null`).
 pub fn variant(name: &str, payload: Value) -> Value {
     obj(vec![(name, payload)])
 }
@@ -167,7 +114,6 @@ pub fn str_value(s: &str) -> Value {
     Value::Str(s.to_string())
 }
 
-/// `Option<String>` -> string or `null`.
 pub fn opt_str(o: &Option<String>) -> Value {
     match o {
         Some(s) => Value::Str(s.clone()),
@@ -175,7 +121,6 @@ pub fn opt_str(o: &Option<String>) -> Value {
     }
 }
 
-/// `Option<i32>` -> int or `null`.
 pub fn opt_i32(o: &Option<i32>) -> Value {
     match o {
         Some(i) => Value::Int(i64::from(*i)),
@@ -183,7 +128,6 @@ pub fn opt_i32(o: &Option<i32>) -> Value {
     }
 }
 
-/// `Option<u8>` -> int or `null`.
 pub fn opt_u8(o: &Option<u8>) -> Value {
     match o {
         Some(i) => Value::Int(i64::from(*i)),
@@ -191,15 +135,9 @@ pub fn opt_u8(o: &Option<u8>) -> Value {
     }
 }
 
-/// `&[String]` -> array of strings.
 pub fn vec_str(v: &[String]) -> Value {
     Value::Arr(v.iter().map(|s| Value::Str(s.clone())).collect())
 }
-
-// -------------------------------------------------------------- read helpers
-//
-// Every accessor takes the path of the value it is reading and returns it
-// inside any error, so a caller only ever has to `join` one more segment.
 
 pub fn expect_obj<'a>(
     v: &'a Value,
@@ -219,8 +157,6 @@ pub fn expect_arr<'a>(v: &'a Value, path: &str) -> Result<&'a Vec<Value>, CanonE
 }
 
 /// Read a required member. The returned value's path is `path.key`, which
-/// is also the path a missing key reports under -- so `payload` missing
-/// from the root reports as `payload`, not as the root.
 pub fn get<'a>(
     m: &'a BTreeMap<String, Value>,
     key: &str,
@@ -236,7 +172,6 @@ pub fn expect_str(v: &Value, path: &str) -> Result<String, CanonError> {
     }
 }
 
-/// D5: a required boolean member.
 pub fn expect_bool(v: &Value, path: &str) -> Result<bool, CanonError> {
     match v {
         Value::Bool(b) => Ok(*b),
@@ -310,9 +245,6 @@ pub fn expect_opt_u8(v: &Value, path: &str) -> Result<Option<u8>, CanonError> {
 }
 
 /// An `f64` field. `Int` is accepted alongside `Float` on purpose: a
-/// whole-valued f64 serializes as a bare integer (see the number law
-/// above), so refusing `Int` here would make decode partial on bytes
-/// encode itself wrote.
 pub fn expect_f64(v: &Value, path: &str) -> Result<f64, CanonError> {
     match v {
         Value::Float(f) => Ok(*f),
@@ -321,25 +253,14 @@ pub fn expect_f64(v: &Value, path: &str) -> Result<f64, CanonError> {
     }
 }
 
-/// Re-ROOT an error onto `path`, KEEPING whatever nested location it
-/// already carried (ruling R10a). The inner path is appended, never
-/// dropped: re-rooting `$.eras.0` onto `edge.payload` gives
-/// `edge.payload.eras.0`. A bare `ROOT` contributes nothing, so
-/// re-rooting a root-level error just yields `path`.
-///
-/// This is how a nested `Canon::from_value` -- which starts at `ROOT`
-/// because it cannot know where its caller sits -- splices into the
-/// caller's trail. Task 2's row decoders are the intended users.
+/// Re-roots an error onto `path`, appending whatever nested location it already carried rather
+/// than dropping it. This is how a nested decoder, which starts at the root because it cannot
+/// know where its caller sits, splices into the caller's trail.
 pub fn at_path(path: &str, e: CanonError) -> CanonError {
     let inner = e.path.strip_prefix(ROOT).unwrap_or(&e.path);
     let inner = inner.strip_prefix('.').unwrap_or(inner);
     CanonError { path: join(path, inner), msg: e.msg }
 }
-
-// ------------------------------------------------------------ field accessors
-//
-// The layer every `from_value` impl actually uses: `path` is the OBJECT's
-// path, `key` the member, and the error already carries `path.key`.
 
 pub fn field<'a>(
     m: &'a BTreeMap<String, Value>,
@@ -437,15 +358,9 @@ pub fn field_obj<'a>(
     Ok((expect_obj(v, &p)?, p))
 }
 
-/// Reject UNKNOWN members (ruling R9). Every closed object in this
-/// encoding names its members exactly, so a key nobody asked for means
-/// the bytes were written by something that does not share this schema --
-/// silently ignoring it would let an artifact carry meaning this decoder
-/// cannot see. The error names the first unexpected key (BTree order, so
-/// the message is deterministic) in its path.
-///
-/// MISSING keys are not this function's job: `get`/`field_*` already
-/// report those, each under its own path.
+/// Every closed object here names its members exactly, so a key nobody asked for means the
+/// bytes carry meaning this decoder cannot see; ignoring it silently would hide that. Missing
+/// keys are reported by the readers above, each under its own path.
 pub fn expect_exact_keys(
     m: &BTreeMap<String, Value>,
     path: &str,

@@ -1,6 +1,5 @@
-//! Chronology: day-capable time, single-feed placements, total order.
-//! No event carries a date literal; every ordering commitment names its
-//! basis; adopted tradition carries its justification inside the hash.
+//! No event carries a date literal: every ordering commitment names its basis, and an adopted
+//! tradition carries its justification inside the hash.
 
 use std::cmp::Ordering;
 
@@ -30,9 +29,6 @@ pub enum YearError {
 }
 
 /// Time at the precision the sources give it — down to the day.
-/// Ordering convention for missing precision (documented, refined at
-/// first day-precision authoring): None sorts before Some within the
-/// same coarser unit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimePoint {
     pub year: Year,
@@ -60,7 +56,8 @@ pub enum TimeError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ResolvedDate {
     pub from: TimePoint,
-    pub to: TimePoint, // invariant: from <= to
+    /// Never earlier than `from`.
+    pub to: TimePoint,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -77,8 +74,6 @@ impl Duration {
 }
 
 /// Single-feed placement: dates resolve from the anchor table; sequence
-/// placement supplies order within equal TimePoints — where adopted
-/// traditional chronology lives.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DatePlacement {
     AnchorBinding { anchor: AnchorId, offset: Duration },
@@ -107,8 +102,6 @@ impl DatePlacement {
 }
 
 /// What kind of ground an ordering commitment stands on. The why of a
-/// Traditional placement lives in the row's justification (one carrier),
-/// inside the content-addressed identity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PlacementBasis {
     /// The text itself fixes the time.
@@ -128,7 +121,6 @@ pub struct DatedBy {
 }
 
 /// Sequence key within equal TimePoints, resolved from SequenceAfter
-/// chains — total by construction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SeqKey(pub u32);
 
@@ -140,7 +132,6 @@ pub struct ResolvedPlacement {
 }
 
 /// TOTAL. Precision first, then the traditional-sequence key. No
-/// cluster of uncertainty ever reaches a surface.
 pub fn temporal_order(a: &ResolvedPlacement, b: &ResolvedPlacement) -> Ordering {
     a.date
         .from

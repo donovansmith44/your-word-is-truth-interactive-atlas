@@ -1,6 +1,5 @@
-//! Exploration: the capability (Explorable — frontiers, nothing else)
-//! and the act (Holdings — the powerset monad's carrier). The monad
-//! laws run as tests; step/page agreement is the trait↔monad bridge.
+//! Exploring means yielding frontiers and nothing else; `Holdings` is the act of doing it,
+//! with set semantics -- a position is arrived at once.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -15,18 +14,14 @@ pub struct EdgeQuery {
     pub limit: usize,
 }
 
-/// Per-entry relation metadata (the types artifact's §10 open question,
-/// answered by demonstrated need — M-B's EventWorld workaround existed
-/// because entries could not carry this): a succession entry names its
-/// narrative; a citation entry carries its votes rank. The SAME meta is
-/// visible from both directions of a row (one row, two projections), so
-/// the bijection witness extends to meta. Extending this enum is a
-/// deliberate act reviewed like any relation change.
+/// An entry can carry the fact that belongs to it -- a succession entry its narrative, a
+/// citation entry its rank. The SAME meta is visible from both directions of a row, so the
+/// bijection between the two projections extends to meta.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EdgeMeta {
     None,
-    Narrative(crate::id::NarrativeId),  // follows-in/precedes-in: which chain
-    Votes(u32),                         // cites/cited-by: ranking
+    Narrative(crate::id::NarrativeId),
+    Votes(u32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -45,19 +40,16 @@ pub struct EdgePage {
 
 pub type EdgeSummary = BTreeMap<EdgeKind, usize>;
 
-/// DB-3 (spec 4): one page of node ids of one kind, in id (byte) order;
-/// `next` follows `EdgePage`'s own rule (`Some(cursor + ids.len())` iff
-/// more remain, `limit = 0` included).
+/// One page of node ids of one kind, in id byte order. `next` is `Some(cursor + ids.len())`
+/// exactly when more remain, including at `limit = 0`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NodePage {
     pub ids: Vec<crate::id::AnyNodeId>,
     pub next: Option<usize>,
 }
 
-/// DB-3 (spec 4): an edge entry with its target node already fetched. An
-/// edge position (a `justified-by` subject) has no node. No `PartialEq`:
-/// `Node` carries `f64` payload fields; compare through `format!("{:?}")`
-/// as the conformance harness does.
+/// The target node is already fetched, and absent when the target is itself an edge. No
+/// `PartialEq`: a node carries `f64` payload fields, so comparison goes through its debug form.
 #[derive(Clone, Debug)]
 pub struct EdgeEntryWithNode {
     pub entry: EdgeEntry,
@@ -71,8 +63,7 @@ pub struct EdgePageWithNodes {
     pub next: Option<usize>,
 }
 
-/// What EXPLORATION means — yielding frontiers, nothing else. Card and
-/// payload live on NodeData/the view side (deliberate split).
+/// Yielding frontiers, nothing else: payload and card live on the data side, deliberately apart.
 pub trait Explorable {
     fn edge_summary(&self, g: &Graph) -> EdgeSummary;
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage;
@@ -105,10 +96,8 @@ fn raw_neighbors(g: &Graph, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
                 })
                 .unwrap_or_default()
         }
-        // M-C: closes the "skeleton serves none yet" gap -- both ends of a
-        // symmetric relation are interchangeable, so BOTH populate the
-        // SAME `fwd` map at index-build time (`BiIndex::build_symmetric`);
-        // querying from either end reads the SAME map, no `inv` involved.
+        // Both ends of a symmetric relation are interchangeable, so both populate the SAME
+        // forward map at build time and querying from either end reads that one map.
         EdgeKind::Symmetric(rel) => {
             let ix = match g.symmetric_indexes.get(&rel) {
                 Some(ix) => ix,
@@ -142,9 +131,8 @@ impl Explorable for PositionRef {
                 }
             }
         }
-        // M-C review I-1: symmetric kinds MUST appear too — a summary
-        // that omits real connections breaks affordance honesty (the
-        // section-renders-iff-count>0 policy would hide them).
+        // Symmetric kinds must appear here too: a summary that omits real connections would
+        // hide them from a frontier that renders a section only when its count is positive.
         for rel in crate::edge::SymRelationId::ALL {
             let k = EdgeKind::Symmetric(*rel);
             let n = raw_neighbors(g, &self.0, k).len();
@@ -168,14 +156,12 @@ impl Explorable for PositionRef {
     }
 }
 
-/// The exploration state: the powerset monad's carrier. Set semantics —
-/// arrive at a position once; edges never dedup (they live in pages,
-/// each with its EdgeId).
+/// Set semantics: a position is arrived at once. Edges never dedup -- they live in pages, each
+/// carrying its own id.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Holdings(pub BTreeSet<Position>);
 
 impl Holdings {
-    /// return: hold one thing, frontier not yet consulted.
     pub fn focus(p: Position) -> Holdings {
         let mut s = BTreeSet::new();
         s.insert(p);
@@ -191,8 +177,7 @@ impl Holdings {
         Holdings(out)
     }
 
-    /// bind at one generating arrow: union over held positions of the
-    /// TOTAL frontier of kind k (all pages — the totaled trait calls).
+    /// The union over held positions of the TOTAL frontier of that kind -- every page.
     pub fn step(&self, g: &Graph, k: EdgeKind) -> Holdings {
         self.bind(|p| {
             Holdings(
@@ -204,14 +189,12 @@ impl Holdings {
         })
     }
 
-    /// Kleisli chain.
     pub fn steps(&self, g: &Graph, path: &[EdgeKind]) -> Holdings {
         path.iter().fold(self.clone(), |h, k| h.step(g, *k))
     }
 }
 
-/// The bijection witness, queryable: traversing forward then asking the
-/// target for the inverse entry finds the same EdgeId.
+/// Traversing forward and then asking the target for its inverse entry finds the same edge id.
 pub fn inverse_entry_ids(g: &Graph, from: &Position, kind: EdgeKind) -> Vec<(EdgeId, EdgeId)> {
     let fwd = raw_neighbors(g, from, kind);
     let dk = dual(kind);

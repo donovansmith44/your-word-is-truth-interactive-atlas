@@ -1,12 +1,6 @@
-//! The storage PORT (design spec §9a): the store is a port, not a place.
-//!
-//! GraphQuery is THE shared contract (owner, 2026-08-22: "if graph and
-//! graph snapshot share a contract why don't we write a shared
-//! interface") — implemented by the concrete Graph itself (the canonical
-//! instance, typed rather than asserted) and by every backend snapshot.
-//! A snapshot is a versioned GraphQuery, nothing more. Conformance is
-//! therefore a comparison of any implementation directly against the
-//! Graph, and the same harness verifies backend-vs-backend migrations.
+//! The store is a port, not a place: the concrete graph implements the same query contract
+//! every backend snapshot does, so admitting a backend is a comparison of its answers against
+//! the canonical instance.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -16,58 +10,48 @@ use crate::graph::Graph;
 use crate::id::{AnyNodeId, ContentAddressed, ContentHash, NodeKind, Pid, Position};
 use crate::node::Node;
 
-/// The version root: one stamp identifies one immutable compiled graph.
-/// (Skeleton: hash of the node table's canonical bytes; production: the
-/// Merkle root over every thing.)
+/// One stamp identifies one immutable compiled graph.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GraphVersion(pub ContentHash);
 
-/// DB-3 (spec 4): which row produced an edge, and its provenance.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RowRef {
     pub family: crate::canon::RowFamily,
-    /// The row's ord within its family (spec 5.0 `ord`; `id` in the tables).
+    /// The row's ord within its own family.
     pub row_id: u64,
     pub provenance: crate::ingest::ProvenanceId,
 }
 
-/// THE SHARED QUERY CONTRACT: what it means to answer graph questions.
-/// The concrete Graph implements it (canonical instance); every backend
-/// snapshot implements it; serving composes it and nothing else.
+/// What it means to answer graph questions. The concrete graph implements it, every backend
+/// snapshot implements it, and serving composes it and nothing else.
 pub trait GraphQuery {
-    /// Node lookup by erased id.
     fn node(&self, id: &AnyNodeId) -> Option<Node>;
 
-    /// derive: the content-addressed store law — the canonical bytes of
-    /// the thing a pid names; must hash back to the pid.
+    /// The content-addressing law: the canonical bytes of the thing a pid names, which must
+    /// hash back to that pid.
     fn derive(&self, pid: &Pid) -> Option<Vec<u8>>;
 
-    /// Frontier counts for one position (kind → count; inhabited only).
+    /// Inhabited kinds only: a kind with no edges at this position is absent, not zero.
     fn edge_summary(&self, p: &Position) -> EdgeSummary;
 
-    /// One page of one edge kind at one position.
     fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage;
 
-    /// A window along one corpus's reading spine (unit ids, canonical
-    /// order). Text composes via `node`.
+    /// Unit ids in canonical order; their text composes through `node`.
     fn reading_window(&self, corpus: &'static str, start: usize, n: usize) -> Vec<AnyNodeId>;
 
-    // ---- DB-3 (spec 4): the port widened. Defaults are compositions
-    // over the five above wherever one exists; the other three are
-    // required because enumeration, row identity and the spine index
-    // are not derivable from the five.
+    // The methods below default to compositions of the five above wherever one exists. Three
+    // are required instead, because enumeration, row identity and the spine index cannot be
+    // derived from the five.
 
-    /// All node ids of one kind, in id (byte) order, paged. Retires the
-    /// per-kind id lists the service used to precompute.
+    /// In id byte order, paged.
     fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage;
 
-    /// Batch lookup; position `i` answers `ids[i]`.
+    /// Position `i` of the result answers `ids[i]`.
     fn nodes(&self, ids: &[AnyNodeId]) -> Vec<Option<Node>> {
         ids.iter().map(|i| self.node(i)).collect()
     }
 
-    /// One page of one kind WITH each target node (an edge position has
-    /// none) -- the N+1 the reader and frontier worked around.
+    /// Each entry carries its target node, which is absent when the target is an edge.
     fn edges_with_nodes(&self, p: &Position, q: &EdgeQuery) -> EdgePageWithNodes {
         let page = self.edges(p, q);
         let ids: Vec<AnyNodeId> = page
@@ -93,28 +77,23 @@ pub trait GraphQuery {
         EdgePageWithNodes { kind: page.kind, entries, next: page.next }
     }
 
-    /// The row behind an edge id, with its provenance; `None` for a
-    /// synthesised edge (`justified-by`) or an unknown id. When two rows
-    /// mint one id (identical `(rel, subject, object)`), this is the FIRST
-    /// by `(family, ord)`; `rows_behind` lists them all.
+    /// `None` for a synthesised or unknown id. Where two rows mint one id, this is the first
+    /// by `(family, ord)` and `rows_behind` lists them all.
     fn row_provenance(&self, e: &crate::edge::EdgeId) -> Option<RowRef>;
 
-    /// EVERY row behind an edge id, in `(family, ord)` order -- the leper
-    /// lesson: one event's account attested by two sources is two rows
-    /// with one id, and both sources must stay reachable. Default: the one
-    /// row `row_provenance` names; backends that keep every row override.
+    /// One account attested by two sources is two rows behind one id, and both must stay
+    /// reachable. The default answers with the single row named above, so a backend that keeps
+    /// every row overrides this.
     fn rows_behind(&self, e: &crate::edge::EdgeId) -> Vec<RowRef> {
         self.row_provenance(e).into_iter().collect()
     }
 
-    /// Index of a unit in a corpus's reading spine; `None` off-spine or
-    /// for an unknown corpus.
+    /// `None` off-spine, and for an unknown corpus.
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize>;
 }
 
-/// The canonical instance: the Graph answers its own questions. Typed
-/// conformance — "a snapshot is basically an instance of graph" is now
-/// a supertrait fact, not an intuition.
+/// The canonical instance: the graph answers its own questions, so conformance is typed
+/// rather than asserted.
 impl GraphQuery for Graph {
     fn node(&self, id: &AnyNodeId) -> Option<Node> {
         self.nodes.get(id).cloned()
@@ -136,8 +115,7 @@ impl GraphQuery for Graph {
     }
     fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
         let start = cursor.unwrap_or(0);
-        // `AnyNodeId: Ord` is `(kind, raw)`, so one kind is one contiguous
-        // range of the node table; within it, raw byte order.
+        // An id orders by `(kind, raw)`, so one kind is one contiguous range.
         let mut ids: Vec<AnyNodeId> = self
             .nodes
             .range(AnyNodeId { kind, raw: String::new() }..)
@@ -172,14 +150,12 @@ impl GraphQuery for Graph {
     }
 }
 
-/// A snapshot is a VERSIONED GraphQuery — the shared contract plus one
-/// stamp. Immutable: publishing a new version never changes what an
-/// open snapshot answers (law-tested).
+/// The same contract plus one stamp, and immutable: publishing a new version never changes
+/// what an already-open snapshot answers.
 pub trait GraphSnapshot: GraphQuery {
     fn version(&self) -> GraphVersion;
 }
 
-/// Read-side port: versioned, snapshot-consistent access.
 pub trait GraphStore {
     type Snapshot: GraphSnapshot;
     fn current_version(&self) -> Option<GraphVersion>;
@@ -189,27 +165,15 @@ pub trait GraphStore {
     }
 }
 
-/// Write-side port: the COMPILER publishes; serving never writes.
-/// Publishing is an atomic advance — readers see the old version or the
-/// new one, never a mixture.
+/// The compiler publishes; serving never writes. Publishing is an atomic advance: a reader
+/// sees the old version or the new one, never a mixture.
 pub trait GraphPublisher {
     fn publish(&mut self, graph: Graph) -> GraphVersion;
 }
 
-// ---------------------------------------------------------------------
-// Reference implementation: the in-memory store (implementation #1).
-// ---------------------------------------------------------------------
-
-/// Skeleton version derivation: hash the node ids + payload debug forms.
-/// (Production: Merkle root. The LAW — same content ⇒ same version — is
-/// what the tests pin.)
-///
-/// KNOWN DEFECT, disclosed rather than hidden (spec §3.1 defect 1): this
-/// hashes the NODE TABLE ONLY. Add a row — a `located_at`, a `mentions` —
-/// with the nodes untouched and the version root does not move, so two
-/// materially different graphs share one stamp. `version_root_is_blind_to_rows`
-/// below asserts that defect so it cannot be forgotten; the `canon-ids`
-/// version underneath FIXES it.
+/// A disclosed defect, not a hidden one: this hashes the NODE TABLE ONLY, so adding a row
+/// with the nodes untouched leaves the root where it was and two different graphs share one
+/// stamp. A law below asserts the defect; the other spelling of this function fixes it.
 #[cfg(not(feature = "canon-ids"))]
 fn version_of(g: &Graph) -> GraphVersion {
     struct V<'a>(&'a Graph);
@@ -222,27 +186,20 @@ fn version_of(g: &Graph) -> GraphVersion {
             s.into_bytes()
         }
         fn position_kind(&self) -> crate::id::PositionKind {
-            crate::id::PositionKind::Exploration // stand-in kind for the root stamp
+            crate::id::PositionKind::Exploration
         }
     }
     GraphVersion(V(g).pid().hash)
 }
 
-/// ON (DB-4a, ROOT-1): the root is THE manifest root -- spec §3.4 --
-/// `sha256_prefixed_128(DOMAIN_PREFIX, manifest lines)` over the shipped
-/// sections' logical hashes (`crate::sections::version_root`). It is the
-/// number the section writer writes as `manifest.toml`'s `root` and
-/// `SqliteSnapshot::version()` reads back: one root, three readers.
-/// Derived state (`indexes`, `symmetric_indexes`, `pid_index`, `edge_rows`,
-/// `spine_index`) is a function of the rows already in the dumps and is
-/// not hashed.
+/// The root is the manifest root over the shipped sections' logical hashes -- the same number
+/// the section writer records and a snapshot reads back. Derived state is a function of rows
+/// those dumps already cover, so it is not hashed again.
 #[cfg(feature = "canon-ids")]
 fn version_of(g: &Graph) -> GraphVersion {
     GraphVersion(crate::sections::version_root(g))
 }
 
-
-/// A version-stamped handle to a Graph — the canonical presentation.
 #[derive(Clone)]
 pub struct MemSnapshot {
     version: GraphVersion,
@@ -255,8 +212,6 @@ impl MemSnapshot {
     }
 }
 
-/// Pure delegation to the Graph's own GraphQuery — conformance by
-/// construction, visible in the code.
 impl GraphQuery for MemSnapshot {
     fn node(&self, id: &AnyNodeId) -> Option<Node> {
         self.graph.node(id)
@@ -293,8 +248,7 @@ impl GraphSnapshot for MemSnapshot {
     }
 }
 
-/// The in-memory store: versions held live; publish swaps atomically
-/// (readers hold Arc snapshots; an open snapshot never changes).
+/// Publishing swaps atomically: a reader holds its own snapshot, which never changes.
 #[derive(Default)]
 pub struct MemStore {
     versions: BTreeMap<GraphVersion, Arc<Graph>>,
@@ -322,14 +276,8 @@ impl GraphPublisher for MemStore {
     }
 }
 
-// ---------------------------------------------------------------------
-// The conformance law, executable.
-// ---------------------------------------------------------------------
-
-/// Every position the model knows: the node table PLUS every subject and
-/// object in the built indexes — so a sparse node table cannot produce a
-/// vacuously-passing check (the lying-snapshot test demonstrates this
-/// deliberately).
+/// The node table PLUS every subject and object in the built indexes, so a sparse node table
+/// cannot make a conformance check pass vacuously.
 fn position_inventory(model: &Graph) -> BTreeSet<Position> {
     let mut out: BTreeSet<Position> = model
         .nodes
@@ -340,13 +288,8 @@ fn position_inventory(model: &Graph) -> BTreeSet<Position> {
         out.extend(ix.fwd.keys().cloned());
         out.extend(ix.inv.keys().cloned());
     }
-    // Survey gotcha 1: `symmetric_indexes` is the SAME kind of built,
-    // never-authored adjacency `indexes` is (`BiIndex::build_symmetric`
-    // instead of `build`) -- a row whose only lowering is symmetric (e.g.
-    // an `Analogue` pair with no directed row alongside it) has both its
-    // ends live ONLY here, so omitting this loop left them outside "every
-    // position the model knows" (position_inventory_covers_symmetric_
-    // indexes pins the gap this closes).
+    // A row whose only lowering is symmetric has both of its ends live here alone, so leaving
+    // this loop out would put them outside "every position the model knows".
     for ix in model.symmetric_indexes.values() {
         out.extend(ix.fwd.keys().cloned());
         out.extend(ix.inv.keys().cloned());
@@ -380,10 +323,6 @@ fn node_eq(a: &Option<Node>, b: &Option<Node>) -> bool {
     }
 }
 
-/// ADMIT-PERF-1 (owner, 2026-09-19): one position's node/derive/
-/// edge_summary/edges answers, checked against the model. Extracted from
-/// `assert_answers_match`'s own first pass VERBATIM so the sweep below can
-/// hand it to several threads without the assertions themselves moving.
 fn check_position_answers<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position) {
     if let Position::Node(id) = p {
         let a = candidate.node(id);
@@ -418,9 +357,6 @@ fn check_position_answers<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Posit
     }
 }
 
-/// ADMIT-PERF-1: one position's ROW-level answers (edges_with_nodes and the
-/// row identity behind each entry, plus position_of). Extracted from
-/// `assert_answers_match`'s own second pass VERBATIM, same reason.
 fn check_position_rows<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position) {
     for (kind, _) in model.edge_summary(p) {
         let q = EdgeQuery { kind, cursor: None, limit: 1 };
@@ -451,27 +387,9 @@ fn check_position_rows<Q: GraphQuery>(candidate: &Q, model: &Graph, p: &Position
     }
 }
 
-/// ADMIT-PERF-1 (owner, 2026-09-19, on the finding that gate 8 outgrew its
-/// ceiling because this sweep is single-threaded while the rest of the box
-/// idles): runs `check` over every position, spread across this machine's
-/// own cores. `std::thread::scope` and `available_parallelism` only — the
-/// SAME zero-dependency idiom `Graph::build_indexes` already uses (this
-/// crate takes no dependencies; the compiler is the reviewer).
-///
-/// Every check is a PURE READ of `candidate` and `model` (no shared mutable
-/// state crosses a thread), so the work partitions with no coordination.
-/// Positions are STRIPED (worker `w` takes `w`, `w+n`, `w+2n`, ...) rather
-/// than sliced into contiguous blocks: per-position cost varies by orders of
-/// magnitude (a hub verse with hundreds of cross-references beside a leaf),
+/// Every check is a pure read of both sides, so the work partitions with no coordination.
+/// Positions are STRIPED rather than sliced: per-position cost varies by orders of magnitude,
 /// and striping averages that out without a work-stealing queue.
-///
-/// FAIL-LOUD IS PRESERVED: an assertion inside a worker panics that worker,
-/// and `thread::scope` re-raises it once the scope ends, message intact. The
-/// ONE observable change is which divergence gets reported when a candidate
-/// has SEVERAL: it is now whichever worker reached one first, not the
-/// lowest-numbered position. With exactly one divergence -- every planted
-/// case in this file's own law tests, and the only case a real regression
-/// has ever produced -- the reported panic is identical.
 fn sweep_positions<Q: GraphQuery + Sync>(
     candidate: &Q,
     model: &Graph,
@@ -499,32 +417,14 @@ fn sweep_positions<Q: GraphQuery + Sync>(
     });
 }
 
-/// THE CONFORMANCE LAW: any GraphQuery implementation claiming to
-/// present `model` must answer every question identically to the Graph
-/// itself (which implements the same interface — no canonical-clone
-/// dance). Works for backend-vs-model AND, via two calls, for
-/// backend-vs-backend migration verification. Panics at a divergence,
-/// precisely named (see `sweep_positions` for the one ordering caveat
-/// ADMIT-PERF-1's threading introduces). This is the port admission
-/// requirement: MemStore passes by construction; the serialized backend
-/// (M-C) and any future database must pass the same call to exist.
-///
-/// ADMIT-PERF-1: `Sync` is required of the candidate because the two
-/// position sweeps run across cores. Every implementation in this workspace
-/// already satisfies it (`Graph` and `MemSnapshot` are plain data;
-/// `SqliteSnapshot` holds a POOL of `Mutex<Connection>`, built for exactly
-/// this). A candidate that genuinely cannot be shared across threads is not
-/// a graph backend this atlas can serve from.
+/// Any implementation claiming to present `model` must answer every question identically to
+/// the graph itself; it panics at a divergence, naming it. `Sync` is required because the
+/// sweeps run across cores: a candidate that cannot be shared is not a backend to serve from.
 pub fn assert_answers_match<Q: GraphQuery + Sync>(candidate: &Q, model: &Graph) {
-    // ADMIT-PERF-1: built ONCE and shared by both sweeps. It used to be
-    // rebuilt from scratch for the second pass -- a full clone of every
-    // position in the graph, inserted one at a time into a fresh BTreeSet,
-    // for a set that had just been walked and thrown away.
     let inventory: Vec<Position> = position_inventory(model).into_iter().collect();
 
     sweep_positions(candidate, model, &inventory, check_position_answers::<Q>);
 
-    // DB-3 (spec 4, 6.2): the widened methods, over the same inventory.
     for kind in NodeKind::ALL {
         let mut cursor = None;
         let mut got: Vec<AnyNodeId> = Vec::new();
@@ -657,8 +557,6 @@ mod laws {
         assert_eq!(bytes, n.canonical_bytes(), "derive returns the canonical form");
     }
 
-    /// True in BOTH states: `hex` is the one wire spelling and `from_hex`
-    /// its strict inverse. Width is asserted separately, per state.
     #[test]
     fn content_hash_hex_and_from_hex_are_inverse() {
         let h = version_of(&graph_with(&[("bible/1.1.1", "In the beginning")])).0;
@@ -687,10 +585,6 @@ mod laws {
         assert_eq!(h.hex().len(), 32);
     }
 
-    /// The content-addressing law, stated over the SHA-256 ids: identity
-    /// follows content and nothing else. Two nodes built independently
-    /// from equal parts share a pid; one byte of payload text apart, they
-    /// do not.
     #[cfg(feature = "canon-ids")]
     #[test]
     fn equal_nodes_have_equal_pids_and_one_payload_byte_moves_them() {
@@ -698,21 +592,11 @@ mod laws {
         let b = unit("bible/1.1.1", "In the beginning");
         assert_eq!(a.pid(), b.pid(), "equal content, equal pid");
 
-        let c = unit("bible/1.1.1", "In the beginninq"); // one byte apart
+        let c = unit("bible/1.1.1", "In the beginninq");
         assert_ne!(a.pid(), c.pid(), "one byte of payload is one different id");
         assert_eq!(a.pid().kind, c.pid().kind, "only the hash moved, not the kind");
     }
 
-    /// Spec §3.1 defect 1, ON: the root covers ROWS. Adding a
-    /// `succession` and a `located_at` with the node table untouched must
-    /// move the version.
-    /// The ONE setup both sides of spec §3.1 defect 1 argue over: two
-    /// graphs with the SAME node table, one of which also carries a
-    /// `succession` and a `located_at` row. Shared so the two cfg'd tests
-    /// below differ in exactly the thing they disagree about — the
-    /// assertion — and cannot drift into comparing different graphs.
-    /// The node-table equality is asserted HERE, once, because it is the
-    /// premise of both, not a claim either test is making.
     fn base_and_rowed() -> (Graph, Graph) {
         let texts = [("bible/1.1.1", "a"), ("bible/1.1.2", "b")];
         let base = graph_with(&texts);
@@ -732,11 +616,6 @@ mod laws {
         assert_ne!(version_of(&base), version_of(&rowed), "a row changes the root");
     }
 
-    /// Spec §3.1 defect 1, OFF: the SAME comparison, asserted the other
-    /// way. This is not a passing test celebrating correct behaviour --
-    /// it PINS a known defect so it cannot be quietly inherited: today's
-    /// root hashes the node table alone, so a graph that gained two edge
-    /// rows still stamps as the graph that did not.
     #[cfg(not(feature = "canon-ids"))]
     #[test]
     fn version_root_is_blind_to_rows_the_documented_defect() {
@@ -749,9 +628,6 @@ mod laws {
         );
     }
 
-    /// The dump is the version root's preimage, so its SHAPE is a law:
-    /// node lines first, then family lines tagged with the family's own
-    /// table name, then one spine line per corpus.
     #[cfg(feature = "canon-ids")]
     #[test]
     fn edge_ids_hash_canonical_edge_bytes_not_debug_text() {
@@ -768,13 +644,6 @@ mod laws {
         assert_eq!(id.0.len(), "LocatedAt:".len() + 32);
     }
 
-    /// A symmetric relation's two ends are interchangeable, so the id is
-    /// taken over the pair SORTED by `Position`'s own `Ord` -- the lower
-    /// end first. Pinned rather than re-derived, because "the same id
-    /// either way round" is also true of the wrong sort order: only a
-    /// fixed value says WHICH end was hashed first. The digest widens with
-    /// `canon-ids` (16 hex chars OFF, 32 ON), so each of this crate's two
-    /// gates reads its own spelling of the one law.
     const PARALLEL_ID_WITHOUT_CANON_IDS: &str = "Parallel:5d66728a994d8f39";
     const PARALLEL_ID_WITH_CANON_IDS: &str = "Parallel:6e8a07c6798657c8680765038904c648";
 
@@ -820,7 +689,7 @@ mod laws {
             }
             fn edges(&self, p: &Position, q: &EdgeQuery) -> EdgePage {
                 let mut page = self.0.edges(p, q);
-                page.entries.pop(); // the lie: drop one connection
+                page.entries.pop();
                 page
             }
             fn reading_window(
@@ -842,9 +711,6 @@ mod laws {
             }
         }
 
-        // Deliberately SPARSE node table: e1/jordan exist only in edge
-        // rows — the index-derived position inventory must still catch
-        // the lie (this is the harness-robustness law).
         let g = with_edges(graph_with(&[("bible/1.1.1", "a")]));
         let mut store = MemStore::default();
         let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a")])));
@@ -855,15 +721,6 @@ mod laws {
         assert!(caught.is_err(), "the harness must catch a dropped edge");
     }
 
-    /// Survey gotcha 1: `position_inventory` walked `indexes` but never
-    /// `symmetric_indexes`, so a graph whose ONLY row is symmetric (no
-    /// directed row at all) reports an inventory that omits both of that
-    /// row's own ends -- a real blind spot in the port admission
-    /// harness (`assert_answers_match` above quantifies "every position
-    /// the model knows" over exactly this set). Analogue is the row: two
-    /// Event ids, no directed row alongside them, no node table entries
-    /// either (the same sparse-table shape `conformance_harness_catches_
-    /// a_lying_snapshot` above already relies on).
     #[test]
     fn position_inventory_covers_symmetric_indexes() {
         let mut g = Graph::default();
@@ -910,8 +767,6 @@ mod laws {
         }
     }
 
-    // ---- DB-3 (spec 4): the widened port on the canonical instance.
-
     #[test]
     fn nodes_of_kind_pages_in_id_order_with_edge_page_semantics() {
         let g = with_edges(graph_with(&[("bible/1.1.2", "b"), ("bible/1.1.1", "a"), ("bible/1.1.3", "c")]));
@@ -924,10 +779,8 @@ mod laws {
         let rest = g.nodes_of_kind(NodeKind::TextUnit, Some(2), 2);
         assert_eq!((rest.ids.len(), rest.next), (1, None));
         assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(9), 2), NodePage { ids: vec![], next: None });
-        // with_edges adds ROWS, never Place/Event nodes: those kinds are empty.
         assert_eq!(g.nodes_of_kind(NodeKind::Place, None, 5), NodePage { ids: vec![], next: None });
         assert_eq!(g.nodes_of_kind(NodeKind::Polity, None, 5), NodePage { ids: vec![], next: None });
-        // limit 0 with entries remaining: next = Some(cursor) (explore.rs's rule, mirrored).
         assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(1), 0).next, Some(1));
         assert_eq!(g.nodes_of_kind(NodeKind::TextUnit, Some(3), 0).next, None);
     }
@@ -945,10 +798,8 @@ mod laws {
         let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
         let page = g.edges_with_nodes(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 1);
-        // The place position is indexed, but with_edges never inserted a Place NODE: honest None.
         assert!(page.entries[0].node.is_none());
         assert_eq!(page.entries[0].entry, g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 }).entries[0]);
-        // A target that IS a node comes back as that node.
         let v = Position::Node(AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
         let g2 = {
             let mut g2 = graph_with(&[("bible/1.1.1", "a")]);
@@ -985,7 +836,6 @@ mod laws {
         assert_eq!(g.position_of("bible", &id), Some(1));
         assert_eq!(g.position_of("concord", &id), None);
         assert_eq!(g.position_of("bible", &EventId::new("e1").erase()), None);
-        // MemSnapshot delegates every new method.
         let mut store = MemStore::default();
         let v = store.publish(with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")])));
         let snap = store.open(v).unwrap();

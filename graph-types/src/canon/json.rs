@@ -1,26 +1,15 @@
-//! The canonical JSON codec: an infallible serializer and a strict,
-//! non-recursive-blowup parser that accepts ONLY canonical bytes.
-//!
-//! "Strict" is the whole point. A lenient parser would let two different
-//! byte strings mean one value, and the artifact's hashes would stop
-//! meaning anything. So every non-canonical spelling -- whitespace, an
-//! unsorted or repeated key, a redundant escape, `1.50`, `1e5`, `01` --
-//! is an error, not a kindness. Errors are located: every one carries a
-//! path from the shared `ROOT`, so a bad artifact row names its own spot.
+//! Strictness is the whole point: a lenient parser would let two byte strings mean one value
+//! and the artifact's hashes would stop meaning anything, so every non-canonical spelling --
+//! whitespace, an unsorted or repeated key, a redundant escape, `1.50`, `1e5`, `01` -- is an error.
 
 use std::collections::BTreeMap;
 
 use super::{CanonError, Value, ROOT};
 
 /// How deep a value may nest before the parser gives up. Node and edge
-/// payloads nest fewer than ten levels; the limit exists so hostile or
-/// corrupt bytes fail as an `Err`, not as a blown stack.
 pub const MAX_DEPTH: u32 = 64;
 
-// ------------------------------------------------------------- serialization
-
 /// Canonical bytes for a value. Infallible: the only unrepresentable
-/// doubles are refused by `Value::float` at construction.
 pub fn serialize(v: &Value) -> Vec<u8> {
     let mut out = Vec::new();
     write_value(v, &mut out);
@@ -34,7 +23,6 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
         Value::Bool(false) => out.extend_from_slice(b"false"),
         Value::Int(i) => out.extend_from_slice(i.to_string().as_bytes()),
         // The float law: Rust's `{}` Display, whatever it yields. See the
-        // module docs on `canon` for what that means and why it is safe.
         Value::Float(f) => out.extend_from_slice(format!("{f}").as_bytes()),
         Value::Str(s) => write_string(s, out),
         Value::Arr(items) => {
@@ -50,7 +38,6 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
         Value::Obj(members) => {
             out.push(b'{');
             // BTreeMap iteration is `str` order, which is UTF-8 byte
-            // order -- the key ordering law, for free.
             for (i, (k, val)) in members.iter().enumerate() {
                 if i > 0 {
                     out.push(b',');
@@ -64,12 +51,9 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
     }
 }
 
-/// Minimal escaping, spec form (ruling R5): exactly TWO two-character
-/// escapes -- `\"` and `\\` -- then `\u00xx` in lowercase hex for EVERY
-/// C0 control (U+0000 through U+001F), with no exceptions. JSON's other
-/// short escapes (`\b \t \n \f \r`) are deliberately NOT produced and are
-/// rejected on the way back in: one character, one spelling. Everything
-/// else -- `/` included, non-ASCII included -- rides raw as UTF-8.
+/// Exactly two two-character escapes, then `\u00xx` in lowercase hex for every C0 control.
+/// JSON's other short escapes are a second spelling of a character that already has one, so
+/// they are never produced and are rejected on the way back in. Everything else rides raw.
 fn write_string(s: &str, out: &mut Vec<u8>) {
     out.push(b'"');
     for ch in s.chars() {
@@ -88,10 +72,7 @@ fn write_string(s: &str, out: &mut Vec<u8>) {
     out.push(b'"');
 }
 
-// ------------------------------------------------------------------- parsing
-
 /// Parse canonical bytes. Any deviation from the canonical spelling is an
-/// `Err` carrying the path of the offending value.
 pub fn parse(bytes: &[u8]) -> Result<Value, CanonError> {
     let mut p = Parser { b: bytes, i: 0, depth: 0 };
     let v = p.value(ROOT)?;
@@ -150,7 +131,7 @@ impl<'a> Parser<'a> {
 
     fn array(&mut self, path: &str) -> Result<Value, CanonError> {
         self.enter(path)?;
-        self.i += 1; // '['
+        self.i += 1;
         let mut items = Vec::new();
         if self.peek() == Some(b']') {
             self.i += 1;
@@ -175,7 +156,7 @@ impl<'a> Parser<'a> {
 
     fn object(&mut self, path: &str) -> Result<Value, CanonError> {
         self.enter(path)?;
-        self.i += 1; // '{'
+        self.i += 1;
         let mut members: BTreeMap<String, Value> = BTreeMap::new();
         if self.peek() == Some(b'}') {
             self.i += 1;
@@ -189,7 +170,6 @@ impl<'a> Parser<'a> {
             }
             let key = self.string(path)?;
             // Strictly increasing catches BOTH laws at once: an unsorted
-            // key and a repeated key are the same violation.
             if let Some(p) = &prev {
                 if key <= *p {
                     return self.err(
@@ -221,9 +201,9 @@ impl<'a> Parser<'a> {
     }
 
     fn string(&mut self, path: &str) -> Result<String, CanonError> {
-        self.i += 1; // opening quote
+        self.i += 1;
         let mut out = String::new();
-        let mut run = self.i; // start of the current unescaped run
+        let mut run = self.i;
         loop {
             let c = match self.peek() {
                 Some(c) => c,
@@ -251,7 +231,6 @@ impl<'a> Parser<'a> {
     }
 
     /// Append `b[run..i]` to `out`, rejecting invalid UTF-8 there. Raw
-    /// runs are the only place non-ASCII bytes can appear.
     fn push_run(&self, path: &str, out: &mut String, run: usize) -> Result<(), CanonError> {
         match std::str::from_utf8(&self.b[run..self.i]) {
             Ok(s) => {
@@ -262,12 +241,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Decode one escape (the backslash is already consumed). Only the
-    /// canonical forms are legal (ruling R5): `\"`, `\\`, and `\u00xx`
-    /// for a C0 control. JSON's other short escapes -- `\n` and its four
-    /// siblings -- are a SECOND spelling of a character that already has
-    /// one, so they are rejected here as unknown escapes, exactly like an
-    /// escaped solidus, an escaped letter, or uppercase hex.
+    /// The backslash is already consumed. Only the canonical forms are legal: a second spelling
+    /// of a character that already has one is rejected as an unknown escape, as is uppercase hex.
     fn escape(&mut self, path: &str) -> Result<char, CanonError> {
         let e = match self.peek() {
             Some(e) => e,
@@ -285,7 +260,6 @@ impl<'a> Parser<'a> {
                 let mut code: u32 = 0;
                 for d in hex {
                     // Lowercase only: `` is a second spelling of a
-                    // value that already has one.
                     let v = match d {
                         b'0'..=b'9' => u32::from(d - b'0'),
                         b'a'..=b'f' => u32::from(d - b'a') + 10,
@@ -316,9 +290,6 @@ impl<'a> Parser<'a> {
     }
 
     /// A number. The canonical spelling is whatever `Display` produces,
-    /// so the check is simply: parse it, print it back, demand the same
-    /// bytes. That one rule subsumes leading zeros, `+`, trailing zeros,
-    /// exponent forms and every other variant spelling.
     fn number(&mut self, path: &str) -> Result<Value, CanonError> {
         let start = self.i;
         while matches!(
@@ -331,9 +302,6 @@ impl<'a> Parser<'a> {
         let text = std::str::from_utf8(&self.b[start..self.i]).unwrap_or("");
 
         // `-0` is a float: it is what `{}` prints for -0.0_f64 and has no
-        // i64 spelling. Everything with a `.` or an exponent marker is a
-        // float too; anything else is an integer unless it overflows i64
-        // (a large float prints as a long run of digits).
         let looks_float = text.contains('.') || text.contains('e') || text.contains('E');
         if !looks_float && text != "-0" {
             if let Ok(n) = text.parse::<i64>() {

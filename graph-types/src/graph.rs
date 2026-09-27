@@ -15,25 +15,23 @@ use crate::id::{AnyNodeId, NodeKind, Position};
 use crate::node::Node;
 use crate::text::{BibleTag, Corpus, TextLocus, TextRef};
 
-/// Reading order: each corpus's spine — a total order per skeleton,
-/// window-queried, NOT a paged relation (deliberate manifest exclusion).
+/// A total order per corpus, window-queried rather than paged as a relation.
 #[derive(Debug, Default)]
 pub struct ReadingSpine {
-    pub order: Vec<AnyNodeId>, // canonical order of materialized units
+    pub order: Vec<AnyNodeId>,
 }
 
 #[derive(Debug, Default)]
 pub struct Graph {
     pub nodes: BTreeMap<AnyNodeId, Node>,
 
-    // -------- authored --------
+    // Authored.
     pub contains_bible: Vec<Contains<BibleTag>>,
     pub contains_concord: Vec<Contains<crate::text::ConcordTag>>,
     pub attests: Vec<Attests>,
     pub succession: Vec<Succession>,
-    /// NODE1-ROWS-1: pairwise canon chapter/book succession steps -- the
-    /// SECOND row implementation of `RelationId::Succession` (see the
-    /// manifest's own note and `CanonSuccession`'s doc comment).
+    /// Pairwise canon chapter and book steps: the second row family lowering into the same
+    /// succession relation.
     pub canon_succession: Vec<CanonSuccession>,
     pub dated_by: Vec<DatedBy>,
     pub located_at: Vec<LocatedAt>,
@@ -41,85 +39,49 @@ pub struct Graph {
     pub typology: Vec<Typology>,
     pub named_after: Vec<NamedAfter>,
     pub catechism: Vec<CatechismLink>,
-    /// KRETZ-1: verse-anchored commentary targets (annotation shape;
-    /// the units themselves are CommentaryItem nodes).
+    /// Verse-anchored commentary targets; the commentary's own prose is a node payload.
     pub comments_on: Vec<CommentsOn>,
-    /// RED-1: direct speech — speaker + site (annotation edges over loci).
     pub spoken_by: Vec<SpokenBy>,
     pub spoken_at: Vec<SpokenAt>,
-    // -------- imported --------
+    // Imported.
     pub mentions: Vec<Mentions>,
     pub cross_refs: Vec<CrossRef>,
     pub quotes: Vec<Quotes>,
     pub confesses: Vec<Confesses>,
     pub corresponds_bible: Vec<Corresponds<BibleTag>>,
-    /// TRAV-1: machine-DERIVED at compile from `temporal_order`
-    /// (consecutive pairs) -- lives with imported rows because the ETL
-    /// authors it, not a human.
+    /// Derived at compile time from consecutive pairs of the temporal order, so it sits with
+    /// the imported rows: the pipeline authors it, never a curator.
     pub temporal_adjacency: Vec<TemporalAdjacency>,
-    /// ATTEST-1: curated `Analogue` rows -- distinct events whose
-    /// accounts are similar in form or content, NEVER two accounts of
-    /// one event (see `edge::Analogue`'s own doc comment, which is the
-    /// law). Authored, not derived: no similarity metric mints these
-    /// (the CHRON-1 verse-jaccard sweep mistaking Matthew's own leper
-    /// for Mark's/Luke's is exactly why).
+    /// Distinct events whose accounts are similar in form or content, never two accounts of
+    /// one event. Authored, never derived: a similarity metric mistook one leper healing for
+    /// another, which is why no metric mints these.
     pub analogue: Vec<Analogue>,
-    /// LEX-1: imported `Occurs` rows (spec 7.3) -- one per aligned
-    /// original-language token, in canonical reading order (book, chapter,
-    /// verse, token), which is what makes a verse's `words` page read in
-    /// token order and an entry's `occurs-in` page a concordance in canon
-    /// order "by construction and nothing else". Empty in every build
-    /// without the lexicon corpus.
+    /// One row per aligned original-language token, in canonical reading order, which is what
+    /// makes a concordance page read in canon order by construction and nothing else.
     pub occurs: Vec<Occurs>,
-    /// D5: Theographic kinship -- `parent --parent-of--> child`, one row per
-    /// (parent, child), imported. Siblings are derived, never stored.
+    /// One row per (parent, child) pair.
     pub parent_of: Vec<ParentOf>,
-    /// D5: spouses, symmetric, one row per pair.
     pub partners: Vec<Partners>,
-    /// D5: `person --participates-in--> event` (Theographic `timeline`).
     pub participates: Vec<Participates>,
 
-    // -------- spines & indexes (built, never authored) --------
+    // Built, never authored.
     pub reading: BTreeMap<&'static str, ReadingSpine>,
-    /// DB-4b: the canonical row bodies of the section tables that are NOT
-    /// derived from `nodes`/rows/`reading` here -- node projections, the
-    /// resolved chronology, the heading index, red-letter spans, the folded
-    /// sidecars -- keyed by table name (`sections::extra_tables_of`), rows
-    /// in primary-key order, each body the canonical JSON
-    /// `sections::extra_line_body` spells. Supplied by the compiler
-    /// (`atlas_graph::sqlite::extras`), attached again at artifact load
-    /// from the same files, so `sections::version_root` covers them on both
-    /// sides. Not serialized in `graph.bin`. Empty for a graph nobody
-    /// attached to.
+    /// The canonical bodies of the section tables that are not derived from the nodes, rows
+    /// and spines here. The compiler supplies them and the artifact load attaches them again
+    /// from the same files, so the version root covers them on both sides.
     pub extra_tables: BTreeMap<&'static str, Vec<Vec<u8>>>,
     pub indexes: BTreeMap<RelationId, BiIndex>,
-    /// M-C: the symmetric sibling of `indexes` -- closes the "Symmetric
-    /// relations: skeleton serves none yet" gap `explore.rs`'s own
-    /// `raw_neighbors` has documented since M-A (a disclosed, standing gap,
-    /// not a law; M-B's own report named it explicitly for
-    /// `temporal-adjacency`). Built the SAME way (one `BiIndex::
-    /// build_symmetric` pass per inhabited `SymRelationId`, from the row
-    /// tables below) -- `catechism-link` populated it first, and TRAV-1's
-    /// own `temporal-adjacency` rows CLOSED the M-B gap by joining it.
+    /// Built exactly as `indexes` is, one pass per inhabited symmetric relation.
     pub symmetric_indexes: BTreeMap<crate::edge::SymRelationId, BiIndex>,
-    /// pid -> node id, built alongside the other indexes: derive() is a
-    /// lookup, not a scan (same derived-state class as `indexes`;
-    /// content addressing makes it deterministic).
+    /// Built alongside the other indexes so resolving a pid is a lookup, not a scan.
     pub pid_index: BTreeMap<crate::id::Pid, AnyNodeId>,
-    /// DB-3: edge-id hash -> the row(s) that produced the entry, sorted by
-    /// `(hash, row_ord)` (binary search) -- the in-memory
-    /// `GraphQuery::row_provenance` / `rows_behind`. Built beside the
-    /// indexes from the same `row_edges()` pass. EVERY row is kept: two
-    /// rows with one `(rel, subject, object)` (the leper lesson -- one
-    /// event's account attested by two sources) mint one id, and both
-    /// sources must stay reachable behind it. Sixteen bytes per index entry.
+    /// Sorted by `(hash, row_ord)` for binary search. EVERY row is kept: two rows sharing one
+    /// (relation, subject, object) mint one id, and both sources must stay reachable behind it.
     pub edge_rows: Vec<EdgeRow>,
-    /// DB-3: corpus -> unit id -> spine index -- the in-memory
-    /// `GraphQuery::position_of`, a lookup instead of a scan of the spine.
+    /// Resolving a unit's position is a lookup instead of a scan of the spine.
     pub spine_index: BTreeMap<&'static str, BTreeMap<AnyNodeId, usize>>,
 }
 
-/// DB-3: one index entry's row, keyed by its edge id's hash.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EdgeRow {
     pub hash: crate::id::ContentHash,
@@ -127,25 +89,21 @@ pub struct EdgeRow {
     pub row_ord: u32,
 }
 
-/// The hash inside an `EdgeId`'s `"Rel:hex"` spelling, or `None` for any
-/// other string (the id grammar is `entry_id`'s, not this function's).
+/// `None` for any other string: the id grammar belongs to whoever mints ids, not to this.
 pub fn edge_hash(e: &crate::edge::EdgeId) -> Option<crate::id::ContentHash> {
     let (_, hex) = e.0.split_once(':')?;
     crate::id::ContentHash::from_hex(hex)
 }
 
-/// Which relation a row family lowers into (directed or symmetric).
+/// Which relation a row family lowers into.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EdgeRel {
     Directed(RelationId),
     Symmetric(crate::edge::SymRelationId),
 }
 
-/// One index entry BEFORE it is placed: the row that produced it, the
-/// relation, the two ends, the meta. `row_ord` is the row's position in
-/// its family's Vec (spec §5.0 `ord`); a set-valued row (a Contains row
-/// with N loci, a Succession chain with N events) yields N entries with
-/// the same `row_ord`.
+/// `row_ord` is the row's position in its family's vector. A set-valued row -- one naming N
+/// loci, or a chain of N events -- yields N entries all carrying the same `row_ord`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RowEdge {
     pub family: crate::canon::RowFamily,
@@ -157,7 +115,6 @@ pub struct RowEdge {
 }
 
 fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
-    // Skeleton mapping from a locus to its unit node id.
     let raw = match &kind_hint.at {
         TextRef::Bible(v) => format!("bible/{}.{}.{}", v.book, v.chapter, v.verse),
         TextRef::Concord(c) => format!("concord/{}.{}.{}", c.part, c.article, c.paragraph),
@@ -166,22 +123,9 @@ fn text_node(kind_hint: &TextLocus) -> AnyNodeId {
 }
 
 impl Graph {
-    /// EVERY edge the row tables declare, in the exact order `build_indexes`
-    /// has always visited them -- the historical loop order, which is NOT
-    /// `RowFamily::ALL` order: contains_bible, contains_concord, attests,
-    /// succession, canon_succession, dated_by, comments_on, spoken_by,
-    /// spoken_at, located_at, named_after, mentions, cross_refs, quotes,
-    /// confesses, fulfills, typology, then symmetric: catechism,
-    /// temporal_adjacency, analogue; then (LEX-1) occurs, then (D5)
-    /// parent_of, partners, participates -- each batch appended LAST so no
-    /// earlier index entry moves. Order is load-bearing: `BiIndex` Vec
-    /// order = cursor order = pinned scene bytes. (`corresponds_bible` has
-    /// never been lowered by `build_indexes` and is not lowered here
-    /// either -- the same zero-index gap it has always had.)
-    ///
-    /// DB-2b: this is the ONE row->edge lowering. `build_indexes` consumes
-    /// it, and so does everything that must name the row behind an index
-    /// entry (`edge_index.row_family/row_id`, the justified-by synthesis).
+    /// The one row-to-edge lowering, and its order is load-bearing: index order is cursor
+    /// order is pinned response bytes, so a new family is appended LAST and no earlier entry
+    /// moves. This is not `RowFamily::ALL` order.
     pub fn row_edges(&self) -> Vec<RowEdge> {
         use crate::canon::RowFamily;
         use crate::edge::SymRelationId as S;
@@ -202,26 +146,11 @@ impl Graph {
                         push_edge(&mut out, RowFamily::ContainsBible, i, EdgeRel::Directed(R::Contains), (c.clone(), at(&text_node(&tl)), M::None));
                     }
                 }
-                // NODE1-ROWS-1: one child container per row -- book ⊃
-                // chapter is a DECLARED edge lowering here, not a derived
-                // index entry ("we have to declare edges. no special
-                // cases").
                 ContainerContent::Container(child) => {
                     push_edge(&mut out, RowFamily::ContainsBible, i, EdgeRel::Directed(R::Contains), (c, at(&child.erase()), M::None));
                 }
             }
         }
-        // CORP-2a: the Concord sibling of the `contains_bible` loop
-        // immediately above -- SAME shape, the OTHER `Contains<C>`
-        // instantiation this struct carries (graph.rs's own field-level
-        // doc comment: "authored"). Declared alongside `contains_bible`
-        // since M-A but never lowered into `pairs` until now: `Contains<
-        // ConcordTag>` had no real caller before `concord_adapter.rs`
-        // (this batch's own first-real-caller note, matching artifact.rs's
-        // identical "deliberately incomplete until a real caller arrives"
-        // shape for `concord_locus_to_dto`) -- both are precedented,
-        // mechanical completions of an already-declared field, not a new
-        // relation or a type-shape change.
         for (i, row) in self.contains_concord.iter().enumerate() {
             let c = at(&row.container.erase());
             match &row.content {
@@ -250,11 +179,8 @@ impl Graph {
                 ));
             }
         }
-        // NODE1-ROWS-1: the SECOND row implementation of Succession --
-        // pairwise canon container steps. `M::None` honestly: a canon
-        // step belongs to no narrative (the canon order itself is the
-        // chain; `EdgeMeta::Narrative` is the event-chain reading's own
-        // annotation, not this one's).
+        // No narrative meta: the canon order is itself the chain, so a canon step belongs to
+        // no narrative.
         for (i, row) in self.canon_succession.iter().enumerate() {
             push_edge(&mut out, RowFamily::CanonSuccession, i, EdgeRel::Directed(R::Succession), (
                 at(&row.prior.erase()),
@@ -271,38 +197,11 @@ impl Graph {
             };
             push_edge(&mut out, RowFamily::DatedBy, i, EdgeRel::Directed(R::DatedBy), (e, t, M::None));
         }
-        // KRETZ-1 (the PRE-AUTHORIZED exception, standing since CORP-2a:
-        // "activating the declared-but-never-wired comments_on field in
-        // build_indexes by mechanically mirroring an existing sibling
-        // loop"): `comments_on` is shaped exactly like `attests` above --
-        // one node-typed field (`item`/`event`) plus one `BibleLocusRange`
-        // field (`on`/`attestation`) -- so this mirrors that loop verbatim,
-        // renamed. The range's own FIRST verse is the edge endpoint (the
-        // SAME "full range stays on the row for display" precedent
-        // `fulfills`/`typology` below also follow) -- a multi-verse
-        // CommentaryItem (a pericope/chapter-intro unit) is reachable from
-        // its range's first verse today; full multi-verse popover surfacing
-        // is deferred with the rest of the client-side POPOVER-LAW-1 work
-        // (decision 7).
         for (i, row) in self.comments_on.iter().enumerate() {
             let item = at(&row.item.erase());
             let tl: TextLocus = row.on.from.clone().into();
             push_edge(&mut out, RowFamily::CommentsOn, i, EdgeRel::Directed(R::CommentsOn), (item, at(&text_node(&tl)), M::None));
         }
-        // RED-1 (the pre-authorized exception, standing since KRETZ-1's own
-        // `comments_on` precedent immediately above): `spoken_by`/
-        // `spoken_at` were declared on this struct at BASE but never
-        // lowered into `pairs` until this batch. Both mirror `attests`'s
-        // own shape (one `BibleLocusRange` field + one node-typed field),
-        // but with the OPPOSITE polarity: `attests` puts the NODE (event)
-        // first and the TEXT second; here the TEXT (this range's own FIRST
-        // verse -- the SAME "full range stays on the row, first verse is
-        // the edge endpoint" precedent `comments_on`/`attests` already
-        // establish) is the SUBJECT and the node (speaker/place) is the
-        // OBJECT -- the polarity each relation's own FORWARD LABEL decides
-        // (this function's own comments_on doc comment note), never a
-        // fixed node-type-first rule: "spoken-by"/"spoken-at" both read
-        // naturally as "[this verse] spoken-by/-at [X]".
         for (i, row) in self.spoken_by.iter().enumerate() {
             let tl: TextLocus = row.locus.from.clone().into();
             push_edge(&mut out, RowFamily::SpokenBy, i, EdgeRel::Directed(R::SpokenBy), (at(&text_node(&tl)), at(&row.speaker.erase()), M::None));
@@ -332,10 +231,6 @@ impl Graph {
                 MentionedEntity::Place(p) => at(&p.erase()),
                 MentionedEntity::Person(p) => at(&p.erase()),
                 MentionedEntity::PeopleGroup(g) => at(&g.erase()),
-                // ATTEST-1: a verse that REFERENCES an event without
-                // narrating it (LUK 1:27's "a virgin espoused to a man")
-                // -- the SAME `Mentions` relation, one more attested
-                // sense, lowered the identical way.
                 MentionedEntity::Event(e) => at(&e.erase()),
             };
             push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, o, M::None));
@@ -361,10 +256,6 @@ impl Graph {
                 M::None,
             ));
         }
-        // EDGE-1: prophecy/fulfillment and typology lower exactly like
-        // the other text-to-text relations -- edge endpoint is each
-        // range's FIRST verse (the cites/quotes/confesses precedent);
-        // the full ranges stay on the rows for display.
         for (i, row) in self.fulfills.iter().enumerate() {
             let s: TextLocus = row.prophecy.from.clone().into();
             let o: TextLocus = row.fulfillment.from.clone().into();
@@ -383,34 +274,12 @@ impl Graph {
                 M::None,
             ));
         }
-        // M-D3 (owner ruling R2) closed M-C's long-disclosed `named` shape
-        // gap by RETIRING the relation: a `Named` row's object was a bare
-        // `String` with no `Position` representation, so the relation
-        // could never lower into `pairs` -- and the serving path was
-        // always `NodePayload::Place`'s own `aliases` payload field
-        // (node.rs). Manifest row, row struct, and the `graph.named`
-        // table are gone; aliases remain a fact ABOUT the place.
 
-        // M-C: the symmetric sibling of the directed pass above -- closes
-        // the "Symmetric relations: skeleton serves none yet" gap
-        // (`explore.rs`'s own `raw_neighbors`, disclosed since M-A).
-        // `catechism` (`CatechismLink { locus: TextLocus, item:
-        // CatechismItemId, .. }`) is the first symmetric relation with
-        // real rows to index; both ends resolve to real `Position`s (a
-        // TextUnit and a CatechismItem node respectively), unlike
-        // `named`'s own bare-string object (see this function's own note
-        // above) -- there is nothing blocking this one.
         for (i, row) in self.catechism.iter().enumerate() {
             let locus = at(&text_node(&row.locus));
             let item = at(&row.item.erase());
             push_edge(&mut out, RowFamily::Catechism, i, EdgeRel::Symmetric(S::CatechismLink), (locus, item, M::None));
         }
-        // TRAV-1: the second inhabited symmetric relation -- the exact
-        // `temporal-adjacency` gap the doc comment above carried since
-        // M-B, now closed. Rows are compile-derived (see the struct's
-        // own doc); the symmetric index serves "adjacent-in-time"
-        // traversal both ways, and the honest `earlier`/`later` row
-        // ends carry direction for the Chronology block's display.
         for (i, row) in self.temporal_adjacency.iter().enumerate() {
             push_edge(&mut out, RowFamily::TemporalAdjacency, i, EdgeRel::Symmetric(S::TemporalAdjacency), (
                 at(&row.earlier.erase()),
@@ -418,10 +287,6 @@ impl Graph {
                 M::None,
             ));
         }
-        // ATTEST-1: the THIRD inhabited symmetric relation. Neither end
-        // is the original (see `edge::Analogue`), so `build_symmetric`'s
-        // own sort-then-hash entry id is exactly right: querying from `a`
-        // or from `b` returns the other under the SAME EdgeId.
         for (i, row) in self.analogue.iter().enumerate() {
             push_edge(&mut out, RowFamily::Analogue, i, EdgeRel::Symmetric(S::Analogue), (
                 at(&row.a.erase()),
@@ -429,9 +294,8 @@ impl Graph {
                 M::None,
             ));
         }
-        // LEX-1: entry --occurs-in--> verse. The word locus lowers to its
-        // VERSE node (`text_node` ignores the span, as it does for every
-        // sub-verse Mentions locus); the token lives in the row.
+        // A word locus lowers to its VERSE node, as every sub-verse locus does; the token
+        // itself lives in the row.
         for (i, row) in self.occurs.iter().enumerate() {
             push_edge(&mut out, RowFamily::Occurs, i, EdgeRel::Directed(RelationId::Occurs), (
                 at(&row.entry.erase()),
@@ -439,7 +303,6 @@ impl Graph {
                 M::None,
             ));
         }
-        // D5: kinship and participation.
         for (i, row) in self.parent_of.iter().enumerate() {
             push_edge(&mut out, RowFamily::ParentOf, i, EdgeRel::Directed(RelationId::ParentOf), (
                 at(&row.parent.erase()),
@@ -464,8 +327,7 @@ impl Graph {
         out
     }
 
-    /// The pure per-family edge id, so callers never re-spell `entry_id`
-    /// vs `entry_id_symmetric`.
+    /// So no caller re-spells the directed and symmetric id functions.
     pub fn edge_id_of(e: &RowEdge) -> crate::edge::EdgeId {
         match e.rel {
             EdgeRel::Directed(r) => crate::edge::entry_id(r, &e.subject, &e.object),
@@ -473,9 +335,7 @@ impl Graph {
         }
     }
 
-    /// DB-3: every row behind an edge id, in `(family, row_ord)` order
-    /// (`edge_rows`, built by `build_indexes`); empty for an unknown or
-    /// synthesised id.
+    /// In `(family, row_ord)` order; empty for an unknown or synthesised id.
     pub fn rows_of_edge(&self, e: &crate::edge::EdgeId) -> &[EdgeRow] {
         let Some(h) = edge_hash(e) else { return &[] };
         let start = self.edge_rows.partition_point(|r| r.hash < h);
@@ -483,13 +343,10 @@ impl Graph {
         &self.edge_rows[start..end]
     }
 
-    /// DB-3: the FIRST row behind an edge id (see `rows_of_edge`).
     pub fn edge_row(&self, e: &crate::edge::EdgeId) -> Option<EdgeRow> {
         self.rows_of_edge(e).first().copied()
     }
 
-    /// DB-3: one row's `provenance`, by family and ord -- the 21-arm match,
-    /// in one place.
     pub fn row_provenance_of(&self, family: crate::canon::RowFamily, row_ord: usize) -> Option<&str> {
         use crate::canon::RowFamily as F;
         match family {
@@ -521,30 +378,9 @@ impl Graph {
         }
     }
 
-    /// Build every bidirectional index from the row tables — one pass
-    /// per relation; both directions are projections of the same rows.
-    /// Also builds the pid index (derive() as lookup).
-    ///
-    /// PERF-2b (profile-guided; see the batch report's own load-time
-    /// investigation): row-table lowering (the loops below, building
-    /// `pairs`/`sym_pairs`) stays exactly as it always was -- ONE
-    /// sequential pass per relation, unchanged. What changed is what
-    /// happens AFTER: turning those rows into `pid_index`/`indexes`/
-    /// `symmetric_indexes` was measured to be the dominant cost of the
-    /// whole artifact-load path (`pid_index`, one hash per NODE, and the
-    /// relation lowering below, one hash per EDGE OCCURRENCE -- `cites`
-    /// alone ~344k rows on the real committed graph) -- and every one of
-    /// those hashes is a pure function of its own input, read-only, with
-    /// no relation's rows depending on any other's and no node depending
-    /// on any edge. That's safe, unsafe-free data parallelism
-    /// (`std::thread::scope` -- no shared mutable state crosses a thread
-    /// boundary, no algorithm change: the exact same `Node::pid`/
-    /// `BiIndex::build`/`build_symmetric` calls the sequential version
-    /// made, just spread across worker threads and merged back), not a
-    /// hash/format rewrite -- measured ~2.6x for `build_indexes` alone
-    /// (~1.9x for the whole `GraphService::from_artifact` load path it
-    /// dominates) on this 16-core machine (see `server/BENCHMARKS.md`'s
-    /// own `artifact_load` section for the full before/after).
+    /// One pass per relation: both directions are projections of the same rows.
+    /// The work after lowering is parallel because every hash is a pure function of its own
+    /// input, no relation's rows depend on another's, and no node depends on any edge.
     pub fn build_indexes(&mut self) {
         use crate::id::ContentAddressed;
 
@@ -555,12 +391,6 @@ impl Graph {
         let mut pairs: BTreeMap<RelationId, Vec<(Position, Position, M)>> = BTreeMap::new();
         let mut sym_pairs: BTreeMap<S, Vec<(Position, Position, M)>> = BTreeMap::new();
         let edges = self.row_edges();
-        // DB-3: the row behind every index entry, by edge-id hash -- one more
-        // mint of the SAME id `BiIndex::build` mints below (see `EdgeRow`),
-        // spread across threads the way PERF-2b spreads the index build (a
-        // single-threaded pass here pushed the artifact load past its 4 s
-        // ceiling; measured in DB-3's report). Computed BEFORE the pairs
-        // take the edges by move, so no position is cloned.
         let mut edge_rows: Vec<EdgeRow> = {
             let n = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
             let chunk = edges.len().div_ceil(n).max(1);
@@ -593,41 +423,15 @@ impl Graph {
             .map(|(corpus, spine)| (*corpus, spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect()))
             .collect();
 
-        // PERF-2b: the parallel pass -- see this function's own doc
-        // comment. Chunk sizes are sized off `available_parallelism`
-        // (falling back to 4 if the platform can't report it), NOT a flat
-        // row constant: `pid_index` (one chunk per node-heavy pass) and
-        // the edge relations (one chunk pool sized off the TOTAL row count
-        // across every relation, so `cites` alone -- by far the largest --
-        // is split into roughly as many pieces as there are cores, and the
-        // many small relations don't each independently multiply the
-        // thread count) are sized so BOTH pools land near, not far under
-        // or wildly over, the core count -- measured (see the batch
-        // report): a flat 50k-row constant gave `pid_index` only 2 chunks
-        // on this 92k-node graph (barely any speedup, ~307ms of a ~344ms
-        // sequential baseline) while starving it of CPU share against 20
-        // concurrently-running edge chunks; sizing both pools off the same
-        // core count fixed that. Every chunk is `BiIndex::build`/
-        // `build_symmetric` (or, for `pid_index`, `Node::pid`) run over a
-        // SLICE -- the identical function the pre-parallel code called
-        // over the WHOLE table, just given less of it -- so per-item
-        // computation is bit-for-bit unchanged; only the merge below is
-        // new code.
         let n_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
 
-        // `pid_index`'s own chunks: read-only over `self.nodes`, touches
-        // none of the relation row tables the directed/symmetric chunks
-        // below read -- safe to run fully concurrently with them. Computed
-        // OUTSIDE the scope below (not just outside its closure body) so
-        // it outlives every spawned thread, satisfying `thread::scope`'s
-        // own borrow requirement.
+        // Read-only over the nodes, touching none of the row tables the edge chunks read, and
+        // computed outside the scope below so it outlives every spawned thread.
         let node_refs: Vec<(&AnyNodeId, &Node)> = self.nodes.iter().collect();
         let node_chunk_size = node_refs.len().div_ceil(n_threads).max(1);
 
-        // The edge-relation chunk size: total rows across every relation,
-        // divided by the core count -- `cites` (by far the largest single
-        // relation) ends up split into roughly `n_threads` pieces on its
-        // own; every smaller relation gets fewer (often just one).
+        // Sized off the total row count, so the largest relation splits into roughly one
+        // chunk per thread and every smaller one gets fewer.
         let total_edge_rows: usize = pairs.values().map(|v| v.len()).sum::<usize>() + sym_pairs.values().map(|v| v.len()).sum::<usize>();
         let edge_chunk_size = total_edge_rows.div_ceil(n_threads).max(1);
 
@@ -637,13 +441,9 @@ impl Graph {
                 .map(|chunk| scope.spawn(move || chunk.iter().map(|(_, n)| (n.pid(), n.id.clone())).collect::<BTreeMap<_, _>>()))
                 .collect();
 
-            // Directed-relation chunks. Pushed relation by relation, and
-            // WITHIN a relation strictly in original row order -- the
-            // order this vector (and so `directed_handles`, and so the
-            // merge loop below, which joins/processes handles in vector
-            // order regardless of which thread the OS finishes first) is
-            // built in is EXACTLY the order the pre-parallel sequential
-            // pass would have visited these same rows in.
+            // Pushed relation by relation and, within a relation, strictly in row order:
+            // exactly the order a single sequential pass would have visited them, whichever
+            // thread finishes first.
             let mut directed_chunks: Vec<(R, &[(Position, Position, M)])> = Vec::new();
             for (rel, ps) in &pairs {
                 if ps.len() <= edge_chunk_size {
@@ -656,9 +456,6 @@ impl Graph {
             }
             let directed_handles: Vec<_> = directed_chunks.into_iter().map(|(rel, ps)| scope.spawn(move || (rel, BiIndex::build(rel, ps)))).collect();
 
-            // The symmetric sibling -- same splitting rule (today's tables
-            // are far smaller than `edge_chunk_size`, so this is one chunk each
-            // in practice, but the rule stays uniform for future growth).
             let mut sym_chunks: Vec<(S, &[(Position, Position, M)])> = Vec::new();
             for (rel, ps) in &sym_pairs {
                 if ps.len() <= edge_chunk_size {
@@ -671,20 +468,11 @@ impl Graph {
             }
             let sym_handles: Vec<_> = sym_chunks.into_iter().map(|(rel, ps)| scope.spawn(move || (rel, BiIndex::build_symmetric(rel, ps)))).collect();
 
-            // pid_index: key-unique (one pid per node), so chunk merge
-            // order carries no meaning -- a plain union.
+            // One pid per node, so merge order carries no meaning here: a plain union.
             let pid_index: BTreeMap<crate::id::Pid, AnyNodeId> = pid_handles.into_iter().flat_map(|h| h.join().expect("pid-index worker panicked").into_iter()).collect();
 
-            // Directed indexes: merge each relation's own chunks back
-            // together IN ORDER (`Vec::append`, never a re-sort) -- for
-            // any `Position` key that chunk i and chunk i+1 both touch,
-            // chunk i's edges land first in `fwd`/`inv`'s Vec, exactly
-            // reproducing the single sequential pass's own per-key order
-            // (proven for a large, multi-chunk relation by
-            // `parallel_build_indexes_matches_sequential_over_a_large_relation`
-            // below, and by the standing full suite, including
-            // `scene_byte_identity.rs`'s pinned response hashes, staying
-            // green through this batch).
+            // Merged in order, by appending and never re-sorting, so a key touched by two
+            // chunks keeps the per-key order the sequential pass produced.
             let mut indexes: BTreeMap<R, BiIndex> = BTreeMap::new();
             for h in directed_handles {
                 let (rel, partial) = h.join().expect("index-build worker panicked");
@@ -704,9 +492,7 @@ impl Graph {
                 for (k, mut v) in partial.fwd {
                     entry.fwd.entry(k).or_default().append(&mut v);
                 }
-                // `.inv` is always empty for a symmetric `BiIndex`
-                // (`build_symmetric`'s own doc comment) -- merged anyway,
-                // for free, rather than assumed.
+                // Always empty for a symmetric index -- merged anyway rather than assumed.
                 for (k, mut v) in partial.inv {
                     entry.inv.entry(k).or_default().append(&mut v);
                 }
@@ -720,8 +506,8 @@ impl Graph {
         self.symmetric_indexes = symmetric_indexes;
     }
 
-    /// Windowed reading query — the reader's only primitive. Any
-    /// partition into windows concatenates to the same sequence.
+    /// The reader's only primitive: any partition into windows concatenates to the same
+    /// sequence.
     pub fn reading_window(
         &self,
         corpus: &'static str,
@@ -735,7 +521,6 @@ impl Graph {
     }
 }
 
-/// Marker: corpus id helper for spines.
 pub fn corpus_key<C: Corpus>() -> &'static str {
     C::ID
 }
@@ -751,42 +536,6 @@ mod tests {
     use crate::text::{ConcordRef, ConcordTag, Locus, LocusSet, TranslationId};
     use std::collections::BTreeSet;
 
-    /// PERF-2b / PERF-m2 (batch-finalp2-brief.md ticket 4 -- strengthening
-    /// this SAME test, test-file-only, per that ticket's own disclosed
-    /// carve-out: "the standing veto is on the TYPES, not this crate's own
-    /// tests"; origin: PERF-2b review finding 1, LOW, "the crate equality
-    /// test is synthetic toy-data and re-implements the merge inline rather
-    /// than calling production `Graph::build_indexes`"):
-    /// `Graph::build_indexes`'s own chunk-then-merge parallelism (this
-    /// file's own `build_indexes` doc comment) is only as correct as the
-    /// claim that splitting a relation's rows into contiguous chunks,
-    /// building a `BiIndex` over each chunk separately, and merging the
-    /// chunks back IN ORDER (`Vec::append`, never a re-sort) reproduces
-    /// EXACTLY what `BiIndex::build` over the WHOLE, unchunked slice would
-    /// have produced -- including PER-KEY EDGE ORDER for a position that
-    /// spans more than one chunk.
-    ///
-    /// STRENGTHENED (was: raw `Position` tuples fed straight to
-    /// `BiIndex::build`, chunked and merged by a hand-rolled 3-chunk loop
-    /// living entirely in this test -- a real, disclosed gap: the merge
-    /// algorithm under test was a SEPARATE, inline REIMPLEMENTATION of
-    /// `build_indexes`'s own logic, so a real bug in the PRODUCTION
-    /// function's own chunking/merge could exist while this test stayed
-    /// green, having never called it). NOW: real, STRUCTURED domain rows
-    /// (`Attests`, populated via `Graph.attests` -- the actual authored row
-    /// table, not a bypass of it) drive the REAL, production
-    /// `g.build_indexes()` entry point directly -- real `std::thread::
-    /// scope`, real chunk count off THIS machine's own `std::thread::
-    /// available_parallelism()`, the exact call every real
-    /// `from_sources`/`from_artifact` build path makes -- and the result
-    /// (`g.indexes`) is compared against an independently-computed
-    /// sequential reference (`BiIndex::build` over the SAME row->pair
-    /// mapping `build_indexes`'s own `attests` loop uses, computed once,
-    /// unchunked, here in the test). 300 rows, all sharing one hub
-    /// `EventId` (every row's own SOURCE position) -- comfortably exceeds
-    /// this machine's own core count, so a position spanning more than one
-    /// chunk (the case that actually exercises cross-chunk merge order) is
-    /// exercised on any real machine, not just a hardcoded chunk count.
     #[test]
     fn parallel_build_indexes_matches_sequential_over_a_large_relation() {
         use crate::edge::Justification;
@@ -802,10 +551,6 @@ mod tests {
             g.attests.push(Attests { event: hub.clone(), attestation, provenance: ProvenanceId::from("test"), justification: Justification::default() });
         }
 
-        // The SAME row->pair mapping `build_indexes`'s own `attests` loop
-        // uses (this file's own `for row in &self.attests` block above),
-        // computed independently here so the sequential reference below is
-        // built from the real rows, not a second synthetic dataset.
         let pairs: Vec<(Position, Position, M)> = g
             .attests
             .iter()
@@ -816,13 +561,8 @@ mod tests {
             .collect();
         assert_eq!(pairs.len(), 300, "sanity: every real Attests row must lower to exactly one pair");
 
-        // Sequential reference: `BiIndex::build` over the WHOLE, unchunked
-        // pair list -- exactly what the pre-PERF-2b code always did.
         let sequential = crate::edge::BiIndex::build(RelationId::Attests, &pairs);
 
-        // THE REAL THING: production `build_indexes()`, called directly --
-        // real thread::scope, real chunk count off this machine's own core
-        // count, the identical entry point every real build path calls.
         g.build_indexes();
         let merged = g.indexes.get(&RelationId::Attests).expect("build_indexes must populate a real index for a relation with real rows");
 
@@ -836,14 +576,6 @@ mod tests {
         }
     }
 
-    /// CORP-2a: `contains_concord` was declared on this struct since M-A
-    /// but never lowered into `pairs` until this batch (see this file's
-    /// own `build_indexes` doc comment on the loop immediately after
-    /// `contains_bible`'s) -- this proves the wiring, mirroring the
-    /// `contains_bible` shape exactly: a container's own forward
-    /// "contains" frontier lists its member paragraphs, and each
-    /// paragraph's inverse "member-of" frontier lists the SAME container
-    /// back, under the SAME EdgeId either way (the bijection witness).
     #[test]
     fn contains_concord_rows_lower_into_the_directed_contains_index_both_ways() {
         let mut g = Graph::default();
@@ -886,14 +618,6 @@ mod tests {
         assert_eq!(from_container_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
 
-    /// NODE1-ROWS-1 (the pre-authorized mechanical-mirror exception, the
-    /// same class as `contains_concord`'s/`comments_on`'s own tests): the
-    /// two NEW row implementations lower into the existing indexes both
-    /// ways -- a `ContainerContent::Container` row is one book ⊃ chapter
-    /// edge ("contains"/"member-of"), and a `CanonSuccession` row is one
-    /// canon step ("follows-in"/"precedes-in"), both under the SAME
-    /// content-addressed EdgeId from either end (the bijection witness),
-    /// with `EdgeMeta::None` (a canon step belongs to no narrative).
     #[test]
     fn container_child_and_canon_succession_rows_lower_into_the_existing_indexes_both_ways() {
         let mut g = Graph::default();
@@ -927,7 +651,6 @@ mod tests {
 
         g.build_indexes();
 
-        // Contains, both directions, one entry per row.
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
         let page = PositionRef(crate::id::Position::Node(book.erase())).edges(&g, &EdgeQuery { kind: forward, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 2, "the book's own forward 'contains' frontier lists both chapter containers");
@@ -938,7 +661,6 @@ mod tests {
         let fwd_entry = page.entries.iter().find(|e| e.node == crate::id::Position::Node(ch1.erase())).expect("book page lists chapter 1");
         assert_eq!(fwd_entry.edge, back.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
 
-        // Succession, both directions, EdgeMeta::None.
         let follows = EdgeKind::Directed(RelationId::Succession, Direction::Forward);
         let succ = PositionRef(crate::id::Position::Node(ch1.erase())).edges(&g, &EdgeQuery { kind: follows, cursor: None, limit: 10 });
         assert_eq!(succ.entries.len(), 1);
@@ -951,13 +673,6 @@ mod tests {
         assert_eq!(prev.entries[0].edge, succ.entries[0].edge);
     }
 
-    /// KRETZ-1: the pre-authorized exception's own proof -- `comments_on`
-    /// was declared on this struct at BASE but never lowered into `pairs`
-    /// until this batch. Mirrors `attests`'s own shape/test exactly (one
-    /// node-typed field + one `BibleLocusRange` field, range's first verse
-    /// is the edge endpoint): a CommentaryItem's own forward "comments-on"
-    /// frontier reaches its target verse, and that verse's own inverse
-    /// "commented-on-by" frontier reaches back, under the SAME EdgeId.
     #[test]
     fn comments_on_rows_lower_into_the_directed_index_both_ways() {
         use crate::edge::CommentsOn;
@@ -995,13 +710,6 @@ mod tests {
         assert_eq!(back.entries[0].edge, page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
 
-    /// RED-1: the SAME pre-authorized-exception shape as `comments_on`
-    /// immediately above -- `spoken_by`/`spoken_at` were declared on this
-    /// struct at BASE but never lowered into `pairs` until this batch.
-    /// OPPOSITE polarity from `comments_on`/`attests` (this function's own
-    /// RED-1 doc comment): the TEXT is the subject here, the node
-    /// (speaker/place) is the object -- "[verse] spoken-by/-at [X]" reads
-    /// naturally either way.
     #[test]
     fn spoken_by_and_spoken_at_rows_lower_into_the_directed_index_both_ways() {
         use crate::edge::{SpokenAt, SpokenBy};
@@ -1050,14 +758,6 @@ mod tests {
         assert_eq!(at_back.entries[0].edge, at_page.entries[0].edge, "the SAME edge id, from either end -- the bijection witness");
     }
 
-    /// ATTEST-1's own SANCTIONED contract change, proved at the lowering
-    /// layer (the same discipline NODE1-ROWS-1's own
-    /// `container_child_and_canon_succession_rows_lower_into_the_existing_
-    /// indexes_both_ways` established for its sanctioned change): the new
-    /// SYMMETRIC `Analogue` rows reach the other event from EITHER end
-    /// under the SAME EdgeId, and the widened `MentionedEntity::Event`
-    /// lowers into the SAME `Mentions` relation both ways -- one relation,
-    /// one more attested sense, no second path.
     #[test]
     fn analogue_rows_and_event_mentions_lower_into_the_existing_indexes_both_ways() {
         use crate::edge::{Analogue, Mentions, MentionedEntity, SymRelationId};
@@ -1126,8 +826,6 @@ mod row_edge_laws {
     use crate::text::{Locus, LocusRange, VerseRef};
 
     fn g() -> Graph {
-        // Two events, one place, one narrative chain of two, one analogue,
-        // one attests over a range -- enough for every EdgeRel arm to fire.
         let mut g = Graph::default();
         let e1 = EventId::new("e1");
         let e2 = EventId::new("e2");
@@ -1210,7 +908,7 @@ mod row_edge_laws {
     #[test]
     fn relation_map_is_total_over_all_21_families() {
         for f in RowFamily::ALL {
-            let _ = f.relation(); // exhaustive match: compiles only if total; runs to prove no panic
+            let _ = f.relation();
         }
     }
 }

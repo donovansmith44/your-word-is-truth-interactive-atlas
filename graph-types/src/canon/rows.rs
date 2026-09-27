@@ -1,50 +1,6 @@
-//! The row encodings: all 21 row families, and the parts they share.
-//!
-//! A row is the graph's unit of AUTHORSHIP -- the thing a human or an
-//! adapter wrote -- and it is what the artifact stores; the index is
-//! derived from it. So a row needs the same two promises the node
-//! encoding makes (canonical bytes, total decode), plus one more:
-//!
-//! **The family rides OUTSIDE the row.** `encode_row_in_family` wraps the
-//! row's value as `{"family":"located_at","row":{…}}`, and THAT is what
-//! edge ids and section logical hashes hash (spec 3.4). Two families
-//! whose rows happen to share a shape -- `SpokenBy` and `SpokenAt` differ
-//! only in one member's name, `Analogue` and `TemporalAdjacency` in two --
-//! can therefore never collide, because the family name is inside the
-//! hashed bytes rather than assumed from context.
-//!
-//! Everything else is the node encoding's discipline, unchanged: object
-//! keys in BTree order with no whitespace, enums as `{"Variant":payload}`
-//! (unit variants carry `null`), `Option::None` as `null`, sets in
-//! `BTreeSet` order, every closed object declaring its exact member set
-//! through `expect_exact_keys` (R9), and every error carrying a
-//! root-anchored path (R10).
-//!
-//! **Every `to_value` destructures `self`.** `let Self { a, b, .. } = self`
-//! -- with every field NAMED and no `..` -- is how the encoder is closed
-//! over its own type, exactly as `canon/node.rs` closes `payload_to_value`
-//! over `NodePayload`. Reading `self.a` instead would let a field added to
-//! a row struct compile straight out of the bytes: the row would keep
-//! encoding, the decoder's struct literal would be the only thing that
-//! complained, and only for a type whose decode is exercised. With the
-//! destructure, a new field is a compile error in the one place that
-//! decides what the bytes say. (Enum `to_value`s already destructure --
-//! their `match` arms name every member.)
-//!
-//! Two things are worth naming, because they are where a row encoding
-//! could quietly lose meaning:
-//!
-//! * **Typed ids re-validate their kind.** A `PlaceId` encodes through
-//!   `AnyNodeId` as `"Place:jerusalem"` -- kind included -- and decodes
-//!   back through `AnyNodeId::narrow`, so bytes that name an `Event`
-//!   where the row wants a `Place` are a located error, not a silently
-//!   mistyped row.
-//! * **Validating constructors are re-run, never bypassed.**
-//!   `TokenSpan::new` (start <= end), `LocusRange::new` (from <= to) and
-//!   `Succession::new` (non-empty, distinct chain) are the only ways
-//!   those types come into being here, so a hand-edited artifact cannot
-//!   smuggle an inverted span or a duplicated chain link past the
-//!   invariants the in-memory types promise.
+//! The family rides OUTSIDE the row in the hashed bytes, so two families whose rows share a
+//! shape cannot collide. Every `to_value` destructures `self` naming every field: reading
+//! fields instead would let a field added later encode itself out of the bytes silently.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -72,11 +28,8 @@ use super::{
     serialize, str_value, variant, Canon, CanonError, Value, ROOT,
 };
 
-// ------------------------------------------------------------- the manifest
-
-/// The closed list of row tables (spec 5). The ORDER is the ordinal, and
-/// the ordinal is what `edge_index.row_family` stores -- so a family may
-/// be appended, never reordered.
+/// The closed list of row tables. The ORDER is the ordinal, so a family is appended, never
+/// inserted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RowFamily {
     ContainsBible,
@@ -100,9 +53,7 @@ pub enum RowFamily {
     CorrespondsBible,
     TemporalAdjacency,
     Analogue,
-    /// LEX-1: the lexicon section's one family (spec 5.7, 7.3).
     Occurs,
-    /// D5: kinship and participation (Core), appended in this order.
     ParentOf,
     Partners,
     Participates,
@@ -137,7 +88,7 @@ impl RowFamily {
         RowFamily::Participates,
     ];
 
-    /// The SQLite table name, verbatim from spec 5.
+    /// The table name as the schema spells it.
     pub fn name(self) -> &'static str {
         match self {
             RowFamily::ContainsBible => "contains_bible",
@@ -168,8 +119,7 @@ impl RowFamily {
         }
     }
 
-    /// Derived from `ALL` rather than from a second match, so the ordinal
-    /// and the list cannot drift apart.
+    /// Derived from `ALL` rather than a second match, so an ordinal cannot drift from the order.
     pub fn ordinal(self) -> u8 {
         Self::ALL.iter().position(|f| *f == self).expect("ALL lists every variant") as u8
     }
@@ -180,17 +130,11 @@ impl RowFamily {
 }
 
 /// The row's canonical bytes with its family OUTSIDE:
-/// `{"family":"located_at","row":{…}}`. This is what edge ids and section
-/// logical hashes hash (spec 3.4) -- see this module's own header for why
-/// the family cannot be left implicit.
 pub fn encode_row_in_family(family: RowFamily, row_value: Value) -> Vec<u8> {
     serialize(&obj(vec![("family", str_value(family.name())), ("row", row_value)]))
 }
 
-// ------------------------------------------------------------ tiny helpers
-
 /// Decode a nested `Canon` value, splicing its own (root-anchored) path
-/// into the caller's trail -- the composition `at_path` exists for.
 fn sub<T: Canon>(v: &Value, path: &str) -> Result<T, CanonError> {
     T::from_value(v).map_err(|e| at_path(path, e))
 }
@@ -217,11 +161,6 @@ fn field_opt_sub<T: Canon>(
 }
 
 /// A canonical SET from its array spelling. The array must be strictly
-/// increasing in the set's own `Ord`, because that is the only order
-/// `to_value` can emit: a duplicate or a re-ordering would decode to a
-/// set that re-encodes to DIFFERENT bytes -- a second spelling of one
-/// value, which is exactly what canonical forbids. Same discipline the
-/// byte parser applies to object keys.
 fn set_from_array<T: Canon + Ord>(arr: &[Value], path: &str) -> Result<BTreeSet<T>, CanonError> {
     let mut set: BTreeSet<T> = BTreeSet::new();
     for (i, item) in arr.iter().enumerate() {
@@ -243,7 +182,6 @@ fn opt_value<T: Canon>(o: &Option<T>) -> Value {
 }
 
 /// A typed node id rides as the canonical `Kind:raw` string, so the KIND
-/// is carried in the bytes and re-checked on the way back in.
 fn id_value<K: KindTag>(id: &NodeId<K>) -> Value {
     str_value(&any_node_id_str(&id.erase()))
 }
@@ -272,7 +210,6 @@ fn field_id<K: KindTag>(
 }
 
 /// A unit variant's payload is `null` and nothing else -- the same
-/// closedness `expect_exact_keys` gives struct variants.
 fn expect_unit(v: &Value, path: &str) -> Result<(), CanonError> {
     match v {
         Value::Null => Ok(()),
@@ -286,8 +223,6 @@ fn expect_unit(v: &Value, path: &str) -> Result<(), CanonError> {
 fn unknown_variant<T>(name: &str, path: String) -> Result<T, CanonError> {
     Err(CanonError::new(path, format!("unknown variant `{name}`")))
 }
-
-// -------------------------------------------------------------- text parts
 
 const VERSE_REF_KEYS: &[&str] = &["book", "chapter", "verse"];
 const CONCORD_REF_KEYS: &[&str] = &["article", "paragraph", "part"];
@@ -405,7 +340,6 @@ where
 {
     fn to_value(&self) -> Value {
         // `BTreeSet` order IS the canonical order -- no sort needed, and
-        // none permitted.
         let Self(loci) = self;
         Value::Arr(loci.iter().map(Canon::to_value).collect())
     }
@@ -450,8 +384,6 @@ impl Canon for TextLocus {
     }
 }
 
-// ----------------------------------------------------- justification parts
-
 const JUSTIFICATION_KEYS: &[&str] = &["grounds", "text"];
 
 impl Canon for Ground {
@@ -494,8 +426,6 @@ impl Canon for Justification {
         })
     }
 }
-
-// --------------------------------------------------------- chronology parts
 
 const DURATION_KEYS: &[&str] = &["days", "months", "years"];
 const ANCHOR_BINDING_KEYS: &[&str] = &["anchor", "offset"];
@@ -604,8 +534,6 @@ impl Canon for PlacementBasis {
     }
 }
 
-// ------------------------------------------------------------- entity parts
-
 impl Canon for Namesake {
     fn to_value(&self) -> Value {
         match self {
@@ -675,8 +603,6 @@ where
         }
     }
 }
-
-// --------------------------------------------------------- the 21 families
 
 const CONTAINS_KEYS: &[&str] = &["container", "content", "justification", "provenance"];
 const ATTESTS_KEYS: &[&str] = &["attestation", "event", "justification", "provenance"];
@@ -774,8 +700,6 @@ impl Canon for Succession {
             chain.push(id_from_value::<EventTag>(item, &join(&cp, &i.to_string()))?);
         }
         // Non-empty and distinct are re-checked through the row's own
-        // constructor -- a malformed chain cannot be stored, only fail to
-        // decode.
         Succession::new(
             field_id::<NarrativeTag>(m, ROOT, "narrative")?,
             chain,
@@ -1250,13 +1174,8 @@ impl Canon for Participates {
     }
 }
 
-/// DB-2b (RELMAP-1): the TOTAL family -> relation map. Every row family
-/// lowers into exactly one relation (directed or symmetric); this is
-/// the single spelling of that pairing, exhaustive by construction (no
-/// wildcard arm), so adding a family without deciding its relation is a
-/// compile error. `JustifiedBy`, `DerivedFrom` and `Parallel` have no
-/// family: `JustifiedBy` is synthesised from grounds
-/// (`event_world::add_justified_by`); the other two have zero producers.
+/// The total family-to-relation map: every family lowers into exactly one relation, so a
+/// family and a relation spelled differently are reconciled in one place.
 impl RowFamily {
     pub fn relation(self) -> crate::graph::EdgeRel {
         use crate::edge::{RelationId as R, SymRelationId as S};

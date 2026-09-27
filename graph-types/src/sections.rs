@@ -1,26 +1,6 @@
-//! Spec §2.1 (the section map) and §3.4 (the per-section logical dump and
-//! the version root) -- moved into `graph-types` at DB-4a so
-//! `MemStore::publish` can stamp THE root: the manifest root over the
-//! shipped sections' logical hashes, the same number the section writer
-//! puts in `manifest.toml` and `SqliteSnapshot::version` reads back.
-//! Zero-dep: pure functions over `Node`, `RowFamily` and `Graph`.
-//!
-//! **Placement rule (spec §2.1, verbatim): a node lives in the section of
-//! the adapter that authored it.** A row's family says which adapter
-//! authored IT -- with one exception. `ContainsBible` rows are authored
-//! by whichever adapter owns the CONTAINER the row names (a book/chapter
-//! container is the KJV adapter's own; any other container -- a curated
-//! passage container, none shipped yet -- is Core's), so that ONE family
-//! is split by row, never decided by family alone. `section_of_family`
-//! therefore refuses to answer for it; `section_of_contains_bible` is the
-//! per-row answer, and `section_of_justified_by` (the one function DB-2b's
-//! writer calls for a `justified-by` entry) special-cases the same family
-//! the same way.
-//!
-//! `Lexicon` is a real section variant (spec's five-section manifest) with
-//! no inhabitant yet: no node payload and no row family maps to it today.
-//! Do not invent one here -- it exists so `Section::MANIFEST_ORDER` is
-//! already the full, final list DB-2b writes against.
+//! A node lives in the section of the adapter that authored it, and a row's family says which
+//! adapter authored it -- except the one family whose section follows the container each row
+//! names, which is therefore decided per row and never by family alone.
 
 use crate::canon::ids::any_node_id_str;
 use crate::canon::{encode_row_in_family, obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
@@ -31,7 +11,8 @@ use crate::node::{Node, NodePayload};
 use crate::sha256::sha256_prefixed_128;
 use crate::text::{BibleTag, ConcordTag, Corpus};
 
-/// The five per-corpus SQLite sections (spec §2.1).
+/// The five per-corpus sections. `Lexicon` has no inhabitant yet: it exists so the manifest
+/// order below is already the final list.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Section {
     Core,
@@ -42,14 +23,11 @@ pub enum Section {
 }
 
 impl Section {
-    /// DB-2b's write order: every deploy's required sections first, then
-    /// the optional per-corpus additions, in the spec's own listing order.
+    /// Required sections first, then the optional per-corpus additions.
     pub const MANIFEST_ORDER: [Section; 5] =
         [Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon];
 
-    /// The sections a manifest lists today: all five of `MANIFEST_ORDER`
-    /// since LEX-1 (the lexicon section ships `Occurs` + its three extra
-    /// tables). The version root is over these.
+    /// The sections a manifest lists, and what the version root is taken over.
     pub const SHIPPED: [Section; 5] = [Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon];
 
     pub fn name(self) -> &'static str {
@@ -62,21 +40,15 @@ impl Section {
         }
     }
 
-    /// Every deploy carries Core and Kjv; the rest are optional per-corpus
-    /// additions a deploy may omit (spec §2.1).
+    /// Every deploy carries these two; the rest are per-corpus additions a deploy may omit.
     pub fn required(self) -> bool {
         matches!(self, Section::Core | Section::Kjv)
     }
 }
 
-/// The ONE container-raw prefix test both `section_of_node`'s Container
-/// arm and `section_of_contains_bible` use (spec §2.1). Today the only
-/// `"bible-"`-prefixed containers are book/chapter containers
-/// (`bible_container_adapter`), so "starts with `bible-book-`/
-/// `bible-chapter-`" and "starts with `bible-`" agree completely on the
-/// shipped graph -- stated here as the narrower, spec-literal prefixes so
-/// a future `"bible-"`-prefixed container that is NOT book/chapter shaped
-/// does not silently inherit Kjv by accident.
+/// The one prefix test both the node and the per-row answers use. Stated as the narrow
+/// book/chapter prefixes rather than the bare corpus one, so a future container that shares
+/// the corpus prefix without that shape cannot inherit its section by accident.
 fn section_of_container_raw(raw: &str) -> Section {
     if raw.starts_with("bible-book-") || raw.starts_with("bible-chapter-") {
         Section::Kjv
@@ -87,28 +59,9 @@ fn section_of_container_raw(raw: &str) -> Section {
     }
 }
 
-/// Placement rule (spec §2.1): a node lives in the section of the adapter
-/// that authored it.
-///
-///   `TextUnit{corpus: BibleTag::ID}` -> Kjv;
-///   `TextUnit{corpus: ConcordTag::ID}` -> Concord;
-///   `CommentaryItem` -> Kretzmann; `Container`: raw starts with
-///   `"bible-book-"`/`"bible-chapter-"` -> Kjv, starts with `"concord-"`
-///   -> Concord, else Core; every other kind -> Core. (`LexiconEntry` ->
-///   Lexicon, when it exists -- no such node exists today.)
-///
-/// FINAL REVIEW items 2 + 9 (M4-2): the match is EXHAUSTIVE -- every
-/// `NodePayload` kind is listed, there is no `_` arm, and the `TextUnit`
-/// corpus is matched against `BibleTag::ID`/`ConcordTag::ID` (the consts
-/// the corpora themselves define) rather than two string literals.
-///
-/// Why: DB-3 will add `NodePayload::LexiconEntry`, and LEX-1's acceptance
-/// test is "no change to any other section's hash". A `_ => Core` arm
-/// would have filed the new kind under Core silently and moved Core's
-/// hash; now it is a compile error here, in the one place that decides.
-/// The corpus arm is loud for the same reason the canon decoder
-/// (`canon/node.rs`'s `corpus_from_value`) refuses an unknown corpus: a
-/// third corpus is a new section decision, not a default.
+/// The match is exhaustive, with no catch-all arm and the corpus matched against the constants
+/// the corpora declare: a new node kind or a third corpus is a section decision, and a default
+/// arm would file it under one section silently and move that section's hash.
 pub fn section_of_node(node: &Node) -> Section {
     match &node.payload {
         NodePayload::TextUnit { corpus, .. } => match *corpus {
@@ -117,11 +70,9 @@ pub fn section_of_node(node: &Node) -> Section {
             other => unreachable!("TextUnit corpus {other}"),
         },
         NodePayload::CommentaryItem { .. } => Section::Kretzmann,
-        // DB-3: the lexicon section's own kind (spec 7); no inhabitant until LEX-1.
         NodePayload::LexiconEntry { .. } => Section::Lexicon,
         NodePayload::Container { .. } => section_of_container_raw(&node.id.raw),
-        // The eleven Core kinds, named one by one so a new variant cannot
-        // join them by default.
+        // Named one by one so a new variant cannot join them by default.
         NodePayload::Event { .. }
         | NodePayload::Narrative { .. }
         | NodePayload::Place { .. }
@@ -136,18 +87,8 @@ pub fn section_of_node(node: &Node) -> Section {
     }
 }
 
-/// One family's section -- the CONSTANT answer for every family except
-/// `ContainsBible`, which has none: it is split by row (see this module's
-/// own header). Calling this with `RowFamily::ContainsBible` is a caller
-/// error, not a silently-wrong constant -- use `section_of_contains_bible`
-/// for that one family.
-///
-///   Kjv: `CanonSuccession`, `CrossRefs`, `SpokenBy`, `SpokenAt`.
-///   Concord: `ContainsConcord`, `Quotes`, `Confesses`.
-///   Kretzmann: `CommentsOn`.
-///   Core: `Attests`, `Succession`, `DatedBy`, `LocatedAt`, `Fulfills`,
-///   `Typology`, `NamedAfter`, `Catechism`, `Mentions`,
-///   `CorrespondsBible`, `TemporalAdjacency`, `Analogue`.
+/// A constant per family, except the one family that has none because it is split by row:
+/// asking for that one is a caller error rather than a silently wrong answer.
 pub fn section_of_family(f: RowFamily) -> Section {
     match f {
         RowFamily::ContainsBible => panic!(
@@ -179,24 +120,15 @@ pub fn section_of_family(f: RowFamily) -> Section {
     }
 }
 
-/// The one family split by row (spec §2.1): a `ContainsBible` row's
-/// section follows its OWN container, not a family-wide constant --
-/// book/chapter containers are the KJV adapter's; any other container (a
-/// curated passage container -- none shipped yet) is Core's.
+/// The one family split by row: its section follows the container the row names, not a
+/// family-wide constant.
 pub fn section_of_contains_bible(row: &Contains<BibleTag>) -> Section {
     section_of_container_raw(&row.container.0)
 }
 
-/// R3: the one function DB-2b's writer calls for a `justified-by` index
-/// entry. These entries are synthesised from a ROW's own justification
-/// (`event_world::add_justified_by`), never authored directly, so they
-/// live in the section of that SOURCE row -- `section_of_family` applied
-/// to the source family, except `ContainsBible`, which decides by
-/// `source_container_raw` through the SAME rule `section_of_contains_bible`
-/// applies to an actual row. (No `ContainsBible` row is a `justified-by`
-/// source in the shipped graph today -- `add_justified_by` wires only
-/// `DatedBy`/`Fulfills`/`Typology`/`NamedAfter` -- but the signature stays
-/// general so a future source family needs no new function.)
+/// These entries are synthesised from a row's own justification rather than authored, so one
+/// lives in the section of that source row -- through the per-row rule for the one family
+/// that needs it. The signature stays general so a future source family needs no new function.
 pub fn section_of_justified_by(
     source_family: RowFamily,
     source_container_raw: Option<&str>,
@@ -210,17 +142,9 @@ pub fn section_of_justified_by(
     }
 }
 
-/// The small helper the justified-by real-data proof needs (survey gotcha
-/// 2): a `justified-by` index entry's SUBJECT position is
-/// `Position::Edge(source_edge_id)`, and `source_edge_id`'s own string
-/// spells `"{RelationId:?}:{hash}"` (`graph_types::edge::entry_id`) -- so
-/// the relation that minted the source row is recoverable from the edge
-/// id's own text, with no new index needed. `add_justified_by` wires only
-/// four source relations today (`DatedBy`, `Fulfillment`, `Typology`,
-/// `NamedAfter`); this maps each to the `RowFamily` `section_of_justified_by`
-/// wants THROUGH `RowFamily::relation` (DB-2b, RELMAP-1: the total
-/// family->relation map), so the `Fulfillment`/`Fulfills` spelling split
-/// is decided in one place, not re-spelled here.
+/// An edge id's own text spells the relation that minted it, so the source family is
+/// recoverable from the id with no extra index. Mapped through the family-to-relation table so
+/// a relation and family that are spelled differently are reconciled in one place.
 pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> {
     use crate::graph::EdgeRel;
     let (relation, _hash) = source_edge_id.0.split_once(':')?;
@@ -231,18 +155,11 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
     })
 }
 
-// ---------------------------------------------------------------------
-// DB-4a: the tables a section carries, its logical dump, and the root
-// ---------------------------------------------------------------------
-
-/// Spec §5.0: every section's `PRAGMA user_version`; part of every
-/// manifest line, therefore part of the root.
+/// Part of every manifest line, and therefore part of the root.
 pub const SECTION_SCHEMA_VERSION: u32 = 14;
 
-/// The row tables each section carries (spec §5.3–5.7). `ContainsBible`
-/// is the one family with two homes -- curated passage containers in
-/// core, book/chapter containers in kjv (`section_of_contains_bible`
-/// decides per row).
+/// One family has two homes -- curated containers in core, book and chapter containers in the
+/// text section -- and is placed per row.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
     match section {
         Section::Core => &[
@@ -276,7 +193,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
     }
 }
 
-/// Whether the section carries a `reading_spine` (spec §5.4, §5.5).
+/// Whether the section carries a reading spine.
 pub fn has_spine(section: Section) -> bool {
     matches!(section, Section::Kjv | Section::Concord)
 }
@@ -290,12 +207,8 @@ pub fn spine_corpus(section: Section) -> Option<&'static str> {
     }
 }
 
-/// DB-4b: the tables a section carries beyond `node`, its row families and
-/// `reading_spine` (spec §5.3–5.6, amended by the DB-4b plan's judgment
-/// calls 3–6): node projections, the resolved chronology, the heading
-/// index, red-letter spans and the folded sidecars. Their rows reach the
-/// dump through `Graph::extra_tables`; `atlas_graph::sqlite::extras`
-/// declares the matching column specs and a law pins the two lists equal.
+/// The tables beyond the nodes, rows and spine. Their rows reach the dump through the graph's
+/// attached extras, and a law pins this list equal to the column specs the writer declares.
 pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
     match section {
         Section::Core => &[
@@ -329,24 +242,18 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
         Section::Kjv => &["verse", "red_letter_span"],
         Section::Concord => &["concord_unit"],
         Section::Kretzmann => &[],
-        // LEX-1 (spec 5.7): the entry projection, its domain codes, and the
-        // word inventory (every token, matched or not).
         Section::Lexicon => &["lexicon_entry", "lexicon_domain", "token"],
     }
 }
 
-/// The ONE spelling of an extra table's row body, both sides (the compiler
-/// attaching to `Graph::extra_tables`, the reader re-encoding a `SELECT`):
-/// an object of `(column, value)` pairs, keys in byte order, no whitespace.
+/// The one spelling of an extra table's row body, for the writer attaching it and the reader
+/// re-encoding a query result: an object of column-value pairs, keys in byte order, no space.
 pub fn extra_line_body(cols: Vec<(&str, Value)>) -> Vec<u8> {
     serialize(&obj(cols))
 }
 
-/// The tables the section's logical dump (spec §3.4) walks, in order:
-/// `node`, each row family's table in `row_tables_of` order, then
-/// `reading_spine` where present, then `extra_tables_of` (DB-4b). `meta`,
-/// `justification`, `ground` and `edge_index` are NOT in the dump:
-/// informational or derived.
+/// In dump order. The informational and derived tables are deliberately absent: a dump covers
+/// only what the rows themselves say.
 pub fn logical_table_order(section: Section) -> Vec<&'static str> {
     let mut v = vec!["node"];
     v.extend(row_tables_of(section).iter().map(|f| f.name()));
@@ -369,13 +276,9 @@ fn line(out: &mut Vec<u8>, table: &str, body: &[u8]) {
     out.push(b'\n');
 }
 
-/// Spec §3.4, DB-2b's binding format: for each table in
-/// `logical_table_order(section)`, for each row in primary-key order,
-/// `<table>\t<canonical row JSON>\n`. Nodes in `any_node_id_str` BYTE
-/// order (what SQLite's `ORDER BY id` yields), rows in ord order
-/// (`ContainsBible` filtered by `section_of_contains_bible`), the spine in
-/// ord order. Recomputable from the section file by streaming its tables
-/// (`atlas_graph::sqlite::logical::logical_dump_of_db`); the two must agree.
+/// The binding format: per table, per row in primary-key order, `<table>\t<canonical row>\n`,
+/// with nodes in id byte order -- what a database's own ordered scan yields. A reader
+/// recomputes this by streaming the section file, and the two must agree byte for byte.
 pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
     let mut out: Vec<u8> = Vec::new();
     let mut nodes: Vec<&Node> = g.nodes.values().filter(|n| section_of_node(n) == section).collect();
@@ -431,9 +334,6 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             }
         }
     }
-    // DB-4b: the non-graph tables, bodies already canonical and in
-    // primary-key order (`Graph::extra_tables`); a table no section lists
-    // is not in any dump.
     for table in extra_tables_of(section) {
         if let Some(bodies) = g.extra_tables.get(table) {
             for body in bodies {
@@ -449,9 +349,8 @@ pub fn logical_hash(dump: &[u8]) -> ContentHash {
     hash_from_digest(sha256_prefixed_128(DOMAIN_PREFIX, dump))
 }
 
-/// ON: the 16-byte digest IS the hash. OFF (the sibling repo's u64 state,
-/// never served by the atlas after DB-4a): the digest's first eight bytes,
-/// so these functions compile and stay law-tested in both states.
+/// The digest IS the hash here; the other spelling truncates it, so both states compile and
+/// stay law-tested.
 #[cfg(feature = "canon-ids")]
 fn hash_from_digest(d: [u8; 16]) -> ContentHash {
     ContentHash(d)
@@ -463,8 +362,7 @@ fn hash_from_digest(d: [u8; 16]) -> ContentHash {
     ContentHash(u64::from_be_bytes(eight))
 }
 
-/// Spec §2.2: `name|logical|schema_version|required\n` per section, in the
-/// order given (manifest order). `logical` is the hash's `hex()`.
+/// One line per section, in the order given: `name|logical|schema_version|required`.
 pub fn manifest_lines(entries: &[(&str, &str, u32, bool)]) -> Vec<u8> {
     let mut out = Vec::new();
     for (name, logical, schema_version, required) in entries {
@@ -478,10 +376,8 @@ pub fn root_of_lines(lines: &[u8]) -> ContentHash {
     hash_from_digest(sha256_prefixed_128(DOMAIN_PREFIX, lines))
 }
 
-/// THE version root (spec §3.4): the manifest root over `Section::SHIPPED`,
-/// each section's logical hash over its own logical dump. Equal to what
-/// the section writer writes as `manifest.toml`'s `root` and to
-/// `SqliteSnapshot::version()`.
+/// The manifest root over the shipped sections' logical hashes -- equal to what the section
+/// writer records and what a snapshot reads back.
 pub fn version_root(g: &Graph) -> ContentHash {
     let logicals: Vec<(Section, String)> = Section::SHIPPED.iter().map(|s| (*s, logical_hash(&logical_dump_section(g, *s)).hex())).collect();
     let entries: Vec<(&str, &str, u32, bool)> =
@@ -550,7 +446,7 @@ mod laws {
         g2.located_at[0].provenance = "q".into();
         assert_ne!(version_root(&g), version_root(&g2), "a row byte moves the root (spec 3.1 defect 1, closed)");
         let mut g3 = fixture();
-        g3.build_indexes(); // derived state is not in the root
+        g3.build_indexes();
         assert_eq!(version_root(&g), version_root(&g3));
     }
 
@@ -605,9 +501,6 @@ mod laws {
         assert_eq!(section_of_family(RowFamily::Occurs), Section::Lexicon);
         assert_eq!(Section::SHIPPED.len(), 5);
         assert_eq!(Section::SHIPPED.to_vec(), Section::MANIFEST_ORDER.to_vec());
-        // The closedness guard that replaces the retired whole-graph dump's
-        // destructure: every family is written by exactly one shipped
-        // section, ContainsBible by two.
         for f in RowFamily::ALL {
             let homes = Section::SHIPPED.iter().filter(|s| row_tables_of(**s).contains(&f)).count();
             assert_eq!(homes, if f == RowFamily::ContainsBible { 2 } else { 1 }, "{f:?}");

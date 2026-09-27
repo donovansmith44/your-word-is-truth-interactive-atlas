@@ -1,19 +1,9 @@
-//! TOOLCHAIN-1 (spec §3.2): the toolchain pin is a law, not a convention.
-//!
-//! Every content-addressed id in this project was, until the relational
-//! artifact cutover, a `DefaultHasher` output -- an algorithm Rust's own
-//! docs say "may change between releases." A `rustup update` could move
-//! every id with zero data change. These tests make the pin load-bearing:
-//! the file must exist, must name the exact version, and the compiler
-//! that BUILT THIS TEST must be that version.
-
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const PINNED: &str = "1.97.1";
 
 fn repo_root() -> PathBuf {
-    // graph-types/ sits at the repo root; the pin sits beside it.
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
 }
 
@@ -39,8 +29,6 @@ fn rust_toolchain_toml_pins_the_exact_version() {
 
 #[test]
 fn the_compiler_that_built_this_test_is_the_pinned_version() {
-    // `CARGO` is the cargo binary that performed this build; its sibling
-    // `rustc` is the compiler that built this test binary.
     let rustc = Path::new(env!("CARGO")).with_file_name(if cfg!(windows) { "rustc.exe" } else { "rustc" });
     let out = Command::new(&rustc)
         .arg("--version")
@@ -55,16 +43,6 @@ fn the_compiler_that_built_this_test_is_the_pinned_version() {
 
 #[test]
 fn rustup_resolves_the_pin_from_the_repo_root() {
-    // The proxy in CARGO_HOME/bin (falling back to ~/.cargo/bin when
-    // CARGO_HOME isn't set) resolves the toolchain from the working
-    // directory; from the repo root it must land on the pin.
-    //
-    // env_remove("RUSTUP_TOOLCHAIN") matters: cargo-launched test processes
-    // inherit RUSTUP_TOOLCHAIN from the toolchain that built/ran this test,
-    // and that env var outranks rust-toolchain.toml when the proxy resolves
-    // a version -- without removing it, this test would pass even if
-    // rust-toolchain.toml were deleted or pointed elsewhere, never actually
-    // consulting the file it claims to prove is load-bearing.
     let cargo_home = std::env::var("CARGO_HOME").map(PathBuf::from).or_else(|_| {
         std::env::var("USERPROFILE")
             .or_else(|_| std::env::var("HOME"))

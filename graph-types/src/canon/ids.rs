@@ -1,15 +1,6 @@
-//! Canonical STRING forms for the identity types.
-//!
-//! `AnyNodeId` and `Position` have no string spelling in the crate today
-//! (only `{:?}`), so these functions MINT the artifact's one: kind name,
-//! `:`, raw. The raw part may itself contain colons (`bible/JHN.3.16` is
-//! colon-free, but nothing forbids them and edge ids carry one), so the
-//! parse side splits at the FIRST colon and hands the whole remainder
-//! back as the raw -- that makes the round trip total for every raw.
-//!
-//! Each parser takes the `path` it is decoding under (R10b): these are
-//! called from inside a field decoder, and an error that cannot say WHERE
-//! the bad id sat is most of the way to useless.
+//! These functions MINT the artifact's one string spelling for an id: kind name, colon, raw.
+//! The raw part may itself contain colons, so the parse side splits at the FIRST colon and
+//! hands back the whole remainder, which makes the round trip total for every raw.
 
 use crate::edge::EdgeId;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -17,7 +8,6 @@ use crate::id::{AnyNodeId, NodeKind, Position};
 use super::CanonError;
 
 /// The canonical name of a node kind: its `Debug` name, so the encoding
-/// and the source read the same.
 pub fn node_kind_str(k: NodeKind) -> &'static str {
     match k {
         NodeKind::TextUnit => "TextUnit",
@@ -39,7 +29,6 @@ pub fn node_kind_str(k: NodeKind) -> &'static str {
 }
 
 /// `path` is where the caller sits, so a bad kind inside a node id
-/// reports at that node id's own location rather than nowhere (R10b).
 pub fn parse_node_kind(s: &str, path: &str) -> Result<NodeKind, CanonError> {
     match s {
         "TextUnit" => Ok(NodeKind::TextUnit),
@@ -74,7 +63,6 @@ pub fn parse_any_node_id(s: &str, path: &str) -> Result<AnyNodeId, CanonError> {
 }
 
 /// `"n:"` + the node id, or `"e:"` + the edge id. Positions include
-/// edges (the edges-as-positions law), so both need a spelling.
 pub fn position_str(p: &Position) -> String {
     match p {
         Position::Node(id) => format!("n:{}", any_node_id_str(id)),
@@ -90,12 +78,8 @@ pub fn parse_position(s: &str, path: &str) -> Result<Position, CanonError> {
     }
 }
 
-/// DB-4a (EDGE-ID-1): the canonical bytes an edge id is minted from --
-/// `{"object":<position_str>,"rel":"<RelationId or SymRelationId Debug
-/// name>","subject":<position_str>}`, keys in byte order, no whitespace.
-/// Decodable and `Debug`-free (spec §3.1 defect 4, for edges). A
-/// symmetric relation's two ends are sorted by the caller before this
-/// is called, as `entry_id_symmetric` always did.
+/// The bytes an edge id is minted from: `{"object":…,"rel":…,"subject":…}`, keys in byte order,
+/// no whitespace, and decodable. A symmetric relation's two ends are sorted by the caller.
 pub fn edge_canonical_bytes(rel_name: &str, subject: &Position, object: &Position) -> Vec<u8> {
     super::serialize(&super::obj(vec![
         ("object", super::str_value(&position_str(object))),

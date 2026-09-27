@@ -1,16 +1,3 @@
-//! DB-2a: the hand-written SHA-256 answers to FIPS 180-4.
-//!
-//! The hasher is the root of every content address the relational
-//! artifact will carry, so it is pinned against the published NIST test
-//! vectors rather than against itself: one empty message, the one-block
-//! `"abc"`, the two-block 56-byte message (the padding case where the
-//! length word does NOT fit in the first block), and the million-'a'
-//! endurance vector that exercises the streaming path over 15,625 blocks.
-//!
-//! `sha256_prefixed_128` is the ONE entry point ids are minted through;
-//! its law is stated here as an identity against `sha256`, so domain
-//! separation can never quietly become "hash the bytes alone".
-
 use atlas_graph_types::sha256::{sha256, sha256_prefixed_128};
 
 fn hex(bytes: &[u8]) -> String {
@@ -35,7 +22,6 @@ fn nist_abc() {
 
 #[test]
 fn nist_two_block_message() {
-    // 56 bytes: padding pushes the 64-bit length into a SECOND block.
     let msg = b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
     assert_eq!(msg.len(), 56);
     assert_eq!(
@@ -53,19 +39,6 @@ fn nist_one_million_a() {
     );
 }
 
-/// Padding is where a hand-written SHA-256 goes wrong, so every dangerous
-/// length is a KNOWN-ANSWER test, not a shape check.
-///
-/// 55 is the largest message whose `0x80` + zeros + 64-bit length still
-/// fit in one block. 56..=63 each spill the length word into a SECOND
-/// block. 64 is a whole block with the entire padding block following.
-/// 65 restarts the cycle; 119/120 are the same two cases one block later,
-/// so an off-by-one that only shows after the first `chunks_exact`
-/// iteration cannot hide.
-///
-/// Every digest below is `sha256sum` of that many `'a'` bytes, confirmed
-/// independently against `openssl dgst -sha256`. Two outside tools, not
-/// this crate agreeing with itself.
 #[test]
 fn padding_boundaries_are_known_answer_tests() {
     let cases: [(usize, &str); 7] = [
@@ -95,14 +68,10 @@ fn prefixed_128_is_the_first_sixteen_bytes_of_the_prefixed_digest() {
 
 #[test]
 fn the_prefix_is_load_bearing() {
-    // Domain separation: the same bytes under two prefixes are two ids.
     let data = b"payload";
     assert_ne!(
         sha256_prefixed_128(b"one/", data),
         sha256_prefixed_128(b"two/", data)
     );
-    // And the prefix is NOT part of the data: hashing the concatenation
-    // directly must agree with the prefixed entry point (above), while an
-    // unprefixed hash must not.
     assert_ne!(sha256_prefixed_128(b"one/", data), sha256(data)[..16]);
 }

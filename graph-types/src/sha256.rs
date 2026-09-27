@@ -1,22 +1,8 @@
-//! SHA-256 (FIPS 180-4), hand-written, std only.
-//!
-//! DB-2a needs a hash that does NOT move when the toolchain moves.
-//! `DefaultHasher` -- what every content address in this project used
-//! before the relational artifact -- is explicitly documented by std as
-//! an algorithm that "may change between releases", so a `rustup update`
-//! could rewrite every id in the artifact with zero data change. A crate
-//! would fix that and break the OTHER law (`graph-types` is
-//! zero-dependency: see `tests/zero_deps.rs`), so the hasher lives here.
-//!
-//! Scope is exactly one responsibility: the compression function plus the
-//! two entry points ids are minted through. No streaming API, no `Hasher`
-//! impl, no incremental state -- the artifact hashes whole byte strings
-//! it already holds, and every extra surface is another thing to get
-//! wrong. `tests/sha256_vectors.rs` pins it against the published NIST
-//! vectors, including the million-'a' case.
+//! Hand-written because a content address must not move when the toolchain moves -- the
+//! standard library's own hasher may change between releases -- and because this crate takes
+//! no dependencies. Scope is one responsibility: the compression function and two entry points.
 
 /// The 64 round constants: the first 32 bits of the fractional parts of
-/// the cube roots of the first 64 primes (FIPS 180-4 §4.2.2).
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -29,7 +15,6 @@ const K: [u32; 64] = [
 ];
 
 /// The initial hash value: the first 32 bits of the fractional parts of
-/// the square roots of the first 8 primes (FIPS 180-4 §5.3.3).
 const H0: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
@@ -83,34 +68,12 @@ fn compress(h: &mut [u32; 8], block: &[u8; 64]) {
     h[7] = h[7].wrapping_add(hh);
 }
 
-/// The digest of the CONCATENATION of `parts`, without ever materialising
-/// that concatenation.
-///
-/// This is the one hashing body in the crate; `sha256` and
-/// `sha256_prefixed_128` are both one line over it, so every vector that
-/// pins either of them pins this. It is NOT a streaming API (no state a
-/// caller can hold between calls, nothing to misuse, nothing to leave
-/// unfinished) -- it is the same whole-byte-string hash the module has
-/// always offered, with the string allowed to arrive in more than one
-/// piece. FINAL REVIEW item 7: `sha256_prefixed_128` used to copy
-/// `prefix ‖ data` into a fresh `Vec`, which for the ON version root over
-/// the real graph doubles a multi-hundred-megabyte dump.
-///
-/// Padding is FIPS 180-4 §5.1.1: a `0x80` byte, then zeros, then the
-/// TOTAL message length in BITS as a big-endian u64, landing the total on
-/// a 64-byte multiple. When the length word does not fit in the block that
-/// holds the `0x80` (total lengths 56..=63 mod 64), the padding spills
-/// into one more block -- the two-block NIST vector covers exactly that.
-///
-/// The part boundaries are invisible to the result: `block` carries at
-/// most 63 leftover bytes from one part into the next, so a split falling
-/// inside a block is the same digest as no split at all
-/// (`a_split_inside_a_block_is_the_same_digest` below).
+/// The digest of the CONCATENATION of `parts`, without ever materialising it -- the version
+/// root over a real graph would otherwise copy a multi-hundred-megabyte dump. Part boundaries
+/// are invisible to the result: a split inside a block yields the digest of no split at all.
 fn sha256_concat(parts: &[&[u8]]) -> [u8; 32] {
     let mut h = H0;
     // The carry: `fill` bytes of a block not yet complete. Always < 64 at
-    // every part boundary -- a full block is compressed the moment it
-    // fills, never held.
     let mut block = [0u8; 64];
     let mut fill = 0usize;
     let mut total: u64 = 0;
@@ -141,9 +104,6 @@ fn sha256_concat(parts: &[&[u8]]) -> [u8; 32] {
     }
 
     // The tail (0..=63 bytes) plus the padding: one block, or two when
-    // the 8-byte length word cannot follow the `0x80` in this one. The
-    // bytes after `fill` are stale carry from an earlier block, so they
-    // are zeroed before the `0x80` goes in.
     block[fill..].iter_mut().for_each(|b| *b = 0);
     block[fill] = 0x80;
     let bit_len = total.wrapping_mul(8);
@@ -169,18 +129,9 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
     sha256_concat(&[data])
 }
 
-/// The 128-bit content address: the first 16 bytes of
-/// `sha256(prefix ‖ data)`.
-///
-/// The prefix is DOMAIN SEPARATION and is hashed BEFORE the bytes, never
-/// stored in them -- so the canonical bytes on disk stay exactly what
-/// `Canon::encode` produced, while a digest taken over a node can never
-/// collide with a digest of the same bytes meaning something else.
-/// Truncation to 128 bits is the artifact's id width (spec §3.1): ~2^64
-/// birthday bound over a corpus of ~10^6 things.
-///
-/// The two slices are fed to the block loop as they lie: no `Vec`, no
-/// copy of `data` (see `sha256_concat`).
+/// The first 16 bytes of the digest of prefix then data. The prefix is domain separation and is
+/// hashed BEFORE the bytes, never stored in them, so what is on disk stays exactly what the
+/// encoder produced while a digest of a node cannot collide with one of the same bytes elsewhere.
 pub fn sha256_prefixed_128(prefix: &[u8], data: &[u8]) -> [u8; 16] {
     let full = sha256_concat(&[prefix, data]);
     let mut out = [0u8; 16];
@@ -196,14 +147,12 @@ mod tests {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
 
-    /// The compression function itself, one block, against the `"abc"`
-    /// vector: `compress` over the padded block from H0 IS the digest.
     #[test]
     fn compression_over_one_padded_block_is_the_abc_digest() {
         let mut block = [0u8; 64];
         block[..3].copy_from_slice(b"abc");
         block[3] = 0x80;
-        block[56..].copy_from_slice(&24u64.to_be_bytes()); // 3 bytes = 24 bits
+        block[56..].copy_from_slice(&24u64.to_be_bytes());
         let mut h = H0;
         compress(&mut h, &block);
         let hexed: String = h.iter().map(|w| format!("{w:08x}")).collect();
@@ -211,15 +160,6 @@ mod tests {
         assert_eq!(hexed, hex(&sha256(b"abc")), "the entry point agrees with the core");
     }
 
-    /// FINAL REVIEW item 7: the multi-slice entry point must be blind to
-    /// WHERE the message is cut. Every cut of `"abc"`, and cuts placed
-    /// deliberately inside a block, across a block boundary, exactly ON a
-    /// block boundary, and at the padding-spill lengths (55/56/63/64/65)
-    /// -- each must equal the one-slice digest of the same bytes.
-    ///
-    /// What would make it fail: a carry that forgets the leftover bytes
-    /// of a part, a length counted per part instead of in total, or a
-    /// stale byte left in the block behind the `0x80`.
     #[test]
     fn a_split_inside_a_block_is_the_same_digest() {
         assert_eq!(sha256_concat(&[b"a", b"bc"]), sha256(b"abc"));
@@ -228,21 +168,16 @@ mod tests {
         assert_eq!(sha256_concat(&[b"abc", b""]), sha256(b"abc"));
         assert_eq!(sha256_concat(&[]), sha256(b""));
 
-        // A 200-byte message (three full blocks + 8) cut at every single
-        // offset: mid-block, on the boundary, and in the padding tail.
         let msg: Vec<u8> = (0..200u32).map(|i| (i % 251) as u8).collect();
         let whole = sha256(&msg);
         for cut in 0..=msg.len() {
             let (a, b) = msg.split_at(cut);
             assert_eq!(sha256_concat(&[a, b]), whole, "two-way cut at {cut}");
         }
-        // Three pieces, the middle one straddling a block boundary.
         assert_eq!(sha256_concat(&[&msg[..60], &msg[60..70], &msg[70..]]), whole);
-        // Many tiny pieces: the carry path runs on every one of them.
         let ones: Vec<&[u8]> = msg.chunks(1).collect();
         assert_eq!(sha256_concat(&ones), whole);
 
-        // The padding-spill lengths, split one byte before the seam.
         for n in [55usize, 56, 63, 64, 65, 119, 120] {
             let m = vec![b'a'; n];
             let (a, b) = m.split_at(n - 1);
@@ -250,9 +185,6 @@ mod tests {
         }
     }
 
-    /// The prefixed entry point is exactly the concatenated digest,
-    /// truncated -- proven WITHOUT the `Vec` it used to build, against a
-    /// prefix/data pair whose seam lands inside the first block.
     #[test]
     fn prefixed_128_never_needs_the_concatenation() {
         let prefix = b"bible-atlas/canon/1\n";

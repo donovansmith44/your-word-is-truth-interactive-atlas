@@ -1,6 +1,4 @@
-//! Presentation: the two policy functions (focusable, display) plus the
-//! Presentable contract — form policy per (kind, context). Laws travel
-//! as server data; a stylesheet can never re-decide a law.
+//! Presentation laws travel as server data, so a stylesheet can never re-decide one.
 
 use crate::edge::EdgeKind;
 use crate::graph::Graph;
@@ -65,9 +63,8 @@ pub struct FrontierPresentation {
 }
 
 /// Which position kinds can take focus, per surface. "What can I
-/// click?" has one answer: kinds focusable HERE.
 pub fn focusable(_surface: Surface, _kind: PositionKind) -> bool {
-    true // policy table lands with the app; the signature is the design
+    true
 }
 
 /// How a focus of a given kind displays its frontier, per surface.
@@ -84,7 +81,6 @@ pub enum Presentation {
 }
 
 /// Form policy: one implementation per (kind, context) — a thing cannot
-/// wear two faces in the same context.
 pub trait Presentable {
     fn present(&self, ctx: PresentationContext, g: &Graph) -> Presentation;
 }
