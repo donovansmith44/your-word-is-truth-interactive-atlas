@@ -75,18 +75,8 @@ pub async fn catechism_item(
         graph.verse_text_of(&VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse })
     };
 
-    // Batch F2: THE SCRIPTURES is the item-level `verses` (Luther's own
-    // embedded citations, Batch F, `question: None`, listed FIRST -- "items
-    // keep their F-batch embedded-citation links too" reads naturally as
-    // the primary, first-listed source) followed by each of `questions[]`,
-    // in curated order, each contributing its OWN verses tagged with its
-    // OWN question title. Deduped by (vref, question) -- a verse cited
-    // twice under the exact same question (or twice with no question) never
-    // renders as two identical rows; a verse legitimately cited BOTH ways
-    // (once bare, once under a question) still shows once per way, since
-    // that's genuinely two different pieces of information (see this
-    // handler's own module-level citation-integrity discipline: never
-    // silently drop a real distinction).
+    // Keyed by (verse, question) rather than by verse: the same verse cited once
+    // bare and once under a question is two distinct citations, not a duplicate.
     let mut seen: std::collections::HashSet<(String, Option<String>)> = std::collections::HashSet::new();
     let mut verses: Vec<wire::CatechismProofVerse> = Vec::new();
     for v in &item.verses {

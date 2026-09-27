@@ -1,9 +1,3 @@
-//! CONTRACT-1a (spec D8): the published contract documents are GENERATED
-//! from the Rust and committed, and this file is the gate -- it regenerates
-//! every one of them and fails on any byte of difference, so a hand edit to
-//! `contracts/openapi.yaml`, `aqc.schema.json` or `graph-vocabulary.json`
-//! cannot survive (PRINCIPLES.md 13).
-
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
@@ -17,8 +11,6 @@ const MISUSE_EXIT: i32 = 2;
 const USAGE_LINE: &str = "usage: export_contract [--check]\n";
 const NOTHING: &str = "";
 
-/// What the committed file at a published path is, against what the Rust
-/// renders today. A closed set of three answers, not a message.
 #[derive(Debug, PartialEq)]
 enum Freshness {
     ByteIdenticalToWhatTheRustRenders,
@@ -82,8 +74,6 @@ fn the_exporter_refuses_an_unrecognised_argument_with_the_usage_line_rather_than
     );
 }
 
-/// `exit_code` is an `Option` because that is what a process status is: on
-/// Unix a signalled process has no code at all.
 #[derive(Debug, PartialEq)]
 struct ProcessOutcome {
     exit_code: Option<i32>,

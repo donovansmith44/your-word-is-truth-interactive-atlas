@@ -1,60 +1,12 @@
-//! Wire-identity conversions for the two generic graph endpoints (design
-//! doc §5; M-A brief requirement 4): a human-inspectable, round-trippable
-//! STRING form for `AnyNodeId` and `EdgeKind`, kept entirely at this DTO
-//! layer -- graph-types' own `AnyNodeId`/`EdgeKind` shapes are untouched;
-//! this module only converts.
-//!
-//! Node ids: `"text-unit:{BOOK}.{chapter}.{verse}"` (e.g.
-//! `"text-unit:JHN.3.16"`) for the only node kind M-A materializes.
-//! Internally a TextUnit's `AnyNodeId.raw` is a numeric-book-index string
-//! (`atlas_graph::kjv_adapter`'s own adapter convention, chosen for a
-//! stable identity independent of any one citation scheme -- "names are
-//! refs, not identity," design doc §9b); this layer is where that internal
-//! identity is dressed up into the human/dot-ref form the REST of this
-//! app's wire already uses everywhere (`Chapter.ref`, `/api/chapter/{cref}`,
-//! ...), and back.
-//!
-//! BATCH M-B id grammar (extends M-A's, per the brief's own requirement 4):
-//! Event/Narrative/Anchor/Place-stub ids are the curated string ids
-//! themselves (`ab_ur`, `theo-157`, `conquest`, `solomon-crowned`,
-//! `jericho`, ...) -- already stable, unique, human-legible, with no
-//! numeric re-encoding needed (unlike TextUnit's book-index scheme, which
-//! exists only because `VerseRef` has no string form of its own). The wire
-//! form is `"{Kind:?}:{raw}"` (e.g. `"Event:ab_ur"`, `"Anchor:solomon-crowned"`)
-//! -- this is NOT a new convention: `encode_node_id`'s own pre-existing
-//! generic fallback (`other => format!("{other:?}:{}", id.raw)`) already
-//! PRODUCES exactly this shape for any non-TextUnit kind, unmodified since
-//! M-A. `decode_node_id` below adds the matching arms so the four kinds
-//! this batch newly materializes complete that round trip -- the encode
-//! half needed no change at all.
-//!
-//! Edge kinds: an `EdgeKind` rides the wire as itself now
-//! (graph-types' own `Serialize` impl emits `EdgeKind::label()`), and
-//! `EdgeKind::from_label` is its total inverse -- both built from the
-//! relation manifest, so this module keeps no edge-kind table of its own.
+//! The wire form of a node id: a round-trippable string a caller hands back.
 
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 
 use crate::wire::{NodeRef, PositionKind};
 
-/// Encodes any node id this batch's graph can produce. Only `NodeKind::TextUnit`
-/// is ever actually built in M-A; the fallback keeps this function total
-/// (never a panic) for whichever kind materializes next (M-B/M-C), at the
-/// cost of a less pretty wire string until THAT batch's own DTO work lands.
 pub fn encode_node_id(id: &AnyNodeId) -> String {
     match id.kind {
-        // CORP-2a: `NodeKind::TextUnit` is now shared by TWO corpora (the
-        // scouting memo's own "ConcordRef locus grammar joins graph_wire,
-        // one decode arm, the P precedent" -- realized here, in BOTH
-        // halves of the round trip, not just decode). Bible tried first
-        // (the overwhelmingly common case, unchanged cost); a Concord id
-        // (`kjv_adapter::decode_text_unit` returns `None` for a
-        // "concord/..." raw string, since it checks the "bible/" prefix)
-        // falls to the Concord decode, which produces the wire form
-        // `"text-unit:BoC {part}.{article}.{paragraph}"` -- reusing
-        // `ConcordTag::cite()`'s own citation format verbatim
-        // (graph-types' text.rs), not a new one invented here.
         NodeKind::TextUnit => match atlas_graph::kjv_adapter::decode_text_unit(id) {
             Some((book, chapter, verse)) => format!("text-unit:{}", atlas_graph::kjv_adapter::dot_ref(book, chapter, verse)),
             None => match atlas_graph::concord_adapter::decode_text_unit(id) {
@@ -62,139 +14,69 @@ pub fn encode_node_id(id: &AnyNodeId) -> String {
                 None => format!("text-unit:{}", id.raw),
             },
         },
+        // The fallback keeps this total for a kind with no prettier wire form,
+        // rather than leaving one unreachable through the generic endpoints.
         other => format!("{other:?}:{}", id.raw),
     }
 }
 
-/// The inverse of `encode_node_id` for the one kind this batch resolves
-/// (`text-unit:...`). `None` for anything else -- a syntactically odd or
-/// unsupported-kind id is a 400 `bad_ref` at the handler, never a panic.
 pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
     let (kind, rest) = s.split_once(':')?;
     if rest.is_empty() {
         return None;
     }
     match kind {
-        // CORP-2a: try the Concord "BoC {part}.{article}.{paragraph}"
-        // form first (a cheap, unambiguous prefix check -- Bible dot-refs
-        // never start "BoC "), then fall through to the existing Bible
-        // parse unchanged. See `encode_node_id`'s own matching doc
-        // comment for the full round-trip picture.
         "text-unit" => {
+            // A Bible dot-ref never starts "BoC ", so the prefix decides the
+            // corpus unambiguously and the Bible parse below needs no guard.
             if let Some(concord_rest) = rest.strip_prefix("BoC ") {
                 let mut parts = concord_rest.split('.');
                 let part: u8 = parts.next()?.parse().ok()?;
                 let article: u16 = parts.next()?.parse().ok()?;
                 let paragraph: u16 = parts.next()?.parse().ok()?;
                 if parts.next().is_some() {
-                    return None; // trailing garbage -- not one of this adapter's ids
+                    return None;
                 }
                 return Some(atlas_graph::concord_adapter::text_unit_id(part, article, paragraph));
             }
             let vid = atlas_core::refs::VerseId::parse_canonical(rest).ok()?;
             Some(atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse))
         }
-        // Batch M-B: the four newly-materialized kinds, completing the
-        // round trip `encode_node_id`'s own pre-existing generic fallback
-        // (`{Kind:?}:{raw}`) already produces for them (module doc
-        // comment above) -- `raw` is the curated id verbatim, no
-        // re-encoding.
         "Event" => Some(AnyNodeId { kind: NodeKind::Event, raw: rest.to_string() }),
         "Narrative" => Some(AnyNodeId { kind: NodeKind::Narrative, raw: rest.to_string() }),
         "Anchor" => Some(AnyNodeId { kind: NodeKind::Anchor, raw: rest.to_string() }),
         "Place" => Some(AnyNodeId { kind: NodeKind::Place, raw: rest.to_string() }),
-        // Batch M-C: three more newly-materialized kinds (era_adapter/
-        // polity_adapter/catechism_adapter), same round-trip completion.
         "Era" => Some(AnyNodeId { kind: NodeKind::Era, raw: rest.to_string() }),
         "Polity" => Some(AnyNodeId { kind: NodeKind::Polity, raw: rest.to_string() }),
         "CatechismItem" => Some(AnyNodeId { kind: NodeKind::CatechismItem, raw: rest.to_string() }),
-        // Batch P (the extensibility proof): the ONE line this batch adds
-        // to this file -- completing the round trip `encode_node_id`'s own
-        // pre-existing generic fallback ALREADY produces for Person
-        // ("Person:aaron_1"), the identical one-arm pattern every prior
-        // node-kind batch added here (M-B's four, M-C's three). Nothing
-        // else in `graph.rs`/`store.rs`/`explore.rs` needed a
-        // change for the two generic endpoints to serve Person nodes.
         "Person" => Some(AnyNodeId { kind: NodeKind::Person, raw: rest.to_string() }),
-        // Batch CORP-1a: same one-arm round-trip completion for the six
-        // Translation nodes this batch newly authors (`brainfuel_adapter.rs`)
-        // -- `encode_node_id`'s own pre-existing generic fallback already
-        // produces "Translation:latin_vulgate" etc.; this is what makes a
-        // rendering's own TranslationId resolve to something actually
-        // reachable through the existing generic `/api/node/{id}` endpoint
-        // (controller decision 6), not just internally present. NOT a new
-        // endpoint, NOT a client change -- the identical pattern every
-        // prior node-kind batch (M-B/M-C/P) added here.
         "Translation" => Some(AnyNodeId { kind: NodeKind::Translation, raw: rest.to_string() }),
-        // KRETZ-1: the identical one-arm round-trip completion for the
-        // 50,602 CommentaryItem nodes this batch newly authors (fix round
-        // 1's own pinned count)
-        // (`kretzmann_adapter.rs`) -- `encode_node_id`'s own pre-existing
-        // generic fallback already produces "CommentaryItem:kretzmann/
-        // 0.1.0" etc.; this is what makes a unit's own id resolve through
-        // the existing generic `/api/node/{id}` endpoint (decision 7: "the
-        // generic /api/node/{id} surfaces work automatically once nodes
-        // exist"), not just internally present. NOT a new endpoint, NOT a
-        // client change -- the identical pattern every prior node-kind
-        // batch (M-B/M-C/P/CORP-1a) added here.
         "CommentaryItem" => Some(AnyNodeId { kind: NodeKind::CommentaryItem, raw: rest.to_string() }),
-        // NODE-1: the identical one-arm round-trip completion for the
-        // 1,255 Bible book/chapter Container nodes this batch newly
-        // authors (`bible_container_adapter.rs`) -- `encode_node_id`'s own
-        // pre-existing generic fallback already produces
-        // "Container:bible-chapter-GEN-1" etc.; this is what makes a
-        // chapter/book node resolve through the existing generic
-        // `/api/node/{id}` endpoint (and `bibex node`/`bibex edges`, which
-        // decode through this same function). Concord's own containers
-        // ("Container:concord-doc-...") become resolvable through this
-        // same arm -- a disclosed side effect, not a second grammar: the
-        // arm is kind-level, exactly like every prior batch's
-        // (M-B/M-C/P/CORP-1a/KRETZ-1).
         "Container" => Some(AnyNodeId { kind: NodeKind::Container, raw: rest.to_string() }),
-        // DB-3: the identical one-arm round-trip completion for the (still
-        // uninhabited) LexiconEntry kind, so the vocabulary and the wire
-        // agree before LEX-1 authors the first node.
         "LexiconEntry" => Some(AnyNodeId { kind: NodeKind::LexiconEntry, raw: rest.to_string() }),
         _ => None,
     }
 }
 
-/// A short, human-legible label for a node -- the citation string for a
-/// TextUnit (e.g. `"JHN.3.16"`), or a generic fallback for any other kind.
-/// Deliberately NOT `graph_types::node::card()`'s own placeholder label
-/// (`"text unit (bible)"`) -- that function is documented as a skeleton
-/// stand-in awaiting real `CorpusScheme::cite`-driven citation strings
-/// (types doc §6); this is this DTO layer's own such computation, an
-/// EXTENSION (new conversion), not a change to graph-types' shipped `card()`.
 pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> String {
     match id.kind {
         NodeKind::TextUnit => {
             if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
                 return atlas_graph::kjv_adapter::dot_ref(book, chapter, verse);
             }
-            // CORP-2a: the Concord sibling -- `ConcordTag::cite`'s own
-            // citation format (graph-types' text.rs), reused verbatim
-            // rather than a third hand-written "BoC ..." string.
             if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
                 use atlas_graph_types::text::Corpus;
                 return atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph });
             }
             "text unit".to_string()
         }
-        // Not TextUnit (M-A never materializes another kind): fall back
-        // to graph-types' own `card()` view assembly rather than
-        // re-deriving its match here -- one label computation, reused.
-        // Node lookup goes through THE PORT (design doc §9a; fix round
-        // 1, C1) -- `GraphQuery::node`, never a direct field reach.
         _ => query.node(id).map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string()),
     }
 }
 
-/// A `Position` (a node or an edge -- edges take focus too, design doc §0)
-/// rendered as the wire node-reference it becomes. Total over both variants,
-/// never a panic: an edge position really is served -- a `justified-by` row
-/// reached through its own `justifies` frontier -- and its kind is
-/// `PositionKind::Edge`.
+/// A position rendered as the wire reference it becomes. An edge position really
+/// is served -- a `justified-by` row reached through its own `justifies`
+/// frontier -- so both variants resolve and neither panics.
 pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> NodeRef {
     match pos {
         Position::Node(id) => NodeRef { id: encode_node_id(id), kind: PositionKind::Node(id.kind), label: describe_node(id, query) },
@@ -213,18 +95,12 @@ mod tests {
             (NodeKind::Narrative, "conquest", "Narrative:conquest"),
             (NodeKind::Anchor, "solomon-crowned", "Anchor:solomon-crowned"),
             (NodeKind::Place, "jericho", "Place:jericho"),
-            // Batch M-C.
             (NodeKind::Era, "patriarchs", "Era:patriarchs"),
             (NodeKind::Polity, "egypt", "Polity:egypt"),
             (NodeKind::CatechismItem, "first-commandment", "CatechismItem:first-commandment"),
-            // Batch P.
             (NodeKind::Person, "aaron_1", "Person:aaron_1"),
-            // Batch CORP-1a.
             (NodeKind::Translation, "latin_vulgate", "Translation:latin_vulgate"),
-            // Batch KRETZ-1.
             (NodeKind::CommentaryItem, "kretzmann/0.1.0", "CommentaryItem:kretzmann/0.1.0"),
-            // Batch NODE-1: Bible book/chapter containers -- and, through
-            // the same kind-level arm, Concord's own containers.
             (NodeKind::Container, "bible-book-GEN", "Container:bible-book-GEN"),
             (NodeKind::Container, "bible-chapter-GEN-1", "Container:bible-chapter-GEN-1"),
             (NodeKind::Container, "concord-doc-small-catechism", "Container:concord-doc-small-catechism"),
@@ -244,7 +120,7 @@ mod tests {
 
     #[test]
     fn text_unit_id_round_trips_through_the_wire_form() {
-        let id = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16); // JHN is index 42
+        let id = atlas_graph::kjv_adapter::verse_node_id(42, 3, 16);
         let wire = encode_node_id(&id);
         assert_eq!(wire, "text-unit:JHN.3.16");
         assert_eq!(decode_node_id(&wire), Some(id));

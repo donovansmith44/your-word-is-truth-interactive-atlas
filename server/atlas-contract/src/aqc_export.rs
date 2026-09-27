@@ -1,29 +1,3 @@
-//! Batch AQC-1's own provider-side exporter (spec §3) -- the PURE
-//! (no I/O) generation logic, factored out of `src/bins/
-//! export_aqc_examples.rs` in fix round 1 (Q-6) so a standing test
-//! (`tests/aqc_corpus_generation.rs`) can call the SAME functions the
-//! exporter binary calls and assert the committed `.feature` files are
-//! byte-identical to what they'd regenerate to -- "generated-output-is-
-//! committed + a test that regenerates and diffs," the pattern this
-//! repo already uses elsewhere (the review's own phrase). The bin itself
-//! (`src/bins/export_aqc_examples.rs`) does everything ELSE this module
-//! doesn't: opening the real graph, capturing real HTTP fixtures, and
-//! writing files to disk -- all I/O, none of it here.
-//!
-//! Run the exporter from `server/`:
-//! `cargo run -p atlas-contract --bin export_aqc_examples`.
-
-/// One (NodeKind Debug string, wire id) seed per real node kind this
-/// contract samples -- SAME id list `graph_wire.rs`'s own round-trip unit
-/// test and `tests/graph_api.rs`'s own real-data HTTP tests already prove
-/// live against the committed graph (`ab_ur`, `aaron_1`, `kretzmann/0.1.0`,
-/// ... -- not invented for this exporter). `commandment-1` (CatechismItem)
-/// is `data/curated/catechism.toml`'s own first commandment item id;
-/// `latin_vulgate` (Translation) is one of the six CORP-1a-ingested
-/// parallel editions -- deliberately NOT "kjv", which
-/// `brainfuel_layers.rs::no_kjv_translation_node_is_authored_this_batch`
-/// proves does NOT exist as a Translation node (the KJV is the canonical
-/// TextUnit layer itself, never a Translation-kind node of its own).
 pub const SEEDS: &[(&str, &str)] = &[
     ("TextUnit", "text-unit:JHN.3.16"),
     ("Event", "Event:ab_ur"),
@@ -38,67 +12,34 @@ pub const SEEDS: &[(&str, &str)] = &[
     ("CatechismItem", "CatechismItem:commandment-1"),
 ];
 
-/// S-1 fix (Batch AQC-1 fix round 1, controller ruling): a second,
-/// non-SEEDS FocusQuery identity capture -- exploration-roundtrip.feature's
-/// own "a traversal target's own id round-trips too" scenario captures a
-/// TraversalQuery entry's id (`text-unit:ROM.5.8`, JHN.3.16's own real
-/// first "cites" target) and re-runs FocusQuery on it. Its fixture name
-/// joins the SEEDS-derived ones in the identity INDEX (`index.json`) the
-/// bin writes.
 pub const FOCUS_IDENTITY_EXTRA: &[(&str, &str)] = &[("text-unit:ROM.5.8", "focus-traversal-target")];
 
-/// Provider-exported response FIXTURES (brief deliverable 3, "Fixtures:
-/// provider-exported response fixtures committed pact-style"): one JSON
-/// file per DISTINCT real HTTP request this contract's Gherkin corpus
-/// makes across ALL SIX feature files (deduplicated -- a request repeated
-/// across two scenarios, e.g. TextUnit's FocusQuery in both
-/// focus-query.feature and exploration-roundtrip.feature, gets ONE
-/// fixture, reused). Captured via the SAME in-process
-/// `tower::ServiceExt::oneshot` idiom the Rust cucumber harness uses --
-/// real committed-graph HTTP responses, never hand-typed JSON. Each file
-/// is `{"status": <u16>, "body": <json>}` so error-path scenarios (400/404)
-/// are provable from a fixture too, not just success shapes. The C#
-/// harness (thin, contract-ignorant) deserializes these through the
-/// client's own DTOs -- it never talks to a live server.
 pub const FIXTURES: &[(&str, &str)] = &[
-    // FocusQuery error cases (the 11 success cases are derived from SEEDS
-    // below -- one "focus-<kind-lowercase>" fixture per real node kind).
     ("focus-not-found", "/api/node/Person:nonexistent-xyz"),
     ("focus-bad-ref", "/api/node/not-even-a-colon-pair"),
-    // exploration-roundtrip.feature's own "a traversal target's own id
-    // round-trips too" scenario captures a TraversalQuery entry's own id
-    // (text-unit:ROM.5.8, JHN.3.16's own first "cites" target) and
-    // re-runs FocusQuery on it -- this is that second FocusQuery's fixture.
     ("focus-traversal-target", "/api/node/text-unit:ROM.5.8"),
-    // TraversalQuery
     ("traversal-cites", "/api/node/text-unit:JHN.3.16/edges?kind=cites"),
     ("traversal-cites-limit1", "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1"),
     ("traversal-located-at", "/api/node/Event:ab_ur/edges?kind=located-at"),
     ("traversal-bad-kind", "/api/node/text-unit:JHN.3.16/edges?kind=not-a-real-kind"),
-    // TextWindowQuery
     ("text-window-single", "/api/text?ref=JHN.3.16&n=1"),
     ("text-window-multi", "/api/text?ref=JHN.3.16&n=3"),
     ("text-window-mat-4-19", "/api/text?ref=MAT.4.19&n=1"),
     ("text-window-mat-5-4", "/api/text?ref=MAT.5.4&n=1"),
     ("text-window-chapter-backward-bad-dir", "/api/text?ref=JHN.3&scope=chapter&dir=backward"),
     ("text-window-bad-corpus", "/api/text?ref=JHN.3.16&n=1&corpus=not-a-real-corpus"),
-    // SceneQuery
     ("scene-time", "/api/scene?from=-2100&to=-2000"),
     ("scene-scripture", "/api/scene/scripture?ref=JHN.3.16"),
     ("scene-bad-window", "/api/scene?from=100&to=-100"),
     ("scene-bad-ref", "/api/scene/scripture?ref=not-a-ref-at-all"),
-    // ContentsQuery (D4): the containment forest, two levels deep.
     ("contents-bible", "/api/contents/bible"),
     ("contents-concord", "/api/contents/concord"),
     ("contents-bad-corpus", "/api/contents/nope"),
-    // Versioning -- the one new behavioral endpoint (meta.rs).
     ("contract", "/api/contract"),
 ];
 
 /// Percent-encodes the one wire-id character that collides with axum's own
-/// path-segment routing (`/`, e.g. `CommentaryItem:kretzmann/0.1.0`) --
-/// same convention `tests/graph_api.rs`'s own literal
-/// `"CommentaryItem:kretzmann%2F0.1.0"` URIs already establish.
+/// path-segment routing (`/`, as in `CommentaryItem:kretzmann/0.1.0`).
 pub fn path_encode(id: &str) -> String {
     id.replace('/', "%2F")
 }

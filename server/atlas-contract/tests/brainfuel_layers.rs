@@ -1,28 +1,3 @@
-//! Batch CORP-1a, requirement 8: "Serving: additive only... if the
-//! reader's wire DTO projects ONLY the canonical rendering today, leave
-//! that projection exactly as is and prove the layers are present in the
-//! graph via a server-side/HTTP test instead."
-//!
-//! Verified first (module doc comments on `window.rs`/`reading.rs`): both
-//! `window::render` (backing `/api/text`) and `/api/verse/{vref}` project
-//! ONLY the KJV canonical rendering (`TranslationId("kjv")`) off a
-//! TextUnit's own `renderings` LayerMap -- neither was touched this batch.
-//! This file proves TWO things over the REAL committed data, built exactly
-//! the way `graph_api.rs`'s own `real_app()` already does (so it exercises
-//! the SAME `GraphService::build` real brain-fuel-bible wiring every other
-//! real-data HTTP test in this crate now gets for free):
-//!
-//! 1. SERVER-SIDE (direct graph query, no wire projection involved at
-//!    all): the five/four non-KJV renderings this batch adds ARE present
-//!    on the real TextUnit nodes' own payload.
-//! 2. HTTP: the existing `/api/verse/{vref}` endpoint's response is
-//!    UNCHANGED (still canonical-only) for the SAME verses, proving
-//!    "additive only" isn't just a claim; and the six new `Translation`
-//!    nodes are genuinely reachable through the existing generic
-//!    `/api/node/{id}` endpoint (a real HTTP round trip, not just an
-//!    internal fact) -- controller decision 6, "a rendering's TranslationId
-//!    resolves to a real node."
-
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -69,10 +44,6 @@ async fn get_json(app: axum::Router, uri: &str) -> (StatusCode, serde_json::Valu
     (status, json)
 }
 
-// ---------------------------------------------------------------------
-// 1. SERVER-SIDE: the graph's own payload carries every layer.
-// ---------------------------------------------------------------------
-
 fn renderings_of(snap: &impl GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> HashMap<String, String> {
     let node = snap.node(id).expect("node must exist");
     match node.payload {
@@ -85,7 +56,7 @@ fn renderings_of(snap: &impl GraphQuery, id: &atlas_graph_types::id::AnyNodeId) 
 fn genesis_1_1_carries_every_ot_applicable_edition_on_the_real_graph() {
     let svc = real_graph();
     let snap = svc.snapshot();
-    let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1); // Genesis
+    let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1);
     let r = renderings_of(&snap, &id);
 
     assert_eq!(r.get("kjv").map(String::as_str), Some("In the beginning God created the heaven and the earth."), "canonical layer untouched");
@@ -102,7 +73,7 @@ fn genesis_1_1_carries_every_ot_applicable_edition_on_the_real_graph() {
 fn john_1_1_carries_every_nt_applicable_edition_on_the_real_graph() {
     let svc = real_graph();
     let snap = svc.snapshot();
-    let id = atlas_graph::kjv_adapter::verse_node_id(42, 1, 1); // John
+    let id = atlas_graph::kjv_adapter::verse_node_id(42, 1, 1);
     let r = renderings_of(&snap, &id);
 
     assert_eq!(r.get("kjv").map(String::as_str), Some("In the beginning was the Word, and the Word was with God, and the Word was God."));
@@ -115,18 +86,11 @@ fn john_1_1_carries_every_nt_applicable_edition_on_the_real_graph() {
     assert_eq!(r.len(), 5, "kjv + 4 -- no stray layers: {r:?}");
 }
 
-// ---------------------------------------------------------------------
-// 2. HTTP: the existing verse endpoint stays canonical-only; the new
-//    Translation nodes are genuinely reachable through /api/node/{id}.
-// ---------------------------------------------------------------------
-
 #[tokio::test]
 async fn api_verse_still_projects_only_the_canonical_kjv_text() {
     let (status, body) = get_json(real_app(), "/api/verse/GEN.1.1").await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["text"], "In the beginning God created the heaven and the earth.");
-    // The wire object carries no rendering-map field at all -- "leave that
-    // projection exactly as is" verified structurally, not just by value.
     assert!(body.get("renderings").is_none());
     assert!(body.get("latin_vulgate").is_none());
 }
@@ -163,11 +127,6 @@ async fn every_ingested_translation_node_is_reachable_through_the_existing_gener
 
 #[tokio::test]
 async fn no_kjv_translation_node_is_authored_this_batch() {
-    // Disclosed scoping decision (brainfuel_adapter.rs's own module doc
-    // comment): "ingested edition" means the SIX this batch adds, not the
-    // pre-existing KJV canonical layer -- no prior pattern existed to
-    // follow for a KJV Translation node, and this batch does not invent
-    // one.
     let (status, _) = get_json(real_app(), "/api/node/Translation:kjv").await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }

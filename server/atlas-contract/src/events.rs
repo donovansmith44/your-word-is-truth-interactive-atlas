@@ -91,11 +91,6 @@ pub async fn narrative_event_positions(
 
     let snap = graph.snapshot();
     let event_id = atlas_graph::event_world::event_node_id(&id);
-    // OVERLAY-1 Task 5: the existence check and the label are ONE node
-    // fetch now -- the label comes straight off the Event node's own
-    // payload, so this handler needs no materialised event collection at
-    // all (it replaces `data.event_by_id(&id).label`, which the deleted
-    // overlay used to populate).
     let Some(node) = snap.node(&event_id) else {
         return Err(ApiError::not_found("event"));
     };
@@ -105,11 +100,9 @@ pub async fn narrative_event_positions(
     };
     let event_pos = Position::Node(event_id);
 
-    // "follows-in" (Forward) is THIS event's own following-event page;
-    // "precedes-in" (Inverse) is its own prior-event page -- see
-    // `graph_types::graph::Graph::build_indexes`'s own Succession pairing
-    // (subject = the earlier leg, object = the later leg; `fwd` reads
-    // subject -> object, `inv` reads object -> subject).
+    // `follows-in` (Forward) at this event's position is its FOLLOWING leg;
+    // `precedes-in` (Inverse) is its PRIOR one -- a succession row reads from the
+    // earlier leg to the later one.
     let following_entries = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Succession, Direction::Forward));
     let prior_entries = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Succession, Direction::Inverse));
 
@@ -121,56 +114,11 @@ pub async fn narrative_event_positions(
             _ => None,
         })
         .collect();
-    // THE ONE PRESENTATION SOURCE for this whole handler (OVERLAY-1-HOTFIX-1).
-    //
-    // `atlas_core::narrative::adjacent_event` -- the shared builder that turns
-    // an event id into {label, places, verse_groups} for every `prior`,
-    // `following` and `timeline.*` below -- used to take `&AtlasData` and
-    // resolve through `AtlasData.events`. OVERLAY-1 Task 5 left that vec
-    // permanently EMPTY on every serving path (the boot-time overlay that
-    // filled it is gone), so all three fields came back blank for every event
-    // in the real atlas, while `tests/api.rs`'s fixture test -- whose
-    // `demo_fixture()` hand-fills `events` -- stayed green. Three Playwright
-    // specs were the only gate that caught it.
-    //
-    // It takes the SceneSource now, and this is the same object
-    // `map::scene_time`/`scene_scripture` compose the map from
-    // (materialised from the port with `finish()`'s merges and sort replayed),
-    // so an adjacent event's own label/places/verse_groups are LITERALLY the
-    // map arrow endpoint's own -- the ONE-GRAPH property
-    // `atlas_core::narrative`'s own header states, now true on the serving
-    // path too.
-    //
-    // Fix round 1 (review I-1): "true by construction" is what the first
-    // version of this comment said, and it was not. `impl SceneSource for
-    // AtlasData` exists, so a future edit CAN hand this function an
-    // `AtlasData` again (`adjacent_event(&*data, ..)` compiles) and get the
-    // same empty answer back. Two standing laws are the real guard --
-    // `tests/no_legacy_event_reads.rs` (no serving source reads the emptied
-    // collections or their derived accessors) and
-    // `atlas-core/tests/no_atlas_data_in_public_signatures.rs` (no new public
-    // fn in atlas-core takes an `AtlasData` at all) -- and the cure is
-    // ETL-INPUT-1, deleting the three fields.
     let src = graph.scene_source(&data);
 
-    // A narrative whose `legs` names exactly ONE event (a real, if rare,
-    // shape -- e.g. `demo_fixture()`'s own "patriarchs-demo") produces NO
-    // `Succession` row pair at all: `chain.windows(2)` on a one-element
-    // chain is empty by construction (a doubly-linked list of one node has
-    // no links), so its membership is genuinely invisible to the port's
-    // EdgeMeta-tagged succession pages -- a real, structural gap in the
-    // `succession` relation's own shape (it communicates SEQUENCE, not bare
-    // membership), not a bug in this batch's port-based rewrite. Solo-leg
-    // narratives are enumerated directly off the narrative list (a small,
-    // in-memory scan -- narrative counts stay in the tens, never paged) so
-    // this event's own membership in one is never silently dropped; every
-    // narrative reached this way that DOES have a real prior/following
-    // still gets it from the port entries above.
-    // OVERLAY-1 Task 5: that list is `graph.scene_source(&data)`'s own,
-    // materialised from `gs.narrative_ids` + `gs.narrative_legs` through
-    // `legacy::narrative_from_node` (and post-`apply_event_merges`, so a leg
-    // naming an absorbed event is already repointed) -- the exact content
-    // and order the deleted `AtlasData.narratives` carried.
+    // A narrative whose `legs` names exactly one event produces no succession row
+    // at all, so its membership is invisible to the pages above and is read off the
+    // narrative list instead.
     for n in src.narrative_list() {
         if n.legs.len() == 1 && n.legs[0] == id {
             narrative_ids.insert(NarrativeId::new(n.id.clone()));
@@ -207,22 +155,6 @@ pub async fn narrative_event_positions(
         })
         .collect();
 
-    // Batch HOTFIX-4 requirement 1's own "global chronological PRIOR/
-    // FOLLOWING" half. TRAV-1 (controller decision 2, "the graph serves
-    // it"): temporal-adjacency IS a materialized graph edge now
-    // (`RelationId`'s symmetric sibling `SymRelationId::TemporalAdjacency`,
-    // TRAV-1's crate patch) -- this reads `GraphService::temporal_neighbors`,
-    // built once from the real `temporal_adjacency` rows' own honest
-    // `earlier`/`later` ends (service.rs's own doc comment), never
-    // re-derived from a position index. `None` (field omitted) for a
-    // general-kind passage, by construction -- a general-kind event never
-    // gets a `ChronologyDerivation` entry at all (`derive_chronology`
-    // filters to `kind == "event"`), so it never gets a `temporal_adjacency`
-    // row either, hence absent from `temporal_neighbors` exactly like it
-    // was absent from the old `timeline_index`.
-    // DB-3: through the port (`GraphService::temporal_neighbors_of`):
-    // membership from the chronology order, adjacency from the
-    // temporal-adjacency edges, direction from that order.
     let timeline = graph.temporal_neighbors_of(&id).map(|(prior, following)| atlas_core::narrative::TimelinePosition {
         prior: prior.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)),
         following: following.as_deref().and_then(|pid| atlas_core::narrative::adjacent_event(src, pid)),
@@ -243,32 +175,13 @@ pub async fn narrative_event_positions(
 /// narrative position.
 #[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), ApiError), tag = "events")]
 pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventDetail>, ApiError> {
-    // M-C2 (definitive surface list): reconstructed from the graph's own
-    // Event node (`NodePayload::Event`'s own M-C2 widening carries every
-    // field this handler needs) instead of `data.event_by_id`.
-    // `place_history_for`/`place_name_alias_for` below stay on `AtlasData`
-    // deliberately -- `place-history.json`/`place-names-kjv.json` are not
-    // this batch's deletion target, unaffected by the migration.
     let snap = graph.snapshot();
     let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap, &graph.chronology.chrono).ok_or_else(|| ApiError::not_found("event"))?;
     let e: &Event = &e;
 
-    // Batch E3: resolved name (period-history- and KJV-alias-aware), not the
-    // bare Theographic default -- this is the "PARALLEL ACCOUNTS place
-    // lines" surface (an EVENT node's own `event-places`/`event-place-{id}`
-    // rows render right alongside its PARALLEL ACCOUNTS witness section).
-    // Window = this event's own `e.when`, gated on `e.kind == "event"` --
-    // Fix round 1 (I-1): a `kind != "event"` ("general") passage's `e.when`
-    // is `TimeRange::undated()` (the WHOLE atlas span, [-4004,100] -- see
-    // its own doc comment), not an out-of-range sentinel, so passing it as a
-    // real window trivially intersects every curated period-name range and
-    // lets `resolve_display_name` spuriously pick a period name (or an
-    // arbitrary one among several) for a passage that structurally has no
-    // date at all. Mirrors the SAME kind-gate this handler already applies
-    // to the wire `when` field below (the SAME "no real window here"
-    // reasoning `reading::chapter`/`compose_scripture_scene` already use)
-    // -- computed once here, reused for both the places resolution and
-    // `when`, so the two can never drift apart again.
+    // A general-kind passage carries `TimeRange::undated()` -- the whole atlas span
+    // -- which would intersect every curated period-name range and let a period name
+    // be picked for a passage that has no date at all.
     let window = if e.kind == "event" { Some(e.when) } else { None };
     let places = e
         .places
@@ -280,20 +193,11 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         })
         .collect();
     let witnesses = atlas_core::scene::witnesses_for(e);
-    // Batch T2: never surface the undated() sentinel to the wire for a
-    // general-kind passage -- see EventDetail's own doc comment.
     let when = window;
 
-    // ATTEST-1: the two new frontier sections, both read straight off the
-    // graph's own indexes through the SAME generic `drain_edges` walk
-    // every other relation in this crate's handlers uses -- no second path, no
-    // re-derivation from AtlasData.
     let event_pos = Position::Node(atlas_graph::event_world::event_node_id(&e.id));
-    // (L3) "Mentioned in": `Mentions` INVERSE, event -> the text units
-    // that reference it. Rendered as canonical verse ids so the client
-    // can hand them straight back to `/api/verse/{sref}`; sorted for a
-    // stable reading order (the index's own order is insertion order,
-    // which is curated-file order, not canonical order).
+    // The frontier answers in curated-file order, so a stable reading order needs
+    // this sort.
     let mut mentioned_in: Vec<String> = drain_edges(&snap, &event_pos, EdgeKind::Directed(RelationId::Mentions, Direction::Inverse))
         .into_iter()
         .filter_map(|entry| match entry.node {
@@ -311,31 +215,10 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .into_values()
         .collect();
     mentioned_in.dedup();
-    // (L4) "Similar Accounts": the SYMMETRIC `Analogue` relation, walked
-    // from this end. Titles come from the neighbour's own Event node, so
-    // the client never needs a second fetch just to label the row.
     let analogues: Vec<wire::EventAnalogue> = drain_edges(&snap, &event_pos, EdgeKind::Symmetric(atlas_graph_types::edge::SymRelationId::Analogue))
         .into_iter()
         .filter_map(|entry| match entry.node {
             Position::Node(id) => atlas_graph::legacy::event_from_node(&id, &snap, &graph.chronology.chrono).map(|other| {
-                // Batch PROV-1: THIS ROW's own provenance, looked up by the
-                // pair it joins. `analogue_for_pair` is symmetric (both
-                // orderings are stored), so walking the relation from
-                // either end resolves the same single row.
-                //
-                // FIX ROUND 1 (review H-1, HIGH): this used to be
-                // `.unwrap_or_default()`, defended by the same false claim
-                // corrected at `reading::verse`'s own `VerseEvent` row -- the client filtered
-                // the blank into silence rather than shouting about it. The
-                // miss IS unreachable for a pair we just WALKED an Analogue
-                // edge to reach, which is exactly why a 500 costs nothing
-                // and makes the fail-loud claim TRUE. The failure it now
-                // catches is the real one the review named: an id
-                // normalization or `EventId` alias change that leaves the
-                // walked edge and the row key disagreeing.
-                // DB-3: `row_provenance` through the port
-                // (`GraphService::analogue_provenance`); the fail-loud
-                // claim is unchanged.
                 let provenance = graph
                     .analogue_provenance(&e.id, &other.id)
                     .filter(|p| !p.trim().is_empty())
@@ -360,22 +243,11 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         ref_note: e.ref_note.clone(),
         mentioned_in,
         analogues,
-        // Batch PROV-1: the event's own node provenance. `event_from_node`
-        // above already proved the node exists (it reconstructed `e` from
-        // it), so this second read cannot legitimately miss -- fail-loud
-        // rather than defaulted, same reasoning as `reading::verse`.
-        // FIX ROUND 1 (review H-1): `.filter` added for the same reason as
-        // `reading::verse`'s -- a node whose provenance is a blank string
-        // used to pass the absence guard and reach the wire as "".
         provenance: snap
             .node(&atlas_graph::event_world::event_node_id(&e.id))
             .map(|n| n.provenance)
             .filter(|p| !p.trim().is_empty())
             .ok_or_else(|| ApiError::internal(&format!("event {} has no node to attribute it to", e.id)))?,
-        // DB-3: both through `GraphQuery::row_provenance`, one lookup per
-        // walked edge (`GraphService::{attests_provenance,
-        // event_mentions_provenance}`), instead of the retired load-time
-        // per-event maps.
         witnesses_provenance: graph.attests_provenance(&e.id),
         mentions_provenance: graph.event_mentions_provenance(&e.id),
     }))

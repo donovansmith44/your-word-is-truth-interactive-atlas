@@ -88,11 +88,7 @@ pub async fn scene_scripture(
 pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
     use atlas_graph_types::node::NodePayload;
 
-    // DB-3: enumeration through the port (`nodes_of_kind`, id order); the
-    // chronological wire order the retired `era_ids` companion carried is
-    // this handler's own sort now -- by `(from_year, id)`, the same key the
-    // companion sorted by, so the response bytes are unchanged
-    // (`port_widening_real_data.rs` pins the equivalence).
+    // `ids_of_kind` answers in id order; this response's order is chronological.
     let snap = graph.snapshot();
     let mut eras: Vec<(i32, Era)> = graph
         .ids_of_kind(atlas_graph_types::id::NodeKind::Era)
@@ -205,9 +201,9 @@ pub async fn polities(
     Ok(Json(wire::Polities { polities: out }))
 }
 
-/// `for_era_from` is UNOBSERVABLE here -- it is `skip_serializing`, so nothing
-/// reads what this writes. It is passed because the domain struct has the
-/// field, and `era_from` is the only value that could ever be right for it.
+/// `for_era_from` is unobservable here -- it is `skip_serializing`, so nothing
+/// reads what this writes. It is passed because the domain struct has the field,
+/// and `era_from` is the only value that could ever be right for it.
 fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atlas_core::time::Year) -> PolityDelta {
     PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone(), for_era_from: era_from }
 }

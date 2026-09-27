@@ -1,28 +1,3 @@
-//! The two generic graph endpoints (design doc §5) plus the text-window
-//! endpoint (design doc §6; M-A brief requirement 4) -- Batch M-A's own
-//! new surfaces, uniform across every node/edge kind the graph carries.
-//! M-A materialized only TextUnit nodes and `cites` edges; Batch M-B adds
-//! Event/Narrative/Anchor/Place-stub nodes and the attests/succession/
-//! dated-by/located-at/justified-by relations with ZERO changes to this
-//! file -- the generic path was already total over any node/edge kind
-//! (only `graph_wire::decode_node_id`/`encode_node_id`'s own id-grammar
-//! layer needed the four new kinds' arms; see that module's own doc
-//! comment).
-//!
-//! Fix round 1 (C1): every handler below opens a snapshot
-//! (`GraphService::snapshot`) and performs every actual graph query
-//! through `atlas_graph_types::store::GraphQuery`'s own trait methods on
-//! it (`node`/`edges`/`edge_summary`/`reading_window`, and `window.rs`'s
-//! own generic helpers built on top of those) -- never a raw `Graph`
-//! field. `GraphService` itself is held concretely in `AppState` only
-//! because `GraphStore`'s associated-type shape isn't `dyn`-safe (see
-//! `app.rs`'s own doc comment); the query surface consumed here is
-//! entirely the owner-approved port.
-//!
-//! `GET /api/node/{id}`              -> card + edge summary + graph version
-//! `GET /api/node/{id}/edges`        -> one page of one edge kind, EdgeIds included
-//! `GET /api/text`                   -> a window of {ref, text} units + next cursor + version
-
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -43,10 +18,6 @@ use atlas_graph_types::store::GraphQuery;
 use crate::error::ApiError;
 use crate::graph_wire::{decode_node_id, describe_position, encode_node_id};
 use crate::wire;
-
-// ---------------------------------------------------------------------
-// GET /api/node/{id}
-// ---------------------------------------------------------------------
 
 /// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
 /// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
@@ -70,21 +41,6 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect();
 
-    // ENT-1a: whichever of the described kinds this node is (or `None` for
-    // every other kind, and `None` until a match exists even for those) --
-    // via this file's own `node_description` (batch-polish1-brief.md
-    // ENT1A-m4: this used to hand-roll its own copy of that exact
-    // NodePayload match on the already-fetched `node` above; unified,
-    // observable behavior unchanged; batch-finalp2's own layering cleanup
-    // relocated it here from `atlas_graph::legacy`, see its own doc
-    // comment). `node_description` re-fetches by id internally rather than
-    // taking `node` directly, a small redundant lookup -- disclosed,
-    // accepted: `GraphQuery::node` is a cheap in-memory lookup, and
-    // matching `places::place`'s own existing call shape (which never
-    // had `node` fetched separately to begin with) keeps the shared fn's
-    // own signature uniform across both callers rather than growing a
-    // second, `Node`-taking overload for this one caller's own minor
-    // optimization.
     let description = node_description(&node_id, &snap);
     let person = match &node.payload {
         atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
@@ -112,38 +68,14 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
     }))
 }
 
-/// Layering cleanup (batch-finalp2-brief.md ticket 10; origin: batch-
-/// corp1-review.md S-3/placement note, "the widened `node_description`
-/// match lives in `atlas-graph`, not `atlas-contract`, arguably outside the
-/// strict wording of the CORP-1b authorization... worth a controller note
-/// for a possible future relocation for tighter handler/domain layering").
-/// RELOCATED here from `atlas_graph::legacy::node_description`, byte-
-/// identical body (a clean move-only diff, confirmed by grep: its only two
-/// callers -- `node_card` above and `places::place` -- both already live
-/// in THIS crate, so nothing outside atlas-contract ever called the old
-/// location; zero behavior change). A node's own Easton's/Kretzmann
-/// `description`, straight off the graph payload -- deliberately NOT
-/// threaded through `atlas_core::data::Place` (that struct is shared by
-/// every OTHER caller this fn's own history does not otherwise touch), so
-/// this stays a second, tiny, single-field reconstruction. `places::place`
-/// calls this via `crate::graph::node_description`.
 pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     let node = q.node(id)?;
     match node.payload {
         NodePayload::Place { description, .. } | NodePayload::Person { description, .. } | NodePayload::PeopleGroup { description, .. } => description,
-        // Batch CORP-1b: a CommentaryItem's own prose is ALREADY on the
-        // compiled graph payload (`NodePayload::CommentaryItem.text`,
-        // KRETZ-1) -- reusing the SAME additive `description` seam
-        // ENT-1a built for Place/Person/PeopleGroup rather than a new wire
-        // field or a bespoke endpoint.
         NodePayload::CommentaryItem { text, .. } => Some(text),
         _ => None,
     }
 }
-
-// ---------------------------------------------------------------------
-// GET /api/node/{id}/edges?kind=&cursor=&limit=
-// ---------------------------------------------------------------------
 
 const DEFAULT_EDGE_LIMIT: usize = 20;
 const MAX_EDGE_LIMIT: usize = 200;
@@ -174,23 +106,8 @@ pub async fn node_edges(
 
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor, limit });
 
-    // PG-1a wire seam (batch-pg1a-brief.md decision 6, "the U5-rebinding
-    // seam"): the CURRENT client has no rendering surface for a
-    // PeopleGroup-kind neighbor -- `graph_wire::decode_node_id` carries no
-    // "PeopleGroup" arm at all (deliberately; that round-trip completion
-    // is U5 rebinding's own job, held for the frontend-elegance
-    // brainstorm), so a client that somehow received a PeopleGroup entry
-    // here could not even re-fetch its own card (`/api/node/{id}` would
-    // 400 `bad_ref` on the wire id this endpoint would otherwise hand
-    // back). Filtered HERE, the ONE place every entity-list page this
-    // generic endpoint can produce funnels through, rather than
-    // special-cased per relation kind (`mentions`/`mentioned-in`/
-    // `namesake-of`/`named-after` all matter equally -- this filter
-    // covers every one of them at once, and any future relation touching
-    // a PeopleGroup node too). Graph queries/indexes themselves still
-    // carry every PeopleGroup edge in full (`snap.edges` above is
-    // unfiltered) -- this is a serving-boundary projection only, one
-    // revert away (delete this `.filter` call) once U5 lands.
+    // A PeopleGroup wire id does not decode, so an entry naming one would hand the
+    // caller a reference it cannot fetch a card for.
     let entries = page
         .entries
         .iter()
@@ -202,10 +119,6 @@ pub async fn node_edges(
 
     Ok(Json(wire::EdgePage { kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
-
-// ---------------------------------------------------------------------
-// GET /api/text?ref=&n=&dir=&scope=
-// ---------------------------------------------------------------------
 
 /// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=&corpus=` (design doc §6;
 /// M-A brief requirement 4): a window of `{ref, text}` units + next
@@ -261,14 +174,8 @@ pub async fn text_window(
     }
 
     let raw_ref = params.get("ref").map(String::as_str).unwrap_or("");
-    // An unrecognised scope has always fallen through to the verse-anchored
-    // window rather than failing; `named` returning `None` reproduces that.
     let scope = params.get("scope").and_then(|raw| wire::TextScope::named(raw)).unwrap_or(wire::TextScope::Verse);
     let dir_raw = params.get("dir").map(String::as_str);
-    // CORP-2a (decision 8): `corpus` defaults to "bible" -- every EXISTING
-    // caller (the client never sends this param) gets byte-identical
-    // behavior; `concord` is the one other corpus `/api/text` now serves,
-    // through this SAME route (design doc §6; no new bespoke endpoint).
     let requested_corpus = params.get("corpus").map(String::as_str).unwrap_or(wire::Corpus::Bible.name());
     let corpus = wire::Corpus::named(requested_corpus).ok_or_else(|| ApiError::bad_corpus(requested_corpus))?;
 
@@ -346,19 +253,11 @@ pub async fn text_window(
             let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
             let text = window::render(&snap, id)?;
             let sref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
-            // Batch RED-1: the SAME per-verse lookup `reading::chapter`/
-            // `reading::verse` use, off the precomputed `graph.
-            // red_letter_spans` companion.
             let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
             Some(wire::TextUnit { sref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 
-    // `next`: the ref that continues the SAME direction of travel one more
-    // step past this window -- None at either edge of the corpus. Reads
-    // the single unit just past the window via THE PORT's own
-    // `reading_window` primitive (a 1-element window), never a direct
-    // spine-slice reach.
     let unit_at = |pos: usize| {
         snap.reading_window(corpus.name(), pos, 1)
             .into_iter()
@@ -382,19 +281,13 @@ pub async fn text_window(
     Ok(([(header::ETAG, etag)], body).into_response())
 }
 
-/// The unit's frontier summary, in the port's own (EdgeKind) order --
-/// identical to `node_card`'s projection of the same call.
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
     snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
 
-/// Parses `ref` into `(book, chapter, verse)`, `verse` present only for a
-/// Verse-shaped ref. WHICH shapes a request may use is not decided here: a
-/// chapter-scoped window uses only the (book, chapter) pair -- that chapter's
-/// own verse count comes from the graph, never from the ref -- and every other
-/// window requires the verse, so a chapter-shaped ref fails as `bad_ref` at the
-/// one place that asks for it. Re-checking the scope here would state the same
-/// rule a second time, and a mutation run proved the second copy unobservable.
+/// Parses `ref` into `(book, chapter, verse)`, the verse present only for a
+/// verse-shaped ref. Which shapes a request may use is decided by the window that
+/// needs the verse, so re-checking it here would state the rule twice.
 fn parse_ref(raw: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
@@ -403,16 +296,6 @@ fn parse_ref(raw: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
     }
 }
 
-/// CORP-2a (decision 8): the Concord-corpus sibling of `parse_ref` above --
-/// `ref` is `ConcordTag::cite`'s own citation form, `"BoC {part}.
-/// {article}.{paragraph}"` (graph-types' text.rs; the SAME string
-/// `graph_wire::encode_node_id`/`describe_node` already produce and parse
-/// for a Concord TextUnit's own wire id). No `scope=chapter` equivalent --
-/// a Concord article's own paragraph count varies too widely (a Small
-/// Catechism commandment is one paragraph; the Apology's own Article IV is
-/// hundreds) for a single server-derived span to mean the same thing
-/// `scope=chapter` means for the Bible; `n` always governs, the same as
-/// every other non-chapter-scoped window.
 fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
     let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
     let mut parts = rest.split('.');

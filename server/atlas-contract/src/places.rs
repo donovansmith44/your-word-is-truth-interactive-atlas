@@ -63,10 +63,8 @@ pub async fn place(
         _ => None,
     };
 
-    // Batch E3: resolved ONCE here (not re-derived inside the `history`
-    // closure below, and not gated on `history` existing at all -- a place
-    // like `cush-2` has no curated `PlaceHistory` record whatsoever, so
-    // `history` stays `None`, but its KJV alias must still resolve).
+    // Resolved before `history`, and independently of it: a place with no curated
+    // history record at all still has a translation alias to resolve.
     let alias = data.place_name_alias_for(&id);
     let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, data.place_history_for(&id), window, alias);
 
@@ -77,14 +75,6 @@ pub async fn place(
         destroyed: h.destroyed.clone(),
     });
 
-    // ENT-1a: a separate, tiny lookup (not threaded through `place`, the
-    // legacy `atlas_core::data::Place` reconstruction above) -- see
-    // `graph::node_description`'s own doc comment (batch-
-    // polish1-brief.md ENT1A-m4: generalized from the old Place-only
-    // `place_description`, unified with `graph::node_card`'s own
-    // near-twin accessor; batch-finalp2's own layering cleanup relocated
-    // it from `atlas_graph::legacy` to this crate -- this call site's own
-    // behavior is unchanged either way).
     let description = crate::graph::node_description(&place_id, &snap);
 
     Ok(Json(wire::PlaceDetail { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))

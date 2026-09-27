@@ -1,8 +1,3 @@
-//! Thin HTTP handlers: parse request params, call into `atlas_core`, wrap
-//! the result in `Json`. No business logic lives here beyond response-shape
-//! assembly and the out-of-canon policy documented at each handler that
-//! needs one (controller ruling 3).
-
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -87,15 +82,6 @@ pub async fn chapter(
         .copied()
         .unwrap_or(0);
 
-    // The graph's own view of this chapter's text, keyed by verse number --
-    // empty (not an error) when the graph has no such chapter, mirroring
-    // `data.verses.get(key)`'s own prior "absent means skip this verse"
-    // tolerance below. Reached entirely through THE PORT (design doc §9a;
-    // fix round 1, C1) -- `window::window`/`window::render` take only
-    // `&dyn atlas_graph_types::store::GraphQuery`, never a concrete graph
-    // struct; `chapter_span`/the opened snapshot are `GraphService`'s own
-    // adapter-side companions (ref-resolution isn't part of the generic
-    // port -- see that module's own doc comment).
     let snap = graph.snapshot();
     let graph_texts: HashMap<u16, String> = graph
         .chapter_span(book.0, chapter)
@@ -107,10 +93,6 @@ pub async fn chapter(
         })
         .unwrap_or_default();
 
-    // OVERLAY-1 Task 5: the place-mention half's own source -- the
-    // graph-backed scene source, resolved ONCE for the whole chapter rather
-    // than per verse (it is a single `OnceLock` read, but hoisting it keeps
-    // the hot loop below free of any repeated lookup).
     let scene_source = graph.scene_source(&data);
 
     let mut verses = Vec::new();
@@ -123,55 +105,23 @@ pub async fn chapter(
                 .filter_map(|pid| scene_source.place(pid))
                 .map(|p| wire::PlaceRef {
                     id: p.id.clone(),
-                    // Batch E3: resolved (period-history/KJV-alias-aware)
-                    // name, not the bare Theographic default -- this is the
-                    // "reader place mentions" surface (PlaceMentions.cs's own
-                    // plain-text substring scan against THIS field is the
-                    // app's only mention-detection mechanism, so an unaliased
-                    // name here means a place whose KJV wording differs from
-                    // its default name is silently never detected as
-                    // mentioned in its own verse's text at all -- exactly
-                    // the owner's bug report, one layer deeper). No window
-                    // (`None`) -- same "scripture mode never resolves a
-                    // period name" reasoning `compose_scripture_scene` uses;
-                    // a chapter reading has no time window either.
+                    // The reader locates a mention by matching this name against the
+                    // verse's own words, so it must carry the wording the translation
+                    // uses rather than the default modern name.
                     name: resolve_display_name(&p.name, data.place_history_for(&p.id), None, data.place_name_alias_for(&p.id)),
                 })
                 .collect();
-            // M-D3 (owner ruling U5): the SAME O(1) per-verse lookup
-            // treatment as `heading`/`xref_count` below, off the
-            // precomputed `graph.persons_by_verse` companion -- see that
-            // field's own doc comment.
-            // DB-3: through the port (`GraphService::persons_at_verse`,
-            // `edges_with_nodes` over `mentions`), the retired
-            // `persons_by_verse` companion's exact answer.
             let persons = graph
                 .persons_at_verse(book.0, chapter, v)
                 .into_iter()
                 .map(|(id, name)| wire::PersonRef { id, name })
                 .collect();
-            // M-C2 (requirement 1, decisive-title law re-homed as a graph
-            // query): `graph.heading_index` (precomputed at `GraphService::
-            // assemble` time by `heading::build_heading_index`), not
-            // `data.heading_for_verse` -- see that module's own doc
-            // comment for the full re-homing (kept in lockstep with
-            // CONTRACT.md and the atlas-core original).
             let heading = graph.heading_index.get(&key).cloned();
-            // Batch M-D2: the generic port, inline -- `Position::Node` +
-            // `GraphQuery::edge_summary` are the EXACT calls
-            // `graph::node_card` makes for `GET /api/node/{id}`;
-            // reused here as a library call (not a second HTTP round trip
-            // per verse) so a whole chapter's worth of superscript counts
-            // ships in the ONE fetch the reader already makes. `cites` is
-            // ALWAYS the Forward direction from a verse's own locus (a verse
-            // citing others, not "who cites me" -- `cited-by` is the
-            // Inverse reading of the SAME relation, unused here).
+            // `cites` is always the Forward direction from a verse: the verses this
+            // one cites, not the ones citing it.
             let verse_pos = Position::Node(atlas_graph::kjv_adapter::verse_node_id(book.0, chapter, v));
             let xref_count =
                 snap.edge_summary(&verse_pos).get(&EdgeKind::Directed(RelationId::Cites, Direction::Forward)).copied().unwrap_or(0);
-            // Batch RED-1: the SAME O(1) per-verse lookup treatment
-            // `heading`/`xref_count`/`persons` above already get, off the
-            // precomputed `graph.red_letter_spans` companion.
             let words_of_christ = graph.red_letter_spans.get(&key).map(|spans| spans.iter().map(|&(start, end)| wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
             verses.push(wire::Verse { verse: v, text: text.to_string(), places, persons, heading, xref_count, words_of_christ });
         }
@@ -221,10 +171,6 @@ pub async fn kretzmann_chapter(
     let snap = graph.snapshot();
     let rows = atlas_graph::kretzmann_adapter::chapter_commentary(&snap, book.0, chapter, verse_count);
 
-    // `chapter_commentary` already returns rows verse-ascending with every
-    // verse's own items grouped consecutively (its own doc comment) -- this
-    // loop just folds that flat Vec into the wire's own nested shape,
-    // never re-sorting or re-grouping independently.
     let mut verses: Vec<wire::KretzmannChapterVerse> = Vec::new();
     for row in rows {
         let item = wire::KretzmannChapterItem { id: crate::graph_wire::encode_node_id(&row.item_id), heading: row.heading };
@@ -258,25 +204,9 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let vid = VerseId::parse_canonical(&vref).map_err(|_| ApiError::bad_ref(&vref))?;
     let canonical = format!("{}.{}.{}", vid.book.code(), vid.chapter, vid.verse);
 
-    // M-C2 (definitive surface list): the verse's own text now comes from
-    // the graph's own TextUnit node -- the SAME `window::render` primitive
-    // `reading::chapter` already uses -- not `data.verses.get(key)`.
     let snap = graph.snapshot();
     let text_id = atlas_graph::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
     let text = window::render(&snap, &text_id).ok_or_else(|| ApiError::not_found("verse"))?;
-    // Batch PROV-1: the verse's own attribution, off the SAME node
-    // `window::render` just read. `window::render` returning `Some` means
-    // the node exists, so this lookup cannot legitimately miss -- but it is
-    // written fail-loud rather than defaulted: an unattributed verse is a
-    // 500 naming the id, never a silent blank at the reader (the fail-loud
-    // law -- "never a silent blank and never a fabricated label").
-    //
-    // FIX ROUND 1 (review H-1): the node-absence guard was already here, but
-    // a node carrying a BLANK provenance string slipped through it. The
-    // `filter` closes that, so "no PROV-1 wire field is ever empty" is one
-    // uniform rule across all four of them rather than three-quarters of one
-    // -- `graph_api.rs::no_provenance_field_the_wire_serves_is_ever_blank`
-    // is the standing assertion of it.
     let provenance = snap
         .node(&text_id)
         .map(|n| n.provenance)
@@ -291,16 +221,8 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         write_to: None,
     });
 
-    // M-C2: "which events attest this verse" is now the INVERSE
-    // `attested-in` frontier at the verse's own TextUnit position -- real
-    // per-verse `attests` rows (event_world.rs's own M-C2 fix, one row per
-    // witness VERSE rather than per verse GROUP) close the exact gap that
-    // would otherwise drop a witness-interior verse like `MAT.26.6`.
-    // Deduped by event id (an event whose OWN top-level `verses` and a
-    // witness both happen to name the identical verse must still surface
-    // once, mirroring `AtlasData::finish()`'s own `verse_to_events`
-    // dedup); sorted by `from_year` to match that index's own inherited
-    // (from `self.events`'s own from_year-sorted order) iteration order.
+    // An event whose own verses and one of its witnesses both name this verse must
+    // still surface once.
     let mut seen_events: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut attesting_events: Vec<Event> = drain_edges(&snap, &Position::Node(text_id.clone()), EdgeKind::Directed(RelationId::Attests, Direction::Inverse))
         .into_iter()
@@ -315,24 +237,6 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let events: Vec<wire::VerseEvent> = attesting_events
         .into_iter()
         .map(|e| {
-            // Batch PROV-1: this row's own attribution -- the Event NODE's
-            // provenance, off the same snapshot.
-            //
-            // FIX ROUND 1 (review H-1, HIGH). This read used to end in
-            // `.unwrap_or_default()`, and three comments (here, at
-            // `EventAnalogue` below, and in `client/Dtos.cs`) justified
-            // the empty string on the ground that the client renders it as
-            // a LOUD unresolved notice. THAT WAS FALSE: every client path
-            // to `ProvenanceResolver.Resolve` filtered whitespace ids out
-            // FIRST, so a blank provenance rendered as no "?" at all --
-            // the exact silent blank requirement 3 forbids, and exactly how
-            // the ATTEST-1 leper row hid in the first place. Both halves
-            // are fixed: the client no longer filters an id it was HANDED
-            // (a blank one now renders the loud notice), and the wire can
-            // no longer emit the blank at all. `ApiError::internal` is the
-            // same answer `events::event` already gives for the event's
-            // own node provenance -- the resource exists, our data about it
-            // is incomplete, which is our bug and not the caller's.
             let node_provenance = snap
                 .node(&atlas_graph::event_world::event_node_id(&e.id))
                 .map(|n| n.provenance)
@@ -352,44 +256,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         })
         .collect::<Result<Vec<_>, ApiError>>()?;
 
-    // M-C2 (requirement 2): `graph.cross_refs_by_from` (the graph's own
-    // `cites` rows, dot-ref keyed, `target` = each row's own
-    // `target_display` -- the honest original citation string) instead of
-    // `data.cross_refs` -- see that field's own doc comment.
-    //
-    // OVERLAY-1 Task 2: the preview TEXT itself now comes from
-    // `graph.verse_text_of` -- a real, on-demand graph query (one node
-    // lookup per row), not the retired `graph.verse_text` whole-spine
-    // companion, and not `data.verses`. Same fail-soft behavior as before
-    // (a missing preview skips the row, per this endpoint's own "ruling 4"
-    // doc comment above): only the DATA SOURCE moved.
-    // PROV-1 FIX ROUND 1 (review M-3): the family set, read ONCE off the
-    // load-time companion index and cloned onto each element, so the two
-    // endpoints that serve `CrossRef` say the identical thing about the
-    // identical rows and a PASSAGE node (served by the bare-array endpoint,
-    // which has no envelope) can carry a "?" at all.
-    //
-    // FIX ROUND 2 (review M-NEW-1) -- THE GRANULARITY, STATED CORRECTLY.
-    // This comment used to end "so the rows INSIDE `VerseDetail` are
-    // attributed per row, not only per section." THAT WAS FALSE, and the
-    // field's own DTO doc comment (`CrossRef.provenance`) had it right
-    // all along: this is SECTION-level attribution DUPLICATED onto each
-    // element for transport, not per-row attribution.
-    //
-    // And per-row is not available here to be had. Measured, not assumed:
-    // `graph.cross_refs_by_from` is `HashMap<String,
-    // Vec<atlas_core::data::CrossRef>>` (`service.rs`), and
-    // `atlas_core::data::CrossRef` (`data.rs`) carries `target` and `votes`
-    // and NOTHING ELSE -- the graph-types row that does carry
-    // `provenance: ProvenanceId` (`edge.rs`) has it projected away before it
-    // reaches this map. Serving the family set is the honest available
-    // answer; claiming it is per-row is not. Getting real per-row values
-    // would mean widening the companion index, which is the contract-shaped
-    // decision this batch deliberately refused, and it must not be implied
-    // to have already happened.
     let cross_refs_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
-    // DB-4c: a seek on the kjv section's `xref_by_from` (or the Mem arm's
-    // retained map), never a whole-corpus companion.
     let by_from = graph.cross_refs_for_span(&ScriptureRef::Verse(vid));
     let cross_refs: Vec<wire::CrossRef> = by_from
         .get(&canonical)
@@ -403,10 +270,6 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         })
         .collect();
 
-    // Batch F: same aggregation core `catechism::catechism_for_span` uses for
-    // a passage, called here with a single-verse span -- see
-    // `VerseDetail.catechism`'s own doc comment for why this is folded
-    // into the already-shared verse-detail fetch rather than a second call.
     let catechism_provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
     let catechism: Vec<wire::CatechismRef> = data
         .catechism_items_for_span(&ScriptureRef::Verse(vid))
@@ -414,8 +277,6 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         .map(|c| wire::CatechismRef::attributed(c, &catechism_provenance))
         .collect();
 
-    // Batch RED-1: the SAME per-verse lookup `reading::chapter` uses, off
-    // the precomputed `graph.red_letter_spans` companion.
     let words_of_christ: Vec<wire::WordsOfChristSpan> = graph.red_letter_spans.get(&canonical).map(|spans| spans.iter().map(|&(start, end)| wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
 
     Ok(Json(wire::VerseDetail {
@@ -427,14 +288,6 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         cross_refs,
         catechism,
         provenance,
-        // Batch PROV-1: the two section-level attributions, straight off
-        // the load-time companion index -- no scan, no fetch, nothing added
-        // to the per-request path (the sub-100ms frontier law binds here).
-        // FIX ROUND 1: the same two values now also ride each `cross_refs`/
-        // `catechism` ELEMENT (review M-3), which is what lets a PASSAGE
-        // node -- served by the bare-array endpoints -- carry a "?" too.
-        // These section fields stay for the wire-compatibility they always
-        // had; nothing about them moved.
         cross_refs_provenance,
         catechism_provenance,
     }))
@@ -489,9 +342,6 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<Stri
         let v = VerseId::parse_canonical(key).ok()?;
         graph.verse_text_of(&VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
     });
-    // PROV-1 FIX ROUND 1 (review M-3): one read off the load-time companion
-    // index, cloned per row -- no scan, no fetch. See
-    // `CrossRef.provenance` for why the value is the family SET.
     let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CROSS_REFS);
     let out = aggregated
         .into_iter()
@@ -500,13 +350,9 @@ pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<Stri
     Ok(Json(out))
 }
 
-/// Mirrors atlas-etl's private `xrefs::first_verse_of_target` (duplicated,
-/// not shared, because atlas-contract does not and should not depend on
-/// atlas-etl — that crate is a build-time-only ETL binary, not a runtime
-/// library). Extracts the first verse id referenced by an
-/// already-canonicalized cross-ref target string, which is either a single
-/// verse (`"PSA.124.8"`), a same-chapter span (`"COL.1.16-19"`), or a
-/// cross-chapter/book span (`"MAT.5.3-MAT.6.2"`).
+/// The first verse id a canonicalised cross-ref target names, whether that target
+/// is one verse, a same-chapter span or a cross-chapter span. Duplicated from the
+/// ETL binary rather than shared: nothing serving a request may depend on it.
 fn first_verse_of_target(target: &str) -> Option<VerseId> {
     if let Ok(v) = VerseId::parse_canonical(target) {
         return Some(v);
@@ -518,13 +364,6 @@ fn first_verse_of_target(target: &str) -> Option<VerseId> {
     VerseId::parse_canonical(left).ok()
 }
 
-/// Drains every page of one edge kind at one position -- the SAME
-/// cursor-loop shape `atlas_graph_types::store`'s own (private) conformance
-/// harness uses internally, needed here because a handler-side consumer
-/// (unlike the generic `/api/node/{id}/edges` endpoint, which hands back
-/// exactly one page) sometimes genuinely needs the WHOLE frontier of one
-/// kind (e.g. every narrative an event is a leg of) rather than one honest
-/// page of it.
 pub(crate) fn drain_edges(
     snap: &impl atlas_graph_types::store::GraphQuery,
     p: &atlas_graph_types::id::Position,

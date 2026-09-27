@@ -1,30 +1,9 @@
-//! EQUIVALENCE (M-A brief acceptance set): "for every chapter in canon, the
-//! window path's text == the pre-migration chapter endpoint's text" -- a
-//! server-side comparison across all 1,189 real KJV chapters. This is the
-//! committed regression guard for `reading::chapter`'s own swap (M-A
-//! brief requirement 5: "re-implement the OLD /api/chapter handler as a
-//! VIEW over the window query"): it independently reproduces BOTH the
-//! pre-migration gathering logic (`data.verses.get(key)`, per verse, in
-//! order) and the post-migration one (`GraphService::chapter_span` +
-//! `window::window`, the SAME primitive `reading::chapter` and
-//! `GET /api/text?scope=chapter` both call) over the real compiled/raw
-//! data, and asserts they produce the IDENTICAL sequence of verse texts for
-//! every chapter -- proving the swap changed nothing observable. The
-//! actual text/window reads go entirely through
-//! `atlas_graph_types::store::GraphQuery` -- THE PORT (design doc §9a; fix
-//! round 1, C1) -- never a raw `Graph` field, so this equivalence proof is
-//! pinned at the same seam any future backend plugs into.
-
 use std::path::Path;
 
 use atlas_core::data::AtlasData;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 
-// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
-// return empty now -- `atlas_etl::compile::compile` is this crate's own
-// real-data source from here on. Cached (`OnceLock`) so this file's two
-// call sites share one real compile.
 fn load_real_atlas_data() -> AtlasData {
     static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
     CACHED
@@ -39,48 +18,19 @@ fn load_real_atlas_data() -> AtlasData {
 
 fn load_real_graph(atlas: &AtlasData) -> GraphService {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    // GraphService::build runs the FIDELITY LAW unconditionally as part of
-    // construction (fix round 1) -- reaching this line already proves it
-    // passed on the real committed KJV source.
     GraphService::build(&dir, atlas).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law")
 }
 
-/// Batch KJV-CASE (owner ruling; batch-kjv-case-brief.md): `GraphService::
-/// build` (used by `load_real_graph` above) threads real vendored
-/// brain-fuel data through automatically (`load_brainfuel`, service.rs),
-/// so the graph this file compares against is case-RESTORED -- while
-/// `AtlasData.verses` (this file's own "old" / pre-migration side) is not
-/// (see `atlas_graph::build`'s own module doc comment for why that field
-/// deliberately stays outside the restoration's scope). Applying the SAME
-/// `atlas_etl::brainfuel::restore_kjv_case` transform to the "old" side
-/// here keeps this test's own promise -- "the window path's text equals
-/// the pre-migration chapter endpoint's text" -- honest once "the
-/// pre-migration text" is, itself, case-restored the same way the graph
-/// is.
 fn real_restored_verses(data: &AtlasData) -> std::collections::HashMap<String, String> {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
     let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
     atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &data.verses).0
 }
 
-/// The OLD `/api/chapter` handler's own text-gathering logic, reproduced
-/// verbatim (pre-migration: `verses.get(&format!("{code}.{chapter}.{v}"))`,
-/// `v` from 1..=verse_count, skipping an absent verse rather than
-/// fabricating one) -- kept as a small local function, not a call into
-/// `atlas_contract::handlers`, so this test independently re-derives the
-/// "before" side rather than trusting the very code path it exists to
-/// check. Takes an already-case-restored verses map (`real_restored_
-/// verses` above), not `&AtlasData` directly, since Batch KJV-CASE.
 fn old_chapter_texts(verses: &std::collections::HashMap<String, String>, code: &str, chapter: u16, verse_count: u16) -> Vec<String> {
     (1..=verse_count).filter_map(|v| verses.get(&format!("{code}.{chapter}.{v}")).cloned()).collect()
 }
 
-/// The NEW window-query path -- exactly `GraphService::chapter_span` +
-/// `window::window`/`window::render`, the same calls both
-/// `reading::chapter` (after its M-A swap) and `GET /api/text?scope=chapter`
-/// make. Ref-resolution (`chapter_span`) is `GraphService`'s own
-/// adapter-side companion; the actual window/render reads run against the
-/// opened snapshot through `&dyn GraphQuery` only.
 fn new_chapter_texts(graph: &GraphService, book_index: u8, chapter: u16) -> Vec<String> {
     match graph.chapter_span(book_index, chapter) {
         Some((start, n)) => {
@@ -125,11 +75,6 @@ fn every_chapter_in_canon_matches_between_the_old_lookup_and_the_new_window_quer
     assert!(mismatches.is_empty(), "chapters where the window path disagreed with the pre-migration lookup:\n{}", mismatches.join("\n"));
 }
 
-/// A byte-level spot check alongside the exhaustive equivalence sweep above
-/// -- pins one well-known verse's exact wording so a bug that happened to
-/// preserve LENGTH (verse count) but corrupt TEXT content in a way the
-/// `Vec<String>` equality above would still have caught is additionally
-/// obvious from a single, human-checkable assertion.
 #[test]
 fn john_3_16_text_matches_between_old_and_new_paths() {
     let data = load_real_atlas_data();

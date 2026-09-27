@@ -1,11 +1,3 @@
-//! HTTP-level tests for `GET /api/sources` (batch-s-brief.md requirement
-//! 3/4). Uses `demo_fixture()` + a minimal graph for `data`/`graph` (this
-//! endpoint's own response never touches either) alongside the REAL
-//! `data/curated/sources.toml`, parsed the same way `gen_sources` does --
-//! so this proves the endpoint really serves the Sources page's real
-//! curated content end to end, without paying for a full raw+curated
-//! `AtlasData` compile the way `graph_api.rs`'s own `real_app()` does.
-
 use std::path::Path;
 use std::sync::Arc;
 
@@ -59,10 +51,6 @@ async fn get_api_sources_returns_every_real_curated_source_and_category() {
     assert_eq!(categories.len(), expected_categories, "GET /api/sources category count must match data/curated/sources.toml");
     assert_eq!(rows.len(), expected_sources, "GET /api/sources source count must match data/curated/sources.toml");
 
-    // Every source row carries the fields the Sources page needs to
-    // render honest, non-hardcoded prose -- a wire-shape regression here
-    // would silently break the page without any Rust-side type error
-    // (the client deserializes this same JSON independently).
     for row in rows {
         for field in ["id", "category", "title", "what_it_is", "what_we_built", "license"] {
             assert!(
@@ -75,10 +63,6 @@ async fn get_api_sources_returns_every_real_curated_source_and_category() {
 
 #[tokio::test]
 async fn api_sources_defaults_to_empty_when_build_called_without_sources() {
-    // `app::build` (the plain, pre-existing signature every other test in
-    // this crate keeps using) delegates to `build_with_sources` with an
-    // empty `SourcesDocument` -- proves that delegation actually happens,
-    // not just that it compiles.
     let data = demo_fixture();
     let graph = minimal_graph(&data);
     let app = atlas_contract::app::build(Arc::new(data), graph, None);
@@ -91,11 +75,6 @@ async fn api_sources_defaults_to_empty_when_build_called_without_sources() {
 
 #[tokio::test]
 async fn get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_against() {
-    // Batch PROV-1: the "?" affordance resolves a provenance id CLIENT-SIDE
-    // against this already-fetched document -- no new fetch per popover
-    // (the sub-100ms frontier law). That only works if the table actually
-    // rides this response, so this asserts the shape a browser receives,
-    // independently of the Rust types on either side.
     let data = demo_fixture();
     let graph = minimal_graph(&data);
     let sources = Arc::new(real_sources_document());
@@ -118,9 +97,6 @@ async fn get_api_sources_serves_the_provenance_join_table_the_frontier_resolves_
                 "provenance row {row} is missing a non-empty '{field}'"
             );
         }
-        // The join must hold ON THE WIRE, not merely in the Rust types: a
-        // dangling `source` here is a "?" that renders "Unrecognized
-        // source" at the reader.
         let source = row["source"].as_str().unwrap();
         assert!(source_ids.contains(source), "provenance row {row} names source '{source}', which this same response does not carry");
     }

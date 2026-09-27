@@ -1,14 +1,3 @@
-//! The API's one error type. Every handler that can fail returns
-//! `Result<_, ApiError>`; `IntoResponse` renders it as
-//! `{"error":{"code":"...","message":"..."}}` with the matching HTTP status.
-//!
-//! Controller ruling: axum extractor rejections must never reach the client
-//! as axum's own default rejection body — handlers use lenient extractors
-//! (`Query<HashMap<String, String>>`, plain `Path<String>`) that cannot
-//! themselves reject on the inputs this API cares about, and turn "missing /
-//! unparseable / out of shape" into one of the typed `ApiError`s below
-//! instead.
-
 use std::collections::BTreeMap;
 
 use axum::http::StatusCode;
@@ -26,7 +15,6 @@ pub struct ApiError {
 }
 
 impl ApiError {
-    /// `from`/`to` missing, unparseable, zero, or inverted (ruling 1).
     pub fn bad_window() -> Self {
         Self {
             status: StatusCode::BAD_REQUEST,
@@ -35,57 +23,29 @@ impl ApiError {
         }
     }
 
-    /// A scripture ref (`ref`, `{cref}`, or `{vref}`) that is missing or
-    /// structurally malformed — not merely out-of-canon (see the
-    /// `ruling-3-policy` doc comments on `map::scene_scripture` /
-    /// `reading::chapter` / `reading::verse` for what counts as which).
     pub fn bad_ref(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_ref", message: format!("invalid scripture reference: '{raw}'") }
     }
 
-    /// A syntactically fine identifier (place id, or a verse ref whose text
-    /// this atlas doesn't have) that names no resource that exists.
     pub fn not_found(what: &str) -> Self {
         Self { status: StatusCode::NOT_FOUND, code: "not_found", message: format!("{what} not found") }
     }
 
-    /// Batch M-A: `GET /api/node/{id}/edges?kind=` names a `kind` label that
-    /// doesn't match any (relation, direction) or symmetric-relation label
-    /// in graph-types' own relation manifest (`RelationId`/`SymRelationId`),
-    /// or omits `kind` entirely -- same "typed error, not axum's default
-    /// rejection body" discipline as `bad_ref`/`bad_window`.
     pub fn bad_kind(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_kind", message: format!("unknown or missing edge kind: '{raw}'") }
     }
 
-    /// Fix round 1, I1: `GET /api/text?scope=chapter&dir=backward` -- a
-    /// parameter combination with no honest meaning (a chapter-scoped
-    /// window's bounds are already fully determined by the chapter itself;
-    /// there is no direction left to walk) -- rejected explicitly rather
-    /// than silently accepted-and-ignored or (the bug this replaces)
-    /// silently misapplied to serve the wrong chapter's tail.
     pub fn bad_dir(message: impl Into<String>) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_dir", message: message.into() }
     }
 
-    /// CORP-2a (decision 8): `GET /api/text?corpus=` names anything other
-    /// than the two corpora `/api/text` currently serves (`bible`, the
-    /// default when `corpus` is absent, and `concord`) -- same "typed
-    /// error, not axum's default rejection body" discipline as `bad_ref`/
-    /// `bad_kind` above.
     pub fn bad_corpus(raw: &str) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: "bad_corpus", message: format!("unknown corpus: '{raw}' (expected 'bible' or 'concord')") }
     }
 
-    /// Batch PROV-1: a server-side invariant this API cannot serve around
-    /// -- today, exactly one caller: a node whose text rendered but which
-    /// carries no provenance to attribute it to. THE FAIL-LOUD LAW is why
-    /// this exists rather than a `.unwrap_or_default()`: an unattributed
-    /// row must never reach a reader as a blank affordance or a guessed
-    /// label ("never a silent blank and never a fabricated label"), and a
-    /// 500 naming the id is the smallest honest answer. Distinct from
-    /// `not_found` on purpose -- the resource DOES exist; this project's
-    /// own data about it is incomplete, which is our bug, not the caller's.
+    /// A server-side invariant this API cannot serve around. Distinct from
+    /// `not_found`: the resource exists, and this project's own data about it is
+    /// incomplete, which must never reach a reader as a blank or a guess.
     pub fn internal(message: &str) -> Self {
         Self { status: StatusCode::INTERNAL_SERVER_ERROR, code: "internal", message: message.to_string() }
     }

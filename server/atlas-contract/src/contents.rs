@@ -1,16 +1,3 @@
-//! D4 (owner, 2026-09-15, verbatim: "Table of contents = a tree. ... Contents
-//! is a tree; clicking a node toggles visibility of its children. Stop at the
-//! level of ARTICLE (BoC) or TOPIC (Small Catechism). Pages are not a
-//! meaningful way of thinking about things."): `GET /api/contents/{corpus}`
-//! -- the graph's own containment forest, two levels deep, read through the
-//! port and nothing else: books then chapters for the Bible
-//! (`bible_container_adapter`'s `Container` nodes and `Contains` rows),
-//! documents then articles for the Book of Concord (`concord_adapter`'s,
-//! in the Bible's own shape since D3). No hand-maintained list: a root is
-//! a `Container` node, a child is a `contains` edge, a count is the child's
-//! own `contains` frontier size. The reader's Contents tree (D4b) renders
-//! exactly this.
-
 use std::sync::Arc;
 
 use atlas_graph::GraphService;
@@ -39,9 +26,8 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }
 
-/// Every `contains` target of `container`, in the port's own order (the
-/// declared row order: chapters in canon order, articles in article order),
-/// paging through the whole frontier.
+/// Every `contains` target of `container`, in the declared row order the port
+/// answers in: chapters in canon order, articles in article order.
 fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
     let mut out = Vec::new();
     let mut cursor = None;
@@ -104,8 +90,8 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
 }
 
 fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
-    // Every Concord document container, wherever the id-ordered node pages
-    // put it; ordered below by its own first paragraph's part number.
+    // Node pages come back in id order; the sort below puts the documents in
+    // their own reading order, by the part number of each one's first paragraph.
     let mut docs: Vec<AnyNodeId> = Vec::new();
     let mut cursor = None;
     loop {

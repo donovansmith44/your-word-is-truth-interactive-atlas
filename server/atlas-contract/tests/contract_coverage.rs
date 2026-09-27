@@ -1,31 +1,9 @@
-//! CONTRACT-1a: NO ROUTE WITHOUT A CONTRACT.
-//!
-//! `contracts/openapi.yaml` publishes every route this server serves, and a
-//! published route is a promise. This file is the law that a promise is
-//! backed by an executable expectation: every documented path must be the
-//! path some contract scenario actually requests, so a route cannot be
-//! added, published and then left with nobody holding us to it.
-//!
-//! A ROUTE IS MATCHED SEGMENT BY SEGMENT, NEVER AS A SUBSTRING. The first
-//! version of this law asked whether the corpus text CONTAINED the part of
-//! the documented path before its first `{`, and that is satisfiable by an
-//! unrelated route: `/api/catechism/{sref}` was "covered" by
-//! `/api/catechism/item/commandment-1`, so deleting the one scenario that
-//! reads the catechism of a verse would have left this law green.
-//! `a_route_whose_only_request_is_deleted_is_named_uncovered` below is that
-//! exact mutant, killed by a test rather than by inspection.
-
 use std::path::{Path, PathBuf};
 
 const CONTRACT_SUITES: [&str; 3] = ["atlas-graph-contract", "atlas-query-contract", "atlas-edge"];
 
-/// `/api/openapi.yaml` serves the contract itself and `/health` answers a
-/// liveness string; neither is a promise a consumer can hold us to.
 const NOT_A_PROMISE: [&str; 2] = ["/health", "/api/openapi.yaml"];
 
-/// The one step line in the whole corpus that requests the catechism of a
-/// verse, and therefore the only thing standing between `/api/catechism/{sref}`
-/// and being an unpromised route.
 const THE_ONLY_REQUEST_FOR_A_VERSE_S_CATECHISM: &str = "When I GET /api/catechism/MAT.28.19";
 const THE_ROUTE_IT_COVERS: &str = "/api/catechism/{sref}";
 
@@ -52,19 +30,10 @@ fn a_route_whose_only_request_is_deleted_is_named_uncovered() {
     assert_eq!(uncovered, vec![THE_ROUTE_IT_COVERS.to_string()]);
 }
 
-/// Every path the corpus's scenarios ask for, with any query string dropped.
 fn every_path_the_scenarios_request(corpus: &str) -> Vec<String> {
     corpus.lines().filter_map(requested_path).collect()
 }
 
-/// The two request phrasings this corpus uses, and there is no third: the
-/// vendored runner's `I GET <path>` (which may bind the answer with a
-/// trailing ` as <name>`, and whose path never contains whitespace), and the
-/// Atlas Query Contract's `I query "<path>"`, which both of that suite's own
-/// harnesses define. A phrasing that names no path -- `I run SceneQuery for
-/// the time window ...` -- requests a route this law cannot see, which is
-/// why the routes behind those steps carry a named `I query` step of their
-/// own in the suite that owns them.
 fn requested_path(line: &str) -> Option<String> {
     let step = line.trim();
     let body = STEP_KEYWORDS.iter().find_map(|keyword| step.strip_prefix(keyword))?;
@@ -113,11 +82,6 @@ fn routes_no_scenario_requests(documented: &[String], requested: &[String]) -> V
         .collect()
 }
 
-/// A documented route answers a requested path when the two have the same
-/// number of segments and agree on every segment the document spells
-/// literally; a `{param}` segment stands for exactly one segment of any
-/// spelling. Same segment count is what keeps `/api/catechism/{sref}` and
-/// `/api/catechism/item/{id}` two separate promises.
 fn route_answers(route: &str, path: &str) -> bool {
     let route = segments(route);
     let path = segments(path);

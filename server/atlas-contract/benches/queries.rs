@@ -1,42 +1,3 @@
-//! Batch PERF-2a Phase 1: the permanent criterion regression harness over
-//! the REAL committed graph (`data/compiled/graph.bin`, loaded exactly the
-//! way `atlas-server`'s own real startup loads it -- see `load_real` below,
-//! which mirrors `main.rs`'s default artifact-load path field for field).
-//!
-//! Own bench target (`cargo bench -p atlas-contract`, or `cargo bench` from
-//! server/) -- NOT part of `cargo test`'s own count (server/Cargo.toml's own
-//! STANDING COUNTING PROCEDURE comment). A fast SMOKE-TIER subset of these
-//! same queries also lives in `tests/perf_smoke.rs`, wired into the normal
-//! test suite with generous (x3-class) regression thresholds -- THAT is the
-//! part that gates CI; this file is the deep, full-distribution instrument
-//! a human runs by hand when investigating a specific query's performance.
-//! See BENCHMARKS.md for recorded baselines + machine context, and
-//! batch-perf2a-report.md for the investigation this batch ran to justify
-//! (or rule out) a given query's own work.
-//!
-//! Coverage (brief's own enumeration): scene/time queries, verse/chapter
-//! window, text window, xrefs for span, node card, node edges, catechism for
-//! span, place/event/narrative lookups, eras/polities/landmarks, and the
-//! full artifact load. "Admission" (`atlas_graph_types::store::
-//! assert_answers_match`, comparing the artifact-loaded graph against a
-//! from-raw-sources rebuild over the FULL graph) is deliberately NOT
-//! duplicated here: it's already a committed, passing law
-//! (`atlas-graph/tests/artifact_conformance.rs::
-//! serialized_artifact_is_admitted_and_loads_under_the_committed_ceiling`),
-//! self-documented there as "compile-time only... never run at server
-//! startup" and ~15-40s per M-B's own prior report -- criterion's minimum
-//! sample size (10) would cost 2.5-6.5+ minutes on ONE bench function alone
-//! for a number that test already measures and prints
-//! (`--nocapture`) every time it runs. Duplicating that heavy from-source
-//! rebuild machinery here (four optional corpora, private loader helpers on
-//! `GraphService`) to re-derive the same number under criterion's own
-//! statistical harness was evaluated and rejected as the wrong tool for a
-//! compile-time-only correctness gate; BENCHMARKS.md quotes that test's own
-//! measured figure instead. The fast, real, runtime-hot artifact LOAD
-//! (`GraphService::from_artifact` + `AtlasData::load` + overlay + `finish`
-//! -- exactly `main.rs`'s default path, the one actually on the owner's
-//! "make it fast" critical path) IS benched below, under `artifact_load`.
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -57,20 +18,8 @@ fn repo_data_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
 }
 
-/// Field-for-field the SAME sequence `main.rs`'s default (non-`--build-from-raw`)
-/// startup path runs: load the serialized graph artifact, load the ten
-/// surviving compiled JSON files, `finish()`, and prime the graph-backed
-/// scene source. This is what every query bench below queries against, and
-/// what `bench_artifact_load` itself times end to end.
-///
-/// OVERLAY-1 Task 5: the overlay assignment that used to sit between
-/// `AtlasData::load` and `finish()` is gone from the real startup path, so
-/// it is gone from here too -- keeping this function field-for-field
-/// faithful to `atlas_contract::load::load_graph_and_data` is the only reason
-/// it exists.
 fn load_real() -> (Arc<AtlasData>, Arc<GraphService>) {
     let compiled = repo_data_dir().join("compiled");
-    // DB-5: the sections, exactly as `atlas_contract::load::load_all` opens them.
     let (graph, data, _sources) = GraphService::from_sections(&compiled)
         .expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first (see README)");
     let data = data.finish();
@@ -86,20 +35,11 @@ fn qmap(pairs: &[(&str, &str)]) -> HashMap<String, String> {
     pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
 }
 
-/// Pure `atlas_core::scene` composition, no HTTP/JSON/axum machinery at all
-/// -- isolates the exact function the Phase 0 investigation profiled
-/// (`compose_time_scene`/`compose_scripture_scene`), so a regression here
-/// can never be masked or falsely blamed on handler-layer overhead.
 fn bench_scene_pure(c: &mut Criterion) {
     let (data, graph) = load_real();
-    // OVERLAY-1 Task 5: the exact object `map::scene_time`/
-    // `scene_scripture` compose from now.
     let source = graph.scene_source(&data);
     let mut group = c.benchmark_group("scene_pure");
 
-    // Same five windows batch-perf2a-report.md's before/after table uses --
-    // spans an era, an exact era, the full atlas span, the documented
-    // ~208KB "NT window," and a one-year degenerate window (all-quiet).
     let windows: &[(&str, i32, i32)] = &[
         ("full_span", -4004, 100),
         ("patriarchs_era", -2166, -1877),
@@ -118,13 +58,6 @@ fn bench_scene_pure(c: &mut Criterion) {
     group.finish();
 }
 
-/// The real axum handlers (`atlas_contract`'s own route-family modules) called
-/// directly with hand-built extractors (`State`/`Path`/`Query` are public
-/// tuple structs -- this is the standard way to bench/unit-test an axum
-/// handler without a socket or even a `Router`), over real, valid,
-/// committed-data ids/refs. Covers the brief's full enumerated surface:
-/// scene/time queries, verse/chapter window, xrefs for span, catechism for
-/// span, place/event/narrative lookups, eras/polities/landmarks.
 fn bench_handlers(c: &mut Criterion) {
     let (data, graph) = load_real();
     let rt = rt();
@@ -161,26 +94,15 @@ fn bench_handlers(c: &mut Criterion) {
         b.iter(|| rt.block_on(events::narrative_event_positions(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });
     group.bench_function("catechism_for_span", |b| {
-        // PROV-1 fix round 1 (review M-3): second extractor, carrying the
-        // catechism family's own provenance -- one `BTreeMap` lookup off the
-        // load-time companion index, which is why the call SHAPE is the only
-        // thing that moved here.
         b.iter(|| rt.block_on(catechism::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
     });
     group.bench_function("catechism_item", |b| {
-        // OVERLAY-1 Task 2: second extractor, `State<Arc<GraphService>>` --
-        // proof-verse text now comes from `graph.verse_text_of`, not the
-        // retired `AtlasData.verses`.
         b.iter(|| rt.block_on(catechism::catechism_item(State(data.clone()), State(graph.clone()), AxPath("commandment-1".to_string()))))
     });
 
     group.finish();
 }
 
-/// The generic typed-graph endpoints (design doc §5/§6): node card, node
-/// edges, text window -- `atlas_contract::graph`, the newer surface
-/// the REFOUNDED typed-edge graph serves directly (not through `AtlasData`
-/// at all).
 fn bench_graph_handlers(c: &mut Criterion) {
     let (_data, graph) = load_real();
     let rt = rt();
@@ -205,14 +127,6 @@ fn bench_graph_handlers(c: &mut Criterion) {
     group.finish();
 }
 
-/// The full artifact-load path (`GraphService::from_artifact` + `AtlasData::
-/// load` + overlay + `finish`) -- exactly `main.rs`'s default startup, timed
-/// end to end, freshly, on EVERY sample (not just once in setup, unlike
-/// every other group above). Sample size dropped to criterion's own minimum
-/// (10): at ~1.7s/load (server startup log, this batch's own re-baseline),
-/// even 10 samples cost ~20-30s, and this is the one bench in this file
-/// whose whole POINT is the real end-to-end cost of the thing every other
-/// group's `load_real()` call pays once and amortizes away.
 fn bench_sections_open(c: &mut Criterion) {
     let mut group = c.benchmark_group("sections_open");
     group.sample_size(10);

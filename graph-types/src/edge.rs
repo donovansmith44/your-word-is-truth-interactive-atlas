@@ -1,6 +1,3 @@
-//! Edges: structurally-paired kinds, bijection-witnessed bidirectional
-//! tables, justification as the one carrier of a claim's why.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::id::{
@@ -11,9 +8,6 @@ use crate::id::{
 use crate::ingest::ProvenanceId;
 use crate::text::{BibleLocusRange, ConcordLocus, Corpus, LocusSet, TextLocus};
 
-/// The two readings of a directed relation. Flipping a two-variant enum
-/// is involutive by construction — the dual is a shape, not a tested
-/// property.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Direction {
     Forward,
@@ -29,15 +23,6 @@ impl Direction {
     }
 }
 
-/// The relation manifest: ONE definition site. The macro generates the
-/// id enums and the label tables; an unpaired kind or label drift is
-/// unrepresentable because there is no second list.
-/// C1 (map-system contract, 2026-08-24): exported so a sibling system
-/// can declare ITS OWN relation manifest with the same one-definition-
-/// site algebra (paired labels, unrepresentable drift). The macro body
-/// is self-contained -- it generates fresh enums in the caller's crate
-/// and references nothing of ours, so exporting it shares the SHAPE,
-/// never our vocabulary.
 #[macro_export]
 macro_rules! relations {
     (
@@ -71,19 +56,6 @@ macro_rules! relations {
 
 relations! {
     directed {
-        // NODE1-ROWS-1 (owner ruling, "we have to declare edges. no
-        // special cases" + sign-off): relations are the INTERFACE; row
-        // structs are the implementations. Two relations here have more
-        // than one row implementation lowering into them:
-        //   Contains   <- `Contains<C>` rows, whose `content` is either
-        //                 flat text loci OR one child container (see
-        //                 `ContainerContent` below) -- containment is
-        //                 edge-carried and genuinely recursive (nodes are
-        //                 atoms; payload nesting is the forbidden second
-        //                 path).
-        //   Succession <- `Succession` rows (curated event-narrative
-        //                 chains) AND `CanonSuccession` rows (pairwise
-        //                 canon chapter/book steps -- see that struct).
         Contains    => "contains" / "member-of",
         Attests     => "attested-in" / "attests",
         Succession  => "follows-in" / "precedes-in",
@@ -101,31 +73,20 @@ relations! {
         SpokenBy    => "spoken-by" / "speech-of",
         SpokenAt    => "spoken-at" / "site-of-speech",
         DerivedFrom => "derived-from" / "derives",
-        // DB-3 (spec 7.3): entry -> word locus (one token). Rows arrive at
-        // LEX-1; appended LAST because `edge_index.rel` is positional.
         Occurs      => "occurs-in" / "words",
-        // D5 (owner, 2026-09-15: person cards show life, events and
-        // family): Theographic kinship and event participation as DECLARED
-        // rows. Appended LAST (positional rel codes).
         ParentOf     => "parent-of" / "child-of",
         Participates => "participates-in" / "participants"
     }
     symmetric {
-        // ATTEST-1 (owner ruling, verbatim: "let's call it Analogue;
-        // that's ok for now."): see the `Analogue` row struct below for
-        // the definition that governs every row.
         Analogue          => "analogous-to",
         CatechismLink     => "catechism-link",
         Corresponds       => "corresponds-to",
         Parallel          => "parallel",
         TemporalAdjacency => "temporal-adjacency",
-        // D5: partners (spouses) -- symmetric, appended LAST.
         Partners          => "partner-of"
     }
 }
 
-/// A kind is a relation plus a direction, or a symmetric relation. The
-/// dual flips the direction; symmetric kinds are fixed points.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EdgeKind {
     Directed(RelationId, Direction),
@@ -164,16 +125,9 @@ impl EdgeKind {
     }
 }
 
-/// Entry identity: the SAME id reached from either end — the bijection's
-/// literal witness. Content-derived (relation + endpoint pids), so
-/// set-valued rows expand deterministically (sweep F10).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(pub Interned);
 
-/// What justifies a claim: optional prose plus the set of grounds it
-/// rests on (owner: "a justification has a set of grounds"). Empty
-/// justification is lawful (populated progressively). Derivation is NOT
-/// justification — it is mechanical, compiler-emitted (DerivedFrom).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Justification {
     pub text: Option<String>,
@@ -187,7 +141,6 @@ pub enum Ground {
     Source(SourceId),
 }
 
-/// The target vocabulary for justified-by edges.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum GroundTarget {
     Scripture(BibleLocusRange),
@@ -195,29 +148,12 @@ pub enum GroundTarget {
     Source(SourceId),
 }
 
-// ---------------------------------------------------------------------
-// Authored rows (each carries provenance + justification).
-// ---------------------------------------------------------------------
-
-/// What one `Contains` row holds (NODE1-ROWS-1, owner-signed design):
-/// EITHER a flat set of text loci (the original shape -- a chapter's own
-/// verses, a Concord article's own paragraphs) OR exactly ONE child
-/// container (an edge, not a list -- book ⊃ chapter is one row per
-/// child). The `Container` variant is what makes containment genuinely
-/// recursive and uniform (owner addendum: "are nodes all recursively
-/// defined? they should be." -- recursion is edge-carried; nodes stay
-/// atoms; payload nesting is the forbidden second path). The
-/// container-of-containers graph these rows form is REQUIRED to be a
-/// forest (acyclic, single-parent) -- enforced fail-loud at build time
-/// by `atlas-graph`'s law_check, not assumed here.
 #[derive(Debug)]
 pub enum ContainerContent<C: Corpus> {
     Loci(LocusSet<C>),
     Container(ContainerNodeId),
 }
 
-// Manual impl: a derive would wrongly bound C itself (the same reason
-// `Locus`/`LocusSet` carry manual impls).
 impl<C: Corpus> Clone for ContainerContent<C> {
     fn clone(&self) -> Self {
         match self {
@@ -235,16 +171,6 @@ pub struct Contains<C: Corpus> {
     pub justification: Justification,
 }
 
-/// NODE1-ROWS-1 (owner ruling verbatim: "derived index entries, not
-/// authored edge rows yeah not good. we have to declare edges. no
-/// special cases."): one PAIRWISE canon-order succession step between
-/// two containers -- chapter -> next chapter (across book boundaries:
-/// GEN.50 -> EXO.1) or book -> next book. Lowers into the SAME
-/// `RelationId::Succession` the event-narrative `Succession` rows use
-/// (Forward = "follows-in", Inverse = "precedes-in") -- one relation,
-/// two row implementations (the manifest's own note). Deliberately
-/// PAIRWISE, not chain-shaped (owner correction during sign-off: "edges
-/// are PAIRWISE rows"); the event `Succession` struct is untouched.
 #[derive(Clone, Debug)]
 pub struct CanonSuccession {
     pub prior: ContainerNodeId,
@@ -261,12 +187,10 @@ pub struct Attests {
     pub justification: Justification,
 }
 
-/// A narrative IS the list — malformed chains cannot be stored, only
-/// fail to construct.
 #[derive(Clone, Debug)]
 pub struct Succession {
     pub narrative: NarrativeId,
-    pub chain: Vec<EventId>, // >= 1, validated distinct
+    pub chain: Vec<EventId>,
     pub provenance: ProvenanceId,
     pub justification: Justification,
 }
@@ -303,20 +227,6 @@ pub struct LocatedAt {
     pub justification: Justification,
 }
 
-// M-D3 (owner ruling R2): the `Named` row struct was retired with the
-// `named` manifest row -- a place's aliases are `NodePayload::Place`'s
-// own `aliases` payload field, the sole path since M-C.
-
-/// EDGE-1 (owner order 2026-08-23: "we also need a couple more edges:
-/// one for Christological types, and one for prophecy/fulfillment").
-/// A prophecy's fulfillment -- Scripture-only, text-to-text, DIRECTED
-/// (prophecy -> fulfillment; forward reads "fulfilled-in", inverse
-/// "fulfills"). Scripture frequently SELF-ATTESTS these rows: the NT
-/// fulfillment formulas ("that it might be fulfilled which was spoken
-/// by the prophet") make the fulfillment passage itself the natural
-/// `Ground::Scripture` of the justification. Positive register per
-/// the KJV inerrancy directive: fulfillment is stated as fact, never
-/// hedged.
 #[derive(Clone, Debug)]
 pub struct Fulfills {
     pub prophecy: BibleLocusRange,
@@ -325,15 +235,6 @@ pub struct Fulfills {
     pub justification: Justification,
 }
 
-/// EDGE-1: a Christological type -- an OT passage prefiguring its NT
-/// antitype (ROM 5:14's own "figure of him that was to come").
-/// Scripture-only, text-to-text, DIRECTED (type -> antitype; forward
-/// "prefigures", inverse "prefigured-by"). v1 is deliberately
-/// text-to-text because the classic cases are ARGUED FROM passages
-/// (GEN 14 -> HEB 7 Melchizedek; NUM 21:8-9 -> JHN 3:14 the serpent;
-/// JON 1:17 -> MAT 12:40); a node-typed subject (the Person/Event
-/// that IS the type) is a later EXTEND, not a v1 field. `note` names
-/// the figure for display ("the brasen serpent").
 #[derive(Clone, Debug)]
 pub struct Typology {
     pub type_passage: BibleLocusRange,
@@ -343,14 +244,6 @@ pub struct Typology {
     pub justification: Justification,
 }
 
-/// PG-1: eponymy, curated. The SUBJECT is the named thing; the OBJECT
-/// is the person it is named for: tribe-of-Judah --named-after-->
-/// Judah the man, and from the man's end, Judah --namesake-of-->
-/// tribe-of-Judah (the edge direction follows the LABELS, so both
-/// read as sentences). Grounds are the naming passages themselves
-/// (the GEN 29-30 etymologies; GEN 32:28 for Israel; GEN 19:37-38
-/// for Moab and Ammon) -- the distinction the owner ordered becomes
-/// EXPLORABLE, not just labeled.
 #[derive(Clone, Debug)]
 pub struct NamedAfter {
     pub namesake: Namesake,
@@ -359,8 +252,6 @@ pub struct NamedAfter {
     pub justification: Justification,
 }
 
-/// The named thing in an eponymy row -- the kinds Scripture actually
-/// names after persons (tribe/nation, place, kingdom).
 #[derive(Clone, Debug)]
 pub enum Namesake {
     PeopleGroup(PeopleGroupId),
@@ -376,11 +267,6 @@ pub struct CatechismLink {
     pub justification: Justification,
 }
 
-/// KRETZ-1: one verse-anchored commentary unit's target -- the unit's
-/// own Bible locus RANGE (lemma spans lower to ranges; pericope intros
-/// to the pericope range; chapter intros to the chapter's full range),
-/// per the owner-ruled verse-mapped-index law. Justification is
-/// grounded in the lemma's own locus.
 #[derive(Clone, Debug)]
 pub struct CommentsOn {
     pub item: CommentaryItemId,
@@ -389,13 +275,6 @@ pub struct CommentsOn {
     pub justification: Justification,
 }
 
-/// RED-1 (owner orders 2026-08-25: "Red letters on Jesus' words in
-/// every translation"; "SpokenAt is another edge"): direct speech as
-/// graph fact. SpokenBy is the GENERAL relation (red letters are its
-/// Jesus-speaker rendering; any speaker's words become queryable);
-/// verse-granular — edition-specific sub-verse display offsets are a
-/// RENDERING concern and live in compiled data, never in this
-/// vocabulary.
 #[derive(Clone, Debug)]
 pub struct SpokenBy {
     pub locus: BibleLocusRange,
@@ -404,9 +283,6 @@ pub struct SpokenBy {
     pub justification: Justification,
 }
 
-/// RED-1: where the words were spoken — the place edge, parallel to
-/// LocatedAt's naming. v1 rows derive from located events whose
-/// attested range contains the speech locus (Confidence::Derived).
 #[derive(Clone, Debug)]
 pub struct SpokenAt {
     pub locus: BibleLocusRange,
@@ -415,29 +291,6 @@ pub struct SpokenAt {
     pub justification: Justification,
 }
 
-// ---------------------------------------------------------------------
-// Imported rows.
-// ---------------------------------------------------------------------
-
-/// PG-1: the attested sense of an in-text mention -- Place, Person,
-/// PeopleGroup, or (ATTEST-1) Event. JDG 1:2 "Judah shall go up"
-/// mentions the TRIBE, not the man; the link points where the data says,
-/// never where a string guesses. (Widened from the retired two-way
-/// `PlaceOrPerson` name -- with three variants the old name stopped
-/// being true; the SAME widening precedent is why `Event` joins here
-/// rather than getting a relation of its own.)
-///
-/// ATTEST-1 `Event` variant (owner order 2, the founding diagnosis: LUK
-/// 1:27 was attested to BOTH the Espousal of Mary and the Annunciation).
-/// THE ACCOUNT/MENTION LAW (L1): an event's `Attests` edges carry ONLY
-/// narrative ACCOUNTS -- a passage that NARRATES the event. A verse that
-/// merely REFERENCES an event while narrating something else is a
-/// `Mentions` row pointing at that event, never an `Attests` row.
-/// Parallel accounts are >= 2 `Attests` groups; mentions NEVER appear
-/// under parallel accounts. An event whose whole scriptural basis is
-/// mentions (the espousal) is still a real node with a real frontier
-/// (L3, total capture) -- its frontier shows its mentions, never a
-/// fabricated "parallel accounts" section.
 #[derive(Clone, Debug)]
 pub enum MentionedEntity {
     Place(PlaceId),
@@ -453,25 +306,6 @@ pub struct Mentions {
     pub provenance: ProvenanceId,
 }
 
-/// ATTEST-1 (owner ruling, verbatim: "let's call it Analogue; that's ok
-/// for now.", ratifying the relation after: "A leper healed; a great
-/// popular excitement is given a parallel where there shouldn't be from
-/// Mat.8.1-4; another leprosy story. We need to come up with an idiom
-/// for stories that are very similar in this regard, but distinct
-/// events.").
-///
-/// THE DEFINITION, AND IT IS LAW: distinct events whose accounts are
-/// similar in form or content — NEVER two accounts of one event.
-///
-/// SYMMETRIC by construction (`SymRelationId::Analogue`, label
-/// "analogous-to"): neither end is the original, so there is no second
-/// reading to hold and no direction to get backwards. Two accounts of
-/// ONE event are `Attests` rows on that one event (parallel accounts);
-/// an `Analogue` row is the opposite claim — the events are two, and
-/// saying so is the whole point of the relation. `a == b` is therefore
-/// meaningless and rejected by `atlas-graph`'s own law_check (an event
-/// is not analogous to itself), the same fail-loud discipline the
-/// container-containment forest gate follows.
 #[derive(Clone, Debug)]
 pub struct Analogue {
     pub a: EventId,
@@ -479,16 +313,6 @@ pub struct Analogue {
     pub provenance: ProvenanceId,
 }
 
-/// LEX-1 (spec 7.3): one aligned original-language token -- a lexicon
-/// entry occurring at ONE word locus. The locus is the verse plus a span
-/// of exactly one token (`span.start == span.end`, the upstream CoNLL-U
-/// token id within the verse, on the `greek_textus_receptus` /
-/// `hebrew_masoretic` layer). Imported, no justification: the alignment
-/// is the source's own assertion, provenance-tagged `stepbible-tagnt` /
-/// `stepbible-tahot`. Lowers to `entry --occurs-in--> verse` (inverse
-/// `words`); two tokens of one entry in one verse are two rows behind one
-/// edge (the leper lesson: `rows_behind` lists both, and each row's
-/// `locus.span` names its token).
 #[derive(Clone, Debug)]
 pub struct Occurs {
     pub entry: LexiconEntryId,
@@ -496,14 +320,6 @@ pub struct Occurs {
     pub provenance: ProvenanceId,
 }
 
-/// D5 (owner, 2026-09-15, verbatim: "when clicking on a person, then i
-/// want to see the years that person is alive ... the events ... optionally
-/// a family tree whose names are all explorable"): one Theographic
-/// `father`/`mother` -> `children` link as a pairwise directed row,
-/// `parent --parent-of--> child` (inverse `child-of`). Imported (provenance
-/// `theographic-people`), no justification; `law_check::kinship_is_acyclic`
-/// holds over every row. Siblings are DERIVED (other children of the same
-/// parents), never stored.
 #[derive(Clone, Debug)]
 pub struct ParentOf {
     pub parent: PersonId,
@@ -511,8 +327,6 @@ pub struct ParentOf {
     pub provenance: ProvenanceId,
 }
 
-/// D5: Theographic `partners` (spouses) -- symmetric, one row per pair
-/// (`a < b` by id so a pair is minted once), `partner-of` from either end.
 #[derive(Clone, Debug)]
 pub struct Partners {
     pub a: PersonId,
@@ -520,10 +334,6 @@ pub struct Partners {
     pub provenance: ProvenanceId,
 }
 
-/// D5: Theographic `timeline` (the events a person takes part in) as
-/// `person --participates-in--> event` (inverse `participants`). Distinct
-/// from `Mentions` (a verse names the person) and `Attests` (a verse
-/// attests the event): this is the person's own place in the event.
 #[derive(Clone, Debug)]
 pub struct Participates {
     pub person: PersonId,
@@ -531,14 +341,6 @@ pub struct Participates {
     pub provenance: ProvenanceId,
 }
 
-/// TRAV-1: one adjacent pair in the chronology's total order, DERIVED
-/// at compile time from `temporal_order` (the ETL emits each
-/// consecutive pair once). The RELATION is symmetric --
-/// "adjacent-in-time" -- and lowers through the symmetric index,
-/// closing the gap `build_indexes` documented since M-A; the ROW
-/// still names its ends honestly (`earlier`/`later`, from the order
-/// itself) so a consumer serving a Chronology block never re-derives
-/// direction.
 #[derive(Clone, Debug)]
 pub struct TemporalAdjacency {
     pub earlier: EventId,
@@ -546,24 +348,6 @@ pub struct TemporalAdjacency {
     pub provenance: ProvenanceId,
 }
 
-/// M-C2 (requirement 2: "extend the cites relation to range-level
-/// (span-capable per the types)"): `to` remains the graph's own edge
-/// endpoint (the target's FIRST verse -- unchanged index shape, unchanged
-/// `build_indexes` behavior) alongside the honest resolution of the
-/// verse-level simplification M-A's own decision 1 disclosed (design doc
-/// §4: "cross-ref: verse-level today, loci by design"). `to_last`/
-/// `target_display` are SPAN DATA riding the row, not a second edge: a
-/// cross-ref target may cite a same-chapter or cross-book/chapter SPAN
-/// (`"COL.1.16-19"`, `"MAT.5.3-MAT.6.2"`), and `aggregate_span_xrefs`'s own
-/// self-target-subset check needs the target's TRUE last verse (not just
-/// its first) to tell "starts inside the span" apart from "wholly inside
-/// the span" -- collapsing to `to` alone (the pre-M-C2 shape) can only ever
-/// approximate that check. `target_display` is the ORIGINAL citation
-/// string exactly as imported (openbible.info's own three canonical
-/// shapes) -- `to`/`to_last` are a lossless structured decomposition of
-/// it into typed loci, but the wire's own `CrossRef.target` field is
-/// this exact string, never a re-synthesized one (a source `COL.1.16-19`
-/// must never round-trip as `COL.1.16-COL.1.19`).
 #[derive(Clone, Debug)]
 pub struct CrossRef {
     pub from: TextLocus,
@@ -574,8 +358,6 @@ pub struct CrossRef {
     pub provenance: ProvenanceId,
 }
 
-/// Quotation points TOWARD the norming norm; the reverse direction has
-/// no constructor.
 #[derive(Clone, Debug)]
 pub struct Quotes {
     pub quoting: TextLocus,
@@ -583,8 +365,6 @@ pub struct Quotes {
     pub provenance: ProvenanceId,
 }
 
-/// Doctrinal accord: a normed-norm locus confesses what Scripture
-/// teaches. Never the reverse — asymmetry by construction.
 #[derive(Clone, Debug)]
 pub struct Confesses {
     pub confessing: ConcordLocus,
@@ -593,8 +373,6 @@ pub struct Confesses {
     pub justification: Justification,
 }
 
-/// Span-level alignment between layers of ONE corpus family —
-/// same-type-ness enforced by the parameter.
 #[derive(Clone, Debug)]
 pub struct Corresponds<C: Corpus> {
     pub a: crate::text::Locus<C>,
@@ -602,18 +380,12 @@ pub struct Corresponds<C: Corpus> {
     pub provenance: ProvenanceId,
 }
 
-// ---------------------------------------------------------------------
-// The relation trait: typed endpoints; direction machinery comes from
-// the EdgeKind shape.
-// ---------------------------------------------------------------------
-
 pub trait Relation {
     type Row;
     const ID: RelationId;
     fn endpoints(row: &Self::Row) -> Vec<(Position, Position)>;
 }
 
-/// Erased edge record the graph serves; the typed rows are the source.
 #[derive(Clone, Debug)]
 pub struct EdgeRecord {
     pub id: EdgeId,
@@ -622,9 +394,6 @@ pub struct EdgeRecord {
     pub object: Position,
 }
 
-/// Built, never authored: both adjacency maps from one row table. A
-/// set-valued row expands to one entry per element; entry ids are
-/// content-derived, so expansion is stable across recompiles.
 #[derive(Debug, Default)]
 pub struct BiIndex {
     pub fwd: BTreeMap<Position, Vec<(EdgeId, Position, crate::explore::EdgeMeta)>>,
@@ -651,13 +420,6 @@ impl BiIndex {
         ix
     }
 
-    /// The symmetric sibling of `build`: BOTH ends are interchangeable, so
-    /// each pair populates `fwd` from EITHER end -- querying from `a` or
-    /// from `b` returns the other one, under the SAME `EdgeId`
-    /// (`entry_id_symmetric`'s own sort-then-hash is what makes that true).
-    /// `inv` stays empty: a symmetric relation has no second reading to
-    /// hold (design doc §3's own "no directions" shape) --
-    /// `raw_neighbors`'s `EdgeKind::Symmetric` arm only ever reads `fwd`.
     pub fn build_symmetric(
         rel: SymRelationId,
         pairs: &[(Position, Position, crate::explore::EdgeMeta)],
@@ -678,21 +440,13 @@ impl BiIndex {
     }
 }
 
-/// Content-derived entry id: hash of (relation, subject, object).
-///
-/// The hash reaches the string through `ContentHash::hex`, not through a
-/// width-baked `{:016x}` — so the id widens with the hash when
-/// `canon-ids` is on, and renders exactly as before when it is off.
-/// There is no `#[cfg]` here on purpose: the split lives in ONE place.
 pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
     struct E<'a>(RelationId, &'a Position, &'a Position);
     impl<'a> ContentAddressed for E<'a> {
-        /// OFF: the historical debug-text digest, byte for byte.
         #[cfg(not(feature = "canon-ids"))]
         fn canonical_bytes(&self) -> Vec<u8> {
             format!("{:?}|{:?}|{:?}", self.0, self.1, self.2).into_bytes()
         }
-        /// ON (DB-4a, EDGE-ID-1): canonical edge bytes over position strings.
         #[cfg(feature = "canon-ids")]
         fn canonical_bytes(&self) -> Vec<u8> {
             crate::canon::ids::edge_canonical_bytes(&format!("{:?}", self.0), self.1, self.2)
@@ -705,12 +459,6 @@ pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {
     EdgeId(format!("{:?}:{}", rel, pid.hash.hex()))
 }
 
-/// The symmetric sibling of `entry_id`: a SYMMETRIC relation's two ends are
-/// interchangeable (design doc §3: "a symmetric relation lives in a
-/// separate id space that HAS no directions"), so the id must be the SAME
-/// regardless of which end a caller happens to hash first -- sorting the
-/// pair by `Position`'s own `Ord` before hashing is what makes that true
-/// (the bijection witness, symmetric case).
 pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> EdgeId {
     let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
     struct E<'a>(SymRelationId, &'a Position, &'a Position);
@@ -731,7 +479,6 @@ pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> Edg
     EdgeId(format!("{:?}:{}", rel, pid.hash.hex()))
 }
 
-/// Convenience: node position.
 pub fn at(n: &AnyNodeId) -> Position {
     Position::Node(n.clone())
 }

@@ -1,52 +1,3 @@
-//! Batch PERF-2a: the ZERO-BEHAVIOR-CHANGE proof the brief requires --
-//! `/api/scene` (time mode) and `/api/scene/scripture` (scripture mode)
-//! responses, byte-for-byte, over the REAL committed graph
-//! (`data/compiled/graph.bin`), for a fixed set of >=20 representative
-//! windows/refs spanning every era, several boundary/degenerate windows, and
-//! a handful of scripture refs.
-//!
-//! HOW THIS PROVES ZERO BEHAVIOR CHANGE: each expected hash below was
-//! captured by running this exact test against BASE (7c32200, the commit
-//! this batch started from, before any change) -- `cargo test -p
-//! atlas-server --test scene_byte_identity -- --nocapture` prints
-//! `label -> hash (n bytes)` for every case; the printed hashes are what's
-//! hard-coded here. Batch PERF-2a made NO changes to `atlas-core::scene`,
-//! `wire.rs`, or anything else in the compose path (the Phase 0
-//! investigation found the diagnosed "~220ms fixed compose cost" was a
-//! measurement artifact -- see batch-perf2a-report.md -- not a real
-//! algorithmic problem; the real cost was already ~1-8ms, so no restructure
-//! was made, and this harness is the proof), so every hash here is expected
-//! to still match after this batch's changes (World.razor debounce/perf
-//! marks are client-only and touch none of this). Going forward, this is
-//! also a PERMANENT regression harness (Phase 1): any future change to the
-//! compose path that silently alters a real window's response now fails
-//! loud, here, rather than being caught (or missed) downstream.
-//!
-//! RE-PINNED, Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW): a DATA batch,
-//! not a zero-behavior-change one -- the 20 `time_windows()` hashes below
-//! legitimately changed (24 duplicate curated<->theographic event pairs
-//! merged; boundary-verse coverage restored via witness-row/top-level-verse
-//! widening) and are re-pinned against the freshly-regenerated
-//! `data/compiled/graph.bin` (`cargo run -p atlas-graph --bin
-//! atlas-graph-compile`), same capture method as before. The 5
-//! `scripture_refs()` hashes are untouched -- none of those single-chapter
-//! windows happened to touch a merged/widened event. This harness's own
-//! PERMANENT-regression job (catching a future SILENT drift) is unaffected;
-//! only its baseline moved, honestly, with the real cause on record.
-//!
-//! "commit the harness, not the captured fixtures if large" (brief): a
-//! single NT-window response alone is ~205KB; committing 25 raw JSON
-//! fixtures would be several MB for zero benefit over a hash. FNV-1a (below)
-//! rather than `std::collections::hash_map::DefaultHasher` deliberately --
-//! the std docs disclose DefaultHasher's algorithm is NOT guaranteed stable
-//! across Rust releases, which would make a hard-coded expected value here
-//! a false-positive time bomb; FNV-1a is a fixed, tiny, dependency-free
-//! algorithm with no such risk. Not a security property (a scene response
-//! is public, non-adversarial, served-from-a-local-sketch-app data) --
-//! collision-resistance against an attacker is not the property being
-//! bought here, only a cheap, stable fingerprint over content nobody is
-//! trying to forge.
-
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -57,21 +8,11 @@ use atlas_core::time::TimeRange;
 use atlas_graph::scene_source::GraphSceneSource;
 use atlas_graph::GraphService;
 
-/// OVERLAY-1 Task 5: the scene's data now comes from the PORT, through
-/// `GraphSceneSource` -- the same object `GraphService::scene_source`
-/// holds for `map::scene_time`/`scene_scripture`, built the same way
-/// `load::load_graph_and_data` builds it (artifact + a bare, un-`finish()`ed
-/// `AtlasData::load` for the two curated sidecars it reads). The overlay
-/// (`legacy::atlas_data_overlay`) and `AtlasData::finish()`'s graph-derived
-/// index web are gone from this path entirely; the 25 pinned hashes below
-/// are unchanged, which is the whole gate on that cut-over.
 fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<GraphSceneSource>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
             let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
-            // DB-5: the served path -- the committed sections, exactly as
-            // atlas_contract::load::load_all opens them.
             let (graph, sidecars, _sources) = GraphService::from_sections(&compiled).expect("data/compiled/manifest.toml + sections/ must exist -- run atlas-graph-compile first");
             let sidecars = sidecars.finish();
             let source = GraphSceneSource::build(&graph, &sidecars);
@@ -80,8 +21,6 @@ fn real_scene_source_and_graph() -> (Arc<GraphSceneSource>, Arc<GraphService>) {
         .clone()
 }
 
-/// FNV-1a, 64-bit. Fixed algorithm, no dependency, good enough for a
-/// non-adversarial content fingerprint (see module doc comment).
 fn fnv1a(bytes: &[u8]) -> u64 {
     const OFFSET_BASIS: u64 = 0xcbf29ce484222325;
     const PRIME: u64 = 0x100000001b3;
@@ -93,72 +32,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     hash
 }
 
-/// `(label, from_year, to_year, expected_fnv1a_hash, expected_byte_len)`.
-/// Spans: every one of the 10 curated eras exactly (`data/curated/eras.toml`),
-/// the full atlas span, the brief's own documented "NT window," three
-/// degenerate/single-year windows (the atlas's own start year, end year, and
-/// an arbitrary mid-span year), and three windows that straddle an era
-/// boundary rather than landing exactly on one.
 fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
-    // Batch CHRON-1: re-pinned against the post-recompile data/compiled/
-    // graph.bin (24-pair triage merge + coverage-completion widenings) --
-    // this data batch deliberately changes scene content (fewer duplicate
-    // events, restored boundary-verse coverage), so the former BASE
-    // (7c32200) hashes are expected to differ; these are the new baseline,
-    // captured via `cargo test -p atlas-server --test scene_byte_identity
-    // -- --nocapture` against the freshly-regenerated artifact.
-    //
-    // Re-pinned AGAIN, fix round 1 (S-1's real fix + I-3/I-4's re-triage --
-    // this version_root_regression.rs's own "MOVED AGAIN" log entry has the
-    // full list): one fewer event node (theo-295 absorbed) and several
-    // events' own witness/verse sets changed again.
-    //
-    // Re-pinned AGAIN, Batch PLACE-1a (2026-09-06, place duplicate-lineage
-    // merge backlog -- 15 new curated MERGE_PAIRS entries, 1373 -> 1358
-    // places): every time window shrinks (fewer duplicate/quiet place
-    // entries -- each absorbed Theographic `_NNN` record's own quiet-place
-    // listing is gone, folded onto its survivor's `merged_ids` instead), but
-    // no scripture_refs() hash below changed (none of GEN.1/JHN.3.16/
-    // PSA.23/EXO.20/REV.22 touches an absorbed id) -- captured via
-    // `cargo test -p atlas-server --test scene_byte_identity -- --nocapture`
-    // against the freshly-regenerated artifact (atlas_version_root
-    // 82bac0bde5a53ec2).
-    //
-    // Re-pinned AGAIN, Batch ATTEST-1 (2026-09-07, accounts vs. mentions +
-    // the Analogue relation). A DELIBERATE data change, and every one of
-    // the 20 deltas below is accounted for -- this file's own law is that
-    // an UNEXPLAINED change is the failure, not a changed hash:
-    //
-    //   * THE THREE WINDOWS CONTAINING AD 31 (era_early_church,
-    //     nt_window_gospels_plus_church, straddle_gospels_early_church)
-    //     each grow by EXACTLY +257 bytes: the one new lit scene event,
-    //     `mat_leper_healed` (Matthew's own leper, split off
-    //     `rob_leper_healed` on the owner's report). Same delta three
-    //     times, because it is the same one event.
-    //   * THE ONE WINDOW CONTAINING -6 (era_return) shrinks by exactly
-    //     -117 bytes: `theo-249` "Espousal of Mary" is still a lit event
-    //     at its unchanged Traditional placement, but its `verse_groups`
-    //     are now EMPTY -- both of its former "parallel accounts" were
-    //     retyped to `Mentions` (L1/L3), and a scene event carries
-    //     accounts, not mentions.
-    //   * `full_span` moves by +140 = +257 - 117, i.e. it contains both
-    //     changes and nothing else. That arithmetic is the cross-check.
-    //   * THE OTHER FIFTEEN WINDOWS keep their byte length EXACTLY and
-    //     change hash only. Cause, verified rather than assumed:
-    //     `scene::quiet_places` carries `total_events`, which is the
-    //     ALL-TIME count for a place (`AtlasData::total_events_for`), not
-    //     a window-scoped one. `mat_leper_healed` is located at
-    //     `galilee-1`, so galilee-1's all-time count increments by one --
-    //     and galilee-1 is a QUIET place in every window that does not
-    //     light it, which is all fifteen. The count's digit width is
-    //     unchanged, hence identical byte lengths.
-    //
-    // No `scripture_refs()` hash below changed (none of GEN.1/JHN.3.16/
-    // PSA.23/EXO.20/REV.22 touches an affected event), which is itself
-    // corroboration: the change is confined to the two events this batch
-    // is about. Captured via `cargo test -p atlas-server --test
-    // scene_byte_identity -- --nocapture` against the freshly-regenerated
-    // artifact (atlas_version_root dfcf6ee4c2a39965).
     vec![
         ("era_primeval", -4004, -2167, 0xcaec481c2bbb825c, 25865),
         ("era_patriarchs", -2166, -1877, 0xa8f2caa1a06510e7, 39564),
@@ -183,7 +57,6 @@ fn time_windows() -> Vec<(&'static str, i32, i32, u64, usize)> {
     ]
 }
 
-/// `(label, sref, expected_fnv1a_hash, expected_byte_len)`.
 fn scripture_refs() -> Vec<(&'static str, &'static str, u64, usize)> {
     vec![
         ("scripture_gen1", "GEN.1", 0xb7c306586ac67917, 92),
@@ -194,8 +67,6 @@ fn scripture_refs() -> Vec<(&'static str, &'static str, u64, usize)> {
     ]
 }
 
-/// 20 time windows + 5 scripture refs = 25 cases, comfortably over the
-/// brief's own N>=20 floor.
 #[test]
 fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
     let (source, _graph) = real_scene_source_and_graph();
@@ -208,7 +79,7 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
         let hash = fnv1a(&bytes);
         println!("{label} -> hash {hash:#018x} ({} bytes)", bytes.len());
         if expected_hash == 0 && expected_len == 0 {
-            continue; // capture mode: hashes not pinned yet (see module doc comment)
+            continue;
         }
         if hash != expected_hash || bytes.len() != expected_len {
             failures.push(format!(
@@ -238,13 +109,6 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
     assert!(failures.is_empty(), "scene response(s) changed since the pinned baseline (BASE 7c32200 for PERF-2a; re-pinned by Batch CHRON-1's own recompile, see this file's own module doc) -- if this batch is NOT a deliberate data/behavior change, the zero-behavior-change law is broken:\n{}", failures.join("\n"));
 }
 
-/// Sanity companion: every one of `AtlasData`'s HTTP-facing scene functions
-/// used above must actually be reachable with the SAME `HashMap` shape
-/// `map::scene_time`/`scene_scripture` parse `from`/`to`/`ref` out of --
-/// this doesn't test that directly (the handler-level equivalence is
-/// `atlas-contract/tests/api.rs`'s job), just documents the coupling so a
-/// future reader knows why this file calls `atlas_core::scene::*` directly
-/// rather than going through `axum`.
 #[test]
 fn windows_parse_the_same_way_the_http_handler_would() {
     let params: HashMap<String, String> = [("from".to_string(), "-5".to_string()), ("to".to_string(), "100".to_string())].into_iter().collect();

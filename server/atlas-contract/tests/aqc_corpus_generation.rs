@@ -1,24 +1,3 @@
-//! Batch AQC-1 fix round 1 (Q-6, controller ruling): "generated-output-is-
-//! committed + a test that regenerates and diffs," the pattern this repo
-//! already uses elsewhere. Two standing checks, neither needing a live
-//! server or the real graph (both are PURE, fast):
-//!
-//! 1. The two `Scenario Outline`-bearing `.feature` files this repo
-//!    commits are byte-identical to what `atlas_contract::aqc_export`'s own
-//!    generation functions produce RIGHT NOW -- catches drift the moment
-//!    someone hand-edits a committed feature file, or the SEEDS list
-//!    changes without re-running the exporter.
-//! 2. Every `SEEDS`/`FOCUS_IDENTITY_EXTRA`/`FIXTURES` name has a committed
-//!    fixture file, AND vice versa (every committed fixture corresponds to
-//!    a name one of those three sources declares) -- the exact class of
-//!    gap that let `focus-traversal-target.json` go briefly unindexed
-//!    during this batch's own C# harness work (batch report, "gap found
-//!    and closed") would have failed THIS test automatically.
-//!
-//! Plus the five-hand-kept-"0.1.0"-copies cross-check (Q-6's other half):
-//! `VERSION`'s trimmed contents, `aqc.schema.json`'s own top-level
-//! `"version"`, and `contract::{MIN,MAX}_SUPPORTED_VERSION` must all agree.
-
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -55,7 +34,6 @@ fn every_seed_and_fixture_name_has_a_committed_file_and_vice_versa() {
 
     let fixtures_dir = contract_dir().join("fixtures");
 
-    // Forward: every name the generator declares must have a file.
     let mut declared: BTreeSet<String> = BTreeSet::new();
     for (kind, _) in SEEDS {
         declared.insert(format!("focus-{}", kind.to_lowercase()));
@@ -63,9 +41,6 @@ fn every_seed_and_fixture_name_has_a_committed_file_and_vice_versa() {
     for (name, _) in FIXTURES {
         declared.insert((*name).to_string());
     }
-    // FOCUS_IDENTITY_EXTRA names are already covered by FIXTURES (both
-    // list "focus-traversal-target"); included here too so this test
-    // does not silently rely on that overlap staying true.
     for (_, name) in FOCUS_IDENTITY_EXTRA {
         declared.insert((*name).to_string());
     }
@@ -75,9 +50,6 @@ fn every_seed_and_fixture_name_has_a_committed_file_and_vice_versa() {
         assert!(path.exists(), "SEEDS/FIXTURES declares fixture '{name}' but {} does not exist -- run the exporter", path.display());
     }
 
-    // Backward: every committed fixture file (except index.json, which is
-    // not a query-response fixture) must correspond to a declared name --
-    // an orphaned fixture is exactly as much drift as a missing one.
     let mut committed: BTreeSet<String> = BTreeSet::new();
     for entry in std::fs::read_dir(&fixtures_dir).expect("fixtures dir must exist") {
         let entry = entry.unwrap();
@@ -114,16 +86,6 @@ fn index_json_matches_the_identity_declared_in_seeds_and_focus_identity_extra() 
     assert_eq!(index, expected, "index.json has drifted from SEEDS/FOCUS_IDENTITY_EXTRA -- run the exporter and commit the result");
 }
 
-/// Q-6 fix: the five hand-kept "0.1.0" copies, cross-checked. `VERSION`'s
-/// trimmed contents and `aqc.schema.json`'s own top-level `"version"` must
-/// both agree with `contract::{MIN,MAX}_SUPPORTED_VERSION` -- the compiled
-/// server's own constants, the one copy that genuinely cannot be read from
-/// a file at compile time (a real server binary, not a test). The
-/// remaining two copies (`AqcContract.cs::ClientVersion`, `aqc_cucumber
-/// .rs`'s own `harness_client_version()`) are single-sourced from this
-/// SAME `VERSION` file instead of hand-kept -- see that function's own doc
-/// comment and `client.Tests/AqcContractTests.cs::
-/// ClientVersionAgreesWithTheVersionFile`.
 #[test]
 fn version_file_and_schema_version_agree_with_the_compiled_server_constants() {
     let version_path = contract_dir().join("VERSION");
@@ -139,24 +101,6 @@ fn version_file_and_schema_version_agree_with_the_compiled_server_constants() {
     assert_eq!(schema_version, version, "aqc.schema.json's own 'version' has drifted from VERSION");
 }
 
-/// THE COUNTING LAW (Batch AQC-1 fix round 1, controller ruling): "the
-/// dotnet line carries the parity check: client.Tests N/N |
-/// client.ContractTests X/X -- where client.ContractTests's count MUST
-/// EQUAL the AQC line's X ... any divergence means a feature file is being
-/// executed by one side and not the other."
-///
-/// Counts every scenario textually across all six committed `.feature`
-/// files (a `Scenario:` line is 1; a `Scenario Outline:`'s own count is
-/// its `Examples:` table's DATA rows, header excluded) -- pure text
-/// parsing, no Gherkin-library dependency, so this stays independent of
-/// whatever `cucumber`'s own internal parser does. `client.ContractTests`'s
-/// own `CorpusCountTests` runs the SAME textual count in C#, independently,
-/// and additionally cross-checks it against Reqnroll's own runtime-
-/// discovered test count via reflection -- the two tests TOGETHER are what
-/// makes "both sides execute the same files" (spec §3) a real, standing
-/// assertion rather than a one-time observation: if a scenario is ever
-/// added/removed from the corpus without both counts being updated in the
-/// SAME commit, one of the two tests fails.
 fn count_scenarios_in_feature_files() -> usize {
     let features_dir = contract_dir().join("features");
     let mut total = 0usize;
@@ -182,7 +126,7 @@ fn count_scenarios_in_feature_files() -> usize {
                 saw_header = false;
             } else if in_examples && line.starts_with('|') {
                 if !saw_header {
-                    saw_header = true; // the header row, not a data row
+                    saw_header = true;
                 } else {
                     total += 1;
                 }
@@ -192,11 +136,7 @@ fn count_scenarios_in_feature_files() -> usize {
     total
 }
 
-/// The current, disclosed truth this file and `CorpusCountTests.cs` both
-/// pin -- bump in the SAME commit as any corpus scenario add/remove
-/// (recorded here per the counting law's own ruling 4: "add this to
-/// server/Cargo.toml's STANDING COUNTING PROCEDURE comment block").
-const EXPECTED_SCENARIO_COUNT: usize = 47; // D4 (2026-09-18): + contents.feature's three ContentsQuery scenarios
+const EXPECTED_SCENARIO_COUNT: usize = 47;
 
 #[test]
 fn declared_scenario_count_matches_the_pinned_corpus_size() {

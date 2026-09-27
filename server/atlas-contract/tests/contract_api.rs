@@ -1,9 +1,3 @@
-//! Batch AQC-1: `GET /api/contract`'s own HTTP-level test -- the ONE new
-//! behavioral surface this batch adds (design spec §2's versioning law).
-//! Mirrors `tests/api.rs`'s own no-socket-bound `oneshot` idiom, over
-//! `atlas_core::data::demo_fixture()` (this endpoint is static -- it needs
-//! no real graph data, unlike `tests/graph_api.rs`'s own `real_app()`).
-
 use std::sync::Arc;
 
 use atlas_core::data::demo_fixture;
@@ -38,7 +32,6 @@ async fn api_contract_carries_no_other_fields() {
     let obj = body.as_object().expect("Contract must serialize as a JSON object");
     let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
     keys.sort();
-    // DB-4c: + the manifest schema and the sections' user_version (additive, spec 9).
     assert_eq!(keys, vec!["manifest_schema", "max_version", "min_version", "section_schema_version"]);
 }
 
@@ -81,8 +74,6 @@ async fn get_text(app: &axum::Router, path: &str) -> String {
     String::from_utf8(bytes.to_vec()).expect("the body is UTF-8 text")
 }
 
-/// The Swagger UI is a developer's convenience behind `dev-docs`, so the
-/// only build that can see it is the only build that tests it.
 #[cfg(feature = "dev-docs")]
 #[tokio::test]
 async fn the_developer_docs_page_is_served_when_dev_docs_is_on() {

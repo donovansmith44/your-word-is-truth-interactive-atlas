@@ -1,8 +1,3 @@
-//! The published contract documents, all of them derived from the Rust that
-//! serves the API (spec D8). `contracts/openapi.yaml` is the contract; the
-//! Atlas Query Contract's shapes and the Atlas Graph Contract's vocabulary
-//! fixture are derivations of it at their own committed paths.
-
 use std::path::PathBuf;
 
 use atlas_graph_types::{NodeKind, RelationId, SymRelationId};
@@ -19,19 +14,17 @@ const RELATIONS_EXTENSION: &str = "x-atlas-relations";
 const COMPONENT_REFERENCE: &str = "#/components/schemas/";
 const SHAPE_REFERENCE: &str = "#/$defs/";
 
-/// One published document: where it is committed, and the Rust that renders
-/// it. Pairing the two in one value is what keeps a document from being
-/// published to a path nothing renders, or rendered to no path at all.
+/// One published document: where it is committed, and the Rust that renders it.
+/// Pairing the two keeps a document from being published to a path nothing
+/// renders, or rendered to no path at all.
 pub struct GeneratedDocument {
     /// Relative to `contracts_root()`.
     pub path: &'static str,
     pub render: fn() -> String,
 }
 
-/// Every document the exporter publishes, declared once. A document that
-/// stops being generated is a promise quietly withdrawn, so this list is the
-/// one place it exists -- the exporter, the gate and the byte-identity test
-/// all read it rather than restate it.
+/// Every document the exporter publishes. The exporter, the gate and the
+/// byte-identity test all read this list rather than restate it.
 pub const GENERATED_DOCUMENTS: [GeneratedDocument; 3] = [
     GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
     GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },
@@ -50,10 +43,9 @@ pub fn openapi_yaml() -> String {
     GENERATED_BY.to_string() + &openapi().to_yaml().expect("the OpenAPI document serialises")
 }
 
-/// The router's document, named and versioned as the PUBLISHED contract:
-/// left alone it carries utoipa-axum's own crate metadata (that crate's
-/// title, author and licence), which would be published as though it
-/// described this API.
+/// The router's document, named and versioned as the PUBLISHED contract: left
+/// alone it carries utoipa-axum's own crate metadata, which would be published
+/// as though it described this API.
 pub fn openapi() -> OpenApi {
     let mut doc = crate::openapi();
     let mut info = Info::new(API_TITLE, crate::meta::MAX_SUPPORTED_VERSION);
@@ -70,11 +62,9 @@ pub fn relations_json() -> Value {
     })
 }
 
-/// The shapes both Atlas Query Contract harnesses validate responses
-/// against. They resolve a shape as `#/$defs/<Shape>`, which is where a
-/// JSON Schema document keeps its definitions; the OpenAPI document keeps
-/// the same schemas under `#/components/schemas/`, so every reference is
-/// rewritten to the one the harnesses follow.
+/// The shapes the Atlas Query Contract harnesses validate responses against.
+/// They resolve a shape as `#/$defs/<Shape>`, where a JSON Schema document keeps
+/// its definitions, so every component reference is rewritten to that path.
 pub fn aqc_schema_json() -> String {
     let doc = serde_json::to_value(openapi()).expect("the document serialises to JSON");
     let mut shapes = doc["components"]["schemas"].clone();
@@ -116,10 +106,9 @@ pub fn graph_vocabulary_json() -> String {
     }))
 }
 
-/// The Atlas Graph Contract's runner blesses a fixture with aeson-pretty --
-/// four-space indent, no trailing newline. This fixture is now blessed from
-/// both sides, so it renders the runner's way; otherwise the two blessers
-/// would rewrite each other's whitespace and one gate would always be red.
+/// The Atlas Graph Contract's runner blesses this fixture with aeson-pretty --
+/// four-space indent, no trailing newline -- so rendering it any other way would
+/// leave the two blessers rewriting each other's whitespace.
 fn blessed_fixture(value: &Value) -> String {
     let mut rendered = Vec::new();
     let mut serializer = serde_json::Serializer::with_formatter(&mut rendered, serde_json::ser::PrettyFormatter::with_indent(b"    "));

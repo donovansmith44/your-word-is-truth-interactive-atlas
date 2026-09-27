@@ -1,49 +1,3 @@
-//! Batch CDC-1: THE PROVIDER HALF OF THE GATE.
-//!
-//! The consumer-driven contract law says the CONSUMER writes the
-//! expectations and the PROVIDER runs them and breaks when it violates
-//! them. `contracts/runner` is what runs them. This file is what makes
-//! running them cheap enough to do before every push.
-//!
-//! # Why a recorded pact at all
-//!
-//! The expectations must be executable PRE-PUSH, LOCALLY, and FAST, with
-//! no escape hatch. The obvious shape -- start a server, point the runner
-//! at it -- is not available here: 8080 is the owner's live app and 8090
-//! is doubly reserved, and a gate that needs a process on a port is a gate
-//! that fails for reasons unrelated to any contract. A gate that cries
-//! wolf gets disabled, and a disabled gate is worse than none.
-//!
-//! So the evidence is recorded instead of re-served, and the recording is
-//! itself gated:
-//!
-//!   * THIS test regenerates the pact from the REAL committed graph
-//!     through the REAL axum `Router`, in-process, and fails if the result
-//!     differs by one byte from the committed copy. That is PROVIDER
-//!     drift: our answers changed.
-//!   * `contract-runner run --replay contracts/pacts <suite>` executes
-//!     every published expectation against that pact. That is EXPECTATION
-//!     drift: what a consumer reads changed.
-//!
-//! Neither half can pass alone, and neither is advisory. A pact compared
-//! only against a pact would prove nothing; a pact regenerated from the
-//! live graph in the same gate proves exactly as much as a live run,
-//! minus the socket.
-//!
-//! # Why it cannot silently under-cover
-//!
-//! The recorder does not carry a hand-maintained list of what to record.
-//! It READS THE FEATURE FILES and records exactly the request keys they
-//! ask for. Adding `When I GET /api/something-new` to any feature file
-//! therefore adds a pact entry here; and if this test has not been re-run,
-//! the runner fails with "no pact entry for ...", naming the key. An
-//! expectation can never quietly outrun the evidence behind it.
-//!
-//! In-process via `tower::ServiceExt::oneshot`, the same idiom
-//! `tests/aqc_cucumber.rs` and `tests/graph_api.rs` already use -- no
-//! socket is bound, so this test is safe under `cargo test --workspace`
-//! and cannot collide with anything on any port.
-
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -58,24 +12,6 @@ fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// The real committed graph's own Router -- built ONCE, then cloned per
-/// request (axum's `Router` is an `Arc` internally). Same "one real
-/// compile, shared across every call site" discipline
-/// `tests/aqc_cucumber.rs::app` already established.
-///
-/// PACT FIDELITY: a recorder that assembles the app DIFFERENTLY from
-/// production records the wrong evidence, and does so silently. CDC-1 did
-/// exactly that twice, and both times the contract suite stayed GREEN.
-///
-/// **This function is one line, and that is the fix** (fix round 1, review
-/// C-3). It used to hand-copy `src/main.rs`'s default startup path;
-/// `main.rs` and this recorder now call the SAME constructor and reach the
-/// Router through the SAME door, so there is no second copy to drift from.
-/// Divergence is not *detected*, it is unrepresentable. See
-/// `atlas_contract::load`'s header for the two bugs that motivated it.
-///
-/// `static_dir: None` is the one deliberate difference and it cannot reach
-/// an `/api` handler -- it only mounts the published client's static files.
 fn app() -> axum::Router {
     static ROUTER: OnceLock<axum::Router> = OnceLock::new();
     ROUTER
@@ -87,26 +23,10 @@ fn app() -> axum::Router {
         .clone()
 }
 
-// ---------------------------------------------------------------------
-// THE GRAPH'S DECLARED VOCABULARY
-// ---------------------------------------------------------------------
-
-/// THE VOCABULARY IS READ FROM THE PUBLISHED DOCUMENT, not rebuilt here
-/// (spec D8). `contracts/openapi.yaml` is the one declaration of the
-/// graph's node kinds and edge families, `document::graph_vocabulary_json`
-/// is its derivation at the fixture's own path, and this recorder answers
-/// the suite's "read the graph's declared vocabulary" step from exactly
-/// that. `the_published_vocabulary_is_drawn_from_the_macros` below then
-/// proves the document still says what the macros say.
 fn graph_vocabulary() -> Value {
     serde_json::from_str(&atlas_contract::document::graph_vocabulary_json()).expect("the published vocabulary is valid JSON")
 }
 
-// ---------------------------------------------------------------------
-// READING THE CORPUS'S OWN REQUEST KEYS
-// ---------------------------------------------------------------------
-
-/// Every `.feature` file under `contracts/`, recursively.
 fn feature_files(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     for e in entries.flatten() {
@@ -119,19 +39,6 @@ fn feature_files(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// A step body like `GET /api/eras as first` binds its answer under a
-/// name; the KEY is the part before ` as <name>`.
-///
-/// Split on the FIRST ` as `, not the last, because that is what the
-/// Haskell side does and the two must agree exactly: `capUntil @UrlPath
-/// " as "` breaks on the first occurrence, and a remainder that is not a
-/// bare binding name fails `BindName`'s parse, so the step falls through
-/// to the un-bound `capRest @UrlPath` overload which takes the line whole.
-/// Splitting on the LAST occurrence would make this recorder key
-/// `/api/x as well` where the runner asks for `/api/x as well as more` --
-/// the two languages silently disagreeing about one line, which is the
-/// exact failure this pair of implementations has to avoid. Caught by
-/// `request_keys_are_read_out_of_step_lines_exactly`, not by inspection.
 fn strip_binding(body: &str) -> &str {
     match body.find(" as ") {
         Some(i) => {
@@ -148,12 +55,6 @@ fn strip_binding(body: &str) -> &str {
     }
 }
 
-/// The request key a step line asks for, if it asks for one. Mirrors
-/// `contracts/runner/src/Steps.hs`'s `When` definitions exactly -- that is
-/// a real coupling between two languages, and it is deliberately kept to
-/// this one small function so it is auditable in one place. A step shape
-/// added there without being added here shows up immediately as the
-/// runner's own "no pact entry for ..." failure, naming the key.
 fn request_key(line: &str) -> Option<String> {
     let s = line.trim();
     let body = s
@@ -178,40 +79,6 @@ fn request_key(line: &str) -> Option<String> {
     None
 }
 
-/// The suites for which THE ATLAS IS THE PROVIDER, and therefore the only
-/// suites this recorder may answer.
-///
-/// This list is not tidiness -- it is a correctness boundary, and leaving
-/// it out was a real bug the gate caught on its first full run. Two suites
-/// can name the same path and mean different servers:
-/// `contracts/map-api-consumer` is the atlas speaking as a CONSUMER of
-/// map-generator's API, and its `When I GET /api/scene` addresses
-/// map-generator's scene endpoint. Scanning the whole `contracts/` tree
-/// made this recorder answer that key with OUR `/api/scene` -- recording
-/// one provider's answer under another provider's question, silently, in a
-/// pact that would have looked perfectly well-formed.
-///
-/// So the rule is stated positively: record only where we are the
-/// provider. `atlas-edge` qualifies (it is map-generator's expectations OF
-/// US); `map-api-consumer` does not, and is run by map-generator against
-/// its own server.
-/// DERIVED, not written down (fix round 3, review M-R2-4).
-///
-/// This used to be `const PROVIDED_SUITES: &[&str] = &["atlas-graph-contract",
-/// "atlas-edge"]` -- a literal array, which is the exact shape that produced
-/// C-2 in round 1 (a suite excluded from every tag check) and C-NEW-2 in
-/// round 2 (a suite excluded by one registry word). Leg 3 turned out to be
-/// the strongest single defence in the gate -- it is what refused three of
-/// the round-2 probes when nothing else did -- and its scope was a
-/// hardcoded list. A second received suite added tomorrow would be detected
-/// by the gate, classified by the registry, executed by leg 4, and
-/// **silently uncovered here**, so hiding its corpus would move no pact and
-/// none of leg 3's objections would fire.
-///
-/// So the scope is read from `contracts/SUITES`: every row registered
-/// `contract-runner` is a suite for which WE are the provider, which is the
-/// same fact the gate derives. An unreadable or empty registry is a broken
-/// recorder, not an empty one, and says so.
 fn provided_suites() -> Vec<String> {
     let registry = repo_root().join("contracts/SUITES");
     let text = std::fs::read_to_string(&registry).unwrap_or_else(|e| {
@@ -275,10 +142,6 @@ fn corpus_request_keys() -> Vec<String> {
     keys
 }
 
-// ---------------------------------------------------------------------
-// RECORDING
-// ---------------------------------------------------------------------
-
 async fn record_http(path: &str) -> Value {
     let response = app()
         .oneshot(Request::builder().uri(path).body(Body::empty()).expect("a request must build"))
@@ -292,30 +155,6 @@ async fn record_http(path: &str) -> Value {
     json!({ "status": status, "body": body })
 }
 
-/// A published export is NOT recorded into the pact -- the runner reads
-/// the committed file directly (`--exports data/exports`).
-///
-/// The pact exists to freeze evidence that is otherwise only obtainable
-/// from a running server. An export is already a committed artifact that
-/// every reviewer sees in the diff, so recording it would store the same
-/// bytes twice and churn the pact on every recompile for no added
-/// guarantee.
-///
-/// Measured on disk, with the method stated so the numbers can be checked:
-/// the three published exports are 428,479 + 689,530 + 17,290 = **1,135,299
-/// bytes (1,109 KiB)**, against a committed `http.json` of **175,656 bytes
-/// (172 KiB)**. Recording them would multiply the pact several-fold and
-/// churn all of it on every recompile.
-///
-/// (Fix round 1, review L-1a. The earlier version of this sentence said
-/// "741 KB of an otherwise 50 KB pact". Those came from a compact
-/// `json.dumps` of the entries while the pact itself is pretty-printed, so
-/// they corresponded to nothing anybody could measure on disk -- the
-/// argument was right and the numbers were not comparable. The claim was
-/// the problem, not the conclusion.)
-///
-/// What is still owed here is that the artifact the corpus NAMES actually
-/// exists and parses, so a feature file cannot name an export into being.
 fn verify_export_is_readable(name: &str) {
     let p = repo_root().join("data/exports").join(format!("{name}.json"));
     let raw = std::fs::read_to_string(&p).unwrap_or_else(|e| {
@@ -325,15 +164,6 @@ fn verify_export_is_readable(name: &str) {
         .unwrap_or_else(|e| panic!("the published export {} is not JSON: {e}", p.display()));
 }
 
-/// The pact this crate is responsible for: every juncture reachable from
-/// the Router, the published exports, and the graph's own vocabulary.
-///
-/// bibex's junctures are NOT here. Its binary belongs to `atlas-cli`, and
-/// `CARGO_BIN_EXE_bibex` is only defined for that package's own tests --
-/// so the CLI records its own fragment next to this one
-/// (`server/atlas-cli/tests/contract_pact_cli.rs`), and the runner merges
-/// every `*.json` in `contracts/pacts/`. One recorder per crate that owns
-/// a transport, rather than one recorder reaching across crate boundaries.
 async fn build_pact() -> Value {
     let mut entries = Map::new();
     let mut cli_keys: Vec<Value> = Vec::new();
@@ -342,16 +172,11 @@ async fn build_pact() -> Value {
         let entry = if let Some(path) = key.strip_prefix("GET ") {
             record_http(path).await
         } else if let Some(name) = key.strip_prefix("export ") {
-            // Served from the committed artifact, not from the pact.
             verify_export_is_readable(name);
             continue;
         } else if key == "graph vocabulary" {
             json!({ "status": 200, "body": graph_vocabulary() })
         } else if key.starts_with("bibex ") {
-            // atlas-cli's fragment owns these, but the KEY EXTRACTION rule
-            // lives here, in one place, so the two recorders cannot come to
-            // disagree about what a step line means. This list is what the
-            // CLI recorder works from.
             cli_keys.push(Value::String(key));
             continue;
         } else {
@@ -378,30 +203,6 @@ fn render(v: &Value) -> String {
     s
 }
 
-/// Regenerate the pact from the live graph and compare it to the committed
-/// copy, byte for byte.
-///
-/// # `ATLAS_BLESS_PACT=1` RE-RECORDS **AND THEN FAILS** (fix round 1, C-1)
-///
-/// Last round this branch wrote the file and `return`ed, so the test passed
-/// unconditionally. The review found the consequence: any shell that
-/// already exports the variable -- a leftover from a legitimate re-record,
-/// a line in a profile, a CI variable -- makes leg 3 of the contract gate
-/// pass forever while silently rewriting the evidence underneath it. The
-/// defence offered was that this is "a re-record switch, not an escape
-/// hatch"; that was a claim about how people would behave, not about what
-/// the code does, and the brief's rule is that an escape hatch on a gate is
-/// the gate's death.
-///
-/// So blessing is now **incapable of producing a green test**. It writes
-/// the pact and panics. A re-record therefore requires a human to read the
-/// diff and re-run without the variable, which is exactly the workflow the
-/// old comment merely *described*.
-///
-/// This closes the bypass at the source. `scripts/contract-gate.sh` closes
-/// it twice more -- it strips the variable from leg 3's environment, and it
-/// asserts afterwards that `contracts/pacts` is unchanged in the working
-/// tree, which catches every present and future re-record path in one line.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_recorded_pact_still_matches_the_live_graph() {
     let pact = build_pact().await;
@@ -409,24 +210,6 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
     let path = pact_path();
 
     if std::env::var("ATLAS_BLESS_PACT").as_deref() == Ok("1") {
-        // A SHRINKING JUNCTURE SET IS NOT BLESSABLE (fix round 3, C-R2-3).
-        //
-        // This is the laundering path the round-2 review walked end to end.
-        // Rename a received suite's `.feature` files away: the corpus
-        // shrinks, so `corpus_request_keys()` shrinks, so the pact this test
-        // builds shrinks -- and the test fails with "the provider drifted
-        // from the recorded pact", whose remedy the gate PRINTS and this
-        // file PRINTED: re-record with ATLAS_BLESS_PACT=1. Following our own
-        // instructions took contracts/pacts/http.json from 175,656 bytes to
-        // 34,257 -- 80% of the recorded evidence gone -- and turned the
-        // whole gate green.
-        //
-        // The message named the wrong event and prescribed the wrong cure.
-        // Losing a juncture is not drift; it is a corpus that stopped
-        // asking. So blessing refuses BEFORE it writes, and there is no
-        // variable that makes it write anyway: the fix for a missing
-        // juncture is to put the question back, or to remove it deliberately
-        // in a diff a human reads.
         if let Ok(committed) = std::fs::read_to_string(&path) {
             if let Ok(old) = serde_json::from_str::<Value>(&committed) {
                 let empty = Map::new();
@@ -473,7 +256,6 @@ async fn the_recorded_pact_still_matches_the_live_graph() {
         return;
     }
 
-    // Name the first key that moved, rather than dumping two documents.
     let old: Value = serde_json::from_str(&committed).expect("the committed pact must be JSON");
     let first_change = first_differing_key(&old, &pact);
     panic!(
@@ -490,13 +272,6 @@ fn first_differing_key(old: &Value, new: &Value) -> String {
     let empty = Map::new();
     let o = old.get("entries").and_then(Value::as_object).unwrap_or(&empty);
     let n = new.get("entries").and_then(Value::as_object).unwrap_or(&empty);
-    // LOST JUNCTURES FIRST, and named as what they are (fix round 3,
-    // C-R2-3). This loop used to iterate only the NEW keys, so a corpus
-    // that stopped asking four questions produced the generic "the provider
-    // drifted" headline and the re-record remedy underneath it -- the exact
-    // sentence the reviewer followed to shrink the pact by 80% and turn the
-    // gate green. A missing question is not a drifting answer, and the two
-    // must not share a message.
     for k in o.keys() {
         if !n.contains_key(k) {
             return format!(
@@ -521,34 +296,6 @@ fn first_differing_key(old: &Value, new: &Value) -> String {
     "the pact differs only in formatting".to_string()
 }
 
-/// THE FIDELITY REGRESSION TEST (fix round 1, review C-3).
-///
-/// Sharing `atlas_contract::load` with `main.rs` makes an assembly divergence
-/// unrepresentable, which is the real fix. This is the belt to that braces:
-/// a law that fails if the assembled app is HOLLOW on any of the three
-/// surfaces whose emptiness has actually bitten this project.
-///
-/// Why it earns its place even after the structural fix: `load.rs` is one
-/// function, but it is still a function someone can edit. Dropping
-/// `.finish()` from it, or handing back a default `SourcesDocument`, would
-/// once again make whole endpoints answer with 200 and nothing in them --
-/// and every fixture would re-bless cleanly to the hollow answers, because a
-/// projection over an empty array is a perfectly well-formed empty array.
-/// That is precisely how fidelity bug 2 stayed green.
-///
-/// Each assertion below names a surface that was ACTUALLY dark at some point
-/// in this batch, not a hypothetical:
-///
-///   * `/api/sources` -> empty registry (fidelity bug 1, caught by luck)
-///   * `/api/catechism/{sref}` -> `[]` for EVERY reference (fidelity bug 2,
-///     which shipped green and was found only incidentally)
-///   * `/api/xrefs/{sref}` -> the other derived-index surface of the same
-///     class, included because it would fail the same way and had no guard
-///
-/// Falsifiability, verified rather than assumed: reverting `app()` to the
-/// pre-fix hand-rolled assembly (no `.finish()`) makes the catechism
-/// assertion fail, and building with `SourcesDocument::default()` makes the
-/// sources assertion fail.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_assembled_app_is_not_hollow_on_any_derived_index() {
     async fn body(path: &str) -> Value {
@@ -570,9 +317,6 @@ async fn the_assembled_app_is_not_hollow_on_any_derived_index() {
          The recorded pact would have pinned the empty answer and the contract suite would have gone green over it."
     );
 
-    // MAT.28.19 is the most-cited verse in the compiled catechism. The point
-    // is not the exact count -- it is that a derived index which is empty
-    // answers 200 with `[]` and looks perfectly healthy.
     let catechism = body("/api/catechism/MAT.28.19").await;
     let n_items = catechism.as_array().map(Vec::len).unwrap_or(0);
     assert!(
@@ -590,9 +334,6 @@ async fn the_assembled_app_is_not_hollow_on_any_derived_index() {
     );
 }
 
-/// The key-extraction rule is the one place two languages have to agree
-/// about what a step line means, so it gets its own falsifiable test
-/// rather than being trusted because it is short.
 #[test]
 fn request_keys_are_read_out_of_step_lines_exactly() {
     assert_eq!(request_key("    When I GET /api/eras").as_deref(), Some("GET /api/eras"));
@@ -613,19 +354,14 @@ fn request_keys_are_read_out_of_step_lines_exactly() {
         request_key("    When I read the graph's declared vocabulary").as_deref(),
         Some("graph vocabulary")
     );
-    // A `Then` is not a request, and prose is not a request.
     assert_eq!(request_key("    Then the response equals fixture \"x\""), None);
     assert_eq!(request_key("  Our parse_eras reads four fields per era"), None);
-    // ` as ` inside a path is not a binding: only a BARE trailing name is.
     assert_eq!(
         request_key("    When I GET /api/xrefs/JHN.3.16 as well as more").as_deref(),
         Some("GET /api/xrefs/JHN.3.16 as well as more")
     );
 }
 
-/// The vocabulary is the root of every other promise in the suite, so
-/// "did we actually publish a vocabulary" is checked here rather than
-/// only implied by a fixture comparison downstream.
 #[test]
 fn the_published_vocabulary_is_drawn_from_the_macros() {
     let v = graph_vocabulary();
@@ -645,8 +381,6 @@ fn the_published_vocabulary_is_drawn_from_the_macros() {
     );
     assert!(kinds.iter().any(|k| k == "Place"), "the published kinds must be the wire's own Debug names");
 
-    // A forward and an inverse label are never the same string; if they
-    // were, the union the runner checks against would silently lose one.
     for r in RelationId::ALL {
         assert_ne!(r.forward_label(), r.inverse_label(), "{r:?} has a degenerate label pair");
     }

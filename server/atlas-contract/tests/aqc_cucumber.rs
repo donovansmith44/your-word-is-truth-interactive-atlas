@@ -1,19 +1,3 @@
-//! Batch AQC-1's own Rust contract harness -- THIN, contract-ignorant
-//! step-definition glue (spec §3: "Step definitions are thin glue, not
-//! contract knowledge") binding every phrase in
-//! `contracts/atlas-query-contract/features/*.feature` (glossary.md's own
-//! phrase table) against the LIVE axum handlers, in-process, via the SAME
-//! `tower::ServiceExt::oneshot` idiom `tests/graph_api.rs`'s own `real_app()`
-//! already uses -- no socket bound, the real committed graph.
-//!
-//! `cucumber` (dev-dependency, MIT/Apache-2.0 dual-licensed -- disclosed in
-//! the batch report) is the ONLY new test-time dependency this file adds.
-//! `harness = false` (Cargo.toml) -- this binary IS its own test runner
-//! (cucumber's own `World::run`), the crate's documented entry shape.
-//!
-//! Joins `cargo test --workspace` (the standing canonical count) as one
-//! more `atlas-contract` test section, same as every `tests/*.rs` file here.
-
 use std::path::Path;
 use std::sync::OnceLock;
 
@@ -26,13 +10,6 @@ use cucumber::{given, then, when, World};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
-/// The real committed graph's own Router -- built ONCE (`OnceLock`, same
-/// "one real compile, shared across every call site" discipline
-/// `tests/graph_api.rs::real_atlas_data` already established), then
-/// `.clone()`d per scenario (axum's `Router` is cheap to clone -- an `Arc`
-/// internally). Cucumber scenarios run against the SAME live graph every
-/// other real-data integration test in this crate exercises -- never a
-/// synthetic fixture (glossary.md's own "the real committed graph").
 fn app() -> axum::Router {
     static ROUTER: OnceLock<axum::Router> = OnceLock::new();
     ROUTER
@@ -48,12 +25,6 @@ fn app() -> axum::Router {
         .clone()
 }
 
-/// Percent-encodes the one wire-id character that collides with axum's own
-/// path-segment routing: `/` (e.g. `CommentaryItem:kretzmann/0.1.0`) --
-/// SAME convention `tests/graph_api.rs`'s own literal
-/// `"CommentaryItem:kretzmann%2F0.1.0"` URIs already establish. No other
-/// character this contract's ids ever carry (letters/digits/`:`/`-`/`.`/`_`)
-/// needs encoding.
 fn path_encode(id: &str) -> String {
     id.replace('/', "%2F")
 }
@@ -66,13 +37,6 @@ async fn get(uri: &str) -> (u16, serde_json::Value) {
     (status, json)
 }
 
-/// Q-2/Q-3 fix (Batch AQC-1 fix round 1, controller ruling): `aqc.schema.json`
-/// itself, parsed ONCE and read at test time -- replaces the prior
-/// hand-copied `required_fields()` match (three places carried the same
-/// list by hand: the schema, this match, and AqcSteps.cs's own switch;
-/// nothing enforced them staying in sync). "Step definitions are thin
-/// glue, not contract knowledge" (spec §3) -- the schema IS the contract
-/// knowledge; this function only reads it.
 fn schema() -> &'static serde_json::Value {
     static SCHEMA: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
     SCHEMA.get_or_init(|| {
@@ -91,15 +55,6 @@ pub struct AqcWorld {
     status: u16,
     body: serde_json::Value,
     captured_ref: Option<String>,
-    /// S-1 fix (Batch AQC-1 fix round 1, controller ruling -- applied here
-    /// too for symmetry with the C# side's own fix, though this review
-    /// flagged only C# as vacuous): the id THIS scenario's own
-    /// `when_focus_query` requested, `None` when the capture instead
-    /// originated from a TraversalQuery target (there, the captured id is
-    /// legitimately DIFFERENT from anything requested so far). When
-    /// `Some`, `then_round_trips` asserts the captured reference equals
-    /// THIS -- the actual descriptor round-trip identity law, not merely
-    /// self-consistency between the capture and the second live fetch.
     focus_requested_id: Option<String>,
     last_traversal_id: String,
     last_traversal_kind: String,
@@ -107,21 +62,6 @@ pub struct AqcWorld {
     advertised_max: String,
 }
 
-/// The Rust test harness's own stand-in for "the consumer's compiled AQC
-/// version" -- there is no Rust CONSUMER in this app (the real client is
-/// C#, `client/AqcContract.cs::ClientVersion`); this mirrors that constant
-/// so `versioning.feature`'s client-acceptance phrases bind on BOTH sides
-/// (spec §3's phrase-parity law), each side proving the SAME semver-range
-/// check independently.
-///
-/// Q-6 fix (Batch AQC-1 fix round 1, controller ruling -- "single-source
-/// them or extend the cross-check to all five" hand-kept "0.1.0" copies):
-/// this one is SINGLE-SOURCED, not hand-kept -- read from `contracts/
-/// atlas-query-contract/VERSION` at test-run time (this is a TEST binary,
-/// unlike `meta.rs`'s own compiled server constants, which genuinely
-/// cannot read a repo-relative file at runtime once deployed) rather than
-/// duplicated as a literal a future VERSION bump could silently leave
-/// stale.
 fn harness_client_version() -> &'static str {
     static VERSION: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     VERSION.get_or_init(|| {
@@ -130,10 +70,6 @@ fn harness_client_version() -> &'static str {
     })
 }
 
-/// `Err` on a malformed semver string -- the Rust mirror of
-/// `AqcContract.ParseSemver`'s own deliberate C# `FormatException` throw
-/// (Q-4 fix, fix round 1): a malformed advertisement must fail LOUD, not
-/// silently pass, on both sides.
 fn parse_semver(s: &str) -> Result<(u32, u32, u32), String> {
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() != 3 {
@@ -151,16 +87,8 @@ fn satisfies(client: &str, min: &str, max: &str) -> Result<bool, String> {
     Ok(c >= parse_semver(min)? && c <= parse_semver(max)?)
 }
 
-// ---------------------------------------------------------------------
-// Given
-// ---------------------------------------------------------------------
-
 #[given(expr = "a node of kind {string} with id {string}")]
 fn given_a_node(_world: &mut AqcWorld, _kind: String, _id: String) {
-    // Documentation-only Given (glossary.md): the exporter already
-    // verified this id resolves against the real committed graph before
-    // it was ever written into the Examples: table (fail-loud at export
-    // time, not here) -- no HTTP call needed to re-prove it per scenario.
 }
 
 #[given(expr = "the server advertises AQC version {string} through {string}")]
@@ -168,10 +96,6 @@ fn given_advertised_range(world: &mut AqcWorld, min: String, max: String) {
     world.advertised_min = min;
     world.advertised_max = max;
 }
-
-// ---------------------------------------------------------------------
-// When
-// ---------------------------------------------------------------------
 
 #[when(expr = "I run FocusQuery for {string}")]
 async fn when_focus_query(world: &mut AqcWorld, id: String) {
@@ -191,8 +115,6 @@ async fn when_focus_query_captured(world: &mut AqcWorld) {
 
 #[when(expr = "I run TraversalQuery for {string} frontier {string}")]
 async fn when_traversal_query(world: &mut AqcWorld, id: String, kind: String) {
-    // Not a FocusQuery -- see AqcWorld::focus_requested_id's own doc
-    // comment for why this scenario shape skips the original-id check.
     world.focus_requested_id = None;
     world.last_traversal_id = id.clone();
     world.last_traversal_kind = kind.clone();
@@ -254,8 +176,6 @@ async fn when_query_path(world: &mut AqcWorld, path: String) {
 
 #[when(expr = "I capture the returned focus reference")]
 fn when_capture_focus_ref(world: &mut AqcWorld) {
-    // FocusQuery response: a top-level "id". TraversalQuery response: no
-    // top-level id -- the FIRST entry's own node.id (glossary.md).
     let captured = if let Some(id) = world.body.get("id").and_then(|v| v.as_str()) {
         id.to_string()
     } else {
@@ -273,10 +193,6 @@ fn when_capture_focus_ref(world: &mut AqcWorld) {
     world.captured_ref = Some(captured);
 }
 
-// ---------------------------------------------------------------------
-// Then
-// ---------------------------------------------------------------------
-
 #[then(expr = "the response is a valid {string}")]
 fn then_valid_shape(world: &mut AqcWorld, shape: String) {
     assert_eq!(world.status, 200, "expected 200 for a valid {shape}, got {} -- body: {}", world.status, world.body);
@@ -289,10 +205,6 @@ fn then_valid_shape(world: &mut AqcWorld, shape: String) {
         assert!(obj.contains_key(field), "{shape} response missing required field '{field}': {}", world.body);
     }
 
-    // Q-3 fix: additionalProperties: false, enforced -- glossary.md's own
-    // "the response is a valid <Shape>" definition names this as HALF of
-    // what the phrase means; only the required-fields half was checked
-    // before this fix.
     assert_eq!(def["additionalProperties"], serde_json::json!(false), "aqc.schema.json $defs.{shape} must declare additionalProperties: false");
     let allowed = def["properties"].as_object().unwrap_or_else(|| panic!("aqc.schema.json $defs.{shape} has no 'properties' object"));
     for key in obj.keys() {
@@ -331,11 +243,6 @@ fn then_round_trips(world: &mut AqcWorld) {
     let captured = world.captured_ref.clone().expect("no focus reference was captured");
     let second = world.body["id"].as_str().expect("second FocusQuery response has no 'id'");
     assert_eq!(second, captured, "the id must round-trip byte-identically (encode_node_id(decode_node_id(s)) == s)");
-    // S-1 fix (fix round 1): the ACTUAL round-trip identity law -- captured
-    // must ALSO equal what this scenario originally requested, not merely
-    // equal the second (live, independently re-fetched) response. Skipped
-    // when the capture originated from a TraversalQuery target
-    // (AqcWorld::focus_requested_id's own doc comment).
     if let Some(requested) = &world.focus_requested_id {
         assert_eq!(captured, *requested, "the captured reference must equal the id this scenario originally requested");
     }
@@ -467,9 +374,6 @@ fn then_client_rejects(world: &mut AqcWorld) {
     assert!(!result, "expected client version {} to be REJECTED by [{}, {}]", harness_client_version(), world.advertised_min, world.advertised_max);
 }
 
-/// Q-4 fix (fix round 1, controller ruling): a MALFORMED advertised
-/// version must fail LOUD -- `satisfies` returning `Err`, the Rust mirror
-/// of `AqcContract.ParseSemver`'s own C# `FormatException` throw.
 #[then(expr = "the malformed advertisement fails loud")]
 fn then_malformed_advertisement_fails_loud(world: &mut AqcWorld) {
     let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max);
@@ -484,10 +388,6 @@ fn then_malformed_advertisement_fails_loud(world: &mut AqcWorld) {
 
 #[tokio::main]
 async fn main() {
-    // `env!("CARGO_MANIFEST_DIR")`-anchored (compile-time), NOT a bare
-    // runtime-relative string -- robust regardless of the CWD `cargo
-    // test` happens to launch this binary from (same discipline `app()`'s
-    // own `data_dir` above already uses).
     let features_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract/features");
     AqcWorld::cucumber().fail_on_skipped().run_and_exit(features_dir).await;
 }

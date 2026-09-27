@@ -1,7 +1,3 @@
-//! Writes every published contract document (spec D8). `--check` writes
-//! nothing and exits non-zero when a committed document has drifted, which
-//! is what a gate runs.
-
 const USAGE: &str = "usage: export_contract [--check]";
 const MISUSE: i32 = 2;
 const STALE: i32 = 1;
@@ -42,8 +38,8 @@ enum Mode {
     Check,
 }
 
-/// `None` is a misuse: a gate that silently wrote when it meant to check
-/// would erase the drift it exists to report.
+/// `None` is a misuse: a gate that silently wrote when it meant to check would
+/// erase the drift it exists to report.
 fn mode(arguments: impl IntoIterator<Item = String>) -> Option<Mode> {
     match Vec::from_iter(arguments).as_slice() {
         [] => Some(Mode::Write),

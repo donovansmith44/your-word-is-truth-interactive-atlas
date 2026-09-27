@@ -1,22 +1,3 @@
-//! The meta family -- `GET /health`, `GET /api/contract`, `GET /api/sources`.
-//!
-//! `GET /api/contract` -- Batch AQC-1's own ONE new behavioral surface
-//! (design spec §2's versioning law: "The server advertises its supported
-//! contract range at `/api/contract` (new, tiny endpoint); the client
-//! checks at startup and fails LOUD on mismatch"). Every other AQC-1
-//! deliverable is a SNAPSHOT (zero behavior change) -- this endpoint is the
-//! sole exception, additive-only, no pre-existing route touched.
-//!
-//! The advertised range is a compile-time constant, not derived from
-//! anything else in this crate (the AQC document itself,
-//! `contracts/atlas-query-contract/VERSION`, is the one hand-maintained
-//! source of truth for what version this server was built to serve --
-//! keeping this endpoint's own constants in lockstep with that file is a
-//! release-process discipline, the same as any other "generated from one
-//! source" pairing in this repo; see `versioning.feature`'s own scenario
-//! pinning `min_version`/`max_version` to "0.8.0"/"0.8.0" (CONTRACT-1a; 0.7.0 D5; 0.6.0 D3; 0.5.0 LEX-1; 0.4.0 DB-4c, 0.3.0 DB-4b, 0.2.0 DB-4a, 0.1.0 before) for the drift-
-//! failing mechanism the conformance corollary requires).
-
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -42,10 +23,8 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
     Json((*sources).clone())
 }
 
-/// The AQC version range THIS running server supports. Pre-launch (spec
-/// §2's semver law), min == max == the one version this codebase currently
-/// implements -- there is no "supports a range of prior versions" story
-/// yet; that becomes meaningful once a second AQC version ships.
+/// Pre-launch there is no range of earlier contract versions to support, so the
+/// minimum and the maximum are the one version this server implements.
 pub const MIN_SUPPORTED_VERSION: &str = "0.8.0";
 pub const MAX_SUPPORTED_VERSION: &str = "0.8.0";
 
@@ -65,6 +44,7 @@ pub async fn contract() -> Json<wire::Contract> {
 /// once: the document cannot change while the process runs.
 #[utoipa::path(get, path = "/api/openapi.yaml", responses((status = 200, body = String, content_type = "application/yaml")), tag = "meta")]
 pub async fn openapi_yaml() -> ([(axum::http::HeaderName, &'static str); 1], String) {
+    // The document cannot change while the process runs.
     static RENDERED: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     let document = RENDERED.get_or_init(crate::document::openapi_yaml);
     ([(axum::http::header::CONTENT_TYPE, "application/yaml")], document.clone())

@@ -1,34 +1,6 @@
-//! Batch AQC-1's own provider-side exporter (spec §3: "a provider-side
-//! exporter draws descriptors from the REAL graph ... and emits/refreshes
-//! the committed `Examples:` tables. The generator is code; its OUTPUT is
-//! Gherkin"). Regenerates the two `Scenario Outline`-bearing corpus files
-//! (`focus-query.feature`, `exploration-roundtrip.feature`) in full,
-//! captures the committed pact-style fixtures, and writes the identity
-//! INDEX (fix round 1, S-1) -- all from the fixed, disclosed
-//! `atlas_contract::aqc_export` module, which owns every PURE (no I/O)
-//! generation function this binary calls. Each seed id is VERIFIED live
-//! against the real compiled graph before anything is written out. A seed
-//! id that no longer resolves (a curated record renamed/removed) makes
-//! this binary panic -- fail loud, never silently emit a stale example.
-//!
-//! Deterministic by construction (never wall-clock random): every output
-//! is a pure function of `aqc_export`'s own fixed consts plus whatever the
-//! real graph/router report for each id -- re-running this binary against
-//! an unchanged graph reproduces byte-identical output every time (the
-//! determinism proof the batch report cites: `git diff` is empty after a
-//! re-run). `tests/aqc_corpus_generation.rs` pins this as a standing test
-//! (fix round 1, Q-6): it calls `aqc_export`'s own generation functions
-//! directly (no HTTP, no graph) and asserts byte-equality against the
-//! committed `.feature` files.
-//!
-//! Outside `src/bin/` (this crate's own root `.gitignore` has a broad
-//! `**/bin/` rule, meant for the Blazor client's own .NET build output --
-//! same disclosed workaround `atlas-graph`'s `compile_graph.rs` and
-//! `atlas-etl`'s `gen_sources.rs` already use): source lives at
-//! `src/bins/export_aqc_examples.rs`, declared explicitly in this crate's
-//! `Cargo.toml` `[[bin]]` table.
-//!
-//! Run from `server/`: `cargo run -p atlas-contract --bin export_aqc_examples`.
+//! Source lives under `src/bins/` rather than `src/bin/` because the repository
+//! root's `.gitignore` carries a broad `**/bin/` rule for the client's build
+//! output; the `[[bin]]` table in `Cargo.toml` names this path explicitly.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -52,9 +24,6 @@ async fn capture(app: &axum::Router, uri: &str) -> serde_json::Value {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Repo layout: server/atlas-contract (this crate) -> ../../data,
-    // ../../contracts -- same relative shape `tests/graph_api.rs`'s own
-    // `real_app()` already uses for `data/`.
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let repo_root = manifest_dir.join("../..");
     let data_dir = repo_root.join("data");
@@ -66,8 +35,6 @@ async fn main() -> anyhow::Result<()> {
     let graph = GraphService::build(&raw_dir, &data).expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
     let snap = graph.snapshot();
 
-    // FAIL LOUD: every seed must round-trip AND resolve against the real
-    // committed graph before anything is written out.
     for (kind, wire_id) in SEEDS {
         let decoded = decode_node_id(wire_id).unwrap_or_else(|| panic!("export_aqc_examples: seed id '{wire_id}' does not even PARSE via graph_wire::decode_node_id -- fix the SEEDS list"));
         let re_encoded = encode_node_id(&decoded);
@@ -81,16 +48,10 @@ async fn main() -> anyhow::Result<()> {
     std::fs::write(features_dir.join("focus-query.feature"), aqc_export::focus_query_feature())?;
     std::fs::write(features_dir.join("exploration-roundtrip.feature"), aqc_export::exploration_roundtrip_feature())?;
 
-    // Fixtures: build the SAME real router (app::build) and capture real
-    // HTTP responses -- one file per SEED kind, plus every FIXTURES entry.
     let app = atlas_contract::app::build(Arc::new(data), Arc::new(graph), None);
     let fixtures_dir = repo_root.join("contracts").join("atlas-query-contract").join("fixtures");
     std::fs::create_dir_all(&fixtures_dir)?;
 
-    // S-1 fix (fix round 1): wire id -> fixture-name identity INDEX, keyed
-    // by the REQUEST id (never the response's own echoed `id`) -- see
-    // `aqc_export::FOCUS_IDENTITY_EXTRA`'s own doc comment for why this
-    // makes the C# harness's round-trip proof genuinely failable.
     let mut identity_index: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
 
     let mut written = 0usize;

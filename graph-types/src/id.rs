@@ -1,18 +1,9 @@
-//! Identity: kind-tagged node ids, positions, content-addressed pids.
-
-// FINAL REVIEW item 6: `DefaultHasher` and the two traits it is driven
-// through are OFF-state machinery and carry the SAME gate, so the import
-// block cannot hold a name the ON build does not use. The manual
-// `impl Hash for NodeId` below therefore spells both trait paths in full
-// (`std::hash::Hash` / `std::hash::Hasher`) rather than relying on these
-// imports: that impl exists in BOTH states, the imports do not.
 #[cfg(not(feature = "canon-ids"))]
 use std::collections::hash_map::DefaultHasher;
 #[cfg(not(feature = "canon-ids"))]
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
-/// Skeleton stand-in for an interner handle.
 pub type Interned = String;
 
 macro_rules! node_kinds {
@@ -34,19 +25,11 @@ macro_rules! node_kinds {
     };
 }
 
-// Closed node-kind vocabulary. Extending it is a deliberate act every
-// exhaustive match must acknowledge. TextUnit's LEVEL (book / chapter /
-// verse — or a Concord part / article / paragraph) is known to its
-// corpus scheme, not to this enum (sweep F11). Every variant, in
-// declaration order — appended, never reordered (`sqlite::partition::node_kind_ordinal`
-// and the contract fixture `graph-vocabulary.json` are positional over it).
 node_kinds! {
     TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
     CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
 }
 
-/// Kind tag for phantom-typed ids: a cross-kind reference is a type
-/// error, not a runtime surprise.
 pub trait KindTag {
     const KIND: NodeKind;
 }
@@ -77,7 +60,6 @@ kind_tags! {
     LexiconEntryTag => LexiconEntry,
 }
 
-/// Typed in-memory handle; renders to its Pid at the boundary.
 #[derive(Debug)]
 pub struct NodeId<K: KindTag>(pub Interned, pub PhantomData<K>);
 
@@ -90,7 +72,6 @@ impl<K: KindTag> NodeId<K> {
     }
 }
 
-// Manual impls: derives would wrongly bound K itself.
 impl<K: KindTag> Clone for NodeId<K> {
     fn clone(&self) -> Self {
         NodeId(self.0.clone(), PhantomData)
@@ -134,8 +115,6 @@ pub type PeopleGroupId = NodeId<PeopleGroupTag>;
 pub type CommentaryItemId = NodeId<CommentaryItemTag>;
 pub type LexiconEntryId = NodeId<LexiconEntryTag>;
 
-/// Erased form for the wire/UI boundary and heterogeneous holdings.
-/// Narrowing back to a typed id is a checked parse.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AnyNodeId {
     pub kind: NodeKind,
@@ -143,7 +122,6 @@ pub struct AnyNodeId {
 }
 
 impl AnyNodeId {
-    /// Checked narrowing: Ok only if the kind agrees.
     pub fn narrow<K: KindTag>(&self) -> Result<NodeId<K>, KindMismatch> {
         if self.kind == K::KIND {
             Ok(NodeId(self.raw.clone(), PhantomData))
@@ -159,8 +137,6 @@ pub struct KindMismatch {
     pub found: NodeKind,
 }
 
-/// Positions include edges: a claim's justification is walkable
-/// (edges-as-positions law).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Position {
     Node(AnyNodeId),
@@ -174,32 +150,16 @@ pub enum PositionKind {
     Exploration,
 }
 
-/// Content-addressed identity: pid = kind + hash(canonical bytes); the
-/// id is a key from which the thing is derivable (self-verifying store).
-///
-/// DB-2a widens this. OFF (default) it is what it has always been: a
-/// 64-bit `DefaultHasher` output -- an algorithm std itself says "may
-/// change between releases", which is exactly why the relational artifact
-/// cannot keep it. ON (`--features canon-ids`) it is the first 128 bits
-/// of a SHA-256 over domain-prefixed canonical JSON: stable across
-/// toolchains, wide enough that a ~10^6-thing corpus has no birthday
-/// problem, and the width spec §3.1 fixes for the artifact's id column.
-///
-/// `hex()` is how a hash reaches the wire in BOTH states, so no caller
-/// has to know the width: 16 lowercase hex chars OFF, 32 ON.
 #[cfg(not(feature = "canon-ids"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContentHash(pub u64);
 
 #[cfg(not(feature = "canon-ids"))]
 impl ContentHash {
-    /// Fixed-width lowercase hex -- zero-padded, so equal hashes are
-    /// byte-identical strings (ETag comparison depends on it).
     pub fn hex(&self) -> String {
         format!("{:016x}", self.0)
     }
 
-    /// The inverse of `hex`, strict: exactly 16 lowercase hex digits.
     pub fn from_hex(s: &str) -> Option<ContentHash> {
         if s.len() != 16 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
             return None;
@@ -214,19 +174,15 @@ pub struct ContentHash(pub [u8; 16]);
 
 #[cfg(feature = "canon-ids")]
 impl ContentHash {
-    /// 32 lowercase hex chars -- the artifact's id spelling. Written into
-    /// one pre-sized String rather than allocating a `format!` per byte:
-    /// this runs once per node on every graph load.
     pub fn hex(&self) -> String {
         use std::fmt::Write;
         let mut s = String::with_capacity(32);
         for b in self.0 {
-            let _ = write!(s, "{b:02x}"); // writing into a String cannot fail
+            let _ = write!(s, "{b:02x}");
         }
         s
     }
 
-    /// The inverse of `hex`, strict: exactly 32 lowercase hex digits.
     pub fn from_hex(s: &str) -> Option<ContentHash> {
         if s.len() != 32 || !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
             return None;
@@ -247,13 +203,10 @@ pub struct Pid {
     pub hash: ContentHash,
 }
 
-/// Everything addressable defines one canonical byte form — the same
-/// form `derive` returns; hash(canonical_bytes(derive(pid))) == pid.
 pub trait ContentAddressed {
     fn canonical_bytes(&self) -> Vec<u8>;
     fn position_kind(&self) -> PositionKind;
 
-    /// OFF: the historical 64-bit `DefaultHasher` digest, byte for byte.
     #[cfg(not(feature = "canon-ids"))]
     fn pid(&self) -> Pid {
         let mut h = DefaultHasher::new();
@@ -261,10 +214,6 @@ pub trait ContentAddressed {
         Pid { kind: self.position_kind(), hash: ContentHash(h.finish()) }
     }
 
-    /// ON: SHA-256-128 over `DOMAIN_PREFIX ‖ canonical_bytes`. The prefix
-    /// is hashed, never stored — the bytes on disk stay exactly what
-    /// `Canon::encode` produced, while a node's digest can never collide
-    /// with a digest of the same bytes meaning something else.
     #[cfg(feature = "canon-ids")]
     fn pid(&self) -> Pid {
         let hash = crate::sha256::sha256_prefixed_128(
@@ -275,7 +224,6 @@ pub trait ContentAddressed {
     }
 }
 
-/// Retirement never recycles: a retired pid resolves to a tombstone.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Tombstone {
     pub retired: Pid,

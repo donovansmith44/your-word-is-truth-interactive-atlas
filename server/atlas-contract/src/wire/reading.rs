@@ -206,19 +206,6 @@ pub struct VerseDetail {
     /// Batch PROV-1: the same, for THE SMALL CATECHISM section -- the
     /// `catechism` family's own distinct provenance set.
     pub catechism_provenance: Vec<String>,
-    // Batch T requirement 3 ("verse popover: event membership replaces
-    // prev/next"): Batch N's own `narrative_positions` field (chronological
-    // PRIOR/FOLLOWING, verse-keyed) is RETIRED here, cleanly -- verse-level
-    // traversal no longer exists (see CONTRACT.md's own retirement note).
-    // The PRE-EXISTING `events` field above (`Vec<VerseEvent>`, id +
-    // label + verse_groups + places, populated the same way since before
-    // this batch) is what the client's own NEW "EVENT" section reads
-    // instead: it already names every EVENT-kind PASSAGE citing this verse,
-    // which is exactly "event membership" -- no new wire field needed for
-    // that half. Chronological PRIOR/FOLLOWING now lives entirely on the
-    // EVENT node (`GET /api/narrative/event/{id}`, unchanged plumbing,
-    // called by a new client-side caller -- see `events::event` for
-    // the richer id-keyed EVENT fetch that node also uses).
 }
 
 /// The verse-detail endpoint's event shape: `SceneEvent`'s fields

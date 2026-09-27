@@ -3,9 +3,9 @@ use serde::Serialize;
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Contract {
-    // A consumer parses the advertised range as MAJOR.MINOR.PATCH and fails
-    // loud on anything else, so the published contract says so -- written out
-    // twice because `#[schema(pattern = ..)]` takes a literal, not a constant.
+    // A consumer parses the advertised range as MAJOR.MINOR.PATCH, so the
+    // published contract says so -- written out twice because
+    // `#[schema(pattern = ..)]` takes a literal, not a constant.
     #[schema(pattern = r"^[0-9]+\.[0-9]+\.[0-9]+$")]
     pub min_version: String,
     #[schema(pattern = r"^[0-9]+\.[0-9]+\.[0-9]+$")]
