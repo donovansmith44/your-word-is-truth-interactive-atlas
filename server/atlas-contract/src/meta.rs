@@ -61,10 +61,13 @@ pub async fn contract() -> Json<wire::Contract> {
 
 /// The published contract itself, served from the same document
 /// `contracts/openapi.yaml` is generated from -- a consumer reads the
-/// running server's contract without reaching for the repository.
+/// running server's contract without reaching for the repository. Rendered
+/// once: the document cannot change while the process runs.
 #[utoipa::path(get, path = "/api/openapi.yaml", responses((status = 200, body = String, content_type = "application/yaml")), tag = "meta")]
 pub async fn openapi_yaml() -> ([(axum::http::HeaderName, &'static str); 1], String) {
-    ([(axum::http::header::CONTENT_TYPE, "application/yaml")], crate::document::openapi_yaml())
+    static RENDERED: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    let document = RENDERED.get_or_init(crate::document::openapi_yaml);
+    ([(axum::http::header::CONTENT_TYPE, "application/yaml")], document.clone())
 }
 
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {

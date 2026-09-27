@@ -34,6 +34,11 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.11.0** (Batch CONTRACT-1a) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The `contract` fixture follows the AQC 0.8.0 advertisement -- `min_version`/
+  `max_version` 0.7.0 -> 0.8.0, the only two fields `transport/http.feature`'s
+  own contract projection pins. No promise added, removed or reworded.
+
 - **0.10.0** (Batch D5, owner directives) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved; the vocabulary grew).**
   Person cards: `RelationId` gains `ParentOf` and `Participates`, `SymRelationId`
   gains `Partners` (all three APPENDED LAST -- positional codes unchanged for

@@ -1,6 +1,6 @@
 # AQC v0.1.0 -- TraversalQuery(descriptor, frontierGroup, page?) -> [Focus refs].
 # GET /api/node/{id}/edges?kind=&cursor=&limit= --
-# server/atlas-server/src/graph_handlers.rs::node_edges.
+# server/atlas-contract/src/graph.rs::node_edges.
 Feature: TraversalQuery -- expand one frontier abstraction into traversable targets
 
   Scenario: a real edge kind expands to a page of live targets

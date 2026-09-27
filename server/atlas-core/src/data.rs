@@ -603,7 +603,9 @@ pub struct Narrative {
 pub struct Era {
     pub id: String,
     pub name: String,
+    #[schema(value_type = i32)]
     pub from_year: Year,
+    #[schema(value_type = i32)]
     pub to_year: Year,
 }
 

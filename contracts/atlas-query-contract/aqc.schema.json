@@ -289,18 +289,20 @@
         "manifest_schema": {
           "description": "DB-4c: the served identity is the manifest's (spec §9): its schema\nand the sections' `PRAGMA user_version`. Additive beside the graph\nvocabulary's `artifact_format_version` (retired at DB-5).",
           "format": "int32",
-          "minimum": 0,
+          "minimum": 1,
           "type": "integer"
         },
         "max_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
           "type": "string"
         },
         "min_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
           "type": "string"
         },
         "section_schema_version": {
           "format": "int32",
-          "minimum": 0,
+          "minimum": 1,
           "type": "integer"
         }
       },
@@ -485,7 +487,8 @@
     "Era": {
       "properties": {
         "from_year": {
-          "$ref": "#/$defs/i32"
+          "format": "int32",
+          "type": "integer"
         },
         "id": {
           "type": "string"
@@ -494,7 +497,8 @@
           "type": "string"
         },
         "to_year": {
-          "$ref": "#/$defs/i32"
+          "format": "int32",
+          "type": "integer"
         }
       },
       "required": [
@@ -1422,24 +1426,18 @@
           "type": "string"
         },
         "existence_from": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/i32",
-              "description": "Batch H (existence gating): same fields, same rule, as\n`ScenePlace::existence_from`/`existence_to` -- see that doc comment.\nA quiet place is exactly where this matters most in practice (the\n\"ever-present graph\" shows a dot for every event-bearing place\nregardless of window, so a long-destroyed place's dot can otherwise\nsit on a plate captioned with a name it never bore at that time)."
-            },
-            {
-              "type": "null"
-            }
+          "description": "Batch H (existence gating): same fields, same rule, as\n`ScenePlace::existence_from`/`existence_to` -- see that doc comment.\nA quiet place is exactly where this matters most in practice (the\n\"ever-present graph\" shows a dot for every event-bearing place\nregardless of window, so a long-destroyed place's dot can otherwise\nsit on a plate captioned with a name it never bore at that time).",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
           ]
         },
         "existence_to": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/i32"
-            },
-            {
-              "type": "null"
-            }
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
           ]
         },
         "id": {
@@ -1486,6 +1484,7 @@
           "type": "array"
         },
         "mode": {
+          "description": "`time` | `scripture`.",
           "type": "string"
         },
         "narratives": {
@@ -1643,24 +1642,18 @@
           "type": "array"
         },
         "existence_from": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/i32",
-              "description": "Batch H (existence gating, deferred from E2): the curated\nestablished/destroyed bounds this place's name resolves against\n(`crate::history::resolve_existence`) -- plain years, never the full\nestablished/destroyed `PlaceDateClaim` (verses/note; that richer\nshape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire\ncost). Both omitted (not `null` -- see `skip_serializing_if`) when\nthis place has no curated history at all, or a curated history with\nneither claim -- the client's own gate never fires in that case\n(`existence_gates_label`'s own \"always labels\" reading). The map\nrenders every place regardless of these bounds (a lit place is only\never here because a real event justifies it THIS window -- see\n`scene::lit_places`); it's the client's own label -- never the\nmarker/dot -- that these bounds gate, and only in time mode (there is\nno window to test outside-ness against in scripture mode)."
-            },
-            {
-              "type": "null"
-            }
+          "description": "Batch H (existence gating, deferred from E2): the curated\nestablished/destroyed bounds this place's name resolves against\n(`crate::history::resolve_existence`) -- plain years, never the full\nestablished/destroyed `PlaceDateClaim` (verses/note; that richer\nshape is `/api/place/{id}`'s own `HistoryOut`, not a per-marker wire\ncost). Both omitted (not `null` -- see `skip_serializing_if`) when\nthis place has no curated history at all, or a curated history with\nneither claim -- the client's own gate never fires in that case\n(`existence_gates_label`'s own \"always labels\" reading). The map\nrenders every place regardless of these bounds (a lit place is only\never here because a real event justifies it THIS window -- see\n`scene::lit_places`); it's the client's own label -- never the\nmarker/dot -- that these bounds gate, and only in time mode (there is\nno window to test outside-ness against in scripture mode).",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
           ]
         },
         "existence_to": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/i32"
-            },
-            {
-              "type": "null"
-            }
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
           ]
         },
         "id": {
@@ -1843,10 +1836,12 @@
     "TimeRange": {
       "properties": {
         "from_year": {
-          "$ref": "#/$defs/i32"
+          "format": "int32",
+          "type": "integer"
         },
         "to_year": {
-          "$ref": "#/$defs/i32"
+          "format": "int32",
+          "type": "integer"
         }
       },
       "required": [
@@ -2113,10 +2108,6 @@
         "end"
       ],
       "type": "object"
-    },
-    "i32": {
-      "format": "int32",
-      "type": "integer"
     }
   },
   "$id": "https://bible-atlas/contracts/atlas-query-contract/aqc.schema.json",

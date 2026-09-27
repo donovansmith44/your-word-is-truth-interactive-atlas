@@ -5,6 +5,7 @@ use crate::time::{TimeRange, Year};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
+    /// `time` | `scripture`.
     pub mode: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<TimeRange>,
@@ -61,8 +62,10 @@ pub struct ScenePlace {
     /// marker/dot -- that these bounds gate, and only in time mode (there is
     /// no window to test outside-ness against in scripture mode).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<i32>)]
     pub existence_from: Option<Year>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<i32>)]
     pub existence_to: Option<Year>,
     /// Batch HOTFIX-2 (same-place dedupe): ids of every OTHER compiled place
     /// record merged into this one at load time (`crate::merge::MERGE_PAIRS`)
@@ -107,8 +110,10 @@ pub struct QuietPlace {
     /// regardless of window, so a long-destroyed place's dot can otherwise
     /// sit on a plate captioned with a name it never bore at that time).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<i32>)]
     pub existence_from: Option<Year>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<i32>)]
     pub existence_to: Option<Year>,
     /// Batch HOTFIX-2: same field, same rule, as `ScenePlace::merged_ids`
     /// above -- a quiet place is exactly where this can matter too (the

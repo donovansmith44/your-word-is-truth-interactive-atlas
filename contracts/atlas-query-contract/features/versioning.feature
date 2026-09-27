@@ -1,6 +1,6 @@
 # AQC v0.8.0 (CONTRACT-1a; v0.7.0 D5; v0.6.0 D3; v0.5.0 LEX-1; v0.4.0 DB-4c; v0.3.0 DB-4b; v0.2.0 DB-4a; v0.1.0 before) -- /api/contract advertisement + fail-loud mismatch (spec §2's
 # versioning law, the house fail-loud law). This is the ONE new behavioral
-# surface this batch adds -- server/atlas-server/src/contract.rs::contract,
+# surface this batch adds -- server/atlas-contract/src/meta.rs::contract,
 # client/AqcContract.cs::Satisfies.
 Feature: Versioning -- the server advertises its AQC range; the client fails loud on mismatch
 

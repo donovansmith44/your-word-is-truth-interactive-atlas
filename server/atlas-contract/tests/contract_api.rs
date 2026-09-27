@@ -54,7 +54,7 @@ fn every_served_route_is_documented() {
         "/api/contents/{corpus}", "/api/openapi.yaml",
     ];
     // Act
-    let doc = atlas_contract::openapi();
+    let doc = atlas_contract::document::openapi();
     let mut paths: Vec<&str> = doc.paths.paths.keys().map(String::as_str).collect();
     paths.sort_unstable();
     // Assert
@@ -79,4 +79,17 @@ async fn get_text(app: &axum::Router, path: &str) -> String {
     assert_eq!(response.status(), StatusCode::OK, "GET {path}");
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     String::from_utf8(bytes.to_vec()).expect("the body is UTF-8 text")
+}
+
+/// The Swagger UI is a developer's convenience behind `dev-docs`, so the
+/// only build that can see it is the only build that tests it.
+#[cfg(feature = "dev-docs")]
+#[tokio::test]
+async fn the_developer_docs_page_is_served_when_dev_docs_is_on() {
+    // Arrange
+    let app = app();
+    // Act
+    let response = app.oneshot(Request::builder().uri("/swagger-ui/").body(Body::empty()).unwrap()).await.unwrap();
+    // Assert
+    assert_eq!(response.status(), StatusCode::OK);
 }
