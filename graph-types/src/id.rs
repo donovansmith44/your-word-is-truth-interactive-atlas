@@ -34,12 +34,12 @@ macro_rules! node_kinds {
     };
 }
 
-/// Closed node-kind vocabulary. Extending it is a deliberate act every
-/// exhaustive match must acknowledge. TextUnit's LEVEL (book / chapter /
-/// verse — or a Concord part / article / paragraph) is known to its
-/// corpus scheme, not to this enum (sweep F11). Every variant, in
-/// declaration order — appended, never reordered (`sqlite::partition::node_kind_ordinal`
-/// and the contract fixture `graph-vocabulary.json` are positional over it).
+// Closed node-kind vocabulary. Extending it is a deliberate act every
+// exhaustive match must acknowledge. TextUnit's LEVEL (book / chapter /
+// verse — or a Concord part / article / paragraph) is known to its
+// corpus scheme, not to this enum (sweep F11). Every variant, in
+// declaration order — appended, never reordered (`sqlite::partition::node_kind_ordinal`
+// and the contract fixture `graph-vocabulary.json` are positional over it).
 node_kinds! {
     TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
     CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
