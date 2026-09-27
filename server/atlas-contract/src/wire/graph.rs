@@ -1,9 +1,11 @@
+use atlas_graph_types::{EdgeKind, NodeKind};
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NodeCard {
     pub id: String,
-    pub kind: String,
+    pub kind: NodeKind,
     pub label: String,
     pub provenance: String,
     pub edge_summary: Vec<EdgeSummaryEntry>,
@@ -36,7 +38,8 @@ pub struct NodeCard {
 /// `last_year` are the CORPUS-mention span, never a lifespan; `eternal`
 /// with its Scripture `eternal_grounds` is the curated exception ("God
 /// because he is eternal") -- an eternal person shows no years at all.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PersonLife {
     pub gender: Option<String>,
     pub birth_year: Option<i32>,
@@ -48,21 +51,24 @@ pub struct PersonLife {
     pub also_called: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EdgeSummaryEntry {
-    pub kind: String,
+    pub kind: EdgeKind,
     pub count: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EdgePage {
-    pub kind: String,
+    pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
     pub next: Option<usize>,
     pub version: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EdgeEntry {
     /// The bijection witness travels on the wire (M-A brief requirement 4):
     /// the SAME id a caller sees here is what the target's own inverse-kind
@@ -71,21 +77,28 @@ pub struct EdgeEntry {
     pub node: NodeRef,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NodeRef {
     pub id: String,
+    /// A `String`, not a `NodeKind`: an edge takes focus too (design doc
+    /// §0), so a frontier entry's position can be an edge -- a
+    /// `justified-by` row reached through its own `justifies` frontier has
+    /// no node kind at all, and carries `"Edge"` here.
     pub kind: String,
     pub label: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TextWindow {
     pub units: Vec<TextUnit>,
     pub next: Option<String>,
     pub version: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TextUnit {
     #[serde(rename = "ref")]
     pub sref: String,

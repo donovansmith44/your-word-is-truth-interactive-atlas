@@ -1,13 +1,15 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Contents {
     pub corpus: String,
     pub version: String,
     pub roots: Vec<ContentsRoot>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ContentsRoot {
     pub id: String,
     pub title: String,
@@ -22,7 +24,8 @@ pub struct ContentsRoot {
     pub children: Vec<ContentsChild>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ContentsChild {
     pub id: String,
     pub title: String,

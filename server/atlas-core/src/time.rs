@@ -10,7 +10,7 @@ pub fn next_year(y: Year) -> Year {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TimeRange {
     pub from_year: Year,
     pub to_year: Year,

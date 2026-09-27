@@ -3,7 +3,8 @@ use serde::Serialize;
 use atlas_core::time::TimeRange;
 use atlas_core::wire::SceneEvent;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PlaceDetail {
     pub id: String,
     pub name: String,
@@ -44,7 +45,8 @@ pub struct PlaceDetail {
 /// see `history::resolve_display_name`/`resolve_blurb`'s own doc comments);
 /// `established`/`destroyed` are window-independent static facts, always
 /// included verbatim whenever curated.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct History {
     pub display_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -60,7 +62,8 @@ pub struct History {
 /// (`from_year`/`to_year`) rather than a separate "year" field -- the
 /// client's `YearText.FormatRange` already collapses equal endpoints to a
 /// single-year display, so a genuine year and a range need no separate flag.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct DateClaim {
     pub when: TimeRange,
     pub verses: Vec<String>,

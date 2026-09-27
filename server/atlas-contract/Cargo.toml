@@ -29,7 +29,7 @@ atlas-etl = { path = "../atlas-etl" }
 atlas-graph = { path = "../atlas-graph" }
 # DB-4a: canon-ids ON for the atlas -- SHA-256-128 pids, canonical edge ids, the
 # manifest root. graph-types' own default stays off for the sibling repo.
-atlas-graph-types = { path = "../../graph-types", features = ["canon-ids"] }
+atlas-graph-types = { path = "../../graph-types", features = ["canon-ids", "serde", "openapi"] }
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 tower = { version = "0.5", features = ["util"] }
@@ -37,6 +37,14 @@ tower-http = { version = "0.6", features = ["cors", "fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
+utoipa = { version = "6.0.0", features = ["yaml", "axum_extras"] }
+utoipa-axum = "0.3.0"
+utoipa-swagger-ui = { version = "10.0.1", features = ["axum", "vendored"], optional = true }
+
+[features]
+# CONTRACT-1a: the Swagger UI ships only to a developer's own build -- a
+# served docs page is not part of the API contract.
+dev-docs = ["dep:utoipa-swagger-ui"]
 
 [dev-dependencies]
 http-body-util = "0.1"

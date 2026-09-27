@@ -9,17 +9,20 @@ use serde::Serialize;
 /// `AtlasData::land_mask`'s own doc comment) -- the client never needs
 /// region names/ref_notes, only the raw geometry to build an SVG clipPath
 /// from.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct LandMask {
     pub rings: Vec<Vec<(f64, f64)>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Polities {
     pub polities: Vec<Polity>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Polity {
     pub id: String,
     pub name: String,
@@ -55,7 +58,8 @@ pub struct Polity {
 /// -- a plain field-for-field copy (`event`/`verses`/`ref_note`), same "no
 /// rename, no reshaping" convention `Polity` itself already follows for
 /// `PolityEra`.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PolityDelta {
     pub event: String,
     pub verses: Vec<String>,

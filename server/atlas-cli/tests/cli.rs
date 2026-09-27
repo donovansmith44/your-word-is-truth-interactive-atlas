@@ -475,7 +475,7 @@ fn json_error_on_a_malformed_data_dir_is_data_load_failed_not_plain_text() {
 }
 
 #[test]
-fn kinds_json_row_count_matches_parse_edge_kind_and_every_token_round_trips() {
+fn kinds_json_row_count_matches_from_label_and_every_token_round_trips() {
     let (o, v) = run_json(&["kinds"]);
     assert!(o.status.success(), "stderr: {}", stderr(&o));
     let rows = v.unwrap();

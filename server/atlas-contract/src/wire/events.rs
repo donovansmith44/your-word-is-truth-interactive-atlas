@@ -18,7 +18,8 @@ use atlas_core::wire::VerseGroup;
 /// `INarrativeAware` (client), `PlaceCard.LoadNarrativePositions` (client,
 /// reads `.Narrative` — TRAVERSAL-1 logic unchanged), and the Playwright
 /// helper call sites in `world-pin.spec.ts`/`popover-sections.spec.ts`.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativeEventPositions {
     pub narrative: Vec<NarrativePosition>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -32,7 +33,8 @@ pub struct NarrativeEventPositions {
 /// use throughout `wire/`. `event_id`/`event_label` are carried (map-
 /// focus-sync + disambiguating two positions sharing one `narrative_id`)
 /// even though they restate something the CALLER usually already knows.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativePosition {
     pub narrative_id: String,
     pub narrative_name: String,
@@ -64,7 +66,8 @@ pub struct NarrativePosition {
 /// event list) -- so this
 /// is provably the same data a map arrow's own endpoint would show for the
 /// identical event id, not a parallel re-derivation.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativeAdjacentEvent {
     pub id: String,
     pub label: String,
@@ -84,7 +87,8 @@ impl From<atlas_core::narrative::NarrativeAdjacentEvent> for NarrativeAdjacentEv
 /// ordering rule. Reuses `NarrativeAdjacentEvent` (same shape, same
 /// "id/label/places/verse_groups" the narrative rows already send) -- one
 /// computation, one wire type, two consumers.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TimelinePosition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prior: Option<NarrativeAdjacentEvent>,
@@ -119,7 +123,8 @@ impl From<atlas_core::narrative::TimelinePosition> for TimelinePosition {
 /// empty array (unchanged pattern -- a general-kind passage's own
 /// `Event::places` is always empty by construction, so this needs no
 /// separate gating).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EventDetail {
     pub id: String,
     pub title: String,
@@ -214,7 +219,8 @@ pub struct EventDetail {
 /// Batch T requirement 4: one EVENT-kind PASSAGE's own resolved place --
 /// id (to open a `PlaceNode`/target the map) + display name (so the client
 /// never needs a second lookup just to label an explorable place row).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EventPlace {
     pub id: String,
     pub name: String,
@@ -227,7 +233,8 @@ pub struct EventPlace {
 /// `verse_groups_for` every other verse list on this wire already uses
 /// (`atlas_core::scene::witnesses_for` -- one function, so a heading's own
 /// anchor verse and this section's own witness list can never disagree).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EventWitness {
     pub book: String,
     pub verse_groups: Vec<VerseGroup>,
@@ -245,7 +252,8 @@ impl From<atlas_core::scene::ResolvedWitness> for EventWitness {
 
 /// ATTEST-1: one end of an `Analogue` -- enough to render and to explore
 /// (`/api/event/{id}` takes this `id` straight back).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EventAnalogue {
     pub id: String,
     pub title: String,

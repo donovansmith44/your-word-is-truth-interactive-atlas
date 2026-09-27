@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Scene {
     pub mode: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -29,7 +30,8 @@ pub struct Scene {
     pub narratives: Vec<SceneNarrative>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ScenePlace {
     pub id: String,
     pub name: String,
@@ -81,7 +83,8 @@ pub struct ScenePlace {
 /// Deliberately LEAN -- no `events`/`verse_groups` at all, unlike
 /// `ScenePlace`: a quiet place has none active this window BY DEFINITION,
 /// so carrying an always-empty list would only bloat the payload.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct QuietPlace {
     pub id: String,
     /// Same window-resolution rules `ScenePlace::display_name` uses
@@ -115,7 +118,8 @@ pub struct QuietPlace {
     pub merged_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct SceneEvent {
     pub id: String,
     pub label: String,
@@ -123,7 +127,8 @@ pub struct SceneEvent {
     pub verse_groups: Vec<VerseGroup>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct VerseGroup {
     pub book: String,
     pub chapter: u16,
@@ -131,7 +136,8 @@ pub struct VerseGroup {
     pub count: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct SceneArrow {
     pub narrative: String,
     pub color: String,
@@ -142,7 +148,8 @@ pub struct SceneArrow {
     pub order: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct SceneNarrative {
     pub id: String,
     pub name: String,

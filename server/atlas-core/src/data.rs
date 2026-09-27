@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::time::{TimeRange, Year};
 
 /// Verse counts per chapter for one book.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CanonBook {
     pub code: String,
     pub name: String,
@@ -591,7 +591,7 @@ pub struct EventWitness {
 /// into consecutive arrows. ETL validates legs are non-decreasing by
 /// `when.from_year`; scene composition trusts that invariant rather than
 /// re-deriving it.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Narrative {
     pub id: String,
     pub name: String,
@@ -599,7 +599,7 @@ pub struct Narrative {
     pub legs: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Era {
     pub id: String,
     pub name: String,
@@ -643,7 +643,7 @@ pub struct CrossRef {
 /// which otherwise only exempts `kind == "water"`. A landmark with no
 /// `size` at all keeps the exact PRE-Batch-C2 kind-based tier behavior —
 /// this field only ever ADDS visibility, never removes any.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Landmark {
     pub name: String,
     pub kind: String,

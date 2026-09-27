@@ -19,8 +19,7 @@ use std::sync::OnceLock;
 
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
-use atlas_graph_types::edge::dual;
-use atlas_contract::graph_wire::parse_edge_kind;
+use atlas_graph_types::edge::{dual, EdgeKind};
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use cucumber::{given, then, when, World};
@@ -312,10 +311,10 @@ fn then_every_frontier_is_a_relations_family(world: &mut AqcWorld) {
     if let Some(summary) = world.body.get("edge_summary").and_then(|v| v.as_array()) {
         for entry in summary {
             let kind = entry["kind"].as_str().unwrap();
-            assert!(parse_edge_kind(kind).is_some(), "edge_summary kind '{kind}' is not a relations! family label");
+            assert!(EdgeKind::from_label(kind).is_some(), "edge_summary kind '{kind}' is not a relations! family label");
         }
     } else if let Some(kind) = world.body.get("kind").and_then(|v| v.as_str()) {
-        assert!(parse_edge_kind(kind).is_some(), "EdgePageOut kind '{kind}' is not a relations! family label");
+        assert!(EdgeKind::from_label(kind).is_some(), "EdgePageOut kind '{kind}' is not a relations! family label");
     } else {
         panic!("no frontier-bearing field (edge_summary or kind) on the last response: {}", world.body);
     }
@@ -356,7 +355,7 @@ async fn then_every_target_resolves(world: &mut AqcWorld) {
 #[then(expr = "every entry's {string} id is present on the matching inverse-kind page of its own target node")]
 async fn then_bijection_witness(world: &mut AqcWorld, field: String) {
     assert_eq!(field, "edge");
-    let kind = parse_edge_kind(&world.last_traversal_kind).expect("last TraversalQuery kind must be a real relations! family label");
+    let kind = EdgeKind::from_label(&world.last_traversal_kind).expect("last TraversalQuery kind must be a real relations! family label");
     let inverse_label = dual(kind).label();
     let entries = world.body["entries"].as_array().expect("EdgePageOut.entries must be an array").clone();
     assert!(!entries.is_empty(), "test needs at least one real entry to prove the bijection over");

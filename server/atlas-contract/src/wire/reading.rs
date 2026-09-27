@@ -5,7 +5,8 @@ use atlas_core::wire::VerseGroup;
 
 use super::catechism::CatechismRef;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Chapter {
     #[serde(rename = "ref")]
     pub sref: String,
@@ -14,7 +15,8 @@ pub struct Chapter {
     pub verses: Vec<Verse>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Verse {
     pub verse: u16,
     pub text: String,
@@ -80,7 +82,8 @@ pub struct Verse {
 /// the verse's rendered text, see `chapter`'s own doc comment for why there
 /// is no richer per-mention offset data) -- mirrors `QuietPlace`'s own
 /// "no more than the consumer needs" wire philosophy.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PlaceRef {
     pub id: String,
     pub name: String,
@@ -104,7 +107,8 @@ pub struct PlaceRef {
 /// is what THIS field guards; locating the substring within an ALREADY-
 /// attested verse is a separate, later step, not a second matching
 /// hazard).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PersonRef {
     pub id: String,
     pub name: String,
@@ -119,7 +123,8 @@ pub struct PersonRef {
 /// absurd). `event_id` is what a click opens (a new `EventNode`, client-side);
 /// `title` is rendered directly, so the reader never needs a second fetch
 /// just to show the heading text itself.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Heading {
     pub event_id: String,
     pub title: String,
@@ -161,13 +166,15 @@ pub struct Heading {
 /// here, always). `start`/`end` are a half-open range (`text[start..end]`
 /// in C# `Substring(start, end-start)` terms) -- KJV display renders this
 /// EXACT sub-verse span; decision 5's own "ONE render rule."
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct WordsOfChristSpan {
     pub start: usize,
     pub end: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct KretzmannChapter {
     pub verses: Vec<KretzmannChapterVerse>,
     pub version: String,
@@ -176,7 +183,8 @@ pub struct KretzmannChapter {
 /// One verse's own commentary items, in document order. Only verses with
 /// >=1 item appear at all (mirrors `Kretzmann.razor`'s own retired
 /// client-side "if (items.Count > 0)" filter).
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct KretzmannChapterVerse {
     pub verse: u16,
     pub items: Vec<KretzmannChapterItem>,
@@ -186,13 +194,15 @@ pub struct KretzmannChapterVerse {
 /// batch-finalp1-brief.md ticket 2, SANCTIONED SERVER ADDITION): one
 /// `CommentaryItem` row within one verse of `GET /api/kretzmann/chapter/{cref}`'s
 /// own chapter-scoped response.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct KretzmannChapterItem {
     pub id: String,
     pub heading: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct VerseDetail {
     #[serde(rename = "ref")]
     pub sref: String,
@@ -256,7 +266,8 @@ pub struct VerseDetail {
     // the richer id-keyed EVENT fetch that node also uses).
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct BookMeta {
     pub author: String,
     pub write_place: Option<String>,
@@ -268,7 +279,8 @@ pub struct BookMeta {
 /// (id/label/when/verse_groups) plus the event's place ids, so the client
 /// can jump from a verse to "explore this event on the map" without a
 /// second round trip.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct VerseEvent {
     pub id: String,
     pub label: String,
@@ -314,7 +326,8 @@ pub struct VerseEvent {
     pub provenance: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CrossRef {
     pub target: String,
     pub votes: i32,

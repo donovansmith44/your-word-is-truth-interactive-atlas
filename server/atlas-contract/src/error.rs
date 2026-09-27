@@ -87,20 +87,22 @@ impl ApiError {
     }
 }
 
-#[derive(Serialize)]
-struct ErrorBody<'a> {
-    error: ErrorInner<'a>,
+#[derive(Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ErrorBody {
+    pub error: ErrorInner,
 }
 
-#[derive(Serialize)]
-struct ErrorInner<'a> {
-    code: &'a str,
-    message: &'a str,
+#[derive(Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ErrorInner {
+    pub code: String,
+    pub message: String,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let body = ErrorBody { error: ErrorInner { code: self.code, message: &self.message } };
+        let body = ErrorBody { error: ErrorInner { code: self.code.to_string(), message: self.message.to_string() } };
         (self.status, Json(body)).into_response()
     }
 }

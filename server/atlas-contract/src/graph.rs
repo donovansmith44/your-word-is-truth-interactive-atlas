@@ -34,13 +34,14 @@ use axum::Json;
 use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
+use atlas_graph_types::edge::EdgeKind;
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::ApiError;
-use crate::graph_wire::{decode_node_id, describe_position, encode_node_id, parse_edge_kind};
+use crate::graph_wire::{decode_node_id, describe_position, encode_node_id};
 use crate::wire;
 
 // ---------------------------------------------------------------------
@@ -66,7 +67,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
     let summary = snap.edge_summary(&Position::Node(node_id.clone()));
     let (label, _kind) = crate::graph_wire::describe_node(&node_id, &snap);
 
-    let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind: kind.label().to_string(), count }).collect();
+    let edge_summary = summary.into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect();
 
     // ENT-1a: whichever of the described kinds this node is (or `None` for
     // every other kind, and `None` until a match exists even for those) --
@@ -100,7 +101,7 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<St
 
     Ok(Json(wire::NodeCard {
         id: encode_node_id(&node_id),
-        kind: format!("{:?}", node_id.kind),
+        kind: node_id.kind,
         label,
         provenance: node.provenance.clone(),
         edge_summary,
@@ -164,7 +165,7 @@ pub async fn node_edges(
     }
 
     let kind_raw = params.get("kind").map(String::as_str).unwrap_or("");
-    let kind = parse_edge_kind(kind_raw).ok_or_else(|| ApiError::bad_kind(kind_raw))?;
+    let kind = EdgeKind::from_label(kind_raw).ok_or_else(|| ApiError::bad_kind(kind_raw))?;
 
     let cursor = params.get("cursor").and_then(|s| s.parse::<usize>().ok());
     let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(DEFAULT_EDGE_LIMIT).clamp(1, MAX_EDGE_LIMIT);
@@ -198,7 +199,7 @@ pub async fn node_edges(
         })
         .collect();
 
-    Ok(Json(wire::EdgePage { kind: kind.label().to_string(), entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 // ---------------------------------------------------------------------
@@ -382,7 +383,7 @@ pub async fn text_window(
 /// The unit's frontier summary, in the port's own (EdgeKind) order --
 /// identical to `node_card`'s projection of the same call.
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
-    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind: kind.label().to_string(), count }).collect()
+    snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
 
 /// Parses `ref` against `scope`: `scope=chapter` accepts a Chapter- or

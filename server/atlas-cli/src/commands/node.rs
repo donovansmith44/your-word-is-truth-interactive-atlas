@@ -37,11 +37,11 @@ struct ResolvedCard {
     provenance: String,
     /// BIBEX-1 addendum (ticket 2, ruling 3, "must show each kind's exact
     /// --kind TOKEN"): `kind.label()` (`EdgeKind::label()`) IS already the
-    /// exact, copy-pasteable `--kind` value `graph_wire::parse_edge_kind`
+    /// exact, copy-pasteable `--kind` value `EdgeKind::from_label`
     /// accepts back (its own total inverse, `graph_wire.rs`'s own doc
     /// comment) -- this was already true before this addendum; declared
     /// explicitly here and in CONTRACT.md, and proven by
-    /// `kinds::tests::every_row_token_round_trips_through_parse_edge_kind`
+    /// `kinds::tests::every_row_token_round_trips_through_from_label`
     /// plus this crate's own `node_edge_summary_kind_token_works_directly_
     /// in_edges` integration test (the real "see it -> use it" loop).
     edge_summary: Vec<(String, usize)>,
@@ -58,7 +58,7 @@ fn resolve(graph: &GraphService, id_raw: &str) -> Result<ResolvedCard, CliError>
 
     Ok(ResolvedCard {
         id_raw: id_raw.to_string(),
-        kind: format!("{:?}", node_id.kind),
+        kind: node_id.kind.name().to_string(),
         label,
         provenance: node.provenance.clone(),
         edge_summary: summary.into_iter().map(|(kind, count)| (kind.label().to_string(), count)).collect(),

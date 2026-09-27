@@ -1,6 +1,7 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Contract {
     pub min_version: String,
     pub max_version: String,

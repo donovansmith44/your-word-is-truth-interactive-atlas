@@ -14,7 +14,8 @@ use serde::Serialize;
 /// embedded citation rather than a question -- same conditional-presence
 /// convention `CatechismItem.where_written` below and `wire/places.rs`'s own
 /// `History.blurb` already use.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CatechismRef {
     pub id: String,
     pub name: String,
@@ -56,7 +57,8 @@ impl CatechismRef {
 /// "Baptism" as this item's own chief-part context. `where_written` is
 /// omitted (not `null`) when absent -- same conditional-presence wire
 /// convention `History.blurb`/`established`/`destroyed` already use.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CatechismItem {
     pub id: String,
     pub name: String,
@@ -81,7 +83,8 @@ pub struct CatechismItem {
 /// deep-link the question context": a small caption next to the verse in
 /// THE SCRIPTURES, cheap because it needs no new fetch or scroll machinery,
 /// just this one extra field already available at merge time.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CatechismProofVerse {
     pub vref: String,
     pub text: String,

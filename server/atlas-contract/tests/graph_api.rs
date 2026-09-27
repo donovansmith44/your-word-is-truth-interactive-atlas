@@ -1744,3 +1744,38 @@ async fn god_is_eternal_and_the_card_says_why() {
     let grounds: Vec<&str> = person["eternal_grounds"].as_array().unwrap().iter().map(|g| g.as_str().unwrap()).collect();
     assert_eq!(grounds, vec!["PSA.90.2", "REV.1.8"]);
 }
+
+/// CONTRACT-1a: the byte-identity witness for one whole card, pinned
+/// before `NodeCard.kind`/`EdgeSummaryEntry.kind` stopped being `String`
+/// and asserted again after -- the retype is only honest if this exact
+/// document still comes back.
+const GENESIS_1: &str = "Container:bible-chapter-GEN-1";
+const VERSES_IN_GENESIS_1: usize = 31;
+
+#[tokio::test]
+async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, body, _) = get(&app, &format!("/api/node/{GENESIS_1}")).await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let version = body["version"].clone();
+    assert_eq!(
+        body,
+        serde_json::json!({
+            "id": GENESIS_1,
+            "kind": "Container",
+            "label": "Genesis 1",
+            "provenance": "kjv",
+            "edge_summary": [
+                { "kind": "contains", "count": VERSES_IN_GENESIS_1 },
+                { "kind": "member-of", "count": 1 },
+                { "kind": "follows-in", "count": 1 },
+            ],
+            "version": version,
+        })
+    );
+}

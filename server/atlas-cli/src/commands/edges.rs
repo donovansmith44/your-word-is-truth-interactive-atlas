@@ -4,10 +4,11 @@
 //! own "bibex edges" section.
 
 use atlas_graph::GraphService;
+use atlas_graph_types::edge::EdgeKind;
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
-use atlas_contract::graph_wire::{decode_node_id, describe_position, parse_edge_kind};
+use atlas_contract::graph_wire::{decode_node_id, describe_position};
 
 use crate::error::CliError;
 
@@ -35,7 +36,7 @@ struct ResolvedPage {
     /// The canonical `--kind` token this page answered for
     /// (`EdgeKind::label()`, not necessarily byte-identical to whatever
     /// case/spelling the caller typed -- though in practice they're the
-    /// same string, since `parse_edge_kind` only accepts exact labels).
+    /// same string, since `EdgeKind::from_label` only accepts exact labels).
     kind_label: String,
     entries: Vec<ResolvedEntry>,
     next: Option<usize>,
@@ -66,7 +67,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
             "run 'bibex node <id>' first to see which kinds are inhabited for this id, then pass --kind <one of them>",
         )
     })?;
-    let kind = parse_edge_kind(kind_raw).ok_or_else(|| {
+    let kind = EdgeKind::from_label(kind_raw).ok_or_else(|| {
         CliError::bad_ref(
             format!("'{kind_raw}' is not a known edge kind"),
             "edge kinds are the labels graph-types' own relation manifest defines (e.g. cites, cited-by, attests, mentions)",

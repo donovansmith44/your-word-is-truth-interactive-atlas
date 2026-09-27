@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// One heading group on the Sources page (e.g. "Scripture & Text"). `id`
 /// is the join key [`SourceEntry::category`] points at.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SourceCategory {
     pub id: String,
     pub label: String,
@@ -34,7 +34,7 @@ pub struct SourceCategory {
 /// read ONLY by `atlas_etl::sources::validate_against_licenses`'s own
 /// fail-loud drift check (requirement 3: "a LICENSES.md row absent from
 /// the page (or vice versa) fails the build or a test").
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SourceEntry {
     pub id: String,
     pub category: String,
@@ -53,7 +53,7 @@ pub struct SourceEntry {
 /// struct serves both directions -- `atlas_etl::sources::parse_sources`
 /// reads the TOML shape, `gen_sources` writes this straight to JSON, and
 /// `GET /api/sources` serves that JSON back out unchanged.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, utoipa::ToSchema)]
 pub struct SourcesDocument {
     pub categories: Vec<SourceCategory>,
     pub sources: Vec<SourceEntry>,
@@ -92,7 +92,7 @@ pub struct SourcesDocument {
 /// registry," and this IS the registry). Spelled exactly as that enum's
 /// variants are: `"CanonicalText"` | `"Curated"` | `"Imported"` |
 /// `"Derived"`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ProvenanceEntry {
     /// The `ProvenanceId` as the compiled graph carries it, verbatim.
     pub id: String,

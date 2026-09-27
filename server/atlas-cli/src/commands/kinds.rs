@@ -4,10 +4,9 @@
 //! edge-kind vocabulary `bibex edges --kind`/`bibex node <id>`'s own edge
 //! summary rows accept, straight off graph-types' own `relations!` manifest
 //! (`RelationId::ALL`/`SymRelationId::ALL`) -- the SAME total enumeration
-//! `graph_wire::parse_edge_kind` itself scans -- that function's own doc
-//! comment (`graph_wire.rs:146-149`) already makes the identical promise
-//! for itself: "an added relation can never drift out of sync with what
-//! this function accepts." This listing shares that promise by construction
+//! `EdgeKind::from_label` itself scans, so an added relation can never
+//! drift out of sync with what a `--kind` value is accepted. This listing
+//! shares that promise by construction
 //! (same `RelationId::ALL`/`SymRelationId::ALL` source), so it can never
 //! drift out of sync with what a real `--kind` value is actually accepted.
 //! See CONTRACT.md's own "bibex kinds" section.
@@ -62,12 +61,12 @@ pub fn run_json() -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_contract::graph_wire::parse_edge_kind;
+    use atlas_graph_types::edge::EdgeKind;
 
     #[test]
-    fn every_row_token_round_trips_through_parse_edge_kind() {
+    fn every_row_token_round_trips_through_from_label() {
         for row in rows() {
-            assert!(parse_edge_kind(&row.token).is_some(), "'{}' (from {} {}) must be a real --kind token", row.token, row.relation, row.direction);
+            assert!(EdgeKind::from_label(&row.token).is_some(), "'{}' (from {} {}) must be a real --kind token", row.token, row.relation, row.direction);
         }
     }
 
