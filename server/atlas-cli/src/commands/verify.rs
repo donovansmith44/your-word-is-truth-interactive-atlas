@@ -1,14 +1,6 @@
-//! DB-4b: `bibex verify [--section <name>]` -- spec §3.5's verification
-//! on demand: recompute the logical hash of each cached section from its
-//! tables, the transport hash of each committed blob, and the root from
-//! the manifest; print each against the manifest; non-zero exit
-//! (`integrity_failed`, 6) on any mismatch. The offline tablet's "verified
-//! update" primitive and CI's integrity check after `graph.bin` is gone.
-//!
-//! Reads `<data_dir>/manifest.toml` and `<data_dir>/sections/*.sqlite.zst`;
-//! unpacks a cache miss into `<data_dir>/../cache/sections/` through the
-//! same `CommittedZstdSource` the server uses (spec §2.4), so a corrupt
-//! blob is refused here exactly as it would be at startup (spec §11).
+//! `bibex verify [--section <name>]` -- recompute each cached section's logical hash, each
+//! committed blob's transport hash and the manifest root, print them against the manifest,
+//! and exit non-zero on any mismatch.
 
 use std::path::Path;
 
@@ -48,7 +40,8 @@ impl Report {
         self.sections.iter().flat_map(|s| s.failures.iter().cloned()).collect()
     }
     pub fn checks(&self) -> usize {
-        // per section: transport + logical (+ schema, counted with logical); plus the root
+        // Two checks per section -- transport and logical, the schema counted with the
+        // logical one -- plus the root.
         1 + self.sections.len() * 2
     }
 }
@@ -59,8 +52,6 @@ fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
 }
 
-/// Runs every check; the caller decides how to render and whether the
-/// failures become an `integrity_failed` error.
 pub fn check(data_dir: &Path, only: Option<&str>) -> Result<Report, CliError> {
     let layout = SectionLayout::under(data_dir);
     let manifest_path = layout.manifest_path();

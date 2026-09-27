@@ -1,15 +1,5 @@
-//! `bibex find <term>` -- case-insensitive substring match on the label of
-//! every node this crate can enumerate WITHOUT new parallel query logic:
-//! `GraphService`'s own `..._ids` companion fields (Place/Event/Narrative/
-//! Era/Polity, the same fields `atlas_contract::places::place`/
-//! `atlas_contract::map::{eras, polities, narratives}` etc. read for their
-//! own listing endpoints; Person,
-//! BIBEX-1 addendum ticket 2, the SAME companion shape, see `GraphService::
-//! person_ids`'s own doc comment) plus `AtlasData.catechism` (already
-//! loaded by `load::load` off `catechism.json` -- no new plumbing at all,
-//! CatechismItem's id/name sit right there unused until this batch). See
-//! CONTRACT.md's own "bibex find" section for the disclosed, still-excluded
-//! kinds and why (PeopleGroup/CommentaryItem/Translation/TextUnit).
+//! `bibex find <term>` -- case-insensitive substring match on the label of every node kind
+//! this crate can enumerate without new query logic.
 
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
@@ -24,10 +14,8 @@ struct Hit {
     label: String,
 }
 
-/// BIBEX-1 addendum (ticket 2, ruling 2, "FIND COVERS EVERYTHING NAMED"):
-/// the widened kind list, shared by the no-argument `bad_usage` scope
-/// message, the zero-match `empty_result` scope message, and this
-/// function's own search loop -- ONE list, never three that could drift.
+/// One list, shared by the usage message, the empty-result message and the search loop, so
+/// the three cannot drift apart.
 pub(crate) const SEARCHED_KINDS: &str = "Place/Event/Narrative/Era/Polity/Person/CatechismItem";
 pub(crate) const EXCLUDED_KINDS: &str =
     "PeopleGroup/CommentaryItem/Translation/TextUnit are not searched -- PeopleGroup has no `bibex node`-resolvable id yet (graph_wire::decode_node_id carries no PeopleGroup arm, pending the U5 rebinding), CommentaryItem has no id/label enumeration surface at its 50k+ scale, Translation has none either (a fixed 6-row set), and TextUnit is covered directly by 'bibex verse'/'bibex chapter' instead -- see CONTRACT.md";
@@ -38,16 +26,12 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
 
     let mut out: Vec<Hit> = Vec::new();
 
-    // DB-3: the six per-kind id lists are the port's `nodes_of_kind` now
-    // (`GraphService::ids_of_kind`); the hit order is this function's own
-    // `(kind, id)` sort below, so enumeration order never mattered here.
     let kinds: [(&'static str, NodeKind); 6] = [
         ("Place", NodeKind::Place),
         ("Event", NodeKind::Event),
         ("Narrative", NodeKind::Narrative),
         ("Era", NodeKind::Era),
         ("Polity", NodeKind::Polity),
-        // BIBEX-1 addendum (ticket 2): the owner's own "PERSONS above all".
         ("Person", NodeKind::Person),
     ];
     for (kind_name, kind) in kinds {
@@ -59,9 +43,6 @@ fn hits(graph: &GraphService, data: &AtlasData, term: &str) -> Vec<Hit> {
         }
     }
 
-    // BIBEX-1 addendum (ticket 2): CatechismItem, off `AtlasData.catechism`
-    // -- already loaded by `load::load` (compiled `catechism.json`), no new
-    // enumeration surface needed at all.
     for part in &data.catechism {
         for item in &part.items {
             if item.name.to_lowercase().contains(&needle) {
@@ -89,15 +70,8 @@ pub fn run(graph: &GraphService, data: &AtlasData, term: &str) -> Result<String,
     Ok(out)
 }
 
-/// BIBEX-1 (--json mode): an array of `{kind, id, label}` objects (`kind`
-/// is necessary here, unlike the addendum's own bare `{id, label}` shape
-/// elsewhere -- `find`'s whole point is a search spanning MULTIPLE node
-/// kinds in one flat list, so the kind that disambiguates each row travels
-/// with it, exactly as it already does in the plain-mode `kind id label`
-/// column). Zero matches is still the `empty_result` taxonomy class on
-/// stderr, same as plain mode (CONTRACT.md: "errors stay fail-loud" applies
-/// under --json too) -- never a silently empty JSON array standing in for
-/// a real miss.
+/// `kind` travels with each row because this search spans several node kinds in one flat
+/// list. Zero matches is still the `empty_result` class, never a silently empty array.
 pub fn run_json(graph: &GraphService, data: &AtlasData, term: &str) -> Result<serde_json::Value, CliError> {
     let hits = hits(graph, data, term);
 

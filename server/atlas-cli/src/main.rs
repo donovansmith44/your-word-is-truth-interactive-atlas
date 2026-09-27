@@ -1,10 +1,5 @@
-//! `atlas-cli`: a really simple, offline binary that queries the Bible
-//! Explorer graph directly -- no server, no HTTP (design ruling R1). Args
-//! are hand-parsed (R3, the `atlas-server/src/main.rs` precedent -- no
-//! clap, no new runtime deps). See `CONTRACT.md` for the full command
-//! vocabulary, error taxonomy, tutorial contract, `--json` mode, and ID
-//! discoverability conventions this binary implements; `report.md`'s own
-//! "self-review" section is checked against that document line by line.
+//! An offline binary that queries the graph directly: no server, no HTTP, and arguments
+//! parsed by hand rather than by a dependency.
 
 mod commands;
 mod error;
@@ -16,13 +11,9 @@ use error::CliError;
 
 fn main() {
     let raw: Vec<String> = std::env::args().skip(1).collect();
-    // BIBEX-1 (--json mode): whether `--json` is present must be known
-    // BEFORE any fallible parsing runs, so a bad-usage error that occurs
-    // while EXTRACTING the other global flags (e.g. a dangling
-    // `--data-dir` with no value) still gets rendered the right way --
-    // a pure presence check over the raw, unparsed args, which can never
-    // itself fail. `--json` is then stripped here (once), so neither
-    // `run` nor `run_json` ever sees it as a stray token.
+    // Whether `--json` was passed has to be known before any fallible parsing, so that a
+    // bad-usage error raised while extracting the other flags is still rendered as JSON.
+    // Stripped here once, so no command ever sees it as a stray token.
     let json = raw.iter().any(|a| a == "--json");
     let stripped: Vec<String> = if json { raw.iter().filter(|a| a.as_str() != "--json").cloned().collect() } else { raw };
 
@@ -49,9 +40,8 @@ fn main() {
     }
 }
 
-/// Pulls `--data-dir <path>` out of `args` wherever it appears (before or
-/// after the subcommand -- a global flag, not positional) and returns the
-/// resolved path plus the remaining args in their original relative order.
+/// A global flag, not a positional one: it may appear before or after the subcommand, and
+/// the remaining arguments keep their original relative order.
 fn extract_data_dir(args: &[String]) -> Result<(PathBuf, Vec<String>), CliError> {
     let mut data_dir: Option<PathBuf> = None;
     let mut rest = Vec::with_capacity(args.len());
@@ -69,10 +59,6 @@ fn extract_data_dir(args: &[String]) -> Result<(PathBuf, Vec<String>), CliError>
     Ok((data_dir.unwrap_or_else(load::default_data_dir), rest))
 }
 
-/// Shared by `run` and `run_json` -- `find`'s own argument validation
-/// (CONTRACT.md's own "bibex find" section: the zero-argument message
-/// specifically states the widened kind-coverage scope, per review S-4 and
-/// BIBEX-1 addendum ticket 2's widening of that same scope).
 fn parse_find_term(rest: &[String]) -> Result<&str, CliError> {
     match rest.len() {
         1 => Err(CliError::bad_usage(
@@ -92,8 +78,6 @@ fn parse_find_term(rest: &[String]) -> Result<&str, CliError> {
     }
 }
 
-/// Shared by `run` and `run_json` -- `verify` takes nothing or
-/// `--section <name>` (DB-4b).
 fn parse_verify_args(rest: &[String]) -> Result<Option<String>, CliError> {
     match &rest[1..] {
         [] => Ok(None),
@@ -111,7 +95,6 @@ fn parse_verify_args(rest: &[String]) -> Result<Option<String>, CliError> {
     }
 }
 
-/// Shared by `run` and `run_json` -- `kinds` takes no arguments at all.
 fn check_no_kinds_args(rest: &[String]) -> Result<(), CliError> {
     if rest.len() > 1 {
         return Err(CliError::bad_usage(format!("'kinds' takes no arguments, got {}", rest.len() - 1), "usage: bibex kinds", "run 'bibex kinds' with no arguments"));
@@ -173,11 +156,8 @@ fn run(args: &[String]) -> Result<String, CliError> {
     }
 }
 
-/// BIBEX-1 (--json mode): the `--json` sibling of `run`. `tutorial`/`help`/
-/// a bare invocation are `bad_usage` under `--json` (CONTRACT.md, binding
-/// ruling: "a tutorial is prose by nature; say so in the message's hint")
-/// -- every real query command (`verse`/`chapter`/`node`/`edges`/`find`/
-/// `kinds`) gets a real JSON answer instead.
+/// `tutorial`, `help` and a bare invocation are `bad_usage` here: a tutorial is prose by
+/// nature, and the hint says so.
 fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
     let (data_dir, rest) = extract_data_dir(args)?;
 
@@ -241,18 +221,6 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
     }
 }
 
-/// Every single-positional-argument command (`verse`/`chapter`/`node`)
-/// shares this exact validation: exactly one argument after the
-/// subcommand name, nonempty. (`find` has its own copy in `run` above,
-/// per review S-4 -- it names its own kind-coverage scope in the
-/// zero-argument message, which this generic helper cannot express.)
-///
-/// FIX ROUND 1 (review T-3): an unrecognized `--flag` used to fall
-/// through into the generic "too many arguments" message without ever
-/// naming the flag -- inconsistent with `edges.rs`'s own diagnostics,
-/// which always name the offending flag. Both the exactly-one-extra-arg
-/// case and the too-many-args case now check for a leading `--` first and
-/// name it explicitly, matching `edges`'s own message shape.
 fn one_positional<'a>(rest: &'a [String], cmd: &str, shape: &str) -> Result<&'a str, CliError> {
     match rest.len() {
         1 => Err(CliError::bad_usage(format!("'{cmd}' requires an argument"), format!("usage: atlas {cmd} {shape}"), format!("run 'atlas {cmd} {shape}' with a real value, or 'bibex tutorial' for a worked example"))),
@@ -280,7 +248,7 @@ fn parse_edges_args(rest: &[String]) -> Result<(&str, Option<&str>, Option<usize
     let mut limit: Option<usize> = None;
     let mut cursor: Option<usize> = None;
 
-    let mut i = 1; // skip "edges" itself
+    let mut i = 1;
     while i < rest.len() {
         match rest[i].as_str() {
             "--kind" => {

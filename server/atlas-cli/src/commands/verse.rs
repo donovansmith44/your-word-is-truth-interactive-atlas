@@ -1,8 +1,4 @@
-//! `bibex verse <ref>` -- text + red-letter marks + attached
-//! places/persons/events. See CONTRACT.md's own "bibex verse" section.
-//! Ref decoded via `graph_wire::decode_node_id("text-unit:" + ref)` -- the
-//! SAME locus grammar `/api/text`/`/api/node` accept on the wire, reused
-//! verbatim rather than hand-parsed (R2/R1).
+//! `bibex verse <ref>` -- a verse's text, its red-letter marks and what attaches to it.
 
 use atlas_core::data::AtlasData;
 use atlas_core::history::resolve_display_name;
@@ -13,10 +9,8 @@ use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
 
 use crate::error::CliError;
 
-/// BIBEX-1 addendum (ticket 2, ruling 1, "IDS EVERYWHERE"): one
-/// associated-entity row -- a wire-encoded node id (`graph_wire::
-/// encode_node_id`, the SAME grammar `bibex node <id>` decodes, so "see it
-/// -> use it" always closes) plus its display label.
+/// The id is wire-encoded in the same grammar `bibex node` decodes, so what is printed can
+/// always be pasted back.
 struct Attached {
     id: String,
     label: String,
@@ -26,12 +20,7 @@ fn attached(kind: NodeKind, raw: &str, label: impl Into<String>) -> Attached {
     Attached { id: encode_node_id(&AnyNodeId { kind, raw: raw.to_string() }), label: label.into() }
 }
 
-/// Plain-mode rendering of one section's own list: `"name [id]"` pairs,
-/// comma-joined, or the literal `(none)` -- the SAME empty-result
-/// discipline `CONTRACT.md`'s own "bibex verse" section already
-/// establishes, now with the addendum's own bracketed-id suffix on each
-/// entry (CONTRACT.md's own "ID discoverability" section fixes this exact
-/// convention).
+/// `"name [id]"` pairs comma-joined, or the literal `(none)` -- never a blank line.
 fn render_section(items: &[Attached]) -> String {
     if items.is_empty() {
         "(none)".to_string()
@@ -44,11 +33,8 @@ fn attached_to_json(items: &[Attached]) -> serde_json::Value {
     serde_json::Value::Array(items.iter().map(|a| serde_json::json!({"id": a.id, "label": a.label})).collect())
 }
 
-/// Renders any red-letter spans (`(start, end)` byte offsets into `text`)
-/// as inline `[...]` brackets -- CONTRACT.md's own "red-letter marks shown
-/// inline" wording. Spans are non-overlapping and sorted (the same
-/// invariant `red_letter_spans.rs` itself establishes for the compiled
-/// table), so a single left-to-right pass suffices.
+/// Spans are byte offsets into `text`, non-overlapping and sorted -- the invariant the
+/// compiled table establishes -- so one left-to-right pass suffices.
 pub(crate) fn mark_red_letter(text: &str, spans: &[(usize, usize)]) -> String {
     if spans.is_empty() {
         return text.to_string();
@@ -72,9 +58,6 @@ pub(crate) fn mark_red_letter(text: &str, spans: &[(usize, usize)]) -> String {
     out
 }
 
-/// The Bible half's own resolved shape, shared by `run` (plain) and
-/// `run_json` -- ONE resolution, TWO renderings, `node.rs`'s/`edges.rs`'s
-/// own discipline.
 struct ResolvedKjvVerse {
     sref: String,
     text: String,
@@ -93,12 +76,6 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
     })?;
     let spans = graph.red_letter_spans.get(&sref).cloned().unwrap_or_default();
 
-    // OVERLAY-1 Task 5: places/events for a verse come from the graph-
-    // backed scene source (`GraphService::scene_source`, primed at load)
-    // rather than the deleted `AtlasData::places_for_verse`/
-    // `events_for_verse` indexes. Same ids, same order -- both indexes are
-    // rebuilt there in the exact passes `AtlasData::finish()` used, which is
-    // what keeps this command's pinned transcripts byte-identical.
     let scene_source = graph.scene_source(data);
 
     let places: Vec<Attached> = scene_source
@@ -113,15 +90,8 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
 
     let persons: Vec<Attached> = graph.persons_at_verse(book, chapter, verse).iter().map(|(pid, label)| attached(NodeKind::Person, pid, label.clone())).collect();
 
-    // Batch PERI-1 (PRESENTATION CATEGORY LAW -- owner, verbatim: "NUN is
-    // not an event. fix this error and others like it"): SPLIT by
-    // `Event::kind`, which was already on every row -- `Events:` keeps only
-    // `kind == "event"` (a real, dated/placed passage); `Passages:` is
-    // `kind == "general"` (a dateless pericope/literary-structure passage --
-    // a Psalm acrostic stanza, an epistle outline pericope, the owner's own
-    // PSA.119.105/GAL.1.8 repros). Each independently empty when its own
-    // kind has zero entries -- the SAME empty-result discipline as before,
-    // now applied per-kind. See CONTRACT.md's own `bibex verse` section.
+    // Split by kind: a dated, placed passage is an event; an undated one is a passage. Each
+    // section is independently empty when its own kind has no entries.
     let all_events: Vec<&atlas_core::data::Event> = scene_source.events_for_verse(&sref).iter().filter_map(|eid| scene_source.event(eid)).collect();
     let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == "event").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
     let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == "general").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
@@ -173,11 +143,7 @@ pub fn run(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<Stri
         out.push_str("Places/Persons/Events/Passages: not tracked for the Book of Concord\n");
         Ok(out)
     } else {
-        // decode_node_id succeeded (it's a well-shaped text-unit id) but
-        // neither adapter recognizes it -- structurally unreachable given
-        // decode_node_id's own two arms, kept as a named, honest error
-        // rather than a panic (fail-loud even on a path this graph's own
-        // grammar should never actually produce).
+        // Unreachable given the decoder's two arms, kept a named error rather than a panic.
         Err(CliError::bad_ref(
             format!("'{ref_raw}' did not resolve to a Bible or Concord locus"),
             "the id decoded as a text-unit but matched neither adapter",
@@ -186,15 +152,8 @@ pub fn run(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<Stri
     }
 }
 
-/// BIBEX-1 (--json mode): a KJV verse is `{ref, text, tracked: true,
-/// words_of_christ, places, persons, events, passages}` (`words_of_christ`
-/// reusing the SAME `{start,end}` shape the AQC corpus/`/api/text` already
-/// use; `places`/`persons`/`events`/`passages` each `[{id, label}]`, the
-/// addendum's own ticket-2 shape); a Concord locus is the leaner `{ref,
-/// text, tracked: false}` -- `tracked` is a NEW field (no established wire
-/// precedent covers "this corpus does/doesn't carry these sections" as a
-/// single flag), disclosed in CONTRACT.md rather than left for a caller to
-/// infer from field absence.
+/// `tracked` says whether this corpus carries the attachment sections at all, rather than
+/// leaving a caller to infer it from absent fields.
 pub fn run_json(graph: &GraphService, data: &AtlasData, ref_raw: &str) -> Result<serde_json::Value, CliError> {
     let wire = format!("text-unit:{ref_raw}");
     let text_id = decode_node_id(&wire).ok_or_else(|| {

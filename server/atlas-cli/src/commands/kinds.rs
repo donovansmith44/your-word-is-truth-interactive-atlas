@@ -1,34 +1,18 @@
-//! `bibex kinds` -- BIBEX-1 addendum (ticket 2, EDGE-KIND DISCOVERABILITY,
-//! owner order mid-batch 2026-08-29: "add `bibex kinds`... so the
-//! vocabulary itself is discoverable from nothing"). Lists the full
-//! edge-kind vocabulary `bibex edges --kind`/`bibex node <id>`'s own edge
-//! summary rows accept, straight off graph-types' own `relations!` manifest
-//! (`RelationId::ALL`/`SymRelationId::ALL`) -- the SAME total enumeration
-//! `EdgeKind::from_label` itself scans, so this listing can never drift
-//! out of sync with the `--kind` values actually accepted.
-//! See CONTRACT.md's own "bibex kinds" section.
+//! `bibex kinds` -- the edge-kind vocabulary, read straight off the relation manifest that
+//! `--kind` itself resolves against, so this listing cannot drift from what is accepted.
 
 use atlas_graph_types::edge::{RelationId, SymRelationId};
 
-/// One row of the vocabulary: `token` is the exact, copy-pasteable
-/// `--kind` value; `relation` is the manifest's OWN Rust identifier for
-/// this relation (`RelationId`/`SymRelationId`'s own `{:?}` name, e.g.
-/// "Cites", "Attests") -- the addendum's own "one-line descriptions from
-/// the relations! manifest names" wording: the description IS the
-/// manifest's own declared name, never new, hand-authored prose that
-/// could drift from what the manifest actually says.
+/// `token` is the exact, copy-pasteable `--kind` value; `relation` is the manifest's own
+/// declared name for it, never hand-authored prose that could drift from the manifest.
 pub struct KindRow {
     pub token: String,
     pub relation: String,
     pub direction: &'static str,
 }
 
-/// Every row `bibex edges --kind`/`bibex node`'s edge-summary tokens can
-/// ever be, in manifest declaration order (`RelationId::ALL` order, each
-/// directed relation's forward row then its inverse row, then every
-/// symmetric relation) -- a stable, reproducible order, not alphabetized
-/// (alphabetizing would separate a relation's own forward/inverse pair,
-/// the one grouping this listing exists to make legible).
+/// In manifest declaration order, deliberately not alphabetized: alphabetizing would
+/// separate a relation's forward and inverse rows, the one grouping this listing exists for.
 pub fn rows() -> Vec<KindRow> {
     let mut out = Vec::new();
     for r in RelationId::ALL {

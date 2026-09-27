@@ -1,5 +1,4 @@
-//! Bare `atlas` and `bibex help` -- CONTRACT.md's own "bibex (bare, no
-//! arguments)"/"bibex help" sections: identical short-help output, exit 0.
+//! Bare `atlas` and `bibex help` -- identical short-help output, exit 0.
 
 pub fn text() -> String {
     let mut out = String::new();

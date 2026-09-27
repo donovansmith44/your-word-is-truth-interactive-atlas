@@ -1,34 +1,3 @@
-//! Batch CDC-1: the CLI's own fragment of the recorded pact.
-//!
-//! bibex is a transport over the graph, so it is a contract surface, and
-//! `contracts/atlas-graph-contract/transport/cli.feature` asks it the same
-//! questions the HTTP suite asks the Router -- deliberately without a
-//! fixture, so the only way those scenarios can pass is for the two
-//! carriers to actually agree.
-//!
-//! # Why this lives here and not next to the other recorder
-//!
-//! `env!("CARGO_BIN_EXE_bibex")` is defined only for the tests of the
-//! package that declares the binary. Reaching across the crate boundary
-//! would mean `cargo run`-ing bibex from atlas-contract's test, which builds
-//! a second time and depends on the workspace layout. One recorder per
-//! crate that OWNS a transport is the smaller rule, and the runner merges
-//! every `*.json` in `contracts/pacts/`.
-//!
-//! # What it does NOT duplicate
-//!
-//! It does not re-derive which bibex invocations the corpus asks for.
-//! Deciding what a step line means is one rule and it lives in ONE place
-//! (`atlas-contract/tests/contract_pact.rs::request_key`), which publishes
-//! the result as `cli_keys` in the committed HTTP pact. This recorder
-//! reads that list. Two recorders parsing Gherkin two ways is exactly the
-//! kind of second, weaker path that eventually disagrees with itself.
-//!
-//! Consequence, stated rather than discovered: adding a bibex step to a
-//! feature file needs the HTTP recorder re-run first (to refresh
-//! `cli_keys`), then this one. If you forget, nothing is silently missed
-//! -- the runner fails with "no pact entry for 'bibex ...'", naming it.
-
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -50,11 +19,6 @@ fn cli_pact_path() -> PathBuf {
     repo_root().join("contracts/pacts/cli.json")
 }
 
-/// The bibex invocations the corpus asks for, as published by the HTTP
-/// recorder. Absent or empty is a hard failure, not an empty run: "no
-/// bibex keys" and "the HTTP pact has not been generated yet" look
-/// identical from here, and quietly writing an empty CLI pact would turn
-/// the second case into a green test and a broken gate.
 fn cli_keys() -> Vec<String> {
     let path = http_pact_path();
     let raw = std::fs::read_to_string(&path).unwrap_or_else(|_| {
@@ -77,13 +41,6 @@ fn cli_keys() -> Vec<String> {
     keys
 }
 
-/// Run bibex exactly as a consumer would, against the real committed
-/// graph, and capture its `--json` answer.
-///
-/// `--json` is bibex's contract surface (its own Cargo.toml: "BIBEX-1
-/// (--json flag, contract-first)"). Its human-readable stdout is pinned as
-/// a transcript by `tests/cli.rs`, which is the right tool for prose; this
-/// records the machine surface a second system would bind to.
 fn record_bibex(args: &str) -> Value {
     let dd = compiled_data_dir();
     let dd_str = dd.to_str().expect("the data dir path must be valid UTF-8");
@@ -123,16 +80,6 @@ fn render(v: &Value) -> String {
     s
 }
 
-/// Same law as the HTTP recorder's: regenerate from the real binary
-/// against the real graph, and fail on any difference from the committed
-/// copy.
-///
-/// `ATLAS_BLESS_PACT=1` RE-RECORDS **AND THEN FAILS** (fix round 1, review
-/// C-1). It used to write and `return`, so the test passed unconditionally
-/// and any shell with the variable already exported turned this leg of the
-/// contract gate green forever while rewriting the evidence under it.
-/// Blessing is now incapable of producing a passing test -- see the HTTP
-/// recorder's own note for the full reasoning.
 #[test]
 fn the_recorded_cli_pact_still_matches_the_real_binary() {
     let rendered = render(&build_pact());

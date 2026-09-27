@@ -1,7 +1,4 @@
-//! `bibex edges <id> [--kind K] [--limit N] [--cursor C]` -- one frontier
-//! page, the exact `(Position, EdgeQuery)` shape
-//! `atlas_contract::graph::node_edges` serves. See CONTRACT.md's
-//! own "bibex edges" section.
+//! `bibex edges <id> [--kind K] [--limit N] [--cursor C]` -- one page of a node's edges.
 
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::EdgeKind;
@@ -22,9 +19,6 @@ pub struct EdgesArgs<'a> {
     pub cursor: Option<usize>,
 }
 
-/// One resolved page row, ALREADY described (id/kind/label) -- shared by
-/// `run` (plain) and `run_json`, the same "one resolution, two renderings"
-/// discipline `node.rs`'s own `ResolvedCard`/`resolve` uses.
 struct ResolvedEntry {
     edge: String,
     id: String,
@@ -33,10 +27,8 @@ struct ResolvedEntry {
 }
 
 struct ResolvedPage {
-    /// The canonical `--kind` token this page answered for
-    /// (`EdgeKind::label()`, not necessarily byte-identical to whatever
-    /// case/spelling the caller typed -- though in practice they're the
-    /// same string, since `EdgeKind::from_label` only accepts exact labels).
+    /// The canonical token for the kind this page answered, not necessarily the spelling
+    /// the caller typed.
     kind_label: String,
     entries: Vec<ResolvedEntry>,
     next: Option<usize>,
@@ -78,16 +70,8 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
     let limit = args.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: args.cursor, limit });
 
-    // FIX ROUND 1 (review S-3/Q-2): the SAME PeopleGroup filter
-    // `atlas_contract::graph::node_edges` applies (PG-1a, "the
-    // U5-rebinding seam") -- `graph_wire::decode_node_id` carries no
-    // "PeopleGroup" arm, so a PeopleGroup-kind neighbor id handed back
-    // here could never be resolved by `bibex node <id>`/`bibex edges <id>`
-    // afterward: a real, reachable dead end this command would otherwise
-    // create and never disclose. Filtered HERE, mirroring the server's own
-    // serving-boundary projection exactly (the underlying graph query
-    // above is unfiltered, same as the server's) -- one revert away once
-    // U5 lands, same as the server's own comment says.
+    // A PeopleGroup neighbour is filtered out because its id cannot be decoded back by
+    // `node`/`edges`: handing one out would be a dead end this command never discloses.
     let entries: Vec<ResolvedEntry> = page
         .entries
         .iter()
@@ -123,12 +107,6 @@ pub fn run(graph: &GraphService, args: EdgesArgs) -> Result<String, CliError> {
     Ok(out)
 }
 
-/// BIBEX-1 (--json mode): `{kind, entries: [{edge, node: {id, kind,
-/// label}}], next}` -- field names reused verbatim from
-/// `atlas_contract::wire::EdgePage`/`EdgeEntry`/`NodeRef`
-/// (the SAME wire shape `/api/node/{id}/edges` already serves, minus
-/// `version`). CONTRACT.md's own "--json mode" section has the full field
-/// table.
 pub fn run_json(graph: &GraphService, args: EdgesArgs) -> Result<serde_json::Value, CliError> {
     let page = resolve(graph, &args)?;
     let entries: Vec<_> = page.entries.iter().map(|e| serde_json::json!({"edge": e.edge, "node": {"id": e.id, "kind": e.kind, "label": e.label}})).collect();

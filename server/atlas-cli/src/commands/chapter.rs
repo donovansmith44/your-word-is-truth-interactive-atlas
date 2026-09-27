@@ -1,26 +1,6 @@
-//! `bibex chapter <ref>` -- every verse in a KJV chapter, one line each.
-//! Ref parsed via `atlas_core::refs::ScriptureRef::parse` (the shared
-//! locus parser, not a hand-rolled one -- R2). Concord is deliberately
-//! NOT accepted here (CONTRACT.md's own "bibex chapter" section: a
-//! Concord article's own paragraph count varies too widely for a
-//! server-derived chapter span to mean anything consistent --
-//! `graph::text_window` rejects the identical combination for
-//! the same reason, and this command inherits that disclosed scope
-//! limit rather than inventing its own answer).
-//!
-//! FIX ROUND 1 (review C-1): the per-verse loop used to map both a
-//! `decode_text_unit` mismatch AND a `window::render` miss to a silent
-//! skip / `.unwrap_or_default()` blank -- a real, if dormant, "silent
-//! failing" violation (the committed graph never triggers either
-//! condition, since `chapter_span`'s own window only ever walks real KJV
-//! positions each carrying a real rendering, but the CODE PATH itself
-//! disagreed with `verse.rs`'s handling of the IDENTICAL condition on the
-//! IDENTICAL primitive). `render_verse_line` below is the shared,
-//! fail-loud replacement -- extracted specifically so the injected-miss
-//! case can be unit tested directly (this crate's own real-binary
-//! integration tests, R6, can only exercise the real committed graph,
-//! which cannot produce either miss; see this module's own `#[cfg(test)]`
-//! block for the hand-built `GraphQuery` fixture that does).
+//! `bibex chapter <ref>` -- every verse of a KJV chapter, one line each. A Concord ref is
+//! refused: an article's paragraph count varies too widely for a chapter span to mean
+//! anything consistent.
 
 use std::collections::HashMap;
 
@@ -32,12 +12,8 @@ use atlas_graph_types::store::GraphQuery;
 
 use crate::error::CliError;
 
-/// One verse's rendered output line (`"REF  text\n"`, red-letter marked),
-/// or a fail-loud `CliError` -- never a silent skip or a blanked line.
-/// Generic over `&impl GraphQuery` (not `GraphService`) so the missing-
-/// rendering case can be reproduced against a small hand-built fixture in
-/// a unit test, without needing a full `GraphService` (which has no
-/// public constructor that accepts a deliberately broken node table).
+/// Never a silent skip or a blanked line. Generic over the query so a node carrying no
+/// rendering at all can be injected in a test.
 fn resolve_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str) -> Result<(String, String), CliError> {
     let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id).ok_or_else(|| {
         CliError::not_found(
@@ -63,11 +39,8 @@ fn render_verse_line(snap: &impl GraphQuery, id: &AnyNodeId, chapter_ref: &str, 
     Ok(format!("{sref}  {}\n", super::verse::mark_red_letter(&text, &spans)))
 }
 
-/// Shared by `run` (plain) and `run_json`: parses `ref_raw` and resolves it
-/// to the `(start, n)` window this chapter's own verses occupy in the
-/// reading spine -- the SAME two fail-loud steps (`bad_ref` on a
-/// non-chapter-shaped ref, `not_found` on a well-shaped but absent
-/// book/chapter combination) both output modes must agree on.
+/// The two fail-loud steps both output modes must agree on: `bad_ref` on a ref that is not
+/// chapter-shaped, `not_found` on a well-shaped book/chapter that is absent.
 fn resolve_span(graph: &GraphService, ref_raw: &str) -> Result<(usize, usize), CliError> {
     let (book, chapter) = match ScriptureRef::parse(ref_raw) {
         Ok(ScriptureRef::Chapter { book, chapter }) => (book, chapter),
@@ -102,13 +75,7 @@ pub fn run(graph: &GraphService, ref_raw: &str) -> Result<String, CliError> {
     Ok(out)
 }
 
-/// BIBEX-1 (--json mode): an array of `{ref, text, words_of_christ}`
-/// objects, one per verse, in chapter order -- field names reused verbatim
-/// from `atlas_contract::wire::TextUnit` (the SAME wire shape
-/// `/api/text` already serves for a window of units). CONTRACT.md's own
-/// "--json mode" section has the full field table; no `next` field (unlike
-/// `/api/text`'s own paginated window) -- a chapter's own span is always
-/// the WHOLE chapter, never a page of it, so there is nothing to continue.
+/// No `next` field: a chapter's span is always the whole chapter, never a page of it.
 pub fn run_json(graph: &GraphService, ref_raw: &str) -> Result<serde_json::Value, CliError> {
     let (start, n) = resolve_span(graph, ref_raw)?;
 
@@ -135,17 +102,8 @@ mod tests {
     use atlas_graph_types::store::{GraphPublisher, GraphStore, MemStore};
     use atlas_graph_types::text::{LayerMap, TranslationId};
 
-    /// C-1 fix round: a hand-built fixture reproducing the exact condition
-    /// `.unwrap_or_default()` used to swallow -- a real TextUnit node
-    /// present in the graph, at a real KJV-shaped id, but with an EMPTY
-    /// `LayerMap` (no "kjv" rendering at all). The real committed
-    /// `data/compiled/graph.bin` can never produce this (every verse
-    /// `kjv_adapter` parses gets a rendering unconditionally), so this is
-    /// injected here rather than reproduced end-to-end -- disclosed, per
-    /// the review's own "or a unit test on the shared rendering path with
-    /// the miss injected" instruction.
     fn snapshot_with_a_textless_verse() -> impl GraphQuery {
-        let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1); // GEN.1.1's own id shape
+        let id = atlas_graph::kjv_adapter::verse_node_id(0, 1, 1);
         let node = Node { id: id.clone(), payload: NodePayload::TextUnit { corpus: "bible", renderings: LayerMap::new() }, provenance: ProvenanceId::from("test-fixture") };
         let mut g = Graph::default();
         g.nodes.insert(id, node);
@@ -168,7 +126,7 @@ mod tests {
     #[test]
     fn render_verse_line_fails_loud_when_the_id_does_not_decode_as_a_kjv_verse() {
         let id = AnyNodeId { kind: NodeKind::TextUnit, raw: "concord/1.1.1".to_string() };
-        let snap = snapshot_with_a_textless_verse(); // any real GraphQuery; this id is never looked up
+        let snap = snapshot_with_a_textless_verse();
         let err = render_verse_line(&snap, &id, "GEN.1", &HashMap::new()).expect_err("an id that isn't KJV-shaped must be a loud error, never a silent skip");
         assert_eq!(err.code(), "not_found");
         assert_eq!(err.exit_code(), 3);

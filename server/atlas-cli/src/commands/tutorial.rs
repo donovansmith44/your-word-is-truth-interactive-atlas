@@ -1,13 +1,5 @@
-//! `bibex tutorial` -- CONTRACT.md's own "Tutorial contract": seven
-//! numbered steps, each running the REAL command-implementation function
-//! against the REAL loaded graph (never a canned transcript) -- a change
-//! to a command's own output shape changes this tutorial's own output on
-//! the next run, automatically, since step 2-6 call `commands::{verse,
-//! chapter, node, edges, find}::run` directly, not a copy of their logic.
-//!
-//! Every ref/id/kind step 2-6 queries is a real, checked-present locus in
-//! the committed `data/compiled/graph.bin` (verified by this crate's own
-//! `tutorial_smoke_test` in `tests/cli.rs` -- R6).
+//! `bibex tutorial` -- seven steps, each calling the real command implementation against
+//! the real loaded graph, so a change to a command's output changes the tutorial's too.
 
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;

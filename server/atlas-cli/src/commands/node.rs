@@ -1,7 +1,4 @@
-//! `bibex node <id>` -- card + edge summary. Mirrors
-//! `atlas_contract::graph::node_card` exactly (same id grammar,
-//! same `GraphQuery` calls), minus the HTTP wire wrapping -- see
-//! CONTRACT.md's own "bibex node" section.
+//! `bibex node <id>` -- one node's card and its edge summary.
 
 use atlas_graph::GraphService;
 use atlas_graph_types::id::Position;
@@ -26,25 +23,13 @@ fn not_found_err(id_raw: &str) -> CliError {
     )
 }
 
-/// Resolved shape shared by `run` (plain) and `run_json` -- ONE resolution,
-/// TWO renderings, the same discipline `edges.rs`'s own `resolve` uses
-/// (never risk the two output modes drifting on what counts as a valid
-/// id/what the edge-summary rows are).
 struct ResolvedCard {
     id_raw: String,
     kind: String,
     label: String,
     provenance: String,
-    /// BIBEX-1 addendum (ticket 2, ruling 3, "must show each kind's exact
-    /// --kind TOKEN"): `kind.label()` (`EdgeKind::label()`) IS already the
-    /// exact, copy-pasteable `--kind` value `EdgeKind::from_label`
-    /// accepts back (its own total inverse, declared with it in
-    /// graph-types' own `edge.rs`) -- this was already true before this
-    /// addendum; declared
-    /// explicitly here and in CONTRACT.md, and proven by
-    /// `kinds::tests::every_row_token_round_trips_through_from_label`
-    /// plus this crate's own `node_edge_summary_kind_token_works_directly_
-    /// in_edges` integration test (the real "see it -> use it" loop).
+    /// Each kind's label IS the exact `--kind` token that resolves back to it, so a summary
+    /// row can be pasted straight into `bibex edges`.
     edge_summary: Vec<(String, usize)>,
 }
 
@@ -85,12 +70,6 @@ pub fn run(graph: &GraphService, id_raw: &str) -> Result<String, CliError> {
     Ok(out)
 }
 
-/// BIBEX-1 (--json mode): `{id, kind, label, provenance, edge_summary:
-/// [{kind, count}]}` -- field names reused verbatim from
-/// `atlas_contract::wire::NodeCard`/`EdgeSummaryEntry` (the
-/// SAME wire shape `/api/node/{id}` already serves, minus `version`/
-/// `description`: this crate never computes either -- CONTRACT.md's own
-/// "--json mode" section has the full field table).
 pub fn run_json(graph: &GraphService, id_raw: &str) -> Result<serde_json::Value, CliError> {
     let card = resolve(graph, id_raw)?;
     let edge_summary: Vec<_> = card.edge_summary.iter().map(|(kind, count)| serde_json::json!({"kind": kind, "count": count})).collect();
