@@ -19,48 +19,17 @@ use atlas_graph_types::text::VerseRef;
 use crate::error::ApiError;
 use crate::wire;
 
+/// The books of the canon in order, each with the verse count of every one of its chapters.
 #[utoipa::path(get, path = "/api/books", responses((status = 200, body = Vec<atlas_core::data::CanonBook>)), tag = "reading")]
 pub async fn books(State(data): State<Arc<AtlasData>>) -> Json<Vec<CanonBook>> {
     Json(data.canon.books.clone())
 }
 
-/// `GET /api/chapter/{cref}`. `cref` must parse as exactly a
-/// `ScriptureRef::Chapter` (book + chapter, e.g. `EXO.14`) — a book-only or
-/// verse/passage-shaped path segment is the wrong shape for this endpoint
-/// and 400s as `bad_ref`, same as an unparseable one. The optional
-/// `?translation=kjv` query param (ruling 5, M1 is KJV-only) is never
-/// extracted, so its presence or absence cannot affect this handler at all.
+/// One chapter of Scripture verse by verse: the text, the places and people named in it, its heading where it opens one, and how many cross references start at it.
 ///
-/// ruling-3-policy: once `cref` parses as a `Chapter`, an out-of-range
-/// chapter number (or a book with no known chapters in this atlas) is NOT an
-/// error — the verse-count bound comes from `canon.books[].chapters`, and an
-/// unknown/short chapter just yields `verse_count = 0`, i.e. a 200 response
-/// with an empty `verses` list. Same rationale as `scene_scripture`: a
-/// reader showing "no verses in this chapter" is a meaningful response, not
-/// a failure.
-///
-/// Batch M-A (brief requirement 5, "re-implement the OLD /api/chapter
-/// handler as a VIEW over the window query"): the verse TEXT below now
-/// comes from `GraphState::chapter_span` + `GraphState::window` -- the SAME
-/// windowed reading-order query `GET /api/text?scope=chapter` calls --
-/// instead of `data.verses.get(key)`. The verse-count bound and the
-/// out-of-canon policy above are UNCHANGED and still sourced from
-/// `AtlasData`; headings moved to `graph.heading_index` in M-C2, and
-/// OVERLAY-1 Task 5 moved the PLACE-MENTION half onto the port too
-/// (`graph.scene_source(&data)`'s own `places_for_verse`/`place`, the
-/// materialised-from-the-graph successors of the deleted
-/// `AtlasData::places_for_verse`/`place_by_id` -- identical ids in
-/// identical order, see those methods' own doc comments). THIS endpoint
-/// (the reader's own chapter view) was untouched by Batch M-B's own
-/// event-world migration;
-/// only `/api/narrative/event/{id}` (see that handler's own doc comment)
-/// and the generic `/api/node`/`/edges` endpoints move to the graph this
-/// batch. The WIRE SHAPE is byte-for-byte identical -- proven by
-/// `tests/graph_equivalence.rs`'s own all-1,189-chapters comparison -- so
-/// every existing caller of this endpoint (the reader's chapter view/
-/// mini-reader/split view, `ChapterNode`, `PlaceCard`'s hover verse text,
-/// `PassageBlock`, `PopoverSectionProviders`) now serves from the graph
-/// with NO client-side change and no reader-visible behavior change.
+/// `{cref}` is `BOOK.CHAPTER`, such as `EXO.14`; a book-only or verse-shaped
+/// segment is `bad_ref`. A chapter number past the end of the book is not an
+/// error -- the response carries an empty `verses` list.
 #[utoipa::path(get, path = "/api/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::Chapter), ApiError), tag = "reading")]
 pub async fn chapter(
     State(data): State<Arc<AtlasData>>,
@@ -130,23 +99,11 @@ pub async fn chapter(
     Ok(Json(wire::Chapter { sref: format!("{code}.{chapter}"), book: book.name().to_string(), chapter, verses }))
 }
 
-/// `GET /api/kretzmann/chapter/{cref}`. `cref` must parse as exactly a
-/// `ScriptureRef::Chapter` (book + chapter, e.g. `PSA.119`) -- same 400
-/// `bad_ref` convention as `GET /api/chapter/{cref}` for a book-only or
-/// verse/passage-shaped path segment. Same ruling-3-policy as `chapter`
-/// above: an out-of-range chapter number (or a book with no known chapters)
-/// is NOT an error -- `verse_count` resolves to 0 and this 200s with an
-/// empty `verses` list, never a 404 for "this chapter has no commentary."
+/// Kretzmann's commentary for one chapter: the items on each verse that has any, in document order.
 ///
-/// Replaces `Kretzmann.razor`'s own retired client-side fan-out (one
-/// `commented-on-by` edges HTTP call PER VERSE, concurrently -- 176
-/// simultaneous requests on every locus change for a chapter like PSA 119)
-/// with ONE request, computed by walking the SAME `commented-on-by` edge
-/// machinery server-side, in-process, via `atlas_graph::kretzmann_adapter::
-/// chapter_commentary` -- see that function's own doc comment for why this
-/// is additive, not a types-crate or artifact change: the underlying
-/// `CommentsOn`/`RelationId::CommentsOn` KRETZ-1 vocabulary is completely
-/// unchanged, this is a new READ path over data the graph already carries.
+/// `{cref}` is `BOOK.CHAPTER`, such as `PSA.119`; a book-only or verse-shaped
+/// segment is `bad_ref`. A chapter with no commentary answers an empty `verses`
+/// list. Each item's `id` fetches its prose from `/api/node/{id}`.
 #[utoipa::path(get, path = "/api/kretzmann/chapter/{cref}", params(("cref" = String, Path)), responses((status = 200, body = wire::KretzmannChapter), ApiError), tag = "reading")]
 pub async fn kretzmann_chapter(
     State(data): State<Arc<AtlasData>>,
@@ -183,22 +140,11 @@ pub async fn kretzmann_chapter(
     Ok(Json(wire::KretzmannChapter { verses, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// `GET /api/verse/{vref}`. `vref` must parse as exactly a
-/// `ScriptureRef::Verse` (`VerseId::parse_canonical` enforces this) — any
-/// other shape 400s as `bad_ref`.
+/// One verse in full: its text, who wrote its book, the events it belongs to, its cross references with previews, and the catechism items citing it.
 ///
-/// ruling-3-policy: unlike the scene/chapter endpoints, a structurally valid
-/// vref whose text is absent from this atlas's compiled KJV map is 404
-/// `not_found`, not a 200-with-placeholder. A single verse is an
-/// individually-addressed resource (like `/api/place/{id}`), not a
-/// list/scene that can be gracefully empty — there is no non-misleading way
-/// to represent "this verse doesn't exist" other than "not found", so this
-/// endpoint intentionally follows `/api/place/{id}`'s precedent rather than
-/// `scene_scripture`'s/`chapter`'s "out-of-canon is still 200" policy.
-///
-/// Cross-ref preview rows fail soft (ruling 4): ETL guarantees every
-/// compiled cross-ref target's first verse exists in the verses map, but if
-/// that's ever violated the row is skipped rather than panicking.
+/// `{vref}` is `BOOK.CHAPTER.VERSE`, such as `JHN.3.16`; any other shape is
+/// `bad_ref`, and a well-formed reference this atlas holds no text for is
+/// `not_found`.
 #[utoipa::path(get, path = "/api/verse/{vref}", params(("vref" = String, Path)), responses((status = 200, body = wire::VerseDetail), ApiError), tag = "reading")]
 pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(vref): Path<String>) -> Result<Json<wire::VerseDetail>, ApiError> {
     let vid = VerseId::parse_canonical(&vref).map_err(|_| ApiError::bad_ref(&vref))?;
@@ -293,43 +239,11 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     }))
 }
 
-/// `GET /api/xrefs/{sref}` (batch-g1-brief.md requirement 2, "passage
-/// context -- passages give xrefs, not just geo"). `sref` must parse as
-/// exactly a `ScriptureRef::Verse` or `ScriptureRef::Passage` -- the brief's
-/// own two given examples, `GEN.1.1` and `GEN.1.1-5`, are read as an
-/// exhaustive pair (a single verse or a same-chapter span) rather than a
-/// representative sample of every `ScriptureRef` shape: a bare book or
-/// chapter ref (`GEN`, `GEN.1`) has no defined "member verses" for this
-/// endpoint to aggregate over, so both 400 as `bad_ref`, the same typed
-/// error every other ref-shaped endpoint already uses (requirement 2:
-/// "Typed errors (bad_ref) unchanged").
+/// The cross references of a verse or a span, strongest first: each target, how strongly it is attested, and a preview of the text it points at.
 ///
-/// ruling-3-policy: unlike `/api/verse/{vref}`, an sref with no recorded
-/// cross-references at all -- including one naming a verse outside this
-/// atlas's compiled canon -- is NOT an error: 200 with an empty list, the
-/// same "gracefully empty, never a 404" policy `scene_scripture`/`chapter`
-/// already follow. This falls out of the aggregation itself needing no
-/// special-casing: `aggregate_span_xrefs` only ever reads `cross_refs` by
-/// key and calls `verse_text` by key, and a key simply absent/`None`
-/// contributes nothing, which is exactly as true for a real, canonical
-/// verse with zero curated cross-references (the overwhelmingly common
-/// case) as for an out-of-canon one.
-///
-/// Business logic (the union-and-sum aggregation, self-target drop, sort,
-/// cap-at-20) lives in `atlas_core::xrefs::aggregate_span_xrefs` -- this
-/// handler is pure response-shape assembly, per this module's own file
-/// header.
-/// OVERLAY-1 Task 2: `aggregate_span_xrefs`'s own preview-text parameter
-/// is now `impl Fn(&str) -> Option<String>`, not `&HashMap<String,
-/// String>` -- `atlas_core` still has no `graph-types` dependency of its
-/// own (the closure type crosses the boundary, not a graph type), and the
-/// aggregation logic itself is unchanged. `graph.cross_refs_by_from` (the
-/// graph's own `cites` rows -- `target` carries each row's own
-/// `target_display`, the honest original citation string, graph_types::
-/// edge::CrossRef's own M-C2 widening) still supplies the rows; the
-/// preview text now comes from `graph.verse_text_of` called per candidate
-/// key, on demand, instead of the retired `graph.verse_text` whole-spine
-/// companion. `AtlasData` is still not read anywhere in this handler.
+/// `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
+/// a book-only or chapter-only reference is `bad_ref`. A reference with no
+/// recorded cross references answers an empty list.
 #[utoipa::path(get, path = "/api/xrefs/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CrossRef>), ApiError), tag = "reading")]
 pub async fn xrefs(State(graph): State<Arc<GraphService>>, Path(sref): Path<String>) -> Result<Json<Vec<wire::CrossRef>>, ApiError> {
     let span = match ScriptureRef::parse(&sref) {

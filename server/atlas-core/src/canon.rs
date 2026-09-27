@@ -66,8 +66,7 @@ pub const BOOKS: [BookInfo; 66] = [
 ];
 
 crate::vocabulary! {
-    /// Which half of the canon a book belongs to -- the reader's own OT/NT
-    /// grouping of the contents tree.
+    /// Which half of the canon a book belongs to: the Old Testament, or the New.
     Testament {
         Old => "OT",
         New => "NT",
@@ -91,7 +90,6 @@ impl Testament {
 /// `BOOKS`, so reordering the canon moves it without anyone editing it.
 const FIRST_NEW_TESTAMENT_BOOK: &str = "MAT";
 
-/// How many of `BOOKS` precede `FIRST_NEW_TESTAMENT_BOOK`.
 pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = books_before(FIRST_NEW_TESTAMENT_BOOK);
 
 /// `BOOKS.iter().position(..)` is not available in a `const`, so the same

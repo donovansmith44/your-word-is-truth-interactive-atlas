@@ -17,25 +17,12 @@ use crate::error::ApiError;
 use crate::reading::drain_edges;
 use crate::wire;
 
-/// `GET /api/place/{id}?from=&to=`. Unknown id -> 404 `not_found` (a place
-/// id is an exact identifier, not a ref that can be "out of canon but still
-/// valid shape" — there's no parsing/shape question here at all).
+/// One place: where it is, the events that happened there oldest first, and its curated history where it has one.
 ///
-/// `from`/`to` are OPTIONAL (Batch E) and, unlike `scene_time`/`borders`'s
-/// own `from`/`to`, never themselves cause a 400: this endpoint's core
-/// resource (the place, its events) is fully meaningful with neither
-/// present, so a missing or malformed window just means `history` (when the
-/// place has one at all) reports its default display name and no blurb,
-/// rather than rejecting the whole request over an optional refinement.
-/// M-C2 (definitive surface list): `place`/`events` now come from the
-/// graph -- `atlas_graph::legacy::place_from_node` for the place itself,
-/// the `site-of` (`located-at` INVERSE) frontier at the place's own
-/// position for its own events (every LocatedAt row event_world.rs builds
-/// for this place, order-independent here since the explicit `sort_by_key`
-/// below already re-establishes the from_year order regardless).
-/// `place_history_for`/`place_name_alias_for` stay on `AtlasData`
-/// deliberately -- `place-history.json`/`place-names-kjv.json` are not
-/// this batch's deletion target.
+/// `{id}` is a place id handed back by another response; an id naming no place
+/// is `not_found`. The optional `from` and `to` years choose the period whose
+/// name and description the history reports -- neither is required, and a window
+/// that cannot be read simply leaves the place's default name in place.
 #[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), ("from" = Option<i32>, Query), ("to" = Option<i32>, Query)), responses((status = 200, body = wire::PlaceDetail), ApiError), tag = "places")]
 pub async fn place(
     State(data): State<Arc<AtlasData>>,

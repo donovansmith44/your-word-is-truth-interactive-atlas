@@ -11,26 +11,12 @@ use atlas_graph_types::text::VerseRef;
 use crate::error::ApiError;
 use crate::wire;
 
-/// `GET /api/catechism/{sref}` (Batch F, "verse -> citing catechism items
-/// lookup" -- requirement 3): `sref` must parse as exactly a
-/// `ScriptureRef::Verse` or `ScriptureRef::Passage`, mirroring
-/// `reading::xrefs`'s own accepted-shapes precedent exactly (a bare book or
-/// chapter ref has no defined "member verses" to aggregate over, so both 400
-/// as `bad_ref`). ruling-3-policy: an sref with no citing catechism items at
-/// all is NOT an error -- 200 with an empty list, same "gracefully empty,
-/// never a 404" policy `xrefs`/`chapter`/`scene_scripture` already follow.
-/// Business logic (the union-across-member-verses aggregation) lives in
-/// `atlas_core::catechism::items_for_span`, reached here via
-/// `AtlasData::catechism_items_for_span` -- this handler is pure
-/// response-shape assembly, same as every other handler in this crate.
+/// The catechism items that cite a verse or a span, each named and tied to the question it was cited under.
 ///
-/// PROV-1 FIX ROUND 1 (review M-3): now takes `State<Arc<GraphService>>`
-/// too, purely to attribute each row. That is the SECOND extractor the
-/// review thought would make this half "a genuinely larger change" -- it is
-/// not: `AppState` already implements `FromRef<AppState>` for
-/// `Arc<GraphService>`, and six handlers in this crate already take both.
-/// The aggregation itself is untouched; `AtlasData` is still where the
-/// business logic lives.
+/// `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
+/// a book-only or chapter-only reference is `bad_ref`. A reference no item cites
+/// answers an empty list, and each `id` fetches the whole item from
+/// `/api/catechism/item/{id}`.
 #[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ApiError), tag = "catechism")]
 pub async fn catechism_for_span(
     State(data): State<Arc<AtlasData>>,
@@ -47,21 +33,10 @@ pub async fn catechism_for_span(
     Ok(Json(out))
 }
 
-/// `GET /api/catechism/item/{id}` (Batch F, "item fetch by id" --
-/// requirement 3). Unknown id -> 404 `not_found`, same precedent
-/// `places::place` already set for an exact-identifier lookup (not a ref
-/// with its own "out of canon but still valid shape" middle ground). Each
-/// proof verse resolves to its own full KJV text (`CatechismProofVerse`'s
-/// own doc comment); a verse id that fails to resolve (should never happen
-/// -- `validate::run_catechism` already guarantees every curated verse
-/// exists in the compiled KJV text) is skipped rather than panicking, same
-/// ruling-4 soft-fail policy `reading::verse`'s own cross-ref preview
-/// lookup already follows.
+/// One catechism item in full: its own words, its explanation, the chief part it belongs to, and every proof verse with the verse text spelled out.
 ///
-/// OVERLAY-1 Task 2: proof-verse text now comes from `graph.verse_text_of`
-/// (a real, on-demand graph query), not the retired `AtlasData.verses` --
-/// this handler picks up a second extractor, `State<Arc<GraphService>>`,
-/// the same combined-state pattern `reading::verse` already uses.
+/// `{id}` is an item id handed back by `/api/catechism/{sref}` or by a verse's
+/// own catechism list; an id naming no item is `not_found`.
 #[utoipa::path(get, path = "/api/catechism/item/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::CatechismItem), ApiError), tag = "catechism")]
 pub async fn catechism_item(
     State(data): State<Arc<AtlasData>>,

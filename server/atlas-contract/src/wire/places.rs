@@ -3,56 +3,46 @@ use serde::Serialize;
 use atlas_core::data::PlaceDateClaim;
 use atlas_core::wire::SceneEvent;
 
+/// One place: where it is, the events that happened there, and what is known
+/// about its name and its history.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlaceDetail {
     pub id: String,
     pub name: String,
+    /// Latitude in degrees, north positive.
     pub lat: f64,
+    /// Longitude in degrees, east positive.
     pub lon: f64,
     pub events: Vec<SceneEvent>,
+    /// Absent for a place with no curated history.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub history: Option<History>,
-    /// Batch E3 (requirement 2's quiet provenance note): the bare, stripped,
-    /// un-aliased, un-period-resolved canonical name. ALWAYS COMPUTED --
-    /// unlike `history`, which stays absent for a place with no curated
-    /// `PlaceHistory` record at all (e.g. `cush-2`), this field's own
-    /// resolution never depends on `history` existing -- but only ever
-    /// SERIALIZED (`Some`) when it differs from whatever name is actually
-    /// showing this request (a curated period name OR a curated KJV alias
-    /// resolved to something else). Omitted (`None`, not a repeat of the
-    /// title) whenever this place's displayed name already IS its canonical
-    /// name, so the client's own popover renders NO provenance note rather
-    /// than a vacuous "known elsewhere as X" that just repeats the title.
+    /// The place's plain canonical name, present only when the name being shown is
+    /// a period name or a translation's own wording and so differs from it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
-    /// ENT-1a (owner order: "we actually want meaningful information about
-    /// who or what someone is, having that be backed by scripture"):
-    /// Easton's Bible Dictionary (1897, public domain) prose, source-
-    /// attested, `None` until a match exists -- never fabricated. ADDITIVE
-    /// JSON (batch-ent1a-brief.md controller decision 3): the current
-    /// client ignores unknown/absent fields; the EntityProfile presentation
-    /// half that renders this is HELD for the frontend-elegance brainstorm.
+    /// Public-domain dictionary prose about the place, absent when none is
+    /// recorded. Never invented.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
-/// Batch E: `/api/place/{id}`'s optional `history` payload, present only
-/// when this place has a curated `PlaceHistory` record at all (`when
-/// curated`, per the brief). `display_name` and `blurb` are resolved
-/// against the request's `?from=&to=` window when given (else `display_name`
-/// falls back to the place's own default `name` and `blurb` is omitted --
-/// see `history::resolve_display_name`/`resolve_blurb`'s own doc comments);
-/// `established`/`destroyed` are window-independent static facts, always
-/// included verbatim whenever curated.
+/// What is known about a place's name and existence over time, resolved for the
+/// years asked about.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct History {
+    /// The name this place bore in the years asked about, falling back to its
+    /// default name when no period name applies.
     pub display_name: String,
+    /// A short description of the place in those years, absent when none applies.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blurb: Option<String>,
+    /// When the place was founded, absent when that is not recorded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub established: Option<PlaceDateClaim>,
+    /// When the place was destroyed, absent when that is not recorded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub destroyed: Option<PlaceDateClaim>,
 }

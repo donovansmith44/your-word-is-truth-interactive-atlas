@@ -7,17 +7,17 @@ use atlas_core::sources::SourcesDocument;
 
 use crate::wire;
 
+/// Reports that the server is up, as the plain text `ok`.
 #[utoipa::path(get, path = "/health", responses((status = 200, body = String, content_type = "text/plain")), tag = "meta")]
 pub async fn health() -> &'static str {
     "ok"
 }
 
-/// `GET /api/sources` (batch-s-brief.md requirement 3): the Sources
-/// page's entire single source of truth, straight off
-/// `data/compiled/sources.json` (itself generated 1:1 from LICENSES.md by
-/// `atlas_etl::sources`'s own fail-loud drift check -- see the
-/// `gen_sources` binary). The client renders this directly; nothing here
-/// is a hardcoded duplicate list.
+/// Every source this atlas is built from, and how each one is licensed.
+///
+/// `categories` are the headings the `sources` are grouped under, and
+/// `provenances` join the provenance id that rides on an individual record
+/// back to the source that asserts it.
 #[utoipa::path(get, path = "/api/sources", responses((status = 200, body = atlas_core::sources::SourcesDocument)), tag = "meta")]
 pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<SourcesDocument> {
     Json((*sources).clone())
@@ -28,6 +28,11 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
 pub const MIN_SUPPORTED_VERSION: &str = "0.8.0";
 pub const MAX_SUPPORTED_VERSION: &str = "0.8.0";
 
+/// The range of contract versions this server answers for.
+///
+/// A consumer checks the range at startup and refuses to run against a server
+/// outside the one it was built for. The two schema versions identify the
+/// compiled data set behind the responses.
 #[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
     Json(wire::Contract {
@@ -38,10 +43,10 @@ pub async fn contract() -> Json<wire::Contract> {
     })
 }
 
-/// The published contract itself, served from the same document
-/// `contracts/openapi.yaml` is generated from -- a consumer reads the
-/// running server's contract without reaching for the repository. Rendered
-/// once: the document cannot change while the process runs.
+/// This API's own OpenAPI document, as YAML.
+///
+/// A consumer reads the contract off the running server rather than out of the
+/// repository the server was built from.
 #[utoipa::path(get, path = "/api/openapi.yaml", responses((status = 200, body = String, content_type = "application/yaml")), tag = "meta")]
 pub async fn openapi_yaml() -> ([(axum::http::HeaderName, &'static str); 1], String) {
     // The document cannot change while the process runs.

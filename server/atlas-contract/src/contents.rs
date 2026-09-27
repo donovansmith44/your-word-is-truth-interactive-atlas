@@ -15,6 +15,11 @@ use crate::wire;
 
 const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
 
+/// The contents of one corpus as a two-level tree: its books or documents, and each one's chapters or articles.
+///
+/// `{corpus}` is `bible` or `concord`; anything else is `not_found`. Every entry
+/// carries the reference to open for it, how many members it holds, and, for a
+/// book, which half of the canon it belongs to.
 #[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), ApiError), tag = "contents")]
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();

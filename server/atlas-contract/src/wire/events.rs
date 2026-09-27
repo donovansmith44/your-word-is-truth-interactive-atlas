@@ -6,36 +6,18 @@ use atlas_core::time::TimeRange;
 
 use super::reading::PlaceRef;
 
-/// Batch HOTFIX-4 requirement 1: `GET /api/narrative/event/{id}`'s own
-/// extended wire shape -- WAS a bare `Vec<NarrativePosition>` (Batch N);
-/// NOW an object, `narrative` carrying EXACTLY that same array (unchanged
-/// shape, unchanged rows, every existing narrative-scoped consumer keeps
-/// reading it unmodified) alongside the NEW `timeline` field. `timeline` is
-/// OMITTED (not `null`) entirely for a general-kind or unknown event id
-/// (requirement 2: "general-kind containers... NOT part of time traversal"),
-/// present otherwise with `prior`/`following` each independently omitted
-/// only at the atlas's own true first/last dated event (conditional
-/// presence, matching every other optional field on this wire). Every
-/// consumer of the OLD bare-array shape is migrated in this same commit:
-/// `AtlasClient.NarrativeEventPositions` (client), `EventNode`/
-/// `INarrativeAware` (client), `PlaceCard.LoadNarrativePositions` (client,
-/// reads `.Narrative` — TRAVERSAL-1 logic unchanged), and the Playwright
-/// helper call sites in `world-pin.spec.ts`/`popover-sections.spec.ts`.
+/// Where one event sits in time: in each narrative it belongs to, and in the
+/// atlas's whole chronology.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NarrativeEventPositions {
     pub narrative: Vec<NarrativePosition>,
+    /// The event's place in the whole chronology; absent for an event with no date.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeline: Option<TimelinePosition>,
 }
 
-/// Batch N: one (narrative, event) position a queried verse or event
-/// touches -- `prior`/`following` omitted (not null) exactly at a
-/// narrative's own first/last leg, same conditional-presence wire
-/// convention `History.blurb`/`CatechismRef.question` etc. already
-/// use throughout `wire/`. `event_id`/`event_label` are carried (map-
-/// focus-sync + disambiguating two positions sharing one `narrative_id`)
-/// even though they restate something the CALLER usually already knows.
+/// One event's place in one narrative, with the legs on either side of it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NarrativePosition {
@@ -43,138 +25,77 @@ pub struct NarrativePosition {
     pub narrative_name: String,
     pub event_id: String,
     pub event_label: String,
+    /// The leg before this one; absent at the narrative's first leg.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prior: Option<NarrativeAdjacentEvent>,
+    /// The leg after this one; absent at the narrative's last leg.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub following: Option<NarrativeAdjacentEvent>,
 }
 
-/// `GET /api/event/{id}`'s own wire shape (Batch T requirement 4, "EVENT
-/// node popover"): `title` (this event's own `Event::label`), `kind`
-/// (Batch T2: `"event"` | `"general"`, ALWAYS present -- the client's own
-/// signal for which sections apply), `when`, every resolved place, every
-/// resolved witness (ALWAYS >=1 -- see `scene::witnesses_for`'s own doc
-/// comment for the single-implicit-witness synthesis; requirement 4's
-/// "single-witness events show the one passage, no parallel framing when
-/// n=1" is a CLIENT-side rendering decision keyed off `witnesses.len()`,
-/// not a server-side omission), and provenance (`robertson_section`/
-/// `ref_note`, each omitted, not null, when this event's own date/grouping
-/// needed no note beyond the other).
-///
-/// Batch T2: `when` is OMITTED (not null) for a `kind == "general"`
-/// passage -- the internal `Event::when` still holds
-/// `TimeRange::undated()` (a structurally-required field, see that
-/// function's own doc comment), but a general-kind passage has no
-/// defensible date, so nothing here may ever present that sentinel to a
-/// reader as a real claim. `places` stays an always-present, possibly-
-/// empty array (unchanged pattern -- a general-kind passage's own
-/// `Event::places` is always empty by construction, so this needs no
-/// separate gating).
+/// One event, or one titled passage, in full.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventDetail {
     pub id: String,
     pub title: String,
+    /// `event` for something that happened at a date, `general` for a titled
+    /// passage that has none.
     pub kind: String,
+    /// The years the event spans; absent for a titled passage that has no date.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub when: Option<TimeRange>,
     pub places: Vec<PlaceRef>,
+    /// The passages that narrate this event, one per book. Always at least one.
     pub witnesses: Vec<EventWitness>,
+    /// The section of Robertson's Harmony of the Gospels this event falls in, absent
+    /// when it has none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub robertson_section: Option<String>,
-    /// Batch T2 (Acts provenance): Acts's own sibling provenance field to
-    /// `robertson_section` above -- see `atlas_core::data::Event::
-    /// acts_section`'s own doc comment for why it's separate, not reused.
-    /// Omitted (not null) when absent, same convention.
+    /// The section of the outline of Acts this event falls in, absent when it has
+    /// none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub acts_section: Option<String>,
-    /// Batch W1 (whole-Bible titled verse containers): the general,
-    /// whole-Bible sibling of `acts_section` above -- see
-    /// `atlas_core::data::Event::atlas_section`'s own doc comment. Omitted
-    /// (not null) when absent, same convention.
+    /// The titled section of this atlas's own outline of Scripture, absent when it
+    /// has none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub atlas_section: Option<String>,
-    /// Batch W3: the KJV's own literal-citation sibling of `robertson_section`/
-    /// `acts_section`/`atlas_section` above -- see `atlas_core::data::Event::
-    /// kjv_superscription`'s own doc comment. Omitted (not null) when absent,
-    /// same convention.
+    /// The superscription the King James Version prints over this passage, absent
+    /// when it prints none.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kjv_superscription: Option<String>,
+    /// A note on how this event's date and grouping were arrived at, absent when
+    /// none was needed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_note: Option<String>,
-    /// ATTEST-1 (L3, "Mentioned in"): the verses that MENTION this event
-    /// without narrating it -- canonical verse ids, ascending. Distinct
-    /// from `witnesses` ON PURPOSE, and that distinction IS the batch: an
-    /// account NARRATES the event and belongs under PARALLEL ACCOUNTS; a
-    /// mention merely REFERENCES it while narrating something else, and
-    /// rendering one as the other is exactly the "fundamental error" the
-    /// owner reported. An event whose whole scriptural basis is mentions
-    /// (the Espousal of Mary) serves an EMPTY `witnesses` and a non-empty
-    /// list here -- a real node with a real frontier, never a fabricated
-    /// parallel-accounts section.
-    ///
-    /// OMITTED (not `[]`) when empty, the same convention every optional
-    /// field above follows -- so an event with no mentions serves
-    /// byte-identically to before this batch.
+    /// The verses that mention this event without narrating it, in canonical order.
+    /// Omitted when there are none.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mentioned_in: Vec<String>,
-    /// ATTEST-1 (L4, "Similar Accounts"): events joined to this one by an
-    /// `Analogue` row -- "distinct events whose accounts are similar in
-    /// form or content, NEVER two accounts of one event." Deliberately a
-    /// SEPARATE field from `witnesses` rather than a flag on it: the
-    /// owner's own report was that a similar-but-distinct story was being
-    /// rendered as a parallel account, and one field cannot carry two
-    /// claims. Omitted when empty, same convention.
+    /// Events whose accounts resemble this one without being accounts of it.
+    /// Omitted when there are none.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub analogues: Vec<EventAnalogue>,
-    /// Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event
-    /// node's `provenance`, off `Node::provenance`
-    /// (`event_world::event_provenance`: `"theographic"` for an imported
-    /// event, `"curated"` for one this project authored). The focus card's
-    /// own attribution, and the TOTAL-CAPTURE HONESTY case in one field: a
-    /// hand-authored event says `curated`, which resolves to the registry's
-    /// own "Our Own Curated Work" category, and therefore cannot silently
-    /// wear Theographic's clothes at the reader.
+    /// The id of the source that asserts this event; `/api/sources` names it.
     pub provenance: String,
-    /// Batch PROV-1: every distinct provenance id behind THIS EVENT's
-    /// PARALLEL ACCOUNTS section -- the `Attests` rows for this event
-    /// specifically, not the family average.
-    ///
-    /// A list, and per-EVENT rather than per-family, even though the real
-    /// `attests` table is single-sourced TODAY (`{event-witnesses}`,
-    /// measured by `the_per_family_provenance_map_of_the_real_artifact_
-    /// is_pinned`; ATTEST-1's `attestation-corrections` rows land on
-    /// `mentions`/`analogue`, not here -- an earlier version of this
-    /// comment said otherwise and was wrong). Per-event is what keeps this
-    /// TRUE if a second source ever lands in the table: a family average
-    /// would start lying the moment it did, and THE LEPER LESSON is exactly
-    /// that a hand-authored row must never be attributed to an importer.
-    ///
-    /// Omitted (not `[]`) when empty -- an event with no accounts (the
-    /// Espousal of Mary) renders no PARALLEL ACCOUNTS section at all, so it
-    /// needs no attribution for one; same convention as `mentioned_in`
-    /// above, so such an event serves byte-identically to before this
-    /// batch but for the two unconditional fields.
+    /// The sources behind the passages that narrate this event, for this event
+    /// rather than for the corpus. Omitted when there are none.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub witnesses_provenance: Vec<String>,
-    /// Batch PROV-1: the same, for the "Mentioned in" section -- the
-    /// `Mentions` rows naming THIS event.
+    /// The sources behind the verses that mention this event. Omitted when there are
+    /// none.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mentions_provenance: Vec<String>,
 }
 
-/// ATTEST-1: one end of an `Analogue` -- enough to render and to explore
-/// (`/api/event/{id}` takes this `id` straight back).
+/// One event whose account resembles another's -- similar in form or in content,
+/// never a second account of the same happening.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventAnalogue {
     pub id: String,
     pub title: String,
-    /// Batch PROV-1: genuinely PER-ROW -- the `Analogue` row joining these
-    /// two events carries its own provenance, and this is that value, not
-    /// either end's node provenance and not the family's. An `Analogue` is
-    /// a curatorial CLAIM about two events ("similar in form or content,
-    /// never two accounts of one event"); attributing it to whoever
-    /// supplied the events would name the wrong asserter.
+    /// The id of the source that asserts the resemblance. A resemblance is a claim
+    /// of its own, so this is neither event's own source.
     pub provenance: String,
 }

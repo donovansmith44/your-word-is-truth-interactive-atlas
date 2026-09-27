@@ -14,69 +14,11 @@ use crate::error::ApiError;
 use crate::reading::drain_edges;
 use crate::wire;
 
-/// `GET /api/narrative/event/{id}` (Batch N requirement 1's own "endpoint/
-/// payload also supports event-id lookup" half; Batch T requirement 2: the
-/// resolver itself is UNCHANGED -- `positions_for_events`'s own leg-array-
-/// adjacency walk was already exactly "chronologically adjacent given a
-/// validated leg order," so no new logic was needed; what changed is WHO
-/// calls this endpoint -- `client/Explore/EventNode.cs` replaces the
-/// retired `NarrativeEventNode.cs` as its own caller -- and that ETL now
-/// ALSO validates same-year legs via `Event::order_key`, not just
-/// `when.from_year`, see `atlas_etl::validate::run`): every narrative
-/// position the given event id occupies -- mirrors `GET
-/// /api/catechism/item/{id}`'s own precedent exactly (an id-keyed follow-on
-/// lookup). Reached by the client ONLY with an event id already handed back
-/// by a prior response (never typed by a user), so an id that names no real
-/// event at all is a genuine "not found," same `places::place`/
-/// `catechism::catechism_item` precedent as every other exact-identifier
-/// lookup in this crate;
-/// ruling-3-policy still applies one layer in -- a REAL event that simply
-/// isn't a leg of any narrative 200s with an empty array (the "no results"
-/// case, not the "bad identifier" case), same as `positions_for_events`
-/// itself naturally returns for a bare, narrative-less event (see
-/// `narrative::tests::event_in_no_narrative_returns_no_positions`).
+/// Where one event sits in time: its neighbours in each narrative it is a leg of, and its neighbours in the whole chronology.
 ///
-/// BATCH M-B (controller decision 3): re-implemented as a VIEW over graph
-/// queries -- temporal neighbors come from `atlas_graph::Chronology::
-/// temporal_neighbors` (built from `ChronologyDerivation::order`, which
-/// `tests/timeline_equivalence.rs` proves is EXACTLY
-/// `atlas_core::narrative::global_timeline_position`'s own timeline order --
-/// the acceptance centerpiece). The bespoke resolvers this endpoint used to
-/// call (`positions_for_events`/`global_timeline_position`) RETIRE from this
-/// production call site -- `atlas_core::narrative`'s own module is
-/// otherwise completely untouched (its OWN tests, including E1-E5, stay
-/// green, unmodified) and its two topology functions remain `pub`, still
-/// directly unit-tested, simply no longer reached by any live server
-/// response.
-///
-/// BATCH M-C (controller decision 1): succession duals now come straight
-/// off the GENERIC PORT instead of a companion index. `graph-types` commit
-/// `13184e1` (owner-approved, "EdgeMeta -- per-entry relation metadata")
-/// tags every `follows-in`/`precedes-in` entry with the `NarrativeId` it
-/// belongs to (`Graph::build_indexes`'s own `Succession` pairing), so "every
-/// narrative this event is a leg of, and its neighbor in each" is answerable
-/// by draining both direction's pages at this event's own Position and
-/// grouping entries by `EdgeMeta::Narrative` -- exactly the SAME
-/// `Narrative.legs`-derived data the graph's own `Succession` rows were
-/// always built from, just read back through the port instead of a
-/// second, hand-maintained index (`atlas_graph::event_world::EventWorld`'s
-/// own `narrative_positions` field, RETIRED this batch -- see that
-/// module's own `Chronology` doc comment). This closes the M-B review's I-3
-/// (validation bypass): there is now only one representation of "which
-/// narrative is this leg in," so it cannot silently diverge from the
-/// graph's own rows.
-///
-/// WIRE SHAPE IS BYTE-IDENTICAL (hard requirement, verified by the
-/// pre-existing Playwright `event-timeline.spec.ts`/`popover-sections.spec.ts`
-/// suites, which exercise this exact endpoint through the unmodified
-/// client): `NarrativeEventPositions`/`NarrativePosition`/
-/// `TimelinePosition`/`NarrativeAdjacentEvent` are UNCHANGED. Each
-/// adjacent event's own presentation (label/places/verse_groups) still
-/// calls `atlas_core::narrative::adjacent_event` directly (made `pub` at
-/// M-B, see that function's own doc comment) -- the SAME presentation
-/// builder the OLD resolver used, so label/places/verse_group formatting
-/// cannot drift from what shipped before; only the TOPOLOGY (which ids are
-/// prior/following, in which narratives) now originates from the graph.
+/// `{id}` is an event id handed back by another response; an id naming no event
+/// is `not_found`. An event that is a leg of no narrative answers an empty
+/// `narrative` list, and one with no date carries no `timeline` at all.
 #[utoipa::path(get, path = "/api/narrative/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NarrativeEventPositions), ApiError), tag = "events")]
 pub async fn narrative_event_positions(
     State(data): State<Arc<AtlasData>>,
@@ -163,16 +105,10 @@ pub async fn narrative_event_positions(
     Ok(Json(wire::NarrativeEventPositions { narrative, timeline }))
 }
 
-/// `GET /api/event/{id}` (Batch T requirement 4): the EVENT node's own rich
-/// fetch -- id-keyed, same exact-identifier "unknown id -> 404 not_found"
-/// precedent `narrative_event_positions`/`catechism_item`/`place` already
-/// set (never a user-typed id; always one a prior response, or a reader
-/// heading, already handed back). Reads the graph's own Event node directly
-/// (M-C2: via `legacy::event_from_node`, not the scene/narrative machinery,
-/// and no longer `data.event_by_id` -- see the M-C2 comment inside this
-/// function) since this is a passage's own STANDALONE content --
-/// title/date/places/witnesses -- not anything scoped to a window or a
-/// narrative position.
+/// One event in full: its title and date, where it happened, the passages that narrate it, the verses that only mention it, and the events whose accounts resemble it.
+///
+/// `{id}` is an event id handed back by another response; an id naming no event
+/// is `not_found`. A titled passage with no date carries no `when`.
 #[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), ApiError), tag = "events")]
 pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventDetail>, ApiError> {
     let snap = graph.snapshot();

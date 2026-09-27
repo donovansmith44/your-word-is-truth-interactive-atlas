@@ -4,56 +4,56 @@ use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
 use utoipa::openapi::{RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
+/// One node of the graph at a glance: what it is, what to call it, where it
+/// came from, and what it connects to.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NodeCard {
     pub id: String,
     pub kind: NodeKind,
     pub label: String,
+    /// The id of the source that asserts this node; `/api/sources` names it.
     pub provenance: String,
+    /// How many neighbours this node has of each kind, listing only the kinds it
+    /// has any of.
     pub edge_summary: Vec<EdgeSummaryEntry>,
+    /// A stamp identifying the data set this card was read from.
     pub version: String,
-    /// D5: present for a Person only (omitted, never null, otherwise).
+    /// Life facts, present only for a person.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub person: Option<PersonLife>,
-    /// ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,
-    /// `None` until a match exists -- same additive-JSON, same held-client
-    /// disclosure as `wire::PlaceDetail::description`. This is the
-    /// ONLY "detail" surface a Person or PeopleGroup node has at all
-    /// (`graph_wire.rs`'s own doc comment: no dedicated per-kind endpoint
-    /// exists for either), so widening the generic card here is what
-    /// actually reaches them; it reaches Place/PeopleGroup for free too
-    /// (the same payload fact, whichever kind carries it).
-    ///
-    /// Batch CORP-1b: the SAME field, widened again -- a CommentaryItem's
-    /// own prose (`NodePayload::CommentaryItem.text`) rides here too now
-    /// (`atlas_graph::legacy::node_description`'s own updated match), for
-    /// the identical reason: no dedicated per-kind endpoint exists for
-    /// CommentaryItem either, and the prose was already sitting on the
-    /// compiled graph payload, just never read.
+    /// Public-domain dictionary or commentary prose about this node, absent when
+    /// none is recorded. Never invented.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
-/// D5 (owner, 2026-09-15; additive, AQC 0.7.0): a Person card's life facts,
-/// straight off the payload. `birth_year`/`death_year` are the source's
-/// own life dates (75 / 64 of 3,067 persons carry one); `first_year`/
-/// `last_year` are the CORPUS-mention span, never a lifespan; `eternal`
-/// with its Scripture `eternal_grounds` is the curated exception ("God
-/// because he is eternal") -- an eternal person shows no years at all.
+/// What is recorded about one person's life.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PersonLife {
+    /// Absent when the source records none.
     pub gender: Option<String>,
+    /// The year of birth where one is recorded, negative for BC; most people have
+    /// none.
     pub birth_year: Option<i32>,
+    /// The year of death where one is recorded.
     pub death_year: Option<i32>,
+    /// The earliest year at which this person is mentioned -- the span of mentions,
+    /// never a lifespan.
     pub first_year: Option<i32>,
+    /// The latest year at which this person is mentioned.
     pub last_year: Option<i32>,
+    /// True for a person Scripture presents as eternal, who therefore carries no
+    /// years at all.
     pub eternal: bool,
+    /// The verses on which that is claimed.
     pub eternal_grounds: Vec<String>,
+    /// Other names this person is known by.
     pub also_called: Vec<String>,
 }
 
+/// How many neighbours of one kind something has.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EdgeSummaryEntry {
@@ -61,25 +61,31 @@ pub struct EdgeSummaryEntry {
     pub count: usize,
 }
 
+/// One page of a node's neighbours of a single kind.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EdgePage {
     pub kind: EdgeKind,
     pub entries: Vec<EdgeEntry>,
+    /// Pass this back as `cursor` for the following page; absent on the last page.
     pub next: Option<usize>,
+    /// A stamp identifying the data set this page was read from.
     pub version: String,
 }
 
+/// One neighbour, with the edge that joins it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EdgeEntry {
-    /// The bijection witness travels on the wire (M-A brief requirement 4):
-    /// the SAME id a caller sees here is what the target's own inverse-kind
-    /// page carries back for this same connection.
+    /// The edge's own id. The neighbour's page for the opposite kind carries this
+    /// same id for this same connection, and the edge itself can be explored.
     pub edge: String,
     pub node: NodeRef,
 }
 
+/// A reference to something the graph holds: enough to show it, and the id to
+/// fetch it with. The `kind` is one of the graph's node kinds, or `Edge` when
+/// the reference is to an edge, which can be explored in its own right.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NodeRef {
@@ -88,10 +94,9 @@ pub struct NodeRef {
     pub label: String,
 }
 
-/// What a frontier entry's position IS: one of the node kinds the graph
-/// declares, or an edge -- an edge takes focus too (design doc §0), so a
-/// `justified-by` row reached through its own `justifies` frontier names
-/// no node kind at all.
+/// A frontier entry's position is not always a node: an edge takes focus too, so
+/// `Edge` is a kind of its own here. Consumers read this as one flat string enum
+/// -- see `NodeRef`, whose description the document publishes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PositionKind {
     Node(NodeKind),
@@ -113,8 +118,6 @@ impl Serialize for PositionKind {
     }
 }
 
-/// A FLAT string enum, never a `oneOf`: the generated client turns this
-/// component into one C# enum.
 impl PartialSchema for PositionKind {
     fn schema() -> RefOr<Schema> {
         let names = NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(PositionKind::Edge.name()));
@@ -125,39 +128,39 @@ impl PartialSchema for PositionKind {
 impl ToSchema for PositionKind {}
 
 atlas_core::vocabulary! {
-    /// How much text one `/api/text` window covers: the `n` units around the
-    /// requested ref, or the whole chapter that ref names.
+    /// How much text one window of `/api/text` covers: the units around the
+    /// reference asked for, or the whole chapter that reference names.
     TextScope {
         Verse => "verse",
         Chapter => "chapter",
     }
 }
 
+/// A window of one corpus's reading spine.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TextWindow {
     pub units: Vec<TextUnit>,
+    /// The reference one step further on in the direction travelled; absent at the
+    /// end of the corpus.
     pub next: Option<String>,
+    /// A stamp identifying the data set this window was read from.
     pub version: String,
 }
 
+/// One unit of a reading spine: a verse of Scripture, or a paragraph of the
+/// Book of Concord.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TextUnit {
     #[serde(rename = "ref")]
     pub sref: String,
     pub text: String,
-    /// Batch RED-1: this unit's own aligned sub-verse red-letter spans --
-    /// see `wire::Verse.words_of_christ`'s own doc comment
-    /// (identical shape/convention). Always empty for `corpus=concord`
-    /// (a wholly different corpus, never the KJV -- decision 5's own
-    /// sub-verse precision is KJV-specific by construction).
+    /// The spans of `text` that are the words of Christ, in order. Always empty
+    /// outside Scripture.
     pub words_of_christ: Vec<super::reading::WordsOfChristSpan>,
-    /// D3 (owner, 2026-09-15; additive, AQC 0.6.0): this unit's own
-    /// inhabited frontier kinds and counts -- the SAME `edge_summary`
-    /// shape `NodeCard` carries, so a corpus page can make ONLY units
-    /// with edges clickable (no dead clicks) without an N+1 of node-card
-    /// calls. The reader may ignore it.
+    /// How many neighbours this unit has of each kind, so a page can tell which
+    /// units lead somewhere without asking after each one.
     pub edge_summary: Vec<EdgeSummaryEntry>,
 }
 

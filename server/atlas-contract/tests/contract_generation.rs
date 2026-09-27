@@ -176,3 +176,65 @@ fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTr
         _ => {}
     }
 }
+
+const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
+    ".md",
+    ".rs",
+    "2026",
+    "atlas_contract",
+    "atlas_core",
+    "atlas_graph",
+    "batch",
+    "brief",
+    "controller",
+    "design doc",
+    "fix round",
+    "fixme",
+    "graph_wire",
+    "graphquery",
+    "hotfix",
+    "m-a",
+    "m-b",
+    "m-c",
+    "m-d",
+    "overlay-",
+    "owner",
+    "principles",
+    "prov-",
+    "q-",
+    "requirement ",
+    " review",
+    "ruling",
+    "spec ",
+    "task ",
+    "todo",
+    "\u{a7}",
+];
+
+#[derive(Debug, PartialEq)]
+struct InternalHistoryHit {
+    line: usize,
+    token: &'static str,
+    text: String,
+}
+
+#[test]
+fn the_published_contract_names_no_internal_history() {
+    // Arrange
+    let document = atlas_contract::document::openapi_yaml();
+    // Act
+    let hits: Vec<InternalHistoryHit> = document
+        .lines()
+        .enumerate()
+        .flat_map(|(number, text)| {
+            let line = number + 1;
+            let haystack = text.to_ascii_lowercase();
+            FORBIDDEN_IN_PUBLISHED_PROSE
+                .iter()
+                .filter(move |token| haystack.contains(**token))
+                .map(move |token| InternalHistoryHit { line, token, text: text.trim().to_string() })
+        })
+        .collect();
+    // Assert
+    assert_eq!(hits, Vec::<InternalHistoryHit>::new());
+}

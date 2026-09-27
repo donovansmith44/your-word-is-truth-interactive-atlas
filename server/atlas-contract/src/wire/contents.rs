@@ -2,46 +2,53 @@ use serde::Serialize;
 
 use atlas_core::canon::Testament;
 
+/// One corpus's contents, as a tree two levels deep.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Contents {
     pub corpus: Corpus,
+    /// A stamp identifying the data set this tree was read from.
     pub version: String,
     pub roots: Vec<ContentsRoot>,
 }
 
+/// A top-level entry: a book of the Bible, or a document of the Book of
+/// Concord.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ContentsRoot {
     pub id: String,
     pub title: String,
     pub kind: ContentsRootKind,
-    /// Absent for a Concord document, which belongs to neither testament.
+    /// Which half of the canon the book belongs to; absent for a Concord document,
+    /// which belongs to neither.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<Testament>,
-    /// The navigation target: the root's own first child's ref.
+    /// The reference to open when this entry is chosen: its first child's.
     #[serde(rename = "ref")]
     pub sref: String,
+    /// The entry's chapters, or its articles.
     pub children: Vec<ContentsChild>,
 }
 
+/// A second-level entry: a chapter of a book, or an article of a document.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ContentsChild {
     pub id: String,
     pub title: String,
     pub kind: ContentsChildKind,
-    /// `GEN.1` for a chapter; `BoC 7.2.1` (its first paragraph) for an article.
+    /// The reference to open for this entry: `GEN.1` for a chapter, or an
+    /// article's first paragraph, such as `BoC 7.2.1`.
     #[serde(rename = "ref")]
     pub sref: String,
-    /// The child's own members: verses of a chapter, paragraphs of an article.
+    /// How many members it holds: verses of a chapter, paragraphs of an article.
     pub count: usize,
 }
 
 atlas_core::vocabulary! {
-    /// Every body of text this app serves a reading spine for. Each name IS
-    /// the graph's own spine key, named here rather than re-typed, so a
-    /// request that resolves to a corpus reaches that corpus's own spine.
+    /// A body of text this API serves a reading spine for: Scripture, or the
+    /// Book of Concord.
     Corpus {
         Bible => atlas_graph::kjv_adapter::BIBLE_CORPUS,
         Concord => atlas_graph::concord_adapter::CONCORD_CORPUS,
@@ -49,7 +56,7 @@ atlas_core::vocabulary! {
 }
 
 atlas_core::vocabulary! {
-    /// What a top-level entry of a corpus's contents IS: a book of the Bible,
+    /// Whether a top-level entry of a corpus's contents is a book of the Bible
     /// or a document of the Book of Concord.
     ContentsRootKind {
         Book => "book",
@@ -58,9 +65,8 @@ atlas_core::vocabulary! {
 }
 
 atlas_core::vocabulary! {
-    /// What a second-level entry IS: a chapter of a book, or an article of a
-    /// document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC)
-    /// or TOPIC (Small Catechism)").
+    /// Whether a second-level entry of a corpus's contents is a chapter of a book
+    /// or an article of a document. The contents tree goes no deeper than this.
     ContentsChildKind {
         Chapter => "chapter",
         Article => "article",

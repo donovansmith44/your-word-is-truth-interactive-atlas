@@ -7,11 +7,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
-/// Verse counts per chapter for one book.
+/// One book of the canon: its code, its name, and how many verses each of its
+/// chapters holds.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CanonBook {
+    /// The three-letter code, such as `GEN`.
     pub code: String,
+    /// The book's full name.
     pub name: String,
+    /// The verse count of each chapter, in order.
     pub chapters: Vec<u16>,
 }
 
@@ -587,36 +591,44 @@ pub struct EventWitness {
     pub robertson_section: Option<String>,
 }
 
-/// An ordered chain of event ids (`legs`) that `scene::build_arrows` turns
-/// into consecutive arrows. ETL validates legs are non-decreasing by
-/// `when.from_year`; scene composition trusts that invariant rather than
-/// re-deriving it.
+/// A journey or storyline through the atlas: an ordered chain of events the map
+/// draws as a run of arrows.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Narrative {
     pub id: String,
     pub name: String,
+    /// The colour its arrows are drawn in.
     pub color: String,
+    /// The ids of its events, in order, never running backwards in time.
     pub legs: Vec<String>,
 }
 
+/// A named stretch of this atlas's timeline.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Era {
     pub id: String,
     pub name: String,
+    /// The first year of the era, negative for BC.
     #[schema(value_type = i32)]
     pub from_year: Year,
+    /// The last year of the era.
     #[schema(value_type = i32)]
     pub to_year: Year,
 }
 
+/// Who wrote one book of the Bible, where, and when.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BookMeta {
     /// Not on the wire: a caller already knows which book it asked about.
     #[serde(skip_serializing)]
     pub book: String,
+    /// The book's author, as this atlas records him.
     pub author: String,
+    /// Where it was written, absent when that is not recorded.
     pub write_place: Option<String>,
+    /// The earliest year it is dated to, negative for BC; absent when undated.
     pub write_from: Option<i32>,
+    /// The latest year it is dated to; absent when undated.
     pub write_to: Option<i32>,
 }
 
@@ -626,33 +638,19 @@ pub struct CrossRef {
     pub votes: i32,
 }
 
-/// A curated landmark label (river/sea/mountain/region) rendered always-on,
-/// non-interactive, on the World map — the "actual good and informative
-/// map" landmark-labels feature. `kind` is one of `"water"`, `"mountain"`,
-/// `"region"` (atlas-etl's `validate::run_landmarks` enforces the enum;
-/// this struct itself accepts any string so a hand-authored curated file
-/// with a typo fails ETL validation with a clear message rather than
-/// silently refusing to deserialize with serde's own less-helpful error).
-///
-/// Batch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,
-/// "populated far field... broad standing regions... sized by geographic
-/// extent"): `size` is an optional hint, one of `"sm"`, `"md"`, `"lg"`
-/// (also enum-checked by `validate::run_landmarks`, same friendlier-error
-/// reason as `kind`), `None` for every landmark curated before this batch.
-/// Two effects, both in map.js: (1) font-size, mirroring BorderLayer's own
-/// polity-label `data-size` sm/md/lg tiers; (2) tier-0 visibility —
-/// `applyLabelTier` treats ANY landmark carrying an explicit size hint as a
-/// deliberately-curated far-field context label, visible even at the FAR
-/// (zoomed-out) tier regardless of its `kind`'s own default tier rule,
-/// which otherwise only exempts `kind == "water"`. A landmark with no
-/// `size` at all keeps the exact PRE-Batch-C2 kind-based tier behavior —
-/// this field only ever ADDS visibility, never removes any.
+/// An always-on map label: a water, a mountain or a region, drawn at one point
+/// and never interactive.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Landmark {
     pub name: String,
+    /// `water`, `mountain` or `region`.
     pub kind: String,
+    /// Latitude in degrees, north positive.
     pub lat: f64,
+    /// Longitude in degrees, east positive.
     pub lon: f64,
+    /// A size hint -- `sm`, `md` or `lg` -- for a label meant to stay readable when
+    /// zoomed out; absent for most landmarks.
     #[serde(default)]
     pub size: Option<String>,
 }
@@ -739,18 +737,15 @@ pub struct PlaceBlurbEntry {
     pub breadth: String,
 }
 
-/// A biblically-supported established/destroyed date claim. `when` is
-/// either a single year (`from_year == to_year`, the curated TOML's `year =
-/// ...` shorthand) or a genuine range (`from = ...` / `to = ...`) --
-/// collapsed to one `TimeRange` here since the client's own `YearText.
-/// FormatRange` already renders an equal-endpoints range as a single year,
-/// so no separate "was this a year or a range" flag is needed on the wire.
-/// `note` is a short qualifier (e.g. `"traditional"`) the client renders as
-/// a leading "c." on the date when present.
+/// A date this atlas claims for a place, with the verses it rests on.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PlaceDateClaim {
+    /// The year claimed, or the range; a single year is a span whose ends are equal.
     pub when: TimeRange,
+    /// The verses supporting the claim.
     pub verses: Vec<String>,
+    /// A qualifier such as `traditional`, shown as a leading "c." on the date;
+    /// absent when the date needs none.
     pub note: Option<String>,
 }
 
@@ -858,39 +853,18 @@ pub struct PolityEra {
     pub fall: Option<PolityDelta>,
 }
 
-/// Batch M requirement 1: one Scripture-mapped historical delta -- the
-/// event AT an era boundary (a polity's rise, an internal border/regime
-/// change, or its fall), curated as `[era.transition]`/`[era.fall]` nested
-/// under one `[[era]]` table (see `PolityEra::transition`/`PolityEra::fall`'s
-/// own doc comments). Shape is deliberately flat and small, mirroring
-/// `CatechismItem.ref_note`'s own "cite only what you actually consulted"
-/// discipline:
-/// - `event`: a short, sentence-cased prose description (e.g. "Assyria
-///   carries Israel captive") -- house prose, never a bare citation.
-/// - `verses`: individually-canonical verse refs (the SAME flat,
-///   already-canonical-string convention `CatechismItem::verses`/
-///   `Event::verses` already use -- no ranges, no re-expansion needed), each
-///   independently explorable once on the wire (POLITY-DELTA's own THE
-///   SCRIPTURES section, rendered through the shared passage-list
-///   component). MAY be empty (an event grounded only in Church-traditional
-///   history, with no single verse pinpointing it) -- the SCRIPTURES section
-///   is then simply absent (conditional presence), never a fabricated ref.
-/// - `ref_note`: names only the source(s) actually consulted -- 1911
-///   Britannica (already the era ring's own grounding source in most
-///   curated files), a specific scripture passage, or an explicit
-///   "tradition only" disclosure when that's the honest state of the
-///   evidence. Never invented, per this project's standing citation-
-///   integrity rule (6+ prior incidents) -- see the batch report's own
-///   delta-coverage table for exactly which boundaries got one and why the
-///   rest were honestly omitted.
+/// The event at one boundary of a polity's era: its rise, a change of its
+/// borders, or its fall.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct PolityDelta {
+    /// A short description of what happened.
     pub event: String,
-    /// `default` governs reading the curated TOML only: the wire always
-    /// carries this list, empty or not.
+    /// The verses grounding it. May be empty for an event history records but no
+    /// single verse pinpoints; never a fabricated reference.
     #[serde(default)]
     #[schema(required = true)]
     pub verses: Vec<String>,
+    /// The sources actually consulted for this event.
     pub ref_note: String,
     /// Fix round 1 (I1): a curator-authored ECHO of the `from` year of the
     /// era this delta block is meant to belong to -- required precisely

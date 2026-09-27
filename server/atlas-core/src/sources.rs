@@ -16,98 +16,62 @@
 
 use serde::{Deserialize, Serialize};
 
-/// One heading group on the Sources page (e.g. "Scripture & Text"). `id`
-/// is the join key [`SourceEntry::category`] points at.
+/// One heading the sources are grouped under.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SourceCategory {
+    /// The key a source's `category` points at.
     pub id: String,
     pub label: String,
 }
 
-/// One row of LICENSES.md's own "## Per-source table", curated by hand
-/// into page-ready prose (positive tone throughout, per the KJV inerrancy
-/// directive; license wording copied from LICENSES.md, never
-/// embellished, per the citation-integrity rule).
-///
-/// `licenses_row_key` is never rendered on the page -- it is a literal
-/// substring of this source's own row in LICENSES.md's Source column,
-/// read ONLY by `atlas_etl::sources::validate_against_licenses`'s own
-/// fail-loud drift check (requirement 3: "a LICENSES.md row absent from
-/// the page (or vice versa) fails the build or a test").
+/// One source this atlas is built from: what it is, what was built from it, and
+/// how it is licensed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct SourceEntry {
     pub id: String,
+    /// The id of the heading this source is grouped under.
     pub category: String,
+    /// The source's own name.
     pub title: String,
+    /// What the source is, in a sentence or two.
     pub what_it_is: String,
+    /// What this atlas built from it.
     pub what_we_built: String,
+    /// The licence it is used under, quoted rather than paraphrased.
     pub license: String,
+    /// Where to find the source, absent when it has no public home.
     #[serde(default)]
     pub link: Option<String>,
+    /// A key that ties this entry to its row in the project's licence file, so the
+    /// two cannot drift apart. Not meant to be displayed.
     pub licenses_row_key: String,
 }
 
-/// The whole compiled/curated shape. `data/curated/sources.toml`'s
-/// `[[category]]`/`[[source]]` arrays and `data/compiled/sources.json`'s
-/// top-level object are the SAME shape (no per-format renaming), so one
-/// struct serves both directions -- `atlas_etl::sources::parse_sources`
-/// reads the TOML shape, `gen_sources` writes this straight to JSON, and
-/// `GET /api/sources` serves that JSON back out unchanged.
+/// Everything this atlas is built from: the sources, the headings they are
+/// grouped under, and the ids that tie individual records back to a source.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, utoipa::ToSchema)]
 pub struct SourcesDocument {
     pub categories: Vec<SourceCategory>,
     pub sources: Vec<SourceEntry>,
-    /// Batch PROV-1: see [`ProvenanceEntry`]. `#[serde(default)]` so a
-    /// `sources.json` written before this batch still deserializes (the
-    /// same additive-only discipline the HTTP wire follows) -- the
-    /// committed one is regenerated with this table populated.
+    /// The join from the provenance id a record carries to the source that asserts
+    /// it.
     #[serde(default)]
     pub provenances: Vec<ProvenanceEntry>,
 }
 
-/// Batch PROV-1 (owner order 1, verbatim: "one thing we definitely need
-/// for EVERY PIECE OF DATA is the source from which it came. openbible,
-/// etc."): THE JOIN ROW between a `ProvenanceId` as the graph actually
-/// carries it -- the interned adapter-side string on every node and every
-/// authored/imported row (`"kjv"`, `"theographic"`, `"curated-eras"`, ...)
-/// -- and the [`SourceEntry`] that names, describes and licenses it for a
-/// reader.
-///
-/// This table exists because the two vocabularies are genuinely DIFFERENT,
-/// and always were: an adapter's provenance id is an INGEST fact (which
-/// pipeline stage asserted this row), while a source id is a PUBLICATION
-/// fact (which corpus a reader is being cited to). Several ingest ids
-/// legitimately map to ONE source -- every hand-authored `curated-*` id is
-/// this project's own work -- and rewriting the graph to carry publication
-/// ids instead would erase that distinction. So the mapping is DECLARED
-/// here, curated, and checked in BOTH directions
-/// (`atlas_etl::sources::validate_structure` for internal consistency;
-/// `atlas-graph/tests/provenance_registry_real_data.rs` for the real
-/// artifact), rather than guessed by string munging at the UI.
-///
-/// [`confidence`](Self::confidence) is the reader-facing half of
-/// `atlas_graph_types::ingest::Confidence`, which the graph's own row
-/// structs do NOT store (they carry the id alone -- and that enum's own
-/// doc comment says why: confidence "derives from its role at the
-/// registry," and this IS the registry). Spelled exactly as that enum's
-/// variants are: `"CanonicalText"` | `"Curated"` | `"Imported"` |
-/// `"Derived"`.
+/// The join between a provenance id as records carry it and the source that
+/// names, describes and licenses it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ProvenanceEntry {
-    /// The `ProvenanceId` as the compiled graph carries it, verbatim.
+    /// The provenance id exactly as a record carries it.
     pub id: String,
-    /// The [`SourceEntry::id`] this ingest id is a claim BY.
+    /// The id of the source this is a claim by.
     pub source: String,
-    /// `atlas_graph_types::ingest::Confidence`, spelled as its own variant
-    /// name -- see this struct's doc comment. Validated against the closed
-    /// vocabulary by [`crate::sources::CONFIDENCE_VOCABULARY`].
+    /// How the claim was arrived at: `CanonicalText`, `Curated`, `Imported` or
+    /// `Derived`.
     pub confidence: String,
-    /// The optional "locator" half of `ingest::Provenance`, at the level
-    /// this registry can honestly state it: WHAT INSIDE the named source
-    /// this id draws on ("cross_references.txt", "Bible-Geocoding-Data",
-    /// ...). Omitted (not an empty string) when the source's own
-    /// `what_we_built` already says it and a locator would add nothing --
-    /// never a fabricated or padded string.
+    /// What inside the named source this id draws on, absent when the source's own
+    /// description already says.
     #[serde(default)]
     pub locator: Option<String>,
 }

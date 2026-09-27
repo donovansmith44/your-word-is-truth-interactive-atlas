@@ -19,17 +19,13 @@ use crate::error::ApiError;
 use crate::graph_wire::{decode_node_id, describe_position, encode_node_id};
 use crate::wire;
 
-/// `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
-/// edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
-/// `edge_summary` already lists only inhabited kinds) + the graph version
-/// stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
-/// malformed or unresolvable id is `bad_ref` (matches every other
-/// ref-shaped endpoint's own 400 convention), an id that parses but names
-/// no node in the built graph is `not_found` (six kinds resolve as of
-/// Batch M-B: `text-unit:BOOK.C.V` naming a real canon verse, and
-/// `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
-/// Theographic id; any other kind prefix, or a real-shaped id this batch's
-/// event world doesn't carry, 400s/404s per the same convention).
+/// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
+///
+/// `{id}` is `Kind:identifier` -- `Place:hazor-1`, `Event:ab_ur`,
+/// `Person:aaron_1` -- or `text-unit:BOOK.CHAPTER.VERSE` for a verse of
+/// Scripture and `text-unit:BoC PART.ARTICLE.PARAGRAPH` for a paragraph of the
+/// Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
+/// node is `not_found`.
 #[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ApiError), tag = "graph")]
 pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::NodeCard>, ApiError> {
     let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
@@ -80,12 +76,13 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
 const DEFAULT_EDGE_LIMIT: usize = 20;
 const MAX_EDGE_LIMIT: usize = 200;
 
-/// `GET /api/node/{id}/edges?kind=&cursor=&limit=` (design doc §5): one page
-/// of one edge kind. `kind` is a label from graph-types' own relation
-/// manifest (e.g. `"cites"`/`"cited-by"`) -- missing or unrecognized is
-/// `bad_kind`; `cursor` is the opaque (here: plain integer) offset the
-/// previous page's own `next` returned; `limit` defaults to 20, capped at
-/// 200.
+/// One page of a node's neighbours of a single kind, each with the id of the edge that joins them.
+///
+/// `{id}` takes the same form `/api/node/{id}` does. The required `kind` is an
+/// edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an
+/// unrecognised id is `bad_ref`, and an id naming no node is `not_found`.
+/// `limit` defaults to 20 and caps at 200; pass the response's `next` back as
+/// `cursor` for the following page, and its absence is the last page.
 #[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), ("kind" = EdgeKind, Query), ("cursor" = Option<usize>, Query), ("limit" = Option<usize>, Query)), responses((status = 200, body = wire::EdgePage), ApiError), tag = "graph")]
 pub async fn node_edges(
     State(graph): State<Arc<GraphService>>,
@@ -120,48 +117,16 @@ pub async fn node_edges(
     Ok(Json(wire::EdgePage { kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// `GET /api/text?ref=<dot-ref>&n=&dir=&scope=&corpus=` (design doc §6;
-/// M-A brief requirement 4): a window of `{ref, text}` units + next
-/// cursor + graph version. `scope=chapter` returns exactly that chapter's
-/// units (`n` is ignored -- the count is derived server-side,
-/// `GraphService::chapter_span`) -- still the SAME window query
-/// (`window::window`) every other path calls, just with server-derived
-/// bounds.
+/// A window of one corpus's reading spine: the units of text around the one a reference names, and the reference that continues the window.
 ///
-/// CORP-2a (decision 8, "additive... the EXISTING generic endpoint... NO
-/// new bespoke endpoints; zero client changes"): `corpus=concord` serves
-/// the Book of Concord's own reading spine through this SAME route --
-/// `ref` is then `ConcordTag::cite`'s own citation form
-/// (`"BoC {part}.{article}.{paragraph}"`, e.g. `"BoC 7.2.1"` for the
-/// Small Catechism's First Commandment), `scope=chapter` is rejected
-/// (`parse_concord_ref`'s own doc comment has the reasoning), and the
-/// canonical rendering is the corpus's own Bente-Dau layer
-/// (`window::render_layer`, not `window::render`'s hardcoded KJV).
-/// `corpus` defaults to `"bible"` when absent -- the client never needs
-/// to send it, so every existing request's own behavior is
-/// byte-for-byte unchanged.
-///
-/// Fix round 1, I1: `dir=backward` is REJECTED (`bad_dir`, 400) when
-/// combined with `scope=chapter`, rather than silently misapplied. A
-/// chapter-scoped window's bounds are already fully determined by the
-/// chapter itself (`chapter_span` always returns the span covering EVERY
-/// verse of that chapter) -- there is no honest "walk backward" distinct
-/// from "walk onward" once start/n are both fixed by the chapter's own
-/// edges, so accepting the combination silently would only ever produce
-/// either (a) the identical result as onward (misleadingly implying a real
-/// choice existed) or, as previously shipped, (b) a DIFFERENT chapter's
-/// tail entirely (`chapter_span`'s `start` is always the chapter's own
-/// verse 1 position; applying backward *resolution* to that as if it were
-/// a window's END walks into the PRECEDING chapter). Rejecting the
-/// combination outright is the honest choice: `dir` only has meaning for a
-/// verse-anchored window, where onward/backward genuinely pick different
-/// spans.
-///
-/// For any other `scope`: `dir=backward` walks the window ending AT `ref`
-/// instead of starting from it; anything else (including absence) is
-/// onward. ETag/If-None-Match on the version stamp: since the graph is
-/// immutable for the process lifetime, the ETag is constant across every
-/// request until the next server restart.
+/// `ref` is `BOOK.CHAPTER.VERSE`, or `BoC PART.ARTICLE.PARAGRAPH` when
+/// `corpus=concord` (`corpus` is `bible` unless given, anything else is
+/// `bad_corpus`); a malformed reference is `bad_ref` and one naming nothing in
+/// the corpus is `not_found`. `n` defaults to 1 and caps at 500, and
+/// `dir=backward` ends the window at `ref` instead of starting it there.
+/// `scope=chapter` covers the whole chapter named instead, and takes neither `n`
+/// nor `dir=backward` -- the combination is `bad_dir`. The response's `next` is
+/// the reference one step further on, absent at the end of the corpus.
 #[utoipa::path(get, path = "/api/text", params(("ref" = String, Query), ("n" = Option<usize>, Query), ("dir" = Option<String>, Query), ("scope" = inline(Option<wire::TextScope>), Query), ("corpus" = Option<String>, Query)), responses((status = 200, body = wire::TextWindow), ApiError), tag = "graph")]
 pub async fn text_window(
     State(graph): State<Arc<GraphService>>,

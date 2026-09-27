@@ -9,6 +9,7 @@ paths:
     get:
       tags:
       - reading
+      summary: The books of the canon in order, each with the verse count of every one of its chapters.
       operationId: books
       responses:
         '200':
@@ -22,22 +23,10 @@ paths:
     get:
       tags:
       - catechism
-      summary: |-
-        `GET /api/catechism/item/{id}` (Batch F, "item fetch by id" --
-        requirement 3). Unknown id -> 404 `not_found`, same precedent
-        `places::place` already set for an exact-identifier lookup (not a ref
-        with its own "out of canon but still valid shape" middle ground). Each
-        proof verse resolves to its own full KJV text (`CatechismProofVerse`'s
-        own doc comment); a verse id that fails to resolve (should never happen
-        -- `validate::run_catechism` already guarantees every curated verse
-        exists in the compiled KJV text) is skipped rather than panicking, same
-        ruling-4 soft-fail policy `reading::verse`'s own cross-ref preview
-        lookup already follows.
+      summary: 'One catechism item in full: its own words, its explanation, the chief part it belongs to, and every proof verse with the verse text spelled out.'
       description: |-
-        OVERLAY-1 Task 2: proof-verse text now comes from `graph.verse_text_of`
-        (a real, on-demand graph query), not the retired `AtlasData.verses` --
-        this handler picks up a second extractor, `State<Arc<GraphService>>`,
-        the same combined-state pattern `reading::verse` already uses.
+        `{id}` is an item id handed back by `/api/catechism/{sref}` or by a verse's
+        own catechism list; an id naming no item is `not_found`.
       operationId: catechism_item
       parameters:
       - name: id
@@ -91,27 +80,12 @@ paths:
     get:
       tags:
       - catechism
-      summary: |-
-        `GET /api/catechism/{sref}` (Batch F, "verse -> citing catechism items
-        lookup" -- requirement 3): `sref` must parse as exactly a
-        `ScriptureRef::Verse` or `ScriptureRef::Passage`, mirroring
-        `reading::xrefs`'s own accepted-shapes precedent exactly (a bare book or
-        chapter ref has no defined "member verses" to aggregate over, so both 400
-        as `bad_ref`). ruling-3-policy: an sref with no citing catechism items at
-        all is NOT an error -- 200 with an empty list, same "gracefully empty,
-        never a 404" policy `xrefs`/`chapter`/`scene_scripture` already follow.
-        Business logic (the union-across-member-verses aggregation) lives in
-        `atlas_core::catechism::items_for_span`, reached here via
-        `AtlasData::catechism_items_for_span` -- this handler is pure
-        response-shape assembly, same as every other handler in this crate.
+      summary: The catechism items that cite a verse or a span, each named and tied to the question it was cited under.
       description: |-
-        PROV-1 FIX ROUND 1 (review M-3): now takes `State<Arc<GraphService>>`
-        too, purely to attribute each row. That is the SECOND extractor the
-        review thought would make this half "a genuinely larger change" -- it is
-        not: `AppState` already implements `FromRef<AppState>` for
-        `Arc<GraphService>`, and six handlers in this crate already take both.
-        The aggregation itself is untouched; `AtlasData` is still where the
-        business logic lives.
+        `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
+        a book-only or chapter-only reference is `bad_ref`. A reference no item cites
+        answers an empty list, and each `id` fetches the whole item from
+        `/api/catechism/item/{id}`.
       operationId: catechism_for_span
       parameters:
       - name: sref
@@ -167,44 +141,11 @@ paths:
     get:
       tags:
       - reading
-      summary: |-
-        `GET /api/chapter/{cref}`. `cref` must parse as exactly a
-        `ScriptureRef::Chapter` (book + chapter, e.g. `EXO.14`) — a book-only or
-        verse/passage-shaped path segment is the wrong shape for this endpoint
-        and 400s as `bad_ref`, same as an unparseable one. The optional
-        `?translation=kjv` query param (ruling 5, M1 is KJV-only) is never
-        extracted, so its presence or absence cannot affect this handler at all.
+      summary: 'One chapter of Scripture verse by verse: the text, the places and people named in it, its heading where it opens one, and how many cross references start at it.'
       description: |-
-        ruling-3-policy: once `cref` parses as a `Chapter`, an out-of-range
-        chapter number (or a book with no known chapters in this atlas) is NOT an
-        error — the verse-count bound comes from `canon.books[].chapters`, and an
-        unknown/short chapter just yields `verse_count = 0`, i.e. a 200 response
-        with an empty `verses` list. Same rationale as `scene_scripture`: a
-        reader showing "no verses in this chapter" is a meaningful response, not
-        a failure.
-
-        Batch M-A (brief requirement 5, "re-implement the OLD /api/chapter
-        handler as a VIEW over the window query"): the verse TEXT below now
-        comes from `GraphState::chapter_span` + `GraphState::window` -- the SAME
-        windowed reading-order query `GET /api/text?scope=chapter` calls --
-        instead of `data.verses.get(key)`. The verse-count bound and the
-        out-of-canon policy above are UNCHANGED and still sourced from
-        `AtlasData`; headings moved to `graph.heading_index` in M-C2, and
-        OVERLAY-1 Task 5 moved the PLACE-MENTION half onto the port too
-        (`graph.scene_source(&data)`'s own `places_for_verse`/`place`, the
-        materialised-from-the-graph successors of the deleted
-        `AtlasData::places_for_verse`/`place_by_id` -- identical ids in
-        identical order, see those methods' own doc comments). THIS endpoint
-        (the reader's own chapter view) was untouched by Batch M-B's own
-        event-world migration;
-        only `/api/narrative/event/{id}` (see that handler's own doc comment)
-        and the generic `/api/node`/`/edges` endpoints move to the graph this
-        batch. The WIRE SHAPE is byte-for-byte identical -- proven by
-        `tests/graph_equivalence.rs`'s own all-1,189-chapters comparison -- so
-        every existing caller of this endpoint (the reader's chapter view/
-        mini-reader/split view, `ChapterNode`, `PlaceCard`'s hover verse text,
-        `PassageBlock`, `PopoverSectionProviders`) now serves from the graph
-        with NO client-side change and no reader-visible behavior change.
+        `{cref}` is `BOOK.CHAPTER`, such as `EXO.14`; a book-only or verse-shaped
+        segment is `bad_ref`. A chapter number past the end of the book is not an
+        error -- the response carries an empty `verses` list.
       operationId: chapter
       parameters:
       - name: cref
@@ -258,6 +199,11 @@ paths:
     get:
       tags:
       - contents
+      summary: 'The contents of one corpus as a two-level tree: its books or documents, and each one''s chapters or articles.'
+      description: |-
+        `{corpus}` is `bible` or `concord`; anything else is `not_found`. Every entry
+        carries the reference to open for it, how many members it holds, and, for a
+        book, which half of the canon it belongs to.
       operationId: contents
       parameters:
       - name: corpus
@@ -311,6 +257,11 @@ paths:
     get:
       tags:
       - meta
+      summary: The range of contract versions this server answers for.
+      description: |-
+        A consumer checks the range at startup and refuses to run against a server
+        outside the one it was built for. The two schema versions identify the
+        compiled data set behind the responses.
       operationId: contract
       responses:
         '200':
@@ -322,18 +273,7 @@ paths:
     get:
       tags:
       - map
-      summary: |-
-        `GET /api/eras` (Batch M-C, controller decision 7: "map migration...
-        become views over graph queries"). BATCH M-C: re-implemented as a VIEW
-        over the graph's own Era nodes (`atlas_graph::era_adapter`) instead of
-        `AtlasData.eras` -- `GraphService.era_ids` is the companion enumeration
-        `GraphQuery`'s own minimal port surface doesn't model (no "list every
-        node of kind K" primitive; see that field's own doc comment), already
-        held in chronological order; every actual FIELD comes from a real
-        `GraphQuery::node` call on this request's own snapshot. WIRE SHAPE
-        UNCHANGED: `Era { id, name, from_year, to_year }`, same order, same
-        JSON -- `AtlasData.eras`/`eras.json` retire this batch (deletion
-        inventory) with this endpoint as their only production reader.
+      summary: Every named stretch of this atlas's timeline, with its year bounds, oldest first.
       operationId: eras
       responses:
         '200':
@@ -347,17 +287,10 @@ paths:
     get:
       tags:
       - events
-      summary: |-
-        `GET /api/event/{id}` (Batch T requirement 4): the EVENT node's own rich
-        fetch -- id-keyed, same exact-identifier "unknown id -> 404 not_found"
-        precedent `narrative_event_positions`/`catechism_item`/`place` already
-        set (never a user-typed id; always one a prior response, or a reader
-        heading, already handed back). Reads the graph's own Event node directly
-        (M-C2: via `legacy::event_from_node`, not the scene/narrative machinery,
-        and no longer `data.event_by_id` -- see the M-C2 comment inside this
-        function) since this is a passage's own STANDALONE content --
-        title/date/places/witnesses -- not anything scoped to a window or a
-        narrative position.
+      summary: 'One event in full: its title and date, where it happened, the passages that narrate it, the verses that only mention it, and the events whose accounts resemble it.'
+      description: |-
+        `{id}` is an event id handed back by another response; an id naming no event
+        is `not_found`. A titled passage with no date carries no `when`.
       operationId: event
       parameters:
       - name: id
@@ -411,24 +344,11 @@ paths:
     get:
       tags:
       - reading
-      summary: |-
-        `GET /api/kretzmann/chapter/{cref}`. `cref` must parse as exactly a
-        `ScriptureRef::Chapter` (book + chapter, e.g. `PSA.119`) -- same 400
-        `bad_ref` convention as `GET /api/chapter/{cref}` for a book-only or
-        verse/passage-shaped path segment. Same ruling-3-policy as `chapter`
-        above: an out-of-range chapter number (or a book with no known chapters)
-        is NOT an error -- `verse_count` resolves to 0 and this 200s with an
-        empty `verses` list, never a 404 for "this chapter has no commentary."
+      summary: 'Kretzmann''s commentary for one chapter: the items on each verse that has any, in document order.'
       description: |-
-        Replaces `Kretzmann.razor`'s own retired client-side fan-out (one
-        `commented-on-by` edges HTTP call PER VERSE, concurrently -- 176
-        simultaneous requests on every locus change for a chapter like PSA 119)
-        with ONE request, computed by walking the SAME `commented-on-by` edge
-        machinery server-side, in-process, via `atlas_graph::kretzmann_adapter::
-        chapter_commentary` -- see that function's own doc comment for why this
-        is additive, not a types-crate or artifact change: the underlying
-        `CommentsOn`/`RelationId::CommentsOn` KRETZ-1 vocabulary is completely
-        unchanged, this is a new READ path over data the graph already carries.
+        `{cref}` is `BOOK.CHAPTER`, such as `PSA.119`; a book-only or verse-shaped
+        segment is `bad_ref`. A chapter with no commentary answers an empty `verses`
+        list. Each item's `id` fetches its prose from `/api/node/{id}`.
       operationId: kretzmann_chapter
       parameters:
       - name: cref
@@ -482,6 +402,7 @@ paths:
     get:
       tags:
       - map
+      summary: The coastline geometry border washes are clipped against, so no polity's colour spills into open sea.
       operationId: land_mask
       responses:
         '200':
@@ -493,6 +414,7 @@ paths:
     get:
       tags:
       - map
+      summary: The always-on map labels -- waters, mountains and regions -- each with the point it is drawn at.
       operationId: landmarks
       responses:
         '200':
@@ -506,70 +428,11 @@ paths:
     get:
       tags:
       - events
-      summary: |-
-        `GET /api/narrative/event/{id}` (Batch N requirement 1's own "endpoint/
-        payload also supports event-id lookup" half; Batch T requirement 2: the
-        resolver itself is UNCHANGED -- `positions_for_events`'s own leg-array-
-        adjacency walk was already exactly "chronologically adjacent given a
-        validated leg order," so no new logic was needed; what changed is WHO
-        calls this endpoint -- `client/Explore/EventNode.cs` replaces the
-        retired `NarrativeEventNode.cs` as its own caller -- and that ETL now
-        ALSO validates same-year legs via `Event::order_key`, not just
-        `when.from_year`, see `atlas_etl::validate::run`): every narrative
-        position the given event id occupies -- mirrors `GET
-        /api/catechism/item/{id}`'s own precedent exactly (an id-keyed follow-on
-        lookup). Reached by the client ONLY with an event id already handed back
-        by a prior response (never typed by a user), so an id that names no real
-        event at all is a genuine "not found," same `places::place`/
-        `catechism::catechism_item` precedent as every other exact-identifier
-        lookup in this crate;
-        ruling-3-policy still applies one layer in -- a REAL event that simply
-        isn't a leg of any narrative 200s with an empty array (the "no results"
-        case, not the "bad identifier" case), same as `positions_for_events`
-        itself naturally returns for a bare, narrative-less event (see
-        `narrative::tests::event_in_no_narrative_returns_no_positions`).
+      summary: 'Where one event sits in time: its neighbours in each narrative it is a leg of, and its neighbours in the whole chronology.'
       description: |-
-        BATCH M-B (controller decision 3): re-implemented as a VIEW over graph
-        queries -- temporal neighbors come from `atlas_graph::Chronology::
-        temporal_neighbors` (built from `ChronologyDerivation::order`, which
-        `tests/timeline_equivalence.rs` proves is EXACTLY
-        `atlas_core::narrative::global_timeline_position`'s own timeline order --
-        the acceptance centerpiece). The bespoke resolvers this endpoint used to
-        call (`positions_for_events`/`global_timeline_position`) RETIRE from this
-        production call site -- `atlas_core::narrative`'s own module is
-        otherwise completely untouched (its OWN tests, including E1-E5, stay
-        green, unmodified) and its two topology functions remain `pub`, still
-        directly unit-tested, simply no longer reached by any live server
-        response.
-
-        BATCH M-C (controller decision 1): succession duals now come straight
-        off the GENERIC PORT instead of a companion index. `graph-types` commit
-        `13184e1` (owner-approved, "EdgeMeta -- per-entry relation metadata")
-        tags every `follows-in`/`precedes-in` entry with the `NarrativeId` it
-        belongs to (`Graph::build_indexes`'s own `Succession` pairing), so "every
-        narrative this event is a leg of, and its neighbor in each" is answerable
-        by draining both direction's pages at this event's own Position and
-        grouping entries by `EdgeMeta::Narrative` -- exactly the SAME
-        `Narrative.legs`-derived data the graph's own `Succession` rows were
-        always built from, just read back through the port instead of a
-        second, hand-maintained index (`atlas_graph::event_world::EventWorld`'s
-        own `narrative_positions` field, RETIRED this batch -- see that
-        module's own `Chronology` doc comment). This closes the M-B review's I-3
-        (validation bypass): there is now only one representation of "which
-        narrative is this leg in," so it cannot silently diverge from the
-        graph's own rows.
-
-        WIRE SHAPE IS BYTE-IDENTICAL (hard requirement, verified by the
-        pre-existing Playwright `event-timeline.spec.ts`/`popover-sections.spec.ts`
-        suites, which exercise this exact endpoint through the unmodified
-        client): `NarrativeEventPositions`/`NarrativePosition`/
-        `TimelinePosition`/`NarrativeAdjacentEvent` are UNCHANGED. Each
-        adjacent event's own presentation (label/places/verse_groups) still
-        calls `atlas_core::narrative::adjacent_event` directly (made `pub` at
-        M-B, see that function's own doc comment) -- the SAME presentation
-        builder the OLD resolver used, so label/places/verse_group formatting
-        cannot drift from what shipped before; only the TOPOLOGY (which ids are
-        prior/following, in which narratives) now originates from the graph.
+        `{id}` is an event id handed back by another response; an id naming no event
+        is `not_found`. An event that is a leg of no narrative answers an empty
+        `narrative` list, and one with no date carries no `timeline` at all.
       operationId: narrative_event_positions
       parameters:
       - name: id
@@ -623,16 +486,7 @@ paths:
     get:
       tags:
       - map
-      summary: |-
-        `GET /api/narratives` (M-C2, definitive surface list). Re-implemented as
-        a VIEW over the graph's own Narrative nodes -- `GraphService.
-        narrative_ids` is the companion enumeration (same "port doesn't model
-        'list every node of kind K'" class as `era_ids`/`polity_ids`, already
-        confirmed to match `data/curated/narratives/`'s own sorted-by-filename
-        compiled order -- see that field's own doc comment); `legs` comes from
-        `narrative_legs` (the `succession` relation's own row `chain`, the
-        single source -- never duplicated onto the payload). WIRE SHAPE
-        UNCHANGED: `atlas_core::data::Narrative { id, name, color, legs }`.
+      summary: 'Every narrative in this atlas: its name, the colour its arrows are drawn in, and the ordered events it runs through.'
       operationId: narratives
       responses:
         '200':
@@ -646,18 +500,13 @@ paths:
     get:
       tags:
       - graph
-      summary: |-
-        `GET /api/node/{id}` (design doc §5): card (id/kind/label/provenance) +
-        edge summary (kind -> true count, honesty needs it -- `GraphQuery`'s own
-        `edge_summary` already lists only inhabited kinds) + the graph version
-        stamp. `{id}` is the wire form `graph_wire::encode_node_id` produces; a
-        malformed or unresolvable id is `bad_ref` (matches every other
-        ref-shaped endpoint's own 400 convention), an id that parses but names
-        no node in the built graph is `not_found` (six kinds resolve as of
-        Batch M-B: `text-unit:BOOK.C.V` naming a real canon verse, and
-        `Event:`/`Narrative:`/`Anchor:`/`Place:` naming a real curated/
-        Theographic id; any other kind prefix, or a real-shaped id this batch's
-        event world doesn't carry, 400s/404s per the same convention).
+      summary: 'One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.'
+      description: |-
+        `{id}` is `Kind:identifier` -- `Place:hazor-1`, `Event:ab_ur`,
+        `Person:aaron_1` -- or `text-unit:BOOK.CHAPTER.VERSE` for a verse of
+        Scripture and `text-unit:BoC PART.ARTICLE.PARAGRAPH` for a paragraph of the
+        Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
+        node is `not_found`.
       operationId: node_card
       parameters:
       - name: id
@@ -711,13 +560,13 @@ paths:
     get:
       tags:
       - graph
-      summary: |-
-        `GET /api/node/{id}/edges?kind=&cursor=&limit=` (design doc §5): one page
-        of one edge kind. `kind` is a label from graph-types' own relation
-        manifest (e.g. `"cites"`/`"cited-by"`) -- missing or unrecognized is
-        `bad_kind`; `cursor` is the opaque (here: plain integer) offset the
-        previous page's own `next` returned; `limit` defaults to 20, capped at
-        200.
+      summary: One page of a node's neighbours of a single kind, each with the id of the edge that joins them.
+      description: |-
+        `{id}` takes the same form `/api/node/{id}` does. The required `kind` is an
+        edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an
+        unrecognised id is `bad_ref`, and an id naming no node is `not_found`.
+        `limit` defaults to 20 and caps at 200; pass the response's `next` back as
+        `cursor` for the following page, and its absence is the last page.
       operationId: node_edges
       parameters:
       - name: id
@@ -788,11 +637,10 @@ paths:
     get:
       tags:
       - meta
-      summary: |-
-        The published contract itself, served from the same document
-        `contracts/openapi.yaml` is generated from -- a consumer reads the
-        running server's contract without reaching for the repository. Rendered
-        once: the document cannot change while the process runs.
+      summary: This API's own OpenAPI document, as YAML.
+      description: |-
+        A consumer reads the contract off the running server rather than out of the
+        repository the server was built from.
       operationId: openapi_yaml
       responses:
         '200':
@@ -804,26 +652,12 @@ paths:
     get:
       tags:
       - places
-      summary: |-
-        `GET /api/place/{id}?from=&to=`. Unknown id -> 404 `not_found` (a place
-        id is an exact identifier, not a ref that can be "out of canon but still
-        valid shape" — there's no parsing/shape question here at all).
+      summary: 'One place: where it is, the events that happened there oldest first, and its curated history where it has one.'
       description: |-
-        `from`/`to` are OPTIONAL (Batch E) and, unlike `scene_time`/`borders`'s
-        own `from`/`to`, never themselves cause a 400: this endpoint's core
-        resource (the place, its events) is fully meaningful with neither
-        present, so a missing or malformed window just means `history` (when the
-        place has one at all) reports its default display name and no blurb,
-        rather than rejecting the whole request over an optional refinement.
-        M-C2 (definitive surface list): `place`/`events` now come from the
-        graph -- `atlas_graph::legacy::place_from_node` for the place itself,
-        the `site-of` (`located-at` INVERSE) frontier at the place's own
-        position for its own events (every LocatedAt row event_world.rs builds
-        for this place, order-independent here since the explicit `sort_by_key`
-        below already re-establishes the from_year order regardless).
-        `place_history_for`/`place_name_alias_for` stay on `AtlasData`
-        deliberately -- `place-history.json`/`place-names-kjv.json` are not
-        this batch's deletion target.
+        `{id}` is a place id handed back by another response; an id naming no place
+        is `not_found`. The optional `from` and `to` years choose the period whose
+        name and description the history reports -- neither is required, and a window
+        that cannot be read simply leaves the place's default name in place.
       operationId: place
       parameters:
       - name: id
@@ -889,35 +723,13 @@ paths:
     get:
       tags:
       - map
-      summary: |-
-        `GET /api/polities?from=&to=`. `from`/`to` share `scene_time`'s lenient
-        parsing (ruling 1: missing/unparseable/zero/inverted -> 400
-        `bad_window`), via the same `parse_year` helper and `TimeRange::new`
-        validity check.
+      summary: 'The polity borders in view for a span of years: one row per era of a polity whose own years overlap the span.'
       description: |-
-        Once the window is valid, emits every era (of every polity) whose own
-        `[from,to]` intersects it -- a polity with several eras in view (a
-        window spanning a border change) contributes one row PER intersecting
-        era, all sharing that polity's own `id`/`color_key`; a window matching no
-        era at all (out-of-span, or the `demo_fixture()`/pre-ETL case where
-        `data.polities` is empty) is not an error, mirroring `scene_time`'s own
-        ruling-2 spirit -- it 200s with an empty `polities` array. Deterministic
-        order: by polity id, then by era `from` -- so a multi-era window always
-        lists a polity's OLDER era before its newer one (the exact order
-        map.js's `BorderLayer` needs to paint older-under-newer and pick the
-        dotted/lightest era correctly without re-sorting client-side).
-        BATCH M-C (controller decision 7): re-implemented as a VIEW over the
-        graph's own Polity nodes (`atlas_graph::polity_adapter`) instead of
-        `AtlasData.polities` -- border data as node payloads (controller
-        decision 2), the map consuming payloads directly, per era, off each
-        Polity node's own `NodePayload::Polity.eras`. `GraphService.polity_ids`
-        is the companion enumeration (same status as `era_ids`, see that
-        field's own doc comment). WIRE SHAPE UNCHANGED: `Polity`/
-        `PolityDelta`, same fields, same conditional presence, same
-        deterministic sort -- `AtlasData.polities`/`polities.json` stay
-        standing (deliberately NOT this batch's deletion target: still the
-        adapter's own curated source, same status as `event_world`'s own
-        `atlas.events`/`.narratives`).
+        `from` and `to` are years on this atlas's scale -- negative for BC, no year
+        zero -- and both are required, with `from` no later than `to`; anything else
+        is `bad_window`. Rows come ordered by polity and then oldest era first, so a
+        border change paints older beneath newer. A span no era overlaps answers an
+        empty list.
       operationId: polities
       parameters:
       - name: from
@@ -978,25 +790,12 @@ paths:
     get:
       tags:
       - map
-      summary: |-
-        `GET /api/scene?from=&to=`. `from`/`to` are read out of a
-        `Query<HashMap<String, String>>` rather than a strongly-typed `Query<T>`
-        specifically so a missing or unparseable value can never trigger axum's
-        own extractor-rejection response (ruling 1) — `HashMap<String, String>`
-        cannot itself fail to deserialize on these inputs, so every failure mode
-        (missing, non-integer, zero, inverted) is handled by this function and
-        always yields the typed `bad_window` body.
+      summary: 'The map for a span of years: the places events light up in that span, the quiet places around them, and the arrows narratives draw between them.'
       description: |-
-        OVERLAY-1 Task 5: the scene's DATA now comes from the graph port --
-        `graph.scene_source(&data)`, an `atlas_graph::scene_source::
-        GraphSceneSource` built once at load from `GraphService`'s own snapshot,
-        not from `AtlasData`'s former graph-derived `events`/`places`/
-        `narratives` fields (which `legacy::atlas_data_overlay` used to
-        reconstruct at boot, and which are no longer written on any serving
-        path). `data` is still extracted because that source reads two genuinely
-        curated-JSON sidecars through it (`place-history.json`,
-        `place-names-kjv.json`). The composed bytes are unchanged -- `tests/
-        scene_byte_identity.rs`'s 25 pinned hashes are the gate on that.
+        `from` and `to` are years on this atlas's scale -- negative for BC, no year
+        zero -- and both are required, with `from` no later than `to`; anything else
+        is `bad_window`. A span no event falls in composes an empty scene rather
+        than failing.
       operationId: scene_time
       parameters:
       - name: from
@@ -1057,23 +856,12 @@ paths:
     get:
       tags:
       - map
-      summary: '`GET /api/scene/scripture?ref=`.'
+      summary: 'The map for a passage: the places its verses name, and the arrows narratives draw between them.'
       description: |-
-        ruling-3-policy: a `ref` that fails to *parse* (unknown book code, zero
-        chapter/verse, empty segment, inverted range — i.e. `ScriptureRef::parse`
-        returns `Err`) is a structurally bad ref and always 400s as `bad_ref`,
-        same as a missing `ref` param (treated as parsing the empty string, which
-        also fails to parse). A `ref` that *parses* but names coordinates outside
-        the loaded canon (e.g. a chapter number past the end of the book) is
-        deliberately NOT an error: `compose_scripture_scene` only ever matches it
-        against verses that actually exist on events/places, so an out-of-canon
-        ref naturally composes an empty-but-valid scene, exactly mirroring
-        ruling 2's "don't reject out-of-span time windows" for the sibling
-        endpoint. This needs no extra bounds-checking code — it falls out of not
-        adding any.
-
-        OVERLAY-1 Task 5: composes from `graph.scene_source(&data)`, exactly as
-        `scene_time` above does -- see that handler's own doc comment.
+        `ref` is a dotted reference -- `GEN.12`, `GEN.12.1` or `GEN.12.1-5` -- and a
+        missing or unparseable one is `bad_ref`. A reference that parses but names
+        coordinates outside this atlas's canon composes an empty scene rather than
+        failing.
       operationId: scene_scripture
       parameters:
       - name: ref
@@ -1127,13 +915,11 @@ paths:
     get:
       tags:
       - meta
-      summary: |-
-        `GET /api/sources` (batch-s-brief.md requirement 3): the Sources
-        page's entire single source of truth, straight off
-        `data/compiled/sources.json` (itself generated 1:1 from LICENSES.md by
-        `atlas_etl::sources`'s own fail-loud drift check -- see the
-        `gen_sources` binary). The client renders this directly; nothing here
-        is a hardcoded duplicate list.
+      summary: Every source this atlas is built from, and how each one is licensed.
+      description: |-
+        `categories` are the headings the `sources` are grouped under, and
+        `provenances` join the provenance id that rides on an individual record
+        back to the source that asserts it.
       operationId: sources
       responses:
         '200':
@@ -1145,49 +931,16 @@ paths:
     get:
       tags:
       - graph
-      summary: |-
-        `GET /api/text?ref=<dot-ref>&n=&dir=&scope=&corpus=` (design doc §6;
-        M-A brief requirement 4): a window of `{ref, text}` units + next
-        cursor + graph version. `scope=chapter` returns exactly that chapter's
-        units (`n` is ignored -- the count is derived server-side,
-        `GraphService::chapter_span`) -- still the SAME window query
-        (`window::window`) every other path calls, just with server-derived
-        bounds.
+      summary: 'A window of one corpus''s reading spine: the units of text around the one a reference names, and the reference that continues the window.'
       description: |-
-        CORP-2a (decision 8, "additive... the EXISTING generic endpoint... NO
-        new bespoke endpoints; zero client changes"): `corpus=concord` serves
-        the Book of Concord's own reading spine through this SAME route --
-        `ref` is then `ConcordTag::cite`'s own citation form
-        (`"BoC {part}.{article}.{paragraph}"`, e.g. `"BoC 7.2.1"` for the
-        Small Catechism's First Commandment), `scope=chapter` is rejected
-        (`parse_concord_ref`'s own doc comment has the reasoning), and the
-        canonical rendering is the corpus's own Bente-Dau layer
-        (`window::render_layer`, not `window::render`'s hardcoded KJV).
-        `corpus` defaults to `"bible"` when absent -- the client never needs
-        to send it, so every existing request's own behavior is
-        byte-for-byte unchanged.
-
-        Fix round 1, I1: `dir=backward` is REJECTED (`bad_dir`, 400) when
-        combined with `scope=chapter`, rather than silently misapplied. A
-        chapter-scoped window's bounds are already fully determined by the
-        chapter itself (`chapter_span` always returns the span covering EVERY
-        verse of that chapter) -- there is no honest "walk backward" distinct
-        from "walk onward" once start/n are both fixed by the chapter's own
-        edges, so accepting the combination silently would only ever produce
-        either (a) the identical result as onward (misleadingly implying a real
-        choice existed) or, as previously shipped, (b) a DIFFERENT chapter's
-        tail entirely (`chapter_span`'s `start` is always the chapter's own
-        verse 1 position; applying backward *resolution* to that as if it were
-        a window's END walks into the PRECEDING chapter). Rejecting the
-        combination outright is the honest choice: `dir` only has meaning for a
-        verse-anchored window, where onward/backward genuinely pick different
-        spans.
-
-        For any other `scope`: `dir=backward` walks the window ending AT `ref`
-        instead of starting from it; anything else (including absence) is
-        onward. ETag/If-None-Match on the version stamp: since the graph is
-        immutable for the process lifetime, the ETag is constant across every
-        request until the next server restart.
+        `ref` is `BOOK.CHAPTER.VERSE`, or `BoC PART.ARTICLE.PARAGRAPH` when
+        `corpus=concord` (`corpus` is `bible` unless given, anything else is
+        `bad_corpus`); a malformed reference is `bad_ref` and one naming nothing in
+        the corpus is `not_found`. `n` defaults to 1 and caps at 500, and
+        `dir=backward` ends the window at `ref` instead of starting it there.
+        `scope=chapter` covers the whole chapter named instead, and takes neither `n`
+        nor `dir=backward` -- the combination is `bad_dir`. The response's `next` is
+        the reference one step further on, absent at the end of the corpus.
       operationId: text_window
       parameters:
       - name: ref
@@ -1212,8 +965,8 @@ paths:
         schema:
           type: string
           description: |-
-            How much text one `/api/text` window covers: the `n` units around the
-            requested ref, or the whole chapter that ref names.
+            How much text one window of `/api/text` covers: the units around the
+            reference asked for, or the whole chapter that reference names.
           enum:
           - verse
           - chapter
@@ -1268,23 +1021,11 @@ paths:
     get:
       tags:
       - reading
-      summary: |-
-        `GET /api/verse/{vref}`. `vref` must parse as exactly a
-        `ScriptureRef::Verse` (`VerseId::parse_canonical` enforces this) — any
-        other shape 400s as `bad_ref`.
+      summary: 'One verse in full: its text, who wrote its book, the events it belongs to, its cross references with previews, and the catechism items citing it.'
       description: |-
-        ruling-3-policy: unlike the scene/chapter endpoints, a structurally valid
-        vref whose text is absent from this atlas's compiled KJV map is 404
-        `not_found`, not a 200-with-placeholder. A single verse is an
-        individually-addressed resource (like `/api/place/{id}`), not a
-        list/scene that can be gracefully empty — there is no non-misleading way
-        to represent "this verse doesn't exist" other than "not found", so this
-        endpoint intentionally follows `/api/place/{id}`'s precedent rather than
-        `scene_scripture`'s/`chapter`'s "out-of-canon is still 200" policy.
-
-        Cross-ref preview rows fail soft (ruling 4): ETL guarantees every
-        compiled cross-ref target's first verse exists in the verses map, but if
-        that's ever violated the row is skipped rather than panicking.
+        `{vref}` is `BOOK.CHAPTER.VERSE`, such as `JHN.3.16`; any other shape is
+        `bad_ref`, and a well-formed reference this atlas holds no text for is
+        `not_found`.
       operationId: verse
       parameters:
       - name: vref
@@ -1338,44 +1079,11 @@ paths:
     get:
       tags:
       - reading
-      summary: |-
-        `GET /api/xrefs/{sref}` (batch-g1-brief.md requirement 2, "passage
-        context -- passages give xrefs, not just geo"). `sref` must parse as
-        exactly a `ScriptureRef::Verse` or `ScriptureRef::Passage` -- the brief's
-        own two given examples, `GEN.1.1` and `GEN.1.1-5`, are read as an
-        exhaustive pair (a single verse or a same-chapter span) rather than a
-        representative sample of every `ScriptureRef` shape: a bare book or
-        chapter ref (`GEN`, `GEN.1`) has no defined "member verses" for this
-        endpoint to aggregate over, so both 400 as `bad_ref`, the same typed
-        error every other ref-shaped endpoint already uses (requirement 2:
-        "Typed errors (bad_ref) unchanged").
+      summary: 'The cross references of a verse or a span, strongest first: each target, how strongly it is attested, and a preview of the text it points at.'
       description: |-
-        ruling-3-policy: unlike `/api/verse/{vref}`, an sref with no recorded
-        cross-references at all -- including one naming a verse outside this
-        atlas's compiled canon -- is NOT an error: 200 with an empty list, the
-        same "gracefully empty, never a 404" policy `scene_scripture`/`chapter`
-        already follow. This falls out of the aggregation itself needing no
-        special-casing: `aggregate_span_xrefs` only ever reads `cross_refs` by
-        key and calls `verse_text` by key, and a key simply absent/`None`
-        contributes nothing, which is exactly as true for a real, canonical
-        verse with zero curated cross-references (the overwhelmingly common
-        case) as for an out-of-canon one.
-
-        Business logic (the union-and-sum aggregation, self-target drop, sort,
-        cap-at-20) lives in `atlas_core::xrefs::aggregate_span_xrefs` -- this
-        handler is pure response-shape assembly, per this module's own file
-        header.
-        OVERLAY-1 Task 2: `aggregate_span_xrefs`'s own preview-text parameter
-        is now `impl Fn(&str) -> Option<String>`, not `&HashMap<String,
-        String>` -- `atlas_core` still has no `graph-types` dependency of its
-        own (the closure type crosses the boundary, not a graph type), and the
-        aggregation logic itself is unchanged. `graph.cross_refs_by_from` (the
-        graph's own `cites` rows -- `target` carries each row's own
-        `target_display`, the honest original citation string, graph_types::
-        edge::CrossRef's own M-C2 widening) still supplies the rows; the
-        preview text now comes from `graph.verse_text_of` called per candidate
-        key, on demand, instead of the retired `graph.verse_text` whole-spine
-        companion. `AtlasData` is still not read anywhere in this handler.
+        `{sref}` is `BOOK.CHAPTER.VERSE` or a same-chapter span such as `GEN.1.1-5`;
+        a book-only or chapter-only reference is `bad_ref`. A reference with no
+        recorded cross references answers an empty list.
       operationId: xrefs
       parameters:
       - name: sref
@@ -1431,6 +1139,7 @@ paths:
     get:
       tags:
       - meta
+      summary: Reports that the server is up, as the plain text `ok`.
       operationId: health
       responses:
         '200':
@@ -1442,28 +1151,35 @@ components:
   schemas:
     BookMeta:
       type: object
+      description: Who wrote one book of the Bible, where, and when.
       required:
       - author
       properties:
         author:
           type: string
+          description: The book's author, as this atlas records him.
         write_from:
           type:
           - integer
           - 'null'
           format: int32
+          description: The earliest year it is dated to, negative for BC; absent when undated.
         write_place:
           type:
           - string
           - 'null'
+          description: Where it was written, absent when that is not recorded.
         write_to:
           type:
           - integer
           - 'null'
           format: int32
+          description: The latest year it is dated to; absent when undated.
     CanonBook:
       type: object
-      description: Verse counts per chapter for one book.
+      description: |-
+        One book of the canon: its code, its name, and how many verses each of its
+        chapters holds.
       required:
       - code
       - name
@@ -1475,18 +1191,18 @@ components:
             type: integer
             format: int32
             minimum: 0
+          description: The verse count of each chapter, in order.
         code:
           type: string
+          description: The three-letter code, such as `GEN`.
         name:
           type: string
+          description: The book's full name.
     CatechismItem:
       type: object
       description: |-
-        `GET /api/catechism/item/{id}`'s own wire shape -- `part_title` alongside
-        the item's own fields so the client never needs a second fetch to show
-        "Baptism" as this item's own chief-part context. `where_written` is
-        omitted (not `null`) when absent -- same conditional-presence wire
-        convention `History.blurb`/`established`/`destroyed` already use.
+        One catechism item in full, with the chief part of the catechism it sits
+        under.
       required:
       - id
       - name
@@ -1499,16 +1215,21 @@ components:
           type: string
         explanation_heading:
           type: string
+          description: The question the explanation answers, such as "What does this mean?".
         id:
           type: string
         name:
           type: string
         part_title:
           type: string
+          description: The chief part this item belongs to, such as Baptism.
         text:
           type:
           - string
           - 'null'
+          description: |-
+            The item's own words -- a commandment, a petition, an article -- absent for
+            an item that has none.
         verses:
           type: array
           items:
@@ -1517,21 +1238,15 @@ components:
           type:
           - string
           - 'null'
+          description: |-
+            Where in Scripture the item's own words are written, absent when it quotes
+            none.
       additionalProperties: false
     CatechismProofVerse:
       type: object
       description: |-
-        Batch F: one resolved proof verse -- `vref` + its own FULL KJV text
-        (design-direction.md's house rendering, per requirement 4: "THE
-        SCRIPTURES -- the item's proof verses... full verse text per house
-        rendering" -- not a truncated preview the way `CrossRef.preview` is).
-        Batch F2: `question` (omitted when absent, same convention as
-        `CatechismRef.question`) names which question this proof verse came
-        from, when it came from one -- `None` for Luther's own item-level
-        embedded citations. This is requirement 4's own "if cheap, highlight/
-        deep-link the question context": a small caption next to the verse in
-        THE SCRIPTURES, cheap because it needs no new fetch or scroll machinery,
-        just this one extra field already available at merge time.
+        One proof verse of a catechism item, carrying the verse in full rather than
+        a preview.
       required:
       - vref
       - text
@@ -1540,6 +1255,9 @@ components:
           type:
           - string
           - 'null'
+          description: |-
+            The question this verse was cited under, absent when the item cites it
+            directly.
         text:
           type: string
         vref:
@@ -1548,20 +1266,8 @@ components:
     CatechismRef:
       type: object
       description: |-
-        Batch F ("the small catechism"), extended Batch F2 (question-level
-        citations): one catechism item citing a verse/span, as embedded in
-        `VerseDetail.catechism` AND returned (as a list) by `GET
-        /api/catechism/{sref}` -- deliberately lean (id + display name + an
-        optional question title, no preview text unlike `CrossRef`):
-        requirement 4's own UI description lists citing items (now
-        question-aware, "<Item> — <Question title>") as plain named entries,
-        nothing more, and the full item content is a separate fetch (`GET
-        /api/catechism/item/{id}`, see `CatechismItem` below), made only once
-        the user actually opens one. `question` is omitted from the wire
-        entirely (not null) when this hit came from Luther's own item-level
-        embedded citation rather than a question -- same conditional-presence
-        convention `CatechismItem.where_written` below and `wire/places.rs`'s own
-        `History.blurb` already use.
+        One catechism item citing a verse or a span: enough to name it and to fetch
+        it in full.
       required:
       - id
       - name
@@ -1576,35 +1282,19 @@ components:
           items:
             type: string
           description: |-
-            PROV-1 FIX ROUND 1 (review M-3): the `catechism` family's own
-            distinct provenance set, so a PASSAGE node's THE SMALL CATECHISM
-            section gets a "?" like a verse's. Same additive element-level move
-            and same set-not-single-id reasoning as `CrossRef.provenance` --
-            see that field's doc comment.
-
-            The review judged deferring this half defensible because
-            `catechism_for_span` took only `State<Arc<AtlasData>>`. Measured, it
-            is not: `AppState` implements `FromRef` for `Arc<GraphService>` too,
-            and six handlers in this crate already take BOTH extractors
-            (`reading::verse` among them). So the second half was one extractor
-            away, not a larger change, and it ships here.
-
-            This family is the genuinely MULTI-sourced one --
-            `{concord-sc-overlap, curated-catechism}`, pinned -- which is exactly
-            why the field is a `Vec` on both endpoints.
-
-            GRANULARITY (fix round 2, review M-NEW-1): SECTION-level, carried on
-            the element because the endpoint is a bare array. Every element of
-            one response receives the identical set. Not per-row, and not to be
-            described as per-row -- see `CrossRef.provenance` for the full
-            statement and for why per-row is unavailable at these call sites.
+            The sources behind this response's catechism citations. Every element of one
+            response carries the same set; `/api/sources` names each id.
         question:
           type:
           - string
           - 'null'
+          description: |-
+            The question the verse was cited under, absent when the item cites it
+            directly.
       additionalProperties: false
     Chapter:
       type: object
+      description: One chapter of Scripture, verse by verse.
       required:
       - ref
       - book
@@ -1613,6 +1303,7 @@ components:
       properties:
         book:
           type: string
+          description: The book's full name.
         chapter:
           type: integer
           format: int32
@@ -1626,6 +1317,7 @@ components:
       additionalProperties: false
     Contents:
       type: object
+      description: One corpus's contents, as a tree two levels deep.
       required:
       - corpus
       - version
@@ -1639,9 +1331,11 @@ components:
             $ref: '#/components/schemas/ContentsRoot'
         version:
           type: string
+          description: A stamp identifying the data set this tree was read from.
       additionalProperties: false
     ContentsChild:
       type: object
+      description: 'A second-level entry: a chapter of a book, or an article of a document.'
       required:
       - id
       - title
@@ -1651,7 +1345,7 @@ components:
       properties:
         count:
           type: integer
-          description: 'The child''s own members: verses of a chapter, paragraphs of an article.'
+          description: 'How many members it holds: verses of a chapter, paragraphs of an article.'
           minimum: 0
         id:
           type: string
@@ -1659,21 +1353,25 @@ components:
           $ref: '#/components/schemas/ContentsChildKind'
         ref:
           type: string
-          description: '`GEN.1` for a chapter; `BoC 7.2.1` (its first paragraph) for an article.'
+          description: |-
+            The reference to open for this entry: `GEN.1` for a chapter, or an
+            article's first paragraph, such as `BoC 7.2.1`.
         title:
           type: string
       additionalProperties: false
     ContentsChildKind:
       type: string
       description: |-
-        What a second-level entry IS: a chapter of a book, or an article of a
-        document. The tree stops here (D4: "Stop at the level of ARTICLE (BoC)
-        or TOPIC (Small Catechism)").
+        Whether a second-level entry of a corpus's contents is a chapter of a book
+        or an article of a document. The contents tree goes no deeper than this.
       enum:
       - chapter
       - article
     ContentsRoot:
       type: object
+      description: |-
+        A top-level entry: a book of the Bible, or a document of the Book of
+        Concord.
       required:
       - id
       - title
@@ -1685,10 +1383,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ContentsChild'
+          description: The entry's chapters, or its articles.
         group:
           oneOf:
           - $ref: '#/components/schemas/Testament'
-            description: Absent for a Concord document, which belongs to neither testament.
+            description: |-
+              Which half of the canon the book belongs to; absent for a Concord document,
+              which belongs to neither.
           - type: 'null'
         id:
           type: string
@@ -1696,20 +1397,23 @@ components:
           $ref: '#/components/schemas/ContentsRootKind'
         ref:
           type: string
-          description: 'The navigation target: the root''s own first child''s ref.'
+          description: 'The reference to open when this entry is chosen: its first child''s.'
         title:
           type: string
       additionalProperties: false
     ContentsRootKind:
       type: string
       description: |-
-        What a top-level entry of a corpus's contents IS: a book of the Bible,
+        Whether a top-level entry of a corpus's contents is a book of the Bible
         or a document of the Book of Concord.
       enum:
       - book
       - document
     Contract:
       type: object
+      description: |-
+        The range of contract versions this server answers for, and the schema
+        versions of the data behind them.
       required:
       - min_version
       - max_version
@@ -1719,33 +1423,35 @@ components:
         manifest_schema:
           type: integer
           format: int32
-          description: |-
-            DB-4c: the served identity is the manifest's (spec §9): its schema
-            and the sections' `PRAGMA user_version`. Additive beside the graph
-            vocabulary's `artifact_format_version` (retired at DB-5).
+          description: The schema version of the compiled data set the responses are read from.
           minimum: 1
         max_version:
           type: string
+          description: The newest contract version this server answers for.
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         min_version:
           type: string
+          description: The oldest contract version this server answers for, as MAJOR.MINOR.PATCH.
           pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
         section_schema_version:
           type: integer
           format: int32
+          description: The schema version of the individual sections that data set is made of.
           minimum: 1
       additionalProperties: false
     Corpus:
       type: string
       description: |-
-        Every body of text this app serves a reading spine for. Each name IS
-        the graph's own spine key, named here rather than re-typed, so a
-        request that resolves to a corpus reaches that corpus's own spine.
+        A body of text this API serves a reading spine for: Scripture, or the
+        Book of Concord.
       enum:
       - bible
       - concord
     CrossRef:
       type: object
+      description: |-
+        One cross reference: where it points, how strongly it is attested, and a
+        look at the text there.
       required:
       - target
       - votes
@@ -1754,56 +1460,25 @@ components:
       properties:
         preview:
           type: string
+          description: The text of the target's first verse.
         provenance:
           type: array
           items:
             type: string
           description: |-
-            PROV-1 FIX ROUND 1 (review M-3): the attribution for the CROSS
-            REFERENCES section these rows belong to, so a PASSAGE node's section
-            gets a "?" like a verse's.
-
-            GRANULARITY, SAID ONCE AND PLAINLY (fix round 2, review M-NEW-1):
-            this is a SECTION-level value carried on the ELEMENT because the
-            endpoint is a bare array with no envelope to hang it on. Every
-            element of one response receives the identical set. It is NOT
-            per-row attribution and must never be described as such -- a
-            comment in `reading::verse` did describe it that way and was
-            corrected. Per-row is not available here to be had:
-            `graph.cross_refs_by_from` holds `atlas_core::data::CrossRef`, which
-            carries `target` and `votes` only; the graph-types row that does
-            carry `provenance` has it projected away before this call site sees
-            it. Widening the companion index to keep it is a contract-shaped
-            decision this batch refused, and nothing here should imply it
-            already happened.
-
-            THE ORIGINAL DISCLOSURE GAVE A FALSE REASON and the review was right
-            to say so: `GET /api/xrefs/{sref}` returns a bare `Vec<CrossRef>`,
-            but the array was never where the field goes -- the ELEMENT is a
-            struct with room for an additive field, which is precisely the move
-            this batch already made twice (`VerseEvent.provenance`,
-            `EventAnalogue.provenance`). No existing field moves; the response
-            stays an array.
-
-            A SET (`Vec<String>`), never one collapsed id, and that is measured
-            rather than stylistic: `atlas_core::xrefs::aggregate_span_xrefs`
-            UNIONS the `cites` rows of every member verse of the span and sums
-            their votes, so one `CrossRef` is an aggregate of several
-            underlying rows and there is no single row to attribute it to. The
-            honest key is the `cross_refs` family's own distinct set -- the
-            identical value `VerseDetail.cross_refs_provenance` already
-            carries, pinned as `{openbible.info-cross-references}` by
-            `the_per_family_provenance_map_of_the_real_artifact_is_pinned`. A
-            second source landing in `cites` would surface on every row instead
-            of hiding behind the first, which is the leper lesson in a type.
+            The sources behind this response's cross references. Every element of one
+            response carries the same set; `/api/sources` names each id.
         target:
           type: string
+          description: 'The reference pointed at: one verse, or a span.'
         votes:
           type: integer
           format: int32
+          description: How many readers voted for this reference. Higher sorts first.
       additionalProperties: false
     EdgeEntry:
       type: object
+      description: One neighbour, with the edge that joins it.
       required:
       - edge
       - node
@@ -1811,9 +1486,8 @@ components:
         edge:
           type: string
           description: |-
-            The bijection witness travels on the wire (M-A brief requirement 4):
-            the SAME id a caller sees here is what the target's own inverse-kind
-            page carries back for this same connection.
+            The edge's own id. The neighbour's page for the opposite kind carries this
+            same id for this same connection, and the edge itself can be explored.
         node:
           $ref: '#/components/schemas/NodeRef'
       additionalProperties: false
@@ -1868,6 +1542,7 @@ components:
       - partner-of
     EdgePage:
       type: object
+      description: One page of a node's neighbours of a single kind.
       required:
       - kind
       - entries
@@ -1883,12 +1558,15 @@ components:
           type:
           - integer
           - 'null'
+          description: Pass this back as `cursor` for the following page; absent on the last page.
           minimum: 0
         version:
           type: string
+          description: A stamp identifying the data set this page was read from.
       additionalProperties: false
     EdgeSummaryEntry:
       type: object
+      description: How many neighbours of one kind something has.
       required:
       - kind
       - count
@@ -1901,6 +1579,7 @@ components:
       additionalProperties: false
     Era:
       type: object
+      description: A named stretch of this atlas's timeline.
       required:
       - id
       - name
@@ -1910,6 +1589,7 @@ components:
         from_year:
           type: integer
           format: int32
+          description: The first year of the era, negative for BC.
         id:
           type: string
         name:
@@ -1917,11 +1597,12 @@ components:
         to_year:
           type: integer
           format: int32
+          description: The last year of the era.
     EventAnalogue:
       type: object
       description: |-
-        ATTEST-1: one end of an `Analogue` -- enough to render and to explore
-        (`/api/event/{id}` takes this `id` straight back).
+        One event whose account resembles another's -- similar in form or in content,
+        never a second account of the same happening.
       required:
       - id
       - title
@@ -1932,39 +1613,14 @@ components:
         provenance:
           type: string
           description: |-
-            Batch PROV-1: genuinely PER-ROW -- the `Analogue` row joining these
-            two events carries its own provenance, and this is that value, not
-            either end's node provenance and not the family's. An `Analogue` is
-            a curatorial CLAIM about two events ("similar in form or content,
-            never two accounts of one event"); attributing it to whoever
-            supplied the events would name the wrong asserter.
+            The id of the source that asserts the resemblance. A resemblance is a claim
+            of its own, so this is neither event's own source.
         title:
           type: string
       additionalProperties: false
     EventDetail:
       type: object
-      description: |-
-        `GET /api/event/{id}`'s own wire shape (Batch T requirement 4, "EVENT
-        node popover"): `title` (this event's own `Event::label`), `kind`
-        (Batch T2: `"event"` | `"general"`, ALWAYS present -- the client's own
-        signal for which sections apply), `when`, every resolved place, every
-        resolved witness (ALWAYS >=1 -- see `scene::witnesses_for`'s own doc
-        comment for the single-implicit-witness synthesis; requirement 4's
-        "single-witness events show the one passage, no parallel framing when
-        n=1" is a CLIENT-side rendering decision keyed off `witnesses.len()`,
-        not a server-side omission), and provenance (`robertson_section`/
-        `ref_note`, each omitted, not null, when this event's own date/grouping
-        needed no note beyond the other).
-
-        Batch T2: `when` is OMITTED (not null) for a `kind == "general"`
-        passage -- the internal `Event::when` still holds
-        `TimeRange::undated()` (a structurally-required field, see that
-        function's own doc comment), but a general-kind passage has no
-        defensible date, so nothing here may ever present that sentinel to a
-        reader as a real claim. `places` stays an always-present, possibly-
-        empty array (unchanged pattern -- a general-kind passage's own
-        `Event::places` is always empty by construction, so this needs no
-        separate gating).
+      description: One event, or one titled passage, in full.
       required:
       - id
       - title
@@ -1978,140 +1634,96 @@ components:
           - string
           - 'null'
           description: |-
-            Batch T2 (Acts provenance): Acts's own sibling provenance field to
-            `robertson_section` above -- see `atlas_core::data::Event::
-            acts_section`'s own doc comment for why it's separate, not reused.
-            Omitted (not null) when absent, same convention.
+            The section of the outline of Acts this event falls in, absent when it has
+            none.
         analogues:
           type: array
           items:
             $ref: '#/components/schemas/EventAnalogue'
           description: |-
-            ATTEST-1 (L4, "Similar Accounts"): events joined to this one by an
-            `Analogue` row -- "distinct events whose accounts are similar in
-            form or content, NEVER two accounts of one event." Deliberately a
-            SEPARATE field from `witnesses` rather than a flag on it: the
-            owner's own report was that a similar-but-distinct story was being
-            rendered as a parallel account, and one field cannot carry two
-            claims. Omitted when empty, same convention.
+            Events whose accounts resemble this one without being accounts of it.
+            Omitted when there are none.
         atlas_section:
           type:
           - string
           - 'null'
           description: |-
-            Batch W1 (whole-Bible titled verse containers): the general,
-            whole-Bible sibling of `acts_section` above -- see
-            `atlas_core::data::Event::atlas_section`'s own doc comment. Omitted
-            (not null) when absent, same convention.
+            The titled section of this atlas's own outline of Scripture, absent when it
+            has none.
         id:
           type: string
         kind:
           type: string
+          description: |-
+            `event` for something that happened at a date, `general` for a titled
+            passage that has none.
         kjv_superscription:
           type:
           - string
           - 'null'
           description: |-
-            Batch W3: the KJV's own literal-citation sibling of `robertson_section`/
-            `acts_section`/`atlas_section` above -- see `atlas_core::data::Event::
-            kjv_superscription`'s own doc comment. Omitted (not null) when absent,
-            same convention.
+            The superscription the King James Version prints over this passage, absent
+            when it prints none.
         mentioned_in:
           type: array
           items:
             type: string
           description: |-
-            ATTEST-1 (L3, "Mentioned in"): the verses that MENTION this event
-            without narrating it -- canonical verse ids, ascending. Distinct
-            from `witnesses` ON PURPOSE, and that distinction IS the batch: an
-            account NARRATES the event and belongs under PARALLEL ACCOUNTS; a
-            mention merely REFERENCES it while narrating something else, and
-            rendering one as the other is exactly the "fundamental error" the
-            owner reported. An event whose whole scriptural basis is mentions
-            (the Espousal of Mary) serves an EMPTY `witnesses` and a non-empty
-            list here -- a real node with a real frontier, never a fabricated
-            parallel-accounts section.
-
-            OMITTED (not `[]`) when empty, the same convention every optional
-            field above follows -- so an event with no mentions serves
-            byte-identically to before this batch.
+            The verses that mention this event without narrating it, in canonical order.
+            Omitted when there are none.
         mentions_provenance:
           type: array
           items:
             type: string
           description: |-
-            Batch PROV-1: the same, for the "Mentioned in" section -- the
-            `Mentions` rows naming THIS event.
+            The sources behind the verses that mention this event. Omitted when there are
+            none.
         places:
           type: array
           items:
             $ref: '#/components/schemas/PlaceRef'
         provenance:
           type: string
-          description: |-
-            Batch PROV-1 (owner order 1): THIS EVENT's own source -- the Event
-            node's `provenance`, off `Node::provenance`
-            (`event_world::event_provenance`: `"theographic"` for an imported
-            event, `"curated"` for one this project authored). The focus card's
-            own attribution, and the TOTAL-CAPTURE HONESTY case in one field: a
-            hand-authored event says `curated`, which resolves to the registry's
-            own "Our Own Curated Work" category, and therefore cannot silently
-            wear Theographic's clothes at the reader.
+          description: The id of the source that asserts this event; `/api/sources` names it.
         ref_note:
           type:
           - string
           - 'null'
+          description: |-
+            A note on how this event's date and grouping were arrived at, absent when
+            none was needed.
         robertson_section:
           type:
           - string
           - 'null'
+          description: |-
+            The section of Robertson's Harmony of the Gospels this event falls in, absent
+            when it has none.
         title:
           type: string
         when:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
+            description: The years the event spans; absent for a titled passage that has no date.
           - type: 'null'
         witnesses:
           type: array
           items:
             $ref: '#/components/schemas/EventWitness'
+          description: The passages that narrate this event, one per book. Always at least one.
         witnesses_provenance:
           type: array
           items:
             type: string
           description: |-
-            Batch PROV-1: every distinct provenance id behind THIS EVENT's
-            PARALLEL ACCOUNTS section -- the `Attests` rows for this event
-            specifically, not the family average.
-
-            A list, and per-EVENT rather than per-family, even though the real
-            `attests` table is single-sourced TODAY (`{event-witnesses}`,
-            measured by `the_per_family_provenance_map_of_the_real_artifact_
-            is_pinned`; ATTEST-1's `attestation-corrections` rows land on
-            `mentions`/`analogue`, not here -- an earlier version of this
-            comment said otherwise and was wrong). Per-event is what keeps this
-            TRUE if a second source ever lands in the table: a family average
-            would start lying the moment it did, and THE LEPER LESSON is exactly
-            that a hand-authored row must never be attributed to an importer.
-
-            Omitted (not `[]`) when empty -- an event with no accounts (the
-            Espousal of Mary) renders no PARALLEL ACCOUNTS section at all, so it
-            needs no attribution for one; same convention as `mentioned_in`
-            above, so such an event serves byte-identically to before this
-            batch but for the two unconditional fields.
+            The sources behind the passages that narrate this event, for this event
+            rather than for the corpus. Omitted when there are none.
       additionalProperties: false
     EventWitness:
       type: object
       description: |-
-        Batch T requirement 1: one EVENT-kind PASSAGE's own resolved witness --
-        the "book, verse-range, translation-mapped" shape the owner's own words
-        describe, with the translation indirection already resolved to
-        [`crate::translation::DEFAULT_TRANSLATION`] (this app's only compiled
-        translation) and grouped into `VerseGroup`s via the SAME `verse_groups_for`
-        every other "an event's own verses on the wire" case in this module
-        already calls -- a witness's own verse list is provably rendered the
-        identical way `to_scene_event`/`lit_places` already render any other
-        verse list, not a parallel formatting path.
+        One book's account of an event: the passage it narrates the event in, and any
+        note on the citation.
       required:
       - book
       - verse_groups
@@ -2155,14 +1767,8 @@ components:
     History:
       type: object
       description: |-
-        Batch E: `/api/place/{id}`'s optional `history` payload, present only
-        when this place has a curated `PlaceHistory` record at all (`when
-        curated`, per the brief). `display_name` and `blurb` are resolved
-        against the request's `?from=&to=` window when given (else `display_name`
-        falls back to the place's own default `name` and `blurb` is omitted --
-        see `history::resolve_display_name`/`resolve_blurb`'s own doc comments);
-        `established`/`destroyed` are window-independent static facts, always
-        included verbatim whenever curated.
+        What is known about a place's name and existence over time, resolved for the
+        years asked about.
       required:
       - display_name
       properties:
@@ -2170,19 +1776,26 @@ components:
           type:
           - string
           - 'null'
+          description: A short description of the place in those years, absent when none applies.
         destroyed:
           oneOf:
           - $ref: '#/components/schemas/PlaceDateClaim'
+            description: When the place was destroyed, absent when that is not recorded.
           - type: 'null'
         display_name:
           type: string
+          description: |-
+            The name this place bore in the years asked about, falling back to its
+            default name when no period name applies.
         established:
           oneOf:
           - $ref: '#/components/schemas/PlaceDateClaim'
+            description: When the place was founded, absent when that is not recorded.
           - type: 'null'
       additionalProperties: false
     KretzmannChapter:
       type: object
+      description: Kretzmann's commentary for one chapter.
       required:
       - verses
       - version
@@ -2193,14 +1806,11 @@ components:
             $ref: '#/components/schemas/KretzmannChapterVerse'
         version:
           type: string
+          description: A stamp identifying the data set this commentary was read from.
       additionalProperties: false
     KretzmannChapterItem:
       type: object
-      description: |-
-        KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5,
-        batch-finalp1-brief.md ticket 2, SANCTIONED SERVER ADDITION): one
-        `CommentaryItem` row within one verse of `GET /api/kretzmann/chapter/{cref}`'s
-        own chapter-scoped response.
+      description: 'One commentary item: the id that fetches its prose, and its heading.'
       required:
       - id
       properties:
@@ -2208,15 +1818,15 @@ components:
           type:
           - string
           - 'null'
+          description: Absent for an item with no heading of its own.
         id:
           type: string
       additionalProperties: false
     KretzmannChapterVerse:
       type: object
       description: |-
-        One verse's own commentary items, in document order. Only verses with
-        >=1 item appear at all (mirrors `Kretzmann.razor`'s own retired
-        client-side "if (items.Count > 0)" filter).
+        One verse's commentary items, in document order. Only verses with at least
+        one item appear at all.
       required:
       - verse
       - items
@@ -2233,15 +1843,8 @@ components:
     LandMask:
       type: object
       description: |-
-        `GET /api/land-mask` (Batch R requirement 1, "borders become part of the
-        plate"): the curated land/coastline mask (`data/curated/land-mask.toml`)
-        used ONLY to clip polity washes so they never spill into open sea --
-        static geometry, no query params, no time dependence (unlike
-        `/api/polities`). `rings` is a flat `[[[lat,lon],...],...]` array -- every
-        region's own rings, already flattened at ETL time (see
-        `AtlasData::land_mask`'s own doc comment) -- the client never needs
-        region names/ref_notes, only the raw geometry to build an SVG clipPath
-        from.
+        The coastline geometry border washes are clipped against, so no polity's
+        colour spills into open sea.
       required:
       - rings
       properties:
@@ -2257,31 +1860,13 @@ components:
                 format: double
               - type: number
                 format: double
+          description: Closed rings of [latitude, longitude] points, in degrees.
       additionalProperties: false
     Landmark:
       type: object
       description: |-
-        A curated landmark label (river/sea/mountain/region) rendered always-on,
-        non-interactive, on the World map — the "actual good and informative
-        map" landmark-labels feature. `kind` is one of `"water"`, `"mountain"`,
-        `"region"` (atlas-etl's `validate::run_landmarks` enforces the enum;
-        this struct itself accepts any string so a hand-authored curated file
-        with a typo fails ETL validation with a clear message rather than
-        silently refusing to deserialize with serde's own less-helpful error).
-
-        Batch C2 (design-direction.md's Atlas plate detail SECOND ADDENDUM,
-        "populated far field... broad standing regions... sized by geographic
-        extent"): `size` is an optional hint, one of `"sm"`, `"md"`, `"lg"`
-        (also enum-checked by `validate::run_landmarks`, same friendlier-error
-        reason as `kind`), `None` for every landmark curated before this batch.
-        Two effects, both in map.js: (1) font-size, mirroring BorderLayer's own
-        polity-label `data-size` sm/md/lg tiers; (2) tier-0 visibility —
-        `applyLabelTier` treats ANY landmark carrying an explicit size hint as a
-        deliberately-curated far-field context label, visible even at the FAR
-        (zoomed-out) tier regardless of its `kind`'s own default tier rule,
-        which otherwise only exempts `kind == "water"`. A landmark with no
-        `size` at all keeps the exact PRE-Batch-C2 kind-based tier behavior —
-        this field only ever ADDS visibility, never removes any.
+        An always-on map label: a water, a mountain or a region, drawn at one point
+        and never interactive.
       required:
       - name
       - kind
@@ -2290,25 +1875,29 @@ components:
       properties:
         kind:
           type: string
+          description: '`water`, `mountain` or `region`.'
         lat:
           type: number
           format: double
+          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
+          description: Longitude in degrees, east positive.
         name:
           type: string
         size:
           type:
           - string
           - 'null'
+          description: |-
+            A size hint -- `sm`, `md` or `lg` -- for a label meant to stay readable when
+            zoomed out; absent for most landmarks.
     Narrative:
       type: object
       description: |-
-        An ordered chain of event ids (`legs`) that `scene::build_arrows` turns
-        into consecutive arrows. ETL validates legs are non-decreasing by
-        `when.from_year`; scene composition trusts that invariant rather than
-        re-deriving it.
+        A journey or storyline through the atlas: an ordered chain of events the map
+        draws as a run of arrows.
       required:
       - id
       - name
@@ -2317,27 +1906,21 @@ components:
       properties:
         color:
           type: string
+          description: The colour its arrows are drawn in.
         id:
           type: string
         legs:
           type: array
           items:
             type: string
+          description: The ids of its events, in order, never running backwards in time.
         name:
           type: string
     NarrativeAdjacentEvent:
       type: object
       description: |-
-        One event ADJACENT to the position being described (the PRIOR or the
-        FOLLOWING leg) -- carries everything the popover needs to render it
-        (label + verses, via the shared passage-list component) and everything
-        needed to traverse further (its own `id`, for the event-id-keyed lookup
-        below). `places` are this event's own anchor-and-companion place ids
-        (`Event::places`, unchanged) -- carried for wire completeness (the
-        brief's own "id, label, place(s), and verse groups") even though this
-        batch's own client UI does not render them textually (the event's own
-        `label` already names the moment in house prose; a future batch could
-        use `places` to jump the map to it without a wire change here).
+        An event next to the one asked about: enough to show it, and the id to travel
+        to it with.
       required:
       - id
       - label
@@ -2360,21 +1943,8 @@ components:
     NarrativeEventPositions:
       type: object
       description: |-
-        Batch HOTFIX-4 requirement 1: `GET /api/narrative/event/{id}`'s own
-        extended wire shape -- WAS a bare `Vec<NarrativePosition>` (Batch N);
-        NOW an object, `narrative` carrying EXACTLY that same array (unchanged
-        shape, unchanged rows, every existing narrative-scoped consumer keeps
-        reading it unmodified) alongside the NEW `timeline` field. `timeline` is
-        OMITTED (not `null`) entirely for a general-kind or unknown event id
-        (requirement 2: "general-kind containers... NOT part of time traversal"),
-        present otherwise with `prior`/`following` each independently omitted
-        only at the atlas's own true first/last dated event (conditional
-        presence, matching every other optional field on this wire). Every
-        consumer of the OLD bare-array shape is migrated in this same commit:
-        `AtlasClient.NarrativeEventPositions` (client), `EventNode`/
-        `INarrativeAware` (client), `PlaceCard.LoadNarrativePositions` (client,
-        reads `.Narrative` — TRAVERSAL-1 logic unchanged), and the Playwright
-        helper call sites in `world-pin.spec.ts`/`popover-sections.spec.ts`.
+        Where one event sits in time: in each narrative it belongs to, and in the
+        atlas's whole chronology.
       required:
       - narrative
       properties:
@@ -2385,18 +1955,12 @@ components:
         timeline:
           oneOf:
           - $ref: '#/components/schemas/TimelinePosition'
+            description: The event's place in the whole chronology; absent for an event with no date.
           - type: 'null'
       additionalProperties: false
     NarrativePosition:
       type: object
-      description: |-
-        Batch N: one (narrative, event) position a queried verse or event
-        touches -- `prior`/`following` omitted (not null) exactly at a
-        narrative's own first/last leg, same conditional-presence wire
-        convention `History.blurb`/`CatechismRef.question` etc. already
-        use throughout `wire/`. `event_id`/`event_label` are carried (map-
-        focus-sync + disambiguating two positions sharing one `narrative_id`)
-        even though they restate something the CALLER usually already knows.
+      description: One event's place in one narrative, with the legs on either side of it.
       required:
       - narrative_id
       - narrative_name
@@ -2410,6 +1974,7 @@ components:
         following:
           oneOf:
           - $ref: '#/components/schemas/NarrativeAdjacentEvent'
+            description: The leg after this one; absent at the narrative's last leg.
           - type: 'null'
         narrative_id:
           type: string
@@ -2418,10 +1983,14 @@ components:
         prior:
           oneOf:
           - $ref: '#/components/schemas/NarrativeAdjacentEvent'
+            description: The leg before this one; absent at the narrative's first leg.
           - type: 'null'
       additionalProperties: false
     NodeCard:
       type: object
+      description: |-
+        One node of the graph at a glance: what it is, what to call it, where it
+        came from, and what it connects to.
       required:
       - id
       - kind
@@ -2435,25 +2004,15 @@ components:
           - string
           - 'null'
           description: |-
-            ENT-1a: Easton's Bible Dictionary (1897, PD) prose, source-attested,
-            `None` until a match exists -- same additive-JSON, same held-client
-            disclosure as `wire::PlaceDetail::description`. This is the
-            ONLY "detail" surface a Person or PeopleGroup node has at all
-            (`graph_wire.rs`'s own doc comment: no dedicated per-kind endpoint
-            exists for either), so widening the generic card here is what
-            actually reaches them; it reaches Place/PeopleGroup for free too
-            (the same payload fact, whichever kind carries it).
-
-            Batch CORP-1b: the SAME field, widened again -- a CommentaryItem's
-            own prose (`NodePayload::CommentaryItem.text`) rides here too now
-            (`atlas_graph::legacy::node_description`'s own updated match), for
-            the identical reason: no dedicated per-kind endpoint exists for
-            CommentaryItem either, and the prose was already sitting on the
-            compiled graph payload, just never read.
+            Public-domain dictionary or commentary prose about this node, absent when
+            none is recorded. Never invented.
         edge_summary:
           type: array
           items:
             $ref: '#/components/schemas/EdgeSummaryEntry'
+          description: |-
+            How many neighbours this node has of each kind, listing only the kinds it
+            has any of.
         id:
           type: string
         kind:
@@ -2463,12 +2022,14 @@ components:
         person:
           oneOf:
           - $ref: '#/components/schemas/PersonLife'
-            description: 'D5: present for a Person only (omitted, never null, otherwise).'
+            description: Life facts, present only for a person.
           - type: 'null'
         provenance:
           type: string
+          description: The id of the source that asserts this node; `/api/sources` names it.
         version:
           type: string
+          description: A stamp identifying the data set this card was read from.
       additionalProperties: false
     NodeKind:
       type: string
@@ -2490,6 +2051,10 @@ components:
       - LexiconEntry
     NodeRef:
       type: object
+      description: |-
+        A reference to something the graph holds: enough to show it, and the id to
+        fetch it with. The `kind` is one of the graph's node kinds, or `Edge` when
+        the reference is to an edge, which can be explored in its own right.
       required:
       - id
       - kind
@@ -2504,13 +2069,7 @@ components:
       additionalProperties: false
     PersonLife:
       type: object
-      description: |-
-        D5 (owner, 2026-09-15; additive, AQC 0.7.0): a Person card's life facts,
-        straight off the payload. `birth_year`/`death_year` are the source's
-        own life dates (75 / 64 of 3,067 persons carry one); `first_year`/
-        `last_year` are the CORPUS-mention span, never a lifespan; `eternal`
-        with its Scripture `eternal_grounds` is the curated exception ("God
-        because he is eternal") -- an eternal person shows no years at all.
+      description: What is recorded about one person's life.
       required:
       - eternal
       - eternal_grounds
@@ -2520,58 +2079,56 @@ components:
           type: array
           items:
             type: string
+          description: Other names this person is known by.
         birth_year:
           type:
           - integer
           - 'null'
           format: int32
+          description: |-
+            The year of birth where one is recorded, negative for BC; most people have
+            none.
         death_year:
           type:
           - integer
           - 'null'
           format: int32
+          description: The year of death where one is recorded.
         eternal:
           type: boolean
+          description: |-
+            True for a person Scripture presents as eternal, who therefore carries no
+            years at all.
         eternal_grounds:
           type: array
           items:
             type: string
+          description: The verses on which that is claimed.
         first_year:
           type:
           - integer
           - 'null'
           format: int32
+          description: |-
+            The earliest year at which this person is mentioned -- the span of mentions,
+            never a lifespan.
         gender:
           type:
           - string
           - 'null'
+          description: Absent when the source records none.
         last_year:
           type:
           - integer
           - 'null'
           format: int32
+          description: The latest year at which this person is mentioned.
       additionalProperties: false
     PersonRef:
       type: object
       description: |-
-        M-D3 (owner ruling U5, "in-text person and place name links,
-        mentions-attested ONLY -- no free-text matching ever"): one person the
-        graph's own `mentions` relation attests at a verse's own locus
-        (`GraphService::persons_by_verse`, precomputed off `Graph.mentions`,
-        NEVER a free-text/dictionary lookup against the verse's own rendered
-        words -- the exact "Sin"-the-city vs "sin"-the-noun hazard this
-        wording guards against: a name is only ever offered as a link because
-        a CURATED edge attests that specific entity at that specific verse,
-        not because some word in the text happens to match a name string
-        somewhere in the graph). Deliberately lean, mirroring `PlaceRef`'s
-        own "no more than the consumer needs" wire philosophy -- id (to open
-        the entity's own node popover) and display label (for the client's
-        own plain-text search locating WHERE in the verse's already-attested
-        text this entity's own name appears, the SAME PlaceMentions.cs
-        mechanism this batch generalizes rather than replaces -- attestation
-        is what THIS field guards; locating the substring within an ALREADY-
-        attested verse is a separate, later step, not a second matching
-        hazard).
+        A person the graph attests at a verse -- never a name matched against the
+        text -- with the id to explore and the name to show for it.
       required:
       - id
       - name
@@ -2583,15 +2140,7 @@ components:
       additionalProperties: false
     PlaceDateClaim:
       type: object
-      description: |-
-        A biblically-supported established/destroyed date claim. `when` is
-        either a single year (`from_year == to_year`, the curated TOML's `year =
-        ...` shorthand) or a genuine range (`from = ...` / `to = ...`) --
-        collapsed to one `TimeRange` here since the client's own `YearText.
-        FormatRange` already renders an equal-endpoints range as a single year,
-        so no separate "was this a year or a range" flag is needed on the wire.
-        `note` is a short qualifier (e.g. `"traditional"`) the client renders as
-        a leading "c." on the date when present.
+      description: A date this atlas claims for a place, with the verses it rests on.
       required:
       - when
       - verses
@@ -2600,14 +2149,22 @@ components:
           type:
           - string
           - 'null'
+          description: |-
+            A qualifier such as `traditional`, shown as a leading "c." on the date;
+            absent when the date needs none.
         verses:
           type: array
           items:
             type: string
+          description: The verses supporting the claim.
         when:
           $ref: '#/components/schemas/TimeRange'
+          description: The year claimed, or the range; a single year is a span whose ends are equal.
     PlaceDetail:
       type: object
+      description: |-
+        One place: where it is, the events that happened there, and what is known
+        about its name and its history.
       required:
       - id
       - name
@@ -2620,29 +2177,15 @@ components:
           - string
           - 'null'
           description: |-
-            Batch E3 (requirement 2's quiet provenance note): the bare, stripped,
-            un-aliased, un-period-resolved canonical name. ALWAYS COMPUTED --
-            unlike `history`, which stays absent for a place with no curated
-            `PlaceHistory` record at all (e.g. `cush-2`), this field's own
-            resolution never depends on `history` existing -- but only ever
-            SERIALIZED (`Some`) when it differs from whatever name is actually
-            showing this request (a curated period name OR a curated KJV alias
-            resolved to something else). Omitted (`None`, not a repeat of the
-            title) whenever this place's displayed name already IS its canonical
-            name, so the client's own popover renders NO provenance note rather
-            than a vacuous "known elsewhere as X" that just repeats the title.
+            The place's plain canonical name, present only when the name being shown is
+            a period name or a translation's own wording and so differs from it.
         description:
           type:
           - string
           - 'null'
           description: |-
-            ENT-1a (owner order: "we actually want meaningful information about
-            who or what someone is, having that be backed by scripture"):
-            Easton's Bible Dictionary (1897, public domain) prose, source-
-            attested, `None` until a match exists -- never fabricated. ADDITIVE
-            JSON (batch-ent1a-brief.md controller decision 3): the current
-            client ignores unknown/absent fields; the EntityProfile presentation
-            half that renders this is HELD for the frontend-elegance brainstorm.
+            Public-domain dictionary prose about the place, absent when none is
+            recorded. Never invented.
         events:
           type: array
           items:
@@ -2650,15 +2193,18 @@ components:
         history:
           oneOf:
           - $ref: '#/components/schemas/History'
+            description: Absent for a place with no curated history.
           - type: 'null'
         id:
           type: string
         lat:
           type: number
           format: double
+          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
+          description: Longitude in degrees, east positive.
         name:
           type: string
       additionalProperties: false
@@ -2678,6 +2224,7 @@ components:
       additionalProperties: false
     Polities:
       type: object
+      description: The polity borders in view for the span of years asked about.
       required:
       - polities
       properties:
@@ -2689,12 +2236,9 @@ components:
     Polity:
       type: object
       description: |-
-        One polity-era row: `id` is the POLITY's (constant across every era row
-        the same polity contributes to a response) and `color_key` its own
-        precomputed hash, while `name`/`from`/`to`/`rings` are this specific ERA's.
-        The field names deliberately match `atlas_core::data::PolityEra`'s own
-        (`from`/`to`, not `from_year`/`to_year` -- see that struct's doc comment
-        for why), so the era half is a plain copy, not a rename.
+        One era of one polity's border. The `id` and `color_key` are the polity's
+        and hold across every era row it contributes; the name, the years and the
+        rings belong to this era alone.
       required:
       - id
       - name
@@ -2706,18 +2250,22 @@ components:
         color_key:
           type: integer
           format: int32
+          description: A number fixed per polity, so its eras can be coloured consistently.
           minimum: 0
         fall:
           oneOf:
           - $ref: '#/components/schemas/PolityDelta'
+            description: The event that ended this polity for good, absent when none is recorded.
           - type: 'null'
         from:
           type: integer
           format: int32
+          description: The first year of this era, negative for BC.
         id:
           type: string
         name:
           type: string
+          description: The polity's name during this era.
         rings:
           type: array
           items:
@@ -2730,51 +2278,24 @@ components:
                 format: double
               - type: number
                 format: double
+          description: |-
+            This era's border, as closed rings of [latitude, longitude] points, in
+            degrees.
         to:
           type: integer
           format: int32
+          description: The last year of this era.
         transition:
           oneOf:
           - $ref: '#/components/schemas/PolityDelta'
-            description: |-
-              Batch M requirement 1: this era's own delta metadata, OMITTED (not
-              null) when absent -- "an uneventful boundary stays visible but gets
-              the minimal popover," so the client must be able to tell "no
-              transition curated" apart from "transition curated with zero
-              verses" (the latter still shows the event/grounding-note sections,
-              just no THE SCRIPTURES section — see `PolityDelta::verses`' own doc
-              comment). Mirrors `NarrativePosition.prior`/`.following`'s own
-              `skip_serializing_if` precedent exactly.
+            description: The event that opened this era, absent when none is recorded.
           - type: 'null'
       additionalProperties: false
     PolityDelta:
       type: object
       description: |-
-        Batch M requirement 1: one Scripture-mapped historical delta -- the
-        event AT an era boundary (a polity's rise, an internal border/regime
-        change, or its fall), curated as `[era.transition]`/`[era.fall]` nested
-        under one `[[era]]` table (see `PolityEra::transition`/`PolityEra::fall`'s
-        own doc comments). Shape is deliberately flat and small, mirroring
-        `CatechismItem.ref_note`'s own "cite only what you actually consulted"
-        discipline:
-        - `event`: a short, sentence-cased prose description (e.g. "Assyria
-          carries Israel captive") -- house prose, never a bare citation.
-        - `verses`: individually-canonical verse refs (the SAME flat,
-          already-canonical-string convention `CatechismItem::verses`/
-          `Event::verses` already use -- no ranges, no re-expansion needed), each
-          independently explorable once on the wire (POLITY-DELTA's own THE
-          SCRIPTURES section, rendered through the shared passage-list
-          component). MAY be empty (an event grounded only in Church-traditional
-          history, with no single verse pinpointing it) -- the SCRIPTURES section
-          is then simply absent (conditional presence), never a fabricated ref.
-        - `ref_note`: names only the source(s) actually consulted -- 1911
-          Britannica (already the era ring's own grounding source in most
-          curated files), a specific scripture passage, or an explicit
-          "tradition only" disclosure when that's the honest state of the
-          evidence. Never invented, per this project's standing citation-
-          integrity rule (6+ prior incidents) -- see the batch report's own
-          delta-coverage table for exactly which boundaries got one and why the
-          rest were honestly omitted.
+        The event at one boundary of a polity's era: its rise, a change of its
+        borders, or its fall.
       required:
       - event
       - verses
@@ -2782,15 +2303,17 @@ components:
       properties:
         event:
           type: string
+          description: A short description of what happened.
         ref_note:
           type: string
+          description: The sources actually consulted for this event.
         verses:
           type: array
           items:
             type: string
           description: |-
-            `default` governs reading the curated TOML only: the wire always
-            carries this list, empty or not.
+            The verses grounding it. May be empty for an event history records but no
+            single verse pinpoints; never a fabricated reference.
     PositionKind:
       type: string
       enum:
@@ -2813,33 +2336,8 @@ components:
     ProvenanceEntry:
       type: object
       description: |-
-        Batch PROV-1 (owner order 1, verbatim: "one thing we definitely need
-        for EVERY PIECE OF DATA is the source from which it came. openbible,
-        etc."): THE JOIN ROW between a `ProvenanceId` as the graph actually
-        carries it -- the interned adapter-side string on every node and every
-        authored/imported row (`"kjv"`, `"theographic"`, `"curated-eras"`, ...)
-        -- and the [`SourceEntry`] that names, describes and licenses it for a
-        reader.
-
-        This table exists because the two vocabularies are genuinely DIFFERENT,
-        and always were: an adapter's provenance id is an INGEST fact (which
-        pipeline stage asserted this row), while a source id is a PUBLICATION
-        fact (which corpus a reader is being cited to). Several ingest ids
-        legitimately map to ONE source -- every hand-authored `curated-*` id is
-        this project's own work -- and rewriting the graph to carry publication
-        ids instead would erase that distinction. So the mapping is DECLARED
-        here, curated, and checked in BOTH directions
-        (`atlas_etl::sources::validate_structure` for internal consistency;
-        `atlas-graph/tests/provenance_registry_real_data.rs` for the real
-        artifact), rather than guessed by string munging at the UI.
-
-        [`confidence`](Self::confidence) is the reader-facing half of
-        `atlas_graph_types::ingest::Confidence`, which the graph's own row
-        structs do NOT store (they carry the id alone -- and that enum's own
-        doc comment says why: confidence "derives from its role at the
-        registry," and this IS the registry). Spelled exactly as that enum's
-        variants are: `"CanonicalText"` | `"Curated"` | `"Imported"` |
-        `"Derived"`.
+        The join between a provenance id as records carry it and the source that
+        names, describes and licenses it.
       required:
       - id
       - source
@@ -2848,34 +2346,26 @@ components:
         confidence:
           type: string
           description: |-
-            `atlas_graph_types::ingest::Confidence`, spelled as its own variant
-            name -- see this struct's doc comment. Validated against the closed
-            vocabulary by [`crate::sources::CONFIDENCE_VOCABULARY`].
+            How the claim was arrived at: `CanonicalText`, `Curated`, `Imported` or
+            `Derived`.
         id:
           type: string
-          description: The `ProvenanceId` as the compiled graph carries it, verbatim.
+          description: The provenance id exactly as a record carries it.
         locator:
           type:
           - string
           - 'null'
           description: |-
-            The optional "locator" half of `ingest::Provenance`, at the level
-            this registry can honestly state it: WHAT INSIDE the named source
-            this id draws on ("cross_references.txt", "Bible-Geocoding-Data",
-            ...). Omitted (not an empty string) when the source's own
-            `what_we_built` already says it and a locator would add nothing --
-            never a fabricated or padded string.
+            What inside the named source this id draws on, absent when the source's own
+            description already says.
         source:
           type: string
-          description: The [`SourceEntry::id`] this ingest id is a claim BY.
+          description: The id of the source this is a claim by.
     QuietPlace:
       type: object
       description: |-
-        Batch E2: one "quiet" place on a time-mode scene -- an event-bearing
-        place that isn't lit (in `Scene::places`) for this particular window.
-        Deliberately LEAN -- no `events`/`verse_groups` at all, unlike
-        `ScenePlace`: a quiet place has none active this window BY DEFINITION,
-        so carrying an always-empty list would only bloat the payload.
+        A place this atlas knows an event at, drawn on the map but not lit for the
+        span asked about.
       required:
       - id
       - display_name
@@ -2885,58 +2375,49 @@ components:
       properties:
         display_name:
           type: string
-          description: |-
-            Same window-resolution rules `ScenePlace::display_name` uses
-            (`crate::history::resolve_display_name`) -- QUIET-1 requires this to
-            never contradict what the lit side would show for the SAME window
-            (e.g. a place that crosses from quiet to lit as the window nudges by
-            a year must not also silently change its displayed name).
+          description: The name to show, resolved for the same span the lit places use.
         existence_from:
           type:
           - integer
           - 'null'
           format: int32
-          description: |-
-            Batch H (existence gating): same fields, same rule, as
-            `ScenePlace::existence_from`/`existence_to` -- see that doc comment.
-            A quiet place is exactly where this matters most in practice (the
-            "ever-present graph" shows a dot for every event-bearing place
-            regardless of window, so a long-destroyed place's dot can otherwise
-            sit on a plate captioned with a name it never bore at that time).
+          description: The year this place was founded, where that is recorded; absent otherwise.
         existence_to:
           type:
           - integer
           - 'null'
           format: int32
+          description: The year it ceased to exist, where that is recorded; absent otherwise.
         id:
           type: string
         lat:
           type: number
           format: double
+          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
+          description: Longitude in degrees, east positive.
         merged_ids:
           type: array
           items:
             type: string
           description: |-
-            Batch HOTFIX-2: same field, same rule, as `ScenePlace::merged_ids`
-            above -- a quiet place is exactly where this can matter too (the
-            survivor of a merge is quiet in any window neither absorbed record's
-            own events intersect).
+            The ids of other records for this same place, folded into this one. Omitted
+            when there are none.
         total_events:
           type: integer
           format: int32
           description: |-
-            This place's ALL-TIME event count (every event touching it, in ANY
-            window) -- NOT scoped to the current scene's window, since a quiet
-            place has zero events IN this window by definition; a window-scoped
-            count would always read zero and tell the client nothing.
+            How many events touch this place in any year. A count for the span asked
+            about would always be zero, which is what makes the place quiet.
           minimum: 0
       additionalProperties: false
     Scene:
       type: object
+      description: |-
+        The map at one moment of enquiry: which places are lit, which are only
+        present, and which arrows run between them.
       required:
       - mode
       - places
@@ -2948,46 +2429,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SceneArrow'
+          description: The movements narratives draw between the places in view.
         mode:
           $ref: '#/components/schemas/SceneMode'
         narratives:
           type: array
           items:
             $ref: '#/components/schemas/SceneNarrative'
+          description: The narratives with at least one leg in view.
         places:
           type: array
           items:
             $ref: '#/components/schemas/ScenePlace'
+          description: The places something in view happens at.
         quiet_places:
           type: array
           items:
             $ref: '#/components/schemas/QuietPlace'
           description: |-
-            Batch E2 (the ever-present graph, user direction 2026-08-19: "all of
-            the cities in our graph are available in any timerange rather than
-            just loading those which are biblically active at the time"): every
-            event-bearing place NOT in `places` for this window -- period
-            relevance is now expressed by GLOW (whether a place is in `places`),
-            not existence. QUIET-1: for every time-mode window, `places` union
-            `quiet_places` equals the FULL event-bearing place set (fixed
-            cardinality, derived from the data -- see
-            `AtlasData::event_bearing_place_ids`), and the two are disjoint.
-            ALWAYS an array (never omitted) on both modes -- but always EMPTY for
-            scripture-mode scenes, which never gain quiet places at all (chosen
-            over an `Option`/omitted-key representation for wire regularity with
-            `places` itself, which is likewise never optional; a client reading
-            `quiet_places` needs no null-check either way).
+            Every other place this atlas knows an event at: present on the map but not
+            lit. Always sent, and always empty for a passage.
         ref:
           type:
           - string
           - 'null'
+          description: The passage asked about; absent when a span of years was asked about instead.
         window:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
+            description: The span of years asked about; absent when a passage was asked about instead.
           - type: 'null'
       additionalProperties: false
     SceneArrow:
       type: object
+      description: |-
+        One leg of a narrative drawn on the map: a movement from one place to the
+        next.
       required:
       - narrative
       - color
@@ -2999,23 +2476,31 @@ components:
       properties:
         color:
           type: string
+          description: The colour that narrative is drawn in.
         from_event:
           type: string
+          description: The id of the event at the starting place.
         from_place:
           type: string
+          description: The id of the place the movement starts from.
         narrative:
           type: string
+          description: The id of the narrative this leg belongs to.
         order:
           type: integer
           format: int32
+          description: This leg's position along the narrative, counting from its first.
           minimum: 0
         to_event:
           type: string
+          description: The id of the event at the arriving place.
         to_place:
           type: string
+          description: The id of the place it arrives at.
       additionalProperties: false
     SceneEvent:
       type: object
+      description: 'One event at a place: when it happened, and where it is narrated.'
       required:
       - id
       - label
@@ -3030,8 +2515,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
+          description: The passages narrating it, grouped by book and chapter.
         when:
           $ref: '#/components/schemas/TimeRange'
+          description: The years the event spans.
       additionalProperties: false
     SceneMode:
       type: string
@@ -3043,6 +2530,7 @@ components:
       - scripture
     SceneNarrative:
       type: object
+      description: One narrative with at least one leg in view.
       required:
       - id
       - name
@@ -3051,17 +2539,21 @@ components:
       properties:
         color:
           type: string
+          description: The colour its arrows are drawn in.
         id:
           type: string
         legs_in_scene:
           type: integer
           format: int32
+          description: How many of its legs are in view.
           minimum: 0
         name:
           type: string
+          description: The narrative's name.
       additionalProperties: false
     ScenePlace:
       type: object
+      description: One lit place on the map, with the events that light it.
       required:
       - id
       - name
@@ -3074,16 +2566,15 @@ components:
         brightness:
           type: integer
           format: int32
+          description: |-
+            How brightly to draw this place, from how much of what is in view happens
+            here.
           minimum: 0
         display_name:
           type: string
           description: |-
-            Batch E: the period-true name resolved for this scene's own window
-            (`crate::history::resolve_display_name`) -- `name`'s original,
-            always-present value unchanged; this is the ADDITIONAL field the
-            client renders on map labels / hover card title / arrow-tip text.
-            Equal to `name` whenever this place has no curated history, or none
-            of its curated ranges intersects the window.
+            The name to show: the one this place bore in the span asked about, or its
+            default name when no period name applies.
         events:
           type: array
           items:
@@ -3093,78 +2584,51 @@ components:
           - integer
           - 'null'
           format: int32
-          description: |-
-            Batch H (existence gating, deferred from E2): the curated
-            established/destroyed bounds this place's name resolves against
-            (`crate::history::resolve_existence`) -- plain years, never the full
-            established/destroyed `PlaceDateClaim` (verses/note; that richer
-            shape is `/api/place/{id}`'s own `wire::History`, not a per-marker wire
-            cost). Both omitted (not `null` -- see `skip_serializing_if`) when
-            this place has no curated history at all, or a curated history with
-            neither claim -- the client's own gate never fires in that case
-            (`existence_gates_label`'s own "always labels" reading). The map
-            renders every place regardless of these bounds (a lit place is only
-            ever here because a real event justifies it THIS window -- see
-            `scene::lit_places`); it's the client's own label -- never the
-            marker/dot -- that these bounds gate, and only in time mode (there is
-            no window to test outside-ness against in scripture mode).
+          description: The year this place was founded, where that is recorded; absent otherwise.
         existence_to:
           type:
           - integer
           - 'null'
           format: int32
+          description: The year it ceased to exist, where that is recorded; absent otherwise.
         id:
           type: string
         lat:
           type: number
           format: double
+          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
+          description: Longitude in degrees, east positive.
         merged_ids:
           type: array
           items:
             type: string
           description: |-
-            Batch HOTFIX-2 (same-place dedupe): ids of every OTHER compiled place
-            record merged into this one at load time (`crate::merge::MERGE_PAIRS`)
-            -- e.g. `["hazor_545"]` on the place carrying id `hazor-1`. Wire
-            traceability only (no client behavior reads this today): the brief's
-            own "note the absorbed record's id in the wire for traceability" --
-            so a future investigation into "why does hazor-1 carry events from
-            two different upstream lineages" doesn't have to go spelunking
-            through source data by hand. Empty (and omitted -- `skip_serializing_if`,
-            matching `existence_from`/`_to`'s own lean-wire convention) for the
-            overwhelming majority of places, which were never part of a merge.
+            The ids of other records for this same place, folded into this one. Omitted
+            when there are none.
         name:
           type: string
+          description: The place's default name.
       additionalProperties: false
     SourceCategory:
       type: object
-      description: |-
-        One heading group on the Sources page (e.g. "Scripture & Text"). `id`
-        is the join key [`SourceEntry::category`] points at.
+      description: One heading the sources are grouped under.
       required:
       - id
       - label
       properties:
         id:
           type: string
+          description: The key a source's `category` points at.
         label:
           type: string
     SourceEntry:
       type: object
       description: |-
-        One row of LICENSES.md's own "## Per-source table", curated by hand
-        into page-ready prose (positive tone throughout, per the KJV inerrancy
-        directive; license wording copied from LICENSES.md, never
-        embellished, per the citation-integrity rule).
-
-        `licenses_row_key` is never rendered on the page -- it is a literal
-        substring of this source's own row in LICENSES.md's Source column,
-        read ONLY by `atlas_etl::sources::validate_against_licenses`'s own
-        fail-loud drift check (requirement 3: "a LICENSES.md row absent from
-        the page (or vice versa) fails the build or a test").
+        One source this atlas is built from: what it is, what was built from it, and
+        how it is licensed.
       required:
       - id
       - category
@@ -3176,31 +2640,36 @@ components:
       properties:
         category:
           type: string
+          description: The id of the heading this source is grouped under.
         id:
           type: string
         license:
           type: string
+          description: The licence it is used under, quoted rather than paraphrased.
         licenses_row_key:
           type: string
+          description: |-
+            A key that ties this entry to its row in the project's licence file, so the
+            two cannot drift apart. Not meant to be displayed.
         link:
           type:
           - string
           - 'null'
+          description: Where to find the source, absent when it has no public home.
         title:
           type: string
+          description: The source's own name.
         what_it_is:
           type: string
+          description: What the source is, in a sentence or two.
         what_we_built:
           type: string
+          description: What this atlas built from it.
     SourcesDocument:
       type: object
       description: |-
-        The whole compiled/curated shape. `data/curated/sources.toml`'s
-        `[[category]]`/`[[source]]` arrays and `data/compiled/sources.json`'s
-        top-level object are the SAME shape (no per-format renaming), so one
-        struct serves both directions -- `atlas_etl::sources::parse_sources`
-        reads the TOML shape, `gen_sources` writes this straight to JSON, and
-        `GET /api/sources` serves that JSON back out unchanged.
+        Everything this atlas is built from: the sources, the headings they are
+        grouped under, and the ids that tie individual records back to a source.
       required:
       - categories
       - sources
@@ -3214,24 +2683,23 @@ components:
           items:
             $ref: '#/components/schemas/ProvenanceEntry'
           description: |-
-            Batch PROV-1: see [`ProvenanceEntry`]. `#[serde(default)]` so a
-            `sources.json` written before this batch still deserializes (the
-            same additive-only discipline the HTTP wire follows) -- the
-            committed one is regenerated with this table populated.
+            The join from the provenance id a record carries to the source that asserts
+            it.
         sources:
           type: array
           items:
             $ref: '#/components/schemas/SourceEntry'
     Testament:
       type: string
-      description: |-
-        Which half of the canon a book belongs to -- the reader's own OT/NT
-        grouping of the contents tree.
+      description: 'Which half of the canon a book belongs to: the Old Testament, or the New.'
       enum:
       - OT
       - NT
     TextUnit:
       type: object
+      description: |-
+        One unit of a reading spine: a verse of Scripture, or a paragraph of the
+        Book of Concord.
       required:
       - ref
       - text
@@ -3243,11 +2711,8 @@ components:
           items:
             $ref: '#/components/schemas/EdgeSummaryEntry'
           description: |-
-            D3 (owner, 2026-09-15; additive, AQC 0.6.0): this unit's own
-            inhabited frontier kinds and counts -- the SAME `edge_summary`
-            shape `NodeCard` carries, so a corpus page can make ONLY units
-            with edges clickable (no dead clicks) without an N+1 of node-card
-            calls. The reader may ignore it.
+            How many neighbours this unit has of each kind, so a page can tell which
+            units lead somewhere without asking after each one.
         ref:
           type: string
         text:
@@ -3257,14 +2722,12 @@ components:
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
           description: |-
-            Batch RED-1: this unit's own aligned sub-verse red-letter spans --
-            see `wire::Verse.words_of_christ`'s own doc comment
-            (identical shape/convention). Always empty for `corpus=concord`
-            (a wholly different corpus, never the KJV -- decision 5's own
-            sub-verse precision is KJV-specific by construction).
+            The spans of `text` that are the words of Christ, in order. Always empty
+            outside Scripture.
       additionalProperties: false
     TextWindow:
       type: object
+      description: A window of one corpus's reading spine.
       required:
       - units
       - version
@@ -3273,15 +2736,22 @@ components:
           type:
           - string
           - 'null'
+          description: |-
+            The reference one step further on in the direction travelled; absent at the
+            end of the corpus.
         units:
           type: array
           items:
             $ref: '#/components/schemas/TextUnit'
         version:
           type: string
+          description: A stamp identifying the data set this window was read from.
       additionalProperties: false
     TimeRange:
       type: object
+      description: |-
+        A span of years on this atlas's scale: negative for BC, positive for AD, with
+        no year zero. A single year is a span whose ends are equal.
       required:
       - from_year
       - to_year
@@ -3295,15 +2765,8 @@ components:
     TimelinePosition:
       type: object
       description: |-
-        Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
-        by time for every dated event"): the GLOBAL chronological PRIOR/
-        FOLLOWING for one event id, independent of narrative membership --
-        "the previous/next event is the one that is chronologically NEXT," the
-        owner's own law, applied to the FULL set of dated events rather than one
-        narrative's own leg chain. `prior`/`following` reuse the SAME
-        `NarrativeAdjacentEvent` shape and the SAME `adjacent_event` builder
-        this module's own narrative-scoped lookups use too (one graph, seen a
-        second way -- never a parallel verse-groups derivation).
+        Where an event sits in the atlas's whole chronology, whatever narratives it
+        belongs to.
       properties:
         following:
           oneOf:
@@ -3316,6 +2779,7 @@ components:
       additionalProperties: false
     Verse:
       type: object
+      description: 'One verse: its text, and what the graph attests at it.'
       required:
       - verse
       - text
@@ -3328,37 +2792,19 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Heading'
             description: |-
-              Batch T requirement 5: this verse's own pericope heading, when it is
-              a heading ANCHOR (`AtlasData::heading_for_verse`) -- omitted (not
-              null), matching `Polity.transition`/`.fall`'s own conditional-
-              presence convention, since the overwhelming majority of verses never
-              anchor a heading at all.
+              The heading that belongs above this verse, present only where the verse opens
+              one.
           - type: 'null'
         persons:
           type: array
           items:
             $ref: '#/components/schemas/PersonRef'
-          description: |-
-            M-D3 (owner ruling U5): every person the graph's own `mentions`
-            relation attests at this verse's own locus, in wire (row-insertion)
-            order -- see `PersonRef`'s own doc comment for the full
-            mentions-attested-only reasoning. Always present, possibly empty
-            (most verses mention zero persons by name) -- SAME conditional-
-            presence-lives-client-side convention `places` immediately above
-            already establishes for this exact shape of field.
+          description: The people this verse names. Empty for most verses.
         places:
           type: array
           items:
             $ref: '#/components/schemas/PlaceRef'
-          description: |-
-            Batch R requirement 5: every curated place whose OWN `verse_links`
-            names this verse, in place-id order (stable, not meaningful --
-            there is no "primary mention" concept). Always present, possibly
-            empty (most verses geocode to zero places) -- conditional presence
-            lives on the CLIENT side (a mini-reader renders no hoverable span at
-            all when this is empty), not as an omitted wire key, matching every
-            other "always an array" field in this app's own wire (e.g.
-            `Scene.quiet_places`).
+          description: The places this verse names, in a stable order. Empty for most verses.
         text:
           type: string
         verse:
@@ -3370,40 +2816,16 @@ components:
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
           description: |-
-            Batch RED-1: this verse's own aligned sub-verse red-letter spans
-            (`GraphService.red_letter_spans`, precomputed once -- see that
-            field's own doc comment for why this ONE companion is not
-            graph-derivable), in ascending order. Always present, possibly
-            empty -- SAME "always an array" convention `places`/`persons`
-            above already establish (most verses carry none). KJV-ONLY by
-            construction (decision 5: sub-verse precision is KJV-specific;
-            this endpoint has never served any other translation -- ruling 5,
-            "M1 is KJV-only").
+            The spans of `text` that are the words of Christ, in order. Empty for most
+            verses.
         xref_count:
           type: integer
-          description: |-
-            Batch M-D2 (owner's cross-reference superscript directive, closed on
-            the graph platform): this verse's own `cites` edge-summary COUNT at
-            its TextUnit locus -- read straight off THE PORT (`GraphQuery::
-            edge_summary`, design doc §5), the SAME generic query the `/api/node/
-            {id}` handler itself calls (`graph::node_card`) -- never a
-            second, bespoke tally. This is a genuinely NEW field (no bespoke
-            predecessor existed), sourced NATIVELY from the generic contract from
-            day one: the reader's own superscript markers ARE a query of the
-            graph, per the design's own P1/P4 laws, just batched onto the
-            EXISTING per-chapter response (one HTTP round trip for a whole
-            chapter) rather than issuing 20-30 individual `GET /api/node/{id}`
-            calls per chapter, which `client/IExplorableClient.cs`'s own concrete
-            implementation is what a SINGLE node's lookup uses (see that file's
-            own doc comment + `GraphExplorableClientTests` for the direct,
-            unbatched proof the same contract is correct in isolation). Always
-            present (0 for the overwhelming majority of verses, never omitted --
-            the client's own superscript decision is `count == 0` -> nothing,
-            never a missing-field special case).
+          description: How many cross references start at this verse; 0 for most of them.
           minimum: 0
       additionalProperties: false
     VerseDetail:
       type: object
+      description: One verse in full, with everything the graph attaches to it.
       required:
       - ref
       - text
@@ -3418,65 +2840,37 @@ components:
       properties:
         book_meta:
           $ref: '#/components/schemas/BookMeta'
+          description: Who wrote this verse's book, where and when.
         catechism:
           type: array
           items:
             $ref: '#/components/schemas/CatechismRef'
-          description: |-
-            Batch F: catechism items citing this verse, via the SAME aggregation
-            core `GET /api/catechism/{sref}` uses for a passage
-            (`AtlasData::catechism_items_for_span`, a single-verse span here) --
-            folded directly into this ALREADY-shared verse-detail fetch (rather
-            than requiring a second round trip) so `CatechismSeamSection`
-            (client) reads it off the exact same memoized `AtlasClient.Verse`
-            call `VerseTextSectionProvider`/`CrossRefsSection` already share --
-            "one fetch, not three," now not four either. Always present, possibly
-            empty (most verses cite none) -- conditional presence lives on the
-            CLIENT side (no section at all when empty), matching every other
-            "always an array" field in this app's own wire.
+          description: The catechism items citing this verse. Empty for most verses.
         catechism_provenance:
           type: array
           items:
             type: string
-          description: |-
-            Batch PROV-1: the same, for THE SMALL CATECHISM section -- the
-            `catechism` family's own distinct provenance set.
+          description: The sources behind the catechism citations above.
         cross_refs:
           type: array
           items:
             $ref: '#/components/schemas/CrossRef'
+          description: This verse's cross references, most strongly attested first.
         cross_refs_provenance:
           type: array
           items:
             type: string
           description: |-
-            Batch PROV-1: every distinct provenance id behind the CROSS
-            REFERENCES section -- the owner's own headline case ("sourced from
-            openbible.com"). A LIST, not a string, deliberately: the day a
-            second cross-reference corpus lands, this section starts naming
-            both instead of quietly continuing to name the first. It is the
-            `cross_refs` FAMILY's own distinct set (`ProvenanceIndex::
-            by_family`), which is a true statement about every individual row
-            exactly while the family is single-sourced -- pinned as such by
-            `atlas-graph/tests/provenance_registry_real_data.rs`, and honest
-            either way, since a family that gained a second source would serve
-            both here rather than pick one.
-
-            Always present, possibly empty (a verse with no cross references),
-            same "always an array" convention as `cross_refs` itself.
+            The sources behind the cross references above. Always present, and empty when
+            there are none.
         events:
           type: array
           items:
             $ref: '#/components/schemas/VerseEvent'
+          description: The events and titled passages this verse belongs to, oldest first.
         provenance:
           type: string
-          description: |-
-            Batch PROV-1 (owner order 1, "the source from which it came"): THIS
-            VERSE's own source -- the provenance id of the `TextUnit` node
-            `text` above was rendered from, read straight off `Node::provenance`
-            (`kjv_adapter`: `"kjv"`). The focus card's own attribution: the
-            affordance beside a verse says "The King James Version" because THIS
-            field said `kjv`, never because a client-side default assumed it.
+          description: The id of the source this verse's text comes from; `/api/sources` names it.
         ref:
           type: string
         text:
@@ -3486,17 +2880,12 @@ components:
           items:
             $ref: '#/components/schemas/WordsOfChristSpan'
           description: |-
-            Batch RED-1: this verse's own aligned sub-verse red-letter spans --
-            see `Verse.words_of_christ`'s own doc comment (identical shape/
-            convention, this endpoint's own single-verse sibling).
+            The spans of `text` that are the words of Christ, in order. Empty for most
+            verses.
       additionalProperties: false
     VerseEvent:
       type: object
-      description: |-
-        The verse-detail endpoint's event shape: `SceneEvent`'s fields
-        (id/label/when/verse_groups) plus the event's place ids, so the client
-        can jump from a verse to "explore this event on the map" without a
-        second round trip.
+      description: One event or titled passage a verse belongs to.
       required:
       - id
       - label
@@ -3510,61 +2899,34 @@ components:
         kind:
           type: string
           description: |-
-            Batch HOTFIX-4 requirement 6 (AFFORDANCE HONESTY): this EVENT-kind
-            PASSAGE's own `Event::kind` ("event" | "general") -- same reason as
-            `Heading::kind`, one surface over (a verse's own EVENT membership
-            row, not a reader heading): the client applies the quiet,
-            non-traversable styling to a general-kind row BEFORE the click, no
-            second fetch needed to find out.
+            `event` for something that happened at a date, `general` for a titled
+            passage that has none.
         label:
           type: string
         places:
           type: array
           items:
             type: string
+          description: The ids of the places it touches.
         provenance:
           type: string
           description: |-
-            Batch PROV-1 (owner order 1): THIS ROW's own source -- the
-            provenance id of the Event NODE this membership row points at, read
-            straight off `Node::provenance` (`event_world::event_provenance`:
-            `"theographic"` for an imported event, `"curated"` for one this
-            project authored). Additive-only, the `words_of_christ` precedent --
-            every field above serves byte-identically to before this batch.
-
-            Deliberately the TARGET NODE's provenance, not the `Attests` row's:
-            this row answers "which event is this verse part of," and the honest
-            attribution for THAT claim is whoever says the event exists. The
-            `Attests` rows' own provenance is served where it is actually
-            rendered -- `EventDetail::witnesses_provenance`, on the PARALLEL
-            ACCOUNTS section.
-
-            This field IS the genuinely mixed one: a verse belonging to both an
-            imported event and a hand-authored one names BOTH sources on its own
-            section heading, which is the total-capture-honesty case at the
-            verse frontier.
+            The id of the source that asserts the event this verse belongs to;
+            `/api/sources` names it.
         verse_groups:
           type: array
           items:
             $ref: '#/components/schemas/VerseGroup'
+          description: The passages it is narrated in, grouped by book and chapter.
         when:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
-            description: |-
-              Batch HOTFIX-4 (drive-by fix, found while adding `kind` below):
-              OMITTED (not the server's own internal undated placeholder) for a
-              general-kind passage -- matches `EventDetail.when`'s own
-              established fabrication guard exactly (`to_scene_event`'s own `se.when`
-              is `e.when` unconditionally, which for `kind == "general"` is
-              `TimeRange::undated()`, never meant to be presented as a real date).
-              Dormant until now (this row's own CLIENT rendering only ever read
-              `Id`/`Label`, never `When`), but a real gap against house doctrine
-              nonetheless -- fixed here rather than left for a future reader of
-              this exact struct to copy the bad precedent forward.
+            description: The years the event spans; absent for a titled passage that has no date.
           - type: 'null'
       additionalProperties: false
     VerseGroup:
       type: object
+      description: A run of verses from one chapter of one book.
       required:
       - book
       - chapter
@@ -3573,6 +2935,7 @@ components:
       properties:
         book:
           type: string
+          description: The book's three-letter code, such as `GEN`.
         chapter:
           type: integer
           format: int32
@@ -3580,24 +2943,20 @@ components:
         count:
           type: integer
           format: int32
+          description: How many verses the group covers in all.
           minimum: 0
         verses:
           type: array
           items:
             type: string
+          description: The verse numbers and ranges covered, such as `3` or `3-5`.
       additionalProperties: false
     WordsOfChristSpan:
       type: object
       description: |-
-        Batch RED-1 (owner order 2026-08-25, "Red letters on Jesus' words in
-        every translation"): one sub-verse red-letter span, CHAR (not byte)
-        offsets into this verse's own `text` field -- `graph.red_letter_spans`'s
-        own doc comment has the full "why char offsets" (C# `string` indexing is
-        UTF-16 code units; every character in this app's own KJV text is within
-        the Basic Multilingual Plane, so char count == UTF-16 code unit count
-        here, always). `start`/`end` are a half-open range (`text[start..end]`
-        in C# `Substring(start, end-start)` terms) -- KJV display renders this
-        EXACT sub-verse span; decision 5's own "ONE render rule."
+        One span of the words of Christ within a verse's text: character offsets into
+        it, half-open, so the span is the text from `start` up to but not including
+        `end`.
       required:
       - start
       - end

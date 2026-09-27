@@ -240,15 +240,8 @@ pub fn to_scene_event(e: &Event) -> SceneEvent {
     SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses, None) }
 }
 
-/// Batch T requirement 1: one EVENT-kind PASSAGE's own resolved witness --
-/// the "book, verse-range, translation-mapped" shape the owner's own words
-/// describe, with the translation indirection already resolved to
-/// [`crate::translation::DEFAULT_TRANSLATION`] (this app's only compiled
-/// translation) and grouped into `VerseGroup`s via the SAME `verse_groups_for`
-/// every other "an event's own verses on the wire" case in this module
-/// already calls -- a witness's own verse list is provably rendered the
-/// identical way `to_scene_event`/`lit_places` already render any other
-/// verse list, not a parallel formatting path.
+/// One book's account of an event: the passage it narrates the event in, and any
+/// note on the citation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventWitness {

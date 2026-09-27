@@ -67,16 +67,8 @@ use crate::data::AtlasData;
 use crate::scene_source::SceneSource;
 use crate::wire::VerseGroup;
 
-/// One event ADJACENT to the position being described (the PRIOR or the
-/// FOLLOWING leg) -- carries everything the popover needs to render it
-/// (label + verses, via the shared passage-list component) and everything
-/// needed to traverse further (its own `id`, for the event-id-keyed lookup
-/// below). `places` are this event's own anchor-and-companion place ids
-/// (`Event::places`, unchanged) -- carried for wire completeness (the
-/// brief's own "id, label, place(s), and verse groups") even though this
-/// batch's own client UI does not render them textually (the event's own
-/// `label` already names the moment in house prose; a future batch could
-/// use `places` to jump the map to it without a wire change here).
+/// An event next to the one asked about: enough to show it, and the id to travel
+/// to it with.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NarrativeAdjacentEvent {
@@ -134,15 +126,8 @@ pub fn adjacent_event(src: &dyn SceneSource, event_id: &str) -> Option<Narrative
 // lockstep test the way `global_timeline_position` below does. Recoverable
 // from git history at the commit immediately preceding this one.
 
-/// Batch HOTFIX-4 requirement 1 ("generalize the ONE resolver -- traversal
-/// by time for every dated event"): the GLOBAL chronological PRIOR/
-/// FOLLOWING for one event id, independent of narrative membership --
-/// "the previous/next event is the one that is chronologically NEXT," the
-/// owner's own law, applied to the FULL set of dated events rather than one
-/// narrative's own leg chain. `prior`/`following` reuse the SAME
-/// `NarrativeAdjacentEvent` shape and the SAME `adjacent_event` builder
-/// this module's own narrative-scoped lookups use too (one graph, seen a
-/// second way -- never a parallel verse-groups derivation).
+/// Where an event sits in the atlas's whole chronology, whatever narratives it
+/// belongs to.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TimelinePosition {
