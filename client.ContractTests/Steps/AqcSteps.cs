@@ -222,18 +222,19 @@ public class AqcSteps
     }
 
     [When("I run TextWindowQuery for \"([^\"]+)\" radius (\\d+)")]
-    public void WhenTextWindow(string sref, int n)
+    public void WhenTextWindow(string sref, int n) => (_status, _body) = LoadFixture(TextWindowFixture(sref, n));
+
+    // A query and the URL it is served at must resolve to the SAME fixture,
+    // so the name is decided once here and the URL-form step below calls this
+    // rather than repeating it.
+    private static string TextWindowFixture(string sref, int n) => (sref, n) switch
     {
-        var name = (sref, n) switch
-        {
-            ("JHN.3.16", 1) => "text-window-single",
-            ("JHN.3.16", 3) => "text-window-multi",
-            ("MAT.4.19", 1) => "text-window-mat-4-19",
-            ("MAT.5.4", 1) => "text-window-mat-5-4",
-            _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TextWindowQuery '{sref}' radius {n}."),
-        };
-        (_status, _body) = LoadFixture(name);
-    }
+        ("JHN.3.16", 1) => "text-window-single",
+        ("JHN.3.16", 3) => "text-window-multi",
+        ("MAT.4.19", 1) => "text-window-mat-4-19",
+        ("MAT.5.4", 1) => "text-window-mat-5-4",
+        _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TextWindowQuery '{sref}' radius {n}."),
+    };
 
     [When("I run TextWindowQuery for \"([^\"]+)\" radius (\\d+) with corpus \"([^\"]+)\"")]
     public void WhenTextWindowCorpus(string sref, int n, string corpus)
@@ -258,28 +259,24 @@ public class AqcSteps
     }
 
     [When("I run SceneQuery for the time window \"([^\"]+)\"-\"([^\"]+)\"")]
-    public void WhenSceneTime(string from, string to)
+    public void WhenSceneTime(string from, string to) => (_status, _body) = LoadFixture(SceneTimeFixture(from, to));
+
+    private static string SceneTimeFixture(string from, string to) => (from, to) switch
     {
-        var name = (from, to) switch
-        {
-            ("-2100", "-2000") => "scene-time",
-            ("100", "-100") => "scene-bad-window",
-            _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for SceneQuery time window '{from}'-'{to}'."),
-        };
-        (_status, _body) = LoadFixture(name);
-    }
+        ("-2100", "-2000") => "scene-time",
+        ("100", "-100") => "scene-bad-window",
+        _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for SceneQuery time window '{from}'-'{to}'."),
+    };
 
     [When("I run SceneQuery for scripture ref \"([^\"]+)\"")]
-    public void WhenSceneScripture(string sref)
+    public void WhenSceneScripture(string sref) => (_status, _body) = LoadFixture(SceneScriptureFixture(sref));
+
+    private static string SceneScriptureFixture(string sref) => sref switch
     {
-        var name = sref switch
-        {
-            "JHN.3.16" => "scene-scripture",
-            "not-a-ref-at-all" => "scene-bad-ref",
-            _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for SceneQuery scripture ref '{sref}'."),
-        };
-        (_status, _body) = LoadFixture(name);
-    }
+        "JHN.3.16" => "scene-scripture",
+        "not-a-ref-at-all" => "scene-bad-ref",
+        _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for SceneQuery scripture ref '{sref}'."),
+    };
 
     [When("I query \"([^\"]+)\"")]
     public void WhenQueryPath(string path)
@@ -291,6 +288,14 @@ public class AqcSteps
             "/api/contents/bible" => "contents-bible",
             "/api/contents/concord" => "contents-concord",
             "/api/contents/nope" => "contents-bad-corpus",
+            // The URL form of a query whose own scenario also asks for it by
+            // name (scene-query.feature, text-window.feature): the arguments
+            // are read back out of the URL and handed to the same resolver the
+            // named step uses, so the two forms cannot come to answer from
+            // different fixtures.
+            "/api/scene?from=-2100&to=-2000" => SceneTimeFixture("-2100", "-2000"),
+            "/api/scene/scripture?ref=JHN.3.16" => SceneScriptureFixture("JHN.3.16"),
+            "/api/text?ref=JHN.3.16&n=1" => TextWindowFixture("JHN.3.16", 1),
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
         (_status, _body) = LoadFixture(name);
