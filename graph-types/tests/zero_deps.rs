@@ -1,11 +1,15 @@
-//! DB-2a: "zero dependencies" is a LAW of this crate, not a habit.
+//! DB-2a, amended by D9: "zero dependencies BY DEFAULT" is the LAW of this
+//! crate now, not "zero dependencies, full stop".
 //!
-//! `graph-types` is the base point every other crate binds to; a single
-//! third-party crate here would put someone else's code inside every
-//! content address the artifact carries. So the manifest itself is under
-//! test: no `[dependencies]`, `[dev-dependencies]` or `[build-dependencies]`
-//! table may hold ANY entry, and `[features]` may hold exactly one --
-//! `canon-ids = []`, the feature this batch adds.
+//! `graph-types` is the base point every other crate binds to, so a
+//! dependency here must never reach a consumer that did not ask for it.
+//! D9 lets `[dependencies]` carry `serde` and `utoipa` -- but only because
+//! both are `optional = true`, gated by a feature nothing turns on by
+//! default; `[dev-dependencies]` may carry `serde_json` (tests only, never
+//! shipped to a consumer); `[build-dependencies]` still holds nothing.
+//! `[features]` may hold exactly `canon-ids`, `serde` and `openapi`, and
+//! never a `default` feature -- a `default` is the one thing that would
+//! turn an optional dependency into a real one.
 //!
 //! The parser is hand-written std (a TOML crate here would be the very
 //! dependency the test forbids). It is deliberately crude and deliberately
@@ -110,28 +114,81 @@ fn table_entries(toml: &str, table: &str) -> Option<Vec<String>> {
     }
 }
 
+/// The exact `[dependencies]` entries the manifest declares today -- both
+/// optional, so nothing reaches a consumer who does not opt in (D9). One
+/// source of truth for the two tests below that both check against it.
+fn expected_dependency_entries() -> Vec<String> {
+    vec![
+        "serde = { version = \"1\", optional = true, default-features = false }".to_string(),
+        "utoipa = { version = \"6.0.0\", optional = true }".to_string(),
+    ]
+}
+
 #[test]
-fn no_dependency_table_holds_an_entry() {
+fn every_dependency_is_optional_so_the_default_build_takes_none() {
+    // Arrange
     let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
-    for table in ["dependencies", "dev-dependencies", "build-dependencies"] {
-        match table_entries(&toml, table) {
-            None => {} // absent is as good as empty
-            Some(entries) => assert!(
-                entries.is_empty(),
-                "[{table}] must be empty; found {entries:?} -- graph-types is zero-dependency"
-            ),
-        }
+    // Act
+    let entries = table_entries(&toml, "dependencies").expect("[dependencies] must exist");
+    // Assert
+    assert_eq!(
+        entries,
+        expected_dependency_entries(),
+        "[dependencies] must hold exactly serde and utoipa, both `optional = true` -- \
+         the default build takes neither"
+    );
+}
+
+#[test]
+fn dev_dependencies_hold_only_serde_json_for_tests() {
+    // Arrange
+    let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
+    // Act
+    let entries = table_entries(&toml, "dev-dependencies").expect("[dev-dependencies] must exist");
+    // Assert
+    assert_eq!(
+        entries,
+        vec!["serde_json = \"1\"".to_string()],
+        "[dev-dependencies] must hold exactly serde_json -- test-only, never reaches a consumer"
+    );
+}
+
+#[test]
+fn build_dependencies_table_holds_no_entry() {
+    // Arrange
+    let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
+    // Act
+    let entries = table_entries(&toml, "build-dependencies");
+    // Assert
+    match entries {
+        None => {} // absent is as good as empty
+        Some(entries) => assert!(
+            entries.is_empty(),
+            "[build-dependencies] must be empty; found {entries:?}"
+        ),
     }
 }
 
 #[test]
-fn features_holds_exactly_the_canon_ids_switch() {
+fn features_hold_exactly_canon_ids_serde_and_openapi_with_no_default() {
+    // Arrange
     let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
+    // Act
     let entries = table_entries(&toml, "features").expect("[features] must exist");
+    // Assert
     assert_eq!(
         entries,
-        vec!["canon-ids = []".to_string()],
-        "[features] must declare exactly `canon-ids = []` and nothing else"
+        vec![
+            "canon-ids = []".to_string(),
+            "serde = [\"dep:serde\"]".to_string(),
+            "openapi = [\"dep:utoipa\"]".to_string(),
+        ],
+        "[features] must declare exactly canon-ids, serde and openapi, and nothing else"
+    );
+    assert!(
+        !entries.iter().any(|e| e.starts_with("default")),
+        "[features] must never declare a `default` feature -- that is what would turn \
+         an optional dependency into a real one"
     );
 }
 
@@ -222,16 +279,18 @@ fn a_target_scoped_table_cannot_hide_a_dependency() {
         "`.dev-dependencies]` must not be read as `.dependencies]`"
     );
 
-    // And the law itself still reads the REAL manifest as clean.
+    // And the law itself still reads the REAL manifest correctly -- exactly
+    // the two optional dependencies it declares (D9), not the empty table
+    // the pre-D9 law expected.
     let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
-    assert_eq!(table_entries(&toml, "dependencies"), Some(Vec::new()));
+    assert_eq!(table_entries(&toml, "dependencies"), Some(expected_dependency_entries()));
 }
 
 /// FINAL REVIEW item 12, second gap: a header with a trailing comment.
 /// The crate's own `[features]` carries a comment block above it today;
 /// one on the header LINE used to make the whole table invisible, which
-/// would have turned `features_holds_exactly_the_canon_ids_switch` into a
-/// test of nothing.
+/// would have turned `features_hold_exactly_canon_ids_serde_and_openapi_with_no_default`
+/// into a test of nothing.
 #[test]
 fn a_trailing_comment_on_a_header_does_not_hide_the_table() {
     let commented = "[dependencies]  # nothing lives here\nserde = \"1\"\n";

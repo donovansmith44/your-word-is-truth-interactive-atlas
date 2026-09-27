@@ -24,6 +24,8 @@ pub mod explore;
 pub mod frontier;
 pub mod present;
 pub mod store;
+#[cfg(any(feature = "serde", feature = "openapi"))]
+pub mod wire_form;
 /// DB-2a: the canonical, decodable JSON encoding for the SQLite artifact.
 pub mod canon;
 /// DB-2a: FIPS 180-4 SHA-256, hand-written and std-only — the one hash
