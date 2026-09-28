@@ -31,7 +31,7 @@
   <Target Name="GenerateContract" BeforeTargets="CoreCompile"
           Inputs="$(ContractDocument);@(ContractGenerator)"
           Outputs="$(GeneratedWire)">
-    <Exec Command="dotnet &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
+    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
   </Target>
 
   <Target Name="IncludeGeneratedContract" AfterTargets="GenerateContract" BeforeTargets="CoreCompile">
