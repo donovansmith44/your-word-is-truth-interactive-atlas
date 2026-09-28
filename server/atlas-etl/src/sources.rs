@@ -3,7 +3,7 @@
 //! never wired into the compile: this data has nothing to do with the graph.
 
 use anyhow::{anyhow, bail, Context, Result};
-use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument, CONFIDENCE_VOCABULARY};
+use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -50,9 +50,9 @@ pub fn validate_structure(doc: &SourcesDocument) -> Result<()> {
         }
     }
 
-    // The same checks over the provenance join table: a duplicate id would make resolution ambiguous, an
-    // unknown `source` would resolve to nothing at the UI, and an off-vocabulary `confidence` would render
-    // a label no variant backs.
+    // The same checks over the provenance join table: a duplicate id would make resolution ambiguous and an
+    // unknown `source` would resolve to nothing at the UI. `confidence` is a closed vocabulary, refused by
+    // the curated file's own parse.
     let mut prov_ids: HashSet<&str> = HashSet::new();
     for p in &doc.provenances {
         if !prov_ids.insert(p.id.as_str()) {
@@ -60,12 +60,6 @@ pub fn validate_structure(doc: &SourcesDocument) -> Result<()> {
         }
         if !source_ids.contains(p.source.as_str()) {
             errors.push(format!("provenance '{}' names undeclared source '{}'", p.id, p.source));
-        }
-        if !CONFIDENCE_VOCABULARY.contains(&p.confidence.as_str()) {
-            errors.push(format!(
-                "provenance '{}' has confidence '{}', which is not one of {CONFIDENCE_VOCABULARY:?}",
-                p.id, p.confidence
-            ));
         }
         if p.locator.as_deref().is_some_and(|l| l.trim().is_empty()) {
             errors.push(format!("provenance '{}' has an empty locator -- omit the key instead", p.id));

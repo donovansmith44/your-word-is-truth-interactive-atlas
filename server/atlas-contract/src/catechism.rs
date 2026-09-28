@@ -4,11 +4,12 @@ use axum::extract::{Path, State};
 use axum::Json;
 
 use atlas_core::data::AtlasData;
-use atlas_core::refs::{ScriptureRef, VerseId};
+use atlas_core::refs::VerseId;
 use atlas_graph::GraphService;
 use atlas_graph_types::text::VerseRef;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, NoRefusals, ReferenceRefusals};
+use crate::reference::{Reference, VerseSpan};
 use crate::wire;
 
 /// The catechism items that cite a verse or a span, each named and tied to the question it was cited under.
@@ -17,17 +18,12 @@ use crate::wire;
 /// a book-only or chapter-only reference is `bad_ref`. A reference no item cites
 /// answers an empty list, and each `id` fetches the whole item from
 /// `/api/catechism/item/{id}`.
-#[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ApiError), tag = "catechism")]
+#[utoipa::path(get, path = "/api/catechism/{sref}", params(("sref" = String, Path)), responses((status = 200, body = Vec<wire::CatechismRef>), ReferenceRefusals), tag = "catechism")]
 pub async fn catechism_for_span(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Path(sref): Path<String>,
+    Reference(VerseSpan(span)): Reference<VerseSpan>,
 ) -> Result<Json<Vec<wire::CatechismRef>>, ApiError> {
-    let span = match ScriptureRef::parse(&sref) {
-        Ok(span @ (ScriptureRef::Verse(_) | ScriptureRef::Passage { .. })) => span,
-        _ => return Err(ApiError::bad_ref(&sref)),
-    };
-
     let provenance = graph.provenance.by_family(atlas_graph::provenance::family::CATECHISM);
     let out = data.catechism_items_for_span(&span).into_iter().map(|c| wire::CatechismRef::attributed(c, &provenance)).collect();
     Ok(Json(out))
@@ -37,7 +33,7 @@ pub async fn catechism_for_span(
 ///
 /// `{id}` is an item id handed back by `/api/catechism/{sref}` or by a verse's
 /// own catechism list; an id naming no item is `not_found`.
-#[utoipa::path(get, path = "/api/catechism/item/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::CatechismItem), ApiError), tag = "catechism")]
+#[utoipa::path(get, path = "/api/catechism/item/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::CatechismItem), NoRefusals), tag = "catechism")]
 pub async fn catechism_item(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,

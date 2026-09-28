@@ -117,12 +117,39 @@ async fn text_window_etag_round_trips_via_if_none_match() {
 }
 
 #[tokio::test]
-async fn a_chapter_shaped_ref_is_a_window_only_under_scope_chapter_and_a_bad_ref_without_it() {
+async fn a_chapter_shaped_ref_without_scope_chapter_is_a_bad_ref() {
     let app = compiled_app();
-    let (chapter_scoped, _, _) = get(&app, "/api/text?ref=JHN.3&scope=chapter").await;
-    let (verse_scoped, body, _) = get(&app, "/api/text?ref=JHN.3").await;
-    assert_eq!((chapter_scoped, verse_scoped), (StatusCode::OK, StatusCode::BAD_REQUEST), "{body}");
-    assert_eq!(body["error"]["code"], "bad_ref", "{body}");
+    let (status, body, _) = get(&app, "/api/text?ref=JHN.3").await;
+    assert_eq!(
+        (status, body),
+        (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_ref", "message": "invalid scripture reference: 'JHN.3'" } }))
+    );
+}
+
+#[tokio::test]
+async fn a_word_outside_a_query_vocabulary_is_refused_with_that_vocabularys_own_code() {
+    let app = compiled_app();
+    let mut refused = Vec::new();
+    for uri in ["/api/text?ref=JHN.3.16&scope=paragraph", "/api/text?ref=JHN.3.16&dir=sideways", "/api/text?ref=JHN.3.16&corpus=vulgate"] {
+        let (status, body, _) = get(&app, uri).await;
+        refused.push((status, body));
+    }
+    assert_eq!(
+        refused,
+        vec![
+            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_scope", "message": "unknown scope: 'paragraph' (expected 'verse' or 'chapter')" } })),
+            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_dir", "message": "unknown dir: 'sideways' (expected 'onward' or 'backward')" } })),
+            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_corpus", "message": "unknown corpus: 'vulgate' (expected 'bible' or 'concord')" } })),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn a_count_that_is_not_a_count_leaves_the_windows_own_default_standing() {
+    let app = compiled_app();
+    let (status, body, _) = get(&app, "/api/text?ref=JHN.3.16&n=notacount").await;
+    let refs: Vec<&str> = body["units"].as_array().unwrap().iter().map(|u| u["ref"].as_str().unwrap()).collect();
+    assert_eq!((status, refs), (StatusCode::OK, vec!["JHN.3.16"]));
 }
 
 #[tokio::test]

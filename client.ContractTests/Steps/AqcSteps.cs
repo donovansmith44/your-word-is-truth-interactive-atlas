@@ -247,6 +247,17 @@ public class AqcSteps
         (_status, _body) = LoadFixture(name);
     }
 
+    [When("I run TextWindowQuery for \"([^\"]+)\" radius (\\d+) with scope \"([^\"]+)\"")]
+    public void WhenTextWindowScope(string sref, int n, string scope)
+    {
+        var name = (sref, n, scope) switch
+        {
+            ("JHN.3.16", 1, "not-a-real-scope") => "text-window-bad-scope",
+            _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TextWindowQuery '{sref}' radius {n} scope '{scope}'."),
+        };
+        (_status, _body) = LoadFixture(name);
+    }
+
     [When("I run a chapter-scoped TextWindowQuery for \"([^\"]+)\" with dir \"([^\"]+)\"")]
     public void WhenTextWindowChapterDir(string cref, string dir)
     {

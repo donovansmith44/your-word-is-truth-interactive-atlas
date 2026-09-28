@@ -1,19 +1,21 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::Json;
+use serde::Deserialize;
+use utoipa::IntoParams;
 
 use atlas_core::data::AtlasData;
 use atlas_core::history::{resolve_blurb, resolve_display_name_and_canonical};
 use atlas_core::scene::to_scene_event;
-use atlas_core::time::TimeRange;
+use atlas_core::time::{TimeRange, Year};
 use atlas_core::wire::SceneEvent;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::Position;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, WindowRefusals};
+use crate::query::{Contract, ContractParams};
 use crate::reading::drain_edges;
 use crate::wire;
 
@@ -21,14 +23,15 @@ use crate::wire;
 ///
 /// `{id}` is a place id handed back by another response; an id naming no place
 /// is `not_found`. The optional `from` and `to` years choose the period whose
-/// name and description the history reports -- neither is required, and a window
-/// that cannot be read simply leaves the place's default name in place.
-#[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), ("from" = Option<i32>, Query), ("to" = Option<i32>, Query)), responses((status = 200, body = wire::PlaceDetail), ApiError), tag = "places")]
+/// name and description the history reports -- neither is required, and a period
+/// only one of them names simply leaves the place's default name in place. A year
+/// that is not a year is `bad_window`.
+#[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), PlacePeriod), responses((status = 200, body = wire::PlaceDetail), WindowRefusals), tag = "places")]
 pub async fn place(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
-    Query(params): Query<HashMap<String, String>>,
+    Contract(asked): Contract<PlacePeriod>,
 ) -> Result<Json<wire::PlaceDetail>, ApiError> {
     let snap = graph.snapshot();
     let place_id = atlas_graph::event_world::place_stub_node_id(&id);
@@ -44,11 +47,7 @@ pub async fn place(
         .collect();
     events.sort_by_key(|e| e.when.from_year);
 
-    let window = match (params.get("from").and_then(|s| s.parse::<i32>().ok()), params.get("to").and_then(|s| s.parse::<i32>().ok()))
-    {
-        (Some(from), Some(to)) => TimeRange::new(from, to).ok(),
-        _ => None,
-    };
+    let window = asked.period();
 
     // Resolved before `history`, and independently of it: a place with no curated
     // history record at all still has a translation alias to resolve.
@@ -65,6 +64,34 @@ pub async fn place(
     let description = crate::graph::node_description(&place_id, &snap);
 
     Ok(Json(wire::PlaceDetail { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
+}
+
+/// The period a place's own history is reported for.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct PlacePeriod {
+    #[serde(default)]
+    #[param(value_type = Option<i32>)]
+    pub from: Option<Year>,
+    #[serde(default)]
+    #[param(value_type = Option<i32>)]
+    pub to: Option<Year>,
+}
+
+impl PlacePeriod {
+    /// A period only one year names is no period at all, and a zero or inverted one
+    /// names none either: both leave the place's default name standing.
+    fn period(&self) -> Option<TimeRange> {
+        TimeRange::new(self.from?, self.to?).ok()
+    }
+}
+
+impl ContractParams for PlacePeriod {
+    /// Both years are the one period, so which of them could not be read makes no
+    /// difference to the refusal.
+    fn unreadable(_parameter: &str, _asked_with: Option<&str>) -> ApiError {
+        ApiError::bad_window()
+    }
 }
 
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {

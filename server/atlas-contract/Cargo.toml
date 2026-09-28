@@ -42,6 +42,13 @@ tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The three crates axum's own query extractor is built from, taken directly: a
+# parameter given twice is reduced to its last value before the parameters are
+# read, and a refusal names the parameter serde walked into rather than being
+# recognised from the sentence it wrote.
+form_urlencoded = "1"
+serde_path_to_error = "0.1"
+serde_urlencoded = "0.7"
 anyhow = "1"
 utoipa = { version = "6.0.0", features = ["yaml", "axum_extras"] }
 utoipa-axum = "0.3.0"

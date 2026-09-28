@@ -282,7 +282,7 @@ async fn event_endpoint_omits_when_for_general_kind_passages() {
             when: TimeRange::undated(),
             places: vec![],
             verses: vec!["LUK.1.1".into()],
-            kind: "general".into(),
+            kind: atlas_core::data::EventKind::General,
             robertson_section: Some("Robertson (1922) §1".into()),
             ..Default::default()
         },
@@ -331,7 +331,7 @@ async fn general_kind_event_places_never_resolve_a_spurious_period_name() {
         when: TimeRange::undated(),
         places: vec!["hebron".into()],
         verses: vec![],
-        kind: "general".into(),
+        kind: atlas_core::data::EventKind::General,
         ..Default::default()
     });
     let data = data.finish();
@@ -408,11 +408,11 @@ async fn event_endpoint_carries_kjv_superscription_when_present() {
             when: TimeRange::undated(),
             places: vec![],
             verses: vec![],
-            kind: "general".into(),
+            kind: atlas_core::data::EventKind::General,
             kjv_superscription: Some("PSA.3.1, the psalm's own KJV superscription, quoted verbatim".into()),
             ..Default::default()
         },
-        Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: "general".into(), ..Default::default() },
+        Event { id: "k2".into(), label: "No KJV-superscription provenance".into(), when: TimeRange::undated(), places: vec![], verses: vec![], kind: atlas_core::data::EventKind::General, ..Default::default() },
     ];
     let data = AtlasData::new(Canon { books: vec![] }, vec![], events, vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
     let graph = graph_fixture_for(&data);
@@ -438,7 +438,7 @@ async fn event_endpoint_general_kind_with_multiple_witnesses_shows_parallel_acco
         when: TimeRange::undated(),
         places: vec![],
         verses: vec!["EXO.20.1".into()],
-        kind: "general".into(),
+        kind: atlas_core::data::EventKind::General,
         atlas_section: Some("test fixture".into()),
         witnesses: vec![
             EventWitness {

@@ -295,7 +295,7 @@ impl Extras {
                 Col::Int(v),
                 Col::Text(h.event_id.clone()),
                 Col::Text(h.title.clone()),
-                Col::Text(h.kind.clone()),
+                Col::Text(h.kind.name().to_string()),
                 Col::Int(h.is_continuation as i64),
             ]);
         }

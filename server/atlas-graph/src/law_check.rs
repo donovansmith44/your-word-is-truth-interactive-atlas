@@ -727,7 +727,7 @@ mod tests {
             id.erase(),
             Node {
                 id: id.erase(),
-                payload: NodePayload::Event { label: raw.to_string(), kind: "event".into(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None },
+                payload: NodePayload::Event { label: raw.to_string(), kind: atlas_core::data::EventKind::Event.name().to_string(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None },
                 provenance: "test".into(),
             },
         );

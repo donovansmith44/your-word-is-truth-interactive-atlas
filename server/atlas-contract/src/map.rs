@@ -1,18 +1,20 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::extract::{Query, State};
+use axum::extract::State;
 use axum::Json;
+use serde::Deserialize;
+use utoipa::IntoParams;
 
 use atlas_core::data::{AtlasData, Era, Landmark, Narrative, PolityDelta};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
-use atlas_core::time::TimeRange;
+use atlas_core::time::{TimeRange, Year};
 use atlas_core::wire::Scene;
 use atlas_graph::GraphService;
 use atlas_graph_types::store::GraphQuery;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, ReferenceRefusals, WindowRefusals};
+use crate::query::{Contract, ContractParams};
 use crate::wire;
 
 /// The map for a span of years: the places events light up in that span, the quiet places around them, and the arrows narratives draw between them.
@@ -21,16 +23,39 @@ use crate::wire;
 /// zero -- and both are required, with `from` no later than `to`; anything else
 /// is `bad_window`. A span no event falls in composes an empty scene rather
 /// than failing.
-#[utoipa::path(get, path = "/api/scene", params(("from" = i32, Query), ("to" = i32, Query)), responses((status = 200, body = atlas_core::wire::Scene), ApiError), tag = "map")]
+#[utoipa::path(get, path = "/api/scene", params(SceneWindow), responses((status = 200, body = atlas_core::wire::Scene), WindowRefusals), tag = "map")]
 pub async fn scene_time(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Query(params): Query<HashMap<String, String>>,
+    Contract(asked): Contract<SceneWindow>,
 ) -> Result<Json<Scene>, ApiError> {
-    let from = parse_year(&params, "from")?;
-    let to = parse_year(&params, "to")?;
-    let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
-    Ok(Json(compose_time_scene(graph.scene_source(&data), window)))
+    Ok(Json(compose_time_scene(graph.scene_source(&data), asked.span()?)))
+}
+
+/// The span of years a map answer covers.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct SceneWindow {
+    #[param(value_type = i32)]
+    pub from: Year,
+    #[param(value_type = i32)]
+    pub to: Year,
+}
+
+impl SceneWindow {
+    /// A zero or inverted span is refused rather than adjusted, exactly as a year
+    /// that is not a year is.
+    pub fn span(&self) -> Result<TimeRange, ApiError> {
+        TimeRange::new(self.from, self.to).map_err(|_| ApiError::bad_window())
+    }
+}
+
+impl ContractParams for SceneWindow {
+    /// Both years are the one window, so which of them could not be read makes no
+    /// difference to the refusal.
+    fn unreadable(_parameter: &str, _asked_with: Option<&str>) -> ApiError {
+        ApiError::bad_window()
+    }
 }
 
 /// The map for a passage: the places its verses name, and the arrows narratives draw between them.
@@ -39,15 +64,29 @@ pub async fn scene_time(
 /// missing or unparseable one is `bad_ref`. A reference that parses but names
 /// coordinates outside this atlas's canon composes an empty scene rather than
 /// failing.
-#[utoipa::path(get, path = "/api/scene/scripture", params(("ref" = String, Query)), responses((status = 200, body = atlas_core::wire::Scene), ApiError), tag = "map")]
+#[utoipa::path(get, path = "/api/scene/scripture", params(ScripturePassage), responses((status = 200, body = atlas_core::wire::Scene), ReferenceRefusals), tag = "map")]
 pub async fn scene_scripture(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
-    Query(params): Query<HashMap<String, String>>,
+    Contract(asked): Contract<ScripturePassage>,
 ) -> Result<Json<Scene>, ApiError> {
-    let raw = params.get("ref").map(String::as_str).unwrap_or("");
+    let raw = asked.sref.as_str();
     let r = ScriptureRef::parse(raw).map_err(|_| ApiError::bad_ref(raw))?;
     Ok(Json(compose_scripture_scene(graph.scene_source(&data), &r)))
+}
+
+/// The passage a map answer covers.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ScripturePassage {
+    #[serde(rename = "ref")]
+    pub sref: String,
+}
+
+impl ContractParams for ScripturePassage {
+    fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
+        ApiError::bad_ref(asked_with.unwrap_or_default())
+    }
 }
 
 /// Every named stretch of this atlas's timeline, with its year bounds, oldest first.
@@ -104,16 +143,14 @@ pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<wire::LandMas
 /// is `bad_window`. Rows come ordered by polity and then oldest era first, so a
 /// border change paints older beneath newer. A span no era overlaps answers an
 /// empty list.
-#[utoipa::path(get, path = "/api/polities", params(("from" = i32, Query), ("to" = i32, Query)), responses((status = 200, body = wire::Polities), ApiError), tag = "map")]
+#[utoipa::path(get, path = "/api/polities", params(SceneWindow), responses((status = 200, body = wire::Polities), WindowRefusals), tag = "map")]
 pub async fn polities(
     State(graph): State<Arc<GraphService>>,
-    Query(params): Query<HashMap<String, String>>,
+    Contract(asked): Contract<SceneWindow>,
 ) -> Result<Json<wire::Polities>, ApiError> {
     use atlas_graph_types::node::NodePayload;
 
-    let from = parse_year(&params, "from")?;
-    let to = parse_year(&params, "to")?;
-    let window = TimeRange::new(from, to).map_err(|_| ApiError::bad_window())?;
+    let window = asked.span()?;
 
     let snap = graph.snapshot();
     let mut out: Vec<wire::Polity> = Vec::new();
@@ -148,9 +185,6 @@ fn curated_delta(d: &atlas_graph_types::node::PolityDeltaPayload, era_from: atla
     PolityDelta { event: d.event.clone(), verses: d.verses.clone(), ref_note: d.ref_note.clone(), for_era_from: era_from }
 }
 
-fn parse_year(params: &HashMap<String, String>, key: &str) -> Result<i32, ApiError> {
-    params.get(key).and_then(|s| s.parse::<i32>().ok()).ok_or_else(ApiError::bad_window)
-}
 
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     use utoipa_axum::routes;

@@ -350,7 +350,7 @@ mod tests {
     fn chronology_round_trips_through_json() {
         let mut g = Graph::default();
         let event_id = "theo-1";
-        let node = Node { id: EventId::new(event_id.to_string()).erase(), payload: NodePayload::Event { label: "Creation".to_string(), kind: "event".to_string(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None }, provenance: "theographic".to_string() };
+        let node = Node { id: EventId::new(event_id.to_string()).erase(), payload: NodePayload::Event { label: "Creation".to_string(), kind: atlas_core::data::EventKind::Event.name().to_string(), verses: vec![], witnesses: vec![], robertson_section: None, acts_section: None, atlas_section: None, kjv_superscription: None, ref_note: None }, provenance: "theographic".to_string() };
         g.nodes.insert(node.id.clone(), node);
         g.attests.push(Attests { event: EventId::new(event_id.to_string()), attestation: BibleLocusRange::new(verse(0, 1, 1), verse(0, 1, 1)).unwrap(), provenance: "p".to_string(), justification: Justification::default() });
 

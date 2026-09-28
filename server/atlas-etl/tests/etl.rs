@@ -5,6 +5,25 @@ use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
+const EVENT_KIND_REFUSAL: &str = "events-extra.toml: invalid TOML or does not match the [[event]] schema: TOML parse error at line 4, column 8
+  |
+4 | kind = \"chapter\"
+  |        ^^^^^^^^^
+unknown variant `chapter`, expected `event` or `general`
+";
+const LANDMARK_KIND_REFUSAL: &str = "landmarks.toml: invalid TOML or does not match the [[landmark]] schema: TOML parse error at line 3, column 8
+  |
+3 | kind = \"volcano\"
+  |        ^^^^^^^^^
+unknown variant `volcano`, expected one of `water`, `mountain`, `region`
+";
+const LANDMARK_SIZE_REFUSAL: &str = "landmarks.toml: invalid TOML or does not match the [[landmark]] schema: TOML parse error at line 6, column 8
+  |
+6 | size = \"huge\"
+  |        ^^^^^^
+unknown variant `huge`, expected one of `sm`, `md`, `lg`
+";
+
 #[test]
 fn kjv_parses_and_keys_canonically() {
     let (canon, verses) = atlas_etl::kjv::parse(include_str!("fixtures/kjv-sample.json")).unwrap();
@@ -183,6 +202,14 @@ fn curated_parsers_handle_valid_toml_and_expand_verse_ranges() {
 }
 
 #[test]
+fn a_curated_event_of_no_known_kind_is_refused_by_the_parse() {
+    // Act
+    let refused = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-bad-kind.toml")).unwrap_err();
+    // Assert
+    assert_eq!(format!("{refused:#}"), EVENT_KIND_REFUSAL);
+}
+
+#[test]
 fn events_extra_zero_year_hard_errors() {
     let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-year-zero.toml")).unwrap_err();
     assert!(err.to_string().to_lowercase().contains("zero"), "{err}");
@@ -193,7 +220,7 @@ fn events_extra_general_kind_parses_without_places_or_dates() {
     let events = atlas_etl::curated::parse_events_extra(include_str!("fixtures/events-extra-general.toml")).unwrap();
     assert_eq!(events.len(), 1);
     let g = &events[0];
-    assert_eq!(g.kind, "general");
+    assert_eq!(g.kind, atlas_core::data::EventKind::General);
     assert!(g.places.is_empty(), "{:?}", g.places);
     assert_eq!(g.when, TimeRange::undated(), "a general-kind event's `when` must be the undated sentinel, never a curator-typed number");
     assert_eq!(g.verses, vec!["MAT.27.1".to_string()]);
@@ -483,25 +510,6 @@ fn validate_event_date_after_atlas_span_fails() {
     assert!(err.to_string().contains("outside"), "{err}");
 }
 
-#[test]
-fn validate_event_invalid_kind_fails() {
-    let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
-    let events = vec![Event {
-        id: "e1".into(),
-        label: "E1".into(),
-        when: TimeRange::new(-5, -5).unwrap(),
-        places: vec!["p".into()],
-        kind: "bogus".into(),
-        ..Default::default()
-    }];
-    let mut data = empty_atlas();
-    data.places = places;
-    data.events = events;
-    let data = data.finish();
-    let err = atlas_etl::validate::run(&data).unwrap_err();
-    assert!(err.to_string().contains("invalid kind"), "{err}");
-}
-
 fn witness(book: &str, verses: &[&str]) -> EventWitness {
     EventWitness {
         book: book.into(),
@@ -706,7 +714,7 @@ fn validate_general_kind_event_with_undated_sentinel_passes() {
         when: TimeRange::undated(),
         places: vec![],
         verses: vec!["MAT.27.1".into()],
-        kind: "general".into(),
+        kind: atlas_core::data::EventKind::General,
         robertson_section: Some("Robertson (1922) §1".into()),
         ..Default::default()
     }];
@@ -761,17 +769,19 @@ fn landmarks_valid_toml_parses_and_validates() {
 }
 
 #[test]
-fn landmarks_bad_kind_fails_validation() {
-    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-kind.toml")).unwrap();
-    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).unwrap_err();
-    assert!(err.to_string().contains("invalid kind"), "{err}");
+fn a_landmark_of_no_known_kind_is_refused_by_the_parse() {
+    // Act
+    let refused = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-kind.toml")).unwrap_err();
+    // Assert
+    assert_eq!(format!("{refused:#}"), LANDMARK_KIND_REFUSAL);
 }
 
 #[test]
-fn landmarks_bad_size_fails_validation() {
-    let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-size.toml")).unwrap();
-    let err = atlas_etl::validate::run_landmarks(&landmarks, &atlas_etl::polities::BIBLICAL_WORLD_BBOX).unwrap_err();
-    assert!(err.to_string().contains("invalid size"), "{err}");
+fn a_landmark_of_no_known_size_is_refused_by_the_parse() {
+    // Act
+    let refused = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-size.toml")).unwrap_err();
+    // Assert
+    assert_eq!(format!("{refused:#}"), LANDMARK_SIZE_REFUSAL);
 }
 
 #[test]
@@ -1680,8 +1690,8 @@ fn run_cross_book_duplicates_ignores_a_legitimate_low_title_similarity_neighbor(
 fn run_cross_book_duplicates_ignores_general_kind_events() {
     let mut a = titled_dated_event("d-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]);
     let mut b = titled_dated_event("d-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]);
-    a.kind = "general".into();
-    b.kind = "general".into();
+    a.kind = atlas_core::data::EventKind::General;
+    b.kind = atlas_core::data::EventKind::General;
     let result = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &[a, b]);
     assert!(result.is_ok(), "{:?}", result.err());
 }
@@ -1746,8 +1756,8 @@ fn run_no_two_opinions_below_threshold_overlap_passes_regardless_of_placement() 
 fn run_no_two_opinions_ignores_general_kind_events() {
     let mut a = placed_event("gen-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
     let mut b = placed_event("gen-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
-    a.kind = "general".into();
-    b.kind = "general".into();
+    a.kind = atlas_core::data::EventKind::General;
+    b.kind = atlas_core::data::EventKind::General;
     let result = atlas_etl::validate::run_no_two_opinions(&[], &[a, b]);
     assert!(result.is_ok(), "{:?}", result.err());
 }

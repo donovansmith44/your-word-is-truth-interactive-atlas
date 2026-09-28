@@ -22,7 +22,7 @@ use atlas_core::narrative::global_timeline_position;
     #[test]
     fn global_timeline_real_compiled_data_has_well_over_450_dated_events() {
         let d = load_real_compiled_data();
-        let dated = d.events.iter().filter(|e| e.kind == "event").count();
+        let dated = d.events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event).count();
         assert!(dated >= 450, "expected n>=450 dated events, got {dated}");
     }
 
@@ -93,7 +93,7 @@ use atlas_core::narrative::global_timeline_position;
         let d = load_real_compiled_data();
 
         let mut by_book: std::collections::HashMap<String, Vec<(String, u32)>> = std::collections::HashMap::new();
-        for e in d.events.iter().filter(|e| e.kind == "event") {
+        for e in d.events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event) {
             let mut first_in_book: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
             let mut note = |v: &str| {
                 if let Ok(vid) = atlas_core::refs::VerseId::parse_canonical(v) {
@@ -210,7 +210,7 @@ use atlas_core::narrative::global_timeline_position;
         let act_witnessed: Vec<&atlas_core::data::Event> = d
             .events
             .iter()
-            .filter(|e| e.kind == "event" && !e.id.starts_with("pw_") && atlas_core::nt_calibration::first_verse_in_book(e, "ACT").is_some())
+            .filter(|e| e.kind == atlas_core::data::EventKind::Event && !e.id.starts_with("pw_") && atlas_core::nt_calibration::first_verse_in_book(e, "ACT").is_some())
             .collect();
         assert!(act_witnessed.len() >= 50, "expected the real compiled data to carry well over 50 non-pw_ ACT-witnessed events (Acts 1 onward, post-calibration), got {}", act_witnessed.len());
 
@@ -236,7 +236,7 @@ use atlas_core::narrative::global_timeline_position;
         let mut acts_section_events: Vec<(&str, (u16, u16))> = d
             .events
             .iter()
-            .filter(|e| e.kind == "event" && e.acts_section.is_some())
+            .filter(|e| e.kind == atlas_core::data::EventKind::Event && e.acts_section.is_some())
             .filter_map(|e| atlas_core::nt_calibration::first_verse_in_book(e, "ACT").map(|cv| (e.id.as_str(), cv)))
             .collect();
         assert!(acts_section_events.len() >= 30, "expected ~33 acts_section events, got {}", acts_section_events.len());

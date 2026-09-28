@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -90,10 +90,8 @@ struct EventToml {
     places: Vec<String>,
     #[serde(default)]
     verses: Vec<String>,
-    /// `"event"`, the default, or `"general"`. The allowed set is re-checked against the full enum by
-    /// `validate`, which is its single source of truth.
     #[serde(default)]
-    kind: Option<String>,
+    kind: Option<EventKind>,
     /// Defaulted so every event authored before these fields existed keeps parsing with no migration.
     #[serde(default)]
     robertson_section: Option<String>,
@@ -113,8 +111,8 @@ struct EventToml {
     order_key: i32,
 }
 
-fn default_event_kind() -> String {
-    "event".to_string()
+fn default_event_kind() -> EventKind {
+    EventKind::Event
 }
 
 #[derive(Deserialize)]
@@ -147,8 +145,8 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
 
     let mut out = Vec::with_capacity(f.event.len());
     for e in f.event {
-        let kind = e.kind.clone().unwrap_or_else(default_event_kind);
-        let (when, places) = if kind == "general" {
+        let kind = e.kind.unwrap_or_else(default_event_kind);
+        let (when, places) = if kind == EventKind::General {
             if e.from_year.is_some() || e.to_year.is_some() {
                 bail!(
                     "curated event '{}' is kind=\"general\" but specifies from_year/to_year -- a general-kind passage must not claim a date (omit both fields; do not fabricate)",
@@ -352,19 +350,8 @@ pub fn parse_coverage_manifest(input: &str) -> Result<Vec<String>> {
 }
 
 #[derive(Deserialize)]
-struct LandmarkToml {
-    name: String,
-    kind: String,
-    lat: f64,
-    lon: f64,
-    // An `Option` field is optional by default under serde's derive, so every entry authored before this key
-    // existed keeps parsing unchanged.
-    size: Option<String>,
-}
-
-#[derive(Deserialize)]
 struct LandmarksFile {
-    landmark: Vec<LandmarkToml>,
+    landmark: Vec<Landmark>,
 }
 
 #[derive(Deserialize)]
@@ -400,7 +387,7 @@ pub fn parse_people_eternal(input: &str) -> Result<Vec<(String, Vec<String>)>> {
 pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
     let f: LandmarksFile =
         toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;
-    Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon, size: l.size }).collect())
+    Ok(f.landmark)
 }
 
 #[derive(Deserialize)]
@@ -757,19 +744,21 @@ pub fn parse_typology(input: &str) -> Result<Vec<TypologySeed>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use atlas_core::data::{LandmarkKind, LandmarkSize};
 
     #[test]
     fn parse_landmarks_reads_valid_toml() {
+        // Act
         let landmarks = parse_landmarks(include_str!("../tests/fixtures/landmarks-sample.toml")).unwrap();
-        assert_eq!(landmarks.len(), 3);
-        let jordan = landmarks.iter().find(|l| l.name == "Jordan River").unwrap();
-        assert_eq!(jordan.kind, "water");
-        assert_eq!(jordan.lat, 31.76);
-        assert_eq!(jordan.lon, 35.55);
-        assert_eq!(jordan.size, None);
-
-        let negev = landmarks.iter().find(|l| l.name == "Negev").unwrap();
-        assert_eq!(negev.size.as_deref(), Some("lg"));
+        // Assert
+        assert_eq!(
+            landmarks,
+            vec![
+                Landmark { name: "Jordan River".to_string(), kind: LandmarkKind::Water, lat: 31.76, lon: 35.55, size: None },
+                Landmark { name: "Mount Sinai".to_string(), kind: LandmarkKind::Mountain, lat: 28.54, lon: 33.97, size: None },
+                Landmark { name: "Negev".to_string(), kind: LandmarkKind::Region, lat: 31.24, lon: 34.84, size: Some(LandmarkSize::Large) },
+            ]
+        );
     }
 
     #[test]

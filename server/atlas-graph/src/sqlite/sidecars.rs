@@ -5,9 +5,10 @@ use std::collections::HashMap;
 
 use atlas_core::data::{
     AtlasData, BookMeta, BookNarrationWindow, Canon, CanonBook, CatechismItem, CatechismPart, CatechismQuestion,
-    ChronologyAnchor, Landmark, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry,
+    ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory,
+    PlaceNameAlias, PlaceNameEntry,
 };
-use atlas_core::sources::{ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
+use atlas_core::sources::{Confidence, ProvenanceEntry, SourceCategory, SourceEntry, SourcesDocument};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::canon::{serialize, Value};
 use rusqlite::Connection;
@@ -117,6 +118,9 @@ fn t(s: &str) -> Col {
 fn ot(o: &Option<String>) -> Col {
     o.as_ref().map(|s| Col::Text(s.clone())).unwrap_or(Col::Null)
 }
+fn ow(word: Option<&str>) -> Col {
+    word.map(|w| Col::Text(w.to_string())).unwrap_or(Col::Null)
+}
 fn oi(o: Option<i32>) -> Col {
     o.map(|x| Col::Int(x as i64)).unwrap_or(Col::Null)
 }
@@ -179,7 +183,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         .landmarks
         .iter()
         .enumerate()
-        .map(|(ord, l)| vec![i(ord as i64), t(&l.name), t(&l.kind), Col::Real(l.lat), Col::Real(l.lon), ot(&l.size)])
+        .map(|(ord, l)| vec![i(ord as i64), t(&l.name), t(l.kind.name()), Col::Real(l.lat), Col::Real(l.lon), ow(l.size.map(LandmarkSize::name))])
         .collect();
     // The compiled land mask is flattened rings: a region's name and ref note were dropped before
     // this point, so both columns are honestly NULL.
@@ -274,7 +278,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
         .provenances
         .iter()
         .enumerate()
-        .map(|(ord, p)| vec![t(&p.id), i(ord as i64), t(&p.source), t(&p.confidence), ot(&p.locator)])
+        .map(|(ord, p)| vec![t(&p.id), i(ord as i64), t(&p.source), t(p.confidence.name()), ot(&p.locator)])
         .collect();
 
     Ok(vec![
@@ -308,6 +312,20 @@ fn text(c: &Col, table: &str) -> Result<String, SqliteError> {
         other => Err(SqliteError(format!("{table}: expected TEXT, got {other:?}"))),
     }
 }
+/// A closed vocabulary read back out of the TEXT column it was written to. A word no
+/// member answers to means this artifact was not written by this atlas.
+fn word<V>(c: &Col, table: &str, named: fn(&str) -> Option<V>) -> Result<V, SqliteError> {
+    let raw = text(c, table)?;
+    named(&raw).ok_or_else(|| SqliteError(format!("{table}: '{raw}' names no member of its own vocabulary")))
+}
+
+fn opt_word<V>(c: &Col, table: &str, named: fn(&str) -> Option<V>) -> Result<Option<V>, SqliteError> {
+    match opt_text(c, table)? {
+        None => Ok(None),
+        Some(raw) => named(&raw).map(Some).ok_or_else(|| SqliteError(format!("{table}: '{raw}' names no member of its own vocabulary"))),
+    }
+}
+
 fn opt_text(c: &Col, table: &str) -> Result<Option<String>, SqliteError> {
     match c {
         Col::Null => Ok(None),
@@ -387,7 +405,13 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     let mut landmarks = Vec::new();
     for r in rows(&LANDMARK)? {
         let t = "landmark";
-        landmarks.push(Landmark { name: text(&r[1], t)?, kind: text(&r[2], t)?, lat: real(&r[3], t)?, lon: real(&r[4], t)?, size: opt_text(&r[5], t)? });
+        landmarks.push(Landmark {
+            name: text(&r[1], t)?,
+            kind: word(&r[2], t, LandmarkKind::named)?,
+            lat: real(&r[3], t)?,
+            lon: real(&r[4], t)?,
+            size: opt_word(&r[5], t, LandmarkSize::named)?,
+        });
     }
     let mut land_mask: Vec<Vec<(f64, f64)>> = Vec::new();
     for r in rows(&LAND_MASK_REGION)? {
@@ -542,7 +566,7 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     let mut provenances: Vec<(i64, ProvenanceEntry)> = Vec::new();
     for r in rows(&PROVENANCE_ENTRY)? {
         let t = "provenance_entry";
-        provenances.push((int(&r[1], t)?, ProvenanceEntry { id: text(&r[0], t)?, source: text(&r[2], t)?, confidence: text(&r[3], t)?, locator: opt_text(&r[4], t)? }));
+        provenances.push((int(&r[1], t)?, ProvenanceEntry { id: text(&r[0], t)?, source: text(&r[2], t)?, confidence: word(&r[3], t, Confidence::named)?, locator: opt_text(&r[4], t)? }));
     }
     provenances.sort_by_key(|(o, _)| *o);
     let sources = SourcesDocument {

@@ -203,6 +203,16 @@
       ],
       "type": "object"
     },
+    "Confidence": {
+      "description": "How a claim was arrived at.",
+      "enum": [
+        "CanonicalText",
+        "Curated",
+        "Imported",
+        "Derived"
+      ],
+      "type": "string"
+    },
     "Contents": {
       "additionalProperties": false,
       "description": "One corpus's contents, as a tree two levels deep.",
@@ -597,8 +607,7 @@
           "type": "string"
         },
         "kind": {
-          "description": "`event` for something that happened at a date, `general` for a titled\npassage that has none.",
-          "type": "string"
+          "$ref": "#/$defs/EventKind"
         },
         "kjv_superscription": {
           "description": "The superscription the King James Version prints over this passage, absent\nwhen it prints none.",
@@ -684,6 +693,14 @@
       ],
       "type": "object"
     },
+    "EventKind": {
+      "description": "Which kind of container this is: an `event`, something that happened at a\ndate, or a `general` titled passage, which has none.",
+      "enum": [
+        "event",
+        "general"
+      ],
+      "type": "string"
+    },
     "EventWitness": {
       "additionalProperties": false,
       "description": "One book's account of an event: the passage it narrates the event in, and any\nnote on the citation.",
@@ -733,8 +750,7 @@
           "type": "boolean"
         },
         "kind": {
-          "description": "`event` for a dated happening, `general` for a titled passage that has none.",
-          "type": "string"
+          "$ref": "#/$defs/EventKind"
         },
         "title": {
           "description": "The heading as a reader sees it.",
@@ -890,8 +906,7 @@
       "description": "An always-on map label: a water, a mountain or a region, drawn at one point\nand never interactive.",
       "properties": {
         "kind": {
-          "description": "`water`, `mountain` or `region`.",
-          "type": "string"
+          "$ref": "#/$defs/LandmarkKind"
         },
         "lat": {
           "description": "Latitude in degrees, north positive.",
@@ -907,10 +922,14 @@
           "type": "string"
         },
         "size": {
-          "description": "A size hint -- `sm`, `md` or `lg` -- for a label meant to stay readable when\nzoomed out; absent for most landmarks.",
-          "type": [
-            "string",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/LandmarkSize",
+              "description": "A size hint for a label meant to stay readable when zoomed out; absent for\nmost landmarks."
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
@@ -921,6 +940,24 @@
         "lon"
       ],
       "type": "object"
+    },
+    "LandmarkKind": {
+      "description": "Which sort of always-on map label this is.",
+      "enum": [
+        "water",
+        "mountain",
+        "region"
+      ],
+      "type": "string"
+    },
+    "LandmarkSize": {
+      "description": "How large a landmark's label is drawn, smallest first.",
+      "enum": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "type": "string"
     },
     "Narrative": {
       "description": "A journey or storyline through the atlas: an ordered chain of events the map\ndraws as a run of arrows.",
@@ -1498,8 +1535,7 @@
       "description": "The join between a provenance id as records carry it and the source that\nnames, describes and licenses it.",
       "properties": {
         "confidence": {
-          "description": "How the claim was arrived at: `CanonicalText`, `Curated`, `Imported` or\n`Derived`.",
-          "type": "string"
+          "$ref": "#/$defs/Confidence"
         },
         "id": {
           "description": "The provenance id exactly as a record carries it.",
@@ -1935,6 +1971,14 @@
       ],
       "type": "string"
     },
+    "TextScope": {
+      "description": "How much text one window of `/api/text` covers: the units around the\nreference asked for, or the whole chapter that reference names.",
+      "enum": [
+        "verse",
+        "chapter"
+      ],
+      "type": "string"
+    },
     "TextUnit": {
       "additionalProperties": false,
       "description": "One unit of a reading spine: a verse of Scripture, or a paragraph of the\nBook of Concord.",
@@ -2184,8 +2228,7 @@
           "type": "string"
         },
         "kind": {
-          "description": "`event` for something that happened at a date, `general` for a titled\npassage that has none.",
-          "type": "string"
+          "$ref": "#/$defs/EventKind"
         },
         "label": {
           "type": "string"
@@ -2264,6 +2307,14 @@
         "count"
       ],
       "type": "object"
+    },
+    "WindowDir": {
+      "description": "Which way a window runs from the reference it is anchored on: onward from that\nreference, or backward to it.",
+      "enum": [
+        "onward",
+        "backward"
+      ],
+      "type": "string"
     },
     "WordsOfChristSpan": {
       "additionalProperties": false,

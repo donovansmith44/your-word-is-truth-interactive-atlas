@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_scope",
+      "message": "unknown scope: 'not-a-real-scope' (expected 'verse' or 'chapter')"
+    }
+  },
+  "status": 400
+}

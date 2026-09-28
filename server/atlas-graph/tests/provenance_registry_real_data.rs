@@ -182,18 +182,6 @@ fn the_distinct_provenance_inventory_of_the_real_artifact_is_pinned() {
     assert_eq!(kinds, PINNED_INVENTORY.iter().map(|s| s.to_string()).collect::<Vec<_>>(), "the artifact's distinct provenance-kind inventory changed");
 }
 
-#[test]
-fn the_registry_confidence_vocabulary_matches_the_contracts_own_enum() {
-    use atlas_graph_types::ingest::Confidence;
-    let from_enum: Vec<String> =
-        [Confidence::CanonicalText, Confidence::Curated, Confidence::Imported, Confidence::Derived].iter().map(|c| format!("{c:?}")).collect();
-    assert_eq!(
-        from_enum,
-        atlas_core::sources::CONFIDENCE_VOCABULARY.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
-        "atlas_core::sources::CONFIDENCE_VOCABULARY has drifted from atlas_graph_types::ingest::Confidence"
-    );
-}
-
 const PINNED_INVENTORY: &[&str] = &[
     "attestation-corrections",
     "brainfuel",

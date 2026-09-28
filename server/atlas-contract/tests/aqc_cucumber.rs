@@ -146,6 +146,13 @@ async fn when_text_window_corpus(world: &mut AqcWorld, sref: String, n: usize, c
     world.body = body;
 }
 
+#[when(expr = "I run TextWindowQuery for {string} radius {int} with scope {string}")]
+async fn when_text_window_scope(world: &mut AqcWorld, sref: String, n: usize, scope: String) {
+    let (status, body) = get(&format!("/api/text?ref={sref}&n={n}&scope={scope}")).await;
+    world.status = status;
+    world.body = body;
+}
+
 #[when(expr = "I run a chapter-scoped TextWindowQuery for {string} with dir {string}")]
 async fn when_text_window_chapter_dir(world: &mut AqcWorld, cref: String, dir: String) {
     let (status, body) = get(&format!("/api/text?ref={cref}&scope=chapter&dir={dir}")).await;

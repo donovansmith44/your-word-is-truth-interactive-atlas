@@ -1,10 +1,11 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::State;
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::Deserialize;
+use utoipa::IntoParams;
 
 use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
@@ -15,8 +16,10 @@ use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 
-use crate::error::ApiError;
-use crate::graph_wire::{decode_node_id, describe_position, encode_node_id};
+use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
+use crate::graph_wire::{describe_position, encode_node_id};
+use crate::query::{AsGiven, Contract, ContractParams};
+use crate::reference::{NodeReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -26,9 +29,8 @@ use crate::wire;
 /// Scripture and `text-unit:BoC PART.ARTICLE.PARAGRAPH` for a paragraph of the
 /// Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
 /// node is `not_found`.
-#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ApiError), tag = "graph")]
-pub async fn node_card(State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::NodeCard>, ApiError> {
-    let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
+#[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ReferenceRefusals), tag = "graph")]
+pub async fn node_card(State(graph): State<Arc<GraphService>>, Reference(NodeReference(node_id)): Reference<NodeReference>) -> Result<Json<wire::NodeCard>, ApiError> {
     let snap = graph.snapshot();
     let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
@@ -73,9 +75,6 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
     }
 }
 
-const DEFAULT_EDGE_LIMIT: usize = 20;
-const MAX_EDGE_LIMIT: usize = 200;
-
 /// One page of a node's neighbours of a single kind, each with the id of the edge that joins them.
 ///
 /// `{id}` takes the same form `/api/node/{id}` does. The required `kind` is an
@@ -83,25 +82,18 @@ const MAX_EDGE_LIMIT: usize = 200;
 /// unrecognised id is `bad_ref`, and an id naming no node is `not_found`.
 /// `limit` defaults to 20 and caps at 200; pass the response's `next` back as
 /// `cursor` for the following page, and its absence is the last page.
-#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), ("kind" = EdgeKind, Query), ("cursor" = Option<usize>, Query), ("limit" = Option<usize>, Query)), responses((status = 200, body = wire::EdgePage), ApiError), tag = "graph")]
+#[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), FrontierRefusals), tag = "graph")]
 pub async fn node_edges(
     State(graph): State<Arc<GraphService>>,
-    Path(id): Path<String>,
-    Query(params): Query<HashMap<String, String>>,
+    Reference(NodeReference(node_id)): Reference<NodeReference>,
+    Contract(asked): Contract<EdgePageQuery>,
 ) -> Result<Json<wire::EdgePage>, ApiError> {
-    let node_id = decode_node_id(&id).ok_or_else(|| ApiError::bad_ref(&id))?;
     let snap = graph.snapshot();
     if snap.node(&node_id).is_none() {
         return Err(ApiError::not_found("node"));
     }
 
-    let kind_raw = params.get("kind").map(String::as_str).unwrap_or("");
-    let kind = EdgeKind::from_label(kind_raw).ok_or_else(|| ApiError::bad_kind(kind_raw))?;
-
-    let cursor = params.get("cursor").and_then(|s| s.parse::<usize>().ok());
-    let limit = params.get("limit").and_then(|s| s.parse::<usize>().ok()).unwrap_or(DEFAULT_EDGE_LIMIT).clamp(1, MAX_EDGE_LIMIT);
-
-    let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor, limit });
+    let page = snap.edges(&Position::Node(node_id), &asked.page());
 
     // A PeopleGroup wire id does not decode, so an entry naming one would hand the
     // caller a reference it cannot fetch a card for.
@@ -114,7 +106,42 @@ pub async fn node_edges(
         })
         .collect();
 
-    Ok(Json(wire::EdgePage { kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+    Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+}
+
+/// Which of a node's frontiers to answer, and which page of it.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct EdgePageQuery {
+    pub kind: EdgeKind,
+    #[serde(default)]
+    #[param(value_type = Option<usize>)]
+    pub cursor: AsGiven<usize>,
+    #[serde(default)]
+    #[param(value_type = Option<usize>)]
+    pub limit: AsGiven<usize>,
+}
+
+const DEFAULT_EDGE_LIMIT: usize = 20;
+const SMALLEST_EDGE_LIMIT: usize = 1;
+const MAX_EDGE_LIMIT: usize = 200;
+
+impl EdgePageQuery {
+    fn page(&self) -> EdgeQuery {
+        EdgeQuery {
+            kind: self.kind,
+            cursor: self.cursor.given(),
+            limit: self.limit.given().unwrap_or(DEFAULT_EDGE_LIMIT).clamp(SMALLEST_EDGE_LIMIT, MAX_EDGE_LIMIT),
+        }
+    }
+}
+
+impl ContractParams for EdgePageQuery {
+    /// The kind is the only word here a caller can get wrong: a page bound that does
+    /// not read as a number leaves the default standing instead of refusing.
+    fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
+        ApiError::bad_kind(asked_with.unwrap_or_default())
+    }
 }
 
 /// A window of one corpus's reading spine: the units of text around the one a reference names, and the reference that continues the window.
@@ -123,28 +150,27 @@ pub async fn node_edges(
 /// `corpus=concord` (`corpus` is `bible` unless given, anything else is
 /// `bad_corpus`); a malformed reference is `bad_ref` and one naming nothing in
 /// the corpus is `not_found`. `n` defaults to 1 and caps at 500, and
-/// `dir=backward` ends the window at `ref` instead of starting it there.
-/// `scope=chapter` covers the whole chapter named instead, and takes neither `n`
-/// nor `dir=backward` -- the combination is `bad_dir`. The response's `next` is
-/// the reference one step further on, absent at the end of the corpus.
-#[utoipa::path(get, path = "/api/text", params(("ref" = String, Query), ("n" = Option<usize>, Query), ("dir" = Option<String>, Query), ("scope" = inline(Option<wire::TextScope>), Query), ("corpus" = Option<String>, Query)), responses((status = 200, body = wire::TextWindow), ApiError), tag = "graph")]
+/// `dir=backward` ends the window at `ref` instead of starting it there; a `dir`
+/// that is neither is `bad_dir`. `scope=chapter` covers the whole chapter named
+/// instead, and takes neither `n` nor `dir=backward` -- the combination is
+/// `bad_dir`, and a `scope` outside the two is `bad_scope`. The response's `next`
+/// is the reference one step further on, absent at the end of the corpus.
+#[utoipa::path(get, path = "/api/text", params(TextWindowQuery), responses((status = 200, body = wire::TextWindow), ReadingWindowRefusals), tag = "graph")]
 pub async fn text_window(
     State(graph): State<Arc<GraphService>>,
     headers: HeaderMap,
-    Query(params): Query<HashMap<String, String>>,
+    Contract(asked): Contract<TextWindowQuery>,
 ) -> Result<Response, ApiError> {
     let etag = format!("\"{}\"", atlas_graph::version_hex(graph.version()));
     if headers.get(header::IF_NONE_MATCH).and_then(|v| v.to_str().ok()) == Some(etag.as_str()) {
         return Ok((StatusCode::NOT_MODIFIED, [(header::ETAG, etag)]).into_response());
     }
 
-    let raw_ref = params.get("ref").map(String::as_str).unwrap_or("");
-    let scope = params.get("scope").and_then(|raw| wire::TextScope::named(raw)).unwrap_or(wire::TextScope::Verse);
-    let dir_raw = params.get("dir").map(String::as_str);
-    let requested_corpus = params.get("corpus").map(String::as_str).unwrap_or(wire::Corpus::Bible.name());
-    let corpus = wire::Corpus::named(requested_corpus).ok_or_else(|| ApiError::bad_corpus(requested_corpus))?;
+    let raw_ref = asked.sref.as_str();
+    let scope = asked.scope();
+    let corpus = asked.corpus();
 
-    if scope == wire::TextScope::Chapter && dir_raw == Some("backward") {
+    if scope == wire::TextScope::Chapter && asked.dir == Some(WindowDir::Backward) {
         return Err(ApiError::bad_dir(
             "dir=backward is not supported with scope=chapter -- a chapter-scoped window's bounds are already fully determined by the chapter itself, so there is no direction left to walk; omit dir, or use dir=onward, or drop scope=chapter and anchor on a specific verse instead",
         ));
@@ -155,17 +181,13 @@ pub async fn text_window(
         ));
     }
 
-    let dir = match dir_raw {
-        Some("backward") => WindowDir::Backward,
-        _ => WindowDir::Onward,
-    };
-
+    let dir = asked.dir();
     let snap = graph.snapshot();
 
     if corpus == wire::Corpus::Concord {
         let (part, article, paragraph) = parse_concord_ref(raw_ref)?;
         let start = graph.concord_position_of(part, article, paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
-        let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
+        let n = asked.units();
 
         let ids = window::window(&snap, corpus.name(), start, n, dir);
         let units: Vec<wire::TextUnit> = ids
@@ -207,8 +229,7 @@ pub async fn text_window(
     } else {
         let verse = verse_opt.ok_or_else(|| ApiError::bad_ref(raw_ref))?;
         let start = graph.position_of(book, chapter, verse).ok_or_else(|| ApiError::not_found("verse"))?;
-        let n = params.get("n").and_then(|s| s.parse::<usize>().ok()).unwrap_or(1).clamp(1, 500);
-        (start, n)
+        (start, asked.units())
     };
 
     let ids = window::window(&snap, corpus.name(), start, n, dir);
@@ -244,6 +265,63 @@ pub async fn text_window(
 
     let body = Json(wire::TextWindow { units, next, version: atlas_graph::version_hex(graph.version()) });
     Ok(([(header::ETAG, etag)], body).into_response())
+}
+
+/// The reading window one request asks for.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct TextWindowQuery {
+    #[serde(rename = "ref")]
+    pub sref: String,
+    #[serde(default)]
+    #[param(value_type = Option<usize>)]
+    pub n: AsGiven<usize>,
+    #[serde(default)]
+    pub dir: Option<WindowDir>,
+    #[serde(default)]
+    pub scope: Option<wire::TextScope>,
+    #[serde(default)]
+    pub corpus: Option<wire::Corpus>,
+}
+
+const DEFAULT_WINDOW_UNITS: usize = 1;
+const SMALLEST_WINDOW: usize = 1;
+const MAX_WINDOW_UNITS: usize = 500;
+
+impl TextWindowQuery {
+    fn units(&self) -> usize {
+        self.n.given().unwrap_or(DEFAULT_WINDOW_UNITS).clamp(SMALLEST_WINDOW, MAX_WINDOW_UNITS)
+    }
+
+    fn scope(&self) -> wire::TextScope {
+        self.scope.unwrap_or(wire::TextScope::Verse)
+    }
+
+    fn corpus(&self) -> wire::Corpus {
+        self.corpus.unwrap_or(wire::Corpus::Bible)
+    }
+
+    fn dir(&self) -> WindowDir {
+        self.dir.unwrap_or(WindowDir::Onward)
+    }
+}
+
+const REF: &str = "ref";
+const SCOPE: &str = "scope";
+const DIR: &str = "dir";
+
+impl ContractParams for TextWindowQuery {
+    /// `n` is the one parameter here that cannot be got wrong, so what is left when
+    /// the scope, the direction and the corpus have each been named is the reference.
+    fn unreadable(parameter: &str, asked_with: Option<&str>) -> ApiError {
+        let asked_with = asked_with.unwrap_or_default();
+        match parameter {
+            SCOPE => ApiError::bad_scope(asked_with),
+            DIR => ApiError::unknown_dir(asked_with),
+            REF => ApiError::bad_ref(asked_with),
+            _ => ApiError::bad_corpus(asked_with),
+        }
+    }
 }
 
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {

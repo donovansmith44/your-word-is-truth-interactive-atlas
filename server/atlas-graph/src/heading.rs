@@ -5,6 +5,7 @@
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use atlas_core::data::EventKind;
 use atlas_graph_types::chrono::ResolvedPlacement;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::NodeKind;
@@ -23,8 +24,7 @@ pub struct Heading {
     pub event_id: String,
     /// The heading as a reader sees it.
     pub title: String,
-    /// `event` for a dated happening, `general` for a titled passage that has none.
-    pub kind: String,
+    pub kind: EventKind,
     /// True when this verse carries on coverage that began in an earlier chapter
     /// rather than opening it, so a reader can render it as a continued heading.
     pub is_continuation: bool,
@@ -120,8 +120,8 @@ fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPaylo
 /// `seq` -- the event's position in the reconstructed global timeline -- is a stricter substitute
 /// for the curated `order_key` here: that timeline is already sorted by `(from_year, order_key,
 /// array position)`, so comparing `seq` alone never ties two distinct dated events.
-fn precedence(layer: u8, kind: &str, year: i32, seq: i32, event_id: &str) -> Precedence {
-    let kind_bit: u8 = if kind == "event" { 1 } else { 0 };
+fn precedence(layer: u8, kind: EventKind, year: i32, seq: i32, event_id: &str) -> Precedence {
+    let kind_bit: u8 = if kind == EventKind::Event { 1 } else { 0 };
     (layer, kind_bit, Reverse(year), Reverse(seq), Reverse(event_id.to_string()))
 }
 
@@ -178,6 +178,7 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
             continue;
         }
 
+        let kind = crate::legacy::event_kind(kind);
         let layer: u8 = if is_real_container { 1 } else { 0 };
         let (year, seq) = resolved_year_seq(&id.raw, resolved);
         let prec = precedence(layer, kind, year, seq, &id.raw);
@@ -188,13 +189,13 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
                 Some((incumbent, _)) => prec > *incumbent,
             };
             if should_replace {
-                let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), is_continuation: false };
+                let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind, is_continuation: false };
                 winners.insert(anchor, (prec.clone(), entry));
             }
         }
 
         for cont in continuation_candidates_for(verses, witnesses) {
-            let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind: kind.clone(), is_continuation: true };
+            let entry = Heading { event_id: id.raw.clone(), title: label.clone(), kind, is_continuation: true };
             continuation_candidates.push((cont, prec.clone(), entry));
         }
     }

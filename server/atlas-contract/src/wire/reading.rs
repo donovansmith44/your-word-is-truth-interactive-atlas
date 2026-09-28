@@ -136,9 +136,7 @@ pub struct VerseEvent {
     pub verse_groups: Vec<VerseGroup>,
     /// The ids of the places it touches.
     pub places: Vec<String>,
-    /// `event` for something that happened at a date, `general` for a titled
-    /// passage that has none.
-    pub kind: String,
+    pub kind: atlas_core::data::EventKind,
     /// The id of the source that asserts the event this verse belongs to;
     /// `/api/sources` names it.
     pub provenance: String,

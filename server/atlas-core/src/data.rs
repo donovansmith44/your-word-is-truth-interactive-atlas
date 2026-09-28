@@ -149,11 +149,11 @@ pub struct Event {
     pub when: TimeRange,
     pub places: Vec<String>,
     pub verses: Vec<String>,
-    /// `"event"` or `"general"`. A general container has no date and no place: it carries
-    /// the undated sentinel and an empty `places`, both supplied by the ETL and never
-    /// curator-typed, so "do not fabricate a date" is structural.
+    /// A general container has no date and no place: it carries the undated sentinel
+    /// and an empty `places`, both supplied by the compiler and never curator-typed, so
+    /// "do not fabricate a date" is structural.
     #[serde(default = "default_event_kind")]
-    pub kind: String,
+    pub kind: EventKind,
     /// Empty means one IMPLICIT witness, synthesized from `verses` grouped by book -- never
     /// zero witnesses, and never a reason to withhold this container's heading.
     #[serde(default)]
@@ -185,8 +185,17 @@ pub struct Event {
     pub order_key: i32,
 }
 
-fn default_event_kind() -> String {
-    "event".to_string()
+atlas_graph_types::vocabulary! {
+    /// Which kind of container this is: an `event`, something that happened at a
+    /// date, or a `general` titled passage, which has none.
+    EventKind {
+        Event => "event",
+        General => "general",
+    }
+}
+
+fn default_event_kind() -> EventKind {
+    EventKind::Event
 }
 
 /// Hand-written because `TimeRange` has no `Default` -- it validates through a fallible
@@ -279,16 +288,33 @@ pub struct CrossRef {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct Landmark {
     pub name: String,
-    /// `water`, `mountain` or `region`.
-    pub kind: String,
+    pub kind: LandmarkKind,
     /// Latitude in degrees, north positive.
     pub lat: f64,
     /// Longitude in degrees, east positive.
     pub lon: f64,
-    /// A size hint -- `sm`, `md` or `lg` -- for a label meant to stay readable when
-    /// zoomed out; absent for most landmarks.
+    /// A size hint for a label meant to stay readable when zoomed out; absent for
+    /// most landmarks.
     #[serde(default)]
-    pub size: Option<String>,
+    pub size: Option<LandmarkSize>,
+}
+
+atlas_graph_types::vocabulary! {
+    /// Which sort of always-on map label this is.
+    LandmarkKind {
+        Water => "water",
+        Mountain => "mountain",
+        Region => "region",
+    }
+}
+
+atlas_graph_types::vocabulary! {
+    /// How large a landmark's label is drawn, smallest first.
+    LandmarkSize {
+        Small => "sm",
+        Medium => "md",
+        Large => "lg",
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -580,7 +606,7 @@ pub struct HeadingEntry {
     pub title: String,
     /// Carried so a reader can tell whether this heading leads to a dated, traversable
     /// container or an undated one, without a second fetch to find out.
-    pub kind: String,
+    pub kind: EventKind,
 }
 
 /// Each anchor is the CANONICALLY FIRST covered verse, not whichever the data happened to
@@ -635,7 +661,7 @@ fn heading_precedence(e: &Event) -> (u8, u8, std::cmp::Reverse<i32>, std::cmp::R
     } else {
         0
     };
-    let kind: u8 = if e.kind == "event" { 1 } else { 0 };
+    let kind: u8 = if e.kind == EventKind::Event { 1 } else { 0 };
     (layer, kind, std::cmp::Reverse(e.when.from_year), std::cmp::Reverse(e.order_key))
 }
 
@@ -758,7 +784,7 @@ impl AtlasData {
                 };
                 if should_replace {
                     verse_heading_precedence.insert(anchor.clone(), precedence);
-                    verse_heading.insert(anchor, HeadingEntry { event_id: e.id.clone(), title: e.label.clone(), kind: e.kind.clone() });
+                    verse_heading.insert(anchor, HeadingEntry { event_id: e.id.clone(), title: e.label.clone(), kind: e.kind });
                 }
             }
         }
@@ -766,7 +792,7 @@ impl AtlasData {
         self.heading_anchor_collisions = heading_anchor_collisions;
 
         let mut timeline_order: Vec<String> =
-            self.events.iter().filter(|e| e.kind == "event").map(|e| e.id.clone()).collect();
+            self.events.iter().filter(|e| e.kind == EventKind::Event).map(|e| e.id.clone()).collect();
         timeline_order.sort_by_key(|id| {
             let e = self.event_by_id(id).expect("id just collected from self.events");
             (e.when.from_year, e.order_key)
@@ -1213,10 +1239,10 @@ mod heading_collision_tests {
     fn heading_collision_tier1_event_kind_beats_general_kind() {
         let mut event_kind = bare_leg();
         event_kind.id = "as_event".into();
-        event_kind.kind = "event".into();
+        event_kind.kind = EventKind::Event;
         let mut general_kind = bare_leg();
         general_kind.id = "as_general".into();
-        general_kind.kind = "general".into();
+        general_kind.kind = EventKind::General;
         let events = vec![general_kind, event_kind];
         let narratives = vec![Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec!["as_event".into(), "as_general".into()] }];
         let data = AtlasData::new(Canon { books: vec![] }, vec![], events, narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();

@@ -258,7 +258,7 @@ pub struct WindowViolation {
 /// `missing_windows`: it is neither skipped nor passed here.
 pub fn window_violations(events: &[Event], windows: &[BookNarrationWindow]) -> Vec<WindowViolation> {
     let mut out = Vec::new();
-    for e in events.iter().filter(|e| e.kind == "event") {
+    for e in events.iter().filter(|e| e.kind == crate::data::EventKind::Event) {
         let mut books: Vec<&str> = window_check_books(e).into_iter().collect();
         books.sort_unstable();
         for book in books {
@@ -282,7 +282,7 @@ pub fn window_violations(events: &[Event], windows: &[BookNarrationWindow]) -> V
 pub fn missing_windows(events: &[Event], windows: &[BookNarrationWindow]) -> Vec<&'static str> {
     let known: HashSet<&str> = windows.iter().map(|w| w.book.as_str()).collect();
     let mut missing: HashSet<&'static str> = HashSet::new();
-    for e in events.iter().filter(|e| e.kind == "event") {
+    for e in events.iter().filter(|e| e.kind == crate::data::EventKind::Event) {
         for book in window_check_books(e) {
             if !known.contains(book) {
                 missing.insert(book);
@@ -315,7 +315,7 @@ pub fn era_boundary_violations(d: &AtlasData) -> Vec<EraBoundaryViolation> {
         let Some(b_event_id) = b.event_id.as_deref() else { continue };
         let Some(b_pos) = d.timeline_position(b_event_id) else { continue };
 
-        for e in d.events.iter().filter(|e| e.kind == "event" && e.id != b_event_id) {
+        for e in d.events.iter().filter(|e| e.kind == crate::data::EventKind::Event && e.id != b_event_id) {
             let mut books: Vec<&str> = window_check_books(e).into_iter().collect();
             books.sort_unstable();
             if books.is_empty() {

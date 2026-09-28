@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -110,9 +109,11 @@ fn scene_responses_are_byte_identical_to_the_pinned_base_captures() {
 }
 
 #[test]
-fn windows_parse_the_same_way_the_http_handler_would() {
-    let params: HashMap<String, String> = [("from".to_string(), "-5".to_string()), ("to".to_string(), "100".to_string())].into_iter().collect();
-    let from: i32 = params["from"].parse().unwrap();
-    let to: i32 = params["to"].parse().unwrap();
-    assert_eq!((from, to), (-5, 100));
+fn a_window_this_file_composes_with_is_the_one_the_route_would_read() {
+    // Arrange
+    let asked = "from=-5&to=100";
+    // Act
+    let read: atlas_contract::map::SceneWindow = serde_urlencoded::from_str(asked).expect("the route's own parameters read");
+    // Assert
+    assert_eq!(read.span().expect("a span of real years"), TimeRange::new(-5, 100).unwrap());
 }

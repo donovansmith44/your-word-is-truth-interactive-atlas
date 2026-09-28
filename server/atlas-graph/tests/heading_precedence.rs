@@ -38,7 +38,7 @@ fn named_case_psa_53_1_the_shared_fool_incipit_container_anchors_both_psalms() {
     let psa53 = index.get("PSA.53.1").expect("PSA.53.1 must anchor a heading -- psa_014's own second (parallel) witness");
     assert_eq!(psa53.event_id, "psa_014");
     assert_eq!(psa53.title, "The fool hath said in his heart, There is no God.");
-    assert_eq!(psa53.kind, "general");
+    assert_eq!(psa53.kind, atlas_core::data::EventKind::General);
 
     let psa14 = index.get("PSA.14.1").expect("PSA.14.1 must anchor a heading -- psa_014's own first (self) witness");
     assert_eq!(psa14.event_id, "psa_014");

@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use crate::data::{Event, Narrative};
+use crate::data::{Event, EventKind, Narrative};
 
 /// `absorbed` is removed entirely and `survivor` keeps every one of its own fields: no
 /// date is ever averaged, nor read across from the absorbed side.
@@ -468,7 +468,7 @@ pub const TITLE_JACCARD_THRESHOLD: f64 = 0.70;
 /// A candidate, not a verdict: deciding that a candidate is unlisted needs the curated
 /// tables, so that half lives in the ETL validator.
 pub fn cross_book_duplicate_candidate(a: &Event, b: &Event) -> bool {
-    if a.kind != "event" || b.kind != "event" {
+    if a.kind != EventKind::Event || b.kind != EventKind::Event {
         return false;
     }
     if !a.when.intersects(&b.when) {
@@ -833,8 +833,8 @@ mod tests {
     fn cross_book_duplicate_candidate_false_for_general_kind_events() {
         let mut a = dated_event("a", "Paul arrives at Rome", 60, &["rome"]);
         let mut b = dated_event("b", "Paul arrives at Rome", 60, &["rome"]);
-        a.kind = "general".into();
-        b.kind = "general".into();
+        a.kind = EventKind::General;
+        b.kind = EventKind::General;
         assert!(
             !cross_book_duplicate_candidate(&a, &b),
             "a general-kind (undated in spirit) passage is out of scope for a TIMELINE-node duplicate check"

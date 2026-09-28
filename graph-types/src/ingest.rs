@@ -13,13 +13,16 @@ pub struct Provenance {
     pub confidence: Confidence,
 }
 
-/// A corpus's TEXT takes its confidence from that corpus's role, never from a per-assertion
-/// claim: `CanonicalText` if and only if the role is `NormaNormans`, so an adapter cannot
-/// claim canonical standing for extrabiblical text.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Confidence {
-    CanonicalText,
-    Curated,
-    Imported,
-    Derived,
+// A corpus's TEXT takes its confidence from that corpus's role, never from a per-assertion
+// claim: `CanonicalText` if and only if the role is `NormaNormans`, so an adapter cannot
+// claim canonical standing for extrabiblical text.
+crate::vocabulary! {
+    /// How a claim was arrived at.
+    #[derive(PartialOrd, Ord, Hash)]
+    Confidence {
+        CanonicalText,
+        Curated,
+        Imported,
+        Derived,
+    }
 }

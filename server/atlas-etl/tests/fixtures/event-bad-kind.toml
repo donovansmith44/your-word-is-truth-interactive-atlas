@@ -1,0 +1,5 @@
+[[event]]
+id = "bogus_kind"
+label = "A container of no known kind"
+kind = "chapter"
+verses = ["MAT.27.1"]

@@ -42,3 +42,7 @@ Feature: TextWindowQuery -- a window of verses with annotation spans
   Scenario: an unknown corpus is bad_corpus
     When I run TextWindowQuery for "JHN.3.16" radius 1 with corpus "not-a-real-corpus"
     Then the request fails with status 400 and code "bad_corpus"
+
+  Scenario: an unknown scope is bad_scope
+    When I run TextWindowQuery for "JHN.3.16" radius 1 with scope "not-a-real-scope"
+    Then the request fails with status 400 and code "bad_scope"

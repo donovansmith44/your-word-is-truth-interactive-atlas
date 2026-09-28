@@ -348,14 +348,14 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
         "jer_jeremiahs_release_and_the_word_to_ebedmelech",
     ] {
         let e = events.iter().find(|e| e.id == id).unwrap_or_else(|| panic!("'{id}' must exist in the real compiled event set"));
-        assert_eq!(e.kind, "event", "'{id}' must be a real dated EVENT-kind node");
+        assert_eq!(e.kind, atlas_core::data::EventKind::Event, "'{id}' must be a real dated EVENT-kind node");
     }
     for id in ["exl_jerusalem", "jer_jeremiah_stays_with_gedaliah", "jer_the_assassination_of_gedaliah"] {
         let e = events.iter().find(|e| e.id == id).unwrap();
         assert!(!e.witnesses.is_empty(), "'{id}' must carry >=1 witness row after the fix round 1 reconciliation");
     }
 
-    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event).collect();
     let mut unlisted: Vec<String> = Vec::new();
     for (i, a) in dated.iter().enumerate() {
         for b in dated[i + 1..].iter() {

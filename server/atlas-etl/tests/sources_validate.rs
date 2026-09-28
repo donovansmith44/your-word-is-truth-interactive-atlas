@@ -69,9 +69,8 @@ fn the_compiled_sources_json_actually_carries_the_provenance_table() {
     );
 }
 
-#[test]
-fn a_malformed_provenance_row_fails_validation_loudly() {
-    const BASE: &str = r#"
+/// One category and one source, so a `[[provenance]]` row under it names something real.
+const PROVENANCE_BASE: &str = r#"
 [[category]]
 id = "c"
 label = "C"
@@ -86,8 +85,17 @@ license = "z"
 licenses_row_key = "k"
 "#;
 
+const CONFIDENCE_REFUSAL: &str = "sources.toml: invalid TOML or does not match the [[category]]/[[source]]/[[provenance]] schema: TOML parse error at line 18, column 14
+   |
+18 | confidence = \"Probably\"
+   |              ^^^^^^^^^^
+unknown variant `Probably`, expected one of `CanonicalText`, `Curated`, `Imported`, `Derived`
+";
+
+#[test]
+fn a_malformed_provenance_row_fails_validation_loudly() {
     let check = |extra: &str, needle: &str, why: &str| {
-        let doc = atlas_etl::sources::parse_sources(&format!("{BASE}{extra}")).expect("the fixture must parse");
+        let doc = atlas_etl::sources::parse_sources(&format!("{PROVENANCE_BASE}{extra}")).expect("the fixture must parse");
         let err = atlas_etl::sources::validate_structure(&doc).expect_err(why);
         assert!(err.to_string().contains(needle), "expected an error mentioning '{needle}', got: {err}");
     };
@@ -101,17 +109,6 @@ confidence = "Imported"
 "#,
         "undeclared source",
         "a provenance row naming no source must fail -- it would resolve to nothing at the UI, the fail-loud law's own silent-blank failure mode",
-    );
-
-    check(
-        r#"
-[[provenance]]
-id = "p"
-source = "s"
-confidence = "Probably"
-"#,
-        "confidence",
-        "an off-vocabulary confidence must fail -- it would render a label no ingest::Confidence variant backs",
     );
 
     check(
@@ -141,4 +138,19 @@ locator = "   "
         "empty locator",
         "a blank locator must fail -- omit the key instead of rendering 'Locator: '",
     );
+}
+
+#[test]
+fn a_confidence_outside_the_four_is_refused_by_the_parse() {
+    // Arrange
+    let off_vocabulary = format!("{PROVENANCE_BASE}
+[[provenance]]
+id = \"p\"
+source = \"s\"
+confidence = \"Probably\"
+");
+    // Act
+    let refused = atlas_etl::sources::parse_sources(&off_vocabulary).expect_err("a confidence no member answers to must not even parse");
+    // Assert
+    assert_eq!(format!("{refused:#}"), CONFIDENCE_REFUSAL);
 }

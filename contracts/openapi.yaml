@@ -40,18 +40,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatechismItem'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
@@ -102,7 +90,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/CatechismRef'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -160,7 +148,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Chapter'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -217,18 +205,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Contents'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
@@ -304,18 +280,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventDetail'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
@@ -363,7 +327,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/KretzmannChapter'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -446,18 +410,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NarrativeEventPositions'
-        '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
@@ -521,7 +473,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NodeCard'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -598,7 +550,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EdgePage'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_kind`).
           content:
             application/json:
               schema:
@@ -656,8 +608,9 @@ paths:
       description: |-
         `{id}` is a place id handed back by another response; an id naming no place
         is `not_found`. The optional `from` and `to` years choose the period whose
-        name and description the history reports -- neither is required, and a window
-        that cannot be read simply leaves the place's default name in place.
+        name and description the history reports -- neither is required, and a period
+        only one of them names simply leaves the place's default name in place. A year
+        that is not a year is `bad_window`.
       operationId: place
       parameters:
       - name: id
@@ -684,7 +637,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlaceDetail'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_window`.
           content:
             application/json:
               schema:
@@ -751,7 +704,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Polities'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_window`.
           content:
             application/json:
               schema:
@@ -817,7 +770,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Scene'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_window`.
           content:
             application/json:
               schema:
@@ -876,7 +829,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Scene'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -937,10 +890,11 @@ paths:
         `corpus=concord` (`corpus` is `bible` unless given, anything else is
         `bad_corpus`); a malformed reference is `bad_ref` and one naming nothing in
         the corpus is `not_found`. `n` defaults to 1 and caps at 500, and
-        `dir=backward` ends the window at `ref` instead of starting it there.
-        `scope=chapter` covers the whole chapter named instead, and takes neither `n`
-        nor `dir=backward` -- the combination is `bad_dir`. The response's `next` is
-        the reference one step further on, absent at the end of the corpus.
+        `dir=backward` ends the window at `ref` instead of starting it there; a `dir`
+        that is neither is `bad_dir`. `scope=chapter` covers the whole chapter named
+        instead, and takes neither `n` nor `dir=backward` -- the combination is
+        `bad_dir`, and a `scope` outside the two is `bad_scope`. The response's `next`
+        is the reference one step further on, absent at the end of the corpus.
       operationId: text_window
       parameters:
       - name: ref
@@ -958,23 +912,17 @@ paths:
         in: query
         required: false
         schema:
-          type: string
+          $ref: '#/components/schemas/WindowDir'
       - name: scope
         in: query
         required: false
         schema:
-          type: string
-          description: |-
-            How much text one window of `/api/text` covers: the units around the
-            reference asked for, or the whole chapter that reference names.
-          enum:
-          - verse
-          - chapter
+          $ref: '#/components/schemas/TextScope'
       - name: corpus
         in: query
         required: false
         schema:
-          type: string
+          $ref: '#/components/schemas/Corpus'
       responses:
         '200':
           content:
@@ -982,7 +930,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TextWindow'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_dir`, `bad_scope`, `bad_corpus`).
           content:
             application/json:
               schema:
@@ -1040,7 +988,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerseDetail'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -1100,7 +1048,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/CrossRef'
         '400':
-          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_window`, `bad_kind`, `bad_dir`, `bad_corpus`).
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
           content:
             application/json:
               schema:
@@ -1315,6 +1263,14 @@ components:
           items:
             $ref: '#/components/schemas/Verse'
       additionalProperties: false
+    Confidence:
+      type: string
+      description: How a claim was arrived at.
+      enum:
+      - CanonicalText
+      - Curated
+      - Imported
+      - Derived
     Contents:
       type: object
       description: One corpus's contents, as a tree two levels deep.
@@ -1654,10 +1610,7 @@ components:
         id:
           type: string
         kind:
-          type: string
-          description: |-
-            `event` for something that happened at a date, `general` for a titled
-            passage that has none.
+          $ref: '#/components/schemas/EventKind'
         kjv_superscription:
           type:
           - string
@@ -1720,6 +1673,14 @@ components:
             The sources behind the passages that narrate this event, for this event
             rather than for the corpus. Omitted when there are none.
       additionalProperties: false
+    EventKind:
+      type: string
+      description: |-
+        Which kind of container this is: an `event`, something that happened at a
+        date, or a `general` titled passage, which has none.
+      enum:
+      - event
+      - general
     EventWitness:
       type: object
       description: |-
@@ -1775,8 +1736,7 @@ components:
             True when this verse carries on coverage that began in an earlier chapter
             rather than opening it, so a reader can render it as a continued heading.
         kind:
-          type: string
-          description: '`event` for a dated happening, `general` for a titled passage that has none.'
+          $ref: '#/components/schemas/EventKind'
         title:
           type: string
           description: The heading as a reader sees it.
@@ -1891,8 +1851,7 @@ components:
       - lon
       properties:
         kind:
-          type: string
-          description: '`water`, `mountain` or `region`.'
+          $ref: '#/components/schemas/LandmarkKind'
         lat:
           type: number
           format: double
@@ -1904,12 +1863,26 @@ components:
         name:
           type: string
         size:
-          type:
-          - string
-          - 'null'
-          description: |-
-            A size hint -- `sm`, `md` or `lg` -- for a label meant to stay readable when
-            zoomed out; absent for most landmarks.
+          oneOf:
+          - $ref: '#/components/schemas/LandmarkSize'
+            description: |-
+              A size hint for a label meant to stay readable when zoomed out; absent for
+              most landmarks.
+          - type: 'null'
+    LandmarkKind:
+      type: string
+      description: Which sort of always-on map label this is.
+      enum:
+      - water
+      - mountain
+      - region
+    LandmarkSize:
+      type: string
+      description: How large a landmark's label is drawn, smallest first.
+      enum:
+      - sm
+      - md
+      - lg
     Narrative:
       type: object
       description: |-
@@ -2365,10 +2338,7 @@ components:
       - confidence
       properties:
         confidence:
-          type: string
-          description: |-
-            How the claim was arrived at: `CanonicalText`, `Curated`, `Imported` or
-            `Derived`.
+          $ref: '#/components/schemas/Confidence'
         id:
           type: string
           description: The provenance id exactly as a record carries it.
@@ -2715,6 +2685,14 @@ components:
       enum:
       - OT
       - NT
+    TextScope:
+      type: string
+      description: |-
+        How much text one window of `/api/text` covers: the units around the
+        reference asked for, or the whole chapter that reference names.
+      enum:
+      - verse
+      - chapter
     TextUnit:
       type: object
       description: |-
@@ -2917,10 +2895,7 @@ components:
         id:
           type: string
         kind:
-          type: string
-          description: |-
-            `event` for something that happened at a date, `general` for a titled
-            passage that has none.
+          $ref: '#/components/schemas/EventKind'
         label:
           type: string
         places:
@@ -2971,6 +2946,14 @@ components:
             type: string
           description: The verse numbers and ranges covered, such as `3` or `3-5`.
       additionalProperties: false
+    WindowDir:
+      type: string
+      description: |-
+        Which way a window runs from the reference it is anchored on: onward from that
+        reference, or backward to it.
+      enum:
+      - onward
+      - backward
     WordsOfChristSpan:
       type: object
       description: |-

@@ -10,7 +10,7 @@ use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, NoRefusals};
 use crate::reading::drain_edges;
 use crate::wire;
 
@@ -19,7 +19,7 @@ use crate::wire;
 /// `{id}` is an event id handed back by another response; an id naming no event
 /// is `not_found`. An event that is a leg of no narrative answers an empty
 /// `narrative` list, and one with no date carries no `timeline` at all.
-#[utoipa::path(get, path = "/api/narrative/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NarrativeEventPositions), ApiError), tag = "events")]
+#[utoipa::path(get, path = "/api/narrative/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NarrativeEventPositions), NoRefusals), tag = "events")]
 pub async fn narrative_event_positions(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
@@ -109,7 +109,7 @@ pub async fn narrative_event_positions(
 ///
 /// `{id}` is an event id handed back by another response; an id naming no event
 /// is `not_found`. A titled passage with no date carries no `when`.
-#[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), ApiError), tag = "events")]
+#[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), NoRefusals), tag = "events")]
 pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventDetail>, ApiError> {
     let snap = graph.snapshot();
     let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap, &graph.chronology.chrono).ok_or_else(|| ApiError::not_found("event"))?;
@@ -118,7 +118,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     // A general-kind passage carries `TimeRange::undated()` -- the whole atlas span
     // -- which would intersect every curated period-name range and let a period name
     // be picked for a passage that has no date at all.
-    let window = if e.kind == "event" { Some(e.when) } else { None };
+    let window = if e.kind == atlas_core::data::EventKind::Event { Some(e.when) } else { None };
     let places = e
         .places
         .iter()
@@ -168,7 +168,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     Ok(Json(wire::EventDetail {
         id: e.id.clone(),
         title: e.label.clone(),
-        kind: e.kind.clone(),
+        kind: e.kind,
         when,
         places,
         witnesses,

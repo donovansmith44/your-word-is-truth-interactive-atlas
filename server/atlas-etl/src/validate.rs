@@ -21,15 +21,6 @@ use crate::polities::{ring_is_simple, Bbox};
 const ATLAS_START_YEAR: i32 = -4004;
 const ATLAS_END_YEAR: i32 = 100;
 
-const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
-
-/// The curated event kinds: `event`, with a real date and place, or `general`, a dateless and placeless titled
-/// container.
-const ALLOWED_EVENT_KINDS: [&str; 2] = ["event", "general"];
-
-/// The optional curated size hint. Absent is always valid: only a PRESENT value is checked against this set.
-const ALLOWED_LANDMARK_SIZES: [&str; 3] = ["sm", "md", "lg"];
-
 pub fn run(data: &AtlasData) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -69,10 +60,6 @@ pub fn run(data: &AtlasData) -> Result<()> {
         }
         if e.when.to_year < ATLAS_START_YEAR || e.when.to_year > ATLAS_END_YEAR {
             errors.push(format!("event '{}': to_year {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]", e.id, e.when.to_year));
-        }
-
-        if !ALLOWED_EVENT_KINDS.contains(&e.kind.as_str()) {
-            errors.push(format!("event '{}' has invalid kind '{}' (expected one of {:?})", e.id, e.kind, ALLOWED_EVENT_KINDS));
         }
 
         // Every witness must name a real canon book and cite at least one verse: an authored-but-empty witness is a
@@ -199,26 +186,13 @@ pub fn run(data: &AtlasData) -> Result<()> {
     bail!("validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Every kind and every present size must be in its allowed set, and every coordinate must fall inside `bbox`:
-/// a landmark the map can never show is a curation bug, not a fact worth silently keeping.
+/// Every coordinate must fall inside `bbox`: a landmark the map can never show is a curation bug, not a fact
+/// worth silently keeping. The kind and the size need no check -- each is a closed vocabulary, refused by the
+/// curated file's own parse.
 pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
     for l in landmarks {
-        if !ALLOWED_LANDMARK_KINDS.contains(&l.kind.as_str()) {
-            errors.push(format!(
-                "landmark '{}' has invalid kind '{}' (expected one of {:?})",
-                l.name, l.kind, ALLOWED_LANDMARK_KINDS
-            ));
-        }
-        if let Some(size) = &l.size {
-            if !ALLOWED_LANDMARK_SIZES.contains(&size.as_str()) {
-                errors.push(format!(
-                    "landmark '{}' has invalid size '{}' (expected one of {:?})",
-                    l.name, size, ALLOWED_LANDMARK_SIZES
-                ));
-            }
-        }
         if !bbox.contains(l.lat, l.lon) {
             errors.push(format!("landmark '{}' at (lat={}, lon={}) is outside the clip bbox", l.name, l.lat, l.lon));
         }
@@ -758,7 +732,7 @@ pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[E
         listed.insert((pair.b, pair.a));
     }
 
-    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event).collect();
     let mut unlisted: Vec<String> = Vec::new();
     for (i, a) in dated.iter().enumerate() {
         for b in dated[i + 1..].iter() {
@@ -790,7 +764,7 @@ pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[E
 pub fn run_no_two_opinions(distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
     let exempt: HashSet<(&str, &str)> = distinct_pairs.iter().flat_map(|p| [(p.a, p.b), (p.b, p.a)]).collect();
 
-    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
+    let dated: Vec<&Event> = events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event).collect();
 
     // book code -> the indices of every event touching it, so a pair is only ever compared once they share a
     // book.

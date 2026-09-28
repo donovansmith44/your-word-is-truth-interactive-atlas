@@ -51,19 +51,14 @@ pub struct ProvenanceEntry {
     pub id: String,
     /// The id of the source this is a claim by.
     pub source: String,
-    /// How the claim was arrived at: `CanonicalText`, `Curated`, `Imported` or
-    /// `Derived`.
-    pub confidence: String,
+    pub confidence: Confidence,
     /// What inside the named source this id draws on, absent when the source's own
     /// description already says.
     #[serde(default)]
     pub locator: Option<String>,
 }
 
-/// Spelled out rather than imported: `atlas-core` does not depend on the graph-types
-/// crate, and the value on the wire is a string either way, so this is the one place
-/// a typo in the curated sources file is caught.
-pub const CONFIDENCE_VOCABULARY: &[&str] = &["CanonicalText", "Curated", "Imported", "Derived"];
+pub use atlas_graph_types::ingest::Confidence;
 
 /// A provenance id is `kind` or `kind/locator`, split at the FIRST slash so a
 /// multi-segment locator such as `jeremiah/1` stays intact. The kind half is the

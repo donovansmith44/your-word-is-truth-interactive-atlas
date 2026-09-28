@@ -2,7 +2,7 @@
 //! function here reads ONLY through `atlas_graph_types::store::GraphQuery`, never a raw `Graph`
 //! field, so it behaves identically against a from-sources build and a loaded snapshot.
 
-use atlas_core::data::{Event, EventWitness, Narrative, Place};
+use atlas_core::data::{Event, EventKind, EventWitness, Narrative, Place};
 use atlas_core::time::TimeRange;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::{EdgeEntry, EdgeQuery};
@@ -25,6 +25,16 @@ fn drain(q: &impl GraphQuery, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
         }
     }
     out
+}
+
+/// The kind a node payload carries, read back from the bare string it was written from. Only the dated kind
+/// is distinguished, exactly as the untyped comparison this replaces did, so a payload written by anything but
+/// this atlas reads as an undated container rather than failing a whole reconstruction.
+pub fn event_kind(payload_kind: &str) -> EventKind {
+    match EventKind::named(payload_kind) {
+        Some(kind) => kind,
+        None => EventKind::General,
+    }
 }
 
 /// `places` comes from `located-at` forward edges in row order, so `places[0]` is still the true
@@ -64,7 +74,7 @@ pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery, chrono: &crate::even
         when: TimeRange { from_year, to_year },
         places,
         verses,
-        kind,
+        kind: event_kind(&kind),
         witnesses,
         robertson_section,
         acts_section,
@@ -107,5 +117,20 @@ pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
     match &l.at {
         TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),
         TextRef::Concord(_) => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_the_dated_kind_is_distinguished_in_a_payloads_own_spelling_of_it() {
+        // Arrange
+        let written = ["event", "general", "chapter"];
+        // Act
+        let read: Vec<EventKind> = written.iter().map(|payload_kind| event_kind(payload_kind)).collect();
+        // Assert
+        assert_eq!(read, vec![EventKind::Event, EventKind::General, EventKind::General]);
     }
 }

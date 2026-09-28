@@ -99,7 +99,7 @@ mod tests {
                 when: crate::time::TimeRange::new(1, 1).unwrap(),
                 places: vec!["p1".into()],
                 verses: vec![],
-                kind: "event".into(),
+                kind: crate::data::EventKind::Event,
                 ..Default::default()
             },
             Event {
@@ -108,7 +108,7 @@ mod tests {
                 when: crate::time::TimeRange::undated(),
                 places: vec![],
                 verses: vec![],
-                kind: "general".into(),
+                kind: crate::data::EventKind::General,
                 ..Default::default()
             },
         ];

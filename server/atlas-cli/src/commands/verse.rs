@@ -1,6 +1,6 @@
 //! `bibex verse <ref>` -- a verse's text, its red-letter marks and what attaches to it.
 
-use atlas_core::data::AtlasData;
+use atlas_core::data::{AtlasData, EventKind};
 use atlas_core::history::resolve_display_name;
 use atlas_graph::window;
 use atlas_graph::GraphService;
@@ -93,8 +93,8 @@ fn resolve_kjv(graph: &GraphService, data: &AtlasData, ref_raw: &str, text_id: &
     // Split by kind: a dated, placed passage is an event; an undated one is a passage. Each
     // section is independently empty when its own kind has no entries.
     let all_events: Vec<&atlas_core::data::Event> = scene_source.events_for_verse(&sref).iter().filter_map(|eid| scene_source.event(eid)).collect();
-    let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == "event").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
-    let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == "general").map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
+    let events: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::Event).map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
+    let passages: Vec<Attached> = all_events.iter().filter(|e| e.kind == EventKind::General).map(|e| attached(NodeKind::Event, &e.id, e.label.clone())).collect();
 
     Ok(ResolvedKjvVerse { sref, text, spans, places, persons, events, passages })
 }

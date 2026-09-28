@@ -71,7 +71,7 @@ pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, Heading>
         let (b, c, v): (i64, i64, i64) = (r.get(0)?, r.get(1)?, r.get(2)?);
         out.insert(
             dot_ref(b as u8, c as u16, v as u16),
-            Heading { event_id: r.get(3)?, title: r.get(4)?, kind: r.get(5)?, is_continuation: r.get::<_, i64>(6)? != 0 },
+            Heading { event_id: r.get(3)?, title: r.get(4)?, kind: crate::legacy::event_kind(&r.get::<_, String>(5)?), is_continuation: r.get::<_, i64>(6)? != 0 },
         );
     }
     Ok(out)

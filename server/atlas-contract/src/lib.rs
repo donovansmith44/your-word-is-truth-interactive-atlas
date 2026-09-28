@@ -13,11 +13,21 @@ pub mod load;
 pub mod map;
 pub mod meta;
 pub mod places;
+pub mod query;
 pub mod reading;
+pub mod reference;
 pub mod wire;
 
+/// The vocabularies that reach this document only as query parameters: no response
+/// body carries one, so nothing else registers them, and a parameter's reference to
+/// one must resolve.
+#[derive(utoipa::OpenApi)]
+#[openapi(components(schemas(wire::TextScope, atlas_graph::window::WindowDir)))]
+struct QueryVocabularies;
+
 pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
-    utoipa_axum::router::OpenApiRouter::new()
+    use utoipa::OpenApi;
+    utoipa_axum::router::OpenApiRouter::with_openapi(QueryVocabularies::openapi())
         .merge(meta::routes())
         .merge(map::routes())
         .merge(reading::routes())

@@ -4,7 +4,7 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use atlas_core::data::{AtlasData, ChronologyAnchor, Event};
+use atlas_core::data::{AtlasData, ChronologyAnchor, Event, EventKind};
 
 use atlas_graph_types::chrono::{
     DatePlacement, Duration, PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year,
@@ -48,7 +48,7 @@ pub struct ChronologyDerivation {
 /// that array is already stably sorted by `from_year`, the pre-sort index is an exact stand-in for
 /// original construction order, so this single sort reproduces the source's two-stage stable sort.
 fn timeline_order(atlas: &AtlasData) -> Vec<String> {
-    let dated: Vec<&Event> = atlas.events.iter().filter(|e| e.kind == "event").collect();
+    let dated: Vec<&Event> = atlas.events.iter().filter(|e| e.kind == EventKind::Event).collect();
     let mut keyed: Vec<(usize, &Event)> = dated.into_iter().enumerate().collect();
     keyed.sort_by_key(|(idx, e)| (e.when.from_year, e.order_key, *idx));
     keyed.into_iter().map(|(_, e)| e.id.clone()).collect()
@@ -218,7 +218,7 @@ impl Chronology {
         atlas
             .events
             .iter()
-            .filter(|e| e.kind == "event")
+            .filter(|e| e.kind == EventKind::Event)
             .map(|e| (e.id.clone(), TimePoint::year_only(Year::new(e.when.from_year).expect("dated event year is never 0"))))
             .collect()
     }
@@ -297,7 +297,7 @@ fn event_node(e: &Event) -> Node {
         id: EventId::new(e.id.clone()).erase(),
         payload: NodePayload::Event {
             label: e.label.clone(),
-            kind: e.kind.clone(),
+            kind: e.kind.name().to_string(),
             verses: e.verses.clone(),
             witnesses,
             robertson_section: e.robertson_section.clone(),
@@ -365,7 +365,7 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
         let node = event_node(e);
         graph.nodes.insert(node.id.clone(), node);
         stats.events += 1;
-        if e.kind == "event" {
+        if e.kind == EventKind::Event {
             stats.dated_events += 1;
         }
 
@@ -704,7 +704,7 @@ mod tests {
     #[test]
     fn general_kind_events_are_excluded_from_the_timeline_and_get_no_dated_by_row() {
         let mut general = event("g1", -4004, 0);
-        general.kind = "general".to_string();
+        general.kind = EventKind::General;
         general.when = atlas_core::time::TimeRange::undated();
         let atlas = atlas_with(vec![event("e1", -1000, 0), general], vec![], vec![anchor("a", -1000, Some("e1"))]);
         let chrono = derive_chronology(&atlas);

@@ -9,12 +9,15 @@ use atlas_graph_types::text::TranslationId;
 
 use crate::kjv_adapter::KJV_TRANSLATION;
 
-/// Direction of a windowed reading-order query. `GraphQuery::reading_window` takes a plain `start`
-/// with no direction, so which spine index the same slice starts from is this crate's concern.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WindowDir {
-    Onward,
-    Backward,
+// `GraphQuery::reading_window` takes a plain `start` with no direction, so which spine index
+// the same slice starts from is this crate's concern.
+atlas_graph_types::vocabulary! {
+    /// Which way a window runs from the reference it is anchored on: onward from that
+    /// reference, or backward to it.
+    WindowDir {
+        Onward => "onward",
+        Backward => "backward",
+    }
 }
 
 /// Which spine index a `window` call starts its slice from -- exposed so a caller computing a next

@@ -39,9 +39,7 @@ pub struct NarrativePosition {
 pub struct EventDetail {
     pub id: String,
     pub title: String,
-    /// `event` for something that happened at a date, `general` for a titled
-    /// passage that has none.
-    pub kind: String,
+    pub kind: atlas_core::data::EventKind,
     /// The years the event spans; absent for a titled passage that has no date.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub when: Option<TimeRange>,

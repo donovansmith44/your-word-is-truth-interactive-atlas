@@ -28,6 +28,7 @@ pub const FIXTURES: &[(&str, &str)] = &[
     ("text-window-mat-5-4", "/api/text?ref=MAT.5.4&n=1"),
     ("text-window-chapter-backward-bad-dir", "/api/text?ref=JHN.3&scope=chapter&dir=backward"),
     ("text-window-bad-corpus", "/api/text?ref=JHN.3.16&n=1&corpus=not-a-real-corpus"),
+    ("text-window-bad-scope", "/api/text?ref=JHN.3.16&n=1&scope=not-a-real-scope"),
     ("scene-time", "/api/scene?from=-2100&to=-2000"),
     ("scene-scripture", "/api/scene/scripture?ref=JHN.3.16"),
     ("scene-bad-window", "/api/scene?from=100&to=-100"),

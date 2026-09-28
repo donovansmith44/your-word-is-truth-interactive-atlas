@@ -9,7 +9,7 @@ use atlas_graph_types::store::GraphQuery;
 use axum::extract::{Path, State};
 use axum::Json;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, NoRefusals};
 use crate::graph_wire::encode_node_id;
 use crate::wire;
 
@@ -20,7 +20,7 @@ const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::F
 /// `{corpus}` is `bible` or `concord`; anything else is `not_found`. Every entry
 /// carries the reference to open for it, how many members it holds, and, for a
 /// book, which half of the canon it belongs to.
-#[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), ApiError), tag = "contents")]
+#[utoipa::path(get, path = "/api/contents/{corpus}", params(("corpus" = String, Path)), responses((status = 200, body = wire::Contents), NoRefusals), tag = "contents")]
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
