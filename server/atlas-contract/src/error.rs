@@ -12,19 +12,25 @@ use atlas_graph::window::WindowDir;
 use crate::query;
 use crate::wire::{Corpus, TextScope};
 
-pub const BAD_WINDOW: &str = "bad_window";
-pub const BAD_REF: &str = "bad_ref";
-pub const BAD_KIND: &str = "bad_kind";
-pub const BAD_DIR: &str = "bad_dir";
-pub const BAD_SCOPE: &str = "bad_scope";
-pub const BAD_CORPUS: &str = "bad_corpus";
-pub const NOT_FOUND: &str = "not_found";
-pub const INTERNAL: &str = "internal";
+atlas_graph_types::vocabulary! {
+    /// Why this API refused a request: the one word a consumer branches on, beside
+    /// which the message is prose for a reader.
+    ErrorCode {
+        BadRef => "bad_ref",
+        BadKind => "bad_kind",
+        BadScope => "bad_scope",
+        BadWindow => "bad_window",
+        BadCorpus => "bad_corpus",
+        BadDir => "bad_dir",
+        NotFound => "not_found",
+        Internal => "internal",
+    }
+}
 
 #[derive(Debug)]
 pub struct ApiError {
     pub status: StatusCode,
-    pub code: &'static str,
+    pub code: ErrorCode,
     pub message: String,
 }
 
@@ -32,57 +38,57 @@ impl ApiError {
     pub fn bad_window() -> Self {
         Self {
             status: StatusCode::BAD_REQUEST,
-            code: BAD_WINDOW,
+            code: ErrorCode::BadWindow,
             message: "from/to must both be present, non-zero integers with from <= to".into(),
         }
     }
 
     pub fn bad_ref(raw: &str) -> Self {
-        Self { status: StatusCode::BAD_REQUEST, code: BAD_REF, message: format!("invalid scripture reference: '{raw}'") }
+        Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadRef, message: format!("invalid scripture reference: '{raw}'") }
     }
 
     pub fn not_found(what: &str) -> Self {
-        Self { status: StatusCode::NOT_FOUND, code: NOT_FOUND, message: format!("{what} not found") }
+        Self { status: StatusCode::NOT_FOUND, code: ErrorCode::NotFound, message: format!("{what} not found") }
     }
 
     pub fn bad_kind(raw: &str) -> Self {
-        Self { status: StatusCode::BAD_REQUEST, code: BAD_KIND, message: format!("unknown or missing edge kind: '{raw}'") }
+        Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadKind, message: format!("unknown or missing edge kind: '{raw}'") }
     }
 
     /// The refusals that are not about one word but about a combination of them: a
     /// window whose scope and direction cannot both be honoured. They carry
     /// `unknown_dir`'s code because the direction is what the caller must change.
     pub fn bad_dir(message: impl Into<String>) -> Self {
-        Self { status: StatusCode::BAD_REQUEST, code: BAD_DIR, message: message.into() }
+        Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadDir, message: message.into() }
     }
 
     pub fn unknown_dir(raw: &str) -> Self {
         let [leading @ .., last] = WindowDir::ALL.map(WindowDir::name);
-        unknown_word(BAD_DIR, query::DIR, raw, &leading, last)
+        unknown_word(ErrorCode::BadDir, query::DIR, raw, &leading, last)
     }
 
     pub fn bad_scope(raw: &str) -> Self {
         let [leading @ .., last] = TextScope::ALL.map(TextScope::name);
-        unknown_word(BAD_SCOPE, query::SCOPE, raw, &leading, last)
+        unknown_word(ErrorCode::BadScope, query::SCOPE, raw, &leading, last)
     }
 
     pub fn bad_corpus(raw: &str) -> Self {
         let [leading @ .., last] = Corpus::ALL.map(Corpus::name);
-        unknown_word(BAD_CORPUS, query::CORPUS, raw, &leading, last)
+        unknown_word(ErrorCode::BadCorpus, query::CORPUS, raw, &leading, last)
     }
 
     /// A server-side invariant this API cannot serve around. Distinct from
     /// `not_found`: the resource exists, and this project's own data about it is
     /// incomplete, which must never reach a reader as a blank or a guess.
     pub fn internal(message: &str) -> Self {
-        Self { status: StatusCode::INTERNAL_SERVER_ERROR, code: INTERNAL, message: message.to_string() }
+        Self { status: StatusCode::INTERNAL_SERVER_ERROR, code: ErrorCode::Internal, message: message.to_string() }
     }
 }
 
 /// A query parameter whose word names no member of its own closed vocabulary. The
 /// words it could have been are read off that vocabulary, so a member added to one
 /// can never be missing from the refusal that lists it.
-fn unknown_word(code: &'static str, parameter: &str, raw: &str, leading: &[&str], last: &str) -> ApiError {
+fn unknown_word(code: ErrorCode, parameter: &str, raw: &str, leading: &[&str], last: &str) -> ApiError {
     ApiError {
         status: StatusCode::BAD_REQUEST,
         code,
@@ -110,13 +116,13 @@ pub struct ErrorBody {
 #[derive(Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ErrorInner {
-    pub code: String,
+    pub code: ErrorCode,
     pub message: String,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let body = ErrorBody { error: ErrorInner { code: self.code.to_string(), message: self.message } };
+        let body = ErrorBody { error: ErrorInner { code: self.code, message: self.message } };
         (self.status, Json(body)).into_response()
     }
 }
@@ -131,7 +137,7 @@ macro_rules! refusals {
 
         impl IntoResponses for $name {
             fn responses() -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
-                refusal_responses(&[$($code),*])
+                refusal_responses(&[$(ErrorCode::$code),*])
             }
         }
     )+};
@@ -142,18 +148,18 @@ refusals! {
     /// path segment, and one that names nothing is `not_found` rather than unreadable.
     NoRefusals {}
     /// A route that reads a reference.
-    ReferenceRefusals { BAD_REF }
+    ReferenceRefusals { BadRef }
     /// A route that reads a span of years.
-    WindowRefusals { BAD_WINDOW }
+    WindowRefusals { BadWindow }
     /// A route that reads a reference and which of a node's frontiers to answer.
-    FrontierRefusals { BAD_REF, BAD_KIND }
+    FrontierRefusals { BadRef, BadKind }
     /// A route that reads a reference and every word a reading window is asked with.
-    ReadingWindowRefusals { BAD_REF, BAD_DIR, BAD_SCOPE, BAD_CORPUS }
+    ReadingWindowRefusals { BadRef, BadDir, BadScope, BadCorpus }
 }
 
 /// A route that can refuse no word publishes no 400 at all, so the document never
 /// advertises a refusal a route cannot make.
-fn refusal_responses(codes: &[&str]) -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
+fn refusal_responses(codes: &[ErrorCode]) -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
     let json = || ContentBuilder::new().schema(Some(Ref::from_schema_name(ErrorBody::name()))).build();
     let mut responses = ResponsesBuilder::new();
     if !codes.is_empty() {
@@ -172,8 +178,8 @@ const INCOMPLETE: &str = "The request was well formed but this atlas's own data 
 
 /// One route's 400 sentence. A route with a single code names it outright; a route
 /// with several says which of them the body carries.
-fn unreadable(codes: &[&str]) -> String {
-    let quoted: Vec<String> = codes.iter().map(|code| format!("`{code}`")).collect();
+fn unreadable(codes: &[ErrorCode]) -> String {
+    let quoted: Vec<String> = codes.iter().map(|code| format!("`{}`", code.name())).collect();
     match quoted.as_slice() {
         [only] => format!("{UNREADABLE}is {only}."),
         _ => format!("{UNREADABLE}says which ({}).", quoted.join(", ")),
@@ -197,7 +203,7 @@ mod tests {
     #[test]
     fn a_route_with_one_refusal_names_it_and_a_route_with_several_says_which() {
         // Arrange
-        let sets: [&[&str]; 2] = [&[BAD_WINDOW], &[BAD_REF, BAD_KIND]];
+        let sets: [&[ErrorCode]; 2] = [&[ErrorCode::BadWindow], &[ErrorCode::BadRef, ErrorCode::BadKind]];
         // Act
         let sentences: Vec<String> = sets.iter().map(|codes| unreadable(codes)).collect();
         // Assert

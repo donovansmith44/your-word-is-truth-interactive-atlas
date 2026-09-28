@@ -517,11 +517,24 @@
       ],
       "type": "object"
     },
+    "ErrorCode": {
+      "enum": [
+        "bad_ref",
+        "bad_kind",
+        "bad_scope",
+        "bad_window",
+        "bad_corpus",
+        "bad_dir",
+        "not_found",
+        "internal"
+      ],
+      "type": "string"
+    },
     "ErrorInner": {
       "additionalProperties": false,
       "properties": {
         "code": {
-          "type": "string"
+          "$ref": "#/$defs/ErrorCode"
         },
         "message": {
           "type": "string"

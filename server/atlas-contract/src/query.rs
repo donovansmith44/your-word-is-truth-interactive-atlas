@@ -122,7 +122,7 @@ impl<'de, T: FromStr> Deserialize<'de> for AsGiven<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::{BAD_CORPUS, BAD_DIR, BAD_KIND, BAD_REF, BAD_SCOPE, BAD_WINDOW};
+    use crate::error::ErrorCode;
     use crate::graph::{EdgePageQuery, TextWindowQuery};
     use crate::map::{SceneWindow, ScripturePassage};
     use crate::places::PlacePeriod;
@@ -212,17 +212,17 @@ mod tests {
         assert_eq!(
             refused,
             vec![
-                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
-                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
-                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
-                (400, BAD_REF, UNREADABLE_EMPTY_REF.to_string()),
-                (400, BAD_KIND, UNREADABLE_EMPTY_KIND.to_string()),
-                (400, BAD_KIND, UNREADABLE_KIND.to_string()),
-                (400, BAD_REF, UNREADABLE_EMPTY_REF.to_string()),
-                (400, BAD_SCOPE, UNREADABLE_SCOPE.to_string()),
-                (400, BAD_DIR, UNREADABLE_DIR.to_string()),
-                (400, BAD_CORPUS, UNREADABLE_CORPUS.to_string()),
-                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
+                Some((400, ErrorCode::BadWindow, UNREADABLE_WINDOW.to_string())),
+                Some((400, ErrorCode::BadWindow, UNREADABLE_WINDOW.to_string())),
+                Some((400, ErrorCode::BadWindow, UNREADABLE_WINDOW.to_string())),
+                Some((400, ErrorCode::BadRef, UNREADABLE_EMPTY_REF.to_string())),
+                Some((400, ErrorCode::BadKind, UNREADABLE_EMPTY_KIND.to_string())),
+                Some((400, ErrorCode::BadKind, UNREADABLE_KIND.to_string())),
+                Some((400, ErrorCode::BadRef, UNREADABLE_EMPTY_REF.to_string())),
+                Some((400, ErrorCode::BadScope, UNREADABLE_SCOPE.to_string())),
+                Some((400, ErrorCode::BadDir, UNREADABLE_DIR.to_string())),
+                Some((400, ErrorCode::BadCorpus, UNREADABLE_CORPUS.to_string())),
+                Some((400, ErrorCode::BadWindow, UNREADABLE_WINDOW.to_string())),
             ]
         );
     }
@@ -249,16 +249,16 @@ mod tests {
         assert_eq!(read, vec![NOTHING_REFUSED; 5]);
     }
 
-    const NOTHING_REFUSED: (u16, &str, String) = (0, "", String::new());
+    const NOTHING_REFUSED: Option<(u16, ErrorCode, String)> = None;
 
     /// Driven through the real reader rather than text written out by hand, so a
     /// reader that names the parameter it could not read differently fails here
     /// instead of answering a caller with another parameter's code.
-    async fn refusal<T: ContractParams>(query: &str) -> (u16, &'static str, String) {
+    async fn refusal<T: ContractParams>(query: &str) -> Option<(u16, ErrorCode, String)> {
         let (mut parts, _) = axum::http::Request::builder().uri(format!("/?{query}")).body(()).unwrap().into_parts();
         match Contract::<T>::from_request_parts(&mut parts, &()).await {
             Ok(_) => NOTHING_REFUSED,
-            Err(refused) => (refused.status.as_u16(), refused.code, refused.message),
+            Err(refused) => Some((refused.status.as_u16(), refused.code, refused.message)),
         }
     }
 }

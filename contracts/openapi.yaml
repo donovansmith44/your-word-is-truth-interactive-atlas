@@ -1302,6 +1302,20 @@ components:
         error:
           $ref: '#/components/schemas/ErrorInner'
       additionalProperties: false
+    ErrorCode:
+      type: string
+      description: |-
+        Why this API refused a request: the one word a consumer branches on, beside
+        which the message is prose for a reader.
+      enum:
+      - bad_ref
+      - bad_kind
+      - bad_scope
+      - bad_window
+      - bad_corpus
+      - bad_dir
+      - not_found
+      - internal
     ErrorInner:
       type: object
       required:
@@ -1309,7 +1323,7 @@ components:
       - message
       properties:
         code:
-          type: string
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
       additionalProperties: false

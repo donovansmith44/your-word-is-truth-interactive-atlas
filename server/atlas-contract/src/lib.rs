@@ -23,7 +23,7 @@ pub mod wire;
 /// vocabularies that reach this document only as query parameters, and the body
 /// every route's refusals are answered with.
 #[derive(utoipa::OpenApi)]
-#[openapi(components(schemas(wire::TextScope, atlas_graph::window::WindowDir, error::ErrorBody, error::ErrorInner)))]
+#[openapi(components(schemas(wire::TextScope, atlas_graph::window::WindowDir, error::ErrorBody, error::ErrorInner, error::ErrorCode)))]
 struct ReferencedElsewhere;
 
 pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
