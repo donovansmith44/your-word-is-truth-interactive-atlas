@@ -66,24 +66,7 @@ pub fn node_kind_ordinal(k: NodeKind) -> i64 {
     }
 }
 pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
-    const ALL: [NodeKind; 15] = [
-        NodeKind::TextUnit,
-        NodeKind::Container,
-        NodeKind::Event,
-        NodeKind::Narrative,
-        NodeKind::Place,
-        NodeKind::Person,
-        NodeKind::Anchor,
-        NodeKind::Era,
-        NodeKind::Polity,
-        NodeKind::CatechismItem,
-        NodeKind::Source,
-        NodeKind::Translation,
-        NodeKind::PeopleGroup,
-        NodeKind::CommentaryItem,
-        NodeKind::LexiconEntry,
-    ];
-    ALL.get(usize::try_from(o).ok()?).copied()
+    NodeKind::ALL.get(usize::try_from(o).ok()?).copied()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

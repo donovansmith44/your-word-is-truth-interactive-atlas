@@ -416,6 +416,7 @@
       "type": "object"
     },
     "EdgeKind": {
+      "description": "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.",
       "enum": [
         "contains",
         "member-of",
@@ -1115,6 +1116,7 @@
       "type": "object"
     },
     "NodeKind": {
+      "description": "What kind of thing one node of this atlas stands for.",
       "enum": [
         "TextUnit",
         "Container",
@@ -1471,6 +1473,7 @@
       "type": "object"
     },
     "PositionKind": {
+      "description": "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.",
       "enum": [
         "TextUnit",
         "Container",

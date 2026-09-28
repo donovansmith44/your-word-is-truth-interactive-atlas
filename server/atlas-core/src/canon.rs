@@ -39,7 +39,7 @@ pub const BOOKS: [BookInfo; 66] = [
     BookInfo{code:"JUD",osis:"Jude",name:"Jude"}, BookInfo{code:"REV",osis:"Rev",name:"Revelation"},
 ];
 
-crate::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// Which half of the canon a book belongs to: the Old Testament, or the New.
     Testament {
         Old => "OT",

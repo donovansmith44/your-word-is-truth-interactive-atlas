@@ -94,13 +94,16 @@ pub struct NodeRef {
     pub label: String,
 }
 
-/// A frontier entry's position is not always a node: an edge takes focus too, so
-/// `Edge` is a kind of its own here.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PositionKind {
     Node(NodeKind),
     Edge,
 }
+
+/// The description this vocabulary publishes. It is a constant rather than a doc
+/// comment because the schema below is hand-written, and a doc comment would be a
+/// second copy of the same sentence.
+const POSITION_KIND: &str = "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.";
 
 impl PositionKind {
     pub fn name(self) -> &'static str {
@@ -111,6 +114,8 @@ impl PositionKind {
     }
 }
 
+// Written out rather than declared through `vocabulary!`: one member of this set
+// carries another whole vocabulary, which a flat member list cannot express.
 impl Serialize for PositionKind {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_str(self.name())
@@ -120,13 +125,17 @@ impl Serialize for PositionKind {
 impl PartialSchema for PositionKind {
     fn schema() -> RefOr<Schema> {
         let names = NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(PositionKind::Edge.name()));
-        ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).enum_values(Some(names.collect::<Vec<_>>())).into()
+        ObjectBuilder::new()
+            .schema_type(SchemaType::Type(Type::String))
+            .enum_values(Some(names.collect::<Vec<_>>()))
+            .description(Some(POSITION_KIND))
+            .into()
     }
 }
 
 impl ToSchema for PositionKind {}
 
-atlas_core::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// How much text one window of `/api/text` covers: the units around the
     /// reference asked for, or the whole chapter that reference names.
     TextScope {

@@ -25,7 +25,7 @@ pub struct Scene {
     pub narratives: Vec<SceneNarrative>,
 }
 
-crate::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// Which question a scene answers: what was happening in a span of years,
     /// or where a passage happens.
     SceneMode {

@@ -1493,6 +1493,7 @@ components:
       additionalProperties: false
     EdgeKind:
       type: string
+      description: 'A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.'
       enum:
       - contains
       - member-of
@@ -2051,6 +2052,7 @@ components:
       additionalProperties: false
     NodeKind:
       type: string
+      description: What kind of thing one node of this atlas stands for.
       enum:
       - TextUnit
       - Container
@@ -2334,6 +2336,7 @@ components:
             single verse pinpoints; never a fabricated reference.
     PositionKind:
       type: string
+      description: 'What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.'
       enum:
       - TextUnit
       - Container

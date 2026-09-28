@@ -5,11 +5,11 @@ const DECLARED_SYMMETRIC_RELATIONS: usize = 6;
 const DECLARED_EDGE_KINDS: usize = 2 * DECLARED_DIRECTED_RELATIONS + DECLARED_SYMMETRIC_RELATIONS;
 
 #[test]
-fn every_name_round_trips_through_from_name() {
+fn every_name_round_trips_through_named() {
     // Arrange
     let kinds = NodeKind::ALL;
     // Act
-    let back: Vec<Option<NodeKind>> = kinds.iter().map(|k| NodeKind::from_name(k.name())).collect();
+    let back: Vec<Option<NodeKind>> = kinds.iter().map(|k| NodeKind::named(k.name())).collect();
     // Assert
     assert_eq!(back, kinds.iter().map(|k| Some(*k)).collect::<Vec<_>>());
 }
@@ -26,11 +26,11 @@ fn names_are_the_debug_names_the_wire_already_carries() {
 }
 
 #[test]
-fn from_name_rejects_an_undeclared_kind() {
+fn named_rejects_an_undeclared_kind() {
     // Arrange
     let name = "Verse";
     // Act
-    let kind = NodeKind::from_name(name);
+    let kind = NodeKind::named(name);
     // Assert
     assert_eq!(kind, None);
 }

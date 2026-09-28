@@ -6,28 +6,13 @@ use std::marker::PhantomData;
 
 pub type Interned = String;
 
-macro_rules! node_kinds {
-    ( $($kind:ident),+ $(,)? ) => {
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        pub enum NodeKind { $($kind),+ }
-
-        impl NodeKind {
-            pub const ALL: [NodeKind; [$(stringify!($kind)),+].len()] = [$(NodeKind::$kind),+];
-
-            pub fn name(self) -> &'static str {
-                match self { $(NodeKind::$kind => stringify!($kind)),+ }
-            }
-
-            pub fn from_name(name: &str) -> Option<NodeKind> {
-                Self::ALL.iter().copied().find(|k| k.name() == name)
-            }
-        }
-    };
-}
-
-node_kinds! {
-    TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
-    CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
+crate::vocabulary! {
+    /// What kind of thing one node of this atlas stands for.
+    #[derive(PartialOrd, Ord, Hash)]
+    NodeKind {
+        TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
+        CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
+    }
 }
 
 pub trait KindTag {

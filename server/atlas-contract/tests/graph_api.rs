@@ -1242,6 +1242,7 @@ async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
 }
 
 const DECLARED_NODE_KINDS: usize = 15;
+const POSITION_KIND_DESCRIPTION: &str = "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.";
 const THE_ONE_EDGE_POSITION: usize = 1;
 const EDGE_POSITION_NAME: &str = "Edge";
 
@@ -1273,5 +1274,5 @@ fn the_position_kind_schema_is_a_flat_string_enum_of_every_node_kind_then_edge()
 
     // Assert
     assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
-    assert_eq!(schema, serde_json::json!({ "type": "string", "enum": expected }));
+    assert_eq!(schema, serde_json::json!({ "type": "string", "description": POSITION_KIND_DESCRIPTION, "enum": expected }));
 }

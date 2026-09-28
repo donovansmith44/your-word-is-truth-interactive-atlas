@@ -13,7 +13,6 @@ pub mod scene_source;
 pub mod sources;
 pub mod time;
 pub mod translation;
-pub mod vocabulary;
 pub mod wire;
 pub mod xrefs;
 

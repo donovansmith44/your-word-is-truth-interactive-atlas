@@ -16,6 +16,7 @@ pub mod wire_form;
 pub mod canon;
 pub mod sections;
 pub mod sha256;
+pub mod vocabulary;
 
 pub use edge::{dual, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
 pub use explore::{Explorable, Holdings};

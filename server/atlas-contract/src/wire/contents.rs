@@ -46,7 +46,7 @@ pub struct ContentsChild {
     pub count: usize,
 }
 
-atlas_core::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// A body of text this API serves a reading spine for: Scripture, or the
     /// Book of Concord.
     Corpus {
@@ -55,7 +55,7 @@ atlas_core::vocabulary! {
     }
 }
 
-atlas_core::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// Whether a top-level entry of a corpus's contents is a book of the Bible
     /// or a document of the Book of Concord.
     ContentsRootKind {
@@ -64,7 +64,7 @@ atlas_core::vocabulary! {
     }
 }
 
-atlas_core::vocabulary! {
+atlas_graph_types::vocabulary! {
     /// Whether a second-level entry of a corpus's contents is a chapter of a book
     /// or an article of a document. The contents tree goes no deeper than this.
     ContentsChildKind {
