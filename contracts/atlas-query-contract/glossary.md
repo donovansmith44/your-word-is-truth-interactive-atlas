@@ -6,17 +6,13 @@ the Rust (`cucumber`) and C# (Reqnroll) step definitions. A phrase not
 listed here has no business appearing in a `.feature` file — add it here
 first, in the same commit as its first use.
 
-**Fix round 1 (S-2, controller ruling):** the corpus uses 31 distinct
-step phrases (verified by extracting every `Given`/`When`/`Then`/`And`
-line across all six `.feature` files and normalizing quoted values/
-integers — 30 at S-2's own original count, +1 for "the malformed
-advertisement fails loud," the Q-4 phrase this SAME fix round added and
-initially left undefined; N-1, fix round 2, closed that gap). All 31
-are defined below. Where the two bindings genuinely
-differ in PROOF DEPTH (not merely implementation), the difference is
-stated explicitly in that phrase's own entry — never left to a code
-comment alone (that was S-2's own finding: the divergence between the
-two bindings is exactly what an incomplete glossary hides).
+The corpus uses 31 distinct step phrases (verified by extracting every
+`Given`/`When`/`Then`/`And` line across all six `.feature` files and
+normalizing quoted values/integers). All 31 are defined below. Where the
+two bindings genuinely differ in PROOF DEPTH (not merely implementation),
+the difference is stated explicitly in that phrase's own entry — never
+left to a code comment alone: the divergence between the two bindings is
+exactly what an incomplete glossary hides.
 
 ## Setup / fixture phrases
 
@@ -42,7 +38,7 @@ two bindings is exactly what an incomplete glossary hides).
 - **"the committed fixture for `<query>`"** (C# only) — the JSON file
   `contracts/atlas-query-contract/fixtures/<query>.json`, byte-identical
   provider output captured by the same exporter.
-- **"the identity index"** (C# only, fix round 1 / S-1) — `contracts/
+- **"the identity index"** (C# only) — `contracts/
   atlas-query-contract/fixtures/index.json`, a wire-id → fixture-name map
   the exporter builds from the REQUEST id of every FocusQuery it captures
   (never from a hand-typed C# switch). See "the focus reference
@@ -51,14 +47,14 @@ two bindings is exactly what an incomplete glossary hides).
 ## Query phrases ("When")
 
 - **"I run FocusQuery for `<id>`"** — `GET /api/node/{id}`. Rust: a live
-  HTTP call. C# (fix round 1): looks `<id>` up in the identity index
+  HTTP call. C#: looks `<id>` up in the identity index
   (real node ids) or a small fixed table of the two deliberately-invalid
   request ids (`Person:nonexistent-xyz`, `not-even-a-colon-pair`) — this
   step ALSO records `<id>` as "what this scenario originally requested,"
   read by "the focus reference round-trips identically" below.
 - **"I run FocusQuery again for the captured reference"** — re-issues
   FocusQuery with the id captured by "I capture the returned focus
-  reference." Rust: a second live HTTP call. C# (fix round 1): looks the
+  reference." Rust: a second live HTTP call. C#: looks the
   captured id up in the identity index ONLY (no error-case fallback — a
   captured reference is never one of the two deliberately-invalid
   inputs); a captured id with no index entry throws immediately.
@@ -105,21 +101,20 @@ two bindings is exactly what an incomplete glossary hides).
   is no Rust CONSUMER in this app for `AqcContract` to live on) — the two
   sides prove the SAME pass/fail outcome via two separately-written
   implementations, which is itself part of what phrase parity is for.
-- **"the malformed advertisement fails loud"** (fix round 1, N-1 —
-  added late by the same fix round that introduced it, closing the gap
-  the re-review found) — asserts the semver-range check itself FAILS
-  LOUD (raises/returns an error signal, distinct from a well-formed
-  `false`) when either advertised bound is not a `MAJOR.MINOR.PATCH`
-  string. C#: `AqcContract.Satisfies` throws `FormatException` (the
-  REAL production implementation — the same one `App.razor`'s own
-  `catch (FormatException)` branch routes to `CheckState.Mismatch`,
-  Q-4). Rust: this file's own `satisfies()` mirror returns `Err`
-  (refactored from a panicking `.expect()` specifically so this phrase
-  can assert the failure as a value rather than catching a panic). Only
-  ever used with `Given the server advertises AQC version "garbage"
-  through "0.1.0"` immediately before it — proves the CHECK fails loud;
-  the BROWSER actually rendering the mismatch page for this same input
-  is proven separately, Playwright-only (N-2, below).
+- **"the malformed advertisement fails loud"** — asserts the semver-range
+  check itself FAILS LOUD (raises/returns an error signal, distinct from
+  a well-formed `false`) when either advertised bound is not a
+  `MAJOR.MINOR.PATCH` string. C#: `AqcContract.Satisfies` throws
+  `FormatException` (the REAL production implementation — the same one
+  `App.razor`'s own `catch (FormatException)` branch routes to
+  `CheckState.Mismatch`). Rust: this file's own `satisfies()` mirror
+  returns `Err` (refactored from a panicking `.expect()` specifically so
+  this phrase can assert the failure as a value rather than catching a
+  panic). Only ever used with `Given the server advertises AQC version
+  "garbage" through "0.1.0"` immediately before it — proves the CHECK
+  fails loud; the BROWSER actually rendering the mismatch page for this
+  same input is proven separately, Playwright-only (see "the app shows
+  the contract-mismatch page," below).
 
 ## Assertion phrases ("Then")
 
@@ -177,15 +172,11 @@ two bindings is exactly what an incomplete glossary hides).
   chain for a property the live Rust side already proves exhaustively).
 - **"the focus reference round-trips identically"** — the id captured
   ("I capture the returned focus reference") is byte-identical to the
-  `id` field FocusQuery-on-that-id returns the second time — the G2
-  seam's wire-level bijection law
-  (`encode_node_id(decode_node_id(s)) == s`). **Fix round 1 (S-1,
-  formerly Critical — the prior C# binding loaded the SAME fixture file
-  via the SAME lookup function on both sides of the comparison, making
-  this assertion true by construction for all 11 outline rows, provable
-  false verified empirically during the fix by corrupting a committed
-  fixture's own `id` field and confirming the test then failed.**
-  Now, on BOTH sides, this step ALSO asserts the captured reference
+  `id` field FocusQuery-on-that-id returns the second time — the
+  wire-level bijection law (`encode_node_id(decode_node_id(s)) == s`).
+  On both sides this assertion is genuinely independent, not true by
+  construction: corrupting a committed fixture's own `id` field causes
+  the test to fail. On BOTH sides, this step ALSO asserts the captured reference
   equals what the scenario's own initiating FocusQuery originally
   requested (skipped for the one scenario whose capture instead
   originates from a TraversalQuery target — there the captured id is
@@ -200,8 +191,8 @@ two bindings is exactly what an incomplete glossary hides).
 - **"every `words_of_christ` span lies within its own verse's text
   length"** — for every unit in a TextWindowQuery response, every
   `words_of_christ[].start`/`.end` satisfies `0 <= start <= end <=
-  text.length` for that SAME unit's own `text` (RED-1's alignment law).
-  **T-5 note (trivia, disclosed rather than silently divergent):** Rust
+  text.length` for that SAME unit's own `text`.
+  **Note (trivia, disclosed rather than silently divergent):** Rust
   measures `text.length` as `chars().count()` (Unicode scalar values);
   C# measures it as `string.Length` (UTF-16 code units). The two are
   equal for every verse this contract ever serves (`handlers.rs`'s own
@@ -213,7 +204,7 @@ two bindings is exactly what an incomplete glossary hides).
   rather than left as two silently different definitions of "length."
 - **"`<field>` is empty"** — the last response's own `<field>` (an array)
   has zero elements. Used in this corpus only for `"quiet_places" is
-  empty` (the scripture-mode Scene law, E2/QUIET-1: a scripture-mode
+  empty` (the scripture-mode Scene law: a scripture-mode
   `Scene.quiet_places` is always `[]`).
 - **"the response `<field>` array has at most `<n>` entry"** — the last
   response's own `<field>` array (always `entries` in this corpus) has at
@@ -228,7 +219,7 @@ two bindings is exactly what an incomplete glossary hides).
   last TextWindowQuery response's own `units[].ref` values equal
   `[<a>,<b>,<c>]` in that exact order.
 
-## Playwright-only phrases (T-4, marked explicitly — not bound by either Gherkin harness)
+## Playwright-only phrases (marked explicitly — not bound by either Gherkin harness)
 
 - **"the app shows the contract-mismatch page"** — never appears in a
   `.feature` file; describes `tests/ux/contract-versioning.spec.ts`'s own
@@ -239,7 +230,7 @@ two bindings is exactly what an incomplete glossary hides).
   two Gherkin bindings, and a reader should not mistake this entry for a
   third binding of a corpus phrase.
 - **"the app loads normally despite an unreachable `/api/contract`"** —
-  Playwright-only (fix round 1, Q-5/§0): `route.abort()` on `/api/
+  Playwright-only: `route.abort()` on `/api/
   contract`, asserting the ordinary app shell (`nav-world`) renders
   regardless — the surviving policy `App.razor`'s narrowed catch still
   covers (network failures are not a mismatch).

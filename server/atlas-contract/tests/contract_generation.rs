@@ -50,7 +50,6 @@ const NAMES_THIS_PROJECTS_OWN_HISTORY: [&str; 26] = [
 /// contract corpus, which is read from inside this repository, names it freely.
 const NAMES_THE_CODE_BEHIND_THE_API: [&str; 7] = [".md", ".rs", "atlas_contract", "atlas_core", "atlas_graph", "graph_wire", "graphquery"];
 
-
 #[derive(Debug, PartialEq)]
 enum Freshness {
     ByteIdenticalToWhatTheRustRenders,

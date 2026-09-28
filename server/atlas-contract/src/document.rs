@@ -86,7 +86,7 @@ pub fn openapi() -> OpenApi {
 fn close_every_object(doc: &mut OpenApi) {
     for schema in doc.components.iter_mut().flat_map(|components| components.schemas.values_mut()) {
         if let RefOr::T(Schema::Object(object)) = schema {
-            if matches!(object.schema_type, SchemaType::Type(Type::Object)) {
+            if matches!(object.schema_type, SchemaType::Type(Type::Object)) && object.additional_properties.is_none() {
                 object.additional_properties = Some(Box::new(AdditionalProperties::FreeForm(false)));
             }
         }

@@ -4,7 +4,6 @@ use utoipa::openapi::schema::{ArrayBuilder, ObjectBuilder, SchemaType, Type};
 use utoipa::openapi::{RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
-/// One point of a border: latitude then longitude, in degrees.
 #[derive(Debug, Serialize)]
 pub struct Point(pub f64, pub f64);
 

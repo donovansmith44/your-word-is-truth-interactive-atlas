@@ -36,7 +36,7 @@ fn rt() -> Runtime {
 /// benchmark saying that a reference written out here must be one this atlas
 /// serves; a bench measuring a refusal would measure nothing.
 fn asked_for<T: std::str::FromStr>(raw: &str) -> Reference<T> {
-    Reference(raw.parse().ok().expect("a reference this benchmark names must be one this atlas reads"))
+    Reference(raw.parse().unwrap_or_else(|_| panic!("a reference this benchmark names must be one this atlas reads")))
 }
 
 fn bench_scene_pure(c: &mut Criterion) {
