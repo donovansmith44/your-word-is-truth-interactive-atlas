@@ -6,6 +6,7 @@ use axum::http::{header, Request, StatusCode};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
+use atlas_contract::error::ApiError;
 use atlas_contract::wire::PositionKind;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
@@ -137,9 +138,9 @@ async fn a_word_outside_a_query_vocabulary_is_refused_with_that_vocabularys_own_
     assert_eq!(
         refused,
         vec![
-            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_scope", "message": "unknown scope: 'paragraph' (expected 'verse' or 'chapter')" } })),
-            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_dir", "message": "unknown dir: 'sideways' (expected 'onward' or 'backward')" } })),
-            (StatusCode::BAD_REQUEST, serde_json::json!({ "error": { "code": "bad_corpus", "message": "unknown corpus: 'vulgate' (expected 'bible' or 'concord')" } })),
+            (StatusCode::BAD_REQUEST, refusal(ApiError::bad_scope("paragraph"))),
+            (StatusCode::BAD_REQUEST, refusal(ApiError::unknown_dir("sideways"))),
+            (StatusCode::BAD_REQUEST, refusal(ApiError::bad_corpus("vulgate"))),
         ]
     );
 }
@@ -150,6 +151,41 @@ async fn a_count_that_is_not_a_count_leaves_the_windows_own_default_standing() {
     let (status, body, _) = get(&app, "/api/text?ref=JHN.3.16&n=notacount").await;
     let refs: Vec<&str> = body["units"].as_array().unwrap().iter().map(|u| u["ref"].as_str().unwrap()).collect();
     assert_eq!((status, refs), (StatusCode::OK, vec!["JHN.3.16"]));
+}
+
+#[tokio::test]
+async fn a_conditional_request_whose_query_cannot_be_read_is_refused_rather_than_answered_not_modified() {
+    // Arrange
+    let app = compiled_app();
+    let (_, _, headers) = get(&app, "/api/text?ref=GEN.1.1").await;
+    let etag = headers.get(header::ETAG).expect("ETag header must be present").to_str().unwrap().to_string();
+    // Act
+    let response = app
+        .clone()
+        .oneshot(Request::builder().uri("/api/text?ref=GEN.1.1&scope=paragraph").header(header::IF_NONE_MATCH, &etag).body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    let status = response.status();
+    let body: serde_json::Value = serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    // Assert
+    assert_eq!((status, body), (StatusCode::BAD_REQUEST, refusal(ApiError::bad_scope("paragraph"))));
+}
+
+#[tokio::test]
+async fn a_frontier_asked_for_at_a_node_that_is_not_there_is_refused_for_the_frontier_first() {
+    // Arrange
+    let app = compiled_app();
+    let absent_node = "/api/node/Person:nonexistent-xyz/edges?kind=not-a-real-kind";
+    // Act
+    let (status, body, _) = get(&app, absent_node).await;
+    // Assert
+    assert_eq!((status, body), (StatusCode::BAD_REQUEST, refusal(ApiError::bad_kind("not-a-real-kind"))));
+}
+
+/// The refusal as it reaches a caller. Built from the constructor rather than written
+/// out, because the words themselves are pinned by the mapping's own table test.
+fn refusal(refused: ApiError) -> serde_json::Value {
+    serde_json::json!({ "error": { "code": refused.code, "message": refused.message } })
 }
 
 #[tokio::test]

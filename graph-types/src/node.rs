@@ -49,6 +49,9 @@ pub enum NodePayload {
     /// is the container's own top-level set, which is distinct from its witnesses'.
     Event {
         label: String,
+        /// The closed set of event kinds as the bare string it is written from. Typing it
+        /// would change this payload's `Debug` spelling, which IS the canonical bytes
+        /// without `canon-ids`, so every content address and the version root would move.
         kind: String,
         verses: Vec<String>,
         witnesses: Vec<EventWitnessPayload>,

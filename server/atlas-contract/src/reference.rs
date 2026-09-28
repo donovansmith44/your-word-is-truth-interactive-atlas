@@ -20,7 +20,9 @@ impl<S: Send + Sync, T: FromStr> FromRequestParts<S> for Reference<T> {
     type Rejection = ApiError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, ApiError> {
-        let Path(raw) = Path::<String>::from_request_parts(parts, state).await.map_err(|_| ApiError::bad_ref(""))?;
+        // A route whose path carries no single segment to read is this atlas's own
+        // wiring mistake, not something the caller could have asked differently.
+        let Path(raw) = Path::<String>::from_request_parts(parts, state).await.map_err(|_| ApiError::internal("a route that reads a reference declared no path segment to read it from"))?;
         T::from_str(&raw).map(Reference).map_err(|_| ApiError::bad_ref(&raw))
     }
 }

@@ -15,7 +15,7 @@ use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::Position;
 
 use crate::error::{ApiError, WindowRefusals};
-use crate::query::{Contract, ContractParams};
+use crate::query::{self, Contract, ContractParams};
 use crate::reading::drain_edges;
 use crate::wire;
 
@@ -23,9 +23,9 @@ use crate::wire;
 ///
 /// `{id}` is a place id handed back by another response; an id naming no place
 /// is `not_found`. The optional `from` and `to` years choose the period whose
-/// name and description the history reports -- neither is required, and a period
-/// only one of them names simply leaves the place's default name in place. A year
-/// that is not a year is `bad_window`.
+/// name and description the history reports -- give both or neither, and giving
+/// neither simply leaves the place's default name in place. One year alone, a year
+/// that is not a year, and a span that ends before it starts are each `bad_window`.
 #[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), PlacePeriod), responses((status = 200, body = wire::PlaceDetail), WindowRefusals), tag = "places")]
 pub async fn place(
     State(data): State<Arc<AtlasData>>,
@@ -47,7 +47,7 @@ pub async fn place(
         .collect();
     events.sort_by_key(|e| e.when.from_year);
 
-    let window = asked.period();
+    let window = asked.period()?;
 
     // Resolved before `history`, and independently of it: a place with no curated
     // history record at all still has a translation alias to resolve.
@@ -79,16 +79,24 @@ pub struct PlacePeriod {
 }
 
 impl PlacePeriod {
-    /// A period only one year names is no period at all, and a zero or inverted one
-    /// names none either: both leave the place's default name standing.
-    fn period(&self) -> Option<TimeRange> {
-        TimeRange::new(self.from?, self.to?).ok()
+    /// A period is asked for with both years or with neither. One year alone is the
+    /// same unreadable window a year that is not a year is -- `bad_window` says so in
+    /// its own words -- and this route reads a pair of years by the one law every
+    /// other route reads one by.
+    fn period(&self) -> Result<Option<TimeRange>, ApiError> {
+        match (self.from, self.to) {
+            (None, None) => Ok(None),
+            (Some(from), Some(to)) => query::span(from, to).map(Some),
+            _ => Err(ApiError::bad_window()),
+        }
     }
 }
 
 impl ContractParams for PlacePeriod {
     /// Both years are the one period, so which of them could not be read makes no
-    /// difference to the refusal.
+    /// difference to the refusal -- and `bad_window` is the only refusal this route
+    /// publishes, so a name it does not know answers the same rather than failing on a
+    /// word that came off the caller's own query.
     fn unreadable(_parameter: &str, _asked_with: Option<&str>) -> ApiError {
         ApiError::bad_window()
     }

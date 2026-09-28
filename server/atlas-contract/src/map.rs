@@ -14,7 +14,7 @@ use atlas_graph::GraphService;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::{ApiError, ReferenceRefusals, WindowRefusals};
-use crate::query::{Contract, ContractParams};
+use crate::query::{self, Contract, ContractParams};
 use crate::wire;
 
 /// The map for a span of years: the places events light up in that span, the quiet places around them, and the arrows narratives draw between them.
@@ -43,16 +43,16 @@ pub struct SceneWindow {
 }
 
 impl SceneWindow {
-    /// A zero or inverted span is refused rather than adjusted, exactly as a year
-    /// that is not a year is.
     pub fn span(&self) -> Result<TimeRange, ApiError> {
-        TimeRange::new(self.from, self.to).map_err(|_| ApiError::bad_window())
+        query::span(self.from, self.to)
     }
 }
 
 impl ContractParams for SceneWindow {
     /// Both years are the one window, so which of them could not be read makes no
-    /// difference to the refusal.
+    /// difference to the refusal -- and `bad_window` is the only refusal this route
+    /// publishes, so a name it does not know answers the same rather than failing on a
+    /// word that came off the caller's own query.
     fn unreadable(_parameter: &str, _asked_with: Option<&str>) -> ApiError {
         ApiError::bad_window()
     }
@@ -70,7 +70,7 @@ pub async fn scene_scripture(
     State(graph): State<Arc<GraphService>>,
     Contract(asked): Contract<ScripturePassage>,
 ) -> Result<Json<Scene>, ApiError> {
-    let raw = asked.sref.as_str();
+    let raw = asked.r#ref.as_str();
     let r = ScriptureRef::parse(raw).map_err(|_| ApiError::bad_ref(raw))?;
     Ok(Json(compose_scripture_scene(graph.scene_source(&data), &r)))
 }
@@ -79,11 +79,13 @@ pub async fn scene_scripture(
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ScripturePassage {
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
 }
 
 impl ContractParams for ScripturePassage {
+    /// The passage is this route's only parameter and `bad_ref` its only refusal, so a
+    /// name it does not know answers the same rather than failing on a word that came
+    /// off the caller's own query.
     fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
         ApiError::bad_ref(asked_with.unwrap_or_default())
     }

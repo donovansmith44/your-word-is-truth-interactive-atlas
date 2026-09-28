@@ -18,7 +18,7 @@ use atlas_graph_types::store::GraphQuery;
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
-use crate::query::{AsGiven, Contract, ContractParams};
+use crate::query::{self, AsGiven, Contract, ContractParams};
 use crate::reference::{NodeReference, Reference};
 use crate::wire;
 
@@ -137,8 +137,11 @@ impl EdgePageQuery {
 }
 
 impl ContractParams for EdgePageQuery {
-    /// The kind is the only word here a caller can get wrong: a page bound that does
-    /// not read as a number leaves the default standing instead of refusing.
+    /// A page bound reads through `AsGiven`, which leaves the route's own default
+    /// standing rather than failing, so the kind is the only parameter that reaches
+    /// here. The others answer for it anyway: the parameter is read off the caller's
+    /// own query, so it is not a value to panic on, and `bad_kind` is the one refusal
+    /// this route publishes.
     fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
         ApiError::bad_kind(asked_with.unwrap_or_default())
     }
@@ -166,7 +169,7 @@ pub async fn text_window(
         return Ok((StatusCode::NOT_MODIFIED, [(header::ETAG, etag)]).into_response());
     }
 
-    let raw_ref = asked.sref.as_str();
+    let raw_ref = asked.r#ref.as_str();
     let scope = asked.scope();
     let corpus = asked.corpus();
 
@@ -271,8 +274,7 @@ pub async fn text_window(
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct TextWindowQuery {
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     #[serde(default)]
     #[param(value_type = Option<usize>)]
     pub n: AsGiven<usize>,
@@ -306,20 +308,19 @@ impl TextWindowQuery {
     }
 }
 
-const REF: &str = "ref";
-const SCOPE: &str = "scope";
-const DIR: &str = "dir";
-
 impl ContractParams for TextWindowQuery {
-    /// `n` is the one parameter here that cannot be got wrong, so what is left when
-    /// the scope, the direction and the corpus have each been named is the reference.
+    /// The window size reads through `AsGiven`, which leaves one unit standing rather
+    /// than failing, so it never reaches here; it and any other name answer for the
+    /// reference, which is both a code this route publishes and the only one a caller
+    /// who mis-typed something unnamed can act on. The name is read off the caller's
+    /// own query, so it is not a value to refuse to answer for.
     fn unreadable(parameter: &str, asked_with: Option<&str>) -> ApiError {
         let asked_with = asked_with.unwrap_or_default();
         match parameter {
-            SCOPE => ApiError::bad_scope(asked_with),
-            DIR => ApiError::unknown_dir(asked_with),
-            REF => ApiError::bad_ref(asked_with),
-            _ => ApiError::bad_corpus(asked_with),
+            query::SCOPE => ApiError::bad_scope(asked_with),
+            query::DIR => ApiError::unknown_dir(asked_with),
+            query::CORPUS => ApiError::bad_corpus(asked_with),
+            _ => ApiError::bad_ref(asked_with),
         }
     }
 }

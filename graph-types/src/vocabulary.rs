@@ -9,6 +9,11 @@
 /// `Deserialize` is generated for every vocabulary and not only for those a
 /// caller reads back: a set that can be written and never read is half a type,
 /// and one uniform expansion leaves no flag to set the wrong way.
+///
+/// The wire and schema halves expand into the INVOKING crate, so a crate that
+/// declares a vocabulary must itself depend on `serde` while this crate's `serde`
+/// feature is on, and on `utoipa` while its `openapi` feature is on. Both features
+/// are on for every consumer in this workspace.
 #[macro_export]
 macro_rules! vocabulary {
     (

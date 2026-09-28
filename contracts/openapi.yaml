@@ -608,9 +608,9 @@ paths:
       description: |-
         `{id}` is a place id handed back by another response; an id naming no place
         is `not_found`. The optional `from` and `to` years choose the period whose
-        name and description the history reports -- neither is required, and a period
-        only one of them names simply leaves the place's default name in place. A year
-        that is not a year is `bad_window`.
+        name and description the history reports -- give both or neither, and giving
+        neither simply leaves the place's default name in place. One year alone, a year
+        that is not a year, and a span that ends before it starts are each `bad_window`.
       operationId: place
       parameters:
       - name: id

@@ -8,7 +8,32 @@ use axum::http::request::Parts;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 
+use atlas_core::time::{TimeRange, Year};
+
 use crate::error::ApiError;
+
+/// Every parameter name this API reads, spelled once: a route matches on these to
+/// name its own refusal, and a refusal quotes the same word back to the caller. The
+/// field that carries `ref` is `r#ref`, so that name needs no `serde(rename)` and is
+/// not written a third time in an attribute no constant can reach.
+pub const REF: &str = "ref";
+pub const FROM: &str = "from";
+pub const TO: &str = "to";
+pub const KIND: &str = "kind";
+pub const CURSOR: &str = "cursor";
+pub const LIMIT: &str = "limit";
+pub const UNITS: &str = "n";
+pub const DIR: &str = "dir";
+pub const SCOPE: &str = "scope";
+pub const CORPUS: &str = "corpus";
+
+/// The span two years name, refused rather than adjusted: a zero year, or a span
+/// that ends before it starts, is no window at all. Every route that reads a pair of
+/// years reads it through here, so two of them cannot come to disagree about which
+/// pairs this atlas serves.
+pub fn span(from: Year, to: Year) -> Result<TimeRange, ApiError> {
+    TimeRange::new(from, to).map_err(|_| ApiError::bad_window())
+}
 
 /// One route's query parameters, read so that a caller who spells one wrongly is
 /// answered in this API's own error vocabulary rather than the web framework's.
@@ -195,20 +220,28 @@ mod tests {
         assert_eq!(
             refused,
             vec![
-                (400, BAD_WINDOW, "from/to must both be present, non-zero integers with from <= to".to_string()),
-                (400, BAD_WINDOW, "from/to must both be present, non-zero integers with from <= to".to_string()),
-                (400, BAD_WINDOW, "from/to must both be present, non-zero integers with from <= to".to_string()),
-                (400, BAD_REF, "invalid scripture reference: ''".to_string()),
-                (400, BAD_KIND, "unknown or missing edge kind: ''".to_string()),
-                (400, BAD_KIND, "unknown or missing edge kind: 'not-a-real-kind'".to_string()),
-                (400, BAD_REF, "invalid scripture reference: ''".to_string()),
-                (400, BAD_SCOPE, "unknown scope: 'paragraph' (expected 'verse' or 'chapter')".to_string()),
-                (400, BAD_DIR, "unknown dir: 'sideways' (expected 'onward' or 'backward')".to_string()),
-                (400, BAD_CORPUS, "unknown corpus: 'vulgate' (expected 'bible' or 'concord')".to_string()),
-                (400, BAD_WINDOW, "from/to must both be present, non-zero integers with from <= to".to_string()),
+                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
+                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
+                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
+                (400, BAD_REF, UNREADABLE_EMPTY_REF.to_string()),
+                (400, BAD_KIND, UNREADABLE_EMPTY_KIND.to_string()),
+                (400, BAD_KIND, UNREADABLE_KIND.to_string()),
+                (400, BAD_REF, UNREADABLE_EMPTY_REF.to_string()),
+                (400, BAD_SCOPE, UNREADABLE_SCOPE.to_string()),
+                (400, BAD_DIR, UNREADABLE_DIR.to_string()),
+                (400, BAD_CORPUS, UNREADABLE_CORPUS.to_string()),
+                (400, BAD_WINDOW, UNREADABLE_WINDOW.to_string()),
             ]
         );
     }
+
+    pub const UNREADABLE_WINDOW: &str = "from/to must both be present, non-zero integers with from <= to";
+    pub const UNREADABLE_EMPTY_REF: &str = "invalid scripture reference: ''";
+    pub const UNREADABLE_EMPTY_KIND: &str = "unknown or missing edge kind: ''";
+    pub const UNREADABLE_KIND: &str = "unknown or missing edge kind: 'not-a-real-kind'";
+    pub const UNREADABLE_SCOPE: &str = "unknown scope: 'paragraph' (expected 'verse' or 'chapter')";
+    pub const UNREADABLE_DIR: &str = "unknown dir: 'sideways' (expected 'onward' or 'backward')";
+    pub const UNREADABLE_CORPUS: &str = "unknown corpus: 'vulgate' (expected 'bible' or 'concord')";
 
     #[tokio::test]
     async fn every_query_a_route_can_read_reaches_the_route_with_no_refusal_at_all() {

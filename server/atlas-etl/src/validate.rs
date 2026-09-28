@@ -21,6 +21,9 @@ use crate::polities::{ring_is_simple, Bbox};
 const ATLAS_START_YEAR: i32 = -4004;
 const ATLAS_END_YEAR: i32 = 100;
 
+/// Aggregates, so a curator sees every mistake at once. A word outside a closed
+/// vocabulary is NOT among them: the curated file's own parse refuses it, and a parse
+/// stops at the first one.
 pub fn run(data: &AtlasData) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 

@@ -65,9 +65,6 @@ pub fn node_kind_ordinal(k: NodeKind) -> i64 {
         NodeKind::LexiconEntry => 14,
     }
 }
-pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
-    NodeKind::ALL.get(usize::try_from(o).ok()?).copied()
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeEntryOut {

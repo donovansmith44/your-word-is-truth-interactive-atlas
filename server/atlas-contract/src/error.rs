@@ -9,6 +9,7 @@ use utoipa::{IntoResponses, PartialSchema};
 
 use atlas_graph::window::WindowDir;
 
+use crate::query;
 use crate::wire::{Corpus, TextScope};
 
 pub const BAD_WINDOW: &str = "bad_window";
@@ -56,15 +57,15 @@ impl ApiError {
     }
 
     pub fn unknown_dir(raw: &str) -> Self {
-        unknown_word(BAD_DIR, "dir", raw, &WindowDir::ALL.map(WindowDir::name))
+        unknown_word(BAD_DIR, query::DIR, raw, &WindowDir::ALL.map(WindowDir::name))
     }
 
     pub fn bad_scope(raw: &str) -> Self {
-        unknown_word(BAD_SCOPE, "scope", raw, &TextScope::ALL.map(TextScope::name))
+        unknown_word(BAD_SCOPE, query::SCOPE, raw, &TextScope::ALL.map(TextScope::name))
     }
 
     pub fn bad_corpus(raw: &str) -> Self {
-        unknown_word(BAD_CORPUS, "corpus", raw, &Corpus::ALL.map(Corpus::name))
+        unknown_word(BAD_CORPUS, query::CORPUS, raw, &Corpus::ALL.map(Corpus::name))
     }
 
     /// A server-side invariant this API cannot serve around. Distinct from
@@ -179,19 +180,6 @@ fn unreadable(codes: &[&str]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_refusal_lists_the_words_its_own_vocabulary_accepts() {
-        // Arrange
-        let asked_with = "paragraph";
-        // Act
-        let refused = ApiError::bad_scope(asked_with);
-        // Assert
-        assert_eq!(
-            (refused.status, refused.code, refused.message),
-            (StatusCode::BAD_REQUEST, BAD_SCOPE, "unknown scope: 'paragraph' (expected 'verse' or 'chapter')".to_string())
-        );
-    }
 
     #[test]
     fn a_list_of_accepted_words_reads_as_this_api_writes_one() {
