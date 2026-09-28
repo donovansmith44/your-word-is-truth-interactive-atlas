@@ -15,32 +15,22 @@
   <PropertyGroup>
     <ContractDocument>$(MSBuildProjectDirectory)/../contracts/openapi.yaml</ContractDocument>
     <ContractVocabulary>$(MSBuildProjectDirectory)/../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json</ContractVocabulary>
+    <GeneratedWire>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)Contract/Wire.g.cs</GeneratedWire>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="$(ContractVocabulary)" LogicalName="graph-vocabulary.json" />
   </ItemGroup>
 
-  <!--
-    GeneratedWire is NOT a top-level property: IntermediateOutputPath only
-    gets its TargetFramework segment from the SDK's own targets, which
-    import after this file's content, so a static top-level property
-    would capture the wrong (pre-TFM) value. Target attributes evaluate
-    against the final property values at build time, so the path is
-    built fresh in every place it is used. The /variables:Output value
-    passed to nswag is resolved relative to Contract/nswag.json itself
-    (not the process's working directory), so it must be absolute here.
-  -->
   <Target Name="GenerateContract" BeforeTargets="CoreCompile"
           Inputs="$(ContractDocument);Contract/nswag.json"
-          Outputs="$(IntermediateOutputPath)Contract/Wire.g.cs">
-    <MakeDir Directories="$(IntermediateOutputPath)Contract" />
-    <Exec Command="dotnet nswag run Contract/nswag.json /variables:Output=$(MSBuildProjectDirectory)/$(IntermediateOutputPath)Contract/Wire.g.cs" WorkingDirectory="$(MSBuildProjectDirectory)" />
+          Outputs="$(GeneratedWire)">
+    <Exec Command="dotnet nswag run Contract/nswag.json /variables:Output=$(GeneratedWire)" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <Target Name="IncludeGeneratedContract" AfterTargets="GenerateContract" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Compile Include="$(IntermediateOutputPath)Contract/Wire.g.cs" />
+      <Compile Include="$(GeneratedWire)" />
     </ItemGroup>
   </Target>
 
