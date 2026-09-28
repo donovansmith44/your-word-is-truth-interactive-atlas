@@ -14,7 +14,7 @@ namespace BibleAtlas.Client.ContractTests;
 /// + one `InlineDataAttribute` per Scenario Outline row -- confirmed by
 /// direct inspection of the generated code-behind under `obj/`) and
 /// compares that DISCOVERED count against the SAME count computed by
-/// parsing the six committed `.feature` files directly (textually,
+/// parsing the committed `.feature` files directly (textually,
 /// language-agnostic -- no Reqnroll/cucumber-specific logic). A feature
 /// file that silently fails to link into this project (a stale
 /// `ReqnrollFeatureFile` glob, a build-config gap) would make the

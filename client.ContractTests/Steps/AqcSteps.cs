@@ -307,6 +307,10 @@ public class AqcSteps
             "/api/scene?from=-2100&to=-2000" => SceneTimeFixture("-2100", "-2000"),
             "/api/scene/scripture?ref=JHN.3.16" => SceneScriptureFixture("JHN.3.16"),
             "/api/text?ref=JHN.3.16&n=1" => TextWindowFixture("JHN.3.16", 1),
+            // A chapter is a Scripture reading (text-window.feature) and a place's
+            // period is read by the one window law (place-period.feature).
+            "/api/text?ref=BoC%207.2.1&corpus=concord&scope=chapter" => "text-window-concord-chapter-bad-scope",
+            "/api/place/hazor-1?from=notayear" => "place-period-bad-window",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
         (_status, _body) = LoadFixture(name);

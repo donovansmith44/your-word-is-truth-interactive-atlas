@@ -138,7 +138,7 @@ async fn a_word_outside_a_query_vocabulary_is_refused_with_that_vocabularys_own_
     assert_eq!(
         refused,
         vec![
-            (StatusCode::BAD_REQUEST, refusal(ApiError::bad_scope("paragraph"))),
+            (StatusCode::BAD_REQUEST, refusal(ApiError::unknown_scope("paragraph"))),
             (StatusCode::BAD_REQUEST, refusal(ApiError::unknown_dir("sideways"))),
             (StatusCode::BAD_REQUEST, refusal(ApiError::bad_corpus("vulgate"))),
         ]
@@ -168,7 +168,7 @@ async fn a_conditional_request_whose_query_cannot_be_read_is_refused_rather_than
     let status = response.status();
     let body: serde_json::Value = serde_json::from_slice(&response.into_body().collect().await.unwrap().to_bytes()).unwrap();
     // Assert
-    assert_eq!((status, body), (StatusCode::BAD_REQUEST, refusal(ApiError::bad_scope("paragraph"))));
+    assert_eq!((status, body), (StatusCode::BAD_REQUEST, refusal(ApiError::unknown_scope("paragraph"))));
 }
 
 #[tokio::test]
@@ -314,7 +314,7 @@ async fn text_window_concord_scope_chapter_and_bad_ref_and_unknown_corpus_are_40
     let app = compiled_app();
     let (st, body, _) = get(&app, "/api/text?ref=BoC%207.2.1&scope=chapter&corpus=concord").await;
     assert_eq!(st, 400, "{body}");
-    assert_eq!(body["error"]["code"], "bad_dir");
+    assert_eq!(body["error"]["code"], "bad_scope", "a chapter is a Scripture reading, so it is the SCOPE a Concord caller must change: {body}");
 
     let (st, body, _) = get(&app, "/api/text?ref=JHN.3.16&corpus=concord").await;
     assert_eq!(st, 400, "a Bible-shaped ref under corpus=concord is bad_ref, never silently reinterpreted: {body}");

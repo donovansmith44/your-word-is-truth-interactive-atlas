@@ -46,3 +46,7 @@ Feature: TextWindowQuery -- a window of verses with annotation spans
   Scenario: an unknown scope is bad_scope
     When I run TextWindowQuery for "JHN.3.16" radius 1 with scope "not-a-real-scope"
     Then the request fails with status 400 and code "bad_scope"
+
+  Scenario: a chapter is a Scripture reading, so a chapter scope over the Concord is bad_scope
+    When I query "/api/text?ref=BoC%207.2.1&corpus=concord&scope=chapter"
+    Then the request fails with status 400 and code "bad_scope"

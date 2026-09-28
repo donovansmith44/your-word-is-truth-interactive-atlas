@@ -81,7 +81,9 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
 /// edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an
 /// unrecognised id is `bad_ref`, and an id naming no node is `not_found`.
 /// `limit` defaults to 20 and caps at 200; pass the response's `next` back as
-/// `cursor` for the following page, and its absence is the last page.
+/// `cursor` for the following page, and its absence is the last page. A `limit`
+/// or `cursor` that does not read as a whole number is not refused: it leaves its
+/// default standing.
 #[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), FrontierRefusals), tag = "graph")]
 pub async fn node_edges(
     State(graph): State<Arc<GraphService>>,
@@ -154,10 +156,15 @@ impl ContractParams for EdgePageQuery {
 /// `bad_corpus`); a malformed reference is `bad_ref` and one naming nothing in
 /// the corpus is `not_found`. `n` defaults to 1 and caps at 500, and
 /// `dir=backward` ends the window at `ref` instead of starting it there; a `dir`
-/// that is neither is `bad_dir`. `scope=chapter` covers the whole chapter named
-/// instead, and takes neither `n` nor `dir=backward` -- the combination is
-/// `bad_dir`, and a `scope` outside the two is `bad_scope`. The response's `next`
-/// is the reference one step further on, absent at the end of the corpus.
+/// that is neither is `bad_dir`. An `n` that does not read as a whole number is
+/// not refused: it leaves the default standing. `scope=chapter` covers the whole
+/// chapter named instead, and takes neither `n` nor `dir=backward` -- that
+/// combination is `bad_dir`, and a `scope` outside the two is `bad_scope`. A
+/// chapter is a Scripture reading and nothing else: `scope=chapter` with
+/// `corpus=concord` is `bad_scope`, because the Book of Concord is read by the
+/// article and an article's paragraph count is no fixed span; a Concord caller
+/// asks for the paragraphs it wants with `n` instead. The response's `next` is the
+/// reference one step further on, absent at the end of the corpus.
 #[utoipa::path(get, path = "/api/text", params(TextWindowQuery), responses((status = 200, body = wire::TextWindow), ReadingWindowRefusals), tag = "graph")]
 pub async fn text_window(
     State(graph): State<Arc<GraphService>>,
@@ -179,7 +186,7 @@ pub async fn text_window(
         ));
     }
     if corpus == wire::Corpus::Concord && scope == wire::TextScope::Chapter {
-        return Err(ApiError::bad_dir(
+        return Err(ApiError::bad_scope(
             "scope=chapter is not supported with corpus=concord -- a Concord article's own paragraph count varies too widely for one server-derived span; omit scope (or use scope=verse) and set n explicitly instead",
         ));
     }
@@ -317,7 +324,7 @@ impl ContractParams for TextWindowQuery {
     fn unreadable(parameter: &str, asked_with: Option<&str>) -> ApiError {
         let asked_with = asked_with.unwrap_or_default();
         match parameter {
-            query::SCOPE => ApiError::bad_scope(asked_with),
+            query::SCOPE => ApiError::unknown_scope(asked_with),
             query::DIR => ApiError::unknown_dir(asked_with),
             query::CORPUS => ApiError::bad_corpus(asked_with),
             _ => ApiError::bad_ref(asked_with),

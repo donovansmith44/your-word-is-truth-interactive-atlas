@@ -1,0 +1,9 @@
+{
+  "body": {
+    "error": {
+      "code": "bad_scope",
+      "message": "scope=chapter is not supported with corpus=concord -- a Concord article's own paragraph count varies too widely for one server-derived span; omit scope (or use scope=verse) and set n explicitly instead"
+    }
+  },
+  "status": 400
+}

@@ -1023,7 +1023,7 @@ resolver = "2"
 # directory, one run, no fail-fast:
 #
 #   canonical 1255 (workspace 1127 + atlas-graph-types 128) across 71 sections
-#   AQC corpus: 48 scenarios / 197 steps (harness=false; NOT in the canonical sum)
+#   AQC corpus: 50 scenarios / 201 steps (harness=false; NOT in the canonical sum)
 #
 # 74 "test result" lines print, of which 4 are Doc-tests (never counted), so
 # 70 binary sections print one; 12 of those print 0 passed (the unittest
@@ -1033,11 +1033,14 @@ resolver = "2"
 # across 9 sections; the default OFF state is 118 across the same 9, the ten
 # extra being `tests/wire_form.rs`, which is `#![cfg(all(feature = "serde",
 # feature = "openapi"))]` and so compiles to nothing in the OFF state.
-# AQC corpus 47 -> 48 scenarios / 194 -> 197 steps: one scenario added, `an
-# unknown scope is bad_scope`, with its own committed fixture.
-# dotnet: client.Tests 409/409 | client.ContractTests 49/49 (48 Reqnroll
+# AQC corpus 47 -> 50 scenarios / 194 -> 201 steps: three scenarios added --
+# `an unknown scope is bad_scope`, the Concord chapter scope, and a place
+# period that is not a span -- each with its own committed fixture.
+# dotnet: client.Tests 409/409 | client.ContractTests 51/51 (50 Reqnroll
 # scenarios + CorpusCountTests, the standing parity shape) -- 48/48 before,
-# the +1 being that one scenario on both sides.
+# the +3 being those three scenarios on both sides. The canonical workspace
+# and section totals above are the batch's own closing measurement and are
+# re-derived there, not here.
 
 # DB-2b: the bundled SQLite amalgamation is C compiled by the `cc` crate at
 # the profile's opt-level -- `-O0` under `dev`, which made the DB-2b

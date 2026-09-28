@@ -55,11 +55,17 @@ impl ApiError {
         Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadKind, message: format!("unknown or missing edge kind: '{raw}'") }
     }
 
-    /// The refusals that are not about one word but about a combination of them: a
-    /// window whose scope and direction cannot both be honoured. They carry
-    /// `unknown_dir`'s code because the direction is what the caller must change.
+    /// A refusal that is not about one word but about a combination of them, whose
+    /// code is the parameter the caller must change: a direction a scope leaves
+    /// nothing to walk.
     pub fn bad_dir(message: impl Into<String>) -> Self {
         Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadDir, message: message.into() }
+    }
+
+    /// The same, where the scope is what the caller must change: a span this atlas
+    /// reads over Scripture and over no other corpus.
+    pub fn bad_scope(message: impl Into<String>) -> Self {
+        Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::BadScope, message: message.into() }
     }
 
     pub fn unknown_dir(raw: &str) -> Self {
@@ -67,7 +73,7 @@ impl ApiError {
         unknown_word(ErrorCode::BadDir, query::DIR, raw, &leading, last)
     }
 
-    pub fn bad_scope(raw: &str) -> Self {
+    pub fn unknown_scope(raw: &str) -> Self {
         let [leading @ .., last] = TextScope::ALL.map(TextScope::name);
         unknown_word(ErrorCode::BadScope, query::SCOPE, raw, &leading, last)
     }
