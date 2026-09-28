@@ -19,8 +19,7 @@
     [Parameter, EditorRequired] public IReadOnlyList<NodeRef> Items { get; set; } = Array.Empty<NodeRef>();
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private static string CitationOf(NodeRef unit) =>
-        unit.Id.StartsWith("text-unit:", StringComparison.Ordinal) ? unit.Id["text-unit:".Length..] : unit.Label;
+    private static string CitationOf(NodeRef unit) => NodeIds.LocalPart(unit);
 
     private static string Slug(string citation) => citation.Replace(' ', '-').Replace('.', '-');
 }

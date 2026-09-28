@@ -1647,10 +1647,10 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         switch (node)
         {
             case VerseNode v:
-                wireId = $"text-unit:{v.Title}";
+                wireId = NodeIds.Of(NodeKind.TextUnit, v.Title);
                 break;
             case PassageNode p:
-                wireId = $"text-unit:{CanonRef.FirstVerseOf(p.Title)}";
+                wireId = NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(p.Title));
                 break;
             default:
                 return null;
@@ -1828,8 +1828,8 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
             // The whole frontier, not the first page: an item's catechism-link edges are
             // mostly its proof verses (the First Commandment alone has 200+), and the
             // Concord paragraphs sit after them.
-            units = (await CatechismLinks.AllTargetsAsync(api, $"CatechismItem:{item.Id}"))
-                .Where(n => n.Id.StartsWith("text-unit:BoC ", StringComparison.Ordinal))
+            units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, NodeIds.Of(NodeKind.CatechismItem, item.Id)))
+                .Where(n => n.Kind == PositionKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
                 .ToList();
         }
         catch (Exception)
@@ -1874,9 +1874,9 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
         IReadOnlyList<CatechismRef> items;
         try
         {
-            items = (await CatechismLinks.AllTargetsAsync(api, unit.NodeId))
+            items = (await CatechismLinks.AllTargetsAsync(ctx.Graph, unit.NodeId))
                 .Where(n => n.Kind == PositionKind.CatechismItem)
-                .Select(n => new CatechismRef(id: n.Id.StartsWith("CatechismItem:", StringComparison.Ordinal) ? n.Id["CatechismItem:".Length..] : n.Id, name: n.Label, provenance: [], question: null))
+                .Select(n => new CatechismRef(id: NodeIds.LocalPart(n), name: n.Label, provenance: [], question: null))
                 .ToList();
         }
         catch (Exception)
@@ -1924,7 +1924,7 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
         string text;
         try
         {
-            text = await unit.TextAsync(api);
+            text = await unit.TextAsync(ctx.Graph);
         }
         catch (Exception)
         {
@@ -1950,13 +1950,15 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 
 internal static class CatechismLinks
 {
-    public static async Task<List<NodeRef>> AllTargetsAsync(AtlasClient api, string nodeId)
+    private const int PageSize = 200;
+
+    public static async Task<List<NodeRef>> AllTargetsAsync(IExplorableClient graph, string nodeId)
     {
         var targets = new List<NodeRef>();
         int? cursor = null;
         do
         {
-            var page = await api.NodeEdges(nodeId, EdgeKind.CatechismLink, cursor: cursor, limit: 200);
+            var page = await graph.Edges(nodeId, EdgeKind.CatechismLink, cursor: cursor, limit: PageSize);
             targets.AddRange(page.Entries.Select(e => e.Node));
             cursor = page.Next;
         }
@@ -1995,8 +1997,6 @@ file static class PersonSectionRendering
         builder.CloseElement();
         return seq;
     }
-
-    public static string RawId(string wireId, string prefix) => wireId.StartsWith(prefix, StringComparison.Ordinal) ? wireId[prefix.Length..] : wireId;
 }
 
 public sealed class PersonLifeSection : IPopoverSectionProvider
@@ -2093,7 +2093,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, $"EVENTS ({events.Count})", "person-events-heading");
-            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (PersonSectionRendering.RawId(e.Id, "Event:"), e.Label, (IExplorable)new EventNode(PersonSectionRendering.RawId(e.Id, "Event:"), e.Label))), ctx);
+            PersonSectionRendering.Chips(builder, seq, "person-event", events.Select(e => (NodeIds.LocalPart(e), e.Label, (IExplorable)new EventNode(NodeIds.LocalPart(e), e.Label))), ctx);
         };
         return new PopoverSection("person-events", body);
     }
@@ -2154,7 +2154,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
                 builder.AddAttribute(seq++, "data-testid", $"person-family-{testid}");
                 builder.AddContent(seq++, $"{label} ({people.Count})");
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{testid}", people.Select(p => (PersonSectionRendering.RawId(p.Id, "Person:"), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{testid}", people.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
             }
         };
         return new PopoverSection("person-family", body);

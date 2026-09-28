@@ -23,7 +23,7 @@ public sealed class StartupTests
         // Act
         var app = File.ReadAllText(appPath).ReplaceLineEndings("\n");
         // Assert
-        Assert.Equal(TheRouterAlone, app);
+        Assert.Equal(TheRouterAlone.ReplaceLineEndings("\n"), app);
     }
 
     [Fact]

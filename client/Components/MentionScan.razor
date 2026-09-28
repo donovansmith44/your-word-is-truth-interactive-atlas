@@ -46,10 +46,10 @@
 
     private Task OpenPerson(MouseEventArgs e, string personId, string personName)
     {
-        var node = new PersonNode($"Person:{personId}", personName);
+        var node = new PersonNode(NodeIds.Of(NodeKind.Person, personId), personName);
         return e.CtrlKey || e.MetaKey ? OnToggleSelect.InvokeAsync(node) : OnExplore.InvokeAsync(node);
     }
 
     private Task OnPlaceKeyDown(KeyboardEventArgs e, string placeId, string placeName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PlaceNode(placeId, placeName)) : Task.CompletedTask;
-    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PersonNode($"Person:{personId}", personName)) : Task.CompletedTask;
+    private Task OnPersonKeyDown(KeyboardEventArgs e, string personId, string personName) => e.Key == "Enter" ? OnExplore.InvokeAsync(new PersonNode(NodeIds.Of(NodeKind.Person, personId), personName)) : Task.CompletedTask;
 }

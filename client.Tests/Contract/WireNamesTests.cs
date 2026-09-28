@@ -41,6 +41,23 @@ public sealed class WireNamesTests
         Assert.Throws<FormatException>(act);
     }
 
+    [Fact]
+    public void WireName_of_an_enum_the_contract_does_not_declare_fails_naming_the_member()
+    {
+        // Arrange
+        var member = NotInTheContract.Member;
+        // Act
+        Action act = () => member.WireName();
+        // Assert
+        var thrown = Assert.Throws<NoWireNameException>(act);
+        Assert.Equal("NotInTheContract.Member has no wire name; WireNames serves only generated contract enums", thrown.Message);
+    }
+
+    private enum NotInTheContract
+    {
+        Member,
+    }
+
     private static List<Enum> GeneratedEnumMembers() =>
         typeof(EdgeKind).Assembly.GetTypes()
             .Where(t => t.IsEnum && t.Namespace == typeof(EdgeKind).Namespace)

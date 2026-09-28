@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Net.Http.Json;
 using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -50,7 +49,7 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var scene = await GetRequired<Scene>($"api/scene?from={from}&to={to}");
+        var scene = await _http.GetRequired<Scene>($"api/scene?from={from}&to={to}");
         _sceneCache.Put(key, scene);
         return scene;
     }
@@ -63,14 +62,14 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var scene = await GetRequired<Scene>($"api/scene/scripture?ref={Uri.EscapeDataString(sref)}");
+        var scene = await _http.GetRequired<Scene>($"api/scene/scripture?ref={Uri.EscapeDataString(sref)}");
         _sceneCache.Put(key, scene);
         return scene;
     }
 
-    public Task<List<CanonBook>> Books() => _booksCache.Get(() => GetRequired<List<CanonBook>>("api/books"));
+    public Task<List<CanonBook>> Books() => _booksCache.Get(() => _http.GetRequired<List<CanonBook>>("api/books"));
 
-    public Task<List<Era>> Eras() => _erasCache.Get(() => GetRequired<List<Era>>("api/eras"));
+    public Task<List<Era>> Eras() => _erasCache.Get(() => _http.GetRequired<List<Era>>("api/eras"));
 
     public async Task<Chapter> Chapter(string book, int chapter)
     {
@@ -80,22 +79,22 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<Chapter>($"api/chapter/{key}");
+        var result = await _http.GetRequired<Chapter>($"api/chapter/{key}");
         _chapterCache.Put(key, result);
         return result;
     }
 
     public Task<VerseDetail> Verse(string vref) =>
-        GetRequired<VerseDetail>($"api/verse/{vref}");
+        _http.GetRequired<VerseDetail>($"api/verse/{vref}");
 
     // No cache here (unlike Chapter): Kretzmann re-fetches fresh on every locus change by design
     // (LoadCommentaryAsync's own request-id guard discards stale in-flight responses), so a
     // curator-added commentary unit is visible on the very next chapter visit.
     public Task<KretzmannChapter> KretzmannChapter(string book, int chapter) =>
-        GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
+        _http.GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
 
     public Task<PlaceDetail> Place(string id) =>
-        GetRequired<PlaceDetail>($"api/place/{id}");
+        _http.GetRequired<PlaceDetail>($"api/place/{id}");
 
     public async Task<PlaceDetail> PlaceHistory(string id, int? from, int? to)
     {
@@ -106,7 +105,7 @@ public sealed class AtlasClient
         }
 
         var url = from is int f2 && to is int t2 ? $"api/place/{id}?from={f2}&to={t2}" : $"api/place/{id}";
-        var result = await GetRequired<PlaceDetail>(url);
+        var result = await _http.GetRequired<PlaceDetail>(url);
         _placeHistoryCache.Put(key, result);
         return result;
     }
@@ -118,7 +117,7 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<IReadOnlyList<CrossRef>>($"api/xrefs/{sref}");
+        var result = await _http.GetRequired<IReadOnlyList<CrossRef>>($"api/xrefs/{sref}");
         _xrefsCache.Put(sref, result);
         return result;
     }
@@ -130,22 +129,22 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<IReadOnlyList<CatechismRef>>($"api/catechism/{sref}");
+        var result = await _http.GetRequired<IReadOnlyList<CatechismRef>>($"api/catechism/{sref}");
         _catechismSpanCache.Put(sref, result);
         return result;
     }
 
     public Task<CatechismItem> CatechismItem(string id) =>
-        GetRequired<CatechismItem>($"api/catechism/item/{id}");
+        _http.GetRequired<CatechismItem>($"api/catechism/item/{id}");
 
     public Task<List<Narrative>> Narratives() =>
-        GetRequired<List<Narrative>>("api/narratives");
+        _http.GetRequired<List<Narrative>>("api/narratives");
 
     public Task<NarrativeEventPositions> NarrativeEventPositions(string eventId) =>
-        GetRequired<NarrativeEventPositions>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
+        _http.GetRequired<NarrativeEventPositions>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
 
     public Task<EventDetail> Event(string id) =>
-        GetRequired<EventDetail>($"api/event/{Uri.EscapeDataString(id)}");
+        _http.GetRequired<EventDetail>($"api/event/{Uri.EscapeDataString(id)}");
 
     public async Task<Polities> Polities(int from, int to)
     {
@@ -155,25 +154,19 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<Polities>($"api/polities?from={from}&to={to}");
+        var result = await _http.GetRequired<Polities>($"api/polities?from={from}&to={to}");
         _politiesCache.Put(key, result);
         return result;
     }
 
-    public Task<IReadOnlyList<Landmark>> Landmarks() => _landmarksCache.Get(() => GetRequired<IReadOnlyList<Landmark>>("api/landmarks"));
+    public Task<IReadOnlyList<Landmark>> Landmarks() => _landmarksCache.Get(() => _http.GetRequired<IReadOnlyList<Landmark>>("api/landmarks"));
 
-    public Task<LandMask> LandMask() => _landMaskCache.Get(() => GetRequired<LandMask>("api/land-mask"));
+    public Task<LandMask> LandMask() => _landMaskCache.Get(() => _http.GetRequired<LandMask>("api/land-mask"));
 
-    public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocument>("api/sources"));
-
-    public Task<EdgePage> NodeEdges(string nodeId, EdgeKind kind, int? cursor = null, int limit = 200) =>
-        GetRequired<EdgePage>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
+    public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => _http.GetRequired<SourcesDocument>("api/sources"));
 
     public Task<NodeCard> NodeCard(string nodeId) =>
-        GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(nodeId)}");
-
-    public Task<TextWindow> ConcordUnit(string citation) =>
-        GetRequired<TextWindow>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
+        _http.GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(nodeId)}");
 
     public Task<Contract.Contents> Contents(Corpus corpus)
     {
@@ -183,14 +176,8 @@ public sealed class AtlasClient
             _contentsCache[corpus] = memo;
         }
 
-        return memo.Get(() => GetRequired<Contract.Contents>($"api/contents/{corpus.WireName()}"));
+        return memo.Get(() => _http.GetRequired<Contract.Contents>($"api/contents/{corpus.WireName()}"));
     }
 
     private readonly Dictionary<Corpus, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new();
-
-    private async Task<T> GetRequired<T>(string relativeUrl)
-    {
-        var result = await _http.GetFromJsonAsync<T>(relativeUrl);
-        return result ?? throw new InvalidOperationException($"empty response body from {relativeUrl}");
-    }
 }

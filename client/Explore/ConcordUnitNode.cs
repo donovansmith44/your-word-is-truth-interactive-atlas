@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -16,35 +17,21 @@ public sealed class ConcordUnitNode : IExplorable
     public string Title { get; }
     public string Kind => "ConcordUnit";
 
-    public string NodeId => $"text-unit:{Title}";
+    public string NodeId => NodeIds.Of(NodeKind.TextUnit, Title);
 
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) =>
         Task.FromResult<IReadOnlyList<Exploration>>(Array.Empty<Exploration>());
 
-    public Task<string> TextAsync(AtlasClient api) =>
+    public Task<string> TextAsync(IExplorableClient graph) =>
         _givenText is { } given
             ? Task.FromResult(given)
-            : _text.Get(async () => (await api.ConcordUnit(Title)).Units.FirstOrDefault()?.Text ?? string.Empty);
+            : _text.Get(async () => (await ParagraphAt(graph, Title))?.Text ?? string.Empty);
 
-    public async Task<RenderFragment> BodyAsync(AtlasClient api)
-    {
-        string text;
-        try
-        {
-            text = await TextAsync(api);
-        }
-        catch (Exception)
-        {
-            text = string.Empty;
-        }
+    public static async Task<TextUnit?> ParagraphAt(IExplorableClient graph, string citation) =>
+        (await graph.Reading(citation, OneParagraph, WindowDir.Onward, Corpus.Concord)).Units.FirstOrDefault(u => u.Ref == citation);
 
-        RenderFragment fragment = builder =>
-        {
-            builder.OpenElement(0, "p");
-            builder.AddAttribute(1, "class", "popover-concord-text");
-            builder.AddContent(2, text);
-            builder.CloseElement();
-        };
-        return fragment;
-    }
+    private const int OneParagraph = 1;
+
+    // Unreachable while ConcordUnitTextSection is registered for Kind == "ConcordUnit"; the interface requires a fallback.
+    public Task<RenderFragment> BodyAsync(AtlasClient api) => Task.FromResult<RenderFragment>(_ => { });
 }

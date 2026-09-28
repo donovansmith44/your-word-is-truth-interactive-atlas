@@ -144,8 +144,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
 
             case "ConcordUnit":
             {
-                var window = await graph.Reading(descriptor.Key, 1, WindowDir.Onward, corpus: Corpus.Concord);
-                var unit = window.Units.FirstOrDefault(u => u.Ref == descriptor.Key)
+                var unit = await ConcordUnitNode.ParagraphAt(graph, descriptor.Key)
                     ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: Concord paragraph '{descriptor.Key}' no longer resolves.");
                 return new ConcordUnitNode(unit.Ref, unit.Text);
             }
