@@ -6,7 +6,7 @@
     <div class="popover-catechism-list">
         @foreach (var unit in Items)
         {
-            var citation = CitationOf(unit);
+            var citation = NodeIds.LocalPart(unit);
             <button type="button" class="popover-catechism-item explorable" data-testid="@($"concord-link-{Slug(citation)}")"
                     @onclick="() => OnExplore.InvokeAsync(new ConcordUnitNode(citation))">
                 @citation
@@ -18,8 +18,6 @@
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<NodeRef> Items { get; set; } = Array.Empty<NodeRef>();
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
-
-    private static string CitationOf(NodeRef unit) => NodeIds.LocalPart(unit);
 
     private static string Slug(string citation) => citation.Replace(' ', '-').Replace('.', '-');
 }
