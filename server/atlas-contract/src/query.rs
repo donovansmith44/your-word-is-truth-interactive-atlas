@@ -12,17 +12,11 @@ use atlas_core::time::{TimeRange, Year};
 
 use crate::error::ApiError;
 
-/// Every parameter name this API reads, spelled once: a route matches on these to
-/// name its own refusal, and a refusal quotes the same word back to the caller. The
-/// field that carries `ref` is `r#ref`, so that name needs no `serde(rename)` and is
-/// not written a third time in an attribute no constant can reach.
-pub const REF: &str = "ref";
-pub const FROM: &str = "from";
-pub const TO: &str = "to";
-pub const KIND: &str = "kind";
-pub const CURSOR: &str = "cursor";
-pub const LIMIT: &str = "limit";
-pub const UNITS: &str = "n";
+/// The three parameter names this API needs as VALUES: each is matched on to pick a
+/// route's refusal and written into that refusal's own sentence, so the two would
+/// otherwise spell it twice. Every other parameter is named once, by the field that
+/// carries it -- including `ref`, whose field is `r#ref` so that even its name is not
+/// repeated in a `serde(rename)` attribute no constant could reach.
 pub const DIR: &str = "dir";
 pub const SCOPE: &str = "scope";
 pub const CORPUS: &str = "corpus";
