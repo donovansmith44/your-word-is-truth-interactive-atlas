@@ -23,6 +23,8 @@
   </ItemGroup>
 
   <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract">
+    <MSBuild Projects="../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj" Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
     <MSBuild Projects="../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="ContractGenerator" />
     </MSBuild>
