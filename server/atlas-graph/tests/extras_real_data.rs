@@ -1,7 +1,3 @@
-//! DB-4b: the nine folded sidecars over the REAL `data/compiled` files:
-//! every loaded struct's every field lands in a table (lossless -- DB-5
-//! deletes the JSONs), row counts match the sources, the fold is
-//! deterministic, and a fixture directory without sidecars folds nothing.
 use std::path::Path;
 
 use atlas_graph::sqlite::extras::{table_specs_of, Col, Extras};
@@ -14,8 +10,6 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
-/// DB-5: the fold's input -- the ETL's own in-memory `AtlasData` (from
-/// raw + curated, exactly what the compile folds) and `sources.json`.
 struct Sidecars {
     atlas: atlas_core::data::AtlasData,
     sources: atlas_core::sources::SourcesDocument,
@@ -82,12 +76,10 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     assert_eq!(n("source_entry"), sc.sources.sources.len());
     assert_eq!(n("provenance_entry"), sc.sources.provenances.len());
     assert!(n("provenance_entry") > 0 && n("catechism_item") > 0 && n("land_mask_region") > 0, "the folds are inhabited");
-    // testament is derived from BOOKS order (survey: no source field)
     let cb = ex.table("canon_book").unwrap();
     assert_eq!(cb.rows[0], vec![Col::Int(0), Col::Text("GEN".into()), Col::Text("Genesis".into()), Col::Text("OT".into()), Col::Int(50)]);
     assert_eq!(cb.rows[39][3], Col::Text("NT".into()));
     assert_eq!(cb.rows[39][1], Col::Text("MAT".into()));
-    // a place with two alias rows keeps both (judgment call 6: alias_ord)
     let multi = sc.atlas.place_name_aliases.iter().find(|(_, v)| v.len() > 1).map(|(id, _)| id.clone());
     if let Some(id) = multi {
         assert!(
@@ -95,7 +87,6 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
             "{id} has an alias_ord 1 row"
         );
     }
-    // deterministic
     let again = fold_sidecars(&sc.atlas, &sc.sources).unwrap();
     let mut ex2 = Extras::default();
     ex2.extend(again);
@@ -104,8 +95,6 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     }
 }
 
-/// DB-4b, the server-path proof: `GraphService::from_artifact` (what
-/// `atlas-server` and `bibex` load) publishes the committed manifest's root.
 #[test]
 fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
     let (service, _, _) = atlas_graph::service::GraphService::from_sections(&data_dir()).expect("the sections open");
@@ -113,8 +102,6 @@ fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
     assert_eq!(service.version().0.hex(), manifest.root, "one root: the served version and data/compiled/manifest.toml");
 }
 
-/// DB-4c: `unfold` is the inverse of the fold on the real sidecars -- the
-/// serving path can build `AtlasData` and `SourcesDocument` from core.
 #[test]
 fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
     let sc = sidecars();
@@ -123,8 +110,6 @@ fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
     let (atlas, sources) = snap.with_conn(atlas_graph::sqlite::sidecars::unfold).unwrap();
     assert_eq!(sources, sc.sources);
     assert_eq!(atlas.canon, sc.atlas.canon);
-    // book_meta's key is the book code (spec 5.3): the table's pk order,
-    // not the JSON's canonical order -- every reader looks a book up.
     let mut a_meta = atlas.books_meta.clone();
     let mut b_meta = sc.atlas.books_meta.clone();
     a_meta.sort_by(|x, y| x.book.cmp(&y.book));
@@ -141,10 +126,6 @@ fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
     assert_eq!(a_windows, b_windows, "narration windows (keyed by book; the table's pk order)");
     assert_eq!(atlas.place_history, sc.atlas.place_history);
     assert_eq!(atlas.place_name_aliases, sc.atlas.place_name_aliases);
-    // and finish()'s derived indexes agree
-    // `compile()` finishes its AtlasData BEFORE the catechism is assigned
-    // (the catechism indexes are built by the caller's own `finish()`, as
-    // the JSON path always did), so both sides are finished here.
     let (a, b) = (atlas.finish(), sc.atlas.clone().finish());
     let span = atlas_core::refs::ScriptureRef::parse("JHN.3.16").unwrap();
     assert_eq!(a.catechism_items_for_span(&span).len(), b.catechism_items_for_span(&span).len());

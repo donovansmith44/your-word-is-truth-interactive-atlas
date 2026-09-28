@@ -1,26 +1,3 @@
-//! Batch ATTEST-1 real-data laws: ACCOUNTS vs. MENTIONS over the real
-//! committed corpus, plus the owner-ratified `Analogue` relation.
-//!
-//! THE OWNER'S DIAGNOSIS (verbatim): "I'm seeing a fundamental error. The
-//! Espousal of Mary event has parallel accounts Mat.1.18 + Luke.1.27, and
-//! that's a distinct event from The Angel Gabriel Announces Jesus'... which
-//! has Luk1.26-36; Even worse, the appearance of Gabriel to Zacharias is
-//! BETWEEN the espousal of mary and the announcement of Gabriel to Mary."
-//! And separately: "A leper healed; a great popular excitement is given a
-//! parallel where there shouldn't be from Mat.8.1-4; another leprosy
-//! story... let's call it Analogue; that's ok for now."
-//!
-//! Both reports are one defect class: `Attests` -- the relation that means
-//! "this passage NARRATES this event" -- was carrying verses that merely
-//! REFERENCE an event, and joining two similar-but-distinct stories. This
-//! file pins the corrections over the real corpus, and pins the SWEEP that
-//! found the rest of the class (see `attestation_pending::PENDING`, the
-//! compiled curation queue).
-//!
-//! Same per-file real-graph construction every other `_real_data.rs` file
-//! in this crate uses (deliberately duplicated, not shared -- see
-//! `bible_containers_real_data.rs`'s own header).
-
 use std::path::Path;
 
 use atlas_graph_types::edge::MentionedEntity;
@@ -50,13 +27,6 @@ fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     })
 }
 
-/// THE FOUNDING CASE, over the real corpus (L1 + L3). `theo-249` "Espousal
-/// of Mary" carried LUK.1.27 and MAT.1.18 as its two "parallel accounts";
-/// neither narrates the espousal. After the retype it has ZERO `Attests`
-/// rows and exactly its two `Mentions` rows -- TOTAL CAPTURE: the facts
-/// changed type, they were not dropped. Both halves are asserted because
-/// either alone passes on a broken shape (zero attests AND zero mentions
-/// would be silent data loss).
 #[test]
 fn the_espousal_of_mary_is_mention_only_and_keeps_both_facts() {
     let graph = real_graph();
@@ -85,8 +55,6 @@ fn the_espousal_of_mary_is_mention_only_and_keeps_both_facts() {
         "total capture: MAT.1.18 (book 39) and LUK.1.27 (book 41) must BOTH still reach the espousal, as mentions"
     );
 
-    // And the collision that started it all is gone: LUK.1.27 now attests
-    // exactly ONE event, the annunciation whose narrative it sits inside.
     let luk_1_27: Vec<&str> = graph
         .attests
         .iter()
@@ -103,11 +71,6 @@ fn the_espousal_of_mary_is_mention_only_and_keeps_both_facts() {
     );
 }
 
-/// THE ANALOGUE CHARTER CASE, over the real corpus (L4). Matthew's leper
-/// (MAT.8.1-4, "when he was come down from the mountain") and Mark's/Luke's
-/// (MRK.1.40-45 / LUK.5.12-16, during the first Galilean tour, with the
-/// publishing-abroad aftermath the event is titled for) are two events, and
-/// the relation that joins them says similar, not same.
 #[test]
 fn the_two_leprosy_events_are_distinct_and_joined_by_an_analogue() {
     let graph = real_graph();
@@ -146,17 +109,6 @@ fn the_two_leprosy_events_are_distinct_and_joined_by_an_analogue() {
     assert!(joined, "the two leprosy events must be joined by an Analogue row -- the owner's own ratified idiom for 'stories that are very similar in this regard, but distinct events'");
 }
 
-/// THE STANDING LAWS, asserted over the REAL corpus rather than a fixture
-/// (the same discipline `bible_containers_real_data.rs` applies to the
-/// forest gate and the index≡rows law):
-///   * L2, attestation exclusivity -- fail-loud against the declared
-///     curation queue, in both directions (an undeclared collision, or a
-///     stale/drifted declaration, is a build failure);
-///   * L4's companion -- every `Analogue` row joins two distinct events,
-///     exactly once.
-/// These are the SAME functions `pipeline::LawCheckPass` runs on every
-/// build; asserting them here as well is what makes a failure legible as a
-/// named test rather than only as a build abort.
 #[test]
 fn the_attestation_laws_hold_over_the_real_corpus() {
     let graph = real_graph();
@@ -166,20 +118,6 @@ fn the_attestation_laws_hold_over_the_real_corpus() {
     atlas_graph::law_check::analogue_rows_join_two_distinct_events(graph).expect("L4's distinctness gate must hold over the real corpus");
 }
 
-/// THE CORPUS SWEEP, pinned (the brief's own requirement 4: "find EVERY
-/// verse attested to >=2 distinct events"). These are real numbers off the
-/// real corpus, and they are the batch's most important finding: the
-/// account/mention confusion the owner caught is NOT a handful of typos --
-/// the `Attests` relation is systematically carrying a CONTAINMENT
-/// relationship it was never meant to carry.
-///
-/// Every pair below is declared in `attestation_pending::PENDING` with its
-/// mechanical structural class and nothing else; the semantic disposition
-/// is the owner's, one pair at a time, against the KJV text
-/// (`batch-attest1-report.md` carries the full table). Pinning the totals
-/// here means the queue's own SIZE cannot drift silently in either
-/// direction -- it shrinks only when someone resolves a pair and records
-/// the shrink.
 #[test]
 fn the_corpus_sweep_totals_are_pinned() {
     use atlas_graph::attestation_pending::{Class, PENDING};
@@ -188,14 +126,10 @@ fn the_corpus_sweep_totals_are_pinned() {
     let overlap = PENDING.iter().filter(|p| p.class == Class::Overlap).count();
     assert_eq!(containment + overlap, PENDING.len(), "every declared row carries a class");
 
-    // The pinned inventory shape (see the module's own doc comment for how
-    // these were derived and why the semantic call is deliberately absent).
     assert_eq!(PENDING.len(), SWEEP_PENDING_PAIRS, "the curation queue's size changed -- re-run the sweep and record the change");
     assert_eq!(containment, SWEEP_CONTAINMENT_PAIRS, "the containment-class count changed");
     assert_eq!(overlap, SWEEP_OVERLAP_PAIRS, "the overlap-class count changed");
 
-    // Sorted and unique, so a hand-edit cannot introduce a shadowed
-    // duplicate the law would then silently accept twice.
     let mut keys: Vec<(&str, &str)> = PENDING.iter().map(|p| (p.a, p.b)).collect();
     let before = keys.len();
     keys.sort();
@@ -203,28 +137,6 @@ fn the_corpus_sweep_totals_are_pinned() {
     assert_eq!(keys.len(), before, "attestation_pending::PENDING contains a duplicate pair");
     assert!(PENDING.iter().all(|p| p.a < p.b), "every row must be stored with its ends in lexicographic order -- law_check folds observed collisions the same way");
 
-    // The pairs THIS batch resolved must be ABSENT: resolving a pair means
-    // deleting its row, and a queue that keeps resolved entries stops being
-    // a queue. Absence here is also the regression pin that says "this was
-    // resolved, do not re-create it" -- without the row, a future re-attest
-    // would come back as a NEW undeclared collision, which reds, but the
-    // resolution itself would be recorded nowhere.
-    //
-    // TWO of these were genuine L2 collisions at BASE (`62e49e6`'s
-    // `data/exports/chronology.json`, checked directly): LUK.1.27 sat in
-    // both `theo-249`'s and `rob_annunciation_mary`'s `Attests` sets, and
-    // MAT.1.18 sat in both `theo-249`'s and `rob_joseph_annunciation`'s.
-    // Both are retyped to `Mentions` on `theo-249` (L1), leaving the
-    // espousal mention-only (L3).
-    //
-    // The THIRD, `mat_leper_healed`/`rob_leper_healed`, was never an L2
-    // collision -- MAT.8.1-4 attested exactly one event at BASE
-    // (`rob_leper_healed`). It was a FALSE PARALLEL INSIDE one event, and
-    // the split that fixed it is what makes the pair possible at all. It is
-    // pinned absent here for the forward direction: the two leprosy events
-    // are joined by an `Analogue` row and must NEVER come to share an
-    // attestation, which would re-fabricate the parallel the owner reported.
-    // (ATTEST-1 fix round 1, review finding M-3.)
     for resolved in [
         ("rob_annunciation_mary", "theo-249"),
         ("rob_joseph_annunciation", "theo-249"),
@@ -237,9 +149,6 @@ fn the_corpus_sweep_totals_are_pinned() {
     }
 }
 
-// Pinned sweep totals -- see `the_corpus_sweep_totals_are_pinned` above.
-// Kept as named constants so a future batch that legitimately shrinks the
-// queue changes ONE line per number, with the change visible in the diff.
 const SWEEP_PENDING_PAIRS: usize = 824;
 const SWEEP_CONTAINMENT_PAIRS: usize = 590;
 const SWEEP_OVERLAP_PAIRS: usize = 234;

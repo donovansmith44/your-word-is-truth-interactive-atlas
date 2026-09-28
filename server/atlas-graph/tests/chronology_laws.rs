@@ -1,35 +1,3 @@
-//! BATCH M-B, brief requirement 5: E1 (anchor-equality), E2 (window-
-//! adherence), E3 (canonical-order embedding), E4 (era-partition) --
-//! RE-IMPLEMENTED over graph placements. The `atlas-core` originals
-//! (`server/atlas-core/src/narrative.rs::tests::e1_*`..`e4_*`) stay green,
-//! UNTOUCHED, still reading `AtlasData`'s own chronology fields directly --
-//! see batch-mb-report.md's own "law re-homing map" for exactly which
-//! surface retired (the `/api/narrative/event/{id}` production call site)
-//! and which stayed standing (the atlas-core tests themselves, and every
-//! OTHER endpoint that still reads `AtlasData` for chronology, e.g. the map
-//! scenes, untouched until M-C).
-//!
-//! DATA SOURCED FROM THE GRAPH, not `AtlasData` fields, for the two facts
-//! each law actually needs from "the graph":
-//! - a dated event's own resolved YEAR: independently re-walked from the
-//!   REAL `dated_by` row's own stored `DatePlacement` via
-//!   `event_world::resolve_timepoint` (never read off `Event.when.from_year`
-//!   directly).
-//! - a dated event's own WITNESS BOOKS: read off the REAL `attests` rows
-//!   (`Event -> BibleLocusRange`), not `Event.verses`/`Event.witnesses`.
-//! - a dated event's own GLOBAL ORDER: `graph_types::chrono::temporal_order`
-//!   over each event's reconstructed `ResolvedPlacement`, never
-//!   `AtlasData::timeline_position`.
-//!
-//! Two tables stay adapter-side lookups, reused directly from the SAME
-//! `AtlasData` this batch's own adapter already treats as its curated
-//! input (per the disclosed deviation) rather than re-derived a second
-//! time: `book_narration_windows` (E2/E4) and each anchor's own
-//! `era_boundary` flag (E4) -- see `event_world::Chronology`'s own doc
-//! comment for why `era_boundary` specifically stays off the graph-types
-//! `NodePayload::Anchor` shape (not part of the binding types spec; a
-//! genuine shape change graph-types' extend-only law does not require).
-
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -41,10 +9,6 @@ use atlas_graph::Chronology;
 use atlas_graph_types::chrono::temporal_order;
 use atlas_graph_types::edge::Attests;
 
-// M-C2 DELETION EVENT: `AtlasData::load`'s own five retiring-file reads
-// return empty now -- `atlas_etl::compile::compile` is this crate's own
-// real-data source from here on. Cached (`OnceLock`) so this file's own
-// multiple `#[test]`s calling `build_real()` share one compile.
 fn load_real_atlas() -> AtlasData {
     static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
     CACHED
@@ -89,11 +53,6 @@ fn build_real() -> RealGraph {
     RealGraph { atlas, graph, resolved }
 }
 
-/// This event's own witness books, read from the REAL `attests` rows (not
-/// `Event.verses`/`Event.witnesses`) -- same recounting/exemption
-/// exclusion `atlas_core::chronology::window_check_books` applies, reused
-/// directly (pure functions of book/chapter/event-id, not tied to
-/// `AtlasData`'s own shape).
 fn graph_witness_books<'a>(attests: &[Attests], event_id: &str) -> HashSet<&'a str> {
     let mut out = HashSet::new();
     for row in attests.iter().filter(|r| r.event.0 == event_id) {
@@ -113,14 +72,6 @@ fn window_for<'a>(atlas: &'a AtlasData, book: &str) -> Option<&'a atlas_core::da
     atlas.book_narration_windows.iter().find(|w| w.book == book)
 }
 
-/// E1 -- ANCHOR-EQUALITY, over the graph: every anchor-table row bound to
-/// an event id -> the event's own DatedBy row (a REAL graph row, not an
-/// AtlasData field) resolves, via `resolve_timepoint`, to that anchor's own
-/// canonical `year` -- exactly like the atlas-core original, but the
-/// "compiled event's own year" half now comes from independently
-/// re-walking the STORED graph placement. Deferred rows (same
-/// `ANCHOR_DEFERRALS` mechanism, reused directly) are reported, not
-/// silently passed, mirroring the original's own discipline.
 #[test]
 fn e1_every_bound_anchor_equals_its_graphs_own_resolved_event_year() {
     let rg = build_real();
@@ -131,7 +82,7 @@ fn e1_every_bound_anchor_equals_its_graphs_own_resolved_event_year() {
     let mut deferred = Vec::new();
     for a in &bound {
         let eid = a.event_id.as_deref().unwrap();
-        let Some(resolved) = rg.resolved.get(eid) else { continue }; // dangling event_id: run_chronology_anchors's own job, not this law's
+        let Some(resolved) = rg.resolved.get(eid) else { continue };
         let graph_year = resolved.date.from.year.get();
 
         if let Some(def) = anchor_deferral(&a.id) {
@@ -152,9 +103,6 @@ fn e1_every_bound_anchor_equals_its_graphs_own_resolved_event_year() {
     assert!(violations.is_empty(), "E1 (graph) anchor-equality violated for {} row(s):\n{}", violations.len(), violations.join("\n"));
 }
 
-/// E2 -- WINDOW-ADHERENCE, over the graph: every dated event's own
-/// graph-resolved year lies within the narration window of every witness
-/// book the graph's OWN `attests` rows carry for it.
 #[test]
 fn e2_every_dated_event_adheres_to_its_graph_attested_books_own_narration_window() {
     let rg = build_real();
@@ -166,7 +114,7 @@ fn e2_every_dated_event_adheres_to_its_graph_attested_books_own_narration_window
         let mut books: Vec<&str> = graph_witness_books(&rg.graph.attests, event_id).into_iter().collect();
         books.sort_unstable();
         for book in books {
-            let Some(w) = window_for(&rg.atlas, book) else { continue }; // missing-window structural gap: a separate, disclosed concern, not this law's job
+            let Some(w) = window_for(&rg.atlas, book) else { continue };
             if year < w.from_year || year > w.to_year {
                 violations.push(format!("'{event_id}': year {year} outside '{book}''s own narration window {}..{}", w.from_year, w.to_year));
             }
@@ -176,10 +124,6 @@ fn e2_every_dated_event_adheres_to_its_graph_attested_books_own_narration_window
     assert!(violations.is_empty(), "E2 (graph) window-adherence violated for {} event/book pair(s):\n{}", violations.len(), violations.join("\n"));
 }
 
-/// E3 -- CANONICAL-ORDER, over the graph: the bound, non-deferred anchor
-/// rows, sorted by the TABLE's own year, embed in the graph's own
-/// `temporal_order` in strictly that order (ties allowed only where two
-/// anchors share the identical table year).
 #[test]
 fn e3_bound_anchors_sorted_by_table_year_are_monotone_under_the_graphs_own_temporal_order() {
     let rg = build_real();
@@ -209,12 +153,6 @@ fn e3_bound_anchors_sorted_by_table_year_are_monotone_under_the_graphs_own_tempo
     assert!(violations.is_empty(), "E3 (graph) canonical-order violated for {} adjacent pair(s):\n{}", violations.len(), violations.join("\n"));
 }
 
-/// E4 -- ERA-PARTITION, over the graph: every dated event's graph-attested
-/// witness-book windows must agree with its `temporal_order` position
-/// relative to EVERY `era_boundary` anchor -- the OT-wide generalization,
-/// re-homed. `era_boundary` itself stays a curated-table lookup (see this
-/// file's own module doc comment for why it never needed to become a
-/// graph-types shape change).
 #[test]
 fn e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal_order() {
     let rg = build_real();
@@ -259,7 +197,7 @@ fn e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal
             } else if all_after && !all_before {
                 "after"
             } else {
-                continue; // straddles this boundary -- no assertion, same carve-out as the atlas-core original
+                continue;
             };
 
             let ord = temporal_order(e_p, b_p);
@@ -276,16 +214,6 @@ fn e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal
     assert!(violations.is_empty(), "E4 (graph) era-partition violated for {} event(s):\n{}", violations.len(), violations.join("\n"));
 }
 
-/// Batch GAZ-1+CHRON-FIX (2026-08-24), real-data spot check: `theo-87`
-/// ("Nimrod's kingdom begins," GEN.10.8-12) is corrected via
-/// `atlas_core::chronology::THEO_DATE_OVERRIDES` from the raw Theographic
-/// import's anachronistic -1822 to -2242 (Genesis 10:10 "the beginning of
-/// his kingdom was Babel"; this atlas's own declared traditional scale
-/// dates Babel/the dispersion to 2242 BC, Ussher's Annals of the World).
-/// Asserted against the REAL compiled graph's own `dated_by` row (via the
-/// SAME `resolve_timepoint` walk `build_real()` already performs for
-/// E1-E4 above), not `Event.when` directly, so this fails loud if a future
-/// change to the override table or the ETL wiring silently reverts it.
 #[test]
 fn theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year() {
     let rg = build_real();
@@ -297,16 +225,6 @@ fn theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year() {
     );
 }
 
-/// ORDER-1 (owner finding 2026-09-15; ruled at DB-4a): the chronology order
-/// is TOTAL and DATA-CARRIED. `resolved[id].seq` IS the event's position in
-/// `order` (a `SeqKey`, persisted in the artifact and, from DB-4b, in
-/// `event_date.seq`), so a SQL `ORDER BY seq` reproduces the served
-/// prior/following exactly -- no sort key has to re-derive it. The order
-/// itself is `from_year`-monotone; inside one year the curated sequence
-/// (a narrative's own leg order) is the tie-break and is SEMANTIC
-/// (`narrative_real_data.rs`'s E5 laws pin it), which is why the key is
-/// not "then id": id order would reorder David's flight. The scene path
-/// (`scene_source.rs`) is a different, also total, order: `(from_year, id)`.
 #[test]
 fn the_chronology_order_is_total_and_carried_by_seq() {
     let atlas = load_real_atlas();

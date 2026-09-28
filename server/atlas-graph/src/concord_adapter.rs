@@ -1,45 +1,6 @@
-//! Batch CORP-2a: the Book of Concord corpus adapter -- turns
-//! `atlas_etl::concord::ConcordCorpus` (the parsed HTML) into one
-//! TextUnit node per paragraph, the document/article `Contains<
-//! ConcordTag>` containers (decision 3), the "concord" reading spine
-//! (canonical document order, decision 3), and the SC-overlap
-//! `CatechismLink` rows (decision 4) -- mirrors `kjv_adapter.rs`'s own
-//! "TextUnit + reading spine" shape for NORMALIZE and `catechism_
-//! adapter.rs`'s own "curated cross-reference -> symmetric relation rows"
-//! shape for MERGE/ALIAS.
-//!
-//! NODE IDENTITY: a TextUnit's `AnyNodeId.raw` is
-//! `"concord/{part}.{article}.{paragraph}"` -- EXACTLY what `graph_types::
-//! graph::Graph::build_indexes`'s own (private) `text_node` helper
-//! produces from a `TextRef::Concord(ConcordRef)` (required for `cites`/
-//! `confesses`/`catechism-link`/... BiIndexes, built from `TextLocus`
-//! endpoints, to resolve to the SAME node ids this adapter inserts into
-//! `graph.nodes` -- the same requirement `kjv_adapter.rs`'s own doc
-//! comment states for the Bible corpus). A CONTAINER's own id is
-//! `"concord-doc-{key}"` (one per document) or `"concord-art-{key}-
-//! {article}"` (one per article) -- stable, internal, never displayed;
-//! the container's own DISPLAY name is its `NodePayload::Container.title`
-//! (a document's own canonical title, or an article's own source-given
-//! title) -- "names are refs, not identity" (`kjv_adapter.rs`'s own `dot_
-//! ref` doc comment names this same discipline).
-//!
-//! TWO-TIER CONTAINMENT (decision 3: "contains_concord rows build the
-//! document/article containers"), in the BIBLE'S OWN SHAPE since D3
-//! (owner, 2026-09-15: "new abstractions that are implementations of our
-//! container abstraction to group things in the BoC in an analogous way
-//! to how we did the Bible"): document ⊃ article as `ContainerContent::
-//! Container` rows, ONE ROW PER ARTICLE in article order (the pairwise
-//! edge `bible_container_adapter.rs` mints for book ⊃ chapter), and
-//! article ⊃ paragraphs as one `ContainerContent::Loci` row (chapter ⊃
-//! verses). Before D3 the document tier was a FLAT union of every
-//! article's paragraph loci -- a paragraph then answered "member-of" with
-//! BOTH its article and its document; now it answers with its article,
-//! and the article answers with its document, exactly as a verse's
-//! chapter answers with its book. Both tiers populate
-//! `graph.contains_concord`, explorable through the SAME generic
-//! "contains"/"member-of" port; the containment forest law
-//! (`law_check::container_containment_is_a_forest`) holds: documents are
-//! roots, every article has exactly one parent.
+//! The Book of Concord corpus: one TextUnit node per paragraph, whose raw id is
+//! `concord/{part}.{article}.{paragraph}` -- the spelling `Graph::build_indexes` derives from a
+//! `TextRef::Concord`. A container's id is `concord-doc-{key}` or `concord-art-{key}-{article}`.
 
 use std::collections::BTreeSet;
 
@@ -54,18 +15,12 @@ use atlas_graph_types::text::{ConcordRef, ConcordTag, Locus, LocusSet, TextLocus
 use crate::pipeline::BuildCtx;
 
 pub const CONCORD_CORPUS: &str = "concord";
-/// The canonical rendering layer for the whole Concord corpus (decision 3:
-/// "canonical rendering = Bente-Dau English") -- one translation, unlike
-/// the Bible corpus's many; a distinct key from `kjv_adapter::
-/// KJV_TRANSLATION` on purpose (this is NOT the King James Version).
+/// The canonical rendering layer for the whole Concord corpus: one translation, unlike the Bible
+/// corpus's many, and a key deliberately distinct from the KJV's -- this is not that translation.
 pub const CONCORD_TRANSLATION: &str = "bente-dau";
 
-/// The parsed corpus + the curated SC-overlap alignment, bundled so
-/// `BuildCtx` threads ONE new `Option<&ConcordBundle>` field (mirrors
-/// `BuildCtx.brainfuel: Option<&BrainFuelCorpus>`'s own "absent == an
-/// honestly empty build, not a placeholder" precedent) rather than two
-/// independently-optional ones that could disagree about whether Concord
-/// data is present at all.
+/// The parsed corpus and the curated SC-overlap alignment, bundled so one optional field threads
+/// through the build rather than two that could disagree about whether Concord data is present.
 pub struct ConcordBundle {
     pub corpus: ConcordCorpus,
     pub sc_overlap: Vec<ScOverlapRow>,
@@ -77,25 +32,20 @@ pub struct ConcordAdapterStats {
     pub articles: usize,
     pub paragraphs: usize,
     pub sc_overlap_links: usize,
-    /// A curated SC-overlap row whose own `item` names no real
-    /// CatechismItem node in THIS build (`merge_alias`'s own doc comment
-    /// -- disclosed, never a hard failure).
+    /// A curated SC-overlap row whose `item` names no real CatechismItem node in THIS build:
+    /// disclosed, never a hard failure.
     pub sc_overlap_unmatched_items: usize,
     /// A curated SC-overlap row whose own paragraph names no real Concord
     /// TextUnit node in THIS build.
     pub sc_overlap_unmatched_paragraphs: usize,
 }
 
-/// The TextUnit node id for one Concord paragraph position -- see module
-/// doc comment for the format (must match `graph_types::graph::text_node`
-/// exactly).
 pub fn text_unit_id(part: u8, article: u16, paragraph: u16) -> AnyNodeId {
     AnyNodeId { kind: NodeKind::TextUnit, raw: format!("concord/{part}.{article}.{paragraph}") }
 }
 
-/// The inverse of `text_unit_id` -- `None` for anything not shaped like
-/// one of this adapter's own ids, never a panic (mirrors `kjv_adapter::
-/// decode_text_unit` exactly).
+/// The inverse of `text_unit_id`: `None` for anything not shaped like one of this adapter's own ids,
+/// never a panic.
 pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
     if id.kind != NodeKind::TextUnit {
         return None;
@@ -119,16 +69,7 @@ fn article_container_id(key: &str, article: u16) -> ContainerNodeId {
     ContainerNodeId::new(format!("concord-art-{key}-{article}"))
 }
 
-/// Pipeline-facing NORMALIZE entry point: walks `ctx.concord`'s own parsed
-/// corpus into one TextUnit node per paragraph, one Container node +
-/// `Contains<ConcordTag>` row per document AND per article, and the
-/// "concord" reading spine, in canonical (part, article, paragraph)
-/// order -- mirrors `kjv_adapter::normalize`'s own "nodes + the spine,
-/// self-contained, no cross-adapter dependency" NORMALIZE-eligibility
-/// (module doc comment's own "TWO-TIER CONTAINMENT"). Absent `ctx.concord`
-/// (every test fixture that doesn't supply real Concord data, the SAME
-/// "honestly empty, not a placeholder" treatment `ctx.brainfuel`/`ctx.eras`
-/// already get) is a true no-op.
+/// Absent `ctx.concord` is a true no-op: no nodes, no rows, no spine.
 pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     let mut stats = ConcordAdapterStats::default();
     let Some(bundle) = ctx.concord else {
@@ -163,22 +104,16 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 art_container.erase(),
                 Node { id: art_container.erase(), payload: NodePayload::Container { title: article.title.clone() }, provenance: "concord".to_string() },
             );
-            // NODE1-ROWS-1 (mechanical migration): `Contains.content` is
-            // the `ContainerContent` enum now -- this adapter's rows stay
-            // flat loci, wrapped in `Loci(..)` (the doc/article tiers'
-            // own shape is unchanged; only the type widened).
             ctx.graph.contains_concord.push(Contains {
                 container: art_container.clone(),
                 content: ContainerContent::Loci(LocusSet(art_content)),
                 provenance: ProvenanceId::from("concord"),
                 justification: Default::default(),
             });
-            // D3: document ⊃ article as a Container row -- the Bible's
-            // book ⊃ chapter shape. One row per article, in article order
-            // (order is load-bearing: contents trees and `member-of` pages
-            // read it). The FLAT paragraph-locus union the document tier
-            // used to carry is gone: paragraphs are reachable through
-            // their article, exactly as verses through their chapter.
+            // Document contains article as a Container row, the book-contains-chapter shape: one row
+            // per article, in article order, which is load-bearing -- contents trees and `member-of`
+            // pages read it. A paragraph is reachable through its article, as a verse through its
+            // chapter.
             ctx.graph.contains_concord.push(Contains {
                 container: doc_container.clone(),
                 content: ContainerContent::Container(art_container),
@@ -197,18 +132,9 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     stats
 }
 
-/// Pipeline-facing MERGE/ALIAS entry point: lowers the curated SC-overlap
-/// alignment (`ctx.concord.sc_overlap`, decision 4) into `catechism-link`
-/// rows -- runs in MERGE/ALIAS (not NORMALIZE) because it cross-references
-/// `catechism_adapter::normalize`'s own CatechismItem nodes, the SAME
-/// "crosses an adapter boundary -> MERGE/ALIAS" reasoning `catechism_
-/// adapter::merge_alias` itself documents (`pipeline.rs`'s own stage
-/// ordering guarantees `catechism_adapter::normalize` already ran, since
-/// NormalizePass completes in full before MergeAliasPass starts). The
-/// small-catechism document's own `part` is looked up from `ctx.concord`'s
-/// own parsed corpus rather than hardcoded -- if the Concord corpus's own
-/// vendored/parsed shape ever changed part numbers, this adapter would
-/// still target the RIGHT document, not a stale constant.
+/// Runs in MERGE/ALIAS rather than NORMALIZE because it cross-references the CatechismItem nodes
+/// that pass built. The small-catechism document's own `part` is looked up from the parsed corpus
+/// rather than hardcoded, so a renumbered corpus still targets the right document.
 pub fn merge_alias(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     let mut stats = ConcordAdapterStats::default();
     let Some(bundle) = ctx.concord else {
@@ -219,23 +145,9 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     };
     for row in &bundle.sc_overlap {
         let item_id = CatechismItemId::new(row.item.clone());
-        // Defensive existence check (decision 4: "unmatched items/paras
-        // disclosed"), not force-fit: a caller that supplies a real
-        // Concord bundle over a PARTIAL/empty `AtlasData` (no real
-        // catechism.toml content -- e.g. a test fixture scoped to
-        // something else entirely, `window_law.rs`'s own real, live-
-        // caught case) would otherwise emit a `CatechismLink` row naming
-        // a CatechismItem node that plain does not exist in THIS build,
-        // failing the pipeline's own generic referential-integrity law
-        // (`law_check::every_authored_edge_resolves`) hard -- skipped and
-        // counted instead, the SAME "a row naming no real node is
-        // skipped, not panicked on" discipline `peoples_adapter.rs`'s own
-        // reclassify-row handling already establishes. Over the REAL
-        // committed `catechism.toml` (every real caller -- `GraphService::
-        // build`/`bins/compile_graph.rs`), every one of these 33 curated
-        // rows' own item id DOES resolve (hand-verified, decision 4) --
-        // this guard exists for build-time robustness, not because a real
-        // mismatch is expected.
+        // A curated row whose item names no node in THIS build is skipped and counted rather than
+        // emitted: a caller can supply a real Concord bundle over an empty `AtlasData`, and an edge
+        // naming a missing node would fail the referential-integrity law hard.
         if !ctx.graph.nodes.contains_key(&item_id.erase()) {
             stats.sc_overlap_unmatched_items += 1;
             continue;
@@ -266,9 +178,6 @@ mod tests {
     use std::collections::HashMap;
 
     fn tiny_corpus() -> ConcordCorpus {
-        // Two documents, mirroring the real shape closely enough to
-        // exercise both container tiers + the spine, without needing the
-        // real 3,827-paragraph corpus in a unit test.
         ConcordCorpus {
             documents: vec![
                 ConcordDocument {
@@ -351,8 +260,6 @@ mod tests {
         let spine = ctx.graph.reading.get(CONCORD_CORPUS).expect("concord reading spine must exist");
         assert_eq!(spine.order.len(), 3);
         let decoded: Vec<_> = spine.order.iter().map(|id| decode_text_unit(id).unwrap()).collect();
-        // Augsburg Confession (part 3) before Small Catechism (part 7) --
-        // canonical part order, document order preserved within a part.
         assert_eq!(decoded, vec![(3, 4, 1), (3, 4, 2), (7, 2, 1)]);
     }
 
@@ -386,9 +293,6 @@ mod tests {
         normalize(&mut ctx);
         ctx.graph.build_indexes();
 
-        // D3 (the Bible's shape): the Augsburg Confession's own DOCUMENT
-        // container contains its ARTICLE container (one row per article --
-        // this fixture's document has one), not its paragraphs directly.
         let doc_container = doc_container_id("augsburg-confession");
         let art_container = article_container_id("augsburg-confession", 4);
         let forward = EdgeKind::Directed(RelationId::Contains, Direction::Forward);
@@ -399,9 +303,6 @@ mod tests {
         let art_page = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: forward, cursor: None, limit: 10 });
         assert_eq!(art_page.entries.len(), 2, "the article container's own frontier lists both of its paragraphs");
 
-        // Inverse: a paragraph's own 'member-of' frontier names its ARTICLE
-        // (exactly one parent), and the article's names its document --
-        // the same two-hop climb a verse makes to its book.
         let p1 = text_unit_id(3, 4, 1);
         let inverse = EdgeKind::Directed(RelationId::Contains, Direction::Inverse);
         let back = PositionRef(Position::Node(p1)).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
@@ -420,9 +321,6 @@ mod tests {
         let bundle = ConcordBundle { corpus: tiny_corpus(), sc_overlap: sc_overlap_rows() };
         let mut ctx = ctx_with_concord(&canon, &verses, &atlas, &bundle);
 
-        // MERGE/ALIAS depends on NORMALIZE having already run (module doc
-        // comment) -- both catechism_adapter's own CatechismItem nodes and
-        // this adapter's own Concord TextUnits must exist first.
         crate::catechism_adapter::normalize(&mut ctx);
         normalize(&mut ctx);
         let stats = merge_alias(&mut ctx);
@@ -437,30 +335,20 @@ mod tests {
         let concord_locus = Position::Node(text_unit_id(7, 2, 1));
         assert_eq!(page.entries[0].node, concord_locus, "linked to the Ten Commandments article's own paragraph 1 -- the First Commandment");
 
-        // Symmetric: querying from the Concord paragraph's own end returns
-        // the SAME item under the SAME edge id (the bijection witness).
         let from_locus = PositionRef(concord_locus).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(from_locus.entries.len(), 1);
         assert_eq!(from_locus.entries[0].node, item_pos);
         assert_eq!(from_locus.entries[0].edge, page.entries[0].edge);
     }
 
-    /// A real, live-caught case (`window_law.rs`'s own real build):
-    /// `GraphService::build` threads a real Concord bundle unconditionally
-    /// (it reads `raw_dir/concord/` whenever present, independent of what
-    /// the CALLER's own `atlas` parameter carries), so a caller supplying
-    /// an EMPTY `AtlasData` (no real `catechism.toml` content -- a
-    /// perfectly legitimate fixture for a test scoped to something else
-    /// entirely) must never hard-fail the whole build just because the
-    /// SC-overlap table's own curated item ids don't resolve.
     #[test]
     fn merge_alias_skips_and_counts_sc_overlap_rows_over_an_empty_atlas_never_panics_or_dangles() {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
-        let atlas = crate::event_world::empty_atlas(); // no CatechismItem nodes will exist
+        let atlas = crate::event_world::empty_atlas();
         let bundle = ConcordBundle { corpus: tiny_corpus(), sc_overlap: sc_overlap_rows() };
         let mut ctx = ctx_with_concord(&canon, &verses, &atlas, &bundle);
-        crate::catechism_adapter::normalize(&mut ctx); // builds zero items -- atlas.catechism is empty
+        crate::catechism_adapter::normalize(&mut ctx);
         normalize(&mut ctx);
         let stats = merge_alias(&mut ctx);
 
@@ -468,8 +356,6 @@ mod tests {
         assert_eq!(stats.sc_overlap_unmatched_items, 1, "the one curated row (commandment-1) is disclosed, not silently dropped or panicked on");
         assert!(ctx.graph.catechism.is_empty(), "no dangling CatechismLink row was authored");
 
-        // The generic referential-integrity law this real bug tripped
-        // must now pass clean over exactly this shape.
         ctx.graph.build_indexes();
         crate::law_check::every_authored_edge_resolves(&ctx.graph).expect("no row this adapter authors may dangle, even over a partial-fixture build");
     }

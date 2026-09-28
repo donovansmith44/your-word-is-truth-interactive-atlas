@@ -1,6 +1,5 @@
-//! DB-2b: the row families of the `kjv` section (spec §5.4) other than
-//! `contains_bible`, which is `core::insert_contains`/`read_contains`
-//! over the same DDL.
+//! The row families of the `kjv` section other than `contains_bible`, which goes through
+//! `core::insert_contains`/`read_contains` over the same DDL.
 
 use atlas_graph_types::edge::{CanonSuccession, CrossRef, SpokenAt, SpokenBy};
 use rusqlite::types::Value;
@@ -12,8 +11,6 @@ use super::super::columns::{
 };
 use super::super::SqliteError;
 use super::{authored, id_col, insert, int, read_all, read_justification_at, text, D};
-
-// ------------------------------------------------------ canon_succession
 
 const COLS_CANON_SUCCESSION: &str = "prior_id, next_id, provenance, justification_id";
 
@@ -37,8 +34,6 @@ pub fn read_canon_succession(conn: &Connection) -> Result<Vec<(i64, CanonSuccess
         })
     })
 }
-
-// ------------------------------------------------------------ cross_refs
 
 const COLS_CROSS_REFS: &str = "\
  from_corpus, from_a, from_b, from_c, from_layer, from_start, from_end, \
@@ -71,8 +66,6 @@ pub fn read_cross_refs(conn: &Connection) -> Result<Vec<(i64, CrossRef)>, Sqlite
     })
 }
 
-// ------------------------------------------------------------- spoken_by
-
 const COLS_SPOKEN_BY: &str = "\
  locus_from_corpus, locus_from_a, locus_from_b, locus_from_c, locus_from_layer, locus_from_start, locus_from_end, \
  locus_to_corpus, locus_to_a, locus_to_b, locus_to_c, locus_to_layer, locus_to_start, locus_to_end, \
@@ -97,8 +90,6 @@ pub fn read_spoken_by(conn: &Connection) -> Result<Vec<(i64, SpokenBy)>, SqliteE
         })
     })
 }
-
-// ------------------------------------------------------------- spoken_at
 
 const COLS_SPOKEN_AT: &str = "\
  locus_from_corpus, locus_from_a, locus_from_b, locus_from_c, locus_from_layer, locus_from_start, locus_from_end, \

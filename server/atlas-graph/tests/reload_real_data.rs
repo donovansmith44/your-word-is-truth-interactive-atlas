@@ -1,7 +1,3 @@
-//! DB-5: the sections read back into a Graph -- what every real-data test
-//! loads now that graph.bin is gone, and the writer's round-trip law: the
-//! read-back graph publishes the manifest's root and every section's own
-//! logical hash, and the port over the sections answers it exactly.
 use std::path::Path;
 
 use atlas_graph::sqlite::reload::committed_graph;
@@ -27,7 +23,5 @@ fn the_sections_read_back_into_the_graph_that_wrote_them() {
     assert_eq!(g.reading["bible"].order.len(), 31102);
     assert_eq!(g.occurs.len(), 431_280, "LEX-1: one Occurs row per aligned token");
     assert!(g.extra_tables.len() == 32, "{} extra tables re-attached", g.extra_tables.len());
-    // The full port admission over the read-back graph (assert_answers_match,
-    // ~245 s) is gate 9's job (`sqlite_real_data.rs`), whose graph this now is.
     assert_eq!(snap.present().len(), 5);
 }

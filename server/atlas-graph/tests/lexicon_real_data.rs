@@ -1,10 +1,3 @@
-//! LEX-1 (spec §7) real-data tests over the adapter: the full graph built
-//! from the real vendored sources WITH the lexicon corpus. Counts are the
-//! reader's own pinned coverage (`atlas-etl/tests/lexicon_real_data.rs`):
-//! 13,548 entries; 452,689 tokens of which 21,409 are `Align=unmatched`, so
-//! 431,280 `Occurs` rows -- every one resolving to an entry node and a
-//! verse node, in canonical reading order.
-
 use std::path::Path;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
@@ -81,9 +74,6 @@ fn john_3_16_has_words_in_token_order_and_logos_has_a_canonical_concordance() {
     let jhn = atlas_core::canon::resolve_alias("John").unwrap().0;
     let verse = at(&atlas_graph::kjv_adapter::verse_node_id(jhn, 3, 16));
     let words = g.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 100 });
-    // 26 tokens -> 26 index entries in token order (spec 7.3: "its tagged
-    // tokens in ord"); the article (G3588) five times and "him" (G0846)
-    // twice share ONE edge id each, so 21 distinct edge ids.
     assert_eq!(words.entries.len(), 26);
     let distinct: std::collections::BTreeSet<_> = words.entries.iter().map(|e| e.entry.edge.clone()).collect();
     assert_eq!(distinct.len(), 21);

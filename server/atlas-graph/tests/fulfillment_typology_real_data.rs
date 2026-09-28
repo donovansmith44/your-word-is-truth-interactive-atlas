@@ -1,10 +1,3 @@
-//! EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md
-//! decision 5): row-count + Scripture-ground-law + locus-validity checks
-//! over the REAL committed `data/curated/fulfillments.toml`/`typology.toml`
-//! -- same `atlas_etl::compile::compile`-backed pattern
-//! `peoples_real_data.rs`/`description_real_data.rs` already establish in
-//! this crate.
-
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -42,7 +35,6 @@ fn real_ctx_pieces() -> (AtlasData, Canon, HashMap<String, String>, String, Stri
     (atlas, canon, verses, kjv_json, xrefs_tsv)
 }
 
-/// Decision 5: "row-count assertions (exact seeded totals)".
 #[test]
 fn exact_seeded_row_counts() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -54,10 +46,6 @@ fn exact_seeded_row_counts() {
     assert_eq!(ctx.graph.typology.len(), 16, "every curated typology row's own locus must parse -- zero runtime omissions expected");
 }
 
-/// Decision 5: "every-row-has-Scripture-ground law test (same shape as
-/// PG-1a's)" -- both re-derived fresh (the dedicated law function, proving
-/// it over the real table independently of LAW-CHECK already having run)
-/// and via a direct inline loop.
 #[test]
 fn every_fulfillment_and_typology_row_has_a_scripture_ground() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -79,11 +67,6 @@ fn every_fulfillment_and_typology_row_has_a_scripture_ground() {
     }
 }
 
-/// Decision 5: "locus-validity test (every BibleLocusRange resolves to
-/// real KJV verses -- no typo'd books/chapters)". Every range in this
-/// batch's own curated data is WITHIN a single book/chapter (verified at
-/// authoring time) -- this test checks EVERY verse the range spans, not
-/// just its two endpoints, over the REAL compiled KJV verse map.
 #[test]
 fn every_locus_in_every_row_resolves_to_a_real_kjv_verse() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -111,8 +94,6 @@ fn every_locus_in_every_row_resolves_to_a_real_kjv_verse() {
     }
 }
 
-/// Spot-checks the brief's own worked example end to end over the real
-/// build: ISA 7:14 -> MAT 1:22-23, self-attesting ground, real quote text.
 #[test]
 fn spot_check_isaiah_7_14_fulfilled_in_matthew_1_22_23() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -129,7 +110,6 @@ fn spot_check_isaiah_7_14_fulfilled_in_matthew_1_22_23() {
     assert!(row.justification.text.as_deref().unwrap().contains("virgin shall be with child"));
 }
 
-/// Spot-checks a real Typology row: Melchizedek, GEN 14:18-20 -> HEB 7:1-17.
 #[test]
 fn spot_check_melchizedek_typology_row() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -142,9 +122,6 @@ fn spot_check_melchizedek_typology_row() {
     assert_eq!(atlas_graph::kjv_adapter::dot_ref(row.antitype_passage.to.unit.book, row.antitype_passage.to.unit.chapter, row.antitype_passage.to.unit.verse), "HEB.7.17");
 }
 
-/// Brief decision 1b's own "may appear in both tables" case: the passover
-/// lamb's EXO.12.46 -> JHN.19.36 pairing is BOTH a fulfillment row AND a
-/// typology row.
 #[test]
 fn the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -165,19 +142,11 @@ fn the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables() {
     assert!(as_typology, "EXO.12.46 -> JHN.19.36 must ALSO appear in the typology table, noted 'the passover lamb'");
 }
 
-/// Version-root regression companion (decision 2): these rows are EDGES,
-/// never nodes -- `graph.nodes` must be untouched by this batch. The
-/// dedicated `tests/version_root_regression.rs` harness is the real
-/// acceptance gate; this is a fast, local sanity companion living
-/// alongside the rest of this file's own real-data checks.
 #[test]
 fn fulfillment_and_typology_rows_add_zero_nodes() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
     let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
     assert!(ctx.graph.fulfills.len() > 0 && ctx.graph.typology.len() > 0, "fixture sanity: real rows exist");
-    // Every fulfillment/typology endpoint resolves to an ALREADY-EXISTING
-    // TextUnit node (the KJV adapter's own, built earlier in NORMALIZE) --
-    // never a new node kind or a new node of an existing kind.
     for row in &ctx.graph.fulfills {
         let from_id = atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw: format!("bible/{}.{}.{}", row.prophecy.from.unit.book, row.prophecy.from.unit.chapter, row.prophecy.from.unit.verse) };
         assert!(ctx.graph.nodes.contains_key(&from_id), "prophecy endpoint must resolve to an existing TextUnit node");

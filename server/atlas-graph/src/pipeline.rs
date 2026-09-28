@@ -1,76 +1,6 @@
-//! THE COMPILER PIPELINE CONTRACT (design doc §7; P7 gap-closure, seam
-//! inventory entry "COMPILER PIPELINE"; controller decision 3, M-C):
-//! `normalize -> merge/alias -> resolve -> derive -> index -> law-check`,
-//! formalized as an ORDERED CONTRACT. Passes are DATA -- a `Vec<Box<dyn
-//! Pass>>` returned by [`pipeline`] -- not a hardcoded call chain baked
-//! into one function body. Backing a pass out is removing it from the
-//! list (`pipeline_tests::a_pass_removed_from_the_list_never_runs` proves
-//! this literally, not just by architecture-diagram assertion); adding a
-//! future pass (e.g. a materialized `temporal-adjacency`/`parallel` DERIVE
-//! step) is adding one more entry, never restructuring the runner.
-//!
-//! The M-A/M-B build logic (kjv_adapter/xref_adapter/event_world::populate/
-//! `Graph::build_indexes`/`add_justified_by`/`fidelity::check_kjv_fidelity`)
-//! restructures INTO this shape here -- BEHAVIOR-IDENTICAL, proven by
-//! `tests/version_root_regression.rs`: the graph version root (a content
-//! hash over every node's id+payload, design doc §9b) is UNCHANGED for the
-//! real committed sources before and after this restructuring. Content
-//! addressing is the regression harness the controller's own instruction
-//! names -- if the pipeline computed anything different, the root would
-//! move, and that test would catch it.
-//!
-//! STAGE MAPPING, disclosed (this codebase's own current shape does not
-//! split as cleanly as the six textbook names might suggest -- each stage
-//! below states plainly what it does and does not cover, rather than
-//! forcing an artificial split that would only obscure the real
-//! dependency order):
-//! - NORMALIZE: raw-ish typed inputs -> nodes + the directly-authored rows
-//!   that need no cross-referencing (KJV TextUnit nodes + the bible
-//!   reading spine; `cites` rows from the xrefs TSV; Event/Narrative/
-//!   Anchor/Place/Era/Polity/CatechismItem nodes plus the witness-derived
-//!   `attests`/`succession`/`located_at` rows event_world::populate
-//!   already builds in one pass, since none of those need any OTHER
-//!   pass's output first).
-//! - MERGE/ALIAS: legacy-vocabulary boundary crossings -- place KJV
-//!   naming -> `named` rows, place `verse_links` -> `mentions` rows,
-//!   catechism item/question verse citations -> `catechism-link` rows,
-//!   and (Batch P) person `verse_links` -> `mentions` rows (no `named`
-//!   counterpart for Person -- see `person_adapter.rs`'s own doc comment).
-//!   Matches the ingestion contract's own parenthetical almost exactly
-//!   ("event and place merge tables become assertion-level rules") --
-//!   this batch's place/catechism/person adapters are that instruction
-//!   realized. (ENT-1a) `description_adapter::fill_descriptions` joins
-//!   this stage too -- Easton's Bible Dictionary (1897) is exactly the
-//!   same "legacy-vocabulary boundary crossing" shape, just onto an
-//!   already-NORMALIZED node's own PAYLOAD field rather than a new
-//!   relation row (see that module's own doc comment for the full "why
-//!   MERGE/ALIAS, not a new stage" reasoning).
-//! - RESOLVE: `DatePlacement` resolution -- `derive_chronology` chooses
-//!   each dated event's placement and the `dated_by` rows it grounds,
-//!   exactly `resolve(DatePlacement)` per the ingestion contract's own
-//!   naming.
-//! - DERIVE: computed relations with no authored-row counterpart --
-//!   reading-order (already complete as the spine NORMALIZE built; this
-//!   stage asserts it, rather than rebuilding it a second time), member-of
-//!   (free: the inverse projection of `contains`/`attests`, nothing to
-//!   compute), and (TRAV-1) `temporal-adjacency`: one `TemporalAdjacency`
-//!   row per consecutive pair of the chronology's own global order
-//!   (`event_world::populate_temporal_adjacency`, called from
-//!   `event_world::derive` below) -- this is the "future batch's own
-//!   derivation" this stage's doc comment named a landing spot for since
-//!   M-C; `parallel` stays UNMATERIALIZED (a real, disclosed, standing gap,
-//!   out of TRAV-1's own named scope).
-//! - INDEX: `Graph::build_indexes()` (unmodified graph-types primitive;
-//!   one BiIndex pass per relation, directed AND -- new this batch --
-//!   symmetric) plus `add_justified_by` (a post-processing step that must
-//!   run after the DatedBy index exists, since it mirrors that index's
-//!   own edge-id computation).
-//! - LAW-CHECK: `fidelity::check_kjv_fidelity` (the KJV adapter's
-//!   bijection + reconstruction boundary law, unconditional, fail-loud)
-//!   plus a new, generic REFERENTIAL-INTEGRITY check
-//!   (`law_check::every_authored_edge_resolves`) that every authored row's
-//!   endpoints name a real node in the built graph -- cheap, and gives
-//!   this stage real substance beyond the one adapter M-A shipped it for.
+//! The compiler pipeline contract: `normalize -> merge/alias -> resolve -> derive -> index ->
+//! law-check`, as an ordered list of passes that is DATA rather than a hardcoded call chain, so
+//! backing a pass out is removing its entry from the list.
 
 use anyhow::{Context, Result};
 
@@ -80,98 +10,36 @@ use atlas_graph_types::graph::Graph;
 use crate::build::BuildStats;
 use crate::event_world::{ChronologyDerivation, EventWorldStats};
 
-/// Everything a pass needs: the typed inputs every adapter reads, the
-/// in-progress `Graph` every pass mutates in place, and the running
-/// stats/derivation state later passes (and the caller, for startup
-/// logging) consume. Passes run in the order `pipeline()` lists; each may
-/// read/write any field.
+/// Everything a pass needs: the typed inputs, the in-progress `Graph` every pass mutates in place, and
+/// the running stats later passes and the caller read. Passes run in the order `pipeline()` lists, and
+/// each may read or write any field.
 pub struct BuildCtx<'a> {
     pub kjv_canon: &'a Canon,
     pub kjv_verses: &'a std::collections::HashMap<String, String>,
-    /// The RAW KJV JSON text, when one exists (`from_sources`'s own real
-    /// startup path always has it; `from_canon_and_verses`'s test-fixture
-    /// path does not, exactly as before this refactor -- "no raw source
-    /// BYTES exist to re-derive 'expected' from"). Kept separately from
-    /// `kjv_canon`/`kjv_verses` on purpose: the fidelity law's own
-    /// `independent_reader` (fidelity.rs) must re-parse these bytes from
-    /// scratch, sharing no code with the adapter path that built
-    /// `kjv_canon`/`kjv_verses` -- collapsing the two into "just use the
-    /// already-parsed canon" would silently de-independent the law I2 fix
-    /// round 1 deliberately established.
+    /// The RAW KJV JSON text, where one exists. Kept separately from the parsed canon on purpose: the
+    /// fidelity law's independent reader must re-parse these bytes sharing no code with the adapter
+    /// path that built the parsed form, and collapsing the two would de-independent that law.
     pub kjv_json_source: Option<&'a str>,
     pub xrefs_tsv: &'a str,
     pub atlas: &'a AtlasData,
-    /// M-C's own Era adapter source (`era_adapter.rs`): pre-parsed rows
-    /// from `data/curated/eras.toml`, via the SAME `atlas_etl::curated::
-    /// parse_eras` the pre-M-C `AtlasData.eras`/`eras.json` path used --
-    /// NOT read from `AtlasData` (unlike every other M-C adapter's own
-    /// source), since `.eras` is one of the fields this batch's own
-    /// deletion event retires (see the batch report's deletion inventory).
-    /// Defaults to empty for every caller that doesn't supply real eras
-    /// (most test fixtures, via `build_graph_from_sources`/
-    /// `build_graph_from_canon_and_verses`'s own plain forms) -- an empty
-    /// slice is a lawful, honest "no eras this build," not a placeholder.
+    /// Pre-parsed curated era rows, not read off `AtlasData` like the other adapter sources. An empty
+    /// slice is a lawful "no eras this build", never a placeholder.
     pub eras: &'a [atlas_core::data::Era],
     pub graph: Graph,
     pub stats: BuildStats,
     pub event_world_stats: EventWorldStats,
     pub chrono: ChronologyDerivation,
     pub justified_by_count: usize,
-    /// CORP-1a: `atlas_etl::brainfuel::read_all`'s own pre-parsed corpus
-    /// (the six ingested editions' renderings + the `king_james` column
-    /// carried only for the cross-check) -- `None` for every caller that
-    /// doesn't supply real brain-fuel data (every OTHER adapter's own test
-    /// fixtures, via `BuildCtx::new`/`with_eras`), the SAME "absent ==
-    /// honestly empty, not a placeholder" treatment `eras` above already
-    /// gets. Reference, not owned: the corpus can be large (31,102 rows
-    /// over the real vendored data) and every real caller already has one
-    /// living for the duration of the build (mirrors `eras: &'a [Era]`).
+    /// Absent means an honestly empty build, not a placeholder -- as for every other corpus field
+    /// here. A reference rather than owned: these corpora are large, and every real caller already has
+    /// one alive for the duration of the build.
     pub brainfuel: Option<&'a atlas_etl::brainfuel::BrainFuelCorpus>,
-    /// CORP-2a: `concord_adapter.rs`'s own source -- the parsed Book of
-    /// Concord corpus plus the curated SC-overlap alignment, bundled
-    /// (`concord_adapter::ConcordBundle`'s own doc comment explains why
-    /// ONE optional field, not two). The SAME "absent == an honestly
-    /// empty build, not a placeholder" treatment `brainfuel`/`eras` above
-    /// already get -- every test fixture that doesn't supply real Concord
-    /// data (every caller of `BuildCtx::new`/`with_eras`/`with_eras_and_
-    /// brainfuel`) gets `None`, unchanged from before this batch.
     pub concord: Option<&'a crate::concord_adapter::ConcordBundle>,
-    /// KRETZ-1: `atlas_etl::kretzmann::read_all`'s own pre-parsed corpus --
-    /// the SAME "absent == an honestly empty build, not a placeholder"
-    /// treatment `concord`/`brainfuel` above already get (every test
-    /// fixture that doesn't supply real Kretzmann data, via `BuildCtx::
-    /// new`/`with_eras`/..., gets `None`, unchanged from before this
-    /// batch). Reference, not owned: the corpus is large (61,374 excised
-    /// fragments alone over the real vendored data, fix round 2's own
-    /// pinned count), and every real caller
-    /// already has one living for the duration of the build.
     pub kretzmann: Option<&'a atlas_etl::kretzmann::KretzmannCorpus>,
-    /// RED-1: `atlas_etl::red_letter::read_all`'s own pre-parsed + aligned
-    /// corpus -- the SAME "absent == an honestly empty build, not a
-    /// placeholder" treatment `kretzmann`/`concord`/`brainfuel` above
-    /// already get (every test fixture that doesn't supply real red-letter
-    /// data, via `BuildCtx::new`/`with_eras`/..., gets `None`, unchanged
-    /// from before this batch). Reference, not owned: every real caller
-    /// already has one living for the duration of the build.
     pub red_letter: Option<&'a atlas_etl::red_letter::RedLetterCorpus>,
-    /// LEX-1: `atlas_etl::lexicon::read_all`'s own pre-parsed corpus (13,548
-    /// entries + 452,689 tokens over the real vendored data) -- the SAME
-    /// "absent == an honestly empty build, not a placeholder" treatment
-    /// `red_letter`/`kretzmann`/`concord`/`brainfuel` above already get.
-    /// Reference, not owned, like its siblings.
     pub lexicon: Option<&'a atlas_etl::lexicon::LexiconCorpus>,
-    /// ENT-1a: `description_adapter::fill_descriptions`'s own return value,
-    /// captured here (not just returned-and-discarded, unlike the other
-    /// MERGE/ALIAS adapter calls' own Stats structs) so a caller that
-    /// constructs a `BuildCtx` directly and drives `run_pipeline` itself --
-    /// `description_real_data.rs`'s own real-data fill-rate report test is
-    /// the one real caller today -- can read the fill-rate breakdown
-    /// afterward, without a second, redundant pass over the graph.
-    /// DISCLOSED, not silently narrower than it sounds: `build::
-    /// build_graph_from_sources_with_eras` (and so `bins/compile_graph.rs`,
-    /// which only calls that wrapper) does NOT surface this field -- its
-    /// own return tuple is a fixed, widely-depended-on shape this batch
-    /// deliberately did not widen. Stays `Default` (all zero) until
+    /// Captured rather than returned and discarded, so a caller that drives `run_pipeline` itself can
+    /// read the fill-rate afterwards without a second pass over the graph. Stays `Default` until
     /// `MergeAliasPass` runs.
     pub description_stats: crate::description_adapter::DescriptionStats,
 }
@@ -198,12 +66,6 @@ impl<'a> BuildCtx<'a> {
         Self::with_eras_and_brainfuel(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, None)
     }
 
-    /// CORP-1a: the richest form -- real startup (via `GraphService::build`)
-    /// and the artifact compile step (`bins/compile_graph.rs`) use this
-    /// directly, with real brain-fuel data; every other caller keeps
-    /// calling `new`/`with_eras` unchanged, getting an honestly absent
-    /// (`None`) `brainfuel` -- see this struct's own `brainfuel` field doc
-    /// comment.
     #[allow(clippy::too_many_arguments)]
     pub fn with_eras_and_brainfuel(
         kjv_canon: &'a Canon,
@@ -217,12 +79,6 @@ impl<'a> BuildCtx<'a> {
         Self::with_eras_and_brainfuel_and_concord(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, None)
     }
 
-    /// CORP-2a: the richest form yet -- real startup and the artifact
-    /// compile step use this directly, with a real, pre-parsed
-    /// `concord_adapter::ConcordBundle`; every other caller keeps calling
-    /// `new`/`with_eras`/`with_eras_and_brainfuel` unchanged, getting an
-    /// honestly absent (`None`) `concord` -- see this struct's own
-    /// `concord` field doc comment.
     #[allow(clippy::too_many_arguments)]
     pub fn with_eras_and_brainfuel_and_concord(
         kjv_canon: &'a Canon,
@@ -237,13 +93,6 @@ impl<'a> BuildCtx<'a> {
         Self::with_eras_and_brainfuel_and_concord_and_kretzmann(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, None)
     }
 
-    /// KRETZ-1: the richest form yet -- real startup and the artifact
-    /// compile step use this directly, with a real, pre-parsed
-    /// `atlas_etl::kretzmann::KretzmannCorpus`; every other caller keeps
-    /// calling `new`/`with_eras`/`with_eras_and_brainfuel`/`with_eras_and_
-    /// brainfuel_and_concord` unchanged, getting an honestly absent
-    /// (`None`) `kretzmann` -- see this struct's own `kretzmann` field doc
-    /// comment.
     #[allow(clippy::too_many_arguments)]
     pub fn with_eras_and_brainfuel_and_concord_and_kretzmann(
         kjv_canon: &'a Canon,
@@ -259,13 +108,6 @@ impl<'a> BuildCtx<'a> {
         Self::with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(kjv_canon, kjv_verses, kjv_json_source, xrefs_tsv, atlas, eras, brainfuel, concord, kretzmann, None)
     }
 
-    /// RED-1: the richest form yet -- real startup and the artifact
-    /// compile step use this directly, with a real, pre-parsed +
-    /// pre-aligned `atlas_etl::red_letter::RedLetterCorpus`; every other
-    /// caller keeps calling `new`/`with_eras`/.../`with_eras_and_brainfuel_
-    /// and_concord_and_kretzmann` unchanged, getting an honestly absent
-    /// (`None`) `red_letter` -- see this struct's own `red_letter` field
-    /// doc comment.
     #[allow(clippy::too_many_arguments)]
     pub fn with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(
         kjv_canon: &'a Canon,
@@ -300,9 +142,6 @@ impl<'a> BuildCtx<'a> {
         }
     }
 
-    /// LEX-1: the richest form -- the compile step's own, with the lexicon
-    /// corpus beside the red-letter one (see the `lexicon` field's doc
-    /// comment). Every narrower constructor above keeps `lexicon: None`.
     #[allow(clippy::too_many_arguments)]
     pub fn with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
         kjv_canon: &'a Canon,
@@ -323,10 +162,8 @@ impl<'a> BuildCtx<'a> {
     }
 }
 
-/// A compiler pass: a named, total step over the build context. `name()`
-/// exists for error attribution (`run_pipeline` names which pass failed)
-/// and for the "passes as data" proof (`pipeline_tests` inspects the
-/// list's own names, not a hardcoded call chain).
+/// A compiler pass: a named, total step over the build context. `name()` exists for error attribution
+/// and for the proof that the passes really are data rather than a hardcoded chain.
 pub trait Pass {
     fn name(&self) -> &'static str;
     fn run(&self, ctx: &mut BuildCtx) -> Result<()>;
@@ -339,68 +176,22 @@ impl Pass for NormalizePass {
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::kjv_adapter::normalize(ctx).context("normalizing the KJV canon/verses into TextUnit nodes")?;
-        // NODE-1: book/chapter Container nodes + the Bible-corpus
-        // `Contains` rows (chapter -> its verses) -- reads only the SAME
-        // canon/verse map kjv_adapter::normalize just walked (no other
-        // pass's output), the SAME NORMALIZE-eligibility reasoning as
-        // every sibling call here. Ordered right after kjv_adapter for
-        // narrative sense (containers over the text units just minted),
-        // not out of data dependency.
+        // Ordered after the KJV adapter for narrative sense, not out of any data dependency.
         crate::bible_container_adapter::normalize(ctx).context("normalizing the canon into book/chapter Container nodes + Contains rows")?;
-        // CORP-1a: MUST run immediately after kjv_adapter::normalize --
-        // this call mutates the very TextUnit nodes the line above just
-        // inserted (module doc comment on brainfuel_adapter.rs), a real,
-        // disclosed in-stage ordering dependency.
         crate::brainfuel_adapter::normalize(ctx);
         crate::xref_adapter::normalize(ctx).context("normalizing the raw cross-references TSV into cites rows")?;
         crate::event_world::normalize(ctx);
         crate::era_adapter::normalize(ctx);
         crate::polity_adapter::normalize(ctx);
         crate::catechism_adapter::normalize(ctx);
-        // CORP-2a: the Concord corpus's own TextUnit nodes + document/
-        // article containers + reading spine -- self-contained (no OTHER
-        // pass's output needed first), the SAME NORMALIZE-eligibility
-        // `kjv_adapter::normalize` above already has (module doc comment
-        // on `concord_adapter.rs`).
         crate::concord_adapter::normalize(ctx);
-        // KRETZ-1: the Kretzmann corpus's own Source node + CommentaryItem
-        // nodes + comments_on rows -- self-contained (no OTHER pass's
-        // output needed first), the SAME NORMALIZE-eligibility `concord_
-        // adapter::normalize` above already has (module doc comment on
-        // `kretzmann_adapter.rs`).
         crate::kretzmann_adapter::normalize(ctx);
-        // Batch P (the extensibility proof): Person nodes need no OTHER
-        // pass's output first (same NORMALIZE-eligibility reasoning as
-        // every sibling call above) -- ctx.atlas.people is already fully
-        // resolved by atlas_etl::people::parse_people before this ever runs.
         crate::person_adapter::normalize(ctx);
-        // RED-1: SpokenBy (verse-set -> maximal contiguous ranges) +
-        // DERIVED SpokenAt rows -- runs AFTER `event_world::normalize`
-        // (above) and `person_adapter::normalize` (immediately above),
-        // deliberately: SpokenAt derivation reads `ctx.graph.attests`/
-        // `ctx.graph.located_at` (event_world's own output), and ordering
-        // after person_adapter mirrors peoples_adapter's own "the Jesus
-        // Person node should already exist" discipline, even though this
-        // adapter's own row construction only NAMES the Jesus PersonId
-        // (referential integrity is checked at LAW-CHECK time, not here).
         crate::red_letter_adapter::normalize(ctx);
-        // LEX-1: LexiconEntry nodes + Occurs rows (one per aligned token,
-        // corpus reading order). Runs AFTER kjv_adapter (every verse node
-        // exists, so a token on a verse the graph lacks is counted, never
-        // dangling) and needs no other pass's output; self-contained like
-        // kretzmann/concord/brainfuel.
+        // After the KJV adapter, so every verse node already exists and a token on a verse the graph
+        // lacks is counted rather than left dangling.
         crate::lexicon_adapter::normalize(ctx);
-        // PG-1a: PeopleGroup nodes (all three sources) + curated NamedAfter
-        // rows -- runs AFTER person_adapter::normalize, deliberately (its
-        // own module doc comment): the NamedAfter eponym-existence check
-        // asks the GRAPH itself whether a real Person node exists, and
-        // person_adapter's own exclusion of the nine reclassified slugs
-        // must already be in effect for the reclassified-node/no-Person-
-        // node invariant to hold by construction.
         crate::peoples_adapter::normalize(ctx);
-        // EDGE-1a: Fulfills/Typology rows need no OTHER pass's output first
-        // (pure Scripture text-to-text rows -- module doc comment's own
-        // "NORMALIZE-eligible" reasoning).
         crate::fulfillment_adapter::normalize(ctx);
         Ok(())
     }
@@ -414,30 +205,11 @@ impl Pass for MergeAliasPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::place_adapter::merge_alias(ctx);
         crate::catechism_adapter::merge_alias(ctx);
-        // CORP-2a: the SC-overlap CatechismLink rows (decision 4) -- runs
-        // AFTER catechism_adapter::merge_alias only incidentally (no
-        // ordering dependency between the two catechism-link builders
-        // themselves); the REAL dependency is on catechism_adapter::
-        // NORMALIZE (CatechismItem nodes) and concord_adapter::NORMALIZE
-        // (Concord TextUnits), both already complete by the time
-        // MergeAliasPass runs at all (concord_adapter.rs's own module doc
-        // comment).
         crate::concord_adapter::merge_alias(ctx);
-        // Batch P: Person.verse_links -> mentions rows, the SAME
-        // "legacy-vocabulary boundary crossing" shape place_adapter's own
-        // mentions half already is (this stage's own doc comment above).
         crate::person_adapter::merge_alias(ctx);
-        // PG-1a: the reclassified nine's own verse_links -> Mentions
-        // (PeopleGroup) rows -- the ONLY per-locus PeopleGroup attestations
-        // this batch's source data ships (decision 1c/2); the (a)/(b)
-        // PeopleGroup sources build no mentions rows at all.
         crate::peoples_adapter::merge_alias(ctx);
-        // ENT-1a: description-filling runs LAST in this stage -- it only
-        // ever READS already-built nodes (never their mentions rows), so it
-        // has no ordering dependency on the three calls above; last is
-        // simply where a payload-only widening reads most naturally,
-        // after every row-building call. (Two statements, not `ctx.x =
-        // f(ctx)`, deliberately -- the latter borrows `ctx` twice at once.)
+        // Description filling only READS already-built nodes, so it has no ordering dependency here.
+        // Two statements rather than `ctx.x = f(ctx)`: the latter would borrow `ctx` twice at once.
         let description_stats = crate::description_adapter::fill_descriptions(ctx);
         ctx.description_stats = description_stats;
         Ok(())
@@ -461,12 +233,8 @@ impl Pass for DerivePass {
         "derive"
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
-        // Reading-order is already complete (NORMALIZE built the spine);
-        // member-of is free (the inverse projection of contains/attests).
-        // TRAV-1: temporal-adjacency now materializes here -- see this
-        // module's own DERIVE doc comment and event_world::derive. parallel
-        // stays unmaterialized (disclosed, standing gap, out of TRAV-1's
-        // own named scope).
+        // Reading order is already complete -- NORMALIZE built the spine -- and member-of is free, the
+        // inverse projection of contains/attests. `parallel` stays unmaterialized, a standing gap.
         crate::event_world::derive(ctx);
         Ok(())
     }
@@ -480,13 +248,6 @@ impl Pass for IndexPass {
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         ctx.graph.build_indexes();
         ctx.justified_by_count = crate::event_world::add_justified_by(&mut ctx.graph);
-        // NODE1-ROWS-1 (fix round 1): the derived container-edge merge
-        // that stood here is GONE -- container membership and canon
-        // succession are DECLARED rows now (`bible_container_adapter::
-        // normalize`), lowered by `build_indexes` above like every other
-        // row family. Indexes derive from rows, never the reverse (the
-        // standing conformance law `law_check::indexes_derive_exactly_
-        // from_rows` pins this).
         Ok(())
     }
 }
@@ -497,80 +258,35 @@ impl Pass for LawCheckPass {
         "law_check"
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
-        // Only the raw-source path (`from_sources`) carries bytes to
-        // independently re-derive "expected" from; the canon-and-verses
-        // test-fixture path skips this the same way it always has (see
-        // `BuildCtx::kjv_json_source`'s own doc comment).
         if let Some(source) = ctx.kjv_json_source {
-            // Batch KJV-CASE: `ctx.brainfuel` threads through so the law's
-            // own independent "expected" re-derivation applies the SAME
-            // case restoration the NORMALIZE stage already applied to the
-            // graph's own TextUnit renderings (see `fidelity.rs`'s own
-            // module doc comment) -- `None` on every caller with no real
-            // brainfuel data is an honest no-op, unchanged from before.
             crate::fidelity::check_kjv_fidelity(source, &ctx.graph, ctx.brainfuel)
                 .map_err(|e| anyhow::anyhow!("{e}"))
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }
         crate::law_check::every_authored_edge_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
-        // NODE1-ROWS-1 (owner recursion addendum): container containment
-        // must be a FOREST (acyclic, single-parent) -- fail-loud build
-        // failure, never shipped data.
         crate::law_check::container_containment_is_a_forest(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("NODE1-ROWS-1 container-containment forest law (acyclicity + single-parent)")?;
-        // D5: kinship is acyclic and each parent-of pair is stated once.
         crate::law_check::kinship_is_acyclic(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("D5 kinship law (acyclic, no duplicate parent-of pair)")?;
-        // ATTEST-1 (owner-signed FAIL-LOUD; the softer warning option was
-        // declined). L2: no verse belongs to the `Attests` set of two
-        // distinct events, stated against the declared curation queue in
-        // `attestation_pending` -- an UNDECLARED collision, or a DRIFTED
-        // shared-verse count on an already-declared pair, is a build
-        // failure. (The STALE direction is deliberately NOT in this pass:
-        // it runs over synthetic fixtures too, against which every declared
-        // row would read stale -- see `law_check.rs`'s note above
-        // `attestation_inventory_has_no_stale_rows`, which carries that
-        // direction over the real corpus instead.) L4's companion gate: an
-        // `Analogue` row joins two DISTINCT events, exactly once.
         crate::law_check::attestation_is_exclusive(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("ATTEST-1 attestation-exclusivity law (L2)")?;
         crate::law_check::analogue_rows_join_two_distinct_events(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("ATTEST-1 Analogue distinctness law (L4)")?;
-        // M-D3 (owner ruling R1): the "verified-cache law"
-        // (`law_check::payload_years_match_resolved_placements`) RETIRED
-        // WITH the `NodePayload::Event.from_year`/`.to_year` fields it
-        // existed to police -- see law_check.rs's own retirement note.
-        // Batch P (the extensibility proof): the Person adapter's own
-        // boundary fidelity law (bijection + mentions completeness) --
-        // referential integrity of Person mentions rows is ALREADY covered
-        // by every_authored_edge_resolves above (see person_adapter.rs's
-        // own module doc comment), so this is the adapter-specific half
-        // only, not a duplicate.
+        // The adapter-specific halves only: referential integrity of these rows' endpoints is already
+        // covered by `every_authored_edge_resolves` above, so re-checking it here would duplicate it.
         crate::person_adapter::check_person_fidelity(ctx.atlas, &ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("Theographic person adapter fidelity law (bijection + mentions completeness)")?;
-        // PG-1a: the peoples adapter's own boundary fidelity law (bijection
-        // across all three PeopleGroup sources + reclassified mentions
-        // completeness), plus the NamedAfter grounding law (every row
-        // carries >=1 Ground::Scripture) -- referential integrity of
-        // PeopleGroup mentions/named_after endpoints is ALREADY covered by
-        // every_authored_edge_resolves above (peoples_adapter.rs's own
-        // module doc comment / test), so these are the adapter-specific
-        // laws only, not a duplicate.
         crate::peoples_adapter::check_peoples_fidelity(ctx.atlas, &ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("PG-1a peoples adapter fidelity law (bijection + mentions completeness)")?;
         crate::peoples_adapter::every_named_after_row_has_a_scripture_ground(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("PG-1a named-after grounding law (every row must carry >=1 Ground::Scripture)")?;
-        // EDGE-1a: same "every row must carry >=1 Ground::Scripture" law,
-        // over the two new relation tables (referential integrity of their
-        // endpoints is ALREADY covered by every_authored_edge_resolves
-        // above -- these are the adapter-specific grounding laws only).
         crate::fulfillment_adapter::every_fulfillment_row_has_a_scripture_ground(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("EDGE-1a fulfillment grounding law (every row must carry >=1 Ground::Scripture)")?;
@@ -581,10 +297,8 @@ impl Pass for LawCheckPass {
     }
 }
 
-/// THE ordered contract: six named stages, one value each, in the order
-/// `run_pipeline` executes them. This function is the ONE place the order
-/// is declared -- backing a stage out is deleting its line here; nothing
-/// else names the sequence.
+/// THE ordered contract: the named stages, one value each, in the order `run_pipeline` executes them.
+/// This is the ONE place the order is declared; nothing else names the sequence.
 pub fn pipeline() -> Vec<Box<dyn Pass>> {
     vec![
         Box::new(NormalizePass),
@@ -596,11 +310,8 @@ pub fn pipeline() -> Vec<Box<dyn Pass>> {
     ]
 }
 
-/// Runs every pass in `passes`, in order, over `ctx` -- a total function
-/// over WHATEVER list it is handed (it does not know or care that
-/// `pipeline()` normally supplies six; a caller building a reduced list,
-/// e.g. for a test proving a backed-out pass never runs, gets exactly
-/// that reduced behavior).
+/// Runs every pass in `passes`, in order: a total function over WHATEVER list it is handed, so a
+/// reduced list gets exactly that reduced behaviour.
 pub fn run_pipeline(ctx: &mut BuildCtx, passes: &[Box<dyn Pass>]) -> Result<()> {
     for pass in passes {
         pass.run(ctx).with_context(|| format!("pipeline pass '{}' failed", pass.name()))?;
@@ -624,11 +335,6 @@ mod pipeline_tests {
 
     #[test]
     fn a_pass_removed_from_the_list_never_runs() {
-        // "Backing one out = removing it from the list" -- proven, not just
-        // architected: a reduced list that DROPS law_check produces a graph
-        // with no fidelity gate ever having run (no panic, no error) --
-        // demonstrating the list is genuinely live control flow, not a
-        // facade over a hardcoded call chain a doc comment merely describes.
         let (canon, verses, atlas) = empty_ctx();
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let reduced: Vec<Box<dyn Pass>> = pipeline().into_iter().filter(|p| p.name() != "law_check").collect();

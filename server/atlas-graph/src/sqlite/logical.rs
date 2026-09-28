@@ -1,15 +1,5 @@
-//! DB-2b: the per-section logical dump and hash (spec §3.4).
-//!
-//! Line format, binding: for each table in `logical_table_order(section)`,
-//! for each row in primary-key order, `<table>\t<canonical row JSON>\n`:
-//! `node` -> `Node::encode()`, a row table -> `encode_row_in_family`, and
-//! `reading_spine` -> `{"corpus":…,"node_id":…,"ord":N}` through
-//! `canon::obj`/`serialize` (keys in byte order, no whitespace), and (DB-4b)
-//! an extra table -> `extras::row_body` over its `SELECT … ORDER BY pk`. Logical
-//! hash = `sha256_prefixed_128(DOMAIN_PREFIX, dump)` as 32 lowercase hex.
-//!
-//! Node order on both sides is `any_node_id_str` BYTE order -- what
-//! SQLite's `ORDER BY id` (TEXT) yields -- never `AnyNodeId: Ord`.
+//! The per-section logical dump recomputed from an open section file, and the hash string the
+//! manifest carries.
 
 use atlas_graph_types::canon::ids::any_node_id_str;
 use atlas_graph_types::canon::{encode_row_in_family, Canon};
@@ -28,19 +18,13 @@ fn line(out: &mut Vec<u8>, table: &str, body: &[u8]) {
     out.push(b'\n');
 }
 
-/// The section logical hash as the manifest spells it (its `hex()`);
-/// the hash itself is `atlas_graph_types::sections::logical_hash`.
+/// The section logical hash as the manifest spells it: the hex of `sections::logical_hash`.
 pub fn logical_hash(dump: &[u8]) -> String {
     atlas_graph_types::sections::logical_hash(dump).hex()
 }
 
-/// Recomputed from an open section file by streaming its tables in
-/// `logical_table_order`: `node ORDER BY id` (the `payload` BLOB verbatim,
-/// after `Node::decode` succeeds and its id agrees with the `id` column),
-/// each family through `read_rows` (re-encoded, so a column drift shows as
-/// a hash drift), `reading_spine ORDER BY ord`. Must equal
-/// `logical_dump_of_partition` for the partition that wrote the file --
-/// that equality is the gate.
+/// Streams the section's tables in `logical_table_order`, re-encoding every row it reads, so a
+/// drifted column shows up as a hash drift instead of passing.
 pub fn logical_dump_of_db(conn: &Connection, section: Section) -> Result<Vec<u8>, SqliteError> {
     let mut out: Vec<u8> = Vec::new();
     for table in logical_table_order(section) {
@@ -73,8 +57,6 @@ pub fn logical_dump_of_db(conn: &Connection, section: Section) -> Result<Vec<u8>
                     line(&mut out, "reading_spine", &spine_line_body(corpus, ord, &node_id));
                 }
             }
-            // DB-4b: an extra table -- `SELECT … ORDER BY pk`, re-encoded
-            // through the one body spelling (`extras::row_body`).
             extra if super::extras::spec_named(extra).is_some() => {
                 let spec = super::extras::spec_named(extra).expect("guarded");
                 for row in super::extras::read_table(conn, spec)? {

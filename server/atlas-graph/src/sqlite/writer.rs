@@ -1,24 +1,6 @@
-//! DB-2b: the section writer (spec §6.1). One `.sqlite` per partition,
-//! rows first, indexes after (spec §6.1 step 2), one transaction per
-//! section, `VACUUM` before close. DB-4b: the file is written straight into
-//! the unpack cache (`<cache>/<logical>.sqlite` -- byte-identical to what
-//! unpacking its own blob yields, so the first start after a compile is a
-//! cache hit), compressed to `<compiled>/sections/<name>.<logical>.sqlite.zst`
-//! (zstd 19, transport hash = SHA-256 of the blob), then `manifest.toml`.
-//! A recompile is idempotent: an unchanged section's blob is reused (its
-//! recorded hash re-checked), `built` is preserved when root and blobs are
-//! unchanged, and the manifest is rewritten only when it differs -- an idle
-//! recompile leaves `git status` clean. `meta.built` is NOT in the section
-//! file (it would move the blob hash on every compile).
-//!
-//! DB-4a: the manifest `root` IS the version root
-//! (`atlas_graph_types::sections::version_root`); `meta.graph_version` is
-//! gone and `SqliteSnapshot::version` reads the root.
-//!
-//! Judgment call 1 (plan): `edge_index` is written from Rust out of the
-//! partition, not by `INSERT … SELECT` per family -- edge ids are content
-//! hashes SQLite cannot compute, and `Graph::row_edges()` is the one
-//! lowering both the in-memory indexes and this table are derived from.
+//! The section writer. The file is written straight into the unpack cache, byte-identical to what
+//! unpacking its own blob yields, so the first start after a compile is a cache hit. `meta.built`
+//! is deliberately NOT in the section file: it would move the blob hash on every compile.
 
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime};
@@ -54,7 +36,7 @@ pub struct WrittenSection {
     /// The committed blob: `<compiled>/sections/<name>.<logical>.sqlite.zst`.
     pub blob_path: PathBuf,
     pub logical: String,
-    /// SHA-256 of the blob (64 hex): the manifest's transport hash.
+    /// SHA-256 of the blob, 64 hex: the manifest's transport hash.
     pub blob: String,
     /// Compressed size (the manifest's `bytes`).
     pub bytes: u64,
@@ -63,13 +45,13 @@ pub struct WrittenSection {
     pub reused_blob: bool,
     pub node_count: usize,
     pub row_count: usize,
-    /// DB-4b: rows of the section's extra tables (projections, sidecars).
+    /// Rows of the section's extra tables (projections, sidecars).
     pub extra_row_count: usize,
     pub edge_count: usize,
     pub elapsed: Duration,
 }
 
-/// The display string hoisted onto `node.label` (informational only).
+/// The display string hoisted onto `node.label`; nothing reads it back.
 pub fn node_label(n: &Node) -> Option<&str> {
     match &n.payload {
         NodePayload::TextUnit { .. } => None,
@@ -181,10 +163,8 @@ fn write_one(
     let tmp = layout.cache_dir.join(format!("{name}.build.tmp"));
     let _ = std::fs::remove_file(&tmp);
 
-    // The logical hash is a pure function of the graph and the section
-    // (`sections::logical_dump_section`, the same walk `version_root`
-    // hashes); computed first so it can be stamped into `meta` and named
-    // on the file.
+    // The logical hash is a pure function of the graph and the section, computed first so it can
+    // be stamped into `meta` and used to name the file.
     let logical = logical_hash(&logical_dump_section(g, p.section));
 
     let mut conn = Connection::open(&tmp)?;
@@ -204,8 +184,6 @@ fn write_one(
                 stmt.execute(rusqlite::params![i as i64, any_node_id_str(id)])?;
             }
         }
-        // DB-4b: the section's extra tables, typed rows in pk order; their
-        // canonical bodies are already in `g.extra_tables` (the dump).
         for spec in table_specs_of(p.section) {
             if let Some(t) = extras.table(spec.name) {
                 insert_table(&tx, t)?;
@@ -234,10 +212,6 @@ fn write_one(
     let _ = std::fs::remove_file(&path);
     std::fs::rename(&tmp, &path)?;
 
-    // The blob: reused when the previous manifest recorded this very
-    // (name, logical) and the file on disk still hashes to what it said;
-    // compressed otherwise. Either way the size is checked against the
-    // git ceiling (spec §2.3).
     let blob_path = layout.blob_path(name, &logical);
     let prev = previous.and_then(|m| m.sections.iter().find(|s| s.name == name && s.logical == logical));
     let (blob, bytes, reused_blob) = match prev {
@@ -270,11 +244,9 @@ fn write_one(
     })
 }
 
-/// Writes every shipped section: `<cache>/<logical>.sqlite`,
-/// `<compiled>/sections/<name>.<logical>.sqlite.zst` (a stale
-/// `<name>.*.sqlite.zst` is deleted; the cache is content-addressed and
-/// kept), then `<compiled>/manifest.toml` -- rewritten only when it
-/// differs, its `built` preserved when root and every blob are unchanged.
+/// Writes every shipped section, deleting a stale `<name>.*.sqlite.zst` while keeping the
+/// content-addressed cache, then the manifest -- rewritten only when it differs, its `built`
+/// preserved when the root and every blob are unchanged.
 pub fn write_sections(
     g: &Graph,
     extras: &Extras,

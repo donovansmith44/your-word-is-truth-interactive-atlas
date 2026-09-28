@@ -1,33 +1,6 @@
-//! LEX-1 (spec §7): the lexicon adapter -- `LexiconEntry` nodes and
-//! `Occurs` rows from `atlas_etl::lexicon::read_all`'s pre-parsed corpus.
-//!
-//! One node per Strong's entry (spec §7.2, the payload field for field, as
-//! published; `id.raw` = the Strong's id, e.g. `"G3056"`). One `Occurs` row
-//! per ALIGNED token (spec §7.3): `entry --occurs-in--> verse`, the locus
-//! being the verse plus a one-token span on the `greek_textus_receptus` /
-//! `hebrew_masoretic` layer (the CoNLL-U token id). Rows are emitted in
-//! the corpus's own canonical reading order (book, chapter, verse, token),
-//! which is exactly what makes a verse's `words` page list its tokens in
-//! order and an entry's `occurs-in` page a concordance in canon order --
-//! "by construction and nothing else".
-//!
-//! Skipped and COUNTED, never silently dropped: unmatched tokens (no
-//! `Strong=`, ~4.7 % by upstream design -- they live in the `token`
-//! inventory only), tokens whose Strong's id has no lexicon entry (none in
-//! the vendored corpus; the count is printed so a future upstream gap
-//! shows), and tokens on a verse the KJV canon does not carry (none
-//! either -- both texts share the 31,102-verse Protestant canon, and the
-//! `kjv_adapter` has already built every verse node when this pass runs).
-//! Absent `ctx.lexicon` (every fixture that does not supply the corpus) is
-//! a true no-op, the SAME "absent == honestly empty, not a placeholder"
-//! treatment `ctx.red_letter`/`ctx.kretzmann`/`ctx.concord` already get.
-//!
-//! Provenance (spec §7.1, §7.3): the entry nodes are `stepbible-tbesg`
-//! (Strong's PD text + TBESG glosses + MACULA domains, one registry row
-//! saying what the id draws on); the NT rows `stepbible-tagnt`, the OT
-//! rows `stepbible-tahot`. All three are registered in
-//! `data/curated/sources.toml` (`provenance_registry_real_data.rs`
-//! reconciles every id the graph carries against `sources.json`).
+//! `LexiconEntry` nodes and `Occurs` rows. Rows are emitted in the corpus's own reading order
+//! (book, chapter, verse, token), which is what makes a verse's words and an entry's concordance
+//! ordered by construction. Every skipped token is counted, never silently dropped.
 
 use atlas_etl::lexicon::{LexiconCorpus, LAYER_GREEK, LAYER_HEBREW};
 use atlas_graph_types::edge::Occurs;
@@ -39,20 +12,16 @@ use atlas_graph_types::text::{TextLocus, TextRef, TokenSpan, TranslationId, Vers
 use crate::kjv_adapter::verse_node_id;
 use crate::pipeline::BuildCtx;
 
-/// The entry nodes' provenance id (registered in `sources.toml`).
 pub const PROVENANCE_ENTRY: &str = "stepbible-tbesg";
-/// The NT (Greek) `Occurs` rows' provenance id.
 pub const PROVENANCE_OCCURS_NT: &str = "stepbible-tagnt";
-/// The OT (Hebrew) `Occurs` rows' provenance id.
 pub const PROVENANCE_OCCURS_OT: &str = "stepbible-tahot";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LexiconAdapterStats {
-    /// `LexiconEntry` nodes authored.
     pub entries: usize,
-    /// `Occurs` rows authored (one per aligned token that resolved).
+    /// `Occurs` rows authored: one per aligned token that resolved.
     pub occurs: usize,
-    /// Tokens with no `Strong=` (upstream `Align=unmatched`): inventory only.
+    /// Tokens with no `Strong=` upstream: they reach the inventory only, never an edge.
     pub tokens_unmatched: usize,
     /// Aligned tokens whose Strong's id has no lexicon entry (skipped, no edge).
     pub tokens_without_entry: usize,
@@ -65,7 +34,6 @@ pub fn entry_node_id(strong: &str) -> AnyNodeId {
     AnyNodeId { kind: NodeKind::LexiconEntry, raw: strong.to_string() }
 }
 
-/// The NORMALIZE-stage pass: nodes first, then rows in corpus order.
 pub fn normalize(ctx: &mut BuildCtx) -> LexiconAdapterStats {
     let mut stats = LexiconAdapterStats::default();
     let Some(corpus) = ctx.lexicon else {

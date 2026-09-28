@@ -1,41 +1,6 @@
-//! Batch M-C, controller decision 4: THE COMPILE STEP -- "a compile step
-//! (extend atlas-etl's entry point or a new atlas-graph bin -- your call,
-//! disclosed) produces it [the serialized artifact]." A NEW BIN here, not
-//! an extension of atlas-etl's own binary: atlas-etl's `main.rs` already
-//! owns the curated-TOML+Theographic parse/merge/validate pipeline that
-//! produces `data/compiled/*.json` (this binary's own OWN INPUT, via
-//! `AtlasData::load`); the graph-artifact compile step is a SEPARATE
-//! concern layered on top (raw KJV/xrefs + curated eras.toml + the
-//! already-compiled `AtlasData` -> one graph artifact file), which reads
-//! more naturally as its own small tool than as a mode flag inside an
-//! already-large ETL binary.
-//!
-//! ```text
-//! atlas-graph-compile --data-dir data/compiled
-//! ```
-//! (`--data-dir` names the SAME `data/compiled` every other tool in this
-//! workspace uses as the anchor; `raw/`/`curated/` are its siblings under
-//! the shared `data/` parent, exactly the derivation `atlas-server`'s own
-//! `main.rs` and `GraphService::build` already use.)
-//!
-//! M-C2: this binary's own INPUT `AtlasData` now comes from
-//! `atlas_etl::compile::compile(raw_dir, curated_dir)` (a real raw+curated
-//! compile, the same orchestration `atlas-etl`'s own binary runs) rather
-//! than `AtlasData::load(&data_dir)` reading `data/compiled/*.json` --
-//! five of those files (places/events/narratives/verses-kjv/cross-refs)
-//! are the M-C2 deletion event's own target and no longer exist.
-//!
-//! ADMISSION (design §9a: "implementation #2 passes the same law as #1"):
-//! before writing anything, this binary independently re-builds the SAME
-//! graph a second time from the identical sources and runs
-//! `atlas_graph_types::store::assert_answers_match` between the dump's own
-//! round-tripped reconstruction and that second build -- the artifact
-//! this binary produces has PASSED the SAME conformance law
-//! `tests/artifact_conformance.rs` proves in CI, not merely "should."
-//! This is the expensive check (measured: ~3-15s over the full real
-//! graph); it happens HERE, once, at compile time -- never at server
-//! startup, which is exactly what keeps the LOAD-TIME ceiling (controller
-//! decision 6) achievable.
+//! The compile step: `atlas-graph-compile --data-dir data/compiled`, with `raw/` and `curated/` as that
+//! directory's siblings. Before writing anything it rebuilds the graph a second time from the identical
+//! sources and runs the conformance law between them, so that expensive check happens here, never at startup.
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -43,11 +8,8 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use atlas_graph_types::store::{GraphPublisher, MemStore};
 
-/// DB-4b: the SQLite sections' home IS `--data-dir` (spec §2.3:
-/// `data/compiled/manifest.toml` + `data/compiled/sections/*.sqlite.zst`,
-/// committed); `--sections-cache <dir>` overrides the unpack cache the
-/// uncompressed files are written into (default: `<data-dir>/../cache/
-/// sections`, gitignored).
+/// The sections' home IS `--data-dir`; `--sections-cache <dir>` overrides the unpack cache the uncompressed
+/// files are written into, which defaults to `<data-dir>/../cache/sections`.
 fn parse_args(args: &[String]) -> Result<(PathBuf, Option<PathBuf>)> {
     let mut data_dir: Option<PathBuf> = None;
     let mut out: Option<PathBuf> = None;
@@ -84,32 +46,18 @@ fn main() -> Result<()> {
 
     let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
     let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
-    // C2C3-EXPORT: `data/exports/` is a NEW committed directory (unlike
-    // gitignored `data/raw`) -- the two cross-repo contract files
-    // (gazetteer.json/chronology.json) land here, derived from `--data-dir`
-    // the SAME way `raw_dir`/`curated_dir` already are.
+    // `data/exports/` is a committed directory, unlike the gitignored raw tree.
     let exports_dir = data_dir.parent().map(|p| p.join("exports")).unwrap_or_else(|| Path::new("../data/exports").to_path_buf());
 
-    // M-C2: `AtlasData::load(&data_dir)` retired as this binary's own
-    // source -- the five files it read (places/events/narratives/
-    // verses-kjv/cross-refs.json) are the deletion event's own target
-    // (batch-mc2-report.md). `atlas_etl::compile::compile` is the SAME
-    // raw+curated orchestration `atlas-etl`'s own binary runs, called here
-    // directly instead of round-tripping through `data/compiled/*.json` --
-    // it also already carries `data.eras` (compiled once, validated),
-    // so the separate `eras.toml` re-parse this binary used to do on its
-    // own retires too: one parse, one source, for both.
     let atlas = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
     let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).with_context(|| format!("reading {}", raw_dir.join("kjv.json").display()))?;
     let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
         .with_context(|| format!("reading {}", raw_dir.join("xrefs/cross_references.txt").display()))?;
     let eras = atlas.eras.clone();
 
-    // CORP-1a: the real compile step HARD-REQUIRES the vendored brain-fuel
-    // data (unlike GraphService::build's own dev-fallback, which degrades
-    // gracefully for a fixture raw_dir) -- a graph.bin compiled without it
-    // would silently ship KJV-only text, defeating this batch's own
-    // purpose. `data/raw/brain-fuel-bible/` (see data/raw/README.md).
+    // The real compile step HARD-REQUIRES every vendored corpus, unlike the dev fallback that degrades
+    // gracefully for a fixture directory: an artifact compiled without one would silently ship less text
+    // than it claims.
     let brainfuel_root = raw_dir.join("brain-fuel-bible");
     println!("atlas-graph-compile: reading vendored brain-fuel editions from {}...", brainfuel_root.display());
     let brainfuel = atlas_etl::brainfuel::read_all(&brainfuel_root).with_context(|| format!("reading {}", brainfuel_root.display()))?;
@@ -123,22 +71,8 @@ fn main() -> Result<()> {
         brainfuel.stats.anomalies,
     );
 
-    // Batch KJV-CASE: the Tetragrammaton LORD/Lord case-restoration pass
-    // (owner ruling; batch-kjv-case-brief.md) actually runs INSIDE
-    // `build_graph_from_sources_with_eras_and_brainfuel` below (see that
-    // function's own doc comment) -- this is a SEPARATE, disclosed
-    // recomputation purely for this startup log, reusing `atlas.verses`
-    // (already in scope, unrestored, from the SAME `data/raw/kjv.json`
-    // `kjv_json` above reads) so the operator sees the exact counts
-    // without a third parse of that file. Batch KJV-CASE-2 (batch-kjv-
-    // case2-brief.md) extended `restore_kjv_case` itself in place -- the
-    // SAME call here now also reports the superscription-tail class.
-    // RED-1: the FIRST return value (the actual restored verse map) is now
-    // CAPTURED, not discarded (`_` before this batch) -- the red-letter
-    // alignment below needs it directly (the span-alignment law runs
-    // against OUR restored casing, never the raw parse, `red_letter.rs`'s
-    // own module doc comment), so this recomputation now serves both the
-    // startup log AND the real alignment input, one call, not two.
+    // A separate, disclosed recomputation of the case restoration purely for this log, reusing the verses
+    // already in scope. The restored map is captured because the red-letter alignment below needs it.
     let (restored_verses, case_restoration) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
     println!(
         "atlas-graph-compile: KJV-CASE restoration -- {} compared, {} case-restored (whole-verse), {} already agreeing, \
@@ -153,13 +87,6 @@ fn main() -> Result<()> {
         case_restoration.skipped_mismatch,
     );
 
-    // CORP-2a: the real compile step HARD-REQUIRES the vendored Concord
-    // data + curated SC-overlap alignment (the SAME "graph.bin compiled
-    // without it would silently ship an incomplete corpus" reasoning
-    // CORP-1a's own brainfuel requirement above already established) --
-    // unlike `GraphService::build`'s own dev fallback, which degrades
-    // gracefully for a fixture `raw_dir` (`data/raw/concord/`, see
-    // `data/raw/README.md`).
     let concord_root = raw_dir.join("concord");
     println!("atlas-graph-compile: reading vendored Concord (Book of Concord) data from {}...", concord_root.display());
     let concord_corpus = atlas_etl::concord::read_all(&concord_root).with_context(|| format!("reading {}", concord_root.display()))?;
@@ -177,12 +104,6 @@ fn main() -> Result<()> {
     );
     let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
 
-    // KRETZ-1: the real compile step HARD-REQUIRES the vendored Kretzmann
-    // data (the SAME "graph.bin compiled without it would silently ship an
-    // incomplete corpus" reasoning CORP-1a/CORP-2a's own requirements above
-    // already established) -- unlike `GraphService::build`'s own dev
-    // fallback, which degrades gracefully for a fixture `raw_dir`
-    // (`data/raw/kretzmann/`, see `data/raw/README.md`).
     let kretzmann_root = raw_dir.join("kretzmann");
     println!("atlas-graph-compile: reading vendored Kretzmann (Popular Commentary of the Bible) data from {}...", kretzmann_root.display());
     let kretzmann_corpus = atlas_etl::kretzmann::read_all(&kretzmann_root, &atlas.verses).with_context(|| format!("reading {}", kretzmann_root.display()))?;
@@ -191,15 +112,6 @@ fn main() -> Result<()> {
         kretzmann_corpus.stats.pages, kretzmann_corpus.stats.units, kretzmann_corpus.stats.fragments, kretzmann_corpus.stats.footnotes, kretzmann_corpus.stats.disclosures.len(),
     );
 
-    // RED-1: the real compile step HARD-REQUIRES the vendored red-letter
-    // OSIS source (the SAME "graph.bin compiled without it would silently
-    // ship an incomplete corpus" reasoning every prior vendored-data
-    // requirement above already established) -- unlike `GraphService::
-    // build`'s own dev fallback, which degrades gracefully for a fixture
-    // `raw_dir` (`data/raw/red-letter/`, see `data/raw/README.md`). Aligned
-    // against `restored_verses` (RESTORED KJV-CASE/KJV-CASE-2 text, just
-    // captured above), never the raw parse -- the span-alignment law runs
-    // against the graph's own restored casing.
     let red_letter_root = raw_dir.join("red-letter");
     println!("atlas-graph-compile: reading vendored red-letter (KJV OSIS, words of Christ) data from {}...", red_letter_root.display());
     let red_letter_corpus = atlas_etl::red_letter::read_all(&red_letter_root, &restored_verses).with_context(|| format!("reading {}", red_letter_root.display()))?;
@@ -212,9 +124,6 @@ fn main() -> Result<()> {
         red_letter_corpus.stats.not_found,
     );
 
-    // LEX-1: the lexicon corpus (spec 7) -- Strong's-keyed entries and the
-    // CoNLL-U morphology under the SAME vendored brain-fuel tree; hard-
-    // required like every other corpus here.
     println!("atlas-graph-compile: reading vendored lexicon + morphology from {}...", brainfuel_root.display());
     let lexicon_corpus = atlas_etl::lexicon::read_all(&brainfuel_root).with_context(|| format!("reading {}/lexicon,morph", brainfuel_root.display()))?;
     println!(
@@ -266,9 +175,6 @@ fn main() -> Result<()> {
         Some(&lexicon_corpus),
     )
     .context("building the independent model graph")?;
-    // NODE1-ROWS-1 (fix round 1): container membership/succession are
-    // declared rows now -- `build_indexes` lowers them like every other
-    // row family; the former derived-edge pairing here is gone.
     graph_b.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph_b);
 
@@ -280,50 +186,21 @@ fn main() -> Result<()> {
     atlas_graph_types::store::assert_answers_match(&graph_a_indexed, &graph_b);
     println!("atlas-graph-compile: ADMISSION passed (assert_answers_match, full graph) in {:?}", admit_start.elapsed());
 
-    // RED-1 / DB-5: the KJV sub-verse span table, built from
-    // `red_letter_corpus` against `restored_verses` (the SAME restored
-    // text this whole compile step aligned against) and folded into the
-    // kjv section's `red_letter_span` table below -- no file.
+    // The KJV sub-verse span table is folded into the kjv section's own table: there is no file.
     let red_letter_spans: std::collections::HashMap<String, Vec<(usize, usize)>> =
         atlas_graph::red_letter_spans::spans_by_dot_ref(&red_letter_corpus, &restored_verses).into_iter().collect();
     println!("atlas-graph-compile: {} verses carry a sub-verse red-letter span", red_letter_spans.len());
 
-    // C2C3-EXPORT (map-system contracts C2/C3, .superpowers/sdd/
-    // 2026-08-17-bible-atlas-m1/c2c3-export-design.md): a NEW TERMINAL PASS
-    // in this SAME binary, after admission -- built from `graph_a_indexed`,
-    // the same admitted graph `dump`/`bytes`/graph.bin just came from, so
-    // `atlas_version_root` embeds the identical `GraphVersion` the artifact
-    // reports (drift is impossible by construction). Row-building borrows
-    // `graph_a_indexed`; only the FINAL version-stamp step below consumes
-    // it by value (nothing downstream needs the graph itself afterward).
     println!("atlas-graph-compile: building C2/C3 map-system exports (gazetteer + chronology)...");
     let gazetteer_places = atlas_graph::exports::gazetteer_places(&graph_a_indexed);
     let chronology_events = atlas_graph::exports::chronology_events(&graph_a_indexed, &chronology);
     let chronology_spans = atlas_graph::exports::chronology_spans(&graph_a_indexed);
     let chronology_anchor_rows = atlas_graph::exports::chronology_anchors(&graph_a_indexed, &atlas.chronology_anchors);
-    // KRETZ-1 (THE DATE MINE): the SAME terminal-pass treatment, riding the
-    // SAME already-admitted `graph_a_indexed` -- drift-impossible by the
-    // SAME construction the C2C3 exports above already rely on. Computed
-    // here, before `graph_a_indexed` moves into `version_store.publish`
-    // below (its own last use).
     let kretzmann_rows = atlas_graph::exports::kretzmann_date_rows(&graph_a_indexed);
 
-    // The SAME version derivation `GraphService`'s own constructors use
-    // (service.rs: `MemStore::default(); store.publish(graph)`) -- the only
-    // public path to a `GraphVersion` from an owned `Graph` (`store::
-    // version_of` is a graph-types-private fn; graph-types stays untouched,
-    // per the EXTEND-ONLY rule). Consumes `graph_a_indexed`: its last use.
-    // DB-4b: the non-graph section tables (projections, resolved
-    // chronology, headings, red-letter spans, the nine folded sidecars)
-    // ride BOTH graphs into the root -- `graph_a_indexed` publishes the
-    // version the exports stamp, `graph_b` is what the sections are written
-    // from -- so `atlas_version_root`, `manifest.toml`'s root and the
-    // server's `from_artifact` version are one number. Read from the SAME
-    // files the server reads (`data_dir`), never from this binary's
-    // in-memory `AtlasData`, so the two sides agree by construction.
-    // DB-5: the sidecars are THIS binary's own in-memory `AtlasData` (the
-    // ETL's `compile`) and `sources.json` (`gen_sources`' file); nothing is
-    // round-tripped through a compiled JSON.
+    // The non-graph section tables ride BOTH graphs into the root -- one publishes the version the exports
+    // stamp, the other is what the sections are written from -- so the artifact's version, the manifest's
+    // root and the server's are one number. Read from the same files the server reads, never from memory.
     let sources_path = data_dir.join("sources.json");
     let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(
         &std::fs::read_to_string(&sources_path).with_context(|| format!("reading {} (run `cargo run -p atlas-etl --bin gen_sources` from server/ first)", sources_path.display()))?,
@@ -374,12 +251,6 @@ fn main() -> Result<()> {
         version_hex
     );
 
-    // KRETZ-1 (THE DATE MINE, owner order 2026-08-24: "extract the years
-    // from Kretzmann and throw them somewhere as our tentative source of
-    // truth that gets shared everywhere") -- its own export file,
-    // `status: "tentative-extraction"` per the scouting memo's own header
-    // (CHRON-CONV-1 adjudicates real placements from it later; this file
-    // carries no placement authority of its own).
     let kretzmann_export = atlas_graph::exports::KretzmannChronologyExport {
         format_version: atlas_graph::exports::KRETZMANN_CHRONOLOGY_FORMAT_VERSION,
         atlas_version_root: version_hex.clone(),
@@ -391,14 +262,8 @@ fn main() -> Result<()> {
     std::fs::write(&kretzmann_path, format!("{kretzmann_json}\n")).with_context(|| format!("writing {}", kretzmann_path.display()))?;
     println!("atlas-graph-compile: wrote {} ({} tentative date rows)", kretzmann_path.display(), kretzmann_export.rows.len());
 
-    // DB-2b/DB-4b (spec §6.1, §6.2): the SQLite sections, written LAST --
-    // after `graph.bin`, the red-letter spans and every export are on
-    // disk, so a section failure never leaves the served artifact
-    // unwritten. `graph_b` (the independent model the admission above
-    // compared against) is still alive here, carries the same rows, and
-    // has the same extras attached. Layout (spec §2.3): the committed
-    // `manifest.toml` + `sections/*.sqlite.zst` under `--data-dir`, the
-    // uncompressed files in the unpack cache.
+    // The sections are written LAST, after the artifact, the spans and every export are on disk, so a
+    // section failure never leaves the served artifact unwritten.
     let layout = match sections_cache {
         Some(cache) => atlas_graph::sqlite::source::SectionLayout { compiled_dir: data_dir.clone(), cache_dir: cache },
         None => atlas_graph::sqlite::source::SectionLayout::under(&data_dir),
@@ -429,8 +294,7 @@ fn main() -> Result<()> {
         );
     }
     println!("atlas-graph-compile: DB-4b -- sections written in {:?}; manifest root {}", t.elapsed(), manifest.root);
-    // THE root-equality proof on the real graph, at compile: the manifest's
-    // root (over the four sections' logical dumps) is the version the
+    // The root-equality proof on the real graph, at compile time: the manifest's root is the version the
     // exports carry and the server publishes.
     anyhow::ensure!(
         manifest.root == version_hex,
@@ -440,8 +304,6 @@ fn main() -> Result<()> {
     );
     println!("atlas-graph-compile: DB-4b ADMISSION -- SqliteSnapshot (through CommittedZstdSource) vs the model graph ...");
     let t = Instant::now();
-    // ADMIT-PERF-1: a pool, so the admission sweep's workers each get a
-    // connection instead of queueing on one.
     let snap = atlas_graph::sqlite::snapshot::SqliteSnapshot::open_with_workers(
         &layout.manifest_path(),
         &atlas_graph::sqlite::source::CommittedZstdSource { layout: layout.clone() },

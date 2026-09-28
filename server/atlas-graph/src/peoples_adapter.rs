@@ -1,73 +1,6 @@
-//! PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md,
-//! owner orders 2026-08-23: "we need a way to distinguish between the
-//! names of the twelve tribes and the people theyre named after and other
-//! sorts of cases" / "pull in Peoples or Nations info so I can find out
-//! who the ammonites are or whatever"): PeopleGroup nodes from THREE
-//! sources (controller decision 1) + curated NamedAfter eponymy rows
-//! (decision 3), the SAME two-phase NORMALIZE/MERGE-ALIAS shape
-//! `person_adapter.rs`/`place_adapter.rs` already established.
-//!
-//! THREE PeopleGroup SOURCES, ONE node table:
-//! (a) the 23 Theographic `peopleGroups.json` records (`ctx.atlas.
-//!     people_groups`) -- NODES only; membership (`members`/`events_dev`)
-//!     is NOT imported (decision 1a).
-//! (b) six CURATED nation seeds (`ctx.atlas.people_group_seeds`, decision
-//!     1b): Ammonites, Moabites, Edomites, Philistines, Amalekites,
-//!     Canaanites.
-//! (c) NINE Theographic PERSON records RECLASSIFIED as PeopleGroup
-//!     (`ctx.atlas.people_group_reclassify`, decision 1c, the closed
-//!     nine-slug curated list): Amorite/Arkite/Arvadite/Girgasite/
-//!     Hamathite/Hivite/Jebusite/Sinite/Zemarite. Each keeps its EXISTING
-//!     raw slug as its PeopleGroupId (same string, PeopleGroup kind
-//!     instead of Person -- `AnyNodeId`'s own `{kind, raw}` shape makes
-//!     the two ids distinct node-store keys even though the raw string is
-//!     identical); its EXISTING resolved `verse_links` become
-//!     `Mentions(PeopleGroup)` rows here (decision 1c: "the only
-//!     per-locus group attestations the source actually ships").
-//!     `person_adapter.rs` is the complementary half: [`reclassified_person_slugs`]
-//!     is the ONE shared view both adapters read, so `ctx.atlas.people`
-//!     partitions between "becomes a Person node" and "becomes a
-//!     PeopleGroup node" without the two ever drifting out of sync -- no
-//!     record is ever built as BOTH (a kind is a fact, not a choice a
-//!     client makes at read time).
-//!
-//! NO INVENTED PER-LOCUS SENSES (decision 2), QUALIFIED by the PG-1B rider
-//! (batch-edge1a-brief.md decision 0): (a)/(b) above get NODES ONLY by
-//! DEFAULT -- no source attests which loci mean the tribe/nation vs. the
-//! man/land for most of (a)'s own 23 records, and NONE of (b)'s six
-//! curated seeds carry any per-locus data at all (the JDG 1:2 problem
-//! stays an OPEN OWNER QUESTION for those, ledgered in progress.md, not
-//! shipped by default). The PG-1a review CORRECTED that premise for a
-//! real subset of (a): 2 of the 23 Theographic `peopleGroups.json` records
-//! (Tribe of Judah, Nation of Israel) DO carry a genuine, reciprocally-
-//! linked `verses` field (`atlas_etl::people_groups::parse_people_groups`
-//! now resolves it into `PeopleGroup.verse_links`) -- these 13 loci ARE
-//! source-attested, so `merge_alias` below builds real Mentions rows for
-//! them, general code over ANY (a)-source group carrying a non-empty
-//! `verse_links` (not a hardcoded two-row special case: a future
-//! Theographic data refresh adding a `verses` field to a THIRD group would
-//! be picked up automatically, no code change). (b)'s curated seeds still
-//! carry zero per-locus data and so still build NO mentions rows -- that
-//! half of decision 2 is unchanged. The Sin-guard principle stands: links
-//! point where data attests, never where a string guesses.
-//!
-//! NAMEDAFTER (decision 3): curated `ctx.atlas.named_after_seeds` rows,
-//! each naming a namesake (PeopleGroup this batch, always) + an eponym
-//! `PersonId` + a real `Justification` (prose + >=1 `Ground::Scripture`).
-//! Built here in NORMALIZE, AFTER `person_adapter::normalize` has already
-//! run in the SAME pass (`pipeline.rs`'s own `NormalizePass::run` call
-//! order) -- curated ids are otherwise already fully resolved at ETL time
-//! (no OTHER pass's OWN output is needed), the same NORMALIZE-eligibility
-//! `pipeline.rs`'s own doc comment states for `event_world::populate`'s
-//! witness-derived rows; the one real dependency is on person_adapter's
-//! own node-building having already run, so the eponym-existence check
-//! below can ask the GRAPH itself, literally, rather than re-deriving
-//! "would person_adapter have built this" from the raw source a second
-//! time. Philistines/Amalekites/Canaanites (decision 3's own
-//! conditional): a row is emitted ONLY when the named eponym slug
-//! resolves to a REAL Person node in the built graph -- never a forced
-//! edge the graph can't ground; `PeoplesAdapterStats::named_after_omitted`
-//! names every curated row skipped this way, with its own reason.
+//! PeopleGroup nodes from three sources -- imported groups, curated nation seeds, and the curated
+//! reclassified person records, which keep their raw slug under the PeopleGroup kind -- plus the
+//! curated NamedAfter rows, emitted only where the named eponym resolves to a real Person node.
 
 use std::collections::BTreeSet;
 
@@ -81,22 +14,16 @@ use atlas_graph_types::text::{BibleLocus, BibleLocusRange, TextLocus, VerseRef};
 
 use crate::pipeline::BuildCtx;
 
-/// Provenance tags -- one per PeopleGroup source, so a card's own
-/// provenance string always names WHICH of the three this batch's own
-/// controller decision 1 ships a node came from.
+/// One provenance tag per PeopleGroup source, so a card's provenance always names which of the three
+/// a node came from.
 pub const PROVENANCE_THEOGRAPHIC: &str = "theographic-people-groups";
 pub const PROVENANCE_CURATED_SEED: &str = "curated-people-groups";
 pub const PROVENANCE_RECLASSIFIED: &str = "theographic-people-reclassified";
 pub const PROVENANCE_NAMED_AFTER: &str = "curated-named-after";
 
-/// The nine reclassified slugs (decision 1c), as a lookup set -- the ONE
-/// shared view `person_adapter.rs` (to EXCLUDE these ids from its own
-/// Person-node/mentions construction) and this module (to build their
-/// PeopleGroup nodes/mentions) both read, so the partition of `atlas.
-/// people` can never drift between the two call sites. Reads curated
-/// data (`atlas.people_group_reclassify`), never a hardcoded list of its
-/// own (decision 1c: "the reclassification list is CURATED DATA... not
-/// code constants").
+/// The reclassified slugs as a lookup set: the ONE shared view this module and `person_adapter` both
+/// read, so the partition of `atlas.people` cannot drift between them. Curated data, never a
+/// hardcoded list.
 pub fn reclassified_person_slugs(atlas: &atlas_core::data::AtlasData) -> BTreeSet<String> {
     atlas.people_group_reclassify.iter().map(|r| r.person_slug.clone()).collect()
 }
@@ -107,26 +34,15 @@ fn verse_locus(vref: &str) -> Option<TextLocus> {
     Some(TextLocus::from(BibleLocus::whole(vr)))
 }
 
-/// `pub(crate)`: EDGE-1a's own `fulfillment_adapter.rs` reuses this exact
-/// verse-ref-string -> `BibleLocus` parser for `FulfillmentSeed`/
-/// `TypologySeed`'s own `ScriptureGroundSeed`-shaped endpoints, rather than
-/// duplicating the `VerseId::parse_canonical` call a third time -- unlike
-/// `people.rs`/`people_groups.rs`'s own deliberately-independent
-/// `verse_osis_by_id` copies (different reason: those two run at different
-/// ETL pipeline points over different raw sources), this is the exact same
-/// small, pure, source-agnostic string parser both adapters need, with
-/// nothing to keep independent.
+/// `pub(crate)` because the fulfillment adapter parses its curated Scripture grounds with this exact
+/// parser rather than a third copy of it.
 pub(crate) fn ground_locus(vref: &str) -> Option<BibleLocus> {
     let vid = atlas_core::refs::VerseId::parse_canonical(vref).ok()?;
     Some(BibleLocus::whole(VerseRef { book: vid.book.0, chapter: vid.chapter, verse: vid.verse }))
 }
 
-/// Parses one curated `{from, to?}` ground row into a real
-/// `BibleLocusRange` -- `to` defaults to `from` (a single-verse ground);
-/// `None` on an unparseable verse ref or an inverted range (`to < from`),
-/// letting the caller fold that into its own omission/skip accounting
-/// rather than panicking on a curated-data typo. `pub(crate)`: see
-/// `ground_locus`'s own doc comment immediately above.
+/// `to` defaults to `from`, a single-verse ground. `None` on an unparseable verse ref or an inverted
+/// range, so a curated typo folds into the caller's omission accounting instead of panicking.
 pub(crate) fn ground_range(g: &ScriptureGroundSeed) -> Option<BibleLocusRange> {
     let from = ground_locus(&g.from)?;
     let to = match &g.to {
@@ -142,26 +58,18 @@ pub struct PeoplesAdapterStats {
     pub curated_seed_nodes: usize,
     pub reclassified_nodes: usize,
     pub reclassified_mentions_rows: usize,
-    /// PG-1B rider: Mentions rows built from source (a) Theographic
-    /// groups' own `verse_links` (general code -- any group with verses;
-    /// 13 in the real committed data, across the 2 of 23 groups that carry
-    /// any).
+    /// Mentions rows built from imported groups' own `verse_links`: general code, any group that
+    /// carries verses.
     pub theographic_mentions_rows: usize,
     pub named_after_rows: usize,
-    /// `(namesake_id, reason)` -- every curated `[[named_after]]` row this
-    /// adapter declined to build, with why (decision 3's own "report which
-    /// were omitted and why").
+    /// `(namesake_id, reason)`: every curated `named_after` row this adapter declined to build.
     pub named_after_omitted: Vec<(String, String)>,
 }
 
-/// NORMALIZE: PeopleGroup nodes from all three sources, plus the curated
-/// NamedAfter rows -- module doc comment above has the full ordering/
-/// eponym-existence reasoning. Called from `pipeline::NormalizePass`,
-/// AFTER `person_adapter::normalize`.
 pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
     let mut stats = PeoplesAdapterStats::default();
 
-    // (a) Theographic groups -- nodes only (decision 1a).
+    // Source (a): nodes only -- membership is not imported.
     for g in &ctx.atlas.people_groups {
         let id = PeopleGroupId::new(g.id.clone()).erase();
         ctx.graph.nodes.insert(
@@ -171,7 +79,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
         stats.theographic_group_nodes += 1;
     }
 
-    // (b) curated nation seeds -- nodes only (decision 1b).
+    // Source (b): nodes only -- a curated seed carries no per-locus data.
     for g in &ctx.atlas.people_group_seeds {
         let id = PeopleGroupId::new(g.id.clone()).erase();
         ctx.graph.nodes.insert(
@@ -181,10 +89,8 @@ pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
         stats.curated_seed_nodes += 1;
     }
 
-    // (c) reclassified persons -- PeopleGroup nodes, SAME raw slug as the
-    // Person record they re-home (decision 1c). `person_adapter::normalize`
-    // (already run, earlier in this SAME pass) never built a Person node
-    // for these ids -- see that module's own doc comment.
+    // Source (c): the PeopleGroup node keeps the Person record's own raw slug. `person_adapter`
+    // already ran in this pass and built no Person node for these ids.
     for r in &ctx.atlas.people_group_reclassify {
         let Some(p) = ctx.atlas.people.iter().find(|p| p.id == r.person_slug) else { continue };
         let id = PeopleGroupId::new(p.id.clone()).erase();
@@ -195,18 +101,10 @@ pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
         stats.reclassified_nodes += 1;
     }
 
-    // NamedAfter eponymy rows (decision 3).
     for row in &ctx.atlas.named_after_seeds {
-        // "add NamedAfter ONLY where the eponym person exists as a node"
-        // (decision 3, verbatim) -- checked against the GRAPH itself
-        // (person_adapter::normalize already ran earlier in this pass),
-        // not the raw source list: this is both the literal reading of
-        // the decision AND the more robust check -- a curated row naming
-        // a RECLASSIFIED slug as its own eponym (never true in this
-        // batch's own seed data, but a real future-mistake class) would
-        // wrongly pass an `atlas.people`-only check (the raw record is
-        // still there) while correctly failing THIS one (no Person node
-        // exists for it any more).
+        // The eponym must resolve to a real Person NODE, checked against the graph rather than the
+        // raw source list: a curated row naming a reclassified slug would wrongly pass a source-only
+        // check, since that raw record still exists.
         let eponym_id = PersonId::new(row.eponym.clone());
         let eponym_node_exists = ctx.graph.nodes.get(&eponym_id.erase()).is_some_and(|n| n.id.kind == NodeKind::Person);
         if !eponym_node_exists {
@@ -258,17 +156,9 @@ pub fn normalize(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
     stats
 }
 
-/// MERGE/ALIAS: reclassified persons' `verse_links` -> `Mentions(PeopleGroup)`
-/// rows -- mirrors `person_adapter::merge_alias` almost line for line,
-/// substituting `MentionedEntity::PeopleGroup` for `MentionedEntity::
-/// Person` and reading only the reclassified subset of `ctx.atlas.people`.
-/// PG-1B rider: source (a) Theographic groups carrying a non-empty
-/// `verse_links` ALSO build real Mentions rows now (module doc comment's
-/// own "QUALIFIED by the PG-1B rider" paragraph has the full reasoning) --
-/// general code over the WHOLE `ctx.atlas.people_groups` list, not a
-/// hardcoded Tribe-of-Judah/Nation-of-Israel special case. Source (b)
-/// (curated nation seeds) still builds NO mentions rows at all (decision
-/// 2's other half, unchanged -- those carry no per-locus data of any kind).
+/// Reclassified persons' `verse_links` become `Mentions(PeopleGroup)` rows, and so do any imported
+/// group's own `verse_links` -- general code over the whole list, never a hardcoded pair of names.
+/// The curated nation seeds build no mentions rows at all: they carry no per-locus data.
 pub fn merge_alias(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
     let mut stats = PeoplesAdapterStats::default();
     let reclass = reclassified_person_slugs(ctx.atlas);
@@ -284,10 +174,6 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PeoplesAdapterStats {
         }
     }
 
-    // PG-1B rider (decision 0): source (a) groups, general code -- ANY
-    // Theographic peopleGroups.json record whose OWN `verse_links` is
-    // non-empty (today: Tribe of Judah, 1; Nation of Israel, 12 -- see
-    // `atlas_etl::people_groups::parse_people_groups`'s own resolution).
     for g in &ctx.atlas.people_groups {
         if g.verse_links.is_empty() {
             continue;
@@ -313,14 +199,9 @@ impl std::fmt::Display for PeoplesFidelityViolation {
 }
 impl std::error::Error for PeoplesFidelityViolation {}
 
-/// THE BOUNDARY FIDELITY LAW (module doc comment has the full design):
-/// bijection over all three PeopleGroup sources (every source record ->
-/// exactly one PeopleGroup node, by exact id; a reclassified slug carries
-/// NO Person node) + a total-count check (catches a stray/duplicate
-/// insert the per-source loops alone would miss) + mentions completeness
-/// for the reclassified subset -- the SAME shape `person_adapter::
-/// check_person_fidelity` already established. Fail-loud on the FIRST
-/// violation found, named precisely.
+/// The boundary fidelity law: every source record of all three sources becomes exactly one
+/// PeopleGroup node by exact id and a reclassified slug carries no Person node, the total count
+/// matches, and the mentions rows are complete. Fail-loud on the first violation, named precisely.
 pub fn check_peoples_fidelity(atlas: &atlas_core::data::AtlasData, graph: &Graph) -> Result<(), PeoplesFidelityViolation> {
     for g in &atlas.people_groups {
         let id = PeopleGroupId::new(g.id.clone()).erase();
@@ -354,11 +235,8 @@ pub fn check_peoples_fidelity(atlas: &atlas_core::data::AtlasData, graph: &Graph
         }
     }
 
-    // TOTAL COUNT: catches a stray/duplicate PeopleGroup insert the three
-    // per-source loops above (each only ever checking "this source's own
-    // records are ALL present") would not by themselves -- the same
-    // "too few AND too many" discipline `person_adapter::
-    // check_person_fidelity`'s own sibling tests establish.
+    // The total count catches a stray or duplicate insert that the per-source loops -- each of which
+    // only ever checks that its own records are all present -- would miss.
     let expected_total = atlas.people_groups.len() + atlas.people_group_seeds.len() + atlas.people_group_reclassify.len();
     let actual_total = graph.nodes.values().filter(|n| n.id.kind == NodeKind::PeopleGroup).count();
     if actual_total != expected_total {
@@ -370,13 +248,8 @@ pub fn check_peoples_fidelity(atlas: &atlas_core::data::AtlasData, graph: &Graph
         )));
     }
 
-    // MENTIONS COMPLETENESS (reclassified subset only -- (a)/(b) sources
-    // carry no mentions by design, decision 2): per-reclassified-person,
-    // resolved `verse_links` count == PeopleGroup-mentions rows actually
-    // carrying that id as entity, exactly. A fresh count over `graph.
-    // mentions`'s own row table, not graph-index-derived -- the same
-    // "count what actually got built" discipline `check_person_fidelity`
-    // already follows.
+    // Mentions completeness for the reclassified subset, counted fresh over `graph.mentions`'s own
+    // row table rather than through the derived index.
     for r in &atlas.people_group_reclassify {
         let Some(p) = atlas.people.iter().find(|p| p.id == r.person_slug) else {
             return Err(PeoplesFidelityViolation(format!("reclassified slug '{}' names no record in the compiled Theographic person set at all", r.person_slug)));
@@ -391,11 +264,8 @@ pub fn check_peoples_fidelity(atlas: &atlas_core::data::AtlasData, graph: &Graph
         }
     }
 
-    // PG-1B rider: the SAME mentions-completeness discipline, over source
-    // (a) Theographic groups' own `verse_links` -- general code (every
-    // `atlas.people_groups` record, not just the two known verse-bearing
-    // ones today), so a future Theographic refresh adding a `verses` field
-    // to a THIRD group is caught here too, not silently under-served.
+    // The same discipline over imported groups' `verse_links`, as general code, so a future refresh
+    // that gives a third group verses is caught here rather than silently under-served.
     for g in &atlas.people_groups {
         let expected = g.verse_links.len();
         let actual = graph.mentions.iter().filter(|row| matches!(&row.entity, MentionedEntity::PeopleGroup(pg) if pg.0 == g.id)).count();
@@ -420,17 +290,9 @@ impl std::fmt::Display for NamedAfterGroundingViolation {
 }
 impl std::error::Error for NamedAfterGroundingViolation {}
 
-/// Brief decision 3/requirement 7 ("each with a real `Justification {
-/// text, grounds: [Ground::Scripture(...)] }`"; "every NamedAfter row's
-/// justification carries at least one Scripture ground -- a law-shaped
-/// test over the table"): a FRESH check over the built graph's own
-/// `named_after` table, independent of how `normalize` above constructed
-/// it (the same "check the built graph, don't just trust the adapter"
-/// discipline `check_peoples_fidelity`/`check_person_fidelity` already
-/// follow) -- every row must carry >=1 `Ground::Scripture` in its own
-/// `justification.grounds` (an `Anchor`/`Source`-only or empty-grounds
-/// NamedAfter row is exactly the "distinction labeled but not actually
-/// grounded" shape this batch exists to avoid).
+/// A FRESH check over the built graph's own `named_after` table: every row must carry at least one
+/// `Ground::Scripture`, since an anchor-only or empty-grounds row is the "labeled but not grounded"
+/// shape this table exists to avoid.
 pub fn every_named_after_row_has_a_scripture_ground(graph: &Graph) -> Result<(), NamedAfterGroundingViolation> {
     for row in &graph.named_after {
         let has_scripture_ground = row.justification.grounds.iter().any(|g| matches!(g, Ground::Scripture(_)));
@@ -479,8 +341,6 @@ mod tests {
         BuildCtx::new(canon, verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", atlas)
     }
 
-    // --- normalize: three sources -------------------------------------------
-
     #[test]
     fn normalize_builds_one_node_per_theographic_group_and_curated_seed() {
         let atlas = atlas_with(
@@ -523,10 +383,6 @@ mod tests {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
-        // person_adapter deliberately NOT run here (this test proves
-        // peoples_adapter's own reclassified-node construction in
-        // isolation) -- the partition itself is proven by the dedicated
-        // pipeline-level real-data test in this module below.
         let stats = normalize(&mut ctx);
         assert_eq!(stats.reclassified_nodes, 1);
 
@@ -553,8 +409,6 @@ mod tests {
         assert_eq!(stats.reclassified_nodes, 0);
     }
 
-    // --- merge_alias: reclassified mentions only ----------------------------
-
     #[test]
     fn merge_alias_builds_peoplegroup_mentions_only_for_reclassified_persons() {
         let atlas = atlas_with(
@@ -579,13 +433,6 @@ mod tests {
 
     #[test]
     fn merge_alias_builds_no_mentions_for_a_verseless_theographic_group_or_any_curated_seed() {
-        // Decision 2 ("NO invented per-locus senses"), as QUALIFIED by the
-        // PG-1B rider (module doc comment above): source (a) groups with
-        // an EMPTY verse_links (the overwhelming majority -- 21 of 23 real
-        // records) still build NO mentions rows, and source (b) curated
-        // seeds NEVER carry verse_links at all (no such field on
-        // `PeopleGroupSeed`) -- so this remains true for both, just no
-        // longer vacuously-by-construction for (a) the way it was pre-rider.
         let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }], vec![PeopleGroupSeed { id: "ammonites".into(), label: "Ammonites".into() }], vec![], vec![]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
@@ -596,17 +443,6 @@ mod tests {
         assert!(ctx.graph.mentions.is_empty());
     }
 
-    /// PG-1B rider (batch-edge1a-brief.md decision 0): "own test (count +
-    /// a spot locus)". Synthetic fixture proving the GENERAL code path
-    /// (any source-(a) group with a non-empty `verse_links`, not a
-    /// hardcoded Tribe-of-Judah/Nation-of-Israel special case) -- uses a
-    /// DIFFERENT group id/label than the real data on purpose, so this
-    /// test cannot pass by accident if the adapter secretly hardcoded the
-    /// two real names. `real_committed_data_resolves_exactly_the_two_verse_bearing_groups`
-    /// (`atlas_etl::people_groups`'s own test) plus
-    /// `pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci`
-    /// (`tests/peoples_real_data.rs`) cover the REAL 13-loci claim end to
-    /// end; this one proves the mechanism in isolation.
     #[test]
     fn merge_alias_builds_mentions_for_any_theographic_group_carrying_verse_links() {
         let atlas = atlas_with(
@@ -636,9 +472,6 @@ mod tests {
             }
         }
 
-        // Spot locus: Tribe of Judah -> PRO.25.1, the exact real-data
-        // pairing (module doc comment: "if Tribe of Judah's one verse is
-        // JDG 1:2, say so loudly" -- it is NOT).
         let judah_locus = ctx
             .graph
             .mentions
@@ -648,8 +481,6 @@ mod tests {
             .expect("a tribe-of-judah mention must exist");
         assert_eq!(judah_locus, verse_locus("PRO.25.1").unwrap());
     }
-
-    // --- normalize: NamedAfter --------------------------------------------
 
     fn person_node(ctx: &mut BuildCtx, slug: &str, label: &str) {
         let id = PersonId::new(slug).erase();
@@ -697,7 +528,6 @@ mod tests {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
-        // Deliberately NO person_node("casluhim_nowhere", ...) call.
 
         let stats = normalize(&mut ctx);
         assert_eq!(stats.named_after_rows, 0);
@@ -709,12 +539,6 @@ mod tests {
 
     #[test]
     fn a_reclassified_slug_can_never_satisfy_a_named_after_eponym_check() {
-        // The "checked against the GRAPH, not the raw source list" design
-        // decision (module doc comment above): a reclassified person has
-        // NO Person node (person_adapter's own exclusion), so a
-        // (hypothetical, never true of this batch's own real seed data)
-        // named_after row naming a reclassified slug as its eponym must be
-        // omitted, even though the RAW `atlas.people` record still exists.
         let atlas = atlas_with(
             vec![person("jebusite_748", "Jebusite", &[])],
             vec![],
@@ -725,9 +549,6 @@ mod tests {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
-        // person_adapter never ran (isolation, per this module's own test
-        // convention above) -- so no Person node for jebusite_748 exists
-        // regardless, which is exactly the state a real build reaches too.
 
         let stats = normalize(&mut ctx);
         assert_eq!(stats.named_after_rows, 0);
@@ -755,8 +576,6 @@ mod tests {
 
     #[test]
     fn named_after_row_supports_a_two_ground_multi_range_justification() {
-        // Edomites' own real curated shape: GEN 36:8-9 (a range) PLUS
-        // GEN 25:30 (a second, single-verse ground) on the SAME row.
         let atlas = atlas_with(
             vec![],
             vec![],
@@ -804,8 +623,6 @@ mod tests {
         assert!(matches!(ctx.graph.named_after[1].namesake, Namesake::Polity(_)));
     }
 
-    // --- fidelity ------------------------------------------------------------
-
     #[test]
     fn fidelity_is_green_over_a_clean_three_source_build() {
         let atlas = atlas_with(
@@ -828,7 +645,7 @@ mod tests {
         let atlas = atlas_with(vec![], vec![PeopleGroup { id: "tribe-of-judah".into(), label: "Tribe of Judah".into(), verse_links: vec![] }], vec![], vec![], vec![]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
-        let ctx = ctx_with(&canon, &verses, &atlas); // normalize() never called
+        let ctx = ctx_with(&canon, &verses, &atlas);
         let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the missing node");
         assert!(err.0.contains("bijection"), "{}", err.0);
     }
@@ -839,9 +656,7 @@ mod tests {
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
-        normalize(&mut ctx); // builds the PeopleGroup node correctly
-        // Simulate a regression: a Person node ALSO exists for this slug
-        // (e.g. a future person_adapter change forgetting the exclusion).
+        normalize(&mut ctx);
         person_node(&mut ctx, "jebusite_748", "Jebusite");
 
         let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the dual-kind regression");
@@ -867,14 +682,10 @@ mod tests {
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
         normalize(&mut ctx);
-        // merge_alias deliberately NOT called -- simulates a silent drop.
         let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
         assert!(err.0.contains("mentions completeness"), "{}", err.0);
     }
 
-    /// PG-1B rider: the SAME mentions-completeness law, over source (a)'s
-    /// own `verse_links` -- proves the new fidelity loop actually fires,
-    /// not just the pre-existing reclassified-subset one.
     #[test]
     fn fidelity_catches_a_theographic_group_mentions_completeness_violation() {
         let atlas = atlas_with(
@@ -888,7 +699,6 @@ mod tests {
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
         normalize(&mut ctx);
-        // merge_alias deliberately NOT called -- simulates a silent drop.
         let err = check_peoples_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
         assert!(err.0.contains("mentions completeness"), "{}", err.0);
         assert!(err.0.contains("tribe-of-judah"), "{}", err.0);
@@ -902,8 +712,6 @@ mod tests {
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
     }
-
-    // --- NamedAfter grounding law --------------------------------------------
 
     #[test]
     fn every_named_after_row_has_a_scripture_ground_is_green_when_true() {

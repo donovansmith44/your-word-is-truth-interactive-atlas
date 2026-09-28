@@ -1,6 +1,5 @@
-//! DB-2b: the row families of the `concord` section (spec §5.5) other
-//! than `contains_concord`, which is `core::insert_contains`/
-//! `read_contains` over the same DDL shape.
+//! The row families of the `concord` section other than `contains_concord`, which goes through
+//! `core::insert_contains`/`read_contains` over the same DDL shape.
 
 use atlas_graph_types::edge::{Confesses, Quotes};
 use rusqlite::types::Value;
@@ -12,8 +11,6 @@ use super::super::columns::{
 };
 use super::super::SqliteError;
 use super::{authored, insert, read_all, read_justification_at, text, D};
-
-// ---------------------------------------------------------------- quotes
 
 const COLS_QUOTES: &str = "\
  quoting_corpus, quoting_a, quoting_b, quoting_c, quoting_layer, quoting_start, quoting_end, \
@@ -38,8 +35,6 @@ pub fn read_quotes(conn: &Connection) -> Result<Vec<(i64, Quotes)>, SqliteError>
         })
     })
 }
-
-// ------------------------------------------------------------- confesses
 
 const COLS_CONFESSES: &str = "\
  confessing_corpus, confessing_a, confessing_b, confessing_c, confessing_layer, confessing_start, confessing_end, \

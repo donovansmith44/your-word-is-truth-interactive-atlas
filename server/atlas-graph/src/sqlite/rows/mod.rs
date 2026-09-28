@@ -1,12 +1,6 @@
-//! DB-2b: one INSERT and one SELECT per row family (spec §5.3–5.6),
-//! proven by canon-byte round-trip (`tests/sqlite_laws.rs`). The two
-//! sides of every family share ONE column-list constant so they cannot
-//! drift; `id` is the global `ord` in this batch (one INTEGER PRIMARY KEY,
-//! one UNIQUE(ord), coinciding by construction -- `read_all` asserts it).
-//!
-//! Ids are the erased raw strings (`x.0`), never `any_node_id_str`: each
-//! column is typed by its family (spec §5.0, "node ids are TEXT in their
-//! existing string form").
+//! One INSERT and one SELECT per row family, sharing ONE column-list constant per family so the two
+//! sides cannot drift. `id` is the global `ord`, coinciding by construction and asserted on read.
+//! Ids are the erased raw strings, never `any_node_id_str`: every column is typed by its family.
 
 pub mod concord;
 pub mod core;
@@ -156,7 +150,6 @@ impl<'a> RowRef<'a> {
     pub fn family(&self) -> RowFamily {
         family_of!(self)
     }
-    /// Delegates to `Canon::to_value` -- the row's canonical Value.
     pub fn to_value(&self) -> CanonValue {
         per_arm!(self, r => r.to_value())
     }
@@ -230,7 +223,6 @@ impl RowOwned {
     }
 }
 
-/// Write one row at global ord `ord`, primary key `id = ord`.
 pub fn insert_row(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &RowRef) -> Result<(), SqliteError> {
     match row {
         RowRef::ContainsBible(r) => core::insert_contains(tx, jw, ord, r, "contains_bible"),
@@ -297,10 +289,6 @@ pub fn read_rows(conn: &Connection, family: RowFamily) -> Result<Vec<(i64, RowOw
     })
 }
 
-// ---------------------------------------------------------------------
-// Shared plumbing for the per-section files
-// ---------------------------------------------------------------------
-
 pub(super) fn text(s: &str) -> Value {
     Value::Text(s.to_string())
 }
@@ -311,13 +299,11 @@ pub(super) fn int(i: i64) -> Value {
     Value::Integer(i)
 }
 
-/// The AUTHORED `justification_id` value: an id, or NULL for an empty one.
 pub(super) fn authored(tx: &Transaction, jw: &mut JustificationWriter, j: &Justification) -> Result<Value, SqliteError> {
     Ok(jw.write(tx, j)?.map(Value::Integer).unwrap_or(Value::Null))
 }
 
-/// `INSERT INTO <table> (id, ord, <cols>) VALUES (?, ?, …)` with `vals`
-/// being exactly the `<cols>` values; `id = ord`.
+/// `vals` must be exactly the `<cols>` values, in that order; `id = ord`.
 pub(super) fn insert(tx: &Transaction, table: &str, cols: &str, ord: i64, vals: Vec<Value>) -> Result<(), SqliteError> {
     let n = cols.split(',').count();
     if n != vals.len() {
@@ -333,8 +319,7 @@ pub(super) fn insert(tx: &Transaction, table: &str, cols: &str, ord: i64, vals: 
     Ok(())
 }
 
-/// `SELECT id, ord, <cols> FROM <table> ORDER BY id`, asserting `id == ord`
-/// on every row; `f` reads the row's data columns starting at index 2.
+/// Asserts `id == ord` on every row; `f` reads the row's data columns starting at index `D`.
 pub(super) fn read_all<T>(
     conn: &Connection,
     table: &str,
@@ -364,7 +349,6 @@ pub(super) fn read_justification_at(conn: &Connection, row: &Row, i: usize) -> R
     super::columns::read_justification(conn, jid)
 }
 
-/// A typed node id column: the erased raw string.
 pub(super) fn id_col<K: atlas_graph_types::id::KindTag>(
     row: &Row,
     i: usize,

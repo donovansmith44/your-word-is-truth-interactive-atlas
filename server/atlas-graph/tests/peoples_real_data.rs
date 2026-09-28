@@ -1,15 +1,3 @@
-//! PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md
-//! requirement 7): node-count + mention-sense + eponymy-law checks over the
-//! REAL committed `data/raw`/`data/curated` sources (never a synthetic
-//! fixture) -- same `atlas_etl::compile::compile`-backed pattern
-//! `description_real_data.rs`/`narrative_real_data.rs`/
-//! `version_root_regression.rs` already establish in this crate.
-//!
-//! Runs the pipeline directly (`pipeline::BuildCtx` + `pipeline::
-//! run_pipeline`), the SAME "direct BuildCtx access" shape
-//! `description_real_data.rs`'s own module doc comment explains (this file
-//! needs `ctx.graph` itself, not just the service-wrapped snapshot).
-
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -46,11 +34,6 @@ fn real_ctx_pieces() -> (AtlasData, Canon, HashMap<String, String>, String, Stri
     (atlas, canon, verses, kjv_json, xrefs_tsv)
 }
 
-/// Requirement 7: "node counts (23 + curated seeds + 9 reclassified, exact
-/// expected totals asserted)". Exact, not a floor -- the roster of THREE
-/// PeopleGroup sources is a fixed, curated/Theographic-bounded set this
-/// batch establishes, not something that grows on its own the way Easton's
-/// coverage does.
 #[test]
 fn peoplegroup_node_counts_match_all_three_sources_exactly() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -63,37 +46,23 @@ fn peoplegroup_node_counts_match_all_three_sources_exactly() {
     let group_nodes = ctx.graph.nodes.values().filter(|n| n.id.kind == NodeKind::PeopleGroup).count();
     assert_eq!(group_nodes, 38, "23 Theographic + 6 curated seeds + 9 reclassified = 38 PeopleGroup nodes in the built graph");
 
-    // Every reclassified slug's own Person node is GONE -- the partition
-    // is exhaustive, not merely additive.
     for r in &atlas.people_group_reclassify {
         assert!(ctx.graph.nodes.get(&PersonId::new(r.person_slug.clone()).erase()).is_none(), "reclassified slug '{}' must carry NO Person node", r.person_slug);
         let g = ctx.graph.nodes.get(&PeopleGroupId::new(r.person_slug.clone()).erase());
         assert!(g.is_some(), "reclassified slug '{}' must carry a PeopleGroup node under the SAME raw id", r.person_slug);
     }
 
-    // Person node count correspondingly drops by exactly nine.
     let person_nodes = ctx.graph.nodes.values().filter(|n| n.id.kind == NodeKind::Person).count();
     assert_eq!(person_nodes, atlas.people.len() - 9, "Person node count = source records MINUS the nine reclassified");
 }
 
-/// Requirement 7: "reclassified mention rows carry PeopleGroup sense
-/// (spot-check JOS 15:63-class loci for jebusite)". DISCLOSED, not
-/// silently substituted: Theographic's own "jebusite_748" record carries
-/// EXACTLY TWO real verse_links, GEN.10.16 and 1CH.1.14 (the Gen-10/
-/// 1-Chronicles-1 genealogical table occurrences) -- JOS.15.63 is never
-/// among them (Theographic ships NO per-locus attestation for the many
-/// narrative occurrences of "the Jebusites" outside that one genealogical
-/// pair; see this batch's own report). This test spot-checks the REAL
-/// available locus of that exact CLASS (an in-text gentilic-name mention)
-/// rather than fabricating a JOS.15.63 row the source does not attest --
-/// the Sin-guard principle applies to this test's own fixture choice too.
 #[test]
 fn reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
     let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
 
     let jebusite = PeopleGroupId::new("jebusite_748");
-    let gen_10_16 = atlas_graph::kjv_adapter::dot_ref(0, 10, 16); // GEN is book index 0
+    let gen_10_16 = atlas_graph::kjv_adapter::dot_ref(0, 10, 16);
     assert_eq!(gen_10_16, "GEN.10.16");
 
     let hits: Vec<_> = ctx
@@ -107,25 +76,10 @@ fn reclassified_mention_rows_carry_peoplegroup_sense_at_a_real_locus() {
     assert!(hits.contains(&"1CH.1.14".to_string()), "jebusite_748 must carry a real PeopleGroup mention at 1CH.1.14: {hits:?}");
     assert_eq!(hits.len(), 2, "Theographic's own jebusite_748 record ships EXACTLY these two verse_links, no more -- see this test's own doc comment");
 
-    // No Person-kind mention survives for this slug -- the sense really
-    // changed, not merely duplicated.
     let person_hits = ctx.graph.mentions.iter().filter(|row| matches!(&row.entity, MentionedEntity::Person(p) if p.0 == "jebusite_748")).count();
     assert_eq!(person_hits, 0, "jebusite_748 must carry NO Person-kind mentions any more");
 }
 
-/// Requirement 7: "every NamedAfter row's justification carries at least
-/// one Scripture ground (a law-shaped test over the table)" -- exercised
-/// here over the REAL curated `data/curated/people-groups.toml` rows,
-/// alongside the exact expected row/omission counts decision 3's own seed
-/// list implies: 18 curated `[[named_after]]` rows authored (12 tribes + Nation
-/// of Israel + Ammonites/Moabites/Edomites/Amalekites/Canaanites), every
-/// ONE of which has a real, existing eponym Person node in the real
-/// compiled data (verified independently against `data/raw/theographic/
-/// .../people.json` at authoring time -- see the curated file's own header
-/// comment) -- so zero RUNTIME omissions. Philistines carries no
-/// `[[named_after]]` row AT ALL (a curated-TIME, disclosed omission, not a
-/// runtime one -- see that file's own trailing comment and the batch
-/// report).
 #[test]
 fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decision_3() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -139,17 +93,8 @@ fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decisio
         assert!(row.justification.grounds.iter().any(|g| matches!(g, Ground::Scripture(_))), "named_after row (eponym {}) must carry >=1 Ground::Scripture specifically", row.eponym.0);
     }
 
-    // Independently re-run the dedicated law function too (not just the
-    // inline loop above) -- proves the SAME law `LawCheckPass` already
-    // ran unconditionally during `build_real_ctx` above (reaching that
-    // line already proved it green; this re-derives the same verdict from
-    // scratch over the real table, the "check the built graph fresh"
-    // discipline this crate's own fidelity laws follow).
     assert!(atlas_graph::peoples_adapter::every_named_after_row_has_a_scripture_ground(&ctx.graph).is_ok());
 
-    // Spot-check one real row's own full shape: Ammonites -> Ben-ammi,
-    // GEN.19.38 ("she called his name Ben-ammi... the father of the
-    // children of Ammon unto this day").
     let ammonites_row = ctx
         .graph
         .named_after
@@ -158,8 +103,6 @@ fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decisio
         .expect("an Ammonites named_after row must exist");
     assert_eq!(ammonites_row.eponym.0, "ben-ammi_451");
 
-    // Edomites carries TWO grounds on one row (GEN 36:8-9 range + GEN
-    // 25:30) -- the real curated multi-ground shape, not a synthetic one.
     let edomites_row = ctx
         .graph
         .named_after
@@ -170,11 +113,6 @@ fn every_named_after_row_is_scripture_grounded_and_the_seed_counts_match_decisio
     assert_eq!(edomites_row.justification.grounds.len(), 2, "Edomites' own real curated row carries two Scripture grounds");
 }
 
-/// Sanity companion to the group-description-fill test in
-/// `description_real_data.rs` (which reports the fill RATE): here we just
-/// confirm a real PeopleGroup node's own description survives the fill
-/// pass end to end when Easton's has a matching entry, spot-checked on
-/// "Ammonites" (the brief's own worked example, decision 4).
 #[test]
 fn a_curated_nation_seeds_description_fills_from_eastons_over_the_real_data() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -184,12 +122,6 @@ fn a_curated_nation_seeds_description_fills_from_eastons_over_the_real_data() {
     match &node.payload {
         NodePayload::PeopleGroup { label, description } => {
             assert_eq!(label, "Ammonites");
-            // Honest report, not an assumed pass: Easton's own dict_lookup
-            // must match "Ammonites" EXACTLY (case-insensitive, tier c) for
-            // this to fill -- if Easton's entry is singular "Ammonite"
-            // only, this assertion is exactly the miss this batch's own
-            // brief (decision 4) asks to be disclosed rather than silently
-            // patched.
             if let Some(text) = description {
                 assert!(!text.trim().is_empty());
                 println!("AMMONITES description ({} chars): {}", text.len(), &text[..text.len().min(120)]);
@@ -201,26 +133,6 @@ fn a_curated_nation_seeds_description_fills_from_eastons_over_the_real_data() {
     }
 }
 
-/// Decision 4 ("REPORT the group fill rate honestly... disclose the miss
-/// pattern"): the EXACT roster of which 8 of 38 PeopleGroup nodes fill,
-/// spot-checked by name rather than just a count -- catches a regression
-/// in EITHER direction (a real future Easton's/label change silently
-/// gaining or losing a match) the aggregate 8/38 in
-/// `description_real_data.rs` alone would not localize. Verified directly
-/// against the real compiled data at authoring time (batch-pg1a-report.md
-/// has the full breakdown): 3 of the 9 reclassified gentilics (Arkite/
-/// Sinite/Zemarite -- their OWN Theographic `name` already matches an
-/// Easton headword of the identical singular shape), 2 of the 6 curated
-/// nation seeds (Canaanites/Philistines -- Easton's own headword happens
-/// to be plural for these two), 3 of the 23 Theographic groups
-/// (Pharisees/Sadducees/Scribes, common NT terms Easton covers). NOT
-/// filled, disclosed: the 12 tribes + Nation of Israel (no Easton
-/// headword shaped like "Tribe of Judah" exists) and four of the six
-/// curated nation seeds (Ammonites/Moabites/Edomites/Amalekites --
-/// PLURAL curated label vs. Easton's own SINGULAR headword, e.g.
-/// "Ammonite" not "Ammonites" -- an exact-match miss tier c's own
-/// no-fuzzy-matching law correctly declines to bridge, never silently
-/// patched).
 #[test]
 fn group_description_fill_matches_the_exact_disclosed_roster() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -246,19 +158,6 @@ fn group_description_fill_matches_the_exact_disclosed_roster() {
     assert_eq!((filled.len(), total), (8, 38), "8/38 (21.1%) -- the PG-1a group description fill rate this batch reports");
 }
 
-/// PG-1B rider (batch-edge1a-brief.md decision 0, verbatim: "REPORT WHICH
-/// 13 LOCI these are verbatim (if Tribe of Judah's one verse is JDG 1:2,
-/// say so loudly -- it is the owner's own motivating example)"). Read
-/// against the REAL committed data: it is NOT JDG 1:2 -- Tribe of Judah's
-/// one real, reciprocally-linked verse is PRO.25.1 ("These are also
-/// proverbs of Solomon, which the men of Hezekiah king of Judah copied
-/// out"). Nation of Israel supplies the other 12, all in the Psalms.
-/// General code proven end to end here: `merge_alias` iterates the WHOLE
-/// `atlas.people_groups` list, not a hardcoded two-id special case (the
-/// adapter-level `merge_alias_builds_mentions_for_any_theographic_group_
-/// carrying_verse_links` unit test in `peoples_adapter.rs` proves the
-/// mechanism itself with a synthetic third group; this test proves the
-/// real data lands exactly where expected).
 #[test]
 fn pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -294,31 +193,11 @@ fn pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci() {
     expected.sort();
     assert_eq!(hits, expected, "the exact 13 loci -- verbatim in the batch report");
 
-    // No OTHER PeopleGroup id carries a mention row via this path -- the
-    // 13 are exhaustive over the real committed data, not a floor.
     let total_theographic_source_mentions =
         ctx.graph.mentions.iter().filter(|row| matches!(&row.entity, MentionedEntity::PeopleGroup(_)) && row.provenance == atlas_graph::peoples_adapter::PROVENANCE_THEOGRAPHIC).count();
     assert_eq!(total_theographic_source_mentions, 13);
 }
 
-/// The exact, per-slug PeopleGroup mentions breakdown -- 27 rows total
-/// across the nine reclassified slugs (batch-pg1a-report.md has this same
-/// table): Amorite carries 4 (the Gen-10/1-Chronicles-1 pair PLUS AMO 2:9-
-/// 10, its own two extra prophetic mentions); Hivite carries 9 (the pair
-/// plus the standard "nations of Canaan" lists, e.g. EXO 3:8/23:23, JOS
-/// 9:1/11:3); the remaining seven carry exactly 2 each (the genealogical
-/// pair only) -- confirming decision 1c's own "the only per-locus group
-/// attestations the source actually ships" is real, verified content, not
-/// an assumption.
-///
-/// PG-1B rider (2026-08-24): filtered by `PROVENANCE_RECLASSIFIED`
-/// explicitly now, not just entity-kind -- a bare `MentionedEntity::
-/// PeopleGroup(_)` filter would ALSO catch the 13 new source-(a) rows
-/// `pg1b_real_data_yields_exactly_13_mentions_rows_at_the_reported_loci`
-/// above covers (27 + 13 = 40), which would make this test's own
-/// "27... across the nine reclassified slugs" claim silently depend on an
-/// unrelated source. Provenance-scoping keeps this test's own subject
-/// exactly what its name and doc comment say.
 #[test]
 fn reclassified_mentions_total_and_per_slug_counts_match_the_disclosed_table() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
@@ -326,9 +205,6 @@ fn reclassified_mentions_total_and_per_slug_counts_match_the_disclosed_table() {
     let total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_)) && r.provenance == atlas_graph::peoples_adapter::PROVENANCE_RECLASSIFIED).count();
     assert_eq!(total, 27, "total PeopleGroup mentions rows across all nine reclassified slugs");
 
-    // Companion sanity: the GRAND total (both sources together) is now 40
-    // -- 27 reclassified + 13 PG-1B source-(a) -- the number the bare,
-    // provenance-blind filter this test used to use would report.
     let grand_total = ctx.graph.mentions.iter().filter(|r| matches!(&r.entity, MentionedEntity::PeopleGroup(_))).count();
     assert_eq!(grand_total, 40, "27 reclassified + 13 PG-1B source-(a) verse-bearing groups");
 

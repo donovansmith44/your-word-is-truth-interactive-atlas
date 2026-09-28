@@ -1,28 +1,6 @@
-//! Batch KRETZ-1: the Kretzmann corpus adapter -- turns `atlas_etl::
-//! kretzmann::KretzmannCorpus` (the parsed HTML, LEMMA-EXCISED per
-//! decision 2) into ONE `Source` node for the work itself, one
-//! `CommentaryItem` node per unit (owner-ruled ANNOTATION shape: "a
-//! comprehensive commentary without the verses interleaved into it"), and
-//! one `CommentsOn` row per unit -> its own Bible locus range ("indexed so
-//! that each verse mapped bit of commentary is mapped to the appropriate
-//! verse in our graph"). Mirrors `concord_adapter.rs`'s own "parsed corpus
-//! -> nodes + rows, self-contained, no cross-adapter dependency"
-//! NORMALIZE-eligibility shape -- this adapter reads nothing any OTHER
-//! adapter builds, so it runs in NORMALIZE, not MERGE/ALIAS.
-//!
-//! NODE IDENTITY: a `CommentaryItem`'s own id is exactly `KretzUnit.id`
-//! (`"kretzmann/{book}.{chapter}.{ordinal}"`, `kretzmann.rs`'s own doc
-//! comment) -- internal, stable within one parse, never displayed (the
-//! node's own `card()` view reads `heading`, per `NodePayload::
-//! CommentaryItem`'s own doc comment in `graph-types/src/node.rs`).
-//!
-//! GROUNDING: every `CommentsOn` row's own `Justification` grounds in the
-//! unit's OWN locus range (`fulfillment_adapter.rs`'s own `scripture_
-//! ground` precedent: "Scripture frequently SELF-ATTESTS these rows") --
-//! decision 4's own "justification grounded in the lemma's own locus."
-//! PROVENANCE is a per-page locator (`"kretzmann/{slug}/{chapter}"`,
-//! decision 4) -- resolvable straight back to the vendored file this row's
-//! own content came from.
+//! The Kretzmann corpus: one `Source` node for the work, one `CommentaryItem` node per unit and one
+//! `CommentsOn` row per unit to its Bible locus range. An item's id is exactly the parsed unit's id,
+//! internal and never displayed; every row grounds in its own locus and carries a per-page locator.
 
 use std::collections::BTreeSet;
 
@@ -36,9 +14,7 @@ use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
 
 use crate::pipeline::BuildCtx;
 
-/// The commentary work's own `Source` node id/label -- one node for the
-/// whole work (decision 4: "one Source node for the work"), never one per
-/// book/chapter.
+/// One `Source` node for the whole work, never one per book or chapter.
 pub const KRETZMANN_SOURCE_ID: &str = "kretzmann-popular-commentary";
 pub const KRETZMANN_SOURCE_LABEL: &str = "Kretzmann, Popular Commentary of the Bible, CPH 1921-1924";
 const KRETZMANN_PROVENANCE_KIND: &str = "kretzmann";
@@ -48,15 +24,11 @@ pub struct KretzmannAdapterStats {
     pub source_nodes: usize,
     pub items: usize,
     pub comments_on: usize,
-    /// A unit whose own range failed to construct (`verse_from > verse_to`
-    /// -- never true by the parser's own construction, but checked rather
-    /// than assumed, the same defensive discipline `fulfillment_adapter::
-    /// ground_range` already establishes for ITS curated ranges).
+    /// A unit whose own range failed to construct: never true by the parser's construction, but
+    /// checked rather than assumed.
     pub inverted_range_dropped: usize,
 }
 
-/// The `CommentaryItem` node id for one parsed unit -- `KretzUnit.id` IS
-/// the raw id (module doc comment's own "NODE IDENTITY").
 fn commentary_item_id(unit: &KretzUnit) -> CommentaryItemId {
     CommentaryItemId::new(unit.id.clone())
 }
@@ -71,12 +43,8 @@ fn scripture_ground(range: &BibleLocusRange) -> BTreeSet<Ground> {
     grounds
 }
 
-/// Pipeline-facing NORMALIZE entry point: the Kretzmann `Source` node +
-/// one `CommentaryItem` node and one `CommentsOn` row per unit, in
-/// document order. Absent `ctx.kretzmann` (every test fixture that doesn't
-/// supply real Kretzmann data) is a true no-op -- the SAME "absent ==
-/// honestly empty, not a placeholder" treatment `ctx.concord`/`ctx.
-/// brainfuel` already get (`concord_adapter.rs`'s own module doc comment).
+/// The `Source` node, one `CommentaryItem` per unit and one `CommentsOn` row per unit, in document
+/// order. Absent `ctx.kretzmann` is a true no-op.
 pub fn normalize(ctx: &mut BuildCtx) -> KretzmannAdapterStats {
     let mut stats = KretzmannAdapterStats::default();
     let Some(corpus): Option<&KretzmannCorpus> = ctx.kretzmann else {
@@ -128,8 +96,6 @@ pub fn normalize(ctx: &mut BuildCtx) -> KretzmannAdapterStats {
     stats
 }
 
-/// One `CommentaryItem` row within a chapter-scoped listing -- see
-/// `chapter_commentary`'s own doc comment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChapterCommentaryRow {
     pub verse: u16,
@@ -137,46 +103,9 @@ pub struct ChapterCommentaryRow {
     pub heading: Option<String>,
 }
 
-/// KRETZ-SCALE-1 (batch-corp1-review.md Q-1, batch-corp1-report.md §5):
-/// the chapter-scoped commentary listing `Kretzmann.razor`'s own
-/// `LoadCommentaryAsync` used to build with one `commented-on-by` edges
-/// HTTP call PER VERSE, concurrently (176 simultaneous requests for a
-/// chapter like PSA 119, on every locus change). This is the SAME
-/// `commented-on-by` query (KRETZ-1's own "pre-authorized exception" --
-/// `comments_on` rows already lowered into the generic directed edge
-/// index, `graph-types/src/graph.rs`), just run server-side, once per
-/// request, in-process, instead of once per verse per client. No
-/// types-crate change (`CommentsOn`/`RelationId::CommentsOn` are unchanged,
-/// pre-existing KRETZ-1 vocabulary) and no artifact change (reads the
-/// already-compiled graph exactly the way every other accessor in this
-/// module family does) -- purely additive: a new READ path over data the
-/// graph already carries.
-///
-/// For every verse `1..=verse_count` of `book_index`/`chapter`, the real
-/// items commenting on it, ordered the SAME way the retired client-side
-/// fan-out did: verse ascending, then each item's own trailing
-/// document-order ordinal within a verse (this module's own "NODE
-/// IDENTITY" doc comment -- the id's own last '.'-separated segment IS
-/// document order). Only verses with >=1 item are represented in the
-/// returned rows -- mirrors the client's own pre-existing "if
-/// (items.Count > 0)" filter exactly, just computed once here instead of
-/// once per verse over HTTP.
-///
-/// KRETZ-m2 (batch-finalp2-brief.md ticket 5, DOCUMENTED not fixed --
-/// `atlas-graph/tests/kretzmann_adapter_real_data.rs`'s own
-/// `chapter_commentary_shows_a_multi_verse_spanning_unit_only_at_its_own_
-/// first_verse_kretz_m2` pins this over real data): a multi-verse-spanning
-/// unit (`ChapterIntro`/`PericopeIntro` -- `atlas-etl`'s own `kretzmann.rs`
-/// range-backfill pass) appears in this listing ONLY at its own FIRST
-/// verse, never at any later verse its real range also covers --
-/// `comments_on` is indexed at the range's first verse only
-/// (`graph-types/src/graph.rs`'s own doc comment), and `GraphQuery` (the
-/// port this function queries through) has no way to recover a row's own
-/// full range from an edge query alone. Fine for THIS function's own
-/// chapter-listing use (an intro repeated under every verse would be
-/// worse), but a future "verse -> applicable commentary" popover lookup
-/// must NOT assume this listing's own per-verse grouping is exhaustive for
-/// multi-verse units.
+/// Verse ascending, then each item's own document-order ordinal; only verses with an item appear. A
+/// multi-verse unit shows ONLY at its FIRST verse, since `comments_on` is indexed there and the port
+/// cannot recover a row's full range, so this grouping is not exhaustive for such units.
 pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, verse_count: u16) -> Vec<ChapterCommentaryRow> {
     let mut rows = Vec::new();
     for verse in 1..=verse_count {
@@ -211,12 +140,8 @@ pub fn chapter_commentary(query: &dyn GraphQuery, book_index: u8, chapter: u16, 
     rows
 }
 
-/// "kretzmann/{book}.{chapter}.{ordinal}" -> ordinal -- this module's own
-/// "NODE IDENTITY" doc comment: the id's own last '.'-separated segment IS
-/// document order. Mirrors `Kretzmann.razor`'s own retired client-side
-/// `OrdinalOf` exactly (same fallback to 0 on anything unparseable, never a
-/// panic -- a malformed id here would be a genuine graph-construction bug,
-/// not something a listing query should crash a request over).
+/// The id's own last '.'-separated segment IS document order. Anything unparseable falls back to 0
+/// rather than panicking: a malformed id would be a construction bug, not a reason to fail a read.
 fn ordinal_of(raw: &str) -> u64 {
     raw.rsplit('.').next().and_then(|s| s.parse().ok()).unwrap_or(0)
 }

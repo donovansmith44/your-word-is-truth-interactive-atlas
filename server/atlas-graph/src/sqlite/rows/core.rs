@@ -1,6 +1,5 @@
-//! DB-2b: the row families authored in the `core` section (spec §5.3),
-//! plus the generic `contains_*` pair the kjv (`contains_bible`) and
-//! concord (`contains_concord`) sections reuse.
+//! The row families authored in the `core` section, plus the generic `contains_*` pair the kjv and
+//! concord sections reuse.
 
 use std::collections::BTreeSet;
 
@@ -21,8 +20,6 @@ use super::super::columns::{
 };
 use super::super::SqliteError;
 use super::{authored, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
-
-// ------------------------------------------------------------ contains_*
 
 /// The three integer columns of a `contains_*_locus` row, per corpus ref.
 pub trait Abc: Sized {
@@ -63,8 +60,8 @@ impl Abc for ConcordRef {
 const COLS_CONTAINS: &str = "container_id, child_container_id, provenance, justification_id";
 const COLS_CONTAINS_LOCUS: &str = "a, b, c, layer, start, end_";
 
-/// `table` is `contains_bible` or `contains_concord`; the sub-table is
-/// `<table>_locus` (`contains_id = id`, `ord` = set order).
+/// `table` is `contains_bible` or `contains_concord`; its sub-table is `<table>_locus`, with
+/// `contains_id = id` and `ord` the set order.
 pub fn insert_contains<C: Corpus>(
     tx: &Transaction,
     jw: &mut JustificationWriter,
@@ -126,8 +123,6 @@ where
     })
 }
 
-// --------------------------------------------------------------- attests
-
 const COLS_ATTESTS: &str = "event_id, \
  att_from_corpus, att_from_a, att_from_b, att_from_c, att_from_layer, att_from_start, att_from_end, \
  att_to_corpus, att_to_a, att_to_b, att_to_c, att_to_layer, att_to_start, att_to_end, \
@@ -151,8 +146,6 @@ pub fn read_attests(conn: &Connection) -> Result<Vec<(i64, Attests)>, SqliteErro
         })
     })
 }
-
-// ------------------------------------------------------------ succession
 
 const COLS_SUCCESSION: &str = "narrative_id, provenance, justification_id";
 
@@ -181,8 +174,6 @@ pub fn read_succession(conn: &Connection) -> Result<Vec<(i64, Succession)>, Sqli
             .map_err(|e| SqliteError(format!("succession {id}: {e:?}")))
     })
 }
-
-// -------------------------------------------------------------- dated_by
 
 const COLS_DATED_BY: &str = "event_id, placement_kind, anchor_id, prior_event_id, era_id, \
  years, months, days, year_of_reign, basis, provenance, justification_id";
@@ -270,8 +261,6 @@ pub fn read_dated_by(conn: &Connection) -> Result<Vec<(i64, DatedBy)>, SqliteErr
     })
 }
 
-// ------------------------------------------------------------ located_at
-
 const COLS_LOCATED_AT: &str = "event_id, place_id, provenance, justification_id";
 
 pub fn insert_located_at(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &LocatedAt) -> Result<(), SqliteError> {
@@ -289,8 +278,6 @@ pub fn read_located_at(conn: &Connection) -> Result<Vec<(i64, LocatedAt)>, Sqlit
         })
     })
 }
-
-// -------------------------------------------------------------- fulfills
 
 const COLS_FULFILLS: &str = "\
  prophecy_from_corpus, prophecy_from_a, prophecy_from_b, prophecy_from_c, prophecy_from_layer, prophecy_from_start, prophecy_from_end, \
@@ -318,8 +305,6 @@ pub fn read_fulfills(conn: &Connection) -> Result<Vec<(i64, Fulfills)>, SqliteEr
         })
     })
 }
-
-// -------------------------------------------------------------- typology
 
 const COLS_TYPOLOGY: &str = "\
  type_from_corpus, type_from_a, type_from_b, type_from_c, type_from_layer, type_from_start, type_from_end, \
@@ -349,8 +334,6 @@ pub fn read_typology(conn: &Connection) -> Result<Vec<(i64, Typology)>, SqliteEr
         })
     })
 }
-
-// ----------------------------------------------------------- named_after
 
 const COLS_NAMED_AFTER: &str = "namesake_kind, namesake_id, eponym_id, provenance, justification_id";
 
@@ -383,8 +366,6 @@ pub fn read_named_after(conn: &Connection) -> Result<Vec<(i64, NamedAfter)>, Sql
     })
 }
 
-// ------------------------------------------------------------- catechism
-
 const COLS_CATECHISM: &str = "locus_corpus, locus_a, locus_b, locus_c, locus_layer, locus_start, locus_end, \
  item_id, provenance, justification_id";
 
@@ -407,8 +388,6 @@ pub fn read_catechism(conn: &Connection) -> Result<Vec<(i64, CatechismLink)>, Sq
         })
     })
 }
-
-// -------------------------------------------------------------- mentions
 
 const COLS_MENTIONS: &str = "locus_corpus, locus_a, locus_b, locus_c, locus_layer, locus_start, locus_end, \
  entity_kind, entity_id, provenance";
@@ -443,8 +422,6 @@ pub fn read_mentions(conn: &Connection) -> Result<Vec<(i64, Mentions)>, SqliteEr
     })
 }
 
-// ----------------------------------------------------- corresponds_bible
-
 const COLS_CORRESPONDS_BIBLE: &str = "a_corpus, a_a, a_b, a_c, a_layer, a_start, a_end, \
  b_corpus, b_a, b_b, b_c, b_layer, b_start, b_end, provenance";
 
@@ -462,8 +439,6 @@ pub fn read_corresponds_bible(conn: &Connection) -> Result<Vec<(i64, Corresponds
     })
 }
 
-// ---------------------------------------------------- temporal_adjacency
-
 const COLS_TEMPORAL_ADJACENCY: &str = "earlier_id, later_id, provenance";
 
 pub fn insert_temporal_adjacency(tx: &Transaction, ord: i64, row: &TemporalAdjacency) -> Result<(), SqliteError> {
@@ -480,8 +455,6 @@ pub fn read_temporal_adjacency(conn: &Connection) -> Result<Vec<(i64, TemporalAd
     })
 }
 
-// -------------------------------------------------------------- analogue
-
 const COLS_ANALOGUE: &str = "a_id, b_id, provenance";
 
 pub fn insert_analogue(tx: &Transaction, ord: i64, row: &Analogue) -> Result<(), SqliteError> {
@@ -493,8 +466,6 @@ pub fn read_analogue(conn: &Connection) -> Result<Vec<(i64, Analogue)>, SqliteEr
         Ok(Analogue { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
     })
 }
-
-// ------------------------------------------------------ D5: kinship rows
 
 const COLS_PARENT_OF: &str = "parent_id, child_id, provenance";
 

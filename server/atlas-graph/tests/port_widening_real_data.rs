@@ -1,9 +1,3 @@
-//! DB-3 (spec §4, §6.2): every retired companion, proven equal to its port
-//! composition over the COMMITTED graph before it was deleted. Each test's
-//! ORACLE is the retired computation, moved here verbatim from
-//! `service.rs` / `provenance.rs` at the commit that deleted it -- so the
-//! equivalence is between the exact code that used to serve and the code
-//! that serves now.
 #![allow(clippy::type_complexity)]
 
 use std::collections::{BTreeMap, HashMap};
@@ -19,7 +13,6 @@ use atlas_graph_types::store::GraphQuery;
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
-        // DB-5: the committed sections read back (sqlite::reload).
         atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
 }
@@ -33,14 +26,10 @@ fn service() -> &'static GraphService {
     })
 }
 
-// ------------------------------------------------------ Task 4: the id lists
-
-/// ORACLE: service.rs's five alphabetical lists, verbatim.
 fn oracle_ids(g: &Graph, kind: NodeKind) -> Vec<AnyNodeId> {
     g.nodes.keys().filter(|id| id.kind == kind).cloned().collect()
 }
 
-/// ORACLE: service.rs's `era_ids`, verbatim (chronological by from_year, then raw).
 fn oracle_era_ids(g: &Graph) -> Vec<AnyNodeId> {
     let mut era_nodes: Vec<(i32, AnyNodeId)> = g
         .nodes
@@ -63,7 +52,6 @@ fn the_five_alphabetical_id_lists_equal_nodes_of_kind() {
         assert_eq!(got, oracle_ids(g, kind), "{kind:?}");
         assert!(!got.is_empty(), "{kind:?} is inhabited in the shipped graph");
     }
-    // LEX-1: inhabited -- the sixth kind reads like the five.
     let lex = s.ids_of_kind(NodeKind::LexiconEntry);
     assert_eq!(lex, oracle_ids(g, NodeKind::LexiconEntry));
     assert_eq!(lex.len(), 13_548, "LEX-1: every Strong's entry");
@@ -74,7 +62,6 @@ fn the_eras_wire_order_is_reproduced_by_sorting_the_payloads() {
     let g = committed_graph();
     let s = service();
     let snap = s.snapshot();
-    // The handler's own composition (handlers::eras): nodes_of_kind, then sort by (from_year, id).
     let mut got: Vec<(i32, AnyNodeId)> = s
         .ids_of_kind(NodeKind::Era)
         .into_iter()
@@ -89,20 +76,15 @@ fn the_eras_wire_order_is_reproduced_by_sorting_the_payloads() {
     assert_eq!(got, oracle_era_ids(g));
 }
 
-// keep the map alias in scope for the later tasks' oracles
 #[allow(dead_code)]
 type Positions = HashMap<AnyNodeId, usize>;
 #[allow(dead_code)]
 type ByKey = BTreeMap<String, Vec<String>>;
 
-// --------------------------------------- Task 5: positions, persons_by_verse
-
-/// ORACLE: service.rs's bible_position / concord_position, verbatim.
 fn oracle_positions(g: &Graph, corpus: &'static str) -> Positions {
     g.reading.get(corpus).map(|spine| spine.order.iter().enumerate().map(|(i, id)| (id.clone(), i)).collect()).unwrap_or_default()
 }
 
-/// ORACLE: service.rs's persons_by_verse, verbatim (Person mentions only, row order, keyed by dotted ref).
 fn oracle_persons_by_verse(g: &Graph) -> HashMap<String, Vec<(String, String)>> {
     let mut out: HashMap<String, Vec<(String, String)>> = HashMap::new();
     for row in &g.mentions {
@@ -156,9 +138,6 @@ fn persons_at_verse_equals_the_retired_persons_by_verse_over_every_verse() {
     assert_eq!(inhabited, oracle.len(), "every keyed verse is a spine verse");
 }
 
-// --------------------------- Task 6: per-edge provenance, temporal_neighbors
-
-/// ORACLE: provenance.rs's three per-edge maps, verbatim.
 fn oracle_provenance(g: &Graph) -> (ByKey, ByKey, BTreeMap<(String, String), String>) {
     use std::collections::BTreeSet;
     let mut attests: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
@@ -183,8 +162,6 @@ fn oracle_provenance(g: &Graph) -> (ByKey, ByKey, BTreeMap<(String, String), Str
     )
 }
 
-/// ORACLE: service.rs's temporal_neighbors, verbatim (domain seeded from
-/// chrono.order, direction from the rows' own earlier/later ends).
 fn oracle_temporal_neighbors(g: &Graph, order: &[String]) -> HashMap<String, (Option<String>, Option<String>)> {
     let mut m: HashMap<String, (Option<String>, Option<String>)> = order.iter().map(|id| (id.clone(), (None, None))).collect();
     for row in &g.temporal_adjacency {

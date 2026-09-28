@@ -1,57 +1,6 @@
-//! THE ATTESTATION-EXCLUSIVITY CURATION QUEUE, COMPILED (Batch ATTEST-1).
-//!
-//! `law_check::attestation_is_exclusive` -- L2, owner-signed FAIL-LOUD --
-//! states that no verse belongs to the `Attests` set of two distinct
-//! events. This module is the DECLARED inventory that law is stated
-//! against, and it exists for one reason: the corpus sweep this batch ran
-//! found the violation is not a handful of typos, it is a systematic
-//! pre-existing shape (see the counts pinned below). A law that went green
-//! by silently retyping hundreds of rows would be exactly the bulk
-//! guessing the batch charter forbids ("uncertain cases go in the report
-//! as a curation queue for the owner, not silently retyped"); a law that
-//! merely warned would be the softer option the owner declined. So the
-//! law fails loud against THIS list, in both directions:
-//!
-//!   * an UNDECLARED collision fails the build -- new data can never
-//!     introduce a new shared attestation quietly;
-//!   * a STALE declaration (a listed pair that no longer collides, or
-//!     collides on a different verse count) ALSO fails the build -- the
-//!     queue can only shrink deliberately, with the shrink recorded.
-//!
-//! PROVENANCE OF EVERY ROW: mechanically generated from the real compiled
-//! corpus (`atlas_core::scene::witnesses_for` over `AtlasData::events`,
-//! the exact source `event_world::populate_nodes_and_direct_rows` builds
-//! `graph.attests` from), not hand-typed. `shared_verses` is the true
-//! count of verses the two events both attest. `class` is likewise
-//! MECHANICAL and structural, never a judgment:
-//!
-//!   * `Class::Containment` -- one event's whole attestation set is
-//!     contained in the other's. This is the DOMINANT real shape, and the
-//!     sweep's most important finding: the containing side is almost
-//!     always a Theographic MEGA-SPAN (`theo-443` "Holy Week", 568
-//!     verses; `theo-217` "Prophecies of Isaiah", 1,091; `theo-159`
-//!     "Reign of David", 442) and the contained side a fine-grained
-//!     curated pericope inside it. That is not an account/mention
-//!     confusion at all -- it is a missing EVENT-CONTAINMENT relation,
-//!     the event-side sibling of the book ⊃ chapter rows Batch NODE-1
-//!     landed. Naming it is this batch's job; building it is not (no
-//!     such relation was ordered, and inventing one unasked would be a
-//!     bigger deviation than disclosing the gap).
-//!   * `Class::Overlap` -- neither side contains the other; the two
-//!     attestation sets genuinely cross. Adjacent journey legs sharing a
-//!     boundary verse (`ex_rameses`/`ex_succoth`, `p1_derbe`/`p1_lystra`)
-//!     and Passion-week place-events crossing Robertson pericopes
-//!     (`pw_golgotha`/`rob_way_to_golgotha`) are the recurring shapes.
-//!
-//! WHAT IS DELIBERATELY NOT HERE: the semantic disposition. Whether a
-//! given pair is a shared-account error, a mention misfiled as an
-//! account, one event needing a merge, or a genuine containment wanting a
-//! relation this vocabulary lacks is an OWNER call, made against the KJV
-//! text, one pair at a time. `batch-attest1-report.md` carries the full
-//! table with each pair's structural evidence for exactly that purpose.
-//! The two pairs the owner HAS ruled on are resolved in data by this
-//! batch and are therefore absent from this list, which is the point:
-//! resolving a pair means deleting its row.
+//! The declared inventory of attestation collisions `law_check::attestation_is_exclusive` is stated
+//! against. The law fails both ways: an undeclared collision fails the build, and so does a stale
+//! declaration, so the queue can only ever shrink deliberately.
 
 /// One declared, still-unresolved attestation collision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,8 +14,7 @@ pub struct Pending {
     pub class: Class,
 }
 
-/// The MECHANICAL structural class -- see this module's own doc comment.
-/// Never a semantic judgment.
+/// The MECHANICAL structural class, never a semantic judgment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Class {
     /// One event's whole attestation set is contained in the other's.
@@ -75,13 +23,9 @@ pub enum Class {
     Overlap,
 }
 
-// (The generated rows below name their class fully qualified as
-// `Class::Containment` / `Class::Overlap`, so no `use Class::{..}` import
-// is needed -- ATTEST-1 left one behind and it warned on every build.)
 type P = Pending;
 
-// GENERATED from the real corpus (see this module's doc comment). Sorted
-// by (a, b). Do not hand-edit a count: re-run the sweep.
+// GENERATED from the real corpus, sorted by (a, b). Do not hand-edit a count: re-run the sweep.
 pub const PENDING: &[Pending] = &[
     P { a: "1ch_davids_hymn_of_praise", b: "psa_105", shared_verses: 15, class: Class::Overlap },
     P { a: "1ch_davids_hymn_of_praise", b: "psa_106", shared_verses: 1, class: Class::Overlap },

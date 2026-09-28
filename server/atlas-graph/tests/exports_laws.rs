@@ -1,22 +1,3 @@
-//! C2C3-EXPORT laws (design doc `.superpowers/sdd/2026-08-17-bible-
-//! atlas-m1/c2c3-export-design.md`, section 4): round-trip parse (also
-//! unit-tested in `exports.rs` itself over synthetic fixtures -- this
-//! file adds ONE real-data round trip for extra confidence), every
-//! dated event's placement resolves (count asserted, not assumed), the
-//! embedded `atlas_version_root` equals the live `GraphVersion`
-//! (drift-impossible by construction, proven here rather than merely
-//! architected), the peer's own alias/canonical spot-checks
-//! ("Kadesh-barnea", "En-rogel" resolve by CANONICAL name; "entrance of
-//! Hamath" resolves by curated ALIAS on `lebo-hamath` as of Batch
-//! GAZ-1-R1 -- see `exports.rs`'s own header comment for the full
-//! citation set), the creation row is present and resolvable, and every
-//! span interval is well-formed (`from <= to`).
-//!
-//! Real committed `data/raw` + `data/curated`, same pattern `tests/
-//! version_root_regression.rs` already established (duplicated helper,
-//! per that file's own convention -- every real-data integration test
-//! file in this crate keeps its own copy).
-
 use std::path::Path;
 
 use atlas_graph::exports;
@@ -41,19 +22,10 @@ struct Built {
     spans: Vec<exports::ChronologySpan>,
     anchors: Vec<exports::ChronologyAnchorRow>,
     order_len: usize,
-    /// This test's own bare-build + `MemStore::publish` version (the SAME
-    /// sequence `bins/compile_graph.rs` uses to stamp the exports).
     actual_hex: String,
-    /// `GraphService`'s own production construction path, independently
-    /// built from the SAME real sources -- law 3 (atlas_version_root
-    /// equals the live GraphVersion) is `actual_hex == expected_hex`.
     expected_hex: String,
 }
 
-/// Builds everything ONCE per test binary (a full real compile + two
-/// independent graph builds is real wall-clock time -- `compile_graph.rs`'s
-/// own doc comment measures ~3-15s for ONE admission-shaped build) and
-/// hands every `#[test]` fn a clone of small, owned row data.
 fn built() -> Built {
     static CACHED: std::sync::OnceLock<Built> = std::sync::OnceLock::new();
     CACHED
@@ -63,11 +35,6 @@ fn built() -> Built {
             let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
             let atlas = real_atlas_data();
             let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
-            // CORP-2a: the real vendored Concord data joins the root
-            // computation, the SAME "otherwise this harness proves a
-            // DIFFERENT graph than atlas-graph-compile actually produces"
-            // reasoning CORP-1a's own brainfuel threading already
-            // established here.
             let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
             let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
             let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
@@ -78,15 +45,7 @@ fn built() -> Built {
                     .expect("the real committed sources must build");
             graph.build_indexes();
             atlas_graph::event_world::add_justified_by(&mut graph);
-            // NODE1-ROWS-1: container edges are declared rows, lowered by
-            // build_indexes above -- no derived-edge step exists any more.
             let chronology = atlas_graph::Chronology::from_derivation(chrono);
-            // DB-4b: the bare path attaches the graph-derived extra tables
-            // before publishing, exactly as `bins/compile_graph.rs` does
-            // (`extras_for_artifact`) and as `GraphService::assemble` does on
-            // every path -- the root covers them now (spec 3.4). No sidecar
-            // files and no red-letter corpus are in hand here, so this is the
-            // from-sources shape: projections, event_date, heading_index.
             let extras = atlas_graph::sqlite::extras::Extras::graph_derived(&graph, &chronology.chrono, &std::collections::HashMap::new())
                 .expect("the real graph's projections encode");
             extras.attach(&mut graph);
@@ -135,20 +94,12 @@ fn law_creation_row_is_present_and_resolvable() {
 #[test]
 fn law_alias_and_canonical_spot_checks_for_the_peers_binding_names() {
     let b = built();
-    // "Kadesh-barnea" and "En-rogel" both resolve as CANONICAL place
-    // names (not KJV aliases) -- see exports.rs's own header comment.
     let kadesh = b.gazetteer.iter().find(|p| p.canonical == "Kadesh-barnea" || p.aliases.iter().any(|a| a == "Kadesh-barnea"));
     assert!(kadesh.is_some(), "\"Kadesh-barnea\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
 
     let en_rogel = b.gazetteer.iter().find(|p| p.canonical == "En-rogel" || p.aliases.iter().any(|a| a == "En-rogel"));
     assert!(en_rogel.is_some(), "\"En-rogel\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
 
-    // Batch GAZ-1-R1: "entrance of Hamath" (the peer's third named binding
-    // example, previously disclosed as unresolvable) now resolves as a
-    // curated KJV ALIAS on `lebo-hamath` -- checked both ways (findable at
-    // all, AND specifically on the right place id, not merely findable
-    // somewhere) so a future accidental re-homing onto the wrong place
-    // fails loud rather than silently passing this law.
     let hamath_entrance = b.gazetteer.iter().find(|p| p.canonical == "entrance of Hamath" || p.aliases.iter().any(|a| a == "entrance of Hamath"));
     assert!(hamath_entrance.is_some(), "\"entrance of Hamath\" (the peer's own binding name) must be findable by canonical name or alias in the exported gazetteer");
     assert_eq!(hamath_entrance.unwrap().id, "lebo-hamath", "\"entrance of Hamath\" must resolve onto lebo-hamath specifically -- the real-world location this traditional identification names");
@@ -163,28 +114,6 @@ fn law_every_span_interval_is_well_formed() {
     }
 }
 
-/// EXPORT-HASH-1 (batch-finalp2-brief.md ticket 6, grep-origin -- parked
-/// since CORP-2a's batch): `atlas_version_root` (`GraphVersion`, hashed
-/// over NODE PAYLOADS ONLY -- `DatedBy` is an EDGE, never a node payload;
-/// M-D3's own ruling moved `from_year`/`to_year`/`order_key` OFF the
-/// event's node payload entirely, onto `DatedBy` placements resolved via
-/// `ChronologyDerivation`) does not uniquely identify EXPORTED CONTENT.
-/// The peer hit this for real (chronology.json content changed while the
-/// embedded root stayed `c97a7d7aa390634c`); reproduced here MECHANICALLY,
-/// not merely asserted in prose -- own, self-contained real-data build
-/// (this file's own header comment: "every real-data integration test file
-/// in this crate keeps its own copy"), separate from `built()` above so
-/// this test can inspect (and locally mutate a COPY of) the raw
-/// `Chronology` that `built()` deliberately does not expose.
-///
-/// DISPOSITION (peer-accepted, LOW priority, per the ledger): a
-/// `content_hash` header field is the candidate fix, but it "rides the
-/// NEXT deliberate export format_version bump" -- explicitly NOT this
-/// batch (`data/` stays byte-untouched always, and `CHRONOLOGY_FORMAT_
-/// VERSION` is not bumped here). This test's job is exactly RED-m2's own
-/// SpokenAt disposition for this batch: pin the CURRENT, real gap with a
-/// real, mechanical proof, so it has a paper trail instead of remaining a
-/// one-line ledger claim.
 #[test]
 fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own_resolved_placement_does() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
@@ -195,12 +124,6 @@ fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own
     let (graph, _stats, _ews, chrono) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras).expect("the real committed sources must build");
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
-    // Pick a real dated event and shift its own RESOLVED year by +1 --
-    // `resolved` (`ChronologyDerivation`'s own field) is exactly the
-    // `DatedBy`-edge-DERIVED data `exports::chronology_events` reads for
-    // `placement` (`resolved.date.from.year`) -- an edge-shaped fact,
-    // never a `NodePayload` (M-D3's own ruling, this test's own doc
-    // comment above).
     let event_id = chronology.chrono.order.first().cloned().expect("the real compiled data must have at least one dated event");
     let mut mutated = atlas_graph::Chronology::from_derivation(chronology.chrono.clone());
     let placement = mutated.chrono.resolved.get_mut(&event_id).expect("the chosen event id must resolve in its own derivation's resolved map");
@@ -212,12 +135,6 @@ fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own
     let events_after = exports::chronology_events(&graph, &mutated);
     assert_ne!(events_before, events_after, "the mutated resolved placement must produce a genuinely different exported row -- otherwise this test proves nothing");
 
-    // `graph` never changed (only `chronology`/`mutated` differ, and
-    // `GraphVersion` is a pure function of `graph` alone) -- so BOTH
-    // exports below would embed the IDENTICAL `atlas_version_root` no
-    // matter how many times it were recomputed; one computation suffices
-    // to name it, and the two `ChronologyExport` values built from it
-    // make the gap explicit and comparable, not merely implied.
     let mut store = MemStore::default();
     let version = store.publish(graph);
     let root_hex = atlas_graph::version_hex(version);

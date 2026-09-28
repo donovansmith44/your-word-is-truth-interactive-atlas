@@ -1,23 +1,3 @@
-//! DB-2a: every node and every row in the graph the compile binary ships
-//! round-trips through the canonical encoding, and the encoding is
-//! deterministic across builds.
-//!
-//! This is the COVERAGE proof for `graph-types`'s `canon` module: the
-//! golden vectors in `graph-types/tests/canon_vectors.rs` and
-//! `canon_row_vectors.rs` pin the BYTES of
-//! hand-built specimens, and this file proves those same encoders total
-//! over the real committed corpus -- ~92k nodes and every row of all 21
-//! families, every `Option`, every enum variant the data actually
-//! inhabits, every string the KJV/Concord/Kretzmann text carries.
-//!
-//! Real-data cost, disclosed: the first three tests load the committed
-//! `data/compiled/graph.bin` once (shared through a `OnceLock`, the same
-//! decode + `build_indexes` + `add_justified_by` sequence
-//! `GraphService::from_artifact` performs); the determinism test builds
-//! the graph TWICE from the real raw+curated sources, the way
-//! `determinism.rs` does. Minutes, not seconds -- expected, and the
-//! reason the per-family counts are printed rather than merely asserted.
-
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::OnceLock;
@@ -32,12 +12,6 @@ use atlas_graph_types::text::{
     BibleLocusRange, BibleTag, ConcordRef, Locus, LocusRange, TextLocus, TextRef, VerseRef,
 };
 
-// ------------------------------------------------- hand-built row builders
-
-/// The specimens the three UNINHABITED families are proven on (M2-5).
-/// Deliberately the simplest lawful shapes: no token spans, no grounds --
-/// the byte goldens in `graph-types/tests/canon_row_vectors.rs` pin the
-/// rich specimens; what is needed here is a row that exists at all.
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
 }
@@ -50,24 +24,12 @@ fn blr(from: (u8, u16, u16), to: (u8, u16, u16)) -> BibleLocusRange {
     .expect("a test range must be ordered")
 }
 
-// --------------------------------------------------------------- the graph
-
-/// The REAL graph the compile binary ships, read off the committed
-/// artifact and indexed exactly as `GraphService::from_artifact` indexes
-/// it (`to_service_parts` -> `build_indexes` -> `add_justified_by`).
-/// Loaded ONCE for the whole binary: the three tests below all walk the
-/// same ~92k nodes, and paying the 100MB decode three times would buy
-/// nothing.
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
-        // DB-5: the committed SECTIONS read back (sqlite::reload), indexed
-        // exactly as the served path indexes -- graph.bin is gone.
         atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
 }
-
-// ------------------------------------------------------------------ nodes
 
 #[test]
 fn every_node_round_trips_and_re_encodes_identically() {
@@ -79,7 +41,6 @@ fn every_node_round_trips_and_re_encodes_identically() {
         let bytes = n.encode();
         let back = Node::decode(&bytes)
             .unwrap_or_else(|e| panic!("node {id:?} failed to decode its own bytes: {e}"));
-        // The round-trip law (R6): byte fixed point AND decoded equality.
         assert_eq!(back.encode(), bytes, "node {id:?} is not a byte fixed point");
         assert_eq!(&back.id, id, "node {id:?} lost its id");
         assert_eq!(back.provenance, n.provenance, "node {id:?} lost its provenance");
@@ -96,19 +57,9 @@ fn every_node_round_trips_and_re_encodes_identically() {
     for (kind, n) in &by_kind {
         println!("  node {kind}: {n}");
     }
-    // FINAL REVIEW item 11: the EXACT count, not a lower bound. A lower
-    // bound passes while nodes silently disappear; the exact number turns
-    // the printed table above into an assertion. It moves only when the
-    // committed artifact is recompiled from changed sources, which is a
-    // deliberate act that should re-pin this line.
     assert_eq!(count, 106_742, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1)");
 }
 
-// ------------------------------------------------------------------- rows
-
-/// One family's proof: every row encodes, decodes, and re-encodes to the
-/// SAME bytes, both bare and wrapped in its family (the form edge ids and
-/// section logical hashes hash, spec 3.4).
 fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
     for (i, row) in rows.iter().enumerate() {
         let value = row.to_value();
@@ -128,17 +79,6 @@ fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
     rows.len()
 }
 
-/// FINAL REVIEW item 3: this walk is closed over `Graph` as well as over
-/// `RowFamily`. Every field of `Graph` is NAMED in the destructure below
-/// and there is no `..`, so a new row `Vec` on the struct is a compile
-/// error here until it joins the round-trip proof. Closing only over
-/// `RowFamily` (the `fam!` list) left the other direction open: a field
-/// with no family is simply never walked, and nothing complains.
-///
-/// The non-row fields are named and discarded (`nodes: _`, `reading: _`,
-/// `extra_tables: _`, `indexes: _`, `symmetric_indexes: _`, `pid_index: _`):
-/// `nodes` has its own test above, `extra_tables` (DB-4b) is proven by the
-/// section laws, and the last three are derived state, not rows.
 #[test]
 fn every_row_of_every_family_round_trips() {
     let Graph {
@@ -169,8 +109,6 @@ fn every_row_of_every_family_round_trips() {
         partners,
         participates,
         reading: _,
-        // DB-4b: the non-graph tables' canonical bodies -- not rows of a
-        // family; their own round trip is `sqlite_laws.rs`/gate 9.
         extra_tables: _,
         indexes: _,
         symmetric_indexes: _,
@@ -218,19 +156,13 @@ fn every_row_of_every_family_round_trips() {
         println!("  [{}] {}: {n}", family.ordinal(), family.name());
     }
 
-    // Every family in the closed enum is covered, in ordinal order --
-    // a new family cannot be added without joining this proof.
     assert_eq!(counts.len(), RowFamily::ALL.len(), "every row family must be walked");
     let walked: Vec<RowFamily> = counts.iter().map(|(f, _)| *f).collect();
     assert_eq!(walked, RowFamily::ALL.to_vec(), "families must be walked in ordinal order");
 
-    // FINAL REVIEW item 11: the EXACT per-family counts, so the printed
-    // table above IS the assertion. A lower bound on the total cannot see
-    // one family emptying while another grows; this can. These move only
-    // when the committed artifact is recompiled from changed sources.
     let expected: Vec<(RowFamily, usize)> = vec![
         (RowFamily::ContainsBible, 2_378),
-        (RowFamily::ContainsConcord, 270), // D3: 135 article rows + 135 document > article rows (was 145: 135 + 10 flat document rows)
+        (RowFamily::ContainsConcord, 270),
         (RowFamily::Attests, 33_355),
         (RowFamily::Succession, 13),
         (RowFamily::CanonSuccession, 1_253),
@@ -251,9 +183,6 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
         (RowFamily::Occurs, 431_280),
-        // D5: Theographic kinship (parent links stated from both ends, minted once),
-        // partnerships (unordered pairs, minted once) and timeline participation
-        // (only where the event is a real Event node).
         (RowFamily::ParentOf, 1_776),
         (RowFamily::Partners, 104),
         (RowFamily::Participates, 714),
@@ -261,13 +190,6 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(total, 917_411, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5)");
 
-    // M2-5. The three uninhabited families (artifact.rs refuses to dump a
-    // non-empty one) are still real encoders. "An empty table round-trips
-    // vacuously" is not a test of anything, so each one is proven on a
-    // HAND-BUILT row here, through the same `round_trip_family` helper
-    // the inhabited families go through -- bare bytes, decode, byte fixed
-    // point, and fixed point inside `{"family":…,"row":…}`. That the real
-    // table is empty is asserted separately, above, by the exact counts.
     assert_eq!(
         round_trip_family(
             &[Quotes {
@@ -304,8 +226,6 @@ fn every_row_of_every_family_round_trips() {
     );
 }
 
-// --------------------------------------------------------------- positions
-
 #[test]
 fn canonical_id_strings_parse_back_for_every_node_and_every_index_position() {
     let g = committed_graph();
@@ -322,10 +242,6 @@ fn canonical_id_strings_parse_back_for_every_node_and_every_index_position() {
     for id in g.nodes.keys() {
         check(&Position::Node(id.clone()), &mut count);
     }
-    // Every index key is a Position -- node ends AND edge ends (the
-    // edges-as-positions law: JustifiedBy subjects are edge positions).
-    // A directed relation's objects are the inverse map's own keys, so
-    // walking both maps' keys walks both ends of every entry.
     for ix in g.indexes.values() {
         for p in ix.fwd.keys().chain(ix.inv.keys()) {
             check(p, &mut count);
@@ -341,17 +257,6 @@ fn canonical_id_strings_parse_back_for_every_node_and_every_index_position() {
     assert!(count > 90_000, "every node is a position at minimum, found {count}");
 }
 
-// ------------------------------------------------------------ determinism
-
-/// The real sources, read fresh. Mirrors `determinism.rs`'s own
-/// `real_sources` (two INDEPENDENT reads + ETL compiles prove the whole
-/// pipeline, not just the graph-build half) and, like
-/// `artifact_conformance.rs`'s KRETZ-m3 note, threads Concord, Kretzmann
-/// AND red-letter in as well -- the full sequence `atlas-graph-compile`
-/// itself performs. Anything less and this proof would never see
-/// `contains_concord`, `catechism`, `comments_on`, `spoken_by` or
-/// `spoken_at` rows, so five of the eighteen inhabited families would sit
-/// outside the determinism law.
 struct RealSources {
     kjv_json: String,
     xrefs_tsv: String,
@@ -384,17 +289,8 @@ fn real_sources() -> RealSources {
         .expect("data/curated/concord-sc-overlap.toml must exist");
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text)
         .expect("concord-sc-overlap.toml must parse");
-    // M2-2: the verse map Kretzmann aligns against is `atlas.verses` --
-    // the SAME map `bins/compile_graph.rs` passes (`read_all(&root,
-    // &atlas.verses)`), not a second parse of `kjv.json`. The two agree
-    // today, which is exactly why they could drift without anyone
-    // noticing; one source is one fewer way for this proof to stop
-    // mirroring the real compile.
     let kretzmann = atlas_etl::kretzmann::read_all(&raw_dir.join("kretzmann"), &atlas.verses)
         .expect("data/raw/kretzmann must exist");
-    // The red-letter span alignment runs against the graph's own
-    // KJV-CASE-restored text, never the raw parse -- the same
-    // recomputation `compile_graph.rs` performs for the same reason.
     let (restored_verses, _case_report) =
         atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
     let red_letter = atlas_etl::red_letter::read_all(&raw_dir.join("red-letter"), &restored_verses)
@@ -445,10 +341,6 @@ fn compare_rows<T: Canon>(a: &[T], b: &[T], family: RowFamily) -> usize {
 
 #[test]
 fn encoding_is_deterministic_across_two_independent_builds() {
-    // Streamed pairwise, not concatenated into two multi-hundred-MB
-    // buffers: comparing item by item in BTreeMap/Vec order is the SAME
-    // byte equality the concatenation would assert, and it also pins the
-    // key order itself.
     let a = build(&real_sources());
     let b = build(&real_sources());
 

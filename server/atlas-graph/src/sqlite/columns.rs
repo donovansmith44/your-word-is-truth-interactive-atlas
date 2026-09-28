@@ -1,11 +1,6 @@
-//! DB-2b: the LOCUS / RANGE / AUTHORED column codec (spec §5.0). One
-//! spelling of "seven columns per locus" for every row writer and reader,
-//! and the `justification` + `ground` side tables behind every AUTHORED
-//! family's `justification_id`.
-//!
-//! Readers are strict: a corpus that is not the one the column typed, an
-//! integer outside the ref's width, or a half-present TokenSpan is an
-//! error naming the column -- never a silently coerced value.
+//! The LOCUS / RANGE / AUTHORED column codec: one spelling of "seven columns per locus" for every
+//! row writer and reader. Readers are strict -- a wrong corpus, an out-of-width integer or a
+//! half-present `TokenSpan` is an error naming the column, never a silently coerced value.
 
 use std::collections::BTreeSet;
 
@@ -26,7 +21,7 @@ pub fn locus_columns(prefix: &str) -> String {
     format!("{prefix}_corpus, {prefix}_a, {prefix}_b, {prefix}_c, {prefix}_layer, {prefix}_start, {prefix}_end")
 }
 
-/// Seven `?` placeholders, for an INSERT's VALUES list.
+/// Seven `?` placeholders, one per LOCUS column, for an INSERT's VALUES list.
 pub fn locus_placeholders() -> &'static str {
     "?, ?, ?, ?, ?, ?, ?"
 }
@@ -98,10 +93,6 @@ pub fn bible_range_values(r: &LocusRange<BibleTag>) -> [Value; 14] {
     out
 }
 
-// ---------------------------------------------------------------------
-// Readers
-// ---------------------------------------------------------------------
-
 pub(crate) fn col<T: rusqlite::types::FromSql>(row: &Row, i: usize, what: &str) -> Result<T, SqliteError> {
     row.get::<_, T>(i).map_err(|e| SqliteError(format!("column {i} ({what}): {e}")))
 }
@@ -152,13 +143,13 @@ fn read_concord_ref(row: &Row, i: usize) -> Result<ConcordRef, SqliteError> {
     })
 }
 
-/// Seven columns from `i`; refuses `corpus != "bible"`.
+/// Seven columns from `i`.
 pub fn read_bible_locus(row: &Row, i: usize) -> Result<Locus<BibleTag>, SqliteError> {
     expect_corpus(row, i, BibleTag::ID)?;
     Ok(Locus { unit: read_verse_ref(row, i + 1)?, span: read_span(row, i + 4)? })
 }
 
-/// Seven columns from `i`; refuses `corpus != "concord"`.
+/// Seven columns from `i`.
 pub fn read_concord_locus(row: &Row, i: usize) -> Result<Locus<ConcordTag>, SqliteError> {
     expect_corpus(row, i, ConcordTag::ID)?;
     Ok(Locus { unit: read_concord_ref(row, i + 1)?, span: read_span(row, i + 4)? })
@@ -184,23 +175,19 @@ pub fn read_opt_text_locus(row: &Row, i: usize) -> Result<Option<TextLocus>, Sql
     }
 }
 
-/// 14 columns: `from` at `i`, `to` at `i + 7`; `LocusRange::new` is fallible.
+/// 14 columns: `from` at `i`, `to` at `i + 7`.
 pub fn read_bible_range(row: &Row, i: usize) -> Result<LocusRange<BibleTag>, SqliteError> {
     let from = read_bible_locus(row, i)?;
     let to = read_bible_locus(row, i + 7)?;
     LocusRange::new(from, to).map_err(|e| SqliteError(format!("column {i} (range): {e:?}")))
 }
 
-// ---------------------------------------------------------------------
-// AUTHORED: justification + ground
-// ---------------------------------------------------------------------
-
 pub const GROUND_SCRIPTURE: i64 = 0;
 pub const GROUND_ANCHOR: i64 = 1;
 pub const GROUND_SOURCE: i64 = 2;
 
-/// Hands out `justification.id`s (from 1, per section) and writes the
-/// `justification` + `ground` rows behind an AUTHORED column.
+/// Hands out `justification.id`s, from 1 and per section, and writes the `justification` +
+/// `ground` rows behind an AUTHORED column.
 pub struct JustificationWriter {
     next_id: i64,
 }
@@ -216,10 +203,8 @@ impl JustificationWriter {
         JustificationWriter { next_id: 1 }
     }
 
-    /// Returns the id to bind, or `None` (bind NULL) when the justification
-    /// is empty: spec says NULL when the family has no justification, and
-    /// -- ruled in the plan -- an authored row's EMPTY justification binds
-    /// NULL too, since `Justification::default()` round-trips through it.
+    /// Returns the id to bind, or `None` -- bind NULL -- when the justification is empty: a family
+    /// with no justification and an authored row's empty one both round-trip through NULL.
     pub fn write(&mut self, tx: &Transaction, j: &Justification) -> Result<Option<i64>, SqliteError> {
         if j.text.is_none() && j.grounds.is_empty() {
             return Ok(None);
@@ -262,10 +247,8 @@ impl JustificationWriter {
     }
 }
 
-/// `None` -> `Justification::default()`; `Some(id)` -> text + grounds in
-/// stored `ord` order, which must equal the `BTreeSet` order they are
-/// read back into (the writer wrote set order; a drift in `Ground: Ord`
-/// is refused rather than silently re-sorted).
+/// Grounds come back in stored `ord` order, which must equal the `BTreeSet` order they are read
+/// into; a drift in `Ground: Ord` is refused rather than silently re-sorted.
 pub fn read_justification(conn: &Connection, id: Option<i64>) -> Result<Justification, SqliteError> {
     let Some(id) = id else { return Ok(Justification::default()) };
     let text: Option<String> = conn

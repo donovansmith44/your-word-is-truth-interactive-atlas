@@ -1,20 +1,6 @@
-//! Batch M-C, controller decision 2: the polity adapter -- "polities
-//! (border data as node payloads -- the map consumes payloads, not new
-//! relation kinds)". Source: `ctx.atlas.polities` (`AtlasData.polities`,
-//! itself loaded from `polities.json` -- kept standing this batch, per
-//! the deletion inventory: `/api/polities` migrates to a graph VIEW, but
-//! the underlying compiled file/field stays the adapter's own source,
-//! same status as `event_world`'s own `atlas.events`/`.narratives`/
-//! `.places`/`.chronology_anchors`).
-//!
-//! One node per Polity, carrying EVERY era of its own lifetime as payload
-//! (`NodePayload::Polity::eras: Vec<PolityEraPayload>`) -- not one node
-//! per (polity, era) pair. A polity's `id`/`color_key` are constant across
-//! its own eras (one hue for its whole lifetime, `Polity::color_key`'s own
-//! doc comment); modeling each era as a SEPARATE node would either
-//! duplicate that identity across nodes or invent a new relation to tie
-//! them back together -- exactly what "border data as node payloads, not
-//! new relation kinds" rules out.
+//! One node per Polity, carrying EVERY era of its lifetime as payload rather than one node per
+//! (polity, era): a polity's id and `color_key` are constant across its eras, so splitting them
+//! would either duplicate that identity or need a relation to tie the pieces back together.
 
 use atlas_graph_types::id::PolityId;
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
@@ -49,11 +35,8 @@ fn polity_node(p: &atlas_core::data::Polity) -> Node {
             fall: era.fall.as_ref().map(delta_payload),
         })
         .collect();
-    // A polity's own display label is its MOST RECENT era's name (mirrors
-    // the map's own "current name wins" convention -- e.g. "Ptolemaic
-    // Egypt" outranks "Egypt" once it's the latest curated era); falls
-    // back to the bare id for the structurally-impossible empty-eras case
-    // (every real curated polity file has >= 1 era; validated ETL-side).
+    // A polity's display label is its MOST RECENT era's name, the map's own "current name wins"
+    // convention; the bare id covers the empty-eras case the ETL already rules out.
     let label = p.eras.last().map(|e| e.name.clone()).unwrap_or_else(|| p.id.clone());
     Node {
         id: PolityId::new(p.id.clone()).erase(),
@@ -62,7 +45,6 @@ fn polity_node(p: &atlas_core::data::Polity) -> Node {
     }
 }
 
-/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`).
 pub fn normalize(ctx: &mut BuildCtx) -> PolityAdapterStats {
     let mut stats = PolityAdapterStats::default();
     for p in &ctx.atlas.polities {

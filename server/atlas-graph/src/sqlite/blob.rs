@@ -1,12 +1,6 @@
-//! DB-4b: the committed blob (spec §2.3, §6.1 step 3): a section file
-//! zstd-compressed at level 19, named by its LOGICAL hash, verified on
-//! unpack by its TRANSPORT hash (SHA-256 of the `.zst` bytes, the
-//! manifest's `blob`). Every committed blob stays under 100 MiB compressed;
-//! the writer refuses a larger one here rather than letting git find out.
-//!
-//! The transport hash is over bytes zstd produced -- it varies with the
-//! zstd version and the thread count, and is NEVER an identity (spec §3.4:
-//! only the logical hash is). It guards the copy, not the content.
+//! The committed section blob: zstd-compressed, named by its LOGICAL hash and verified on unpack
+//! by its TRANSPORT hash, which varies with the zstd version and thread count and so guards the
+//! copy, never the content -- only the logical hash is an identity.
 
 use std::io::Write;
 use std::path::Path;
@@ -15,16 +9,15 @@ use atlas_graph_types::sha256::sha256;
 
 use super::SqliteError;
 
-/// Spec §2.3, §12: 100 MiB.
+/// 100 MiB, the ceiling a committed blob must stay under; the writer refuses a larger one.
 pub const BLOB_CEILING: u64 = 104_857_600;
-/// Spec §6.1 step 3.
 pub const ZSTD_LEVEL: i32 = 19;
 
 fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
 
-/// SHA-256 of the file's bytes, 64 lowercase hex.
+/// SHA-256 of the file's bytes, as 64 lowercase hex.
 pub fn sha256_hex_of_file(path: &Path) -> Result<String, SqliteError> {
     Ok(hex(&sha256(&std::fs::read(path)?)))
 }
@@ -37,8 +30,8 @@ fn zerr(e: std::io::Error) -> SqliteError {
     SqliteError(format!("zstd: {e}"))
 }
 
-/// Compresses `src` to `dst` (via `dst.zst.tmp`, renamed on success) at
-/// `ZSTD_LEVEL`; returns `(sha256 hex of dst, dst bytes)`.
+/// Compresses `src` to `dst` through `dst.zst.tmp`, renamed on success, so a partial file is
+/// never mistaken for a blob. Returns the SHA-256 hex of `dst` and its byte size.
 pub fn compress_file(src: &Path, dst: &Path) -> Result<(String, u64), SqliteError> {
     if let Some(parent) = dst.parent() {
         std::fs::create_dir_all(parent)?;
@@ -60,10 +53,8 @@ pub fn compress_file(src: &Path, dst: &Path) -> Result<(String, u64), SqliteErro
     Ok((sha256_hex_of_file(dst)?, bytes))
 }
 
-/// Verifies the blob's transport hash, THEN unpacks it to `dst` (via
-/// `dst.sqlite.tmp`, renamed on success). A mismatch names both hashes and
-/// writes nothing; a failed unpack removes its partial file (spec §11).
-/// Returns the unpacked size.
+/// Verifies the blob's transport hash BEFORE unpacking: a mismatch names both hashes and writes
+/// nothing, and a failed unpack removes its partial file. Returns the unpacked size.
 pub fn decompress_verified(blob: &Path, expected_sha256: &str, dst: &Path) -> Result<u64, SqliteError> {
     let compressed = std::fs::read(blob)?;
     let actual = hex(&sha256(&compressed));

@@ -1,8 +1,3 @@
-//! LEX-1: the `lexicon` section's one row family, `occurs` (spec §5.7):
-//! `entry_id`, the seven LOCUS columns (layer/start/end NOT NULL -- a word
-//! locus always carries its one-token span), `provenance`. Imported, no
-//! justification column.
-
 use atlas_graph_types::edge::Occurs;
 use rusqlite::types::Value;
 use rusqlite::{Connection, Transaction};

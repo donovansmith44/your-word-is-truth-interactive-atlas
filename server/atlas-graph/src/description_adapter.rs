@@ -1,64 +1,6 @@
-//! ENT-1a ("Easton's descriptions: the data half" -- batch-ent1a-brief.md,
-//! the owner's own "we actually want meaningful information about who or
-//! what someone is, having that be backed by scripture"): fills
-//! `description` on every Place/Person/PeopleGroup node's own payload --
-//! called from `pipeline::MergeAliasPass` (this module's own "WHY
-//! MERGE/ALIAS" note below), so any node of those THREE kinds, however it
-//! got built and in whatever order, flows through the SAME matcher on
-//! every compile (batch ordering is irrelevant BY CONSTRUCTION: PG-1a's
-//! future PeopleGroup nodes need zero changes here to start getting
-//! filled the day they exist -- this module already has their arm).
-//!
-//! WHY MERGE/ALIAS, not a new pipeline stage: `pipeline.rs`'s own MERGE/
-//! ALIAS doc comment names its shape as "legacy-vocabulary boundary
-//! crossings" -- Easton's Bible Dictionary (1897) is exactly that, a
-//! legacy vocabulary being joined onto already-NORMALIZED nodes (this pass
-//! runs strictly AFTER `NormalizePass`, which is where every Place/Person/
-//! PeopleGroup node is actually built -- description-filling needs those
-//! nodes to already exist, unlike NORMALIZE's own "no cross-referencing
-//! needed" scope). Every prior batch that added cross-referencing work
-//! (Batch P's own `person_adapter::merge_alias`, M-C's own
-//! `place_adapter::merge_alias`) extended an EXISTING stage's own call list
-//! rather than inventing a new one; this module follows that same,
-//! established precedent -- one more call in `MergeAliasPass::run`, not a
-//! restructured pipeline.
-//!
-//! TRUST ORDER (batch-ent1a-brief.md controller decision 2, verbatim
-//! order), Person only ever tries (a) then (b) then (c); Place only ever
-//! tries (b) then (c) (no per-record dictText source exists for places);
-//! PeopleGroup only ever tries (c) (no Theographic id exists for a FUTURE
-//! curated-nation-seed PeopleGroup to key tier (b) on):
-//! - (a) `Person::dict_text` -- the person's OWN source record, already
-//!   resolved by `atlas_etl::people::parse_people` (Theographic's own
-//!   pre-joined Easton's match, per-person).
-//! - (b) `EastonEntry::person_slug`/`place_name` -- Theographic's OWN
-//!   attested single-entity match (`matchType`/`matchSlugs`), resolved by
-//!   `atlas_etl::easton::parse_easton` (see that module's own doc comment
-//!   for the place-name-vs-id-space finding).
-//! - (c) `EastonEntry::dict_lookup` == the node's own canonical/label,
-//!   exact case-insensitive, no stemming/fuzzy matching -- OUR OWN literal
-//!   fallback, independent of Theographic's own match-type judgment.
-//! - unmatched at every tier -> `None`. NO FABRICATED PROSE, EVER: every
-//!   filled `description` is IDENTICAL to one whole source string (proven
-//!   by this module's own tests) -- never concatenated, trimmed-and-
-//!   rebuilt, or synthesized from parts.
-//!
-//! AMBIGUITY (batch-ent1a-brief.md: "no multi-candidate guessing --
-//! ambiguity means None"), applied uniformly to EVERY tier this module
-//! builds a lookup for, not just tier (c)'s own literal wording: whenever
-//! two DIFFERENT source rows would claim the SAME key (person slug, place
-//! name, or dict_lookup) with DIFFERING text, that key is dropped from the
-//! map entirely (`collision_checked` below) -- a real, disclosed case in
-//! the committed data: "Ammon" (dict_lookup "Ammon") and "Ammonite" (dict_
-//! lookup "Ammonite") both attest `matchSlugs "ammon_58"`, Theographic's own
-//! place record for Ammon, with DIFFERING dictText (one describes the land,
-//! the other the demonym) -- tier (b) backs off for that target rather than
-//! guessing between them, and tier (c) THEN independently resolves it
-//! anyway (the place's own canonical name is literally "Ammon", an exact
-//! match against that entry's own dict_lookup) -- an emergent correctness
-//! property of running the two tiers independently, not special-cased.
-//! IDENTICAL-text repeats (the real data has a couple) are harmless, not
-//! ambiguous, and are kept.
+//! Fills `description` on every Place/Person/PeopleGroup node from Easton's, in trust order: the
+//! person's own source record, then the attested single-entity match, then an exact case-insensitive
+//! name match. Never fabricated -- a filled description is one whole source string, or `None`.
 
 use std::collections::{HashMap, HashSet};
 
@@ -96,18 +38,14 @@ struct EastonLexicon<'a> {
     /// tier (b), Person: Theographic person slug (e.g. "aaron_1", the EXACT
     /// id space a compiled `PersonId` already uses) -> dictText.
     person_by_slug: HashMap<String, &'a str>,
-    /// tier (b), Place: lowercased Theographic place display name (resolved
-    /// through `places.json`'s own slug field at ETL parse time -- see
-    /// `atlas_etl::easton`'s own doc comment) -> dictText.
+    /// tier (b), Place: lowercased Theographic place display name -> dictText.
     place_by_name: HashMap<String, &'a str>,
     /// tier (c), any kind: lowercased `dict_lookup` -> dictText.
     by_dict_lookup: HashMap<String, &'a str>,
 }
 
-/// Builds a `key -> text` map from `(key, text)` pairs, dropping any key
-/// that maps to more than one DISTINCT text entirely -- this module's own
-/// "AMBIGUITY" doc comment above. Repeat rows with IDENTICAL text under the
-/// same key are harmless (kept, not flagged).
+/// Builds a `key -> text` map, dropping entirely any key that maps to more than one DISTINCT text:
+/// ambiguity means no description rather than a guess. Repeat rows with identical text are kept.
 fn collision_checked<'a>(pairs: impl Iterator<Item = (String, &'a str)>) -> HashMap<String, &'a str> {
     let mut map: HashMap<String, &'a str> = HashMap::new();
     let mut ambiguous: HashSet<String> = HashSet::new();
@@ -119,7 +57,7 @@ fn collision_checked<'a>(pairs: impl Iterator<Item = (String, &'a str)>) -> Hash
             None => {
                 map.insert(key, text);
             }
-            Some(existing) if *existing == text => {} // identical repeat row: harmless
+            Some(existing) if *existing == text => {}
             Some(_) => {
                 map.remove(&key);
                 ambiguous.insert(key);
@@ -140,12 +78,8 @@ fn build_lexicon(entries: &[EastonEntry]) -> EastonLexicon<'_> {
     EastonLexicon { person_by_slug: collision_checked(person_pairs), place_by_name: collision_checked(place_pairs), by_dict_lookup: collision_checked(lookup_pairs) }
 }
 
-/// Pipeline-facing entry point (`pipeline::MergeAliasPass`): mutates every
-/// already-normalized Place/Person/PeopleGroup node's own `description`
-/// field IN PLACE, over `ctx.graph.nodes` -- no new nodes, no new relation
-/// rows, a payload widening only (the SAME "payload FACT" shape `NodePayload
-/// ::Place`'s own ENT-1 doc comment already established for `description`
-/// itself).
+/// Mutates every already-normalized Place/Person/PeopleGroup node's `description` in place: no new
+/// nodes and no new relation rows, a payload fill only.
 pub fn fill_descriptions(ctx: &mut BuildCtx) -> DescriptionStats {
     let atlas = ctx.atlas;
     let lex = build_lexicon(&atlas.easton);
@@ -244,7 +178,6 @@ mod tests {
         BuildCtx::new(canon, verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", atlas)
     }
 
-    // (a) "a person whose record carries dictText gets exactly that text."
     #[test]
     fn tier_a_person_dict_text_fills_verbatim() {
         let atlas = atlas_with(vec![person("moses_1", "Moses", Some("The great lawgiver of Israel."))], vec![]);
@@ -264,7 +197,6 @@ mod tests {
         }
     }
 
-    // (b) "an entity with no match gets None."
     #[test]
     fn no_match_at_any_tier_leaves_description_none() {
         let atlas = atlas_with(vec![person("ghost_1", "Ghostperson", None)], vec![easton("Unrelated", "Some unrelated entry.", "unmatched", "unmatched", None, None)]);
@@ -290,8 +222,6 @@ mod tests {
         }
     }
 
-    // (c) "the matcher never concatenates/synthesizes" -- the filled value
-    // is byte-identical to ONE whole source string, not a rebuilt one.
     #[test]
     fn filled_description_is_byte_identical_to_the_source_string_never_built() {
         let src = "Line one.\n\n Line two, with an inline [Ex. 6:20](/exod#Exod.6.20) link -- verbatim.  ";
@@ -309,10 +239,6 @@ mod tests {
         }
     }
 
-    // (d) "an easton.json matchSlugs hit fills a place" -- the brief's own
-    // worked example: "Ammonite" (dict_lookup) -> ammon_58 (matchSlugs),
-    // matchType "place", resolved (at ETL parse time, simulated here via
-    // `place_name` already-lowercased) to the place named "Ammon".
     #[test]
     fn tier_b_matchslugs_hit_fills_a_place() {
         let atlas = atlas_with(vec![], vec![easton("Ammonite", "The usual name of the descendants of Ammon, the son of Lot.", "place", "ammon_58", None, Some("ammon"))]);
@@ -354,7 +280,6 @@ mod tests {
         let verses = HashMap::new();
         let mut ctx = ctx_with(&canon, &verses, &atlas);
         ctx.graph.nodes.insert(PlaceId::new("hebron").erase(), place_node("hebron", "Hebron"));
-        // "Hebronite" must NOT match "Hebron" -- no fuzzy/stemmed matching.
         ctx.graph.nodes.insert(PlaceId::new("hebronite-town").erase(), place_node("hebronite-town", "Hebronite"));
 
         fill_descriptions(&mut ctx);
@@ -372,12 +297,6 @@ mod tests {
 
     #[test]
     fn ambiguous_matchslugs_target_backs_off_tier_b_but_tier_c_can_still_resolve_it() {
-        // The real committed collision this module's own doc comment
-        // discloses: "Ammon"/"Ammonite" both attest matchSlugs "ammon_58"
-        // with DIFFERING text -- tier (b) must decline (place_name stays
-        // out of the collision-checked map), but tier (c) independently
-        // resolves it via the "Ammon" entry's own dict_lookup, which
-        // exactly equals the place's own canonical name.
         let atlas = atlas_with(
             vec![],
             vec![
@@ -402,10 +321,6 @@ mod tests {
 
     #[test]
     fn ambiguous_dict_lookup_with_differing_text_resolves_to_none_not_a_guess() {
-        // Two entries sharing a dict_lookup key, DIFFERING text -- a
-        // synthetic case (the real data has none, per this module's own
-        // doc comment) proving the law holds even if a future data refresh
-        // introduces one.
         let atlas = atlas_with(vec![], vec![easton("Salt", "Text A about salt.", "unmatched", "unmatched", None, None), easton("SALT", "Text B, a different entry.", "unmatched", "unmatched", None, None)]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
@@ -458,10 +373,6 @@ mod tests {
 
     #[test]
     fn non_described_node_kinds_are_left_untouched() {
-        // Total-count discipline: an Era/Anchor/etc. node must not even be
-        // COUNTED (a real bug this catches: matching on `_ =>` for stats
-        // instead of skipping entirely would silently inflate `place_total`
-        // et al. for unrelated kinds).
         let atlas = atlas_with(vec![], vec![]);
         let canon = Canon { books: vec![] };
         let verses = HashMap::new();
@@ -477,9 +388,6 @@ mod tests {
 
     #[test]
     fn node_kind_matches_stay_sane_across_the_three_kinds() {
-        // NodeKind import stays exercised (avoids an unused-import lint drift
-        // if a future edit removes the direct `NodeKind::Person` references
-        // this module's own sibling adapters carry) -- a cheap sanity check.
         assert_eq!(PersonId::new("x").erase().kind, NodeKind::Person);
         assert_eq!(PlaceId::new("x").erase().kind, NodeKind::Place);
         assert_eq!(PeopleGroupId::new("x").erase().kind, NodeKind::PeopleGroup);

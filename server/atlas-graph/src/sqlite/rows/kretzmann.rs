@@ -1,5 +1,3 @@
-//! DB-2b: the one row family of the `kretzmann` section (spec §5.6).
-
 use atlas_graph_types::edge::CommentsOn;
 use rusqlite::types::Value;
 use rusqlite::{Connection, Transaction};

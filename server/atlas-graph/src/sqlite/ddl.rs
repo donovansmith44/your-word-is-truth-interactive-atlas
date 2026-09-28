@@ -1,27 +1,15 @@
-//! DB-2b: the per-section DDL, verbatim from spec §5.1 and §5.3–5.6, and
-//! the section -> row-table map: the common tables, every row family's
-//! table (+ `_locus` / `_step` sub-tables) and `reading_spine`. DB-4b: the
-//! node projections, `event_date`, `heading_index`, `red_letter_span` and
-//! the folded sidecars (`extra_ddl`/`extra_index_ddl`; column specs in
-//! `sqlite::extras`/`sqlite::sidecars`, pinned against this DDL by
-//! `sqlite_laws.rs`; amendments to spec §5.3 in the DB-4b plan's judgment
-//! calls 3–6).
-//!
-//! Spec §5.0: no `FOREIGN KEY`, no `CHECK`, no triggers -- the compiler
-//! proves the laws, the file only describes the shape (a unit test below
-//! pins that). Indexes are created AFTER the inserts (spec §6.1), hence
-//! the table/index split in every constant pair.
+//! The per-section DDL and the section -> row-table map. Indexes are created after the inserts, so
+//! every table constant is paired with an index constant.
 
 use atlas_graph_types::canon::RowFamily;
 use rusqlite::Connection;
 
 use super::{stamp_pragmas, SqliteError};
-// DB-4a: the section -> table map lives in graph-types (it is part of the
-// version root); re-exported here for the sqlite module's callers.
+// The section -> table map is part of the version root, so it lives in graph-types; re-exported
+// here for this module's callers.
 pub use crate::sections::{has_spine, logical_table_order, row_tables_of};
 use crate::sections::Section;
 
-/// Spec §5.1 minus its three `CREATE … INDEX` lines (see `COMMON_INDEX_DDL`).
 pub const COMMON_DDL: &str = "
 CREATE TABLE meta (
   key   TEXT PRIMARY KEY,
@@ -70,20 +58,16 @@ CREATE TABLE edge_index (
 ) WITHOUT ROWID;
 ";
 
-/// Spec §5.1's three indexes -- created after the inserts. `edge_by_id`
-/// is NOT unique, deviating from the spec's text (ruled in DB-2b, spec
-/// erratum): a symmetric entry is stored once under EACH end with the
-/// same `(edge_id, dir = 2)` (spec §5.2's own shape), and a directed
-/// relation whose rows mint one id twice (identical `(rel, subject,
-/// object)`) keeps both entries in memory today; a unique index would
-/// refuse both. `row_provenance` reads the first hit either way.
+/// `edge_by_id` is deliberately NOT unique: a symmetric entry is stored once under EACH end with
+/// the same `(edge_id, dir = 2)`, and two rows can mint one id, so a unique index would refuse
+/// rows the graph allows. `row_provenance` reads the first hit either way.
 pub const COMMON_INDEX_DDL: &str = "
 CREATE INDEX node_by_kind ON node (kind, id);
 CREATE UNIQUE INDEX node_by_pid ON node (pid);
 CREATE INDEX edge_by_id ON edge_index (edge_id, dir);
 ";
 
-/// Spec §5.4 / §5.5: `reading_spine` (kjv: corpus 'bible'; concord: 'concord').
+/// `reading_spine`: corpus `bible` for Kjv, `concord` for Concord.
 pub const SPINE_DDL: &str = "
 CREATE TABLE reading_spine (
   ord INTEGER PRIMARY KEY, node_id TEXT NOT NULL
@@ -92,11 +76,6 @@ CREATE TABLE reading_spine (
 pub const SPINE_INDEX_DDL: &str = "
 CREATE UNIQUE INDEX spine_by_node ON reading_spine (node_id);
 ";
-
-// ---------------------------------------------------------------------
-// Row families (spec §5.3–5.6), one table constant + one index constant
-// each. The RANGE families spell all 14 columns exactly as the spec does.
-// ---------------------------------------------------------------------
 
 const DDL_CONTAINS_BIBLE: &str = "
 CREATE TABLE contains_bible (
@@ -284,8 +263,7 @@ CREATE TABLE analogue (
 ";
 const IDX_ANALOGUE: &str = "CREATE UNIQUE INDEX analogue_ord ON analogue (ord);";
 
-// LEX-1 (spec 5.7): the lexicon section's family table. The LOCUS span
-// columns are NOT NULL here (a word locus always names its one token).
+// The LOCUS span columns are NOT NULL here: a word locus always names its one token.
 const DDL_OCCURS: &str = "
 CREATE TABLE occurs (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -300,7 +278,6 @@ CREATE UNIQUE INDEX occurs_ord ON occurs (ord);
 CREATE INDEX occurs_by_locus ON occurs (locus_a, locus_b, locus_c, locus_layer, locus_start);
 ";
 
-// D5: kinship and participation (Core), imported, no justification.
 const DDL_PARENT_OF: &str = "
 CREATE TABLE parent_of (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -406,11 +383,6 @@ CREATE UNIQUE INDEX comments_on_ord ON comments_on (ord);
 CREATE INDEX comments_on_by_from ON comments_on (on_from_a, on_from_b, on_from_c, ord);
 ";
 
-// ---------------------------------------------------------------------
-// DB-4b: the extra tables (spec §5.3–5.6, amended)
-// ---------------------------------------------------------------------
-
-/// Core: the graph-derived tables.
 const EXTRA_DDL_CORE_GRAPH: &str = "
 CREATE TABLE place (
   node_id TEXT PRIMARY KEY, canonical TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL
@@ -444,7 +416,6 @@ CREATE INDEX event_by_order ON event_date (seq);
 CREATE INDEX heading_by_event ON heading_index (event_id);
 ";
 
-/// Core: the nine folded sidecars as 21 tables.
 const EXTRA_DDL_CORE_SIDECARS: &str = "
 CREATE TABLE canon_book (
   ord INTEGER PRIMARY KEY, code TEXT NOT NULL, name TEXT NOT NULL, testament TEXT NOT NULL,
@@ -527,8 +498,7 @@ CREATE TABLE provenance_entry (
   id TEXT PRIMARY KEY, ord INTEGER NOT NULL, source TEXT NOT NULL, confidence TEXT NOT NULL, locator TEXT
 ) WITHOUT ROWID;
 ";
-/// The write-time materialisation of `AtlasData::finish()`'s verse->item
-/// join (`/api/catechism/{sref}` seeks these at DB-4c).
+/// The write-time materialisation of `AtlasData::finish()`'s verse -> item join.
 const EXTRA_INDEX_DDL_CORE_SIDECARS: &str = "
 CREATE INDEX catechism_item_by_part ON catechism_item (part_id, ord);
 CREATE INDEX catechism_item_verse_by_sref ON catechism_item_verse (sref);
@@ -559,8 +529,7 @@ const EXTRA_INDEX_DDL_CONCORD: &str = "
 CREATE UNIQUE INDEX concord_by_ref ON concord_unit (part, article, paragraph);
 ";
 
-// LEX-1 (spec 5.7): the entry projection, its domain codes, and the word
-// inventory (every token, matched or not; `strong` NULL when unmatched).
+// The word inventory holds every token, matched or not; `strong` is NULL for an unmatched one.
 const EXTRA_DDL_LEXICON: &str = "
 CREATE TABLE lexicon_entry (
   node_id TEXT PRIMARY KEY,
@@ -587,7 +556,6 @@ CREATE INDEX lexicon_by_lemma ON lexicon_entry (lang, lemma);
 CREATE INDEX domain_by_code ON lexicon_domain (code, node_id);
 ";
 
-/// DB-4b: the section's extra tables' `CREATE TABLE` text.
 pub fn extra_ddl(section: Section) -> &'static [&'static str] {
     match section {
         Section::Core => &[EXTRA_DDL_CORE_GRAPH, EXTRA_DDL_CORE_SIDECARS],
@@ -598,7 +566,6 @@ pub fn extra_ddl(section: Section) -> &'static [&'static str] {
     }
 }
 
-/// DB-4b: the section's extra tables' indexes (created after the inserts).
 pub fn extra_index_ddl(section: Section) -> &'static [&'static str] {
     match section {
         Section::Core => &[EXTRA_INDEX_DDL_CORE_GRAPH, EXTRA_INDEX_DDL_CORE_SIDECARS],
@@ -609,7 +576,7 @@ pub fn extra_index_ddl(section: Section) -> &'static [&'static str] {
     }
 }
 
-/// The `CREATE TABLE` text (plus sub-table) of spec §5.3–5.6 for a family.
+/// A family's `CREATE TABLE` text, including its `_locus` / `_step` sub-tables.
 pub fn family_ddl(f: RowFamily) -> &'static str {
     match f {
         RowFamily::ContainsBible => DDL_CONTAINS_BIBLE,
@@ -640,8 +607,7 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
     }
 }
 
-/// The family's `CREATE UNIQUE INDEX <family>_ord` and every secondary
-/// index the spec lists for it.
+/// The family's `CREATE UNIQUE INDEX <family>_ord` plus every secondary index it declares.
 pub fn family_index_ddl(f: RowFamily) -> &'static str {
     match f {
         RowFamily::ContainsBible => IDX_CONTAINS_BIBLE,
@@ -672,8 +638,7 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
     }
 }
 
-/// Spec §6.1: pragmas first (page_size/encoding only bind on an empty
-/// file), then every table -- and NO index yet.
+/// Pragmas first, then every table -- and no index yet.
 pub fn create_tables(conn: &Connection, section: Section) -> Result<(), SqliteError> {
     stamp_pragmas(conn)?;
     let mut ddl = String::from(COMMON_DDL);
@@ -690,7 +655,6 @@ pub fn create_tables(conn: &Connection, section: Section) -> Result<(), SqliteEr
     Ok(())
 }
 
-/// Spec §6.1: every index, created AFTER the inserts.
 pub fn create_indexes(conn: &Connection, section: Section) -> Result<(), SqliteError> {
     let mut ddl = String::from(COMMON_INDEX_DDL);
     for f in row_tables_of(section) {
@@ -711,8 +675,6 @@ pub fn create_indexes(conn: &Connection, section: Section) -> Result<(), SqliteE
 mod laws {
     use super::*;
 
-    /// Spec §1.3 / §5.0: the file describes the shape; the compiler proves
-    /// the laws. No constraint machinery may sneak into any DDL string.
     #[test]
     fn no_ddl_string_carries_constraint_machinery() {
         let mut all: Vec<&str> = vec![COMMON_DDL, COMMON_INDEX_DDL, SPINE_DDL, SPINE_INDEX_DDL];

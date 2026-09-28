@@ -1,15 +1,5 @@
-//! DB-4c: the serving companions loaded from the section tables -- what
-//! `GraphService::from_sections` reads once at startup where
-//! `from_artifact` used to carry them in `graph.bin` -- and the one seek
-//! that replaces the 344k-row `cross_refs_by_from` companion. Each loader
-//! is proven equal to the artifact path's value on the real data
-//! (`tests/serve_real_data.rs`).
-//!
-//! Sizes justify the split: the resolved chronology (912 rows), the heading
-//! index (~3k), red-letter spans (2k verses), narrative legs (13) and the
-//! provenance families (21 DISTINCT scans) are read whole; only the
-//! cross-refs are large enough that a per-request seek on `xref_by_from`
-//! (spec §5.4) is the right shape.
+//! The serving companions read out of the section tables once at startup. Only the cross-refs
+//! (344k rows) are large enough to stay a per-request seek instead of being read whole.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -36,10 +26,9 @@ fn opt_u8(v: Option<i64>) -> Option<u8> {
     v.map(|x| x as u8)
 }
 
-/// `core.event_date` -> the chronology companion: `order` by `seq`,
-/// `resolved` for every row, `source_meta` where the curated pair is
-/// present (NULL = no entry, exactly the artifact's absence); `placements`
-/// stays empty -- nothing on the serving path reads it.
+/// `core.event_date` -> the chronology companion: `source_meta` only where the curated pair is
+/// present (a NULL column means no entry), and `placements` stays empty because nothing on the
+/// serving path reads it.
 pub fn load_chronology(conn: &Connection) -> Result<ChronologyDerivation, SqliteError> {
     let mut stmt = conn.prepare(
         "SELECT event_id, from_year, to_year, from_month, from_day, to_month, to_day, seq, basis, meta_to_year, order_key \
@@ -73,7 +62,7 @@ pub fn load_chronology(conn: &Connection) -> Result<ChronologyDerivation, Sqlite
     Ok(out)
 }
 
-/// `core.heading_index` -> dot-ref -> the one heading that wins there.
+/// `core.heading_index` -> dot-ref -> the one heading that wins at that ref.
 pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, Heading>, SqliteError> {
     let mut stmt = conn.prepare("SELECT book, chapter, verse, event_id, title, kind, continuation FROM heading_index")?;
     let mut rows = stmt.query([])?;
@@ -88,7 +77,7 @@ pub fn load_heading_index(conn: &Connection) -> Result<BTreeMap<String, Heading>
     Ok(out)
 }
 
-/// `kjv.red_letter_span` -> dot-ref -> the char-offset spans, in `ord` order.
+/// `kjv.red_letter_span` -> dot-ref -> char-offset spans, in `ord` order.
 pub fn load_red_letter_spans(conn: &Connection) -> Result<HashMap<String, Vec<(usize, usize)>>, SqliteError> {
     let mut stmt = conn.prepare("SELECT book, chapter, verse, start, end_ FROM kjv.red_letter_span ORDER BY book, chapter, verse, ord")?;
     let mut rows = stmt.query([])?;
@@ -101,7 +90,7 @@ pub fn load_red_letter_spans(conn: &Connection) -> Result<HashMap<String, Vec<(u
     Ok(out)
 }
 
-/// `core.succession` + `succession_step` -> narrative id -> its chain.
+/// `core.succession` + `succession_step` -> narrative id -> its chain of node ids.
 pub fn load_narrative_legs(conn: &Connection) -> Result<BTreeMap<String, Vec<String>>, SqliteError> {
     let mut stmt = conn.prepare(
         "SELECT s.narrative_id, st.event_id FROM succession s JOIN succession_step st ON st.succession_id = s.id ORDER BY s.id, st.ord",
@@ -122,9 +111,8 @@ fn schema_of(section: Section) -> &'static str {
     }
 }
 
-/// `SELECT DISTINCT provenance` per family of every present section (plus
-/// `nodes` over the union view) -- `ProvenanceIndex::build`'s sweep, done
-/// by the database (DB-3 judgment call 5's promise).
+/// The provenance families of every present section. Every family is a key even when its section
+/// is absent, so the index lists every family it swept, inhabited or not.
 pub fn load_provenance_families(
     conn: &Connection,
     present: &[Section],
@@ -149,8 +137,6 @@ pub fn load_provenance_families(
             }
         }
     }
-    // Every family is a key even when a section is absent (the artifact
-    // index lists every family it swept, inhabited or not).
     for f in RowFamily::ALL {
         out.entry(f.name()).or_default();
     }
@@ -167,10 +153,8 @@ fn count_kind(conn: &Connection, kind: NodeKind) -> Result<usize, SqliteError> {
     Ok(n as usize)
 }
 
-/// The boot log's counters from the tables. `cites_dropped_negative_votes`
-/// is a compile-time count of rows that were NOT written and is not
-/// derivable here: it is reported as 0 (disclosed; the compile's own log
-/// still prints it).
+/// The boot log's counters. `cites_dropped_negative_votes` counts rows that were never written and
+/// is not derivable from the tables, so it is reported as 0 here.
 pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildStats, EventWorldStats), SqliteError> {
     let has = |s: Section| present.contains(&s);
     let stats = BuildStats {
@@ -195,11 +179,8 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
     Ok((stats, ews))
 }
 
-/// The cross-refs authored by the span's member verses, keyed by dot-ref,
-/// each list in `ord` order with the row's own `target_display` -- exactly
-/// the slice of the retired `cross_refs_by_from` companion
-/// `atlas_core::xrefs::aggregate_span_xrefs` reads. A seek on `xref_by_from`
-/// (`from_a, from_b, from_c, ord`), spec §5.4.
+/// The cross-refs authored by the span's member verses, keyed by dot-ref, each list in `ord` order
+/// carrying the row's own `target_display`. A seek on `xref_by_from`, not a scan.
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {
     let base = "SELECT from_a, from_b, from_c, target_display, votes FROM kjv.cross_refs";
     let (sql, params): (String, Vec<i64>) = match span {

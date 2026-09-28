@@ -1,34 +1,6 @@
-//! M-C2 requirement 1 / the decisive-title law, re-homed as a graph query.
-//!
-//! Re-implements `atlas_core::data::AtlasData::finish()`'s own
-//! `heading_worthy` test, `heading_anchors_for`, and `heading_precedence`
-//! (CONTRACT.md's own HEADING-WORTHY RULE + 3-tier precedence paragraph)
-//! directly over graph `Event` nodes -- computed ONCE, at `GraphService::
-//! assemble` time (an event-count-sized pass, ~1,700 events -- the same
-//! "cheap, once, not per-request" class as `bible_position`/`era_ids`),
-//! never per-request: `handlers::chapter`'s own per-verse heading lookup
-//! (up to 176 calls per chapter, Psalm 119) needs O(1) access, the exact
-//! reason the pre-M-C2 `AtlasData.verse_heading` index existed. Kept in
-//! LOCKSTEP with CONTRACT.md and the atlas-core original (both describe the
-//! identical rule; if either changes, so must this module, in the same
-//! commit -- the atlas-core original itself stays untouched and still
-//! green, still the law for `AtlasData`-sourced surfaces that have not yet
-//! migrated, mirroring the M-B/M-C precedent of re-homing a law onto the
-//! graph without deleting the atlas-core version until every consumer has).
-//!
-//! DETERMINISM IMPROVEMENT, disclosed: the atlas-core original's own
-//! precedence tuple doc comment states a true 4-tier tie among the layer/
-//! kind/chronology tiers "is not expected to ever actually occur for two
-//! distinct real events" (CONTRACT.md's own WITHIN-LAYER ANCHOR COLLISIONS
-//! validator fails ETL loud on the one case that WOULD produce one -- two
-//! real containers claiming the identical anchor) and, on the rare
-//! four-way tie, resolves by incidental iteration/vec order (first-wins).
-//! This re-homing adds the event id itself as a fifth, always-distinct
-//! tier, so the winner is a pure function of CONTENT for every input,
-//! never of node-table iteration order (`Graph.nodes` is a `BTreeMap`,
-//! already order-stable by id -- this tier makes that stability load-
-//! bearing rather than incidental). Changes nothing for any real curated
-//! case; only makes the theoretical tie-break provably deterministic.
+//! The decisive-title law as a graph query, computed once at assemble time because a per-verse
+//! heading lookup needs O(1) access. Precedence carries the event id as a final, always-distinct
+//! tier, so the winner is a pure function of content rather than of node iteration order.
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -60,15 +32,8 @@ pub struct Heading {
 
 type Precedence = (u8, u8, Reverse<i32>, Reverse<i32>, Reverse<String>);
 
-/// M-D1 requirement 1 (owner live report #2, GEN.6 class, verbatim:
-/// "genesis 6 the first verses have no container label... i'm assuming
-/// this isn't an isolated case"): the CANONICALLY FIRST verse in `verses`
-/// -- minimum by (book, chapter, verse), i.e. reading-spine order -- never
-/// merely the first one encountered in CURATED/IMPORTED array order.
-/// `VerseId` carries no `Ord` of its own (a deliberate, narrow choice --
-/// widening a shared type's derive list is a bigger blast radius than this
-/// one law needs), so the tuple key is built by hand here, the same
-/// "compare by content, not position" fix in both branches below.
+/// The CANONICALLY FIRST verse -- the minimum by (book, chapter, verse) -- never the first one the
+/// curated or imported array happens to list. `VerseId` has no `Ord`, so the key is built by hand.
 fn canonically_first(verses: &[String]) -> Option<String> {
     verses
         .iter()
@@ -77,21 +42,9 @@ fn canonically_first(verses: &[String]) -> Option<String> {
         .map(|(_, v)| v.clone())
 }
 
-/// Mirrors `atlas_core::data::heading_anchors_for`'s own SHAPE (one anchor
-/// per witness when explicit witnesses exist; else one anchor per book
-/// touched by the container's own top-level `verses`) but fixes the
-/// ROOT-CAUSE bug both branches shared: each anchor is now the book's own
-/// CANONICALLY FIRST covered verse (`canonically_first` above), not merely
-/// the first one this container's own curated/imported data happened to
-/// list first. Concretely: `theo-32` ("God decides to destroy every living
-/// thing") covers GEN.6.1-7, but its original Theographic verse link was
-/// GEN.6.7 and W1's own enrichment pass APPENDED 6.1-6 afterward -- the OLD
-/// code anchored at GEN.6.7 (first in the array), leaving GEN.6.1-6 read
-/// unlabeled; this fix anchors at GEN.6.1 (first in reading order), the
-/// SAME defect class the brief's own root-cause note names as systemic
-/// ("any enriched event whose original link was not the passage's first
-/// verse is mis-anchored"), fixed for BOTH branches (the witness branch had
-/// the identical defect via `.find(first parseable)`).
+/// One anchor per witness where explicit witnesses exist, else one per book the container's own
+/// `verses` touch. Each anchor is that book's canonically first covered verse: anchoring at the
+/// first verse a container's data happened to list leaves the verses before it read unlabeled.
 fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     if !witnesses.is_empty() {
         return witnesses
@@ -101,15 +54,9 @@ fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> 
             .collect();
     }
 
-    // No explicit witnesses -- one anchor per book actually touched by
-    // `verses`: that book's own canonically first verse, not merely the
-    // first one encountered in curated/imported array order. Two passes
-    // (group by book, then take each book's own minimum) rather than one --
-    // `seen_books` still preserves first-SEEN-book order for the returned
-    // Vec's own iteration order (harmless: each book's anchor lands at a
-    // DIFFERENT verse, so inter-book ordering here never decides a
-    // collision -- only intra-book anchor CHOICE does, which is what this
-    // fix corrects).
+    // Two passes -- group by book, then take each book's own minimum -- rather than one. The
+    // first-seen book order the returned Vec keeps is harmless: each book's anchor lands at a
+    // different verse, so only intra-book anchor CHOICE can ever decide a collision.
     let mut seen_books: Vec<String> = Vec::new();
     let mut best: std::collections::HashMap<String, (u16, u16, String)> = std::collections::HashMap::new();
     for v in verses {
@@ -129,23 +76,10 @@ fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> 
     seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
-/// M-D1 requirement 1 ("CHAPTER-BOUNDARY CONTINUATION": "when a chapter's
-/// first verse sits mid-container (container anchored in a previous
-/// chapter), render the container's heading at the chapter top with a
-/// quiet continuation marker... No covered chapter may open with unlabeled
-/// verses"): for the SAME per-witness/per-book groups `heading_anchors_for`
-/// anchors, every chapter STRICTLY AFTER that group's own anchor chapter
-/// (the minimum chapter present, since a group's own primary anchor is
-/// always its canonically-first verse) that the group's own coverage
-/// includes AT the chapter's own opening verse (verse 1, always the
-/// chapter boundary in KJV versification -- no canon lookup needed) is a
-/// CONTINUATION candidate: this same container's heading continues there.
-/// A gap chapter the group does NOT cover at its own verse 1 (coverage
-/// resumes mid-chapter, or not at all) is correctly NOT a continuation
-/// point for this container -- whichever OTHER heading-worthy container
-/// truly opens that chapter (whole-Bible coverage, Batch W5, guarantees
-/// one exists) supplies its own primary anchor or continuation there
-/// instead; this function only ever answers for ITS OWN container.
+/// A chapter strictly after a group's own anchor chapter that the group covers AT its opening verse
+/// continues this container's heading there. Verse 1 is always the chapter boundary in KJV
+/// versification, so no canon lookup is needed, and a chapter covered only mid-way is not a
+/// continuation point -- whichever container truly opens it answers for itself.
 fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     let groups: Vec<Vec<atlas_core::refs::VerseId>> = if !witnesses.is_empty() {
         witnesses
@@ -174,7 +108,7 @@ fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPaylo
         let covered_chapters: BTreeSet<u16> = group.iter().map(|v| v.chapter).collect();
         for chapter in covered_chapters {
             if chapter <= anchor_chapter {
-                continue; // the anchor's own chapter is a PRIMARY anchor, never a continuation
+                continue;
             }
             if group.iter().any(|v| v.chapter == chapter && v.verse == 1) {
                 out.push(format!("{}.{}.1", book.code(), chapter));
@@ -184,42 +118,17 @@ fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPaylo
     out
 }
 
-/// Mirrors `atlas_core::data::heading_precedence`'s own 3-tier rule (layer,
-/// kind, chronology) plus the disclosed 5th determinism tier (event id --
-/// this module's own doc comment).
-///
-/// M-D3 (owner ruling R1 propagation): `year`/`seq` replace the former
-/// `from_year`/`order_key` payload reads -- sourced from the event's own
-/// `ResolvedPlacement` (`event_world::ChronologyDerivation.resolved`, the
-/// timeline's one authority) instead, via `build_heading_index`'s own new
-/// parameter. `seq` (the event's own position in the reconstructed global
-/// timeline, `event_world::derive_chronology`'s own doc comment: "assigned
-/// DIRECTLY from the reconstructed timeline position... exact, not a
-/// shortcut") is a faithful, STRICTER substitute for `order_key` here: the
-/// timeline itself is already sorted by `(from_year, order_key, array
-/// position)`, so comparing `seq` alone reproduces every `(from_year,
-/// order_key)` ordering the old tuple decided, and never ties between two
-/// distinct dated events (order_key defaulted to 0 for the overwhelming
-/// majority, so the old tuple tied far more often, falling through to the
-/// event-id tier below more frequently than this one now needs to).
+/// `seq` -- the event's position in the reconstructed global timeline -- is a stricter substitute
+/// for the curated `order_key` here: that timeline is already sorted by `(from_year, order_key,
+/// array position)`, so comparing `seq` alone never ties two distinct dated events.
 fn precedence(layer: u8, kind: &str, year: i32, seq: i32, event_id: &str) -> Precedence {
     let kind_bit: u8 = if kind == "event" { 1 } else { 0 };
     (layer, kind_bit, Reverse(year), Reverse(seq), Reverse(event_id.to_string()))
 }
 
-/// Sentinel `(year, seq)` for a heading-worthy node with NO resolved
-/// placement -- exclusively general-kind ("undated") events, which
-/// `event_world::derive_chronology` correctly excludes from `resolved`
-/// entirely (never a real dated event: `derive_chronology` resolves EVERY
-/// `kind == "event"` id `timeline_order` collects). Mirrors
-/// `atlas_core::time::TimeRange::undated()`'s own whole-atlas-span sentinel
-/// (`-4004`) rather than inventing a new one -- the SAME "deliberately
-/// undated, not a mystery number" idiom every other general-kind call site
-/// in this workspace already uses. The exact value is functionally inert
-/// here: `kind_bit` (0 for every general-kind node) already outranks the
-/// chronology tier ahead of it, so this sentinel only ever breaks a tie
-/// between two OTHER general-kind nodes, which then falls through to the
-/// always-distinct event-id tier regardless.
+/// The sentinel `(year, seq)` for a heading-worthy node with no resolved placement, which is only
+/// ever a general-kind event. The value mirrors the whole-atlas undated span and is functionally
+/// inert: the kind tier ahead of it already outranks chronology for every such node.
 const UNDATED_SENTINEL: (i32, i32) = (-4004, 0);
 
 fn resolved_year_seq(id: &str, resolved: &HashMap<String, ResolvedPlacement>) -> (i32, i32) {
@@ -229,34 +138,16 @@ fn resolved_year_seq(id: &str, resolved: &HashMap<String, ResolvedPlacement>) ->
     }
 }
 
-/// `event_id -> true` iff it is a leg of ANY narrative -- callers build
-/// this from `graph.succession`'s own row `chain`s (not from `follows-in`/
-/// `precedes-in` EDGES: a solo-leg narrative, a real if rare shape, e.g.
-/// `demo_fixture()`'s own `patriarchs-demo`, produces a `Succession` ROW
-/// but zero succession EDGE pairs by construction -- `chain.windows(2)` on
-/// a one-element chain is empty -- the same gap `handlers::
-/// narrative_event_positions`'s own solo-leg fallback already discloses).
+/// `event_id -> true` iff it is a leg of ANY narrative. Built from `succession` row chains rather
+/// than from succession EDGES, because a solo-leg narrative is a real shape that produces a row and
+/// zero edge pairs.
 pub fn narrative_leg_event_ids(graph: &Graph) -> BTreeSet<String> {
     graph.succession.iter().flat_map(|row| row.chain.iter().map(|e| e.0.clone())).collect()
 }
 
-/// The full verse -> heading map, exactly mirroring `AtlasData::finish()`'s
-/// own `verse_heading` construction (this module's own doc comment has the
-/// one deliberate improvement) PLUS M-D1 requirement 1's own continuation
-/// pass (below). Order-independent over `graph.nodes`'s own iteration (a
-/// `BTreeMap`, so already deterministic either way): the winner at each
-/// anchor is the objective MAXIMUM precedence among every heading-worthy
-/// event claiming it, never a first-wins accident of scan order.
-///
-/// TWO PASSES, deliberately sequential, never interleaved: pass 1 resolves
-/// every PRIMARY anchor exactly as before this batch (unchanged collision
-/// rule); pass 2 resolves CONTINUATION candidates only at verses pass 1
-/// left unclaimed -- a primary anchor is always the stronger claim (a
-/// container's own true first-covered verse beats any other container's
-/// mid-coverage continuation, unconditionally, never arbitrated by the
-/// precedence tuple), so continuations can only ever FILL gaps, never
-/// contest an already-decided verse. This is what keeps "decisive rule
-/// still yields exactly one label" true even with continuations in play.
+/// The full verse -> heading map. The winner at each anchor is the objective MAXIMUM precedence
+/// among every heading-worthy event claiming it, never a first-wins accident of scan order, and the
+/// two passes are sequential: a primary anchor always beats a continuation, which only fills gaps.
 pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPlacement>) -> BTreeMap<String, Heading> {
     let narrative_legs = narrative_leg_event_ids(graph);
     let mut winners: BTreeMap<String, (Precedence, Heading)> = BTreeMap::new();
@@ -309,14 +200,8 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
         }
     }
 
-    // Pass 2: fill gaps only. A PRIMARY anchor already at this verse is an
-    // ABSOLUTE, unconditional win (never arbitrated by precedence -- a
-    // container's own true first-covered verse always beats any other
-    // container's mid-coverage continuation); competing CONTINUATION
-    // candidates at the same still-open verse (two different containers
-    // both continuing through it) resolve by the identical precedence
-    // tuple pass 1 uses -- the same layer/kind/chronology/id law, just
-    // applied to the smaller "who continues here" question.
+    // Competing CONTINUATION candidates at one still-open verse -- two containers both continuing
+    // through it -- resolve by the same precedence tuple the primary pass uses.
     for (verse, prec, entry) in continuation_candidates {
         let should_replace = match winners.get(&verse) {
             None => true,

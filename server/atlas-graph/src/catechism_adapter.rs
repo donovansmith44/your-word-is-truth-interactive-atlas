@@ -1,28 +1,6 @@
-//! Batch M-C, controller decision 2: the catechism adapter -- "catechism
-//! links (locus <-> CatechismItem; legacy vocabulary maps at the
-//! boundary)". Source: `ctx.atlas.catechism` (`AtlasData.catechism`, a
-//! `Vec<CatechismPart>` -- kept standing this batch: the RICH item content
-//! (explanation/where_written/part_title/question titles) stays served by
-//! the existing `/api/catechism/item/{id}` endpoint, unmigrated; only the
-//! item's own label and its locus links join the graph, per this batch's
-//! own disclosed scope).
-//!
-//! LEGACY VOCABULARY MAPPED AT THE BOUNDARY: two curated citation shapes
-//! collapse into ONE symmetric `catechism-link` row each -- an item-level
-//! embedded citation (`CatechismItem.verses`, Luther's own wording, no
-//! question context) and a question-level citation
-//! (`CatechismQuestion.verses`, Batch F2's own per-topic mapping). Neither
-//! curated file is re-parsed or re-authored; both already live on the SAME
-//! `AtlasData.catechism` this adapter reads. The distinction itself (WHICH
-//! question a citation came from) does not survive onto the graph row --
-//! disclosed, not silent: `catechism-link` is a flat, symmetric, locus <->
-//! item relation (design doc §4's own edge-kind table), with no room for a
-//! question tag; the rich, question-aware view stays on the existing
-//! bespoke endpoint, which reads `AtlasData.catechism` directly and never
-//! loses that distinction. A verse cited by the SAME item under two
-//! different questions collapses to ONE graph row (deduped by (locus,
-//! item) below) -- the graph's own question is "does this locus connect to
-//! this item," not "under how many questions."
+//! `CatechismItem` nodes and the symmetric `catechism-link` rows. Both curated citation shapes,
+//! item-level and question-level, collapse into one flat locus <-> item row deduped by
+//! (locus, item): which question cited a verse does not survive onto the row.
 
 use std::collections::BTreeSet;
 
@@ -50,8 +28,7 @@ fn verse_locus(vref: &str) -> Option<TextLocus> {
     Some(TextLocus::from(atlas_graph_types::text::BibleLocus::whole(vr)))
 }
 
-/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`): one
-/// node per catechism item, across every part.
+/// One node per catechism item, across every part.
 pub fn normalize(ctx: &mut BuildCtx) -> CatechismAdapterStats {
     let mut stats = CatechismAdapterStats::default();
     for part in &ctx.atlas.catechism {
@@ -68,9 +45,6 @@ pub fn normalize(ctx: &mut BuildCtx) -> CatechismAdapterStats {
     stats
 }
 
-/// Pipeline-facing MERGE/ALIAS entry point (`pipeline::MergeAliasPass`):
-/// lowers both citation shapes into `catechism-link` rows, deduped by
-/// (locus, item) -- see this module's own doc comment.
 pub fn merge_alias(ctx: &mut BuildCtx) -> CatechismAdapterStats {
     let mut stats = CatechismAdapterStats::default();
     let mut seen: BTreeSet<(TextLocus, CatechismItemId)> = BTreeSet::new();
@@ -150,8 +124,6 @@ mod tests {
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         normalize(&mut ctx);
         let stats = merge_alias(&mut ctx);
-        // EXO.20.3 is cited BOTH item-level and question-level -- one row,
-        // not two; 1CO.10.14 is question-only -- a second row. Total: 2.
         assert_eq!(stats.link_rows, 2, "EXO.20.3 (deduped) + 1CO.10.14");
     }
 
@@ -171,9 +143,6 @@ mod tests {
             .edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind, cursor: None, limit: 10 });
         assert_eq!(page.entries.len(), 2, "the item's own frontier lists both linked loci");
 
-        // Query from the OTHER end (a linked verse) -- symmetric means the
-        // SAME edge id comes back either way (the bijection witness,
-        // symmetric case).
         let vid = atlas_core::refs::VerseId::parse_canonical("EXO.20.3").unwrap();
         let verse_node_id = crate::kjv_adapter::verse_node_id(vid.book.0, vid.chapter, vid.verse);
         let verse_pos = Position::Node(verse_node_id);

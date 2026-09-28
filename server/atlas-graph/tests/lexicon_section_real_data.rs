@@ -1,16 +1,3 @@
-//! LEX-1 (spec §8 row 7): the acceptance test. The lexicon section "lands
-//! with NO change to the loader, the port, or any other section's hash --
-//! that invariance IS the acceptance test". The three corpus sections' logical
-//! hashes (kjv, concord, kretzmann) are the values `data/compiled/manifest.toml`
-//! carried at DB-5 (`ae8d3da`), byte-identical after; core moved for the
-//! attribution registry rows alone (see `PINNED`); the fifth line is new, so
-//! the ROOT moves.
-//!
-//! Then the spec's own frontier consequences (§7.3), over the committed
-//! sections through the served path: a verse's `words` in token order, an
-//! entry's `occurs-in` concordance in canonical order, five rows behind one
-//! edge for a repeated word.
-
 use std::path::Path;
 use std::sync::OnceLock;
 
@@ -35,24 +22,10 @@ fn sections() -> &'static SqliteSnapshot {
     })
 }
 
-/// The three corpus sections' logical hashes BEFORE LEX-1 (manifest.toml at
-/// DB-5), unchanged after; and core's AFTER. Core moved
-/// (`a34bb9212f730dec5470d340a2244ff4` -> `36c377d88a0f09869247b259242c681d`)
-/// for ONE disclosed reason: the source registry (`sources.json`, folded
-/// into core's `source_entry`/`provenance_entry` tables at DB-4b) gained
-/// the three LEX-1 attribution rows (STEPBible, MACULA, Strong's) and the
-/// three provenance ids the lexicon's nodes and rows carry -- attribution
-/// is a licence condition, and the registry lives in core. A table-by-table
-/// diff of the two core files (ledger, LEX-1 R-LEX1-10) shows every other
-/// core table byte-identical: no node, row, projection or other sidecar of
-/// core changed.
 const PINNED: [(&str, &str); 4] = [
-    // D5 (2026-09-19): core moved again (36c377d8... -> f9294873...) -- the
-    // Person payload columns and the parent_of/partners/participates tables
-    // (kjv/concord/kretzmann/lexicon byte-identical, as before).
     ("core", "f92948735c4b4cc3e3934a85b44f4168"),
     ("kjv", "abec1ca14dacb605148520b8d59cb4ec"),
-    ("concord", "3ef8508fa6e6782f4aa96376674b6b7f"), // D3 (2026-09-18): document > article Container rows replaced the flat document loci (145 -> 270 rows)
+    ("concord", "3ef8508fa6e6782f4aa96376674b6b7f"),
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),
 ];
 

@@ -1,40 +1,6 @@
-//! EDGE-1a ("Prophecy & typology: the seed data" -- batch-edge1a-brief.md,
-//! owner order 2026-08-23: "we also need a couple more edges: one for
-//! Christological types, and one for prophecy/fulfillment"). The crate
-//! relations (`Fulfills`/`Typology`) landed in commit 98a8dce -- this
-//! module AUTHORS THE ROWS from two curated files, `data/curated/
-//! fulfillments.toml` (`[[fulfillment]]`, decision 1a: the NT's own
-//! explicit fulfillment-formula set) and `data/curated/typology.toml`
-//! (`[[typology]]`, decision 1b: the Scripture-argued type/antitype seed
-//! list) -- the SAME two-phase "curated seed -> typed graph row"
-//! translation `peoples_adapter::normalize`'s own NamedAfter half already
-//! establishes, one relation simpler (no eponym-existence conditional --
-//! every row here is Scripture-only, text-to-text, nothing to look up
-//! against an already-built node set).
-//!
-//! SELF-ATTESTING GROUNDS (both tables): a `FulfillmentSeed`/`TypologySeed`
-//! row's own `text` field is the hand-verified KJV formula quote/figure
-//! note (curated data, never invented here) -- its `Justification.grounds`
-//! is ALWAYS exactly `{Ground::Scripture(<the fulfillment/antitype
-//! passage>)}`, mirroring `Fulfills`'s own doc comment ("Scripture
-//! frequently SELF-ATTESTS these rows: the NT fulfillment formulas... make
-//! the fulfillment passage itself the natural Ground::Scripture") and
-//! extending the identical convention to Typology (the antitype passage
-//! is where Scripture itself argues the type -- Melchizedek's own case,
-//! e.g., is HEB 7 arguing FROM the Genesis 14 record, so HEB 7 is the
-//! ground). KJV INERRANCY DIRECTIVE: every row's `text` states fulfillment/
-//! prefiguring as FACT, never hedged -- curated at authoring time, not
-//! synthesized here.
-//!
-//! SKIP, DON'T PANIC (the SAME discipline `peoples_adapter::normalize`'s
-//! own NamedAfter loop follows for an unparseable ground): a curated row
-//! whose `prophecy`/`fulfillment` (or `type_passage`/`antitype_passage`)
-//! locus fails to parse (bad verse ref, or an inverted range) is omitted,
-//! not fatal -- `FulfillmentAdapterStats::{fulfillment,typology}_omitted`
-//! names every skip with why. Never expected to fire over the real
-//! committed data (every row is hand-verified against the KJV text before
-//! being curated -- see the batch report), but a curated-TOML typo must
-//! fail loud via the omission list, not silently corrupt a row.
+//! `Fulfills` and `Typology` rows from the two curated seed files. A row's `Justification.grounds` is
+//! always exactly the fulfillment or antitype passage, the place Scripture argues the claim itself. A
+//! row whose locus fails to parse is omitted with a reason, never fatal and never silent.
 
 use std::collections::BTreeSet;
 
@@ -51,12 +17,10 @@ pub const PROVENANCE_TYPOLOGY: &str = "curated-typology";
 #[derive(Debug, Clone, Default)]
 pub struct FulfillmentAdapterStats {
     pub fulfillment_rows: usize,
-    /// `(row index into data/curated/fulfillments.toml, reason)` -- every
-    /// curated `[[fulfillment]]` row this adapter declined to build.
+    /// `(row index into the curated fulfillments file, reason)`: every row this adapter declined.
     pub fulfillment_omitted: Vec<(usize, String)>,
     pub typology_rows: usize,
-    /// `(row index into data/curated/typology.toml, reason)` -- every
-    /// curated `[[typology]]` row this adapter declined to build.
+    /// `(row index into the curated typology file, reason)`: every row this adapter declined.
     pub typology_omitted: Vec<(usize, String)>,
 }
 
@@ -66,13 +30,8 @@ fn scripture_ground(range: &BibleLocusRange) -> BTreeSet<Ground> {
     grounds
 }
 
-/// NORMALIZE: `graph.fulfills`/`graph.typology` rows from the two curated
-/// seed lists. No dependency on any other pass's output (pure Scripture
-/// text-to-text rows -- unlike `peoples_adapter`'s own NamedAfter half,
-/// there is no node-existence check to perform), so this is
-/// NORMALIZE-eligible the same way `person_adapter::normalize`'s own doc
-/// comment already establishes for its analogous case. Called from
-/// `pipeline::NormalizePass`.
+/// Depends on no other pass's output -- these rows are Scripture text to Scripture text, with no
+/// node to look up -- so it runs in NORMALIZE.
 pub fn normalize(ctx: &mut BuildCtx) -> FulfillmentAdapterStats {
     let mut stats = FulfillmentAdapterStats::default();
 
@@ -120,12 +79,8 @@ impl std::fmt::Display for FulfillmentGroundingViolation {
 }
 impl std::error::Error for FulfillmentGroundingViolation {}
 
-/// Brief decision 5 ("every-row-has-Scripture-ground law test (same shape
-/// as PG-1a's)"): a FRESH check over the built graph's own `fulfills`
-/// table, independent of how `normalize` above constructed it -- the SAME
-/// "check the built graph, don't just trust the adapter" discipline
-/// `peoples_adapter::every_named_after_row_has_a_scripture_ground` already
-/// follows.
+/// A FRESH check over the built graph's own `fulfills` table, independent of how `normalize`
+/// constructed it.
 pub fn every_fulfillment_row_has_a_scripture_ground(graph: &atlas_graph_types::graph::Graph) -> Result<(), FulfillmentGroundingViolation> {
     for row in &graph.fulfills {
         let has_scripture_ground = row.justification.grounds.iter().any(|g| matches!(g, Ground::Scripture(_)));
@@ -140,8 +95,6 @@ pub fn every_fulfillment_row_has_a_scripture_ground(graph: &atlas_graph_types::g
     Ok(())
 }
 
-/// The Typology sibling of `every_fulfillment_row_has_a_scripture_ground`
-/// above -- same discipline, `graph.typology`'s own table.
 pub fn every_typology_row_has_a_scripture_ground(graph: &atlas_graph_types::graph::Graph) -> Result<(), FulfillmentGroundingViolation> {
     for row in &graph.typology {
         let has_scripture_ground = row.justification.grounds.iter().any(|g| matches!(g, Ground::Scripture(_)));
@@ -176,8 +129,6 @@ mod tests {
     fn g(from: &str, to: Option<&str>) -> ScriptureGroundSeed {
         ScriptureGroundSeed { from: from.into(), to: to.map(String::from) }
     }
-
-    // --- normalize: fulfillments ---------------------------------------
 
     #[test]
     fn normalize_builds_one_fulfills_row_per_curated_seed() {
@@ -220,8 +171,6 @@ mod tests {
         assert!(ctx.graph.fulfills.is_empty());
     }
 
-    // --- normalize: typology --------------------------------------------
-
     #[test]
     fn normalize_builds_one_typology_row_per_curated_seed() {
         let atlas = atlas_with(
@@ -263,10 +212,6 @@ mod tests {
 
     #[test]
     fn a_fulfillment_and_a_typology_row_can_share_the_same_locus_pair() {
-        // Brief decision 1b, verbatim: "Where a case is BOTH an explicit
-        // fulfillment formula and a type, it may appear in both tables --
-        // they are different claims." (the real EXO.12.46 -> JHN.19.36
-        // case: the passover lamb, both fulfilled-in AND prefigures).
         let atlas = atlas_with(
             vec![FulfillmentSeed { prophecy: g("EXO.12.46", None), fulfillment: g("JHN.19.36", None), text: "x".into() }],
             vec![TypologySeed { type_passage: g("EXO.12.46", None), antitype_passage: g("JHN.19.36", None), note: "the passover lamb".into(), text: "y".into() }],
@@ -278,8 +223,6 @@ mod tests {
         assert_eq!(stats.fulfillment_rows, 1);
         assert_eq!(stats.typology_rows, 1);
     }
-
-    // --- grounding laws ---------------------------------------------------
 
     #[test]
     fn every_fulfillment_row_has_a_scripture_ground_is_green_when_true() {

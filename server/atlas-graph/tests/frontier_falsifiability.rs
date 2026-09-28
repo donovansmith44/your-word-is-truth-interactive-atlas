@@ -1,33 +1,3 @@
-//! Batch FQ-0 (frontier.rs contract revision), design review B1's
-//! recommended falsifiability test: "every relation named by any
-//! `Capability::edges()` cell has ≥1 row in the compiled artifact." The
-//! bridge in `graph-types/src/frontier.rs` was compiled to be honest, not
-//! merely to compile -- this is the test that makes a decorative cell
-//! (the original `Parallel` cell: zero producers, zero consumers anywhere
-//! in the repo) impossible to ship silently again.
-//!
-//! Lives here, not in `graph-types`, because `graph-types` is pure
-//! types+laws and cannot load a compiled artifact (owner ruling,
-//! `progress.md` 2026-09-07 ruling (f)); this crate can, via the same
-//! `real_graph()` pattern `kretzmann_adapter_real_data.rs` already
-//! established.
-//!
-//! Batch NODE-1 UN-GATED the one `#[ignore]` this file shipped with:
-//! `Members` (`Contains`-forward, Chapter/Book) now has real rows --
-//! `bible_container_adapter` mints the 66 book + 1,189 chapter `Container`
-//! nodes and the chapter->verses Bible-corpus `Contains` rows, and
-//! `artifact.rs` serializes `contains_bible` (FORMAT_VERSION 11) -- so
-//! `Members` is folded back into the live sweep below, exactly per the
-//! un-gate instructions the ignored test's own doc comment carried.
-//! Every other capability's relation was checked at FQ-0 and has real
-//! rows in the committed data (see the sweep below); `Succession` in
-//! particular was verified non-decorative here (owner ruling (f): "check
-//! Succession's row count and gate honestly if zero") -- it is NOT zero
-//! (curated-narrative chains, `event_world::populate_nodes_and_direct_
-//! rows`), and NODE1-ROWS-1 (fix round 1) made the chapter/book prev/next
-//! steps DECLARED `CanonSuccession` rows over the same relation, pinned
-//! per-implementation below.
-
 use std::path::Path;
 
 fn real_atlas_data() -> atlas_core::data::AtlasData {
@@ -42,10 +12,6 @@ fn real_atlas_data() -> atlas_core::data::AtlasData {
         .clone()
 }
 
-/// Same construction `kretzmann_adapter_real_data.rs` already uses
-/// (deliberately duplicated rather than shared -- each `_real_data.rs`
-/// file in this crate builds its own real graph; see that file's own
-/// header for the precedent).
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
     GRAPH.get_or_init(|| {
@@ -76,21 +42,12 @@ fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     })
 }
 
-/// Maps an `EdgeKind` a `Capability::edges()` cell might name to the real
-/// row table backing it. A `panic!` on an unmapped relation is
-/// deliberate: it means a new `Capability::edges()` cell named a relation
-/// this sweep does not yet know how to count, which is exactly the
-/// "silently decorative" failure mode B1 exists to catch -- fail loud,
-/// don't skip.
 fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph_types::edge::EdgeKind) -> usize {
     use atlas_graph_types::edge::{EdgeKind, RelationId as R, SymRelationId as S};
     match kind {
         EdgeKind::Directed(R::Cites, _) => graph.cross_refs.len(),
         EdgeKind::Directed(R::Attests, _) => graph.attests.len(),
         EdgeKind::Directed(R::Mentions, _) => graph.mentions.len(),
-        // NODE1-ROWS-1: Succession has TWO row implementations (the
-        // manifest's own note) -- event-narrative chains AND pairwise
-        // canon container steps; the relation's honest row count is both.
         EdgeKind::Directed(R::Succession, _) => graph.succession.len() + graph.canon_succession.len(),
         EdgeKind::Directed(R::DatedBy, _) => graph.dated_by.len(),
         EdgeKind::Directed(R::LocatedAt, _) => graph.located_at.len(),
@@ -98,13 +55,7 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
         EdgeKind::Directed(R::Contains, _) => graph.contains_bible.len(),
         EdgeKind::Symmetric(S::CatechismLink) => graph.catechism.len(),
         EdgeKind::Symmetric(S::TemporalAdjacency) => graph.temporal_adjacency.len(),
-        // ATTEST-1: the owner-ratified Analogue relation. Deliberately
-        // NOT gated -- contract-first meant writing the cell before the
-        // rows, but the rows land in the SAME batch, so gating it would
-        // ship a decorative cell for no reason. If this ever goes to zero
-        // the sweep above fails loud, which is the point.
         EdgeKind::Symmetric(S::Analogue) => graph.analogue.len(),
-        // D5: kinship (ParentOf both ways, Partners) and participation.
         EdgeKind::Directed(R::ParentOf, _) => graph.parent_of.len(),
         EdgeKind::Symmetric(S::Partners) => graph.partners.len(),
         EdgeKind::Directed(R::Participates, _) => graph.participates.len(),
@@ -116,10 +67,6 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
     }
 }
 
-/// THE FALSIFIABILITY TEST (design review B1, owner ruling (f)): every
-/// relation named by any `Capability::edges()` cell -- `Members`
-/// included, since NODE-1 -- must have at least one row in the real
-/// compiled graph.
 #[test]
 fn every_capability_has_real_rows_in_the_compiled_artifact() {
     use atlas_graph_types::frontier::Capability;
@@ -140,13 +87,6 @@ fn every_capability_has_real_rows_in_the_compiled_artifact() {
     }
 }
 
-/// NODE-1 (un-gated per this test's own former TODO(NODE-1) doc comment,
-/// steps 1-3 executed): `Capability::Members` (`Contains`-forward,
-/// Chapter/Book) has real rows -- `bible_container_adapter::normalize`
-/// emits one chapter->verses `Contains<BibleTag>` row per chapter (1,189
-/// over the real canon), plus (NODE1-ROWS-1) one book ⊃ chapter
-/// `ContainerContent::Container` row per child (1,189), and `artifact.rs`
-/// serializes `contains_bible` instead of guarding it empty.
 #[test]
 fn members_capability_has_real_bible_contains_rows_since_node_1() {
     let graph = real_graph();
@@ -158,15 +98,6 @@ fn members_capability_has_real_bible_contains_rows_since_node_1() {
     );
 }
 
-/// ATTEST-1's own falsifiability gate (the brief's L4 requirement: ">=1
-/// row after retype"). `Capability::Analogues` names
-/// `SymRelationId::Analogue`; a capability whose relation has zero rows is
-/// exactly the decorative cell design review B1 found and this file
-/// exists to make unshippable. The owner's own charter case
-/// (`rob_leper_healed` <-> `mat_leper_healed`) is that row, and it is
-/// asserted by IDENTITY here, not merely by count -- a future edit that
-/// swapped it for some other pair would leave the count green and the
-/// owner's own reported defect silently unfixed.
 #[test]
 fn analogues_capability_has_the_owners_own_charter_row() {
     let graph = real_graph();
@@ -187,14 +118,6 @@ fn analogues_capability_has_the_owners_own_charter_row() {
     );
 }
 
-/// ATTEST-1's L3 gate: an event whose whole scriptural basis is MENTIONS
-/// is still a real node with a real frontier. `theo-249` ("Espousal of
-/// Mary") is the founding case -- both of its former "parallel accounts"
-/// were retyped, so it must now have ZERO `Attests` rows and a non-empty
-/// set of `Mentions` rows pointing back at it. Asserted over the real
-/// compiled graph, both halves, because either half alone would pass on a
-/// broken shape (zero attests + zero mentions is data loss, not a
-/// mention-only event).
 #[test]
 fn the_espousal_is_a_mention_only_event_with_no_attests_rows() {
     use atlas_graph_types::edge::MentionedEntity;
@@ -218,15 +141,6 @@ fn the_espousal_is_a_mention_only_event_with_no_attests_rows() {
     );
 }
 
-/// `Succession` specifically, pinned per owner ruling (f) ("check
-/// Succession's row count and gate honestly if zero"): it is NOT zero --
-/// curated-narrative chains with real legs produce real rows
-/// (`event_world::populate_nodes_and_direct_rows`), independent of
-/// NODE-1. NODE1-ROWS-1 (fix round 1) made the CHAPTER/BOOK use of this
-/// same relation row-level falsifiable too: pairwise `CanonSuccession`
-/// rows (the relation's second implementation), pinned separately below
-/// so neither implementation can silently go decorative behind the
-/// other's count.
 #[test]
 fn succession_has_real_rows_in_both_of_its_row_implementations() {
     let graph = real_graph();

@@ -1,11 +1,3 @@
-//! D3 (owner, 2026-09-15): "new abstractions that are implementations of our
-//! container abstraction to group things in the BoC in an analogous way to how
-//! we did the Bible." The Bible's shape: book ⊃ chapter as Container rows (one
-//! per child), chapter ⊃ verses as Loci. This test pins the same shape for the
-//! Concord: document ⊃ article as Container rows, article ⊃ paragraphs as Loci.
-//! Before this batch the document tier was a FLAT union of paragraph loci
-//! (concord_adapter.rs's own module comment disclosed it).
-
 use std::path::Path;
 
 use atlas_graph::concord_adapter::ConcordBundle;
@@ -17,8 +9,6 @@ fn real_atlas_data() -> atlas_core::data::AtlasData {
     atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated")).expect("data/raw + data/curated must compile").data
 }
 
-/// The real graph with the Concord corpus (the same build the sibling
-/// `concord_sc_overlap_real_data.rs` uses).
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
     GRAPH.get_or_init(|| {

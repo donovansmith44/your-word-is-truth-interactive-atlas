@@ -1,15 +1,6 @@
-//! DB-5: the sections read back into the `Graph` that wrote them -- the
-//! inverse of `writer` and the one "scan port" DB-1 OQ-8 deferred "until a
-//! second consumer wants one". The consumers are the real-data tests and
-//! the benches, which used to load `graph.bin`; nothing on the served
-//! path calls this (`GraphService::from_sections` reads companions, not
-//! whole tables). It is also the writer's round-trip law: a graph read
-//! back publishes the manifest's root and every section's own logical
-//! hash (`tests/reload_real_data.rs`).
-//!
-//! Each section's cached `.sqlite` is opened on its own connection, so the
-//! per-family readers (`rows::read_rows`, `extras::read_table`) run
-//! unqualified, exactly as the logical dump does.
+//! The sections read back into the `Graph` that wrote them, for the tests and benches that used to
+//! load one whole artifact. Nothing on the served path calls this: `GraphService::from_sections`
+//! reads companions, not whole tables.
 
 use std::path::Path;
 
@@ -70,11 +61,8 @@ fn push_row(g: &mut Graph, ord: i64, row: RowOwned) -> Result<(), SqliteError> {
     Ok(())
 }
 
-/// Reads every present section's cached file back into one `Graph`:
-/// nodes, every row family in `ord` order (`contains_bible`'s two homes
-/// merged by their shared global ord), both spines, the extra tables'
-/// canonical bodies; then `build_indexes` + `add_justified_by`, the shape
-/// `from_artifact` used to return.
+/// Reads every present section back into one `Graph`, merging `contains_bible`'s two section homes
+/// by their shared global `ord`, then rebuilds the derived indexes.
 pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present: &[Section]) -> Result<Graph, SqliteError> {
     let mut g = Graph::default();
     let mut contains_bible: Vec<(i64, RowOwned)> = Vec::new();
@@ -132,8 +120,6 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
     Ok(g)
 }
 
-/// The committed sections under `data_dir`, opened (one worker; the cache
-/// populated) and read back. What the real-data tests call.
 pub fn committed_graph(data_dir: &Path) -> anyhow::Result<(Graph, SqliteSnapshot)> {
     let layout = SectionLayout::under(data_dir);
     let snap = SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout: layout.clone() })

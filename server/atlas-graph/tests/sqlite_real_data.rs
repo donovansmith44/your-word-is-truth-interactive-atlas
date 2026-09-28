@@ -1,14 +1,3 @@
-//! DB-2b's gate (spec §6.2) over the COMMITTED graph: write the four
-//! sections, open them through `SqliteSnapshot`, and prove (a) every port
-//! answer over the full position inventory equals the in-memory graph's,
-//! (b) each section's logical hash recomputed from its tables equals the
-//! one computed from the partition and stamped in the manifest, (c) two
-//! writes are identical in every logical hash and in the root.
-//!
-//! Wall-clock gate: `#[ignore]`d and run serialized by
-//! `scripts/timing-gates.sh` (gate 9), the CONTENTION-1 mechanism --
-//! never in the parallel workspace run.
-
 use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Instant;
@@ -26,8 +15,6 @@ fn layout_under(dir: &Path) -> SectionLayout {
 }
 fn open_written(dir: &Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::SqliteError> {
     let layout = layout_under(dir);
-    // ADMIT-PERF-1: the gate measures the admission the compile actually
-    // runs -- a pooled snapshot, one connection per core (capped).
     SqliteSnapshot::open_with_workers(
         &layout.manifest_path(),
         &CommittedZstdSource { layout },
@@ -41,10 +28,6 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
-/// Loaded ONCE for the binary. DB-5: the committed SECTIONS read back
-/// (`sqlite::reload`) -- extras already attached -- plus the typed extras
-/// the writer needs, recomputed from the ETL's in-memory `AtlasData`
-/// (raw + curated) and `sources.json`, exactly as the compile folds them.
 fn committed_graph() -> &'static (Graph, Extras) {
     static CACHED: OnceLock<(Graph, Extras)> = OnceLock::new();
     CACHED.get_or_init(|| {
@@ -53,51 +36,12 @@ fn committed_graph() -> &'static (Graph, Extras) {
         let data = data_dir().parent().unwrap().to_path_buf();
         let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
         let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
-        // LEX-1: the `token` inventory is not graph-derived; it rides in
-        // from the reader exactly as the compile feeds it.
         let lexicon = atlas_etl::lexicon::read_all(&data.join("raw").join("brain-fuel-bible")).expect("the vendored lexicon + morphology");
         let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, &atlas, &sources, &lexicon.tokens).expect("the fold");
         (graph, extras)
     })
 }
 
-/// Ceiling: the FIRST measured run x 2, rounded up to the next 30 s, written
-/// beside the measurement in `scripts/timing-gates.sh`'s DB-2b note and in
-/// `server/BENCHMARKS.md`. Never loosened afterward.
-/// Measured 2026-09-17 (debug build, serialized): write 46.6 s + dump
-/// re-derivation 18.1 s + assert_answers_match 159.7 s + second write =
-/// 271.5 s total -> ceiling 570 s.
-/// RE-DERIVED at DB-4b (2026-09-17), the same rule over a wider gate: the
-/// write now includes zstd-19 of ~356 MB (four threads) and the extra
-/// tables, the open goes through `CommittedZstdSource`. Measured
-/// standalone: write 104.4 s + dump re-derivation 4.2 s +
-/// assert_answers_match 255.5 s + second write = 471.3 s -> ceiling 960 s
-/// (x2, rounded up to 30 s). Not loosened afterward.
-/// RE-DERIVED at the D3+D4 standing block (2026-09-19), the same rule over
-/// the gate LEX-1 widened (431,280 `occurs` rows and 862,560 index entries
-/// joined the single-threaded answers sweep; LEX-1 read 908.0 s of 960 and
-/// disclosed the 5.4 % margin instead of re-deriving, because the rule
-/// re-derives only when exceeded). Exceeded twice on eb9d730: 1104.0 s
-/// inside the block (Playwright harness alive) and 1064.4 s ALONE (write
-/// 197.8 s incl. zstd-19, dump re-derivation 9.9 s, assert_answers_match
-/// 652.5 s) -- D3's own delta is 125 concord rows (0.03 % of the graph), so
-/// the width is LEX-1's, not a regression. 1064.4 s x2, rounded up to 30 s
-/// -> 2130 s. Not loosened afterward. The honest next step is a faster
-/// sweep (ADMIT-PERF-1: the comparison is single-threaded), not this number.
-/// RE-DERIVED DOWN at ADMIT-PERF-1 (2026-09-19, owner: "yeah do that"):
-/// that faster sweep landed. `assert_answers_match` now spreads its two
-/// position passes across this box's cores (`std::thread::scope`, no new
-/// dependency) and builds the position inventory once instead of twice,
-/// and the two admission call sites open one connection per core instead
-/// of one in total. Measured ALONE, box otherwise idle, the same way every
-/// earlier reading here was taken:
-///   sweep       652.5 s -> 373.8 s
-///   gate total 1064.4 s -> 779.6 s
-/// 779.6 s x2, rounded up to 30 s -> 1560 s. This TIGHTENS the gate by
-/// 570 s; "never loosened" is a floor under the ceiling, not a ratchet
-/// that forbids reclaiming headroom a real speedup earned -- a ceiling
-/// left at 2130 s over a 780 s run would detect nothing short of a 2.7x
-/// regression, which is the opposite of what this gate is for.
 const CEILING_SECS: u64 = 1560;
 
 #[test]
@@ -141,7 +85,6 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
         "determinism: every logical hash"
     );
     assert_eq!(read_manifest(&layout_under(&dir).manifest_path()).unwrap().root, m1.root);
-    // DB-4b: the COMMITTED manifest is what this graph + these sidecars produce
     let committed = read_manifest(&data_dir().join("manifest.toml")).expect("data/compiled/manifest.toml is committed");
     assert_eq!(committed.root, m1.root, "data/compiled/manifest.toml's root is this graph's (recompile if the sidecars or the graph moved)");
     assert_eq!(

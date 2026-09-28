@@ -1,32 +1,7 @@
-//! atlas-graph: storage/adapters/build over `atlas-graph-types` (Batch M-A).
+//! Storage, adapters and the in-memory graph build over `atlas-graph-types`.
 //!
-//! `graph-types/` stays pure types+laws (the owner-approved compiling
-//! authority; nothing in it changes here). This crate is the pragmatic M-A
-//! materialization the controller ordered (ruling 2): it builds the
-//! Explorable Graph IN MEMORY, once, at server startup, from the same raw
-//! sources `atlas-etl` reads -- the KJV text (`kjv_adapter`) and
-//! openbible.info's cross-references (`xref_adapter`, the first relation
-//! proving the generic edge path end-to-end, ruling 3).
-//!
-//! STORAGE PORTABILITY (design doc §9a; fix round 1, C1): the storage/
-//! query port -- `GraphQuery`/`GraphSnapshot`/`GraphStore`/`GraphPublisher`
-//! -- is OWNER-APPROVED and lives entirely in `atlas_graph_types::store`
-//! (commit `ab75c8b`). This crate defines NO competing trait -- `window.rs`
-//! (the window/text-path logic) is generic over `&dyn
-//! atlas_graph_types::store::GraphQuery` only, and `service::GraphService`
-//! (this batch's implementation #1) is a thin adapter-side wrapper around
-//! the owner's own `MemStore`/`MemSnapshot`, plus the one companion index
-//! the port itself doesn't model (a reading-spine reverse lookup -- see
-//! `service.rs`'s own doc comment for why that's a disclosed companion,
-//! not scope creep). `fidelity` is the KJV adapter's fail-loud boundary
-//! law (bijection + reconstruction, design doc P3), enforced automatically
-//! inside `GraphService::from_sources`/`build` -- an ingestion-time concern
-//! of this backend, not part of the generic port.
-//!
-//! The serialized one-artifact form (design doc P1, fully realized) lands
-//! at M-C when the parallel `data/compiled/*.json` artifacts retire; until
-//! then this crate and `atlas-etl` both derive from the same `data/raw/`,
-//! disclosed as a strangler deviation, not a quiet one.
+//! The storage/query port lives entirely in `atlas_graph_types::store`; this crate defines no
+//! competing trait, only implementations of it.
 
 pub mod attestation_pending;
 pub mod bible_container_adapter;
@@ -51,9 +26,6 @@ pub mod person_adapter;
 pub mod pipeline;
 pub mod place_adapter;
 pub mod polity_adapter;
-/// Batch PROV-1: the per-surface provenance companion index -- see that
-/// module's own header for why this is a companion index and NOT an
-/// `EdgeMeta` widening.
 pub mod provenance;
 pub mod red_letter_adapter;
 pub mod red_letter_spans;
@@ -71,17 +43,9 @@ pub use pipeline::{pipeline as compiler_pipeline, BuildCtx, Pass};
 pub use service::GraphService;
 pub use window::WindowDir;
 
-/// The wire/ETag form of a `GraphVersion` -- fixed-width lowercase hex, so
-/// equal stamps are byte-identical strings (no whitespace/case ambiguity
-/// for `If-None-Match` comparisons). A free function here, not a new impl
-/// added directly inside `graph-types` itself (deliberately -- the port is
-/// owner-approved and this batch touches no `graph-types` source file at
-/// all, even for a small additive `Display` impl; `GraphVersion`'s own
-/// `.0.0` field access is public, so this needs no such impl to exist).
+/// The wire/ETag form of a `GraphVersion`: fixed-width lowercase hex, so equal stamps compare
+/// byte-identical as `If-None-Match` strings. The width follows `ContentHash`, which the
+/// `canon-ids` feature widens, so it is never spelled out here.
 pub fn version_hex(v: atlas_graph_types::store::GraphVersion) -> String {
-    // DB-2a: delegated to `ContentHash::hex` rather than spelled with a
-    // width-baked `{:016x}` here, so the wire form follows the hash when
-    // the `canon-ids` feature widens it (16 hex chars off, 32 on) and
-    // this crate needs no feature knowledge of its own.
     v.0.hex()
 }

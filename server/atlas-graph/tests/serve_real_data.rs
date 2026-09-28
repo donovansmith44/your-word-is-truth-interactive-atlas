@@ -1,6 +1,3 @@
-//! DB-4c: every serving companion loaded from the section tables equals
-//! the artifact path's value, on the REAL data -- the equivalence gates
-//! that let `GraphService::from_sections` replace `from_artifact`.
 use std::path::Path;
 use std::sync::OnceLock;
 
@@ -14,9 +11,6 @@ fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
 
-/// DB-5: the reference is the served path itself (`from_sections`); the
-/// loaders below are what it runs, so each law now says "loaded through the
-/// service and loaded directly, equal" plus the shape checks on the values.
 fn artifact() -> &'static GraphService {
     static CACHED: OnceLock<GraphService> = OnceLock::new();
     CACHED.get_or_init(|| GraphService::from_sections(&data_dir()).expect("the sections open").0)
@@ -91,7 +85,6 @@ fn cross_refs_for_span_is_the_companions_slice() {
     for span in &spans {
         let got = snap.with_conn(|c| cross_refs_for_span(c, span)).unwrap();
         assert!(!got.is_empty(), "{span}");
-        // the artifact path answers through its Mem arm (the retained map, filtered to the span)
         assert_eq!(got, a.cross_refs_for_span(span), "{span}");
     }
     let one = snap.with_conn(|c| cross_refs_for_span(c, &spans[0])).unwrap();

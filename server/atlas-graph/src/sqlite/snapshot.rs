@@ -1,15 +1,6 @@
-//! DB-2b: `SqliteSnapshot` -- the read port (`GraphQuery` +
-//! `GraphSnapshot`) over the attached section files (spec §2.5, §5.2).
-//! Every answer must equal the in-memory `Graph`'s; `assert_answers_match`
-//! is the judge (the specimen in `sqlite_laws.rs`, the real graph in
-//! `sqlite_real_data.rs`).
-//!
-//! DB-4c (spec §2.5 step 3): one connection PER WORKER -- `open_with_workers`
-//! opens `n` read-only connections (each attaching the same files and
-//! building its own TEMP views), `with_conn` hands a query the first free
-//! one (round-robin `try_lock`, falling back to blocking on its own slot),
-//! and `PRAGMA mmap_size` is the attached files' sum (capped). `open` is
-//! the one-worker form the gates and `bibex verify` use.
+//! `SqliteSnapshot`: the read port over the attached section files. Every answer it gives must
+//! equal the in-memory `Graph`'s -- `assert_answers_match` is the judge -- and it holds one
+//! read-only connection per worker, a query taking the first free one.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -33,7 +24,6 @@ use super::{hash_bytes, hash_from_bytes, open_read_only, SqliteError};
 use crate::sections::Section;
 
 pub struct SqliteSnapshot {
-    /// One per worker (spec §2.5 step 3); a query takes the first free one.
     conns: Vec<Mutex<Connection>>,
     next: AtomicUsize,
     version: GraphVersion,
@@ -58,8 +48,7 @@ impl std::fmt::Debug for SqliteSnapshot {
     }
 }
 
-/// Spec §2.5 step 3: "capped by platform" -- 1 GiB covers the four
-/// shipped sections (356 MB) with room for the lexicon.
+/// 1 GiB: enough to map every shipped section, with room for the lexicon.
 pub const MMAP_CAP: u64 = 1 << 30;
 
 fn section_named(name: &str) -> Option<Section> {
@@ -67,21 +56,9 @@ fn section_named(name: &str) -> Option<Section> {
 }
 
 impl SqliteSnapshot {
-    /// The one-worker form (the gates, `bibex verify`, the tests).
-    /// ADMIT-PERF-1: one connection per core -- what an
-    /// `assert_answers_match` admission needs to actually use the cores its
-    /// sweep now spreads across (a single-connection pool would serialize
-    /// every worker on one mutex, and a pool SMALLER than the sweep's own
-    /// thread count leaves the surplus threads queueing: measured on this
-    /// box, 16 sweep threads against a pool of 8 swept in 397.4 s, against
-    /// a matched pool of 16 in 373.8 s).
-    ///
-    /// The pool is cheap where it matters: every connection opens the SAME
-    /// section files, so their `mmap` pages are one shared set in the page
-    /// cache, not a private copy each -- the per-connection cost is the
-    /// handles, the statement cache and address space, never the ~540 MB of
-    /// section bytes multiplied out. Capped at 16 anyway: past that the
-    /// sweep is bound by those shared pages, not by cores.
+    /// One connection per core, capped at 16: a pool smaller than the admission sweep's own thread
+    /// count leaves the surplus threads queueing on one mutex, and past 16 the sweep is bound by the
+    /// section pages every connection shares rather than by cores.
     pub fn admission_workers() -> usize {
         std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1).min(16)
     }
@@ -90,19 +67,9 @@ impl SqliteSnapshot {
         Self::open_with_workers(manifest_path, source, 1)
     }
 
-    /// Spec §2.5 steps 1–4: read + verify the manifest; resolve every
-    /// section through the `SectionSource` (DB-4b: `CommittedZstdSource`
-    /// verifies the transport hash and unpacks on a cache miss); then, for
-    /// each of `workers` connections: open `core` as `main`, ATTACH every
-    /// other present section under its name in manifest order, refuse a
-    /// `user_version` this build does not understand (spec §11, the
-    /// artifact wall's successor), `PRAGMA mmap_size`, `PRAGMA query_only =
-    /// ON`, and build the TEMP views `all_edge_index` and `all_node` over
-    /// the attached sections. A `required` section that cannot be resolved
-    /// is an error naming the section and its logical hash; an optional one
-    /// whose blob is MISSING is recorded absent and skipped -- any other
-    /// failure (a present but corrupt blob, an unpack error) is loud for
-    /// optional sections too.
+    /// A section whose `user_version` this build does not understand is refused. A `required`
+    /// section that cannot be resolved is an error naming it and its logical hash; only a MISSING
+    /// blob of an optional section is tolerated, recorded absent -- a corrupt one is loud too.
     pub fn open_with_workers(manifest_path: &Path, source: &dyn SectionSource, workers: usize) -> Result<SqliteSnapshot, SqliteError> {
         if workers == 0 {
             return Err(SqliteError("SqliteSnapshot needs at least one worker connection".into()));
@@ -153,7 +120,6 @@ impl SqliteSnapshot {
                 let sql = format!("ATTACH DATABASE ?1 AS {}", section.name());
                 conn.execute(&sql, [path.to_string_lossy().as_ref()])?;
             }
-            // The wall (spec §11): every attached file's own user_version.
             for (section, _) in &present {
                 let schema = if *section == Section::Core { "main".to_string() } else { section.name().to_string() };
                 let v: u32 = conn.query_row(&format!("PRAGMA {schema}.user_version"), [], |r| r.get(0))?;
@@ -164,16 +130,15 @@ impl SqliteSnapshot {
                     )));
                 }
             }
-            // `open_read_only` already set `query_only = ON`, which also
-            // refuses TEMP objects; lift it just long enough to build the two
-            // views (the file itself stays read-only through the open flag).
+            // `query_only = ON` also refuses TEMP objects, so it is lifted just long enough to build
+            // the two views; the file itself stays read-only through the open flag.
             conn.execute_batch(&format!(
                 "PRAGMA query_only = OFF; PRAGMA mmap_size = {mmap_bytes}; {edge_view}; {node_view}; PRAGMA query_only = ON;"
             ))?;
             conns.push(Mutex::new(conn));
         }
-        // DB-4a: the version IS the manifest root (spec 3.4) -- the same
-        // number `MemStore::publish` stamps from the in-memory graph.
+        // The version IS the manifest root: the same number `MemStore::publish` stamps from the
+        // in-memory graph.
         let version = ContentHash::from_hex(&manifest.root)
             .map(GraphVersion)
             .ok_or_else(|| SqliteError(format!("manifest root {} is not a ContentHash", manifest.root)))?;
@@ -208,10 +173,8 @@ impl SqliteSnapshot {
         self.mmap_bytes
     }
 
-    /// Runs `f` on the first free worker connection (round-robin start,
-    /// `try_lock` across all, then a blocking lock on the start slot).
-    /// `pub` so the serving companions (`sqlite::serve`, `sidecars::unfold`)
-    /// load over the same connections.
+    /// Runs `f` on the first free worker connection. `pub` so the serving companions load over the
+    /// same connections instead of opening their own.
     pub fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> Result<T, SqliteError>) -> Result<T, SqliteError> {
         let n = self.conns.len();
         let start = self.next.fetch_add(1, Ordering::Relaxed) % n;
@@ -244,14 +207,9 @@ impl SqliteSnapshot {
         }
     }
 
-    /// Paging is keyset, not OFFSET: `ord` IS the entry's position in the
-    /// in-memory `(subject, rel, dir)` list (spec §5.2), and those
-    /// positions are contiguous `0..n` across the attached sections, so
-    /// `ord >= cursor LIMIT limit` reads exactly the rows `skip(cursor).
-    /// take(limit)` reads -- O(limit) per page instead of O(cursor), and no
-    /// `COUNT(*)`: one extra row (`LIMIT limit + 1`) decides `next` --
-    /// `start + entries.len() < total` holds iff a row beyond the page
-    /// exists (`explore.rs`'s own rule, `limit = 0` included).
+    /// Paging is keyset, not OFFSET: `ord` IS the entry's position in the in-memory
+    /// `(subject, rel, dir)` list, and those positions are contiguous `0..n` across the attached
+    /// sections, so `ord >= cursor LIMIT limit + 1` reads one page plus the row that decides `next`.
     fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
         let (rel, dir, rel_name) = Self::code_of(q.kind);
         let subject = position_str(p);
@@ -319,8 +277,8 @@ impl GraphQuery for SqliteSnapshot {
             Ok(match payload {
                 Some(bytes) => {
                     let node = Node::decode(&bytes)?;
-                    // `PositionKind` is not a column: re-derive and compare,
-                    // so a pid of another kind with the same hash is refused.
+                    // `PositionKind` is not a column, so it is re-derived and compared: a pid of
+                    // another kind with the same hash is refused.
                     (node.pid() == *pid).then(|| node.canonical_bytes())
                 }
                 None => None,
@@ -380,9 +338,6 @@ impl GraphQuery for SqliteSnapshot {
         .unwrap_or_default()
     }
 
-    // ---- DB-3 (spec 4): the three overrides the section indexes answer
-    // directly; `nodes` and `edges_with_nodes` keep the trait's
-    // compositions (plan judgment call 2).
     fn nodes_of_kind(&self, kind: NodeKind, cursor: Option<usize>, limit: usize) -> NodePage {
         let start = cursor.unwrap_or(0);
         self.with_conn(|conn| {
@@ -408,9 +363,8 @@ impl GraphQuery for SqliteSnapshot {
         self.rows_behind(e).into_iter().next()
     }
 
-    /// Every DISTINCT `(row_family, row_id)` behind the id across the
-    /// attached sections, in `(family, id)` order -- the same order the
-    /// in-memory `edge_rows` keeps, so the first is the same first.
+    /// In `(family, id)` order -- the same order the in-memory `edge_rows` keeps, so the first row
+    /// behind an id is the same first on both sides.
     fn rows_behind(&self, e: &EdgeId) -> Vec<RowRef> {
         let Ok(blob) = super::writer::edge_id_blob(e) else { return Vec::new() };
         let justified = directed_rel_code(atlas_graph_types::edge::RelationId::JustifiedBy);

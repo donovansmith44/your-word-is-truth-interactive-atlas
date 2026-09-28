@@ -1,15 +1,4 @@
-//! Batch M-C, controller decision 2: the era adapter -- `Era` nodes for
-//! the map's own era selector/dropdown (design doc §3: "Era / Polity --
-//! time-range and border-bearing nodes for the map"). Source: `ctx.eras`
-//! (pre-parsed `data/curated/eras.toml` rows, via the SAME
-//! `atlas_etl::curated::parse_eras` the pre-M-C `eras.json` compilation
-//! path used -- see `pipeline::BuildCtx::eras`'s own doc comment for why
-//! this is NOT read off `AtlasData`, unlike this batch's other adapters).
-//!
-//! Node id: the curated era id itself (`atlas_core::data::Era.id`, e.g.
-//! `"patriarchs"`) -- stable, unique, human-legible, same "no numeric
-//! re-encoding needed" reasoning M-B's own Event/Narrative/Anchor/Place id
-//! grammar already established.
+//! `Era` nodes for the map's era selector. A node's raw id is the curated era id itself.
 
 use atlas_graph_types::id::EraId;
 use atlas_graph_types::node::{Node, NodePayload};
@@ -33,12 +22,8 @@ fn era_node(e: &atlas_core::data::Era) -> Node {
     }
 }
 
-/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`): one
-/// node per curated era. No relation rows -- a time range is the whole of
-/// what an Era node is for; nothing else references it (design's own
-/// edge-kind table names no era-targeting relation beyond `DatedBy`'s
-/// `EraOnly` placement form, which this batch's real data never exercises
-/// -- see `event_world::choose_placement`'s own doc comment).
+/// One node per curated era, and no relation rows: a time range is the whole of what an Era node
+/// is for, and nothing else references it.
 pub fn normalize(ctx: &mut BuildCtx) -> EraAdapterStats {
     let mut stats = EraAdapterStats::default();
     for e in ctx.eras {

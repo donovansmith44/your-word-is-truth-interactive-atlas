@@ -1,13 +1,6 @@
-//! DB-2b: the section partition (spec §2.1). Every node, every row and
-//! every index entry of the in-memory `Graph` is assigned to exactly one
-//! section, through DB-2a's `sections.rs` rules: nodes by
-//! `section_of_node`, rows by `row_tables_of` (+ `section_of_contains_bible`
-//! for the one family split by row), index entries by the ROW that
-//! produced them (`Graph::row_edges` names it; `edge_row_map` indexes it
-//! by edge id) -- a `justified-by` entry by its SOURCE row.
-//!
-//! Nothing here is a default: an index entry whose edge id names no row
-//! is an error, never a silent Core.
+//! Every node, row and index entry of the in-memory `Graph` is assigned to exactly one section.
+//! Nothing here defaults: an index entry whose edge id names no row is an error, never a silent
+//! Core.
 
 use std::collections::BTreeMap;
 
@@ -24,18 +17,16 @@ use super::rows::RowRef;
 use super::SqliteError;
 use crate::sections::{section_of_contains_bible, section_of_justified_by, section_of_node, Section};
 
-/// Spec §5.1 `edge_index.dir`.
 pub const DIR_FORWARD: i64 = 0;
 pub const DIR_INVERSE: i64 = 1;
 pub const DIR_SYMMETRIC: i64 = 2;
-/// Spec §5.1 `edge_index.rel`: symmetric relations are offset by 128.
+/// `edge_index.rel`: a symmetric relation's code is offset by 128.
 pub const SYMMETRIC_REL_BASE: i64 = 128;
 
-/// `RelationId` ordinal = its index in `RelationId::ALL` (declaration order).
+/// The ordinal is the relation's index in `RelationId::ALL`, so declaration order is the encoding.
 pub fn directed_rel_code(r: RelationId) -> i64 {
     RelationId::ALL.iter().position(|x| *x == r).expect("ALL lists every RelationId") as i64
 }
-/// `128 + SymRelationId` ordinal.
 pub fn symmetric_rel_code(s: SymRelationId) -> i64 {
     SYMMETRIC_REL_BASE + SymRelationId::ALL.iter().position(|x| *x == s).expect("ALL lists every SymRelationId") as i64
 }
@@ -45,7 +36,6 @@ pub fn rel_code_of(rel: EdgeRel) -> i64 {
         EdgeRel::Symmetric(s) => symmetric_rel_code(s),
     }
 }
-/// The inverse of `directed_rel_code` / `symmetric_rel_code`.
 pub fn rel_of_code(code: i64) -> Option<EdgeRel> {
     if code >= SYMMETRIC_REL_BASE {
         SymRelationId::ALL.get(usize::try_from(code - SYMMETRIC_REL_BASE).ok()?).map(|s| EdgeRel::Symmetric(*s))
@@ -100,7 +90,6 @@ pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeEntryOut {
     pub subject: Position,
-    /// `RelationId` ordinal, or `128 + SymRelationId` ordinal.
     pub rel: i64,
     /// 0 forward | 1 inverse | 2 symmetric.
     pub dir: i64,
@@ -118,9 +107,8 @@ pub struct EdgeEntryOut {
 /// Everything one section file holds, borrowed from the Graph.
 pub struct SectionPartition<'a> {
     pub section: Section,
-    /// Sorted by `any_node_id_str` BYTE order -- the same key SQLite's
-    /// `ORDER BY id` (TEXT) uses, so the logical dump agrees on both
-    /// sides. (`AnyNodeId: Ord` is `(kind, raw)`, which is NOT that order.)
+    /// Sorted by `any_node_id_str` BYTE order -- the key SQLite's `ORDER BY id` (TEXT) uses, so the
+    /// logical dump agrees on both sides. `AnyNodeId: Ord` is `(kind, raw)`, which is NOT that order.
     pub nodes: Vec<&'a Node>,
     /// Family by `row_tables_of(section)` order, then global ord ascending.
     pub rows: Vec<(RowFamily, i64, RowRef<'a>)>,
@@ -130,11 +118,8 @@ pub struct SectionPartition<'a> {
     pub spine: Option<(&'static str, &'a [AnyNodeId])>,
 }
 
-/// The section's rows: every family `row_tables_of(section)` names, in
-/// that order; `ContainsBible` filtered by `section_of_contains_bible`.
-/// The global ord is the row's index in its family Vec (`row_ord` of
-/// `Graph::row_edges`) -- the same number for the core and kjv halves of
-/// `contains_bible`, so an ord is unique within its family across sections.
+/// The global ord is the row's index in its family Vec -- the same number for the core and kjv
+/// halves of `contains_bible`, so an ord is unique within its family across sections.
 pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, RowRef<'a>)> {
     fn all<'a, T>(f: RowFamily, v: &'a [T], wrap: fn(&'a T) -> RowRef<'a>) -> Vec<(RowFamily, i64, RowRef<'a>)> {
         v.iter().enumerate().map(|(i, r)| (f, i as i64, wrap(r))).collect()
@@ -179,13 +164,9 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
     out
 }
 
-/// Edge id -> EVERY row minting it, in `row_edges` order, as (family,
-/// global ord, container raw for `ContainsBible` rows). LEX-1: two rows
-/// CAN mint one id (two tokens of one entry in one verse: identical
-/// `(rel, subject, object)`), and each has its own index entry -- so
-/// `partition` pairs the k-th index entry under an id with the k-th row,
-/// and `rows_behind` lists them all (the leper lesson). Before LEX-1 every
-/// Vec here had one element.
+/// Edge id -> EVERY row minting it, in `row_edges` order. Two rows CAN mint one id (two tokens of
+/// one lexicon entry in one verse share `(rel, subject, object)`) and each has its own index entry,
+/// so the k-th index entry under an id belongs to the k-th row.
 pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> {
     let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> = BTreeMap::new();
     for e in g.row_edges() {
@@ -199,8 +180,7 @@ pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<S
     map
 }
 
-/// One partition per `Section::SHIPPED` entry (all five of
-/// `MANIFEST_ORDER` since LEX-1; a manifest lists shipped sections only).
+/// One partition per `Section::SHIPPED` entry; a manifest lists shipped sections only.
 pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     let sections: Vec<Section> = Section::SHIPPED.to_vec();
     let slot = |s: Section| sections.iter().position(|x| *x == s).expect("every shipped section has a slot");
@@ -208,10 +188,8 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     let mut nodes: Vec<Vec<&Node>> = vec![Vec::new(); sections.len()];
     for n in g.nodes.values() {
         let section = section_of_node(n);
-        // A node routed to a section that is not shipped is an error, never
-        // a silent drop or a default into core (DB-3's guard, kept: today
-        // every section ships, so this cannot fire; a future section added
-        // to MANIFEST_ORDER before SHIPPED would).
+        // A node routed to a section that is not shipped is an error, never a silent drop or a
+        // default into core. Today every section in `MANIFEST_ORDER` ships, so this cannot fire.
         let Some(i) = sections.iter().position(|x| *x == section) else {
             return Err(SqliteError(format!(
                 "node {} routes to the {:?} section, which is not a shipped section",
@@ -229,19 +207,15 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64, Option<String>)>, SqliteError> {
         map.get(eid).ok_or_else(|| SqliteError(format!("index entry {} names no row (edge_row_map)", eid.0)))
     };
-    // The k-th index entry under (edge id, direction, subject) is the k-th
-    // row minting that id: `build_indexes` pushes one entry per row, in
-    // `row_edges` order, and `place` walks each subject's entries in that
-    // same order. Keyed by subject too because a symmetric row's entries
-    // sit under BOTH ends.
+    // Keyed by subject as well as id and direction: a symmetric row's entries sit under BOTH ends,
+    // and within one subject the k-th entry is the k-th row minting that id.
     let mut seen: BTreeMap<(EdgeId, i64, String), usize> = BTreeMap::new();
     let mut edges: Vec<Vec<EdgeEntryOut>> = vec![Vec::new(); sections.len()];
     let mut place = |subject: &Position, rel: i64, dir: i64, ord: usize, object: &Position, eid: &EdgeId, meta: &EdgeMeta, justified: bool| -> Result<(), SqliteError> {
         let (fam, row_id, container) = if justified {
-            // A justified-by entry runs edge -> ground node; the forward
-            // reading has the SOURCE edge as subject, the inverse reading
-            // has it as object. Either way the row is the source row (the
-            // FIRST behind that id: grounds are synthesised per id).
+            // A justified-by entry runs edge -> ground node, so the forward reading has the source
+            // edge as subject and the inverse reading has it as object. Either way the row is the
+            // first behind that id, since grounds are synthesised per id.
             let source = if dir == DIR_FORWARD { subject } else { object };
             match source {
                 Position::Edge(source) => &rows_of(source)?[0],

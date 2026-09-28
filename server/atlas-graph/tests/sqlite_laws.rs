@@ -1,6 +1,3 @@
-//! DB-2b laws on synthetic data: the seams the section writer and the
-//! SqliteSnapshot are built from, each proven in isolation before the
-//! real-data gate (`sqlite_real_data.rs`) composes them.
 use atlas_graph::sqlite::blob::sha256_hex_of_file;
 use atlas_graph::sqlite::extras::Extras;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout, SectionSource};
@@ -10,13 +7,10 @@ use atlas_graph::sqlite::{
 };
 use atlas_graph_types::id::ContentHash;
 
-/// DB-4b: a test's private layout -- `compiled/` (manifest + `sections/`)
-/// and `cache/sections/` under one temp dir.
 fn layout_under(dir: &std::path::Path) -> SectionLayout {
     SectionLayout { compiled_dir: dir.join("compiled"), cache_dir: dir.join("cache").join("sections") }
 }
 
-/// Opens what `write_sections` wrote under `dir`, through the committed source.
 fn open_written(dir: &std::path::Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::SqliteError> {
     let layout = layout_under(dir);
     SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout })
@@ -63,9 +57,6 @@ fn pragmas_are_stamped_and_read_back_from_a_read_only_open() {
     );
 }
 
-// ---------------------------------------------------------------------
-// Task 3: DDL per section; the LOCUS / RANGE / AUTHORED column codec
-// ---------------------------------------------------------------------
 use atlas_graph::sections::Section;
 use atlas_graph::sqlite::columns::{
     bible_locus_values, locus_columns, read_bible_locus, read_justification, JustificationWriter,
@@ -96,7 +87,6 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
         assert_eq!(uv, 14);
         assert_eq!(logical_table_order(s)[0], "node");
     }
-    // Every family has exactly one home except ContainsBible (core + kjv).
     let mut homes: std::collections::BTreeMap<RowFamily, usize> = Default::default();
     for s in Section::MANIFEST_ORDER {
         for f in row_tables_of(s) {
@@ -188,9 +178,6 @@ fn a_justification_with_three_ground_kinds_round_trips_and_an_empty_one_is_null(
     assert_eq!(n, 3);
 }
 
-// ---------------------------------------------------------------------
-// Task 4: row writers and readers for all 21 families
-// ---------------------------------------------------------------------
 use atlas_graph::sqlite::rows::{insert_row, read_rows, RowRef};
 use atlas_graph_types::canon::encode_row_in_family;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
@@ -225,7 +212,6 @@ fn cl(part: u8, article: u16, paragraph: u16) -> ConcordLocus {
 fn span(start: u16, end: u16) -> TokenSpan {
     TokenSpan::new(TranslationId("kjv".into()), start, end).expect("test span must be ordered")
 }
-/// A justification exercising all three `Ground` variants and the prose.
 fn full_justification() -> Justification {
     let grounds: BTreeSet<Ground> = [
         Ground::Scripture(blr((40, 3, 13), (40, 3, 17))),
@@ -237,41 +223,29 @@ fn full_justification() -> Justification {
     Justification { text: Some("Jordan, at Bethabara".into()), grounds }
 }
 
-/// One hand-built row per family plus the nodes and spines the rows
-/// refer to. The 21 row constructions are COPIED VERBATIM from the golden
-/// test `graph-types/tests/canon_row_vectors.rs` (DB-2a), so their
-/// canonical bytes are ALREADY pinned there (container ids renamed so
-/// spec 2.1's placement rule splits them: `passage-` -> core,
-/// `bible-book-`/`bible-chapter-` -> kjv, `concord-` -> concord); extra
-/// rows cover the other `ContainerContent` shape of each corpus and every
-/// `DatePlacement` kind.
 fn specimen_graph() -> atlas_graph_types::graph::Graph {
     use atlas_graph_types::graph::{Graph, ReadingSpine};
     use atlas_graph_types::id::{AnyNodeId, NodeKind};
     use atlas_graph_types::node::{Node, NodePayload};
     let mut g = Graph::default();
-    // 1. contains_bible -- the flat-loci content, a non-empty set.
     g.contains_bible.push(Contains::<BibleTag> {
         container: ContainerNodeId::new("passage-creation"),
         content: ContainerContent::Loci(LocusSet([bl(1, 1, 1), bl(1, 1, 2)].into_iter().collect())),
         provenance: "kjv".into(),
         justification: Justification::default(),
     });
-    // 1b. contains_bible -- the child-container content.
     g.contains_bible.push(Contains::<BibleTag> {
         container: ContainerNodeId::new("bible-book-GEN"),
         content: ContainerContent::Container(ContainerNodeId::new("bible-chapter-GEN-1")),
         provenance: "kjv".into(),
         justification: full_justification(),
     });
-    // 2. contains_concord -- the recursive child-container content.
     g.contains_concord.push(Contains::<ConcordTag> {
         container: ContainerNodeId::new("concord-ac"),
         content: ContainerContent::Container(ContainerNodeId::new("concord-ac-1")),
         provenance: "concord".into(),
         justification: Justification::default(),
     });
-    // 2b. contains_concord -- a loci set of two, one with a span.
     g.contains_concord.push(Contains::<ConcordTag> {
         container: ContainerNodeId::new("concord-ac-1"),
         content: ContainerContent::Loci(LocusSet(
@@ -282,14 +256,12 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         provenance: "concord".into(),
         justification: Justification::default(),
     });
-    // 3. attests
     g.attests.push(Attests {
         event: EventId::new("jesus-baptized"),
         attestation: blr((40, 3, 13), (40, 3, 17)),
         provenance: "curated/events".into(),
         justification: full_justification(),
     });
-    // 4. succession
     g.succession.push(
         Succession::new(
             NarrativeId::new("life-of-christ"),
@@ -299,14 +271,12 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         )
         .expect("a distinct, non-empty chain"),
     );
-    // 5. canon_succession
     g.canon_succession.push(CanonSuccession {
         prior: ContainerNodeId::new("bible/GEN.50"),
         next: ContainerNodeId::new("bible/EXO.1"),
         provenance: "canon".into(),
         justification: Justification::default(),
     });
-    // 6. dated_by (the four placement kinds, so every reader arm fires)
     g.dated_by.push(DatedBy {
         event: EventId::new("exodus"),
         placement: DatePlacement::AnchorBinding { anchor: AnchorId::new("abraham-called"), offset: Duration::years(430) },
@@ -338,21 +308,18 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         justification: Justification::default(),
         provenance: "ussher".into(),
     });
-    // 7. located_at
     g.located_at.push(LocatedAt {
         event: EventId::new("jesus-baptized"),
         place: PlaceId::new("jordan-river"),
         provenance: "curated/events".into(),
         justification: full_justification(),
     });
-    // 8. fulfills
     g.fulfills.push(Fulfills {
         prophecy: blr((23, 7, 14), (23, 7, 14)),
         fulfillment: blr((40, 1, 22), (40, 1, 23)),
         provenance: "curated/fulfillment".into(),
         justification: full_justification(),
     });
-    // 9. typology -- `note` present.
     g.typology.push(Typology {
         type_passage: blr((4, 21, 8), (4, 21, 9)),
         antitype_passage: blr((43, 3, 14), (43, 3, 14)),
@@ -360,48 +327,41 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         provenance: "curated/typology".into(),
         justification: Justification::default(),
     });
-    // 10. named_after
     g.named_after.push(NamedAfter {
         namesake: Namesake::PeopleGroup(PeopleGroupId::new("tribe-of-judah")),
         eponym: PersonId::new("judah"),
         provenance: "curated/peoples".into(),
         justification: Justification::default(),
     });
-    // 11. catechism -- a Concord-side TextLocus.
     g.catechism.push(CatechismLink {
         locus: TextLocus { at: TextRef::Concord(ConcordRef { part: 1, article: 2, paragraph: 3 }), span: None },
         item: CatechismItemId::new("sc/1st-commandment"),
         provenance: "small-catechism".into(),
         justification: Justification::default(),
     });
-    // 12. comments_on
     g.comments_on.push(CommentsOn {
         item: CommentaryItemId::new("kretzmann/JHN.3.16"),
         on: blr((43, 3, 16), (43, 3, 16)),
         provenance: "kretzmann".into(),
         justification: Justification::default(),
     });
-    // 13. spoken_by
     g.spoken_by.push(SpokenBy {
         locus: blr((43, 3, 16), (43, 3, 21)),
         speaker: PersonId::new("jesus"),
         provenance: "red-letter".into(),
         justification: Justification::default(),
     });
-    // 14. spoken_at
     g.spoken_at.push(SpokenAt {
         locus: blr((43, 3, 16), (43, 3, 21)),
         place: PlaceId::new("jerusalem"),
         provenance: "red-letter".into(),
         justification: Justification::default(),
     });
-    // 15. mentions -- a locus WITH a token span (the layer-tagged case).
     g.mentions.push(Mentions {
         locus: TextLocus { at: TextRef::Bible(vr(7, 1, 2)), span: Some(span(3, 5)) },
         entity: MentionedEntity::PeopleGroup(PeopleGroupId::new("tribe-of-judah")),
         provenance: "theographic".into(),
     });
-    // 16. cross_refs -- `to_last` present, votes carried.
     g.cross_refs.push(CrossRef {
         from: tl(51, 1, 15),
         to: tl(51, 1, 16),
@@ -410,36 +370,29 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         votes: 7,
         provenance: "openbible-xrefs".into(),
     });
-    // 17. quotes
     g.quotes.push(Quotes { quoting: tl(40, 4, 4), quoted: blr((5, 8, 3), (5, 8, 3)), provenance: "curated/quotes".into() });
-    // 18. confesses -- a Concord locus confessing Scripture.
     g.confesses.push(Confesses {
         confessing: cl(1, 2, 3),
         confessed: blr((45, 3, 28), (45, 3, 28)),
         provenance: "concord".into(),
         justification: full_justification(),
     });
-    // 19. corresponds_bible -- span-level alignment.
     g.corresponds_bible.push(Corresponds::<BibleTag> {
         a: Locus { unit: vr(43, 3, 16), span: Some(span(0, 4)) },
         b: Locus { unit: vr(43, 3, 16), span: Some(span(5, 9)) },
         provenance: "alignment".into(),
     });
-    // 20. temporal_adjacency
     g.temporal_adjacency.push(TemporalAdjacency {
         earlier: EventId::new("nativity"),
         later: EventId::new("jesus-baptized"),
         provenance: "derived/chronology".into(),
     });
-    // 21. analogue
     g.analogue.push(Analogue {
         a: EventId::new("leper-healed-galilee"),
         b: EventId::new("leper-healed-capernaum"),
         provenance: "curated/analogues".into(),
     });
 
-    // 22. occurs (LEX-1): two tokens of one entry in one verse (ONE edge,
-    // two rows behind it), and one Hebrew token on the next verse.
     let word = |book: u8, chapter: u16, verse: u16, layer: &str, tok: u16| TextLocus {
         at: TextRef::Bible(vr(book, chapter, verse)),
         span: Some(TokenSpan::new(TranslationId(layer.into()), tok, tok).unwrap()),
@@ -448,13 +401,10 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 3), provenance: "stepbible-tagnt".into() });
     g.occurs.push(Occurs { entry: LexiconEntryId::new("H0430"), locus: word(1, 1, 2, "hebrew_masoretic", 2), provenance: "stepbible-tahot".into() });
 
-    // 23-25. D5: kinship and participation -- Abraham > Isaac, Abraham + Sarah,
-    // Abraham takes part in the baptism-era event this specimen already has.
     g.parent_of.push(ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() });
     g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
 
-    // Nodes the rows can reach from an edge endpoint, and the two spines.
     let node = |kind: NodeKind, raw: &str, payload: NodePayload| Node {
         id: AnyNodeId { kind, raw: raw.to_string() },
         payload,
@@ -482,14 +432,12 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
                 text: "For God so loved the world...".into(),
             },
         ),
-        // DB-4b: one node of each projected kind (place / era / polity_era).
         node(
             NodeKind::Place,
             "ur-1",
             NodePayload::Place { canonical: "Ur".into(), lat: 30.96, lon: 46.1, aliases: vec![], description: None },
         ),
         node(NodeKind::Era, "patriarchs", NodePayload::Era { label: "Patriarchs".into(), from_year: -2100, to_year: -1800 }),
-        // LEX-1: the two entries the occurs rows name (one with domains, one bare).
         node(
             NodeKind::LexiconEntry,
             "G3056",
@@ -567,8 +515,6 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g
 }
 
-/// Every row of the section's families, borrowed, in family order --
-/// the explicit per-family chain (Task 5 swaps in `partition::rows_of_section`).
 fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> Vec<RowRef<'_>> {
     let mut out = Vec::new();
     for f in row_tables_of(s) {
@@ -631,9 +577,6 @@ fn every_family_round_trips_through_its_columns_with_identical_canon_bytes() {
     }
 }
 
-// ---------------------------------------------------------------------
-// Task 5: the partition, the manifest, and the writer
-// ---------------------------------------------------------------------
 use atlas_graph::sqlite::manifest::{read_manifest, root_of, Manifest, ManifestSection};
 use atlas_graph::sqlite::partition::{edge_row_map, partition};
 use atlas_graph::sqlite::writer::write_sections;
@@ -667,8 +610,6 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
                 assert_eq!(atlas_graph::sections::section_of_justified_by(e.row_family, raw.as_deref()), p.section);
             } else {
                 saw_justified = true;
-                // A justified-by entry's row is its SOURCE row, and its
-                // section is that row's section.
                 let end = if e.dir == 0 { &e.subject } else { &e.object };
                 let source = match end {
                     atlas_graph_types::id::Position::Edge(id) => id,
@@ -757,9 +698,6 @@ fn the_writer_produces_five_files_named_by_logical_hash_and_a_manifest_in_order(
     assert_eq!(files.len(), 5, "stale blobs are deleted after a rewrite: {files:?}");
 }
 
-// ---------------------------------------------------------------------
-// Task 6: the logical dump from the SQLite file agrees with the partition
-// ---------------------------------------------------------------------
 use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
 use atlas_graph_types::sections::logical_dump_section;
 
@@ -810,9 +748,6 @@ fn a_changed_row_changes_the_logical_hash_and_a_changed_timestamp_does_not() {
     assert_ne!(m3.root, m1.root);
 }
 
-// ---------------------------------------------------------------------
-// Task 7: SqliteSnapshot -- the read port over the attached sections
-// ---------------------------------------------------------------------
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
 use atlas_graph_types::store::{assert_answers_match, GraphQuery, GraphSnapshot};
 
@@ -827,8 +762,6 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
     let snap = open_written(&dir).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Concord, Section::Kretzmann, Section::Lexicon]);
     assert_answers_match(&snap, &g);
-    // LEX-1: two rows behind ONE occurs-in edge (the leper lesson), the
-    // verse's `words` summary, and the inverse page back to the entry.
     {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
         use atlas_graph_types::explore::EdgeQuery;
@@ -873,9 +806,8 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
         k,
         atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::CommentsOn, _)
     )));
-    drop(snap); // Windows holds an open section file locked
-    // LEX-1: the lexicon section is optional too -- absent, its entries are
-    // uninhabited and a verse has no `words`.
+    // Windows keeps an open section file locked, so the snapshot must be dropped before the file can be removed.
+    drop(snap);
     let lx = written.iter().find(|w| w.section == Section::Lexicon).unwrap();
     std::fs::remove_file(&lx.path).unwrap();
     std::fs::remove_file(&lx.blob_path).unwrap();
@@ -909,8 +841,6 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
     let _ = std::fs::remove_dir_all(&dir);
     write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let snap = open_written(&dir).unwrap();
-    // The container with a Loci set of two verses has 2 Contains entries:
-    // walk every (cursor, limit) in 0..=3.
     let container = atlas_graph_types::edge::at(
         &g.contains_bible
             .iter()
@@ -932,9 +862,6 @@ fn paging_semantics_match_explore_rs_at_every_cursor_and_limit() {
     }
 }
 
-// ---------------------------------------------------------------------
-// DB-3 Task 3: the SqliteSnapshot overrides for the widened port
-// ---------------------------------------------------------------------
 #[test]
 fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() {
     use atlas_graph_types::edge::{at, Direction, EdgeId, EdgeKind, RelationId, SymRelationId};
@@ -947,8 +874,6 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     let _ = std::fs::remove_dir_all(&dir);
     write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     let snap = open_written(&dir).unwrap();
-    // nodes_of_kind pages across sections (Container lives in core, kjv AND
-    // concord) in one byte order.
     let containers = snap.nodes_of_kind(NodeKind::Container, None, 2);
     assert_eq!(
         containers.ids.iter().map(|i| i.raw.as_str()).collect::<Vec<_>>(),
@@ -963,8 +888,6 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     assert_eq!(rest.next, None);
     assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2, "LEX-1: the specimen carries two entries");
     assert_eq!(snap.nodes_of_kind(NodeKind::Container, Some(1), 0).next, Some(1), "limit 0 with more: next = cursor");
-    // row_provenance: a directed row, a symmetric row, a justified-by edge
-    // (None, judgment call 3), an unknown id (None).
     let located = g
         .edges(
             &at(&g.located_at[0].event.erase()),
@@ -987,8 +910,6 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
         snap.row_provenance(&analogue).map(|r| (r.family, r.provenance)),
         Some((RowFamily::Analogue, "curated/analogues".into()))
     );
-    // add_justified_by fans out grounds for DatedBy/Fulfills/Typology/NamedAfter
-    // rows only; the specimen's second dated_by row carries full_justification().
     let dated = g
         .edges(
             &at(&g.dated_by[1].event.erase()),
@@ -1008,19 +929,14 @@ fn the_sqlite_overrides_answer_the_widened_port_exactly_as_the_specimen_graph() 
     assert_eq!(snap.row_provenance(&justified), None, "a synthesised edge has no row");
     assert_eq!(g.row_provenance(&justified), None, "and the model agrees");
     assert_eq!(snap.row_provenance(&EdgeId(format!("LocatedAt:{}", "0".repeat(HASH_WIDTH * 2)))), None);
-    // position_of over both spines and off-spine.
     let v2 = &g.reading["bible"].order[1];
     assert_eq!(snap.position_of("bible", v2), Some(1));
     assert_eq!(snap.position_of("concord", v2), None);
     assert_eq!(snap.position_of("bible", &g.located_at[0].event.erase()), None);
     assert_eq!(snap.position_of("nope", v2), None);
-    // And the whole harness, which now covers the five methods.
     assert_answers_match(&snap, &g);
 }
 
-// ---------------------------------------------------------------------
-// DB-4a: one root
-// ---------------------------------------------------------------------
 #[test]
 fn the_sqlite_snapshots_version_is_the_manifest_root_and_equals_the_in_memory_root() {
     let mut g = specimen_graph();
@@ -1034,8 +950,6 @@ fn the_sqlite_snapshots_version_is_the_manifest_root_and_equals_the_in_memory_ro
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "and equals the in-memory root (one root, spec 3.4)");
 }
 
-/// DB-4a: `MemStore::publish` stamps the manifest root (the atlas workspace
-/// runs `canon-ids` ON).
 #[test]
 fn mem_store_stamps_the_same_root_the_sections_carry() {
     use atlas_graph_types::store::{GraphPublisher, MemStore};
@@ -1050,10 +964,6 @@ fn mem_store_stamps_the_same_root_the_sections_carry() {
     assert_eq!(v.0.hex(), m.root, "what MemStore stamps is what the manifest says");
 }
 
-// ---------------------------------------------------------------------
-// DB-4b: extras -- the non-graph tables (projections, chronology, headings,
-// red-letter spans, sidecars) through one row shape
-// ---------------------------------------------------------------------
 use atlas_graph::sqlite::extras::{read_table, row_body, spec_named, table_specs_of, Col};
 use atlas_graph_types::chrono::{ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 
@@ -1111,7 +1021,6 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
             basis: PlacementBasis::Textual,
         },
     );
-    // DB-4c: source_meta rides along (the Event wire's curated to_year/order_key); e2 has none.
     let mut source_meta = std::collections::HashMap::new();
     source_meta.insert("e1".to_string(), atlas_graph::event_world::SourceEventMeta { to_year: -990, order_key: 7 });
     let chrono = atlas_graph::event_world::ChronologyDerivation {
@@ -1163,7 +1072,6 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
         }
         assert_eq!(logical_hash(&logical_dump_of_db(&conn, w.section).unwrap()), w.logical, "{:?}", w.section);
     }
-    // a graph nobody attached to writes empty extra tables and a different root
     let mut bare = specimen_graph();
     bare.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut bare);
@@ -1173,9 +1081,6 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     assert_ne!(m2.root, _m.root, "the extras are in the root");
 }
 
-// ---------------------------------------------------------------------
-// DB-4b: zstd blobs, the committed source and the cache (spec 2.3, 2.4, 11)
-// ---------------------------------------------------------------------
 #[test]
 fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_hash() {
     let mut g = specimen_graph();
@@ -1197,7 +1102,6 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
         let ms = m.sections.iter().find(|s| s.name == w.section.name()).unwrap();
         assert_eq!((ms.blob.as_str(), ms.bytes), (w.blob.as_str(), w.bytes));
     }
-    // a cold cache: delete it, resolve through the source, get a byte-identical file back
     let core_cache = layout.cache_path(&written[0].logical);
     let before = std::fs::read(&core_cache).unwrap();
     std::fs::remove_file(&core_cache).unwrap();
@@ -1205,7 +1109,6 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
     let resolved = src.resolve(&m.sections[0]).unwrap();
     assert_eq!(resolved, core_cache);
     assert_eq!(std::fs::read(&resolved).unwrap(), before, "unpacking the blob reproduces the written file byte for byte");
-    // a tampered blob is refused, both hashes named, and nothing lands in the cache
     std::fs::remove_file(&core_cache).unwrap();
     let mut bytes = std::fs::read(&written[0].blob_path).unwrap();
     let last = bytes.len() - 1;
@@ -1214,7 +1117,6 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
     let err = src.resolve(&m.sections[0]).unwrap_err().to_string();
     assert!(err.contains(&m.sections[0].blob) && err.contains("transport hash"), "{err}");
     assert!(!core_cache.exists() && !layout.cache_dir.join(format!("{}.sqlite.tmp", written[0].logical)).exists());
-    // the snapshot refuses it too -- core is required
     let open_err = open_written(&dir).unwrap_err().to_string();
     assert!(open_err.contains("required section core") && open_err.contains("transport hash"), "{open_err}");
 }
@@ -1270,7 +1172,6 @@ fn a_recompile_is_idempotent_and_reuses_unchanged_blobs() {
         .filter(|n| n.starts_with("core."))
         .collect();
     assert_eq!(stale.len(), 1, "the stale core blob was deleted: {stale:?}");
-    // meta carries no timestamp: the section file itself is a pure function of the content
     let conn = open_read_only(&w3[1].path).unwrap();
     let built: Option<String> = conn.query_row("SELECT value FROM meta WHERE key = 'built'", [], |r| r.get(0)).ok();
     assert!(built.is_none(), "meta.built is gone (it would move the blob hash every compile)");
@@ -1286,9 +1187,6 @@ fn the_blob_constants_are_the_specs() {
     assert_eq!(layout.cache_path("abc"), std::path::Path::new("data").join("cache").join("sections").join("abc.sqlite"));
 }
 
-// ---------------------------------------------------------------------
-// DB-4c: one connection per worker, mmap, the user_version wall (spec 2.5, 11)
-// ---------------------------------------------------------------------
 #[test]
 fn the_snapshot_opens_one_connection_per_worker_and_every_one_answers() {
     let mut g = specimen_graph();
@@ -1351,7 +1249,6 @@ fn a_section_with_an_unknown_user_version_is_refused_like_an_old_artifact() {
     let _ = std::fs::remove_dir_all(&dir);
     let layout = layout_under(&dir);
     let (m, _) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
-    // tamper the cached concord file's user_version (the cache is trusted by name, so the wall must catch it)
     let concord = layout.cache_path(&m.sections[2].logical);
     let conn = rusqlite::Connection::open(&concord).unwrap();
     conn.execute_batch("PRAGMA user_version = 99;").unwrap();

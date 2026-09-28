@@ -1,7 +1,4 @@
-//! DB-2b: the SQLite section artifact (spec §2, §5, §6) — writer,
-//! logical dump, manifest and the `SqliteSnapshot` read port. Everything
-//! SQLite in the workspace lives under this module; `graph-types` never
-//! sees it (zero-dep covenant, spec §1.2).
+//! The SQLite section artifact: writer, logical dump, manifest and the read port.
 pub mod blob;
 pub mod columns;
 pub mod ddl;
@@ -22,9 +19,9 @@ use std::path::Path;
 use atlas_graph_types::id::ContentHash;
 use rusqlite::{Connection, OpenFlags};
 
-/// Spec §5.0: every section's `PRAGMA user_version`.
+/// Every section file's `PRAGMA user_version`.
 pub const SCHEMA_VERSION: u32 = 14;
-/// Spec §5.0: 'BLGA'.
+/// Every section file's `PRAGMA application_id`: the ASCII bytes `BLGA`.
 pub const APPLICATION_ID: u32 = 0x424C_4741;
 /// Bytes per hash column (`node.pid`, `edge_index.edge_id`): the current
 /// `ContentHash` width — 8 while `canon-ids` is off, 16 once it is on.
@@ -55,13 +52,11 @@ impl From<std::io::Error> for SqliteError {
     }
 }
 
-// The hash width is graph-types' feature, which this crate cannot `cfg`
-// on. `ContentHash::hex()` exists in both states and is width-honest
-// (16 hex chars OFF, 32 ON), so the BLOB is the hex decoded to bytes —
-// one path, no cfg. OFF: `hex()` is `{:016x}` of the u64, so the 8 bytes
-// ARE the big-endian u64; ON: the 16 bytes themselves.
+// The hash width is a graph-types feature this crate cannot `cfg` on, and `ContentHash::hex`
+// is width-honest in both states, so the BLOB is that hex decoded back to bytes: one path,
+// no cfg, and the column width follows the hash.
 pub fn hash_bytes(h: &ContentHash) -> Vec<u8> {
-    let hex = h.hex(); // 16 or 32 lowercase hex chars
+    let hex = h.hex();
     (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).expect("ContentHash::hex is hex"))
@@ -89,8 +84,7 @@ pub fn open_read_only(path: &Path) -> Result<Connection, SqliteError> {
     Ok(conn)
 }
 
-/// Spec §5.0 pragmas. Run BEFORE any table exists — `page_size` and
-/// `encoding` only take effect on an empty file.
+/// Run BEFORE any table exists: `page_size` and `encoding` only take effect on an empty file.
 pub fn stamp_pragmas(conn: &Connection) -> Result<(), SqliteError> {
     conn.execute_batch(&format!(
         "PRAGMA page_size = 4096; PRAGMA encoding = 'UTF-8'; PRAGMA journal_mode = OFF; \

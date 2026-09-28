@@ -1,35 +1,6 @@
-//! Batch CORP-1a ("brain-fuel editions: the ingestion half"): the graph
-//! half of `atlas_etl::brainfuel` -- merges each of the six ingested
-//! editions' own renderings onto the ALREADY-BUILT KJV `TextUnit` nodes
-//! (sweep F1: one node per skeleton position, all layer renderings as
-//! payload) and authors one `Translation` node per ingested edition, so a
-//! rendering's own `TranslationId` resolves to a real node (batch brief
-//! controller decision 6). Runs in NORMALIZE, immediately after
-//! `kjv_adapter::normalize` (module doc comment on `pipeline.rs`'s own
-//! `NormalizePass`) -- a real, disclosed in-stage ordering dependency: this
-//! adapter MUTATES the TextUnit nodes `kjv_adapter::normalize` just
-//! inserted, rather than creating new ones, so those nodes must already
-//! exist.
-//!
-//! No pre-existing KJV `Translation` node was found anywhere in this
-//! codebase to "follow the pattern of" (searched exhaustively -- disclosed
-//! in this batch's own report): `NodePayload::Translation`/`NodeKind::
-//! Translation` exist in `graph-types` but had never once been
-//! instantiated before this batch. This adapter follows the closest real
-//! precedent instead -- the general "adapter constructs a `Node` directly
-//! and inserts it into `ctx.graph.nodes`" shape every simple label-payload
-//! NORMALIZE adapter already uses (e.g. `catechism_adapter::normalize`'s
-//! own `NodePayload::CatechismItem { label }` nodes) -- and authors nodes
-//! ONLY for the SIX editions this batch actually ingests (controller
-//! decision 6: "one node per ingested edition"), not for KJV itself (the
-//! pre-existing canonical layer, not "ingested" by this batch).
-//!
-//! A rendering's `TranslationId` and its own `Translation` node's
-//! `AnyNodeId.raw` deliberately share ONE string space (both are exactly
-//! `atlas_etl::brainfuel::EDITIONS`'s own slugs, e.g. `"latin_vulgate"`) --
-//! literally the same "which translation" fact, viewed from the payload
-//! side and the node-identity side; no separate mapping table exists or is
-//! needed between them.
+//! Merges each ingested edition's rendering onto the ALREADY-BUILT KJV `TextUnit` nodes, so this
+//! pass must run after `kjv_adapter::normalize`: it mutates those nodes instead of creating them.
+//! A rendering's `TranslationId` and its `Translation` node's raw id are one string space of slugs.
 
 use atlas_graph_types::id::TranslationNodeId;
 use atlas_graph_types::node::{Node, NodePayload};
@@ -37,12 +8,8 @@ use atlas_graph_types::text::TranslationId;
 
 use crate::pipeline::BuildCtx;
 
-/// One `(edition slug, display label)` row per ingested edition -- the
-/// label is the source repo's own `data/editions.json` `name` field,
-/// carried verbatim (provenance-respecting: this app did not invent these
-/// names). Order here is immaterial (nodes are inserted into `ctx.graph.
-/// nodes`, a `BTreeMap`, so iteration order at query time is always by id)
-/// but matches `atlas_etl::brainfuel::EDITIONS`'s own declared order.
+/// One `(edition slug, display label)` row per ingested edition; the label is the source repo's own
+/// name, carried verbatim. Order is immaterial -- nodes are keyed by id.
 const EDITION_LABELS: &[(&str, &str)] = &[
     ("latin_vulgate", "Clementine Vulgate"),
     ("hebrew_masoretic", "Westminster Leningrad Codex"),
@@ -56,20 +23,12 @@ const EDITION_LABELS: &[(&str, &str)] = &[
 pub struct BrainFuelAdapterStats {
     pub translation_nodes: usize,
     pub renderings_merged: usize,
-    /// Must be 0 over real data -- a brain-fuel verse row whose own (book,
-    /// chapter, verse) position has no matching KJV `TextUnit` node would
-    /// mean the two skeletons disagree; asserted `0` by this batch's own
-    /// real-data test (`brainfuel_layers.rs`), not just hoped.
+    /// A brain-fuel verse row whose own position has no matching KJV `TextUnit` node: anything but
+    /// zero means the two skeletons disagree.
     pub rows_with_no_matching_text_unit: usize,
 }
 
-/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`, called
-/// immediately after `kjv_adapter::normalize` -- module doc comment). A
-/// no-op, honestly (zero Translation nodes, zero merges), when `ctx.
-/// brainfuel` is `None` -- every test fixture that doesn't wire real
-/// brain-fuel data simply doesn't get multilingual content, exactly the
-/// same "no data, no nodes" discipline every other adapter in this crate
-/// already follows.
+/// A true no-op -- no Translation nodes, no merges -- when `ctx.brainfuel` is `None`.
 pub fn normalize(ctx: &mut BuildCtx) -> BrainFuelAdapterStats {
     let mut stats = BrainFuelAdapterStats::default();
     let Some(corpus) = ctx.brainfuel else {
@@ -179,9 +138,6 @@ mod tests {
         assert!(matches!(&node.payload, NodePayload::Translation { label } if label == "Clementine Vulgate"));
         assert_eq!(node.id.kind, NodeKind::Translation);
 
-        // No KJV Translation node is authored this batch (module doc
-        // comment: not "ingested" by CORP-1a, no pre-existing pattern to
-        // follow -- disclosed scoping decision, not an oversight).
         let kjv_translation_id = TranslationNodeId::new("kjv".to_string()).erase();
         assert!(ctx.graph.node(&kjv_translation_id).is_none());
     }

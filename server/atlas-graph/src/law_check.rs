@@ -1,33 +1,6 @@
-//! The pipeline's LAW-CHECK stage (pipeline.rs's own stage mapping): a
-//! generic, cross-adapter REFERENTIAL-INTEGRITY law, alongside the KJV
-//! adapter's own bijection/reconstruction fidelity law (fidelity.rs).
-//!
-//! Scope, disclosed: checks every NODE-TYPED endpoint of every authored
-//! row -- Event/Narrative/Anchor/Place ids on `attests`/`succession`/
-//! `dated_by`/`located_at`, (M-C2, folding M-C review M-1) `mentions.entity`
-//! (`MentionedEntity`) and `catechism.item` (`CatechismItemId`), and
-//! (PG-1a) `named_after`'s own `namesake` (`Namesake::{PeopleGroup, Place,
-//! Polity}`) and `eponym` (`PersonId`) -- resolves to a real node in the
-//! built graph. This is now every node-typed endpoint this crate's own
-//! adapters emit; the
-//! previous omission of the latter two was a genuine scope-disclosure gap
-//! (M-C review's own words: "safe today only because place_adapter/
-//! catechism_adapter build their rows and their corresponding nodes from
-//! the identical source iteration... but that invariant isn't enforced by
-//! this law, only coincidentally true"), now closed for real rather than
-//! merely documented. TextLocus-typed endpoints (`attests.attestation`,
-//! `mentions.locus`, `cross_refs.from`/`.to`, `catechism.locus`) are STILL
-//! NOT checked here -- resolving a locus to its own TextUnit node id
-//! requires `graph_types::graph::Graph`'s own PRIVATE `text_node` helper
-//! (confirmed: not part of that module's public surface), and every
-//! adapter that EMITS a TextLocus-shaped row already derives it directly
-//! from a real, just-built TextUnit node id (kjv_adapter's own
-//! `verse_node_id`/`dot_ref` round trip) or a citation the KJV fidelity
-//! law itself already proves exists -- a second, weaker re-check here
-//! would not catch anything the adapters' own construction doesn't
-//! already guarantee by shape (unlike the node-typed endpoints above,
-//! which name an id typed once at authoring time with no such structural
-//! guarantee).
+//! The pipeline's LAW-CHECK stage: the generic, cross-adapter referential-integrity law. Every
+//! NODE-TYPED endpoint of every authored row is checked; a TextLocus-typed endpoint is not -- resolving
+//! one needs a private helper, and every adapter derives its loci from real, just-built node ids.
 use std::collections::BTreeSet;
 
 use atlas_graph_types::edge::MentionedEntity;
@@ -48,10 +21,8 @@ impl std::fmt::Display for DanglingReference {
 }
 impl std::error::Error for DanglingReference {}
 
-/// Every node-typed endpoint of every authored row resolves to a real
-/// node. Fail-loud on the FIRST dangling reference found (named precisely
-/// -- which relation, which field, which missing id), matching this
-/// crate's own fail-loud convention for boundary laws (`fidelity.rs`).
+/// Every node-typed endpoint of every authored row resolves to a real node. Fail-loud on the FIRST
+/// dangling reference, naming the relation, the field and the missing id.
 pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReference> {
     let has = |id: &AnyNodeId| graph.nodes.contains_key(id);
     let check = |relation: &'static str, field: &'static str, id: AnyNodeId| -> Result<(), DanglingReference> {
@@ -78,21 +49,9 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.dated_by {
         check("dated_by", "event", row.event.erase())?;
         use atlas_graph_types::chrono::ChronoTarget;
-        // ChronoTarget::Era is DELIBERATELY excluded: `event_world::
-        // choose_placement`'s own degenerate fallback (reachable only when
-        // the anchor table is empty -- never true of real data, but true
-        // of `AtlasData::demo_fixture()` and several unit fixtures across
-        // this workspace) mints a synthetic `"undetermined-basis-{id}"`
-        // era id BY DESIGN, documented at that call site as intentionally
-        // unresolvable ("EraOnly has no real Era node to resolve against,
-        // honestly... this event's own 'why this date?' explorability
-        // degrades to 'undetermined basis'"). Flagging that as a dangling
-        // reference would turn a disclosed, deliberate honesty gap into a
-        // build failure -- the opposite of this law's own purpose. A
-        // REAL (curated, non-synthetic) EraOnly placement's target -- once
-        // Era nodes materialize -- is exactly the kind of reference this
-        // law WOULD want to check; that's a real Era adapter's own concern,
-        // not this generic pass's.
+        // `ChronoTarget::Era` is deliberately excluded: the degenerate placement fallback, reachable
+        // only when the anchor table is empty, mints a synthetic era id that is intentionally
+        // unresolvable, and flagging it would turn a disclosed honesty gap into a build failure.
         let target = match row.placement.target() {
             ChronoTarget::Anchor(a) => Some(a.erase()),
             ChronoTarget::Prior(p) => Some(p.erase()),
@@ -102,23 +61,11 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
             check("dated_by", "target", target)?;
         }
     }
-    // M-D3 (owner ruling R2): the `named` relation (and its own
-    // `named.place` dangling-reference check, formerly here) retired whole
-    // -- a place's aliases are `NodePayload::Place::aliases`'s own payload
-    // field, plain strings with no node reference of their own to dangle,
-    // so there is nothing left for a check at this shape to verify (the
-    // vacuous branch of the ruling: "re-points... or deletes it if
-    // vacuous").
-    // M-C2 (folded M-C review M-1): the two node-typed endpoints this
-    // law's own module doc comment previously disclosed as unchecked --
-    // now real checks, not just a documented coincidence.
     for row in &graph.mentions {
         let id = match &row.entity {
             MentionedEntity::Place(p) => p.erase(),
             MentionedEntity::Person(p) => p.erase(),
             MentionedEntity::PeopleGroup(g) => g.erase(),
-            // ATTEST-1: the widened sense -- a verse that references an
-            // event without narrating it. Same check, one more variant.
             MentionedEntity::Event(e) => e.erase(),
         };
         check("mentions", "entity", id)?;
@@ -126,36 +73,15 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
     }
-    // KRETZ-1: `comments_on`'s own node-typed endpoint (`item`) -- the SAME
-    // class of check `catechism`'s own `item` gets immediately above. The
-    // `on` field (a `BibleLocusRange`) is NOT checked here, matching this
-    // law's own disclosed scope (module doc comment): every adapter that
-    // emits a TextLocus/BibleLocusRange-shaped row already derives it
-    // directly from a real, just-built TextUnit position, and `kretzmann_
-    // adapter::normalize` is no exception (`VerseRef { book, chapter, verse
-    // }` built straight from the SAME parsed unit the KJV TextUnit nodes
-    // themselves are keyed by).
     for row in &graph.comments_on {
         check("comments_on", "item", row.item.erase())?;
     }
-    // RED-1: `spoken_by`'s own node-typed endpoint (`speaker`) and
-    // `spoken_at`'s own (`place`) -- the SAME class of check `comments_on`'s
-    // own `item` gets immediately above. `locus` (a `BibleLocusRange`) is
-    // NOT checked here, matching this law's own disclosed scope (module
-    // doc comment): `red_letter_adapter::normalize` derives every locus
-    // directly from real, just-built TextUnit positions, the same
-    // discipline `kretzmann_adapter::normalize` already follows.
     for row in &graph.spoken_by {
         check("spoken_by", "speaker", row.speaker.erase())?;
     }
     for row in &graph.spoken_at {
         check("spoken_at", "place", row.place.erase())?;
     }
-    // PG-1a: `named_after`'s two node-typed endpoints (`namesake`/`eponym`)
-    // -- newly authored this batch, closing the SAME class of gap M-C2's
-    // own `mentions`/`catechism` extension above closed first (this law's
-    // own scope grows with every new node-typed authored relation, per its
-    // own module doc comment).
     for row in &graph.named_after {
         let namesake_id = match &row.namesake {
             atlas_graph_types::edge::Namesake::PeopleGroup(g) => g.erase(),
@@ -165,13 +91,6 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("named_after", "namesake", namesake_id)?;
         check("named_after", "eponym", row.eponym.erase())?;
     }
-    // NODE-1 fix round 1 (review M-1, closing the gap this law's own
-    // growth rule names -- and the SAME gap `contains_concord` had
-    // carried since CORP-2a): every `Contains` row's `container`
-    // endpoint, and (NODE1-ROWS-1) the `Container` child endpoint, must
-    // name real nodes. The `Loci` content is NOT checked here, matching
-    // this law's own disclosed scope for TextLocus-shaped fields (module
-    // doc comment).
     for row in &graph.contains_bible {
         check("contains_bible", "container", row.container.erase())?;
         if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
@@ -184,22 +103,16 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
             check("contains_concord", "content.container", child.erase())?;
         }
     }
-    // NODE1-ROWS-1: the pairwise canon steps -- both endpoints node-typed.
     for row in &graph.canon_succession {
         check("canon_succession", "prior", row.prior.erase())?;
         check("canon_succession", "next", row.next.erase())?;
     }
-    // ATTEST-1: the symmetric analogue rows -- both endpoints node-typed
-    // (the SAME class of check `canon_succession` gets immediately above;
-    // this law's own scope grows with every new node-typed authored
-    // relation, per its own module doc comment).
     for row in &graph.analogue {
         check("analogue", "a", row.a.erase())?;
         check("analogue", "b", row.b.erase())?;
     }
-    // LEX-1: both ends of an `Occurs` row are node-typed once lowered --
-    // the entry, and the verse the word locus lowers to (the SAME
-    // `text_node` spelling `Graph::row_edges` uses).
+    // Both ends of an `Occurs` row are node-typed once lowered: the entry, and the verse its word
+    // locus lowers to.
     for row in &graph.occurs {
         check("occurs", "entry", row.entry.erase())?;
         let raw = match &row.locus.at {
@@ -208,7 +121,6 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
         };
         check("occurs", "locus", AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw })?;
     }
-    // D5: kinship and participation -- every end is node-typed.
     for row in &graph.parent_of {
         check("parent_of", "parent", row.parent.erase())?;
         check("parent_of", "child", row.child.erase())?;
@@ -225,18 +137,11 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     Ok(())
 }
 
-/// NODE1-ROWS-1 (owner recursion addendum: "are nodes all recursively
-/// defined? they should be." -- recursion is edge-carried, and the
-/// container-containment rows must form a FOREST): every container that
-/// appears as a `ContainerContent::Container` CHILD across BOTH corpora's
-/// `Contains` tables has at most ONE parent (single-parent), and
-/// following parents never returns to a visited container (acyclic).
-/// Runs as part of `LawCheckPass` -- a violation is a fail-loud BUILD
-/// failure, never shipped data.
+/// The container-containment rows must form a FOREST: every container appearing as a `Container` child
+/// in either corpus has at most ONE parent, and following parents never returns to a visited
+/// container. A violation is a fail-loud build failure, never shipped data.
 pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
-    // Every Container-child row of both corpora, as (relation, parent,
-    // child) borrows off the graph.
     let mut edges: Vec<(&'static str, &str, &str)> = Vec::new();
     for row in &graph.contains_bible {
         if let atlas_graph_types::edge::ContainerContent::Container(child) = &row.content {
@@ -249,7 +154,7 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
         }
     }
 
-    // child -> parent (single-parent enforced as the map is built).
+    // child -> parent, with single-parent enforced as the map is built.
     let mut parent: BTreeMap<&str, &str> = BTreeMap::new();
     for (relation, container, child) in edges {
         if let Some(existing) = parent.insert(child, container) {
@@ -258,18 +163,15 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
                     "container containment is not single-parent: '{child}' is a Container child of BOTH '{existing}' and '{container}' ({relation})"
                 ));
             }
-            // The same (parent, child) row twice is a duplicate edge --
-            // also a defect, and cheaper to name here than to let the
-            // index silently double.
+            // The same (parent, child) row twice is a duplicate edge, and cheaper to name here than to
+            // let the index silently double it.
             return Err(format!(
                 "duplicate container-containment row: '{container}' ⊃ '{child}' appears more than once ({relation})"
             ));
         }
     }
-    // Acyclicity: with single-parent already enforced, every walk up the
-    // parent map either terminates at a root or revisits -- a revisit is
-    // a cycle. Each chain is walked once with a local visited set (the
-    // map is small: one entry per child container).
+    // With single-parent already enforced, a walk up the parent map either terminates at a root or
+    // revisits a container, and a revisit is a cycle.
     for start in parent.keys() {
         let mut seen: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
         let mut cur: &str = start;
@@ -286,20 +188,10 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
-/// ATTEST-1's L4 companion gate: an `Analogue` row asserts that its two
-/// ends are DISTINCT events (see `edge::Analogue`'s own doc comment, which
-/// is the law: "distinct events whose accounts are similar in form or
-/// content — NEVER two accounts of one event"). A self-loop asserts the
-/// opposite of what the relation means, so it is a fail-loud build
-/// failure, not a silently-tolerated no-op. Duplicate rows for the same
-/// unordered pair are caught here too -- the symmetric index would
-/// silently double the edge, exactly the defect the container-containment
-/// forest gate's own duplicate branch exists to name.
-/// D5 (owner, 2026-09-15): kinship is ACYCLIC -- nobody is their own
-/// ancestor -- and no `parent-of` pair is stated twice. Theographic states
-/// each link from both ends; the adapter merges them, and this law is what
-/// says the merge (and the source) never produced a loop. Fail-loud at
-/// compile, like the containment forest.
+/// An `Analogue` row asserts its two ends are DISTINCT events, so a self-loop asserts the opposite of
+/// what the relation means, and a duplicate row for one unordered pair would double the symmetric edge.
+/// Kinship is likewise acyclic -- nobody is their own ancestor -- and no `parent-of` pair is stated
+/// twice: the source states each link from both ends and the adapter merges them.
 pub fn kinship_is_acyclic(graph: &Graph) -> Result<(), String> {
     use std::collections::{BTreeMap, BTreeSet};
     let mut children: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
@@ -314,8 +206,8 @@ pub fn kinship_is_acyclic(graph: &Graph) -> Result<(), String> {
         }
         children.entry(p).or_default().push(c);
     }
-    // iterative DFS with colours over every parent node
-    let mut colour: BTreeMap<&str, u8> = BTreeMap::new(); // 1 = on the stack, 2 = done
+    // Colour 1 is on the stack, colour 2 is done.
+    let mut colour: BTreeMap<&str, u8> = BTreeMap::new();
     for start in children.keys().copied() {
         if colour.get(start).is_some() {
             continue;
@@ -364,88 +256,22 @@ pub fn analogue_rows_join_two_distinct_events(graph: &Graph) -> Result<(), Strin
     Ok(())
 }
 
-/// ATTEST-1's L2, THE ATTESTATION-EXCLUSIVITY LAW (owner-signed, and
-/// owner-signed FAIL-LOUD -- "the softer warning option was declined"):
-///
-/// > no verse belongs to the `Attests` set of two distinct events.
-///
-/// WHY it is a law and not a lint. The founding diagnosis (owner, verbatim):
-/// "I'm seeing a fundamental error. The Espousal of Mary event has parallel
-/// accounts Mat.1.18 + Luke.1.27, and that's a distinct event from The Angel
-/// Gabriel Announces Jesus'... which has Luk1.26-36; Even worse, the
-/// appearance of Gabriel to Zacharias is BETWEEN the espousal of mary and
-/// the announcement of Gabriel to Mary." LUK.1.27 sat in the `Attests` set
-/// of BOTH `theo-249` and `rob_annunciation_mary`, and because `Attests`
-/// is what the `Parallels` capability walks (verse -> event -> that event's
-/// OTHER witnesses, `frontier.rs`), a shared verse silently fabricates a
-/// parallel between two events that are not parallel at all. The same
-/// shape produced the leper false-parallel the owner reported separately.
-/// `Analogue` and `Mentions` rows are EXEMPT by construction -- they are
-/// not in this table; only `Attests` partitions.
-///
-/// HOW it fails loud without asserting a corpus-wide fix nobody has made
-/// yet. A green law over a corpus with 500+ real collisions would be a
-/// lie, and silently retyping 500+ collisions to make it green would be
-/// exactly the bulk guessing the batch charter forbids. So the law is
-/// stated against a DECLARED inventory, the same shape
-/// `atlas_core::event_merge`'s own `EVENT_MERGE_PAIRS`/
-/// `EVENT_DISTINCT_PAIRS` already use for the sibling duplicate-identity
-/// question:
-///
-///   * an UNDECLARED collision -- any event pair sharing an attestation
-///     that is not in `attestation_pending::PENDING` -- is a BUILD
-///     FAILURE. New data can never introduce a new shared attestation
-///     quietly, which is the property that actually protects a reader.
-///   * a DRIFTED declaration -- a declared pair now sharing a different
-///     number of verses than declared -- is also a build failure. A count
-///     that is merely "close" is a count nobody can trust.
-///
-/// The STALE direction (a declared pair that no longer collides at all)
-/// is checked by `attestation_inventory_has_no_stale_rows` below, NOT
-/// here, and the split is deliberate: this function runs on EVERY graph
-/// build, including the many small synthetic fixtures across this
-/// workspace, and every one of those legitimately collides on nothing, so
-/// checking staleness here would make the entire inventory "stale" against
-/// a three-node test graph. Staleness is a claim about the REAL corpus, so
-/// it is asserted where the real corpus is
-/// (`tests/attestation_exclusivity_real_data.rs`).
-///
-/// KNOWN LIMIT, stated so nobody has to rediscover it (ATTEST-1 fix round
-/// 1, review finding L-2): a declared row pins the shared-verse COUNT, not
-/// the shared-verse SET. A future change that removes one shared verse
-/// between an already-declared pair and adds a different one leaves the
-/// count unchanged and passes here silently. That is tolerable only because
-/// the pair is already queued for an owner ruling either way; if the queue
-/// ever outlives that assumption, the row should carry a hash of the shared
-/// verse set rather than its cardinality.
-///
-/// The inventory itself is the OWNER'S CURATION QUEUE, compiled: every row
-/// carries the mechanically-derived structural class (`Containment` when
-/// one event's attestation set contains the other's -- the dominant real
-/// shape, a Theographic mega-span such as `theo-443` "Holy Week" or
-/// `theo-217` "Prophecies of Isaiah" against the fine-grained curated
-/// pericopes inside it -- `Overlap` otherwise) and NOTHING ELSE. The
-/// SEMANTIC call (shared-account error / mention misfiled as account /
-/// same event needing a merge / genuine containment wanting an event
-/// containment relation this vocabulary does not yet have) is deliberately
-/// NOT guessed here; it belongs to the owner, and `batch-attest1-report.md`
-/// carries the full table.
+/// No verse belongs to the `Attests` set of two distinct events: a shared verse fabricates a parallel,
+/// since `Attests` is what the parallels capability walks. The law is stated against the declared
+/// inventory -- an undeclared collision or a drifted count fails the build -- and a declared row pins
+/// the shared-verse COUNT, not the shared-verse SET.
 pub fn attestation_is_exclusive(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
 
-    // verse position -> the distinct events attesting it.
-    // `event_world::populate_nodes_and_direct_rows` emits ONE Attests row
-    // per verse (`from == to`, a single-verse range -- see its own
-    // `verse_to_range` doc comment), so the range's own `from` unit IS the
-    // attested verse; no range expansion is needed or would be honest here.
+    // One `Attests` row is emitted per verse, so a range's own `from` unit IS the attested verse: no
+    // range expansion is needed, or would be honest.
     let mut by_verse: BTreeMap<(u8, u16, u16), BTreeSet<&str>> = BTreeMap::new();
     for row in &graph.attests {
         let v = &row.attestation.from.unit;
         by_verse.entry((v.book, v.chapter, v.verse)).or_default().insert(row.event.0.as_str());
     }
 
-    // Observed collisions, folded to unordered event pairs with a count of
-    // the verses they actually share.
+    // Observed collisions, folded to unordered event pairs with the count of verses they truly share.
     let mut observed: BTreeMap<(&str, &str), usize> = BTreeMap::new();
     for events in by_verse.values() {
         if events.len() < 2 {
@@ -484,13 +310,9 @@ pub fn attestation_is_exclusive(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
-/// L2's other direction, asserted over the REAL corpus only (see
-/// `attestation_is_exclusive`'s own doc comment for why it is not part of
-/// the per-build pass): a DECLARED pair that no longer collides at all is
-/// a failure. The curation queue can only shrink deliberately, with the
-/// shrink recorded -- a queue that keeps resolved entries stops being a
-/// queue, and a resolved entry left in place would also silently license a
-/// future regression to re-introduce the very collision it names.
+/// The other direction, over the REAL corpus only: a DECLARED pair that no longer collides is a
+/// failure, so the queue can only shrink deliberately. It is not part of the per-build pass because
+/// every small synthetic fixture collides on nothing, which would make the whole inventory look stale.
 pub fn attestation_inventory_has_no_stale_rows(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
 
@@ -522,32 +344,13 @@ pub fn attestation_inventory_has_no_stale_rows(graph: &Graph) -> Result<(), Stri
     Ok(())
 }
 
-/// NODE1-ROWS-1's standing index≡rows conformance law ("indexes derive
-/// FROM rows, never the reverse"): rebuilding the indexes from THIS
-/// graph's own row tables alone reproduces the indexes the graph is
-/// actually serving, entry for entry, in order. Catches any future step
-/// that writes into `graph.indexes`/`graph.symmetric_indexes` outside
-/// `Graph::build_indexes` + `event_world::add_justified_by` (the one
-/// row-derived post-step) -- the exact class the retired NODE-1
-/// derived-entry merge belonged to.
-///
-/// CALL SITES, stated exactly (Batch ATTEST-1, closing NODE-1 review
-/// NEW-1: this comment used to claim coverage the law's single call site
-/// did not deliver). It runs over BOTH paths a real graph can arrive by,
-/// and neither is a per-build pass (that would double every build's index
-/// cost for a property only a code change can break):
-///   * FROM SOURCES -- `tests/bible_containers_real_data.rs`, over the
-///     real committed corpus as `build_graph_from_sources_with_eras`
-///     produces it;
-///   * FROM ARTIFACT -- `tests/artifact_conformance.rs`, over the graph
-///     decoded from real written artifact bytes and indexed by exactly
-///     the sequence `GraphService::from_artifact` runs at server startup.
-/// That second call site is the one NEW-1 found missing; it was the path
-/// nine of the retired derived-merge's own call sites lived on.
+/// Rebuilding the indexes from this graph's row tables alone must reproduce the indexes it serves,
+/// entry for entry and in order, which catches any step writing into them outside `build_indexes` and
+/// its one row-derived post-step. Not a per-build pass: it would double every build's index cost for a
+/// property only a code change can break.
 pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
-    // Clone the row tables + nodes into a fresh graph (indexes are a pure
-    // function of exactly these), rebuild, and compare.
+    // The indexes are a pure function of exactly the rows and nodes cloned here.
     let mut fresh = Graph::default();
     fresh.nodes = graph.nodes.clone();
     fresh.contains_bible = graph.contains_bible.clone();
@@ -572,7 +375,6 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.temporal_adjacency = graph.temporal_adjacency.clone();
     fresh.analogue = graph.analogue.clone();
     fresh.occurs = graph.occurs.clone();
-    // D5: kinship, partnership and participation rows.
     fresh.parent_of = graph.parent_of.clone();
     fresh.partners = graph.partners.clone();
     fresh.participates = graph.participates.clone();
@@ -603,18 +405,6 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
-// M-D3 (owner ruling R1): `payload_years_match_resolved_placements` (the
-// M-C2 "verified-cache law," which verified `NodePayload::Event.from_year`
-// never diverged from its own resolved `dated_by` placement) RETIRES here,
-// WITH the payload fields it existed to police -- `NodePayload::Event` no
-// longer carries a from_year/to_year/order_key mirror at all (the crate
-// patch this batch applies), so there is no longer a second, independently-
-// computed copy for this law to cross-check; deletion is the stronger fix
-// (a law with nothing left to guard is not a law, it is dead weight). The
-// deleted code (struct, fn, and its own tests) is recoverable from git
-// history at the commit immediately preceding this one -- see the batch
-// report for the exact SHA, the P7 way (no runtime flag).
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -637,8 +427,6 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        // No Event/Place nodes inserted at all -- both endpoints dangle;
-        // the first-checked field (`event`) is what the error names.
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling reference");
         assert_eq!(err.relation, "located_at");
         assert_eq!(err.field, "event");
@@ -651,9 +439,6 @@ mod tests {
         }
     }
 
-    // M-C2 (folded M-C review M-1): the two node-typed endpoints this
-    // law previously left unchecked -- red-then-green, mirroring the
-    // `located_at` case above.
     #[test]
     fn red_when_a_mentions_row_names_a_place_with_no_node() {
         let mut graph = Graph::default();
@@ -681,8 +466,6 @@ mod tests {
         assert_eq!(err.field, "item");
     }
 
-    /// KRETZ-1: the SAME red-then-green shape as `catechism` immediately
-    /// above, for `comments_on`'s own node-typed `item` endpoint.
     #[test]
     fn red_when_a_comments_on_row_names_an_item_with_no_node() {
         use atlas_graph_types::text::{BibleLocusRange, VerseRef};
@@ -715,8 +498,6 @@ mod tests {
         assert!(every_authored_edge_resolves(&graph).is_ok());
     }
 
-    /// RED-1: the SAME red-then-green shape as `comments_on` above, for
-    /// `spoken_by`'s own node-typed `speaker` endpoint.
     #[test]
     fn red_when_a_spoken_by_row_names_a_speaker_with_no_node() {
         use atlas_graph_types::text::{BibleLocusRange, VerseRef};
@@ -749,8 +530,6 @@ mod tests {
         assert!(every_authored_edge_resolves(&graph).is_ok());
     }
 
-    /// RED-1: the SAME red-then-green shape, for `spoken_at`'s own
-    /// node-typed `place` endpoint.
     #[test]
     fn red_when_a_spoken_at_row_names_a_place_with_no_node() {
         use atlas_graph_types::text::{BibleLocusRange, VerseRef};
@@ -791,9 +570,6 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        // Both endpoints dangle; the first-checked field (`namesake`) is
-        // what the error names, the same "first field wins" convention
-        // `red_when_a_located_at_row_names_a_place_with_no_node` proves.
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling named_after.namesake reference");
         assert_eq!(err.relation, "named_after");
         assert_eq!(err.field, "namesake");
@@ -855,17 +631,6 @@ mod tests {
         assert!(every_authored_edge_resolves(&graph).is_ok());
     }
 
-    // M-D3: the former "verified-cache law" tests (`one_dated_event` +
-    // four `payload_years_match_resolved_placements` cases) are deleted
-    // alongside the function itself -- see this file's own retirement note
-    // above.
-
-    // -----------------------------------------------------------------
-    // NODE-1 fix round 1: the grown referential checks (review M-1) and
-    // the NODE1-ROWS-1 forest law, red/green pairs (the same discipline
-    // every prior law extension here followed).
-    // -----------------------------------------------------------------
-
     fn container_node(graph: &mut Graph, raw: &str) -> atlas_graph_types::id::ContainerNodeId {
         let id = atlas_graph_types::id::ContainerNodeId::new(raw);
         graph.nodes.insert(
@@ -887,7 +652,6 @@ mod tests {
     #[test]
     fn red_when_a_contains_row_names_a_container_with_no_node() {
         let mut graph = Graph::default();
-        // Neither the container nor the child node exists.
         graph.contains_bible.push(child_row(&atlas_graph_types::id::ContainerNodeId::new("bible-book-GEN"), &atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-1")));
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling container");
         assert_eq!(err.relation, "contains_bible");
@@ -960,12 +724,6 @@ mod tests {
         assert!(err2.contains("CYCLE"), "{err2}");
     }
 
-    // -----------------------------------------------------------------
-    // ATTEST-1: the attestation-exclusivity law (L2) and the Analogue
-    // distinctness gate (L4), red/green pairs -- the same per-field
-    // discipline every prior law extension in this file followed.
-    // -----------------------------------------------------------------
-
     fn event_node(graph: &mut Graph, raw: &str) -> EventId {
         let id = EventId::new(raw);
         graph.nodes.insert(
@@ -990,9 +748,6 @@ mod tests {
         }
     }
 
-    /// GREEN: two events attesting DIFFERENT verses partition cleanly --
-    /// the law's own happy path, and the shape every corrected pair is
-    /// meant to reach.
     #[test]
     fn attestation_exclusivity_green_when_no_verse_is_shared() {
         let mut graph = Graph::default();
@@ -1003,16 +758,11 @@ mod tests {
         assert!(attestation_is_exclusive(&graph).is_ok());
     }
 
-    /// RED: the founding case's own SHAPE -- one verse in two events'
-    /// Attests sets, with the pair undeclared. This is the failure the
-    /// owner reported (LUK.1.27 attested to both the espousal and the
-    /// annunciation), stated as the law that now catches it.
     #[test]
     fn attestation_exclusivity_red_on_an_undeclared_shared_verse() {
         let mut graph = Graph::default();
         let espousal = event_node(&mut graph, "theo-249");
         let annunciation = event_node(&mut graph, "rob_annunciation_mary");
-        // LUK 1:27 -- book 41 (Luke), chapter 1, verse 27.
         graph.attests.push(attests(&espousal, 41, 1, 27));
         graph.attests.push(attests(&annunciation, 41, 1, 27));
         let err = attestation_is_exclusive(&graph).expect_err("a shared attestation must fail the build");
@@ -1020,22 +770,9 @@ mod tests {
         assert!(err.contains("theo-249") && err.contains("rob_annunciation_mary"), "the error must name BOTH events: {err}");
     }
 
-    /// RED: a DECLARED pair that no longer collides is a failure of the
-    /// REAL-corpus half of the law -- the curation queue can only shrink
-    /// deliberately, with the shrink recorded. Uses a real row from the
-    /// shipped inventory so the test cannot rot into asserting nothing.
-    ///
-    /// GREEN half, stated as the complement: the per-build pass
-    /// (`attestation_is_exclusive`) must NOT fail on the same empty graph
-    /// -- every small synthetic fixture in this workspace collides on
-    /// nothing, and treating that as staleness would red every pipeline
-    /// test in the repo. That split is the reason the two functions exist
-    /// separately at all, so it is pinned here rather than only described.
     #[test]
     fn stale_declarations_fail_the_real_corpus_law_but_never_the_per_build_pass() {
         let first = crate::attestation_pending::PENDING.first().expect("the shipped inventory is non-empty -- if it ever empties, L2 is fully satisfied and this module should be deleted with it");
-        // An EMPTY graph collides on nothing, so every declared row is
-        // stale against it by construction.
         let err = attestation_inventory_has_no_stale_rows(&Graph::default()).expect_err("a declared pair that no longer collides must fail");
         assert!(err.contains("STALE DECLARATION"), "{err}");
         assert!(err.contains(first.a), "the error must name the stale pair: {err}");
@@ -1046,18 +783,12 @@ mod tests {
         );
     }
 
-    /// RED: an inventory whose declared verse count has drifted from the
-    /// truth fails too -- a count that is merely "close" is a count
-    /// nobody can trust.
     #[test]
     fn attestation_exclusivity_red_on_inventory_drift() {
         let row = crate::attestation_pending::PENDING.first().expect("the shipped inventory is non-empty");
         let mut graph = Graph::default();
         let a = event_node(&mut graph, row.a);
         let b = event_node(&mut graph, row.b);
-        // Exactly ONE shared verse -- the real inventory row declares its
-        // own true count, which is never 1 for a real mega-span overlap;
-        // if it ever were, the guard below keeps this test honest.
         assert_ne!(row.shared_verses, 1, "pick a different row: this test needs a declared count that differs from 1");
         graph.attests.push(attests(&a, 40, 1, 1));
         graph.attests.push(attests(&b, 40, 1, 1));
@@ -1065,7 +796,6 @@ mod tests {
         assert!(err.contains("INVENTORY DRIFT"), "{err}");
     }
 
-    /// L4's companion gate: an Analogue joins two DISTINCT events, once.
     #[test]
     fn analogue_gate_green_then_red_on_a_self_loop_and_on_a_duplicate() {
         use atlas_graph_types::edge::Analogue;
@@ -1081,9 +811,6 @@ mod tests {
         let err = analogue_rows_join_two_distinct_events(&loops).expect_err("a self-loop must be caught");
         assert!(err.contains("ITSELF"), "{err}");
 
-        // The SAME unordered pair twice, written from opposite ends --
-        // still a duplicate; `entry_id_symmetric` would give both rows the
-        // same id and the index would double the edge.
         let mut dupes = Graph::default();
         let x = event_node(&mut dupes, "rob_leper_healed");
         let y = event_node(&mut dupes, "mat_leper_healed");
@@ -1093,9 +820,6 @@ mod tests {
         assert!(err2.contains("duplicate"), "{err2}");
     }
 
-    /// The referential half, for both ATTEST-1 endpoints: an `Analogue`
-    /// naming an event with no node, and a `Mentions` row whose widened
-    /// `Event` entity dangles.
     #[test]
     fn red_when_an_analogue_or_an_event_mention_names_a_missing_node() {
         use atlas_graph_types::edge::Analogue;
@@ -1117,9 +841,6 @@ mod tests {
         assert_eq!(err2.field, "entity");
     }
 
-    /// NODE1-ROWS-1's index≡rows conformance law, red case: a graph whose
-    /// indexes were tampered with after build (the retired derived-merge
-    /// class) fails; the same graph untampered passes.
     #[test]
     fn indexes_derive_exactly_from_rows_catches_a_post_build_write() {
         let mut graph = Graph::default();
@@ -1129,7 +850,6 @@ mod tests {
         graph.build_indexes();
         assert!(indexes_derive_exactly_from_rows(&graph).is_ok(), "an untampered graph must pass");
 
-        // Tamper: append one extra entry the rows do not back.
         use atlas_graph_types::edge::{at, entry_id, RelationId};
         let s = at(&book.erase());
         let o = at(&ch.erase());

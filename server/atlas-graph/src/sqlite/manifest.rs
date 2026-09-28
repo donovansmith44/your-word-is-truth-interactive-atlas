@@ -1,8 +1,6 @@
-//! DB-2b: `manifest.toml` (spec §2.2) and the version root (spec §3.4).
-//! The root hashes ONLY `name|logical|schema_version|required` per
-//! section in manifest order -- byte sizes, blob hashes and timestamps are
-//! outside it, so a byte-identical rebuild on another day has the same
-//! root and a changed row does not.
+//! `manifest.toml` and its version root. The root's preimage is only
+//! `name|logical|schema_version|required` per section, so byte sizes, blob hashes and timestamps
+//! stay outside it and a byte-identical rebuild on another day still has the same root.
 
 use std::path::Path;
 
@@ -17,10 +15,9 @@ pub const MANIFEST_SCHEMA: u32 = 1;
 pub struct ManifestSection {
     pub name: String,
     pub required: bool,
-    /// 32 lowercase hex: the section's logical hash (spec §3.4).
+    /// 32 lowercase hex: the section's logical hash.
     pub logical: String,
-    /// 64 lowercase hex: SHA-256 of the `.sqlite` file as written (DB-4
-    /// moves this to the compressed blob).
+    /// 64 lowercase hex: SHA-256 of the committed `.zst` blob's bytes.
     pub blob: String,
     pub bytes: u64,
     pub schema_version: u32,
@@ -36,15 +33,13 @@ pub struct Manifest {
     pub sections: Vec<ManifestSection>,
 }
 
-/// `name|logical|schema_version|required\n` per section, manifest order
-/// (`atlas_graph_types::sections::manifest_lines`, the root's preimage).
 pub fn manifest_lines(sections: &[ManifestSection]) -> Vec<u8> {
     let entries: Vec<(&str, &str, u32, bool)> =
         sections.iter().map(|s| (s.name.as_str(), s.logical.as_str(), s.schema_version, s.required)).collect();
     atlas_graph_types::sections::manifest_lines(&entries)
 }
 
-/// The root as the manifest spells it: `sections::root_of_lines(..).hex()`.
+/// The root as the manifest spells it: the hex of `sections::root_of_lines`.
 pub fn root_of(sections: &[ManifestSection]) -> String {
     atlas_graph_types::sections::root_of_lines(&manifest_lines(sections)).hex()
 }
@@ -55,8 +50,8 @@ pub fn write_manifest(m: &Manifest, path: &Path) -> Result<(), SqliteError> {
     Ok(())
 }
 
-/// Reads and VERIFIES: a manifest whose root does not recompute from its
-/// own section lines is refused (spec §11).
+/// Reads and VERIFIES: a manifest whose root does not recompute from its own section lines is
+/// refused.
 pub fn read_manifest(path: &Path) -> Result<Manifest, SqliteError> {
     let text = std::fs::read_to_string(path)?;
     let m: Manifest = toml::from_str(&text).map_err(|e| SqliteError(format!("manifest parse {}: {e}", path.display())))?;

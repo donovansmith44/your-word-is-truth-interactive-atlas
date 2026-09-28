@@ -1,25 +1,6 @@
-//! DB-4b: the nine `data/compiled/*.json` sidecars folded into core's
-//! tables (spec §5.3 "folded sidecars", amended by the DB-4b plan's
-//! judgment calls 3 and 6): lossless -- every field of every loaded struct
-//! lands in a column, because DB-5 deletes the JSONs and nothing may be
-//! lost on the way. Where the spec's column list was narrower than the
-//! struct, the column was added (`chronology_anchor.event_id/era_boundary/
-//! source/note`, `provenance_entry.locator`); where the data is narrower
-//! than the spec, the column is derived (`canon_book.testament` from
-//! `canon::BOOKS` order) or honestly NULL (`land_mask_region.name/
-//! ref_note`: the compiled `land-mask.json` is flattened rings, the ETL
-//! dropped the region metadata); where the data is wider than the spec's
-//! key (one place, two alias rows), the key widened (`alias_ord`).
-//!
-//! `polities.json` is loaded by `AtlasData` and served by nothing
-//! (`/api/polities` reads Polity payloads): retired at DB-5, not folded
-//! (spec §5.3's closing note).
-//!
-//! Sources (DB-5): the ETL's own in-memory `AtlasData`
-//! (`atlas_etl::compile::compile`) and `sources.json` -> `SourcesDocument`
-//! (atlas-core `sources.rs`, written by `gen_sources`) -- the compile folds
-//! them straight into the sections; no compiled JSON sidecar exists any
-//! more. `unfold` is the inverse the served path uses.
+//! The nine former compiled JSON sidecars, folded into core's tables losslessly: every field of
+//! every loaded struct lands in a column, because no JSON sidecar is read any more. `unfold` is the
+//! inverse the served path uses.
 
 use std::collections::HashMap;
 
@@ -106,8 +87,7 @@ pub static SOURCE_ENTRY: TableSpec = TableSpec {
 pub static PROVENANCE_ENTRY: TableSpec =
     TableSpec { name: "provenance_entry", columns: &["id", "ord", "source", "confidence", "locator"], pk: &["id"] };
 
-/// The 21 sidecar specs in `extra_tables_of(Core)` order (after the five
-/// graph-derived tables).
+/// The 21 sidecar specs in `extra_tables_of(Core)` order, after the five graph-derived tables.
 pub static SIDECAR_SPECS: [&TableSpec; 21] = [
     &CANON_BOOK,
     &CANON_CHAPTER_VERSES,
@@ -145,8 +125,8 @@ fn i(x: impl Into<i64>) -> Col {
     Col::Int(x.into())
 }
 
-/// Books before index 39 (GEN..MAL) are the Old Testament, the rest the
-/// New (`atlas_core::canon::BOOKS` order; there is no source field).
+/// Books before index 39 are the Old Testament and the rest the New, by `atlas_core::canon::BOOKS`
+/// order: the data carries no testament field.
 pub fn testament_of(book_ord: usize) -> &'static str {
     if book_ord < 39 {
         "OT"
@@ -170,10 +150,9 @@ fn claim_cols(c: &Option<PlaceDateClaim>) -> [Col; 3] {
     }
 }
 
-/// The nine folds, as 21 tables (rows in source order; `Extras::extend`
-/// sorts them into primary-key order).
+/// The nine folds, as 21 tables, rows in source order -- `Extras::extend` sorts them into
+/// primary-key order.
 pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec<ExtraTable>, SqliteError> {
-    // canon.json
     let mut canon_book = Vec::new();
     let mut canon_chapter_verses = Vec::new();
     for (ord, b) in atlas.canon.books.iter().enumerate() {
@@ -182,13 +161,11 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             canon_chapter_verses.push(vec![i(ord as i64), i(ch as i64 + 1), i(*verses)]);
         }
     }
-    // books-meta.json
     let book_meta = atlas
         .books_meta
         .iter()
         .map(|m| vec![t(&m.book), t(&m.author), ot(&m.write_place), oi(m.write_from), oi(m.write_to)])
         .collect();
-    // chronology-anchors.json
     let chronology_anchor = atlas
         .chronology_anchors
         .iter()
@@ -197,22 +174,20 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             vec![t(&a.id), i(ord as i64), t(&a.label), i(a.year), ot(&a.event_id), i(a.era_boundary as i64), t(&a.source), ot(&a.note)]
         })
         .collect();
-    // book-narration-windows.json
     let book_narration_window =
         atlas.book_narration_windows.iter().map(|w| vec![t(&w.book), i(w.from_year), i(w.to_year), ot(&w.note)]).collect();
-    // landmarks.json
     let landmark = atlas
         .landmarks
         .iter()
         .enumerate()
         .map(|(ord, l)| vec![i(ord as i64), t(&l.name), t(&l.kind), Col::Real(l.lat), Col::Real(l.lon), ot(&l.size)])
         .collect();
-    // land-mask.json (flattened rings; names lost at ETL -- NULL, honestly)
+    // The compiled land mask is flattened rings: a region's name and ref note were dropped before
+    // this point, so both columns are honestly NULL.
     let mut land_mask_region = Vec::with_capacity(atlas.land_mask.len());
     for (ord, ring) in atlas.land_mask.iter().enumerate() {
         land_mask_region.push(vec![i(ord as i64), Col::Null, Col::Null, Col::Text(ring_json(ring)?)]);
     }
-    // catechism.json
     let (mut part, mut item, mut item_verse, mut question, mut question_verse) = (vec![], vec![], vec![], vec![], vec![]);
     for (pord, p) in atlas.catechism.iter().enumerate() {
         part.push(vec![t(&p.id), i(pord as i64), t(&p.title)]);
@@ -239,7 +214,6 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             }
         }
     }
-    // place-history.json
     let (mut ph, mut ph_name, mut ph_blurb, mut ph_verse) = (vec![], vec![], vec![], vec![]);
     let mut histories: Vec<_> = atlas.place_history.values().collect();
     histories.sort_by(|a, b| a.id.as_bytes().cmp(b.id.as_bytes()));
@@ -264,7 +238,7 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             }
         }
     }
-    // place-names-kjv.json (one place may carry several alias rows)
+    // One place may carry several alias rows, so the key widens with `alias_ord`.
     let (mut alias, mut alias_verse) = (vec![], vec![]);
     let mut alias_ids: Vec<_> = atlas.place_name_aliases.keys().collect();
     alias_ids.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
@@ -278,7 +252,6 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
             }
         }
     }
-    // sources.json
     let source_category = sources.categories.iter().enumerate().map(|(ord, c)| vec![t(&c.id), i(ord as i64), t(&c.label)]).collect();
     let source_entry = sources
         .sources
@@ -330,10 +303,6 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
     ])
 }
 
-// ---------------------------------------------------------------------
-// DB-4c: the inverse -- AtlasData and SourcesDocument from core's tables
-// ---------------------------------------------------------------------
-
 fn text(c: &Col, table: &str) -> Result<String, SqliteError> {
     match c {
         Col::Text(s) => Ok(s.clone()),
@@ -368,17 +337,11 @@ fn real(c: &Col, table: &str) -> Result<f64, SqliteError> {
     }
 }
 
-/// `AtlasData` (its serving-path fields: `canon`, `books_meta`, `landmarks`,
-/// `land_mask`, `place_history`, `place_name_aliases`, `catechism`,
-/// `chronology_anchors`, `book_narration_windows`; everything else
-/// `Default` -- never populated on the serving path since OVERLAY-1,
-/// `polities.json` retired at DB-5) and `SourcesDocument`, read back from
-/// the 21 tables `fold_sidecars` wrote. NOT `finish()`ed: the caller does
-/// that, exactly as `atlas-server::load` does for the JSON path. Proven the
-/// inverse of the fold on the real data (`extras_real_data.rs`).
+/// `AtlasData`'s serving-path fields and `SourcesDocument`, read back from the 21 tables
+/// `fold_sidecars` wrote; every other field stays `Default`, since nothing on the serving path
+/// reads it. NOT `finish()`ed -- the caller does that.
 pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteError> {
     let rows = |spec: &TableSpec| read_table(conn, spec);
-    // canon
     let mut books: Vec<CanonBook> = Vec::new();
     for r in rows(&CANON_BOOK)? {
         books.push(CanonBook { code: text(&r[1], "canon_book")?, name: text(&r[2], "canon_book")?, chapters: Vec::new() });
@@ -392,13 +355,11 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         book.chapters.push(v as u16);
     }
     let canon = Canon { books };
-    // books-meta
     let mut books_meta = Vec::new();
     for r in rows(&BOOK_META)? {
         let t = "book_meta";
         books_meta.push(BookMeta { book: text(&r[0], t)?, author: text(&r[1], t)?, write_place: opt_text(&r[2], t)?, write_from: opt_int(&r[3], t)?, write_to: opt_int(&r[4], t)? });
     }
-    // chronology anchors (source order = ord)
     let mut anchors: Vec<(i64, ChronologyAnchor)> = Vec::new();
     for r in rows(&CHRONOLOGY_ANCHOR)? {
         let t = "chronology_anchor";
@@ -417,26 +378,24 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     }
     anchors.sort_by_key(|(ord, _)| *ord);
     let chronology_anchors = anchors.into_iter().map(|(_, a)| a).collect();
-    // narration windows (source order is the JSON's; the table's pk is book -- keep pk order, the consumers index by book)
+    // The table's primary key is the book and its consumers index by book, so pk order stands in
+    // for the source order.
     let mut book_narration_windows = Vec::new();
     for r in rows(&BOOK_NARRATION_WINDOW)? {
         let t = "book_narration_window";
         book_narration_windows.push(BookNarrationWindow { book: text(&r[0], t)?, from_year: int(&r[1], t)? as i32, to_year: int(&r[2], t)? as i32, note: opt_text(&r[3], t)? });
     }
-    // landmarks
     let mut landmarks = Vec::new();
     for r in rows(&LANDMARK)? {
         let t = "landmark";
         landmarks.push(Landmark { name: text(&r[1], t)?, kind: text(&r[2], t)?, lat: real(&r[3], t)?, lon: real(&r[4], t)?, size: opt_text(&r[5], t)? });
     }
-    // land mask
     let mut land_mask: Vec<Vec<(f64, f64)>> = Vec::new();
     for r in rows(&LAND_MASK_REGION)? {
         let json = text(&r[3], "land_mask_region")?;
         let ring: Vec<(f64, f64)> = serde_json::from_str(&json).map_err(|e| SqliteError(format!("land_mask_region rings_json: {e}")))?;
         land_mask.push(ring);
     }
-    // catechism
     let mut parts: Vec<(i64, CatechismPart)> = Vec::new();
     for r in rows(&CATECHISM_PART)? {
         let t = "catechism_part";
@@ -497,7 +456,6 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         part.1.items.push(item);
     }
     let catechism: Vec<CatechismPart> = parts.into_iter().map(|(_, p)| p).collect();
-    // place history
     let mut place_history: HashMap<String, PlaceHistory> = HashMap::new();
     for r in rows(&PLACE_HISTORY)? {
         let t = "place_history";
@@ -537,7 +495,6 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
             other => return Err(SqliteError(format!("{t}: owner_kind {other}"))),
         }
     }
-    // place name aliases
     let mut aliases: HashMap<String, Vec<PlaceNameAlias>> = HashMap::new();
     for r in rows(&PLACE_NAME_ALIAS)? {
         let t = "place_name_alias";
@@ -559,7 +516,6 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         }
         list[aord].verses.push(text(&r[3], t)?);
     }
-    // sources.json
     let mut categories: Vec<(i64, SourceCategory)> = Vec::new();
     for r in rows(&SOURCE_CATEGORY)? {
         let t = "source_category";
@@ -595,8 +551,8 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         sources: entries.into_iter().map(|(_, e)| e).collect(),
         provenances: provenances.into_iter().map(|(_, p)| p).collect(),
     };
-    // `AtlasData` has private derived-index fields, so no struct update
-    // syntax: start from `Default` and set the nine serving-path fields.
+    // `AtlasData`'s derived-index fields are private, so there is no struct update syntax here:
+    // start from `Default` and set the serving-path fields.
     let mut atlas = AtlasData::default();
     atlas.canon = canon;
     atlas.books_meta = books_meta;

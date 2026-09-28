@@ -1,32 +1,6 @@
-//! The cross-references source adapter: turns openbible.info's raw
-//! cross-references TSV into `cites` (TextUnit -> TextUnit) rows -- the
-//! first relation proving the generic edge path end-to-end (controller
-//! ruling 3).
-//!
-//! Reuses `atlas_etl::xrefs::parse` + `atlas_etl::xrefs::filter_missing_first_verse`
-//! verbatim (the SAME raw-TSV parsing/filtering pipeline `atlas-etl`'s own
-//! binary runs to produce `data/compiled/cross-refs.json`) as this adapter's
-//! reader -- mirroring the KJV adapter's reuse (`kjv_adapter`'s own doc
-//! comment). No parsing logic is forked or duplicated.
-//!
-//! DISCLOSED DECISION 1: a cross-ref TARGET may be a same-chapter or
-//! cross-book/chapter SPAN (`"COL.1.16-19"`, `"MAT.5.3-MAT.6.2"`), not a
-//! single verse -- graph-types' `CrossRef` row is `TextLocus -> TextLocus`
-//! (a single locus each; design doc §4's edge-kind table: "verse-level
-//! today, loci by design"). This adapter targets the span's FIRST verse,
-//! mirroring `atlas_server::handlers::first_verse_of_target`/
-//! `atlas_core::xrefs::target_span`'s own pre-existing "preview" convention
-//! exactly -- not a new precedent.
-//!
-//! DISCLOSED DECISION 2: graph-types' `CrossRef.votes` is `u32` (a shape the
-//! M-A brief holds fixed, per the "types are owner-approved" law).
-//! openbible.info's own vote column is signed, and a small fraction of real
-//! rows (1,241 of 344,799 in the committed raw TSV, ~0.36%) carry negative
-//! votes. A negative vote cannot be cast into `u32` without corrupting its
-//! sign (clamping to 0 or taking the magnitude would both misstate the
-//! source), so those rows are DROPPED at the adapter boundary -- counted,
-//! never silent -- consistent with "where no assertion or derivation
-//! speaks, no edge exists" (design doc P2).
+//! openbible.info's raw cross-references TSV lowered into `cites` rows. A target may be a span, and
+//! this adapter cites the span's FIRST verse. A row carrying NEGATIVE votes is dropped and counted:
+//! `CrossRef.votes` is unsigned, and clamping or taking the magnitude would misstate the source.
 
 use std::collections::HashMap;
 
@@ -34,13 +8,8 @@ use atlas_core::data::CrossRef as CoreCrossRef;
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef as GVerseRef};
 
-/// One `cites`-ready row, lowered from a raw (from, target, votes) triple.
-/// M-C2 (requirement 2): `to_last`/`target_display` carry the honest
-/// resolution of the verse-level simplification -- see `graph_types::edge::
-/// CrossRef`'s own doc comment for the full reasoning; this is the SAME
-/// (first, last, original-string) triple `target_span` below resolves, just
-/// not yet lowered into an edge (`to` alone stays the graph's own edge
-/// endpoint, unchanged).
+/// One `cites`-ready row. `to_last`/`target_display` carry the honest resolution of a span target,
+/// while `to` alone stays the graph's own edge endpoint.
 pub struct XrefRow {
     pub from: TextLocus,
     pub to: TextLocus,
@@ -51,22 +20,12 @@ pub struct XrefRow {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct XrefAdapterStats {
-    /// Disclosed decision 2 above.
     pub dropped_negative_votes: usize,
 }
 
-/// Extracts a cross-ref TARGET's own (first, last) verse endpoints --
-/// mirrors `atlas_server::handlers::first_verse_of_target` (first-verse-
-/// only) / `atlas_core::xrefs::target_span`'s (first+last) three-shape parse
-/// (single verse / same-chapter range / cross-chapter range) over an
-/// ALREADY-CANONICALIZED target string (3-letter codes, `atlas_etl::xrefs::
-/// parse`'s own output shape) -- duplicated rather than imported because
-/// those two live in atlas-server/atlas-core respectively and this is the
-/// same small, stable, three-branch parse already duplicated twice in this
-/// codebase for analogous reasons. M-C2: widened from first-verse-only
-/// (`first_verse_of_target`) to the full span, so this adapter's own
-/// `to_last` can be built from the identical parse `to` already uses,
-/// never a second, differently-shaped lookup.
+/// A target's own (first, last) verse endpoints, over an ALREADY-CANONICALIZED target string: the
+/// three shapes are a single verse, a same-chapter range and a cross-chapter range. Duplicated
+/// rather than imported, since the analogous parses live in atlas-server and atlas-core.
 fn target_span(target: &str) -> Option<(VerseId, VerseId)> {
     if let Ok(v) = VerseId::parse_canonical(target) {
         return Some((v, v));
@@ -85,16 +44,9 @@ fn text_locus(v: VerseId) -> TextLocus {
     TextLocus::from(BibleLocus::whole(vr))
 }
 
-/// Reads and parses the raw TSV (via `atlas_etl::xrefs::parse` +
-/// `filter_missing_first_verse`, against `verses` -- the SAME dot-ref-keyed
-/// map the KJV adapter just built, so "first verse of target must exist"
-/// checks against the SAME graph this row will join, not a stale compiled
-/// artifact), then lowers every surviving row into a `cites`-ready triple.
-/// Self-references and structurally unparseable rows are already dropped by
-/// `atlas_etl::xrefs::parse` itself (counted there, not here); negative-vote
-/// rows are dropped here (disclosed decision 2, module doc comment).
-/// Deterministic order: by `from` key, then each `from`'s own
-/// votes-descending order (`atlas_etl::xrefs::parse`'s own per-from sort).
+/// "First verse of target exists" is checked against the SAME dot-ref map the KJV adapter just
+/// built, so it agrees with the graph this row joins rather than a stale artifact. Order is
+/// deterministic: by `from` key, then that key's own votes-descending order.
 pub fn read_xrefs_ordered(
     raw_tsv: &str,
     verses: &HashMap<String, String>,
@@ -130,20 +82,9 @@ pub fn read_xrefs_ordered(
     Ok((rows, stats))
 }
 
-/// Pipeline-facing NORMALIZE entry point (`pipeline::NormalizePass`, run
-/// AFTER `kjv_adapter::normalize` within the same pass -- xref rows need
-/// the KJV nodes' own dot-ref-keyed text to exist first): parses
-/// `ctx.xrefs_tsv` and lowers surviving rows into `cites`-ready `CrossRef`
-/// rows on `ctx.graph`. Mirrors exactly what
-/// `build::build_graph_from_canon_and_verses`'s own middle block did
-/// before the pipeline restructuring, with ONE deliberate difference: the
-/// dot-ref-keyed verse-text map it checks "first verse of target exists"
-/// against is rebuilt by walking the JUST-NORMALIZED graph nodes (not a
-/// second parameter threaded alongside `ctx.kjv_verses`) -- this is the
-/// SAME set of verses `ordered_verses_from_canon` actually inserted (the
-/// filtered, canon-walked set, not `ctx.kjv_verses` as originally handed
-/// in, which could theoretically carry a stray key no chapter/verse slot
-/// ever reached), so behavior is unchanged, not merely similar.
+/// Runs after `kjv_adapter::normalize` within the same pass: xref rows need the KJV nodes' own
+/// dot-ref-keyed text to exist. The map checked against is rebuilt by walking the just-normalized
+/// nodes, which is exactly the filtered set that adapter inserted.
 pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
     use atlas_graph_types::node::NodePayload;
     use atlas_graph_types::text::TranslationId;
@@ -202,11 +143,6 @@ Rev.22.21\tRom.16.23\t-2\n";
 
     fn sample_verses() -> HashMap<String, String> {
         let mut v = HashMap::new();
-        // ROM.16.23 (the negative-vote row's own target) is included
-        // deliberately -- it must survive atlas_etl::xrefs::filter_missing_first_verse
-        // so the negative-votes test below actually exercises THIS adapter's
-        // own disclosed-decision-2 drop, not upstream's unrelated
-        // missing-first-verse drop.
         for key in ["GEN.1.1", "JOB.26.13", "COL.1.16", "PSA.124.8", "MAT.5.3", "REV.22.21", "ROM.16.23"] {
             v.insert(key.to_string(), format!("text of {key}"));
         }
@@ -216,9 +152,6 @@ Rev.22.21\tRom.16.23\t-2\n";
     #[test]
     fn self_reference_and_unparseable_target_are_dropped_upstream() {
         let (rows, _stats) = read_xrefs_ordered(SAMPLE_TSV, &sample_verses()).unwrap();
-        // Gen.1.1 -> Gen.1.1 (self) and Gen.1.1 -> NotARealRef (unparseable)
-        // are both dropped by atlas_etl::xrefs::parse itself, before this
-        // adapter ever sees them.
         let gen_targets: Vec<_> =
             rows.iter().filter(|r| r.from == text_locus(VerseId::parse_canonical("GEN.1.1").unwrap())).collect();
         assert_eq!(gen_targets.len(), 3, "JOB.26.13, COL.1.16 (first verse of the range), PSA.124.8");
@@ -226,23 +159,12 @@ Rev.22.21\tRom.16.23\t-2\n";
 
     #[test]
     fn range_target_resolves_to_its_first_verse() {
-        // Col.1.16 -> Col.1.16-Col.1.19: a range target whose own first verse
-        // is the citing verse itself. atlas_etl::xrefs::parse's self-check
-        // only fires for a SINGLE-verse target identical to `from` (its own
-        // `is_single` guard), so this range survives upstream; this adapter
-        // then resolves it to that first verse per disclosed decision 1.
         let (rows, _stats) = read_xrefs_ordered(SAMPLE_TSV, &sample_verses()).unwrap();
         let col_row = rows
             .iter()
             .find(|r| r.from == text_locus(VerseId::parse_canonical("COL.1.16").unwrap()))
             .expect("Col.1.16 -> Col.1.16-Col.1.19 must survive");
         assert_eq!(col_row.to, text_locus(VerseId::parse_canonical("COL.1.16").unwrap()));
-        // Fix round 1 (I-1): the row's own to_last/target_display, not just
-        // `to` -- a same-chapter range. atlas_etl::xrefs::parse_to_span's own
-        // canonical form for this shape is the COMPRESSED "BOOK.CHAP.V1-V2"
-        // (never the two-full-refs form the raw TSV happens to be typed in
-        // above), matching the real wire shape live-verified against
-        // /api/verse/JHN.3.16 in the M-C2 report ("1JN.4.9-10").
         assert_eq!(
             col_row.to_last,
             Some(text_locus(VerseId::parse_canonical("COL.1.19").unwrap())),
@@ -256,12 +178,6 @@ Rev.22.21\tRom.16.23\t-2\n";
 
     #[test]
     fn cross_chapter_range_target_carries_its_own_full_to_last_and_display_string() {
-        // Fix round 1 (I-1): the THIRD of the three openbible.info citation
-        // shapes (single verse / same-chapter range / cross-chapter-or-book
-        // range) -- Matt.5.3 -> Matt.5.3-Matt.6.2, already present in
-        // SAMPLE_TSV but never asserted on before this round. Canonical form
-        // for a cross-chapter range is the FULL "canon1-canon2" (never
-        // compressed, since compression only applies within one chapter).
         let (rows, _stats) = read_xrefs_ordered(SAMPLE_TSV, &sample_verses()).unwrap();
         let matt_row = rows
             .iter()
@@ -294,10 +210,6 @@ Rev.22.21\tRom.16.23\t-2\n";
             .find(|r| r.to == text_locus(VerseId::parse_canonical("JOB.26.13").unwrap()))
             .expect("Gen.1.1 -> Job.26.13 must survive");
         assert_eq!(job_row.votes, 20);
-        // Fix round 1 (I-1): the FIRST of the three citation shapes -- a bare
-        // single-verse target carries no to_last at all (None, not an
-        // accidental Some(itself)), and target_display is its own plain
-        // canonical form.
         assert_eq!(job_row.to_last, None, "a single-verse target has no LAST verse distinct from its own to");
         assert_eq!(job_row.target_display, "JOB.26.13");
     }

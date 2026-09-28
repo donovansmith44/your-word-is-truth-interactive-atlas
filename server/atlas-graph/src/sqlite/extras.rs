@@ -1,19 +1,6 @@
-//! DB-4b: the section tables that are not graph-native (spec §5.3–5.6):
-//! one generic row shape (`Col`, `TableSpec`, `ExtraTable`), one INSERT,
-//! one `SELECT … ORDER BY pk`, one canonical encoder
-//! (`sections::extra_line_body`), and the graph-derived builders (node
-//! projections, the resolved chronology, the heading index, red-letter
-//! spans). The folded sidecars live in `sidecars.rs` and share the shape.
-//!
-//! `Graph::extra_tables` carries the ENCODED bodies so the version root
-//! covers them (graph-types learns only a map of bytes); the writer
-//! inserts the TYPED rows from the same `Extras`. The law that the dump
-//! recomputed from the file equals the attached dump (`sqlite_laws.rs`,
-//! gate 9) is what proves `attach` and `insert_table` agree.
-//!
-//! Primary-key order on both sides is SQLite's BINARY order per column
-//! (`pk_cmp`): integers numerically, text by bytes. No extra table has a
-//! REAL or a NULL in its primary key.
+//! The section tables that are not graph-native. `Graph::extra_tables` carries the ENCODED bodies,
+//! so the version root covers them, while the writer inserts the TYPED rows from the same `Extras`:
+//! the two must agree, and the law over the dump recomputed from the file is what proves they do.
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -28,8 +15,8 @@ use rusqlite::{Connection, Transaction};
 
 use super::SqliteError;
 
-/// One column value. The four SQLite storage classes an extra table uses
-/// (no BLOB: hashes live only in `node`/`edge_index`).
+/// One column value: the four SQLite storage classes an extra table uses. No BLOB -- hashes live
+/// only in `node` and `edge_index`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Col {
     Null,
@@ -38,9 +25,7 @@ pub enum Col {
     Text(String),
 }
 
-/// A table's name, its columns in DDL order, and its primary key in key
-/// order. `sqlite_laws.rs` pins every spec against `PRAGMA table_info` of
-/// the DDL and against `sections::extra_tables_of`.
+/// A table's name, its columns in DDL order, and its primary key in key order.
 pub struct TableSpec {
     pub name: &'static str,
     pub columns: &'static [&'static str],
@@ -82,7 +67,6 @@ pub static RED_LETTER_SPAN: TableSpec = TableSpec {
 };
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
-// LEX-1 (spec 5.7).
 pub static LEXICON_ENTRY: TableSpec = TableSpec {
     name: "lexicon_entry",
     columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
@@ -95,8 +79,8 @@ pub static TOKEN: TableSpec = TableSpec {
     pk: &["book", "chapter", "verse", "layer", "ord"],
 };
 
-/// Core's specs: the five graph-derived tables, then the 21 folded
-/// sidecars (`sidecars::SIDECAR_SPECS`), in `extra_tables_of` order.
+/// Core's specs: the five graph-derived tables, then the 21 folded sidecars, in
+/// `extra_tables_of` order -- which the section's own table list must match.
 static CORE_SPECS: [&TableSpec; 26] = [
     &PLACE,
     &ERA,
@@ -129,8 +113,6 @@ static KJV_SPECS: [&TableSpec; 2] = [&VERSE, &RED_LETTER_SPAN];
 static CONCORD_SPECS: [&TableSpec; 1] = [&CONCORD_UNIT];
 static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
 
-/// The extra tables a section carries -- the same names, in the same
-/// order, as `sections::extra_tables_of` (a law pins it).
 pub fn table_specs_of(section: Section) -> &'static [&'static TableSpec] {
     match section {
         Section::Core => &CORE_SPECS,
@@ -154,7 +136,6 @@ fn col_value(c: &Col) -> Result<Value, SqliteError> {
     })
 }
 
-/// The row's canonical body: `extra_line_body` over `(column, value)`.
 pub fn row_body(spec: &TableSpec, row: &[Col]) -> Result<Vec<u8>, SqliteError> {
     if row.len() != spec.columns.len() {
         return Err(SqliteError(format!("{}: row has {} cols, spec has {}", spec.name, row.len(), spec.columns.len())));
@@ -166,8 +147,8 @@ pub fn row_body(spec: &TableSpec, row: &[Col]) -> Result<Vec<u8>, SqliteError> {
     Ok(extra_line_body(cols))
 }
 
-/// SQLite's BINARY collation order within one column: NULL < numeric < TEXT;
-/// numerics by value, text by bytes.
+/// SQLite's BINARY collation order within one column: NULL < numeric < TEXT, numerics by value and
+/// text by bytes.
 fn col_cmp(a: &Col, b: &Col) -> Ordering {
     fn class(c: &Col) -> u8 {
         match c {
@@ -186,7 +167,7 @@ fn col_cmp(a: &Col, b: &Col) -> Ordering {
     }
 }
 
-/// Primary-key order of two rows of `spec`.
+/// Primary-key order of two rows of `spec`; no extra table has a REAL or a NULL in its primary key.
 pub fn pk_cmp(spec: &TableSpec, a: &[Col], b: &[Col]) -> Ordering {
     for k in spec.pk {
         let i = spec.columns.iter().position(|c| c == k).expect("a pk column is a column");
@@ -216,8 +197,8 @@ impl Extras {
         self.tables.extend(more.into_iter().map(ExtraTable::sorted));
     }
 
-    /// `g.extra_tables[name] = the canonical bodies, in pk order` for every
-    /// table here (replacing any earlier attachment of the same table).
+    /// Attaches the canonical bodies, in pk order, replacing any earlier attachment of the same
+    /// table.
     pub fn attach(&self, g: &mut Graph) {
         for t in &self.tables {
             let bodies: Vec<Vec<u8>> =
@@ -226,14 +207,9 @@ impl Extras {
         }
     }
 
-    /// The graph-derived tables: projections of `Place`/`Era`/`Polity`/
-    /// `TextUnit` payloads, `event_date` from the chronology (`resolved`:
-    /// `seq` is the total order, R-DB4a-1; DB-4c: plus `source_meta`'s
-    /// curated `to_year`/`order_key`, the values the Event wire serves --
-    /// NULL for an event without an entry, which `legacy::event_from_node`
-    /// substitutes from `from_year`/`0`), `heading_index` through
-    /// `heading::build_heading_index`, and `red_letter_span` from the
-    /// char-offset span map.
+    /// The graph-derived tables. `event_date.resolved` takes `seq` as its total order, and
+    /// `source_meta`'s curated `to_year`/`order_key` are NULL for an event with no entry -- the
+    /// values `legacy::event_from_node` substitutes from `from_year` and `0`.
     pub fn graph_derived(
         g: &Graph,
         chrono: &crate::event_world::ChronologyDerivation,
@@ -346,9 +322,8 @@ impl Extras {
         Ok(out)
     }
 
-    /// LEX-1: the `token` inventory from the corpus (spec 5.7) -- every
-    /// token, matched or not; NOT graph-derived (the graph carries only the
-    /// aligned ones, as `Occurs` rows), so it rides in from the reader.
+    /// The `token` inventory is not graph-derived -- the graph carries only the aligned tokens, as
+    /// `Occurs` rows -- so every token, matched or not, rides in from the reader.
     pub fn tokens(tokens: &[atlas_etl::lexicon::TokenRow]) -> ExtraTable {
         let rows = tokens
             .iter()
@@ -390,10 +365,8 @@ pub fn verse_triple(sref: &str) -> Result<(i64, i64, i64), SqliteError> {
     }
 }
 
-/// The whole fold, from memory (DB-5): the graph-derived tables plus the
-/// nine sidecars folded from the ETL's own in-memory `AtlasData` and the
-/// `sources.json` document -- what the compile attaches to both graphs and
-/// writes into the sections. No JSON sidecar is read back from disk.
+/// The whole fold from memory: the graph-derived tables plus the nine sidecars folded from the
+/// ETL's own `AtlasData` and the `sources.json` document. No JSON sidecar is read back from disk.
 pub fn compute(
     g: &Graph,
     chrono: &crate::event_world::ChronologyDerivation,
@@ -408,7 +381,6 @@ pub fn compute(
     Ok(ex)
 }
 
-/// `INSERT INTO <table> (<columns>) VALUES (?, …)` per row.
 pub fn insert_table(tx: &Transaction, t: &ExtraTable) -> Result<(), SqliteError> {
     let sql = format!(
         "INSERT INTO {} ({}) VALUES ({})",
@@ -435,8 +407,6 @@ pub fn insert_table(tx: &Transaction, t: &ExtraTable) -> Result<(), SqliteError>
     Ok(())
 }
 
-/// `SELECT <columns> FROM <table> ORDER BY <pk>` -- the read-back the
-/// logical dump re-encodes.
 pub fn read_table(conn: &Connection, spec: &TableSpec) -> Result<Vec<Vec<Col>>, SqliteError> {
     let sql = format!("SELECT {} FROM {} ORDER BY {}", spec.columns.join(", "), spec.name, spec.pk.join(", "));
     let mut stmt = conn.prepare(&sql)?;
