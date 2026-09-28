@@ -64,15 +64,3 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
         .routes(routes!(openapi_yaml))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn advertises_the_pinned_aqc_version_range() {
-        let Json(body) = contract().await;
-        assert_eq!(body.min_version, "0.8.0");
-        assert_eq!(body.max_version, "0.8.0");
-        assert_eq!((body.manifest_schema, body.section_schema_version), (1, 14));
-    }
-}

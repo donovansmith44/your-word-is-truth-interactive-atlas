@@ -7,7 +7,6 @@ use axum::Json;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use atlas_core::refs::ScriptureRef;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::EdgeKind;
@@ -19,7 +18,7 @@ use atlas_graph_types::store::GraphQuery;
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{NodeReference, Reference};
+use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -195,8 +194,8 @@ pub async fn text_window(
     let snap = graph.snapshot();
 
     if corpus == wire::Corpus::Concord {
-        let (part, article, paragraph) = parse_concord_ref(raw_ref)?;
-        let start = graph.concord_position_of(part, article, paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
+        let asked_for: ConcordParagraphReference = raw_ref.parse().map_err(|_| ApiError::bad_ref(raw_ref))?;
+        let start = graph.concord_position_of(asked_for.part, asked_for.article, asked_for.paragraph).ok_or_else(|| ApiError::not_found("concord paragraph"))?;
         let n = asked.units();
 
         let ids = window::window(&snap, corpus.name(), start, n, dir);
@@ -232,12 +231,13 @@ pub async fn text_window(
         return Ok(([(header::ETAG, etag)], body).into_response());
     }
 
-    let (book, chapter, verse_opt) = parse_ref(raw_ref)?;
+    let asked_for: ReadingReference = raw_ref.parse().map_err(|_| ApiError::bad_ref(raw_ref))?;
+    let (book, chapter) = (asked_for.chapter.book.0, asked_for.chapter.chapter);
 
     let (start, n) = if scope == wire::TextScope::Chapter {
         graph.chapter_span(book, chapter).ok_or_else(|| ApiError::not_found("chapter"))?
     } else {
-        let verse = verse_opt.ok_or_else(|| ApiError::bad_ref(raw_ref))?;
+        let verse = asked_for.verse.ok_or_else(|| ApiError::bad_ref(raw_ref))?;
         let start = graph.position_of(book, chapter, verse).ok_or_else(|| ApiError::not_found("verse"))?;
         (start, asked.units())
     };
@@ -334,29 +334,6 @@ impl ContractParams for TextWindowQuery {
 
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
     snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
-}
-
-/// Parses `ref` into `(book, chapter, verse)`, the verse present only for a
-/// verse-shaped ref. Which shapes a request may use is decided by the window that
-/// needs the verse, so re-checking it here would state the rule twice.
-fn parse_ref(raw: &str) -> Result<(u8, u16, Option<u16>), ApiError> {
-    match ScriptureRef::parse(raw) {
-        Ok(ScriptureRef::Verse(v)) => Ok((v.book.0, v.chapter, Some(v.verse))),
-        Ok(ScriptureRef::Chapter { book, chapter }) => Ok((book.0, chapter, None)),
-        _ => Err(ApiError::bad_ref(raw)),
-    }
-}
-
-fn parse_concord_ref(raw: &str) -> Result<(u8, u16, u16), ApiError> {
-    let rest = raw.strip_prefix("BoC ").ok_or_else(|| ApiError::bad_ref(raw))?;
-    let mut parts = rest.split('.');
-    let (Some(part), Some(article), Some(paragraph), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
-        return Err(ApiError::bad_ref(raw));
-    };
-    let part: u8 = part.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    let article: u16 = article.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    let paragraph: u16 = paragraph.parse().map_err(|_| ApiError::bad_ref(raw))?;
-    Ok((part, article, paragraph))
 }
 
 pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {

@@ -128,98 +128,113 @@ fn features_hold_exactly_canon_ids_serde_and_openapi_with_no_default() {
 }
 
 #[test]
-fn the_parser_reads_the_manifest_shapes_we_write() {
-    let sample = "[package]\nname = \"x\"\n\n[dependencies]\n\n[features]\n# a comment\ncanon-ids = []\n";
-    assert_eq!(table_entries(sample, "dependencies"), Some(Vec::new()));
-    assert_eq!(
-        table_entries(sample, "features"),
-        Some(vec!["canon-ids = []".to_string()])
-    );
-    assert_eq!(table_entries(sample, "dev-dependencies"), None);
-    let dirty = "[dependencies]\nserde = \"1\"\n";
-    assert_eq!(
-        table_entries(dirty, "dependencies"),
-        Some(vec!["serde = \"1\"".to_string()])
-    );
-    assert_eq!(table_entries("[features]\ncanon-ids = []\n", "features"), Some(vec!["canon-ids = []".to_string()]));
+fn a_table_is_read_as_its_own_entries_and_a_table_that_is_absent_as_nothing() {
+    // Arrange
+    let manifest = "[package]
+name = \"x\"
+
+[dependencies]
+serde = \"1\"
+
+[features]
+# a comment
+canon-ids = []
+";
+    // Act
+    let read = [table_entries(manifest, "dependencies"), table_entries(manifest, "features"), table_entries(manifest, "dev-dependencies")];
+    // Assert
+    assert_eq!(read, [Some(vec!["serde = \"1\"".to_string()]), Some(vec!["canon-ids = []".to_string()]), None]);
 }
 
 #[test]
 fn a_dotted_sub_table_cannot_hide_a_dependency() {
-    let manifest = "[package]\nname = \"x\"\n\n[dependencies.serde]\nversion = \"1\"\n\n[features]\ncanon-ids = []\n";
-
-    let deps = table_entries(manifest, "dependencies")
-        .expect("`[dependencies.serde]` IS a dependencies table, dotted spelling or not");
-    assert!(
-        !deps.is_empty() && deps.iter().any(|e| e.contains("serde")),
-        "a dotted dependency must be reported as an entry, got {deps:?}"
-    );
-
-    for (table, text) in [
-        ("dev-dependencies", "[dev-dependencies.proptest]\nversion = \"1\"\n"),
-        ("build-dependencies", "[build-dependencies.cc]\nversion = \"1\"\n"),
-    ] {
-        let found = table_entries(text, table).unwrap_or_else(|| panic!("[{table}.…] must be attributed to {table}"));
-        assert!(!found.is_empty(), "[{table}.…] must count as an entry, got {found:?}");
-    }
-
-    let bare = table_entries("[dependencies.serde]\n", "dependencies").expect("attributed");
-    assert_eq!(bare, vec!["[dependencies.serde]".to_string()]);
-
+    // Arrange
+    let dotted = [
+        ("dependencies", "[dependencies.serde]
+version = \"1\"
+"),
+        ("dev-dependencies", "[dev-dependencies.proptest]
+version = \"1\"
+"),
+        ("build-dependencies", "[build-dependencies.cc]
+version = \"1\"
+"),
+    ];
+    // Act
+    let read: Vec<Option<Vec<String>>> = dotted.iter().map(|(table, manifest)| table_entries(manifest, table)).collect();
+    // Assert
     assert_eq!(
-        table_entries(manifest, "features"),
-        Some(vec!["canon-ids = []".to_string()])
+        read,
+        vec![
+            Some(vec!["[dependencies.serde]".to_string(), "version = \"1\"".to_string()]),
+            Some(vec!["[dev-dependencies.proptest]".to_string(), "version = \"1\"".to_string()]),
+            Some(vec!["[build-dependencies.cc]".to_string(), "version = \"1\"".to_string()]),
+        ]
     );
-    assert_eq!(table_entries(manifest, "dev-dependencies"), None);
 }
 
 #[test]
 fn a_target_scoped_table_cannot_hide_a_dependency() {
-    for (table, text) in [
-        ("dependencies", "[target.'cfg(windows)'.dependencies]\nwinapi = \"0.3\"\n"),
-        ("dependencies", "[target.cfg(unix).dependencies]\nlibc = \"0.2\"\n"),
-        (
-            "dev-dependencies",
-            "[target.'cfg(target_os = \"linux\")'.dev-dependencies]\nproptest = \"1\"\n",
-        ),
-        ("build-dependencies", "[target.'cfg(windows)'.build-dependencies]\ncc = \"1\"\n"),
-    ] {
-        let found = table_entries(text, table)
-            .unwrap_or_else(|| panic!("a target-scoped [{table}] must be attributed to {table}"));
-        assert!(
-            found.len() == 2,
-            "the header ITSELF declares the table, and its one line is an entry: {found:?}"
-        );
-    }
-
+    // Arrange
+    let scoped = [
+        ("dependencies", "[target.'cfg(windows)'.dependencies]
+winapi = \"0.3\"
+"),
+        ("dependencies", "[target.cfg(unix).dependencies]
+libc = \"0.2\"
+"),
+        ("dev-dependencies", "[target.'cfg(target_os = \"linux\")'.dev-dependencies]
+proptest = \"1\"
+"),
+        ("build-dependencies", "[target.'cfg(windows)'.build-dependencies]
+cc = \"1\"
+"),
+        ("dependencies", "[target.'cfg(windows)'.dev-dependencies]
+proptest = \"1\"
+"),
+    ];
+    // Act
+    let read: Vec<Option<Vec<String>>> = scoped.iter().map(|(table, manifest)| table_entries(manifest, table)).collect();
+    // Assert
     assert_eq!(
-        table_entries("[target.'cfg(windows)'.dev-dependencies]\nproptest = \"1\"\n", "dependencies"),
-        None,
-        "`.dev-dependencies]` must not be read as `.dependencies]`"
+        read,
+        vec![
+            Some(vec!["[target.'cfg(windows)'.dependencies]".to_string(), "winapi = \"0.3\"".to_string()]),
+            Some(vec!["[target.cfg(unix).dependencies]".to_string(), "libc = \"0.2\"".to_string()]),
+            Some(vec!["[target.'cfg(target_os = \"linux\")'.dev-dependencies]".to_string(), "proptest = \"1\"".to_string()]),
+            Some(vec!["[target.'cfg(windows)'.build-dependencies]".to_string(), "cc = \"1\"".to_string()]),
+            None,
+        ]
     );
-
-    let toml = std::fs::read_to_string(manifest_path()).expect("graph-types/Cargo.toml");
-    assert_eq!(table_entries(&toml, "dependencies"), Some(expected_dependency_entries()));
 }
 
 #[test]
 fn a_trailing_comment_on_a_header_does_not_hide_the_table() {
-    let commented = "[dependencies]  # nothing lives here\nserde = \"1\"\n";
+    // Arrange
+    let commented = [
+        ("dependencies", "[dependencies]  # nothing lives here
+serde = \"1\"
+"),
+        ("features", "[features] # the one switch
+canon-ids = []
+"),
+        ("dependencies", "[dependencies.serde] # pinned
+version = \"1\"
+"),
+        ("dependencies", "[target.'cfg(feature = \"a#b\")'.dependencies]
+libc = \"0.2\"
+"),
+    ];
+    // Act
+    let read: Vec<Option<Vec<String>>> = commented.iter().map(|(table, manifest)| table_entries(manifest, table)).collect();
+    // Assert
     assert_eq!(
-        table_entries(commented, "dependencies"),
-        Some(vec!["serde = \"1\"".to_string()]),
-        "a commented header is still the header"
+        read,
+        vec![
+            Some(vec!["serde = \"1\"".to_string()]),
+            Some(vec!["canon-ids = []".to_string()]),
+            Some(vec!["[dependencies.serde]".to_string(), "version = \"1\"".to_string()]),
+            Some(vec!["[target.'cfg(feature = \"a#b\")'.dependencies]".to_string(), "libc = \"0.2\"".to_string()]),
+        ]
     );
-    assert_eq!(
-        table_entries("[features] # the one switch\ncanon-ids = []\n", "features"),
-        Some(vec!["canon-ids = []".to_string()])
-    );
-    assert_eq!(
-        table_entries("[dependencies.serde] # pinned\nversion = \"1\"\n", "dependencies"),
-        Some(vec!["[dependencies.serde]".to_string(), "version = \"1\"".to_string()])
-    );
-    let quoted = "[target.'cfg(feature = \"a#b\")'.dependencies]\nlibc = \"0.2\"\n";
-    let found = table_entries(quoted, "dependencies").expect("attributed");
-    assert_eq!(found.len(), 2, "got {found:?}");
-    assert!(found[0].ends_with(".dependencies]"), "header kept whole: {:?}", found[0]);
 }

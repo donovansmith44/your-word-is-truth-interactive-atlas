@@ -13,26 +13,19 @@ fn app() -> axum::Router {
 }
 
 #[tokio::test]
-async fn api_contract_advertises_the_pinned_aqc_version_range() {
-    let response = app().oneshot(Request::builder().uri("/api/contract").body(Body::empty()).unwrap()).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(body["min_version"], "0.8.0");
-    assert_eq!(body["max_version"], "0.8.0");
-    assert_eq!(body["manifest_schema"], 1);
-    assert_eq!(body["section_schema_version"], 14);
-}
-
-#[tokio::test]
-async fn api_contract_carries_no_other_fields() {
-    let response = app().oneshot(Request::builder().uri("/api/contract").body(Body::empty()).unwrap()).await.unwrap();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-    let obj = body.as_object().expect("Contract must serialize as a JSON object");
-    let mut keys: Vec<&str> = obj.keys().map(String::as_str).collect();
-    keys.sort();
-    assert_eq!(keys, vec!["manifest_schema", "max_version", "min_version", "section_schema_version"]);
+async fn api_contract_answers_the_whole_advertisement_and_nothing_besides() {
+    // Arrange
+    let app = app();
+    let expected = serde_json::json!({
+        "min_version": "0.8.0",
+        "max_version": "0.8.0",
+        "manifest_schema": 1,
+        "section_schema_version": 14,
+    });
+    // Act
+    let answered = get_json(&app, "/api/contract").await;
+    // Assert
+    assert_eq!(answered, (StatusCode::OK, expected));
 }
 
 #[test]
@@ -65,6 +58,13 @@ async fn the_served_openapi_document_equals_the_committed_one() {
     let served = get_text(&app, "/api/openapi.yaml").await;
     // Assert
     assert_eq!(served, committed);
+}
+
+async fn get_json(app: &axum::Router, path: &str) -> (StatusCode, serde_json::Value) {
+    let response = app.clone().oneshot(Request::builder().uri(path).body(Body::empty()).unwrap()).await.unwrap();
+    let status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    (status, serde_json::from_slice(&bytes).expect("the body is JSON"))
 }
 
 async fn get_text(app: &axum::Router, path: &str) -> String {

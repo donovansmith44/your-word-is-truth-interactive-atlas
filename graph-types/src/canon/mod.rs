@@ -38,9 +38,9 @@ pub enum Value {
 }
 
 impl Value {
-    /// The ONLY way to build a `Value::Float`: a non-finite double has no canonical spelling, so
-/// it is refused here rather than at serialization time, which is what lets `serialize` be
-/// infallible.
+    /// The ONLY way to build a `Value::Float`: a non-finite double has no canonical
+    /// spelling, so it is refused here rather than at serialization time, which is
+    /// what lets `serialize` be infallible.
     pub fn float(f: f64) -> Result<Value, CanonError> {
         if f.is_finite() {
             Ok(Value::Float(f))

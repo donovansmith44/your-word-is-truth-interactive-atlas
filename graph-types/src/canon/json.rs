@@ -40,8 +40,8 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
         }
         Value::Obj(members) => {
             out.push(b'{');
-            // BTreeMap iteration is `str` order, which is UTF-8 byte order -- the key ordering law,
-        // for free.
+            // BTreeMap iteration is `str` order, which is UTF-8 byte order -- the key
+            // ordering law, for free.
             for (i, (k, val)) in members.iter().enumerate() {
                 if i > 0 {
                     out.push(b',');

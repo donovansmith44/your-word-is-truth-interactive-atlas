@@ -84,7 +84,7 @@ fn provided_suites() -> Vec<String> {
     let text = std::fs::read_to_string(&registry).unwrap_or_else(|e| {
         panic!(
             "cannot read {}: {e}\n  The recorder derives WHICH suites it provides from the registry; \
-             without it, it would have to guess, and a hardcoded guess is what review M-R2-4 is about.",
+             without it, it would have to guess, and a guess written out here is what the registry exists to replace.",
             registry.display()
         )
     });

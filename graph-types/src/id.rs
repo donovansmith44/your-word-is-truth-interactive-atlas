@@ -20,11 +20,20 @@ pub trait KindTag {
 }
 
 macro_rules! kind_tags {
-    ($($tag:ident => $kind:ident),+ $(,)?) => {$(
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-        pub struct $tag;
-        impl KindTag for $tag { const KIND: NodeKind = NodeKind::$kind; }
-    )+};
+    ($($tag:ident => $kind:ident),+ $(,)?) => {
+        $(
+            #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct $tag;
+            impl KindTag for $tag { const KIND: NodeKind = NodeKind::$kind; }
+        )+
+
+        /// The kind each tag stands for, read back through the tag. The match is over
+        /// `NodeKind`, so the compiler refuses a kind the list above leaves untagged.
+        #[cfg(test)]
+        fn tagged(kind: NodeKind) -> NodeKind {
+            match kind { $(NodeKind::$kind => <$tag as KindTag>::KIND),+ }
+        }
+    };
 }
 
 kind_tags! {
@@ -213,4 +222,19 @@ pub trait ContentAddressed {
 pub struct Tombstone {
     pub retired: Pid,
     pub superseded_by: Option<Pid>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_node_kind_has_a_tag_that_stands_for_it() {
+        // Arrange
+        let every_kind = NodeKind::ALL;
+        // Act
+        let stood_for = every_kind.map(tagged);
+        // Assert
+        assert_eq!(stood_for, every_kind);
+    }
 }

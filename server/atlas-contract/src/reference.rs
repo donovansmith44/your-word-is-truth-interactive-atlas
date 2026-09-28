@@ -1,4 +1,5 @@
-//! What a route's own path segment names, read as the reference it is.
+//! What a route reads a reference as: every shape a path segment or a `ref`
+//! parameter may name, and the one refusal a segment that names none answers.
 
 use std::str::FromStr;
 
@@ -47,6 +48,55 @@ impl FromStr for ChapterReference {
             Ok(ScriptureRef::Chapter { book, chapter }) => Ok(ChapterReference { book, chapter }),
             _ => Err(NamesNoReference),
         }
+    }
+}
+
+/// A reference as a reading window reads one: the chapter it names, and the verse
+/// where it named one. Which of the two shapes a request may use is decided by the
+/// window that needs the verse, so it is not decided here.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReadingReference {
+    pub chapter: ChapterReference,
+    pub verse: Option<u16>,
+}
+
+impl FromStr for ReadingReference {
+    type Err = NamesNoReference;
+
+    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
+        match ScriptureRef::parse(raw) {
+            Ok(ScriptureRef::Verse(verse)) => Ok(ReadingReference { chapter: ChapterReference { book: verse.book, chapter: verse.chapter }, verse: Some(verse.verse) }),
+            Ok(ScriptureRef::Chapter { book, chapter }) => Ok(ReadingReference { chapter: ChapterReference { book, chapter }, verse: None }),
+            _ => Err(NamesNoReference),
+        }
+    }
+}
+
+/// A reference naming one paragraph of the Book of Concord, as
+/// `BoC PART.ARTICLE.PARAGRAPH`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ConcordParagraphReference {
+    pub part: u8,
+    pub article: u16,
+    pub paragraph: u16,
+}
+
+const CONCORD_PREFIX: &str = "BoC ";
+
+impl FromStr for ConcordParagraphReference {
+    type Err = NamesNoReference;
+
+    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
+        let rest = raw.strip_prefix(CONCORD_PREFIX).ok_or(NamesNoReference)?;
+        let mut numbers = rest.split('.');
+        let (Some(part), Some(article), Some(paragraph), None) = (numbers.next(), numbers.next(), numbers.next(), numbers.next()) else {
+            return Err(NamesNoReference);
+        };
+        Ok(ConcordParagraphReference {
+            part: part.parse().map_err(|_| NamesNoReference)?,
+            article: article.parse().map_err(|_| NamesNoReference)?,
+            paragraph: paragraph.parse().map_err(|_| NamesNoReference)?,
+        })
     }
 }
 
@@ -106,6 +156,45 @@ mod tests {
             read,
             vec![
                 Ok(ChapterReference { book: BookId(1), chapter: 14 }),
+                Err(NamesNoReference),
+                Err(NamesNoReference),
+                Err(NamesNoReference),
+                Err(NamesNoReference),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_reading_reference_carries_the_chapter_always_and_the_verse_where_one_was_named() {
+        // Arrange
+        let asked = ["JHN.3.16", "JHN.3", "JHN", "JHN.3.16-18", "nope"];
+        // Act
+        let read: Vec<Result<ReadingReference, NamesNoReference>> = asked.iter().map(|raw| raw.parse()).collect();
+        // Assert
+        assert_eq!(
+            read,
+            vec![
+                Ok(ReadingReference { chapter: ChapterReference { book: BookId(42), chapter: 3 }, verse: Some(16) }),
+                Ok(ReadingReference { chapter: ChapterReference { book: BookId(42), chapter: 3 }, verse: None }),
+                Err(NamesNoReference),
+                Err(NamesNoReference),
+                Err(NamesNoReference),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_concord_paragraph_reference_names_a_part_an_article_and_a_paragraph() {
+        // Arrange
+        let asked = ["BoC 7.2.1", "BoC 7.2", "BoC 7.2.1.4", "BoC 7.2.x", "7.2.1", "nope"];
+        // Act
+        let read: Vec<Result<ConcordParagraphReference, NamesNoReference>> = asked.iter().map(|raw| raw.parse()).collect();
+        // Assert
+        assert_eq!(
+            read,
+            vec![
+                Ok(ConcordParagraphReference { part: 7, article: 2, paragraph: 1 }),
+                Err(NamesNoReference),
                 Err(NamesNoReference),
                 Err(NamesNoReference),
                 Err(NamesNoReference),
