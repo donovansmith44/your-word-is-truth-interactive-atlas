@@ -15,10 +15,7 @@ public sealed class GeneratedUsageTests
         // Arrange
         var schemas = ContractSchemas();
         var generatedTypeNames = schemas.Keys.Where(name => !IsInlinedArray(schemas[name])).ToHashSet();
-        // client.ContractTests deserialises live wire payloads (error bodies,
-        // the /api/contract response) straight into the generated types for
-        // pact verification -- a genuine reader of the contract, even though
-        // it is not product UI code, so it counts alongside client/ itself.
+        // The pact harness deserialises into generated types, so it is a reader too.
         var roots = generatedTypeNames
             .Where(name => NamesType(name, ConformanceTests.SourceUnder("client")) || NamesType(name, ConformanceTests.SourceUnder("client.ContractTests")))
             .ToHashSet();
@@ -37,9 +34,7 @@ public sealed class GeneratedUsageTests
         return document.RootElement.GetProperty("$defs").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
     }
 
-    // `InlineNamedArrays` (client.ContractGenerator/Program.cs) turns every
-    // array-shaped named schema into a plain `IReadOnlyList<T>` inline, so it
-    // never becomes a C# type that could need a reader (B7: Point).
+    // An array-shaped schema is inlined by the generator and never becomes a type.
     private static bool IsInlinedArray(JsonElement schema) =>
         schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "array";
 
@@ -50,11 +45,7 @@ public sealed class GeneratedUsageTests
             return Regex.IsMatch(source, $@"\b{Regex.Escape(typeName)}\b");
         }
 
-        // "Contract" is also the last segment of this whole namespace
-        // (BibleAtlas.Client.Contract), so a bare `using ...Contract;` or a
-        // `Contract.Foo` qualifier names the NAMESPACE, not the type -- only
-        // a token touching no dot on either side, or the fully qualified
-        // `Contract.Contract`, actually names the type.
+        // `Contract` is also a namespace segment; only an undotted token or `Contract.Contract` names the type.
         if (Regex.IsMatch(source, @"\bContract\.Contract\b"))
         {
             return true;
