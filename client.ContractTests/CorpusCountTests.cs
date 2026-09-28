@@ -45,7 +45,10 @@ public class CorpusCountTests
                 {
                     count += 1;
                 }
-                count += attrs.Count(a => a.GetType().Name == "InlineDataAttribute");
+                if (attrs.Any(a => a.GetType().Name == "SkippableTheoryAttribute"))
+                {
+                    count += attrs.Count(a => a.GetType().Name == "InlineDataAttribute");
+                }
             }
         }
         return count;

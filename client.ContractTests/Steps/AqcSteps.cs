@@ -19,7 +19,7 @@ namespace BibleAtlas.Client.ContractTests.Steps;
 [Binding]
 public class AqcSteps
 {
-    private static readonly string RepoRoot = FindRepoRoot();
+    internal static readonly string RepoRoot = FindRepoRoot();
     private static readonly string FixturesDir = Path.Combine(RepoRoot, "contracts", "atlas-query-contract", "fixtures");
 
     /// <summary>
