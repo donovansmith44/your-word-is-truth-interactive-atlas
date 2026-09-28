@@ -5,7 +5,7 @@ fn sample_scene() -> Scene {
     Scene {
         mode: SceneMode::Time,
         window: Some(TimeRange::new(-1450, -1400).unwrap()),
-        sref: None,
+        r#ref: None,
         places: vec![ScenePlace {
             id: "jericho".into(), name: "Jericho".into(), display_name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
             brightness: 2,

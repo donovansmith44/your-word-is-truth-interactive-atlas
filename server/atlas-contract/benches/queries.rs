@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use axum::extract::{Path as AxPath, Query as AxQuery, State};
+use axum::extract::{Path as AxPath, State};
 use axum::http::HeaderMap;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tokio::runtime::Runtime;
@@ -12,6 +11,8 @@ use atlas_core::refs::ScriptureRef;
 use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::TimeRange;
 use atlas_graph::GraphService;
+use atlas_contract::query::Contract;
+use atlas_contract::reference::Reference;
 use atlas_contract::{catechism, events, graph, map, places, reading};
 
 fn repo_data_dir() -> PathBuf {
@@ -31,8 +32,11 @@ fn rt() -> Runtime {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap()
 }
 
-fn qmap(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-    pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+/// A reference as a route would have read it off the request. `unwrap` is the
+/// benchmark saying that a reference written out here must be one this atlas
+/// serves; a bench measuring a refusal would measure nothing.
+fn asked_for<T: std::str::FromStr>(raw: &str) -> Reference<T> {
+    Reference(raw.parse().ok().expect("a reference this benchmark names must be one this atlas reads"))
 }
 
 fn bench_scene_pure(c: &mut Criterion) {
@@ -64,10 +68,10 @@ fn bench_handlers(c: &mut Criterion) {
     let mut group = c.benchmark_group("handlers");
 
     group.bench_function("scene_time", |b| {
-        b.iter(|| rt.block_on(map::scene_time(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("from", "-5"), ("to", "100")])))))
+        b.iter(|| rt.block_on(map::scene_time(State(data.clone()), State(graph.clone()), Contract(map::SceneWindow { from: -5, to: 100 }))))
     });
     group.bench_function("scene_scripture", |b| {
-        b.iter(|| rt.block_on(map::scene_scripture(State(data.clone()), State(graph.clone()), AxQuery(qmap(&[("ref", "JHN.3")])))))
+        b.iter(|| rt.block_on(map::scene_scripture(State(data.clone()), State(graph.clone()), Contract(map::ScripturePassage { r#ref: "JHN.3".to_string() }))))
     });
     group.bench_function("books", |b| b.iter(|| rt.block_on(reading::books(State(data.clone())))));
     group.bench_function("eras", |b| b.iter(|| rt.block_on(map::eras(State(graph.clone())))));
@@ -75,17 +79,17 @@ fn bench_handlers(c: &mut Criterion) {
     group.bench_function("landmarks", |b| b.iter(|| rt.block_on(map::landmarks(State(data.clone())))));
     group.bench_function("land_mask", |b| b.iter(|| rt.block_on(map::land_mask(State(data.clone())))));
     group.bench_function("polities", |b| {
-        b.iter(|| rt.block_on(map::polities(State(graph.clone()), AxQuery(qmap(&[("from", "-4004"), ("to", "100")])))))
+        b.iter(|| rt.block_on(map::polities(State(graph.clone()), Contract(map::SceneWindow { from: -4004, to: 100 }))))
     });
     group.bench_function("chapter", |b| {
-        b.iter(|| rt.block_on(reading::chapter(State(data.clone()), State(graph.clone()), AxPath("JHN.3".to_string()))))
+        b.iter(|| rt.block_on(reading::chapter(State(data.clone()), State(graph.clone()), asked_for("JHN.3"))))
     });
     group.bench_function("verse", |b| {
-        b.iter(|| rt.block_on(reading::verse(State(data.clone()), State(graph.clone()), AxPath("JHN.3.16".to_string()))))
+        b.iter(|| rt.block_on(reading::verse(State(data.clone()), State(graph.clone()), asked_for("JHN.3.16"))))
     });
-    group.bench_function("xrefs", |b| b.iter(|| rt.block_on(reading::xrefs(State(graph.clone()), AxPath("JHN.3.16".to_string())))));
+    group.bench_function("xrefs", |b| b.iter(|| rt.block_on(reading::xrefs(State(graph.clone()), asked_for("JHN.3.16")))));
     group.bench_function("place", |b| {
-        b.iter(|| rt.block_on(places::place(State(data.clone()), State(graph.clone()), AxPath("hebron".to_string()), AxQuery(HashMap::new()))))
+        b.iter(|| rt.block_on(places::place(State(data.clone()), State(graph.clone()), AxPath("hebron".to_string()), Contract(places::PlacePeriod { from: None, to: None }))))
     });
     group.bench_function("event", |b| {
         b.iter(|| rt.block_on(events::event(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
@@ -94,7 +98,7 @@ fn bench_handlers(c: &mut Criterion) {
         b.iter(|| rt.block_on(events::narrative_event_positions(State(data.clone()), State(graph.clone()), AxPath("ab_ur".to_string()))))
     });
     group.bench_function("catechism_for_span", |b| {
-        b.iter(|| rt.block_on(catechism::catechism_for_span(State(data.clone()), State(graph.clone()), AxPath("EXO.20.3".to_string()))))
+        b.iter(|| rt.block_on(catechism::catechism_for_span(State(data.clone()), State(graph.clone()), asked_for("EXO.20.3"))))
     });
     group.bench_function("catechism_item", |b| {
         b.iter(|| rt.block_on(catechism::catechism_item(State(data.clone()), State(graph.clone()), AxPath("commandment-1".to_string()))))
@@ -103,25 +107,33 @@ fn bench_handlers(c: &mut Criterion) {
     group.finish();
 }
 
+const CITES: atlas_graph_types::edge::EdgeKind = atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::Cites, atlas_graph_types::edge::Direction::Forward);
+
 fn bench_graph_handlers(c: &mut Criterion) {
     let (_data, graph) = load_real();
     let rt = rt();
     let mut group = c.benchmark_group("graph_handlers");
 
     group.bench_function("node_card", |b| {
-        b.iter(|| rt.block_on(graph::node_card(State(graph.clone()), AxPath("text-unit:JHN.3.16".to_string()))))
+        b.iter(|| rt.block_on(graph::node_card(State(graph.clone()), asked_for("text-unit:JHN.3.16"))))
     });
     group.bench_function("node_edges", |b| {
         b.iter(|| {
             rt.block_on(graph::node_edges(
                 State(graph.clone()),
-                AxPath("text-unit:JHN.3.16".to_string()),
-                AxQuery(qmap(&[("kind", "cites")])),
+                asked_for("text-unit:JHN.3.16"),
+                Contract(graph::EdgePageQuery { kind: CITES, cursor: Default::default(), limit: Default::default() }),
             ))
         })
     });
     group.bench_function("text_window", |b| {
-        b.iter(|| rt.block_on(graph::text_window(State(graph.clone()), HeaderMap::new(), AxQuery(qmap(&[("ref", "JHN.3.16")])))))
+        b.iter(|| {
+            rt.block_on(graph::text_window(
+                State(graph.clone()),
+                HeaderMap::new(),
+                Contract(graph::TextWindowQuery { r#ref: "JHN.3.16".to_string(), n: Default::default(), dir: None, scope: None, corpus: None }),
+            ))
+        })
     });
 
     group.finish();
