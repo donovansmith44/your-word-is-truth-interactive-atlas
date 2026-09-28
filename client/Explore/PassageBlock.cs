@@ -1,7 +1,9 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Explore;
 
 // Places/Persons/WordsOfChrist: null means no source data to check; empty means checked, none found.
-public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRefDto>? Places = null, IReadOnlyList<PersonRefDto>? Persons = null, IReadOnlyList<WordsOfChristSpanDto>? WordsOfChrist = null);
+public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRef>? Places = null, IReadOnlyList<PersonRef>? Persons = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null);
 
 public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null, bool CoalesceAcrossChapters = false, Versification? Canon = null);
 
@@ -17,7 +19,7 @@ public static class VerseTextResolver
     public static async Task<List<PassageListVerse>> ResolveAsync(AtlasClient api, IReadOnlyList<string> vrefs)
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), ChapterOut>();
+        var chapters = new Dictionary<(string, int), Chapter>();
         try
         {
             var fetched = await Task.WhenAll(pairs.Select(p => api.Chapter(p.Book, p.Chapter)));
@@ -38,7 +40,7 @@ public static class VerseTextResolver
             {
                 continue;
             }
-            var cv = c.Verses.FirstOrDefault(v => v.Verse == verse);
+            var cv = c.Verses.FirstOrDefault(v => v.Verse1 == verse);
             if (cv is not null)
             {
                 result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
@@ -122,7 +124,7 @@ public static class PassageBlockBuilder
         return blocks;
     }
 
-    public static List<PassageListVerse> FlattenWitness(EventWitnessDto witness) =>
+    public static List<PassageListVerse> FlattenWitness(EventWitness witness) =>
         witness.VerseGroups.SelectMany(g => g.Verses.Select(v => new PassageListVerse(v, "", g.Count))).ToList();
 
     // FirstVerse/LastVerse are true extents (cap-corrected), not necessarily delivered verses.

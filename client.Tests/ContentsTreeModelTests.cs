@@ -12,18 +12,18 @@ public class ContentsTreeModelTests
     private const string GenesisTwo = "Container:bible-chapter-GEN-2";
     private const string ExodusOne = "Container:bible-chapter-EXO-1";
 
-    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(Corpus.Bible, new List<ContentsRoot>
-    {
-        new(new List<ContentsChild>
-        {
-            new(31, GenesisOne, ContentsChildKind.Chapter, "GEN.1", "1"),
-            new(25, GenesisTwo, ContentsChildKind.Chapter, "GEN.2", "2"),
-        }, Testament.OT, Genesis, ContentsRootKind.Book, "GEN.1", "Genesis"),
-        new(new List<ContentsChild>
-        {
-            new(22, ExodusOne, ContentsChildKind.Chapter, "EXO.1", "1"),
-        }, Testament.OT, Exodus, ContentsRootKind.Book, "EXO.1", "Exodus"),
-    }, "v"));
+    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
+    [
+        new(id: Genesis, title: "Genesis", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GEN.1", children:
+        [
+            new(id: GenesisOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GEN.1", count: 31),
+            new(id: GenesisTwo, title: "2", kind: ContentsChildKind.Chapter, @ref: "GEN.2", count: 25),
+        ]),
+        new(id: Exodus, title: "Exodus", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "EXO.1", children:
+        [
+            new(id: ExodusOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "EXO.1", count: 22),
+        ]),
+    ]));
 
     [Fact]
     public void From_carries_the_contract_kinds_of_roots_and_children()

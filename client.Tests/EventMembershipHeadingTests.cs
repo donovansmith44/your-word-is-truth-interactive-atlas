@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
@@ -14,14 +15,13 @@ namespace BibleAtlas.Client.Tests;
 /// throwing (the pre-PERI-1 shape this class replaced) fails this test.
 /// </summary>
 public class EventMembershipHeadingTests {
-    [Fact] public void EventKindMapsToEventHeading() => Assert.Equal("EVENT", EventMembershipHeading.For("event"));
+    [Fact] public void EventKindMapsToEventHeading() => Assert.Equal("EVENT", EventMembershipHeading.For(EventKind.Event));
 
-    [Fact] public void GeneralKindMapsToPassageHeading() => Assert.Equal("PASSAGE", EventMembershipHeading.For("general"));
+    [Fact] public void GeneralKindMapsToPassageHeading() => Assert.Equal("PASSAGE", EventMembershipHeading.For(EventKind.General));
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("Event")]
-    [InlineData("unknown")]
-    public void UnrecognizedKindThrowsRatherThanDefaulting(string kind) =>
-        Assert.Throws<NotSupportedException>(() => EventMembershipHeading.For(kind));
+    [Fact]
+    public void UndeclaredKindThrowsRatherThanDefaulting() =>
+        Assert.Throws<NotSupportedException>(() => EventMembershipHeading.For(UndeclaredKind));
+
+    private static readonly EventKind UndeclaredKind = (EventKind)Enum.GetValues<EventKind>().Length;
 }

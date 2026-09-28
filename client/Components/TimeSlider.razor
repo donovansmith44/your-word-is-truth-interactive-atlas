@@ -71,7 +71,7 @@
 
     private const double SnapThresholdPx = 6.0;
 
-    [Parameter] public List<EraDto> Eras { get; set; } = new();
+    [Parameter] public List<Era> Eras { get; set; } = new();
     [Parameter] public int From { get; set; }
     [Parameter] public int To { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
@@ -134,7 +134,7 @@
         }
     }
 
-    private async Task ApplyEra(EraDto era)
+    private async Task ApplyEra(Era era)
     {
         if (Disabled)
         {

@@ -16,10 +16,10 @@
 
 @code {
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PlaceRef> Places { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PersonRef> Persons { get; set; } = default!;
 
-    [Parameter] public IReadOnlyList<WordsOfChristSpanDto> WordsOfChrist { get; set; } = Array.Empty<WordsOfChristSpanDto>();
+    [Parameter] public IReadOnlyList<WordsOfChristSpan> WordsOfChrist { get; set; } = Array.Empty<WordsOfChristSpan>();
 
     [Parameter, EditorRequired] public int Verse { get; set; }
 
@@ -34,7 +34,7 @@
     public readonly record struct TextRun(string Text, bool IsRed);
 
     /// <summary>Pure. <paramref name="spans"/> is trusted sorted/non-overlapping (the server's alignment walk guarantees this), but this still clamps a malformed/out-of-range span rather than trusting the wire blindly.</summary>
-    public static List<TextRun> ComputeRuns(string text, IReadOnlyList<WordsOfChristSpanDto> spans)
+    public static List<TextRun> ComputeRuns(string text, IReadOnlyList<WordsOfChristSpan> spans)
     {
         if (spans.Count == 0)
         {

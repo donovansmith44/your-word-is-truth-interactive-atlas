@@ -1,10 +1,12 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Explore;
 
 public readonly record struct MentionSegment(string Text, string? PlaceId, string? PlaceName, string? PersonId = null, string? PersonName = null);
 
 public static class PlaceMentions
 {
-    public static IReadOnlyList<MentionSegment> Scan(string text, IReadOnlyList<PlaceRefDto> places, IReadOnlyList<PersonRefDto> persons)
+    public static IReadOnlyList<MentionSegment> Scan(string text, IReadOnlyList<PlaceRef> places, IReadOnlyList<PersonRef> persons)
     {
         if (string.IsNullOrEmpty(text) || (places.Count == 0 && persons.Count == 0))
         {

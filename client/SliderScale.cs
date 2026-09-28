@@ -1,3 +1,5 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client;
 
 // Maps between a calendar year and a horizontal pixel position on the TimeSlider's era-segmented
@@ -19,7 +21,7 @@ public static class SliderScale
     // the width tolerance callers should use (1e-6).
     private const double Epsilon = 1e-7;
 
-    public static double YearToX(int year, IReadOnlyList<EraDto> eras, double width)
+    public static double YearToX(int year, IReadOnlyList<Era> eras, double width)
     {
         var widths = EraWidths(eras, width);
         var eraIndex = FindEraForYear(year, eras);
@@ -37,7 +39,7 @@ public static class SliderScale
         return cumStart + index * step;
     }
 
-    public static int XToYear(double x, IReadOnlyList<EraDto> eras, double width)
+    public static int XToYear(double x, IReadOnlyList<Era> eras, double width)
     {
         var widths = EraWidths(eras, width);
         var clampedX = Math.Clamp(x, 0.0, width);
@@ -66,7 +68,7 @@ public static class SliderScale
     // Public so TimeSlider.razor can render each band at this exact pixel width -- the visual band
     // and the handle math must use the same numbers, not two independent approximations (CSS flex
     // resolution does not land on the same per-era widths this computes).
-    public static double[] EraWidths(IReadOnlyList<EraDto> eras, double width)
+    public static double[] EraWidths(IReadOnlyList<Era> eras, double width)
     {
         var n = eras.Count;
         var spans = new double[n];
@@ -143,7 +145,7 @@ public static class SliderScale
         return start;
     }
 
-    private static int FindEraForYear(int year, IReadOnlyList<EraDto> eras)
+    private static int FindEraForYear(int year, IReadOnlyList<Era> eras)
     {
         for (var i = 0; i < eras.Count; i++)
         {
@@ -175,12 +177,12 @@ public static class SliderScale
 
     // ToYear - FromYear + 1 for an era that doesn't straddle year zero, or one fewer when it does
     // (FromYear < 0 < ToYear), since year 0 is skipped -- era "gospels" (-5..29) is 34 years, not 35.
-    private static int EraYearCount(EraDto era) =>
+    private static int EraYearCount(Era era) =>
         era.ToYear - era.FromYear + (era.FromYear < 0 && era.ToYear > 0 ? 0 : 1);
 
     // For an era that straddles zero, years <= -1 keep the plain offset from FromYear, and years
     // >= 1 continue one slot earlier than the raw offset would put them, since year 0 is skipped.
-    private static int YearToLocalIndex(int year, EraDto era)
+    private static int YearToLocalIndex(int year, Era era)
     {
         if (era.FromYear < 0 && era.ToYear > 0)
         {
@@ -190,7 +192,7 @@ public static class SliderScale
         return year - era.FromYear;
     }
 
-    private static int LocalIndexToYear(int index, EraDto era)
+    private static int LocalIndexToYear(int index, Era era)
     {
         if (era.FromYear < 0 && era.ToYear > 0)
         {

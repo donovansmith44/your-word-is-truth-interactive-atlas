@@ -49,7 +49,7 @@
     [Parameter] public int SyncToken { get; set; }
     private int _syncedToken;
 
-    private List<BookTocEntry>? _toc;
+    private List<CanonBook>? _toc;
     private string _bookCode = "";
     private string _chapterText = "";
     private string _verseFromText = "";
@@ -107,7 +107,7 @@
         _verseToText = "";
     }
 
-    private BookTocEntry? SelectedBookEntry => _toc?.FirstOrDefault(b => b.Code == _bookCode);
+    private CanonBook? SelectedBookEntry => _toc?.FirstOrDefault(b => b.Code == _bookCode);
     private int ChapterCount => SelectedBookEntry?.Chapters.Count ?? 0;
 
     private int? SelectedChapter =>

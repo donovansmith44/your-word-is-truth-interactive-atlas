@@ -11,7 +11,7 @@
                 {
                     @foreach (var v in FocalVerses)
                     {
-                        <MentionText Text="@v.Text" Places="@v.Places" Persons="@v.Persons" WordsOfChrist="@v.WordsOfChrist" Verse="@v.Verse"
+                        <MentionText Text="@v.Text" Places="@v.Places" Persons="@v.Persons" WordsOfChrist="@v.WordsOfChrist" Verse="@v.Verse1"
                                      ClassPrefix="popover-verse-mention" OnExplore="OnExplore" /><text> </text>
                     }
                 }
@@ -31,7 +31,7 @@
     [Parameter] public int FocalToVerse { get; set; }
     [Parameter, EditorRequired] public string CompactText { get; set; } = default!;
 
-    [Parameter] public IReadOnlyList<VerseOut> FocalVerses { get; set; } = Array.Empty<VerseOut>();
+    [Parameter] public IReadOnlyList<Verse> FocalVerses { get; set; } = Array.Empty<Verse>();
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 }

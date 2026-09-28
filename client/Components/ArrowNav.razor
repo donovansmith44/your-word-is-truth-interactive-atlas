@@ -56,7 +56,7 @@ else
             @foreach (var v in _peekVerses.Take(_peekShown))
             {
                 <p class="popover-arrow-peek-verse" data-testid="@($"{EventTestIdPrefix}-{IdSuffix}-peek-verse-{v.Vref}")">
-                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRefDto>())" Persons="@(v.Persons ?? Array.Empty<PersonRefDto>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpanDto>())"
+                    <sup class="popover-arrow-peek-verse-num">@CanonRef.ParseVerse(v.Vref).Verse</sup><MentionText Text="@v.Text" Places="@(v.Places ?? Array.Empty<PlaceRef>())" Persons="@(v.Persons ?? Array.Empty<PersonRef>())" WordsOfChrist="@(v.WordsOfChrist ?? Array.Empty<WordsOfChristSpan>())"
                         Verse="@CanonRef.ParseVerse(v.Vref).Verse" ClassPrefix="popover-arrow-peek-mention" TestIdSuffix="@($"-{EventTestIdPrefix}-{IdSuffix}-peek")" OnExplore="OnExplore" />
                 </p>
             }
@@ -80,7 +80,7 @@ else
     [Parameter, EditorRequired] public string RoleTestIdPrefix { get; set; } = default!;
     [Parameter, EditorRequired] public string IdSuffix { get; set; } = default!;
 
-    [Parameter] public NarrativeAdjacentEventDto? Adjacent { get; set; }
+    [Parameter] public NarrativeAdjacentEvent? Adjacent { get; set; }
     [Parameter, EditorRequired] public string Glyph { get; set; } = default!;
 
     [Parameter] public bool Inline { get; set; }
@@ -156,7 +156,7 @@ else
         return result;
     }
 
-    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitnessDto> witnesses, Versification? canon)
+    public static List<RefsList.RefDescriptor> SelectRefsFromWitnesses(IReadOnlyList<EventWitness> witnesses, Versification? canon)
     {
         var result = new List<RefsList.RefDescriptor>();
         foreach (var w in witnesses)
@@ -184,8 +184,8 @@ else
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        // Adjacent is always a narrative/timeline event by construction here (NarrativeAdjacentEventDto carries no Kind field) -- not a guessed literal
-        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, "event"));
+        // Adjacent is always a narrative/timeline event by construction here (NarrativeAdjacentEvent carries no Kind field) -- not a guessed literal
+        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, EventKind.Event));
     }
 
     private const int LongLabelThreshold = 24;
@@ -401,7 +401,7 @@ else
         try
         {
             var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-            var rect = await readerJs.InvokeAsync<ElementRectDto?>("getElementRect", _sideRef);
+            var rect = await readerJs.InvokeAsync<ElementRect?>("getElementRect", _sideRef);
             if (rect is { } r && _showPeek)
             {
                 // budget against the enclosing .popover's own edges, not the viewport: .popover is routinely shorter than the viewport (its own max-height), so budgeting off the viewport would let an expanded peek spill past the popover's bottom edge
@@ -439,7 +439,7 @@ else
         return missing;
     }
 
-    private sealed record ElementRectDto(double Left, double Top, double Width, double Height, double PopoverTop, double PopoverBottom);
+    private sealed record ElementRect(double Left, double Top, double Width, double Height, double PopoverTop, double PopoverBottom);
 
     public void Dispose()
     {

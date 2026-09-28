@@ -22,7 +22,7 @@ public sealed class ChapterCardSection : IPopoverSectionProvider
             return null;
         }
 
-        ChapterOut chapter;
+        Chapter chapter;
         try
         {
             chapter = await chapterNode.Load(api);
@@ -199,15 +199,15 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 return null;
         }
 
-        List<VerseOut> focalVerses;
+        IReadOnlyList<Verse> focalVerses;
         try
         {
-            var chapterOut = await api.Chapter(book, chapter);
-            focalVerses = chapterOut.Verses.Where(cv => cv.Verse >= focalFrom && cv.Verse <= focalTo).ToList();
+            var chapterText = await api.Chapter(book, chapter);
+            focalVerses = chapterText.Verses.Where(cv => cv.Verse1 >= focalFrom && cv.Verse1 <= focalTo).ToList();
         }
         catch (Exception)
         {
-            focalVerses = new List<VerseOut>();
+            focalVerses = new List<Verse>();
         }
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -221,7 +221,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "FocalFromVerse", focalFrom);
             builder.AddAttribute(seq++, "FocalToVerse", focalTo);
             builder.AddAttribute(seq++, "CompactText", compactText);
-            builder.AddAttribute(seq++, "FocalVerses", (IReadOnlyList<VerseOut>)focalVerses);
+            builder.AddAttribute(seq++, "FocalVerses", (IReadOnlyList<Verse>)focalVerses);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
 
@@ -240,7 +240,7 @@ internal static class FrontierProvenance
     // and callers render their content anyway. An id the registry does NOT contain is a
     // different fact (a piece of data with no source) and ProvenanceAffordance says so
     // out loud rather than treating it the same as a fetch failure.
-    internal static async Task<SourcesDocumentOut?> RegistryOrNull(AtlasClient api)
+    internal static async Task<SourcesDocument?> RegistryOrNull(AtlasClient api)
     {
         try
         {
@@ -263,7 +263,7 @@ internal static class FrontierProvenance
         string text,
         string headingTestId,
         IReadOnlyList<string>? provenance,
-        SourcesDocumentOut? sources,
+        SourcesDocument? sources,
         string provenanceTestId,
         string buttonLabel)
     {
@@ -283,7 +283,7 @@ internal static class FrontierProvenance
         RenderTreeBuilder builder,
         int seq,
         IReadOnlyList<string>? provenance,
-        SourcesDocumentOut? sources,
+        SourcesDocument? sources,
         string testId,
         string buttonLabel,
         string register)
@@ -311,7 +311,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
-        List<CrossRefOut> xrefs;
+        IReadOnlyList<CrossRef> xrefs;
         IReadOnlyList<string> xrefProvenance = Array.Empty<string>();
         try
         {
@@ -321,15 +321,15 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 {
                     var detail = await v.DetailAsync(api);
                     xrefs = detail.CrossRefs;
-                    xrefProvenance = detail.CrossRefsProvenanceOrEmpty;
+                    xrefProvenance = detail.CrossRefsProvenance;
                     break;
                 }
                 case PassageNode p:
                     xrefs = await p.XrefsAsync(api);
-                    xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.ProvenanceOrEmpty));
+                    xrefProvenance = FrontierProvenance.Distinct(xrefs.SelectMany(x => x.Provenance));
                     break;
                 default:
-                    xrefs = new List<CrossRefOut>();
+                    xrefs = new List<CrossRef>();
                     break;
             }
         }
@@ -379,10 +379,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         return new PopoverSection("xrefs", body);
     }
 
-    private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRefOut Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
+    private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRef Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), ChapterOut>();
+        var chapters = new Dictionary<(string, int), Chapter>();
         try
         {
             var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
@@ -403,7 +403,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 var verses = new List<PassageListVerse>();
                 for (var v = s.FromVerse; v <= s.ToVerse; v++)
                 {
-                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse == v);
+                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse1 == v);
                     if (cv is not null)
                     {
                         verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
@@ -427,7 +427,7 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
-        List<CatechismRefDto> items;
+        IReadOnlyList<CatechismRef> items;
         IReadOnlyList<string> catechismProvenance = Array.Empty<string>();
         try
         {
@@ -437,15 +437,15 @@ public sealed class CatechismSeamSection : IPopoverSectionProvider
                 {
                     var detail = await v.DetailAsync(api);
                     items = detail.Catechism;
-                    catechismProvenance = detail.CatechismProvenanceOrEmpty;
+                    catechismProvenance = detail.CatechismProvenance;
                     break;
                 }
                 case PassageNode p:
                     items = await p.CatechismAsync(api);
-                    catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.ProvenanceOrEmpty));
+                    catechismProvenance = FrontierProvenance.Distinct(items.SelectMany(i => i.Provenance));
                     break;
                 default:
-                    items = new List<CatechismRefDto>();
+                    items = new List<CatechismRef>();
                     break;
             }
         }
@@ -514,7 +514,7 @@ public sealed class CatechismTextSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItemDetail detail;
+        CatechismItem detail;
         try
         {
             detail = await item.DetailAsync(api);
@@ -551,7 +551,7 @@ public sealed class CatechismExplanationSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItemDetail detail;
+        CatechismItem detail;
         try
         {
             detail = await item.DetailAsync(api);
@@ -581,7 +581,7 @@ public sealed class CatechismWhereWrittenSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItemDetail detail;
+        CatechismItem detail;
         try
         {
             detail = await item.DetailAsync(api);
@@ -616,7 +616,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        CatechismItemDetail detail;
+        CatechismItem detail;
         try
         {
             detail = await item.DetailAsync(api);
@@ -631,16 +631,16 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        var mentionData = new Dictionary<string, VerseOut>();
+        var mentionData = new Dictionary<string, Verse>();
         try
         {
             var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
             var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Book, k.Chapter)));
-            foreach (var (key, chapterOut) in chapterKeys.Zip(fetched))
+            foreach (var (key, chapterText) in chapterKeys.Zip(fetched))
             {
-                foreach (var cv in chapterOut.Verses)
+                foreach (var cv in chapterText.Verses)
                 {
-                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Verse}"] = cv;
+                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Verse1}"] = cv;
                 }
             }
         }
@@ -781,7 +781,7 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
     }
 
     private static void RenderDateRow(
-        RenderTreeBuilder builder, ref int seq, string testidSuffix, string label, DateClaimOut claim, List<PassageListVerse> verses, IPopoverSectionContext ctx)
+        RenderTreeBuilder builder, ref int seq, string testidSuffix, string label, PlaceDateClaim claim, List<PassageListVerse> verses, IPopoverSectionContext ctx)
     {
         var dateText = YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
 
@@ -899,10 +899,10 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
 
 public static class EventMembershipHeading
 {
-    public static string For(string kind) => kind switch
+    public static string For(EventKind kind) => kind switch
     {
-        "event" => "EVENT",
-        "general" => "PASSAGE",
+        EventKind.Event => "EVENT",
+        EventKind.General => "PASSAGE",
         _ => throw new NotSupportedException($"EventMembershipHeading.For: unrecognized Event::kind '{kind}'."),
     };
 }
@@ -918,7 +918,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        List<VerseEventDto> events;
+        IReadOnlyList<VerseEvent> events;
         try
         {
             events = (await v.DetailAsync(api)).Events;
@@ -928,16 +928,16 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        var dated = events.Where(e => e.Kind == "event").ToList();
+        var dated = events.Where(e => e.Kind == EventKind.Event).ToList();
         if (dated.Count == 0)
         {
             return null;
         }
 
-        return new PopoverSection("event-membership", RenderRows("event", dated, ctx, await FrontierProvenance.RegistryOrNull(api)));
+        return new PopoverSection("event-membership", RenderRows(EventKind.Event, dated, ctx, await FrontierProvenance.RegistryOrNull(api)));
     }
 
-    internal static RenderFragment RenderRows(string kind, IReadOnlyList<VerseEventDto> events, IPopoverSectionContext ctx, SourcesDocumentOut? registry) => builder =>
+    internal static RenderFragment RenderRows(EventKind kind, IReadOnlyList<VerseEvent> events, IPopoverSectionContext ctx, SourcesDocument? registry) => builder =>
     {
         var seq = 0;
         seq = FrontierProvenance.Heading(
@@ -946,8 +946,8 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             "event-section-heading",
             FrontierProvenance.Distinct(events.Select(e => e.Provenance)),
             registry,
-            "event-membership-provenance-" + kind,
-            "Sources for these " + kind + " rows");
+            "event-membership-provenance-" + kind.WireName(),
+            "Sources for these " + kind.WireName() + " rows");
 
         foreach (var e in events)
         {
@@ -956,7 +956,7 @@ public sealed class VerseEventMembershipSection : IPopoverSectionProvider
             var rowKind = e.Kind;
             // .explorable-quiet replaces .explorable (never both): a general-kind event
             // is not part of time traversal, so its row must not look traversable.
-            var explorableClass = e.Kind == "general" ? "explorable-quiet" : "explorable";
+            var explorableClass = e.Kind == EventKind.General ? "explorable-quiet" : "explorable";
             builder.OpenElement(seq++, "button");
             builder.AddAttribute(seq++, "type", "button");
             builder.AddAttribute(seq++, "class", $"popover-event-row popover-event-row-button {explorableClass}");
@@ -979,7 +979,7 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        List<VerseEventDto> events;
+        IReadOnlyList<VerseEvent> events;
         try
         {
             events = (await v.DetailAsync(api)).Events;
@@ -989,13 +989,13 @@ public sealed class VersePassageMembershipSection : IPopoverSectionProvider
             return null;
         }
 
-        var general = events.Where(e => e.Kind == "general").ToList();
+        var general = events.Where(e => e.Kind == EventKind.General).ToList();
         if (general.Count == 0)
         {
             return null;
         }
 
-        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows("general", general, ctx, await FrontierProvenance.RegistryOrNull(api)));
+        return new PopoverSection("passage-membership", VerseEventMembershipSection.RenderRows(EventKind.General, general, ctx, await FrontierProvenance.RegistryOrNull(api)));
     }
 }
 
@@ -1101,7 +1101,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         return new PopoverSection("event-date-places", body);
     }
 
-    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEventDto? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
+    internal static void RenderArrowNav(RenderTreeBuilder builder, ref int seq, IPopoverSectionContext ctx, string direction, string eventTestIdPrefix, string roleTestIdPrefix, string idSuffix, NarrativeAdjacentEvent? adjacent, string glyph, bool inline = false, string? inlinePrefixText = null)
     {
         builder.OpenComponent<Components.ArrowNav>(seq++);
         builder.AddAttribute(seq++, "Direction", direction);
@@ -1119,7 +1119,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 
 file static class WitnessUnitsResolver
 {
-    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitnessDto> witnesses)
+    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitness> witnesses)
     {
         Versification? canon = null;
         try
@@ -1204,7 +1204,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             {
                 seq = FrontierProvenance.Heading(
                     builder, seq, "PARALLEL ACCOUNTS", "event-section-heading",
-                    detail.WitnessesProvenanceOrEmpty, registry, "event-witnesses-provenance",
+                    detail.WitnessesProvenance ?? [], registry, "event-witnesses-provenance",
                     "Sources for these parallel accounts");
             }
 
@@ -1243,7 +1243,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var mentions = detail.MentionedInOrEmpty;
+        var mentions = detail.MentionedIn ?? [];
         if (mentions.Count == 0)
         {
             return null;
@@ -1258,7 +1258,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             var seq = 0;
             seq = FrontierProvenance.Heading(
                 builder, seq, "MENTIONED IN", "event-section-heading",
-                detail.MentionsProvenanceOrEmpty, registry, "event-mentions-provenance",
+                detail.MentionsProvenance ?? [], registry, "event-mentions-provenance",
                 "Sources for these mentions");
 
             builder.OpenComponent<Components.RefsList>(seq++);
@@ -1292,14 +1292,14 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             return null;
         }
 
-        var analogues = detail.AnaloguesOrEmpty;
+        var analogues = detail.Analogues ?? [];
         if (analogues.Count == 0)
         {
             return null;
         }
 
         var refs = analogues
-            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, "event"), a.Id))
+            .Select(a => new Components.RefsList.RefDescriptor(a.Title, (IExplorable)new EventNode(a.Id, a.Title, EventKind.Event), a.Id))
             .ToList();
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -1329,7 +1329,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
 
     public async Task<PopoverSection?> ResolveAsync(IExplorable node, AtlasClient api, IPopoverSectionContext ctx)
     {
-        List<VerseEventDto> events;
+        IReadOnlyList<VerseEvent> events;
         string ownVref;
         switch (node)
         {
@@ -1377,7 +1377,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
             return null;
         }
 
-        var qualifying = new List<(string Label, List<EventWitnessDto> OtherWitnesses)>();
+        var qualifying = new List<(string Label, List<EventWitness> OtherWitnesses)>();
         foreach (var (e, detail) in events.Zip(details))
         {
             if (detail is null)
@@ -1458,7 +1458,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
             return null;
         }
 
-        NarrativeEventPositionsResult positions;
+        NarrativeEventPositions positions;
         try
         {
             positions = await aware.NarrativePositionsAsync(api);
@@ -1542,7 +1542,7 @@ public sealed class EventChronologySection : IPopoverSectionProvider
 
     // A null narrative-side leg is that narrative's own chain end, never a divergence,
     // so this short-circuits false before comparing ids.
-    private static bool Diverges(NarrativeAdjacentEventDto? narrativeLeg, NarrativeAdjacentEventDto? timelineLeg)
+    private static bool Diverges(NarrativeAdjacentEvent? narrativeLeg, NarrativeAdjacentEvent? timelineLeg)
         => narrativeLeg is not null && narrativeLeg.Id != timelineLeg?.Id;
 }
 
@@ -1871,12 +1871,12 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
             return null;
         }
 
-        List<CatechismRefDto> items;
+        IReadOnlyList<CatechismRef> items;
         try
         {
             items = (await CatechismLinks.AllTargetsAsync(api, unit.NodeId))
                 .Where(n => n.Kind == PositionKind.CatechismItem)
-                .Select(n => new CatechismRefDto(n.Id.StartsWith("CatechismItem:", StringComparison.Ordinal) ? n.Id["CatechismItem:".Length..] : n.Id, n.Label))
+                .Select(n => new CatechismRef(id: n.Id.StartsWith("CatechismItem:", StringComparison.Ordinal) ? n.Id["CatechismItem:".Length..] : n.Id, name: n.Label, provenance: [], question: null))
                 .ToList();
         }
         catch (Exception)
@@ -1899,7 +1899,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
             builder.CloseElement();
 
             builder.OpenComponent<Components.CatechismList>(seq++);
-            builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRefDto>)items);
+            builder.AddAttribute(seq++, "Items", (IReadOnlyList<CatechismRef>)items);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };

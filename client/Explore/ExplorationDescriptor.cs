@@ -1,3 +1,5 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Explore;
 
 public sealed record ExplorationDescriptor(string Kind, string Key, string Title, bool IsGeneralKind = false)
@@ -13,7 +15,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
         TimeAndPlaceNode tp => new ExplorationDescriptor("TimeAndPlace", $"{tp.PlaceId}|{tp.EventId}", tp.Title),
         YearNode y => new ExplorationDescriptor("Year", $"{y.PlaceId}|{y.Label}", y.Title),
         CatechismNode ct => new ExplorationDescriptor("Catechism", ct.Id, ct.Title),
-        EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title, IsGeneralKind: ev.CachedKind == "general"),
+        EventNode ev => new ExplorationDescriptor("Event", ev.EventId, ev.Title, IsGeneralKind: ev.CachedKind == EventKind.General),
         // Key leads with the polity's own stable id so Reconstruct can re-locate
         // it even if a curator later renames it; Reconstruct still accepts the
         // older 4-field (Name+From+To only) form for descriptors saved earlier.
@@ -37,7 +39,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                     ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: unparseable Passage key '{descriptor.Key}'.");
                 var chapter = await api.Chapter(span.Book, span.Chapter);
                 var text = string.Join(" ", chapter.Verses
-                    .Where(v => v.Verse >= span.FromVerse && v.Verse <= span.ToVerse)
+                    .Where(v => v.Verse1 >= span.FromVerse && v.Verse1 <= span.ToVerse)
                     .Select(v => v.Text));
                 return new PassageNode(descriptor.Key, text);
             }
@@ -91,7 +93,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                 // "Continue" reopen re-captures the node fresh before its detail fetch
                 // resolves, which would regress an already-correct saved "Passage"
                 // badge back to "Event".
-                return new EventNode(descriptor.Key, descriptor.Title, descriptor.IsGeneralKind ? "general" : "event");
+                return new EventNode(descriptor.Key, descriptor.Title, descriptor.IsGeneralKind ? EventKind.General : EventKind.Event);
 
             case "PolityDelta":
             {
@@ -118,14 +120,14 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                     toYear = int.Parse(parts[3]);
                 }
 
-                PolityDeltaDto? delta = null;
-                PolityEraOut? era = null;
+                PolityDelta? delta = null;
+                Polity? era = null;
                 try
                 {
                     var polities = await api.Polities(fromYear, toYear);
                     era = polityId is not null
-                        ? polities.Polities.FirstOrDefault(e => e.Id == polityId)
-                        : polities.Polities.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
+                        ? polities.Polities1.FirstOrDefault(e => e.Id == polityId)
+                        : polities.Polities1.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
                     delta = deltaKind == "fall" ? era?.Fall : era?.Transition;
                 }
                 catch (Exception)
@@ -142,7 +144,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
 
             case "ConcordUnit":
             {
-                var window = await graph.Reading(descriptor.Key, 1, Contract.WindowDir.Onward, corpus: Contract.Corpus.Concord);
+                var window = await graph.Reading(descriptor.Key, 1, WindowDir.Onward, corpus: Corpus.Concord);
                 var unit = window.Units.FirstOrDefault(u => u.Ref == descriptor.Key)
                     ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: Concord paragraph '{descriptor.Key}' no longer resolves.");
                 return new ConcordUnitNode(unit.Ref, unit.Text);

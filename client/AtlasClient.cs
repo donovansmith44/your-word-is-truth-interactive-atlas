@@ -10,19 +10,19 @@ public sealed class AtlasClient
 {
     private readonly HttpClient _http;
     private readonly LruCache<string, Scene> _sceneCache = new(capacity: 48);
-    private readonly LruCache<string, ChapterOut> _chapterCache = new(capacity: 24);
-    private readonly LruCache<string, PolitiesOut> _politiesCache = new(capacity: 12);
+    private readonly LruCache<string, Chapter> _chapterCache = new(capacity: 24);
+    private readonly LruCache<string, Polities> _politiesCache = new(capacity: 12);
     private readonly LruCache<string, PlaceDetail> _placeHistoryCache = new(capacity: 24);
-    private readonly LruCache<string, List<CrossRefOut>> _xrefsCache = new(capacity: 24);
-    private readonly LruCache<string, List<CatechismRefDto>> _catechismSpanCache = new(capacity: 24);
+    private readonly LruCache<string, IReadOnlyList<CrossRef>> _xrefsCache = new(capacity: 24);
+    private readonly LruCache<string, IReadOnlyList<CatechismRef>> _catechismSpanCache = new(capacity: 24);
     // AsyncMemo, not a plain cache: several callers can independently invoke Books()/Eras()/etc.
     // concurrently before any has resolved (e.g. around app startup), so a plain cache would
     // double-fetch without in-flight dedup.
-    private readonly Explore.AsyncMemo<List<BookTocEntry>> _booksCache = new();
-    private readonly Explore.AsyncMemo<List<EraDto>> _erasCache = new();
-    private readonly Explore.AsyncMemo<List<LandmarkDto>> _landmarksCache = new();
-    private readonly Explore.AsyncMemo<LandMaskOut> _landMaskCache = new();
-    private readonly Explore.AsyncMemo<SourcesDocumentOut> _sourcesCache = new();
+    private readonly Explore.AsyncMemo<List<CanonBook>> _booksCache = new();
+    private readonly Explore.AsyncMemo<List<Era>> _erasCache = new();
+    private readonly Explore.AsyncMemo<IReadOnlyList<Landmark>> _landmarksCache = new();
+    private readonly Explore.AsyncMemo<LandMask> _landMaskCache = new();
+    private readonly Explore.AsyncMemo<SourcesDocument> _sourcesCache = new();
 
     public AtlasClient(HttpClient http)
     {
@@ -68,11 +68,11 @@ public sealed class AtlasClient
         return scene;
     }
 
-    public Task<List<BookTocEntry>> Books() => _booksCache.Get(() => GetRequired<List<BookTocEntry>>("api/books"));
+    public Task<List<CanonBook>> Books() => _booksCache.Get(() => GetRequired<List<CanonBook>>("api/books"));
 
-    public Task<List<EraDto>> Eras() => _erasCache.Get(() => GetRequired<List<EraDto>>("api/eras"));
+    public Task<List<Era>> Eras() => _erasCache.Get(() => GetRequired<List<Era>>("api/eras"));
 
-    public async Task<ChapterOut> Chapter(string book, int chapter)
+    public async Task<Chapter> Chapter(string book, int chapter)
     {
         var key = $"{book}.{chapter}";
         if (_chapterCache.TryGet(key, out var cached))
@@ -80,7 +80,7 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<ChapterOut>($"api/chapter/{key}");
+        var result = await GetRequired<Chapter>($"api/chapter/{key}");
         _chapterCache.Put(key, result);
         return result;
     }
@@ -91,8 +91,8 @@ public sealed class AtlasClient
     // No cache here (unlike Chapter): Kretzmann re-fetches fresh on every locus change by design
     // (LoadCommentaryAsync's own request-id guard discards stale in-flight responses), so a
     // curator-added commentary unit is visible on the very next chapter visit.
-    public Task<KretzmannChapterOut> KretzmannChapter(string book, int chapter) =>
-        GetRequired<KretzmannChapterOut>($"api/kretzmann/chapter/{book}.{chapter}");
+    public Task<KretzmannChapter> KretzmannChapter(string book, int chapter) =>
+        GetRequired<KretzmannChapter>($"api/kretzmann/chapter/{book}.{chapter}");
 
     public Task<PlaceDetail> Place(string id) =>
         GetRequired<PlaceDetail>($"api/place/{id}");
@@ -111,43 +111,43 @@ public sealed class AtlasClient
         return result;
     }
 
-    public async Task<List<CrossRefOut>> Xrefs(string sref)
+    public async Task<IReadOnlyList<CrossRef>> Xrefs(string sref)
     {
         if (_xrefsCache.TryGet(sref, out var cached))
         {
             return cached;
         }
 
-        var result = await GetRequired<List<CrossRefOut>>($"api/xrefs/{sref}");
+        var result = await GetRequired<IReadOnlyList<CrossRef>>($"api/xrefs/{sref}");
         _xrefsCache.Put(sref, result);
         return result;
     }
 
-    public async Task<List<CatechismRefDto>> Catechism(string sref)
+    public async Task<IReadOnlyList<CatechismRef>> Catechism(string sref)
     {
         if (_catechismSpanCache.TryGet(sref, out var cached))
         {
             return cached;
         }
 
-        var result = await GetRequired<List<CatechismRefDto>>($"api/catechism/{sref}");
+        var result = await GetRequired<IReadOnlyList<CatechismRef>>($"api/catechism/{sref}");
         _catechismSpanCache.Put(sref, result);
         return result;
     }
 
-    public Task<CatechismItemDetail> CatechismItem(string id) =>
-        GetRequired<CatechismItemDetail>($"api/catechism/item/{id}");
+    public Task<CatechismItem> CatechismItem(string id) =>
+        GetRequired<CatechismItem>($"api/catechism/item/{id}");
 
-    public Task<List<NarrativeOut>> Narratives() =>
-        GetRequired<List<NarrativeOut>>("api/narratives");
+    public Task<List<Narrative>> Narratives() =>
+        GetRequired<List<Narrative>>("api/narratives");
 
-    public Task<NarrativeEventPositionsResult> NarrativeEventPositions(string eventId) =>
-        GetRequired<NarrativeEventPositionsResult>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
+    public Task<NarrativeEventPositions> NarrativeEventPositions(string eventId) =>
+        GetRequired<NarrativeEventPositions>($"api/narrative/event/{Uri.EscapeDataString(eventId)}");
 
     public Task<EventDetail> Event(string id) =>
         GetRequired<EventDetail>($"api/event/{Uri.EscapeDataString(id)}");
 
-    public async Task<PolitiesOut> Polities(int from, int to)
+    public async Task<Polities> Polities(int from, int to)
     {
         var key = $"polities:{from}:{to}";
         if (_politiesCache.TryGet(key, out var cached))
@@ -155,20 +155,20 @@ public sealed class AtlasClient
             return cached;
         }
 
-        var result = await GetRequired<PolitiesOut>($"api/polities?from={from}&to={to}");
+        var result = await GetRequired<Polities>($"api/polities?from={from}&to={to}");
         _politiesCache.Put(key, result);
         return result;
     }
 
-    public Task<List<LandmarkDto>> Landmarks() => _landmarksCache.Get(() => GetRequired<List<LandmarkDto>>("api/landmarks"));
+    public Task<IReadOnlyList<Landmark>> Landmarks() => _landmarksCache.Get(() => GetRequired<IReadOnlyList<Landmark>>("api/landmarks"));
 
-    public Task<LandMaskOut> LandMask() => _landMaskCache.Get(() => GetRequired<LandMaskOut>("api/land-mask"));
+    public Task<LandMask> LandMask() => _landMaskCache.Get(() => GetRequired<LandMask>("api/land-mask"));
 
-    public Task<SourcesDocumentOut> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocumentOut>("api/sources"));
+    public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocument>("api/sources"));
 
-    public async Task<ContractDto> Contract(CancellationToken cancellationToken = default)
+    public async Task<Contract.Contract> Contract(CancellationToken cancellationToken = default)
     {
-        return await GetRequired<ContractDto>("api/contract", cancellationToken);
+        return await GetRequired<Contract.Contract>("api/contract", cancellationToken);
     }
 
     public Task<EdgePage> NodeEdges(string nodeId, EdgeKind kind, int? cursor = null, int limit = 200) =>
@@ -195,7 +195,7 @@ public sealed class AtlasClient
 
     private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
     {
-        var result = await _http.GetFromJsonAsync<T>(relativeUrl, Wire.Options, cancellationToken);
+        var result = await _http.GetFromJsonAsync<T>(relativeUrl, cancellationToken);
         return result ?? throw new InvalidOperationException($"empty response body from {relativeUrl}");
     }
 }

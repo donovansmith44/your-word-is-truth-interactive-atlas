@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -5,7 +6,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class CatechismNode : IExplorable
 {
     private readonly string _id;
-    private readonly AsyncMemo<CatechismItemDetail> _detail = new();
+    private readonly AsyncMemo<CatechismItem> _detail = new();
 
     public CatechismNode(string id, string name)
     {
@@ -26,5 +27,5 @@ public sealed class CatechismNode : IExplorable
         return Task.FromResult(fragment);
     }
 
-    public Task<CatechismItemDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.CatechismItem(_id));
+    public Task<CatechismItem> DetailAsync(AtlasClient api) => _detail.Get(() => api.CatechismItem(_id));
 }

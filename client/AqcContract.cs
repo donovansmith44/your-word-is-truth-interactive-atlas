@@ -4,7 +4,7 @@ public static class AqcContract
 {
     public const string ClientVersion = "0.8.0";
 
-    public static bool Satisfies(ContractDto contract)
+    public static bool Satisfies(Contract.Contract contract)
     {
         var client = ParseSemver(ClientVersion);
         var min = ParseSemver(contract.MinVersion);

@@ -114,12 +114,12 @@
                     {
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
-                    <VerseLine Verse="@v" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Verse}")"
+                    <VerseLine Verse="@v" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Verse1}")"
                                RowClass="verse-line explorable" RowTestIdPrefix="verse-line"
                                VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
-                               OnVerseNumClick="@(e => OnVerseNumClick(e, v.Verse))"
+                               OnVerseNumClick="@(e => OnVerseNumClick(e, v.Verse1))"
                                TextClass="verse-text" MentionClass="verse-mention"
-                               XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse, "")"
+                               XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse1, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
                                OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect"
                                OnMentionToggleSelect="OnMentionToggleSelect" />
@@ -163,7 +163,7 @@
 
     @if (_contentsOpen)
     {
-        <ContentsPanel Corpus="Contract.Corpus.Bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
+        <ContentsPanel Corpus="Corpus.Bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
     }
 
     @if (_activeNode is not null)
@@ -192,13 +192,13 @@
 
     private CompositionSplit? _compositionSplit;
 
-    private List<BookTocEntry>? _toc;
+    private List<CanonBook>? _toc;
 
     private Projection<Locus>? _locusBacking;
     private Projection<Locus> _locus => _locusBacking ??= new Projection<Locus>(LocusAtom);
     private string _book => _locus.Value.Book;
     private int _chapterNum => _locus.Value.Chapter;
-    private ChapterOut? _chapter;
+    private Chapter? _chapter;
     private string? _loadedBook;
     private int? _loadedChapterNum;
     private string? _errorMessage;
@@ -242,7 +242,7 @@
             : "";
 
     // _loadedBook/_loadedChapterNum are stamped from the SAME _book/
-    // _chapterNum that drove the fetch, never from ChapterOut's own Book
+    // _chapterNum that drove the fetch, never from Chapter's own Book
     // field -- that's the display name ("Genesis"), not the code ("GEN"),
     // so comparing against it would never match and would wedge the page
     // on "Loading..." forever.
@@ -579,9 +579,9 @@
         }
     }
 
-    private List<HeadingDto> ChapterPeekHeadings =>
+    private List<Heading> ChapterPeekHeadings =>
         _chapter?.Verses.Where(v => v.Heading is not null).Select(v => v.Heading!).GroupBy(h => h.EventId).Select(g => g.First()).Take(8).ToList()
-        ?? new List<HeadingDto>();
+        ?? new List<Heading>();
 
     private Task ClosePopover()
     {
@@ -655,7 +655,7 @@
 
         ResetXrefEntryState();
         var text = string.Join(" ", chapter.Verses
-            .Where(v => v.Verse >= range.From && v.Verse <= range.To)
+            .Where(v => v.Verse1 >= range.From && v.Verse1 <= range.To)
             .Select(v => v.Text));
         _activeNode = new PassageNode(PassageRef(range), text);
     }

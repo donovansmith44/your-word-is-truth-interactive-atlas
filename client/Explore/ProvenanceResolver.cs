@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,7 +15,7 @@ public static class ProvenanceResolver
         return slash < 0 ? (id, null) : (id[..slash], id[(slash + 1)..]);
     }
 
-    public static ResolvedProvenance Resolve(SourcesDocumentOut? doc, string id)
+    public static ResolvedProvenance Resolve(SourcesDocument? doc, string id)
     {
         if (doc is null)
         {
@@ -27,7 +28,7 @@ public static class ProvenanceResolver
         }
 
         var (kind, locator) = SplitId(id);
-        var row = doc.ProvenancesOrEmpty.FirstOrDefault(p => p.Id == kind);
+        var row = (doc.Provenances ?? []).FirstOrDefault(p => p.Id == kind);
         if (row is null)
         {
             return ResolvedProvenance.Unresolved(id);
@@ -58,7 +59,7 @@ public static class ProvenanceResolver
     // loud notice, because something claimed an attribution and handed over nothing. Blanks
     // are normalized (via NormalizeId) before Distinct so several blank flavors collapse to
     // one notice, not one per flavor.
-    public static IReadOnlyList<ResolvedProvenance> ResolveAll(SourcesDocumentOut? doc, IEnumerable<string>? ids) =>
+    public static IReadOnlyList<ResolvedProvenance> ResolveAll(SourcesDocument? doc, IEnumerable<string>? ids) =>
         (ids ?? Enumerable.Empty<string>())
             .Select(NormalizeId)
             .Distinct()
@@ -70,11 +71,11 @@ public static class ProvenanceResolver
     // "Imported" (the default register of this atlas) deliberately has no note here --
     // most rows come from a named outside corpus, and saying so on every popover would be
     // noise. Returning null means "render no confidence line at all," never an empty one.
-    public static string? ConfidenceNote(string? confidence) => confidence switch
+    public static string? ConfidenceNote(Confidence? confidence) => confidence switch
     {
-        "CanonicalText" => "Canonical text",
-        "Curated" => "Our own curated work",
-        "Derived" => "Derived by this project's pipeline",
+        Confidence.CanonicalText => "Canonical text",
+        Confidence.Curated => "Our own curated work",
+        Confidence.Derived => "Derived by this project's pipeline",
         _ => null,
     };
 }
@@ -86,18 +87,18 @@ public sealed record ResolvedProvenance(
     string License,
     string? Link,
     string? CategoryLabel,
-    string Confidence,
+    Confidence? Confidence,
     string? Locator,
     ProvenanceStatus Status = ProvenanceStatus.Resolved)
 {
     public bool IsResolved => Status == ProvenanceStatus.Resolved;
 
     public static ResolvedProvenance Unresolved(string id) =>
-        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: "", Locator: null,
+        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: null, Locator: null,
             Status: ProvenanceStatus.Unresolved);
 
     public static ResolvedProvenance RegistryUnavailable(string id) =>
-        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: "", Locator: null,
+        new(Id: id, Title: "", WhatItIs: "", License: "", Link: null, CategoryLabel: null, Confidence: null, Locator: null,
             Status: ProvenanceStatus.RegistryUnavailable);
 }
 

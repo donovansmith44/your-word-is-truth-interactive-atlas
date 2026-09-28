@@ -7,29 +7,29 @@
     {
         <button type="button" class="@VerseNumClass" data-testid="@VerseNumTestId"
                 @onclick="@(e => OnVerseNumClick.InvokeAsync(e))" @onclick:stopPropagation="true"
-                @onkeydown:stopPropagation="true">@Verse.Verse</button>
+                @onkeydown:stopPropagation="true">@Verse.Verse1</button>
     }
     else
     {
-        <span class="@VerseNumClass">@Verse.Verse</span>
+        <span class="@VerseNumClass">@Verse.Verse1</span>
     }
     <span class="@TextClass">
-        <MentionText Text="@Verse.Text" Places="@Verse.Places" Persons="@Verse.Persons" WordsOfChrist="@Verse.WordsOfChrist" Verse="@Verse.Verse"
+        <MentionText Text="@Verse.Text" Places="@Verse.Places" Persons="@Verse.Persons" WordsOfChrist="@Verse.WordsOfChrist" Verse="@Verse.Verse1"
                      ClassPrefix="@MentionClass" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnMentionToggleSelect" />
         @if (ShowXrefMarker)
         {
             <sup class="verse-xref-marker" data-testid="@XrefMarkerTestId"
                  tabindex="0" role="button" aria-label="@XrefMarkerAriaLabel"
-                 @onclick="() => OnXrefClick.InvokeAsync(Verse.Verse)" @onclick:stopPropagation="true"
-                 @onmouseenter="() => OnXrefHoverEnter.InvokeAsync(Verse.Verse)" @onmouseleave="() => OnXrefHoverLeave.InvokeAsync()"
-                 @onfocus="() => OnXrefClick.InvokeAsync(Verse.Verse)"
+                 @onclick="() => OnXrefClick.InvokeAsync(Verse.Verse1)" @onclick:stopPropagation="true"
+                 @onmouseenter="() => OnXrefHoverEnter.InvokeAsync(Verse.Verse1)" @onmouseleave="() => OnXrefHoverLeave.InvokeAsync()"
+                 @onfocus="() => OnXrefClick.InvokeAsync(Verse.Verse1)"
                  @onkeydown="@(e => OnXrefKeyDown(e))" @onkeydown:stopPropagation="true">@XrefMarkerGlyph</sup>
         }
     </span>
 </div>
 
 @code {
-    [Parameter, EditorRequired] public VerseOut Verse { get; set; } = default!;
+    [Parameter, EditorRequired] public Verse Verse { get; set; } = default!;
     [Parameter, EditorRequired] public string Book { get; set; } = default!;
     [Parameter, EditorRequired] public int Chapter { get; set; }
 
@@ -71,14 +71,14 @@
     [Parameter] public EventCallback<int> OnXrefHoverEnter { get; set; }
     [Parameter] public EventCallback OnXrefHoverLeave { get; set; }
 
-    private string Vref => $"{Book}.{Chapter}.{Verse.Verse}";
-    private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
+    private string Vref => $"{Book}.{Chapter}.{Verse.Verse1}";
+    private string RowTestId => $"{RowTestIdPrefix}-{Verse.Verse1}{TestIdSuffix}";
 
-    private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse}{TestIdSuffix}" : null;
+    private string? VerseNumTestId => VerseNumTestIdPrefix is { } prefix ? $"{prefix}-{Verse.Verse1}{TestIdSuffix}" : null;
 
     // Ordinal among the chapter's xref-bearing verses, in reading order ("a" for the first) --
     // computed once per chapter, never a mutable counter incremented during this row's own render.
-    public static Dictionary<int, string> ComputeXrefLetters(IReadOnlyList<VerseOut> verses)
+    public static Dictionary<int, string> ComputeXrefLetters(IReadOnlyList<Verse> verses)
     {
         var map = new Dictionary<int, string>();
         var ordinal = 0;
@@ -87,7 +87,7 @@
             if (v.XrefCount > 0)
             {
                 ordinal++;
-                map[v.Verse] = BijectiveBase26(ordinal);
+                map[v.Verse1] = BijectiveBase26(ordinal);
             }
         }
         return map;
@@ -109,9 +109,9 @@
 
     private bool ShowXrefMarker => FeatureFlags.XrefSuperscripts && Verse.XrefCount > 0;
 
-    private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Verse}";
-    private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Verse}{TestIdSuffix}";
+    private string XrefMarkerAriaLabel => $"Cross-references for verse {Verse.Verse1}";
+    private string XrefMarkerTestId => $"{XrefMarkerTestIdPrefix}-{Verse.Verse1}{TestIdSuffix}";
 
     private Task OnLineKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnExplore.InvokeAsync(new VerseNode(Vref)) : Task.CompletedTask;
-    private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Verse) : Task.CompletedTask;
+    private Task OnXrefKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? OnXrefClick.InvokeAsync(Verse.Verse1) : Task.CompletedTask;
 }

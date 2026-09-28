@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using System.Text.RegularExpressions;
 
 namespace BibleAtlas.Client.Explore;
@@ -42,7 +43,7 @@ public static class ScriptureRefScan
 
     // Longest-alias-first: an alternation tries left-to-right, so "1 Corinthians" must be
     // offered before "1 Cor" or the shorter alias would win and strand " inthians" as plain text.
-    private static Regex BuildPattern(IReadOnlyList<BookTocEntry> toc)
+    private static Regex BuildPattern(IReadOnlyList<CanonBook> toc)
     {
         var tokens = new List<(string Alias, string Code)>();
         foreach (var book in toc)
@@ -63,11 +64,11 @@ public static class ScriptureRefScan
     // hands out one singleton-cached list for the app's whole lifetime, so this never goes
     // stale, and rebuilding it (compiling a ~130-branch regex) on every render was measured
     // as a real perf cost across this app's commentary/reading surfaces.
-    private static IReadOnlyList<BookTocEntry>? _cachedToc;
+    private static IReadOnlyList<CanonBook>? _cachedToc;
     private static Regex? _cachedPattern;
     private static Dictionary<string, string>? _cachedCodeByAlias;
 
-    private static (Regex Pattern, Dictionary<string, string> CodeByAlias) GetOrBuild(IReadOnlyList<BookTocEntry> toc)
+    private static (Regex Pattern, Dictionary<string, string> CodeByAlias) GetOrBuild(IReadOnlyList<CanonBook> toc)
     {
         if (_cachedPattern is not null && ReferenceEquals(_cachedToc, toc))
         {
@@ -91,7 +92,7 @@ public static class ScriptureRefScan
         return (pattern, codeByAlias);
     }
 
-    public static IReadOnlyList<ScriptureRefMatch> Scan(string text, IReadOnlyList<BookTocEntry> toc)
+    public static IReadOnlyList<ScriptureRefMatch> Scan(string text, IReadOnlyList<CanonBook> toc)
     {
         if (string.IsNullOrEmpty(text) || toc.Count == 0)
         {

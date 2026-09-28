@@ -1,24 +1,25 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
 public interface INarrativeAware
 {
-    Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api);
+    Task<NarrativeEventPositions> NarrativePositionsAsync(AtlasClient api);
 }
 
 public sealed class EventNode : IExplorable, INarrativeAware
 {
     private readonly AsyncMemo<EventDetail> _detail = new();
-    private readonly AsyncMemo<NarrativeEventPositionsResult> _positions = new();
+    private readonly AsyncMemo<NarrativeEventPositions> _positions = new();
 
     // Falls back to this caller-supplied kind when no fetch has resolved yet:
     // ExplorationDescriptor.Capture reads CachedKind synchronously, before
     // PushAsync's own await ever gets a chance to resolve DetailAsync, so a
     // freshly-clicked node would otherwise always report a null kind.
-    private readonly string? _knownKind;
+    private readonly EventKind? _knownKind;
 
-    public EventNode(string eventId, string title, string? knownKind = null)
+    public EventNode(string eventId, string title, EventKind? knownKind = null)
     {
         EventId = eventId;
         Title = title;
@@ -29,7 +30,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
     public string Title { get; }
     public string Kind => "Event";
 
-    public string? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
+    public EventKind? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
 
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
@@ -62,6 +63,6 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public Task<EventDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
 
-    public Task<NarrativeEventPositionsResult> NarrativePositionsAsync(AtlasClient api) =>
+    public Task<NarrativeEventPositions> NarrativePositionsAsync(AtlasClient api) =>
         _positions.Get(() => api.NarrativeEventPositions(EventId));
 }

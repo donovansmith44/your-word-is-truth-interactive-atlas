@@ -22,7 +22,7 @@
     private readonly record struct Segment(string Text, string? Sref, int Index);
 
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<BookTocEntry> Toc { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<CanonBook> Toc { get; set; } = default!;
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
 
     [Parameter, EditorRequired] public string OwnerSlug { get; set; } = default!;
@@ -32,7 +32,7 @@
     // OnParametersSet runs on every render regardless of whether parameters actually changed;
     // this guard avoids re-scanning Text on every unrelated re-render.
     private string? _lastText;
-    private IReadOnlyList<BookTocEntry>? _lastToc;
+    private IReadOnlyList<CanonBook>? _lastToc;
     private IReadOnlyList<Segment> _segments = Array.Empty<Segment>();
 
     protected override void OnParametersSet()

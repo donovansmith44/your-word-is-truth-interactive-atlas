@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client;
 using BibleAtlas.Client.Components;
 using BibleAtlas.Client.Explore;
@@ -20,7 +21,7 @@ namespace BibleAtlas.Client.Tests;
 public class ArrowNavTests
 {
     private static VerseGroup Group(string book, int chapter, int count, params string[] verses) =>
-        new(book, chapter, verses.ToList(), count);
+        new(book: book, chapter: chapter, count: count, verses: verses);
 
     // Fix round 2 (N-1): the real MAT/MRK chapter lengths
     // (data/compiled/canon.json) -- what SelectRefsFromWitnesses's own
@@ -28,8 +29,8 @@ public class ArrowNavTests
     // fixtures touch.
     private static readonly Versification RealCanon = Versification.From(new[]
     {
-        new BookTocEntry("MAT", "Matthew", new List<int> { 25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 27, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20 }),
-        new BookTocEntry("MRK", "Mark", new List<int> { 45, 28, 35, 41, 43, 56, 37, 38, 50, 52, 33, 44, 37, 72, 47, 20 }),
+        new CanonBook(chapters: new List<int> { 25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 27, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20 }, code: "MAT", name: "Matthew"),
+        new CanonBook(chapters: new List<int> { 45, 28, 35, 41, 43, 56, 37, 38, 50, 52, 33, 44, 37, 72, 47, 20 }, code: "MRK", name: "Mark"),
     });
 
     [Fact]
@@ -114,7 +115,7 @@ public class ArrowNavTests
     {
         var groups = new List<VerseGroup>
         {
-            new("MAT", 8, new List<string>(), 0),
+            new(book: "MAT", chapter: 8, count: 0, verses: []),
             Group("LUK", 5, 2, "LUK.5.12", "LUK.5.13"),
         };
         var refs = ArrowNav.SelectRefs(groups);
@@ -125,7 +126,7 @@ public class ArrowNavTests
     [Fact]
     public void EveryGroupEmptyReturnsNoRefs()
     {
-        var groups = new List<VerseGroup> { new("MAT", 8, new List<string>(), 0) };
+        var groups = new List<VerseGroup> { new(book: "MAT", chapter: 8, count: 0, verses: []) };
         Assert.Empty(ArrowNav.SelectRefs(groups));
     }
 
@@ -161,10 +162,10 @@ public class ArrowNavTests
     [Fact]
     public void SelectRefsFromWitnesses_OneRefPerWitness_InServerOrder()
     {
-        var witnesses = new List<EventWitnessDto>
+        var witnesses = new List<EventWitness>
         {
-            new("LUK", new List<VerseGroup> { Group("LUK", 6, 5, "LUK.6.12", "LUK.6.13", "LUK.6.14", "LUK.6.15", "LUK.6.16") }),
-            new("MRK", new List<VerseGroup> { Group("MRK", 3, 7, "MRK.3.13", "MRK.3.14", "MRK.3.15", "MRK.3.16", "MRK.3.17", "MRK.3.18", "MRK.3.19") }),
+            new(book: "LUK", refNote: null, robertsonSection: null, verseGroups: new List<VerseGroup> { Group("LUK", 6, 5, "LUK.6.12", "LUK.6.13", "LUK.6.14", "LUK.6.15", "LUK.6.16") }),
+            new(book: "MRK", refNote: null, robertsonSection: null, verseGroups: new List<VerseGroup> { Group("MRK", 3, 7, "MRK.3.13", "MRK.3.14", "MRK.3.15", "MRK.3.16", "MRK.3.17", "MRK.3.18", "MRK.3.19") }),
         };
 
         var refs = ArrowNav.SelectRefsFromWitnesses(witnesses, RealCanon);
@@ -182,9 +183,9 @@ public class ArrowNavTests
         // Proves this derivation is the IDENTICAL coalescing
         // WitnessUnitsResolver uses (ACCT-COALESCE-1) -- a witness spanning
         // multiple chapters becomes ONE ref, never one per chapter.
-        var witnesses = new List<EventWitnessDto>
+        var witnesses = new List<EventWitness>
         {
-            new("MAT", new List<VerseGroup>
+            new(book: "MAT", refNote: null, robertsonSection: null, verseGroups: new List<VerseGroup>
             {
                 Group("MAT", 5, 48, Enumerable.Range(1, 48).Select(n => $"MAT.5.{n}").ToArray()),
                 Group("MAT", 6, 34, Enumerable.Range(1, 34).Select(n => $"MAT.6.{n}").ToArray()),
@@ -201,10 +202,10 @@ public class ArrowNavTests
     [Fact]
     public void SelectRefsFromWitnesses_SkipsAWitnessWithNoVerses()
     {
-        var witnesses = new List<EventWitnessDto>
+        var witnesses = new List<EventWitness>
         {
-            new("MAT", new List<VerseGroup>()),
-            new("LUK", new List<VerseGroup> { Group("LUK", 6, 1, "LUK.6.1") }),
+            new(book: "MAT", refNote: null, robertsonSection: null, verseGroups: new List<VerseGroup>()),
+            new(book: "LUK", refNote: null, robertsonSection: null, verseGroups: new List<VerseGroup> { Group("LUK", 6, 1, "LUK.6.1") }),
         };
 
         var refs = ArrowNav.SelectRefsFromWitnesses(witnesses, RealCanon);

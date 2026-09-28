@@ -18,7 +18,7 @@
 }
 
 @code {
-    [Parameter, EditorRequired] public IReadOnlyList<CatechismRefDto> Items { get; set; } = Array.Empty<CatechismRefDto>();
+    [Parameter, EditorRequired] public IReadOnlyList<CatechismRef> Items { get; set; } = Array.Empty<CatechismRef>();
     [Parameter] public int? Cap { get; set; }
     [Parameter] public string MoreTestId { get; set; } = "catechism-more";
     [Parameter] public string CollapseTestId { get; set; } = "catechism-collapse";
@@ -27,7 +27,7 @@
     private int? _shown;
     private int ShownCount(int cap) => _shown ??= cap;
 
-    private sealed record VisibleEntry(CatechismRefDto Item, string TestId, string Label);
+    private sealed record VisibleEntry(CatechismRef Item, string TestId, string Label);
 
     private IEnumerable<VisibleEntry> Visible
     {

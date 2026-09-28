@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -6,8 +7,8 @@ public sealed class PassageNode : IExplorable
 {
     private readonly string _sref;
     private readonly string _text;
-    private readonly AsyncMemo<List<CrossRefOut>> _xrefs = new();
-    private readonly AsyncMemo<List<CatechismRefDto>> _catechism = new();
+    private readonly AsyncMemo<IReadOnlyList<CrossRef>> _xrefs = new();
+    private readonly AsyncMemo<IReadOnlyList<CatechismRef>> _catechism = new();
 
     public PassageNode(string sref, string text)
     {
@@ -35,9 +36,9 @@ public sealed class PassageNode : IExplorable
 
     // AsyncMemo-backed rather than a value-memoizing `??= await`: the latter races when
     // ExplorerPopover.LoadCurrent's concurrent Task.WhenAll dispatch calls this more than once.
-    public Task<List<CrossRefOut>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(_sref));
+    public Task<IReadOnlyList<CrossRef>> XrefsAsync(AtlasClient api) => _xrefs.Get(() => api.Xrefs(_sref));
 
-    public Task<List<CatechismRefDto>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(_sref));
+    public Task<IReadOnlyList<CatechismRef>> CatechismAsync(AtlasClient api) => _catechism.Get(() => api.Catechism(_sref));
 
     public Task<RenderFragment> BodyAsync(AtlasClient api)
     {

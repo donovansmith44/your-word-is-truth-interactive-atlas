@@ -157,7 +157,7 @@
     private sealed record ArticleHeadingRow(int Part, int Article) : ConcordRenderRow;
     private sealed record UnitRow(TextUnit Unit) : ConcordRenderRow;
 
-    private static readonly List<BookTocEntry> EmptyToc = new();
+    private static readonly List<CanonBook> EmptyToc = new();
 
     [Parameter] public bool? SplitMode { get; set; }
 
@@ -178,7 +178,7 @@
     private int? _jumpArticle;
     private int? _jumpParagraph;
 
-    private List<BookTocEntry>? _toc;
+    private List<CanonBook>? _toc;
 
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 

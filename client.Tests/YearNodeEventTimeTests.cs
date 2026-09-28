@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
@@ -14,7 +15,7 @@ public class YearNodeEventTimeTests
     [Fact]
     public void EventTimeConstructor_TitleIsTheFormattedYearRange()
     {
-        var node = new YearNode(new TimeRangeDto(31, 31));
+        var node = new YearNode(new TimeRange(fromYear: 31, toYear: 31));
         Assert.Equal("AD 31", node.Title);
         Assert.Equal("Year", node.Kind);
     }
@@ -22,7 +23,7 @@ public class YearNodeEventTimeTests
     [Fact]
     public void EventTimeConstructor_GenuineRangeFormatsBothEndpoints()
     {
-        var node = new YearNode(new TimeRangeDto(-1000, -960));
+        var node = new YearNode(new TimeRange(fromYear: -1000, toYear: -960));
         Assert.Equal("1000 BC – 960 BC", node.Title);
     }
 
@@ -33,7 +34,7 @@ public class YearNodeEventTimeTests
     [Fact]
     public void PlaceDateClaimConstructor_TitleFormatIsUnaffectedByTheNewConstructor()
     {
-        var node = new YearNode("jerusalem_1", "Established", new TimeRangeDto(-1003, -1003), new List<string> { "2SA.5.6" }, "traditional");
+        var node = new YearNode("jerusalem_1", "Established", new TimeRange(fromYear: -1003, toYear: -1003), new List<string> { "2SA.5.6" }, "traditional");
         Assert.Equal("Established c. 1003 BC", node.Title);
         Assert.Equal("Year", node.Kind);
     }
@@ -43,7 +44,7 @@ public class YearNodeEventTimeTests
     // ResolveChronologyAsync so the ordering fix (When.FromYear, then
     // ToYear, then label -- was label-only) is testable without a fetch.
     private static SceneEvent Ev(string id, string label, int fromYear, int toYear) =>
-        new(id, label, new TimeRangeDto(fromYear, toYear), new List<VerseGroup>());
+        new(id: id, label: label, verseGroups: [], when: new TimeRange(fromYear: fromYear, toYear: toYear));
 
     [Fact]
     public void DedupeAndOrder_SortsByFromYearFirst_EvenWhenAllShareTheQueriedWindow()

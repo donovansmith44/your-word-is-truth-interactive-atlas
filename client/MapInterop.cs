@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -53,31 +54,29 @@ public sealed class MapInterop : IAsyncDisposable
         return new MapInterop(module, sinkRef, id);
     }
 
-    // InvokeAsync serializes arguments with System.Text.Json's default (camelCase) options, never
-    // Wire.Options -- passing s straight through would rename e.g. verse_groups to verseGroups,
-    // silently diverging from the snake_case shape map.js is written against. Serializing with
-    // Wire.Options first and sending the result as a string sidesteps that.
+    // map.js takes every wire value as the server's JSON text, which the generated records'
+    // JsonPropertyName attributes reproduce.
     // Each place's `name` is overwritten with its own DisplayName before serializing: map.js's
     // marker-label rendering reads p.name, so this is the only client-side change a period-
     // resolved display name needs.
     public async Task SetScene(Scene s)
     {
         var forMap = s with { Places = s.Places.Select(p => p with { Name = p.DisplayName }).ToList() };
-        var json = JsonSerializer.Serialize(forMap, Wire.Options);
+        var json = JsonSerializer.Serialize(forMap);
         await _module.InvokeVoidAsync("setScene", _id, json);
     }
 
     public async Task FitScene() => await _module.InvokeVoidAsync("fitScene", _id);
 
-    public async Task SetPolities(List<PolityEraOut> polities, int from, int to)
+    public async Task SetPolities(IReadOnlyList<Polity> polities, int from, int to)
     {
-        var json = JsonSerializer.Serialize(polities, Wire.Options);
+        var json = JsonSerializer.Serialize(polities);
         await _module.InvokeVoidAsync("setPolities", _id, json, from, to);
     }
 
-    public async Task SetPolitiesRoster(List<PolityEraOut> roster)
+    public async Task SetPolitiesRoster(IReadOnlyList<Polity> roster)
     {
-        var json = JsonSerializer.Serialize(roster, Wire.Options);
+        var json = JsonSerializer.Serialize(roster);
         await _module.InvokeVoidAsync("setPolitiesRoster", _id, json);
     }
 
@@ -95,27 +94,25 @@ public sealed class MapInterop : IAsyncDisposable
     // failure still shows the last known-good polities instead of leaving them hidden.
     public async Task SetPolitiesVisible(bool visible) => await _module.InvokeVoidAsync("setPolitiesVisible", _id, visible);
 
-    public async Task SetLandmarks(List<LandmarkDto> landmarks)
+    public async Task SetLandmarks(IReadOnlyList<Landmark> landmarks)
     {
-        var json = JsonSerializer.Serialize(landmarks, Wire.Options);
+        var json = JsonSerializer.Serialize(landmarks);
         await _module.InvokeVoidAsync("setLandmarks", _id, json);
     }
 
-    public async Task SetLandMask(JsonElement rings)
+    public async Task SetLandMask(LandMask landMask)
     {
-        var json = JsonSerializer.Serialize(rings, Wire.Options);
+        var json = JsonSerializer.Serialize(landMask.Rings);
         await _module.InvokeVoidAsync("setLandMask", _id, json);
     }
 
-    // A bare string has no properties to rename, so (unlike SetScene) this skips the
-    // Wire.Options serialize-to-string detour.
     public async Task SetIsolate(string? narrativeId) => await _module.InvokeVoidAsync("setIsolate", _id, narrativeId);
 
     // Instant, not animated: an animated pan would make the returned point unreliable (read
     // mid-animation) without an added moveend-await round trip.
     public async Task<(double X, double Y)> PanToPlace(double lat, double lon)
     {
-        var point = await _module.InvokeAsync<ContainerPointDto>("panToPlace", _id, lat, lon);
+        var point = await _module.InvokeAsync<ContainerPoint>("panToPlace", _id, lat, lon);
         return (point.X, point.Y);
     }
 
@@ -136,10 +133,10 @@ public sealed class MapInterop : IAsyncDisposable
 
     // Deliberately deferred until both chapter-text and history fetches settle -- measuring
     // earlier would size against not-yet-loaded content and produce a wrong flip/clamp decision.
-    public static async Task<CardMeasurementDto> MeasureCardPlacement(IJSRuntime js, ElementReference cardEl)
+    public static async Task<CardMeasurement> MeasureCardPlacement(IJSRuntime js, ElementReference cardEl)
     {
         var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
-        return await module.InvokeAsync<CardMeasurementDto>("measureCardPlacement", cardEl);
+        return await module.InvokeAsync<CardMeasurement>("measureCardPlacement", cardEl);
     }
 
     public async ValueTask DisposeAsync()
@@ -182,8 +179,8 @@ public sealed class MapEventsSink
         _sink.OnPolityDeltaClick(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
 }
 
-// These JS-interop return shapes deserialize via Blazor's default (camelCase) JSON options, not
-// Wire.Options -- they never cross the real HTTP API, so there's no snake_case wire shape to match.
-public sealed record ContainerPointDto(double X, double Y);
+// These JS-interop return shapes deserialize via Blazor's default (camelCase) JSON options: they
+// never cross the HTTP API, so they have no contract counterpart.
+public sealed record ContainerPoint(double X, double Y);
 
-public sealed record CardMeasurementDto(double Width, double Height, double ContainerWidth, double ContainerHeight);
+public sealed record CardMeasurement(double Width, double Height, double ContainerWidth, double ContainerHeight);

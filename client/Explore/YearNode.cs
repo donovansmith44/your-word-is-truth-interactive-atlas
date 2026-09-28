@@ -1,14 +1,15 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
 public sealed class YearNode : IExplorable
 {
-    private readonly TimeRangeDto _when;
-    private readonly List<string> _verses;
+    private readonly TimeRange _when;
+    private readonly IReadOnlyList<string> _verses;
     private readonly bool _isEventTime;
 
-    public YearNode(string placeId, string label, TimeRangeDto when, List<string> verses, string? note)
+    public YearNode(string placeId, string label, TimeRange when, IReadOnlyList<string> verses, string? note)
     {
         PlaceId = placeId;
         Label = label;
@@ -18,7 +19,7 @@ public sealed class YearNode : IExplorable
         _isEventTime = false;
     }
 
-    public YearNode(TimeRangeDto when)
+    public YearNode(TimeRange when)
     {
         PlaceId = "";
         Label = "";
@@ -115,7 +116,7 @@ public sealed class YearNode : IExplorable
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"year-chronology-event-{id}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, "event"))));
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, EventKind.Event))));
                 builder.AddContent(seq++, label);
                 builder.CloseElement();
             }

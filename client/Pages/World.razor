@@ -194,20 +194,20 @@
 
     [Parameter] public Action<Func<string, Task>>? RegisterQueryHandler { get; set; }
 
-    private List<EraDto>? _eras;
+    private List<Era>? _eras;
     private Scene? _scene;
     private string? _errorMessage;
     private string? _scriptureRef;
 
-    private PolitiesOut? _polities;
-    private List<LandmarkDto>? _landmarks;
+    private Polities? _polities;
+    private IReadOnlyList<Landmark>? _landmarks;
 
     private bool _landmarksPushed;
 
-    private LandMaskOut? _landMask;
+    private LandMask? _landMask;
     private bool _landMaskPushed;
 
-    private PolitiesOut? _polityRoster;
+    private Polities? _polityRoster;
     private bool _polityRosterPushed;
 
     private int _from = DefaultFrom;
@@ -217,7 +217,7 @@
     private ElementReference _mapEl;
     private MapInterop? _mapInterop;
 
-    private string? _lastFitMode;
+    private SceneMode? _lastFitMode;
 
     private ScenePlace? _hoverPlace;
     private double _hoverX;
@@ -336,7 +336,7 @@
         }
 
         _landMaskPushed = true;
-        await _mapInterop.SetLandMask(_landMask.Rings);
+        await _mapInterop.SetLandMask(_landMask);
     }
 
     private async Task PushPolityRosterIfReady()
@@ -347,7 +347,7 @@
         }
 
         _polityRosterPushed = true;
-        await _mapInterop.SetPolitiesRoster(_polityRoster.Polities);
+        await _mapInterop.SetPolitiesRoster(_polityRoster.Polities1);
     }
 
     private async Task PushLandmarksIfReady()
@@ -535,7 +535,7 @@
             return;
         }
 
-        _lastFitMode = "time";
+        _lastFitMode = SceneMode.Time;
         await EnterTimeMode(ViewState.Map.From, ViewState.Map.To);
 
         if (ViewState.Map.CenterLat is double lat && ViewState.Map.CenterLon is double lon && ViewState.Map.Zoom is double zoom)
@@ -612,7 +612,7 @@
         if (_scene is not null)
         {
             await _mapInterop.SetScene(_scene);
-            var thisMode = _scriptureRef is not null ? "scripture" : "time";
+            var thisMode = _scriptureRef is not null ? SceneMode.Scripture : SceneMode.Time;
             if (_lastFitMode != thisMode)
             {
                 await _mapInterop.FitScene();
@@ -624,7 +624,7 @@
         if (_polities is not null && _scriptureRef is null)
         {
             await _mapInterop.SetPolitiesVisible(true);
-            await _mapInterop.SetPolities(_polities.Polities, _from, _to);
+            await _mapInterop.SetPolities(_polities.Polities1, _from, _to);
         }
 
         await PushLandmarksIfReady();
@@ -812,10 +812,10 @@
                 await _mapInterop.SetScene(scene);
                 await JS.InvokeVoidAsync("performance.mark", "atlas:scene-rendered");
 
-                if (_lastFitMode != "time")
+                if (_lastFitMode != SceneMode.Time)
                 {
                     await _mapInterop.FitScene();
-                    _lastFitMode = "time";
+                    _lastFitMode = SceneMode.Time;
                 }
 
                 if (focusPlaceId is not null)
@@ -865,7 +865,7 @@
 
             if (_mapInterop is not null)
             {
-                await _mapInterop.SetPolities(polities.Polities, from, to);
+                await _mapInterop.SetPolities(polities.Polities1, from, to);
             }
         }
         catch (Exception)
@@ -909,7 +909,7 @@
                 await _mapInterop.SetScene(scene);
                 await _mapInterop.FitScene();
 
-                _lastFitMode = "scripture";
+                _lastFitMode = SceneMode.Scripture;
             }
         }
         catch (Exception)
@@ -977,7 +977,7 @@
     private ScenePlace? QuietAsScenePlace(string id)
     {
         var quiet = _scene?.QuietPlaces.FirstOrDefault(p => p.Id == id);
-        return quiet is null ? null : new ScenePlace(quiet.Id, quiet.DisplayName, quiet.DisplayName, quiet.Lat, quiet.Lon, 0, new List<SceneEvent>());
+        return quiet is null ? null : new ScenePlace(brightness: 0, displayName: quiet.DisplayName, events: [], existenceFrom: null, existenceTo: null, id: quiet.Id, lat: quiet.Lat, lon: quiet.Lon, mergedIds: null, name: quiet.DisplayName);
     }
 
     public void OnPlaceLeave()

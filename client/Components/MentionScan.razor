@@ -27,8 +27,8 @@
 
 @code {
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PlaceRefDto> Places { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PersonRefDto> Persons { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PlaceRef> Places { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<PersonRef> Persons { get; set; } = default!;
     [Parameter, EditorRequired] public int Verse { get; set; }
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
     [Parameter] public string TestIdSuffix { get; set; } = "";

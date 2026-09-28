@@ -170,7 +170,7 @@
     [Parameter] public EventCallback OnOpenPlace { get; set; }
 
     [Parameter] public bool Pinned { get; set; }
-    [Parameter] public List<SceneNarrative>? Narratives { get; set; }
+    [Parameter] public IReadOnlyList<SceneNarrative>? Narratives { get; set; }
     [Parameter] public EventCallback<string> OnGoToPlace { get; set; }
     [Parameter] public EventCallback OnClosePin { get; set; }
 
@@ -184,9 +184,9 @@
     private int _initialShownCount;
     private readonly Dictionary<string, string> _verseText = new();
 
-    private PlaceHistoryOut? _history;
+    private History? _history;
 
-    private List<NarrativePositionDto> _narrativePositions = new();
+    private List<NarrativePosition> _narrativePositions = new();
 
     private ElementReference _cardEl;
 
@@ -318,7 +318,7 @@
         // Captured before the await: if a newer place supersedes this one while measuring is
         // still in flight, comparing against the current Place.Id below detects that and drops the stale result.
         var placeId = Place.Id;
-        CardMeasurementDto measurement;
+        CardMeasurement measurement;
         try
         {
             measurement = await MapInterop.MeasureCardPlacement(JS, _cardEl);
@@ -363,7 +363,7 @@
         var eventIds = Place.Events.Select(e => e.Id).Where(id => !id.StartsWith("mention-", StringComparison.Ordinal)).ToList();
         if (eventIds.Count == 0)
         {
-            _narrativePositions = new List<NarrativePositionDto>();
+            _narrativePositions = new List<NarrativePosition>();
             return;
         }
 
@@ -374,20 +374,20 @@
         }
         catch (Exception)
         {
-            _narrativePositions = new List<NarrativePositionDto>();
+            _narrativePositions = new List<NarrativePosition>();
         }
     }
 
-    private static string DateText(DateClaimOut claim) => YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
+    private static string DateText(PlaceDateClaim claim) => YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
 
-    private static string ExploreLabel(string label, DateClaimOut claim) => $"Explore {label.ToLowerInvariant()} date: {DateText(claim)}";
+    private static string ExploreLabel(string label, PlaceDateClaim claim) => $"Explore {label.ToLowerInvariant()} date: {DateText(claim)}";
 
     // Named wrappers, not an inline Explore(label, claim) call: Razor's @onclick attribute-value
     // parser cannot handle an embedded double-quoted string literal inside the lambda.
-    private Task ExploreEstablished(DateClaimOut claim) =>
+    private Task ExploreEstablished(PlaceDateClaim claim) =>
         OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Established", claim.When, claim.Verses, claim.Note));
 
-    private Task ExploreDestroyed(DateClaimOut claim) =>
+    private Task ExploreDestroyed(PlaceDateClaim claim) =>
         OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Destroyed", claim.When, claim.Verses, claim.Note));
 
     private Task ExploreVerse(string vref) => OnExploreNode.InvokeAsync(new VerseNode(vref));
@@ -456,7 +456,7 @@
         return rows;
     }
 
-    private static string? AdjacentPlaceId(NarrativeAdjacentEventDto? adjacent) =>
+    private static string? AdjacentPlaceId(NarrativeAdjacentEvent? adjacent) =>
         adjacent?.Places is { Count: > 0 } places ? places[0] : null;
 
     // Populates every verse from each fetched chapter, not just the requested ones --
@@ -479,7 +479,7 @@
                 // which never matches a verse ref like "JDG.3.7".
                 foreach (var v in chapter.Verses)
                 {
-                    _verseText[$"{chapter.Ref}.{v.Verse}"] = v.Text;
+                    _verseText[$"{chapter.Ref}.{v.Verse1}"] = v.Text;
                 }
             }
         }

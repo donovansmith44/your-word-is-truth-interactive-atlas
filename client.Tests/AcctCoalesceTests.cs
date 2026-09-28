@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client;
 using BibleAtlas.Client.Explore;
 
@@ -33,8 +34,8 @@ public class AcctCoalesceTests
 {
     private static PassageListVerse V(string vref, int? groupCount = null) => new(vref, $"text of {vref}", groupCount);
 
-    private static BookTocEntry Toc(string code, string name, params int[] chapters) =>
-        new(code, name, chapters.ToList());
+    private static CanonBook Toc(string code, string name, params int[] chapters) =>
+        new(chapters: chapters, code: code, name: name);
 
     // The REAL canon chapter lengths (data/compiled/canon.json -- the same
     // per-chapter verse counts AtlasClient.Books() serves the live app)

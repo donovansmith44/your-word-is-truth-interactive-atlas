@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;

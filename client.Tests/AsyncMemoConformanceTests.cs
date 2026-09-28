@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using System.Text.RegularExpressions;
 
 namespace BibleAtlas.Client.Tests;
@@ -101,7 +102,7 @@ public class AsyncMemoConformanceTests
         // operand (AlreadyLoaded) sits between `??=` and `await`, proving
         // the bounded lazy window catches this, not just the bare-adjacency
         // case the OTHER planted test above already covers.
-        const string planted = "public async Task<ChapterOut> Load(AtlasClient api) => _cached ??= AlreadyLoaded ?? await api.Chapter(_book, _chapter);";
+        const string planted = "public async Task<Chapter> Load(AtlasClient api) => _cached ??= AlreadyLoaded ?? await api.Chapter(_book, _chapter);";
 
         Assert.Matches(RawAwaitMemoizationPattern, planted);
     }

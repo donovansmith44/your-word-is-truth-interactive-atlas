@@ -158,10 +158,10 @@
     private ElementReference _panelRef;
     private bool _focused;
 
-    private PaneRectDto? _paneRect;
+    private PaneRect? _paneRect;
     private bool _paneMeasured;
 
-    private VerseAnchorRectDto? _verseAnchorRect;
+    private VerseAnchorRect? _verseAnchorRect;
     private bool _verseAnchorMeasured;
 
     // reader-root's own testid never changes with its class (unlike split-pane-atlas, whose class AND testid switch together) -- a selector targeting "split-pane-reader" would match nothing, ever, so this targets the stable "reader-root" testid instead.
@@ -248,7 +248,7 @@
             try
             {
                 var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-                _paneRect = await readerJs.InvokeAsync<PaneRectDto?>("getPaneRect", PaneSelector);
+                _paneRect = await readerJs.InvokeAsync<PaneRect?>("getPaneRect", PaneSelector);
                 if (_paneRect is not null)
                 {
                     StateHasChanged();
@@ -265,7 +265,7 @@
             try
             {
                 var readerJs = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-                _verseAnchorRect = await readerJs.InvokeAsync<VerseAnchorRectDto?>("getVerseAnchorRect", VerseAnchorSelector);
+                _verseAnchorRect = await readerJs.InvokeAsync<VerseAnchorRect?>("getVerseAnchorRect", VerseAnchorSelector);
                 if (_verseAnchorRect is not null)
                 {
                     StateHasChanged();
@@ -461,7 +461,5 @@
         _ => "•",
     };
 
-    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
-
-    private sealed record VerseAnchorRectDto(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
+    private sealed record VerseAnchorRect(double Left, double Top, double Width, double Height, double ViewportWidth, double ViewportHeight);
 }

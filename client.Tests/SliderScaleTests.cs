@@ -1,10 +1,12 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Tests;
 
 public class SliderScaleTests {
-    static readonly List<EraDto> Eras = new() {
-        new("a","A",-4004,-2167), new("b","B",-2166,-1877), new("c","C",-1876,-1407),
-        new("d","D",-1406,-1051), new("e","E",-1050,-932), new("f","F",-931,-587),
-        new("g","G",-586,-539), new("h","H",-538,-6), new("i","I",-5,29), new("j","J",30,100) };
+    static readonly List<Era> Eras = new() {
+        new(fromYear: -4004, id: "a", name: "A", toYear: -2167), new(fromYear: -2166, id: "b", name: "B", toYear: -1877), new(fromYear: -1876, id: "c", name: "C", toYear: -1407),
+        new(fromYear: -1406, id: "d", name: "D", toYear: -1051), new(fromYear: -1050, id: "e", name: "E", toYear: -932), new(fromYear: -931, id: "f", name: "F", toYear: -587),
+        new(fromYear: -586, id: "g", name: "G", toYear: -539), new(fromYear: -538, id: "h", name: "H", toYear: -6), new(fromYear: -5, id: "i", name: "I", toYear: 29), new(fromYear: 30, id: "j", name: "J", toYear: 100) };
 
     [Fact]
     public void RoundTripEveryYearInSpan() {

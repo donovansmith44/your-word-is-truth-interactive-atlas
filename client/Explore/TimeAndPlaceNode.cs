@@ -1,14 +1,15 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
 
 public sealed class TimeAndPlaceNode : IExplorable
 {
-    private readonly TimeRangeDto _when;
+    private readonly TimeRange _when;
     private readonly string _label;
-    private readonly List<VerseGroup> _verseGroups;
+    private readonly IReadOnlyList<VerseGroup> _verseGroups;
 
-    public TimeAndPlaceNode(string placeId, string placeName, string eventId, TimeRangeDto when, string label, List<VerseGroup> verseGroups)
+    public TimeAndPlaceNode(string placeId, string placeName, string eventId, TimeRange when, string label, IReadOnlyList<VerseGroup> verseGroups)
     {
         PlaceId = placeId;
         EventId = eventId;

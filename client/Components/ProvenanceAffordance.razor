@@ -77,7 +77,7 @@
     // Passed in rather than injected so this component stays pure and synchronously
     // renderable off the caller's already-awaited fetch. Null means the registry hasn't
     // resolved yet or failed to load -- resolved as RegistryUnavailable, not "unrecognized".
-    [Parameter] public SourcesDocumentOut? Sources { get; set; }
+    [Parameter] public SourcesDocument? Sources { get; set; }
 
     public const string HeaderRegister = "header";
     public const string RowRegister = "row";

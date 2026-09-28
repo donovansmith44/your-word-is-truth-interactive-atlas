@@ -48,7 +48,7 @@
         try
         {
             var js = await JS.InvokeAsync<IJSObjectReference>("import", "./js/reader.js");
-            var rect = await js.InvokeAsync<PaneRectDto?>("getPaneRect", ".split-view");
+            var rect = await js.InvokeAsync<PaneRect?>("getPaneRect", ".split-view");
             _lastMeasuredTotalWidthPx = rect?.Width;
             _maxWidthPx = rect is { } r ? Math.Max(MinWidthPx, r.Width - MinWidthPx - DividerWidthPx) : double.MaxValue;
         }
@@ -110,6 +110,4 @@
         await WidthPxChanged.InvokeAsync(next);
         await OnCommitted.InvokeAsync((next, FractionOf(next)));
     }
-
-    private sealed record PaneRectDto(double Left, double Top, double Width, double Height);
 }

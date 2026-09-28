@@ -1,6 +1,6 @@
 @using BibleAtlas.Client.Explore
 
-<h2 class="pericope-heading @(Heading.IsContinuation ? "pericope-heading-continuation" : "") @(Heading.Kind == "general" ? "explorable-quiet" : "explorable")"
+<h2 class="pericope-heading @(Heading.IsContinuation ? "pericope-heading-continuation" : "") @(Heading.Kind == EventKind.General ? "explorable-quiet" : "explorable")"
     data-testid="@($"pericope-heading-{Heading.EventId}{TestIdSuffix}")" data-continuation="@(Heading.IsContinuation ? "true" : "false")"
     tabindex="0" role="button" aria-label="@(Heading.IsContinuation ? $"Explore {Heading.Title} (continued)" : $"Explore {Heading.Title}")"
     @onclick="Open" @onkeydown="@(e => OnKeyDown(e))">
@@ -12,7 +12,7 @@
 </h2>
 
 @code {
-    [Parameter, EditorRequired] public HeadingDto Heading { get; set; } = default!;
+    [Parameter, EditorRequired] public Heading Heading { get; set; } = default!;
 
     [Parameter] public string TestIdSuffix { get; set; } = "";
 

@@ -76,14 +76,14 @@
                     {
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
-                    <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Verse}")">
+                    <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Verse1}")">
                         <VerseLine Verse="@row.Verse" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
-                                   Id="@($"v{row.Verse.Verse}{VerseTestIdSuffix}")"
+                                   Id="@($"v{row.Verse.Verse1}{VerseTestIdSuffix}")"
                                    RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
-                                   OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Verse))"
+                                   OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Verse1))"
                                    TextClass="verse-text kretzmann-scripture-text" MentionClass="verse-mention"
-                                   XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Verse, "")"
+                                   XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Verse1, "")"
                                    OnXrefClick="OpenVerseXrefEntry"
                                    OnToggleSelect="OnLineToggleSelect" OnMentionToggleSelect="OnMentionToggleSelect" />
 
@@ -143,9 +143,9 @@
 @code {
     private sealed record CommentaryItemRow(string Id, string Heading, string? Text, bool IsSectionStart);
 
-    private sealed record MergedVerseRow(VerseOut Verse, List<CommentaryItemRow> CommentaryItems);
+    private sealed record MergedVerseRow(Verse Verse, List<CommentaryItemRow> CommentaryItems);
 
-    private static readonly List<BookTocEntry> EmptyToc = new();
+    private static readonly List<CanonBook> EmptyToc = new();
 
     [Parameter] public bool? SplitMode { get; set; }
 
@@ -170,8 +170,8 @@
     // property is re-evaluated fresh on every later render.
     private string VerseTestIdSuffix => (_compositionSplit?.IsSplitOpen ?? false) ? "-kv" : "";
 
-    private List<BookTocEntry>? _toc;
-    private List<VerseOut> _verses = new();
+    private List<CanonBook>? _toc;
+    private IReadOnlyList<Verse> _verses = [];
     private List<MergedVerseRow> _rows = new();
     private bool _loading = true;
     private string? _error;
@@ -452,7 +452,7 @@
 
             _verses = chapter.Verses;
             _rows = chapter.Verses
-                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Verse, new List<CommentaryItemRow>())))
+                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Verse1, new List<CommentaryItemRow>())))
                 .ToList();
             _loadedBook = book;
             _loadedChapterNum = chapterNum;
@@ -589,7 +589,7 @@
         }
 
         var text = string.Join(" ", _verses
-            .Where(v => v.Verse >= range.From && v.Verse <= range.To)
+            .Where(v => v.Verse1 >= range.From && v.Verse1 <= range.To)
             .Select(v => v.Text));
         _activeNode = new PassageNode(PassageRef(range), text);
     }

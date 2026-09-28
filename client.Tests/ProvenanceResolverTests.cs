@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
@@ -20,28 +21,28 @@ namespace BibleAtlas.Client.Tests;
 // below run with no HTTP and no component host at all.
 public class ProvenanceResolverTests
 {
-    private static SourcesDocumentOut Registry() => new(
-        Categories: new List<SourceCategoryDto>
+    private static SourcesDocument Registry() => new(
+        categories: new List<SourceCategory>
         {
-            new("scripture", "Scripture & Text"),
-            new("our-work", "Our Own Curated Work"),
+            new(id: "scripture", label: "Scripture & Text"),
+            new(id: "our-work", label: "Our Own Curated Work"),
         },
-        Sources: new List<SourceEntryDto>
+        sources: new List<SourceEntry>
         {
-            new("kjv-text", "scripture", "The King James Version", "The canonical English text this app reads.", "Compiled into verses-kjv.json.", "Public domain", "https://example.invalid/kjv", "KJV text"),
-            new("openbible-xrefs", "scripture", "OpenBible.info Cross-References", "A cross-reference dataset.", "Compiled into cross-refs.json.", "Free to use with credit", null, "OpenBible.info cross-references"),
-            new("our-curated-work", "our-work", "Our Own Curated Work", "Everything this project authored directly.", "Hand-authored under data/curated/.", "CC0 1.0 Universal", null, "All curated data"),
+            new(id: "kjv-text", category: "scripture", title: "The King James Version", whatItIs: "The canonical English text this app reads.", whatWeBuilt: "Compiled into verses-kjv.json.", license: "Public domain", link: "https://example.invalid/kjv", licensesRowKey: "KJV text"),
+            new(id: "openbible-xrefs", category: "scripture", title: "OpenBible.info Cross-References", whatItIs: "A cross-reference dataset.", whatWeBuilt: "Compiled into cross-refs.json.", license: "Free to use with credit", link: null, licensesRowKey: "OpenBible.info cross-references"),
+            new(id: "our-curated-work", category: "our-work", title: "Our Own Curated Work", whatItIs: "Everything this project authored directly.", whatWeBuilt: "Hand-authored under data/curated/.", license: "CC0 1.0 Universal", link: null, licensesRowKey: "All curated data"),
         },
-        Provenances: new List<ProvenanceEntryDto>
+        provenances: new List<ProvenanceEntry>
         {
-            new("kjv", "kjv-text", "CanonicalText", "verses-kjv.json"),
-            new("openbible.info-cross-references", "openbible-xrefs", "Imported", "cross_references.txt"),
-            new("curated", "our-curated-work", "Curated"),
-            new("chronology-derivation", "our-curated-work", "Derived"),
-            new("kretzmann", "our-curated-work", "Imported"),
+            new(id: "kjv", source: "kjv-text", confidence: Confidence.CanonicalText, locator: "verses-kjv.json"),
+            new(id: "openbible.info-cross-references", source: "openbible-xrefs", confidence: Confidence.Imported, locator: "cross_references.txt"),
+            new(id: "curated", source: "our-curated-work", confidence: Confidence.Curated, locator: null),
+            new(id: "chronology-derivation", source: "our-curated-work", confidence: Confidence.Derived, locator: null),
+            new(id: "kretzmann", source: "our-curated-work", confidence: Confidence.Imported, locator: null),
             // A row whose `source` names nothing -- `validate_structure`
             // rejects this on the server, so only a fixture can produce it.
-            new("dangling", "no-such-source", "Imported"),
+            new(id: "dangling", source: "no-such-source", confidence: Confidence.Imported, locator: null),
         });
 
     // ---- THE ID GRAMMAR ------------------------------------------------
@@ -276,8 +277,8 @@ public class ProvenanceResolverTests
     [Fact]
     public void CanonicalTextAndDerivedDoNotLookAlike()
     {
-        var canonical = ProvenanceResolver.ConfidenceNote("CanonicalText");
-        var derived = ProvenanceResolver.ConfidenceNote("Derived");
+        var canonical = ProvenanceResolver.ConfidenceNote(Confidence.CanonicalText);
+        var derived = ProvenanceResolver.ConfidenceNote(Confidence.Derived);
 
         Assert.NotNull(canonical);
         Assert.NotNull(derived);
@@ -289,19 +290,18 @@ public class ProvenanceResolverTests
     {
         // The ATTEST-1 leper lesson as a display rule: our own work must
         // announce itself, or it can pass for an imported source.
-        Assert.Equal("Our own curated work", ProvenanceResolver.ConfidenceNote("Curated"));
+        Assert.Equal("Our own curated work", ProvenanceResolver.ConfidenceNote(Confidence.Curated));
     }
 
     [Fact]
     public void ImportedIsTheSilentDefaultBecauseSayingItEverywhereWouldTrainTheEyeToSkipIt()
     {
-        Assert.Null(ProvenanceResolver.ConfidenceNote("Imported"));
+        Assert.Null(ProvenanceResolver.ConfidenceNote(Confidence.Imported));
     }
 
     [Fact]
-    public void AnUnknownConfidenceRendersNoLineRatherThanAnEmptyOne()
+    public void AnAbsentConfidenceRendersNoLineRatherThanAnEmptyOne()
     {
-        Assert.Null(ProvenanceResolver.ConfidenceNote("Speculative"));
         Assert.Null(ProvenanceResolver.ConfidenceNote(null));
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using BibleAtlas.Client.Contract;
 using Reqnroll;
 
 namespace BibleAtlas.Client.ContractTests.Steps;
@@ -9,7 +10,7 @@ namespace BibleAtlas.Client.ContractTests.Steps;
 /// contract knowledge") binding every phrase in
 /// <c>contracts/atlas-query-contract/features/*.feature</c> (glossary.md's
 /// own phrase table) -- the SAME phrases the Rust cucumber harness binds
-/// -- through the client's own DTO deserialization (<see cref="Wire.Options"/>)
+/// -- through the generated contract records
 /// against the committed provider fixtures
 /// (<c>contracts/atlas-query-contract/fixtures/*.json</c>), never a live
 /// server. Reqnroll creates one instance of this class per scenario (the
@@ -319,21 +320,13 @@ public class AqcSteps
     [When("I capture the returned focus reference")]
     public void WhenCaptureFocusRef()
     {
-        // FocusQuery response: a top-level "id". TraversalQuery response:
-        // the FIRST entry's own node.id (glossary.md's own convention,
-        // identical to the Rust harness's own step).
-        if (_body.TryGetProperty("id", out var idProp))
-        {
-            _capturedRef = idProp.GetString();
-            return;
-        }
-        if (_body.TryGetProperty("entries", out var entries) && entries.GetArrayLength() > 0)
-        {
-            _capturedRef = entries[0].GetProperty("node").GetProperty("id").GetString();
-            return;
-        }
-        throw new InvalidOperationException("no capturable focus reference on the last response (expected a top-level 'id' or a non-empty 'entries' array)");
+        // A FocusQuery answers with a NodeCard, a TraversalQuery with an EdgePage.
+        _capturedRef = _body.TryGetProperty("id", out _)
+            ? Body<NodeCard>().Id
+            : Body<EdgePage>().Entries.First().Node.Id;
     }
+
+    private T Body<T>() => _body.Deserialize<T>() ?? throw new InvalidOperationException($"the last response is not a {typeof(T).Name}");
 
     // ---------------------------------------------------------------
     // Then
@@ -364,23 +357,12 @@ public class AqcSteps
                 $"{shape} response has field '{prop.Name}' outside aqc.schema.json's own $defs.{shape}.properties");
         }
 
-        // Also proves CONSUMER PARSING, not just field presence -- the
-        // brief's own "proving the consumer parses every shape the
-        // provider emits" -- by round-tripping through the client's real
-        // DTO + Wire.Options.
-        var json = _body.GetRawText();
-        object? dto = shape switch
-        {
-            "NodeCard" => JsonSerializer.Deserialize<NodeCardDto>(json, Wire.Options),
-            "EdgePage" => JsonSerializer.Deserialize<EdgePageDto>(json, Wire.Options),
-            "TextWindow" => JsonSerializer.Deserialize<TextWindowDto>(json, Wire.Options),
-            "Scene" => JsonSerializer.Deserialize<Scene>(json, Wire.Options),
-            "Contract" => JsonSerializer.Deserialize<ContractDto>(json, Wire.Options),
-            "Contents" => JsonSerializer.Deserialize<ContentsOut>(json, Wire.Options),
-            _ => null,
-        };
-        Assert.NotNull(dto);
+        Assert.NotNull(_body.Deserialize(GeneratedRecord(shape)));
     }
+
+    private static Type GeneratedRecord(string shape) =>
+        typeof(NodeCard).Assembly.GetType($"{typeof(NodeCard).Namespace}.{shape}")
+            ?? throw new NotSupportedException($"AqcSteps: no generated record named '{shape}'.");
 
     [Then("the response \"([^\"]+)\" field equals \"([^\"]+)\"")]
     public void ThenFieldEquals(string field, string expected)
@@ -392,43 +374,23 @@ public class AqcSteps
     [Then("every frontier group is a relations! family")]
     public void ThenEveryFrontierIsARelationsFamily()
     {
-        // Thin: the C# side proves it recognizes every label the FIXTURE
-        // set itself carries (the Rust side is authoritative for "is this
-        // string drawn from RelationId::ALL" -- graph_wire::parse_edge_kind
-        // has no C# equivalent, and duplicating the relation manifest here
-        // would be a second representation of it). What this DOES prove:
-        // every kind label present deserializes as a non-empty string on
-        // the client's own EdgeSummaryEntryDto/EdgePageDto.Kind.
-        if (_body.TryGetProperty("edge_summary", out var summary))
-        {
-            foreach (var entry in summary.EnumerateArray())
-            {
-                Assert.False(string.IsNullOrEmpty(entry.GetProperty("kind").GetString()));
-            }
-        }
-        else if (_body.TryGetProperty("kind", out var kind))
-        {
-            Assert.False(string.IsNullOrEmpty(kind.GetString()));
-        }
-        else
-        {
-            throw new InvalidOperationException("no frontier-bearing field (edge_summary or kind) on the last response");
-        }
+        IReadOnlyList<EdgeKind> kinds = _body.TryGetProperty("edge_summary", out _)
+            ? Body<NodeCard>().EdgeSummary.Select(e => e.Kind).ToList()
+            : [Body<EdgePage>().Kind];
+        Assert.All(kinds, kind => Assert.True(Enum.IsDefined(kind)));
     }
 
     [Then("the request fails with status (\\d+) and code \"([^\"]+)\"")]
     public void ThenRequestFails(int status, string code)
     {
-        Assert.Equal(status, _status);
-        Assert.Equal(code, _body.GetProperty("error").GetProperty("code").GetString());
+        Assert.Equal((status, WireNames.Parse<ErrorCode>(code)), (_status, Body<ErrorBody>().Error.Code));
     }
 
     [Then("the focus reference round-trips identically")]
     public void ThenRoundTrips()
     {
         Assert.NotNull(_capturedRef);
-        var second = _body.GetProperty("id").GetString();
-        Assert.Equal(_capturedRef, second);
+        Assert.Equal(_capturedRef, Body<NodeCard>().Id);
         // S-1 fix (fix round 1): the ACTUAL round-trip identity law --
         // captured must ALSO equal what this scenario originally
         // requested, not merely equal the second (independently,
@@ -444,84 +406,47 @@ public class AqcSteps
     [Then("every traversal target resolves to a live node")]
     public void ThenEveryTargetResolves()
     {
-        // The Rust harness proves this LIVE (a real FocusQuery re-fetch per
-        // entry, against the real committed graph). A page can carry up to
-        // 20 entries by default -- fixturing every one's own FocusQuery
-        // individually would multiply the fixture count for a property
-        // already proven live, server-side (the SAME reasoning
-        // ThenBijectionWitness below discloses). What THIS side proves:
-        // every entry deserializes as a well-formed NodeRefDto (non-empty
-        // id/kind/label) on the client's own EdgeEntryDto.Node -- one
-        // entry's id (the FIRST, "text-unit:ROM.5.8") is additionally
-        // cross-checked against its own committed FocusQuery fixture, so
-        // at least one target IS proven to independently resolve.
-        var entries = _body.GetProperty("entries");
-        Assert.True(entries.GetArrayLength() > 0, "test needs at least one real entry to prove resolution over");
-        var first = true;
-        foreach (var entry in entries.EnumerateArray())
-        {
-            var node = entry.GetProperty("node");
-            var id = node.GetProperty("id").GetString();
-            Assert.False(string.IsNullOrEmpty(id));
-            Assert.False(string.IsNullOrEmpty(node.GetProperty("kind").GetString()));
-            Assert.False(string.IsNullOrEmpty(node.GetProperty("label").GetString()));
-            if (first)
-            {
-                var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(id!));
-                Assert.Equal(200, status);
-                Assert.Equal(id, focusBody.GetProperty("id").GetString());
-                first = false;
-            }
-        }
+        // The Rust harness re-fetches every entry live; this side proves every entry is a
+        // well-formed NodeRef and that the first one resolves through its own committed
+        // FocusQuery fixture.
+        var entries = Body<EdgePage>().Entries;
+        Assert.NotEmpty(entries);
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Node.Id) || string.IsNullOrEmpty(e.Node.Label)));
+        var first = entries[0].Node.Id;
+        var (status, focusBody) = LoadFixture(FocusFixtureNameForCapturedIdentity(first));
+        Assert.Equal((200, first), (status, focusBody.Deserialize<NodeCard>()!.Id));
     }
 
     [Then("every entry's \"edge\" id is present on the matching inverse-kind page of its own target node")]
     public void ThenBijectionWitness()
     {
-        // The bijection ITSELF is a graph-structural law the Rust harness
-        // proves against the live inverse-kind page (this fixture set
-        // deliberately carries only ONE direction's fixture per pair --
-        // "traversal-located-at", not also its own inverse "site-of" page
-        // -- capturing every inverse page too would double the fixture
-        // count for a property already proven live, server-side). What
-        // THIS side proves instead: every entry's own "edge" id
-        // deserializes as a non-empty string on the client's own
-        // EdgeEntryDto.Edge -- the wire FIELD the bijection travels on is
-        // real and parses.
-        var entries = _body.GetProperty("entries");
-        Assert.True(entries.GetArrayLength() > 0, "test needs at least one real entry to prove the wire field over");
-        foreach (var entry in entries.EnumerateArray())
-        {
-            Assert.False(string.IsNullOrEmpty(entry.GetProperty("edge").GetString()));
-        }
+        // The bijection itself is proven live by the Rust harness against the inverse page;
+        // this side proves the wire field it travels on is present on every entry.
+        var entries = Body<EdgePage>().Entries;
+        Assert.NotEmpty(entries);
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.Edge)));
     }
 
     [Then("the response \"entries\" array has at most (\\d+) entry")]
     public void ThenEntriesAtMost(int max)
     {
-        Assert.True(_body.GetProperty("entries").GetArrayLength() <= max);
+        Assert.InRange(Body<EdgePage>().Entries.Count, 0, max);
     }
 
     [Then("a further page reached by following \"next\" never repeats an entry already seen")]
     public void ThenPaginationNoRepeats()
     {
-        // Fixture-only equivalent of the Rust harness's own live-walked
-        // proof: this fixture ("traversal-cites-limit1") is a ONE-entry
-        // page with a real "next" cursor -- proving the client's own
-        // EdgePageDto.Next deserializes as the expected non-null int, the
-        // wire FIELD the live pagination walk (Rust side) depends on.
-        Assert.True(_body.GetProperty("entries").GetArrayLength() <= 1);
-        Assert.True(_body.TryGetProperty("next", out var next));
-        if (next.ValueKind != JsonValueKind.Null)
-        {
-            Assert.True(next.GetInt32() >= 0);
-        }
+        // The Rust harness walks the pages live; this fixture is a one-entry page whose
+        // cursor is the field that walk depends on.
+        var page = Body<EdgePage>();
+        Assert.InRange(page.Entries.Count, 0, 1);
+        Assert.NotNull(page.Next);
     }
 
     [Then("the response has exactly (\\d+) units?")]
     public void ThenExactlyNUnits(int n)
     {
-        Assert.Equal(n, _body.GetProperty("units").GetArrayLength());
+        Assert.Equal(n, Body<TextWindow>().Units.Count);
     }
 
     [Then("unit (\\d+)'s \"([^\"]+)\" field equals \"([^\"]+)\"")]
@@ -534,24 +459,16 @@ public class AqcSteps
     [Then("the units' \"ref\" fields are \"([^\"]+)\", \"([^\"]+)\", \"([^\"]+)\" in order")]
     public void ThenUnitsRefsInOrder(string a, string b, string c)
     {
-        var units = _body.GetProperty("units");
-        var refs = units.EnumerateArray().Select(u => u.GetProperty("ref").GetString()).ToArray();
-        Assert.Equal(new[] { a, b, c }, refs);
+        Assert.Equal([a, b, c], Body<TextWindow>().Units.Select(u => u.Ref));
     }
 
     [Then("every \"words_of_christ\" span lies within its own verse's text length")]
     public void ThenSpansWithinLength()
     {
-        foreach (var unit in _body.GetProperty("units").EnumerateArray())
-        {
-            var len = unit.GetProperty("text").GetString()!.Length;
-            foreach (var span in unit.GetProperty("words_of_christ").EnumerateArray())
-            {
-                var start = span.GetProperty("start").GetInt32();
-                var end = span.GetProperty("end").GetInt32();
-                Assert.True(start <= end && end <= len, $"span [{start},{end}) is outside its own verse's text length {len}");
-            }
-        }
+        Assert.All(Body<TextWindow>().Units, unit =>
+            Assert.All(unit.WordsOfChrist, span =>
+                Assert.True(span.Start <= span.End && span.End <= unit.Text.Length,
+                    $"span [{span.Start},{span.End}) is outside its own verse's text length {unit.Text.Length}")));
     }
 
     [Then("\"([^\"]+)\" is empty")]
@@ -563,20 +480,25 @@ public class AqcSteps
     [Then("the server advertises AQC version \"([^\"]+)\" through \"([^\"]+)\"")]
     public void ThenServerAdvertises(string min, string max)
     {
-        Assert.Equal(min, _body.GetProperty("min_version").GetString());
-        Assert.Equal(max, _body.GetProperty("max_version").GetString());
+        var contract = Body<Contract.Contract>();
+        Assert.Equal((min, max), (contract.MinVersion, contract.MaxVersion));
     }
+
+    private Contract.Contract Advertised() =>
+        new(manifestSchema: UnreadBySatisfies, maxVersion: _advertisedMax, minVersion: _advertisedMin, sectionSchemaVersion: UnreadBySatisfies);
+
+    private const int UnreadBySatisfies = 0;
 
     [Then("the client accepts the advertised range")]
     public void ThenClientAccepts()
     {
-        Assert.True(AqcContract.Satisfies(new ContractDto(_advertisedMin, _advertisedMax)));
+        Assert.True(AqcContract.Satisfies(Advertised()));
     }
 
     [Then("the client rejects the advertised range")]
     public void ThenClientRejects()
     {
-        Assert.False(AqcContract.Satisfies(new ContractDto(_advertisedMin, _advertisedMax)));
+        Assert.False(AqcContract.Satisfies(Advertised()));
     }
 
     /// <summary>Q-4 fix (fix round 1, controller ruling): a MALFORMED
@@ -588,6 +510,6 @@ public class AqcSteps
     [Then("the malformed advertisement fails loud")]
     public void ThenMalformedAdvertisementFailsLoud()
     {
-        Assert.Throws<FormatException>(() => AqcContract.Satisfies(new ContractDto(_advertisedMin, _advertisedMax)));
+        Assert.Throws<FormatException>(() => AqcContract.Satisfies(Advertised()));
     }
 }

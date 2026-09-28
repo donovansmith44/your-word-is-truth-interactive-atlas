@@ -1,3 +1,5 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Explore;
 
 // A missing book/chapter answers null, and every consumer must treat null conservatively:
@@ -12,7 +14,7 @@ public sealed class Versification
         _chapters = chapters;
     }
 
-    public static Versification From(IEnumerable<BookTocEntry> books)
+    public static Versification From(IEnumerable<CanonBook> books)
     {
         var byCode = new Dictionary<string, int[]>();
         foreach (var b in books)

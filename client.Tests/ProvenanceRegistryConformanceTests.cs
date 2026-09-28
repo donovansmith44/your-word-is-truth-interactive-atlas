@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using System.Text.Json;
 using BibleAtlas.Client.Explore;
 
@@ -5,8 +6,8 @@ namespace BibleAtlas.Client.Tests;
 
 // Batch PROV-1: the CLIENT-SIDE half of the resolution law, run against the
 // REAL committed registry -- data/compiled/sources.json, deserialized
-// through this app's own wire DTOs and its own Wire.Options policy, exactly
-// as the browser receives it from GET /api/sources.
+// through the generated contract records, exactly as the browser receives
+// it from GET /api/sources.
 //
 // Why this exists alongside the Rust law: those are two different claims.
 // server/atlas-graph/tests/provenance_registry_real_data.rs proves the
@@ -16,11 +17,11 @@ namespace BibleAtlas.Client.Tests;
 // named by hand resolve to the sources he named them for. A snake_case
 // mapping bug would leave the Rust law perfectly green while every "?" in
 // the browser reported "Unrecognized source" (the exact class of bug
-// CatechismProofVerseDto.Vref's own doc comment records this project
+// CatechismProofVerse.Vref's own doc comment records this project
 // already shipping once).
 public class ProvenanceRegistryConformanceTests
 {
-    private static SourcesDocumentOut RealRegistry()
+    private static SourcesDocument RealRegistry()
     {
         // client.Tests runs from its own bin directory; the repo root is
         // four levels up (bin/{Config}/{Tfm}/ under client.Tests/). Resolved
@@ -34,7 +35,7 @@ public class ProvenanceRegistryConformanceTests
         Assert.NotNull(dir);
 
         var path = Path.Combine(dir!.FullName, "data", "compiled", "sources.json");
-        var doc = JsonSerializer.Deserialize<SourcesDocumentOut>(File.ReadAllText(path), Wire.Options);
+        var doc = JsonSerializer.Deserialize<SourcesDocument>(File.ReadAllText(path));
         Assert.NotNull(doc);
         return doc!;
     }
@@ -45,7 +46,7 @@ public class ProvenanceRegistryConformanceTests
         // The whole-table smoke test: a snake_case/casing mismatch on the
         // new field deserializes to null, silently, and every affordance in
         // the app goes unresolved at once.
-        Assert.NotEmpty(RealRegistry().ProvenancesOrEmpty);
+        Assert.NotEmpty(RealRegistry().Provenances ?? []);
     }
 
     [Theory]
@@ -92,29 +93,12 @@ public class ProvenanceRegistryConformanceTests
         // to a title, that row is dead weight at the browser regardless of
         // what the server thinks.
         var registry = RealRegistry();
-        var unresolved = registry.ProvenancesOrEmpty
+        var unresolved = (registry.Provenances ?? [])
             .Select(p => ProvenanceResolver.Resolve(registry, p.Id))
             .Where(r => !r.IsResolved)
             .Select(r => r.Id)
             .ToList();
 
         Assert.True(unresolved.Count == 0, $"declared provenance rows that this app cannot resolve: {string.Join(", ", unresolved)}");
-    }
-
-    [Fact]
-    public void EveryConfidenceInTheCommittedRegistryIsOneThisAppKnowsHowToDisplay()
-    {
-        // "Display" includes deliberately displaying NOTHING (Imported).
-        // What must never happen is a value outside the vocabulary, which
-        // would silently fall through ConfidenceNote's own default arm and
-        // be indistinguishable from Imported at the reader -- so this
-        // asserts membership, not renderability.
-        var vocabulary = new[] { "CanonicalText", "Curated", "Imported", "Derived" };
-        var strays = RealRegistry().ProvenancesOrEmpty
-            .Where(p => !vocabulary.Contains(p.Confidence))
-            .Select(p => $"{p.Id}={p.Confidence}")
-            .ToList();
-
-        Assert.True(strays.Count == 0, $"off-vocabulary confidence values: {string.Join(", ", strays)}");
     }
 }

@@ -62,7 +62,7 @@
 </CompositionSplit>
 
 @code {
-    private SourcesDocumentOut? _doc;
+    private SourcesDocument? _doc;
     private string? _error;
 
     // Currently unreachable (no shipped pairing mounts Sources as a guest
@@ -78,7 +78,7 @@
             _doc = await Atlas.Sources();
             _byCategory = _doc.Sources
                 .GroupBy(s => s.Category)
-                .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntryDto>)g.ToList());
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<SourceEntry>)g.ToList());
         }
         catch (Exception)
         {
@@ -86,10 +86,10 @@
         }
     }
 
-    private static readonly IReadOnlyList<SourceEntryDto> EmptySources = Array.Empty<SourceEntryDto>();
+    private static readonly IReadOnlyList<SourceEntry> EmptySources = Array.Empty<SourceEntry>();
 
-    private Dictionary<string, IReadOnlyList<SourceEntryDto>> _byCategory = new();
+    private Dictionary<string, IReadOnlyList<SourceEntry>> _byCategory = new();
 
-    private IReadOnlyList<SourceEntryDto> SourcesFor(string categoryId) =>
+    private IReadOnlyList<SourceEntry> SourcesFor(string categoryId) =>
         _byCategory.TryGetValue(categoryId, out var sources) ? sources : EmptySources;
 }

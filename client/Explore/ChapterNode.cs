@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -6,11 +7,11 @@ public sealed class ChapterNode : IExplorable
 {
     private readonly string _book;
     private readonly int _chapter;
-    private readonly AsyncMemo<ChapterOut> _loaded = new();
+    private readonly AsyncMemo<Chapter> _loaded = new();
 
     public int? TotalChapters { get; }
 
-    public ChapterOut? AlreadyLoaded { get; init; }
+    public Chapter? AlreadyLoaded { get; init; }
 
     public string Book => _book;
     public int Chapter => _chapter;
@@ -57,5 +58,5 @@ public sealed class ChapterNode : IExplorable
         return fragment;
     }
 
-    public Task<ChapterOut> Load(AtlasClient api) => _loaded.Get(() => AlreadyLoaded is { } already ? Task.FromResult(already) : api.Chapter(_book, _chapter));
+    public Task<Chapter> Load(AtlasClient api) => _loaded.Get(() => AlreadyLoaded is { } already ? Task.FromResult(already) : api.Chapter(_book, _chapter));
 }
