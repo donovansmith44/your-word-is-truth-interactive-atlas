@@ -479,7 +479,7 @@
                 // which never matches a verse ref like "JDG.3.7".
                 foreach (var v in chapter.Verses)
                 {
-                    _verseText[$"{chapter.Ref}.{v.Verse1}"] = v.Text;
+                    _verseText[$"{chapter.Ref}.{v.Number}"] = v.Text;
                 }
             }
         }

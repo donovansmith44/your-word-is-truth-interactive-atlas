@@ -39,7 +39,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                     ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: unparseable Passage key '{descriptor.Key}'.");
                 var chapter = await api.Chapter(span.Book, span.Chapter);
                 var text = string.Join(" ", chapter.Verses
-                    .Where(v => v.Verse1 >= span.FromVerse && v.Verse1 <= span.ToVerse)
+                    .Where(v => v.Number >= span.FromVerse && v.Number <= span.ToVerse)
                     .Select(v => v.Text));
                 return new PassageNode(descriptor.Key, text);
             }
@@ -126,8 +126,8 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                 {
                     var polities = await api.Polities(fromYear, toYear);
                     era = polityId is not null
-                        ? polities.Polities1.FirstOrDefault(e => e.Id == polityId)
-                        : polities.Polities1.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
+                        ? polities.All.FirstOrDefault(e => e.Id == polityId)
+                        : polities.All.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
                     delta = deltaKind == "fall" ? era?.Fall : era?.Transition;
                 }
                 catch (Exception)

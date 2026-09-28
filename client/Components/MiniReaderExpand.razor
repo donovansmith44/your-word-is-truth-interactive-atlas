@@ -23,18 +23,18 @@ else
             var xrefLetters = VerseLine.ComputeXrefLetters(_chapter.Verses);
             @foreach (var v in _chapter.Verses)
             {
-                var isFocal = v.Verse1 >= FocalFromVerse && v.Verse1 <= FocalToVerse;
+                var isFocal = v.Number >= FocalFromVerse && v.Number <= FocalToVerse;
                 @if (v.Heading is { } heading)
                 {
                     <PericopeHeading Heading="@heading" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
                 }
                 <VerseLine Verse="@v" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
-                           Focal="@isFocal" Id="@(v.Verse1 == FocalFromVerse ? _focalDomId : null)"
+                           Focal="@isFocal" Id="@(v.Number == FocalFromVerse ? _focalDomId : null)"
                            RowClass="popover-reader-verse explorable" RowTestIdPrefix="popover-reader-verse" TestIdSuffix="@TestIdSuffix"
                            VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
                            TextClass="popover-reader-verse-text" MentionClass="popover-reader-mention"
                            XrefMarkerTestIdPrefix="popover-reader-xref-marker"
-                           XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse1, "")"
+                           XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Number, "")"
                            OnXrefClick="@(vn => OnExplore.InvokeAsync(new VerseNode($"{Book}.{Chapter}.{vn}", xrefEntryPoint: true)))" />
             }
         }

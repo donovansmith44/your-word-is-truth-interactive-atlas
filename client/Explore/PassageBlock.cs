@@ -40,7 +40,7 @@ public static class VerseTextResolver
             {
                 continue;
             }
-            var cv = c.Verses.FirstOrDefault(v => v.Verse1 == verse);
+            var cv = c.Verses.FirstOrDefault(v => v.Number == verse);
             if (cv is not null)
             {
                 result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));

@@ -5,6 +5,8 @@ using NSwag.CodeGeneration.CSharp;
 
 var (contract, output) = (args[0], args[1]);
 
+var document = await OpenApiYamlDocument.FromFileAsync(contract);
+
 var settings = new CSharpClientGeneratorSettings
 {
     GenerateClientClasses = false,
@@ -24,10 +26,9 @@ var settings = new CSharpClientGeneratorSettings
         GenerateDataAnnotations = false,
         GenerateDefaultValues = true,
         GenerateJsonMethods = false,
-        PropertyNameGenerator = new PascalCasePropertyNames(),
+        PropertyNameGenerator = new PascalCasePropertyNames(document.Definitions),
     },
 };
 
-var document = await OpenApiYamlDocument.FromFileAsync(contract);
 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
 await File.WriteAllTextAsync(output, new CSharpClientGenerator(document, settings).GenerateFile());

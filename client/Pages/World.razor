@@ -347,7 +347,7 @@
         }
 
         _polityRosterPushed = true;
-        await _mapInterop.SetPolitiesRoster(_polityRoster.Polities1);
+        await _mapInterop.SetPolitiesRoster(_polityRoster.All);
     }
 
     private async Task PushLandmarksIfReady()
@@ -624,7 +624,7 @@
         if (_polities is not null && _scriptureRef is null)
         {
             await _mapInterop.SetPolitiesVisible(true);
-            await _mapInterop.SetPolities(_polities.Polities1, _from, _to);
+            await _mapInterop.SetPolities(_polities.All, _from, _to);
         }
 
         await PushLandmarksIfReady();
@@ -865,7 +865,7 @@
 
             if (_mapInterop is not null)
             {
-                await _mapInterop.SetPolities(polities.Polities1, from, to);
+                await _mapInterop.SetPolities(polities.All, from, to);
             }
         }
         catch (Exception)

@@ -114,12 +114,12 @@
                     {
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
-                    <VerseLine Verse="@v" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Verse1}")"
+                    <VerseLine Verse="@v" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore" Id="@($"v{v.Number}")"
                                RowClass="verse-line explorable" RowTestIdPrefix="verse-line"
                                VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
-                               OnVerseNumClick="@(e => OnVerseNumClick(e, v.Verse1))"
+                               OnVerseNumClick="@(e => OnVerseNumClick(e, v.Number))"
                                TextClass="verse-text" MentionClass="verse-mention"
-                               XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Verse1, "")"
+                               XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(v.Number, "")"
                                OnXrefClick="OpenVerseXrefEntryPersistent" OnXrefHoverEnter="OpenVerseXrefEntryHover"
                                OnXrefHoverLeave="OnXrefMarkerPointerLeave" OnToggleSelect="OnLineToggleSelect"
                                OnMentionToggleSelect="OnMentionToggleSelect" />
@@ -655,7 +655,7 @@
 
         ResetXrefEntryState();
         var text = string.Join(" ", chapter.Verses
-            .Where(v => v.Verse1 >= range.From && v.Verse1 <= range.To)
+            .Where(v => v.Number >= range.From && v.Number <= range.To)
             .Select(v => v.Text));
         _activeNode = new PassageNode(PassageRef(range), text);
     }

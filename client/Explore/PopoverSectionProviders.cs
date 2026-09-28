@@ -203,7 +203,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
         try
         {
             var chapterText = await api.Chapter(book, chapter);
-            focalVerses = chapterText.Verses.Where(cv => cv.Verse1 >= focalFrom && cv.Verse1 <= focalTo).ToList();
+            focalVerses = chapterText.Verses.Where(cv => cv.Number >= focalFrom && cv.Number <= focalTo).ToList();
         }
         catch (Exception)
         {
@@ -403,7 +403,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
                 var verses = new List<PassageListVerse>();
                 for (var v = s.FromVerse; v <= s.ToVerse; v++)
                 {
-                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Verse1 == v);
+                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Number == v);
                     if (cv is not null)
                     {
                         verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
@@ -640,7 +640,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             {
                 foreach (var cv in chapterText.Verses)
                 {
-                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Verse1}"] = cv;
+                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Number}"] = cv;
                 }
             }
         }

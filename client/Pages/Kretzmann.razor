@@ -76,14 +76,14 @@
                     {
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
-                    <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Verse1}")">
+                    <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Number}")">
                         <VerseLine Verse="@row.Verse" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
-                                   Id="@($"v{row.Verse.Verse1}{VerseTestIdSuffix}")"
+                                   Id="@($"v{row.Verse.Number}{VerseTestIdSuffix}")"
                                    RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
-                                   OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Verse1))"
+                                   OnVerseNumClick="@(e => OnVerseNumClick(e, row.Verse.Number))"
                                    TextClass="verse-text kretzmann-scripture-text" MentionClass="verse-mention"
-                                   XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Verse1, "")"
+                                   XrefMarkerGlyph="@xrefLetters.GetValueOrDefault(row.Verse.Number, "")"
                                    OnXrefClick="OpenVerseXrefEntry"
                                    OnToggleSelect="OnLineToggleSelect" OnMentionToggleSelect="OnMentionToggleSelect" />
 
@@ -452,7 +452,7 @@
 
             _verses = chapter.Verses;
             _rows = chapter.Verses
-                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Verse1, new List<CommentaryItemRow>())))
+                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
                 .ToList();
             _loadedBook = book;
             _loadedChapterNum = chapterNum;
@@ -589,7 +589,7 @@
         }
 
         var text = string.Join(" ", _verses
-            .Where(v => v.Verse1 >= range.From && v.Verse1 <= range.To)
+            .Where(v => v.Number >= range.From && v.Number <= range.To)
             .Select(v => v.Text));
         _activeNode = new PassageNode(PassageRef(range), text);
     }
