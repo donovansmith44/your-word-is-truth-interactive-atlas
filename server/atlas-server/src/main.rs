@@ -16,14 +16,9 @@ struct Args {
     data_dir: PathBuf,
     static_dir: Option<PathBuf>,
     port: u16,
-    /// M-C (controller decision 4): the startup build retires -- the
-    /// DEFAULT path opens the compiled artifact (DB-4c/DB-5: the SQLite
-    /// sections, `<data_dir>/manifest.toml` + `sections/`; `graph.bin` is
-    /// gone). `--build-from-raw`
-    /// is the dev fallback flag the brief's own wording calls for
-    /// (disclosed): rebuilds in memory from `data/raw/` + curated eras,
-    /// exactly the M-A/M-B startup path, for iterating on curated data
-    /// without re-running the compile step.
+    /// Rebuilds the graph in memory from `data/raw/` and the curated files rather
+    /// than opening the compiled artifact, for iterating on curated data without
+    /// re-running the compile step.
     build_from_raw: bool,
 }
 
@@ -65,126 +60,40 @@ fn parse_args(args: &[String]) -> Result<Args> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Skip argv[0] (the executable path) before handing off to parse_args,
-    // which is written to take a plain argument slice so it stays testable
-    // without a process boundary.
+    // parse_args takes a plain argument slice so that it stays testable without a
+    // process boundary, which leaves argv[0] to skip here.
     let raw: Vec<String> = env::args().skip(1).collect();
     let args = parse_args(&raw)?;
 
-    // Batch M-A (controller ruling 2): the Explorable Graph is built IN
-    // MEMORY at startup from the same raw sources atlas-etl reads --
-    // `data/raw/`, always the sibling of `--data-dir`'s own `data/compiled`
-    // under one `data/` parent (true of every real invocation of this
-    // binary, including start-api.ps1's own `--data-dir ../data/compiled`;
-    // deriving it this way avoids a second CLI flag for M-A's own pragmatic
-    // scope). 31,102 KJV verses plus ~344k raw cross-reference rows is
-    // trivial startup work.
-    // Batch M-C (controller decision 4): the startup BUILD retires -- the
-    // default path OPENS the compiled artifact (DB-4c/DB-5: the SQLite
-    // sections under `<data_dir>`, produced by the `atlas-graph-compile`
-    // bin, see `bin/compile_graph.rs`'s own doc comment), start-to-listening
-    // <=3s release, a committed law (`tests/artifact_conformance.rs`
-    // proves it in CI). `--build-from-raw` is the disclosed dev fallback:
-    // rebuilds in memory from `data/raw/` + curated eras, the M-A/M-B
-    // startup path, unconditionally still enforcing the KJV fidelity law
-    // (design doc P3) since raw bytes are actually in hand on this path.
-    //
-    // M-C2: `AtlasData` construction now depends on WHICH graph path ran,
-    // reordered so the graph loads/builds FIRST:
-    // - `--build-from-raw`: needs a real, validated `AtlasData` as its own
-    //   event-world/place/polity/catechism adapter source (unchanged
-    //   reasoning from M-A/M-B/M-C) -- built via `atlas_etl::compile::
-    //   compile` (a real raw+curated compile; the SAME orchestration
-    //   `atlas-etl`'s own binary runs), since `AtlasData::load`'s own five
-    //   retiring-file reads (places/events/narratives/verses-kjv/
-    //   cross-refs.json, this batch's own deletion target) return empty.
-    // - default (artifact load): stays fast -- `AtlasData::load` still
-    //   reads the TEN surviving compiled files (canon/books-meta/
-    //   chronology-anchors/book-narration-windows/polities/landmarks/
-    //   place-history/place-names-kjv/land-mask/catechism, all untouched
-    //   by this batch), and the five retiring fields stay honestly
-    //   EMPTY. OVERLAY-1 Task 5 deleted the boot-time overlay that used to
-    //   reconstruct three of them (`events`/`places`/`narratives`) from the
-    //   already-loaded graph and hang them back on `AtlasData`; every
-    //   surface that used to read them -- scene.rs's map composition,
-    //   `handlers::chapter`'s place-mention half,
-    //   `narrative_event_positions` -- now reads
-    //   `GraphService::scene_source`, ONE materialisation on the graph
-    //   side, primed in `load::load_graph_and_data`. That is a strictly
-    //   smaller startup than the reconstruct-and-copy it replaces, so the
-    //   artifact LOAD-TIME ceiling (<=3s, a committed law) stays meaningful
-    //   for this server's own real total startup, not just the graph's own
-    //   isolated load step.
     let load_start = std::time::Instant::now();
     let (graph, data) = if args.build_from_raw {
+        // `data/raw` and `data/curated` are siblings of `--data-dir`'s own
+        // `data/compiled` under one `data/` parent, which is true of every real
+        // invocation of this binary and spares it a second flag for each.
         let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
         let curated_dir = args.data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| PathBuf::from("../data/curated"));
         println!("atlas-graph: --build-from-raw -- building in memory from {} (dev fallback, disclosed)", raw_dir.display());
         let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
-        // FAIL-LOUD FIDELITY GATE (design doc P3): `GraphService::build`
-        // runs the KJV adapter's own bijection + reconstruction boundary
-        // law unconditionally as part of construction (see
-        // `atlas_graph::service`'s own doc comment) -- a violation
-        // refuses construction entirely, so reaching the `println!` below
-        // already proves the gate passed.
-        // Batch M-B: the event world (events/attestations/narratives/
-        // anchors/chronology) is built from the SAME already-loaded
-        // `data` -- see `atlas_graph::event_world`'s own module doc
-        // comment for why this adapter reads `AtlasData` rather than
-        // re-parsing `data/curated/`.
+        // `GraphService::build` runs the KJV fidelity law as part of construction and
+        // refuses to construct on a violation, so reaching the line after it is
+        // already proof that the law held.
         let graph = GraphService::build(&raw_dir, &data)
             .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
-        // OVERLAY-1 fix round 1 (F2): prime the graph-backed scene source
-        // HERE TOO. `load::load_graph_and_data` primes it on the default
-        // path; without this line the dev fallback was the one startup that
-        // did not, so the FIRST `/api/scene`, `/api/chapter` or
-        // `/api/narrative/event/{id}` request on it paid the whole
-        // materialisation inline -- a latency cliff on exactly the path a
-        // developer is most likely to be watching, and a quiet
-        // contradiction of this file's own "primed at load" claim.
-        //
-        // DISCLOSED: on THIS path `data` is `atlas_etl::compile::compile`'s
-        // own output, so its `events`/`places`/`narratives` ARE populated
-        // (they are the graph compiler's input here, not a retired runtime
-        // overlay). The process therefore holds TWO materialisations on the
-        // dev fallback, where the default artifact path holds exactly one.
-        // That is accepted: `--build-from-raw` exists to run without a
-        // compiled artifact at all, and it already pays a full raw+curated
-        // compile to get there.
-        //
-        // Also disclosed: this `graph.scene_source(&data)` call composes
-        // the scene from `GraphSceneSource`'s served (overlay/BTreeMap-id)
-        // event order, not `compile()`'s own post-`finish()` order -- so
-        // `--build-from-raw` now AGREES with the default artifact path's
-        // event order for the first time (Task 1 measured the two orders
-        // differing in 1,364 of 1,711 positions). No gate pins this path.
+        // Primes the graph-backed scene source, which the artifact path primes inside
+        // `atlas_contract::load`: without this the first scene, chapter or narrative
+        // request on this path would pay the whole materialisation inline.
         graph.scene_source(&data);
         (graph, data)
     } else {
-        // CDC-1 fix round 1 (review C-3): this sequence used to be written
-        // out here and hand-copied into the contract-pact recorder. It now
-        // lives in `atlas_contract::load`, which the recorder calls too, so
-        // the recorded evidence the contract gate runs against cannot drift
-        // from what this binary actually serves. See that module's header
-        // for the two fidelity bugs that made it necessary -- both of which
-        // produced a GREEN contract suite over a wrong provider.
+        // Through `atlas_contract::load`, which the pact recorder calls too, so the
+        // recorded evidence the contract gate runs against cannot drift from what
+        // this binary actually serves.
         atlas_contract::load::load_graph_and_data(&args.data_dir)?
     };
     let data = Arc::new(data);
     let load_elapsed = load_start.elapsed();
-    // M-C2 (folded M-C review M-2): was "{} load complete" with the
-    // artifact-path branch string ALREADY ending in "load" ("artifact
-    // load"), producing "artifact load load complete" -- a doubled word.
-    // Dropping "load" from the format string (not the branch strings)
-    // reads correctly for both: "artifact load complete" / "from-raw build
-    // complete".
     println!("atlas-graph: {} complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "sections open" });
 
-    // Published to the owner-approved `atlas_graph_types::store` port
-    // (`GraphPublisher::publish`) before being wrapped here, on either
-    // path; every downstream consumer (app::build, every handler, the
-    // window/text path) queries it as `atlas_graph_types::store::
-    // GraphQuery`, never a raw `Graph` field (fix round 1, C1).
     println!(
         "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped, disclosed), graph version {}",
         graph.stats.kjv_verses,
@@ -205,25 +114,12 @@ async fn main() -> Result<()> {
     );
     let graph = Arc::new(graph);
 
-    // Batch S: the Sources page's own single source of truth --
-    // `data/compiled/sources.json`, a sibling of every other compiled
-    // file already read above, but deliberately loaded as its OWN
-    // independent piece of state (never folded into `AtlasData`/the
-    // graph -- see `app::AppState`'s own doc comment). A missing or
-    // unparseable file fails loud at startup, the same "never silently
-    // serve stale/absent data" discipline this binary already applies to
-    // the sections above -- run `cargo run -p
-    // atlas-etl --bin gen_sources` (from `server/`) to (re)generate it.
-    // CDC-1 fix round 1 (review C-3): read through `atlas_contract::load`,
-    // the same call the pact recorder makes -- a recorder that built with
-    // `SourcesDocument::default()` recorded an EMPTY registry while this
-    // binary served 18 sources, and the contract suite went green over it.
     let sources = atlas_contract::load::load_sources(&args.data_dir)?;
     println!("atlas-server: {} source categories, {} sources loaded from the core section under {}", sources.categories.len(), sources.sources.len(), args.data_dir.display());
 
-    // The ONE door to a serving Router (`LoadedAtlas::into_router`), taken
-    // by both startup branches and by the recorder. A new `AppState`
-    // ingredient cannot be wired in here while quietly missing there.
+    // The one door to a serving router, taken by both startup paths and by the pact
+    // recorder, so a new piece of state cannot be wired in for one and missed for
+    // the others.
     let app = atlas_contract::load::LoadedAtlas { data, graph, sources: Arc::new(sources) }
         .into_router(args.static_dir);
 
