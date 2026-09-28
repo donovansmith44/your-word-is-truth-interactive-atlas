@@ -2,13 +2,6 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "nswag.consolecore": {
-      "version": "14.7.1",
-      "commands": [
-        "nswag"
-      ],
-      "rollForward": false
-    },
     "dotnet-stryker": {
       "version": "5.0.0",
       "commands": [

@@ -41,17 +41,17 @@ public sealed class PersonNode : IExplorable
         }
 
         var chips = new List<Exploration>();
-        if (life.Birth_year is int born)
+        if (life.BirthYear is int born)
         {
             chips.Add(new Exploration($"Born c. {Year(born)}", "popover-chip-year-born", new ExplorationTarget.NavigateWorld($"from={born}&to={born}")));
         }
 
-        if (life.Death_year is int died)
+        if (life.DeathYear is int died)
         {
             chips.Add(new Exploration($"Died c. {Year(died)}", "popover-chip-year-died", new ExplorationTarget.NavigateWorld($"from={died}&to={died}")));
         }
 
-        if (chips.Count == 0 && life.First_year is int first && life.Last_year is int last)
+        if (chips.Count == 0 && life.FirstYear is int first && life.LastYear is int last)
         {
             chips.Add(new Exploration($"Mentioned across c. {Year(first)} - {Year(last)}", "popover-chip-year-span", new ExplorationTarget.NavigateWorld($"from={first}&to={last}")));
         }

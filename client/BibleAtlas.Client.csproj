@@ -22,10 +22,16 @@
     <EmbeddedResource Include="$(ContractVocabulary)" LogicalName="graph-vocabulary.json" />
   </ItemGroup>
 
+  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract">
+    <MSBuild Projects="../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj" Targets="Build">
+      <Output TaskParameter="TargetOutputs" ItemName="ContractGenerator" />
+    </MSBuild>
+  </Target>
+
   <Target Name="GenerateContract" BeforeTargets="CoreCompile"
-          Inputs="$(ContractDocument);Contract/nswag.json"
+          Inputs="$(ContractDocument);@(ContractGenerator)"
           Outputs="$(GeneratedWire)">
-    <Exec Command="dotnet nswag run Contract/nswag.json /variables:Output=$(GeneratedWire)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="dotnet &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
   </Target>
 
   <Target Name="IncludeGeneratedContract" AfterTargets="GenerateContract" BeforeTargets="CoreCompile">

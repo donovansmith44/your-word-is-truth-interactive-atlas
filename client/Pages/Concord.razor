@@ -106,7 +106,7 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.Edge_summary.Count > 0)
+                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.EdgeSummary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
                                      tabindex="0" role="button"

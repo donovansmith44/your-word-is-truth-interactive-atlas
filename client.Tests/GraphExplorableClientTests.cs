@@ -66,9 +66,9 @@ public class GraphExplorableClientTests
         Assert.Equal("JHN.3.16", card.Label);
         Assert.Equal("kjv", card.Provenance);
         Assert.Equal("abc123", card.Version);
-        Assert.Single(card.Edge_summary);
-        Assert.Equal(EdgeKind.Cites, card.Edge_summary[0].Kind);
-        Assert.Equal(178, card.Edge_summary[0].Count);
+        Assert.Single(card.EdgeSummary);
+        Assert.Equal(EdgeKind.Cites, card.EdgeSummary[0].Kind);
+        Assert.Equal(178, card.EdgeSummary[0].Count);
     }
 
     [Fact]

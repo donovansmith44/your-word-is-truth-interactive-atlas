@@ -1746,7 +1746,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var total = card.Edge_summary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
 
         RenderFragment body = builder =>
         {
@@ -2030,14 +2030,14 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
         {
             line = "Eternal";
         }
-        else if (life.Birth_year is int b || life.Death_year is int d0)
+        else if (life.BirthYear is int b || life.DeathYear is int d0)
         {
             var parts = new List<string>();
-            if (life.Birth_year is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
-            if (life.Death_year is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
+            if (life.BirthYear is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
+            if (life.DeathYear is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
             line = string.Join(" \u00b7 ", parts);
         }
-        else if (life.First_year is int first && life.Last_year is int last)
+        else if (life.FirstYear is int first && life.LastYear is int last)
         {
             line = $"Mentioned across c. {PersonNode.Year(first)} \u2013 {PersonNode.Year(last)}";
         }
@@ -2055,9 +2055,9 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "data-testid", "person-life");
             builder.AddContent(seq++, line);
             builder.CloseElement();
-            if (life.Eternal && life.Eternal_grounds.Count > 0)
+            if (life.Eternal && life.EternalGrounds.Count > 0)
             {
-                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.Eternal_grounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
             }
         };
         return new PopoverSection("person-life", body);
