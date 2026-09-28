@@ -1,12 +1,10 @@
-using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace BibleAtlas.Client.Contract;
 
 public static class EdgeKinds
 {
-    public static string Label(this EdgeKind kind) => Labels[kind];
+    public static string Label(this EdgeKind kind) => kind.WireName();
 
     public static EdgeKind Parse(string label) =>
         ByLabel.TryGetValue(label, out var kind) ? kind : throw new FormatException($"'{label}' is not a declared edge kind");
@@ -17,13 +15,8 @@ public static class EdgeKinds
 
     private const string VocabularyResource = "graph-vocabulary.json";
 
-    // The attribute JsonStringEnumConverter<T> reads, so the label is the one the wire carries.
-    private static readonly IReadOnlyDictionary<EdgeKind, string> Labels =
-        Enum.GetValues<EdgeKind>().ToDictionary(k => k, k =>
-            typeof(EdgeKind).GetField(k.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name);
-
     private static readonly IReadOnlyDictionary<string, EdgeKind> ByLabel =
-        Labels.ToDictionary(p => p.Value, p => p.Key);
+        Enum.GetValues<EdgeKind>().ToDictionary(k => k.Label());
 
     private static readonly IReadOnlyDictionary<EdgeKind, EdgeKind> Duals = LoadDuals();
 
