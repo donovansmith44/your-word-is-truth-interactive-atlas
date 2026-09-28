@@ -27,6 +27,7 @@ var settings = new CSharpClientGeneratorSettings
         GenerateDefaultValues = true,
         GenerateJsonMethods = false,
         PropertyNameGenerator = new PascalCasePropertyNames(document.Definitions),
+        ExcludedTypeNames = ContractGeneration.Unread.ToArray(),
     },
 };
 

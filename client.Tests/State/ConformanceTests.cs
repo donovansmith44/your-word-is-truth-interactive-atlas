@@ -57,13 +57,23 @@ public class ConformanceTests
 
     internal static string ClientRoot => Path.Combine(RepoRoot(), "client");
 
-    private static IEnumerable<string> ClientSourceFiles()
-    {
-        return Directory.EnumerateFiles(ClientRoot, "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(ClientRoot, "*.razor", SearchOption.AllDirectories))
-            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
-    }
+    /// A file counts as hand-written source (as opposed to build output or a
+    /// generated artifact) if it is a `.cs`/`.razor` file outside `obj`/`bin`.
+    internal static bool IsHandWrittenSourceFile(string path) =>
+        (path.EndsWith(".cs") || path.EndsWith(".razor"))
+        && !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+        && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
+
+    /// Every hand-written source file under a repo-relative directory (e.g.
+    /// `client`, `client.ContractTests`), concatenated -- used wherever a
+    /// conformance check needs to know what a whole project's source names.
+    internal static string SourceUnder(string repoRelativeRoot) =>
+        string.Join("\n", Directory.EnumerateFiles(Path.Combine(RepoRoot(), repoRelativeRoot), "*.*", SearchOption.AllDirectories)
+            .Where(IsHandWrittenSourceFile)
+            .Select(File.ReadAllText));
+
+    private static IEnumerable<string> ClientSourceFiles() =>
+        Directory.EnumerateFiles(ClientRoot, "*.*", SearchOption.AllDirectories).Where(IsHandWrittenSourceFile);
 
     private static string ProgramCsText() => File.ReadAllText(Path.Combine(ClientRoot, "Program.cs"));
 
