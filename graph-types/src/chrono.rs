@@ -28,7 +28,9 @@ pub enum YearError {
     YearZero,
 }
 
-/// Time at the precision the sources give it — down to the day.
+/// Time at the precision the sources give it, down to the day. `None` sorts before `Some`
+/// within the same coarser unit -- the derived order depends on this field order, and
+/// `temporal_order` relies on it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimePoint {
     pub year: Year,
@@ -56,7 +58,8 @@ pub enum TimeError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ResolvedDate {
     pub from: TimePoint,
-    /// Never earlier than `from`.
+    /// By convention never earlier than `from`; nothing enforces it -- this type has no
+    /// constructor and every site builds it by literal.
     pub to: TimePoint,
 }
 
@@ -73,7 +76,8 @@ impl Duration {
     }
 }
 
-/// Single-feed placement: dates resolve from the anchor table; sequence
+/// Dates resolve from the anchor table; sequence placement supplies order within equal
+/// `TimePoint`s, which is where adopted traditional chronology lives.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DatePlacement {
     AnchorBinding { anchor: AnchorId, offset: Duration },
@@ -82,7 +86,7 @@ pub enum DatePlacement {
     EraOnly { era: EraId },
 }
 
-/// The heterogeneous target a dated-by edge points at (sweep F5).
+/// The target of a dated-by edge is heterogeneous, so it cannot be narrowed to one kind.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ChronoTarget {
     Anchor(AnchorId),
@@ -101,7 +105,8 @@ impl DatePlacement {
     }
 }
 
-/// What kind of ground an ordering commitment stands on. The why of a
+/// What kind of ground an ordering commitment stands on. The why of a traditional placement
+/// lives in the row's justification -- one carrier, inside the content-addressed identity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PlacementBasis {
     /// The text itself fixes the time.
@@ -120,7 +125,8 @@ pub struct DatedBy {
     pub provenance: crate::ingest::ProvenanceId,
 }
 
-/// Sequence key within equal TimePoints, resolved from SequenceAfter
+/// Sequence key within equal `TimePoint`s, resolved from the chains of sequence commitments
+/// and total by construction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SeqKey(pub u32);
 
@@ -131,7 +137,8 @@ pub struct ResolvedPlacement {
     pub basis: PlacementBasis,
 }
 
-/// TOTAL. Precision first, then the traditional-sequence key. No
+/// TOTAL. Precision first, then the traditional-sequence key, so no cluster of uncertainty
+/// ever reaches a surface.
 pub fn temporal_order(a: &ResolvedPlacement, b: &ResolvedPlacement) -> Ordering {
     a.date
         .from

@@ -14,7 +14,8 @@ pub trait Corpus {
     fn cite(r: &Self::Ref) -> String;
 }
 
-/// The corpus's standing relative to Scripture. Asymmetric by
+/// A corpus's standing relative to Scripture; `crate::ingest::Confidence` states the law that
+/// derives from it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CorpusRole {
     /// Scripture — the norming norm. The attestation law lives here.
@@ -28,7 +29,8 @@ pub enum CorpusRole {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TranslationId(pub Interned);
 
-/// The Bible corpus: canon-structural skeleton; N translation layers
+/// The Bible corpus: a canon-structural skeleton that N translation layers render, of which
+/// the KJV is the canonical one.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BibleTag;
 
@@ -47,7 +49,8 @@ impl Corpus for BibleTag {
     }
 }
 
-/// The Book of Concord: RESERVED — materializes when ingested. Its
+/// Reserved: its structural scheme is decided at ingestion, and the placeholder reference
+/// keeps the variant honest and compiling until then.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ConcordTag;
 
@@ -66,12 +69,14 @@ impl Corpus for ConcordTag {
     }
 }
 
-/// Token indices — necessarily tagged with the layer whose tokenization
+/// Necessarily tagged with the layer whose tokenization they index: a verse-level locus is
+/// layer-neutral, but a sub-unit span only means something in one translation's wording.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TokenSpan {
     pub layer: TranslationId,
     pub start: u16,
-    /// Never less than `start`; the constructor is the only way in.
+    /// `start <= end`, validated by `TokenSpan::new`; the fields are public, so a struct
+    /// literal can still violate it.
     pub end: u16,
 }
 
@@ -90,7 +95,8 @@ pub enum SpanError {
     Inverted,
 }
 
-/// Corpus-typed locus: a container for corpus C can only hold C's loci —
+/// The corpus parameter is the point: a container for corpus C can only hold C's loci, so
+/// Scripture smeared into an extrabiblical container's content is unrepresentable.
 #[derive(Debug)]
 pub struct Locus<C: Corpus> {
     pub unit: C::Ref,
@@ -187,7 +193,8 @@ where
 
 pub type BibleLocusRange = LocusRange<BibleTag>;
 
-/// Container content: a SET of same-corpus loci. ∅ is lawful identity;
+/// A SET of same-corpus loci. The empty set is a lawful identity, overlaps between containers
+/// are lawful, and contiguity is not assumed.
 #[derive(Debug)]
 pub struct LocusSet<C: Corpus>(pub BTreeSet<Locus<C>>);
 
@@ -202,7 +209,8 @@ impl<C: Corpus> Clone for LocusSet<C> {
     }
 }
 
-/// Corpus-erased text address for the wire/UI and cross-corpus edges.
+/// Corpus-erased, for the wire and for a cross-corpus edge. Widening from a typed locus is
+/// free; narrowing is a checked parse.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TextRef {
     Bible(VerseRef),
@@ -236,5 +244,6 @@ impl TextLocus {
     }
 }
 
-/// Per-layer renderings of one skeleton unit (sweep F1: ONE node per
+/// One node per skeleton position: every layer's rendering rides as payload, and the
+/// canonical layer is required.
 pub type LayerMap = BTreeMap<TranslationId, String>;

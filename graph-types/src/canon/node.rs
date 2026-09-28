@@ -19,7 +19,8 @@ use super::{
     Canon, CanonError, Value, ROOT,
 };
 
-/// The member set of every closed object in the node encoding, named once
+/// The member set of every closed object in the node encoding, named once so the encoder and
+/// the decoder cannot drift apart.
 const NODE_KEYS: &[&str] = &["id", "payload", "provenance"];
 const TEXT_UNIT_KEYS: &[&str] = &["corpus", "renderings"];
 const CONTAINER_KEYS: &[&str] = &["title"];
@@ -358,7 +359,9 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
     }
 }
 
-/// An f64 member. `NodePayload`'s doubles are finite by construction
+/// A non-finite double has no canonical spelling, so it encodes as `null` and `expect_f64`
+/// then refuses it BY PATH on the way back in: a located decode error instead of a silent
+/// corruption. `to_value` has no `Result` to return, which is why the check lands there.
 fn number(f: f64) -> Value {
     Value::float(f).unwrap_or(Value::Null)
 }
@@ -384,7 +387,8 @@ fn corpus_from_value(
     }
 }
 
-/// A `LayerMap` is an OPEN map -- its keys are translation ids, not a
+/// A `LayerMap` is an OPEN map -- its keys are translation ids, not a fixed schema -- so the
+/// closed-member check deliberately does not apply here. Same for a witness's translations.
 fn layer_map_to_value(map: &LayerMap) -> Value {
     Value::Obj(map.iter().map(|(k, v)| (k.0.clone(), Value::Str(v.clone()))).collect())
 }
@@ -414,7 +418,8 @@ fn time_point_from_value(
 ) -> Result<TimePoint, CanonError> {
     expect_exact_keys(m, path, TIME_POINT_KEYS)?;
     let raw_year = field_i32(m, path, "year")?;
-    // Both constructors are re-run, not bypassed: no year zero, no day
+    // Both constructors are re-run, not bypassed: no year zero and no day without a month,
+    // however the bytes were written.
     let year = Year::new(raw_year).map_err(|e| {
         CanonError::new(join(path, "year"), format!("invalid year {raw_year}: {e:?}"))
     })?;
@@ -498,7 +503,8 @@ fn polity_era_to_value(e: &PolityEraPayload) -> Value {
         ("from_year", Value::Int(i64::from(e.from_year))),
         ("name", str_value(&e.name)),
         ("ref_note", str_value(&e.ref_note)),
-        // A ring point is the tuple `(f64, f64)` -- a 2-element array in
+        // A ring point is a 2-element array in the tuple's OWN order, never reordered into
+        // lon/lat.
         (
             "rings",
             Value::Arr(

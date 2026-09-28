@@ -7,7 +7,8 @@ use crate::id::{AnyNodeId, NodeKind, Position};
 
 use super::CanonError;
 
-/// The canonical name of a node kind: its `Debug` name, so the encoding
+/// The canonical name of a node kind: its `Debug` name, so the encoding and the source read
+/// the same.
 pub fn node_kind_str(k: NodeKind) -> &'static str {
     match k {
         NodeKind::TextUnit => "TextUnit",
@@ -28,7 +29,8 @@ pub fn node_kind_str(k: NodeKind) -> &'static str {
     }
 }
 
-/// `path` is where the caller sits, so a bad kind inside a node id
+/// `path` is where the caller sits, so a bad kind inside a node id reports at that node id's
+/// own location rather than nowhere.
 pub fn parse_node_kind(s: &str, path: &str) -> Result<NodeKind, CanonError> {
     match s {
         "TextUnit" => Ok(NodeKind::TextUnit),
@@ -62,7 +64,8 @@ pub fn parse_any_node_id(s: &str, path: &str) -> Result<AnyNodeId, CanonError> {
     Ok(AnyNodeId { kind: parse_node_kind(kind, path)?, raw: raw.to_string() })
 }
 
-/// `"n:"` + the node id, or `"e:"` + the edge id. Positions include
+/// `"n:"` + the node id, or `"e:"` + the edge id. A position may be an edge, so both need a
+/// spelling.
 pub fn position_str(p: &Position) -> String {
     match p {
         Position::Node(id) => format!("n:{}", any_node_id_str(id)),

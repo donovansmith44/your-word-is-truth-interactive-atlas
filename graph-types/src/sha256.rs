@@ -2,7 +2,8 @@
 //! standard library's own hasher may change between releases -- and because this crate takes
 //! no dependencies. Scope is one responsibility: the compression function and two entry points.
 
-/// The 64 round constants: the first 32 bits of the fractional parts of
+/// The 64 round constants: the first 32 bits of the fractional parts of the cube roots of the
+/// first 64 primes (FIPS 180-4 §4.2.2).
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -14,7 +15,8 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
-/// The initial hash value: the first 32 bits of the fractional parts of
+/// The initial hash value: the first 32 bits of the fractional parts of the square roots of
+/// the first 8 primes (FIPS 180-4 §5.3.3).
 const H0: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
@@ -73,7 +75,8 @@ fn compress(h: &mut [u32; 8], block: &[u8; 64]) {
 /// are invisible to the result: a split inside a block yields the digest of no split at all.
 fn sha256_concat(parts: &[&[u8]]) -> [u8; 32] {
     let mut h = H0;
-    // The carry: `fill` bytes of a block not yet complete. Always < 64 at
+    // The carry: `fill` bytes of a block not yet complete. Always < 64 at every part boundary,
+    // because a full block is compressed the moment it fills and never held.
     let mut block = [0u8; 64];
     let mut fill = 0usize;
     let mut total: u64 = 0;
@@ -103,7 +106,9 @@ fn sha256_concat(parts: &[&[u8]]) -> [u8; 32] {
         }
     }
 
-    // The tail (0..=63 bytes) plus the padding: one block, or two when
+    // The tail plus the padding is one block, or two when the 8-byte length word cannot follow
+    // the `0x80` in this one. The bytes after `fill` are stale carry from an earlier block, so
+    // they are zeroed before the `0x80` goes in.
     block[fill..].iter_mut().for_each(|b| *b = 0);
     block[fill] = 0x80;
     let bit_len = total.wrapping_mul(8);

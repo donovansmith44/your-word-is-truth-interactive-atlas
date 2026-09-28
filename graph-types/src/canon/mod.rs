@@ -12,17 +12,20 @@ pub mod rows;
 pub use json::{parse, serialize};
 pub use rows::{encode_row_in_family, RowFamily};
 
-/// The encoding's version. Bump ONLY for a breaking byte change; every
+/// The encoding's version. Bump ONLY for a breaking byte change; every stored artifact
+/// records the version it was written under.
 pub const CANON_VERSION: u32 = 1;
 
-/// Domain separation for any hash taken over canonical bytes: prefix the
+/// Domain separation for any hash taken over canonical bytes: prefix the bytes with this so a
+/// digest of a node can never collide with a digest of the same bytes meaning something else.
 pub const DOMAIN_PREFIX: &[u8] = b"bible-atlas/canon/1\n";
 
 /// The one path root, shared by the byte parser and by every field decoder, so a decode error
 /// reads as one continuous location whichever side raised it and no error carries an empty path.
 pub const ROOT: &str = "$";
 
-/// The canonical JSON data model. Deliberately small: no integer/float
+/// The canonical JSON data model. Deliberately small: no integer/float unification, no object
+/// ordering choice, no room for two spellings of one value.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Null,
@@ -35,7 +38,9 @@ pub enum Value {
 }
 
 impl Value {
-    /// The ONLY way to build a `Value::Float`: non-finite doubles have no
+    /// The ONLY way to build a `Value::Float`: a non-finite double has no canonical spelling, so
+/// it is refused here rather than at serialization time, which is what lets `serialize` be
+/// infallible.
     pub fn float(f: f64) -> Result<Value, CanonError> {
         if f.is_finite() {
             Ok(Value::Float(f))
@@ -77,7 +82,9 @@ impl std::fmt::Display for CanonError {
     }
 }
 
-/// A type with a canonical JSON form. `encode`/`decode` are the byte
+/// A type with a canonical JSON form. `encode`/`decode` are the byte surface;
+/// `to_value`/`from_value` are the shape surface, so nested types compose without going
+/// through bytes.
 pub trait Canon: Sized {
     fn to_value(&self) -> Value;
     fn from_value(v: &Value) -> Result<Self, CanonError>;
@@ -89,7 +96,8 @@ pub trait Canon: Sized {
     }
 }
 
-/// Extend a path with one more segment. An empty side contributes
+/// Extend a path with one more segment. An empty side contributes nothing, so this never
+/// yields a leading, trailing or doubled dot.
 pub fn join(path: &str, seg: &str) -> String {
     if path.is_empty() {
         seg.to_string()
@@ -100,12 +108,12 @@ pub fn join(path: &str, seg: &str) -> String {
     }
 }
 
-/// An object from `(key, value)` pairs -- the one spelling every
+/// An object from `(key, value)` pairs -- the one spelling every `to_value` here uses.
 pub fn obj(pairs: Vec<(&str, Value)>) -> Value {
     Value::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
 }
 
-/// A single-variant enum object: `{"Variant": payload}` (unit variants
+/// A single-variant enum object: `{"Variant": payload}`; a unit variant passes `Value::Null`.
 pub fn variant(name: &str, payload: Value) -> Value {
     obj(vec![(name, payload)])
 }
@@ -156,7 +164,9 @@ pub fn expect_arr<'a>(v: &'a Value, path: &str) -> Result<&'a Vec<Value>, CanonE
     }
 }
 
-/// Read a required member. The returned value's path is `path.key`, which
+/// Read a required member. The returned value's path is `path.key`, which is also the path a
+/// missing key reports under -- so a member missing from the root reports as that member, not
+/// as the root.
 pub fn get<'a>(
     m: &'a BTreeMap<String, Value>,
     key: &str,
@@ -244,7 +254,9 @@ pub fn expect_opt_u8(v: &Value, path: &str) -> Result<Option<u8>, CanonError> {
     }
 }
 
-/// An `f64` field. `Int` is accepted alongside `Float` on purpose: a
+/// An `f64` field. `Int` is accepted alongside `Float` on purpose: a whole-valued f64
+/// serializes as a bare integer, so refusing `Int` would make decode partial on bytes
+/// `encode` itself wrote.
 pub fn expect_f64(v: &Value, path: &str) -> Result<f64, CanonError> {
     match v {
         Value::Float(f) => Ok(*f),

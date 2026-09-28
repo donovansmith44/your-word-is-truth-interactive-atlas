@@ -5,8 +5,6 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum CliError {
-    /// The command line itself is unparseable: unknown subcommand or flag, a missing value,
-    /// an extra positional argument.
     BadUsage { what: String, why: String, do_: String },
     /// A ref or id argument does not parse against its grammar.
     BadRef { what: String, why: String, do_: String },

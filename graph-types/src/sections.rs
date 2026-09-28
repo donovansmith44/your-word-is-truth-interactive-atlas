@@ -87,8 +87,7 @@ pub fn section_of_node(node: &Node) -> Section {
     }
 }
 
-/// A constant per family, except the one family that has none because it is split by row:
-/// asking for that one is a caller error rather than a silently wrong answer.
+/// Asking this for the per-row family is a caller error, not a silently wrong answer.
 pub fn section_of_family(f: RowFamily) -> Section {
     match f {
         RowFamily::ContainsBible => panic!(
@@ -120,8 +119,7 @@ pub fn section_of_family(f: RowFamily) -> Section {
     }
 }
 
-/// The one family split by row: its section follows the container the row names, not a
-/// family-wide constant.
+/// The per-row answer: the section follows the container the row names.
 pub fn section_of_contains_bible(row: &Contains<BibleTag>) -> Section {
     section_of_container_raw(&row.container.0)
 }
@@ -143,8 +141,7 @@ pub fn section_of_justified_by(
 }
 
 /// An edge id's own text spells the relation that minted it, so the source family is
-/// recoverable from the id with no extra index. Mapped through the family-to-relation table so
-/// a relation and family that are spelled differently are reconciled in one place.
+/// recoverable from the id with no extra index.
 pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> {
     use crate::graph::EdgeRel;
     let (relation, _hash) = source_edge_id.0.split_once(':')?;
@@ -158,8 +155,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 /// Part of every manifest line, and therefore part of the root.
 pub const SECTION_SCHEMA_VERSION: u32 = 14;
 
-/// One family has two homes -- curated containers in core, book and chapter containers in the
-/// text section -- and is placed per row.
+/// The per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
     match section {
         Section::Core => &[

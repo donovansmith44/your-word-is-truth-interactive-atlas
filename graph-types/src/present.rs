@@ -62,7 +62,8 @@ pub struct FrontierPresentation {
     pub sections: Vec<SectionSpec>,
 }
 
-/// Which position kinds can take focus, per surface. "What can I
+/// Which position kinds can take focus, per surface. The policy table has not landed: this
+/// signature is the design, and every kind is focusable until it does.
 pub fn focusable(_surface: Surface, _kind: PositionKind) -> bool {
     true
 }
@@ -80,7 +81,7 @@ pub enum Presentation {
     PinLabel(String),
 }
 
-/// Form policy: one implementation per (kind, context) — a thing cannot
+/// One implementation per (kind, context): a thing cannot wear two faces in one context.
 pub trait Presentable {
     fn present(&self, ctx: PresentationContext, g: &Graph) -> Presentation;
 }

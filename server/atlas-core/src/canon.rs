@@ -1,8 +1,5 @@
-//! The 66-book Protestant canon in the order the King James Version prints it, no
-//! Apocrypha: a book's array POSITION is this codebase's book index (every
-//! `bible/{book}.{chapter}.{verse}` id rides it) and the array ORDER is the
-//! reader's navigation order, so reordering `BOOKS` moves verse ids and every
-//! canon-succession row with it.
+//! A book's array POSITION is this codebase's book index and the array ORDER is the reader's
+//! navigation order, so reordering `BOOKS` moves verse ids and canon-succession rows with it.
 
 pub struct BookInfo { pub code: &'static str, pub osis: &'static str, pub name: &'static str }
 

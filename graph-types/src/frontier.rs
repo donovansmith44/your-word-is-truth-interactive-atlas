@@ -79,6 +79,7 @@ pub struct FrontierEdge {
 /// an opt-out decision, so they are not here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Capability {
+    /// Not claimed by an event frontier: no event-level cross-reference data exists yet.
     CrossReferences,
     /// A two-hop: `Attests` forward to the event, then `Attests` inverse to its other
     /// witnesses. There is no parallel relation in the data.
@@ -108,9 +109,8 @@ pub enum Capability {
     Commentary,
     /// `Contains` forward -- what this container contains.
     Members,
-    /// Symmetric `Analogue`: distinct events whose accounts are similar in form or content,
-    /// never two accounts of one event. Kept apart from `Accounts` because conflating them
-    /// is what put a false parallel in front of a reader.
+    /// Symmetric `Analogue` -- see `Graph::analogue` for what the relation admits. Kept apart
+    /// from `Accounts` because conflating the two put a false parallel in front of a reader.
     Analogues,
     /// `ParentOf` walked both ways plus the symmetric partner row. Siblings are derived as
     /// the other children of the same parents, never a fourth row.

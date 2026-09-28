@@ -6,10 +6,13 @@ use std::collections::BTreeMap;
 
 use super::{CanonError, Value, ROOT};
 
-/// How deep a value may nest before the parser gives up. Node and edge
+/// How deep a value may nest before the parser gives up. Node and edge payloads nest fewer
+/// than ten levels; the limit exists so hostile or corrupt bytes fail as an `Err` rather than
+/// as a blown stack.
 pub const MAX_DEPTH: u32 = 64;
 
-/// Canonical bytes for a value. Infallible: the only unrepresentable
+/// Canonical bytes for a value. Infallible: the only unrepresentable doubles are refused by
+/// `Value::float` at construction.
 pub fn serialize(v: &Value) -> Vec<u8> {
     let mut out = Vec::new();
     write_value(v, &mut out);
@@ -22,7 +25,7 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
         Value::Bool(true) => out.extend_from_slice(b"true"),
         Value::Bool(false) => out.extend_from_slice(b"false"),
         Value::Int(i) => out.extend_from_slice(i.to_string().as_bytes()),
-        // The float law: Rust's `{}` Display, whatever it yields. See the
+        // The float law: whatever Rust's `{}` yields IS the canonical spelling.
         Value::Float(f) => out.extend_from_slice(format!("{f}").as_bytes()),
         Value::Str(s) => write_string(s, out),
         Value::Arr(items) => {
@@ -37,7 +40,8 @@ fn write_value(v: &Value, out: &mut Vec<u8>) {
         }
         Value::Obj(members) => {
             out.push(b'{');
-            // BTreeMap iteration is `str` order, which is UTF-8 byte
+            // BTreeMap iteration is `str` order, which is UTF-8 byte order -- the key ordering law,
+        // for free.
             for (i, (k, val)) in members.iter().enumerate() {
                 if i > 0 {
                     out.push(b',');
@@ -72,7 +76,8 @@ fn write_string(s: &str, out: &mut Vec<u8>) {
     out.push(b'"');
 }
 
-/// Parse canonical bytes. Any deviation from the canonical spelling is an
+/// Parse canonical bytes. Any deviation from the canonical spelling is an `Err` carrying the
+/// path of the offending value.
 pub fn parse(bytes: &[u8]) -> Result<Value, CanonError> {
     let mut p = Parser { b: bytes, i: 0, depth: 0 };
     let v = p.value(ROOT)?;
@@ -169,7 +174,8 @@ impl<'a> Parser<'a> {
                 return self.err(path, "expected a quoted key");
             }
             let key = self.string(path)?;
-            // Strictly increasing catches BOTH laws at once: an unsorted
+            // Strictly increasing catches BOTH laws at once: an unsorted key and a repeated key
+            // are the same violation.
             if let Some(p) = &prev {
                 if key <= *p {
                     return self.err(
@@ -230,7 +236,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Append `b[run..i]` to `out`, rejecting invalid UTF-8 there. Raw
+    /// Append `b[run..i]` to `out`, rejecting invalid UTF-8 there. A raw run is the only place
+    /// a non-ASCII byte can appear.
     fn push_run(&self, path: &str, out: &mut String, run: usize) -> Result<(), CanonError> {
         match std::str::from_utf8(&self.b[run..self.i]) {
             Ok(s) => {
@@ -259,7 +266,8 @@ impl<'a> Parser<'a> {
                 };
                 let mut code: u32 = 0;
                 for d in hex {
-                    // Lowercase only: `` is a second spelling of a
+                    // Lowercase only: an uppercase hex escape would be a second spelling of
+                    // a value that already has one.
                     let v = match d {
                         b'0'..=b'9' => u32::from(d - b'0'),
                         b'a'..=b'f' => u32::from(d - b'a') + 10,
@@ -289,7 +297,9 @@ impl<'a> Parser<'a> {
         Ok(ch)
     }
 
-    /// A number. The canonical spelling is whatever `Display` produces,
+    /// A number. The canonical spelling is whatever `Display` produces, so the check is: parse
+    /// it, print it back, demand the same bytes. That one rule subsumes leading zeros, `+`,
+    /// trailing zeros, exponent forms and every other variant spelling.
     fn number(&mut self, path: &str) -> Result<Value, CanonError> {
         let start = self.i;
         while matches!(
@@ -301,7 +311,9 @@ impl<'a> Parser<'a> {
         // Only ASCII bytes were consumed, so this cannot fail.
         let text = std::str::from_utf8(&self.b[start..self.i]).unwrap_or("");
 
-        // `-0` is a float: it is what `{}` prints for -0.0_f64 and has no
+        // `-0` is a float: it is what `{}` prints for -0.0_f64 and has no i64 spelling. So is
+        // anything carrying a `.` or an exponent marker; anything else is an integer unless it
+        // overflows i64, which prints as a long run of digits.
         let looks_float = text.contains('.') || text.contains('e') || text.contains('E');
         if !looks_float && text != "-0" {
             if let Ok(n) = text.parse::<i64>() {

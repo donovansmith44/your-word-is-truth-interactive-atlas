@@ -1,6 +1,5 @@
 //! The family rides OUTSIDE the row in the hashed bytes, so two families whose rows share a
-//! shape cannot collide. Every `to_value` destructures `self` naming every field: reading
-//! fields instead would let a field added later encode itself out of the bytes silently.
+//! shape cannot collide.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -129,12 +128,14 @@ impl RowFamily {
     }
 }
 
-/// The row's canonical bytes with its family OUTSIDE:
+/// The row's canonical bytes with its family OUTSIDE: `{"family":"located_at","row":{…}}`.
+/// These are the bytes an edge id and a section's logical hash are taken over, so the family
+/// can never be left implicit.
 pub fn encode_row_in_family(family: RowFamily, row_value: Value) -> Vec<u8> {
     serialize(&obj(vec![("family", str_value(family.name())), ("row", row_value)]))
 }
 
-/// Decode a nested `Canon` value, splicing its own (root-anchored) path
+/// Decode a nested `Canon` value, splicing its own root-anchored path into the caller's trail.
 fn sub<T: Canon>(v: &Value, path: &str) -> Result<T, CanonError> {
     T::from_value(v).map_err(|e| at_path(path, e))
 }
@@ -160,7 +161,9 @@ fn field_opt_sub<T: Canon>(
     }
 }
 
-/// A canonical SET from its array spelling. The array must be strictly
+/// The array must be strictly increasing in the set's own `Ord`, because that is the only
+/// order `to_value` can emit: a duplicate or a re-ordering would decode to a set that
+/// re-encodes to DIFFERENT bytes, which is a second spelling of one value.
 fn set_from_array<T: Canon + Ord>(arr: &[Value], path: &str) -> Result<BTreeSet<T>, CanonError> {
     let mut set: BTreeSet<T> = BTreeSet::new();
     for (i, item) in arr.iter().enumerate() {
@@ -181,7 +184,8 @@ fn opt_value<T: Canon>(o: &Option<T>) -> Value {
     o.as_ref().map_or(Value::Null, Canon::to_value)
 }
 
-/// A typed node id rides as the canonical `Kind:raw` string, so the KIND
+/// A typed node id rides as the canonical `Kind:raw` string, so the KIND is carried in the
+/// bytes and re-checked on the way back in.
 fn id_value<K: KindTag>(id: &NodeId<K>) -> Value {
     str_value(&any_node_id_str(&id.erase()))
 }
@@ -209,7 +213,8 @@ fn field_id<K: KindTag>(
     id_from_value::<K>(v, &p)
 }
 
-/// A unit variant's payload is `null` and nothing else -- the same
+/// A unit variant's payload is `null` and nothing else -- the same closedness the member check
+/// gives a struct variant.
 fn expect_unit(v: &Value, path: &str) -> Result<(), CanonError> {
     match v {
         Value::Null => Ok(()),
@@ -231,6 +236,8 @@ const LOCUS_KEYS: &[&str] = &["span", "unit"];
 const LOCUS_RANGE_KEYS: &[&str] = &["from", "to"];
 const TEXT_LOCUS_KEYS: &[&str] = &["at", "span"];
 
+// Every `to_value` below destructures `self`, naming every field: reading fields instead
+// would let a field added later encode itself out of the bytes silently.
 impl Canon for VerseRef {
     fn to_value(&self) -> Value {
         let Self { book, chapter, verse } = self;
@@ -289,7 +296,6 @@ impl Canon for TokenSpan {
         let layer = TranslationId(field_str(m, ROOT, "layer")?);
         let start = field_u16(m, ROOT, "start")?;
         let end = field_u16(m, ROOT, "end")?;
-        // start <= end is re-checked, not assumed.
         TokenSpan::new(layer, start, end)
             .map_err(|e| CanonError::new(ROOT, format!("invalid token span: {e:?}")))
     }
@@ -328,7 +334,6 @@ where
         expect_exact_keys(m, ROOT, LOCUS_RANGE_KEYS)?;
         let from = field_sub::<Locus<C>>(m, ROOT, "from")?;
         let to = field_sub::<Locus<C>>(m, ROOT, "to")?;
-        // from <= to is re-checked, not assumed.
         LocusRange::new(from, to)
             .map_err(|e| CanonError::new(ROOT, format!("invalid locus range: {e:?}")))
     }
@@ -339,7 +344,7 @@ where
     C::Ref: Canon,
 {
     fn to_value(&self) -> Value {
-        // `BTreeSet` order IS the canonical order -- no sort needed, and
+        // `BTreeSet` order IS the canonical order -- no sort needed, and none permitted.
         let Self(loci) = self;
         Value::Arr(loci.iter().map(Canon::to_value).collect())
     }
@@ -699,7 +704,8 @@ impl Canon for Succession {
         for (i, item) in chain_items.iter().enumerate() {
             chain.push(id_from_value::<EventTag>(item, &join(&cp, &i.to_string()))?);
         }
-        // Non-empty and distinct are re-checked through the row's own
+        // Non-empty and distinct are re-checked through the row's own constructor: a malformed
+        // chain cannot be stored, only fail to decode.
         Succession::new(
             field_id::<NarrativeTag>(m, ROOT, "narrative")?,
             chain,

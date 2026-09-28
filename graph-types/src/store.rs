@@ -192,9 +192,8 @@ fn version_of(g: &Graph) -> GraphVersion {
     GraphVersion(V(g).pid().hash)
 }
 
-/// The root is the manifest root over the shipped sections' logical hashes -- the same number
-/// the section writer records and a snapshot reads back. Derived state is a function of rows
-/// those dumps already cover, so it is not hashed again.
+/// `crate::sections::version_root` states what this root is. Derived state is a function of
+/// rows the section dumps already cover, so it is not hashed again.
 #[cfg(feature = "canon-ids")]
 fn version_of(g: &Graph) -> GraphVersion {
     GraphVersion(crate::sections::version_root(g))

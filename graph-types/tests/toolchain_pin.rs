@@ -51,6 +51,9 @@ fn rustup_resolves_the_pin_from_the_repo_root() {
     let proxy = cargo_home
         .join("bin")
         .join(if cfg!(windows) { "rustc.exe" } else { "rustc" });
+    // `RUSTUP_TOOLCHAIN` is inherited by a cargo-launched test process and outranks the pin
+    // file when the proxy resolves a version, so without removing it this test would pass
+    // even with the pin file deleted.
     let out = Command::new(&proxy)
         .arg("--version")
         .current_dir(repo_root())

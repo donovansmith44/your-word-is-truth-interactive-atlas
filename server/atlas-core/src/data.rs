@@ -789,7 +789,7 @@ impl AtlasData {
         self.place_history.get(id)
     }
 
-    /// The first-authored alias for this id. See `place_name_aliases_for` for the full list.
+    /// See `place_name_aliases_for` for the full list.
     pub fn place_name_alias_for(&self, id: &str) -> Option<&PlaceNameAlias> {
         self.place_name_aliases.get(id).and_then(|v| v.first())
     }
