@@ -1,18 +1,6 @@
-//! Parser for the OpenBible.info geocoding bundle's `ancient.jsonl` (JSON
-//! Lines, one place per line; see `data/raw/README.md`). This is the only
-//! one of the 5 geo files M1 needs: it carries place name, resolvable
-//! coordinates (nested under `identifications[].resolutions[].lonlat`, a
-//! `"lon,lat"` string — longitude first, reversed from the usual order),
-//! and KJV verse links (`verses[].osis`, filtered to entries whose
-//! `translations` include `"kjv"`).
-//!
-//! Divergence from `data/raw/README.md`'s worked example: the README's
-//! prose describes `identifications[].score` as a plain int, but the real
-//! file has it as a nested stats object (`{vote_average, vote_count, ...}`).
-//! The per-modern-id int score genuinely used for ranking lives in
-//! `modern_associations{modern_id}.score` instead (confirmed against the
-//! real `ancient.jsonl`), which is what this parser ranks by; see the
-//! correction added to `data/raw/README.md`.
+//! Parser for the OpenBible geocoding bundle's JSON Lines file. A coordinate is a `"lon,lat"` string --
+//! longitude FIRST, reversed from the usual order -- and the int score used for ranking lives in
+//! `modern_associations{modern_id}.score`, not in `identifications[].score`, which is a stats object.
 
 use std::collections::HashMap;
 
@@ -41,9 +29,8 @@ struct RawIdentification {
 
 #[derive(Deserialize)]
 struct RawResolution {
-    // Both optional: a resolution can be a `"special": "not_a_place"` dead-end
-    // marker (e.g. real ancient.jsonl id `aaee94d` "Addar") carrying neither
-    // field at all — see the correction note in data/raw/README.md.
+    // Both optional: a resolution can be a `"special": "not_a_place"` dead-end marker that carries
+    // neither field at all.
     #[serde(default)]
     lonlat: Option<String>,
     #[serde(default)]
@@ -63,12 +50,11 @@ struct RawVerseLink {
     translations: Vec<String>,
 }
 
-/// Lowercase-kebab-case of `s`: runs of non-alphanumeric characters become a
-/// single `-`, with no leading/trailing dash. `"Antioch of Pisidia"` ->
-/// `"antioch-of-pisidia"`.
+/// Lowercase-kebab-case: runs of non-alphanumeric characters become a single `-`, with no leading or
+/// trailing dash.
 fn kebab(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
-    let mut prev_dash = true; // suppress a leading dash
+    let mut prev_dash = true;
     for c in s.chars() {
         if c.is_ascii_alphanumeric() {
             out.push(c.to_ascii_lowercase());
@@ -84,15 +70,13 @@ fn kebab(s: &str) -> String {
     out
 }
 
-/// Picks one `(lon, lat)` per place: across all `identifications[].resolutions[]`,
-/// the one whose `modern_basis_id` has the highest `modern_associations[..].score`
-/// (defaulting unknown/missing associations to score 0); ties keep the first
-/// encountered. Returns `None` if the record has no resolvable coordinate at all.
+/// One `(lon, lat)` per place: across every resolution, the one whose `modern_basis_id` has the highest
+/// association score, unknown or missing associations counting as 0, ties keeping the first encountered.
+/// `None` when the record has no resolvable coordinate at all.
 fn best_lonlat(raw: &RawAncient) -> Option<(f64, f64)> {
-    let mut best: Option<(i64, &str)> = None; // (score, lonlat)
+    let mut best: Option<(i64, &str)> = None;
     for ident in &raw.identifications {
         for res in &ident.resolutions {
-            // "special": "not_a_place" dead-end resolutions carry neither field: skip.
             let (Some(lonlat), Some(modern_basis_id)) = (res.lonlat.as_deref(), res.modern_basis_id.as_deref()) else {
                 continue;
             };
@@ -113,12 +97,10 @@ fn best_lonlat(raw: &RawAncient) -> Option<(f64, f64)> {
     Some((lon, lat))
 }
 
-/// Parses `ancient.jsonl` into `Vec<Place>`. Records with no resolvable
-/// coordinate are skipped (not a hard error — geocoding coverage is
-/// inherently partial; `report.rs` surfaces gaps as a percentage instead).
-/// Slugs are our own kebab-case of `friendly_id`, not the upstream
-/// `url_slug`, so that same-named places collide and get `-2`, `-3` suffixes
-/// in encounter order (independent of whatever slug OpenBible assigned).
+/// A record with no resolvable coordinate is skipped rather than failing: geocoding coverage is
+/// inherently partial, and the report surfaces the gap as a percentage. Slugs are our own kebab-case of
+/// `friendly_id`, not the upstream slug, so same-named places collide and take `-2`, `-3` suffixes in
+/// encounter order.
 pub fn parse(input: &str) -> Result<Vec<Place>> {
     let mut places = Vec::new();
     let mut slug_counts: HashMap<String, u32> = HashMap::new();
@@ -132,7 +114,7 @@ pub fn parse(input: &str) -> Result<Vec<Place>> {
             serde_json::from_str(line).with_context(|| format!("geo/ancient.jsonl line {} is not valid JSON", i + 1))?;
 
         let Some((lon, lat)) = best_lonlat(&raw) else {
-            continue; // unresolvable place: no coordinate to plot
+            continue;
         };
 
         let base = kebab(&raw.friendly_id);

@@ -1,13 +1,6 @@
-//! Parser for the scrollmapper `KJV.json` public-domain text (saved locally
-//! as `data/raw/kjv.json`; see `data/raw/README.md`). Single JSON object
-//! (not array) shaped `{ translation, books: [{ name, chapters: [{ chapter,
-//! verses: [{ verse, text }] }] }] }`.
-//!
-//! This dataset's book names use old-style forms ("I Samuel", "II Kings",
-//! "Revelation of John") rather than the OSIS/USX abbreviations the other
-//! datasets use, so `canon::resolve_alias` won't match them directly. We
-//! normalize Roman-numeral prefixes to Arabic digits and strip the
-//! "of John" suffix before resolving.
+//! Parser for the scrollmapper KJV JSON: one object shaped
+//! `{ translation, books: [{ name, chapters: [{ chapter, verses: [{ verse, text }] }] }] }`. Its book
+//! names are old-style ("I Samuel", "Revelation of John"), so they are normalized before resolving.
 
 use std::collections::HashMap;
 
@@ -39,18 +32,9 @@ struct RawVerse {
     text: String,
 }
 
-/// Normalizes this dataset's book-name spelling into a form
-/// `canon::resolve_alias` can match: `"I Samuel"` -> `"1 Samuel"`,
-/// `"II Kings"` -> `"2 Kings"`, `"III John"` -> `"3 John"`,
-/// `"Revelation of John"` -> `"Revelation"`. Everything else passes through
-/// unchanged (it already matches a canonical name, e.g. `"Genesis"`,
-/// `"Song of Solomon"`).
-/// `pub(crate)`, not private: Batch CORP-1a's `brainfuel` module reuses this
-/// EXACT normalization for `data/raw/brain-fuel-bible/data/books.json`'s own
-/// `kjv_name` field, which uses the IDENTICAL old-style convention this
-/// dataset does ("I Samuel", "Revelation of John", ...) -- verified against
-/// the real vendored file (see `brainfuel.rs`'s own module doc comment). One
-/// normalizer, not two independently-authored copies that could drift.
+/// Normalizes this dataset's book-name spelling into a form `canon::resolve_alias` can match: a Roman
+/// numeral prefix becomes a digit and an " of John" suffix is stripped; anything else passes through.
+/// `pub(crate)` because the brain-fuel books file uses the identical convention and must not drift.
 pub(crate) fn normalize_book_name(raw: &str) -> String {
     let s = raw.trim();
     let s = s.strip_suffix(" of John").unwrap_or(s);
@@ -65,10 +49,7 @@ pub(crate) fn normalize_book_name(raw: &str) -> String {
     }
 }
 
-/// Parses `kjv.json` into the compiled `Canon` (book codes/names + verse
-/// counts per chapter, in canonical `canon::BOOKS` order) and a canonical
-/// `"BOOK.CH.V" -> text` verse map. Hard-errors if any book name fails to
-/// resolve even after normalization.
+/// Hard-errors if any book name fails to resolve even after normalization.
 pub fn parse(input: &str) -> Result<(Canon, HashMap<String, String>)> {
     let raw: RawKjv = serde_json::from_str(input).context("kjv.json is not valid JSON")?;
 
@@ -102,8 +83,8 @@ pub fn parse(input: &str) -> Result<(Canon, HashMap<String, String>)> {
         ));
     }
 
-    // Order by canonical BookId index regardless of input file order (the
-    // real kjv.json already happens to be in this order, but don't rely on it).
+    // Ordered by canonical book index whatever the input file's order: the real file already happens to
+    // be in this order, but nothing here relies on that.
     books.sort_by_key(|(idx, _)| *idx);
     let canon = Canon { books: books.into_iter().map(|(_, b)| b).collect() };
 

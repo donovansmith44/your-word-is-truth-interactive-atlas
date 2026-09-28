@@ -1,35 +1,6 @@
-//! M-C2: the reusable COMPUTE half of `main.rs`'s own pipeline (parse
-//! `data/raw/` + `data/curated/`, merge, hard-validate), extracted into a
-//! library function so every consumer that needs a fully-populated,
-//! validated `AtlasData` FROM RAW+CURATED SOURCES -- not from the five
-//! retiring compiled JSON files this batch deletes -- calls the SAME code
-//! `main.rs` always has, rather than a second, independently-authored copy
-//! that could drift from it. `main.rs` itself is the first caller: it now
-//! calls [`compile`], then writes only the SURVIVING `data/compiled/*.json`
-//! files (reading every value straight off the returned `AtlasData`/
-//! `Report`, never a second local copy) and the report.
-//!
-//! THE OTHER CALLERS (why this extraction exists at all): `atlas-graph`'s
-//! own `bins/compile_graph.rs` (the one-time artifact-compile step) and
-//! `atlas-server`'s own `--build-from-raw` dev fallback both need a real,
-//! validated `AtlasData` as their event-world/place/polity/catechism
-//! adapters' own source (`event_world`/`place_adapter`/`polity_adapter`/
-//! `catechism_adapter`'s own module doc comments) -- previously via
-//! `AtlasData::load(&data/compiled)`, reading the now-deleted
-//! `places.json`/`events.json`/`narratives.json`. Once those files are
-//! gone, this function is what stands in their place for exactly the two
-//! callers that build a graph from nothing (the server's own DEFAULT
-//! startup path, loading the pre-built artifact, does NOT call this, and
-//! since OVERLAY-1 Task 5 does not reconstruct these fields at all: it
-//! reads the graph it just loaded, through
-//! `atlas_graph::scene_source::GraphSceneSource`, instead of compiling a
-//! second copy of them from raw+curated sources).
-//!
-//! `AtlasData::load` (the JSON-file loader) stays -- it still reads the
-//! TEN surviving compiled files (canon/books-meta/chronology-anchors/
-//! book-narration-windows/polities/landmarks/place-history/place-names-kjv/
-//! land-mask/catechism); only its own five retiring-file reads become
-//! honest empty defaults (the eras.json precedent, M-C's own deletion).
+//! The reusable COMPUTE half of the ETL: parse the raw and curated trees, merge, hard-validate, and return a
+//! fully populated `AtlasData`. Every consumer that needs one built from sources calls this rather than a
+//! second, independently authored copy.
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -42,35 +13,18 @@ use atlas_core::data::{AtlasData, Polity};
 use crate::report::{Counts, PolityStats, Report};
 use crate::{catechism_map, curated, easton, geo, kjv, people, people_groups, polities, theographic, validate, xrefs};
 
-/// Everything `main.rs`'s own report/write phase needs, alongside the
-/// fully-populated, validated `AtlasData` every graph-building caller
-/// needs -- one call, one source, no second copy to drift.
+/// Everything the report and write phase needs, alongside the validated `AtlasData` every graph-building
+/// caller needs: one call, one source.
 pub struct CompileOutput {
     pub data: AtlasData,
     pub report: Report,
-    /// `data.place_history`/`data.place_name_aliases` are HashMaps (O(1)
-    /// lookup -- `AtlasData::place_history_for`/`place_name_alias_for`,
-    /// needed by every handler/scene.rs consumer on the `--build-from-raw`
-    /// path); these carry the SAME content in the ORIGINAL curated-file
-    /// order, kept alongside so `main.rs`'s own `place-history.json`/
-    /// `place-names-kjv.json` writes stay byte-identical to their
-    /// pre-M-C2 shape (curated order, never a HashMap's own incidental
-    /// iteration order).
+    /// The same content as the lookup maps, in the ORIGINAL curated-file order, so a write of these stays in
+    /// curated order rather than a `HashMap`'s incidental iteration order.
     pub place_history_list: Vec<atlas_core::data::PlaceHistory>,
     pub place_name_alias_list: Vec<atlas_core::data::PlaceNameAlias>,
 }
 
-/// Reads `raw_dir`/`curated_dir`, parses, merges, and hard-validates --
-/// identical to `main.rs`'s own pre-M-C2 inlined compute phase, just
-/// parameterized on its two input directories instead of a hardcoded
-/// `../data` and returning its result instead of falling through into
-/// file writes. Every `validate::run_*` call, every error `.context(...)`,
-/// and every merge/calibration step below is UNCHANGED from that phase --
-/// this is a relocation, not a rewrite (verified: `main.rs`'s own
-/// post-M-C2 surviving `data/compiled/*.json` outputs are byte-identical
-/// to the pre-M-C2 ones over the real committed sources).
 pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
-    // --- data/raw/ ------------------------------------------------------
     let kjv_raw = read(&raw_dir.join("kjv.json"))?;
     let (canon, verses) = kjv::parse(&kjv_raw)?;
 
@@ -102,16 +56,9 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let (theo_events, theo_new_places, theo_stats) =
         theographic::parse_events(&places_json, &verses_json, &events_json, &place_slug_by_name)?;
 
-    // Batch P (the extensibility proof): Theographic PERSONS -> the
-    // `AtlasData.people` sidecar (person_adapter.rs's own graph-side
-    // source). Reads the SAME `theo_dir`/`verses_json` already in scope
-    // above -- one more sibling fact file, not a new source tree.
     let people_json = read(&theo_dir.join("people.json"))?;
-    // D5: kinship + timeline resolved through the SAME events.json bytes
-    // parse_events read above.
     let (mut people_list, people_stats) = people::parse_people_full(&people_json, &verses_json, Some(&events_json))?;
-    // D5: eternity is curated truth with grounds (data/curated/people-eternal.toml);
-    // every id must be a real person -- fail loud otherwise.
+    // Eternity is curated truth carrying grounds, so every id must name a real person: fail loud otherwise.
     for (id, grounds) in curated::parse_people_eternal(&read(&curated_dir.join("people-eternal.toml"))?)? {
         let Some(person) = people_list.iter_mut().find(|p| p.id == id) else {
             anyhow::bail!("people-eternal.toml names '{id}', which is not a Theographic person");
@@ -120,22 +67,9 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         person.eternal_grounds = grounds;
     }
 
-    // ENT-1a: Easton's Bible Dictionary (1897, PD) -- the `AtlasData.easton`
-    // sidecar (`description_adapter.rs`'s own graph-side source). Reuses the
-    // SAME already-in-scope `places_json` bytes `theographic::parse_events`
-    // read above (no second disk read) -- `easton::parse_easton`'s own
-    // module doc comment explains why its OWN in-memory parse of that
-    // string is still independent (a second, minimal typed struct), not
-    // shared parsing code.
     let easton_json = read(&theo_dir.join("easton.json"))?;
     let (easton_list, easton_stats) = easton::parse_easton(&easton_json, &places_json)?;
 
-    // PG-1a: Theographic PEOPLE GROUPS -> the `AtlasData.people_groups`
-    // sidecar (`atlas_graph::peoples_adapter`'s own graph-side source).
-    // Reads the SAME `theo_dir` already in scope above -- one more sibling
-    // fact file, not a new source tree. PG-1B rider: also reads the SAME
-    // `verses_json` already in scope above (locus resolution for the 2 of
-    // 23 records that carry a real `verses` field).
     let people_groups_json = read(&theo_dir.join("peopleGroups.json"))?;
     let (people_groups_list, people_groups_stats) = people_groups::parse_people_groups(&people_groups_json, &verses_json)?;
 
@@ -143,7 +77,6 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let (xrefs_map, xref_stats) = xrefs::parse(&xrefs_raw)?;
     let (xrefs_map, xref_dropped_missing_first_verse) = xrefs::filter_missing_first_verse(xrefs_map, &verses);
 
-    // --- data/curated/ ---------------------------------------------------
     check_curated_inputs_exist(curated_dir)?;
 
     let eras = curated::parse_eras(&read(&curated_dir.join("eras.toml"))?)?;
@@ -153,19 +86,12 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let events_extra = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
     let narratives = read_narratives(&curated_dir.join("narratives"))?;
 
-    // PG-1a: curated nation seeds + Gen-10 reclassification rows + eponymy
-    // seed rows (decisions 1b/1c/3) -- `atlas_graph::peoples_adapter`'s own
-    // graph-side source, alongside `people_groups_list` above.
     let (people_group_seeds, people_group_reclassify, named_after_seeds) =
         curated::parse_people_group_seeds(&read(&curated_dir.join("people-groups.toml"))?)?;
 
-    // EDGE-1a: curated explicit-formula fulfillments + Scripture-argued
-    // typology seed rows (decisions 1a/1b) -- `atlas_graph::
-    // fulfillment_adapter`'s own graph-side source.
     let fulfillment_seeds = curated::parse_fulfillments(&read(&curated_dir.join("fulfillments.toml"))?)?;
     let typology_seeds = curated::parse_typology(&read(&curated_dir.join("typology.toml"))?)?;
 
-    // --- merge -------------------------------------------------------------
     let mut all_events = theo_events;
     let mut seen_event_ids: HashSet<String> = all_events.iter().map(|e| e.id.clone()).collect();
     for e in events_extra {
@@ -198,22 +124,14 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
     }
 
-    // ATTEST-1: the account -> mention RETYPE, applied here (after
-    // witnesses are attached, before anything reads the event set) so
-    // there is exactly ONE place in the pipeline where an event's own
-    // attested verse list is settled. Every named verse is stripped from
-    // the event's `verses` AND from every witness row's translations --
-    // `scene::witnesses_for` reads ONLY explicit witness rows once any
-    // exist, so stripping one and not the other would silently keep the
-    // Attests row alive (the exact trap CHRON-1's own fix round S-C1/S-1
-    // fell into from the other direction). Fail-loud on a row that
-    // retypes nothing: a correction that corrects nothing is a stale
-    // correction.
+    // The account-to-mention retype is applied here, after witnesses are attached and before anything reads
+    // the event set, so exactly one place settles an event's attested verse list. A named verse is stripped
+    // from the event's `verses` AND from every witness row, since stripping one alone would silently leave
+    // the attestation alive. A row that retypes nothing fails loud: it is a stale correction.
     let (event_mentions, event_analogues) =
         curated::parse_attestation_corrections(&read(&curated_dir.join("attestation-corrections.toml"))?)?;
-    // Reuses `event_by_id` above -- the witness loop only ASSIGNED into
-    // `all_events[idx]`, never reordered it, so the index map is still
-    // exact (the same reuse `acts_sections`/`atlas_sections` below make).
+    // The witness loop only assigned into the events vector, never reordered it, so the index map built above
+    // is still exact.
     for m in &event_mentions {
         let Some(&idx) = event_by_id.get(&m.event_id) else {
             bail!(
@@ -232,17 +150,10 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
         e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
         let after: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
-        // KNOWN LIMIT of this guard (ATTEST-1 fix round 1, review finding
-        // L-6): the match above is EXACT STRING equality against the stored
-        // `verses`/translation entries, which may themselves be RANGE
-        // strings (`LUK.1.26-38`). A `[[mention]]` verse that lives INSIDE a
-        // range is therefore not stripped. `after == before` catches that
-        // for a single-verse row, but a MULTI-verse row where one verse
-        // matches exactly and another sits inside a range would apply
-        // PARTIALLY and pass here. Both of today's rows are single exact
-        // verses, so this is latent only; the next author adding a row that
-        // targets a verse inside a range must split the range first (or
-        // teach this loop to expand ranges) rather than trust this bail.
+        // KNOWN LIMIT: the match is exact string equality against stored entries that may themselves be RANGE
+        // strings, so a verse living INSIDE a range is not stripped. The bail below catches that for a
+        // single-verse row, but a multi-verse row with one exact match and one inside a range would apply
+        // partially and pass. A new row targeting a verse inside a range must split the range first.
         if after == before {
             bail!(
                 "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids.",
@@ -299,7 +210,6 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
     }
 
-    // --- counts + coverage stats (computed before AtlasData::new moves things) ---
     let mut counts = Counts {
         canon_books: canon.books.len(),
         places: all_places.len(),
@@ -362,18 +272,15 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     };
     let pct_events_dated = if theo_stats.total == 0 { 0.0 } else { 100.0 * theo_stats.dated as f64 / theo_stats.total as f64 };
 
-    // --- atlas_core::merge::MERGE_PAIRS ------------------------------------
     validate::run_place_merges(atlas_core::merge::MERGE_PAIRS, &all_places)
         .context("data/compiled/* was NOT written; fix atlas_core::merge::MERGE_PAIRS (bad id or over-threshold pair)")?;
 
-    // --- atlas_core::event_merge::EVENT_MERGE_PAIRS ------------------------
     validate::run_event_merges(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
         .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted near-duplicate event pair, or a bad id)")?;
 
     validate::run_cross_book_duplicates(atlas_core::event_merge::EVENT_MERGE_PAIRS, atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &all_events)
         .context("data/compiled/* was NOT written; fix atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS (an unlisted cross-book duplicate event pair, found by title/year/place similarity)")?;
 
-    // --- atlas_core::nt_calibration -----------------------------------------
     let nt_calibration_log = atlas_core::nt_calibration::apply_nt_calibration(&mut all_events);
     eprintln!(
         "NT CALIBRATION: {} surviving Theographic-scale NT event(s) shifted +{} year(s) to the AD-33 Passion anchor (full before/after table in batch-hotfix4-report.md's own \"Fix round 1\" section):",
@@ -387,59 +294,29 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         );
     }
 
-    // --- atlas_core::chronology::THEO_DATE_OVERRIDES -----------------------
     let theo_override_log = atlas_core::chronology::apply_theo_date_overrides(&mut all_events);
     eprintln!("CHRONOLOGY OVERRIDES: {} isolated raw-import date correction(s) applied (batch-hotfix6-report.md has the full derivation):", theo_override_log.len());
     for row in &theo_override_log {
         eprintln!("  {:<10} {:<35} {}..{} -> {}..{}", row.id, row.label, row.old_from_year, row.old_to_year, row.new_from_year, row.new_to_year);
     }
 
-    // --- assemble, validate --------------------------------------------
     let mut data = AtlasData::new(canon, all_places, all_events, narratives, eras, books_meta, verses, xrefs_map).finish();
     validate::run(&data).context("data/compiled/* was NOT written; fix data/curated/ and re-run")?;
     counts.places = data.places.len();
-    // Batch P: `people` needs no `validate::run`-style check of its own --
-    // its own fail-loud boundary law (bijection + mentions completeness)
-    // lives at the GRAPH adapter (`atlas_graph::person_adapter::
-    // check_person_fidelity`, run unconditionally at pipeline LAW-CHECK
-    // time), not here -- see that function's own doc comment for why.
+    // These sidecars carry no `validate::run`-style check here: their fail-loud boundary laws -- node-count
+    // bijections, mentions completeness, the eponym-existence conditional, the Scripture-ground rule -- live
+    // at the graph adapters, which run them unconditionally at law-check time.
     data.people = people_list;
-    // ENT-1a: same "no validate::run-style check of its own" status as
-    // `people` immediately above -- `easton`'s own consumer
-    // (`atlas_graph::description_adapter`) is a pure best-effort matcher,
-    // never a graph-shape law (an unmatched/absent description is always a
-    // lawful `None`, not a validation failure).
     data.easton = easton_list;
-    // PG-1a: same "no validate::run-style check of its own" status as
-    // `people`/`easton` above -- these four sidecars' own fail-loud
-    // boundary laws (node-count bijections, mentions completeness, the
-    // eponym-existence conditional, the >=1-Scripture-ground law) live at
-    // the GRAPH adapter (`atlas_graph::peoples_adapter::
-    // check_peoples_fidelity`, run unconditionally at pipeline LAW-CHECK
-    // time, mirroring `person_adapter::check_person_fidelity`'s own
-    // precedent), not here.
     data.people_groups = people_groups_list;
     data.people_group_seeds = people_group_seeds;
     data.people_group_reclassify = people_group_reclassify;
     data.named_after_seeds = named_after_seeds;
-    // EDGE-1a: same "no validate::run-style check of its own" status --
-    // this pair's own fail-loud boundary law (every row carries
-    // >=1 Ground::Scripture) lives at the GRAPH adapter
-    // (`atlas_graph::fulfillment_adapter`, run unconditionally at pipeline
-    // LAW-CHECK time), not here.
     data.fulfillment_seeds = fulfillment_seeds;
     data.typology_seeds = typology_seeds;
-    // ATTEST-1: the retype itself already happened above (on
-    // `all_events`, before `AtlasData` was assembled); these carry the
-    // rows on to `atlas_graph::event_world`, which emits the `Mentions`/
-    // `Analogue` edges. Same "no validate::run-style check of its own"
-    // status as the pair immediately above -- L2's own fail-loud
-    // boundary law (`atlas_graph::law_check::attestation_is_exclusive`)
-    // lives at the GRAPH, run unconditionally at pipeline LAW-CHECK time.
     data.event_mentions = event_mentions;
     data.event_analogues = event_analogues;
 
-    // --- chronology anchor table + era-window validator ---
     data.chronology_anchors = chronology_anchors;
     data.book_narration_windows = book_narration_windows;
     validate::run_chronology_anchors(&data.chronology_anchors, &data.events)
@@ -453,17 +330,13 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     validate::run_era_boundaries(&data)
         .context("data/compiled/* was NOT written; fix the flagged event's own date, or its book's own data/curated/book-narration-windows.toml window")?;
 
-    // THE NO-TWO-OPINIONS VALIDATION (Batch CHRON-1, THE CHRONOLOGY
-    // AUTHORITY LAW's own DIRECT enforcement -- `event_merge.rs`'s own
-    // module doc part (b)): runs on `data.events`, the FINAL (post-merge,
-    // post-nt_calibration, post-THEO_DATE_OVERRIDES) set -- same
-    // post-`finish()` orientation as `run_chronology_anchors` above.
+    // Runs on the FINAL event set: post-merge, post-calibration and post-overrides, the same orientation the
+    // anchor check above has.
     validate::run_no_two_opinions(atlas_core::event_merge::EVENT_DISTINCT_PAIRS, &data.events).context(
         "data/compiled/* was NOT written; two surviving events with heavy witness overlap carry independent placements -- either merge them (EVENT_MERGE_PAIRS) or, if genuinely distinct, document the pair in EVENT_DISTINCT_PAIRS",
     )?;
     counts.events = data.events.len();
 
-    // --- data/curated/polities/ ---------------------------------------------
     let (compiled_polities, polity_stats) = process_polities(&curated_dir.join("polities"))?;
     validate::run_polities(&compiled_polities, &polities::BIBLICAL_WORLD_BBOX, &data.verses)
         .context("data/compiled/polities.json was NOT written; fix data/curated/polities/*.toml and re-run")?;
@@ -475,7 +348,6 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let landmarks_count = landmarks.len();
     data.landmarks = landmarks;
 
-    // --- data/curated/land-mask.toml ---
     let land_mask_regions = curated::parse_land_mask(&read(&curated_dir.join("land-mask.toml"))?)?;
     validate::run_land_mask(&land_mask_regions, &polities::BIBLICAL_WORLD_BBOX)
         .context("data/compiled/land-mask.json was NOT written; fix data/curated/land-mask.toml and re-run")?;
@@ -485,7 +357,6 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let land_mask_ring_count = land_mask.len();
     data.land_mask = land_mask;
 
-    // --- data/curated/place-history.toml -
     let place_history = curated::parse_place_history(&read(&curated_dir.join("place-history.toml"))?)?;
     let compiled_place_ids: HashSet<&str> = data.places.iter().map(|p| p.id.as_str()).collect();
     validate::run_place_history(&place_history, &compiled_place_ids, &data.verses)
@@ -493,15 +364,11 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     data.place_history = place_history.iter().map(|h| (h.id.clone(), h.clone())).collect();
     let place_history_list = place_history;
 
-    // --- data/curated/place-names-kjv.toml -
     let place_names_kjv = curated::parse_place_names_kjv(&read(&curated_dir.join("place-names-kjv.toml"))?)?;
     validate::run_place_names_kjv(&place_names_kjv, &data.places, &data.verses)
         .context("data/compiled/place-names-kjv.json was NOT written; fix data/curated/place-names-kjv.toml and re-run")?;
-    // Batch GAZ-1-R1: GROUPED by id (was a plain 1:1 collect, last-wins on
-    // a repeated id) -- `lebo-hamath` is the first place authoring more
-    // than one curated KJV alias row (several distinct verbatim wordings of
-    // the same "entrance of Hamath" boundary idiom); see
-    // `atlas_core::data::AtlasData::place_name_aliases`'s own doc comment.
+    // Grouped by id rather than collected one-to-one, which was last-wins: one place authors several curated
+    // alias rows, distinct wordings of the same boundary idiom.
     let mut place_name_aliases: HashMap<String, Vec<atlas_core::data::PlaceNameAlias>> = HashMap::new();
     for a in &place_names_kjv {
         place_name_aliases.entry(a.id.clone()).or_default().push(a.clone());
@@ -509,7 +376,6 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     data.place_name_aliases = place_name_aliases;
     let place_name_alias_list = place_names_kjv;
 
-    // --- data/curated/catechism.toml ----
     let mut catechism = curated::parse_catechism(&read(&curated_dir.join("catechism.toml"))?)?;
 
     let catechism_mapping = curated::parse_catechism_mapping(&read(&curated_dir.join("catechism-mapping.toml"))?)?;
@@ -584,11 +450,8 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     Ok(CompileOutput { data, report, place_history_list, place_name_alias_list })
 }
 
-/// Reads every `*.toml` polity file under `polities_curated_dir` (sorted by
-/// filename, i.e. by polity id, for a deterministic processing/report
-/// order), parses each via `curated::parse_polity`, and returns the full
-/// compiled roster alongside per-polity stats -- unchanged from `main.rs`'s
-/// own pre-M-C2 function of the same name/behavior.
+/// Reads every polity file under the directory, sorted by filename and so by polity id, which is what makes
+/// the processing and report order deterministic.
 fn process_polities(polities_curated_dir: &Path) -> Result<(Vec<Polity>, Vec<PolityStats>)> {
     let mut paths: Vec<PathBuf> = fs::read_dir(polities_curated_dir)
         .with_context(|| format!("reading directory {} -- these are hand-authored and committed, not fetched; see LICENSES.md", polities_curated_dir.display()))?
@@ -624,10 +487,8 @@ fn read(path: &Path) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))
 }
 
-/// Parses every `*.toml` file directly under `passages_dir` (one book per
-/// file), each in the SAME `[[event]]` schema `events-extra.toml` uses,
-/// concatenated in sorted filename order for reproducible output --
-/// unchanged from `main.rs`'s own pre-M-C2 function of the same name.
+/// One book per file, each in the same event schema, concatenated in sorted filename order for reproducible
+/// output.
 fn read_passages(passages_dir: &Path) -> Result<Vec<atlas_core::data::Event>> {
     let mut paths: Vec<PathBuf> = fs::read_dir(passages_dir)
         .with_context(|| format!("reading directory {}", passages_dir.display()))?
@@ -646,9 +507,7 @@ fn read_passages(passages_dir: &Path) -> Result<Vec<atlas_core::data::Event>> {
     Ok(events)
 }
 
-/// Parses every `*.toml` file directly under `narratives_dir` (one
-/// narrative per file), in sorted filename order -- unchanged from
-/// `main.rs`'s own pre-M-C2 function of the same name.
+/// One narrative per file, in sorted filename order.
 fn read_narratives(narratives_dir: &Path) -> Result<Vec<atlas_core::data::Narrative>> {
     let mut paths: Vec<PathBuf> = fs::read_dir(narratives_dir)
         .with_context(|| format!("reading directory {}", narratives_dir.display()))?
@@ -667,9 +526,6 @@ fn read_narratives(narratives_dir: &Path) -> Result<Vec<atlas_core::data::Narrat
     Ok(narratives)
 }
 
-/// Checks that every file/directory `data/curated/` must provide is
-/// present -- unchanged from `main.rs`'s own pre-M-C2 function of the same
-/// name.
 fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     let mut missing = Vec::new();
 

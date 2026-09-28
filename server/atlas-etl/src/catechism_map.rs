@@ -1,41 +1,6 @@
-//! Batch F2: ingestion of the user's own catechism verse-mapping repo
-//! (brain-fuel/catechism, <https://github.com/brain-fuel/catechism>, pinned
-//! at a specific commit SHA -- see `data/fetch-raw.ps1`) -- `resources/*.yaml`,
-//! one file per catechism topic, each holding numbered QUESTION-level
-//! entries: `{ title: "...", refs: !!set of "Book Chapter:Verse" }`. This
-//! module (a) parses that YAML shape and (b) canonicalizes each
-//! human-readable ref string into this app's own canonical verse-ref
-//! grammar (`BOOK.CH.V`, one string per INDIVIDUAL verse -- the same
-//! flattened convention `curated::expand_verse_ref` already uses for
-//! hand-typed `catechism.toml` citations, so a passage-grouping consumer
-//! downstream, batch-f2-brief.md's 6-ARCH, sees the identical shape
-//! regardless of which batch's data produced it).
-//!
-//! Human ref forms actually observed across the real ~45 files (verified by
-//! a full grep sweep of every distinct ref string in every
-//! `resources/*.yaml` file BEFORE writing this parser, not guessed):
-//! - `"Isaiah 45:20"` -- book chapter:verse
-//! - `"Exodus 20:1-3"` -- book chapter:verse-verse (same-chapter range)
-//! - `"Psalm 1"` / `"1 Samuel 28"` -- bare chapter (no verse at all)
-//! - `"Romans 12-13"` / `"Job 38-41"` -- bare CHAPTER range (no colon at all)
-//! - `"1 John 1:7-2:2"` / `"Genesis 3:1-4:12"` -- CROSS-CHAPTER verse range
-//! - `"Exodus 34:1, 27-28"` -- comma-separated compound: the book+chapter is
-//!   stated once, in the FIRST segment; every later comma segment is a bare
-//!   verse or verse-range within that SAME chapter
-//! No semicolons, no unicode dashes, no malformed/inverted ranges, and no
-//! ref ever crosses a BOOK boundary (only chapter boundaries) anywhere in
-//! the real data -- all confirmed by that same sweep.
-//!
-//! Book names are always the FULL English name (never an abbreviation),
-//! e.g. `"1 Corinthians"`, `"Song of Solomon"` -- resolved primarily via
-//! `atlas_core::canon::resolve_alias` (covers 52 of the 53 distinct book
-//! names actually used in the real data). The one gap: the repo cites the
-//! Psalms in the SINGULAR ("Psalm 23"), while this app's own canonical name
-//! is plural ("Psalms") and its OSIS abbreviation is "Ps" -- neither
-//! normalizes to "psalm" -- so a tiny, disclosed local fallback covers it.
-//! `every_real_book_name_resolves` (this module's own test, run against a
-//! fixture mirroring the real distinct-name list) pins that this fallback
-//! is the ONLY gap, not merely "probably fine."
+//! Ingests the vendored catechism verse-mapping repo: one YAML file per topic, whose question-level refs are
+//! human-readable ("Exodus 20:1-3", "Psalm 1", "Romans 12-13", "1 John 1:7-2:2", "Exodus 34:1, 27-28") and
+//! never cross a book boundary. Book names are full English; only the singular "Psalm" needs a local fallback.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -45,11 +10,8 @@ use atlas_core::canon::resolve_alias;
 use atlas_core::data::{CatechismPart, CatechismQuestion};
 use atlas_core::refs::BookId;
 
-/// One QUESTION-level entry parsed from a single `resources/*.yaml` file,
-/// refs still in RAW, human-readable form -- canonicalization
-/// (`canonicalize_ref` below) is a separate step, so a YAML-shape parse
-/// failure and a ref-canonicalization failure are reported distinctly, and
-/// a caller can attach its own per-file/per-item context to each.
+/// One question-level entry, refs still in RAW human-readable form: canonicalization is a separate step, so a
+/// YAML-shape failure and a ref failure are reported distinctly and a caller can attach its own context to each.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RawQuestion {
     pub number: u32,
@@ -57,21 +19,9 @@ pub struct RawQuestion {
     pub refs: Vec<String>,
 }
 
-/// Parses one `resources/*.yaml` file's own numbered-entry shape: a
-/// top-level mapping from a bare integer key (`1`, `2`, ...) to
-/// `{ title: string, refs: !!set of string }`. Deserializes via
-/// `serde_yaml::Value` (untyped) rather than a `#[derive(Deserialize)]`
-/// struct: a YAML `!!set` is represented in YAML's own data model as an
-/// ordinary MAPPING node (every entry's own value is null) regardless of
-/// the tag, so walking the generic `Value` tree directly sidesteps any
-/// question of whether serde_yaml's derive path has special `!!set`
-/// support at all -- confirmed empirically against REAL file content (this
-/// module's own tests are built from actual `resources/02.1-*.yaml`
-/// excerpts), not assumed from documentation. Questions are returned
-/// SORTED by their own numeric key (YAML mapping order is not guaranteed
-/// to already be numeric-ascending, though every real file inspected
-/// happens to be); each question's own `refs` are returned in the file's
-/// insertion order (serde_yaml preserves YAML mapping order).
+/// A YAML `!!set` is an ordinary MAPPING node in YAML's data model whatever its tag, so this walks the untyped
+/// value tree rather than relying on a derive's set support. Questions come back SORTED by their numeric key,
+/// since mapping order is not guaranteed to be ascending; each question's refs keep the file's own order.
 pub fn parse_yaml_questions(input: &str) -> Result<Vec<RawQuestion>> {
     let doc: serde_yaml::Value = serde_yaml::from_str(input).context("invalid YAML")?;
     let top = doc.as_mapping().context("expected a top-level YAML mapping of question-number -> {title, refs}")?;
@@ -108,11 +58,8 @@ pub fn parse_yaml_questions(input: &str) -> Result<Vec<RawQuestion>> {
     Ok(out)
 }
 
-/// Resolves a human book name to its canonical `BookId`. Tries the app's
-/// own `canon::resolve_alias` first (covers every full book name/OSIS/code
-/// this app already knows, case/spacing-insensitive) -- falls back to a
-/// tiny, disclosed local table for the ONE gap found in the real data (see
-/// this module's own header).
+/// Tries the atlas's own alias resolution first, which covers every full name, OSIS spelling and code it knows,
+/// then a tiny local table for the one gap the real data has.
 pub fn resolve_book_name(name: &str) -> Option<BookId> {
     if let Some(b) = resolve_alias(name) {
         return Some(b);
@@ -123,16 +70,9 @@ pub fn resolve_book_name(name: &str) -> Option<BookId> {
     }
 }
 
-/// Splits `"1 Samuel 28"` -> `("1 Samuel", "28")`, `"2 Corinthians 8-9"` ->
-/// `("2 Corinthians", "8-9")`, `"Song of Solomon 2:1"` -> `("Song of
-/// Solomon", "2:1")`, `"Isaiah 45:20"` -> `("Isaiah", "45:20")`. Every book
-/// name actually used in the real data is either a bare run of alphabetic
-/// words, or exactly ONE leading numeral (`1`/`2`/`3`) followed by a run of
-/// alphabetic words (never a digit anywhere else in the name) -- this
-/// tokenizer relies on exactly that shape rather than a general-purpose
-/// regex (no `regex` crate dependency needed for one small, fully-verified
-/// grammar). Returns `None` when no chapter-spec tail (a token starting
-/// with a digit, after the optional leading book-numeral) is found at all.
+/// Splits a segment into its book name and the chapter-spec tail. Every book name in the real data is a run of
+/// alphabetic words, optionally preceded by exactly one numeral, and never has a digit elsewhere, so this
+/// tokenizer relies on that shape rather than pulling in a regex dependency for one verified grammar.
 fn split_book_and_tail(segment: &str) -> Option<(String, String)> {
     let tokens: Vec<&str> = segment.split_whitespace().collect();
     if tokens.is_empty() {
@@ -153,13 +93,8 @@ fn split_book_and_tail(segment: &str) -> Option<(String, String)> {
     Some((tokens[..i].join(" "), tokens[i..].join(" ")))
 }
 
-/// A parsed chapter-spec tail (the part of a ref AFTER its book name),
-/// still book-agnostic -- `canonicalize_ref` resolves it against a
-/// specific `BookId` afterward. Chapter/verse numbers are `u32` (this
-/// app's own canonical types use `u16`; validated to fit on push, see
-/// `push_verse`/`expand_whole_chapter` below -- keeping this enum's own
-/// arithmetic in a wider type avoids an intermediate overflow panic on a
-/// malformed/huge input, converting only at the final, checked boundary).
+/// Chapter and verse numbers are wider here than the canonical types they become, and are checked on push:
+/// keeping the intermediate arithmetic wide means a malformed, huge input cannot overflow before that check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ChapterSpec {
     WholeChapter(u32),
@@ -178,9 +113,7 @@ fn parse_chapter_and_verse(s: &str, raw: &str) -> Result<(u32, u32)> {
     Ok((parse_u32(ch, raw)?, parse_u32(v, raw)?))
 }
 
-/// Parses the tail of the FIRST comma-segment of a ref (the one that
-/// always carries the chapter, e.g. `"20:1-3"`, `"1"`, `"12-13"`,
-/// `"1:7-2:2"`). See this module's own header for the full form catalog.
+/// Parses the tail of the FIRST comma-segment of a ref, the one that always carries the chapter.
 fn parse_chapter_tail(tail: &str, raw: &str) -> Result<ChapterSpec> {
     if let Some((left, right)) = tail.split_once('-') {
         let (left, right) = (left.trim(), right.trim());
@@ -208,11 +141,8 @@ fn parse_chapter_tail(tail: &str, raw: &str) -> Result<ChapterSpec> {
     }
 }
 
-/// Parses a comma-CONTINUATION segment (every segment after the first in a
-/// compound ref like `"Exodus 34:1, 27-28"`) -- a bare verse (`"29"`) or a
-/// bare same-chapter verse range (`"27-28"`), against the chapter already
-/// established by the first segment. Never itself carries a book, a
-/// chapter, or a colon (none of the real data's continuation segments do).
+/// Parses a comma-CONTINUATION segment -- a bare verse or same-chapter verse range -- against the chapter the
+/// first segment established. A continuation never carries a book, a chapter or a colon.
 fn parse_continuation(piece: &str, chapter: u32, raw: &str) -> Result<ChapterSpec> {
     if piece.contains(':') {
         bail!("ref '{raw}': continuation segment '{piece}' unexpectedly carries its own chapter");
@@ -235,12 +165,8 @@ fn push_verse(book: BookId, chapter: u32, verse: u32, verses: &HashMap<String, S
     Ok(())
 }
 
-/// Every verse of `chapter`, walked forward from verse 1 until
-/// `book.chapter.(v+1)` is absent from the compiled KJV text -- see this
-/// module's own header for why this walks the REAL compiled text rather
-/// than depending on a separate chapter-verse-count table (this ingestion
-/// step needs no data beyond the verses map already produced by
-/// `kjv::parse`).
+/// Every verse of the chapter, walked forward until the next verse is absent from the compiled text: the text
+/// itself is the authority, so no separate chapter-verse-count table is needed.
 fn expand_whole_chapter(book: BookId, chapter: u32, verses: &HashMap<String, String>, raw: &str, out: &mut Vec<String>) -> Result<()> {
     let ch: u16 = chapter.try_into().with_context(|| format!("ref '{raw}': chapter {chapter} out of range"))?;
     let first_key = format!("{}.{}.1", book.code(), ch);
@@ -259,15 +185,10 @@ fn expand_whole_chapter(book: BookId, chapter: u32, verses: &HashMap<String, Str
     Ok(())
 }
 
-/// Walks forward from `(from_chapter, from_verse)` to `(to_chapter,
-/// to_verse)` inclusive, one verse at a time, via the compiled text itself
-/// (never a separate chapter-count table -- same reasoning as
-/// `expand_whole_chapter`): if the NEXT verse number in the same chapter
-/// exists, that's next; otherwise the chapter has ended, so chapter+1 verse
-/// 1 is next. Fails loudly (rather than looping forever or silently
-/// stopping short) if the endpoint is never reached within a generous
-/// bound -- a malformed/inverted cross-chapter range is a real citation-
-/// integrity error, not a silent truncation.
+/// Walks forward one verse at a time through the compiled text: if the next verse number in the chapter exists
+/// it is next, otherwise the chapter has ended and the next chapter's verse 1 is. Fails loudly if the endpoint
+/// is never reached within a generous bound, since a malformed or inverted range is a citation-integrity error
+/// rather than something to truncate silently.
 #[allow(clippy::too_many_arguments)]
 fn expand_cross_chapter(
     book: BookId,
@@ -294,7 +215,7 @@ fn expand_cross_chapter(
         bail!("ref '{raw}': '{key}' does not exist in the compiled KJV text");
     }
 
-    const MAX_STEPS: u32 = 5000; // a generous bound -- no real cross-chapter citation in this data spans more than a few chapters
+    const MAX_STEPS: u32 = 5000;
     for _ in 0..MAX_STEPS {
         out.push(format!("{}.{}.{}", book.code(), chapter, verse));
         if chapter == target_chapter && verse == target_verse {
@@ -317,26 +238,16 @@ fn expand_cross_chapter(
     bail!("ref '{raw}': cross-chapter range exceeded {MAX_STEPS} verses -- likely malformed");
 }
 
-/// True for a book with exactly one chapter (Obadiah, Philemon, 2 John,
-/// 3 John, Jude) -- determined from the compiled KJV text itself (does
-/// `book.2.1` exist?), not a hardcoded book list, so it stays correct for
-/// any future canon change with no edit needed here. Citation CONVENTION
-/// for a single-chapter book drops the chapter number entirely -- "Jude 6"
-/// means verse 6 of Jude's one chapter, not "chapter 6" (which doesn't
-/// exist) -- confirmed a real, live gap by `sweep_all_real_refs`-style
-/// verification against the actual data (4 of 1550 real refs, all "Jude N"/
-/// "Jude N-M" forms, failed before this fix; 0 failed after).
+/// True for a book with exactly one chapter, determined by asking the compiled text whether chapter 2 verse 1
+/// exists rather than from a hardcoded list. The citation CONVENTION for such a book drops the chapter
+/// entirely, so "Jude 6" means verse 6 of its one chapter, never chapter 6.
 fn is_single_chapter_book(book: BookId, verses: &HashMap<String, String>) -> bool {
     !verses.contains_key(&format!("{}.2.1", book.code()))
 }
 
 fn expand_spec(book: BookId, spec: ChapterSpec, verses: &HashMap<String, String>, raw: &str, out: &mut Vec<String>) -> Result<()> {
-    // A bare "chapter" or "chapter-chapter" spec against a single-chapter
-    // book is really "verse"/"verse-verse" of chapter 1 -- see
-    // is_single_chapter_book's own doc comment. An explicit "chapter:verse"
-    // form is untouched either way (already correct, or a genuine
-    // out-of-range citation this function's own existence checks will
-    // catch honestly).
+    // A bare chapter or chapter-range spec against a single-chapter book is really a verse or verse-range of
+    // chapter 1. An explicit chapter:verse form is left untouched either way.
     let spec = if is_single_chapter_book(book, verses) {
         match spec {
             ChapterSpec::WholeChapter(n) => ChapterSpec::Verse(1, n),
@@ -372,15 +283,8 @@ fn expand_spec(book: BookId, spec: ChapterSpec, verses: &HashMap<String, String>
     }
 }
 
-/// Canonicalizes ONE human-readable ref string (requirement 2: "Book
-/// Chapter:Verse" human format, ranges, bare chapters -> canonical refs")
-/// into a flat, ordered `Vec` of individual canonical verse-ref strings
-/// (`"BOOK.CH.V"`). `verses` is the compiled KJV text map -- used both to
-/// walk chapter boundaries for whole-chapter/cross-chapter expansion and to
-/// fail loudly (never silently drop, per this batch's own citation-
-/// integrity rule) the instant a produced verse doesn't actually exist in
-/// this atlas's compiled text. See this module's own header for the full,
-/// verified catalog of ref shapes this handles.
+/// Canonicalizes ONE human-readable ref into a flat, ordered list of individual canonical verse refs, failing
+/// loudly the instant a produced verse does not actually exist in the compiled text rather than dropping it.
 pub fn canonicalize_ref(raw: &str, verses: &HashMap<String, String>) -> Result<Vec<String>> {
     let raw_trimmed = raw.trim();
     if raw_trimmed.is_empty() {
@@ -406,12 +310,9 @@ pub fn canonicalize_ref(raw: &str, verses: &HashMap<String, String>) -> Result<V
             if let ChapterSpec::Verse(ch, _) | ChapterSpec::VerseRange(ch, _, _) | ChapterSpec::WholeChapter(ch) = spec {
                 chapter = Some(ch);
             }
-            // A ChapterRange or CrossChapterRange segment can never be
-            // followed by a bare comma-continuation in the real data (a
-            // continuation implies "more verses of the ONE chapter just
-            // named"); `chapter` is left `None` for those shapes, and any
-            // later segment that needs it will fail loudly via the
-            // `with_context` below instead of silently guessing.
+            // A chapter-range or cross-chapter segment is never followed by a bare continuation in the real
+            // data, so `chapter` stays `None` for those shapes and any later segment that needs it fails loudly
+            // instead of guessing.
             book = Some(book_id);
             expand_spec(book_id, spec, verses, raw_trimmed, &mut out)?;
         } else {
@@ -426,14 +327,8 @@ pub fn canonicalize_ref(raw: &str, verses: &HashMap<String, String>) -> Result<V
     Ok(out)
 }
 
-// --- data/curated/catechism-mapping.toml (requirement 3: the file->item
-// mapping table) + data/curated/catechism-deut5.toml (requirement 5b) -----
-
-/// One `[[file]]` row of `catechism-mapping.toml`: an ingested
-/// `resources/*.yaml` path, the catechism item id its questions attach to
-/// by DEFAULT, and (for exactly one real file, `05.2.1-Confession-and-
-/// Absolution.yaml`, per that file's own comment) a small per-question
-/// override list reassigning specific question NUMBERS to a different item.
+/// One row of the mapping table: an ingested file path, the catechism item its questions attach to by default,
+/// and a small per-question override list reassigning specific question numbers to another item.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MappingFile {
     pub path: String,
@@ -448,21 +343,15 @@ pub struct MappingOverride {
 }
 
 impl MappingFile {
-    /// The item a given question NUMBER (within this file) attaches to --
-    /// the first override whose own `questions` names it, else this file's
-    /// own default `item`.
+    /// The first override whose own question list names this number, else the file's default item.
     pub fn item_for(&self, question_number: u32) -> &str {
         self.overrides.iter().find(|o| o.questions.contains(&question_number)).map_or(&self.item, |o| &o.item)
     }
 }
 
-/// One `[[entry]]` row of `catechism-deut5.toml` (requirement 5b): a
-/// catechism item id, its own curated Deuteronomy 5 parallel verse(s) (our
-/// own canonical-ref convention, e.g. `"DEU.5.7"` or `"DEU.5.9-10"` -- NOT
-/// the brain-fuel repo's human-readable form, so these expand via the
-/// SAME `curated::expand_verse_ref` every other hand-typed curated citation
-/// in this app already uses, not `canonicalize_ref` above), and a required
-/// `ref_note` documenting the versification judgment call.
+/// One supplement entry: an item id, its curated parallel verses in OUR OWN canonical convention rather than
+/// the vendored repo's human-readable form -- so they expand through the curated expansion, not this module's
+/// canonicalizer -- and a required note documenting the versification judgment.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Deut5Entry {
     pub item: String,
@@ -470,30 +359,13 @@ pub struct Deut5Entry {
     pub ref_note: String,
 }
 
-/// The fixed title every `catechism-deut5.toml` entry's own compiled
-/// `CatechismQuestion` carries -- see that file's own header for why one
-/// consistent, descriptive label (rather than a per-commandment title, the
-/// repo-derived questions' own convention) is the honest reading of "a
-/// small curated mapping... attaching each Commandment item to its DEU.5
-/// parallel": these are all the SAME kind of thing (a cross-reference to
-/// the parallel Decalogue enumeration), not 11 distinct topical questions.
+/// The fixed title every supplement entry's question carries: these are all the same kind of cross-reference to
+/// the parallel enumeration, not distinct topical questions, so one consistent label is the honest reading.
 pub const DEUT5_QUESTION_TITLE: &str = "The Deuteronomy 5 Parallel";
 
-/// Reads every file named in `mapping` (relative to `mapping_root`,
-/// e.g. `.../catechism-mapping/catechism-{sha}/`), parses its own numbered
-/// questions, canonicalizes every ref, and returns the full set of
-/// `CatechismQuestion`s each target item should receive -- grouped by
-/// item id, each item's own list in file-then-question-number order. Pure
-/// aggregation over already-read strings (the actual `std::fs::read_to_string`
-/// calls happen here since `mapping_root`/each file's path are simple
-/// joins, not a network fetch -- consistent with "atlas-etl does no
-/// networking," the one remaining filesystem exception every OTHER
-/// distinct-entry-point curated-file reader in this crate's `main.rs`
-/// already takes for granted). Fails loudly and IMMEDIATELY on any file
-/// read/YAML-shape/ref-canonicalization error, naming the exact file and
-/// question -- this project's own citation-integrity rule (`context()`
-/// chains give the full "which file, which question, which ref" trail in
-/// the resulting error).
+/// Reads every file the mapping names, parses its questions and canonicalizes every ref, grouped by item id
+/// with each item's list in file-then-question-number order. Fails immediately on any read, shape or ref error,
+/// naming the exact file and question.
 pub fn build_questions_from_mapping(
     mapping: &[MappingFile],
     mapping_root: &Path,
@@ -526,20 +398,12 @@ pub fn build_questions_from_mapping(
     Ok(by_item)
 }
 
-/// Merges `by_item` (from `build_questions_from_mapping`, and/or the
-/// Deut5 supplement's own equivalent map) into `parts` -- assigns each
-/// target item's own `questions` field. Fails loudly if any target item id
-/// doesn't actually exist in `parts` (a mapping-table typo, or a
-/// catechism.toml item since renamed/removed): every bad id is collected
-/// before bailing, same aggregate-don't-fail-fast policy
-/// `atlas_etl::validate`'s own `run_*` functions use throughout this crate,
-/// even though this particular check runs at MERGE time rather than inside
-/// `validate.rs` (it needs to run before `validate::run_catechism` can even
-/// see the merged `questions` fields it itself validates).
+/// Assigns each target item's questions, failing loudly when a target id does not exist in the parts -- a
+/// mapping typo, or an item since renamed. Every bad id is collected before bailing, and this runs at merge
+/// time because the catechism validation needs the merged questions to look at.
 pub fn merge_questions_into_parts(parts: &mut [CatechismPart], by_item: HashMap<String, Vec<CatechismQuestion>>) -> Result<()> {
-    // Owned (String) keys, not &str -- borrowing `parts` here would keep an
-    // immutable borrow alive for this whole function, conflicting with the
-    // mutable `parts[pi].items[ii].questions.append(...)` below.
+    // Owned keys rather than borrowed: borrowing `parts` here would hold an immutable borrow across the
+    // mutation below.
     let mut item_index: HashMap<String, (usize, usize)> = HashMap::new();
     for (pi, part) in parts.iter().enumerate() {
         for (ii, item) in part.items.iter().enumerate() {
@@ -572,30 +436,22 @@ mod tests {
 
     fn verses_fixture() -> HashMap<String, String> {
         let mut v = HashMap::new();
-        // GEN 1: 5 verses; GEN 2: 3 verses (enough to exercise whole-chapter
-        // and cross-chapter walking without a full real KJV fixture).
         for i in 1..=5 {
             v.insert(format!("GEN.1.{i}"), format!("gen1v{i}"));
         }
         for i in 1..=3 {
             v.insert(format!("GEN.2.{i}"), format!("gen2v{i}"));
         }
-        // EXO 20: 17 verses (real chapter length) + EXO 34: 28 verses.
         for i in 1..=17 {
             v.insert(format!("EXO.20.{i}"), format!("exo20v{i}"));
         }
         for i in 1..=28 {
             v.insert(format!("EXO.34.{i}"), format!("exo34v{i}"));
         }
-        // PSA 1: 6 verses. PSA.2.1 is a sentinel only (proves PSA is
-        // multi-chapter to is_single_chapter_book) -- real Psalm 2 has 12
-        // verses, irrelevant to any test here.
         for i in 1..=6 {
             v.insert(format!("PSA.1.{i}"), format!("psa1v{i}"));
         }
         v.insert("PSA.2.1".to_string(), "psa2v1".to_string());
-        // ROM 12: 21 verses, ROM 13: 14 verses (for a bare chapter range).
-        // ROM.2.1 sentinel, same reasoning as PSA.2.1 above.
         v.insert("ROM.2.1".to_string(), "rom2v1".to_string());
         for i in 1..=21 {
             v.insert(format!("ROM.12.{i}"), format!("rom12v{i}"));
@@ -603,25 +459,19 @@ mod tests {
         for i in 1..=14 {
             v.insert(format!("ROM.13.{i}"), format!("rom13v{i}"));
         }
-        // 1SA 28: 25 verses. 1SA.2.1 sentinel, same reasoning as above.
         v.insert("1SA.2.1".to_string(), "1sa2v1".to_string());
         for i in 1..=25 {
             v.insert(format!("1SA.28.{i}"), format!("1sa28v{i}"));
         }
         v.insert("ISA.45.20".to_string(), "isa45v20".to_string());
-        // JUD: single-chapter book, 25 verses (real length) -- no JUD.2.* at
-        // all, which is exactly the signal is_single_chapter_book reads.
         for i in 1..=25 {
             v.insert(format!("JUD.1.{i}"), format!("judv{i}"));
         }
         v
     }
 
-    // --- parse_yaml_questions ------------------------------------------
-
     #[test]
     fn parse_yaml_questions_reads_real_repo_shape() {
-        // Verbatim excerpt from the real resources/02.1-The-First-Commandment.yaml.
         let yaml = r#"
 1:
   title: "God Alone as Judge"
@@ -650,7 +500,6 @@ mod tests {
         assert_eq!(qs[0].refs, vec!["Luke 12:13-14".to_string()]);
         assert_eq!(qs[1].number, 2);
         assert_eq!(qs[1].refs.len(), 3);
-        // Numeric sort, not YAML source order (15 appears last in the file too, but this pins it either way).
         assert_eq!(qs[2].number, 15);
         assert_eq!(qs[2].title, "The First Commandment");
         assert!(qs[2].refs.contains(&"Exodus 20:1-3".to_string()));
@@ -667,8 +516,6 @@ mod tests {
         assert!(parse_yaml_questions("1:\n  title: \"X\"\n").is_err(), "missing refs");
     }
 
-    // --- resolve_book_name ----------------------------------------------
-
     #[test]
     fn resolve_book_name_covers_full_names_and_the_psalm_singular_gap() {
         assert_eq!(resolve_book_name("Genesis").unwrap().code(), "GEN");
@@ -680,11 +527,6 @@ mod tests {
         assert!(resolve_book_name("Not A Real Book").is_none());
     }
 
-    // Every distinct book-name string this module's own header discloses as
-    // actually appearing in the real fetched data (53 names, catalogued via
-    // a full grep sweep before this parser was written) resolves. Pins the
-    // "book-name mapping must cover every book that appears" requirement
-    // directly against that verified list, not just a spot check.
     #[test]
     fn every_real_book_name_resolves() {
         const REAL_BOOK_NAMES: &[&str] = &[
@@ -701,8 +543,6 @@ mod tests {
         assert_eq!(REAL_BOOK_NAMES.len(), 53);
     }
 
-    // --- split_book_and_tail ---------------------------------------------
-
     #[test]
     fn split_book_and_tail_handles_numbered_and_multiword_books() {
         assert_eq!(split_book_and_tail("1 Samuel 28"), Some(("1 Samuel".into(), "28".into())));
@@ -712,8 +552,6 @@ mod tests {
         assert_eq!(split_book_and_tail("Psalm 1"), Some(("Psalm".into(), "1".into())));
         assert_eq!(split_book_and_tail("no chapter here"), None);
     }
-
-    // --- canonicalize_ref: every real shape, from real refs -------------
 
     #[test]
     fn canonicalize_ref_single_verse() {
@@ -753,37 +591,25 @@ mod tests {
 
     #[test]
     fn canonicalize_ref_comma_compound() {
-        // Real example: "Exodus 34:1, 27-28" -- verse 1, then verses 27-28,
-        // all within EXO.34 (the book+chapter is stated only once).
         let out = canonicalize_ref("Exodus 34:1, 27-28", &verses_fixture()).unwrap();
         assert_eq!(out, vec!["EXO.34.1", "EXO.34.27", "EXO.34.28"]);
     }
 
     #[test]
     fn canonicalize_ref_comma_compound_with_bare_verse_continuation() {
-        // Real example: "1 Corinthians 5:11, 13" -- two bare verses.
         let out = canonicalize_ref("1 Corinthians 5:11, 13", &verses_fixture());
-        // Fixture doesn't carry 1CO -- assert the PARSE shape (not existence)
-        // by checking the error names the expected canonical key, proving
-        // the comma-continuation was correctly resolved against chapter 5.
         let err = out.unwrap_err().to_string();
         assert!(err.contains("1CO.5.11"), "{err}");
     }
 
     #[test]
     fn canonicalize_ref_single_chapter_book_bare_verse_and_range() {
-        // Real examples from the actual data: "Jude 6", "Jude 22-25" --
-        // convention drops the chapter number entirely for a one-chapter
-        // book; must NOT be read as "chapter 6"/"chapters 22-25" (Jude has
-        // no chapter 6 or 22).
         assert_eq!(canonicalize_ref("Jude 6", &verses_fixture()).unwrap(), vec!["JUD.1.6"]);
         assert_eq!(
             canonicalize_ref("Jude 22-25", &verses_fixture()).unwrap(),
             vec!["JUD.1.22", "JUD.1.23", "JUD.1.24", "JUD.1.25"]
         );
     }
-
-    // --- fail-loud on real invalid input ----------------------------------
 
     #[test]
     fn canonicalize_ref_rejects_unknown_book() {
@@ -807,8 +633,6 @@ mod tests {
         assert!(canonicalize_ref("Genesis 1:5-3", &verses_fixture()).is_err());
     }
 
-    // --- MappingFile::item_for --------------------------------------------
-
     #[test]
     fn mapping_file_item_for_uses_default_with_no_overrides() {
         let f = MappingFile { path: "x.yaml".into(), item: "default-item".into(), overrides: vec![] };
@@ -828,8 +652,6 @@ mod tests {
         assert_eq!(f.item_for(5), "confession-1", "not in the override list -- falls back to the default");
         assert_eq!(f.item_for(8), "confession-1");
     }
-
-    // --- merge_questions_into_parts ----------------------------------------
 
     fn parts_fixture() -> Vec<CatechismPart> {
         vec![CatechismPart {
@@ -878,9 +700,6 @@ mod tests {
 
     #[test]
     fn merge_questions_into_parts_appends_rather_than_overwrites() {
-        // Two separate sources (the repo mapping AND the deut5 supplement)
-        // both target the same item -- both calls' own questions must
-        // survive, not the second silently replacing the first.
         let mut parts = parts_fixture();
         let mut first = HashMap::new();
         first.insert("item-a".to_string(), vec![CatechismQuestion { title: "Repo Q".into(), verses: vec![], source: "brain-fuel/catechism".into() }]);

@@ -1,36 +1,8 @@
-//! Batch T2 requirement 5: "Coverage completeness is TESTED: a test derives
-//! the expected section list from the curated Robertson table itself (not
-//! hardcoded counts) and fails loud on any gap between table and compiled
-//! output."
-//!
-//! `ROBERTSON_TABLE` below IS "the curated Robertson table" the requirement
-//! names -- this project's own independently-verified transcription of
-//! A.T. Robertson's *A Harmony of the Gospels* (1922) own Analytical
-//! Outline/Reference Table, fetched from two Project Gutenberg #36264
-//! mirrors and cross-checked (see LICENSES.md's own "Robertson's Harmony
-//! of the Gospels" section, and batch-t2-report.md for the fetch record).
-//! Every one of its 185 slots (sections 1-184, with 128 split into 128a/
-//! 128b, matching Robertson's own table) must be accounted for in the REAL
-//! curated data -- read live from `data/curated/` here, not a fixture --
-//! by EXACTLY ONE of three honest outcomes: (1) its own literal
-//! `robertson_section` citation appears somewhere in the curated data, (2)
-//! it is named in `SUBSUMED`, a disclosed list of sections whose entire
-//! content already falls within a DIFFERENT curated event's own wider
-//! witness range (documented at each subsuming event's own `ref_note` in
-//! `events-extra.toml`), or (3) it is named in `HONESTLY_OMITTED`, a
-//! disclosed list of sections with no Gospel text to cite at all. A
-//! section number belonging to none of the three is a real, uncaught gap
-//! -- this test fails loud, naming it, rather than passing silently.
-
 use std::collections::HashSet;
 
 use atlas_core::data::{Canon, Event, EventWitness};
 use atlas_core::event_merge::{cross_book_duplicate_candidate, title_jaccard, EVENT_DISTINCT_PAIRS};
 
-/// Robertson's own full section list, 1-184, with 128 split into 128a/128b
-/// exactly as his own table does (no other section carries a letter
-/// suffix). One entry per slot, as `&str` so "128a"/"128b" fit the same
-/// list as the bare numbers.
 fn robertson_table() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for n in 1..=184 {
@@ -44,61 +16,13 @@ fn robertson_table() -> Vec<String> {
     out
 }
 
-/// Batch T2's own disclosed "subsumed by a wider sibling" list -- each of
-/// these Robertson sections is fully covered by a DIFFERENT event's own
-/// witness ranges (a Batch-T-established "disclosed widening" precedent,
-/// e.g. pw_golgotha's own §164 already covering the crucifixion's full
-/// scope), so it never appears as its own literal `robertson_section`
-/// citation. See each subsuming event's own `ref_note` in
-/// events-extra.toml for the specific disclosure:
-/// - 153 (the arrest) -> pw_gethsemane (§152)
-/// - 165 (three hours of darkness) -> pw_golgotha (§164)
-/// - 169/170/172/174 (women set out; the earthquake; women report + Peter
-///   and John visit the tomb; appearance to the other women) ->
-///   pw_jerusalem_resurrection (§171) -- 172 added after this test's own
-///   FIRST real run caught it missing from the ref_note disclosure (the
-///   subsumption itself was correct from the start; only the written
-///   disclosure had been incomplete) -- exactly the gap-class this test
-///   exists to catch, confirmed working against real data before it ever
-///   reached review.
-/// - 177 (the two disciples' own report) -> pw_emmaus (§176)
-///
-/// Fix round 1 (review finding M-2): this list used to be a bare
-/// `HashSet<&str>` of section numbers, checked only for bookkeeping
-/// (real section number, not stale) -- never for CONTENT (does the
-/// claimed subsuming event's own actual verse/witness coverage really
-/// reach the subsumed section's own citations?). `SUBSUMPTION_CLAIMS`
-/// below is now the single source of truth (this function derives its
-/// own `HashSet` from it, so the two can never drift) and carries enough
-/// structure -- the claimed subsuming event id, and Robertson's own
-/// literal per-book verse citation for the SUBSUMED section itself, NOT
-/// the wider subsuming section's own citation -- for
-/// `every_subsumption_claim_is_content_verified_against_real_curated_data`
-/// below to check real containment, not just list membership.
 fn subsumed() -> HashSet<&'static str> {
     SUBSUMPTION_CLAIMS.iter().map(|c| c.section).collect()
 }
 
-/// One disclosed subsumption claim: `subsuming_event_id`'s own real,
-/// currently-shipping verse/witness coverage is claimed to fully contain
-/// every verse Robertson's primary source cites for `section` itself.
 struct SubsumptionClaim {
     section: &'static str,
     subsuming_event_id: &'static str,
-    /// Robertson's own literal reference for the SUBSUMED section --
-    /// (book, chapter, from_verse, to_verse) per citation fragment --
-    /// independently fetched from Project Gutenberg #36264
-    /// (`https://www.gutenberg.org/cache/epub/36264/pg36264.txt`) on
-    /// 2026-08-21, the SAME primary source `robertson_table()`'s own
-    /// structural claims (185 slots, only §128 splits) already come from
-    /// -- re-fetched fresh for this check, not copied from this
-    /// codebase's own pre-existing ref_note prose, so a stale or
-    /// mis-transcribed prose disclosure can't launder itself into a
-    /// passing test. A non-Gospel citation fragment (§177's own Robertson
-    /// reference also names "1 Cor. 15:5") is out of this project's own
-    /// citable KJV-Gospel scope -- the same class of thing §182's own
-    /// honest omission already discloses -- and is simply omitted here;
-    /// only the Gospel portion of each citation is checked.
     refs: &'static [(&'static str, u16, u16, u16)],
 }
 
@@ -117,23 +41,9 @@ const SUBSUMPTION_CLAIMS: &[SubsumptionClaim] = &[
     SubsumptionClaim { section: "170", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("MAT", 28, 2, 4)] },
     SubsumptionClaim { section: "172", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("LUK", 24, 9, 12), ("JHN", 20, 2, 10)] },
     SubsumptionClaim { section: "174", subsuming_event_id: "pw_jerusalem_resurrection", refs: &[("MAT", 28, 9, 10)] },
-    // 1 Cor. 15:5 (also part of Robertson's own §177 citation) omitted --
-    // not a Gospel reference, out of scope, see `refs`'s own doc comment.
     SubsumptionClaim { section: "177", subsuming_event_id: "pw_emmaus", refs: &[("LUK", 24, 33, 35)] },
 ];
 
-/// The actual containment check: for every claim in `claims`, the claimed
-/// `subsuming_event_id` must exist in `events`, and its own real coverage
-/// (top-level `verses` UNION every one of its own `witnesses`' verses --
-/// exactly what a reader heading's own PARALLEL ACCOUNTS section would
-/// show, the real-world stakes of this check) must contain every verse
-/// `refs` names. Aggregates every violation (never fails fast), same house
-/// pattern `atlas_etl::validate::run` itself follows. Parameterized over
-/// `claims`/`events`/`witnesses` (never reaches into a global or reads a
-/// file itself) specifically so it can be exercised against a small
-/// synthetic fixture in a unit test, not just the real curated files --
-/// see the two tests immediately below
-/// `every_subsumption_claim_is_content_verified_against_real_curated_data`.
 fn check_subsumption_content(claims: &[SubsumptionClaim], events: &[Event], witnesses: &[(String, EventWitness)]) -> Vec<String> {
     let mut errors = Vec::new();
     for claim in claims {
@@ -152,11 +62,6 @@ fn check_subsumption_content(claims: &[SubsumptionClaim], events: &[Event], witn
                 }
             }
         }
-        // Re-review finding M-3: a claim (or fragment) that contributes zero
-        // membership checks would pass vacuously -- the exact self-declared
-        // failure mode this checker exists to close, one layer deeper. An
-        // empty refs list or an inverted range (`a..=b` with a>b is silently
-        // empty in Rust) is therefore itself an error, not a free pass.
         if claim.refs.is_empty() {
             errors.push(format!(
                 "subsumption claim for §{}: empty refs list -- a claim that checks no verses is vacuous",
@@ -185,56 +90,15 @@ fn check_subsumption_content(claims: &[SubsumptionClaim], events: &[Event], witn
     errors
 }
 
-/// Batch T2's own disclosed honest omission: Robertson's own table lists
-/// NO Gospel reference at all for §182 ("The Appearance to James") -- it
-/// rests solely on 1 Corinthians 15:7, outside this project's Gospels+Acts
-/// scope. There is no verse to cite, so none is fabricated -- see
-/// data/curated/events-extra.toml's own period-11 header comment.
-///
-/// Fix round 1 (review finding M-2): unlike `subsumed()` above, this list
-/// has no content-containment check to give it the same automated teeth --
-/// "no Gospel reference exists" isn't a containment fact `check_subsumption_
-/// content` (or anything like it) can verify structurally, only a primary-
-/// source absence a human has to confirm by reading the actual table (both
-/// this batch's own implementer and, independently, the review that raised
-/// M-2, did exactly that for §182 against Gutenberg #36264 and found it
-/// genuinely empty). This list stays editorially asserted and
-/// human-reviewed, not independently derived the way `robertson_table()`
-/// itself is.
 fn honestly_omitted() -> HashSet<&'static str> {
     ["182"].into_iter().collect()
 }
 
-/// Reads a real `data/curated/*.toml` file relative to this crate's own
-/// manifest dir (works regardless of the test runner's own CWD) -- NOT a
-/// `tests/fixtures/*` copy, deliberately: this test's whole point is
-/// checking the REAL curated data actually shipped, not a frozen sample.
 fn read_curated(name: &str) -> String {
     let path = format!("{}/../../data/curated/{name}", env!("CARGO_MANIFEST_DIR"));
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"))
 }
 
-/// Extracts every distinct Robertson section token ("141", "128a", ...)
-/// actually CITED as some container's own `robertson_section = "..."`
-/// field value -- deliberately scoped to ONLY that key's own line (never
-/// `ref_note`/comment prose), which turned out to matter for real: this
-/// test's own first draft scanned the WHOLE file for any `§NNN` pattern,
-/// which produced a false positive the moment a `ref_note` disclosure
-/// MENTIONED a subsumed section by number (e.g. "...fully subsume
-/// Robertson's own separate §153...") without CITING it as that event's
-/// own robertson_section -- the mention alone made this test's own
-/// stale-exception self-check wrongly conclude §153 had a real citation
-/// and was therefore a stale entry in `subsumed()`. Caught by this test's
-/// own first real run before it shipped; fixed by scanning only
-/// `robertson_section = "..."` lines, which is what "cited as this
-/// event's own provenance" actually means.
-///
-/// Scans over CHARS, not bytes, within each such line (curated titles
-/// quote Robertson's own archaic spellings, e.g. "Zacchæus"/"Cæsarea,"
-/// genuinely multi-byte UTF-8 -- a byte-index scan panics the instant one
-/// lands where this function is mid-lookahead, this test's own second
-/// real-run catch, fixed the same way). Looks for `§` immediately
-/// followed by digits and an optional single lowercase letter.
 fn extract_section_tokens(text: &str) -> HashSet<String> {
     let mut out = HashSet::new();
     for line in text.lines() {
@@ -295,20 +159,11 @@ fn every_robertson_section_is_accounted_for_in_the_real_curated_data() {
         "Robertson section(s) with no curated container, no disclosed subsumption, and no disclosed honest omission -- a real, uncaught coverage gap: {gaps:?}"
     );
 
-    // The inverse direction matters too: every entry in `subsumed`/
-    // `honestly_omitted` must be a REAL Robertson section number (185
-    // valid slots) -- guards this test's own two exception lists against a
-    // typo silently exempting a section that was never a gap to begin with
-    // (which would make this test weaker than it looks, not stronger).
     let table: HashSet<String> = robertson_table().into_iter().collect();
     for s in subsumed.iter().chain(omitted.iter()) {
         assert!(table.contains(*s), "'{s}' in this test's own exception lists is not a real Robertson section number 1-184 (typo?)");
     }
 
-    // And every exception-listed section must NOT also appear as its own
-    // literal citation -- if it does, the exception enty is stale (the
-    // gap it once covered for was since filled directly), and should be
-    // removed so this test stays a real gap-detector, not a rubber stamp.
     for s in subsumed.iter().chain(omitted.iter()) {
         assert!(
             !present.contains(*s),
@@ -317,22 +172,11 @@ fn every_robertson_section_is_accounted_for_in_the_real_curated_data() {
     }
 }
 
-// ---------------------------------------------------------------------
-// Fix round 1 (review finding M-2): proving `check_subsumption_content`
-// itself has real teeth BEFORE trusting it against the live curated data
-// -- a synthetic fixture, red then green, same discipline as every other
-// check in this codebase.
-// ---------------------------------------------------------------------
-
 #[test]
 fn subsumption_content_check_catches_a_genuinely_uncovered_citation() {
     let claims = &[SubsumptionClaim { section: "153", subsuming_event_id: "pw_gethsemane", refs: &[("MAT", 26, 47, 56)] }];
-    // Only reaches MAT.26.36 -- does NOT reach 26.47-56, the claimed range.
     let events = vec![Event { id: "pw_gethsemane".into(), verses: vec!["MAT.26.36".into()], ..Default::default() }];
     let errors = check_subsumption_content(claims, &events, &[]);
-    // One error PER missing verse (26:47..=56, 10 verses) -- the check
-    // reports every gap individually, not just the first, same
-    // aggregate-don't-fail-fast policy `validate::run` itself follows.
     assert_eq!(errors.len(), 10, "{errors:?}");
     assert!(errors[0].contains("MAT.26.47"), "{}", errors[0]);
 }
@@ -340,7 +184,7 @@ fn subsumption_content_check_catches_a_genuinely_uncovered_citation() {
 #[test]
 fn subsumption_content_check_catches_a_missing_subsuming_event() {
     let claims = &[SubsumptionClaim { section: "153", subsuming_event_id: "pw_gethsemane", refs: &[("MAT", 26, 47, 56)] }];
-    let errors = check_subsumption_content(claims, &[], &[]); // pw_gethsemane doesn't exist at all
+    let errors = check_subsumption_content(claims, &[], &[]);
     assert_eq!(errors.len(), 1, "{errors:?}");
     assert!(errors[0].contains("does not exist"), "{}", errors[0]);
 }
@@ -365,15 +209,6 @@ fn subsumption_content_check_passes_when_coverage_is_real() {
     assert!(errors.is_empty(), "{errors:?}");
 }
 
-/// The live audit itself: runs `check_subsumption_content` against the REAL
-/// currently-shipping `events-extra.toml`/`event-witnesses.toml`, parsed
-/// through the exact same real parsers `main.rs`'s own ETL pipeline uses
-/// (`curated::parse_events_extra`/`curated::parse_event_witnesses`) -- never
-/// a second, parallel re-implementation of curated-TOML parsing. This is
-/// the actual M-2 hardening: every one of `SUBSUMPTION_CLAIMS`'s 7 entries
-/// must hold not just as a real section number (the pre-existing
-/// bookkeeping check above), but as a genuine, currently-true containment
-/// fact about the real data.
 #[test]
 fn every_subsumption_claim_is_content_verified_against_real_curated_data() {
     let events_extra_toml = read_curated("events-extra.toml");
@@ -385,16 +220,6 @@ fn every_subsumption_claim_is_content_verified_against_real_curated_data() {
     assert!(errors.is_empty(), "subsumption content check found {} problem(s):\n{}", errors.len(), errors.join("\n"));
 }
 
-/// Batch T2 requirement 1's own Acts ambiguity ruling: Acts sections carry
-/// `acts_section`, never `robertson_section` (Robertson's own Harmony is
-/// Gospels-only). This is a narrower sanity check, not a full Acts
-/// "expected table" walk (this batch has no independently-verified
-/// external Acts-sectioning source to derive one from, honestly, per the
-/// ambiguity ruling's own ruling and data/curated/acts-sections.toml's own
-/// header disclosure) -- it confirms the 33 SS1-12 sections this batch DID
-/// author are all really present and distinctly identified, so a future
-/// accidental deletion is still caught even without an external table to
-/// check against.
 #[test]
 fn every_authored_acts_section_is_present_and_distinct() {
     let acts_sections = read_curated("acts-sections.toml");
@@ -412,31 +237,6 @@ fn every_authored_acts_section_is_present_and_distinct() {
     }
 }
 
-// ---------------------------------------------------------------------
-// Batch W1 ("whole-Bible titled verse containers" -- the coverage-manifest
-// infrastructure the whole W series builds on, per batch-w-brief.md's own
-// "Scale protocol"). Requirement 1's own coverage test: "(a) every verse
-// of every declared book is in >=1 container -- derived from the compiled
-// KJV verse inventory itself (genuinely independent ground truth, per the
-// T2 circularity standard); (b) the declared list only ever grows; (c)
-// Gospels+Acts stay declared from day one."
-//
-// Deliberately reads the REAL COMPILED output (`data/compiled/canon.json`/
-// `events.json`), not curated TOML re-parsed by hand, for BOTH halves:
-// the verse universe (ground truth -- never a hand-typed per-book verse
-// count) AND the coverage claim itself (the REAL merged event set --
-// Theographic + every curated source combined -- exactly what a reader's
-// own verse popover would show; a curated-TOML-only re-derivation would
-// incorrectly call a Theographic-only-covered verse "uncovered", since a
-// great many of this project's own covering events, in EVERY book, are
-// bare Theographic records with no curated-TOML footprint at all).
-// ---------------------------------------------------------------------
-
-/// M-C2 DELETION EVENT: `events.json` retired -- this crate (unlike
-/// `atlas-core`/`atlas-graph`, which read it via `AtlasData::load`, now
-/// empty) IS `atlas-etl` itself, so `atlas_etl::compile::compile` is a
-/// same-crate call, no layering question at all. Cached (`OnceLock`) so
-/// this file's own three call sites share one real compile.
 fn real_compiled_data() -> atlas_core::data::AtlasData {
     static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
     CACHED
@@ -449,10 +249,6 @@ fn real_compiled_data() -> atlas_core::data::AtlasData {
         .clone()
 }
 
-/// The full set of canonical verse ids for one book, derived from the REAL
-/// compiled `canon.json` (chapter/verse counts) -- never a hardcoded
-/// per-book total, per the T2 circularity standard this requirement's own
-/// text explicitly invokes.
 fn all_verses_for_book(canon: &Canon, code: &str) -> Vec<String> {
     let book = canon.books.iter().find(|b| b.code == code).unwrap_or_else(|| panic!("'{code}' is not a real canon book code"));
     let mut out = Vec::new();
@@ -465,12 +261,6 @@ fn all_verses_for_book(canon: &Canon, code: &str) -> Vec<String> {
     out
 }
 
-/// Every verse id this event covers, ANY layer/kind: its own top-level
-/// `verses` UNION every witness's own `translations["kjv"]` verses -- the
-/// exact same union `AtlasData::finish`'s own `verse_to_events` reverse
-/// index builds (server/atlas-core/src/data.rs), so "covered" here means
-/// exactly what a real verse's own EVENT-membership popover would show,
-/// not a narrower or looser re-derivation.
 fn covered_verses(events: &[Event]) -> HashSet<String> {
     let mut out = HashSet::new();
     for e in events {
@@ -510,9 +300,6 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
     }
     assert!(failures.is_empty(), "declared-but-not-fully-covered book(s):\n{}", failures.join("\n"));
 
-    // No duplicate/typo'd declaration, and every declared code is a real
-    // canon book -- guards this test's own input against a stale or
-    // malformed manifest entry silently doing nothing.
     let distinct: HashSet<&String> = declared.iter().collect();
     assert_eq!(distinct.len(), declared.len(), "coverage-manifest.toml's own declared list has a duplicate entry");
     let real_codes: HashSet<&str> = canon.books.iter().map(|b| b.code.as_str()).collect();
@@ -521,28 +308,6 @@ fn every_declared_book_is_fully_covered_by_the_real_compiled_data() {
     }
 }
 
-/// Requirement 1(b), "the declared list only ever grows": this is the
-/// project's own PERMANENT floor -- every book any past batch has ever
-/// declared fully covered. A future batch's own coverage-manifest.toml
-/// may only ADD to this set, never remove from it; this test's own
-/// hardcoded floor is the audit trail (grep this file's own git blame for
-/// when each book was added) and fails loud the moment a future edit
-/// accidentally drops one. Gospels+Acts (Batch T/T2), the whole W1 window
-/// (Genesis, Exodus, Leviticus, Numbers, Deuteronomy, Joshua, Judges,
-/// Ruth), the whole W2 window (1/2 Samuel, 1/2 Kings, 1/2 Chronicles,
-/// Ezra, Nehemiah, and Esther), and the whole W3 window -- Job, Psalms,
-/// Proverbs, Ecclesiastes, and Song of Solomon (Batch W3, this run) --
-/// are the floor as of this commit. Batch W4 (whole-Bible titled verse
-/// containers, fourth run): all 17 Prophets -- Isaiah, Jeremiah,
-/// Lamentations, Ezekiel, Daniel, and the twelve Minor Prophets (Hosea
-/// through Malachi) -- the full W4 window the master brief named
-/// ("W4 = Isaiah-Malachi"), added. Batch W5 (whole-Bible titled verse
-/// containers, fifth and FINAL run): Romans through Revelation -- all 21
-/// epistles plus Revelation -- the full W5 window the master brief named
-/// ("W5 = Romans-Revelation"), added below. THE FLOOR NOW NAMES ALL 66
-/// CANONICAL BOOKS -- see `every_canonical_book_is_declared_and_the_whole_
-/// kjv_is_fully_covered` below for the completion-milestone assertion this
-/// makes possible.
 #[test]
 fn declared_books_never_shrink_below_the_established_floor() {
     const FLOOR: &[&str] = &[
@@ -562,40 +327,11 @@ fn declared_books_never_shrink_below_the_established_floor() {
     }
 }
 
-// ---------------------------------------------------------------------
-// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own ACCEPTANCE
-// criterion, verbatim: "probe the compiled global timeline -- exactly one
-// fall-of-Jerusalem dated node; no duplicate-occurrence nodes in the
-// Gedaliah/Mizpah sequence; a committed test pins it"). Reads the REAL
-// compiled `events.json` (POST-merge, POST-`AtlasData::finish()` -- exactly
-// what a reader's own timeline actually shows), the same "deliberately
-// reads the real compiled output" discipline the coverage test above
-// already established for this file. NOT a re-run of
-// `validate::run_event_merges`/`run_cross_book_duplicates` themselves (both
-// are documented to run on the RAW PRE-merge event set -- every
-// `EVENT_MERGE_PAIRS` entry's own `absorbed` id is, by design, already
-// gone from this POST-merge file, so re-running those validators here
-// would misfire on every single pair as a dangling id, not a real bug);
-// this test instead re-runs the cross-book sweep's own CANDIDATE logic
-// directly against the compiled output, checked only against
-// `EVENT_DISTINCT_PAIRS` (the only list a genuinely-surviving compiled pair
-// could ever legitimately need -- a true duplicate's own `absorbed` half is
-// never present here to begin with).
-// ---------------------------------------------------------------------
-
 #[test]
 fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_timeline() {
     let events = real_compiled_data().events;
     let by_id: HashSet<&str> = events.iter().map(|e| e.id.as_str()).collect();
 
-    // RED (pre-fix-round-1 shape, named explicitly so a future regression
-    // reads as a real historical fact, not a mystery assertion): these two
-    // ids were retired/renamed because each duplicated a pre-existing
-    // event's own real-world identity -- `exl_mizpah` (absorbed into
-    // `jer_jeremiah_stays_with_gedaliah`, EVENT_MERGE_PAIRS) and
-    // `jer_the_fall_of_jerusalem_retold` (trimmed and renamed to
-    // `jer_jeremiahs_release_and_the_word_to_ebedmelech` once its own
-    // duplicate JER.39.1-10 span moved onto `exl_jerusalem` as a witness).
     assert!(
         !by_id.contains("exl_mizpah"),
         "exl_mizpah must stay retired -- its own occurrence is now dated by jer_jeremiah_stays_with_gedaliah/jer_the_assassination_of_gedaliah"
@@ -605,9 +341,6 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
         "jer_the_fall_of_jerusalem_retold must stay retired/renamed -- its own duplicate span is now a witness on exl_jerusalem"
     );
 
-    // GREEN: the real survivors are present, each a real dated EVENT-kind
-    // node, each carrying >=1 witness row (the 72-row anchor fix, proven
-    // against the real compiled data, not just a synthetic fixture).
     for id in [
         "exl_jerusalem",
         "jer_jeremiah_stays_with_gedaliah",
@@ -622,12 +355,6 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
         assert!(!e.witnesses.is_empty(), "'{id}' must carry >=1 witness row after the fix round 1 reconciliation");
     }
 
-    // The acceptance criterion's own literal words, run for real: sweep the
-    // WHOLE compiled global timeline for any dated-event pair the cross-book
-    // detector would flag as a candidate duplicate. A future curated edit
-    // that reintroduces a duplicate-occurrence node -- in this Jerusalem/
-    // Gedaliah/Mizpah sequence or anywhere else in the whole compiled data
-    // -- fails this test loud, naming both ids, the same day it's authored.
     let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
     let mut unlisted: Vec<String> = Vec::new();
     for (i, a) in dated.iter().enumerate() {
@@ -653,53 +380,12 @@ fn no_duplicate_fall_of_jerusalem_or_gedaliah_mizpah_nodes_in_the_real_compiled_
     assert!(unlisted.is_empty(), "duplicate-occurrence node(s) found in the real compiled global timeline:\n{}", unlisted.join("\n"));
 }
 
-// ---------------------------------------------------------------------
-// Batch CHRON-1 fix round 1 (review finding S-C1/S-1, Critical): the
-// original batch's own claimed "coverage restoration" fixes were checked
-// against `covered_verses` above (a top-level-`verses`-UNION-witnesses
-// helper) and against `chronology.json`'s own event count, neither of
-// which reproduces the real bug -- `scene::witnesses_for` (the function
-// `server/atlas-graph/src/event_world.rs`'s own `attests`-row builder
-// calls, i.e. the SAME resolver that actually reaches `chronology.json`
-// and the live server) returns ONLY an event's own explicit `[[witness]]`
-// rows once ANY exist, NEVER falling back to top-level `verses` -- so
-// widening `rob_leper_healed`'s own top-level `verses` to MAT.8.1-4
-// (this batch's original fix) never reached a real reader at all; the
-// MAT witness row itself was still MAT.8.2-4. Fixed (widened the witness
-// row too); this test proves it stays fixed by calling `witnesses_for`
-// directly, on the real compiled event, the exact function the bug hid
-// inside -- not a re-derivation of `verse_to_events`'s own different
-// (looser) union, which would pass even on the broken shape.
-// ---------------------------------------------------------------------
-
 #[test]
 fn chron1_coverage_restorations_actually_reach_witnesses_for() {
     let real = real_compiled_data();
 
-    // (event id, verse this event's own restoration/enrichment must cover)
-    // -- covers FOUR of the batch's own five claimed restorations directly
-    // through `witnesses_for`'s own OUTPUT: the charter case's own MAT.8.1
-    // (the one S-1 caught broken), plus ab_egypt/je_egypt_ruler (no witness
-    // rows of their own, so their top-level widenings alone DO reach
-    // witnesses_for's synthesis path) and jm_caesarea_philippi's MRK/LUK
-    // (real witness rows, never dependent on the top-level field at all).
-    // jm_sychar is checked separately, below, at the SOURCE rather than
-    // through witnesses_for's own output -- see that test's own comment
-    // for why (verse_groups_for's own pre-existing 20-verses-per-chapter
-    // cap, unrelated to this batch, would make JHN.4.27 structurally
-    // unreachable through witnesses_for() regardless of the widening).
     let cases: &[(&str, &str)] = &[
-        // Batch ATTEST-1 (owner order 1): MAT.8.1 is STILL covered, and
-        // still through a real witness row -- the CHRON-1 restoration this
-        // case exists to protect is intact -- but the event it attests
-        // moved `rob_leper_healed` -> `mat_leper_healed`. Matthew's leper
-        // is a DISTINCT occasion from Mark's and Luke's (the false
-        // parallel the owner reported); the two are joined by an
-        // `Analogue` row now. Re-pointing this pin rather than deleting it
-        // is the point: the coverage claim survives the correction.
         ("mat_leper_healed", "MAT.8.1"),
-        // ... and `rob_leper_healed` keeps its own MRK/LUK accounts, so
-        // the event the CHRON-1 merge produced is still witness-complete.
         ("rob_leper_healed", "MRK.1.40"),
         ("rob_leper_healed", "LUK.5.12"),
         ("ab_egypt", "GEN.12.11"),
@@ -719,20 +405,6 @@ fn chron1_coverage_restorations_actually_reach_witnesses_for() {
     }
 }
 
-/// `jm_sychar`'s own JHN.4.4-42 widening checked at the SOURCE (the
-/// event's own top-level `verses` field), not through `witnesses_for`'s
-/// own OUTPUT the way the other four restorations above are -- that
-/// output runs through `verse_groups_for`'s own PRE-EXISTING (unrelated to
-/// this batch), ascending, 20-verse-per-chapter cap (`scene.rs`'s own doc
-/// comment), so JHN.4.4-42's own 39 verses cap down to JHN.4.4-23 there
-/// regardless of whether the widening ever happened -- asserting JHN.4.27
-/// through `witnesses_for()` would fail on CORRECT data just as readily as
-/// on broken data, telling a future reader nothing. This is exactly the
-/// shape the review's own investigation already checked and cleared:
-/// "JHN.4.24-JHN.4.42 appearing uncovered in chronology.json is the
-/// pre-existing 20-verses-per-chapter DISPLAY cap... not a data loss --
-/// jm_sychar really does carry JHN.4.4-42." This test proves that last
-/// clause directly against the real compiled event's own source field.
 #[test]
 fn chron1_jm_sychar_widening_reaches_the_source_verses_field() {
     let real = real_compiled_data();
@@ -748,56 +420,6 @@ fn chron1_jm_sychar_widening_reaches_the_source_verses_field() {
     );
 }
 
-// ---------------------------------------------------------------------
-// Batch W5 (whole-Bible titled verse containers, fifth and FINAL run --
-// req 4, THE COMPLETION MILESTONE). `tests/ux/reader-headings.spec.ts`'s
-// own "an uncovered book/chapter shows no pericope heading at all" test
-// used Romans 1 as its own exemplar (Batch W4's own retarget, after that
-// run completed the whole Old Testament -- see that spec file's own
-// updated comment, this batch's own commit). Once this run declares Romans
-// (and every other remaining NT epistle plus Revelation), that fixture's
-// own precondition -- "Romans has ZERO touching events at all" -- becomes
-// permanently false, the LAST time any book in this app could ever have
-// served as a genuinely uncovered exemplar. RULING (per this batch's own
-// dispatch): convert that retired precondition into the owner's own
-// binding END-STATE assertion, rather than merely retargeting to a
-// different (temporarily-uncovered) book -- there is no such book left,
-// and no future W-series run to uncover one, since W5 is the last window
-// the master brief names. This test is the permanent, real proof of the
-// owner's own container-algebra end state (progress.md "OWNER DIRECTIVE --
-// passage container algebra": "every verse in the Bible will ultimately be
-// migrated to belong to one of these structures"; CONTRACT.md's own
-// DECISIVE-CONTAINER MODEL section states the identical end state), read
-// live against the real compiled data on every future run, not merely
-// asserted once in a report:
-//   (a) every one of the 66 real canonical book codes (from the compiled
-//       `canon.json` itself, never a hand-typed "66") is declared in
-//       `coverage-manifest.toml`, and nothing extra/misspelled is declared
-//       either -- an exact set match, both directions.
-//   (b) every one of the compiled KJV's own 31,102 verses (summed
-//       directly from `canon.json`'s own chapter/verse counts, the SAME
-//       ground truth `all_verses_for_book` above already uses -- never a
-//       hand-typed total) belongs to >=1 container in the real compiled
-//       `events.json`, checked directly against the WHOLE canon, not
-//       filtered through the declared list at all -- so this half of the
-//       test would still catch a real gap even if the manifest mechanism
-//       itself were somehow broken or bypassed.
-//
-// RED-THEN-GREEN (demonstrated live against this exact test and this
-// exact final committed state -- full transcript in batch-w5-report.md):
-// with "ROM" temporarily removed from coverage-manifest.toml's own
-// `declared` array (recreating the OLD retired fixture's own exact
-// precondition -- Romans absent from the declared list, the "Romans
-// uncovered" shape that Playwright test itself was named for), this test
-// FAILS, naming ROM as undeclared; restored, it passes GREEN again. This
-// is the inverse of the OLD fixture's own polarity: that test asserted
-// Romans stayed uncovered (which was GENUINELY TRUE, and therefore
-// green, at Batch W4's own base commit); THIS test asserts the opposite --
-// full 66-book completion -- which is therefore symmetrically RED at that
-// same base (only 44 of 66 books declared then) and turns GREEN only once
-// this run's own coverage actually lands.
-// ---------------------------------------------------------------------
-
 #[test]
 fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
     let real = real_compiled_data();
@@ -805,8 +427,6 @@ fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
     let events = real.events.clone();
     let covered = covered_verses(&events);
 
-    // (a) the declared list is EXACTLY the 66 real canonical book codes --
-    // no gap, and (defensively) nothing stray either.
     let manifest_toml = read_curated("coverage-manifest.toml");
     let declared: HashSet<String> =
         atlas_etl::curated::parse_coverage_manifest(&manifest_toml).expect("coverage-manifest.toml must parse").into_iter().collect();
@@ -826,10 +446,6 @@ fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
     assert_eq!(all_canon_codes.len(), 66, "expected exactly 66 real canon book codes, found {} -- canon.json itself changed shape", all_canon_codes.len());
     assert_eq!(declared.len(), 66, "expected exactly 66 declared books at the completion milestone, found {}", declared.len());
 
-    // (b) EVERY verse of the WHOLE compiled KJV (all 66 books, read
-    // directly from canon.json -- not filtered through `declared` at all)
-    // is in >=1 container. Aggregates every book's own gaps (never fails
-    // fast), same house pattern every other check in this crate follows.
     let mut failures: Vec<String> = Vec::new();
     let mut total_verses = 0usize;
     for book in &canon.books {
@@ -852,8 +468,5 @@ fn every_canonical_book_is_declared_and_the_whole_kjv_is_fully_covered() {
         failures.len(),
         failures.join("\n")
     );
-    // The owner's own "~31,102 KJV verses" figure (batch-w-brief.md's own
-    // "Scale protocol" section), confirmed exactly against the real
-    // compiled data, never hand-typed here either.
     assert_eq!(total_verses, 31102, "expected the compiled KJV's own real total (31,102 verses per batch-w-brief.md's own Scale protocol), found {total_verses}");
 }

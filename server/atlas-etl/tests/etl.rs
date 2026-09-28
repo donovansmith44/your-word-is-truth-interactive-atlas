@@ -5,10 +5,6 @@ use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
 
-// ---------------------------------------------------------------------
-// kjv.rs
-// ---------------------------------------------------------------------
-
 #[test]
 fn kjv_parses_and_keys_canonically() {
     let (canon, verses) = atlas_etl::kjv::parse(include_str!("fixtures/kjv-sample.json")).unwrap();
@@ -33,10 +29,6 @@ fn kjv_unresolved_book_name_hard_errors() {
     assert!(err.to_string().contains("Not A Real Book"), "{err}");
 }
 
-// ---------------------------------------------------------------------
-// geo.rs
-// ---------------------------------------------------------------------
-
 #[test]
 fn geo_slug_collisions_get_suffixes() {
     let places = atlas_etl::geo::parse(include_str!("fixtures/geo-ancient-sample.jsonl")).unwrap();
@@ -47,24 +39,17 @@ fn geo_slug_collisions_get_suffixes() {
 #[test]
 fn geo_filters_non_kjv_verse_links_and_skips_unresolvable_places() {
     let places = atlas_etl::geo::parse(include_str!("fixtures/geo-ancient-sample.jsonl")).unwrap();
-    // "Ghostplace" has no identifications at all -> no coordinate -> dropped.
     assert_eq!(places.len(), 4, "{places:#?}");
     assert!(places.iter().all(|p| p.name != "Ghostplace"));
 
-    // "Nowhereton"'s only verse link is not tagged "kjv" in translations -> filtered out.
     let nowhereton = places.iter().find(|p| p.name == "Nowhereton").unwrap();
     assert!(nowhereton.verse_links.is_empty(), "{:?}", nowhereton.verse_links);
 
-    // lon,lat are reversed in the raw "lonlat" string; Place stores real lat/lon.
     let abana = places.iter().find(|p| p.name == "Abana").unwrap();
     assert_eq!(abana.verse_links, vec!["2KI.5.12".to_string()]);
     assert_eq!(abana.lat, 33.513542);
     assert_eq!(abana.lon, 36.305000);
 }
-
-// ---------------------------------------------------------------------
-// theographic.rs
-// ---------------------------------------------------------------------
 
 fn theo_place_slug_by_name() -> HashMap<String, String> {
     let mut m = HashMap::new();
@@ -96,15 +81,11 @@ fn theographic_dates_parsed_and_places_joined_or_created() {
     )
     .unwrap();
 
-    // "-4003" astronomical == 4004 BC == historical -4004 (matches the README's
-    // own worked example and the curated "primeval" era boundary).
     let creation = events.iter().find(|e| e.label.contains("Creation")).unwrap();
     assert_eq!(creation.when, TimeRange::new(-4004, -4004).unwrap());
-    assert_eq!(creation.places, vec!["antioch".to_string()]); // joined by name to the geo place
+    assert_eq!(creation.places, vec!["antioch".to_string()]);
     assert_eq!(creation.verses, vec!["ACT.13.1".to_string()]);
 
-    // ISO-ish "0046-03-01" -> historical year 46 (positive, no BC shift); place name
-    // "Nineveh" has no geo match, so a new Place is synthesized from lat/lon.
     let jonah = events.iter().find(|e| e.label.contains("Nineveh")).unwrap();
     assert_eq!(jonah.when, TimeRange::new(46, 46).unwrap());
     assert_eq!(jonah.verses, vec!["JON.1.2".to_string()]);
@@ -116,7 +97,6 @@ fn theographic_dates_parsed_and_places_joined_or_created() {
     assert_eq!(np.lon, 43.15);
     assert!(np.verse_links.is_empty());
 
-    // Dated event with no `locations` key at all -> kept, with empty places.
     let no_place_event = events.iter().find(|e| e.label.contains("no linked place")).unwrap();
     assert!(no_place_event.places.is_empty());
 
@@ -124,10 +104,6 @@ fn theographic_dates_parsed_and_places_joined_or_created() {
     assert_eq!(stats.new_places, 1);
     assert_eq!(stats.dated, 3);
 }
-
-// ---------------------------------------------------------------------
-// xrefs.rs
-// ---------------------------------------------------------------------
 
 #[test]
 fn xrefs_sorted_desc_and_no_self() {
@@ -144,21 +120,21 @@ fn xrefs_sorted_desc_and_no_self() {
 #[test]
 fn xrefs_drops_unparseable_target_and_counts() {
     let (_map, stats) = atlas_etl::xrefs::parse(include_str!("fixtures/xrefs-sample.txt")).unwrap();
-    assert_eq!(stats.dropped_unparseable, 1, "{stats:?}"); // "NotARealRef"
-    assert_eq!(stats.dropped_self, 1, "{stats:?}"); // Gen.1.1 -> Gen.1.1
+    assert_eq!(stats.dropped_unparseable, 1, "{stats:?}");
+    assert_eq!(stats.dropped_self, 1, "{stats:?}");
 }
 
 #[test]
 fn xrefs_canonicalizes_same_chapter_and_cross_chapter_spans() {
     let (map, _stats) = atlas_etl::xrefs::parse(include_str!("fixtures/xrefs-sample.txt")).unwrap();
     let col = map.get("COL.1.16").expect("Col.1.16 row");
-    assert_eq!(col[0].target, "COL.1.16-19"); // same chapter: shorthand
+    assert_eq!(col[0].target, "COL.1.16-19");
 
     let matt = map.get("MAT.5.3").expect("Matt.5.3 row");
-    assert_eq!(matt[0].target, "MAT.5.3-MAT.6.2"); // cross-chapter: full repeat
+    assert_eq!(matt[0].target, "MAT.5.3-MAT.6.2");
 
     let rev = map.get("REV.22.21").expect("Rev.22.21 row");
-    assert_eq!(rev[0].votes, -2); // negative votes kept
+    assert_eq!(rev[0].votes, -2);
     assert_eq!(rev[0].target, "ROM.16.23");
 }
 
@@ -174,17 +150,12 @@ fn xrefs_filter_missing_first_verse_drops_and_counts() {
     );
     let mut verses: HashMap<String, String> = HashMap::new();
     verses.insert("PSA.124.8".to_string(), "text".to_string());
-    // REV.22.21 is deliberately absent from the compiled KJV verses map.
 
     let (filtered, dropped) = atlas_etl::xrefs::filter_missing_first_verse(map, &verses);
     assert_eq!(dropped, 1);
     assert_eq!(filtered["GEN.1.1"].len(), 1);
     assert_eq!(filtered["GEN.1.1"][0].target, "PSA.124.8");
 }
-
-// ---------------------------------------------------------------------
-// curated.rs
-// ---------------------------------------------------------------------
 
 #[test]
 fn curated_parsers_handle_valid_toml_and_expand_verse_ranges() {
@@ -206,8 +177,6 @@ fn curated_parsers_handle_valid_toml_and_expand_verse_ranges() {
     let events = atlas_etl::curated::parse_events_extra(include_str!("fixtures/events-extra-sample.toml")).unwrap();
     assert_eq!(events.len(), 2);
     let red_sea = events.iter().find(|e| e.id == "ex_2").unwrap();
-    // "EXO.14.21-31" is a curator convenience range; ETL expands it to individual
-    // canonical verse ids so validate::run's non-canon-verse-id check accepts it.
     assert_eq!(red_sea.verses.len(), 11, "{:?}", red_sea.verses);
     assert!(red_sea.verses.contains(&"EXO.14.21".to_string()));
     assert!(red_sea.verses.contains(&"EXO.14.31".to_string()));
@@ -218,18 +187,6 @@ fn events_extra_zero_year_hard_errors() {
     let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-year-zero.toml")).unwrap_err();
     assert!(err.to_string().to_lowercase().contains("zero"), "{err}");
 }
-
-// ---------------------------------------------------------------------
-// Batch T2 (general-kind PASSAGEs -- requirement 2's own promotion rule):
-// `kind = "general"` is now REAL curated data, not just a modeled-but-
-// unused enum value. A general-kind event has no defensible date/place,
-// so `from_year`/`to_year`/`places` become OPTIONAL in the curated TOML
-// (never hand-typed by a curator for a general-kind row -- the parser
-// itself supplies `TimeRange::undated()`, never a curator-authored
-// number, so "do not fabricate a date" is enforced structurally, not by
-// convention). `kind = "event"` (the default when the field is absent,
-// unchanged back-compat) still requires both, exactly as before.
-// ---------------------------------------------------------------------
 
 #[test]
 fn events_extra_general_kind_parses_without_places_or_dates() {
@@ -244,9 +201,6 @@ fn events_extra_general_kind_parses_without_places_or_dates() {
 
 #[test]
 fn events_extra_general_kind_with_from_year_hard_errors() {
-    // Fabrication guard: a curator writing `kind = "general"` AND a
-    // from_year/to_year together is almost certainly a mistake (either the
-    // kind or the date is wrong) -- fail loud rather than silently pick one.
     let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-general-with-year.toml")).unwrap_err();
     let msg = err.to_string().to_lowercase();
     assert!(msg.contains("general"), "{err}");
@@ -261,19 +215,6 @@ fn events_extra_general_kind_with_places_hard_errors() {
     assert!(msg.contains("place"), "{err}");
 }
 
-// ---------------------------------------------------------------------
-// Batch T2 (Acts provenance -- owner's own ambiguity ruling: "acts
-// sections get their own provenance key, NOT robertson_section"): a new,
-// flat, event_id-keyed curated file (data/curated/acts-sections.toml),
-// parsed the SAME way event-witnesses.toml already is -- see
-// `curated::parse_event_witnesses`'s own doc comment for why this flat
-// shape carries no nested-table mis-attachment risk. Merged onto the
-// FULL combined event set (Theographic + events-extra.toml) by
-// `main.rs`, the identical mechanism event-witnesses.toml already uses
-// (so it can target a bare Theographic event directly, with no
-// events-extra.toml duplication).
-// ---------------------------------------------------------------------
-
 #[test]
 fn acts_sections_parses_a_flat_event_id_keyed_list() {
     let sections = atlas_etl::curated::parse_acts_sections(include_str!("fixtures/acts-sections-sample.toml")).unwrap();
@@ -286,17 +227,10 @@ fn acts_sections_parses_a_flat_event_id_keyed_list() {
 
 #[test]
 fn events_extra_event_kind_missing_from_year_hard_errors() {
-    // `kind` absent (defaults to "event", unchanged back-compat) still
-    // requires from_year/to_year -- the new Option<i32> plumbing must not
-    // silently relax the pre-existing event-kind requirement.
     let err = atlas_etl::curated::parse_events_extra(include_str!("fixtures/event-missing-year.toml")).unwrap_err();
     let msg = err.to_string().to_lowercase();
     assert!(msg.contains("from_year") || msg.contains("to_year") || msg.contains("date"), "{err}");
 }
-
-// ---------------------------------------------------------------------
-// validate.rs
-// ---------------------------------------------------------------------
 
 fn empty_atlas() -> AtlasData {
     AtlasData::new(
@@ -334,7 +268,7 @@ fn full_eras() -> Vec<Era> {
 fn validate_dangling_narrative_leg_fails() {
     let narrative = atlas_etl::curated::parse_narrative(include_str!("fixtures/narrative-dangling-leg.toml")).unwrap();
     let mut data = empty_atlas();
-    data.narratives = vec![narrative]; // legs=["ghost_event"], but data.events is empty
+    data.narratives = vec![narrative];
     let data = data.finish();
     let err = atlas_etl::validate::run(&data).unwrap_err();
     assert!(err.to_string().contains("dangling leg"), "{err}");
@@ -354,7 +288,6 @@ fn validate_era_gap_fails() {
 
 #[test]
 fn validate_era_coverage_bounds_fail() {
-    // Internally contiguous (no gap: next_year(-1) == 1) but doesn't span [-4004,100].
     let eras = vec![
         Era { id: "a".into(), name: "A".into(), from_year: -100, to_year: -1 },
         Era { id: "b".into(), name: "B".into(), from_year: 1, to_year: 50 },
@@ -437,20 +370,6 @@ fn validate_valid_data_passes() {
     assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
 }
 
-// ---------------------------------------------------------------------
-// Batch T2 fix-round-1 (review finding I-1): the exact invariant whose
-// violation caused the real 72-event silent-heading-drop bug (fixed in
-// data only by commit 9679583) -- `heading_anchors_for`
-// (atlas-core/src/data.rs) uses ONLY `e.witnesses` once any witness row
-// exists, never falling back to `e.verses`, so a top-level book with no
-// matching witness row silently loses its own reader heading and
-// PARALLEL ACCOUNTS entry. This reproduces the historical 72-row shape
-// directly: an event witnessed only for MRK, but whose own top-level
-// `verses` also touch MAT -- exactly the "primary citation in book X,
-// explicit witness rows for OTHER books, no witness row for X itself"
-// pattern every one of the 72 affected events shared.
-// ---------------------------------------------------------------------
-
 #[test]
 fn validate_event_witness_missing_for_own_top_level_book_fails() {
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
@@ -459,8 +378,8 @@ fn validate_event_witness_missing_for_own_top_level_book_fails() {
         label: "E1".into(),
         when: TimeRange::new(33, 33).unwrap(),
         places: vec!["p".into()],
-        verses: vec!["MAT.27.1".into()], // top-level book MAT ...
-        witnesses: vec![witness("MRK", &["MRK.15.1"])], // ... but only MRK has a witness row
+        verses: vec!["MAT.27.1".into()],
+        witnesses: vec![witness("MRK", &["MRK.15.1"])],
         ..Default::default()
     }];
     let mut data = empty_atlas();
@@ -478,9 +397,6 @@ fn validate_event_witness_missing_for_own_top_level_book_fails() {
 
 #[test]
 fn validate_event_witness_covers_own_top_level_book_passes() {
-    // Same shape as the failing case above, EXCEPT MAT now also has its
-    // own explicit witness row (the actual fix commit 9679583 applied) --
-    // must pass.
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![Event {
         id: "e1".into(),
@@ -502,9 +418,6 @@ fn validate_event_witness_covers_own_top_level_book_passes() {
 
 #[test]
 fn validate_event_with_no_witnesses_and_top_level_verses_only_passes() {
-    // The common, pre-existing single-implicit-witness shape (no
-    // `[[witness]]` rows at all) -- this check must never fire when
-    // `e.witnesses` is empty; unchanged, still legal.
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![Event {
         id: "e1".into(),
@@ -523,16 +436,7 @@ fn validate_event_with_no_witnesses_and_top_level_verses_only_passes() {
     assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
 }
 
-// ---------------------------------------------------------------------
-// Batch T requirement 1: PASSAGE/EVENT data model validation --
-// date-outside-span, kind enum, witness book/verse/overlap checks, and
-// requirement 2's order_key chronological-leg tiebreak.
-// ---------------------------------------------------------------------
-
 fn mat_verses() -> HashMap<String, String> {
-    // A handful of real-shaped (not necessarily literal) verse keys under
-    // one book/chapter, enough for the "exists in the compiled KJV text"
-    // half of every witness-verse check below.
     let mut verses = HashMap::new();
     for v in 1..=10 {
         verses.insert(format!("MAT.27.{v}"), format!("Verse {v} text."));
@@ -549,7 +453,7 @@ fn validate_event_date_before_atlas_span_fails() {
     let events = vec![Event {
         id: "e1".into(),
         label: "Too early".into(),
-        when: TimeRange::new(-5000, -5000).unwrap(), // outside [-4004,100]
+        when: TimeRange::new(-5000, -5000).unwrap(),
         places: vec!["p".into()],
         ..Default::default()
     }];
@@ -567,7 +471,7 @@ fn validate_event_date_after_atlas_span_fails() {
     let events = vec![Event {
         id: "e1".into(),
         label: "Too late".into(),
-        when: TimeRange::new(200, 200).unwrap(), // outside [-4004,100]
+        when: TimeRange::new(200, 200).unwrap(),
         places: vec!["p".into()],
         ..Default::default()
     }];
@@ -675,7 +579,7 @@ fn validate_event_witness_verse_missing_from_compiled_kjv_text_fails() {
         label: "E1".into(),
         when: TimeRange::new(33, 33).unwrap(),
         places: vec!["p".into()],
-        witnesses: vec![witness("MAT", &["MAT.27.999"])], // parses canonically, but not in mat_verses()
+        witnesses: vec![witness("MAT", &["MAT.27.999"])],
         ..Default::default()
     }];
     let mut data = empty_atlas();
@@ -727,22 +631,6 @@ fn validate_event_witnesses_valid_multi_book_data_passes() {
     assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
 }
 
-// ---------------------------------------------------------------------
-// Batch T2: within-layer anchor collisions (owner's own ruling: "Robertson
-// sections within one Gospel should partition, not collide with each
-// other -- a within-layer anchor collision is a curation error your
-// validation must catch"). Distinct from `heading_precedence`'s own
-// collision RESOLUTION (data.rs's `heading_collision_tests` module,
-// tier-1/2/3) -- that mechanism decisively picks a winner for DISPLAY and
-// is fine with a real-container-vs-narrative-leg-freebie collision (e.g.
-// `pw_bethany`/`jm_bethany`, both real curated data). This check instead
-// fails LOUD, at ETL time, whenever two DIFFERENT real (curated
-// `witnesses` non-empty and/or `robertson_section` present) containers
-// anchor the identical verse -- that specific shape should never happen
-// for correctly-partitioned curated sections, so silently resolving it
-// would hide a real curation mistake.
-// ---------------------------------------------------------------------
-
 #[test]
 fn validate_two_real_containers_sharing_an_anchor_verse_fails() {
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
@@ -761,7 +649,7 @@ fn validate_two_real_containers_sharing_an_anchor_verse_fails() {
             label: "Section B (mis-drawn boundary)".into(),
             when: TimeRange::new(33, 33).unwrap(),
             places: vec!["p".into()],
-            verses: vec!["MAT.27.1".into()], // same first verse as sect_a -- a partition error
+            verses: vec!["MAT.27.1".into()],
             robertson_section: Some("Robertson (1922) §2".into()),
             ..Default::default()
         },
@@ -779,11 +667,6 @@ fn validate_two_real_containers_sharing_an_anchor_verse_fails() {
 
 #[test]
 fn validate_freebie_and_real_container_sharing_anchor_is_allowed() {
-    // The EXISTING, legal shape (pw_bethany/jm_bethany, fix-round-1): a
-    // bare narrative-leg-only event (no witnesses/robertson_section --
-    // heading-worthy only via the freebie rule) sharing an anchor with a
-    // REAL curated container is NOT a within-layer collision (only one
-    // side is layer-1) -- must keep passing after this batch's new check.
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![
         Event {
@@ -837,9 +720,6 @@ fn validate_general_kind_event_with_undated_sentinel_passes() {
 
 #[test]
 fn validate_narrative_legs_order_key_tiebreak_fails_when_reversed() {
-    // Two events sharing the SAME year -- year alone can't order them, so
-    // the leg array's own order must match order_key. Here it doesn't:
-    // legs = [e1 (order_key=20), e2 (order_key=10)] is a REVERSED tiebreak.
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![
         Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 20, ..Default::default() },
@@ -858,7 +738,6 @@ fn validate_narrative_legs_order_key_tiebreak_fails_when_reversed() {
 
 #[test]
 fn validate_narrative_legs_order_key_tiebreak_passes_when_ascending() {
-    // Same same-year pair, correctly ordered by order_key this time.
     let places = vec![Place { id: "p".into(), name: "P".into(), lat: 0.0, lon: 0.0, verse_links: vec![] }];
     let events = vec![
         Event { id: "e1".into(), label: "E1".into(), when: TimeRange::new(33, 33).unwrap(), places: vec!["p".into()], order_key: 10, ..Default::default() },
@@ -874,10 +753,6 @@ fn validate_narrative_legs_order_key_tiebreak_passes_when_ascending() {
     assert!(atlas_etl::validate::run(&data).is_ok(), "{:?}", atlas_etl::validate::run(&data).err());
 }
 
-// ---------------------------------------------------------------------
-// landmarks (curated::parse_landmarks + validate::run_landmarks)
-// ---------------------------------------------------------------------
-
 #[test]
 fn landmarks_valid_toml_parses_and_validates() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-sample.toml")).unwrap();
@@ -892,8 +767,6 @@ fn landmarks_bad_kind_fails_validation() {
     assert!(err.to_string().contains("invalid kind"), "{err}");
 }
 
-// Batch C2: the optional far-field `size` hint (sm/md/lg) is enum-checked
-// the same way `kind` already is -- see Landmark::size's own doc comment.
 #[test]
 fn landmarks_bad_size_fails_validation() {
     let landmarks = atlas_etl::curated::parse_landmarks(include_str!("fixtures/landmarks-bad-size.toml")).unwrap();
@@ -908,10 +781,6 @@ fn landmarks_out_of_bbox_fails_validation() {
     assert!(err.to_string().contains("outside the clip bbox"), "{err}");
 }
 
-// ---------------------------------------------------------------------
-// polities (Batch B2: curated::parse_polity + validate::run_polities)
-// ---------------------------------------------------------------------
-
 fn square_ring(south: f64, west: f64, north: f64, east: f64) -> Vec<(f64, f64)> {
     vec![(south, west), (south, east), (north, east), (north, west), (south, west)]
 }
@@ -920,11 +789,6 @@ fn test_bbox() -> atlas_etl::polities::Bbox {
     atlas_etl::polities::Bbox { south: 0.0, north: 50.0, west: 0.0, east: 50.0 }
 }
 
-// Batch M requirement 1: a tiny compiled-KJV-text stand-in covering exactly
-// the verses `polities-sample.toml`'s own [era.transition]/[era.fall]
-// blocks cite, so `polities_valid_toml_parses_and_validates` below exercises
-// the REAL "does this verse exist" path (not just "does it parse
-// canonically") the same way every other real caller does.
 fn test_verses() -> HashMap<String, String> {
     HashMap::from([
         ("GEN.1.1".to_string(), "In the beginning God created the heaven and the earth.".to_string()),
@@ -934,12 +798,6 @@ fn test_verses() -> HashMap<String, String> {
 }
 
 fn one_era_polity(id: &str, name: &str, from: i32, to: i32, ring: Vec<(f64, f64)>) -> Polity {
-    // Fix round 1 (M1): color_key is no longer a per-id hash reachable from
-    // outside the crate (see `polities::assign_color_keys`'s own doc
-    // comment) -- these fixtures only exercise `validate::run_polities`,
-    // which never reads color_key at all, so a plain 0 (matching this
-    // file's own other polity fixtures below, e.g. `polities_overlapping_
-    // eras_fail_validation`) is exactly as good as a real hash here.
     Polity {
         id: id.into(),
         color_key: 0,
@@ -1004,7 +862,7 @@ fn polities_adjacent_non_overlapping_eras_pass_validation() {
 #[test]
 fn polities_unclosed_ring_fails_validation() {
     let mut ring = square_ring(10.0, 10.0, 20.0, 20.0);
-    ring.pop(); // drop the closing repeat -- no longer a closed ring
+    ring.pop();
     let polity = one_era_polity("u", "U", -1000, -500, ring);
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("not a closed ring"), "{err}");
@@ -1012,9 +870,6 @@ fn polities_unclosed_ring_fails_validation() {
 
 #[test]
 fn polities_self_intersecting_ring_fails_validation() {
-    // The same "bowtie" shape polities.rs's own ring_is_simple unit test
-    // uses -- verifying the validator actually WIRES that checker in, not
-    // just that the checker itself works in isolation.
     let bowtie = vec![(10.0, 10.0), (20.0, 20.0), (20.0, 10.0), (10.0, 20.0), (10.0, 10.0)];
     let polity = one_era_polity("b", "B", -1000, -500, bowtie);
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
@@ -1023,7 +878,7 @@ fn polities_self_intersecting_ring_fails_validation() {
 
 #[test]
 fn polities_out_of_bbox_point_fails_validation() {
-    let polity = one_era_polity("far", "Far", -1000, -500, square_ring(60.0, 60.0, 70.0, 70.0)); // outside test_bbox()'s 0..50
+    let polity = one_era_polity("far", "Far", -1000, -500, square_ring(60.0, 60.0, 70.0, 70.0));
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("outside the clip bbox"), "{err}");
 }
@@ -1035,8 +890,6 @@ fn polities_duplicate_id_fails_validation() {
     let err = atlas_etl::validate::run_polities(&[a, b], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("duplicate"), "{err}");
 }
-
-// --- Batch M requirement 1: [era.transition]/[era.fall] delta validation ---
 
 fn one_era_polity_with_transition(id: &str, name: &str, from: i32, to: i32, transition: PolityDelta) -> Polity {
     let mut p = one_era_polity(id, name, from, to, square_ring(10.0, 10.0, 20.0, 20.0));
@@ -1132,32 +985,11 @@ fn polities_fall_on_a_non_final_era_fails_validation() {
             PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
         ],
     };
-    // "A" is NOT this polity's chronologically final era ("B" ends later) --
-    // a [era.fall] there describes an end that isn't actually this polity's
-    // own end, so it must fail loud rather than silently compile.
-    // for_era_from correctly names A (-1000) here -- this fixture is
-    // deliberately isolating the "wrong final era" check from the
-    // "wrong for_era_from" check below, not conflating the two failure
-    // reasons in one assertion.
     polity.eras[0].fall = Some(PolityDelta { event: "A falls (wrong)".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -1000 });
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("is not this polity's chronologically final era"), "{err}");
 }
 
-// Fix round 1 (I1): the ACTUAL historical mis-attachment bug, reproduced as
-// a fixture. TOML's array-of-tables rule attaches a nested
-// `[era.transition]` table to whichever `[[era]]` was MOST RECENTLY OPENED
-// -- a block textually authored to describe era B's own rise (placed
-// before B's own `[[era]]` header, with a comment saying so) actually lands
-// on era A's own struct field instead. `for_era_from` is the curator's own
-// declared intent (B's own `from`); the era it's ACTUALLY attached to (A)
-// has a different `from` -- this is precisely what shipped silently once
-// (7 of 22 deltas, this batch's own self-review) with nothing structural
-// catching it before this check existed. Confirmed red-then-green: this
-// test fails to compile/panics with a missing-field error before
-// `for_era_from` existed on `PolityDelta`, and fails validation (not a
-// panic) once the field exists but before this check was added; green only
-// once both the field and the check are in place together.
 #[test]
 fn polities_transition_for_era_from_mismatch_fails_validation() {
     let mut polity = Polity {
@@ -1168,18 +1000,11 @@ fn polities_transition_for_era_from_mismatch_fails_validation() {
             PolityEra { name: "B".into(), from: -499, to: -100, ref_note: "fixture".into(), rings: vec![square_ring(10.0, 10.0, 20.0, 20.0)], transition: None, fall: None },
         ],
     };
-    // Authored FOR era B's own rise (for_era_from = B's own from, -499) but
-    // sitting on era A's own struct field -- exactly the shape a misplaced
-    // [era.transition] block parses into.
     polity.eras[0].transition = Some(PolityDelta { event: "B rises (misattached)".into(), verses: vec![], ref_note: "fixture".into(), for_era_from: -499 });
     let err = atlas_etl::validate::run_polities(&[polity], &test_bbox(), &test_verses()).unwrap_err();
     assert!(err.to_string().contains("does not match this era's own from"), "{err}");
     assert!(err.to_string().contains("for_era_from=-499"), "{err}");
 }
-
-// ---------------------------------------------------------------------
-// land-mask (Batch R requirement 1: curated::parse_land_mask + validate::run_land_mask)
-// ---------------------------------------------------------------------
 
 #[test]
 fn land_mask_valid_toml_parses_and_validates() {
@@ -1215,14 +1040,10 @@ fn land_mask_self_intersecting_ring_fails_validation() {
 
 #[test]
 fn land_mask_out_of_bbox_point_fails_validation() {
-    let region = LandMaskRegion { name: "far".into(), ref_note: "fixture".into(), rings: vec![square_ring(60.0, 60.0, 70.0, 70.0)] }; // outside test_bbox()'s 0..50
+    let region = LandMaskRegion { name: "far".into(), ref_note: "fixture".into(), rings: vec![square_ring(60.0, 60.0, 70.0, 70.0)] };
     let err = atlas_etl::validate::run_land_mask(&[region], &test_bbox()).unwrap_err();
     assert!(err.to_string().contains("outside the clip bbox"), "{err}");
 }
-
-// ---------------------------------------------------------------------
-// catechism (Batch F: curated.rs::parse_catechism + validate.rs::run_catechism)
-// ---------------------------------------------------------------------
 
 #[test]
 fn catechism_valid_toml_parses_and_validates() {
@@ -1279,9 +1100,6 @@ fn catechism_duplicate_part_id_fails_validation() {
 
 #[test]
 fn catechism_duplicate_item_id_across_different_parts_fails_validation() {
-    // Item ids are looked up GLOBALLY (AtlasData::catechism_item_by_id is
-    // not scoped to a part), so a collision across two DIFFERENT parts must
-    // be caught too, not just within one part.
     let parts = vec![
         atlas_core::data::CatechismPart { id: "p1".into(), title: "P1".into(), items: vec![catechism_item("shared", "A", &[])] },
         atlas_core::data::CatechismPart { id: "p2".into(), title: "P2".into(), items: vec![catechism_item("shared", "B", &[])] },
@@ -1318,8 +1136,6 @@ fn catechism_non_canonical_verse_fails_validation() {
     let err = atlas_etl::validate::run_catechism(&parts, &HashMap::new()).unwrap_err();
     assert!(err.to_string().contains("not a canonical single-verse ref"), "{err}");
 }
-
-// --- Batch F2: run_catechism's own question-level checks --------------
 
 #[test]
 fn catechism_question_with_verse_missing_from_compiled_text_fails_validation() {
@@ -1359,10 +1175,6 @@ fn catechism_valid_questions_pass_validation() {
     assert!(atlas_etl::validate::run_catechism(&parts, &verses).is_ok());
 }
 
-// ---------------------------------------------------------------------
-// osis.rs
-// ---------------------------------------------------------------------
-
 #[test]
 fn osis_parse_verse_resolves_abbreviations() {
     let v = atlas_etl::osis::parse_verse("1Kgs.17.1").expect("should parse");
@@ -1372,10 +1184,6 @@ fn osis_parse_verse_resolves_abbreviations() {
     assert_eq!(atlas_etl::osis::canonical(&v), "1KI.17.1");
     assert!(atlas_etl::osis::parse_verse("Zzz.1.1").is_none());
 }
-
-// ---------------------------------------------------------------------
-// report.rs
-// ---------------------------------------------------------------------
 
 #[test]
 fn report_contains_expected_sections() {
@@ -1415,7 +1223,7 @@ fn report_contains_expected_sections() {
     assert!(text.contains("exodus"), "{text}");
     assert!(text.contains("antioch-2"), "{text}");
     assert!(text.contains("unknown write_place"), "{text}");
-    assert!(text.contains("egypt"), "{text}"); // polity id
+    assert!(text.contains("egypt"), "{text}");
     assert!(text.contains("4 era(s)"), "{text}");
     assert!(text.contains("180 points"), "{text}");
     assert!(text.contains("19 curated landmarks"), "{text}");
@@ -1424,12 +1232,8 @@ fn report_contains_expected_sections() {
     assert!(text.contains("30/33 items reachable"), "{text}");
     assert!(text.contains("210 distinct verse(s)"), "{text}");
     assert!(text.contains("The Ten Commandments: 11/11 reachable"), "{text}");
-    assert!(text.contains("3067"), "{text}"); // Batch P: people count
+    assert!(text.contains("3067"), "{text}");
 }
-
-// ---------------------------------------------------------------------
-// place-history (Batch E: curated.rs::parse_place_history + validate.rs::run_place_history)
-// ---------------------------------------------------------------------
 
 #[test]
 fn place_history_valid_toml_parses_names_blurbs_and_dates() {
@@ -1446,10 +1250,10 @@ fn place_history_valid_toml_parses_names_blurbs_and_dates() {
 
     let jerusalem = history.iter().find(|h| h.id == "jerusalem").unwrap();
     let established = jerusalem.established.as_ref().unwrap();
-    assert_eq!(established.when, TimeRange::new(-1003, -1003).unwrap()); // `year = -1003` shorthand
+    assert_eq!(established.when, TimeRange::new(-1003, -1003).unwrap());
     assert_eq!(established.note.as_deref(), Some("traditional"));
     let destroyed = jerusalem.destroyed.as_ref().unwrap();
-    assert_eq!(destroyed.when, TimeRange::new(-586, -586).unwrap()); // `from`/`to` shape, equal endpoints
+    assert_eq!(destroyed.when, TimeRange::new(-586, -586).unwrap());
     assert_eq!(destroyed.verses, vec!["2KI.25.9".to_string(), "2KI.25.10".to_string()]);
 }
 
@@ -1483,9 +1287,6 @@ fn some_verses() -> HashMap<String, String> {
     let mut v = HashMap::new();
     v.insert("GEN.28.19".to_string(), "And he called the name of that place Bethel...".to_string());
     v.insert("2SA.5.7".to_string(), "Nevertheless David took the strong hold of Zion...".to_string());
-    // Batch GAZ-1-R1: the real KJV text (GEN.2.13), not a placeholder --
-    // `run_place_names_kjv`'s own new verbatim-substring law needs a real
-    // match for `place_names_kjv_valid_data_passes_validation` below.
     v.insert("GEN.2.13".to_string(), "And the name of the second river is Gihon: the same is it that compasseth the whole land of Ethiopia.".to_string());
     v
 }
@@ -1514,9 +1315,6 @@ fn place_history_non_canonical_verse_fails_validation() {
 
 #[test]
 fn place_history_verse_missing_from_compiled_kjv_text_fails_validation() {
-    // GEN.99.99 parses fine structurally (a real book, positive chapter/verse)
-    // but does not exist in the compiled KJV text -- Batch E's own
-    // strengthened check (beyond plain `VerseId::parse_canonical`) catches it.
     let history = vec![PlaceHistory {
         id: "bethel-1".into(),
         names: vec![name_entry("Luz", -4004, -2092, &["GEN.99.99"])],
@@ -1533,7 +1331,7 @@ fn place_history_verse_missing_from_compiled_kjv_text_fails_validation() {
 fn place_history_year_outside_atlas_span_fails_validation() {
     let history = vec![PlaceHistory {
         id: "bethel-1".into(),
-        names: vec![name_entry("Luz", -5000, -2092, &["GEN.28.19"])], // -5000 < -4004
+        names: vec![name_entry("Luz", -5000, -2092, &["GEN.28.19"])],
         blurbs: vec![],
         established: None,
         destroyed: None,
@@ -1549,7 +1347,7 @@ fn place_history_overlapping_name_ranges_fail_validation() {
         id: "bethel-1".into(),
         names: vec![
             name_entry("Luz", -4004, -1900, &["GEN.28.19"]),
-            name_entry("Bethel", -2000, 100, &["GEN.28.19"]), // overlaps [-2000,-1900] with Luz above
+            name_entry("Bethel", -2000, 100, &["GEN.28.19"]),
         ],
         blurbs: vec![],
         established: None,
@@ -1567,7 +1365,7 @@ fn place_history_overlapping_same_breadth_blurbs_fail_validation() {
         names: vec![],
         blurbs: vec![
             blurb_entry("first", -4004, -500, "era"),
-            blurb_entry("second", -600, 100, "era"), // overlaps [-600,-500] with "first", same breadth
+            blurb_entry("second", -600, 100, "era"),
         ],
         established: None,
         destroyed: None,
@@ -1579,10 +1377,6 @@ fn place_history_overlapping_same_breadth_blurbs_fail_validation() {
 
 #[test]
 fn place_history_blurb_overlap_across_breadths_is_allowed() {
-    // A "broad" range is EXPECTED to overlap every "era" range it summarizes
-    // -- only same-breadth overlaps are an error (batch-e-brief.md
-    // Requirement 2: "blurb ranges may overlap across breadths but not
-    // within one breadth").
     let history = vec![PlaceHistory {
         id: "jerusalem".into(),
         names: vec![],
@@ -1599,7 +1393,7 @@ fn place_history_invalid_blurb_breadth_fails_validation() {
     let history = vec![PlaceHistory {
         id: "jerusalem".into(),
         names: vec![],
-        blurbs: vec![blurb_entry("oops", -100, -50, "century")], // not "era" or "broad"
+        blurbs: vec![blurb_entry("oops", -100, -50, "century")],
         established: None,
         destroyed: None,
     }];
@@ -1651,11 +1445,6 @@ fn place_history_valid_data_passes_validation() {
     assert!(result.is_ok(), "{:?}", result.err());
 }
 
-// ---------------------------------------------------------------------
-// place-names-kjv (Batch E3: curated.rs::parse_place_names_kjv +
-// validate.rs::run_place_names_kjv)
-// ---------------------------------------------------------------------
-
 fn cush_place() -> Place {
     Place { id: "cush-2".into(), name: "Cush 2".into(), lat: 32.54, lon: 44.42, verse_links: vec!["GEN.2.13".into()] }
 }
@@ -1695,9 +1484,6 @@ fn place_names_kjv_duplicate_alias_id_fails_validation() {
 
 #[test]
 fn place_names_kjv_alias_equal_to_canonical_name_fails_validation() {
-    // "Cush 2" strips (same ETL disambiguation-suffix rule resolve_display_name
-    // itself applies) to "Cush" -- an alias of exactly "Cush" for this place
-    // is pure noise, req 1's own named error case.
     let aliases = vec![alias_row("cush-2", "Cush", &["GEN.2.13"])];
     let places = vec![cush_place()];
     let err = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses()).unwrap_err();
@@ -1722,26 +1508,11 @@ fn place_names_kjv_verse_missing_from_compiled_kjv_text_fails_validation() {
 
 #[test]
 fn place_names_kjv_valid_data_passes_validation() {
-    // Batch GAZ-1-R1: GEN.2.13 (not GEN.28.19 -- an arbitrary "reuses
-    // some_verses()'s own populated verse" pick that predates the
-    // verbatim-substring law and never actually said "Ethiopia") --
-    // GEN.2.13 is this row's own REAL citation in the real committed
-    // data/curated/place-names-kjv.toml, and matches cush_place()'s own
-    // verse_links besides.
     let aliases = vec![alias_row("cush-2", "Ethiopia", &["GEN.2.13"])];
     let places = vec![cush_place()];
     let result = atlas_etl::validate::run_place_names_kjv(&aliases, &places, &some_verses());
     assert!(result.is_ok(), "{:?}", result.err());
 }
-
-// ---------------------------------------------------------------------
-// atlas_core::merge::MERGE_PAIRS + validate::run_place_merges
-// (Batch HOTFIX-2 fix-round-1: review findings I-1 -- a bad table entry
-// must fail the ETL build loudly, naming the entry, instead of the silent
-// no-op `apply_place_merges` itself has to tolerate for idempotence -- and
-// I-3 -- the distance re-check must run in every build profile, against
-// REAL per-call coordinates, not a hand-copied snapshot baked into a test)
-// ---------------------------------------------------------------------
 
 fn merge_place(id: &str, lat: f64, lon: f64) -> Place {
     Place { id: id.into(), name: id.into(), lat, lon, verse_links: vec![] }
@@ -1771,9 +1542,6 @@ fn run_place_merges_unknown_absorbed_id_fails_naming_the_entry() {
 
 #[test]
 fn run_place_merges_over_threshold_pair_fails_validation() {
-    // ~2km apart (0.018 deg latitude) -- both ids present and real, so only
-    // the DISTANCE check can catch this; closes I-3 (a real per-call
-    // coordinate check, not a hand-copied snapshot).
     let pairs = [PlaceMerge { survivor: "a", absorbed: "b", reason: "test" }];
     let places = vec![merge_place("a", 32.735, 35.55555), merge_place("b", 32.753, 35.55555)];
     let err = atlas_etl::validate::run_place_merges(&pairs, &places).unwrap_err();
@@ -1785,7 +1553,6 @@ fn run_place_merges_over_threshold_pair_fails_validation() {
 
 #[test]
 fn run_place_merges_valid_pairs_pass_validation() {
-    // Today's real two curated pairs' own real coordinates (data/compiled/places.json).
     let pairs = [
         PlaceMerge { survivor: "hazor-1", absorbed: "hazor_545", reason: "test" },
         PlaceMerge { survivor: "kedesh-4", absorbed: "kedesh-naphtali", reason: "test" },
@@ -1799,20 +1566,6 @@ fn run_place_merges_valid_pairs_pass_validation() {
     let result = atlas_etl::validate::run_place_merges(&pairs, &places);
     assert!(result.is_ok(), "{:?}", result.err());
 }
-
-// ---------------------------------------------------------------------
-// atlas_core::event_merge::EVENT_MERGE_PAIRS/EVENT_DISTINCT_PAIRS +
-// validate::run_event_merges (HOTFIX-4 fix round 1, review finding I-2:
-// the validator itself had ZERO committed regression tests -- the
-// red-then-green test the original batch report cited,
-// `event_merge::red_then_green_baptism_pair_collapses_to_one_event_on_the_ad33_scale`,
-// exercises `apply_event_merges` (the MERGE mechanism), not
-// `run_event_merges` (this VALIDATOR) -- a genuinely different function.
-// Mirrors `run_place_merges`'s own quartet immediately above, exactly:
-// unknown survivor fails; unknown absorbed fails; an unlisted
-// over-threshold near-duplicate pair fails loud naming both ids and the
-// jaccard score; listed pairs (both list kinds) pass.
-// ---------------------------------------------------------------------
 
 fn freebie_event(id: &str, verses: &[&str]) -> Event {
     Event { id: id.into(), label: id.into(), when: TimeRange::new(1, 1).unwrap(), verses: verses.iter().map(|s| s.to_string()).collect(), ..Default::default() }
@@ -1853,11 +1606,6 @@ fn run_event_merges_unknown_absorbed_id_fails_naming_the_entry() {
 
 #[test]
 fn run_event_merges_over_threshold_unlisted_pair_fails_loud_naming_both_ids_and_jaccard() {
-    // Identical verse sets (jaccard 1.000) -- both ids real/present in the
-    // event set, so ONLY the unlisted-duplicate sweep can catch this
-    // (proves the validator really does find a near-duplicate the curated
-    // tables don't mention, the same live proof the review's own temporary
-    // probe test made -- now a permanent, committed one).
     let events = vec![freebie_event("theo-1", &["MAT.1.1", "MAT.1.2"]), real_event("real-1", &["MAT.1.1", "MAT.1.2"])];
     let err = atlas_etl::validate::run_event_merges(&[], &[], &events).unwrap_err();
     let msg = err.to_string();
@@ -1868,9 +1616,6 @@ fn run_event_merges_over_threshold_unlisted_pair_fails_loud_naming_both_ids_and_
 
 #[test]
 fn run_event_merges_listed_pairs_pass_validation() {
-    // Both list KINDS suppress the sweep -- a merge pair (theo-1/real-1)
-    // AND a distinct pair (theo-2/real-2), each otherwise an unlisted
-    // jaccard-1.0 near-duplicate the test immediately above would flag.
     let merge_pairs = [EventMerge { survivor: "real-1", absorbed: "theo-1", reason: "test" }];
     let distinct_pairs = [EventDistinct { a: "theo-2", b: "real-2", reason: "test" }];
     let events = vec![
@@ -1882,17 +1627,6 @@ fn run_event_merges_listed_pairs_pass_validation() {
     let result = atlas_etl::validate::run_event_merges(&merge_pairs, &distinct_pairs, &events);
     assert!(result.is_ok(), "{:?}", result.err());
 }
-
-// ---------------------------------------------------------------------
-// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own SYSTEMIC
-// GUARD): validate::run_cross_book_duplicates -- the second, orthogonal
-// duplicate-identity sweep, mirroring the run_event_merges quartet above.
-// Two of the original four (unknown-survivor-id / unknown-absorbed-id) are
-// deliberately NOT mirrored here: this validator's own doc comment
-// explains why -- dangling-id checking is run_event_merges's own job
-// against the SAME merge_pairs/distinct_pairs/events, and re-checking here
-// would only ever duplicate that function's errors verbatim.
-// ---------------------------------------------------------------------
 
 fn titled_dated_event(id: &str, label: &str, year: i32, place: &str, verses: &[&str]) -> Event {
     Event {
@@ -1907,13 +1641,6 @@ fn titled_dated_event(id: &str, label: &str, year: i32, place: &str, verses: &[&
 
 #[test]
 fn run_cross_book_duplicates_unlisted_pair_fails_loud_naming_both_ids_and_title_jaccard() {
-    // Cross-book shape: identical labels, same year, common place, but
-    // DISJOINT verse sets (different books) -- exactly what verse_jaccard
-    // (run_event_merges's own sweep, tested above) is structurally blind
-    // to, and exactly the shape batch-w4-review.md Critical-1 found live
-    // (jer_the_fall_of_jerusalem_retold/exl_jerusalem,
-    // jer_jeremiah_stays_with_gedaliah+jer_the_assassination_of_gedaliah/
-    // exl_mizpah).
     let events = vec![
         titled_dated_event("a-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]),
         titled_dated_event("a-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]),
@@ -1927,10 +1654,6 @@ fn run_cross_book_duplicates_unlisted_pair_fails_loud_naming_both_ids_and_title_
 
 #[test]
 fn run_cross_book_duplicates_listed_pairs_pass_validation() {
-    // Both list kinds suppress the sweep here too -- a merge pair (a-1/a-2)
-    // AND a distinct pair (b-1/b-2), each otherwise an unlisted
-    // title-jaccard-1.0 cross-book candidate the test immediately above
-    // would flag.
     let merge_pairs = [EventMerge { survivor: "a-1", absorbed: "a-2", reason: "test" }];
     let distinct_pairs = [EventDistinct { a: "b-1", b: "b-2", reason: "test" }];
     let events = vec![
@@ -1945,14 +1668,6 @@ fn run_cross_book_duplicates_listed_pairs_pass_validation() {
 
 #[test]
 fn run_cross_book_duplicates_ignores_a_legitimate_low_title_similarity_neighbor() {
-    // Same year, same place, but genuinely different titles (title jaccard
-    // well under TITLE_JACCARD_THRESHOLD) -- the "legitimate
-    // same-place-same-year neighbor" shape the threshold is tuned not to
-    // flood on (see event_merge's own threshold-derivation doc comment;
-    // the real curated instance of this shape, ret_susa/
-    // neh_nehemiah_hears_report, is documented in EVENT_DISTINCT_PAIRS --
-    // this is a synthetic, further-below-threshold pair so the regression
-    // doesn't depend on today's real curated titles staying byte-identical).
     let events = vec![
         titled_dated_event("c-1", "Nehemiah hears of Jerusalem's ruin in Susa", -445, "susa", &["NEH.1.1"]),
         titled_dated_event("c-2", "The people gather at Mizpah to mourn", -445, "susa", &["NEH.1.2"]),
@@ -1963,13 +1678,6 @@ fn run_cross_book_duplicates_ignores_a_legitimate_low_title_similarity_neighbor(
 
 #[test]
 fn run_cross_book_duplicates_ignores_general_kind_events() {
-    // Same title/year/place as the positive-detection test above, but both
-    // rows are kind="general" -- out of scope for a TIMELINE-node duplicate
-    // check by definition (no `when` genuinely comparable). Exercised
-    // through the real validator entry point's own dated-event filter, not
-    // just cross_book_duplicate_candidate's internal kind guard (belt and
-    // suspenders, deliberately -- see run_cross_book_duplicates's own doc
-    // comment).
     let mut a = titled_dated_event("d-1", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["2KI.25.22"]);
     let mut b = titled_dated_event("d-2", "Gedaliah governs the remnant at Mizpah", -586, "mizpah", &["JER.40.7"]);
     a.kind = "general".into();
@@ -1977,18 +1685,6 @@ fn run_cross_book_duplicates_ignores_general_kind_events() {
     let result = atlas_etl::validate::run_cross_book_duplicates(&[], &[], &[a, b]);
     assert!(result.is_ok(), "{:?}", result.err());
 }
-
-// ---------------------------------------------------------------------
-// Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW's own DIRECT enforcement):
-// validate::run_no_two_opinions. Unlike run_event_merges/
-// run_cross_book_duplicates above, this validator runs on the POST-merge
-// event set and checks PLACEMENT AGREEMENT directly, not "is this pair
-// listed" -- red-then-green: two synthetic same-verse events with
-// DIFFERENT from_year, neither merged nor distinct-listed, must fail
-// (proving the law's own direct enforcement actually catches a live
-// violation); the real post-triage EVENT_DISTINCT_PAIRS corpus, and an
-// agreeing-placement duplicate, must both pass.
-// ---------------------------------------------------------------------
 
 fn placed_event(id: &str, label: &str, from_year: i32, to_year: i32, order_key: i32, verses: &[&str]) -> Event {
     Event {
@@ -2003,17 +1699,12 @@ fn placed_event(id: &str, label: &str, from_year: i32, to_year: i32, order_key: 
 
 #[test]
 fn run_no_two_opinions_red_then_green_planted_violation_fails_loud() {
-    // RED: two events, identical verse set (jaccard 1.000, well over the
-    // 0.5 threshold), but DIFFERENT from_year -- exactly the leper-pair
-    // shape (two ids, two dates, one episode) THE CHRONOLOGY AUTHORITY LAW
-    // forbids, planted directly rather than merely asserted.
     let events = vec![
         placed_event("planted-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
         placed_event("planted-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
     ];
     let err = atlas_etl::validate::run_no_two_opinions(&[], &events).unwrap_err();
     let msg = err.to_string();
-    // GREEN: the validator actually catches it, naming both ids and the score.
     assert!(msg.contains("'planted-a'") && msg.contains("'planted-b'"), "{msg}");
     assert!(msg.contains("jaccard"), "{msg}");
     assert!(msg.contains("1.000"), "{msg}");
@@ -2022,10 +1713,6 @@ fn run_no_two_opinions_red_then_green_planted_violation_fails_loud() {
 
 #[test]
 fn run_no_two_opinions_a_distinct_listed_pair_with_disagreeing_placements_passes() {
-    // Same shape as the planted violation above, but the pair is
-    // EXPLICITLY documented in EVENT_DISTINCT_PAIRS -- a genuinely distinct
-    // pair is EXPECTED to keep two independent placements; that is what
-    // "distinct" means, and the law's own direct enforcement must not flag it.
     let distinct_pairs = [EventDistinct { a: "planted-a", b: "planted-b", reason: "test: genuinely distinct" }];
     let events = vec![
         placed_event("planted-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
@@ -2037,11 +1724,6 @@ fn run_no_two_opinions_a_distinct_listed_pair_with_disagreeing_placements_passes
 
 #[test]
 fn run_no_two_opinions_agreeing_placements_pass_even_though_unlisted() {
-    // Heavy overlap, but the SAME placement on both sides -- no conflicting
-    // opinion reaches a reader, so this passes without needing an
-    // EVENT_DISTINCT_PAIRS entry at all (this validator's own job is
-    // narrower than run_event_merges's own "every candidate must be
-    // listed" sweep -- it only fails on an actual placement DISAGREEMENT).
     let events = vec![
         placed_event("agree-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
         placed_event("agree-b", "Healing the Leper", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
@@ -2052,9 +1734,6 @@ fn run_no_two_opinions_agreeing_placements_pass_even_though_unlisted() {
 
 #[test]
 fn run_no_two_opinions_below_threshold_overlap_passes_regardless_of_placement() {
-    // Low overlap (jaccard well under 0.5) with disagreeing placements --
-    // not the same episode, so a placement disagreement is expected and
-    // not a violation.
     let events = vec![
         placed_event("low-a", "Event A", 30, 30, 0, &["MAT.8.1", "MAT.8.2", "MAT.8.3", "MAT.8.4"]),
         placed_event("low-b", "Event B", 60, 60, 0, &["MAT.8.4", "MRK.1.1", "MRK.1.2", "MRK.1.3"]),
@@ -2065,9 +1744,6 @@ fn run_no_two_opinions_below_threshold_overlap_passes_regardless_of_placement() 
 
 #[test]
 fn run_no_two_opinions_ignores_general_kind_events() {
-    // kind="general" events carry no comparable `when` by definition
-    // (Batch T2's own undated policy) -- out of scope for this check, same
-    // "kind == event" gate run_cross_book_duplicates already applies.
     let mut a = placed_event("gen-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
     let mut b = placed_event("gen-b", "Healing the Leper", 31, 31, 0, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]);
     a.kind = "general".into();
@@ -2078,22 +1754,6 @@ fn run_no_two_opinions_ignores_general_kind_events() {
 
 #[test]
 fn run_no_two_opinions_exempts_every_real_distinct_pair() {
-    // FIX ROUND 1 (review finding I-7): renamed from
-    // `..._passes_on_the_real_post_triage_corpus` -- that name overclaimed
-    // what this test actually proves. It builds SYNTHETIC events (fabricated
-    // `GEN.{i}.1` verses) one pair per real EVENT_DISTINCT_PAIRS row, so it
-    // proves the exemption LOOKUP covers every real entry, not that the
-    // real compiled corpus passes this check end to end -- the genuine
-    // corpus proof is `cargo run -p atlas-etl` (which calls
-    // run_no_two_opinions against the real post-merge data and DID run,
-    // clean, at this batch's own recompile step), not this unit test. Every
-    // pair this module's own module doc documents as genuinely distinct
-    // must be exempt from the direct, placement-based check (not just the
-    // pairwise sweep's own "is it listed" bar) -- proven here via synthetic
-    // events matching each real distinct pair's own id/placement shape
-    // rather than the full compiled corpus, so this proves the FUNCTION's
-    // own exemption lookup works against every real entry, not a stale
-    // subset.
     use atlas_core::event_merge::EVENT_DISTINCT_PAIRS;
     let mut events = Vec::new();
     for (i, pair) in EVENT_DISTINCT_PAIRS.iter().enumerate() {
@@ -2109,7 +1769,7 @@ fn run_no_two_opinions_exempts_every_real_distinct_pair() {
         events.push(Event {
             id: pair.b.into(),
             label: pair.b.into(),
-            when: TimeRange::new(2, 2).unwrap(), // disagreeing placement -- would fail if not exempt
+            when: TimeRange::new(2, 2).unwrap(),
             order_key: 2,
             verses,
             ..Default::default()
@@ -2118,15 +1778,6 @@ fn run_no_two_opinions_exempts_every_real_distinct_pair() {
     let result = atlas_etl::validate::run_no_two_opinions(EVENT_DISTINCT_PAIRS, &events);
     assert!(result.is_ok(), "{:?}", result.err());
 }
-
-// ---------------------------------------------------------------------
-// Batch HOTFIX-6 (graph-wide chronology audit): validate::run_chronology_anchors
-// / run_chronology_windows / run_era_boundaries. The first two mirror the
-// established quartet shape (run_place_merges/run_event_merges above)
-// exactly. run_era_boundaries needs a full AtlasData (it reasons about
-// GLOBAL TIMELINE POSITION, not raw years, unlike the other two) -- its own
-// tests build one directly via AtlasData::new(...).finish().
-// ---------------------------------------------------------------------
 
 fn chronology_event(id: &str, label: &str, year: i32, book: &str, chapter: u16, verse: u16) -> Event {
     Event { id: id.into(), label: label.into(), when: TimeRange::new(year, year).unwrap(), verses: vec![format!("{book}.{chapter}.{verse}")], ..Default::default() }
@@ -2176,8 +1827,6 @@ fn run_chronology_anchors_valid_table_passes() {
     assert!(result.is_ok(), "{:?}", result.err());
 }
 
-// --- run_chronology_anchor_equality (fix round 2, review finding I-2) ---
-
 #[test]
 fn run_chronology_anchor_equality_matching_table_and_event_passes() {
     let anchors = [anchor("a1", 100, Some("e1"), false)];
@@ -2206,8 +1855,6 @@ fn run_chronology_anchor_equality_is_a_noop_for_an_unbound_anchor() {
 
 #[test]
 fn run_chronology_windows_event_outside_its_book_window_fails_naming_it() {
-    // The owner's own case, synthetically reproduced: df_ramah's own
-    // pre-fix -1014 outside 1SA's own -1171..-1055 window.
     let events = vec![chronology_event("df_ramah", "David flees to Ramah", -1014, "1SA", 19, 18)];
     let windows = [window("1SA", -1171, -1055)];
     let err = atlas_etl::validate::run_chronology_windows(&events, &windows).unwrap_err();
@@ -2227,9 +1874,6 @@ fn run_chronology_windows_missing_window_for_a_cited_book_fails_naming_it() {
 
 #[test]
 fn run_chronology_windows_recounting_chapter_citation_never_flags() {
-    // theo-7-shaped: correctly dated deep in Genesis-era history, citing a
-    // genealogy chapter (1 Chronicles 1) far outside 1 Chronicles's own
-    // tight window -- must pass via RECOUNTING_CHAPTERS, not fail.
     let events = vec![chronology_event("theo-7", "Birth of Seth", -3874, "1CH", 1, 1)];
     let windows = [window("1CH", -1062, -1015)];
     let result = atlas_etl::validate::run_chronology_windows(&events, &windows);
@@ -2238,7 +1882,6 @@ fn run_chronology_windows_recounting_chapter_citation_never_flags() {
 
 #[test]
 fn run_chronology_windows_in_bounds_events_pass() {
-    // df_ramah's own post-fix -1062, inside 1SA's own window.
     let events = vec![chronology_event("df_ramah", "David flees to Ramah", -1062, "1SA", 19, 18)];
     let windows = [window("1SA", -1171, -1055)];
     let result = atlas_etl::validate::run_chronology_windows(&events, &windows);
@@ -2254,11 +1897,6 @@ fn atlas_with_chronology(events: Vec<Event>, anchors: Vec<ChronologyAnchor>, win
 
 #[test]
 fn run_era_boundaries_event_on_the_wrong_side_fails_naming_it_and_the_boundary() {
-    // Boundary "conquest-begins" at year -1406 (bound to real event "b1");
-    // "e1" is JDG-witnessed (JDG's own window entirely AFTER -1406) but its
-    // OWN year (-1500) sorts BEFORE the boundary on the timeline -- the same
-    // shape theo-124's own pre-exemption -1521 "Lifetime of Joshua" hit,
-    // found live by this batch's own full audit.
     let events = vec![chronology_event("b1", "boundary event", -1406, "EXO", 1, 1), chronology_event("e1", "wrong-side event", -1500, "JDG", 3, 1)];
     let anchors = vec![anchor("conquest-begins", -1406, Some("b1"), true)];
     let windows = vec![window("EXO", -1600, -1400), window("JDG", -1400, -1100)];

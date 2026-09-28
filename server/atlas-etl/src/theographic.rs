@@ -1,22 +1,7 @@
-//! Joins Theographic Bible Metadata's Airtable-style `events.json`,
-//! `places.json`, and `verses.json` (see `data/raw/README.md`) into compiled
-//! `Event`s. Record cross-references are 14-char `rec...` Airtable ids.
-//!
-//! Adapted return shape: the parser contract in the task brief lists
-//! `(Vec<Event>, TheoStats)`, but per its own instruction ("unmatched name
-//! => create a new Place ... return those too") a third element is needed;
-//! this module returns `(Vec<Event>, Vec<Place>, TheoStats)`.
-//!
-//! Dates: `fields.startDate` is documented as an *astronomical* year number
-//! (`"-4003"` == `4004 BC`; negate and add 1 to get the BC year). We convert
-//! straight to atlas-core's historical (no-year-zero) convention: astronomical
-//! year `A` maps to historical year `A` when `A >= 1`, or `A - 1` when
-//! `A <= 0`. Also accepts a literal `"NNNN BC"` suffix form (already a
-//! calendar BC year, no astronomical shift) and the ISO-ish `"0030-05-01"`
-//! form actually seen in the real data (extracts the leading year and applies
-//! the same astronomical conversion). Empty/unparseable/all of these still
-//! landing on year zero => the event is dropped into `TheoStats.undated`
-//! (not fatal).
+//! Joins Theographic's event, place and verse records into compiled events; their cross-references are
+//! 14-char Airtable record ids. A `startDate` is an ASTRONOMICAL year, so `-4003` is 4004 BC: it is
+//! converted to the no-year-zero convention, and an unparseable or year-zero date drops the event rather
+//! than failing.
 
 use std::collections::HashMap;
 
@@ -62,8 +47,9 @@ struct EventFields {
     title: String,
     #[serde(default)]
     start_date: Option<String>,
+    /// The source omits the key entirely rather than writing an empty array, hence the default.
     #[serde(default)]
-    locations: Vec<String>, // missing key -> empty (per README, absent not [])
+    locations: Vec<String>,
     #[serde(default)]
     verses: Vec<String>,
     #[serde(default, rename = "eventID")]
@@ -82,17 +68,8 @@ pub struct TheoStats {
     pub new_places: usize,
 }
 
-/// Converts a Theographic `startDate` string into atlas-core's historical
-/// (no-year-zero) year convention. Returns `None` for empty/unparseable
-/// input or the (should-be-impossible) case of landing on year zero.
-///
-/// `pub(crate)` (Batch P): `atlas_etl::people::parse_people` reuses this
-/// verbatim for `birthYear`/`deathYear` -- the SAME astronomical-year
-/// convention Theographic uses for both its Events and People tables, so a
-/// second, independently-authored copy would only risk drifting from this
-/// one, never add real independence (unlike `fidelity.rs`'s OWN
-/// deliberately-independent re-derivation, which exists specifically to
-/// catch bugs IN shared code -- this is not that kind of law).
+/// `pub(crate)` because the people parser reuses it verbatim for birth and death years: Theographic uses
+/// the same astronomical convention for both tables, so a second copy could only drift.
 pub(crate) fn parse_theo_year(raw: &str) -> Option<i32> {
     let s = raw.trim();
     if s.is_empty() {
@@ -106,8 +83,8 @@ pub(crate) fn parse_theo_year(raw: &str) -> Option<i32> {
         return if mag == 0 { None } else { Some(-mag) };
     }
 
-    // Plain astronomical integer ("-4003") or ISO-ish ("0030-05-01" /
-    // "-1446-04-01"): take the leading signed integer as the astronomical year.
+    // A plain astronomical integer or an ISO-ish date: the leading signed integer is the astronomical
+    // year.
     let (neg, rest) = match s.strip_prefix('-') {
         Some(r) => (true, r),
         None => (false, s),
@@ -126,17 +103,8 @@ pub(crate) fn parse_theo_year(raw: &str) -> Option<i32> {
     }
 }
 
-/// Joins events -> places -> our place slugs (by case-insensitive name match
-/// against `place_slug_by_name`, whose keys must already be lowercased) and
-/// events -> verses -> canonical verse ids. An event place name with no geo
-/// match gets a brand-new `Place` synthesized from Theographic's own
-/// `latitude`/`longitude` (same lat/lon order as normal, unlike the
-/// openbible `lon,lat` convention) — those new places are returned
-/// alongside the events so the caller can merge them into the compiled set.
-/// D5: the Airtable record id -> atlas event id (`theo-{eventID}`, or
-/// `theo-{record id}` when the numeric id is absent) map, spelled ONCE --
-/// the SAME rule `parse_events` below uses to mint ids -- so the people
-/// parser's `timeline` resolution can never disagree with the events'.
+/// The Airtable record id -> atlas event id map, spelled ONCE and by the same rule `parse_events` mints
+/// ids with, so the people parser's timeline resolution cannot disagree with the events'.
 pub fn event_ids_by_record(events_json: &str) -> Result<HashMap<String, String>> {
     let events: Vec<Record<EventFields>> = serde_json::from_str(events_json).context("theographic events.json is not valid JSON")?;
     Ok(events
@@ -151,6 +119,10 @@ pub fn event_ids_by_record(events_json: &str) -> Result<HashMap<String, String>>
         .collect())
 }
 
+/// Joins events to places by case-insensitive name match against `place_slug_by_name`, whose keys must
+/// already be lowercased. A place name with no geo match gets a `Place` synthesized from Theographic's own
+/// latitude/longitude -- in that order, unlike the geocoding bundle's -- and those places are returned
+/// alongside the events so the caller can merge them.
 pub fn parse_events(
     places_json: &str,
     verses_json: &str,
@@ -195,7 +167,7 @@ pub fn parse_events(
                 continue;
             }
             let Some(pf) = place_by_id.get(loc_id.as_str()) else {
-                continue; // dangling record id in this trimmed/fixture data: skip
+                continue;
             };
             let name = pf.display_title.clone().or_else(|| pf.kjv_name.clone());
             let matched = name.as_ref().and_then(|n| place_slug_by_name.get(&n.to_lowercase()).cloned());
@@ -204,7 +176,7 @@ pub fn parse_events(
                 Some(id) => id,
                 None => {
                     let (Some(lat_s), Some(lon_s)) = (pf.latitude.as_deref(), pf.longitude.as_deref()) else {
-                        continue; // no coordinate to synthesize from either: skip this location
+                        continue;
                     };
                     let (Ok(lat), Ok(lon)) = (lat_s.parse::<f64>(), lon_s.parse::<f64>()) else {
                         continue;
@@ -256,7 +228,6 @@ mod tests {
 
     #[test]
     fn creation_event_matches_readmes_worked_example() {
-        // README: "-4003" (astronomical) == "4004 BC" == our historical -4004.
         assert_eq!(parse_theo_year("-4003"), Some(-4004));
     }
 

@@ -1,23 +1,13 @@
-//! Shared helper for parsing OSIS-style `Book.Chapter.Verse` references, as
-//! used by the OpenBible geocoding bundle (`ancient.jsonl`'s `verses[].osis`),
-//! Theographic's `verses.json` (`fields.osisRef`), and the openbible.info
-//! cross-references TSV (`Gen.1.1` style).
-//!
-//! These raw datasets use OSIS book abbreviations (`Gen`, `1Sam`, `2Kgs`, ...)
-//! which do NOT always match atlas-core's 3-letter `code`s
-//! (`GEN`, `1SA`, `2KI`, ...) even case-insensitively, so
-//! `atlas_core::refs::ScriptureRef::parse` (which only matches `.code`)
-//! cannot be used directly on raw osis text. `canon::resolve_alias` matches
-//! code OR osis OR name, so we resolve the book that way and build the
-//! `VerseId` by hand.
+//! Parsing OSIS-style `Book.Chapter.Verse` references, as the raw geocoding, Theographic and
+//! cross-reference sources all spell them. Their book abbreviations do not match atlas-core's codes
+//! even case-insensitively, so the book is resolved through `canon::resolve_alias`, which matches code,
+//! osis or name, and the `VerseId` is built by hand.
 
 use atlas_core::canon::resolve_alias;
 use atlas_core::refs::VerseId;
 
-/// Parses a strict `Book.Chapter.Verse` OSIS reference (e.g. `"2Kgs.5.12"`)
-/// into a `VerseId`. Returns `None` (not an error) on anything that isn't
-/// exactly that shape — callers decide whether a non-match is a hard error
-/// or a droppable row.
+/// Returns `None`, not an error, for anything that is not exactly that shape: the caller decides
+/// whether a non-match is a hard error or a droppable row.
 pub fn parse_verse(s: &str) -> Option<VerseId> {
     let parts: Vec<&str> = s.split('.').collect();
     if parts.len() != 3 {
@@ -32,8 +22,8 @@ pub fn parse_verse(s: &str) -> Option<VerseId> {
     Some(VerseId { book, chapter, verse })
 }
 
-/// Canonical string form of a `VerseId`, e.g. `"2KI.5.12"` (our 3-letter code,
-/// not the input's OSIS abbreviation).
+/// Canonical string form of a `VerseId`, in our 3-letter code rather than the input's OSIS
+/// abbreviation.
 pub fn canonical(v: &VerseId) -> String {
     format!("{}.{}.{}", v.book.code(), v.chapter, v.verse)
 }
@@ -51,10 +41,10 @@ mod tests {
 
     #[test]
     fn rejects_bad_shapes() {
-        assert!(parse_verse("Gen.1").is_none()); // not verse-granularity
+        assert!(parse_verse("Gen.1").is_none());
         assert!(parse_verse("Gen.1.1.1").is_none());
-        assert!(parse_verse("Zzz.1.1").is_none()); // unknown book
-        assert!(parse_verse("Gen.0.1").is_none()); // chapter 0
-        assert!(parse_verse("Gen.1.0").is_none()); // verse 0
+        assert!(parse_verse("Zzz.1.1").is_none());
+        assert!(parse_verse("Gen.0.1").is_none());
+        assert!(parse_verse("Gen.1.0").is_none());
     }
 }

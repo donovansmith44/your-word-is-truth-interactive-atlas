@@ -1,109 +1,6 @@
-//! Batch CORP-1a ("brain-fuel editions: the ingestion half"): parser for
-//! `data/raw/brain-fuel-bible/` -- a vendored subset of
-//! github.com/brain-fuel/bible (pinned commit `94d44842cb242e8aa840330748e03d2803f2a7c1`;
-//! see `data/raw/README.md` for the fetch/vendor procedure and `LICENSES.md`
-//! for the per-edition license disposition). Owner order (verbatim, via the
-//! controller): "3 - take all. no apocrypha for now."
-//!
-//! ONE parser, edition-parameterized (controller decision 3) -- never six
-//! copies. The shape below was verified DIRECTLY against the real vendored
-//! files (929 OT + 260 NT chapter JSONs, every one of the 31,102 aligned
-//! verse positions swept programmatically), not assumed from the source
-//! repo's own README, per this batch's own brief ("the controller's
-//! scouting has been wrong twice from sampling too little").
-//!
-//! # The real, verified shape
-//!
-//! One JSON object per `bible/{ot,nt}/{CODE}/{NNN}.json` (`CODE` is
-//! brain-fuel's OWN three-letter book code -- NOT this app's OSIS-ish
-//! `atlas_core::canon::BOOKS` codes; e.g. `JOH` not `JHN`, `MAR` not `MRK`,
-//! `SOS` not `SNG`, `JDE` not `JUD`. Resolved via `data/books.json`'s own
-//! `kjv_name` field instead of a hand-maintained code table: that field uses
-//! the IDENTICAL old-style KJV book-name convention
-//! (`server/atlas-etl/src/kjv.rs`'s own `kjv.json` source already parses --
-//! "I Samuel", "Revelation of John", etc.) -- one normalizer
-//! (`kjv::normalize_book_name`), reused, not forked):
-//!
-//! ```json
-//! { "book_id": "GEN", "chapter": 1, "verses": [
-//!   { "verse": 1,
-//!     "latin_vulgate": "In principio creavit Deus...",
-//!     "hebrew_masoretic": "בְּרֵאשִׁ֖ית...",
-//!     "douay_rheims": "In the beginning God created...",
-//!     "finnish_biblia": "Alussa loi Jumala...",
-//!     "swedish_karl_xii": "J Begynnelsen skapade...",
-//!     "king_james": "In the beginning God created the heaven and the earth."
-//!   }, ...
-//! ] }
-//! ```
-//!
-//! `verse` is ALREADY the KJV skeleton position (controller decision 3: "the
-//! brain-fuel chapter JSONs share one shape (parallel verse columns
-//! PRE-ALIGNED at KJV positions...)") -- every chapter file's own verse
-//! numbers run contiguously `1..=N` with no gaps, matching this app's own
-//! KJV verse counts exactly (swept: 23,145 OT + 7,957 NT = 31,102, the SAME
-//! total `atlas_etl::kjv::parse` produces from `data/raw/kjv.json`).
-//!
-//! An edition's own field key is present on EVERY verse of a chapter file,
-//! or on NONE of them -- a testament-level fact (which editions
-//! `data/editions.json` upstream registers for `ot`/`nt`), never a
-//! per-verse one. Swept and confirmed over the real data: OT chapters carry
-//! `latin_vulgate`/`hebrew_masoretic`/`douay_rheims`/`finnish_biblia`/
-//! `swedish_karl_xii`/`king_james` (never `greek_textus_receptus`); NT
-//! chapters carry `latin_vulgate`/`greek_textus_receptus`/`finnish_biblia`/
-//! `swedish_karl_xii`/`king_james` (never `hebrew_masoretic` or
-//! `douay_rheims` -- Douay-Rheims ships OT-only in this dataset, confirmed
-//! against both `data/editions.json`'s own manifest row and the real files,
-//! disclosed in this batch's report). `RawVerse`'s six non-KJV fields are
-//! all `Option<String>` for exactly this reason: serde leaves a field `None`
-//! when its key is simply absent from the JSON object, no per-testament
-//! branching needed in this parser at all.
-//!
-//! An `ABSENT` marker (`refs.<edition>.absent: true`) is a PER-VERSE gap
-//! within an edition that otherwise applies to the testament (e.g. ten OT
-//! verses merged into the preceding verse in the Vulgate tradition). Loud
-//! gotcha, verified on the real data (`bible/ot/1CH/011.json` verse 47,
-//! among others): when a verse is `absent`-marked, its own text KEY IS
-//! STILL PRESENT in the JSON, holding an EMPTY STRING (`""`) -- never
-//! simply omitted. This parser reads `refs.<edition>.absent` FIRST and, if
-//! true, produces NO rendering at all for that edition at that position
-//! (`RenderingOutcome::Absent`) -- the empty string is never treated as
-//! content (batch brief requirement 4: "absence is data, never an empty
-//! string"). Swept over the entire real dataset: every `absent`-marked
-//! field's own text value is exactly `""` (zero anomalies -- confirmed by
-//! `read_all`'s own `stats.anomalies`, asserted `0` in this batch's
-//! real-data tests) and no edition is ever empty WITHOUT an `absent`
-//! marker; `RenderingOutcome::Anomaly` exists purely as an honest fallback
-//! for a future drift this parser has never actually observed, not a
-//! shape this batch's own data needs.
-//!
-//! `refs.<edition>.src` is versification PROVENANCE only (the source
-//! tradition's own local `"chapter:verse"` label for a position already
-//! aligned to the KJV skeleton, e.g. Hebrew/Latin Psalm-title-shifted
-//! numbering) -- per batch brief requirement 4, it imports as NOTHING this
-//! batch (the cross-corpus correspondence design is CORP-2's scope): this
-//! parser reads the rendering at its ALREADY-CORRECT KJV position and
-//! never stores or acts on `src` beyond disclosing its count in
-//! `ParseStats::src_notes` (2,835 Vulgate + 1,971 Hebrew + 1,303+1 Swedish
-//! + 2,835 Douay-Rheims over the real data -- Psalm-title shifts and
-//! similar, not alignment errors).
-//!
-//! `king_james` is parsed (`VerseRow.king_james`) ONLY for the owner-ordered
-//! cross-check (`kjv_cross_check` below) against this app's own canonical
-//! KJV text -- per the KJV INERRANCY DIRECTIVE and batch brief requirement
-//! 5, it is NEVER imported into this app's graph; our KJV base is
-//! authoritative and stays the only KJV rendering the graph ever carries.
-//!
-//! # Apocrypha
-//!
-//! `bible/apo/` and `bible/lxx/` are not read here at all -- not vendored
-//! (`data/raw/brain-fuel-bible/` carries only `data/books.json` + `ot/` +
-//! `nt/`), per the owner's own ruling ("no apocrypha for now"). KJVA
-//! (`king_james_apocrypha`) is SKIPPED outright, not just descoped: its
-//! canonical 66-book coverage would exactly duplicate this app's own KJV
-//! base, and its only UNIQUE content is the apocryphal books this batch
-//! already excludes -- ingesting it would add no real content, disclosed
-//! in this batch's own report rather than silently omitted.
+//! Parser for the vendored brain-fuel editions: ONE parser, edition-parameterized. Its verse numbers are
+//! ALREADY KJV skeleton positions, and an edition's field key is present on every verse of a chapter file or on
+//! none of them, a testament-level fact. An `absent`-marked verse still carries its key, holding an EMPTY STRING.
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
@@ -115,13 +12,9 @@ use serde::Deserialize;
 
 use crate::kjv::normalize_book_name;
 
-/// The six editions this batch ingests as renderings (controller decision
-/// 2) -- each string is BOTH the exact JSON field name on `RawVerse` AND
-/// the `TranslationId` slug the graph adapter stamps onto the corresponding
-/// `LayerMap` entry (one vocabulary, not two). `king_james` (the base/
-/// canonical layer, already ingested since M-A) and `king_james_apocrypha`
-/// (skipped, see module doc comment) are deliberately absent from this
-/// list.
+/// The editions ingested as renderings. Each string is BOTH the exact JSON field name and the translation slug
+/// the graph adapter stamps onto the layer: one vocabulary, not two. The KJV base and the apocrypha edition are
+/// deliberately absent.
 pub const EDITIONS: &[&str] =
     &["latin_vulgate", "hebrew_masoretic", "douay_rheims", "finnish_biblia", "swedish_karl_xii", "greek_textus_receptus"];
 
@@ -138,23 +31,16 @@ struct RawBookMeta {
     kjv_name: Option<String>,
 }
 
-/// Parses `data/raw/brain-fuel-bible/data/books.json` into a `{brain-fuel
-/// code -> BookId}` map, covering exactly the 66 `ot`/`nt` rows (the 14
-/// `apo` rows are skipped -- this batch never reads `bible/apo/`). Resolves
-/// each row's own `kjv_name` through the SAME `kjv::normalize_book_name` +
-/// `canon::resolve_alias` pipeline `kjv.rs` already uses for
-/// `data/raw/kjv.json`'s own old-style names -- verified: brain-fuel's
-/// `kjv_name` field uses the IDENTICAL convention ("I Samuel", "Revelation
-/// of John", ...). Fails loudly (names every unresolved row) rather than
-/// silently dropping a book -- a gap here would silently drop that book's
-/// entire chapter set from every one of the six editions.
+/// The brain-fuel book codes are not this app's, so each row's own `kjv_name` -- which uses the identical
+/// old-style convention the KJV source does -- is resolved through the same normalizer, and the apocrypha rows
+/// are skipped. Fails loudly naming every unresolved row: a gap would drop that book from every edition.
 pub(crate) fn book_code_map(books_json: &str) -> Result<HashMap<String, BookId>> {
     let manifest: RawBooksManifest = serde_json::from_str(books_json).context("brain-fuel data/books.json is not valid JSON")?;
     let mut map = HashMap::new();
     let mut unresolved: Vec<String> = Vec::new();
     for b in &manifest.books {
         if b.testament != "ot" && b.testament != "nt" {
-            continue; // apo -- out of scope this batch, never read
+            continue;
         }
         let Some(kjv_name) = &b.kjv_name else {
             unresolved.push(format!("{} (testament {}, no kjv_name field)", b.code, b.testament));
@@ -223,9 +109,6 @@ impl RawVerse {
         }
     }
 
-    /// One edition's own outcome at this verse position -- see this
-    /// module's own doc comment for the full `absent`/`src`/testament-gap
-    /// catalog this classifies.
     fn outcome(&self, edition: &str) -> RenderingOutcome<'_> {
         let Some(text) = self.field(edition) else {
             return RenderingOutcome::NotApplicable;
@@ -235,11 +118,8 @@ impl RawVerse {
             return RenderingOutcome::Absent;
         }
         if text.is_empty() {
-            // Never observed in the real vendored data (swept: 0 occurrences,
-            // asserted by this batch's own real-data test) -- an honest
-            // fallback, not a shape this batch's data needs. Refusing to
-            // import an unmarked empty string keeps the "absence is data,
-            // never an empty string" law even if this ever DID happen.
+            // Never observed in the real data. Refusing to import an unmarked empty string keeps "absence is
+            // data, never an empty string" true even if it ever happened.
             return RenderingOutcome::Anomaly;
         }
         RenderingOutcome::Present(text)
@@ -247,23 +127,17 @@ impl RawVerse {
 }
 
 enum RenderingOutcome<'a> {
-    /// This edition's field key is absent from the JSON entirely -- the
-    /// edition doesn't apply to this verse's own testament.
+    /// The edition's field key is absent entirely: it does not apply to this verse's own testament.
     NotApplicable,
     /// `refs.<edition>.absent: true` -- a real, disclosed gap.
     Absent,
-    /// A real rendering, ready to import verbatim.
     Present(&'a str),
-    /// Text present, non-`absent`-marked, but empty -- never observed;
-    /// disclosed rather than silently imported as content.
+    /// Text present and not `absent`-marked, but empty: disclosed rather than imported as content.
     Anomaly,
 }
 
-/// One (book, chapter, verse) row, fully resolved -- what the graph adapter
-/// consumes. `renderings` carries only `Present` outcomes (edition id,
-/// verbatim text); `king_james` is carried SEPARATELY and ONLY for the
-/// cross-check (`kjv_cross_check` below) -- never merged into
-/// `renderings`, never imported into the graph (module doc comment).
+/// One fully resolved row. `renderings` carries only the present outcomes, and the KJV column is carried
+/// SEPARATELY and only for the cross-check -- never merged in, never imported into the graph.
 pub struct VerseRow {
     pub book: BookId,
     pub chapter: u16,
@@ -272,23 +146,17 @@ pub struct VerseRow {
     pub renderings: Vec<(&'static str, String)>,
 }
 
-/// The parser's own tally (batch brief requirement 9: "per-edition ingested
-/// verse counts, exact totals asserted, from the parser's own tally").
 #[derive(Debug, Clone, Default)]
 pub struct ParseStats {
     pub ot_chapters: usize,
     pub nt_chapters: usize,
-    /// Present-outcome count per edition -- the number of TextUnit
-    /// positions this edition actually gains a rendering at.
+    /// Present-outcome count per edition: the positions this edition actually gains a rendering at.
     pub per_edition_present: BTreeMap<&'static str, usize>,
     /// `refs.<edition>.absent` count per edition -- disclosed gaps.
     pub per_edition_absent: BTreeMap<&'static str, usize>,
-    /// `refs.<edition>.src` count per edition -- versification provenance
-    /// notes, disclosed, never imported (module doc comment).
+    /// Versification provenance notes per edition: disclosed, never imported.
     pub per_edition_src_notes: BTreeMap<&'static str, usize>,
-    /// `RenderingOutcome::Anomaly` count -- must be 0 over real data
-    /// (asserted by this batch's own real-data test); never silently
-    /// imported if it ever isn't.
+    /// Must be 0 over the real data, and never silently imported if it ever is not.
     pub anomalies: usize,
 }
 
@@ -329,12 +197,8 @@ fn parse_chapter_file(json: &str, book_codes: &HashMap<String, BookId>, stats: &
     Ok(())
 }
 
-/// Sorted, numbered `NNN.json` chapter file paths directly under `dir`
-/// (one book's own chapter directory, e.g. `.../ot/GEN/`) -- lexicographic
-/// `read_dir` order already sorts correctly since every real file name is
-/// zero-padded to three digits (the source repo's own stated convention,
-/// module doc comment), but this sorts explicitly rather than depending on
-/// the OS's own directory-listing order.
+/// Sorted, numbered chapter-file paths under one book's directory. Lexicographic order already sorts correctly,
+/// since every real name is zero-padded, but this sorts explicitly rather than trusting the OS listing.
 fn chapter_files(dir: &Path) -> Result<Vec<std::path::PathBuf>> {
     let mut paths: Vec<std::path::PathBuf> = std::fs::read_dir(dir)
         .with_context(|| format!("reading directory {}", dir.display()))?
@@ -346,15 +210,8 @@ fn chapter_files(dir: &Path) -> Result<Vec<std::path::PathBuf>> {
     Ok(paths)
 }
 
-/// Reads the whole vendored corpus: `root/data/books.json` (the code map)
-/// plus every `root/ot/*/*.json` and `root/nt/*/*.json` chapter file --
-/// `root` is `data/raw/brain-fuel-bible` (see `data/raw/README.md`). The
-/// one disclosed filesystem-touching function in this module (mirrors
-/// `atlas_etl::catechism_map::build_questions_from_mapping`'s own precedent
-/// for a multi-file curated/vendored source -- see that function's own doc
-/// comment for the "atlas-etl does no networking, but a simple directory
-/// walk over already-vendored files is the one standing exception" note).
-/// Fails loudly on any read/parse/book-resolution error, naming the file.
+/// Reads the whole vendored corpus: the one filesystem-touching function here, failing loudly on any read,
+/// parse or book-resolution error, naming the file.
 pub fn read_all(root: &Path) -> Result<BrainFuelCorpus> {
     let books_json = std::fs::read_to_string(root.join("data/books.json")).with_context(|| format!("reading {}", root.join("data/books.json").display()))?;
     let book_codes = book_code_map(&books_json)?;
@@ -383,12 +240,7 @@ pub fn read_all(root: &Path) -> Result<BrainFuelCorpus> {
     Ok(BrainFuelCorpus { rows, stats })
 }
 
-// ---------------------------------------------------------------------
-// The owner-ordered KJV column cross-check (batch brief requirement 5).
-// ---------------------------------------------------------------------
-
-/// One disclosed mismatch: dot-ref, our canonical text, brain-fuel's own
-/// `king_james` column text at the same aligned position.
+/// One disclosed mismatch: the dot-ref, our canonical text, and the vendored KJV column at the same position.
 pub struct KjvMismatch {
     pub dot_ref: String,
     pub ours: String,
@@ -397,29 +249,16 @@ pub struct KjvMismatch {
 
 pub struct KjvCrossCheckReport {
     pub compared: usize,
-    /// RAW byte-for-byte mismatches -- the pinned regression number (batch
-    /// brief requirement 9: "KJV cross-check test, mismatch count asserted
-    /// at the disclosed number"). See `brainfuel_real_data.rs`'s own test
-    /// for the full categorized breakdown (whitespace, the Tetragrammaton
-    /// `LORD`/`Lord` case convention, Psalm-superscription/Ps119-acrostic/
-    /// epistle-subscription folding, and a small residue of genuine
-    /// spelling variants) -- every single one confirmed, by manual
-    /// inspection across the full raw-to-normalized funnel, to be a
-    /// typographic/transcription-convention difference, NEVER a case of
-    /// verse-content substitution or versification drift.
+    /// RAW byte-for-byte mismatches, the pinned regression number. Every one was confirmed a typographic or
+    /// transcription-convention difference, never verse-content substitution or versification drift.
     pub raw_mismatches: usize,
     pub examples: Vec<KjvMismatch>,
 }
 
-/// Compares brain-fuel's own `king_james` column against `our_kjv_verses`
-/// (this app's own canonical `"BOOK.CH.V" -> text` map, from
-/// `atlas_etl::kjv::parse`) at every aligned position -- RAW byte equality,
-/// no normalization (this function's own job is to report the honest,
-/// literal number; a caller may categorize it further). Mismatches are
-/// DISCLOSED here, never imported anywhere -- our KJV base is
-/// authoritative (KJV INERRANCY DIRECTIVE; batch brief requirement 5).
-/// `example_cap` bounds how many mismatches are collected into
-/// `examples` (the full COUNT is always exact regardless of the cap).
+/// Compares the vendored KJV column against our own canonical text at every aligned position, by RAW byte
+/// equality with no normalization: this reports the honest literal number and a caller may categorize further.
+/// Mismatches are DISCLOSED, never imported -- our base is authoritative -- and `example_cap` bounds only the
+/// examples, never the count.
 pub fn kjv_cross_check(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String, String>, example_cap: usize) -> KjvCrossCheckReport {
     let mut compared = 0;
     let mut raw_mismatches = 0;
@@ -439,49 +278,13 @@ pub fn kjv_cross_check(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String
     KjvCrossCheckReport { compared, raw_mismatches, examples }
 }
 
-// ---------------------------------------------------------------------
-// Batch KJV-CASE (owner ruling, "KJV-CASE-1 APPROVED... 3. yes" --
-// .superpowers/sdd/2026-08-17-bible-atlas-m1/batch-kjv-case-brief.md): the
-// Tetragrammaton case-restoration pass. Built BESIDE `kjv_cross_check`
-// above -- the SAME per-row loop, walking the SAME already-parsed
-// `corpus.rows`/`our_kjv_verses`, at the SAME dot-ref-aligned positions
-// that function's own report already proved line up 31,102/31,102 -- not
-// a second parser, a sibling pass over identical already-parsed data.
-//
-// KJV INERRANCY DIRECTIVE: restoration, never revision. The law this pass
-// exists to satisfy (batch brief controller decision 2): for any position
-// this pass TOUCHES, before/after must be identical under ASCII
-// case-folding (a byte difference that is not purely a case difference is
-// a bug, not a restoration); for any position this pass SKIPS (the folded
-// texts themselves disagree -- whitespace conventions, Psalm-superscription/
-// Ps119-acrostic-header folding, spelling residue -- `kjv_cross_check`'s
-// own doc comment has the full catalog `kjv_column_cross_check_mismatch_
-// count_is_pinned` categorizes), before/after must be BYTE-IDENTICAL: this
-// pass provably never touches them.
-// ---------------------------------------------------------------------
+// The case-only law: at any position this pass TOUCHES, before and after must be identical under ASCII
+// case-folding, and at any position it SKIPS they must be byte-identical.
 
-/// Transfers brain-fuel's own CASE onto `ours`, byte-for-byte, wherever
-/// the two are equal under ASCII case-folding -- `None` when they are
-/// NOT (a caller MUST treat `None` as "touch nothing at this position";
-/// this is the case-only law's own enforcement point).
-///
-/// Deliberately NOT "return `theirs.to_string()` when case-fold-equal":
-/// even though case-fold equality already proves `ours`/`theirs` share
-/// the identical character sequence up to ASCII case, this walks `ours`'s
-/// OWN bytes and flips only the ones brain-fuel's own corresponding byte
-/// says should change -- "characters unchanged, case only" (batch brief
-/// controller decision 1) provable byte-by-byte, not merely true by a
-/// construction a reader would have to re-derive.
-///
-/// `str::eq_ignore_ascii_case` compares byte-for-byte and requires equal
-/// length, so a `Some` result implies `ours.len() == theirs.len()` and the
-/// two zipped byte streams stay aligned throughout. The output is
-/// guaranteed valid UTF-8: every byte this loop CHANGES is a single-byte
-/// ASCII alphabetic character on BOTH sides (a non-ASCII UTF-8
-/// continuation byte, always `>= 0x80`, can never be
-/// `is_ascii_uppercase`/`is_ascii_lowercase`, so this transform never
-/// touches one), and every byte it leaves alone was already valid UTF-8
-/// in `ours`.
+/// Transfers the vendored CASE onto `ours` wherever the two are equal under ASCII case-folding, and `None` where
+/// they are not -- a caller MUST treat `None` as "touch nothing here". It walks `ours`'s own bytes and flips only
+/// the ones the other side disagrees on, so "characters unchanged, case only" is provable byte by byte. Every
+/// byte it changes is single-byte ASCII on both sides, so the result is always valid UTF-8.
 pub fn restore_verse_case(ours: &str, theirs: &str) -> Option<String> {
     if !ours.eq_ignore_ascii_case(theirs) {
         return None;
@@ -494,48 +297,13 @@ pub fn restore_verse_case(ours: &str, theirs: &str) -> Option<String> {
     Some(String::from_utf8(restored).expect("ASCII-case-only transform of valid UTF-8 stays valid UTF-8 (fn doc comment)"))
 }
 
-// ---------------------------------------------------------------------
-// Batch KJV-CASE-2 (owner ruling, verbatim "do it (superscript fix)" --
-// .superpowers/sdd/2026-08-17-bible-atlas-m1/batch-kjv-case2-brief.md):
-// extends the pass above to the positions it provably and correctly
-// SKIPPED because our own canonical text folds a book/Psalm superscription
-// (e.g. "A Psalm of David.") into verse 1 while brain-fuel's own column
-// carries the verse body alone -- so the whole-verse case-fold-equality
-// gate above never fires there. PSA 110:1 is the flagship: "The LORD said
-// unto my Lord" (both Tetragrammaton-referent forms, one verse).
-//
-// KJV INERRANCY DIRECTIVE still binds: restoration, never revision -- the
-// superscription text itself IS Scripture and keeps its place, characters
-// AND casing both, byte-for-byte untouched; only the ALIGNED TAIL (the
-// verse body brain-fuel's own column actually carries) is ever eligible
-// for case restoration, via the SAME `restore_verse_case` primitive pass 1
-// already proved correct -- this extension adds an ALIGNMENT step ahead
-// of that primitive, it never forks a second byte-transform mechanism.
-// ---------------------------------------------------------------------
+// Our own text folds a book or Psalm superscription into verse 1 where the vendored column carries the verse
+// body alone, so the whole-verse gate above never fires there. The superscription itself is Scripture and stays
+// byte-for-byte untouched; only the ALIGNED TAIL is ever eligible, through the same primitive.
 
-/// EXCLUSION LIST (batch KJV-CASE-2 controller decision 3): positions
-/// this pass's own tail-alignment sweep (`tail_align` below) would
-/// otherwise classify `OursSuffix` (superscription-class, eligible for
-/// restoration), but which this batch's own real-data inspection showed
-/// are NOT a genuine folded-in superscription -- brain-fuel `king_james`
-/// column data artifacts of the same general kind batch KJV-CASE's own
-/// report self-review catalogued (transcription quirks, never a real KJV
-/// convention). Authored from what THIS run's own data showed
-/// (batch-kjv-case2-brief.md controller decision 3: "the code's table is
-/// authored from what the DATA shows... this run is the authority") --
-/// position + one-line reason each, from real inspection of the aligned
-/// prefix/tail this run produced. Checked BEFORE `tail_align` runs
-/// (`classify_and_restore` below): an excluded position restores nothing
-/// regardless of what the alignment check would otherwise decide, and is
-/// asserted untouched by `brainfuel_real_data.rs`'s own
-/// `superscription_exclusions_are_provably_untouched`.
-/// Authored from a full real-data sweep of the 3,801 pass-1-skipped
-/// positions (batch-kjv-case2-report.md has the full methodology): 139
-/// positions tail-aligned (`OursSuffix`), a word-level diff against each
-/// one's own restored tail flagged exactly these three as changing a word
-/// OTHER than a Tetragrammaton-pattern one (LORD/GOD/JAH/JEHOVAH, or the
-/// unrestored Adonai-class "Lord"/"God" left alone) -- the report's own
-/// "~136-class" estimate reconciles exactly: 139 - 3 = 136.
+/// Positions the tail-alignment sweep would classify as superscription but which real-data inspection showed are
+/// vendored-column artifacts rather than a genuine folded-in superscription, each with its reason. Checked BEFORE
+/// the alignment, so an excluded position restores nothing whatever the alignment would decide.
 pub const SUPERSCRIPTION_EXCLUSIONS: &[(&str, &str)] = &[
     (
         "PSA.70.1",
@@ -551,44 +319,22 @@ pub const SUPERSCRIPTION_EXCLUSIONS: &[(&str, &str)] = &[
     ),
 ];
 
-/// One position's own tail-alignment outcome (batch KJV-CASE-2 controller
-/// decision 1), computed once the whole verse is already known NOT to be
-/// case-fold-equal to brain-fuel's own column (`restore_verse_case`
-/// already returned `None`). ASCII-folds BOTH texts -- the IDENTICAL fold
-/// `restore_verse_case`'s own `eq_ignore_ascii_case` uses, never a
-/// broader Unicode fold, keeping this pass's UTF-8 safety guarantee
-/// identical to pass 1's -- and checks for a SUFFIX alignment.
-///
-/// batch-polish1-brief.md KJVCASE2-m1: `pub`, alongside `tail_align`
-/// below, as a test-support export -- `tests/brainfuel_real_data.rs`'s own
-/// real-data law sweep calls this SAME fn directly now (rather than
-/// maintaining its own second copy of the alignment check), the same
-/// "one alignment implementation beats two" discipline `classify_and_
-/// restore`'s own doc comment already establishes for `restore_verse_
-/// case` between its two real call sites.
+/// One position's tail-alignment outcome, computed once the whole verse is known NOT to be case-fold-equal. It
+/// folds BOTH texts with the IDENTICAL ASCII fold, never a broader Unicode one, keeping the UTF-8 guarantee the
+/// primitive has. `pub` so the real-data sweep calls this same check rather than keeping a second copy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TailAlignment {
-    /// `ours`'s own folded text ends with `theirs`'s folded text -- the
-    /// expected shape (a folded-in superscription prefix ahead of the
-    /// verse body). Carries the untouched prefix's own BYTE length.
+    /// `ours`'s folded text ends with the other's -- the expected shape -- carrying the untouched prefix's own
+    /// BYTE length.
     OursSuffix { prefix_len: usize },
-    /// `theirs`'s own folded text ends with `ours`'s -- NOT expected
-    /// (controller decision 1: "Mirror-case... is NOT expected -- if
-    /// found, count + disclose, restore nothing there").
+    /// The other's folded text ends with `ours` -- NOT expected: count and disclose, restore nothing.
     TheirsSuffix,
-    /// Neither aligns -- true residue (whitespace conventions, spelling
-    /// residue, etc: the non-superscription mismatch classes this batch
-    /// does not touch).
+    /// Neither aligns: true residue, the whitespace and spelling classes this pass does not touch.
     NoAlignment,
 }
 
-/// Pure, dependency-free alignment check -- no case transform happens
-/// here (`classify_and_restore` below does that, via `restore_verse_case`
-/// on the aligned tail only, never a bespoke second transform).
-/// `is_char_boundary` guards every byte slice: real KJV/brain-fuel text is
-/// ASCII at every observed superscription boundary, but this never
-/// assumes it -- a non-boundary split is treated as no alignment, never a
-/// panic.
+/// A pure alignment check; no case transform happens here. `is_char_boundary` guards every byte slice: the real
+/// text is ASCII at every observed boundary, but a non-boundary split is treated as no alignment, never a panic.
 pub fn tail_align(ours: &str, theirs: &str) -> TailAlignment {
     if ours.len() > theirs.len() {
         let prefix_len = ours.len() - theirs.len();
@@ -604,15 +350,8 @@ pub fn tail_align(ours: &str, theirs: &str) -> TailAlignment {
     TailAlignment::NoAlignment
 }
 
-/// The full, richer per-position classification (batch KJV-CASE-2): pass
-/// 1's own binary `restore_verse_case` `Some`/`None` outcome, extended
-/// with the tail-alignment/exclusion/mirror-case buckets. ONE function,
-/// shared by BOTH real call sites that need this decision
-/// (`restore_kjv_case` below, and `atlas_graph::fidelity::
-/// check_kjv_fidelity`'s own independent "expected"-side re-derivation) --
-/// mirrors pass 1's own precedent of sharing `restore_verse_case` itself
-/// between those same two call sites, so the law stays provably ONE
-/// mechanism, never two.
+/// The per-position classification: ONE function, shared by both real call sites that need this decision, so the
+/// law stays provably one mechanism rather than two.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RestorationOutcome {
     /// Pass-1 class: whole verse case-fold-equal. Carries the fully
@@ -630,9 +369,8 @@ pub enum RestorationOutcome {
     Residue,
 }
 
-/// `dot_ref` is needed only for the `SUPERSCRIPTION_EXCLUSIONS` lookup --
-/// every byte-level decision still flows through `restore_verse_case`
-/// alone, exactly as pass 1 established.
+/// `dot_ref` is needed only for the exclusion lookup: every byte-level decision still flows through the
+/// case-transfer primitive alone.
 pub fn classify_and_restore(dot_ref: &str, ours: &str, theirs: &str) -> RestorationOutcome {
     if let Some(new_text) = restore_verse_case(ours, theirs) {
         return RestorationOutcome::WholeVerse(new_text);
@@ -652,35 +390,10 @@ pub fn classify_and_restore(dot_ref: &str, ours: &str, theirs: &str) -> Restorat
     }
 }
 
-/// Per-class tallies (batch brief controller decision 4; buckets 3-6
-/// added by batch KJV-CASE-2, controller decisions 1-3). `restored`/
-/// `already_agreeing` are PASS-1's own two whole-verse buckets, byte-for-
-/// byte UNCHANGED by this extension (KJV-CASE-2 never touches a position
-/// pass 1 already restored or already-agreed): `restored` -- positions
-/// where `restore_verse_case` produced a genuinely different string
-/// (brain-fuel's own casing disagreed with ours). `already_agreeing` --
-/// positions where the folded texts matched AND the bytes were ALREADY
-/// identical -- no case drift to restore, the bulk of the KJV.
-///
-/// The remaining four fields subdivide PASS-1's own single
-/// `skipped_mismatch` bucket via KJV-CASE-2's own TAIL-ALIGNMENT RULE:
-/// `superscription_restored` -- `ours`'s own folded text ends with
-/// `theirs`'s folded text (a folded-in superscription prefix): case
-/// restored over the aligned TAIL only, the prefix kept byte-identical.
-/// `excluded` -- named in `SUPERSCRIPTION_EXCLUSIONS` (a brain-fuel
-/// artifact, not a genuine superscription) -- restore nothing.
-/// `mirror_case_found` -- `theirs`'s own folded text ends with `ours`'s
-/// (brain-fuel longer) -- NOT expected; disclosed, never restored.
-/// `skipped_mismatch` -- true residue: neither whole-verse-equal nor
-/// tail-aligned at all (whitespace conventions, spelling residue, etc.) --
-/// KJV-CASE-2 does NOT touch this class, per its own scope.
-///
-/// `compared == restored + already_agreeing + superscription_restored +
-/// excluded + mirror_case_found + skipped_mismatch` always (every compared
-/// position falls into exactly one of the six buckets) -- and `compared`
-/// itself matches `KjvCrossCheckReport.compared` exactly, over the same
-/// two inputs (both walk the identical `corpus.rows`/`our_kjv_verses`
-/// alignment).
+/// Per-class tallies. The two whole-verse buckets are the positions where the case genuinely differed and where
+/// the bytes already agreed; the other four subdivide the rest by the tail-alignment rule -- a restored
+/// superscription tail, an excluded position, the unexpected mirror case, and true residue. Every compared
+/// position falls into exactly one bucket, so `compared` is always their sum.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct CaseRestorationReport {
     pub compared: usize,
@@ -692,25 +405,9 @@ pub struct CaseRestorationReport {
     pub skipped_mismatch: usize,
 }
 
-/// The owner-ordered case-restoration pass (batch brief controller
-/// decision 1; extended by batch KJV-CASE-2's own superscription-aware
-/// tail alignment, controller decisions 1-3). Returns a NEW
-/// `"BOOK.CH.V" -> text` map: a full clone of `our_kjv_verses` with ONLY
-/// the restored positions' values replaced (whole-verse OR
-/// superscription-tail class). Every other entry -- including any
-/// position brain-fuel doesn't cover at all -- passes through
-/// byte-identical by construction (this starts from
-/// `our_kjv_verses.clone()` and only ever `.insert()`s at a position this
-/// loop actually visits and restores), which is exactly the case-only
-/// law's second half: a skipped/excluded/uncovered position is untouched,
-/// not merely "close."
-///
-/// Same per-row loop shape as `kjv_cross_check` above (the batch brief's
-/// own instruction: "build the restoration pass beside it"), now
-/// delegating the per-position DECISION to `classify_and_restore` above
-/// (the ONE mechanism this whole module's own KJV-CASE-2 section extends,
-/// never a second one). Iteration order over `corpus.rows` cannot change
-/// the result: every write lands at a distinct `dot_ref` key.
+/// Returns a full clone of the input map with ONLY the restored positions replaced, so a skipped, excluded or
+/// uncovered position passes through byte-identical by construction -- the second half of the case-only law.
+/// Iteration order cannot change the result: every write lands at a distinct key.
 pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String, String>) -> (HashMap<String, String>, CaseRestorationReport) {
     let mut restored_verses = our_kjv_verses.clone();
     let mut report = CaseRestorationReport::default();
@@ -740,14 +437,8 @@ pub fn restore_kjv_case(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<Strin
     (restored_verses, report)
 }
 
-/// dot-ref (`"BOOK.CH.V"`) -> brain-fuel's own `king_james` column text,
-/// for every row that carries one. The one lookup `atlas_graph::fidelity`
-/// needs cross-crate: its own independent re-derivation of "expected" KJV
-/// text must apply the IDENTICAL `restore_verse_case` transform this pass
-/// does (see that module's own doc comment for why), reached from typed
-/// book-index/chapter/verse fields rather than a `BrainFuelCorpus` row --
-/// `kjv_cross_check`/`restore_kjv_case` above need no such map themselves
-/// (they already iterate `corpus.rows` directly, one row at a time).
+/// dot-ref -> the vendored KJV column text, for every row that carries one: the one lookup the fidelity law needs
+/// cross-crate, reached from typed book/chapter/verse fields rather than from a corpus row.
 pub fn king_james_by_dot_ref(corpus: &BrainFuelCorpus) -> HashMap<String, &str> {
     corpus.rows.iter().filter_map(|r| r.king_james.as_deref().map(|kjv| (format!("{}.{}.{}", r.book.code(), r.chapter, r.verse), kjv))).collect()
 }
@@ -804,8 +495,6 @@ mod tests {
 
     #[test]
     fn absent_marker_produces_no_rendering_never_an_empty_string() {
-        // Real shape from bible/ot/1CH/011.json verse 47 (module doc
-        // comment): the text key is STILL PRESENT, holding "".
         let json = r#"{"book_id":"1CH","chapter":11,"verses":[
             {"verse":47,"latin_vulgate":"","douay_rheims":"","hebrew_masoretic":"real text","king_james":"kjv text",
              "refs":{"latin_vulgate":{"absent":true},"douay_rheims":{"absent":true}}}
@@ -825,9 +514,6 @@ mod tests {
 
     #[test]
     fn edition_not_applicable_to_testament_is_silently_absent_not_flagged() {
-        // greek_textus_receptus never appears as a KEY at all on an OT
-        // verse -- NotApplicable, distinct from an explicit absent marker,
-        // but with the identical "no rendering" outcome.
         let json = r#"{"book_id":"GEN","chapter":1,"verses":[
             {"verse":1,"latin_vulgate":"txt","king_james":"kjv"}
         ]}"#;
@@ -884,23 +570,14 @@ mod tests {
             rows: vec![VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 99, king_james: Some("x".into()), renderings: vec![] }],
             stats: ParseStats::default(),
         };
-        let ours_map: HashMap<String, String> = HashMap::new(); // GEN.1.99 not present on our side
+        let ours_map: HashMap<String, String> = HashMap::new();
         let report = kjv_cross_check(&corpus, &ours_map, 10);
         assert_eq!(report.compared, 0, "a position absent from OUR side is skipped, never counted as a mismatch");
         assert_eq!(report.raw_mismatches, 0);
     }
 
-    // -------------------------------------------------------------------
-    // Batch KJV-CASE: restore_verse_case / restore_kjv_case.
-    // -------------------------------------------------------------------
-
     #[test]
     fn restore_verse_case_none_when_lengths_differ() {
-        // The real PSA 110:1 shape (this batch's own report): our source
-        // folds the Psalm superscription into verse 1 ("A Psalm of
-        // David. The Lord said..."), brain-fuel's king_james column does
-        // not -- longer string, never case-fold-equal, must be a hard
-        // `None`, not a best-effort partial match.
         assert_eq!(restore_verse_case("A Psalm of David. The Lord said unto my Lord.", "The LORD said unto my Lord."), None);
     }
 
@@ -917,22 +594,15 @@ mod tests {
 
     #[test]
     fn restore_verse_case_transfers_theirs_case_pattern_onto_ours_own_characters() {
-        // Ours starts capitalized ("The"), theirs does not; ours' own
-        // "lord" is lowercase, theirs' is upper -- the output must follow
-        // BRAIN-FUEL's own case at every position, not just fill gaps.
         assert_eq!(restore_verse_case("The lord said", "the LORD said").as_deref(), Some("the LORD said"));
     }
 
     #[test]
     fn restore_kjv_case_buckets_every_compared_position_exactly_once() {
         let rows = vec![
-            // already_agreeing: byte-identical already.
             VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 1, verse: 1, king_james: Some("In the beginning".into()), renderings: vec![] },
-            // restored: a genuine LORD/Lord case difference.
             VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 2, verse: 4, king_james: Some("the LORD God made".into()), renderings: vec![] },
-            // skipped_mismatch: folded texts disagree (extra word).
             VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 3, verse: 1, king_james: Some("Now the serpent was subtil indeed".into()), renderings: vec![] },
-            // not compared: absent from our own side.
             VerseRow { book: resolve_alias("Genesis").unwrap(), chapter: 4, verse: 1, king_james: Some("x".into()), renderings: vec![] },
         ];
         let corpus = BrainFuelCorpus { rows, stats: ParseStats::default() };
@@ -940,7 +610,6 @@ mod tests {
         ours.insert("GEN.1.1".to_string(), "In the beginning".to_string());
         ours.insert("GEN.2.4".to_string(), "the Lord God made".to_string());
         ours.insert("GEN.3.1".to_string(), "Now the serpent was subtil".to_string());
-        // GEN.4.1 deliberately absent from `ours`.
 
         let (restored, report) = restore_kjv_case(&corpus, &ours);
 
@@ -963,19 +632,8 @@ mod tests {
         assert_eq!(restored.len(), ours.len(), "no keys added or removed, only values at restored positions");
     }
 
-    // -------------------------------------------------------------------
-    // Batch KJV-CASE-2: tail_align / classify_and_restore / the
-    // superscription-aware extension of restore_kjv_case.
-    // -------------------------------------------------------------------
-
     #[test]
     fn classify_and_restore_restores_a_folded_in_superscription_tail_only() {
-        // The real PSA 110:1 shape: our own text folds "A Psalm of
-        // David. " into verse 1 ahead of the body; brain-fuel's column
-        // carries the body alone, cased correctly. The prefix must come
-        // through BYTE-IDENTICAL (including its own "Lord" -- Adonai, not
-        // Tetragrammaton, correctly lowercase-l already) while the tail's
-        // "lord" (Tetragrammaton) gets promoted to "LORD".
         let ours = "A Psalm of David. The lord said unto my Lord.";
         let theirs = "The LORD said unto my Lord.";
         match classify_and_restore("PSA.110.1", ours, theirs) {
@@ -988,9 +646,6 @@ mod tests {
 
     #[test]
     fn classify_and_restore_leaves_the_prefix_byte_identical_even_when_it_itself_contains_mixed_case() {
-        // The prefix (superscription) must never be touched, even where
-        // it contains letters that coincidentally look Tetragrammaton-ish
-        // -- only the ALIGNED TAIL is ever eligible.
         let ours = "To the chief Musician, A Psalm of david. the LORD reigneth.";
         let theirs = "The LORD reigneth.";
         match classify_and_restore("PSA.99.1", ours, theirs) {
@@ -1004,9 +659,6 @@ mod tests {
 
     #[test]
     fn classify_and_restore_finds_mirror_case_and_restores_nothing() {
-        // brain-fuel's own column LONGER than ours, folded-suffix-equal --
-        // the NOT-expected mirror shape (controller decision 1). Must be
-        // disclosed as MirrorCase, never restored.
         let ours = "The LORD reigneth.";
         let theirs = "Unto the end, A Psalm of David. The LORD reigneth.";
         assert_eq!(classify_and_restore("PSA.X.1", ours, theirs), RestorationOutcome::MirrorCase);
@@ -1021,18 +673,9 @@ mod tests {
 
     #[test]
     fn classify_and_restore_honors_the_exclusion_table_over_an_otherwise_valid_alignment() {
-        // A position that WOULD tail-align (ours' folded text ends with
-        // theirs') but is named in SUPERSCRIPTION_EXCLUSIONS must restore
-        // nothing regardless -- the exclusion check runs BEFORE tail_align.
-        // Uses PSA.70.1, one of the three REAL excluded positions
-        // (brainfuel_real_data.rs's own real-data test proves the actual
-        // corpus shape; this unit test proves the MECHANISM in isolation
-        // with a synthetic fixture standing in for the real ALL-CAPS text).
         assert!(SUPERSCRIPTION_EXCLUSIONS.iter().any(|(d, _)| *d == "PSA.70.1"), "this test targets a real exclusion-table entry -- update if PSA.70.1 is ever removed from the table");
         let ours = "To the chief Musician, A Psalm of David, to bring to remembrance. Make haste, O God, to deliver me.";
         let theirs = "MAKE HASTE, O GOD, TO DELIVER ME.";
-        // Sanity: without the exclusion, this WOULD tail-align (folded
-        // suffix match holds regardless of the all-caps artifact).
         assert!(matches!(classify_and_restore("PSA.NOT.EXCLUDED", ours, theirs), RestorationOutcome::Superscription(_)));
         assert_eq!(classify_and_restore("PSA.70.1", ours, theirs), RestorationOutcome::Excluded);
     }

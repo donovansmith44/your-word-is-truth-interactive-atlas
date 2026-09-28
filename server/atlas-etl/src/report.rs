@@ -1,6 +1,5 @@
-//! Formats the ETL coverage/health report. Pure (`Report` in, `String`
-//! out) so it's unit-testable without touching disk; `main.rs` writes the
-//! returned text to both stdout and `data/compiled/report.txt`.
+//! Formats the ETL coverage/health report. Pure -- `Report` in, `String` out -- so it is testable without
+//! touching disk.
 
 use std::fmt::Write as _;
 
@@ -13,13 +12,9 @@ pub struct Counts {
     pub eras: usize,
     pub books_meta: usize,
     pub verses: usize,
-    /// Number of distinct `From` verses that have at least one surviving
-    /// cross-reference (i.e. `cross_refs.len()`, the compiled map's key count).
+    /// Distinct `From` verses with at least one surviving cross-reference.
     pub cross_ref_sources: usize,
-    /// Batch P (the extensibility proof): Theographic person records
-    /// compiled onto `AtlasData.people` -- graph-only from birth, no
-    /// compiled JSON file at any point (see `AtlasData.people`'s own doc
-    /// comment).
+    /// Theographic person records compiled into memory: graph-only from birth, never a compiled file.
     pub people: usize,
 }
 
@@ -37,46 +32,26 @@ pub struct Report {
     pub xref_dropped_unparseable: usize,
     pub xref_dropped_self: usize,
     pub xref_dropped_missing_first_verse: usize,
-    /// Batch B2: one line per curated polity, sorted by id (see
-    /// `PolityStats`).
     pub polities: Vec<PolityStats>,
     pub landmarks_count: usize,
-    /// Batch R requirement 1 ("borders become part of the plate"): the
-    /// curated land mask's own coverage figures -- how many named regions,
-    /// how many rings across them (a region may itself carry >1 ring, though
-    /// none do yet), and the total point count (the same "how much
-    /// hand-authoring" figure `PolityStats::points` already reports for
-    /// polities).
+    /// The curated land mask's coverage: how many named regions, how many rings across them -- a region
+    /// may carry more than one -- and the total point count.
     pub land_mask_regions: usize,
     pub land_mask_rings: usize,
     pub land_mask_points: usize,
-    /// Batch F ("the small catechism"): how many chief parts and total
-    /// items compiled from `data/curated/catechism.toml` -- the same coarse
-    /// "how much curated content is there" figure `landmarks_count`/
-    /// `land_mask_regions` already report for their own curated files.
     pub catechism_parts: usize,
     pub catechism_items: usize,
-    /// Batch F2 (requirement 5, "report the before/after"): how many of
-    /// `catechism_items` are reachable from >=1 verse today -- an item
-    /// counts if EITHER its own item-level `verses` (Luther's embedded
-    /// citations, Batch F) OR any of its `questions[].verses` (the repo
-    /// mapping / Deut5 supplement, Batch F2) is non-empty. Was 6 (of 33)
-    /// before this batch.
+    /// How many items are reachable from at least one verse: an item counts if EITHER its own item-level
+    /// verses OR any of its questions' verses is non-empty.
     pub catechism_items_reachable: usize,
-    /// Batch F2: distinct verse ids that link into the catechism from
-    /// EITHER citation source (the compiled `verse_to_catechism` index's
-    /// own key count).
+    /// Distinct verse ids linking into the catechism from EITHER citation source.
     pub catechism_distinct_verses: usize,
-    /// Batch F2: per-part reachability, `(part title, reachable items,
-    /// total items)`, in `catechism.toml`'s own part order.
+    /// Per-part reachability, `(part title, reachable items, total items)`, in the curated part order.
     pub catechism_per_part: Vec<(String, usize, usize)>,
 }
 
-/// Batch B2: per-polity report line -- how many eras it carries, and the
-/// total point count across every ring of every one of those eras (a coarse
-/// "how much hand-authoring does this polity represent" figure, the spirit
-/// of what the retired border-snapshot report's own point-reduction line
-/// used to convey, now with nothing simplified away to reduce).
+/// Per-polity report line: how many eras it carries, and the total point count across every ring of every
+/// one of those eras.
 #[derive(Debug, Clone, Default)]
 pub struct PolityStats {
     pub id: String,
@@ -103,12 +78,6 @@ pub fn write(r: &Report) -> String {
 
     writeln!(s, "Compiled file counts:").unwrap();
     writeln!(s, "  canon.json        {} books", r.counts.canon_books).unwrap();
-    // M-C2 deletion event: places.json/events.json/narratives.json/
-    // verses-kjv.json/cross-refs.json retire (their data lives only on
-    // the graph, GraphStore-served -- see batch-mc2-report.md's own
-    // deletion inventory), the SAME "count stays real and worth
-    // reporting, filename claim retires" treatment M-C's own eras.json
-    // retirement already established just below.
     writeln!(s, "  places (graph-only, places.json retired at M-C2)      {}", r.counts.places).unwrap();
     writeln!(s, "  events (graph-only, events.json retired at M-C2)      {}", r.counts.events).unwrap();
     writeln!(s, "  narratives (graph-only, narratives.json retired at M-C2) {}", r.counts.narratives).unwrap();
@@ -116,10 +85,6 @@ pub fn write(r: &Report) -> String {
     writeln!(s, "  books-meta.json   {} rows", r.counts.books_meta).unwrap();
     writeln!(s, "  verses (graph-only, verses-kjv.json retired at M-C2)   {}", r.counts.verses).unwrap();
     writeln!(s, "  cross-refs (graph-only, cross-refs.json retired at M-C2) {} source verses", r.counts.cross_ref_sources).unwrap();
-    // Batch P: graph-only from the start, never a compiled JSON file (see
-    // AtlasData.people's own doc comment) -- reported the same "count stays
-    // real and worth reporting" way as the M-C2-retired fields just above,
-    // minus the "retired" framing (nothing here was ever a standalone file).
     writeln!(s, "  people (graph-only, no compiled file -- Batch P)       {}", r.counts.people).unwrap();
     writeln!(s).unwrap();
 

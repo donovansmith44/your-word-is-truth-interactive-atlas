@@ -1,32 +1,6 @@
-//! LEX-1 (spec §7): the lexicon reader over the vendored
-//! `data/raw/brain-fuel-bible/{lexicon,morph}` tree at the SAME pinned
-//! commit CORP-1a's `brainfuel.rs` reads (`94d44842cb242e8aa840330748e03d2803f2a7c1`).
-//!
-//! Two sources, one corpus:
-//!
-//! - `lexicon/{grc,hbo}/<STRONG>.json` -- 13,548 Strong's-keyed entries
-//!   (5,122 Greek + 8,426 Hebrew): `strong, lemma, translit, lang, pos,
-//!   glosses{en:[{text,src}]}, senses[{id,gloss_en,domain}], domains[],
-//!   root, sources[]`. The `lemma-*.json` files beside them are LXX-only
-//!   entries (the owner's standing "no apocrypha for now"; spec §7.4) and
-//!   are never read: only `[GH]NNNN.json` names are.
-//! - `morph/{nt,ot}/<UPSTREAM_CODE>/NNN.conllu` -- 452,689 tokens (140,610
-//!   Greek + 312,079 Hebrew), one sentence per verse under a `# ref =
-//!   CODE.c.v` comment, NINE tab-separated columns (`id FORM LEMMA UPOS
-//!   XPOS FEATS HEAD DEPREL MISC` -- upstream omits CoNLL-U's DEPS), MISC
-//!   `Strong=G3972|Translit=Paulos[|Align=...]`. A token is ALIGNED when
-//!   MISC carries `Strong=`; `Align=unmatched` (4.70% NT / 4.74% OT, by
-//!   upstream design) marks the ones that are not. `Align=source_extra:N`
-//!   is an upstream alignment note on an aligned token and is not carried.
-//!   `morph/lxx` is never read (spec §7.4).
-//!
-//! Upstream book codes (`JOH`, `SOS`, ...) resolve through the SAME
-//! `brainfuel::book_code_map` over `data/books.json` CORP-1a built, so the
-//! two readers can never disagree on which book a chapter file belongs to.
-//!
-//! Pure `&str`-in parsers (`parse_entry`, `parse_conllu`) plus the one
-//! filesystem walk (`read_all`), the module shape every other corpus reader
-//! in this crate has.
+//! The lexicon reader over the vendored Strong's entries and CoNLL-U morphology. Only `[GH]NNNN.json`
+//! entry files are read -- the `lemma-*.json` beside them are LXX-only -- and the morphology carries NINE
+//! tab-separated columns, since upstream omits CoNLL-U's DEPS. A token is ALIGNED when MISC has `Strong=`.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -35,22 +9,19 @@ use anyhow::{bail, Context, Result};
 use atlas_core::refs::BookId;
 use serde::Deserialize;
 
-/// The rendering-layer ids the tokens address (spec §7.3) -- the SAME
-/// strings `brainfuel.rs` registers as `TranslationId`s for the Greek
-/// Textus Receptus and the Hebrew Masoretic renderings, so a `TokenSpan`
-/// built from a token names a layer every verse already carries.
+/// The rendering-layer ids the tokens address: the SAME strings the edition reader registers as
+/// translations, so a span built from a token names a layer every verse already carries.
 pub const LAYER_GREEK: &str = "greek_textus_receptus";
 pub const LAYER_HEBREW: &str = "hebrew_masoretic";
 
-/// One lexicon entry, as published (spec §7.2's payload, field for field).
+/// One lexicon entry, as published: field for field.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LexEntry {
     pub strong: String,
     /// `"grc"` | `"hbo"`.
     pub lang: String,
-    /// Empty for sixteen upstream entries (three extended-Strong's Greek
-    /// ids and thirteen Hebrew affix/particle pseudo-entries such as
-    /// `H9033`) -- carried as published, never invented.
+    /// Empty for sixteen upstream entries -- three extended-Strong's Greek ids and thirteen Hebrew
+    /// affix pseudo-entries -- and carried as published, never invented.
     pub lemma: String,
     pub translit: Option<String>,
     pub pos: Option<String>,
@@ -92,7 +63,6 @@ pub struct LexiconStats {
     pub tokens_ot: usize,
     pub unmatched_nt: usize,
     pub unmatched_ot: usize,
-    /// CoNLL-U chapter files read.
     pub files: usize,
 }
 
@@ -105,8 +75,6 @@ pub struct LexiconCorpus {
     pub tokens: Vec<TokenRow>,
     pub stats: LexiconStats,
 }
-
-// ------------------------------------------------------------ the JSON
 
 #[derive(Deserialize)]
 struct RawEntry {
@@ -154,9 +122,8 @@ fn non_empty(s: String) -> Option<String> {
     }
 }
 
-/// One `lexicon/<lang>/<STRONG>.json` body. Empty strings become `None`
-/// on the optional fields; `senses` are ordered by their `id`; `domains`
-/// are sorted and deduplicated.
+/// One entry file. An empty string becomes `None` on the optional fields, senses are ordered by their
+/// `id`, and domains are sorted and deduplicated.
 pub fn parse_entry(json: &str) -> Result<LexEntry> {
     let raw: RawEntry = serde_json::from_str(json).context("lexicon entry is not the expected JSON shape")?;
     if !(raw.strong.starts_with('G') || raw.strong.starts_with('H')) || raw.strong.len() < 5 {
@@ -183,15 +150,13 @@ pub fn parse_entry(json: &str) -> Result<LexEntry> {
     })
 }
 
-/// True for the `[GH]NNNN.json` names that are Strong's entries -- the
-/// `lemma-*.json` LXX-only files beside them are skipped.
+/// True for the `[GH]NNNN.json` names that are Strong's entries: the `lemma-*.json` files beside them are
+/// LXX-only and skipped.
 fn is_strongs_file_name(name: &str) -> bool {
     let Some(stem) = name.strip_suffix(".json") else { return false };
     let mut chars = stem.chars();
     matches!(chars.next(), Some('G') | Some('H')) && stem.len() >= 5 && chars.all(|c| c.is_ascii_digit())
 }
-
-// ------------------------------------------------------------ the CoNLL-U
 
 fn absent(col: &str) -> Option<String> {
     if col == "_" {
@@ -201,8 +166,7 @@ fn absent(col: &str) -> Option<String> {
     }
 }
 
-/// One chapter file. `book` is the file's own book (from its directory,
-/// through `book_code_map`); every `# ref = CODE.c.v` line must name the
+/// One chapter file. `book` comes from the file's own directory, and every `# ref` line must name that
 /// same code. Tokens are emitted in file order.
 pub fn parse_conllu(text: &str, book: BookId, expected_code: &str, layer: &'static str, out: &mut Vec<TokenRow>, unmatched: &mut usize) -> Result<usize> {
     let mut chapter_verse: Option<(u16, u16)> = None;
@@ -275,11 +239,7 @@ pub fn parse_conllu(text: &str, book: BookId, expected_code: &str, layer: &'stat
     Ok(count)
 }
 
-// ------------------------------------------------------------ the walk
-
-/// Reads `lexicon/{grc,hbo}` and `morph/{nt,ot}` under `root`
-/// (`data/raw/brain-fuel-bible`). Fails loud on a malformed file, a
-/// duplicate Strong's id, or an unresolvable book directory.
+/// Fails loud on a malformed file, a duplicate Strong's id, or an unresolvable book directory.
 pub fn read_all(root: &Path) -> Result<LexiconCorpus> {
     let books_json = std::fs::read_to_string(root.join("data/books.json")).with_context(|| format!("reading {}", root.join("data/books.json").display()))?;
     let book_codes = crate::brainfuel::book_code_map(&books_json)?;
@@ -359,8 +319,7 @@ pub fn read_all(root: &Path) -> Result<LexiconCorpus> {
     Ok(LexiconCorpus { entries, tokens, stats })
 }
 
-/// The entries keyed by Strong's id (what the adapter resolves tokens
-/// against).
+/// The entries keyed by Strong's id, which is what the adapter resolves tokens against.
 pub fn entry_index(corpus: &LexiconCorpus) -> HashMap<&str, &LexEntry> {
     corpus.entries.iter().map(|e| (e.strong.as_str(), e)).collect()
 }

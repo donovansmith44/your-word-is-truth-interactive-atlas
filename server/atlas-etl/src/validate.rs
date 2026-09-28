@@ -1,55 +1,6 @@
-//! Hard validation of the fully-merged `AtlasData` before it's written to
-//! `data/compiled/`. Collects every violation into one error (never stops
-//! at the first) so a curator fixing `data/curated/` sees the whole list in
-//! one ETL run.
-//!
-//! Checks required by the brief: unknown place ids referenced by events,
-//! dangling narrative legs, non-canon verse ids (in `Event.verses` AND
-//! `Place.verse_links` — both are the "etl-validated" trust class
-//! `atlas_core::scene` relies on via `VerseId::parse_canonical(..).expect(..)`),
-//! era gaps/overlaps/zero-years/coverage of `[-4004,100]`, duplicate event
-//! ids, non-chronological narrative legs.
-//!
-//! Two extra checks beyond the brief's literal list, added to protect
-//! invariants `atlas_core::scene::build_arrows` trusts without re-checking
-//! (it indexes `event.places[0]` directly for every narrative leg it keeps):
-//! duplicate place ids (mirrors the duplicate-event-id check) and a
-//! narrative leg whose event has zero places (would panic scene
-//! composition, not just misbehave).
-//!
-//! Cross-reference validity (ruling: every target parses, no self-refs,
-//! first verse exists in the compiled KJV text) is enforced by
-//! `xrefs::parse` + `xrefs::filter_missing_first_verse` instead — those
-//! rows are dropped-and-counted during ETL, so by the time `run` sees
-//! `AtlasData` they're already clean and don't need re-checking here.
-//!
-//! Batch E (`run_place_history`, same separate-entry-point pattern as
-//! `run_landmarks` — place histories are `#[serde(skip)]` "extra" data on
-//! `AtlasData`, not part of the core eight fields `run` above validates):
-//! unknown place id, a cited verse that doesn't parse as canonical OR
-//! doesn't exist in the compiled KJV text (a STRICTER bar than
-//! `run`'s own event-verse/verse_links check above, deliberate — every verse
-//! here is hand-typed, and this batch's standing citation-integrity rule
-//! means a typo'd verse ref must fail loudly, not silently pass a
-//! format-only check), a year of zero or outside `[ATLAS_START_YEAR,
-//! ATLAS_END_YEAR]` (zero/inverted are already impossible by the time this
-//! runs — `TimeRange::new` enforces both at parse time, see
-//! `curated::parse_place_history` — so only the atlas-span bound is left to
-//! check here), overlapping name ranges within one place, and — within one
-//! place's own blurbs — two ranges of the SAME breadth overlapping (a
-//! "broad" range is expected to overlap every "era" range it summarizes, so
-//! only same-breadth overlaps are an error). Duplicate place ids within
-//! place-history.toml itself are an extra check beyond the brief's literal
-//! list, same spirit as `run`'s own duplicate-place/duplicate-event checks.
-//!
-//! Batch HOTFIX-2 fix-round-1 (`run_place_merges`, review findings I-1/I-3):
-//! same separate-entry-point pattern as `run_place_history`/`run_landmarks`
-//! above — `atlas_core::merge::MERGE_PAIRS` is curated Rust data, not a
-//! `data/curated/*.toml` file, but it deserves the exact same fail-loud
-//! treatment: every `survivor`/`absorbed` id must exist in the real,
-//! pre-merge compiled place set, and every pair's REAL distance must be
-//! within `atlas_core::merge::SAME_PLACE_THRESHOLD_KM`. See this function's
-//! own doc comment below for why both checks matter and what they replace.
+//! Hard validation of the fully-merged `AtlasData`. Every violation is collected into one error rather than
+//! stopping at the first, so a curator sees the whole list in one run. A HAND-TYPED curated verse must both
+//! parse and EXIST in the compiled text; an imported one is checked for format only, being ETL-derived.
 
 use std::collections::{HashMap, HashSet};
 
@@ -70,25 +21,13 @@ use crate::polities::{ring_is_simple, Bbox};
 const ATLAS_START_YEAR: i32 = -4004;
 const ATLAS_END_YEAR: i32 = 100;
 
-/// The curated `kind` values `landmarks.toml` may use (design-direction.md's
-/// Atlas plate detail: water names styled italic/lapis, mountain/region
-/// names styled letterspaced small caps).
 const ALLOWED_LANDMARK_KINDS: [&str; 3] = ["water", "mountain", "region"];
 
-/// Batch T requirement 1, real data since Batch T2: the curated
-/// `Event::kind` values -- "event" (real date/place) or "general"
-/// (dateless/placeless titled container -- see `atlas_core::data::
-/// Event::kind`'s own doc comment for the shape each implies, and
-/// `atlas_etl::curated::parse_events_extra` for the fabrication guard
-/// that keeps a general-kind row from ever carrying a curator-typed
-/// date/place).
+/// The curated event kinds: `event`, with a real date and place, or `general`, a dateless and placeless titled
+/// container.
 const ALLOWED_EVENT_KINDS: [&str; 2] = ["event", "general"];
 
-/// Batch C2: the curated `size` hint `landmarks.toml` may optionally set
-/// (`None` is always valid too — only a PRESENT value is checked against
-/// this enum). Mirrors BorderLayer's own polity-label size tiers
-/// (map.js's `_sizeTier`); see `atlas_core::data::Landmark::size`'s own doc
-/// comment for what each value does.
+/// The optional curated size hint. Absent is always valid: only a PRESENT value is checked against this set.
 const ALLOWED_LANDMARK_SIZES: [&str; 3] = ["sm", "md", "lg"];
 
 pub fn run(data: &AtlasData) -> Result<()> {
@@ -100,14 +39,6 @@ pub fn run(data: &AtlasData) -> Result<()> {
     let place_ids: HashSet<&str> = data.places.iter().map(|p| p.id.as_str()).collect();
     let event_by_id: HashMap<&str, &Event> = data.events.iter().map(|e| (e.id.as_str(), e)).collect();
 
-    // Batch T requirement 1: pure verse-format check for hand-typed witness
-    // refs -- both parses canonically AND actually exists in the compiled
-    // KJV text (the STRICTER bar `run_place_history`/`run_polities` already
-    // apply to every other hand-typed curated citation in this app, since a
-    // typo there must fail loudly rather than silently pass a format-only
-    // check -- unlike `e.verses` below, whose OWN Theographic-imported
-    // majority is ETL-derived, not hand-typed, so that check stays
-    // format-only, its own long-standing behavior, unchanged by this batch).
     let check_witness_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
         Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
         Ok(_) if !data.verses.contains_key(v) => {
@@ -128,11 +59,8 @@ pub fn run(data: &AtlasData) -> Result<()> {
             }
         }
 
-        // Batch T requirement 1 ("date outside span"): every event's own
-        // `when` must fall inside the atlas's own curated span -- previously
-        // unchecked for events specifically (unlike eras/polities/place-
-        // history, which each already enforce this bound; `TimeRange::new`
-        // itself only ever rejects zero/inverted, never an out-of-span year).
+        // Every event's own span must fall inside the atlas's: `TimeRange::new` only ever rejects a zero or
+        // inverted range, never an out-of-span year.
         if e.when.from_year < ATLAS_START_YEAR || e.when.from_year > ATLAS_END_YEAR {
             errors.push(format!(
                 "event '{}': from_year {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]",
@@ -143,23 +71,14 @@ pub fn run(data: &AtlasData) -> Result<()> {
             errors.push(format!("event '{}': to_year {} is outside [{ATLAS_START_YEAR},{ATLAS_END_YEAR}]", e.id, e.when.to_year));
         }
 
-        // Batch T requirement 1: `kind` enum (see `ALLOWED_EVENT_KINDS`'s
-        // own doc comment for why every real record is "event" today).
         if !ALLOWED_EVENT_KINDS.contains(&e.kind.as_str()) {
             errors.push(format!("event '{}' has invalid kind '{}' (expected one of {:?})", e.id, e.kind, ALLOWED_EVENT_KINDS));
         }
 
-        // Batch T requirement 1: PARALLEL WITNESSES -- every witness's own
-        // book must be a real canon code, every witness must cite >=1 verse
-        // (an authored-but-empty witness is a curator mistake, not a valid
-        // "no evidence" state -- an event that genuinely has no parallel
-        // account simply carries no `[[witness]]` row at all, relying on
-        // the single-implicit-witness fallback, `scene::witnesses_for`'s
-        // own doc comment), and every cited verse both parses AND exists.
-        // Overlapping witness ranges: within ONE event, two witnesses of
-        // the SAME book whose own verse sets intersect are a curator
-        // mistake (a real account is split across two witness rows, or a
-        // copy-paste duplicate) -- checked pairwise per (event, book) group.
+        // Every witness must name a real canon book and cite at least one verse: an authored-but-empty witness
+        // is a curator mistake, not a valid "no evidence" state -- an event with no parallel account simply
+        // carries no witness row. Two witnesses of the SAME book whose verse sets intersect are likewise a
+        // mistake, an account split in two or a copy-paste, so they are checked pairwise per book.
         let mut by_book: HashMap<&str, Vec<&atlas_core::data::EventWitness>> = HashMap::new();
         for w in &e.witnesses {
             let ctx = format!("event '{}' witness ({})", e.id, w.book);
@@ -205,26 +124,10 @@ pub fn run(data: &AtlasData) -> Result<()> {
             }
         }
 
-        // Batch T2 fix-round-1 (review finding I-1): the exact invariant
-        // whose violation caused the real 72-event silent-heading-drop bug
-        // (data-only patched by commit 9679583). `heading_anchors_for`
-        // (atlas-core/src/data.rs) uses ONLY `e.witnesses` once ANY witness
-        // row exists, never falling back to `e.verses` -- so a top-level
-        // book with no matching witness row silently loses its own reader
-        // heading and PARALLEL ACCOUNTS entry, even though its verse
-        // content still shows up everywhere else. Deliberately NOT fixed by
-        // adding a fallback there (the owner's own ruling: a silent
-        // fallback would mask the curation gap instead of surfacing it,
-        // against this file's own house fail-loud pattern) -- this is the
-        // permanent guard instead. Only applies once `e.witnesses` is
-        // non-empty (an event relying purely on the single-implicit-witness
-        // fallback has nothing to check against here, and stays legal,
-        // unchanged); an event with no top-level `verses` at all likewise
-        // has nothing to check. Resolves both sides through the SAME
-        // `canon::resolve_alias` the unknown-book-code check above already
-        // uses, so an aliased witness book (e.g. an OSIS code) still counts
-        // -- an already-invalid book code gets its own separate error above
-        // and simply contributes nothing here.
+        // The heading anchors use ONLY the witness rows once any exist, never falling back to the top-level
+        // verses, so a top-level book with no matching witness row silently loses its reader heading -- the real
+        // bug that once dropped 72 events' headings. A fallback there would mask the curation gap, so this guard
+        // is the fix: it applies only once witnesses exist, and resolves both sides through the same aliasing.
         if !e.witnesses.is_empty() {
             let witness_books: HashSet<&str> =
                 e.witnesses.iter().filter_map(|w| atlas_core::canon::resolve_alias(&w.book)).map(|b| b.code()).collect();
@@ -266,18 +169,9 @@ pub fn run(data: &AtlasData) -> Result<()> {
                 Some(ev) => resolved.push(ev),
             }
         }
-        // Batch T requirement 2: same check, extended with `order_key` as an
-        // explicit SUB-YEAR tiebreak (never a fake year offset, per the
-        // brief's own instruction) -- `(from_year, order_key)` must be
-        // non-decreasing along the leg chain, not just `from_year` alone.
-        // Every pre-Batch-T event defaults `order_key` to 0, so this is a
-        // strict extension: any narrative that already passed the
-        // year-only check keeps passing (0 >= 0, always) UNLESS this batch
-        // (or a future curator) explicitly assigns order_keys that
-        // contradict the curated leg order -- exactly the class of mistake
-        // this check exists to catch (Passion Week's own 8-9 legs, all
-        // dated to the identical traditional year, had NO ordering
-        // enforcement at all before this field existed).
+        // `(from_year, order_key)` must be non-decreasing along a leg chain, not just the year: `order_key` is
+        // the explicit SUB-YEAR tiebreak, so a narrative whose legs all share one traditional year still has
+        // its order enforced.
         for pair in resolved.windows(2) {
             let a_key = (pair[0].when.from_year, pair[0].order_key);
             let b_key = (pair[1].when.from_year, pair[1].order_key);
@@ -290,15 +184,8 @@ pub fn run(data: &AtlasData) -> Result<()> {
         }
     }
 
-    // Batch T2 (owner's own ruling: "Robertson sections within one Gospel
-    // should partition, not collide with each other -- a within-layer
-    // anchor collision is a curation error your validation must catch").
-    // `AtlasData::finish()` already derives every such collision in ONE
-    // pass alongside `verse_heading` itself (see `heading_anchor_
-    // collisions`'s own doc comment, `atlas-core/src/data.rs`) -- this is
-    // purely the fail-loud reporting half, same split every other
-    // AtlasData-derived check in this function follows (era gaps/overlaps
-    // via `check_eras`, chronological legs above).
+    // The collisions are already derived in one pass alongside the heading index: this is purely the fail-loud
+    // reporting half.
     for (anchor, a, b) in data.heading_anchor_collisions() {
         errors.push(format!(
             "verse '{anchor}' is anchored by two real curated containers, '{a}' and '{b}' -- curated sections (Robertson or otherwise) must partition, never share an anchor verse (within-layer anchor collision)"
@@ -314,15 +201,8 @@ pub fn run(data: &AtlasData) -> Result<()> {
     bail!("validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Validates curated landmarks (`data/curated/landmarks.toml`, parsed
-/// separately by `curated::parse_landmarks` — see that function's doc
-/// comment for why this is a distinct pipeline step): every `kind` must be
-/// one of [`ALLOWED_LANDMARK_KINDS`], every PRESENT `size` must be one of
-/// [`ALLOWED_LANDMARK_SIZES`] (absent is always fine), and every
-/// `(lat, lon)` must fall inside `bbox` (a landmark the map is locked away
-/// from ever showing is a curation bug, not a fact worth silently keeping).
-/// Collects every violation before failing, same aggregate-don't-fail-fast
-/// policy as [`run`].
+/// Every kind and every present size must be in its allowed set, and every coordinate must fall inside `bbox`:
+/// a landmark the map can never show is a curation bug, not a fact worth silently keeping.
 pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -353,35 +233,14 @@ pub fn run_landmarks(landmarks: &[Landmark], bbox: &Bbox) -> Result<()> {
     bail!("landmark validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch B2 ("borders v2"): validates curated polities
-/// (`data/curated/polities/{id}.toml`, one `Polity` per file, parsed
-/// separately by `curated::parse_polity` -- same distinct-entry-point
-/// pattern as `run_landmarks`/`run_place_history` above: this needs the
-/// clip bbox, which the pure parse step doesn't own). Checks required by
-/// the batch brief, all aggregated (never fail-fast) same as every other
-/// check in this file:
-/// - duplicate polity ids across the curated set
-/// - every era's `from`/`to`: non-zero, non-inverted, and inside
-///   `[ATLAS_START_YEAR, ATLAS_END_YEAR]`
-/// - within ONE polity, no two eras' `[from,to]` windows intersect (reuses
-///   `TimeRange::intersects`, the exact "overlapping name/blurb ranges"
-///   check `run_place_history` already applies to a place's own curated
-///   ranges -- same shape of invariant, same reused check)
-/// - every ring: closed (first point repeats as the last, >=4 points) AND
-///   simple (`ring_is_simple` -- the reused Batch L segment-crossing test,
-///   see `crate::polities`'s own module doc comment)
-/// - every ring point falls inside `bbox` (same "a curator's typo shouldn't
-///   silently draw off in the ocean somewhere this app never renders" reason
-///   `run_landmarks` already checks `lat`/`lon` against it)
+/// Every era's years must be non-zero, non-inverted and inside the atlas span; no two eras of ONE polity may
+/// intersect; every ring must be closed, with its first point repeated last, and simple; and every ring point
+/// must fall inside `bbox`, so a transposed coordinate cannot silently draw somewhere this app never renders.
 pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
     check_duplicate_ids(polities.iter().map(|p| p.id.as_str()), "polity", &mut errors);
 
-    // Batch M requirement 1: same verse-check shape `run_place_history`
-    // already established (parses canonically AND actually exists in the
-    // compiled KJV text -- every delta verse is hand-typed, so a typo must
-    // fail loud, not silently pass a format-only check).
     let check_verse = |v: &str, ctx: &str, errors: &mut Vec<String>| match VerseId::parse_canonical(v) {
         Err(err) => errors.push(format!("{ctx}: verse '{v}' is not a canonical single-verse ref: {err}")),
         Ok(_) if !verses.contains_key(v) => {
@@ -389,17 +248,9 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
         }
         Ok(_) => {}
     };
-    // Fix round 1 (I1): `era_from` is the era ACTUALLY hosting this delta,
-    // per TOML's own attachment (whatever `[[era]]` block it's nested
-    // under) -- cross-checked against the delta's own curator-authored
-    // `for_era_from` echo. This is the structural safety net the original
-    // mis-attachment bug had none of: TOML's array-of-tables rule attaches
-    // a nested `[era.transition]`/`[era.fall]` table to whichever `[[era]]`
-    // was MOST RECENTLY OPENED, not whichever era a curator's own
-    // surrounding comment describes -- a mismatch here means the block
-    // landed on the wrong era, exactly the failure mode that shipped once
-    // (7 of 22 deltas, this batch's own self-review) and had nothing
-    // catching it before this field/check existed.
+    // The hosting era is whichever one TOML attached this block to -- the most recently opened one, not
+    // whichever era a curator's surrounding comment describes -- cross-checked against the curator's own echo
+    // field. A mismatch means the block landed on the wrong era, the failure mode that once shipped live.
     let check_delta = |delta: &atlas_core::data::PolityDelta, era_from: i32, ctx: &str, errors: &mut Vec<String>| {
         if delta.event.trim().is_empty() {
             errors.push(format!("{ctx}: event is empty"));
@@ -424,14 +275,9 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
             continue;
         }
 
-        // Batch M requirement 1: `fall` is only meaningful on the polity's
-        // own chronologically FINAL era -- determined by the era with the
-        // greatest `to` year, never assumed from file/array order (a
-        // curator could, in principle, list eras out of order; the overlap
-        // check just below doesn't depend on file order either). A `fall`
-        // authored on any OTHER era is a curator mistake (it describes an
-        // end that isn't actually this polity's end), caught here rather
-        // than silently accepted.
+        // A `fall` is only meaningful on the polity's chronologically FINAL era, found by the greatest `to` year
+        // rather than by file order, since a curator may list eras in any order. On any other era it describes
+        // an end that is not this polity's end.
         if let Some(final_era) = p.eras.iter().max_by_key(|e| e.to) {
             let final_key = (final_era.from, final_era.to);
             let final_name = final_era.name.clone();
@@ -455,11 +301,8 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
             }
         }
 
-        // Only eras with a structurally sound (non-zero, non-inverted) range
-        // are collected here for the cross-era overlap check below -- a
-        // malformed era already gets its own specific error from the loop
-        // just below and would otherwise make `TimeRange::intersects`
-        // meaningless to ask about it.
+        // Only eras with a structurally sound range are collected for the overlap check: an intersection test
+        // against a malformed range would be meaningless, and it already has its own error.
         let mut sound_ranges: Vec<(usize, TimeRange)> = Vec::new();
 
         for (i, era) in p.eras.iter().enumerate() {
@@ -489,7 +332,7 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
                         "{ring_ctx}: not a closed ring ({} points; the first point must repeat as the last, >=4 points total)",
                         ring.len()
                     ));
-                    continue; // a not-closed ring isn't a meaningful shape to run the simplicity/bbox checks against either
+                    continue;
                 }
                 if !ring_is_simple(ring) {
                     errors.push(format!("{ring_ctx}: self-intersects (not a simple polygon)"));
@@ -523,20 +366,8 @@ pub fn run_polities(polities: &[Polity], bbox: &Bbox, verses: &HashMap<String, S
     bail!("polity validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch R requirement 1 ("borders become part of the plate"): validates the
-/// curated land mask (`data/curated/land-mask.toml`, parsed separately by
-/// `curated::parse_land_mask` -- same distinct-entry-point pattern as
-/// `run_polities`/`run_landmarks`: this needs the clip bbox, which the pure
-/// parse step doesn't own). Checks, all aggregated (never fail-fast) same as
-/// every other check in this file: at least one region, every region has at
-/// least one ring, every ring closed (first point repeats as the last, >=4
-/// points) AND simple (reuses `ring_is_simple`, the SAME segment-crossing
-/// test `run_polities` already applies to polity rings -- "no fancy geometry
-/// math anywhere," one algorithm for every hand-authored ring in this app),
-/// and every ring point falls inside `bbox` (same "a curator's typo
-/// shouldn't silently draw off in the ocean somewhere this app never
-/// renders" reason `run_polities`/`run_landmarks` already check their own
-/// coordinates against it).
+/// At least one region, every region at least one ring, every ring closed and simple by the same test the polity
+/// rings use, and every point inside `bbox` for the same reason.
 pub fn run_land_mask(regions: &[LandMaskRegion], bbox: &Bbox) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -575,14 +406,8 @@ pub fn run_land_mask(regions: &[LandMaskRegion], bbox: &Bbox) -> Result<()> {
     bail!("land-mask validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch E: validates curated place histories (`data/curated/place-history.toml`,
-/// parsed separately by `curated::parse_place_history` — see that
-/// function's doc comment for why this is a distinct pipeline step, same
-/// reason `run_landmarks` above is separate from `run`). `place_ids` is the
-/// FULL compiled place-id set (so an unknown id is caught regardless of
-/// whether ANY event references it) and `verses` is the compiled KJV text
-/// map (so a cited verse must both parse canonically and actually exist).
-/// Same aggregate-don't-fail-fast policy as every other check in this file.
+/// `place_ids` is the FULL compiled place-id set, so an unknown id is caught whether or not any event references
+/// it, and `verses` is the compiled text, so a cited verse must both parse and exist.
 pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -606,11 +431,6 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
 
     for h in history {
         if !place_ids.contains(h.id.as_str()) {
-            // Fix round 1, M-2: "not in compiled places.json" was stale --
-            // places.json retired at M-C2 (graph-only now); this checks
-            // `place_ids`, the in-memory roster `compile()` builds from
-            // `AtlasData.places` before any writer runs, unaffected by
-            // that retirement.
             errors.push(format!("place-history '{}': unknown place id (not compiled -- no matching place)", h.id));
         }
 
@@ -670,36 +490,14 @@ pub fn run_place_history(history: &[PlaceHistory], place_ids: &HashSet<&str>, ve
     bail!("place-history validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch E3 (KJV display-name alias layer): validates the curated
-/// `place-names-kjv.toml` (`atlas_core::data::PlaceNameAlias`, parsed by
-/// `curated::parse_place_names_kjv`) against the compiled place set and KJV
-/// text -- same aggregate-every-error-then-bail shape `run_place_history`
-/// above uses. `places` (the FULL compiled place list, not just a
-/// `HashSet<&str>` of ids like `run_place_history` takes) is needed here
-/// specifically because the noise check below needs each alias's OWN
-/// place's canonical name, not just its existence.
-///
-/// Checks (requirement 1's own named validation list): every alias id
-/// resolves to a real compiled place; no duplicate alias ids; an alias
-/// equal to its own place's canonical name is rejected as noise (compared
-/// against the SAME stripped form `resolve_display_name`'s own fallback
-/// produces -- `strip_disambiguation_suffix`, reused directly rather than
-/// re-derived, so "Cush" is correctly caught as noise for `cush-2` even
-/// though its raw compiled name is "Cush 2"); every cited verse parses as a
-/// canonical single-verse ref AND exists in the compiled KJV text (same
-/// two-part check `run_place_history`'s own `check_verse` closure applies);
-/// a curated row missing its own "kjv" translation entry (defensive --
-/// `parse_place_names_kjv` always populates it today, but this function
-/// stays honest for a future translation-keyed row shape that might not).
+/// Takes the full compiled places rather than just their ids, because the noise check needs each alias's own
+/// place's canonical name: an alias equal to that name is rejected, compared against the SAME stripped form the
+/// display-name fallback produces, so a disambiguated name still catches its bare alias.
 pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
-    // Batch GAZ-1-R1: was `check_duplicate_ids` over the bare `id` -- a
-    // place may now legitimately carry more than one curated alias row
-    // (`lebo-hamath`, several distinct verbatim KJV wordings of the same
-    // "entrance of Hamath" boundary idiom), so a repeated id is no longer
-    // itself an error. What still is: the exact same (id, name) pair
-    // authored twice -- a copy-paste mistake, not a second genuine wording.
+    // A place may legitimately carry more than one curated alias row -- several distinct verbatim wordings of one
+    // idiom -- so a repeated id is not itself an error. The same (id, name) pair twice still is.
     {
         let mut seen: HashSet<(&str, &str)> = HashSet::new();
         let mut dupes: Vec<(&str, &str)> = Vec::new();
@@ -721,9 +519,6 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
     for a in aliases {
         let ctx = format!("place-names-kjv alias '{}'", a.id);
         let Some(place) = places_by_id.get(a.id.as_str()) else {
-            // Fix round 1, M-2: same stale-wording fix as place-history's
-            // own check above -- `places_by_id` is an in-memory map, not a
-            // file read.
             errors.push(format!("{ctx}: unknown place id (not compiled -- no matching place)"));
             continue;
         };
@@ -736,24 +531,13 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
                     errors.push(format!("{ctx}: kjv name '{kjv_name}' is equal to '{}' own canonical name -- noise, not a genuine mismatch", a.id));
                 }
 
-                // Batch GAZ-1-R1 LAW: every curated alias string must be a
-                // case-sensitive verbatim substring of the KJV text of
-                // EVERY verse listed for it -- a phrase form appearing in
-                // no listed verse is an authoring mistake, not a real
-                // citation. Dashes are normalized first (en dash U+2013 /
-                // em dash U+2014 -> plain ASCII hyphen): this dataset's own
-                // KJV text typesets compound Hebrew names with a real en
-                // dash (e.g. "Sela\u{2013}hammahlekoth"), while curated alias
-                // strings are authored with a plain hyphen -- this file's
-                // own header comment already documents that exact
-                // equivalence for its E3 sweep methodology, reused here
-                // rather than re-derived (verified against the real
-                // pre-existing `rock-of-escape` row before this law was
-                // added: it needs exactly this normalization to pass).
+                // Every curated alias must be a case-sensitive verbatim substring of the text of EVERY verse
+                // listed for it: a wording appearing in no listed verse is an authoring mistake. Dashes are
+                // normalized first, because this text typesets compound names with a real en dash while curated
+                // aliases are authored with a plain hyphen.
                 let normalized_name = normalize_dashes(kjv_name);
                 for v in &a.verses {
-                    // An unresolvable/nonexistent verse is already reported
-                    // by the verse-parse loop below -- not duplicated here.
+                    // An unresolvable verse is already reported by the parse loop below, not duplicated here.
                     if let Some(text) = verses.get(v) {
                         let normalized_text = normalize_dashes(text);
                         if !normalized_text.contains(&normalized_name) {
@@ -784,31 +568,14 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
     bail!("place-names-kjv validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Normalizes en dash (U+2013) and em dash (U+2014) to a plain ASCII
-/// hyphen -- see `run_place_names_kjv`'s own verbatim-substring law for why.
+/// Normalizes en and em dashes to a plain ASCII hyphen, for the verbatim-substring comparison.
 fn normalize_dashes(s: &str) -> String {
     s.replace('\u{2013}', "-").replace('\u{2014}', "-")
 }
 
-/// Batch F ("the small catechism"), extended Batch F2 (question-level
-/// citations): validates the curated catechism (`data/curated/
-/// catechism.toml`, MERGED with the brain-fuel/catechism mapping and the
-/// Deut5 supplement by the time this runs -- see `main.rs`'s own Batch F2
-/// section; parsed separately by `curated::parse_catechism` -- same
-/// distinct-entry-point pattern as `run_place_history`/`run_landmarks`:
-/// this needs the compiled KJV text, which the pure parse step doesn't
-/// own). `verses` is the compiled KJV text map, same stricter-than-`run`'s-
-/// own-check bar `run_place_history` already applies to hand-typed verse
-/// refs (must both parse canonically AND exist). Checks, all aggregated
-/// (never fail-fast) same as every other check in this file: duplicate
-/// part ids, duplicate item ids (GLOBAL across every part, since item
-/// lookup by id -- `AtlasData::catechism_item_by_id` --  is itself global,
-/// not scoped to a part), every part has >=1 item, every item's `verses`
-/// both parse canonically and exist in the compiled KJV text, and (Batch
-/// F2) every one of every item's own `questions[].verses` too -- the exact
-/// same per-verse bar, so a bad ref from either citation source (Luther's
-/// own embedded citations OR the repo mapping/Deut5 supplement) fails the
-/// SAME way, loudly, never silently dropped.
+/// Duplicate item ids are checked GLOBALLY across every part, because item lookup by id is itself global rather
+/// than scoped to a part. Every verse of an item, and of every one of its questions, must both parse and exist,
+/// so a bad ref from either citation source fails the same way.
 pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -851,39 +618,10 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
     bail!("catechism validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch HOTFIX-2 fix-round-1 (review findings I-1, I-3): validates
-/// `atlas_core::merge::MERGE_PAIRS` — the small, hand-curated table of
-/// same-place merges `AtlasData::finish()` applies via
-/// `atlas_core::merge::apply_place_merges` — against `places`, the REAL
-/// pre-merge compiled place set (`main.rs` calls this with `all_places`,
-/// BEFORE `AtlasData::new(...).finish()` ever runs the merge). Two checks,
-/// both aggregated, never fail-fast, same policy as every other `run_*` in
-/// this file:
-///
-/// - **I-1 (fail loud on a bad table entry)**: every `survivor`/`absorbed`
-///   id must actually exist in `places`. `apply_place_merges` itself treats
-///   a missing id as a silent no-op — it has to, since that same function
-///   also has to tolerate its own idempotent second call (after the first
-///   already dropped `absorbed`), and cannot tell "already merged" apart
-///   from "never existed" from inside that function. Called here, BEFORE any
-///   merge has ever applied, there is no such ambiguity: a missing id at
-///   this point is unambiguously a curation mistake (a typo, or an id that
-///   existed when the pair was added but was later renamed/removed
-///   upstream), so it hard-fails the ETL build — mirroring
-///   `run_place_history`'s own "unknown place id" treatment of curated ids.
-/// - **I-3 (a safety net that actually fires)**: every pair's REAL distance
-///   (`great_circle_km`, using the ACTUAL coordinates from `places` — not a
-///   hand-copied snapshot, unlike `merge.rs`'s own
-///   `every_curated_pair_is_within_the_same_place_threshold` unit test) must
-///   be within `SAME_PLACE_THRESHOLD_KM`. This is the same bound
-///   `apply_place_merges`'s own `debug_assert!` checks, but that check
-///   compiles to nothing in a release build, and nothing in the test suite
-///   ever calls it against live data (every test builds an in-memory
-///   fixture, never `AtlasData::load()`). This check runs in EVERY build
-///   profile (`bail!`, not `debug_assert!`) against the real
-///   `data/compiled/places.json` contents on every single ETL run, so
-///   upstream data drift that pushes a curated pair's real coordinates past
-///   the threshold is caught at build time, not silently shipped.
+/// Validates the curated same-place merge table against the REAL pre-merge place set, before any merge has
+/// applied: the merge itself must treat a missing id as a no-op to stay idempotent, but at this point a missing
+/// id is unambiguously a curation mistake. Every pair's REAL distance is also checked against the threshold, in
+/// every build profile and against live coordinates, unlike the debug assertion inside the merge.
 pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     let by_id: HashMap<&str, &Place> = places.iter().map(|p| (p.id.as_str(), p)).collect();
@@ -921,29 +659,9 @@ pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
     bail!("place-merge validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch HOTFIX-4 (duplicate-identity rectification, `atlas_core::event_merge`'s
-/// own module doc comment has the full root-cause chain): runs on the RAW,
-/// PRE-`AtlasData::finish()` event set (called from `main.rs`, same call
-/// position/timing as `run_place_merges` above -- BEFORE
-/// `atlas_core::event_merge::apply_event_merges` ever runs, so the
-/// duplicates this sweep is looking for are still actually there to find;
-/// running it post-merge would trivially always pass). Two checks:
-///
-/// 1. Every `EVENT_MERGE_PAIRS`/`EVENT_DISTINCT_PAIRS` entry names two real
-///    ids in the compiled event set (a stale/typo'd curated entry is a
-///    curation error, same class as `run_place_merges`'s own dangling-id
-///    check above).
-/// 2. THE FAIL-LOUD SWEEP ITSELF: every (LAYER-0, LAYER-1) event pair --
-///    and, Batch CHRON-1 (THE CHRONOLOGY AUTHORITY LAW,
-///    `atlas_core::event_merge`'s own module doc), every (LAYER-0, LAYER-0)
-///    pair too -- in the WHOLE compiled set at verse-set jaccard >=
-///    `DUPLICATE_JACCARD_THRESHOLD` (0.5 as of CHRON-1) must be accounted
-///    for -- either merged (`EVENT_MERGE_PAIRS`) or explicitly documented as
-///    genuinely distinct despite the overlap (`EVENT_DISTINCT_PAIRS`). An
-///    unlisted pair fails loud, naming both ids, both labels, and the
-///    jaccard score, so a future curator adding a new event that happens to
-///    duplicate an existing one is caught immediately, not silently shipped
-///    as a second "straight up lie" the way `theo-267`/`jm_jordan` was.
+/// Runs on the RAW, pre-merge event set, where the duplicates being looked for still exist to be found; running
+/// it after the merge would trivially pass. Every table entry must name two real ids, and every pair above the
+/// duplicate threshold must be accounted for -- merged, or explicitly documented as genuinely distinct.
 pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     let by_id: HashMap<&str, &Event> = events.iter().map(|e| (e.id.as_str(), e)).collect();
@@ -971,10 +689,8 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
         }
     }
 
-    // The sweep: every listed (merge OR distinct) pair, keyed BOTH
-    // directions -- a curator lists a merge pair as (survivor, absorbed)
-    // and a distinct pair in whatever order reads naturally, so the lookup
-    // below must not care which side is which.
+    // Keyed in BOTH directions: a curator lists a merge pair as survivor-then-absorbed and a distinct pair in
+    // whatever order reads naturally, so the lookup must not care which side is which.
     let mut listed: HashSet<(&str, &str)> = HashSet::new();
     for pair in merge_pairs {
         listed.insert((pair.survivor, pair.absorbed));
@@ -1003,17 +719,9 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
             ));
         }
     }
-    // THE CHRONOLOGY AUTHORITY LAW (`atlas_core::event_merge`'s own module
-    // doc, Batch CHRON-1, part (a)): the sweep is widened to ALSO compare
-    // LAYER-0-against-LAYER-0 pairs -- the shape neither this loop (until
-    // now) nor `run_cross_book_duplicates` below ever caught, since both
-    // sides lack the real (LAYER-1) provenance that made an "obvious
-    // survivor" easy to pick. The 4 disclosed-but-unswept Acts pairs
-    // (`p1_pisidian_antioch`/`theo-340` etc., named in `event_merge.rs`'s
-    // own former "NOT swept" section) live in exactly this gap. Same
-    // threshold, same exemption tables, same unordered-pair keying as the
-    // layer0-vs-layer1 loop above; `i+1..` avoids comparing a pair to
-    // itself or reporting it twice in either order.
+    // The sweep also compares layer-0 against layer-0, the shape neither this loop nor the title-based sweep
+    // used to catch, since with neither side carrying the richer provenance there is no obvious survivor to
+    // pick. Same threshold, same exemptions, same unordered keying.
     for i in 0..layer0.len() {
         for j_idx in (i + 1)..layer0.len() {
             let (a, b) = (layer0[i], layer0[j_idx]);
@@ -1040,42 +748,9 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
     bail!("event-merge validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch W4 fix round 1 (batch-w4-review.md Critical-1's own SYSTEMIC
-/// GUARD): the SECOND duplicate-identity sweep. `atlas_core::event_merge`'s
-/// own doc comment above `cross_book_duplicate_candidate` has the full "why
-/// a second detector" rationale -- `verse_jaccard`/`run_event_merges` above
-/// are structurally blind to a same-occurrence pair that cites disjoint
-/// verse sets (different books, or a small subset fully contained in a much
-/// larger sibling). Same call timing as `run_event_merges` (pre-merge event
-/// set, called from `main.rs` right after it) and the SAME two-part shape:
-///
-/// 1. Dangling-id checking is NOT repeated here: this function is handed the
-///    identical `merge_pairs`/`distinct_pairs`/`events` `run_event_merges`
-///    already validates for stale/typo'd ids -- re-checking would only ever
-///    duplicate that function's own errors verbatim.
-/// 2. THE FAIL-LOUD SWEEP ITSELF: every DISTINCT pair of `kind == "event"`
-///    entries in the whole compiled set that `cross_book_duplicate_candidate`
-///    flags must be accounted for -- either merged (`EVENT_MERGE_PAIRS`) or
-///    explicitly documented as genuinely distinct (`EVENT_DISTINCT_PAIRS`) --
-///    checked against the SAME shared exemption tables `run_event_merges`
-///    uses (that module's own updated doc comment: "this list is now
-///    consulted by BOTH... sweeps"). An unlisted pair fails loud, naming
-///    both ids, both labels, and the title-jaccard score, so a future
-///    curator authoring a fresh dated event that happens to duplicate an
-///    existing one's real-world occurrence is caught immediately -- the
-///    exact gap that let `jer_the_fall_of_jerusalem_retold`/`exl_jerusalem`
-///    and `jer_jeremiah_stays_with_gedaliah`+`jer_the_assassination_of_gedaliah`
-///    /`exl_mizpah` ship live undetected in the first place.
-///
-/// O(n^2) over every `kind == "event"` entry (not LAYER-0-vs-LAYER-1 like
-/// `run_event_merges` -- this shape can strike two LAYER-1 events, e.g.
-/// `exl_mizpah`'s own `atlas_section` provenance against
-/// `jer_jeremiah_stays_with_gedaliah`'s own curated-but-not-`kjv_superscription`
-/// row), but `cross_book_duplicate_candidate`'s own cheap early checks
-/// (kind, year-overlap, place-overlap) reject the overwhelming majority of
-/// pairs before the title-jaccard word-set computation ever runs, and the
-/// compiled dated-event count (~900) keeps this sweep well under a second
-/// in practice.
+/// The SECOND duplicate-identity sweep: a verse-overlap detector is structurally blind to a same-occurrence pair
+/// citing disjoint verse sets -- different books, or a small subset inside a much larger sibling -- so this one
+/// flags by title similarity instead. Dangling ids are not re-checked here; the first sweep already did.
 pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
     let mut listed: HashSet<(&str, &str)> = HashSet::new();
     for pair in merge_pairs {
@@ -1113,44 +788,16 @@ pub fn run_cross_book_duplicates(merge_pairs: &[EventMerge], distinct_pairs: &[E
     bail!("cross-book event-duplicate validation failed with {} error(s):\n{}", unlisted.len(), joined);
 }
 
-/// THE NO-TWO-OPINIONS VALIDATION (Batch CHRON-1, THE CHRONOLOGY AUTHORITY
-/// LAW's own DIRECT enforcement -- `atlas_core::event_merge`'s own module
-/// doc, part (b); designed in that same doc comment before this function was
-/// written, per the batch's own contract-first order). Unlike
-/// `run_event_merges`/`run_cross_book_duplicates` above (pairwise CURATION
-/// TOOLING: "is this an unlisted candidate pair," run on the PRE-merge event
-/// set, the only point a soon-to-be-absorbed id and its own survivor both
-/// still exist to compare), this check runs on the event set a READER
-/// actually sees -- POST-merge, POST-`nt_calibration`, POST-
-/// `THEO_DATE_OVERRIDES` (`compile.rs` calls it against `data.events`, the
-/// same post-`finish()` orientation as `run_chronology_anchors`) -- and
-/// asserts the law ITSELF, directly: no two surviving `kind == "event"`
-/// entries at verse-jaccard >= `DUPLICATE_JACCARD_THRESHOLD` (heavy witness
-/// overlap -- the SAME real-world episode) carry independent placements
-/// (`when.from_year`, `when.to_year`, or `order_key` differing). A pair
-/// explicitly listed in `EVENT_DISTINCT_PAIRS` is exempt by definition -- a
-/// genuinely distinct mega-span/complementary-beat pair is EXPECTED to keep
-/// two placements, that is what "distinct" means.
-///
-/// Also closes a gap NEITHER prior sweep covers: `run_event_merges` only
-/// ever compares a LAYER-0 event against a LAYER-0 or LAYER-1 one
-/// (`is_layer0`-gated); `run_cross_book_duplicates` requires year-overlap +
-/// place-overlap + high TITLE similarity. Two CURATED (LAYER-1) events that
-/// duplicate each other via heavy VERSE overlap alone (no prior sweep's own
-/// shape) would still fail loud here -- this is the law's own backstop, not
-/// merely a third restatement of the same check.
-///
-/// Book-bucketed (not naive O(n^2) over ~1700 events): two events are only
-/// ever compared if they touch >= 1 common book, the same cheap-early-check
-/// discipline `cross_book_duplicate_candidate`'s own doc comment describes,
-/// keeping this well under a second in practice.
+/// The law itself, on the event set a READER sees: post-merge, post-calibration and post-override, no two
+/// surviving events at heavy verse overlap -- the same real-world episode -- may carry independent placements.
+/// A pair listed as genuinely distinct is exempt by definition, since two placements is what distinct means.
 pub fn run_no_two_opinions(distinct_pairs: &[EventDistinct], events: &[Event]) -> Result<()> {
     let exempt: HashSet<(&str, &str)> = distinct_pairs.iter().flat_map(|p| [(p.a, p.b), (p.b, p.a)]).collect();
 
     let dated: Vec<&Event> = events.iter().filter(|e| e.kind == "event").collect();
 
-    // book code -> indices (into `dated`) of every event touching it, so a
-    // pair is only ever compared once they share >= 1 book.
+    // book code -> the indices of every event touching it, so a pair is only ever compared once they share a
+    // book.
     let mut by_book: HashMap<&str, Vec<usize>> = HashMap::new();
     for (i, e) in dated.iter().enumerate() {
         let mut seen_books: HashSet<&str> = HashSet::new();
@@ -1184,7 +831,7 @@ pub fn run_no_two_opinions(distinct_pairs: &[EventDistinct], events: &[Event]) -
             continue;
         }
         if a.when.from_year == b.when.from_year && a.when.to_year == b.when.to_year && a.order_key == b.order_key {
-            continue; // same episode, same placement -- no conflicting opinion reaches a reader
+            continue;
         }
         violations.push(format!(
             "'{}' ({:?}, placed {}..{} order_key {}) <-> '{}' ({:?}, placed {}..{} order_key {}): jaccard {j_score:.3} >= {DUPLICATE_JACCARD_THRESHOLD} but the two placements DISAGREE, and neither is documented as genuinely distinct (EVENT_DISTINCT_PAIRS)",
@@ -1201,16 +848,9 @@ pub fn run_no_two_opinions(distinct_pairs: &[EventDistinct], events: &[Event]) -
     bail!("no-two-opinions validation failed with {} violation(s) (THE CHRONOLOGY AUTHORITY LAW):\n{}", violations.len(), joined);
 }
 
-/// Batch HOTFIX-6 (graph-wide chronology audit): `data/curated/
-/// chronology-anchors.toml`'s own structural validity -- every `event_id`
-/// (when present) must name a real compiled event, and every `era_boundary`
-/// row MUST carry one (the E4 property test needs a real timeline position
-/// to gate on; an unbound era-boundary row is a curation error, not a
-/// legal "disclosed adjacency" gap the way an ordinary unbound anchor is).
-/// Runs against `data.events`, the FINAL (post-merge, post-calibration,
-/// post-override) compiled set -- same post-`finish()` orientation as
-/// `run` above, since an anchor binding an id a merge/override step could
-/// still touch should be checked against what actually ships.
+/// Every anchor's `event_id`, where present, must name a real compiled event, and an `era_boundary` row MUST
+/// carry one -- an unbound boundary row is a curation error, unlike an ordinary unbound anchor. Runs against the
+/// FINAL event set, since an anchor binding an id a merge or override could still touch must be checked as shipped.
 pub fn run_chronology_anchors(anchors: &[ChronologyAnchor], events: &[Event]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     let by_id: HashSet<&str> = events.iter().map(|e| e.id.as_str()).collect();
@@ -1238,21 +878,9 @@ pub fn run_chronology_anchors(anchors: &[ChronologyAnchor], events: &[Event]) ->
     bail!("chronology-anchor validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch HOTFIX-6 fix round 2 (review finding I-2): the fail-loud ETL-time
-/// twin of `narrative.rs`'s own E1 property test. Before this function
-/// existed, "the table and the data agree" was enforced ONLY at `cargo
-/// test` time -- a curator typo, or a merge/rename that silently drifted a
-/// bound event's `from_year` away from its anchor, would still let `cargo
-/// run -p atlas-etl` succeed and write `data/compiled/*` normally. Calls
-/// the SAME `atlas_core::chronology::anchor_equality_check` predicate E1
-/// uses (two independent LAYERS -- in-process build-time state here,
-/// compiled-JSON-on-disk there -- never two hand-written copies that could
-/// silently drift apart, the identical reasoning `run_chronology_windows`/
-/// `run_era_boundaries` already established for their own shared
-/// predicates). A stale deferral (an `ANCHOR_DEFERRALS` entry whose
-/// recorded `shipped_value` no longer matches its event's real current
-/// date) fails loud exactly like a real violation -- a deferral is a
-/// disclosed, TIME-BOUNDED gap, never a license to silently drift further.
+/// The fail-loud ETL-time twin of the anchor-equality property test, calling the SAME predicate so the two layers
+/// cannot drift into two hand-written copies. A stale deferral -- one whose recorded value no longer matches its
+/// event's date -- fails loud exactly like a real violation: a deferral is a time-bounded gap, not a licence to drift.
 pub fn run_chronology_anchor_equality(anchors: &[ChronologyAnchor], events: &[Event]) -> Result<()> {
     let (violations, _deferred) = atlas_core::chronology::anchor_equality_check(anchors, events);
     if violations.is_empty() {
@@ -1279,22 +907,9 @@ pub fn run_chronology_anchor_equality(anchors: &[ChronologyAnchor], events: &[Ev
     bail!("chronology anchor-equality validation failed with {} error(s):\n{}", violations.len(), joined);
 }
 
-/// Batch HOTFIX-6: the ERA-WINDOW VALIDATOR itself -- the permanent,
-/// fail-loud guard the owner's own "i'm sure these errors are graph-wide"
-/// assertion earns. `atlas_core::chronology`'s own module doc comment has
-/// the full root-cause/design story; this is purely the "turn a finding
-/// into an ETL failure" half, same split every other validator in this file
-/// follows.
-///
-/// Two independent failure modes, both real curation errors, both reported
-/// together (never one masking the other):
-/// 1. `missing_windows`: a book some dated event actually cites (net of
-///    recounting citations) has no curated `BookNarrationWindow` row at
-///    all -- a curation gap, not silently un-checked.
-/// 2. `window_violations`: a dated event's own year falls outside a witness
-///    book's own curated window, and is not individually exempted
-///    (`chronology::WINDOW_EXEMPTIONS`) -- the df_ramah-class bug this
-///    validator exists to catch.
+/// The era-window guard, in two independent failure modes reported together: a book some dated event actually
+/// cites having no curated narration window at all, and a dated event's year falling outside a witness book's
+/// window without an individual exemption.
 pub fn run_chronology_windows(events: &[Event], windows: &[BookNarrationWindow]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
@@ -1317,12 +932,8 @@ pub fn run_chronology_windows(events: &[Event], windows: &[BookNarrationWindow])
     bail!("chronology era-window validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Batch HOTFIX-6: the E4-shaped structural guard, generalizing HOTFIX-4's
-/// own single NT era-boundary gate (Passion cluster vs. every ACT-witnessed
-/// event) to EVERY `era_boundary` anchor in the curated table. Needs the
-/// full `AtlasData` (unlike the two checks above) because it reasons about
-/// GLOBAL TIMELINE POSITION, not raw years -- `atlas_core::chronology::
-/// era_boundary_violations`'s own doc comment has the full design.
+/// Needs the full `AtlasData`, unlike the checks above, because it reasons about GLOBAL TIMELINE POSITION rather
+/// than raw years.
 pub fn run_era_boundaries(data: &AtlasData) -> Result<()> {
     let violations = atlas_core::chronology::era_boundary_violations(data);
     if violations.is_empty() {
@@ -1403,18 +1014,6 @@ fn check_eras(eras: &[Era], errors: &mut Vec<String>) {
     }
 }
 
-// ---------------------------------------------------------------------
-// Batch GAZ-1-R1: run_place_names_kjv's own new verbatim-substring law --
-// this file's first `#[cfg(test)]` module (every other check here is
-// otherwise only exercised transitively, via the real ETL pipeline over
-// real committed data -- e.g. `atlas-etl/tests/etl.rs`'s own real-compile
-// tests, `atlas-graph/tests/*_real_data.rs`). Small, fast, synthetic
-// fixtures specifically for this new law's own logic (substring matching +
-// dash normalization + the relaxed duplicate-id rule), separate from and
-// in addition to the real committed `data/curated/place-names-kjv.toml`
-// already being validated on every real compile.
-// ---------------------------------------------------------------------
-
 #[cfg(test)]
 mod gaz1_r1_tests {
     use super::*;
@@ -1439,23 +1038,16 @@ mod gaz1_r1_tests {
             "From mount Hor ye shall point out your border unto the entrance of Hamath; and the goings forth of the border shall be to Zedad:".to_string(),
         )]);
 
-        // RED: the alias string is not a substring of its cited verse's own text.
         let wrong = vec![alias("lebo-hamath", "entering in of Hamath", &["NUM.34.8"])];
         let err = run_place_names_kjv(&wrong, &places, &verses).unwrap_err();
         assert!(err.to_string().contains("not a verbatim substring"), "{err}");
 
-        // GREEN: it is.
         let right = vec![alias("lebo-hamath", "entrance of Hamath", &["NUM.34.8"])];
         assert!(run_place_names_kjv(&right, &places, &verses).is_ok());
     }
 
     #[test]
     fn verbatim_substring_law_normalizes_en_dash_to_hyphen() {
-        // The real pre-existing `rock-of-escape` row's own shape: the KJV
-        // text's own en dash (U+2013, "Sela\u{2013}hammahlekoth") vs. the
-        // curated alias's plain ASCII hyphen ("Sela-hammahlekoth") --
-        // confirmed against the real committed data before this law was
-        // added (see run_place_names_kjv's own doc comment).
         let places = vec![place("rock-of-escape", "Rock of Escape")];
         let verses = HashMap::from([("1SA.23.28".to_string(), "...therefore they called that place Sela\u{2013}hammahlekoth.".to_string())]);
         let aliases = vec![alias("rock-of-escape", "Sela-hammahlekoth", &["1SA.23.28"])];
@@ -1464,8 +1056,6 @@ mod gaz1_r1_tests {
 
     #[test]
     fn multiple_aliases_on_the_same_id_are_lawful_when_names_differ() {
-        // Batch GAZ-1-R1: lebo-hamath's own real shape -- rejected as a
-        // "duplicate id" before this batch; lawful now.
         let places = vec![place("lebo-hamath", "Lebo-hamath")];
         let verses = HashMap::from([
             ("NUM.34.8".to_string(), "...unto the entrance of Hamath; and the goings forth...".to_string()),

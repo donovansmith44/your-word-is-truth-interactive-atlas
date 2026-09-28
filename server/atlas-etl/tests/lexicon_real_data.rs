@@ -1,12 +1,3 @@
-//! LEX-1 real-data tests over the actual vendored
-//! `data/raw/brain-fuel-bible/{lexicon,morph}` (pinned commit
-//! `94d44842cb242e8aa840330748e03d2803f2a7c1` -- see `data/raw/README.md`).
-//!
-//! Every count below was verified by an independent Python sweep of the
-//! real files before being pinned here (spec §7.1's coverage table gives
-//! the same totals): 5,122 + 8,426 entries; 140,610 NT + 312,079 OT tokens
-//! of which 6,615 + 14,794 are `Align=unmatched`; 260 + 929 chapter files.
-
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -45,7 +36,6 @@ fn entries_are_sorted_unique_strongs_ids_and_only_strongs_files_are_read() {
         assert!(digits.len() >= 4 && digits.bytes().all(|b| b.is_ascii_digit()), "{}", e.strong);
         assert_eq!(e.lang, if head == "G" { "grc" } else { "hbo" }, "{}", e.strong);
     }
-    // The 10,133 `lemma-*.json` LXX-only entries beside the Greek ones are never read.
     assert!(c.entries.iter().all(|e| !e.strong.starts_with("lemma")));
 }
 
@@ -80,8 +70,6 @@ fn sixteen_upstream_entries_have_no_lemma_and_are_carried_as_published() {
         bare,
         vec!["G6053", "G6063", "G6083", "H9005", "H9007", "H9008", "H9030", "H9031", "H9032", "H9033", "H9034", "H9035", "H9036", "H9037", "H9038", "H9039"]
     );
-    // ... and the tokens DO reference them (Hebrew suffix pronouns and
-    // particles), so an adapter that dropped them would orphan edges.
     let refs = c.tokens.iter().filter(|t| t.strong.as_deref() == Some("H9033")).count();
     assert_eq!(refs, 1515);
 }

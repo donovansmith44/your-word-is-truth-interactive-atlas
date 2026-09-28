@@ -1,48 +1,6 @@
-//! PG-1a ("People groups & eponymy: the data half" -- batch-pg1a-brief.md
-//! controller decision 1a): parses Theographic Bible Metadata's
-//! `peopleGroups.json` (23 records: 12 tribes + Nation of Israel + a
-//! handful of NT collectives) into compiled [`PeopleGroup`]s -- a new
-//! sibling fact file to `people.rs`/`easton.rs`, the SAME "adapter reads
-//! one source's bytes, emits typed data, no filesystem/network I/O"
-//! discipline this crate's own module doc comment names (`lib.rs`).
-//!
-//! MOSTLY NODES ONLY, CORRECTED (PG-1B rider, batch-edge1a-brief.md
-//! controller decision 0): the PG-1a doc comment this replaces claimed
-//! `peopleGroups.json` ships NO per-group verse arrays at all -- FALSE for
-//! 2 of the 23 records. Tribe of Judah and Nation of Israel DO carry a
-//! real `verses` field (Airtable record ids into `verses.json`, the SAME
-//! foreign-key shape `people.rs`'s own `PersonFields.verses` already
-//! resolves) -- reciprocally back-referenced by each of those 13 verse
-//! records' own `peopleGroups` field (the Sin-guard's "source-attested,
-//! not string-guessed" bar). This module now resolves them the SAME way
-//! `people::parse_people` resolves `Person.verse_links`: join through
-//! `verses.json`'s own `osisRef`, dedup, canon-sort. The OTHER 21 records
-//! genuinely carry no `verses` field, so `verse_links` stays honestly
-//! empty for them. `members` (person-record ids) and `events_dev` (event
-//! ids) remain UNIMPORTED (decision 1a: "the members data is NOT imported
-//! this batch -- a member-of relation is a noted owner option, unordered")
-//! -- `id` (derived, see below), `label` (`groupName` verbatim), and now
-//! `verse_links` are the three facts the graph adapter
-//! (`atlas_graph::peoples_adapter`) needs.
-//!
-//! NO ID-LOOKUP FIELD, disclosed: unlike `people.json`'s own
-//! `personLookup`, `peopleGroups.json` ships no analogous slug/lookup
-//! field for its own 23 records -- every record's ONLY name-bearing field
-//! is `groupName` (`"Tribe of Levi"`, `"Nation of Israel"`, ...). This
-//! module derives a kebab-case slug FROM `groupName` (see [`slugify`]) as
-//! the compiled `PeopleGroup.id`, rather than falling back to the raw
-//! Airtable record id the way `people.rs`'s own no-lookup-field fallback
-//! does (`f.person_lookup.clone().unwrap_or_else(|| rec.id.clone())`) --
-//! a DELIBERATE divergence from that precedent, not an oversight: curated
-//! data (`data/curated/people-groups.toml`'s own `[[named_after]]` rows)
-//! needs to REFERENCE these ids BY HAND, and an opaque Airtable id (e.g.
-//! `"reciI2noa29XOlF3E"`) would make that curated authoring illegible,
-//! where a friendly kebab-case slug (`"tribe-of-judah"`) does not -- the
-//! SAME "friendly, human-legible slug" shape `PlaceId` already uses
-//! (geo-derived kebab-case, per `easton.rs`'s own "PLACE-NAME RESOLUTION"
-//! doc comment). Verified collision-free over the real committed data (23
-//! distinct `groupName` values -> 23 distinct slugs; `parse_people_groups`'s
-//! own tests re-prove this against the real file).
+//! Parses Theographic people-group records. Only 2 of the 23 carry a `verses` field, and `members` and the
+//! event ids are not imported. The source ships no lookup field, so a compiled id is a kebab-case slug of
+//! the group name: curated rows reference these ids by hand, where an opaque record id would not read.
 
 use std::collections::HashMap;
 
@@ -63,9 +21,7 @@ struct Record<F> {
 struct PeopleGroupFields {
     #[serde(default)]
     group_name: Option<String>,
-    /// PG-1B rider: present (non-empty) on exactly 2 of the 23 real
-    /// records -- Tribe of Judah, Nation of Israel. Module doc comment
-    /// above has the full correction story.
+    /// Present and non-empty on exactly 2 of the 23 real records.
     #[serde(default)]
     verses: Vec<String>,
 }
@@ -80,30 +36,20 @@ struct VerseFields {
 #[derive(Debug, Clone, Default)]
 pub struct PeopleGroupStats {
     pub total: usize,
-    /// Records with no usable (non-empty, after trim) `groupName` --
-    /// dropped, not fatal (zero in the real committed data, verified;
-    /// surfaced anyway per this crate's own "skip, don't panic, but count
-    /// it" discipline for a plain, expected raw-data gap).
+    /// Records with no usable, non-empty name: dropped rather than fatal, and counted.
     pub no_name: usize,
     /// PG-1B rider: groups carrying >=1 resolved verse link (2 of 23 in
     /// the real committed data: Tribe of Judah, Nation of Israel).
     pub with_verses: usize,
-    /// PG-1B rider: total raw `verses` foreign-key entries seen across all
-    /// records, before resolution -- mirrors `people::PeopleStats::
-    /// verse_refs_total`.
+    /// Total raw `verses` foreign-key entries seen across all records, before resolution.
     pub verse_refs_total: usize,
-    /// PG-1B rider: raw verse refs that failed to resolve (dangling
-    /// `verses.json` foreign key, or an unparseable `osisRef`) -- dropped,
-    /// not fatal, same "skip, don't panic, but count it" discipline as
-    /// `no_name` above. Zero in the real committed data (verified).
+    /// Raw verse refs that failed to resolve -- a dangling foreign key, or an unparseable reference --
+    /// dropped rather than fatal, and counted.
     pub verse_refs_unresolved: usize,
 }
 
-/// Kebab-case slug from a display name: lowercase; every run of
-/// non-ASCII-alphanumeric characters collapses to one hyphen; leading/
-/// trailing hyphens trimmed. Module doc comment above has the full "why"
-/// (no source lookup field exists to reuse). E.g. `"Tribe of Levi"` ->
-/// `"tribe-of-levi"`; `"Apostles (The Eleven)"` -> `"apostles-the-eleven"`.
+/// Kebab-case slug from a display name: lowercased, every run of non-alphanumeric characters collapsed to
+/// one hyphen, no leading or trailing hyphen. `"Tribe of Levi"` becomes `"tribe-of-levi"`.
 pub fn slugify(name: &str) -> String {
     let mut out = String::with_capacity(name.len());
     let mut pending_hyphen = false;
@@ -121,16 +67,8 @@ pub fn slugify(name: &str) -> String {
     out
 }
 
-/// Parses `people_groups_json` (Theographic's own `peopleGroups.json`) +
-/// `verses_json` (for locus resolution, PG-1B rider) into
-/// `Vec<PeopleGroup>`. A record with no usable `groupName` is dropped (not
-/// fatal -- `PeopleGroupStats::no_name` surfaces the count), matching
-/// every sibling adapter's own "skip, don't panic, but count it"
-/// discipline for a plain, expected raw-data gap. `verses` resolution
-/// mirrors `people::parse_people` exactly: join through `verses.json`'s
-/// own `osisRef`, dedup, canon-sort (module doc comment's own "CANON
-/// ORDER" reasoning applies here too -- Theographic's own list order is
-/// not trusted as upstream happenstance).
+/// A record with no usable name is dropped rather than fatal, and counted. The verse refs are joined through
+/// the verses file, deduped and canon-sorted: the source's own list order is not trusted.
 pub fn parse_people_groups(people_groups_json: &str, verses_json: &str) -> Result<(Vec<PeopleGroup>, PeopleGroupStats)> {
     let records: Vec<Record<PeopleGroupFields>> =
         serde_json::from_str(people_groups_json).context("theographic peopleGroups.json is not valid JSON")?;
@@ -225,23 +163,13 @@ mod tests {
 
     #[test]
     fn members_events_dev_and_part_of_are_read_by_nothing_here() {
-        // Decision 1a: "the members data is NOT imported this batch" --
-        // proven by feeding a record that ALSO carries partOf (a real
-        // shape some Theographic tribe records have) and confirming the
-        // parsed PeopleGroup carries only id/label/verse_links, nothing
-        // else to leak.
         let json = r#"[{"id": "recX", "fields": {"groupName": "Tribe of Gad", "members": ["recA","recB"], "partOf": ["recC"], "events_dev": ["recD"]}}]"#;
         let (groups, _) = parse_people_groups(json, VERSES_FIXTURE).unwrap();
         assert_eq!(groups, vec![atlas_core::data::PeopleGroup { id: "tribe-of-gad".into(), label: "Tribe of Gad".into(), verse_links: vec![] }]);
     }
 
-    // --- PG-1B rider: `verses` resolution -----------------------------------
-
     #[test]
     fn resolves_and_canon_sorts_a_groups_own_verses_field() {
-        // Deliberately OUT of canon order in the source list -- proves the
-        // explicit sort, not upstream happenstance (mirrors people.rs's own
-        // identical test for Person.verse_links).
         let json = r#"[{"id": "recX", "fields": {"groupName": "Nation of Israel", "verses": ["v3", "v1", "v2"]}}]"#;
         let (groups, stats) = parse_people_groups(json, VERSES_FIXTURE).unwrap();
         assert_eq!(groups[0].verse_links, vec!["GEN.1.1", "GEN.1.2", "EXO.2.1"]);
@@ -289,13 +217,6 @@ mod tests {
         assert_eq!(ids.len(), 23, "every derived slug must be collision-free over the real committed group names");
     }
 
-    /// PG-1B rider (batch-edge1a-brief.md decision 0): "REPORT WHICH 13
-    /// LOCI these are verbatim (if Tribe of Judah's one verse is JDG 1:2,
-    /// say so loudly -- it is the owner's own motivating example)." Read
-    /// against the REAL committed data: it is NOT JDG 1:2 -- Tribe of
-    /// Judah's one real, reciprocally-linked verse is PRO.25.1 ("These are
-    /// also proverbs of Solomon, which the men of Hezekiah king of Judah
-    /// copied out"). Nation of Israel carries the other 12, all in Psalms.
     #[test]
     fn real_committed_data_resolves_exactly_the_two_verse_bearing_groups() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw/theographic/theographic-bible-metadata-master/json");
@@ -317,8 +238,6 @@ mod tests {
         );
         assert_eq!(judah.verse_links.len() + israel.verse_links.len(), 13, "13 total loci across the two verse-bearing groups");
 
-        // Every OTHER group must stay honestly empty -- these two are not
-        // representative of the whole 23-record set.
         for g in &groups {
             if g.id != "tribe-of-judah" && g.id != "nation-of-israel" {
                 assert!(g.verse_links.is_empty(), "'{}' must carry no verse_links -- only Tribe of Judah/Nation of Israel do in the real data", g.id);

@@ -1,27 +1,6 @@
-//! `gen_sources` binary: reads `data/curated/sources.toml`, validates it
-//! (structurally, then 1:1 against LICENSES.md's own "## Per-source
-//! table" -- `atlas_etl::sources`'s own doc comment has the full
-//! reasoning), and writes `data/compiled/sources.json`. Run as
-//! `cargo run -p atlas-etl --bin gen_sources` from `server/` (paths below
-//! are relative to that working directory -- the same convention
-//! `atlas-etl`'s own primary binary, `main.rs`, already uses).
-//!
-//! Deliberately its OWN binary, never folded into `main.rs`'s own
-//! `compile()` pipeline: batch-s-brief.md's own finalization block
-//! requires any Rust helper this batch adds stay OUTSIDE the graph
-//! pipeline, so `graph.bin`/`data/exports/` stay byte-untouched by
-//! anything here -- this binary never reads `data/raw/`, never touches
-//! `AtlasData`, and writes exactly one new file.
-//!
-//! Lives at `src/bins/gen_sources.rs` (note the "s"), NOT Cargo's
-//! auto-discovered `src/bin/gen_sources.rs` -- this repo's own root
-//! `.gitignore` carries a broad `**/bin/` rule (meant for the Blazor
-//! client's own .NET build-output `bin/` directories), which would
-//! silently exclude a real source file at that conventional path. Same
-//! disclosed workaround `atlas-graph/Cargo.toml`'s own `[[bin]]` entry
-//! for `compile_graph.rs` already established -- declared explicitly in
-//! `atlas-etl/Cargo.toml`'s own `[[bin]]` table rather than relying on
-//! auto-discovery.
+//! Reads the curated sources file, validates it, and writes the compiled sources document:
+//! `cargo run -p atlas-etl --bin gen_sources` from `server/`. It lives under `src/bins/`, not Cargo's
+//! auto-discovered `src/bin/`, because this repo's `.gitignore` excludes every `bin/` directory.
 
 use std::fs;
 use std::path::Path;
@@ -29,9 +8,6 @@ use std::path::Path;
 use anyhow::{Context, Result};
 
 fn main() -> Result<()> {
-    // Built from components, same as main.rs's own data_dir -- consistent
-    // separators in error messages instead of mixing '/' (as typed) and
-    // '\' (from PathBuf::join) on Windows.
     let repo_root = Path::new("..");
     let sources_toml_path = repo_root.join("data").join("curated").join("sources.toml");
     let licenses_path = repo_root.join("LICENSES.md");
@@ -56,11 +32,6 @@ fn main() -> Result<()> {
         "gen_sources: wrote {} categories, {} sources, {} provenance rows to {} (validated 1:1 against LICENSES.md's per-source table)",
         doc.categories.len(),
         doc.sources.len(),
-        // Batch PROV-1: the provenance join table rides the SAME
-        // parse/validate/write path -- no second binary, no second file.
-        // Whether every row is INHABITED by the real artifact (and every
-        // carried id declared) is checked where the graph is actually
-        // loaded: atlas-graph/tests/provenance_registry_real_data.rs.
         doc.provenances.len(),
         compiled_path.display()
     );

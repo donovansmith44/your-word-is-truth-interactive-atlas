@@ -1,140 +1,49 @@
-//! Batch RED-1 ("Red letters on Jesus' words in every translation," owner
-//! order 2026-08-25): parses the vendored `data/raw/red-letter/
-//! eng-kjv.osis.xml` -- a public-domain KJV OSIS file (eBible.org, via the
-//! `seven1m/open-bibles` curated PD-bibles collection; see LICENSES.md's own
-//! "KJV red-letter markup" section for the full PD grounding and the
-//! CrossWire-substitution disclosure) -- into per-verse `<q who="Jesus">`
-//! spans, then ALIGNS each span's own text against OUR canonical KJV verse
-//! text (the GAZ-1 alias-law pattern, `atlas-etl/src/validate.rs`'s own
-//! `run_place_names_kjv`: "every curated alias string must be a
-//! case-sensitive verbatim substring... of the KJV text").
-//!
-//! SOURCE SHAPE (OSIS, milestone-style -- verified directly against the real
-//! vendored file): `<verse osisID="Matt.4.19" sID="..." n="19" />TEXT
-//! <verse eID="..." />` per verse; a red span is `<q who="Jesus" sID="..."
-//! marker="" />TEXT<q eID="..." />` NESTED inside one verse's own text
-//! region -- the source's own `<q>` usage never crosses a verse boundary
-//! (its own revisionDesc header: "`<q>` markup is stopped and restarted at
-//! all verse boundaries"), so this parser never needs to carry an open span
-//! across a `<verse eID.../>`. Book identity comes from `<div type="book"
-//! osisID="Gen" ...>` -- `osisID` is the OSIS 3-ish-letter code
-//! (`"Gen"`/`"Matt"`/`"1Cor"`), which `atlas_core::canon::resolve_alias`
-//! ALREADY resolves directly (`BookInfo.osis`, canon.rs) -- no separate
-//! mapping table needed. A book whose `osisID` does not resolve (the
-//! source's own bundled Apocrypha/Deuterocanon -- its header states "with
-//! Apocrypha/Deuterocanon") is silently excluded from `current_book`, so its
-//! verses never open at all -- correct: our canon has no Apocrypha, and
-//! Jesus never speaks there regardless.
-//!
-//! PARSER SHAPE: hand-rolled tag scanner, single pass (this crate's own
-//! established house style -- `kretzmann.rs`/`concord.rs` are both
-//! hand-rolled HTML scanners too; no XML/HTML parsing crate exists anywhere
-//! in this workspace's `Cargo.lock`, and this file's own tag grammar is
-//! regular enough not to need one). Only text INSIDE a `who="Jesus"` span is
-//! ever accumulated -- the parser has no need to reconstruct a whole
-//! verse's own plain text (unlike `kretzmann.rs`, which excises AROUND kept
-//! lemma text); `<transChange type="added">...</transChange>` (KJV's own
-//! italicized/supplied-word convention) is transparent here -- its own
-//! open/close tags are stripped, its inner text flows through like any
-//! other text chunk, whether inside or outside a Jesus span. The MOMENT a
-//! verse closes, its own raw span texts are immediately aligned against
-//! `kjv_verses` (below) and only the resolved byte offsets are kept -- the
-//! raw text itself never needs to outlive that one verse's own scope.
-//!
-//! ALIGNMENT: per verse, each source span's own TRIMMED text is searched
-//! (case-sensitive first) as a substring of OUR canonical verse text,
-//! starting from a CURSOR that advances past each successful match (so two
-//! spans in one verse, or a repeated short phrase, resolve left-to-right
-//! rather than both collapsing onto the first occurrence). A verse
-//! containing multiple SEPARATE `<q who="Jesus">` runs (narration between
-//! two sayings) is real and handled this way, in document order. Failing
-//! that, a CASE-INSENSITIVE retry (`ascii_ci_find` below, the disclosed
-//! KJV-CASE class: our RESTORED case convention -- LORD/Lord -- vs this
-//! source's own normalization) resolves the offset the same way, against
-//! OUR bytes (never the source's own differently-cased text). Neither
-//! found: the span is dropped from the SUB-VERSE table (counted, never
-//! guessed) -- the verse itself STAYS in the verse SET regardless (decision
-//! 2a: the verse set is edition-independent, sourced from "does the source
-//! mark ANY red content here," not from OUR OWN byte-alignment success).
-//!
-//! ASCII-CASE-INSENSITIVE, NOT `str::to_lowercase()`, disclosed: Rust's
-//! `to_lowercase()` is Unicode-aware and can change a string's own BYTE
-//! LENGTH for some scripts (never English/Latin text), which would silently
-//! break the "offset transfers back to the original bytes" step. Real KJV
-//! text is ASCII plus the occasional en/em dash (case-invariant) --
-//! `ascii_ci_find` below only ever treats ASCII letters case-insensitively
-//! (`u8::eq_ignore_ascii_case`'s own documented scope) and compares every
-//! other byte exactly, so it is safe over arbitrary UTF-8 and simply
-//! reports "not found" rather than mis-computing an offset on any text this
-//! assumption doesn't hold for.
+//! Parses the vendored KJV OSIS file into per-verse `<q who="Jesus">` spans and ALIGNS each against OUR canonical
+//! verse text -- case-sensitive first, then an ASCII-case-insensitive retry, with an advancing cursor so repeated
+//! phrases resolve left to right. A span aligning neither way is dropped and counted; the verse stays in the set.
 
 use std::collections::HashMap;
 
 use anyhow::{Context, Result};
 
-/// One verse the SOURCE marks as containing >=1 run of Christ's words --
-/// present in the verse SET regardless of alignment outcome (module doc
-/// comment). `spans` carries only the SUCCESSFULLY ALIGNED byte-offset
-/// ranges (into OUR canonical verse text, `String::find`-compatible byte
-/// indices) -- empty when every span in this verse failed to align (a real,
-/// disclosed, counted case; the verse stays in the set, just contributes no
-/// sub-verse row).
+/// One verse the SOURCE marks as containing Christ's words, present in the verse SET whatever the alignment
+/// outcome. `spans` carries only the successfully aligned ranges, and is empty when every span in the verse failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RedLetterVerse {
     pub book_index: u8,
     pub chapter: u16,
     pub verse: u16,
-    /// Byte-offset `(start, end)` pairs into OUR canonical verse text,
-    /// ascending, non-overlapping (guaranteed by the cursor-advancing
-    /// alignment walk).
+    /// Byte-offset `(start, end)` pairs into OUR canonical verse text, ascending and non-overlapping, which the
+    /// cursor-advancing walk guarantees.
     pub spans: Vec<(usize, usize)>,
 }
 
-/// Alignment-law counts (decision 2's own "counted, categorized" -- module
-/// doc comment): every `<q who="Jesus">` run the source carries, however it
-/// resolved.
+/// Alignment counts: every source span the file carries, however it resolved.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct AlignmentStats {
-    /// The verse SET's own size -- one per verse carrying >=1 source span,
-    /// regardless of alignment outcome.
+    /// The verse SET's size: one per verse carrying at least one source span, whatever the alignment outcome.
     pub verses_with_source_markup: usize,
-    /// Every source span found, across every verse -- exact + case_insensitive + not_found.
+    /// Every source span found, across every verse: the exact, case-insensitive and not-found counts summed.
     pub source_spans_total: usize,
     /// Case-sensitive verbatim substring match (the GAZ-1 law, unmodified).
     pub exact: usize,
-    /// The disclosed KJV-CASE class: found only case-insensitively.
+    /// The disclosed case class: found only case-insensitively.
     pub case_insensitive: usize,
-    /// Neither found -- dropped from the sub-verse table, never guessed;
-    /// the verse itself still counts toward `verses_with_source_markup`.
+    /// Neither found: dropped from the sub-verse table, never guessed, while the verse itself still counts.
     pub not_found: usize,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct RedLetterCorpus {
-    /// Canon order (book, chapter, verse ascending) -- the walk this
-    /// module's own `parse` produces is already in document order, which
-    /// for a whole-Bible OSIS file IS canon order.
+    /// Canon order, which for a whole-Bible OSIS file is the document order this parser already walks.
     pub verses: Vec<RedLetterVerse>,
     pub stats: AlignmentStats,
 }
 
-/// Extracts `name="value"` from a raw tag string (e.g. `osisID`/`sID`/
-/// `eID`/`n`/`who`/`type`) -- the one shared attribute-read primitive every
-/// tag-classification branch below uses. `None` when the attribute is
-/// absent, never a panic on a malformed/unexpected tag shape.
-///
-/// LEADING-SPACE GUARD (a real, self-caught bug this file's own unit tests
-/// found before this parser ever touched the real vendored data): `sID=` is
-/// a literal trailing SUBSTRING of `osisID=` ("o-s-i-**s-I-D**="), so a bare
-/// `tag.find("sID=\"")` on `<verse osisID="Matt.4.19" sID="v1" n="19" />`
-/// matches INSIDE `osisID`'s own value first, returning `"Matt.4.19"`
-/// instead of the real `sID` attribute's `"v1"` -- silently wrong, not a
-/// crash (the eventual `<verse eID="v1" />` close tag's own `eid` then
-/// never equals this wrongly-captured `sid`, so the verse quietly never
-/// enters the output at all). Searching for `" {name}=\""` (a LEADING
-/// SPACE) instead anchors the match to a genuine attribute boundary --
-/// every real attribute in this file is preceded by whitespace, `osisID`'s
-/// own tail can never BE preceded by one mid-word.
+/// Extracts `name="value"` from a raw tag, returning `None` for an absent attribute rather than panicking on an
+/// unexpected shape. It searches for a LEADING SPACE before the name: `sID=` is a trailing substring of `osisID=`,
+/// so a bare search matches inside that attribute's own value and returns silently wrong data, which then makes
+/// the verse quietly never close. Every real attribute here is preceded by whitespace.
 fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let pat = format!(" {name}=\"");
     let start = tag.find(&pat)? + pat.len();
@@ -143,21 +52,13 @@ fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     Some(&rest[..end])
 }
 
-/// The SAME leading-space guard as `attr` above, for the boolean
-/// open/close-detector calls (`tag.contains("sID=")` etc.) that don't need
-/// the value itself, just whether a genuine (not `osisID`-tail-coincidence)
-/// occurrence exists.
+/// The same leading-space guard, for the boolean open/close detectors that need no value.
 fn has_attr(tag: &str, name: &str) -> bool {
     tag.contains(&format!(" {name}=\""))
 }
 
-/// Minimal XML entity decode -- the real vendored file carries only `&lt;`/
-/// `&gt;` (both inside the header's own prose describing the `<q>` element,
-/// confirmed by direct inspection before this parser was written; verse
-/// TEXT never uses an entity at all), so this covers the five predefined
-/// XML entities and nothing else (no numeric character references) --
-/// sufficient for this one source, disclosed rather than silently assumed
-/// complete for some other file.
+/// The real file uses only `&lt;` and `&gt;`, and only in its header prose, so this covers the five predefined XML
+/// entities and no numeric references: sufficient for this one source, disclosed rather than assumed complete.
 fn decode_entities(s: &str) -> std::borrow::Cow<'_, str> {
     if !s.contains('&') {
         return std::borrow::Cow::Borrowed(s);
@@ -165,19 +66,14 @@ fn decode_entities(s: &str) -> std::borrow::Cow<'_, str> {
     std::borrow::Cow::Owned(s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&apos;", "'").replace("&amp;", "&"))
 }
 
-/// Byte-for-byte comparison, ASCII letters case-insensitive, every other
-/// byte exact (module doc comment: why not `to_lowercase()`).
+/// Byte-for-byte comparison with ASCII letters case-insensitive and every other byte exact. Not `to_lowercase`,
+/// which is Unicode-aware and can change a string's BYTE LENGTH, breaking the transfer of offsets back to ours.
 fn ascii_ci_eq(a: &[u8], b: &[u8]) -> bool {
     a.len() == b.len() && a.iter().zip(b.iter()).all(|(&x, &y)| x.eq_ignore_ascii_case(&y))
 }
 
-/// The KJV-CASE fallback's own search primitive: the first (leftmost) byte
-/// offset in `haystack` where `needle` matches ASCII-case-insensitively.
-/// Only tries positions that are valid UTF-8 char boundaries in `haystack`
-/// (a needle containing any non-ASCII byte sequence must then match it
-/// EXACTLY -- `eq_ignore_ascii_case`'s own documented scope -- which is what
-/// keeps every returned offset a valid boundary in turn; module doc
-/// comment).
+/// The leftmost offset where `needle` matches ASCII-case-insensitively. Only valid char boundaries are tried, and
+/// a needle with any non-ASCII byte must match it exactly, which keeps every returned offset a boundary in turn.
 fn ascii_ci_find(haystack: &str, needle: &str) -> Option<usize> {
     let h = haystack.as_bytes();
     let n = needle.as_bytes();
@@ -195,44 +91,18 @@ fn ascii_ci_find(haystack: &str, needle: &str) -> Option<usize> {
     None
 }
 
-/// Collapses every run of whitespace (space/tab/newline) to one plain
-/// space, and trims the ends -- a REAL, self-caught alignment gap this
-/// parser's own first pass over the real vendored data found (not a
-/// hypothetical): the source's own XML is PRETTY-PRINTED, inserting a
-/// literal newline at points like `Blessed\n<transChange type="added">are
-/// </transChange> they...` (MAT.5.4's own real shape) -- insignificant to
-/// XML, but the raw accumulated span text still carries that `\n` between
-/// "Blessed" and "are" where OUR canonical prose has an ordinary single
-/// space, so a byte-exact (or even case-insensitive) search against the
-/// UNNORMALIZED raw text silently missed spans it should have found. Our
-/// own canonical KJV text is already single-spaced, ordinary prose, so only
-/// the NEEDLE (the source's own span text) ever needs this -- the haystack
-/// is never touched.
+/// Collapses whitespace runs to one space and trims: the source's XML is PRETTY-PRINTED, so a raw span text can
+/// carry a newline where our prose has an ordinary space, and an unnormalized search silently missed real spans.
+/// Only the NEEDLE ever needs this -- our own text is already ordinary single-spaced prose, so the haystack is
+/// never touched.
 fn normalize_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Aligns one verse's own raw source spans against OUR canonical text,
-/// left-to-right with an advancing cursor (module doc comment) -- pure,
-/// unit-tested directly (below) independent of the XML scan. Every input
-/// span contributes to `stats` (found or not), even one that ends up
-/// contributing no output span.
-///
-/// RESIDUAL `not_found` CLASS, disclosed (real committed data, batch-red1-
-/// report.md has the full per-verse list): 18 of 2,081 real source spans
-/// (0.87%) genuinely fail both tiers -- every one of them a wording
-/// difference between this source's own 1769-class text and OUR canonical
-/// KJV, never a parsing defect: spelling variants this source spells
-/// differently than our own canon (`Caesar`/our `Cesar`, `Judaea`/our
-/// `Judea`, `Galilaeans`/our `Galileans`, `Zacchaeus`/our `Zaccheus`,
-/// `Nicolaitanes`/our `Nicolaitans`, `Barjona`/our `Bar–jona`), two dropped
-/// possessive apostrophes, one dropped comma, and one source-side literal
-/// typo (MAT.5.30 "cut **if** off" for "cut **it** off"). None extend
-/// beyond a real, disclosed spelling/punctuation class into anything
-/// resembling a content substitution -- and per decision 2's own law, NONE
-/// are bridged by a wider fuzzy-match: only case-insensitivity is an
-/// authorized second tier; every one of these 18 is counted here and
-/// disclosed, never guessed into a wrong offset.
+/// Aligns one verse's raw spans against OUR text, left to right with an advancing cursor; every input span counts,
+/// found or not. The residual not-found class is real and disclosed: a small share of source spans genuinely fail
+/// both tiers, every one a spelling or punctuation difference from our canon, and none is bridged by a wider fuzzy
+/// match -- only case-insensitivity is an authorized second tier.
 fn align_verse(spans_raw: &[String], canon_text: &str, stats: &mut AlignmentStats) -> Vec<(usize, usize)> {
     let mut cursor = 0usize;
     let mut aligned = Vec::new();
@@ -268,19 +138,13 @@ struct OpenVerse {
     chapter: u16,
     verse: u16,
     sid: String,
-    /// Completed `<q who="Jesus">` run texts, in document order -- each
-    /// still carries whatever leading/trailing whitespace the source's own
-    /// formatting left around it (trimmed by `align_verse`, not here: the
-    /// RAW text is what a future caller wanting the untrimmed source would
-    /// want preserved as long as possible).
+    /// Completed span texts in document order, each still carrying whatever whitespace the source left around it:
+    /// trimming happens at alignment, so the raw text survives as long as possible.
     spans_raw: Vec<String>,
 }
 
-/// Parses the vendored OSIS XML text into a `RedLetterCorpus`, aligning
-/// every source span against `kjv_verses` THE MOMENT each verse closes
-/// (module doc comment has the full scan + alignment law). `&str`-in/
-/// data-out (this crate's own established discipline, `build.rs`'s own doc
-/// comment) -- `read_all` below is the one filesystem-touching wrapper.
+/// Aligns every span the MOMENT its verse closes, so a raw span text never outlives that verse's scope. `&str`-in,
+/// data-out; the wrapper below is the one filesystem-touching function.
 pub fn parse(xml: &str, kjv_verses: &HashMap<String, String>) -> Result<RedLetterCorpus> {
     let mut current_book: Option<u8> = None;
     let mut current_chapter: u16 = 0;
@@ -303,7 +167,8 @@ pub fn parse(xml: &str, kjv_verses: &HashMap<String, String>) -> Result<RedLette
         }
         let tag_end = match xml[i..].find('>') {
             Some(p) => i + p + 1,
-            None => break, // truncated/malformed tail -- stop rather than panic; whatever parsed so far is honest
+            // A truncated or malformed tail stops the scan rather than panicking: whatever parsed is honest.
+            None => break,
         };
         let tag = &xml[i..tag_end];
         i = tag_end;
@@ -325,10 +190,8 @@ pub fn parse(xml: &str, kjv_verses: &HashMap<String, String>) -> Result<RedLette
                 if let (Some(book_index), Some(sid), Some(verse)) = (current_book, attr(tag, "sID"), attr(tag, "n").and_then(|s| s.parse::<u16>().ok())) {
                     open_verse = Some(OpenVerse { book_index, chapter: current_chapter, verse, sid: sid.to_string(), spans_raw: Vec::new() });
                 }
-                // No current_book (an Apocrypha/Deuterocanon verse, module
-                // doc comment) or an unparseable n: `open_verse` stays
-                // `None` -- this verse's own content is silently never
-                // collected, by construction (never a partial/guessed row).
+                // No current book -- an Apocrypha verse, which our canon does not carry -- or an unparseable
+                // number means this verse never opens, so its content is never collected rather than guessed.
                 continue;
             }
             if let Some(eid) = attr(tag, "eID") {
@@ -338,15 +201,8 @@ pub fn parse(xml: &str, kjv_verses: &HashMap<String, String>) -> Result<RedLette
                         stats.verses_with_source_markup += 1;
                         let aligned = match kjv_verses.get(&dot_ref) {
                             Some(canon_text) => align_verse(&v.spans_raw, canon_text, &mut stats),
-                            // Our own canon lacks this verse (never true of
-                            // the real committed kjv.json -- every verse the
-                            // OSIS source marks red is well within the
-                            // 66-book canon, Apocrypha already excluded via
-                            // `current_book` above -- but a slimmed-down
-                            // test fixture may legitimately carry only a
-                            // few verses): every one of this verse's own
-                            // raw spans is honestly `not_found`, never a
-                            // panic on a caller's own smaller fixture.
+                            // Our own canon lacks this verse, which a slimmed-down fixture legitimately can:
+                            // every one of its raw spans is honestly not-found, never a panic on the caller.
                             None => {
                                 stats.source_spans_total += v.spans_raw.len();
                                 stats.not_found += v.spans_raw.len();
@@ -374,51 +230,30 @@ pub fn parse(xml: &str, kjv_verses: &HashMap<String, String>) -> Result<RedLette
                     }
                     open_q_sid = None;
                 }
-                // An eID belonging to some OTHER (non-Jesus, or already-
-                // closed) q milestone is not this parser's own open span --
-                // ignored, matching the file's own disclosure that q
-                // markup here is used ONLY for the who="Jesus" feature (no
-                // real nesting expected; this check is the defensive floor
-                // if that ever proves wrong on some verse).
+                // An eID belonging to some OTHER quotation milestone is not this parser's open span, so it is
+                // ignored: the defensive floor should the file's single-feature use of that markup ever change.
                 continue;
             }
             continue;
         }
-        // Every other tag (`<transChange>`, `</transChange>`, `<p>`,
-        // `<title>`, `<note>`, book/chapter CLOSE tags, etc.) is
-        // transparent: strip the tag itself, keep scanning -- its own
-        // inner text (if any) is picked up by the plain-text branch above
-        // precisely because no state changed.
+        // Every other tag is transparent: strip the tag and keep scanning. Its inner text is picked up by the
+        // plain-text branch precisely because no state changed.
     }
 
     Ok(RedLetterCorpus { verses, stats })
 }
 
-/// Reads and parses `red_letter_dir/eng-kjv.osis.xml` -- the one
-/// filesystem-touching wrapper (this crate's own "`&str`-in/data-out; only
-/// the caller touches the filesystem" discipline, `build.rs`'s own doc
-/// comment) -- mirroring `kretzmann::read_all`/`concord::read_all`'s own
-/// calling convention (a root PATH, not raw text, so `service.rs`'s
-/// `load_red_letter`/`bins/compile_graph.rs` can call this exactly like its
-/// two siblings).
+/// The one filesystem-touching wrapper, taking a root path like its sibling corpus readers so the same callers
+/// can drive all of them alike.
 pub fn read_all(red_letter_dir: &std::path::Path, kjv_verses: &HashMap<String, String>) -> Result<RedLetterCorpus> {
     let path = red_letter_dir.join("eng-kjv.osis.xml");
     let xml = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     parse(&xml, kjv_verses).with_context(|| format!("parsing {}", path.display()))
 }
 
-/// Groups the verse SET (`corpus.verses`, one entry per source-marked verse
-/// regardless of alignment) into MAXIMAL CONTIGUOUS canon-order ranges --
-/// decision 3's own SpokenBy shape ("one row per maximal contiguous verse
-/// RANGE of the verse set... ranges keep the table honest to discourse
-/// shape"). Two verses are contiguous when the second is EXACTLY the
-/// first's own next verse in canon reading order (same book, same chapter,
-/// verse+1, OR the first chapter's own last verse followed by the next
-/// chapter's own verse 1 -- `chapter_verse_counts` supplies the per-
-/// (book,chapter) verse count this needs to detect a chapter rollover
-/// correctly, never assumed to be exactly `verse+1` in a different
-/// chapter). `corpus.verses` is already in document (== canon) order, so
-/// this is a single linear pass, no sort needed.
+/// Groups the verse set into MAXIMAL CONTIGUOUS canon-order ranges. Two verses are contiguous when the second is
+/// exactly the first's next verse in reading order, chapter rollover included -- which is why the per-chapter
+/// verse count is needed rather than assuming `verse + 1`. One linear pass: the input is already in canon order.
 pub fn contiguous_ranges(verses: &[RedLetterVerse], chapter_verse_counts: &dyn Fn(u8, u16) -> Option<u16>) -> Vec<((u8, u16, u16), (u8, u16, u16))> {
     let mut ranges: Vec<((u8, u16, u16), (u8, u16, u16))> = Vec::new();
     for v in verses {
@@ -451,8 +286,6 @@ mod tests {
         pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
     }
 
-    // ---- align_verse (the pure alignment law) --------------------------
-
     #[test]
     fn align_verse_finds_an_exact_case_sensitive_match() {
         let mut stats = AlignmentStats::default();
@@ -467,7 +300,6 @@ mod tests {
     #[test]
     fn align_verse_falls_back_to_case_insensitive_and_still_reports_our_bytes() {
         let mut stats = AlignmentStats::default();
-        // Source normalizes "Lord" where our RESTORED text carries "LORD".
         let aligned = align_verse(&["the lord thy God".to_string()], "Thou shalt worship the LORD thy God, and him only shalt thou serve.", &mut stats);
         let (start, end) = aligned[0];
         assert_eq!(&"Thou shalt worship the LORD thy God, and him only shalt thou serve."[start..end], "the LORD thy God", "the served text must be OUR bytes/casing, never the source's own");
@@ -487,9 +319,6 @@ mod tests {
 
     #[test]
     fn align_verse_resolves_two_spans_in_one_verse_left_to_right() {
-        // A verse with narration between two separate sayings -- the SAME
-        // short word ("Come") legitimately repeats; the cursor must not
-        // collapse both onto the first occurrence.
         let mut stats = AlignmentStats::default();
         let aligned = align_verse(&["Come unto me".to_string(), "Come, follow me".to_string()], "Jesus said, Come unto me, all ye that labour. Then he said, Come, follow me.", &mut stats);
         assert_eq!(aligned.len(), 2);
@@ -498,14 +327,10 @@ mod tests {
 
     #[test]
     fn align_verse_trims_a_trailing_formatting_newline() {
-        // MAT.4.19's own real shape: the source span's raw text carries a
-        // trailing "\n" before its own closing tag.
         let mut stats = AlignmentStats::default();
         let aligned = align_verse(&["Follow me.\n".to_string()], "He saith, Follow me.", &mut stats);
         assert_eq!(aligned, vec![(10, 20)]);
     }
-
-    // ---- parse (the full XML scan) --------------------------------------
 
     fn osis(body: &str) -> String {
         format!(
@@ -515,8 +340,6 @@ mod tests {
 
     #[test]
     fn parse_extracts_the_mat_4_19_case_exactly_the_brief_names() {
-        // The narration prefix is NOT red; the speech is -- the exact
-        // required test spot (batch-red1-brief.md decision 6).
         let xml = osis(
             r#"<chapter osisRef="Matt.4" sID="c1" n="4" /><verse osisID="Matt.4.19" sID="v1" n="19" />And he saith unto them,
 <q who="Jesus" sID="q1" marker="" />Follow me, and I will make you fishers of men.
@@ -526,7 +349,7 @@ mod tests {
         let corpus = parse(&xml, &kjv).unwrap();
         assert_eq!(corpus.verses.len(), 1);
         let v = &corpus.verses[0];
-        assert_eq!((v.book_index, v.chapter, v.verse), (39, 4, 19)); // Matthew is index 39
+        assert_eq!((v.book_index, v.chapter, v.verse), (39, 4, 19));
         assert_eq!(v.spans, vec![(24, 70)]);
         let canon = &kjv["MAT.4.19"];
         assert_eq!(&canon[24..70], "Follow me, and I will make you fishers of men.");
@@ -585,8 +408,6 @@ mod tests {
         assert_eq!(corpus.stats.verses_with_source_markup, 1);
     }
 
-    // ---- contiguous_ranges ------------------------------------------------
-
     fn rv(book: u8, chapter: u16, verse: u16) -> RedLetterVerse {
         RedLetterVerse { book_index: book, chapter, verse, spans: vec![] }
     }
@@ -618,8 +439,6 @@ mod tests {
     #[test]
     fn contiguous_ranges_does_not_cross_a_chapter_boundary_when_the_prior_chapter_has_more_verses() {
         let verses = vec![rv(39, 5, 47), rv(39, 6, 1)];
-        // Chapter 5 actually has 48 verses -- verse 47 is NOT its last, so
-        // this must NOT be treated as a rollover into chapter 6.
         let counts = |_b: u8, c: u16| -> Option<u16> { if c == 5 { Some(48) } else { None } };
         let ranges = contiguous_ranges(&verses, &counts);
         assert_eq!(ranges, vec![((39, 5, 47), (39, 5, 47)), ((39, 6, 1), (39, 6, 1))]);

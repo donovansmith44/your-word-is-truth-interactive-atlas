@@ -1,22 +1,6 @@
-//! Parsers for `data/curated/*.toml` (schemas per spec §4.5 / the Task 5
-//! brief): `eras.toml`, `books.toml`, one narrative per
-//! `narratives/*.toml` file, and `events-extra.toml` for curator-defined
-//! events that have no Theographic counterpart.
-//!
-//! Adapted name: the brief lists this group as
-//! `parse_eras/parse_books/parse_narratives/parse_events_extra`, but each
-//! `narratives/*.toml` file holds exactly one narrative (bare top-level
-//! `id`/`name`/`color`/`legs`, not a `[[narrative]]` array-of-tables like
-//! the other three schemas), so the function here is `parse_narrative`
-//! (singular) — `main.rs` calls it once per file found under
-//! `data/curated/narratives/`.
-//!
-//! `events-extra.toml`'s `verses` field accepts a curator-friendly range
-//! (`"EXO.14.21-31"`, our own canonical codes — not raw OSIS) and is
-//! expanded here into individual canonical verse ids, since the compiled
-//! `Event.verses` contract (validated by `validate::run`) is single verses
-//! only (mirrors the `Place.verse_links`/`Event.verses` "etl-validated"
-//! trust class scene composition relies on).
+//! Parsers for the curated TOML files. Every parser here is pure and STRUCTURAL only: a malformed file bails
+//! immediately, and every cross-check that needs the wider compile -- a real event id, a real place, a verse
+//! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
 use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
@@ -31,12 +15,8 @@ struct ErasFile {
     era: Vec<Era>,
 }
 
-/// Parses `eras.toml`. Reuses `atlas_core::data::Era` directly for
-/// deserialization since its field names (`id`, `name`, `from_year`,
-/// `to_year`) already match the TOML schema exactly. Does not itself
-/// validate contiguity/coverage/zero-years — that's `validate::run`'s job,
-/// since it needs the full picture (and must report ALL violations, not
-/// fail fast at the first bad era).
+/// Contiguity, coverage and zero-year checks belong to `validate`, which needs the full picture and must
+/// report EVERY violation rather than fail at the first bad era.
 pub fn parse_eras(input: &str) -> Result<Vec<Era>> {
     let f: ErasFile = toml::from_str(input).context("eras.toml: invalid TOML or does not match the [[era]] schema")?;
     Ok(f.era)
@@ -47,14 +27,6 @@ struct ChronologyAnchorsFile {
     anchor: Vec<ChronologyAnchor>,
 }
 
-/// Batch HOTFIX-6: parses `chronology-anchors.toml` (that file's own header
-/// has the full schema/design rationale). Reuses `atlas_core::data::
-/// ChronologyAnchor` directly for deserialization (its field names already
-/// match the TOML schema exactly, same shape as `parse_eras` above). Pure
-/// and STRUCTURAL only -- cross-checking each `event_id` against the real
-/// compiled event set and each `era_boundary` row for a real bound
-/// `event_id` are `validate::run_chronology_anchors`'s own job (needs the
-/// fuller picture), matching every other curated schema in this module.
 pub fn parse_chronology_anchors(input: &str) -> Result<Vec<ChronologyAnchor>> {
     let f: ChronologyAnchorsFile =
         toml::from_str(input).context("chronology-anchors.toml: invalid TOML or does not match the [[anchor]] schema")?;
@@ -66,9 +38,6 @@ struct BookNarrationWindowsFile {
     window: Vec<BookNarrationWindow>,
 }
 
-/// Batch HOTFIX-6: parses `book-narration-windows.toml` (that file's own
-/// header has the full design rationale). Same reuse-the-atlas-core-struct
-/// shape as `parse_chronology_anchors` immediately above.
 pub fn parse_book_narration_windows(input: &str) -> Result<Vec<BookNarrationWindow>> {
     let f: BookNarrationWindowsFile = toml::from_str(input)
         .context("book-narration-windows.toml: invalid TOML or does not match the [[window]] schema")?;
@@ -92,11 +61,7 @@ struct BooksFile {
     book: Vec<BookToml>,
 }
 
-/// Parses `books.toml`. The TOML field is named `code` (matching the other
-/// curated schemas' terminology) while `BookMeta`'s field is named `book`;
-/// this wrapper does that one rename. Does not check `write_place` against
-/// the known place set — that cross-reference (WARN + drop on unknown,
-/// per the brief) needs the compiled place list, so it lives in `main.rs`.
+/// The TOML field is `code` while the compiled field is `book`: this wrapper does that one rename.
 pub fn parse_books(input: &str) -> Result<Vec<BookMeta>> {
     let f: BooksFile = toml::from_str(input).context("books.toml: invalid TOML or does not match the [[book]] schema")?;
     Ok(f.book
@@ -105,8 +70,8 @@ pub fn parse_books(input: &str) -> Result<Vec<BookMeta>> {
         .collect())
 }
 
-/// Parses one `narratives/*.toml` file (bare top-level fields; `Narrative`'s
-/// field names already match exactly, so this is a direct deserialize).
+/// One file holds exactly one narrative, as bare top-level fields rather than an array of tables, hence the
+/// singular.
 pub fn parse_narrative(input: &str) -> Result<Narrative> {
     toml::from_str(input).context("narrative TOML: invalid TOML or does not match the Narrative schema (id/name/color/legs)")
 }
@@ -115,70 +80,31 @@ pub fn parse_narrative(input: &str) -> Result<Narrative> {
 struct EventToml {
     id: String,
     label: String,
-    /// Batch T2: OPTIONAL -- a `kind = "general"` row must OMIT both (see
-    /// `parse_events_extra`'s own conditional-required logic below); a
-    /// `kind = "event"` row (or `kind` absent, the default) still REQUIRES
-    /// both, unchanged since Task 3.
+    /// A `general` row must OMIT both; an `event` row, which is the default, requires both.
     #[serde(default)]
     from_year: Option<i32>,
     #[serde(default)]
     to_year: Option<i32>,
-    /// Batch T2: `#[serde(default)]` added so a `kind = "general"` row can
-    /// omit this key entirely, same reasoning as `from_year`/`to_year`.
+    /// Omitted by a `general` row, exactly as the years are.
     #[serde(default)]
     places: Vec<String>,
     #[serde(default)]
     verses: Vec<String>,
-    /// Batch T2: `"event"` (default, back-compat) | `"general"` -- see
-    /// `atlas_core::data::Event::kind`'s own doc comment for the shape
-    /// each implies. Re-validated against the full enum by
-    /// `atlas_etl::validate::run` too (this parser only ever produces
-    /// "event"/"general" itself, but `validate::run` is the single source
-    /// of truth for the allowed set, same split every other curated enum
-    /// in this app follows).
+    /// `"event"`, the default, or `"general"`. The allowed set is re-checked against the full enum by
+    /// `validate`, which is its single source of truth.
     #[serde(default)]
     kind: Option<String>,
-    /// Batch T requirement 1/2: optional curator-authored provenance/
-    /// ordering (see `atlas_core::data::Event`'s own doc comments for each).
-    /// `#[serde(default)]` so every pre-Batch-T event in this file (the
-    /// overwhelming majority) keeps parsing with no migration.
+    /// Defaulted so every event authored before these fields existed keeps parsing with no migration.
     #[serde(default)]
     robertson_section: Option<String>,
-    /// Batch W1: inline `acts_section` provenance -- until this batch,
-    /// `Event::acts_section` was only ever SET via the separate
-    /// `data/curated/acts-sections.toml` merge file (every prior Acts
-    /// event was a pre-existing Theographic id being enriched, never a
-    /// brand-new `[[event]]` row -- see `parse_acts_sections`'s own doc
-    /// comment). W1 closes a genuine coverage gap with NO pre-existing
-    /// Theographic event to enrich (Acts 1:1-3, Luke's own preface to
-    /// Theophilus, before the acts-sections.toml-enriched narrative even
-    /// begins at 1:4) -- this field lets a brand-new Acts passage carry
-    /// its own provenance inline, the SAME way `robertson_section` already
-    /// does for brand-new Gospel events, without disturbing
-    /// `acts-sections.toml`'s own existing enrichment-only role.
+    /// Inline provenance for a brand-new row. A pre-existing imported event has no row to carry a field, so
+    /// it is enriched through the separate merge file instead.
     #[serde(default)]
     acts_section: Option<String>,
-    /// Batch W1: inline `atlas_section` provenance for a brand-new passage
-    /// authored directly in a `data/curated/passages/*.toml` file (this
-    /// batch's own new one-file-per-book directory, reusing this exact
-    /// `EventToml`/`EventsFile`/`parse_events_extra` schema unmodified) --
-    /// see `atlas_core::data::Event::atlas_section`'s own doc comment for
-    /// the sibling "enrich a pre-existing Theographic event instead" path
-    /// (`parse_atlas_sections`, below), which this field does NOT cover
-    /// (that path has no `[[event]]` row to attach an inline field to in
-    /// the first place).
     #[serde(default)]
     atlas_section: Option<String>,
-    /// Batch W3: inline `kjv_superscription` provenance -- the KJV's own
-    /// literal-citation sibling of `robertson_section`/`acts_section`/
-    /// `atlas_section` above (see `atlas_core::data::Event::
-    /// kjv_superscription`'s own doc comment). Inline-only, same as
-    /// `acts_section`/`atlas_section` can also be set via their own merge
-    /// files (`acts-sections.toml`/`atlas-sections.toml`) for promoting a
-    /// bare pre-existing Theographic event -- this field has no such
-    /// merge-file sibling, since every Batch W3 superscription-titled
-    /// container is a brand-new `[[event]]` row, never a promotion (no
-    /// pre-existing Theographic event models an individual Psalm).
+    /// Inline only: this one has no merge-file sibling, because every container titled from a superscription
+    /// is a brand-new row rather than the promotion of an imported event.
     #[serde(default)]
     kjv_superscription: Option<String>,
     #[serde(default)]
@@ -196,22 +122,9 @@ struct EventsFile {
     event: Vec<EventToml>,
 }
 
-/// Expands one curated `verses` entry (a single canonical verse, e.g.
-/// `"EXO.12.37"`, or a same-chapter range, e.g. `"EXO.14.21-31"`, using our
-/// own book codes) into one-or-more canonical single-verse strings.
-/// `context` names whatever curated record this ref came from (an event id,
-/// a catechism item id, ...) purely for the error message -- shared by every
-/// curated schema in this module that accepts a curator-friendly
-/// single-verse-or-range string (originally `parse_events_extra`'s own
-/// helper; Batch F's `parse_catechism` reuses it verbatim rather than
-/// re-implementing the same expansion a second time).
-/// `pub` (not private) specifically so `main.rs` -- a SEPARATE crate from
-/// this library's own perspective, even though it's the same Cargo package
-/// -- can reuse it for `catechism-deut5.toml`'s own `verses` field (see
-/// `main.rs`'s own Batch F2 catechism section): those entries use this
-/// project's OWN canonical-ref convention (e.g. `"DEU.5.9-10"`), identical
-/// in shape to `catechism.toml`'s own `verses` field, so this is the exact
-/// same expansion, not a second implementation of it.
+/// Expands one curated verse entry -- a single canonical verse, or a same-chapter range -- into one or more
+/// canonical single-verse strings. `context` names the record the ref came from, purely for the error message.
+/// `pub` so the binary can reuse it for the supplement file, whose refs are identical in shape.
 pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Result<()> {
     match ScriptureRef::parse(raw) {
         Ok(ScriptureRef::Verse(v)) => out.push(format!("{}.{}.{}", v.book.code(), v.chapter, v.verse)),
@@ -225,25 +138,10 @@ pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Resu
     Ok(())
 }
 
-/// Parses `events-extra.toml`. Hard-errors (does not soft-drop) on an
-/// invalid time range or a curated event with zero places, since this is
-/// our own authored data and should be held to a higher bar than
-/// third-party raw data with soft-dropped rows.
-///
-/// Batch T2 (general-kind PASSAGEs): `kind` gates which of `from_year`/
-/// `to_year`/`places` are REQUIRED vs FORBIDDEN, in both directions --
-/// "do not fabricate a date/place" is enforced structurally, not by
-/// convention:
-/// - `kind` absent or `"event"` (unchanged since Task 3): `places`
-///   non-empty and `from_year`/`to_year` both present are REQUIRED; a
-///   missing one of any of these is a hard error.
-/// - `kind = "general"`: `places`/`from_year`/`to_year` must all be
-///   ABSENT from the curated row -- a curator writing a date/place
-///   TOGETHER WITH `kind = "general"` is a hard error too (one of the two
-///   is a mistake; failing loud beats silently picking one). `when`
-///   becomes `TimeRange::undated()` -- never a curator-typed number --
-///   and `places` stays the empty `Vec` `#[serde(default)]` already gives
-///   it when omitted.
+/// Hard-errors rather than soft-dropping: this is our own authored data, held to a higher bar than third-party
+/// raw rows. `kind` gates which fields are required in BOTH directions -- an `event` row must carry places and
+/// both years, a `general` row must carry none of them, and a row carrying both a `general` kind and a date is
+/// a hard error, since one of the two is a mistake.
 pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
     let f: EventsFile =
         toml::from_str(input).context("events-extra.toml: invalid TOML or does not match the [[event]] schema")?;
@@ -304,8 +202,6 @@ pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
     Ok(out)
 }
 
-// --- Batch T requirement 1: event-witnesses.toml ("parallel witnesses") ---
-
 #[derive(Deserialize)]
 struct EventWitnessesFile {
     witness: Vec<WitnessToml>,
@@ -315,10 +211,8 @@ struct EventWitnessesFile {
 struct WitnessToml {
     event_id: String,
     book: String,
-    /// Curator-friendly single-verse-or-range strings (this project's own
-    /// canonical codes, e.g. `"MAT.27.33-50"`) -- expanded the SAME way
-    /// `parse_events_extra`'s own `verses` field already is (`expand_verse_ref`,
-    /// reused verbatim, not re-implemented).
+    /// Curator-friendly single-verse-or-range strings in our own canonical codes, expanded the same way the
+    /// events file's own verses are.
     verses: Vec<String>,
     #[serde(default)]
     ref_note: Option<String>,
@@ -326,26 +220,9 @@ struct WitnessToml {
     robertson_section: Option<String>,
 }
 
-/// Parses `event-witnesses.toml` (Batch T requirement 1: "PARALLEL
-/// WITNESSES -- the set of per-book passages that recount the same event").
-/// Schema: a FLAT `[[witness]]` array, each row explicitly naming its own
-/// `event_id` -- deliberately NOT nested under a per-event `[[event]]`
-/// group the way `polities/*.toml`'s `[era.transition]`/`[era.fall]` are
-/// (see `atlas_core::data::PolityDelta::for_era_from`'s own doc comment for
-/// the exact TOML array-of-tables mis-attachment bug that shipped once,
-/// live, from that nested shape -- 7 of Batch M's own 22 deltas). A FLAT
-/// list with an explicit id per row has NO equivalent risk to guard against
-/// in the first place -- there is no "most recently opened parent" for a
-/// row to silently attach to instead of the one a curator's own comment
-/// describes, so no echo-field discipline is needed here; the batch report
-/// discloses this as the reason, not an oversight.
-///
-/// Pure and STRUCTURAL only, same split every other curated schema in this
-/// module follows: a malformed file bails immediately; cross-checking each
-/// `event_id` against the real compiled event set, each `book` against the
-/// real canon, and each verse against the compiled KJV text all need the
-/// fuller picture and are `main.rs`'s / `validate::run`'s own job (matching
-/// `parse_place_history`'s own pure-parse-then-cross-validate precedent).
+/// A FLAT array, each row naming its own event id, deliberately NOT nested under a per-event group: a nested
+/// array-of-tables subtable attaches to the most recently opened parent, which once silently mis-attached real
+/// curated rows. A flat list with an explicit id per row has no such failure mode.
 pub fn parse_event_witnesses(input: &str) -> Result<Vec<(String, atlas_core::data::EventWitness)>> {
     let f: EventWitnessesFile =
         toml::from_str(input).context("event-witnesses.toml: invalid TOML or does not match the [[witness]] schema")?;
@@ -366,9 +243,6 @@ pub fn parse_event_witnesses(input: &str) -> Result<Vec<(String, atlas_core::dat
     Ok(out)
 }
 
-// --- Batch ATTEST-1: attestation-corrections.toml (accounts vs mentions,
-// plus the Analogue relation) ---
-
 #[derive(Deserialize)]
 struct AttestationCorrectionsFile {
     #[serde(default)]
@@ -380,9 +254,6 @@ struct AttestationCorrectionsFile {
 #[derive(Deserialize)]
 struct MentionToml {
     event_id: String,
-    /// Curator-friendly single-verse-or-range strings, expanded by
-    /// `expand_verse_ref` -- the SAME helper `events-extra.toml`/
-    /// `event-witnesses.toml` already use.
     verses: Vec<String>,
     note: String,
 }
@@ -394,24 +265,9 @@ struct AnalogueToml {
     note: String,
 }
 
-/// Parses `attestation-corrections.toml` (Batch ATTEST-1, the owner's own
-/// two orders: the account/mention distinction and the `Analogue`
-/// relation). ONE file, two FLAT arrays -- `[[mention]]` and
-/// `[[analogue]]` -- each row naming its own event ids explicitly, the
-/// same no-mis-attachment-risk shape `parse_event_witnesses` above
-/// establishes and for the same reason (see that function's own doc
-/// comment).
-///
-/// `[[mention]]` is a RETYPE, not a deletion: `compile()` strips the named
-/// verses out of that event's own `verses`/witness lists so no `Attests`
-/// row is built for them, and hands the row on to
-/// `atlas_graph::event_world`, which emits a `Mentions` row pointing at
-/// the event instead. Total capture -- the fact changes type and keeps its
-/// provenance; nothing is dropped.
-///
-/// Pure and STRUCTURAL only, same split every other curated schema in this
-/// module follows: a malformed file bails immediately; cross-checking each
-/// event id against the real compiled event set is `compile()`'s own job.
+/// A mention row is a RETYPE, not a deletion: the compile strips the named verses out of that event's own
+/// verses and witness rows so no attestation is built for them, and the row goes on to become a mention
+/// pointing at the event. The fact changes type and keeps its provenance; nothing is dropped.
 pub fn parse_attestation_corrections(
     input: &str,
 ) -> Result<(Vec<atlas_core::data::EventMentionSeed>, Vec<atlas_core::data::EventAnalogueSeed>)> {
@@ -444,8 +300,6 @@ pub fn parse_attestation_corrections(
     Ok((mentions, analogues))
 }
 
-// --- Batch T2: acts-sections.toml (Acts provenance) ---
-
 #[derive(Deserialize)]
 struct ActsSectionsFile {
     #[serde(default)]
@@ -458,31 +312,13 @@ struct ActsSectionToml {
     acts_section: String,
 }
 
-/// Parses `acts-sections.toml` (Batch T2, Acts provenance -- owner's own
-/// ambiguity ruling: "acts sections get their own provenance key, NOT
-/// robertson_section"). Schema: a FLAT `[[section]]` array, each row
-/// explicitly naming its own `event_id` -- the SAME flat, no-mis-attachment-
-/// risk shape `event-witnesses.toml`/`parse_event_witnesses` already
-/// establishes (see that function's own doc comment for the full
-/// reasoning), reused here rather than re-invented, since this file has
-/// the identical "one curated fact per named event id" structure. This
-/// file exists specifically so a bare Theographic-sourced event (which
-/// has no `[[event]]` row of its own in `events-extra.toml` to add a field
-/// to directly) can still gain Acts provenance -- `main.rs` merges it onto
-/// the FULL combined event set (Theographic + events-extra.toml) by id,
-/// the same merge timing/mechanism `event-witnesses.toml` already uses.
-///
-/// Pure and STRUCTURAL only, same split every other curated schema in this
-/// module follows: a malformed file bails immediately; cross-checking each
-/// `event_id` against the real compiled event set is `main.rs`'s own job.
+/// This file exists so a bare imported event -- which has no authored row of its own to add a field to -- can
+/// still gain provenance: the rows are merged onto the full combined event set by id.
 pub fn parse_acts_sections(input: &str) -> Result<Vec<(String, String)>> {
     let f: ActsSectionsFile =
         toml::from_str(input).context("acts-sections.toml: invalid TOML or does not match the [[section]] schema")?;
     Ok(f.section.into_iter().map(|s| (s.event_id, s.acts_section)).collect())
 }
-
-// --- Batch W1: atlas-sections.toml (whole-Bible provenance, the general
-// sibling of acts-sections.toml) ---
 
 #[derive(Deserialize)]
 struct AtlasSectionsFile {
@@ -496,45 +332,20 @@ struct AtlasSectionToml {
     atlas_section: String,
 }
 
-/// Parses `atlas-sections.toml` (Batch W1, whole-Bible titled verse
-/// containers -- req 1's own provenance vocabulary: "atlas_section (our own
-/// sectioning, the sanctioned Acts-precedent fallback)"). Schema and
-/// purpose are IDENTICAL to `parse_acts_sections` immediately above, just
-/// for `Event::atlas_section` instead of `Event::acts_section` -- a flat
-/// `[[section]]` array, each row explicitly naming its own `event_id`,
-/// letting a bare pre-existing Theographic-sourced event (already real
-/// title/date/place, CC BY-SA 4.0, already credited in LICENSES.md) gain
-/// heading-worthy provenance with no duplicate `[[event]]` row. `main.rs`
-/// merges it onto the FULL combined event set (Theographic +
-/// events-extra.toml + passages/*.toml) by id, the same merge timing/
-/// mechanism `acts-sections.toml`/`event-witnesses.toml` already use.
-///
-/// Pure and STRUCTURAL only, same split every other curated schema in this
-/// module follows: a malformed file bails immediately; cross-checking each
-/// `event_id` against the real compiled event set is `main.rs`'s own job.
+/// The same flat, merge-by-id shape as the acts sections, for the atlas-section field instead.
 pub fn parse_atlas_sections(input: &str) -> Result<Vec<(String, String)>> {
     let f: AtlasSectionsFile =
         toml::from_str(input).context("atlas-sections.toml: invalid TOML or does not match the [[section]] schema")?;
     Ok(f.section.into_iter().map(|s| (s.event_id, s.atlas_section)).collect())
 }
 
-// --- Batch W1: coverage-manifest.toml (the whole-Bible coverage-manifest
-// infrastructure the W series builds on) ---
-
 #[derive(Deserialize)]
 struct CoverageManifestFile {
     declared: Vec<String>,
 }
 
-/// Parses `coverage-manifest.toml` -- a flat list of canonical 3-letter book
-/// codes this project claims are FULLY covered (every one of that book's
-/// own verses belongs to >=1 titled container). Pure and STRUCTURAL only,
-/// same split every other curated schema in this module follows -- a
-/// malformed file bails immediately; checking each declared code is a real
-/// canon code, has no duplicates, and is ACTUALLY fully covered against the
-/// real compiled data is `server/atlas-etl/tests/coverage.rs`'s own job
-/// (it needs the compiled `events.json`/`canon.json`, which this pure
-/// parser deliberately does not read).
+/// A flat list of canonical book codes this project claims are FULLY covered: every verse of that book belongs
+/// to at least one titled container. Whether the claim is true is a test's job, over the compiled data.
 pub fn parse_coverage_manifest(input: &str) -> Result<Vec<String>> {
     let f: CoverageManifestFile =
         toml::from_str(input).context("coverage-manifest.toml: invalid TOML or does not match the 'declared' schema")?;
@@ -547,12 +358,8 @@ struct LandmarkToml {
     kind: String,
     lat: f64,
     lon: f64,
-    // Batch C2: optional far-field size hint ("sm"/"md"/"lg") — see
-    // atlas_core::data::Landmark::size's own doc comment. `Option<T>`
-    // fields are optional-by-default under serde's derive (missing key ->
-    // None) even without an explicit `#[serde(default)]`, so every
-    // pre-Batch-C2 landmarks.toml entry (no `size = ...` line at all)
-    // keeps parsing exactly as before.
+    // An `Option` field is optional by default under serde's derive, so every entry authored before this key
+    // existed keeps parsing unchanged.
     size: Option<String>,
 }
 
@@ -560,14 +367,6 @@ struct LandmarkToml {
 struct LandmarksFile {
     landmark: Vec<LandmarkToml>,
 }
-
-/// Parses `landmarks.toml` (schema: `[[landmark]]` with `name`/`kind`/
-/// `lat`/`lon`/optional `size`). Pure — does not validate `kind`/`size`
-/// against their allowed enums or check `lat`/`lon` against the clip bbox;
-/// that's `validate::run_landmarks`'s job (needs the bbox, which this
-/// module doesn't own), matching the brief's "curated::parse_landmarks
-/// (pure) -> validate" pipeline.
-// --- D5: people-eternal.toml -----------------------------------------------
 
 #[derive(Deserialize)]
 struct PeopleEternalFile {
@@ -582,11 +381,8 @@ struct EternalToml {
     grounds: Vec<String>,
 }
 
-/// D5 (owner, 2026-09-15: "the exception is God because he is eternal"):
-/// `(person id, Scripture grounds)` per `[[eternal]]` entry. Existence of
-/// the person is the compile's check (it has the people in hand), not this
-/// parser's; an entry with no grounds is refused here -- eternity is a
-/// claim, and a claim carries its Scripture.
+/// `(person id, Scripture grounds)` per entry. An entry with no grounds is refused here: eternity is a claim,
+/// and a claim carries its Scripture. Whether the person exists is the compile's check, which has them in hand.
 pub fn parse_people_eternal(input: &str) -> Result<Vec<(String, Vec<String>)>> {
     let f: PeopleEternalFile = toml::from_str(input).context("people-eternal.toml: invalid TOML or does not match the [[eternal]] schema")?;
     let mut out = Vec::with_capacity(f.eternal.len());
@@ -607,8 +403,6 @@ pub fn parse_landmarks(input: &str) -> Result<Vec<Landmark>> {
         toml::from_str(input).context("landmarks.toml: invalid TOML or does not match the [[landmark]] schema")?;
     Ok(f.landmark.into_iter().map(|l| Landmark { name: l.name, kind: l.kind, lat: l.lat, lon: l.lon, size: l.size }).collect())
 }
-
-// --- Batch E: place-history.toml -------------------------------------------
 
 #[derive(Deserialize)]
 struct PlaceHistoryFile {
@@ -645,11 +439,8 @@ struct BlurbToml {
     breadth: String,
 }
 
-/// `year` OR `from`+`to` (the brief's "year OR from/to range") -- exactly
-/// one of the two shapes is required; ambiguous (both) or empty (neither)
-/// TOML tables are a curator authoring mistake, held to the same
-/// hard-error-not-soft-drop bar `parse_events_extra` already applies to our
-/// own hand-authored data (see this module's file header).
+/// Exactly one of `year` or `from`+`to` is required: both, or neither, is a curator authoring mistake and a
+/// hard error rather than a soft drop.
 #[derive(Deserialize)]
 struct DateClaimToml {
     year: Option<i32>,
@@ -679,17 +470,6 @@ fn resolve_date_claim(claim: DateClaimToml, place_id: &str, field: &str) -> Resu
     Ok(PlaceDateClaim { when, verses: claim.verses, note: claim.note })
 }
 
-/// Parses `place-history.toml` (Batch E: `[[place]]` per curated place id,
-/// with nested `[[place.name]]` / `[[place.blurb]]` arrays and singular
-/// `[place.established]` / `[place.destroyed]` tables). Pure — bails
-/// immediately (matching `parse_events_extra`'s precedent) only on
-/// STRUCTURAL shape problems a `TimeRange` can catch by itself (a zero year
-/// or an inverted range) or an ambiguous/empty established/destroyed table;
-/// does NOT check the place id is real, that cited verses parse and exist
-/// in the compiled KJV text, or that ranges within one place don't overlap
-/// — those need the full merged `AtlasData` (or the compiled verse map) and
-/// so are `validate::run_place_history`'s job instead, same pure-parse-then-
-/// cross-validate split every other curated schema in this module follows.
 pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
     let f: PlaceHistoryFile =
         toml::from_str(input).context("place-history.toml: invalid TOML or does not match the [[place]] schema")?;
@@ -720,8 +500,6 @@ pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
     Ok(out)
 }
 
-// --- Batch E3: place-names-kjv.toml (KJV display-name alias layer) --------
-
 #[derive(Deserialize)]
 struct PlaceNamesKjvFile {
     alias: Vec<AliasToml>,
@@ -735,28 +513,9 @@ struct AliasToml {
     verses: Vec<String>,
 }
 
-/// Parses `place-names-kjv.toml` (Batch E3: a FLAT `[[alias]]` array, each
-/// row naming its own `id`) -- the SAME flat, no-mis-attachment-risk shape
-/// `event-witnesses.toml`/`parse_event_witnesses` and `acts-sections.toml`/
-/// `parse_acts_sections` already establish (see `parse_event_witnesses`'s
-/// own doc comment for the TOML array-of-tables mis-attachment class this
-/// avoids entirely), reused here for the identical reason: one curated fact
-/// per named place id. Each row's plain `name` is wrapped into a
-/// `{"kjv": name}` translation map here (same indirection
-/// `parse_event_witnesses` wraps its own single-translation curator field
-/// into) -- "kjv is the only key today; identity survives future
-/// translations" per batch-e3-brief.md requirement 1. `verses` are passed
-/// through AS-IS (plain single-verse citation ids, e.g. `place-history.toml`'s
-/// own `[[place.name]]` `verses` field -- not a curator-friendly RANGE like
-/// `events-extra.toml`'s own `verses`, so no `expand_verse_ref` here).
-///
-/// Pure and STRUCTURAL only, same split every other curated schema in this
-/// module follows: a malformed file bails immediately; cross-checking `id`
-/// against the real compiled place set, rejecting duplicate ids, rejecting
-/// an alias equal to its own place's canonical name, and checking each
-/// cited verse parses and exists in the compiled KJV text are all
-/// `validate::run_place_names_kjv`'s job instead (needs the compiled places
-/// list and KJV text, which this pure parse step doesn't own).
+/// A flat array, each row naming its own place id. A row's plain name is wrapped into a `{"kjv": name}`
+/// translation map here -- kjv is the only key today, and identity survives future translations -- and its
+/// verses are passed through AS-IS: they are plain citation ids, not curator-friendly ranges to expand.
 pub fn parse_place_names_kjv(input: &str) -> Result<Vec<PlaceNameAlias>> {
     let f: PlaceNamesKjvFile =
         toml::from_str(input).context("place-names-kjv.toml: invalid TOML or does not match the [[alias]] schema")?;
@@ -770,8 +529,6 @@ pub fn parse_place_names_kjv(input: &str) -> Result<Vec<PlaceNameAlias>> {
         })
         .collect())
 }
-
-// --- Batch B2: polities/{id}.toml ("borders v2, the cartographer's edition") ---
 
 #[derive(Deserialize)]
 struct PolityToml {
@@ -787,14 +544,8 @@ struct PolityEraToml {
     to: i32,
     ref_note: String,
     rings: Vec<Vec<(f64, f64)>>,
-    /// Batch M requirement 1: nested `[era.transition]`/`[era.fall]` tables
-    /// -- TOML's own standard "subtable of the most recently opened
-    /// array-of-tables element" shape, so these attach to exactly the
-    /// `[[era]]` entry they're written under with no id/index matching. See
-    /// `atlas_core::data::PolityEra::transition`/`::fall`'s own doc comments
-    /// for what each means; both are `#[serde(default)]` so every existing
-    /// era (the overwhelming majority, honestly omitted per the citation-
-    /// integrity rule) keeps parsing with neither present.
+    /// Nested subtables attach to exactly the era element they are written under, by TOML's own rule, so no id
+    /// or index matching is needed. Both default, so an era that honestly omits them keeps parsing.
     #[serde(default)]
     transition: Option<PolityDeltaToml>,
     #[serde(default)]
@@ -807,41 +558,14 @@ struct PolityDeltaToml {
     #[serde(default)]
     verses: Vec<String>,
     ref_note: String,
-    /// Fix round 1 (I1): required, no `#[serde(default)]` -- a curator MUST
-    /// name which era's own `from` year this block belongs to. See
-    /// `atlas_core::data::PolityDelta::for_era_from`'s own doc comment for
-    /// why (the actual mis-attachment bug this batch's own self-review
-    /// found, and the structural check this field exists to make possible).
+    /// Required, with no default: a curator MUST name which era's own `from` year this block belongs to, which
+    /// is what makes the mis-attachment this shape once suffered structurally checkable.
     for_era_from: i32,
 }
 
-/// Parses one `data/curated/polities/{id}.toml` file (schema: top-level
-/// `id`, one or more `[[era]]` tables -- `name`/`from`/`to`/`ref_note`/
-/// `rings`, see `atlas_core::data::PolityEra`'s own doc comment for the
-/// exact field shape and why `rings` is `[lat, lon]`, not GeoJSON's
-/// `[lon, lat]`). Pure and STRUCTURAL only, same split every other curated
-/// schema in this module follows (`parse_landmarks`/`parse_place_history`):
-/// a TOML file that doesn't even parse into this shape is a curator
-/// authoring mistake, held to the same immediate-bail bar
-/// `parse_place_history` already applies to hand-authored data, but zero
-/// years, inverted ranges, era overlap, ring closure/simplicity, and the
-/// bbox check all need the FULL picture (every era at once, geometry math) and
-/// so are deliberately deferred to `validate::run_polities` instead, same
-/// "parse then cross-validate, don't fail fast mid-file" reasoning as
-/// `parse_place_history`'s own doc comment.
-///
-/// `color_key` is LEFT PROVISIONAL (`0`) here -- fix round 1 (M1): it used
-/// to be computed eagerly in this function (a pure hash of `id` alone), but
-/// a collision-free assignment needs to see every OTHER polity in the same
-/// roster too, which a single file being parsed in isolation never has
-/// visibility into (exactly the same "needs the FULL picture" reasoning the
-/// doc comment above already gives for deferring the zero-year/overlap/
-/// ring-closure checks to `validate::run_polities` instead of checking them
-/// here). `process_polities` (`server/atlas-etl/src/main.rs`) overwrites
-/// every polity's `color_key` in one pass, via
-/// `polities::assign_color_keys`, once the full sorted roster this
-/// function's own caller reads is available -- see that function's own doc
-/// comment for the collision-free assignment algorithm itself.
+/// `color_key` is left PROVISIONAL at 0 here: a collision-free assignment needs to see every other polity in
+/// the roster, which a single file parsed in isolation cannot. The caller overwrites it in one pass once the
+/// full sorted roster is in hand.
 pub fn parse_polity(input: &str) -> Result<Polity> {
     let f: PolityToml = toml::from_str(input).context("polity TOML: invalid TOML or does not match the id/[[era]] schema")?;
     let eras = f
@@ -860,8 +584,6 @@ pub fn parse_polity(input: &str) -> Result<Polity> {
     Ok(Polity { id: f.id, color_key: 0, eras })
 }
 
-// --- Batch R requirement 1: land-mask.toml ("borders become part of the plate") ---
-
 #[derive(Deserialize)]
 struct LandMaskFile {
     region: Vec<LandMaskRegionToml>,
@@ -874,22 +596,11 @@ struct LandMaskRegionToml {
     rings: Vec<Vec<(f64, f64)>>,
 }
 
-/// Parses `land-mask.toml` (schema: one or more `[[region]]` tables --
-/// `name`/`ref_note`/`rings`, mirroring `PolityEra`'s own `rings` shape
-/// exactly -- see `atlas_core::data::LandMaskRegion`'s own doc comment).
-/// Pure and STRUCTURAL only, same split every other curated geometry schema
-/// in this module follows (`parse_polity`'s own doc comment): a TOML file
-/// that doesn't even parse into this shape is a curator authoring mistake,
-/// held to the same immediate-bail bar; ring closure/simplicity/bbox
-/// containment all need the full picture and so are deliberately deferred to
-/// `validate::run_land_mask` instead.
 pub fn parse_land_mask(input: &str) -> Result<Vec<LandMaskRegion>> {
     let f: LandMaskFile =
         toml::from_str(input).context("land-mask.toml: invalid TOML or does not match the [[region]] schema")?;
     Ok(f.region.into_iter().map(|r| LandMaskRegion { name: r.name, ref_note: r.ref_note, rings: r.rings }).collect())
 }
-
-// --- Batch F: catechism.toml ("the small catechism") -----------------------
 
 #[derive(Deserialize)]
 struct CatechismFile {
@@ -920,24 +631,6 @@ struct CatechismItemToml {
     ref_note: Option<String>,
 }
 
-/// Parses `catechism.toml` (schema: `[[part]]` -- `id`/`title` -> nested
-/// `[[part.item]]` -- `id`/`name`/optional `text`/optional
-/// `explanation_heading`/`explanation`/optional `where_written`/`verses`/
-/// optional `ref_note`, see `CatechismItem`'s own doc comment for why `text`
-/// is optional and `explanation_heading` defaults). Pure and STRUCTURAL
-/// only, same split every other curated schema in this module follows: a
-/// TOML file that doesn't even parse into this shape is a curator authoring
-/// mistake, held to the same immediate-bail bar `parse_place_history`/
-/// `parse_polity` already apply to hand-authored data. `verses` accepts the
-/// SAME curator-friendly single-verse-or-range strings `parse_events_extra`
-/// does (reuses `expand_verse_ref` verbatim), expanded here into individual
-/// canonical verse ids; a verse ref's own validity against the compiled KJV
-/// text (does it parse AND actually exist) needs the full picture and so is
-/// deliberately deferred to `validate::run_catechism` instead, same
-/// pure-parse-then-cross-validate split `parse_place_history`'s own doc
-/// comment already establishes. Duplicate part/item ids across the whole
-/// file are ALSO `validate::run_catechism`'s job (needs the full roster at
-/// once), not checked here.
 pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
     let f: CatechismFile =
         toml::from_str(input).context("catechism.toml: invalid TOML or does not match the [[part]]/[[part.item]] schema")?;
@@ -959,10 +652,8 @@ pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
                 where_written: it.where_written,
                 verses,
                 ref_note: it.ref_note,
-                // Batch F2: question-level citations are merged in SEPARATELY,
-                // by main.rs (after this pure parse of catechism.toml itself),
-                // from the brain-fuel/catechism mapping + the Deut5 supplement
-                // -- see `merge_catechism_questions` there. Always empty here.
+                // Question-level citations are merged in separately, after this pure parse, so they are always
+                // empty here.
                 questions: Vec::new(),
             });
         }
@@ -970,8 +661,6 @@ pub fn parse_catechism(input: &str) -> Result<Vec<CatechismPart>> {
     }
     Ok(parts)
 }
-
-// --- Batch F2: catechism-mapping.toml (requirement 3) + catechism-deut5.toml (requirement 5b) ---
 
 #[derive(Deserialize)]
 struct CatechismMappingFileToml {
@@ -992,20 +681,6 @@ struct MappingOverrideToml {
     questions: Vec<u32>,
 }
 
-/// Parses `catechism-mapping.toml` (schema: `[[file]]` -- `path`/`item`/
-/// optional `[[file.override]]` -- `item`/`questions`, see that file's own
-/// header comment for the full convention). Pure and STRUCTURAL only, same
-/// split every other curated schema in this module follows: a TOML file
-/// that doesn't even parse into this shape is a curator authoring mistake,
-/// held to the same immediate-bail bar `parse_catechism`/`parse_polity`
-/// already apply. Does NOT check that every named `item`/override `item`
-/// actually exists in `catechism.toml`, or that every named `path` actually
-/// exists under `data/raw/` -- both need the fuller picture (the compiled
-/// catechism parts, and the filesystem) and so are
-/// `catechism_map::merge_questions_into_parts`'s / `catechism_map::
-/// build_questions_from_mapping`'s own job respectively, same
-/// pure-parse-then-cross-validate split every other curated schema here
-/// follows.
 pub fn parse_catechism_mapping(input: &str) -> Result<Vec<MappingFile>> {
     let f: CatechismMappingFileToml =
         toml::from_str(input).context("catechism-mapping.toml: invalid TOML or does not match the [[file]] schema")?;
@@ -1031,16 +706,8 @@ struct Deut5EntryToml {
     ref_note: String,
 }
 
-/// Parses `catechism-deut5.toml` (requirement 5b; schema: `[[entry]]` --
-/// `item`/`verses`/`ref_note`, all required -- see that file's own header).
-/// Pure and STRUCTURAL only, same split as `parse_catechism_mapping` above:
-/// verse expansion/validation against the compiled KJV text and the item-id
-/// cross-check both happen later (`curated::expand_verse_ref` is reused
-/// verbatim for the actual range expansion, at the SAME call site
-/// `main.rs` already uses for `catechism.toml`'s own `verses` field --
-/// these are OUR OWN canonical-ref strings, e.g. `"DEU.5.9-10"`, not the
-/// brain-fuel repo's human-readable form, so `catechism_map::
-/// canonicalize_ref` is deliberately NOT used here).
+/// These refs are OUR OWN canonical strings, identical in shape to the main catechism file's, so the range
+/// expansion is reused verbatim and the vendored repo's human-readable canonicalizer is deliberately not used.
 pub fn parse_catechism_deut5(input: &str) -> Result<Vec<Deut5Entry>> {
     let f: CatechismDeut5File =
         toml::from_str(input).context("catechism-deut5.toml: invalid TOML or does not match the [[entry]] schema")?;
@@ -1057,19 +724,9 @@ struct PeopleGroupsFile {
     named_after: Vec<NamedAfterSeed>,
 }
 
-/// PG-1a: parses `people-groups.toml` (three independent array-of-tables:
-/// `[[group]]` curated nation seeds, `[[reclassify]]` the nine Gen-10
-/// gentilic reclassification rows, `[[named_after]]` eponymy seed rows --
-/// controller decisions 1b/1c/3). Reuses `atlas_core::data::
-/// PeopleGroupSeed`/`PeopleGroupReclassify`/`NamedAfterSeed` directly for
-/// deserialization (their field names already match the TOML schema
-/// exactly, the same "reuse the atlas-core struct" shape `parse_eras`/
-/// `parse_chronology_anchors` already establish) -- pure and STRUCTURAL
-/// only: cross-checking each `named_after` row's `eponym`/`namesake_id`
-/// against the real compiled person/group sets is
-/// `peoples_adapter::normalize`'s own job (needs the fuller, already-built
-/// picture), matching every other curated schema in this module's own
-/// split between "parses" and "validates against the wider compile."
+/// Three independent arrays: the curated nation seeds, the gentilic reclassification rows, and the eponymy
+/// seed rows. Whether an eponymy row's ids name real people or groups is the graph adapter's check, which has
+/// the built picture.
 pub fn parse_people_group_seeds(input: &str) -> Result<(Vec<PeopleGroupSeed>, Vec<PeopleGroupReclassify>, Vec<NamedAfterSeed>)> {
     let f: PeopleGroupsFile =
         toml::from_str(input).context("people-groups.toml: invalid TOML or does not match the [[group]]/[[reclassify]]/[[named_after]] schema")?;
@@ -1082,15 +739,6 @@ struct FulfillmentsFile {
     fulfillment: Vec<FulfillmentSeed>,
 }
 
-/// EDGE-1a (controller decision 1a): parses `fulfillments.toml` (one
-/// array-of-tables, `[[fulfillment]]`). Reuses `atlas_core::data::
-/// FulfillmentSeed` directly for deserialization -- the same "reuse the
-/// atlas-core struct" shape `parse_people_group_seeds` above already
-/// establishes -- pure and STRUCTURAL only: locus parsing/validation
-/// against the real compiled KJV text is `fulfillment_adapter::normalize`'s
-/// own job (needs the fuller, already-built picture), matching every
-/// other curated schema in this module's own split between "parses" and
-/// "validates against the wider compile."
 pub fn parse_fulfillments(input: &str) -> Result<Vec<FulfillmentSeed>> {
     let f: FulfillmentsFile = toml::from_str(input).context("fulfillments.toml: invalid TOML or does not match the [[fulfillment]] schema")?;
     Ok(f.fulfillment)
@@ -1102,9 +750,6 @@ struct TypologyFile {
     typology: Vec<TypologySeed>,
 }
 
-/// EDGE-1a (controller decision 1b): parses `typology.toml` (one
-/// array-of-tables, `[[typology]]`). Same shape/split as `parse_fulfillments`
-/// above.
 pub fn parse_typology(input: &str) -> Result<Vec<TypologySeed>> {
     let f: TypologyFile = toml::from_str(input).context("typology.toml: invalid TOML or does not match the [[typology]] schema")?;
     Ok(f.typology)
@@ -1122,18 +767,11 @@ mod tests {
         assert_eq!(jordan.kind, "water");
         assert_eq!(jordan.lat, 31.76);
         assert_eq!(jordan.lon, 35.55);
-        assert_eq!(jordan.size, None); // Batch C2: no `size` line in the fixture -> None, not an error
+        assert_eq!(jordan.size, None);
 
-        // Batch C2: the Negev entry DOES carry a `size = "lg"` line -- proves
-        // parse_landmarks actually threads the optional field through
-        // (rather than silently dropping it), the real bug a naive
-        // `Landmark { ..., size: None }` literal in the map closure would
-        // have caused with zero compile-time signal.
         let negev = landmarks.iter().find(|l| l.name == "Negev").unwrap();
         assert_eq!(negev.size.as_deref(), Some("lg"));
     }
-
-    // --- Batch B2: parse_polity ---------------------------------------------
 
     #[test]
     fn parse_polity_reads_valid_toml_and_computes_color_key() {
@@ -1150,10 +788,6 @@ mod tests {
         assert!(polity.eras[0].transition.is_none(), "first era's own [era.transition] is honestly absent in the fixture");
         assert!(polity.eras[0].fall.is_none());
 
-        // Batch M requirement 1: [era.transition]/[era.fall] under the
-        // fixture's SECOND [[era]] -- proves both nested tables attach to
-        // the era they're written under (TOML's own array-of-tables
-        // subtable rule), not the first/wrong one.
         let transition = polity.eras[1].transition.as_ref().expect("second era carries a transition in the fixture");
         assert_eq!(transition.event, "Testland expands");
         assert_eq!(transition.verses, vec!["GEN.1.1".to_string()]);
@@ -1165,14 +799,6 @@ mod tests {
         assert_eq!(fall.verses, vec!["GEN.1.2".to_string(), "GEN.1.3".to_string()]);
         assert_eq!(fall.for_era_from, -1499);
 
-        // Fix round 1 (M1): color_key is now LEFT PROVISIONAL (0) by
-        // parse_polity -- a single file has no visibility into the rest of
-        // the roster it might collide with, so the real, collision-free
-        // value is assigned later by `process_polities` (main.rs), over the
-        // FULL sorted roster at once, via `polities::assign_color_keys`
-        // (see that function's own unit tests for the collision-free
-        // assignment algorithm itself). This just proves parse_polity
-        // doesn't reach for the old per-file hash anymore.
         assert_eq!(polity.color_key, 0);
     }
 
@@ -1181,8 +807,6 @@ mod tests {
         assert!(parse_polity("not = [valid").is_err());
         assert!(parse_polity("id = \"x\"").is_err(), "missing [[era]] array entirely");
     }
-
-    // --- Batch R requirement 1: parse_land_mask -----------------------------
 
     #[test]
     fn parse_land_mask_reads_valid_toml() {
@@ -1214,8 +838,6 @@ rings = [
         assert!(parse_land_mask("not = [valid").is_err());
         assert!(parse_land_mask("foo = 1").is_err(), "missing [[region]] array entirely");
     }
-
-    // --- Batch F: parse_catechism --------------------------------------------
 
     #[test]
     fn parse_catechism_reads_valid_toml_with_defaults_applied() {
@@ -1261,22 +883,18 @@ title = "The Sacrament of Holy Baptism"
         let first = &commandments.items[0];
         assert_eq!(first.id, "commandment-1");
         assert_eq!(first.text.as_deref(), Some("Thou shalt have no other gods."));
-        // Default applied: no explanation_heading line in the TOML above.
         assert_eq!(first.explanation_heading, "What does this mean?");
         assert_eq!(first.where_written, None);
         assert!(first.verses.is_empty());
         assert_eq!(first.ref_note, None);
 
         let close = &commandments.items[1];
-        // "EXO.20.5-6" expands to two individual canonical verse ids, same
-        // range-expansion expand_verse_ref already gives parse_events_extra.
         assert_eq!(close.verses, vec!["EXO.20.5".to_string(), "EXO.20.6".to_string()]);
         assert_eq!(close.ref_note.as_deref(), Some("f. read as covering v.6"));
 
         let baptism = &parts[1];
         let b1 = &baptism.items[0];
         assert_eq!(b1.text, None, "Baptism items have no separate prompt text -- see CatechismItem's own doc comment");
-        // Explicit override, NOT the default.
         assert_eq!(b1.explanation_heading, "What is Baptism?");
         assert_eq!(b1.where_written.as_deref(), Some("Christ, our Lord, says..."));
         assert_eq!(b1.verses, vec!["MAT.28.19".to_string()]);
@@ -1303,8 +921,6 @@ title = "P"
         let err = parse_catechism(toml).unwrap_err();
         assert!(err.to_string().contains("i1"), "{err}");
     }
-
-    // --- Batch F2: parse_catechism_mapping / parse_catechism_deut5 ---------
 
     #[test]
     fn parse_catechism_mapping_reads_valid_toml_with_and_without_overrides() {
@@ -1377,8 +993,6 @@ ref_note = "another note"
         assert_eq!(out2.last().unwrap(), "GEN.12.20");
     }
 
-    // --- Batch T requirement 1: parse_event_witnesses -----------------------
-
     #[test]
     fn parse_event_witnesses_reads_a_flat_witness_list_with_translation_indirection() {
         let toml = r#"
@@ -1400,11 +1014,8 @@ verses = ["JHN.19.17-30"]
         let (event_id, mat) = &rows[0];
         assert_eq!(event_id, "pw_golgotha");
         assert_eq!(mat.book, "MAT");
-        // "kjv" translation-mapped, expanded from the curator-friendly range
-        // string the SAME way events-extra.toml's own `verses` field is
-        // (expand_verse_ref, reused verbatim).
         let kjv = mat.translations.get("kjv").expect("kjv translation must be populated");
-        assert_eq!(kjv.len(), 18); // MAT.27.33..=50
+        assert_eq!(kjv.len(), 18);
         assert_eq!(kjv.first().unwrap(), "MAT.27.33");
         assert_eq!(kjv.last().unwrap(), "MAT.27.50");
         assert_eq!(mat.ref_note.as_deref(), Some("Matthew 27:33-50 read directly"));
@@ -1413,7 +1024,7 @@ verses = ["JHN.19.17-30"]
         let (event_id2, jhn) = &rows[1];
         assert_eq!(event_id2, "pw_golgotha");
         assert_eq!(jhn.book, "JHN");
-        assert_eq!(jhn.ref_note, None); // optional field, genuinely absent here
+        assert_eq!(jhn.ref_note, None);
     }
 
     #[test]
@@ -1434,8 +1045,6 @@ verses = ["not-a-ref"]
         assert!(err.to_string().contains("e1"), "{err}");
     }
 
-    // --- Batch E3: parse_place_names_kjv -------------------------------------
-
     #[test]
     fn parse_place_names_kjv_reads_a_flat_alias_list_with_translation_indirection() {
         let toml = r#"
@@ -1453,8 +1062,6 @@ verses = ["GEN.2.14", "DAN.10.4"]
         assert_eq!(rows.len(), 2);
 
         assert_eq!(rows[0].id, "cush-2");
-        // "kjv" translation-mapped, same indirection parse_event_witnesses
-        // wraps its own single-translation curator field into.
         assert_eq!(rows[0].translations.get("kjv").map(String::as_str), Some("Ethiopia"));
         assert_eq!(rows[0].verses, vec!["GEN.2.13".to_string()]);
 
@@ -1468,8 +1075,6 @@ verses = ["GEN.2.14", "DAN.10.4"]
         assert!(parse_place_names_kjv("not = [valid").is_err());
         assert!(parse_place_names_kjv("foo = 1").is_err(), "missing [[alias]] array entirely");
     }
-
-    // --- PG-1a: parse_people_group_seeds -------------------------------------
 
     #[test]
     fn parse_people_group_seeds_reads_all_three_arrays() {

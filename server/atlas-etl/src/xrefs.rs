@@ -1,20 +1,6 @@
-//! Parser for openbible.info's cross-references TSV
-//! (`data/raw/xrefs/cross_references.txt`; see `data/raw/README.md`).
-//!
-//! Line 1 is a 4-tab-field header (`From Verse\tTo Verse\tVotes\t#comment`)
-//! while every data row has exactly 3 fields — we unconditionally skip line
-//! 1 rather than inferring columns from it. `To` may be a same-chapter range
-//! (`Col.1.16-Col.1.17`, canonicalized to `COL.1.16-17`) or a cross-chapter
-//! /book range (canonicalized to `MAT.5.3-MAT.6.2`). Votes may be negative
-//! and are kept (sorted descending still works).
-//!
-//! Per controller ruling, the compiled cross-refs must guarantee: every
-//! target parses as a canon ref/span, no self-references, votes sorted
-//! descending, and every target's first verse exists in the compiled KJV
-//! verses map. The first three are enforced here (structural, pure);
-//! the last needs the compiled verses map, which this module has no access
-//! to (pure `&str` in) — `filter_missing_first_verse` is a second pure pass
-//! `main.rs` runs after joining, so the check stays testable without I/O.
+//! Parser for the openbible.info cross-references TSV. Line 1 is a 4-field header while every data row
+//! has exactly 3, so it is skipped unconditionally rather than inferring columns from it. A target may
+//! be a same-chapter range, canonicalized to `COL.1.16-17`, or a wider one, `MAT.5.3-MAT.6.2`.
 
 use std::collections::HashMap;
 
@@ -26,17 +12,15 @@ use crate::osis;
 
 #[derive(Debug, Clone, Default)]
 pub struct XrefStats {
-    /// Rows dropped for structural reasons: wrong field count, `From`/`To`
-    /// not parseable as a canon verse or span, or a non-integer vote count.
+    /// Rows dropped for structural reasons: a wrong field count, a `From`/`To` that is not a canon verse
+    /// or span, or a non-integer vote count.
     pub dropped_unparseable: usize,
     /// Rows dropped because `To` (as a single verse) was identical to `From`.
     pub dropped_self: usize,
 }
 
-/// Parses `To` into `(canonical_target, first_verse, is_single_verse)`.
-/// Tries the whole string as one verse first (the common case), then falls
-/// back to splitting on the first `-` and parsing both halves as OSIS
-/// verses (the `Book.C.V-Book.C.V` range form actually used by this file).
+/// Tries the whole string as one verse first, the common case, then falls back to splitting on the first
+/// `-` and parsing both halves as OSIS verses.
 fn parse_to_span(raw: &str) -> Option<(String, VerseId, bool)> {
     if let Some(v) = osis::parse_verse(raw) {
         let canon = osis::canonical(&v);
@@ -53,9 +37,8 @@ fn parse_to_span(raw: &str) -> Option<(String, VerseId, bool)> {
     Some((canon, lv, false))
 }
 
-/// Parses the whole TSV. Each `From` verse's cross-refs are sorted by votes
-/// descending. Self-references and structurally unparseable rows are
-/// dropped and counted, never silently ignored.
+/// Each `From` verse's cross-refs come back sorted by votes descending. Self-references and structurally
+/// unparseable rows are dropped and counted, never silently ignored.
 pub fn parse(input: &str) -> Result<(HashMap<String, Vec<CrossRef>>, XrefStats)> {
     let mut map: HashMap<String, Vec<CrossRef>> = HashMap::new();
     let mut stats = XrefStats::default();
@@ -101,8 +84,7 @@ pub fn parse(input: &str) -> Result<(HashMap<String, Vec<CrossRef>>, XrefStats)>
     Ok((map, stats))
 }
 
-/// Extracts the first verse of an already-canonicalized target string
-/// (`"PSA.124.8"`, `"COL.1.16-19"`, or `"MAT.5.3-MAT.6.2"`).
+/// Extracts the first verse of an already-canonicalized target, in any of its three forms.
 fn first_verse_of_target(target: &str) -> Option<VerseId> {
     if let Ok(v) = VerseId::parse_canonical(target) {
         return Some(v);
@@ -114,13 +96,9 @@ fn first_verse_of_target(target: &str) -> Option<VerseId> {
     VerseId::parse_canonical(left).ok()
 }
 
-/// Second pure pass (ruling: "a post-join filter in main.rs is fine", kept
-/// as a standalone function here so it stays unit-testable without I/O):
-/// drops any cross-ref whose target's first verse is not a key in the
-/// compiled KJV verses map, since the `/api/verse` preview feature needs
-/// that verse's text to exist. Drops the `From` entry entirely if it ends
-/// up with zero surviving targets. Returns the filtered map and how many
-/// individual cross-ref rows were dropped.
+/// A second pure pass, standalone so it stays unit-testable without I/O: drops any cross-ref whose
+/// target's first verse is not a key in the compiled verses map, since the preview needs that verse's
+/// text, and drops the `From` entry entirely when nothing survives.
 pub fn filter_missing_first_verse(
     map: HashMap<String, Vec<CrossRef>>,
     verses: &HashMap<String, String>,
