@@ -3,26 +3,6 @@ using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
 
-// Batch R requirement 5 (place-in-verse hover -> marker blink): PlaceMentions.Scan
-// is the mini-reader's own plain-text substring detector -- given a verse's
-// text and the places GET /api/chapter/{cref} says are linked to it (server-
-// side reverse index, no character-offset data), find which substrings to
-// wrap as hoverable mentions. Pure, so tested directly rather than through
-// the Razor component that consumes it.
-//
-// M-D3 fix round (R-D1, review C1): widened to a required third `persons`
-// argument when U5 generalized Scan to a second entity kind -- this
-// pre-existing file was left uncompiling by that batch (10x CS7036), caught
-// by review, not by this session's own original verification. Every call
-// site below passes `Array.Empty<PersonRef>()` (this file is exercising
-// the place-only half of the contract deliberately, one concern per test,
-// matching its own established convention -- Person-kind coverage rides
-// the Playwright layer instead, MENTION-2/MENTION-4, `tests/ux/popover-
-// sections.spec.ts`). `PersonRef` resolves with no new `using` needed --
-// this file's own `namespace BibleAtlas.Client.Tests` already encloses
-// `BibleAtlas.Client` (where both `PlaceRef` and `PersonRef` live),
-// the same reason the pre-existing `PlaceRef` usage below never needed
-// one either.
 public class PlaceMentionsTests {
     private static PlaceRef Place(string id, string name) => new(id: id, name: name);
 
@@ -73,14 +53,6 @@ public class PlaceMentionsTests {
         Assert.Equal("jericho", segments[1].PlaceId);
     }
 
-    // M-D3/U5 (Explore/PlaceMentions.cs's own doc comment): matching is now
-    // case-SENSITIVE, corrected FROM case-insensitive -- a real, deliberate,
-    // tested production fix, not a regression. Case-insensitive matching
-    // made the real place "Sin" (a wilderness/city name, EXO.16.1/EZE.30.15)
-    // indistinguishable from the ordinary English word "sin". Replaces this
-    // file's own former MatchIsCaseInsensitive, which asserted the OPPOSITE,
-    // now-retired contract; split into two, one behavior per test, matching
-    // this file's own established convention.
     [Fact]
     public void DifferentlyCasedTextNeverMatches() {
         var segments = PlaceMentions.Scan("go up to JERUSALEM now.", new[] { Place("jerusalem", "Jerusalem") }, Array.Empty<PersonRef>());
@@ -105,18 +77,6 @@ public class PlaceMentionsTests {
         Assert.Equal(new[] { "bethlehem", "jerusalem" }, mentionIds);
     }
 
-    // Overlap resolution: a longer place name that CONTAINS a shorter one as
-    // a real substring claims the span; the shorter one never also matches
-    // inside it (a real risk once two curated names are anywhere near each
-    // other alphabetically -- "beersheba" genuinely contains "sheba").
-    // M-D3/U5 note: since the Ordinal fix above, this now ALSO exercises the
-    // case-sensitivity guard incidentally ("Beersheba"'s own embedded
-    // "sheba" is lowercase, so the capitalized "Sheba" candidate no longer
-    // even reaches the overlap-resolution step to begin with) -- the
-    // OBSERVABLE outcome (exactly one mention, Beersheba) is unchanged
-    // either way, so this test still stands as written; not expanded
-    // further here (R-D1's own "mechanical" scope), disclosed in the batch
-    // report instead.
     [Fact]
     public void LongerContainingNameWinsOverAShorterSubstringName() {
         var places = new[] { Place("beersheba", "Beersheba"), Place("sheba", "Sheba") };
@@ -129,9 +89,6 @@ public class PlaceMentionsTests {
 
     [Fact]
     public void UnmatchedPlaceIsSimplyAbsentNotAnError() {
-        // "Egypt" is in the caller-supplied place list but does not actually
-        // appear in this particular verse's text -- no exception, no
-        // spurious segment, the text just comes back whole.
         var segments = PlaceMentions.Scan("The LORD spake unto Moses.", new[] { Place("egypt", "Egypt") }, Array.Empty<PersonRef>());
         var seg = Assert.Single(segments);
         Assert.Equal("The LORD spake unto Moses.", seg.Text);

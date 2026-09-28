@@ -6,33 +6,8 @@ using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Tests.State;
 
-/// <summary>
-/// Batch VC-1 (R6): "registry conformance (R1); an arrangement-vocabulary
-/// test (every LayoutKind rendered by the host; unknown name/kind fails
-/// loud with the contract clause); ... hatch conformance (every declared
-/// enter-split hatch resolves both its views in the registry)." Builds the
-/// REAL <see cref="ViewRegistry"/> via <see cref="ViewRegistrySetup.Build"/>
-/// -- the SAME factory Program.cs calls -- against real (non-JS-dependent)
-/// singletons, exactly the DI-realism discipline
-/// <c>ConformanceTests.AtomRegistrationConformance</c> already established
-/// for atoms (S-10/ruling 6.i).
-///
-/// Fix round 1 (S-6, IMPORTANT -- review): the registry-resolution tests
-/// below now REFLECT over <see cref="ViewNames"/> instead of iterating a
-/// hand-written array literal -- a new <c>ViewNames</c> constant with no
-/// matching registration now fails THIS test directly, not incidentally via
-/// an unrelated count assertion whose natural repair ("bump 3 to 4") would
-/// have registered nothing.
-/// </summary>
 public class ViewRegistryConformanceTests
 {
-    /// A minimal, real <see cref="NavigationManager"/> -- ViewRegistrySetup's
-    /// own hatches close over it but this suite never actually INVOKES a
-    /// hatch (that would navigate/dispatch for real, exercised instead by
-    /// ViewArrangementTests.cs's own intent-level tests and
-    /// tests/ux/composition.spec.ts at the browser level) -- constructing a
-    /// real, working instance is enough to prove the registry itself builds
-    /// and every registration is genuinely resolvable.
     private sealed class FakeNavigationManager : NavigationManager
     {
         public FakeNavigationManager() => Initialize("https://example.test/", "https://example.test/");
@@ -44,7 +19,6 @@ public class ViewRegistryConformanceTests
 
     private static ViewRegistry BuildRegistry() => BuildRegistry(new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
 
-    /// <summary>D2: the same registry over a caller-owned arrangement atom, so a test can read what a hatch dispatched.</summary>
     private static ViewRegistry BuildRegistry(StateAtom<ViewArrangement> arrangement) => ViewRegistrySetup.Build(
         arrangement,
         new ViewStateService(),
@@ -59,18 +33,13 @@ public class ViewRegistryConformanceTests
 
     private static string Capitalize(string name) => char.ToUpperInvariant(name[0]) + name[1..];
 
-    // ------------------------------------------------------------------
-    // R1: registry conformance -- every arrangement-reachable name
-    // resolves; every registered name unique.
-    // ------------------------------------------------------------------
-
     [Fact]
     public void Registry_EveryViewNamesConstant_ResolvesInTheRegistry()
     {
         var registry = BuildRegistry();
         var names = ViewNamesConstants();
 
-        Assert.NotEmpty(names); // never vacuous
+        Assert.NotEmpty(names);
         foreach (var name in names)
         {
             Assert.True(registry.TryGet(name, out var view), $"'{name}' (a ViewNames constant, found via REFLECTION) did not resolve in the registry -- add its own RegisteredView in ViewRegistrySetup.Build.");
@@ -83,16 +52,10 @@ public class ViewRegistryConformanceTests
     {
         var values = ViewNamesConstants();
 
-        // Batch CORP-1: reader, world, sources, kretzmann, concord -- grows
-        // deliberately, not by accident (this test's own header comment).
         Assert.Equal(5, values.Count);
         Assert.Equal(values.Count, values.Distinct().Count());
     }
 
-    // Fix round 1 (S-6): the constructor GENUINELY throws on a duplicate
-    // name (ViewRegistry.cs's own `views.ToDictionary(v => v.Name)`) --
-    // proven directly against a planted duplicate, rather than asserting
-    // uniqueness on a state the registry can never actually reach.
     [Fact]
     public void Registry_ConstructorThrows_OnAPlantedDuplicateName()
     {
@@ -113,10 +76,6 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewCapabilities.None, registry.CapabilitiesOf("not-a-real-view"));
     }
 
-    // ------------------------------------------------------------------
-    // R1: capability data -- declared, never inferred from name.
-    // ------------------------------------------------------------------
-
     [Fact]
     public void Registry_CapabilityData_MatchesR1sOwnAssignment()
     {
@@ -126,24 +85,9 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewCapabilities.BearsWindow, registry.CapabilitiesOf(ViewNames.World));
         Assert.Equal(ViewCapabilities.None, registry.CapabilitiesOf(ViewNames.Sources));
 
-        // Batch CORP-1 (R2/R3): Kretzmann PROJECTS the shared Locus atom
-        // (BearsLocus, the SAME declaration Reader carries -- this is
-        // exactly why the split-follow-by-construction proof holds); Concord
-        // declares no capability (R3: navigates its own structure, not
-        // scripture locus).
         Assert.Equal(ViewCapabilities.BearsLocus, registry.CapabilitiesOf(ViewNames.Kretzmann));
         Assert.Equal(ViewCapabilities.None, registry.CapabilitiesOf(ViewNames.Concord));
     }
-
-    // ------------------------------------------------------------------
-    // R4: hatch conformance -- every declared enter-split hatch resolves
-    // BOTH its views in the registry (owner + partner). Fix round 1
-    // (controller ruling 2): "no separate CanHost flag -- the declared
-    // hatch IS the hosting declaration." HostView (distinct from OwnerView
-    // -- see EnterSplitHatch.cs's own header) is what actually hosts when
-    // the hatch fires; the tripwire below proves every HostView's own
-    // component genuinely uses CompositionSplit, by name.
-    // ------------------------------------------------------------------
 
     [Fact]
     public void HatchConformance_EveryEnterSplitHatch_ResolvesBothItsViewsInTheRegistry()
@@ -164,24 +108,13 @@ public class ViewRegistryConformanceTests
                     Assert.True(registry.TryGet(partner, out _), $"Hatch partner '{partner}' does not resolve in the registry.");
                 }
                 Assert.True(registry.TryGet(hatch.HostView, out _), $"Hatch HostView '{hatch.HostView}' does not resolve in the registry.");
-                Assert.NotEqual(hatch.OwnerView, hatch.PartnerView); // the DEFAULT guest is never the owner itself (D2: a later menu entry may be)
+                Assert.NotEqual(hatch.OwnerView, hatch.PartnerView);
             }
         }
 
-        // R4's own ship list, verbatim: reader<->world (two hatches, one per
-        // side) PLUS Sources' own "read-beside" proof -- three at VC-1.
-        // Batch CORP-1 adds two more, self-hosting like Sources: Kretzmann's
-        // own "read-beside" and Concord's own "read-beside" -- five, never
-        // silently zero (a registry with no hatches at all would pass every
-        // loop above vacuously).
         Assert.Equal(5, hatchesFound);
     }
 
-    /// <summary>
-    /// D2 (owner: "multiple maps, multiple readers ... FOR NOW: map + reader
-    /// only"): the reader and the map each offer the other (default, first)
-    /// and themselves; every other host offers the reader alone.
-    /// </summary>
     [Fact]
     public void HatchConformance_D2_GuestMenus_ReaderAndWorldOfferEachOtherThenThemselves_OthersOfferReaderOnly()
     {
@@ -196,7 +129,6 @@ public class ViewRegistryConformanceTests
         Assert.Throws<ArgumentException>(() => { Hatch(ViewNames.Concord).InvokeWith(ViewNames.World).GetAwaiter().GetResult(); });
     }
 
-    /// <summary>D2: entering a same-view split through the hatch yields Members == [host, host], not following.</summary>
     [Fact]
     public void HatchConformance_D2_SameViewSplit_EntersWithMembersHostHost_NotFollowing()
     {
@@ -226,9 +158,6 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewNames.Sources, sourcesHatch.HostView);
     }
 
-    // Batch CORP-1 (R2/R3): Kretzmann and Concord each declare their OWN
-    // "read-beside" hatch, self-hosting -- the identical shape Sources' own
-    // hatch already proved generic immediately above.
     [Fact]
     public void HatchConformance_KretzmannAndConcord_OwnHatchHostsThemselves()
     {
@@ -248,10 +177,6 @@ public class ViewRegistryConformanceTests
     [Fact]
     public void HatchConformance_World_DeclaresItsOwnHatchButReaderIsTheHost()
     {
-        // R7: byte-identical to pre-VC-1 -- "Read beside the map" (declared
-        // BY World) still makes READER the host, not World. This is exactly
-        // why HostView is a separate field from OwnerView (EnterSplitHatch.cs's
-        // own header).
         var registry = BuildRegistry();
 
         var worldHatch = (EnterSplitHatch)registry.Get(ViewNames.World).EscapeHatches.Single(h => h.Kind == HatchKinds.EnterSplit);
@@ -260,16 +185,6 @@ public class ViewRegistryConformanceTests
         Assert.Equal(ViewNames.Reader, worldHatch.HostView);
     }
 
-    // Fix round 1 (controller ruling 2, THE tripwire): "the conformance test
-    // asserts every declared enter-split hatch's host renders through
-    // CompositionSplit -- that is the tripwire that makes a pasted-wrapper
-    // fourth host impossible." A source scan, disclosed (client.Tests has no
-    // Razor-rendering harness) -- but a REAL one: it reads the actual
-    // shipped .razor file for every distinct HostView across every declared
-    // hatch and requires the literal `<CompositionSplit` usage, keyed to
-    // THAT view's own `ViewNames` constant. A future host declared via a
-    // hatch but wired with a pasted, ad-hoc wrapper (or no CompositionSplit
-    // at all) fails this loudly.
     [Fact]
     public void HatchConformance_EveryHatchsHostView_RendersThroughCompositionSplit()
     {
@@ -283,7 +198,7 @@ public class ViewRegistryConformanceTests
             {
                 if (!checkedHostViews.Add(hatch.HostView))
                 {
-                    continue; // already checked this HostView via a different hatch (e.g. World's own hatch also names "reader")
+                    continue;
                 }
 
                 var path = Path.Combine(repoRoot, "client", "Pages", Capitalize(hatch.HostView) + ".razor");
@@ -295,64 +210,11 @@ public class ViewRegistryConformanceTests
             }
         }
 
-        Assert.NotEmpty(checkedHostViews); // never vacuous -- this batch's own ship list touches "reader" and "sources"
+        Assert.NotEmpty(checkedHostViews);
     }
-
-    // ------------------------------------------------------------------
-    // Batch CORPREAD-1b, DELIVERABLE 0a -- THE FOLLOW-RELEASE LAW's own
-    // conformance tripwire (design spec §5, owner ruling 2026-08-27,
-    // verbatim: "on every thing sharing state with the reader state, we
-    // need an escape hatch to stop following the reader as well"; §5's own
-    // conformance clause, verbatim: "a registered view that declares the
-    // locus-bearing capability without declaring the toggle-follow hatch
-    // fails a standing conformance test"). Reflects over the REAL registry
-    // (the same BuildRegistry() every other test in this file uses) --
-    // structural, not a source-text scan, mirroring HatchConformance_
-    // EveryEnterSplitHatch_ResolvesBothItsViewsInTheRegistry's own proof
-    // shape immediately above.
-    //
-    // ADJUDICATION G (fix round, review): the law's own LITERAL predicate
-    // (BearsLocus => toggle-follow) over-fired on exactly one view --
-    // Reader, the CANONICAL LOCUS WRITER, whose own route IS the shared
-    // value's projection (CORPREAD-1a's URL-projection contract), so there
-    // is no external value for it to stop following, and a "released
-    // Reader" would render a chapter its own URL contradicts. The first
-    // ship of this batch satisfied the letter with a hatch NO UI anywhere
-    // in the app could ever invoke (verified exhaustively by the review:
-    // every EscapeHatches consumer selects by Kind == EnterSplit or by a
-    // specific view's OWN name; nothing renders a generic "every hatch"
-    // button) -- contract theater, the exact opposite of this codebase's
-    // "the vocabulary IS what's real" discipline (the Sources precedent the
-    // first ship leaned on does not carry: Sources' own read-beside hatch
-    // is unreachable from SOME pairings but is really invoked from the
-    // Sources page itself; Reader's toggle-follow hatch was invoked from
-    // NOWHERE at all -- a different category). Exempted BY NAME, with this
-    // reason, rather than satisfied by a hatch no UI can reach. Any FUTURE
-    // locus-bearing view is still caught -- this list is a closed, pinned
-    // set, not a predicate a future batch could quietly widen to make a
-    // real violation pass (the companion pinning test below guards that).
-    // If Reader ever gains a genuine guest-mode independent-browse
-    // capability, it will need its own designed release semantics (what
-    // does the URL show while released?) -- the hatch should be declared
-    // THEN, alongside the chip that invokes it, not kept inert "for future
-    // semantics" in the meantime.
-    // ------------------------------------------------------------------
 
     private static readonly string[] FollowReleaseExemptViews = { ViewNames.Reader };
 
-    // Fix round (Q-5, IMPORTANT -- review, folded into this same edit): the
-    // ONE predicate the law actually checks, now shared by BOTH tests
-    // below. Before this fix, the planted-violation proof re-implemented
-    // this exact boolean expression inline -- a self-referential assertion
-    // that would keep passing even if the REAL tripwire immediately below
-    // were weakened or deleted, proving only that the author could restate
-    // the predicate twice, not that the check itself catches the defect.
-    // RegisteredView, not the compiled IView contract (client/Contracts/) --
-    // Capabilities is RegisteredView's own additive data beyond what IView
-    // itself declares (see that class's own header, Views/ViewRegistry.cs),
-    // and client/Contracts/ is extend-only for this batch, so this helper
-    // is correctly typed against the concrete class both call sites already
-    // use, not against the interface.
     private static bool ViolatesFollowReleaseLaw(RegisteredView view) =>
         view.Capabilities.HasFlag(ViewCapabilities.BearsLocus)
         && !FollowReleaseExemptViews.Contains(view.Name)
@@ -367,8 +229,6 @@ public class ViewRegistryConformanceTests
             .Where(v => !FollowReleaseExemptViews.Contains(v.Name))
             .ToList();
 
-        // Kretzmann -- never vacuous (Reader is exempted above, by name,
-        // not silently filtered out of this count).
         Assert.Single(bearsLocusViews);
 
         foreach (var view in bearsLocusViews)
@@ -377,24 +237,12 @@ public class ViewRegistryConformanceTests
         }
     }
 
-    // The exemption list itself is pinned, so a future batch cannot quietly
-    // widen it to make a real violation pass without this test itself
-    // failing loud first.
     [Fact]
     public void HatchConformance_TheFollowReleaseExemptionList_IsExactlyTheCanonicalLocusWriter()
     {
         Assert.Equal(new[] { ViewNames.Reader }, FollowReleaseExemptViews);
     }
 
-    // The planted-violation proof (this file's own established style, e.g.
-    // Registry_ConstructorThrows_OnAPlantedDuplicateName above): a
-    // synthetic RegisteredView, built directly (NOT through the real
-    // registry, which by construction never produces this shape today) --
-    // proves the CHECK ITSELF genuinely fails on the exact defect §5
-    // describes, not merely that today's registry happens to pass. Fix
-    // round (Q-5): now calls the SAME ViolatesFollowReleaseLaw helper the
-    // real test above uses -- so a future weakening of that helper breaks
-    // BOTH tests together, not just the real-registry one silently.
     [Fact]
     public void HatchConformance_PlantedBearsLocusViewWithNoToggleFollowHatch_FailsTheLawsOwnCheck()
     {
@@ -404,18 +252,6 @@ public class ViewRegistryConformanceTests
 
         Assert.True(ViolatesFollowReleaseLaw(offender), "The planted view declares BearsLocus with no toggle-follow hatch -- the law's own check must catch this, or the real-registry proof above is vacuous.");
     }
-
-    // ------------------------------------------------------------------
-    // R6: arrangement-vocabulary -- every LayoutKind is a real, known value
-    // (proven directly, structurally); unknown fails loud. CompositionSplit's
-    // OWN "unknown kind" branch reads LayoutKinds.IsKnown -- see that
-    // component's own header -- so this test proves the SAME predicate its
-    // markup uses, not a source-text proxy for it. The actual RENDERING
-    // proof (CompositionSplit genuinely handles single/split-h/an injected
-    // unknown kind in a live browser) lives at tests/ux/composition.spec.ts
-    // -- client.Tests has no Razor-component-rendering harness (no bUnit
-    // referenced), disclosed rather than faked with a source scan.
-    // ------------------------------------------------------------------
 
     [Theory]
     [InlineData(LayoutKinds.Single)]
@@ -428,7 +264,7 @@ public class ViewRegistryConformanceTests
     [Theory]
     [InlineData("")]
     [InlineData("overlay")]
-    [InlineData("SPLIT-H")] // case-sensitive -- not a known kind by accident of casing
+    [InlineData("SPLIT-H")]
     public void LayoutKinds_UnrecognizedValue_IsNotKnown(string kind)
     {
         Assert.False(LayoutKinds.IsKnown(kind));
@@ -443,11 +279,6 @@ public class ViewRegistryConformanceTests
     [Fact]
     public async Task Hatch_Invoke_DispatchesTheExpectedEnterSplitArrangement()
     {
-        // The one behavioral (not just structural) proof at this level --
-        // invoking Sources' own declared hatch genuinely dispatches
-        // EnterSplit(sources, reader) onto the SAME atom instance the
-        // registry was built against (composition.spec.ts proves the
-        // browser-level, end-to-end version of this same fact).
         var arrangement = new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default);
         var registry = ViewRegistrySetup.Build(arrangement, new ViewStateService(), new StateAtom<Locus>(AtomNames.Locus, Locus.Default), new FakeNavigationManager());
 
@@ -457,16 +288,6 @@ public class ViewRegistryConformanceTests
         Assert.Equal(LayoutKinds.SplitH, arrangement.Value.LayoutKind);
         Assert.Equal(new[] { ViewNames.Sources, ViewNames.Reader }, arrangement.Value.Members);
     }
-
-    // ------------------------------------------------------------------
-    // Fix round 1 (S-1, CRITICAL -- controller ruling 3): "the live
-    // arrangement materializes through the compiled contract -- your
-    // LayoutKind values implement ICompositionLayout, and the active
-    // composition exposes an IViewComposition (Members = registry-backed
-    // IView instances, Layout = the kind)." Proven directly against
-    // ViewRegistry.ComposeFrom -- the SAME method CompositionSplit.razor
-    // calls every render (not a parallel proof).
-    // ------------------------------------------------------------------
 
     public static IEnumerable<object[]> RepresentativeArrangements()
     {
@@ -484,13 +305,9 @@ public class ViewRegistryConformanceTests
 
         var composition = registry.ComposeFrom(arrangement);
 
-        // The types themselves -- not just duck-typed shapes -- are the
-        // compiled §4b contract (client/Contracts/Views.cs).
         Assert.IsAssignableFrom<IViewComposition>(composition);
         Assert.IsAssignableFrom<ICompositionLayout>(composition.Layout);
 
-        // Agreement: the contract's own Members/Layout agree with the
-        // ViewArrangement atom value this composition was built from.
         Assert.Equal(arrangement.LayoutKind, composition.Layout.Kind);
         Assert.Equal(arrangement.Members, composition.Members.Select(m => m.Name).ToList());
     }
@@ -498,10 +315,6 @@ public class ViewRegistryConformanceTests
     [Fact]
     public void ComposeFrom_MembersAreTheSameRegisteredViewInstancesTheRegistryHolds()
     {
-        // Not fresh stand-ins per call -- the SAME IView object the
-        // registry itself would hand back from Get(name), proving Members
-        // is a real registry-backed projection, not a name echoed into a
-        // lookalike shape.
         var registry = BuildRegistry();
         var arrangement = new ViewArrangement(new[] { ViewNames.Reader, ViewNames.World }, LayoutKinds.SplitH, null, true);
 

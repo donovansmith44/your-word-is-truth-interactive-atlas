@@ -7,24 +7,6 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Tests;
 
-/// <summary>
-/// Batch M-D2 (P7 closure, "the client gains the generic contract... implemented
-/// by ONE concrete client class over /api/node/{id} + /api/node/{id}/edges"):
-/// direct proof of <see cref="GraphExplorableClient"/>'s own URL construction
-/// and wire deserialization, in isolation -- no live server needed. This
-/// project has no dedicated unit tests for <see cref="AtlasClient"/> itself
-/// (its own HTTP behavior is exercised end to end by the Playwright suite,
-/// per every prior batch report's own "no new C# unit-test work needed"
-/// note) -- this file is the ONE deliberate exception for the new generic
-/// seam, precisely because it has no live in-app caller yet this batch (see
-/// CONTRACT.md's own M-D2 strangler-inventory note: the interface/
-/// implementation are real, DI-wired, and this batch's own proof of
-/// correctness, but the popover's own xrefs section stays on its existing
-/// bespoke fetch -- disclosed, not silently assumed correct). Real sample
-/// JSON shaped exactly like atlas-server's own `graph_handlers` output,
-/// field names cross-checked against `server/atlas-server/tests/graph_api.rs`'s
-/// own live assertions against the real running server.
-/// </summary>
 public class GraphExplorableClientTests
 {
     private sealed class StubHandler : HttpMessageHandler
@@ -57,9 +39,6 @@ public class GraphExplorableClientTests
 
         var card = await client.Card("text-unit:JHN.3.16");
 
-        // Node ids can carry a colon (the "kind:raw" wire form) -- verify the
-        // REQUEST round-trips to the same unescaped path this id names,
-        // rather than asserting one specific percent-encoding of it.
         Assert.Equal("/api/node/text-unit:JHN.3.16", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Equal("text-unit:JHN.3.16", card.Id);
         Assert.Equal(NodeKind.TextUnit, card.Kind);

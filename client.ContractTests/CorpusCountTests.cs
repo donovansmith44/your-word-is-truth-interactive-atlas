@@ -2,26 +2,6 @@ using System.Reflection;
 
 namespace BibleAtlas.Client.ContractTests;
 
-/// <summary>
-/// Batch AQC-1 fix round 1 -- THE COUNTING LAW (controller ruling): "the
-/// dotnet line carries the parity check: client.Tests N/N |
-/// client.ContractTests X/X -- where client.ContractTests's count MUST
-/// EQUAL the AQC line's X ... any divergence means a feature file is being
-/// executed by one side and not the other." This is that assertion, made
-/// real rather than merely reported: it reflects over every
-/// Reqnroll-generated scenario test THIS ASSEMBLY actually discovered
-/// (`SkippableFactAttribute` per plain scenario, `SkippableTheoryAttribute`
-/// + one `InlineDataAttribute` per Scenario Outline row -- confirmed by
-/// direct inspection of the generated code-behind under `obj/`) and
-/// compares that DISCOVERED count against the SAME count computed by
-/// parsing the committed `.feature` files directly (textually,
-/// language-agnostic -- no Reqnroll/cucumber-specific logic). A feature
-/// file that silently fails to link into this project (a stale
-/// `ReqnrollFeatureFile` glob, a build-config gap) would make the
-/// DISCOVERED count fall behind the DECLARED one; this test catches that
-/// class of drift even though it cannot directly compare against the Rust
-/// side's own live cucumber run in the same process.
-/// </summary>
 public class CorpusCountTests
 {
     [Fact]
@@ -56,7 +36,7 @@ public class CorpusCountTests
 
     private static int CountScenariosInFeatureFiles()
     {
-        var repoRoot = FindRepoRoot();
+        var repoRoot = Steps.AqcSteps.RepoRoot;
         var featuresDir = Path.Combine(repoRoot, "contracts", "atlas-query-contract", "features");
         var total = 0;
         foreach (var file in Directory.GetFiles(featuresDir, "*.feature"))
@@ -89,8 +69,6 @@ public class CorpusCountTests
                 {
                     if (!sawExamplesHeader)
                     {
-                        // First "|" row after "Examples:" is the header row
-                        // (column names) -- not a data row.
                         sawExamplesHeader = true;
                     }
                     else
@@ -102,7 +80,4 @@ public class CorpusCountTests
         }
         return total;
     }
-
-    private static string FindRepoRoot([System.Runtime.CompilerServices.CallerFilePath] string here = "") =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, ".."));
 }

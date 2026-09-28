@@ -3,20 +3,6 @@ using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
 
-// EVT-3 Ticket 3 (the map-focus-at-time hatch -- a "declared,
-// one-named-site" pattern, NOT a formal IEscapeHatch/HatchKinds instance;
-// fix round 2, Q-1/N-3, a third stale label beyond the review's own
-// two-site count -- MapFocusHatch.cs's doc comment has the full
-// genuine-conflict reasoning): direct,
-// isolated proof of MapFocusHatch.Query's own pure query-building logic --
-// the piece that decides the EXACT {place, window} query string
-// EventDateAndPlacesSection's own Place: row hands to
-// IPopoverSectionContext.NavigateWorldAsync. The real end-to-end
-// window+focus effect (World.razor reading `place=` back off this exact
-// shape and panning the camera) is exercised by
-// tests/ux/event-timeplace.spec.ts instead, the same "pure logic here,
-// real render/interaction there" split this app's other component-adjacent
-// static helpers already follow.
 public class MapFocusHatchTests
 {
     [Fact]
@@ -29,10 +15,6 @@ public class MapFocusHatchTests
     [Fact]
     public void Query_MatchesTheExactShapeApplyExternalQueryAlreadyParses()
     {
-        // World.razor's own ApplyExternalQuery splits on '&' then '=' --
-        // this pins that MapFocusHatch.Query never emits anything that
-        // shape can't round-trip (no stray '&'/'=' inside an unescaped
-        // segment).
         var query = MapFocusHatch.Query("jerusalem", new TimeRange(fromYear: -1000, toYear: -960));
         var parts = query.Split('&').Select(p => p.Split('=', 2)).ToDictionary(kv => kv[0], kv => kv[1]);
         Assert.Equal("-1000", parts["from"]);

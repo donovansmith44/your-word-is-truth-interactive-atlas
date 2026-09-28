@@ -3,22 +3,6 @@ using BibleAtlas.Client.Explore;
 
 namespace BibleAtlas.Client.Tests;
 
-// Batch PROV-1 (owner order 1, verbatim: "one thing we definitely need for
-// EVERY PIECE OF DATA is the source from which it came. openbible, etc.";
-// owner order 2: "add a ? button on our frontier interface that gives
-// provenance (i.e., sourced from openbible.com) or whatever").
-//
-// THE CLIENT HALF of the resolution law. The SERVER half
-// (server/atlas-graph/tests/provenance_registry_real_data.rs) proves that
-// every distinct provenance id in the real compiled artifact HAS a registry
-// row, and fails the build if one does not. This file proves the other
-// thing: that when resolution fails anyway, it fails LOUDLY -- which is
-// exactly the case no real document can produce while the server law holds,
-// and therefore exactly the case only a hand-built registry can test.
-//
-// ProvenanceResolver is static and pure (it takes the document as a
-// parameter rather than injecting a client), which is what lets every test
-// below run with no HTTP and no component host at all.
 public class ProvenanceResolverTests
 {
     private static SourcesDocument Registry() => new(
@@ -40,15 +24,8 @@ public class ProvenanceResolverTests
             new(id: "curated", source: "our-curated-work", confidence: Confidence.Curated, locator: null),
             new(id: "chronology-derivation", source: "our-curated-work", confidence: Confidence.Derived, locator: null),
             new(id: "kretzmann", source: "our-curated-work", confidence: Confidence.Imported, locator: null),
-            // A row whose `source` names nothing -- `validate_structure`
-            // rejects this on the server, so only a fixture can produce it.
             new(id: "dangling", source: "no-such-source", confidence: Confidence.Imported, locator: null),
         });
-
-    // ---- THE ID GRAMMAR ------------------------------------------------
-    // Mirrors atlas_core::sources::split_provenance_id exactly; that
-    // function's own #[cfg(test)] module asserts the same three cases on
-    // the Rust side, and the two must never disagree.
 
     [Fact]
     public void ABareIdIsAllKindAndNoLocator()
@@ -59,22 +36,14 @@ public class ProvenanceResolverTests
     [Fact]
     public void ADottedIdIsNotSplitBecauseOnlySlashesSeparate()
     {
-        // The real id `openbible.info-cross-references` carries dots. If
-        // dots split, the owner's own headline source would resolve to
-        // nothing.
         Assert.Equal(("openbible.info-cross-references", null), ProvenanceResolver.SplitId("openbible.info-cross-references"));
     }
 
     [Fact]
     public void ASuffixedIdSplitsAtTheFirstSlashOnlySoAMultiSegmentLocatorSurvives()
     {
-        // kretzmann_adapter's own real shape: one id PER commentary unit,
-        // kind + a two-segment locator. Splitting at the LAST slash would
-        // mis-read the kind as "kretzmann/jeremiah" and resolve nothing.
         Assert.Equal(("kretzmann", "jeremiah/1"), ProvenanceResolver.SplitId("kretzmann/jeremiah/1"));
     }
-
-    // ---- RESOLUTION ----------------------------------------------------
 
     [Fact]
     public void AKnownIdResolvesToItsSourcesOwnTitleLicenseAndCategory()
@@ -91,9 +60,6 @@ public class ProvenanceResolverTests
     [Fact]
     public void ASuffixedIdResolvesThroughItsKindAndKeepsTheRowsOwnLocator()
     {
-        // The ROW's locator wins over the registry's general one: "jeremiah/1"
-        // is what THIS row cites; a registry locator would be what the
-        // source generally covers.
         var r = ProvenanceResolver.Resolve(Registry(), "kretzmann/jeremiah/1");
 
         Assert.True(r.IsResolved);
@@ -101,16 +67,12 @@ public class ProvenanceResolverTests
         Assert.Equal("jeremiah/1", r.Locator);
     }
 
-    // ---- THE FAIL-LOUD LAW ---------------------------------------------
-
     [Fact]
     public void AnUnknownIdIsLoudlyUnresolvedAndCarriesTheOffendingIdBack()
     {
         var r = ProvenanceResolver.Resolve(Registry(), "no-such-provenance");
 
         Assert.False(r.IsResolved);
-        // The id itself survives, so ProvenanceAffordance can NAME what it
-        // could not resolve -- never a silent blank, never a guess.
         Assert.Equal("no-such-provenance", r.Id);
         Assert.Equal("", r.Title);
     }
@@ -129,24 +91,8 @@ public class ProvenanceResolverTests
     {
         var r = ProvenanceResolver.Resolve(Registry(), "");
         Assert.False(r.IsResolved);
-        // FIX ROUND 1 (review H-1): and it is a DATA fault, not an
-        // infrastructure one -- the registry loaded fine; what arrived was
-        // nothing to look up.
         Assert.Equal(ProvenanceStatus.Unresolved, r.Status);
     }
-
-    // ---- H-1: THE LOUD PATH IS LIVE, NOT DEAD CODE ----------------------
-    // The batch asserted, in three source comments and in its report, that
-    // an empty provenance renders as a LOUD unresolved notice. It did not:
-    // ProvenanceAffordance, ResolveAll, FrontierProvenance.Distinct and
-    // EventProvenanceSection each filtered whitespace ids out BEFORE
-    // resolution, so Resolve's blank branch was unreachable from the UI and
-    // a missing provenance rendered as no "?" at all -- a curatorial claim
-    // with no attribution and no sign that attribution was missing.
-    //
-    // These two tests are what would have caught it: they assert on
-    // ResolveAll (the collection entry point every call site goes through),
-    // not on Resolve (the branch that was already green while dead).
 
     [Fact]
     public void ResolveAllKeepsABlankIdAsALoudUnresolvedEntryInsteadOfFilteringItIntoSilence()
@@ -161,31 +107,17 @@ public class ProvenanceResolverTests
     [Fact]
     public void AnEmptyListStillSaysNothingBecauseNoAttributionSectionIsNotTheSameFactAsAnIllegibleOne()
     {
-        // The distinction the fix preserves. Zero ids = this surface has no
-        // attribution to make (honest absence; the component renders
-        // nothing). One blank id = something claimed an attribution and
-        // handed over nothing (loud). Collapsing the two is what made the
-        // silent blank possible.
         Assert.Empty(ProvenanceResolver.ResolveAll(Registry(), Array.Empty<string>()));
         Assert.Single(ProvenanceResolver.ResolveAll(Registry(), new[] { "   " }));
     }
 
-    // ---- M-4: AN INFRASTRUCTURE FAULT IS NOT A DATA FAULT ---------------
-
     [Fact]
     public void ANullRegistryReportsThatTheRegistryIsUnavailableRatherThanAccusingTheData()
     {
-        // Before this fix, `/api/sources` failing rendered
-        // `Unrecognized source "kjv". Please report it.` -- in the loudest
-        // register in the panel, on EVERY affordance on the popover -- for
-        // data whose provenance is perfectly well-formed and perfectly well
-        // registered. The reader was told the atlas had unattributed data
-        // and asked to report a bug that did not exist.
         var r = ProvenanceResolver.Resolve(null, "kjv");
 
         Assert.False(r.IsResolved);
         Assert.Equal(ProvenanceStatus.RegistryUnavailable, r.Status);
-        // The id survives, because it is the one true thing we can still say.
         Assert.Equal("kjv", r.Id);
     }
 
@@ -196,8 +128,6 @@ public class ProvenanceResolverTests
         var data = ProvenanceResolver.Resolve(Registry(), "no-such-provenance");
 
         Assert.NotEqual(infrastructure.Status, data.Status);
-        // ...and both are still NOT resolved, so neither can render a
-        // fabricated label.
         Assert.False(infrastructure.IsResolved);
         Assert.False(data.IsResolved);
     }
@@ -208,13 +138,9 @@ public class ProvenanceResolverTests
         Assert.Equal(ProvenanceStatus.Resolved, ProvenanceResolver.Resolve(Registry(), "kjv").Status);
     }
 
-    // ---- SECTION-LEVEL RESOLUTION (the leper lesson) --------------------
-
     [Fact]
     public void ASectionDrawingOnTwoSourcesResolvesBothRatherThanCollapsingToOne()
     {
-        // THE LEPER LESSON, client-side: a hand-authored row under the same
-        // heading as an imported one must stay visible AS hand-authored.
         var all = ProvenanceResolver.ResolveAll(Registry(), new[] { "kjv", "curated" });
 
         Assert.Equal(2, all.Count);
@@ -225,20 +151,6 @@ public class ProvenanceResolverTests
     [Fact]
     public void ResolveAllDedupesByIdAndPreservesOrderAndNoLongerDropsBlanks()
     {
-        // FIX ROUND 1 (review H-1): this test used to be named
-        // "...AndDropsBlanks" and asserted 2 entries for this input --
-        // it PINNED the silent blank as correct behavior.
-        //
-        // FIX ROUND 2 (review L-NEW-3): the comment then said "the two
-        // blanks now dedupe to ONE loud entry" while the assertions below
-        // said 4, with all[1] AND all[3] both Unresolved -- the comment
-        // contradicted its own test, and the behaviour it described was the
-        // better one. `""` and `"  "` are different strings but the same
-        // fact, and rendering "This item was served with no source at all"
-        // TWICE, identically, is noise. ResolveAll now normalises every
-        // flavour of blank to `""` BEFORE Distinct, so the sentence is true
-        // and the assertions match it. Still not a filter: the blank
-        // survives, still opens the button, still shouts -- once.
         var all = ProvenanceResolver.ResolveAll(Registry(), new[] { "curated", "", "kjv", "curated", "  " });
 
         Assert.Equal(3, all.Count);
@@ -250,16 +162,11 @@ public class ProvenanceResolverTests
     [Fact]
     public void EveryFlavourOfBlankIsTheSameFactAndSaysSoExactlyOnce()
     {
-        // FIX ROUND 2 (review L-NEW-3), stated as its own law rather than as
-        // a side effect of the dedupe test above: null, "", "   " and "\t"
-        // all mean "we were handed nothing to attribute this with", so a
-        // section handed all four renders ONE loud notice, not four.
         var all = ProvenanceResolver.ResolveAll(Registry(), new string[] { null!, "", "   ", "\t" });
 
         Assert.Single(all);
         Assert.Equal(ProvenanceStatus.Unresolved, all[0].Status);
         Assert.Equal("", all[0].Id);
-        // ...and it is still LOUD, not filtered -- the H-1 law is unmoved.
         Assert.False(all[0].IsResolved);
     }
 
@@ -269,10 +176,6 @@ public class ProvenanceResolverTests
         Assert.Empty(ProvenanceResolver.ResolveAll(Registry(), null));
         Assert.Empty(ProvenanceResolver.ResolveAll(Registry(), Array.Empty<string>()));
     }
-
-    // ---- THE CONFIDENCE-DISPLAY RULE -----------------------------------
-    // Brief: "Confidence is shown when it is not the obvious default -- a
-    // CanonicalText claim and a Derived claim must not look alike."
 
     [Fact]
     public void CanonicalTextAndDerivedDoNotLookAlike()
@@ -288,8 +191,6 @@ public class ProvenanceResolverTests
     [Fact]
     public void CuratedSaysSoOutLoudBecauseTotalCaptureHonestyDependsOnIt()
     {
-        // The ATTEST-1 leper lesson as a display rule: our own work must
-        // announce itself, or it can pass for an imported source.
         Assert.Equal("Our own curated work", ProvenanceResolver.ConfidenceNote(Confidence.Curated));
     }
 

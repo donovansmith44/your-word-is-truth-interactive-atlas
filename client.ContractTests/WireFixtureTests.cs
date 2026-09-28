@@ -48,13 +48,12 @@ public sealed class WireFixtureTests
         return root.TryGetProperty("body", out var body) ? body.GetRawText() : text;
     }
 
-    private static string Canonical(JsonElement element) => Numeric(element)?.ToJsonString() ?? "null";
+    private static string Canonical(JsonElement element) => SameNumberWhetherWrittenAs35Or35Point0(element)?.ToJsonString() ?? "null";
 
-    // The server writes an f64 as `35.0` and System.Text.Json writes the same double as `35`; both are one number to every reader.
-    private static JsonNode? Numeric(JsonElement element) => element.ValueKind switch
+    private static JsonNode? SameNumberWhetherWrittenAs35Or35Point0(JsonElement element) => element.ValueKind switch
     {
-        JsonValueKind.Object => new JsonObject(element.EnumerateObject().Select(p => KeyValuePair.Create(p.Name, Numeric(p.Value)))),
-        JsonValueKind.Array => new JsonArray(element.EnumerateArray().Select(Numeric).ToArray()),
+        JsonValueKind.Object => new JsonObject(element.EnumerateObject().Select(p => KeyValuePair.Create(p.Name, SameNumberWhetherWrittenAs35Or35Point0(p.Value)))),
+        JsonValueKind.Array => new JsonArray(element.EnumerateArray().Select(SameNumberWhetherWrittenAs35Or35Point0).ToArray()),
         JsonValueKind.Number => JsonValue.Create(element.GetDouble()),
         _ => JsonNode.Parse(element.GetRawText()),
     };
