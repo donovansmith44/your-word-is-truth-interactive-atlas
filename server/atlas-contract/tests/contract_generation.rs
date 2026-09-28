@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-use atlas_contract::document::{contracts_root, GENERATED_DOCUMENTS};
+use atlas_contract::document::{contracts_root, RenderedDocument, GENERATED_DOCUMENTS};
 
 const EXPORTER: &str = env!("CARGO_BIN_EXE_export_contract");
 const CHECK_ARGUMENT: &str = "--check";
@@ -78,13 +78,13 @@ fn every_generated_document_is_byte_identical_to_the_committed_one() {
     assert_eq!(actual, expected, "run `cargo run -p atlas-contract --bin export_contract`");
 }
 
-fn committed_document((path, rendered): (PathBuf, String)) -> CommittedDocument {
-    let freshness = match std::fs::read_to_string(&path) {
-        Ok(committed) if committed == rendered => Freshness::ByteIdenticalToWhatTheRustRenders,
+fn committed_document(rendered: RenderedDocument) -> CommittedDocument {
+    let freshness = match std::fs::read_to_string(&rendered.path) {
+        Ok(committed) if committed == rendered.contents => Freshness::ByteIdenticalToWhatTheRustRenders,
         Ok(_) => Freshness::DiffersFromWhatTheRustRenders,
         Err(_) => Freshness::NoCommittedFileAtThisPath,
     };
-    CommittedDocument { path, freshness }
+    CommittedDocument { path: rendered.path, freshness }
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
     // Arrange
     let expected = serde_json::json!({
         "title": "Bible Atlas API",
-        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it.",
+        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.",
         "version": atlas_contract::meta::MAX_SUPPORTED_VERSION,
     });
     // Act
@@ -189,16 +189,90 @@ fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
 fn every_reference_in_the_aqc_schema_resolves_under_defs() {
     // Arrange
     let schema: serde_json::Value = serde_json::from_str(&atlas_contract::document::aqc_schema_json()).expect("the AQC schema is valid JSON");
-    let shapes: std::collections::BTreeSet<&str> = schema["$defs"].as_object().expect("the AQC schema has a $defs object").keys().map(String::as_str).collect();
     // Act
-    let mut references = std::collections::BTreeSet::new();
-    collect_references(&schema, &mut references);
+    let unresolved = unresolved_references(&schema, "#/$defs/", &schema["$defs"]);
     // Assert
-    let unresolved: Vec<&String> = references
-        .iter()
-        .filter(|r| r.strip_prefix("#/$defs/").is_none_or(|shape| !shapes.contains(shape)))
+    assert_eq!(unresolved, Vec::<String>::new());
+}
+
+#[test]
+fn every_reference_in_the_published_document_resolves() {
+    // Arrange
+    let document = published_document();
+    // Act
+    let unresolved = unresolved_references(&document, "#/components/schemas/", &document["components"]["schemas"]);
+    // Assert
+    assert_eq!(unresolved, Vec::<String>::new());
+}
+
+#[test]
+fn every_object_the_published_document_publishes_is_closed() {
+    // Arrange
+    let document = published_document();
+    // Act
+    let open = open_objects(&document, String::new());
+    // Assert
+    assert_eq!(open, Vec::<String>::new());
+}
+
+#[test]
+fn every_family_a_route_names_is_published_with_its_own_sentence() {
+    // Arrange
+    let document = published_document();
+    let mut published: Vec<String> = document["tags"].as_array().expect("the document publishes a tag list").iter().map(|tag| tag["name"].as_str().expect("a tag is named").to_string()).collect();
+    published.sort_unstable();
+    // Act
+    let named_by_a_route = families_every_route_names(&document);
+    // Assert
+    assert_eq!((named_by_a_route, published), (families_declared(), families_declared()));
+}
+
+fn published_document() -> serde_json::Value {
+    serde_json::to_value(atlas_contract::document::openapi()).expect("the published document serialises to JSON")
+}
+
+fn families_declared() -> Vec<String> {
+    let mut declared: Vec<String> = atlas_contract::document::FAMILIES.iter().map(|(name, _)| (*name).to_string()).collect();
+    declared.sort_unstable();
+    declared
+}
+
+fn families_every_route_names(document: &serde_json::Value) -> Vec<String> {
+    let mut named: Vec<String> = document["paths"]
+        .as_object()
+        .expect("the document publishes a path map")
+        .values()
+        .flat_map(|route| route.as_object().expect("a route publishes a method map").values())
+        .flat_map(|operation| operation["tags"].as_array().expect("an operation names its family").iter())
+        .map(|family| family.as_str().expect("a family is a name").to_string())
         .collect();
-    assert!(unresolved.is_empty(), "the AQC harnesses resolve every $ref under #/$defs/, but these do not resolve there: {unresolved:?}");
+    named.sort_unstable();
+    named.dedup();
+    named
+}
+
+/// The names of every schema that says it is an object and does not refuse the
+/// fields it has not declared, wherever in the document it stands.
+fn open_objects(value: &serde_json::Value, at: String) -> Vec<String> {
+    let mut open = Vec::new();
+    match value {
+        serde_json::Value::Object(map) => {
+            if map.get("type") == Some(&serde_json::json!("object")) && map.get("additionalProperties") != Some(&serde_json::json!(false)) {
+                open.push(at.clone());
+            }
+            open.extend(map.iter().flat_map(|(key, child)| open_objects(child, format!("{at}/{key}"))));
+        }
+        serde_json::Value::Array(items) => open.extend(items.iter().enumerate().flat_map(|(index, item)| open_objects(item, format!("{at}/{index}")))),
+        _ => {}
+    }
+    open
+}
+
+fn unresolved_references(value: &serde_json::Value, prefix: &str, defined: &serde_json::Value) -> Vec<String> {
+    let names: std::collections::BTreeSet<&str> = defined.as_object().expect("a document defines its shapes under one key").keys().map(String::as_str).collect();
+    let mut references = std::collections::BTreeSet::new();
+    collect_references(value, &mut references);
+    references.into_iter().filter(|reference| reference.strip_prefix(prefix).is_none_or(|name| !names.contains(name))).collect()
 }
 
 fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTreeSet<String>) {

@@ -25,8 +25,7 @@ pub struct ContentsRoot {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<Testament>,
     /// The reference to open when this entry is chosen: its first child's.
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     /// The entry's chapters, or its articles.
     pub children: Vec<ContentsChild>,
 }
@@ -40,8 +39,7 @@ pub struct ContentsChild {
     pub kind: ContentsChildKind,
     /// The reference to open for this entry: `GEN.1` for a chapter, or an
     /// article's first paragraph, such as `BoC 7.2.1`.
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     /// How many members it holds: verses of a chapter, paragraphs of an article.
     pub count: usize,
 }

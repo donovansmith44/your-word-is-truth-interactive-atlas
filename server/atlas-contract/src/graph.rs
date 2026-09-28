@@ -198,7 +198,7 @@ pub async fn text_window(
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(wire::TextUnit { sref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
+                Some(wire::TextUnit { r#ref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
             })
             .collect();
 
@@ -241,9 +241,9 @@ pub async fn text_window(
         .filter_map(|id| {
             let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
             let text = window::render(&snap, id)?;
-            let sref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
-            let words_of_christ = graph.red_letter_spans.get(&sref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            Some(wire::TextUnit { sref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
+            let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
+            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
+            Some(wire::TextUnit { r#ref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 

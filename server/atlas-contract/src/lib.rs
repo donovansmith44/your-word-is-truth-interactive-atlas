@@ -18,16 +18,17 @@ pub mod reading;
 pub mod reference;
 pub mod wire;
 
-/// The vocabularies that reach this document only as query parameters: no response
-/// body carries one, so nothing else registers them, and a parameter's reference to
-/// one must resolve.
+/// The components no response body registers, and which a reference to them
+/// therefore has nothing to resolve against until they are declared here: the
+/// vocabularies that reach this document only as query parameters, and the body
+/// every route's refusals are answered with.
 #[derive(utoipa::OpenApi)]
-#[openapi(components(schemas(wire::TextScope, atlas_graph::window::WindowDir)))]
-struct QueryVocabularies;
+#[openapi(components(schemas(wire::TextScope, atlas_graph::window::WindowDir, error::ErrorBody, error::ErrorInner)))]
+struct ReferencedElsewhere;
 
 pub fn openapi_router() -> utoipa_axum::router::OpenApiRouter<app::AppState> {
     use utoipa::OpenApi;
-    utoipa_axum::router::OpenApiRouter::with_openapi(QueryVocabularies::openapi())
+    utoipa_axum::router::OpenApiRouter::with_openapi(ReferencedElsewhere::openapi())
         .merge(meta::routes())
         .merge(map::routes())
         .merge(reading::routes())

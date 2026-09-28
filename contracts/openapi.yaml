@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: Bible Atlas API
-  description: The Bible Atlas HTTP API, generated from the Rust that serves it.
+  description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.
   version: 0.8.0
 paths:
   /api/books:
@@ -45,25 +45,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/catechism/{sref}:
     get:
       tags:
@@ -94,37 +82,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/chapter/{cref}:
     get:
       tags:
@@ -152,37 +122,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/contents/{corpus}:
     get:
       tags:
@@ -210,25 +162,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/contract:
     get:
       tags:
@@ -285,25 +225,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/kretzmann/chapter/{cref}:
     get:
       tags:
@@ -331,37 +259,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/land-mask:
     get:
       tags:
@@ -415,25 +325,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/narratives:
     get:
       tags:
@@ -477,37 +375,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/node/{id}/edges:
     get:
       tags:
@@ -554,37 +434,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/openapi.yaml:
     get:
       tags:
@@ -641,37 +503,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/polities:
     get:
       tags:
@@ -708,37 +552,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/scene:
     get:
       tags:
@@ -774,37 +600,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/scene/scripture:
     get:
       tags:
@@ -833,37 +641,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/sources:
     get:
       tags:
@@ -934,37 +724,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/verse/{vref}:
     get:
       tags:
@@ -992,37 +764,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /api/xrefs/{sref}:
     get:
       tags:
@@ -1052,37 +806,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
         '500':
           description: The request was well formed but this atlas's own data for it is incomplete.
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - error
-                properties:
-                  error:
-                    $ref: '#/components/schemas/ErrorInner'
-                additionalProperties: false
+                $ref: '#/components/schemas/ErrorBody'
   /health:
     get:
       tags:
@@ -1123,6 +859,7 @@ components:
           - 'null'
           format: int32
           description: The latest year it is dated to; absent when undated.
+      additionalProperties: false
     CanonBook:
       type: object
       description: |-
@@ -1146,6 +883,7 @@ components:
         name:
           type: string
           description: The book's full name.
+      additionalProperties: false
     CatechismItem:
       type: object
       description: |-
@@ -1555,6 +1293,26 @@ components:
           type: integer
           format: int32
           description: The last year of the era.
+      additionalProperties: false
+    ErrorBody:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorInner'
+      additionalProperties: false
+    ErrorInner:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      additionalProperties: false
     EventAnalogue:
       type: object
       description: |-
@@ -1830,13 +1588,7 @@ components:
           items:
             type: array
             items:
-              type: array
-              items: false
-              prefixItems:
-              - type: number
-                format: double
-              - type: number
-                format: double
+              $ref: '#/components/schemas/Point'
           description: Closed rings of [latitude, longitude] points, in degrees.
       additionalProperties: false
     Landmark:
@@ -1869,6 +1621,7 @@ components:
               A size hint for a label meant to stay readable when zoomed out; absent for
               most landmarks.
           - type: 'null'
+      additionalProperties: false
     LandmarkKind:
       type: string
       description: Which sort of always-on map label this is.
@@ -1906,6 +1659,7 @@ components:
           description: The ids of its events, in order, never running backwards in time.
         name:
           type: string
+      additionalProperties: false
     NarrativeAdjacentEvent:
       type: object
       description: |-
@@ -2153,6 +1907,7 @@ components:
         when:
           $ref: '#/components/schemas/TimeRange'
           description: The year claimed, or the range; a single year is a span whose ends are equal.
+      additionalProperties: false
     PlaceDetail:
       type: object
       description: |-
@@ -2215,6 +1970,13 @@ components:
         name:
           type: string
       additionalProperties: false
+    Point:
+      type: array
+      items:
+        type: number
+      description: 'One point of a border: latitude then longitude, in degrees.'
+      maxItems: 2
+      minItems: 2
     Polities:
       type: object
       description: The polity borders in view for the span of years asked about.
@@ -2264,13 +2026,7 @@ components:
           items:
             type: array
             items:
-              type: array
-              items: false
-              prefixItems:
-              - type: number
-                format: double
-              - type: number
-                format: double
+              $ref: '#/components/schemas/Point'
           description: |-
             This era's border, as closed rings of [latitude, longitude] points, in
             degrees.
@@ -2307,6 +2063,7 @@ components:
           description: |-
             The verses grounding it. May be empty for an event history records but no
             single verse pinpoints; never a fabricated reference.
+      additionalProperties: false
     PositionKind:
       type: string
       description: 'What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.'
@@ -2352,6 +2109,7 @@ components:
         source:
           type: string
           description: The id of the source this is a claim by.
+      additionalProperties: false
     QuietPlace:
       type: object
       description: |-
@@ -2559,6 +2317,7 @@ components:
           description: |-
             How brightly to draw this place, from how much of what is in view happens
             here.
+          maximum: 255
           minimum: 0
         display_name:
           type: string
@@ -2614,6 +2373,7 @@ components:
           description: The key a source's `category` points at.
         label:
           type: string
+      additionalProperties: false
     SourceEntry:
       type: object
       description: |-
@@ -2655,6 +2415,7 @@ components:
         what_we_built:
           type: string
           description: What this atlas built from it.
+      additionalProperties: false
     SourcesDocument:
       type: object
       description: |-
@@ -2679,6 +2440,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SourceEntry'
+      additionalProperties: false
     Testament:
       type: string
       description: 'Which half of the canon a book belongs to: the Old Testament, or the New.'
@@ -2760,6 +2522,7 @@ components:
         to_year:
           type: integer
           format: int32
+      additionalProperties: false
     TimelinePosition:
       type: object
       description: |-
@@ -2971,6 +2734,23 @@ components:
           type: integer
           minimum: 0
       additionalProperties: false
+tags:
+- name: meta
+  description: 'What this server is: whether it is up, the range of contract versions it answers for, this document itself, and the sources every answer is drawn from.'
+- name: map
+  description: 'The map: what is in view for a span of years or at a passage, the polity borders and eras behind it, and the coastline and landmarks it is drawn over.'
+- name: reading
+  description: 'Scripture as it is read: a chapter verse by verse, one verse in full, and the cross references a verse carries.'
+- name: catechism
+  description: 'The catechism: one item in full, and the items that cite a passage.'
+- name: places
+  description: 'One place: where it is, what happened there, and the name and history it bore in the period asked about.'
+- name: events
+  description: 'What happened: one event in full, every narrative this atlas tells, and the narrative legs an event belongs to.'
+- name: graph
+  description: 'This atlas as a graph: one node''s card, one frontier of its neighbours, and a window of a corpus''s reading spine.'
+- name: contents
+  description: One corpus's table of contents, two levels deep.
 x-atlas-relations:
   directed:
   - forward: contains

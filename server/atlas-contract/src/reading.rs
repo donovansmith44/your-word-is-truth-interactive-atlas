@@ -93,7 +93,7 @@ pub async fn chapter(
         }
     }
 
-    Ok(Json(wire::Chapter { sref: format!("{code}.{chapter}"), book: book.name().to_string(), chapter, verses }))
+    Ok(Json(wire::Chapter { r#ref: format!("{code}.{chapter}"), book: book.name().to_string(), chapter, verses }))
 }
 
 /// Kretzmann's commentary for one chapter: the items on each verse that has any, in document order.
@@ -218,7 +218,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
     let words_of_christ: Vec<wire::WordsOfChristSpan> = graph.red_letter_spans.get(&canonical).map(|spans| spans.iter().map(|&(start, end)| wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
 
     Ok(Json(wire::VerseDetail {
-        sref: canonical,
+        r#ref: canonical,
         text,
         words_of_christ,
         book_meta,

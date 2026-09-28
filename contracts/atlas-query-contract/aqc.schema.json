@@ -1,14 +1,12 @@
 {
   "$defs": {
     "BookMeta": {
-      "description": "Who wrote one book of the Bible, where, and when.",
+      "additionalProperties": false,
       "properties": {
         "author": {
-          "description": "The book's author, as this atlas records him.",
           "type": "string"
         },
         "write_from": {
-          "description": "The earliest year it is dated to, negative for BC; absent when undated.",
           "format": "int32",
           "type": [
             "integer",
@@ -16,14 +14,12 @@
           ]
         },
         "write_place": {
-          "description": "Where it was written, absent when that is not recorded.",
           "type": [
             "string",
             "null"
           ]
         },
         "write_to": {
-          "description": "The latest year it is dated to; absent when undated.",
           "format": "int32",
           "type": [
             "integer",
@@ -37,10 +33,9 @@
       "type": "object"
     },
     "CanonBook": {
-      "description": "One book of the canon: its code, its name, and how many verses each of its\nchapters holds.",
+      "additionalProperties": false,
       "properties": {
         "chapters": {
-          "description": "The verse count of each chapter, in order.",
           "items": {
             "format": "int32",
             "minimum": 0,
@@ -49,11 +44,9 @@
           "type": "array"
         },
         "code": {
-          "description": "The three-letter code, such as `GEN`.",
           "type": "string"
         },
         "name": {
-          "description": "The book's full name.",
           "type": "string"
         }
       },
@@ -66,13 +59,11 @@
     },
     "CatechismItem": {
       "additionalProperties": false,
-      "description": "One catechism item in full, with the chief part of the catechism it sits\nunder.",
       "properties": {
         "explanation": {
           "type": "string"
         },
         "explanation_heading": {
-          "description": "The question the explanation answers, such as \"What does this mean?\".",
           "type": "string"
         },
         "id": {
@@ -82,11 +73,9 @@
           "type": "string"
         },
         "part_title": {
-          "description": "The chief part this item belongs to, such as Baptism.",
           "type": "string"
         },
         "text": {
-          "description": "The item's own words -- a commandment, a petition, an article -- absent for\nan item that has none.",
           "type": [
             "string",
             "null"
@@ -99,7 +88,6 @@
           "type": "array"
         },
         "where_written": {
-          "description": "Where in Scripture the item's own words are written, absent when it quotes\nnone.",
           "type": [
             "string",
             "null"
@@ -118,10 +106,8 @@
     },
     "CatechismProofVerse": {
       "additionalProperties": false,
-      "description": "One proof verse of a catechism item, carrying the verse in full rather than\na preview.",
       "properties": {
         "question": {
-          "description": "The question this verse was cited under, absent when the item cites it\ndirectly.",
           "type": [
             "string",
             "null"
@@ -142,7 +128,6 @@
     },
     "CatechismRef": {
       "additionalProperties": false,
-      "description": "One catechism item citing a verse or a span: enough to name it and to fetch\nit in full.",
       "properties": {
         "id": {
           "type": "string"
@@ -151,14 +136,12 @@
           "type": "string"
         },
         "provenance": {
-          "description": "The sources behind this response's catechism citations. Every element of one\nresponse carries the same set; `/api/sources` names each id.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "question": {
-          "description": "The question the verse was cited under, absent when the item cites it\ndirectly.",
           "type": [
             "string",
             "null"
@@ -174,10 +157,8 @@
     },
     "Chapter": {
       "additionalProperties": false,
-      "description": "One chapter of Scripture, verse by verse.",
       "properties": {
         "book": {
-          "description": "The book's full name.",
           "type": "string"
         },
         "chapter": {
@@ -204,7 +185,6 @@
       "type": "object"
     },
     "Confidence": {
-      "description": "How a claim was arrived at.",
       "enum": [
         "CanonicalText",
         "Curated",
@@ -215,7 +195,6 @@
     },
     "Contents": {
       "additionalProperties": false,
-      "description": "One corpus's contents, as a tree two levels deep.",
       "properties": {
         "corpus": {
           "$ref": "#/$defs/Corpus"
@@ -227,7 +206,6 @@
           "type": "array"
         },
         "version": {
-          "description": "A stamp identifying the data set this tree was read from.",
           "type": "string"
         }
       },
@@ -240,10 +218,8 @@
     },
     "ContentsChild": {
       "additionalProperties": false,
-      "description": "A second-level entry: a chapter of a book, or an article of a document.",
       "properties": {
         "count": {
-          "description": "How many members it holds: verses of a chapter, paragraphs of an article.",
           "minimum": 0,
           "type": "integer"
         },
@@ -254,7 +230,6 @@
           "$ref": "#/$defs/ContentsChildKind"
         },
         "ref": {
-          "description": "The reference to open for this entry: `GEN.1` for a chapter, or an\narticle's first paragraph, such as `BoC 7.2.1`.",
           "type": "string"
         },
         "title": {
@@ -271,7 +246,6 @@
       "type": "object"
     },
     "ContentsChildKind": {
-      "description": "Whether a second-level entry of a corpus's contents is a chapter of a book\nor an article of a document. The contents tree goes no deeper than this.",
       "enum": [
         "chapter",
         "article"
@@ -280,10 +254,8 @@
     },
     "ContentsRoot": {
       "additionalProperties": false,
-      "description": "A top-level entry: a book of the Bible, or a document of the Book of\nConcord.",
       "properties": {
         "children": {
-          "description": "The entry's chapters, or its articles.",
           "items": {
             "$ref": "#/$defs/ContentsChild"
           },
@@ -292,8 +264,7 @@
         "group": {
           "oneOf": [
             {
-              "$ref": "#/$defs/Testament",
-              "description": "Which half of the canon the book belongs to; absent for a Concord document,\nwhich belongs to neither."
+              "$ref": "#/$defs/Testament"
             },
             {
               "type": "null"
@@ -307,7 +278,6 @@
           "$ref": "#/$defs/ContentsRootKind"
         },
         "ref": {
-          "description": "The reference to open when this entry is chosen: its first child's.",
           "type": "string"
         },
         "title": {
@@ -324,7 +294,6 @@
       "type": "object"
     },
     "ContentsRootKind": {
-      "description": "Whether a top-level entry of a corpus's contents is a book of the Bible\nor a document of the Book of Concord.",
       "enum": [
         "book",
         "document"
@@ -333,26 +302,21 @@
     },
     "Contract": {
       "additionalProperties": false,
-      "description": "The range of contract versions this server answers for, and the schema\nversions of the data behind them.",
       "properties": {
         "manifest_schema": {
-          "description": "The schema version of the compiled data set the responses are read from.",
           "format": "int32",
           "minimum": 1,
           "type": "integer"
         },
         "max_version": {
-          "description": "The newest contract version this server answers for.",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
           "type": "string"
         },
         "min_version": {
-          "description": "The oldest contract version this server answers for, as MAJOR.MINOR.PATCH.",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
           "type": "string"
         },
         "section_schema_version": {
-          "description": "The schema version of the individual sections that data set is made of.",
           "format": "int32",
           "minimum": 1,
           "type": "integer"
@@ -367,7 +331,6 @@
       "type": "object"
     },
     "Corpus": {
-      "description": "A body of text this API serves a reading spine for: Scripture, or the\nBook of Concord.",
       "enum": [
         "bible",
         "concord"
@@ -376,25 +339,20 @@
     },
     "CrossRef": {
       "additionalProperties": false,
-      "description": "One cross reference: where it points, how strongly it is attested, and a\nlook at the text there.",
       "properties": {
         "preview": {
-          "description": "The text of the target's first verse.",
           "type": "string"
         },
         "provenance": {
-          "description": "The sources behind this response's cross references. Every element of one\nresponse carries the same set; `/api/sources` names each id.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "target": {
-          "description": "The reference pointed at: one verse, or a span.",
           "type": "string"
         },
         "votes": {
-          "description": "How many readers voted for this reference. Higher sorts first.",
           "format": "int32",
           "type": "integer"
         }
@@ -409,10 +367,8 @@
     },
     "EdgeEntry": {
       "additionalProperties": false,
-      "description": "One neighbour, with the edge that joins it.",
       "properties": {
         "edge": {
-          "description": "The edge's own id. The neighbour's page for the opposite kind carries this\nsame id for this same connection, and the edge itself can be explored.",
           "type": "string"
         },
         "node": {
@@ -426,7 +382,6 @@
       "type": "object"
     },
     "EdgeKind": {
-      "description": "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.",
       "enum": [
         "contains",
         "member-of",
@@ -479,7 +434,6 @@
     },
     "EdgePage": {
       "additionalProperties": false,
-      "description": "One page of a node's neighbours of a single kind.",
       "properties": {
         "entries": {
           "items": {
@@ -491,7 +445,6 @@
           "$ref": "#/$defs/EdgeKind"
         },
         "next": {
-          "description": "Pass this back as `cursor` for the following page; absent on the last page.",
           "minimum": 0,
           "type": [
             "integer",
@@ -499,7 +452,6 @@
           ]
         },
         "version": {
-          "description": "A stamp identifying the data set this page was read from.",
           "type": "string"
         }
       },
@@ -512,7 +464,6 @@
     },
     "EdgeSummaryEntry": {
       "additionalProperties": false,
-      "description": "How many neighbours of one kind something has.",
       "properties": {
         "count": {
           "minimum": 0,
@@ -529,10 +480,9 @@
       "type": "object"
     },
     "Era": {
-      "description": "A named stretch of this atlas's timeline.",
+      "additionalProperties": false,
       "properties": {
         "from_year": {
-          "description": "The first year of the era, negative for BC.",
           "format": "int32",
           "type": "integer"
         },
@@ -543,7 +493,6 @@
           "type": "string"
         },
         "to_year": {
-          "description": "The last year of the era.",
           "format": "int32",
           "type": "integer"
         }
@@ -556,15 +505,41 @@
       ],
       "type": "object"
     },
+    "ErrorBody": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/ErrorInner"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "type": "object"
+    },
+    "ErrorInner": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
     "EventAnalogue": {
       "additionalProperties": false,
-      "description": "One event whose account resembles another's -- similar in form or in content,\nnever a second account of the same happening.",
       "properties": {
         "id": {
           "type": "string"
         },
         "provenance": {
-          "description": "The id of the source that asserts the resemblance. A resemblance is a claim\nof its own, so this is neither event's own source.",
           "type": "string"
         },
         "title": {
@@ -580,24 +555,20 @@
     },
     "EventDetail": {
       "additionalProperties": false,
-      "description": "One event, or one titled passage, in full.",
       "properties": {
         "acts_section": {
-          "description": "The section of the outline of Acts this event falls in, absent when it has\nnone.",
           "type": [
             "string",
             "null"
           ]
         },
         "analogues": {
-          "description": "Events whose accounts resemble this one without being accounts of it.\nOmitted when there are none.",
           "items": {
             "$ref": "#/$defs/EventAnalogue"
           },
           "type": "array"
         },
         "atlas_section": {
-          "description": "The titled section of this atlas's own outline of Scripture, absent when it\nhas none.",
           "type": [
             "string",
             "null"
@@ -610,21 +581,18 @@
           "$ref": "#/$defs/EventKind"
         },
         "kjv_superscription": {
-          "description": "The superscription the King James Version prints over this passage, absent\nwhen it prints none.",
           "type": [
             "string",
             "null"
           ]
         },
         "mentioned_in": {
-          "description": "The verses that mention this event without narrating it, in canonical order.\nOmitted when there are none.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "mentions_provenance": {
-          "description": "The sources behind the verses that mention this event. Omitted when there are\nnone.",
           "items": {
             "type": "string"
           },
@@ -637,18 +605,15 @@
           "type": "array"
         },
         "provenance": {
-          "description": "The id of the source that asserts this event; `/api/sources` names it.",
           "type": "string"
         },
         "ref_note": {
-          "description": "A note on how this event's date and grouping were arrived at, absent when\nnone was needed.",
           "type": [
             "string",
             "null"
           ]
         },
         "robertson_section": {
-          "description": "The section of Robertson's Harmony of the Gospels this event falls in, absent\nwhen it has none.",
           "type": [
             "string",
             "null"
@@ -660,8 +625,7 @@
         "when": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimeRange",
-              "description": "The years the event spans; absent for a titled passage that has no date."
+              "$ref": "#/$defs/TimeRange"
             },
             {
               "type": "null"
@@ -669,14 +633,12 @@
           ]
         },
         "witnesses": {
-          "description": "The passages that narrate this event, one per book. Always at least one.",
           "items": {
             "$ref": "#/$defs/EventWitness"
           },
           "type": "array"
         },
         "witnesses_provenance": {
-          "description": "The sources behind the passages that narrate this event, for this event\nrather than for the corpus. Omitted when there are none.",
           "items": {
             "type": "string"
           },
@@ -694,7 +656,6 @@
       "type": "object"
     },
     "EventKind": {
-      "description": "Which kind of container this is: an `event`, something that happened at a\ndate, or a `general` titled passage, which has none.",
       "enum": [
         "event",
         "general"
@@ -703,28 +664,23 @@
     },
     "EventWitness": {
       "additionalProperties": false,
-      "description": "One book's account of an event: the passage it narrates the event in, and any\nnote on the citation.",
       "properties": {
         "book": {
-          "description": "The book's three-letter code, such as `MAT`.",
           "type": "string"
         },
         "ref_note": {
-          "description": "A note on how THIS account is cited -- not the event's own note about how its\ndate and grouping were arrived at. Absent when the account needed none.",
           "type": [
             "string",
             "null"
           ]
         },
         "robertson_section": {
-          "description": "The section of Robertson's Harmony of the Gospels this account falls in, sent\nonly where it differs from the event's own. Absent otherwise.",
           "type": [
             "string",
             "null"
           ]
         },
         "verse_groups": {
-          "description": "The verses of this account, grouped by chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
@@ -739,21 +695,17 @@
     },
     "Heading": {
       "additionalProperties": false,
-      "description": "The pericope heading that belongs above one verse: the container it names,\nits title, that container's kind, and whether this verse merely continues\ncoverage that began in an earlier chapter rather than opening it.",
       "properties": {
         "event_id": {
-          "description": "The id of the event or titled passage that covers this verse and gives the\nheading its words; `/api/event/{id}` fetches it.",
           "type": "string"
         },
         "is_continuation": {
-          "description": "True when this verse carries on coverage that began in an earlier chapter\nrather than opening it, so a reader can render it as a continued heading.",
           "type": "boolean"
         },
         "kind": {
           "$ref": "#/$defs/EventKind"
         },
         "title": {
-          "description": "The heading as a reader sees it.",
           "type": "string"
         }
       },
@@ -767,10 +719,8 @@
     },
     "History": {
       "additionalProperties": false,
-      "description": "What is known about a place's name and existence over time, resolved for the\nyears asked about.",
       "properties": {
         "blurb": {
-          "description": "A short description of the place in those years, absent when none applies.",
           "type": [
             "string",
             "null"
@@ -779,8 +729,7 @@
         "destroyed": {
           "oneOf": [
             {
-              "$ref": "#/$defs/PlaceDateClaim",
-              "description": "When the place was destroyed, absent when that is not recorded."
+              "$ref": "#/$defs/PlaceDateClaim"
             },
             {
               "type": "null"
@@ -788,14 +737,12 @@
           ]
         },
         "display_name": {
-          "description": "The name this place bore in the years asked about, falling back to its\ndefault name when no period name applies.",
           "type": "string"
         },
         "established": {
           "oneOf": [
             {
-              "$ref": "#/$defs/PlaceDateClaim",
-              "description": "When the place was founded, absent when that is not recorded."
+              "$ref": "#/$defs/PlaceDateClaim"
             },
             {
               "type": "null"
@@ -810,7 +757,6 @@
     },
     "KretzmannChapter": {
       "additionalProperties": false,
-      "description": "Every verse of one chapter that carries commentary, in canon order.",
       "properties": {
         "verses": {
           "items": {
@@ -819,7 +765,6 @@
           "type": "array"
         },
         "version": {
-          "description": "A stamp identifying the data set this commentary was read from.",
           "type": "string"
         }
       },
@@ -831,10 +776,8 @@
     },
     "KretzmannChapterItem": {
       "additionalProperties": false,
-      "description": "One commentary item: the id that fetches its prose, and its heading.",
       "properties": {
         "heading": {
-          "description": "Absent for an item with no heading of its own.",
           "type": [
             "string",
             "null"
@@ -851,7 +794,6 @@
     },
     "KretzmannChapterVerse": {
       "additionalProperties": false,
-      "description": "One verse's commentary items, in document order. Only verses with at least\none item appear at all.",
       "properties": {
         "items": {
           "items": {
@@ -873,24 +815,11 @@
     },
     "LandMask": {
       "additionalProperties": false,
-      "description": "The coastline geometry border washes are clipped against, so no polity's\ncolour spills into open sea.",
       "properties": {
         "rings": {
-          "description": "Closed rings of [latitude, longitude] points, in degrees.",
           "items": {
             "items": {
-              "items": false,
-              "prefixItems": [
-                {
-                  "format": "double",
-                  "type": "number"
-                },
-                {
-                  "format": "double",
-                  "type": "number"
-                }
-              ],
-              "type": "array"
+              "$ref": "#/$defs/Point"
             },
             "type": "array"
           },
@@ -903,18 +832,16 @@
       "type": "object"
     },
     "Landmark": {
-      "description": "An always-on map label: a water, a mountain or a region, drawn at one point\nand never interactive.",
+      "additionalProperties": false,
       "properties": {
         "kind": {
           "$ref": "#/$defs/LandmarkKind"
         },
         "lat": {
-          "description": "Latitude in degrees, north positive.",
           "format": "double",
           "type": "number"
         },
         "lon": {
-          "description": "Longitude in degrees, east positive.",
           "format": "double",
           "type": "number"
         },
@@ -924,8 +851,7 @@
         "size": {
           "oneOf": [
             {
-              "$ref": "#/$defs/LandmarkSize",
-              "description": "A size hint for a label meant to stay readable when zoomed out; absent for\nmost landmarks."
+              "$ref": "#/$defs/LandmarkSize"
             },
             {
               "type": "null"
@@ -942,7 +868,6 @@
       "type": "object"
     },
     "LandmarkKind": {
-      "description": "Which sort of always-on map label this is.",
       "enum": [
         "water",
         "mountain",
@@ -951,7 +876,6 @@
       "type": "string"
     },
     "LandmarkSize": {
-      "description": "How large a landmark's label is drawn, smallest first.",
       "enum": [
         "sm",
         "md",
@@ -960,17 +884,15 @@
       "type": "string"
     },
     "Narrative": {
-      "description": "A journey or storyline through the atlas: an ordered chain of events the map\ndraws as a run of arrows.",
+      "additionalProperties": false,
       "properties": {
         "color": {
-          "description": "The colour its arrows are drawn in.",
           "type": "string"
         },
         "id": {
           "type": "string"
         },
         "legs": {
-          "description": "The ids of its events, in order, never running backwards in time.",
           "items": {
             "type": "string"
           },
@@ -990,7 +912,6 @@
     },
     "NarrativeAdjacentEvent": {
       "additionalProperties": false,
-      "description": "An event next to the one asked about: enough to show it, and the id to travel\nto it with.",
       "properties": {
         "id": {
           "type": "string"
@@ -999,14 +920,12 @@
           "type": "string"
         },
         "places": {
-          "description": "The ids of the places it touches.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "verse_groups": {
-          "description": "The passages it is narrated in, grouped by book and chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
@@ -1023,7 +942,6 @@
     },
     "NarrativeEventPositions": {
       "additionalProperties": false,
-      "description": "Where one event sits in time: in each narrative it belongs to, and in the\natlas's whole chronology.",
       "properties": {
         "narrative": {
           "items": {
@@ -1034,8 +952,7 @@
         "timeline": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimelinePosition",
-              "description": "The event's place in the whole chronology; absent for an event with no date."
+              "$ref": "#/$defs/TimelinePosition"
             },
             {
               "type": "null"
@@ -1050,7 +967,6 @@
     },
     "NarrativePosition": {
       "additionalProperties": false,
-      "description": "One event's place in one narrative, with the legs on either side of it.",
       "properties": {
         "event_id": {
           "type": "string"
@@ -1061,8 +977,7 @@
         "following": {
           "oneOf": [
             {
-              "$ref": "#/$defs/NarrativeAdjacentEvent",
-              "description": "The leg after this one; absent at the narrative's last leg."
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
             },
             {
               "type": "null"
@@ -1078,8 +993,7 @@
         "prior": {
           "oneOf": [
             {
-              "$ref": "#/$defs/NarrativeAdjacentEvent",
-              "description": "The leg before this one; absent at the narrative's first leg."
+              "$ref": "#/$defs/NarrativeAdjacentEvent"
             },
             {
               "type": "null"
@@ -1097,17 +1011,14 @@
     },
     "NodeCard": {
       "additionalProperties": false,
-      "description": "One node of the graph at a glance: what it is, what to call it, where it\ncame from, and what it connects to.",
       "properties": {
         "description": {
-          "description": "Public-domain dictionary or commentary prose about this node, absent when\nnone is recorded. Never invented.",
           "type": [
             "string",
             "null"
           ]
         },
         "edge_summary": {
-          "description": "How many neighbours this node has of each kind, listing only the kinds it\nhas any of.",
           "items": {
             "$ref": "#/$defs/EdgeSummaryEntry"
           },
@@ -1125,8 +1036,7 @@
         "person": {
           "oneOf": [
             {
-              "$ref": "#/$defs/PersonLife",
-              "description": "Life facts, present only for a person."
+              "$ref": "#/$defs/PersonLife"
             },
             {
               "type": "null"
@@ -1134,11 +1044,9 @@
           ]
         },
         "provenance": {
-          "description": "The id of the source that asserts this node; `/api/sources` names it.",
           "type": "string"
         },
         "version": {
-          "description": "A stamp identifying the data set this card was read from.",
           "type": "string"
         }
       },
@@ -1153,7 +1061,6 @@
       "type": "object"
     },
     "NodeKind": {
-      "description": "What kind of thing one node of this atlas stands for.",
       "enum": [
         "TextUnit",
         "Container",
@@ -1175,7 +1082,6 @@
     },
     "NodeRef": {
       "additionalProperties": false,
-      "description": "A reference to something the graph holds: enough to show it, and the id to\nfetch it with. The `kind` is one of the graph's node kinds, or `Edge` when\nthe reference is to an edge, which can be explored in its own right.",
       "properties": {
         "id": {
           "type": "string"
@@ -1196,17 +1102,14 @@
     },
     "PersonLife": {
       "additionalProperties": false,
-      "description": "What is recorded about one person's life.",
       "properties": {
         "also_called": {
-          "description": "Other names this person is known by.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "birth_year": {
-          "description": "The year of birth where one is recorded, negative for BC; most people have\nnone.",
           "format": "int32",
           "type": [
             "integer",
@@ -1214,7 +1117,6 @@
           ]
         },
         "death_year": {
-          "description": "The year of death where one is recorded.",
           "format": "int32",
           "type": [
             "integer",
@@ -1222,18 +1124,15 @@
           ]
         },
         "eternal": {
-          "description": "True for a person Scripture presents as eternal, who therefore carries no\nyears at all.",
           "type": "boolean"
         },
         "eternal_grounds": {
-          "description": "The verses on which that is claimed.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "first_year": {
-          "description": "The earliest year at which this person is mentioned -- the span of mentions,\nnever a lifespan.",
           "format": "int32",
           "type": [
             "integer",
@@ -1241,14 +1140,12 @@
           ]
         },
         "gender": {
-          "description": "Absent when the source records none.",
           "type": [
             "string",
             "null"
           ]
         },
         "last_year": {
-          "description": "The latest year at which this person is mentioned.",
           "format": "int32",
           "type": [
             "integer",
@@ -1265,7 +1162,6 @@
     },
     "PersonRef": {
       "additionalProperties": false,
-      "description": "A person the graph attests at a verse -- never a name matched against the\ntext -- with the id to explore and the name to show for it.",
       "properties": {
         "id": {
           "type": "string"
@@ -1281,25 +1177,22 @@
       "type": "object"
     },
     "PlaceDateClaim": {
-      "description": "A date this atlas claims for a place, with the verses it rests on.",
+      "additionalProperties": false,
       "properties": {
         "note": {
-          "description": "A qualifier such as `traditional`, shown as a leading \"c.\" on the date;\nabsent when the date needs none.",
           "type": [
             "string",
             "null"
           ]
         },
         "verses": {
-          "description": "The verses supporting the claim.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "when": {
-          "$ref": "#/$defs/TimeRange",
-          "description": "The year claimed, or the range; a single year is a span whose ends are equal."
+          "$ref": "#/$defs/TimeRange"
         }
       },
       "required": [
@@ -1310,17 +1203,14 @@
     },
     "PlaceDetail": {
       "additionalProperties": false,
-      "description": "One place: where it is, the events that happened there, and what is known\nabout its name and its history.",
       "properties": {
         "canonical_name": {
-          "description": "The place's plain canonical name, present only when the name being shown is\na period name or a translation's own wording and so differs from it.",
           "type": [
             "string",
             "null"
           ]
         },
         "description": {
-          "description": "Public-domain dictionary prose about the place, absent when none is\nrecorded. Never invented.",
           "type": [
             "string",
             "null"
@@ -1335,8 +1225,7 @@
         "history": {
           "oneOf": [
             {
-              "$ref": "#/$defs/History",
-              "description": "Absent for a place with no curated history."
+              "$ref": "#/$defs/History"
             },
             {
               "type": "null"
@@ -1347,12 +1236,10 @@
           "type": "string"
         },
         "lat": {
-          "description": "Latitude in degrees, north positive.",
           "format": "double",
           "type": "number"
         },
         "lon": {
-          "description": "Longitude in degrees, east positive.",
           "format": "double",
           "type": "number"
         },
@@ -1371,7 +1258,6 @@
     },
     "PlaceRef": {
       "additionalProperties": false,
-      "description": "A place named by something else on this response: its id, to explore or to\ntarget on the map, and the name to show for it.",
       "properties": {
         "id": {
           "type": "string"
@@ -1386,9 +1272,16 @@
       ],
       "type": "object"
     },
+    "Point": {
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array"
+    },
     "Polities": {
       "additionalProperties": false,
-      "description": "The polity borders in view for the span of years asked about.",
       "properties": {
         "polities": {
           "items": {
@@ -1404,10 +1297,8 @@
     },
     "Polity": {
       "additionalProperties": false,
-      "description": "One era of one polity's border. The `id` and `color_key` are the polity's\nand hold across every era row it contributes; the name, the years and the\nrings belong to this era alone.",
       "properties": {
         "color_key": {
-          "description": "A number fixed per polity, so its eras can be coloured consistently.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -1415,8 +1306,7 @@
         "fall": {
           "oneOf": [
             {
-              "$ref": "#/$defs/PolityDelta",
-              "description": "The event that ended this polity for good, absent when none is recorded."
+              "$ref": "#/$defs/PolityDelta"
             },
             {
               "type": "null"
@@ -1424,7 +1314,6 @@
           ]
         },
         "from": {
-          "description": "The first year of this era, negative for BC.",
           "format": "int32",
           "type": "integer"
         },
@@ -1432,40 +1321,25 @@
           "type": "string"
         },
         "name": {
-          "description": "The polity's name during this era.",
           "type": "string"
         },
         "rings": {
-          "description": "This era's border, as closed rings of [latitude, longitude] points, in\ndegrees.",
           "items": {
             "items": {
-              "items": false,
-              "prefixItems": [
-                {
-                  "format": "double",
-                  "type": "number"
-                },
-                {
-                  "format": "double",
-                  "type": "number"
-                }
-              ],
-              "type": "array"
+              "$ref": "#/$defs/Point"
             },
             "type": "array"
           },
           "type": "array"
         },
         "to": {
-          "description": "The last year of this era.",
           "format": "int32",
           "type": "integer"
         },
         "transition": {
           "oneOf": [
             {
-              "$ref": "#/$defs/PolityDelta",
-              "description": "The event that opened this era, absent when none is recorded."
+              "$ref": "#/$defs/PolityDelta"
             },
             {
               "type": "null"
@@ -1484,18 +1358,15 @@
       "type": "object"
     },
     "PolityDelta": {
-      "description": "The event at one boundary of a polity's era: its rise, a change of its\nborders, or its fall.",
+      "additionalProperties": false,
       "properties": {
         "event": {
-          "description": "A short description of what happened.",
           "type": "string"
         },
         "ref_note": {
-          "description": "The sources actually consulted for this event.",
           "type": "string"
         },
         "verses": {
-          "description": "The verses grounding it. May be empty for an event history records but no\nsingle verse pinpoints; never a fabricated reference.",
           "items": {
             "type": "string"
           },
@@ -1510,7 +1381,6 @@
       "type": "object"
     },
     "PositionKind": {
-      "description": "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.",
       "enum": [
         "TextUnit",
         "Container",
@@ -1532,24 +1402,21 @@
       "type": "string"
     },
     "ProvenanceEntry": {
-      "description": "The join between a provenance id as records carry it and the source that\nnames, describes and licenses it.",
+      "additionalProperties": false,
       "properties": {
         "confidence": {
           "$ref": "#/$defs/Confidence"
         },
         "id": {
-          "description": "The provenance id exactly as a record carries it.",
           "type": "string"
         },
         "locator": {
-          "description": "What inside the named source this id draws on, absent when the source's own\ndescription already says.",
           "type": [
             "string",
             "null"
           ]
         },
         "source": {
-          "description": "The id of the source this is a claim by.",
           "type": "string"
         }
       },
@@ -1562,14 +1429,11 @@
     },
     "QuietPlace": {
       "additionalProperties": false,
-      "description": "A place this atlas knows an event at, drawn on the map but not lit for the\nspan asked about.",
       "properties": {
         "display_name": {
-          "description": "The name to show, resolved for the same span the lit places use.",
           "type": "string"
         },
         "existence_from": {
-          "description": "The year this place was founded, where that is recorded; absent otherwise.",
           "format": "int32",
           "type": [
             "integer",
@@ -1577,7 +1441,6 @@
           ]
         },
         "existence_to": {
-          "description": "The year it ceased to exist, where that is recorded; absent otherwise.",
           "format": "int32",
           "type": [
             "integer",
@@ -1588,24 +1451,20 @@
           "type": "string"
         },
         "lat": {
-          "description": "Latitude in degrees, north positive.",
           "format": "double",
           "type": "number"
         },
         "lon": {
-          "description": "Longitude in degrees, east positive.",
           "format": "double",
           "type": "number"
         },
         "merged_ids": {
-          "description": "The ids of other records for this same place, folded into this one. Omitted\nwhen there are none.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "total_events": {
-          "description": "How many events touch this place in any year. A count for the span asked\nabout would always be zero, which is what makes the place quiet.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -1622,10 +1481,8 @@
     },
     "Scene": {
       "additionalProperties": false,
-      "description": "The map at one moment of enquiry: which places are lit, which are only\npresent, and which arrows run between them.",
       "properties": {
         "arrows": {
-          "description": "The movements narratives draw between the places in view.",
           "items": {
             "$ref": "#/$defs/SceneArrow"
           },
@@ -1635,28 +1492,24 @@
           "$ref": "#/$defs/SceneMode"
         },
         "narratives": {
-          "description": "The narratives with at least one leg in view.",
           "items": {
             "$ref": "#/$defs/SceneNarrative"
           },
           "type": "array"
         },
         "places": {
-          "description": "The places something in view happens at.",
           "items": {
             "$ref": "#/$defs/ScenePlace"
           },
           "type": "array"
         },
         "quiet_places": {
-          "description": "Every other place this atlas knows an event at: present on the map but not\nlit. Always sent, and always empty for a passage.",
           "items": {
             "$ref": "#/$defs/QuietPlace"
           },
           "type": "array"
         },
         "ref": {
-          "description": "The passage asked about; absent when a span of years was asked about instead.",
           "type": [
             "string",
             "null"
@@ -1665,8 +1518,7 @@
         "window": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimeRange",
-              "description": "The span of years asked about; absent when a passage was asked about instead."
+              "$ref": "#/$defs/TimeRange"
             },
             {
               "type": "null"
@@ -1685,36 +1537,28 @@
     },
     "SceneArrow": {
       "additionalProperties": false,
-      "description": "One leg of a narrative drawn on the map: a movement from one place to the\nnext.",
       "properties": {
         "color": {
-          "description": "The colour that narrative is drawn in.",
           "type": "string"
         },
         "from_event": {
-          "description": "The id of the event at the starting place.",
           "type": "string"
         },
         "from_place": {
-          "description": "The id of the place the movement starts from.",
           "type": "string"
         },
         "narrative": {
-          "description": "The id of the narrative this leg belongs to.",
           "type": "string"
         },
         "order": {
-          "description": "This leg's position along the narrative, counting from its first.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
         },
         "to_event": {
-          "description": "The id of the event at the arriving place.",
           "type": "string"
         },
         "to_place": {
-          "description": "The id of the place it arrives at.",
           "type": "string"
         }
       },
@@ -1731,7 +1575,6 @@
     },
     "SceneEvent": {
       "additionalProperties": false,
-      "description": "One event at a place: when it happened, and where it is narrated.",
       "properties": {
         "id": {
           "type": "string"
@@ -1740,15 +1583,13 @@
           "type": "string"
         },
         "verse_groups": {
-          "description": "The passages narrating it, grouped by book and chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
           "type": "array"
         },
         "when": {
-          "$ref": "#/$defs/TimeRange",
-          "description": "The years the event spans."
+          "$ref": "#/$defs/TimeRange"
         }
       },
       "required": [
@@ -1760,7 +1601,6 @@
       "type": "object"
     },
     "SceneMode": {
-      "description": "Which question a scene answers: what was happening in a span of years,\nor where a passage happens.",
       "enum": [
         "time",
         "scripture"
@@ -1769,17 +1609,14 @@
     },
     "SceneNarrative": {
       "additionalProperties": false,
-      "description": "One narrative with at least one leg in view.",
       "properties": {
         "color": {
-          "description": "The colour its arrows are drawn in.",
           "type": "string"
         },
         "id": {
           "type": "string"
         },
         "legs_in_scene": {
-          "description": "How many of its legs are in view.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -1798,16 +1635,14 @@
     },
     "ScenePlace": {
       "additionalProperties": false,
-      "description": "One lit place on the map, with the events that light it.",
       "properties": {
         "brightness": {
-          "description": "How brightly to draw this place, from how much of what is in view happens\nhere.",
           "format": "int32",
+          "maximum": 255,
           "minimum": 0,
           "type": "integer"
         },
         "display_name": {
-          "description": "The name to show: the one this place bore in the span asked about, or its\ndefault name when no period name applies.",
           "type": "string"
         },
         "events": {
@@ -1817,7 +1652,6 @@
           "type": "array"
         },
         "existence_from": {
-          "description": "The year this place was founded, where that is recorded; absent otherwise.",
           "format": "int32",
           "type": [
             "integer",
@@ -1825,7 +1659,6 @@
           ]
         },
         "existence_to": {
-          "description": "The year it ceased to exist, where that is recorded; absent otherwise.",
           "format": "int32",
           "type": [
             "integer",
@@ -1836,24 +1669,20 @@
           "type": "string"
         },
         "lat": {
-          "description": "Latitude in degrees, north positive.",
           "format": "double",
           "type": "number"
         },
         "lon": {
-          "description": "Longitude in degrees, east positive.",
           "format": "double",
           "type": "number"
         },
         "merged_ids": {
-          "description": "The ids of other records for this same place, folded into this one. Omitted\nwhen there are none.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "name": {
-          "description": "The place's default name.",
           "type": "string"
         }
       },
@@ -1869,10 +1698,9 @@
       "type": "object"
     },
     "SourceCategory": {
-      "description": "One heading the sources are grouped under.",
+      "additionalProperties": false,
       "properties": {
         "id": {
-          "description": "The key a source's `category` points at.",
           "type": "string"
         },
         "label": {
@@ -1886,40 +1714,33 @@
       "type": "object"
     },
     "SourceEntry": {
-      "description": "One source this atlas is built from: what it is, what was built from it, and\nhow it is licensed.",
+      "additionalProperties": false,
       "properties": {
         "category": {
-          "description": "The id of the heading this source is grouped under.",
           "type": "string"
         },
         "id": {
           "type": "string"
         },
         "license": {
-          "description": "The licence it is used under, quoted rather than paraphrased.",
           "type": "string"
         },
         "licenses_row_key": {
-          "description": "A key that ties this entry to its row in the project's licence file, so the\ntwo cannot drift apart. Not meant to be displayed.",
           "type": "string"
         },
         "link": {
-          "description": "Where to find the source, absent when it has no public home.",
           "type": [
             "string",
             "null"
           ]
         },
         "title": {
-          "description": "The source's own name.",
           "type": "string"
         },
         "what_it_is": {
-          "description": "What the source is, in a sentence or two.",
           "type": "string"
         },
         "what_we_built": {
-          "description": "What this atlas built from it.",
           "type": "string"
         }
       },
@@ -1935,7 +1756,7 @@
       "type": "object"
     },
     "SourcesDocument": {
-      "description": "Everything this atlas is built from: the sources, the headings they are\ngrouped under, and the ids that tie individual records back to a source.",
+      "additionalProperties": false,
       "properties": {
         "categories": {
           "items": {
@@ -1944,7 +1765,6 @@
           "type": "array"
         },
         "provenances": {
-          "description": "The join from the provenance id a record carries to the source that asserts\nit.",
           "items": {
             "$ref": "#/$defs/ProvenanceEntry"
           },
@@ -1964,7 +1784,6 @@
       "type": "object"
     },
     "Testament": {
-      "description": "Which half of the canon a book belongs to: the Old Testament, or the New.",
       "enum": [
         "OT",
         "NT"
@@ -1972,7 +1791,6 @@
       "type": "string"
     },
     "TextScope": {
-      "description": "How much text one window of `/api/text` covers: the units around the\nreference asked for, or the whole chapter that reference names.",
       "enum": [
         "verse",
         "chapter"
@@ -1981,10 +1799,8 @@
     },
     "TextUnit": {
       "additionalProperties": false,
-      "description": "One unit of a reading spine: a verse of Scripture, or a paragraph of the\nBook of Concord.",
       "properties": {
         "edge_summary": {
-          "description": "How many neighbours this unit has of each kind, so a page can tell which\nunits lead somewhere without asking after each one.",
           "items": {
             "$ref": "#/$defs/EdgeSummaryEntry"
           },
@@ -1997,7 +1813,6 @@
           "type": "string"
         },
         "words_of_christ": {
-          "description": "The spans of `text` that are the words of Christ, in order. Always empty\noutside Scripture.",
           "items": {
             "$ref": "#/$defs/WordsOfChristSpan"
           },
@@ -2014,10 +1829,8 @@
     },
     "TextWindow": {
       "additionalProperties": false,
-      "description": "A window of one corpus's reading spine.",
       "properties": {
         "next": {
-          "description": "The reference one step further on in the direction travelled; absent at the\nend of the corpus.",
           "type": [
             "string",
             "null"
@@ -2030,7 +1843,6 @@
           "type": "array"
         },
         "version": {
-          "description": "A stamp identifying the data set this window was read from.",
           "type": "string"
         }
       },
@@ -2041,7 +1853,7 @@
       "type": "object"
     },
     "TimeRange": {
-      "description": "A span of years on this atlas's scale: negative for BC, positive for AD, with\nno year zero. A single year is a span whose ends are equal.",
+      "additionalProperties": false,
       "properties": {
         "from_year": {
           "format": "int32",
@@ -2060,7 +1872,6 @@
     },
     "TimelinePosition": {
       "additionalProperties": false,
-      "description": "Where an event sits in the atlas's whole chronology, whatever narratives it\nbelongs to.",
       "properties": {
         "following": {
           "oneOf": [
@@ -2087,13 +1898,11 @@
     },
     "Verse": {
       "additionalProperties": false,
-      "description": "One verse: its text, and what the graph attests at it.",
       "properties": {
         "heading": {
           "oneOf": [
             {
-              "$ref": "#/$defs/Heading",
-              "description": "The heading that belongs above this verse, present only where the verse opens\none."
+              "$ref": "#/$defs/Heading"
             },
             {
               "type": "null"
@@ -2101,14 +1910,12 @@
           ]
         },
         "persons": {
-          "description": "The people this verse names. Empty for most verses.",
           "items": {
             "$ref": "#/$defs/PersonRef"
           },
           "type": "array"
         },
         "places": {
-          "description": "The places this verse names, in a stable order. Empty for most verses.",
           "items": {
             "$ref": "#/$defs/PlaceRef"
           },
@@ -2123,14 +1930,12 @@
           "type": "integer"
         },
         "words_of_christ": {
-          "description": "The spans of `text` that are the words of Christ, in order. Empty for most\nverses.",
           "items": {
             "$ref": "#/$defs/WordsOfChristSpan"
           },
           "type": "array"
         },
         "xref_count": {
-          "description": "How many cross references start at this verse; 0 for most of them.",
           "minimum": 0,
           "type": "integer"
         }
@@ -2147,49 +1952,41 @@
     },
     "VerseDetail": {
       "additionalProperties": false,
-      "description": "One verse in full, with everything the graph attaches to it.",
       "properties": {
         "book_meta": {
-          "$ref": "#/$defs/BookMeta",
-          "description": "Who wrote this verse's book, where and when."
+          "$ref": "#/$defs/BookMeta"
         },
         "catechism": {
-          "description": "The catechism items citing this verse. Empty for most verses.",
           "items": {
             "$ref": "#/$defs/CatechismRef"
           },
           "type": "array"
         },
         "catechism_provenance": {
-          "description": "The sources behind the catechism citations above.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "cross_refs": {
-          "description": "This verse's cross references, most strongly attested first.",
           "items": {
             "$ref": "#/$defs/CrossRef"
           },
           "type": "array"
         },
         "cross_refs_provenance": {
-          "description": "The sources behind the cross references above. Always present, and empty when\nthere are none.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "events": {
-          "description": "The events and titled passages this verse belongs to, oldest first.",
           "items": {
             "$ref": "#/$defs/VerseEvent"
           },
           "type": "array"
         },
         "provenance": {
-          "description": "The id of the source this verse's text comes from; `/api/sources` names it.",
           "type": "string"
         },
         "ref": {
@@ -2199,7 +1996,6 @@
           "type": "string"
         },
         "words_of_christ": {
-          "description": "The spans of `text` that are the words of Christ, in order. Empty for most\nverses.",
           "items": {
             "$ref": "#/$defs/WordsOfChristSpan"
           },
@@ -2222,7 +2018,6 @@
     },
     "VerseEvent": {
       "additionalProperties": false,
-      "description": "One event or titled passage a verse belongs to.",
       "properties": {
         "id": {
           "type": "string"
@@ -2234,18 +2029,15 @@
           "type": "string"
         },
         "places": {
-          "description": "The ids of the places it touches.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "provenance": {
-          "description": "The id of the source that asserts the event this verse belongs to;\n`/api/sources` names it.",
           "type": "string"
         },
         "verse_groups": {
-          "description": "The passages it is narrated in, grouped by book and chapter.",
           "items": {
             "$ref": "#/$defs/VerseGroup"
           },
@@ -2254,8 +2046,7 @@
         "when": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimeRange",
-              "description": "The years the event spans; absent for a titled passage that has no date."
+              "$ref": "#/$defs/TimeRange"
             },
             {
               "type": "null"
@@ -2275,10 +2066,8 @@
     },
     "VerseGroup": {
       "additionalProperties": false,
-      "description": "A run of verses from one chapter of one book.",
       "properties": {
         "book": {
-          "description": "The book's three-letter code, such as `GEN`.",
           "type": "string"
         },
         "chapter": {
@@ -2287,13 +2076,11 @@
           "type": "integer"
         },
         "count": {
-          "description": "How many verses the group covers in all.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
         },
         "verses": {
-          "description": "The verse numbers and ranges covered, such as `3` or `3-5`.",
           "items": {
             "type": "string"
           },
@@ -2309,7 +2096,6 @@
       "type": "object"
     },
     "WindowDir": {
-      "description": "Which way a window runs from the reference it is anchored on: onward from that\nreference, or backward to it.",
       "enum": [
         "onward",
         "backward"
@@ -2318,7 +2104,6 @@
     },
     "WordsOfChristSpan": {
       "additionalProperties": false,
-      "description": "One span of the words of Christ within a verse's text: character offsets into\nit, half-open, so the span is the text from `start` up to but not including\n`end`.",
       "properties": {
         "end": {
           "minimum": 0,

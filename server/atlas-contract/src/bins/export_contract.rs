@@ -12,16 +12,16 @@ fn main() {
     };
 
     let mut stale = Vec::new();
-    for (path, contents) in atlas_contract::document::generated_files() {
-        let current = std::fs::read_to_string(&path).ok();
-        if current.as_deref() == Some(contents.as_str()) {
+    for document in atlas_contract::document::generated_files() {
+        let current = std::fs::read_to_string(&document.path).ok();
+        if current.as_deref() == Some(document.contents.as_str()) {
             continue;
         }
         match mode {
-            Mode::Check => stale.push(path.display().to_string()),
+            Mode::Check => stale.push(document.path.display().to_string()),
             Mode::Write => {
-                std::fs::write(&path, contents).unwrap_or_else(|e| panic!("writing {}: {e}", path.display()));
-                println!("wrote {}", path.display());
+                std::fs::write(&document.path, document.contents).unwrap_or_else(|e| panic!("writing {}: {e}", document.path.display()));
+                println!("wrote {}", document.path.display());
             }
         }
     }

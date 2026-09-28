@@ -1,6 +1,5 @@
 use atlas_graph_types::{EdgeKind, NodeKind};
 use serde::{Serialize, Serializer};
-use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
 use utoipa::openapi::{RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
@@ -125,11 +124,7 @@ impl Serialize for PositionKind {
 impl PartialSchema for PositionKind {
     fn schema() -> RefOr<Schema> {
         let names = NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(PositionKind::Edge.name()));
-        ObjectBuilder::new()
-            .schema_type(SchemaType::Type(Type::String))
-            .enum_values(Some(names.collect::<Vec<_>>()))
-            .description(Some(POSITION_KIND))
-            .into()
+        atlas_graph_types::vocabulary::string_enum(names, POSITION_KIND.to_string())
     }
 }
 
@@ -161,8 +156,7 @@ pub struct TextWindow {
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TextUnit {
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     pub text: String,
     /// The spans of `text` that are the words of Christ, in order. Always empty
     /// outside Scripture.

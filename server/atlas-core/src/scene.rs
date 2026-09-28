@@ -16,7 +16,7 @@ pub fn compose_time_scene(d: &dyn SceneSource, w: TimeRange) -> Scene {
     let quiet = quiet_places(d, &places, w);
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
-    Scene { mode: SceneMode::Time, window: Some(w), sref: None, places, quiet_places: quiet, arrows, narratives }
+    Scene { mode: SceneMode::Time, window: Some(w), r#ref: None, places, quiet_places: quiet, arrows, narratives }
 }
 
 /// Lit places are the union of those touched by an event with a verse inside `r` and those
@@ -73,7 +73,7 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
     let narratives = legend(d, &span, Some(r), &arrows);
 
     // No window here to resolve "not yet active" against, so the array is always empty.
-    Scene { mode: SceneMode::Scripture, window: None, sref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
+    Scene { mode: SceneMode::Scripture, window: None, r#ref: Some(r.to_string()), places, quiet_places: vec![], arrows, narratives }
 }
 
 /// Book matches book; Chapter matches book+chapter; Passage matches

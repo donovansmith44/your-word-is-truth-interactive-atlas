@@ -37,6 +37,11 @@ macro_rules! relations {
 
         impl RelationId {
             pub const ALL: &'static [RelationId] = &[$(RelationId::$dr),+];
+            /// The relation's own name, spelled from the declaration rather than read
+            /// off `Debug`, which is free to change its rendering without notice.
+            pub fn name(self) -> &'static str {
+                match self { $(RelationId::$dr => ::core::stringify!($dr)),+ }
+            }
             pub fn forward_label(self) -> &'static str {
                 match self { $(RelationId::$dr => $fwd),+ }
             }
@@ -47,6 +52,11 @@ macro_rules! relations {
 
         impl SymRelationId {
             pub const ALL: &'static [SymRelationId] = &[$(SymRelationId::$sr),+];
+            /// The relation's own name, spelled from the declaration for the same
+            /// reason [`RelationId::name`] is.
+            pub fn name(self) -> &'static str {
+                match self { $(SymRelationId::$sr => ::core::stringify!($sr)),+ }
+            }
             pub fn label(self) -> &'static str {
                 match self { $(SymRelationId::$sr => $sym),+ }
             }

@@ -1,5 +1,36 @@
 use atlas_core::data::PolityDelta;
 use serde::Serialize;
+use utoipa::openapi::schema::{ArrayBuilder, ObjectBuilder, SchemaType, Type};
+use utoipa::openapi::{RefOr, Schema};
+use utoipa::{PartialSchema, ToSchema};
+
+/// One point of a border: latitude then longitude, in degrees.
+#[derive(Debug, Serialize)]
+pub struct Point(pub f64, pub f64);
+
+const POINT: &str = "One point of a border: latitude then longitude, in degrees.";
+const POINT_COORDINATES: usize = 2;
+
+/// Written out rather than derived: a Rust pair publishes as a fixed-length tuple,
+/// which OpenAPI spells with a per-position schema list that a generated client
+/// refuses to read, while what this actually is -- two numbers -- is an array.
+impl PartialSchema for Point {
+    fn schema() -> RefOr<Schema> {
+        ArrayBuilder::new()
+            .items(ObjectBuilder::new().schema_type(SchemaType::Type(Type::Number)))
+            .min_items(Some(POINT_COORDINATES))
+            .max_items(Some(POINT_COORDINATES))
+            .description(Some(POINT))
+            .into()
+    }
+}
+
+impl ToSchema for Point {}
+
+/// Closed rings of points, in the form the served structs carry them.
+pub fn rings(curated: &[Vec<(f64, f64)>]) -> Vec<Vec<Point>> {
+    curated.iter().map(|ring| ring.iter().map(|&(lat, lon)| Point(lat, lon)).collect()).collect()
+}
 
 /// The coastline geometry border washes are clipped against, so no polity's
 /// colour spills into open sea.
@@ -7,7 +38,7 @@ use serde::Serialize;
 #[serde(deny_unknown_fields)]
 pub struct LandMask {
     /// Closed rings of [latitude, longitude] points, in degrees.
-    pub rings: Vec<Vec<(f64, f64)>>,
+    pub rings: Vec<Vec<Point>>,
 }
 
 /// The polity borders in view for the span of years asked about.
@@ -32,7 +63,7 @@ pub struct Polity {
     pub to: i32,
     /// This era's border, as closed rings of [latitude, longitude] points, in
     /// degrees.
-    pub rings: Vec<Vec<(f64, f64)>>,
+    pub rings: Vec<Vec<Point>>,
     /// A number fixed per polity, so its eras can be coloured consistently.
     pub color_key: u8,
     /// The event that opened this era, absent when none is recorded.

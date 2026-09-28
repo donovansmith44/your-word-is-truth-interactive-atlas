@@ -12,8 +12,8 @@ pub struct Scene {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<TimeRange>,
     /// The passage asked about; absent when a span of years was asked about instead.
-    #[serde(rename = "ref", skip_serializing_if = "Option::is_none")]
-    pub sref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
     /// The places something in view happens at.
     pub places: Vec<ScenePlace>,
     /// Every other place this atlas knows an event at: present on the map but not
@@ -50,6 +50,7 @@ pub struct ScenePlace {
     pub lon: f64,
     /// How brightly to draw this place, from how much of what is in view happens
     /// here.
+    #[schema(maximum = 255)]
     pub brightness: u8,
     pub events: Vec<SceneEvent>,
     /// The year this place was founded, where that is recorded; absent otherwise.
@@ -170,11 +171,11 @@ mod tests {
     }
 
     #[test]
-    fn populated_sref_serializes_as_ref_and_omits_window() {
+    fn a_populated_reference_serializes_as_ref_and_omits_window() {
         let scene = Scene {
             mode: SceneMode::Scripture,
             window: None,
-            sref: Some("GEN.1.1".into()),
+            r#ref: Some("GEN.1.1".into()),
             places: vec![],
             quiet_places: vec![],
             arrows: vec![],
@@ -182,7 +183,7 @@ mod tests {
         };
         let json = serde_json::to_string(&scene).unwrap();
         assert!(json.contains("\"ref\":\"GEN.1.1\""), "missing ref key: {json}");
-        assert!(!json.contains("\"sref\""), "sref must never appear on the wire: {json}");
+        assert!(!json.contains("\"r#ref\""), "the field's own spelling must never appear on the wire: {json}");
         assert!(!json.contains("\"window\""), "window must be omitted when None: {json}");
         assert!(json.contains("\"quiet_places\":[]"), "quiet_places must be present (empty, not omitted): {json}");
 

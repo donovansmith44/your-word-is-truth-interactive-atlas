@@ -1,5 +1,19 @@
 //! One mechanism for every closed vocabulary this workspace declares.
 
+/// The schema every closed string vocabulary this workspace publishes is written
+/// as: a FLAT string enum, never a `oneOf`, so a generated client turns the
+/// component into one enum of its own. The description is assembled by the caller
+/// because a hand-written schema gets none of a derive's own reading of the doc
+/// comment.
+#[cfg(feature = "openapi")]
+pub fn string_enum<V: IntoIterator<Item = &'static str>>(values: V, description: String) -> ::utoipa::openapi::RefOr<::utoipa::openapi::Schema> {
+    ::utoipa::openapi::schema::ObjectBuilder::new()
+        .schema_type(::utoipa::openapi::schema::SchemaType::Type(::utoipa::openapi::schema::Type::String))
+        .enum_values(Some(values))
+        .description(Some(description))
+        .into()
+}
+
 /// Declares a closed vocabulary: its members, the one string each is written as,
 /// and the wire form and schema that publish both.
 ///
@@ -105,17 +119,12 @@ macro_rules! vocabulary_wire_form {
 #[macro_export]
 macro_rules! vocabulary_schema {
     ($name:ident { $($doc:expr),* }) => {
-        // A FLAT string enum, never a `oneOf`: the generated client turns this
-        // component into one enum of its own. The description is assembled here
-        // because a hand-written schema gets none of a derive's own reading of
-        // the doc comment.
         impl ::utoipa::PartialSchema for $name {
             fn schema() -> ::utoipa::openapi::RefOr<::utoipa::openapi::Schema> {
-                ::utoipa::openapi::schema::ObjectBuilder::new()
-                    .schema_type(::utoipa::openapi::schema::SchemaType::Type(::utoipa::openapi::schema::Type::String))
-                    .enum_values(Some(Self::ALL.map(Self::name)))
-                    .description(Some([$($doc),*].map(|line: &str| line.strip_prefix(' ').unwrap_or(line)).join("\n")))
-                    .into()
+                $crate::vocabulary::string_enum(
+                    Self::ALL.map(Self::name),
+                    [$($doc),*].map(|line: &str| line.strip_prefix(' ').unwrap_or(line)).join("\n"),
+                )
             }
         }
 

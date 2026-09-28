@@ -12,8 +12,7 @@ use super::catechism::CatechismRef;
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Chapter {
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     /// The book's full name.
     pub book: String,
     pub chapter: u16,
@@ -100,8 +99,7 @@ pub struct KretzmannChapterItem {
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VerseDetail {
-    #[serde(rename = "ref")]
-    pub sref: String,
+    pub r#ref: String,
     pub text: String,
     /// The spans of `text` that are the words of Christ, in order. Empty for most
     /// verses.

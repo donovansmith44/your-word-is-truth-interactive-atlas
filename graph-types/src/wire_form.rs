@@ -35,8 +35,8 @@ mod serialize {
 
 #[cfg(feature = "openapi")]
 mod schema {
+    use crate::vocabulary::string_enum;
     use crate::EdgeKind;
-    use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
     use utoipa::openapi::{RefOr, Schema};
     use utoipa::{PartialSchema, ToSchema};
 
@@ -44,11 +44,7 @@ mod schema {
 
     impl PartialSchema for EdgeKind {
         fn schema() -> RefOr<Schema> {
-            ObjectBuilder::new()
-                .schema_type(SchemaType::Type(Type::String))
-                .enum_values(Some(EdgeKind::labels().collect::<Vec<_>>()))
-                .description(Some(EDGE_KIND))
-                .into()
+            string_enum(EdgeKind::labels(), EDGE_KIND.to_string())
         }
     }
 

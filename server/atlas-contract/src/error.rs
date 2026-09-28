@@ -4,8 +4,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Serialize;
-use utoipa::openapi::{ContentBuilder, RefOr, ResponseBuilder, ResponsesBuilder};
-use utoipa::{IntoResponses, PartialSchema};
+use utoipa::openapi::{ContentBuilder, Ref, RefOr, ResponseBuilder, ResponsesBuilder};
+use utoipa::{IntoResponses, ToSchema};
 
 use atlas_graph::window::WindowDir;
 
@@ -57,15 +57,18 @@ impl ApiError {
     }
 
     pub fn unknown_dir(raw: &str) -> Self {
-        unknown_word(BAD_DIR, query::DIR, raw, &WindowDir::ALL.map(WindowDir::name))
+        let [leading @ .., last] = WindowDir::ALL.map(WindowDir::name);
+        unknown_word(BAD_DIR, query::DIR, raw, &leading, last)
     }
 
     pub fn bad_scope(raw: &str) -> Self {
-        unknown_word(BAD_SCOPE, query::SCOPE, raw, &TextScope::ALL.map(TextScope::name))
+        let [leading @ .., last] = TextScope::ALL.map(TextScope::name);
+        unknown_word(BAD_SCOPE, query::SCOPE, raw, &leading, last)
     }
 
     pub fn bad_corpus(raw: &str) -> Self {
-        unknown_word(BAD_CORPUS, query::CORPUS, raw, &Corpus::ALL.map(Corpus::name))
+        let [leading @ .., last] = Corpus::ALL.map(Corpus::name);
+        unknown_word(BAD_CORPUS, query::CORPUS, raw, &leading, last)
     }
 
     /// A server-side invariant this API cannot serve around. Distinct from
@@ -79,22 +82,22 @@ impl ApiError {
 /// A query parameter whose word names no member of its own closed vocabulary. The
 /// words it could have been are read off that vocabulary, so a member added to one
 /// can never be missing from the refusal that lists it.
-fn unknown_word(code: &'static str, parameter: &str, raw: &str, accepted: &[&str]) -> ApiError {
+fn unknown_word(code: &'static str, parameter: &str, raw: &str, leading: &[&str], last: &str) -> ApiError {
     ApiError {
         status: StatusCode::BAD_REQUEST,
         code,
-        message: format!("unknown {parameter}: '{raw}' (expected {})", one_of(accepted)),
+        message: format!("unknown {parameter}: '{raw}' (expected {})", one_of(leading, last)),
     }
 }
 
 /// A list of accepted words as this API's own refusals read it: `'a'`, `'a' or 'b'`,
-/// `'a', 'b' or 'c'`.
-fn one_of(words: &[&str]) -> String {
-    let quoted: Vec<String> = words.iter().map(|word| format!("'{word}'")).collect();
-    match quoted.split_last() {
-        Some((last, [])) => last.clone(),
-        Some((last, leading)) => format!("{} or {last}", leading.join(", ")),
-        None => String::new(),
+/// `'a', 'b' or 'c'`. It is given the last word apart from the words before it,
+/// which is a list no vocabulary can hand it empty.
+fn one_of(leading: &[&str], last: &str) -> String {
+    let quoted = |word: &str| format!("'{word}'");
+    match leading {
+        [] => quoted(last),
+        _ => format!("{} or {}", leading.iter().map(|word| quoted(word)).collect::<Vec<_>>().join(", "), quoted(last)),
     }
 }
 
@@ -151,7 +154,7 @@ refusals! {
 /// A route that can refuse no word publishes no 400 at all, so the document never
 /// advertises a refusal a route cannot make.
 fn refusal_responses(codes: &[&str]) -> BTreeMap<String, RefOr<utoipa::openapi::Response>> {
-    let json = || ContentBuilder::new().schema(Some(ErrorBody::schema())).build();
+    let json = || ContentBuilder::new().schema(Some(Ref::from_schema_name(ErrorBody::name()))).build();
     let mut responses = ResponsesBuilder::new();
     if !codes.is_empty() {
         responses = responses.response("400", ResponseBuilder::new().description(unreadable(codes)).content("application/json", json()));
@@ -184,11 +187,11 @@ mod tests {
     #[test]
     fn a_list_of_accepted_words_reads_as_this_api_writes_one() {
         // Arrange
-        let vocabularies: [&[&str]; 4] = [&[], &["verse"], &["bible", "concord"], &["water", "mountain", "region"]];
+        let vocabularies: [(&[&str], &str); 3] = [(&[], "verse"), (&["bible"], "concord"), (&["water", "mountain"], "region")];
         // Act
-        let listed: Vec<String> = vocabularies.iter().map(|words| one_of(words)).collect();
+        let listed: Vec<String> = vocabularies.iter().map(|(leading, last)| one_of(leading, last)).collect();
         // Assert
-        assert_eq!(listed, vec!["", "'verse'", "'bible' or 'concord'", "'water', 'mountain' or 'region'"]);
+        assert_eq!(listed, vec!["'verse'", "'bible' or 'concord'", "'water', 'mountain' or 'region'"]);
     }
 
     #[test]
@@ -209,9 +212,8 @@ mod tests {
 
     #[test]
     fn a_route_that_refuses_no_word_publishes_no_bad_request_at_all() {
-        // Arrange
-        let refusable = ReferenceRefusals::responses();
         // Act
+        let refusable = ReferenceRefusals::responses();
         let unrefusable = NoRefusals::responses();
         // Assert
         assert_eq!(refusable.keys().collect::<Vec<_>>(), vec!["400", "404", "500"]);

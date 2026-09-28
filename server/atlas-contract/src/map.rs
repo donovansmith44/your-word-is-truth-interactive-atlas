@@ -135,7 +135,7 @@ pub async fn landmarks(State(data): State<Arc<AtlasData>>) -> Json<Vec<Landmark>
 /// The coastline geometry border washes are clipped against, so no polity's colour spills into open sea.
 #[utoipa::path(get, path = "/api/land-mask", responses((status = 200, body = wire::LandMask)), tag = "map")]
 pub async fn land_mask(State(data): State<Arc<AtlasData>>) -> Json<wire::LandMask> {
-    Json(wire::LandMask { rings: data.land_mask.clone() })
+    Json(wire::LandMask { rings: wire::rings(&data.land_mask) })
 }
 
 /// The polity borders in view for a span of years: one row per era of a polity whose own years overlap the span.
@@ -167,7 +167,7 @@ pub async fn polities(
                     name: era.name.clone(),
                     from: era.from_year,
                     to: era.to_year,
-                    rings: era.rings.clone(),
+                    rings: wire::rings(&era.rings),
                     color_key,
                     transition: era.transition.as_ref().map(|d| curated_delta(d, era.from_year)),
                     fall: era.fall.as_ref().map(|d| curated_delta(d, era.from_year)),

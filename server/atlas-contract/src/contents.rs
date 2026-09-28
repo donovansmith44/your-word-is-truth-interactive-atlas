@@ -76,18 +76,18 @@ fn bible_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
                     id: encode_node_id(child),
                     title: chapter.to_string(),
                     kind: wire::ContentsChildKind::Chapter,
-                    sref: format!("{}.{chapter}", book.code),
+                    r#ref: format!("{}.{chapter}", book.code),
                     count: member_count(snap, child),
                 })
             })
             .collect();
-        let sref = children.first().map(|c| c.sref.clone()).unwrap_or_else(|| format!("{}.1", book.code));
+        let r#ref = children.first().map(|c| c.r#ref.clone()).unwrap_or_else(|| format!("{}.1", book.code));
         roots.push(wire::ContentsRoot {
             id: encode_node_id(&id),
             title: title_of(snap, &id),
             kind: wire::ContentsRootKind::Book,
             group: Some(atlas_core::canon::Testament::of_book_index(i)),
-            sref,
+            r#ref,
             children,
         });
     }
@@ -121,13 +121,13 @@ fn concord_roots<S: GraphQuery>(snap: &S) -> Vec<wire::ContentsRoot> {
                         id: encode_node_id(article),
                         title: title_of(snap, article),
                         kind: wire::ContentsChildKind::Article,
-                        sref: format!("BoC {}.{}.{}", first.0, first.1, first.2),
+                        r#ref: format!("BoC {}.{}.{}", first.0, first.1, first.2),
                         count: member_count(snap, article),
                     })
                 })
                 .collect();
-            let sref = children.first().map(|c| c.sref.clone()).unwrap_or_default();
-            (part, wire::ContentsRoot { id: encode_node_id(doc), title: title_of(snap, doc), kind: wire::ContentsRootKind::Document, group: None, sref, children })
+            let r#ref = children.first().map(|c| c.r#ref.clone()).unwrap_or_default();
+            (part, wire::ContentsRoot { id: encode_node_id(doc), title: title_of(snap, doc), kind: wire::ContentsRootKind::Document, group: None, r#ref, children })
         })
         .collect();
     roots.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));
