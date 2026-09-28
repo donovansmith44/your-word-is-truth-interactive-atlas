@@ -180,7 +180,7 @@ public sealed class AtlasClient
     public Task<TextWindow> ConcordUnit(string citation) =>
         GetRequired<TextWindow>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
 
-    public Task<Contract.Contents> Contents(string corpus)
+    public Task<Contract.Contents> Contents(Corpus corpus)
     {
         if (!_contentsCache.TryGetValue(corpus, out var memo))
         {
@@ -188,10 +188,10 @@ public sealed class AtlasClient
             _contentsCache[corpus] = memo;
         }
 
-        return memo.Get(() => GetRequired<Contract.Contents>($"api/contents/{Uri.EscapeDataString(corpus)}"));
+        return memo.Get(() => GetRequired<Contract.Contents>($"api/contents/{corpus.WireName()}"));
     }
 
-    private readonly Dictionary<string, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<Corpus, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new();
 
     private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
     {

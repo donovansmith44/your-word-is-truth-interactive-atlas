@@ -163,7 +163,7 @@
 
     @if (_contentsOpen)
     {
-        <ContentsPanel Corpus="bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
+        <ContentsPanel Corpus="Contract.Corpus.Bible" CurrentRef="@($"{_book}.{_chapterNum}")" OnNavigate="OnContentsNavigate" OnClose="CloseContents" />
     }
 
     @if (_activeNode is not null)

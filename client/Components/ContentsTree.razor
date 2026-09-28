@@ -4,7 +4,7 @@
     @foreach (var row in Model.Flatten())
     {
         var slug = Slug(row.Node.Id);
-        var current = row.Current || (row.Depth == 0 && Model.CurrentId is { } cur && row.Node.Children.Any(c => c.Id == cur));
+        var current = row.Current || (row.Node is ContentsTreeModel.Root root && Model.CurrentId is { } cur && root.Children.Any(c => c.Id == cur));
         <li role="treeitem" class="@($"contents-row contents-depth-{row.Depth}{(row.Current ? " contents-row-current" : "")}")"
             aria-expanded="@(row.Expandable ? (row.Expanded ? "true" : "false") : null)"
             aria-current="@(row.Current ? "true" : null)"
@@ -21,7 +21,7 @@
                     aria-current="@(current && row.Depth == 0 && RootClickNavigates ? "true" : null)"
                     @onclick="() => OnRowClickAsync(row)">
                 @row.Node.Title
-                @if (row.Node.Count is int count)
+                @if (row.Node is ContentsTreeModel.Child { Count: var count })
                 {
                     <span class="contents-count" aria-label="@($"{count} members")">@count</span>
                 }
@@ -35,7 +35,7 @@
     [Parameter, EditorRequired] public EventCallback<ContentsTreeModel.Node> OnNavigate { get; set; }
     [Parameter] public EventCallback OnChanged { get; set; }
     [Parameter] public bool RootClickNavigates { get; set; }
-    [Parameter] public Func<ContentsTreeModel.Node, string>? RootTestId { get; set; }
+    [Parameter] public Func<ContentsTreeModel.Root, string>? RootTestId { get; set; }
     [Parameter] public string TestId { get; set; } = "contents-tree";
     [Parameter] public string? RootClass { get; set; }
     [Parameter] public string? RootCurrentClass { get; set; }
@@ -43,7 +43,7 @@
     public static string Slug(string id) => id.Replace(':', '-').Replace('.', '-').Replace(' ', '-');
 
     private string LabelTestId(ContentsTreeModel.Row row, string slug) =>
-        row.Depth == 0 && RootTestId is { } f ? f(row.Node) : $"contents-node-{slug}";
+        row.Node is ContentsTreeModel.Root root && RootTestId is { } f ? f(root) : $"contents-node-{slug}";
 
     private string LabelClass(ContentsTreeModel.Row row, bool current)
     {

@@ -232,7 +232,7 @@
     {
         try
         {
-            _contents = ContentsTreeModel.From(await Atlas.Contents("concord"));
+            _contents = ContentsTreeModel.From(await Atlas.Contents(Corpus.Concord));
             SyncContentsToPosition();
         }
         catch (Exception)
@@ -262,7 +262,7 @@
 
     private Task OnContentsNavigate(ContentsTreeModel.Node node)
     {
-        if (node.Kind == "document")
+        if (node is ContentsTreeModel.Root { Kind: ContentsRootKind.Document })
         {
             return JumpToPartAsync(PartOfRef(node.Ref));
         }

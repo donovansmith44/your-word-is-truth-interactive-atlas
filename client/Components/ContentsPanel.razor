@@ -1,3 +1,4 @@
+@using BibleAtlas.Client.Contract
 @using BibleAtlas.Client.Explore
 @inject AtlasClient Atlas
 @inject IJSRuntime JS
@@ -27,16 +28,16 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Corpus { get; set; } = "bible";
+    [Parameter, EditorRequired] public Corpus Corpus { get; set; }
     [Parameter] public string? CurrentRef { get; set; }
     [Parameter, EditorRequired] public EventCallback<string> OnNavigate { get; set; }
     [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
 
     private ContentsTreeModel? _model;
     private string? _error;
-    private string? _loadedFor;
+    private Corpus? _loadedFor;
 
-    private string StorageKey => $"contents-expanded-{Corpus}";
+    private string StorageKey => $"contents-expanded-{Corpus.WireName()}";
 
     protected override async Task OnParametersSetAsync()
     {

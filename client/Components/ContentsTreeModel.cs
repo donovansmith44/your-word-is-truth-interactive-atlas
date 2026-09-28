@@ -4,46 +4,28 @@ namespace BibleAtlas.Client.Components;
 
 public sealed class ContentsTreeModel
 {
-    public sealed class Node
+    public abstract record Node(string Id, string Title, string Ref);
+
+    public sealed record Root(string Id, string Title, string Ref, ContentsRootKind Kind, IReadOnlyList<Child> Children) : Node(Id, Title, Ref)
     {
-        public required string Id { get; init; }
-        public required string Title { get; init; }
-        public required string Kind { get; init; }
-        public string? Group { get; init; }
-        public required string Ref { get; init; }
-        public int? Count { get; init; }
-        public IReadOnlyList<Node> Children { get; init; } = Array.Empty<Node>();
         public bool Expandable => Children.Count > 0;
     }
+
+    public sealed record Child(string Id, string Title, string Ref, ContentsChildKind Kind, int Count) : Node(Id, Title, Ref);
 
     public sealed record Row(Node Node, int Depth, bool Expandable, bool Expanded, bool Current);
 
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
 
-    private ContentsTreeModel(string corpus, IReadOnlyList<Node> roots)
-    {
-        Corpus = corpus;
-        Roots = roots;
-    }
+    private ContentsTreeModel(IReadOnlyList<Root> roots) => Roots = roots;
 
-    public string Corpus { get; }
-    public IReadOnlyList<Node> Roots { get; }
+    public IReadOnlyList<Root> Roots { get; }
     public string? CurrentId { get; private set; }
 
     public static ContentsTreeModel From(Contract.Contents contents) =>
-        new(
-            contents.Corpus.WireName(),
-            contents.Roots.Select(r => new Node
-            {
-                Id = r.Id,
-                Title = r.Title,
-                Kind = r.Kind.WireName(),
-                Group = r.Group?.WireName(),
-                Ref = r.Ref,
-                Children = r.Children.Select(c => new Node { Id = c.Id, Title = c.Title, Kind = c.Kind.WireName(), Ref = c.Ref, Count = c.Count }).ToList(),
-            }).ToList());
-
-    public bool IsExpanded(string id) => _expanded.Contains(id);
+        new(contents.Roots
+            .Select(r => new Root(r.Id, r.Title, r.Ref, r.Kind, r.Children.Select(c => new Child(c.Id, c.Title, c.Ref, c.Kind, c.Count)).ToList()))
+            .ToList());
 
     public IReadOnlyCollection<string> ExpandedIds => _expanded;
 

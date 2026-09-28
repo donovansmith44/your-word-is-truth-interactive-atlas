@@ -61,7 +61,7 @@
 
 @if (_contentsOpen)
 {
-    <ContentsPanel Corpus="bible" CurrentRef="@null" OnNavigate="OnContentsNavigate" OnClose="@(() => _contentsOpen = false)" />
+    <ContentsPanel Corpus="Contract.Corpus.Bible" CurrentRef="@null" OnNavigate="OnContentsNavigate" OnClose="@(() => _contentsOpen = false)" />
 }
 
 @if (_hamburgerActiveNode is not null)
