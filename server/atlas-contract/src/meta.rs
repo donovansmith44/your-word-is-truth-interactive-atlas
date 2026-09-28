@@ -25,14 +25,13 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
 
 /// Pre-launch there is no range of earlier contract versions to support, so the
 /// minimum and the maximum are the one version this server implements.
-pub const MIN_SUPPORTED_VERSION: &str = "0.8.0";
-pub const MAX_SUPPORTED_VERSION: &str = "0.8.0";
+pub const MIN_SUPPORTED_VERSION: &str = "0.9.0";
+pub const MAX_SUPPORTED_VERSION: &str = "0.9.0";
 
 /// The range of contract versions this server answers for.
 ///
-/// A consumer checks the range at startup and refuses to run against a server
-/// outside the one it was built for. The two schema versions identify the
-/// compiled data set behind the responses.
+/// The two schema versions identify the compiled data set behind the
+/// responses.
 #[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
     Json(wire::Contract {

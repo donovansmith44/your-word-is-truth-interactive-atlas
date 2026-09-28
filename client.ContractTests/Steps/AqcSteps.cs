@@ -92,9 +92,6 @@ public class AqcSteps
     /// </summary>
     private string? _focusRequestedId;
 
-    private string _advertisedMin = "";
-    private string _advertisedMax = "";
-
     /// <summary>
     /// Walks up from this SOURCE FILE's own compile-time path (captured via
     /// <see cref="System.Runtime.CompilerServices.CallerFilePathAttribute"/>,
@@ -167,13 +164,6 @@ public class AqcSteps
         // ever written into the Examples: table or captured as a fixture.
         _ = kind;
         _ = id;
-    }
-
-    [Given("the server advertises AQC version \"([^\"]+)\" through \"([^\"]+)\"")]
-    public void GivenAdvertisedRange(string min, string max)
-    {
-        _advertisedMin = min;
-        _advertisedMax = max;
     }
 
     // ---------------------------------------------------------------
@@ -482,34 +472,5 @@ public class AqcSteps
     {
         var contract = Body<Contract.Contract>();
         Assert.Equal((min, max), (contract.MinVersion, contract.MaxVersion));
-    }
-
-    private Contract.Contract Advertised() =>
-        new(manifestSchema: UnreadBySatisfies, maxVersion: _advertisedMax, minVersion: _advertisedMin, sectionSchemaVersion: UnreadBySatisfies);
-
-    private const int UnreadBySatisfies = 0;
-
-    [Then("the client accepts the advertised range")]
-    public void ThenClientAccepts()
-    {
-        Assert.True(AqcContract.Satisfies(Advertised()));
-    }
-
-    [Then("the client rejects the advertised range")]
-    public void ThenClientRejects()
-    {
-        Assert.False(AqcContract.Satisfies(Advertised()));
-    }
-
-    /// <summary>Q-4 fix (fix round 1, controller ruling): a MALFORMED
-    /// advertised version must fail LOUD -- the REAL production
-    /// <see cref="AqcContract.Satisfies"/> throwing
-    /// <see cref="FormatException"/>, the same mechanism App.razor's own
-    /// narrowed startup-check catch now routes to
-    /// <c>CheckState.Mismatch</c> rather than swallowing into "Ok".</summary>
-    [Then("the malformed advertisement fails loud")]
-    public void ThenMalformedAdvertisementFailsLoud()
-    {
-        Assert.Throws<FormatException>(() => AqcContract.Satisfies(Advertised()));
     }
 }

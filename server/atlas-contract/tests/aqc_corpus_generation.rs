@@ -136,7 +136,7 @@ fn count_scenarios_in_feature_files() -> usize {
     total
 }
 
-const EXPECTED_SCENARIO_COUNT: usize = 50;
+const EXPECTED_SCENARIO_COUNT: usize = 47;
 
 #[test]
 fn declared_scenario_count_matches_the_pinned_corpus_size() {

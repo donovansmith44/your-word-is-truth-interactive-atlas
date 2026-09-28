@@ -1041,6 +1041,17 @@ resolver = "2"
 # the +3 being those three scenarios on both sides. The canonical workspace
 # and section totals above are the batch's own closing measurement and are
 # re-derived there, not here.
+#
+# CONTRACT-1b, the startup check deleted (D7):
+#
+#   AQC corpus: 47 scenarios / 195 steps (harness=false; NOT in the canonical sum)
+#
+# AQC corpus 50 -> 47 scenarios / 201 -> 195 steps: `versioning.feature`'s
+# three client-acceptance scenarios (two steps each) are removed with the
+# client check they described; the server's own advertisement scenario stays.
+# dotnet: client.ContractTests 54/54 (47 Reqnroll scenarios + CorpusCountTests
+# + the six non-scenario tests the typed path added) -- 57/57 before, the -3
+# being those three scenarios on both sides.
 
 # DB-2b: the bundled SQLite amalgamation is C compiled by the `cc` crate at
 # the profile's opt-level -- `-O0` under `dev`, which made the DB-2b

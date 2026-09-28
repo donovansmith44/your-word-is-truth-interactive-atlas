@@ -34,6 +34,11 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.13.0** (Batch CONTRACT-1b) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
+  The `contract` fixture follows the AQC 0.9.0 advertisement -- `min_version`/
+  `max_version` 0.8.0 -> 0.9.0, the only two fields `transport/http.feature`'s
+  own contract projection pins. No promise added, removed or reworded.
+
 - **0.12.0** (Batch CONTRACT-1a) — **MINOR: expectations added.**
   Detail routes pinned whole: `books`, `chapter`, `kretzmann-chapter`, `verse`,
   `catechism-item`, `place`, `narrative-event`. `graph/detail-routes.feature`

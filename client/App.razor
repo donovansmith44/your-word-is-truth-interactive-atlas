@@ -1,56 +1,6 @@
-@using BibleAtlas.Client.Pages
-@inject AtlasClient Api
-
-@switch (_state)
-{
-    case CheckState.Checking:
-        break;
-    case CheckState.Mismatch:
-        <ContractMismatch Advertised="@_advertisedRange"/>
-        break;
-    default:
-        <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-            <Found Context="routeData">
-                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-            </Found>
-        </Router>
-        break;
-}
-
-@code {
-    private enum CheckState { Checking, Ok, Mismatch }
-    private CheckState _state = CheckState.Checking;
-    private string _advertisedRange = "";
-
-    private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(2);
-
-    protected override async Task OnInitializedAsync()
-    {
-        Contract.Contract contract;
-        try
-        {
-            using var cts = new CancellationTokenSource(CheckTimeout);
-            contract = await Api.Contract(cts.Token);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or OperationCanceledException or System.Text.Json.JsonException)
-        {
-            // Not a version mismatch this check can speak to (unreachable/CORS/timeout/unparseable
-            // JSON) -- proceed and let the app's own per-request error handling cover the rest.
-            _state = CheckState.Ok;
-            return;
-        }
-
-        _advertisedRange = $"{contract.MinVersion}-{contract.MaxVersion}";
-        try
-        {
-            // A malformed advertisement is a deployment-skew case this gate exists for: it must
-            // fail loud (Mismatch), not fall into the network-failure catch above.
-            _state = AqcContract.Satisfies(contract) ? CheckState.Ok : CheckState.Mismatch;
-        }
-        catch (FormatException)
-        {
-            _state = CheckState.Mismatch;
-        }
-    }
-}
+<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>

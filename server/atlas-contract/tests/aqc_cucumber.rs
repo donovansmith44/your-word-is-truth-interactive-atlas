@@ -58,43 +58,10 @@ pub struct AqcWorld {
     focus_requested_id: Option<String>,
     last_traversal_id: String,
     last_traversal_kind: String,
-    advertised_min: String,
-    advertised_max: String,
-}
-
-fn harness_client_version() -> &'static str {
-    static VERSION: std::sync::OnceLock<String> = std::sync::OnceLock::new();
-    VERSION.get_or_init(|| {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract/VERSION");
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("aqc_cucumber: could not read {}: {e}", path.display())).trim().to_string()
-    })
-}
-
-fn parse_semver(s: &str) -> Result<(u32, u32, u32), String> {
-    let parts: Vec<&str> = s.split('.').collect();
-    if parts.len() != 3 {
-        return Err(format!("'{s}' is not a MAJOR.MINOR.PATCH semver string"));
-    }
-    let mut nums = [0u32; 3];
-    for (i, p) in parts.iter().enumerate() {
-        nums[i] = p.parse::<u32>().map_err(|_| format!("'{s}' is not a MAJOR.MINOR.PATCH semver string"))?;
-    }
-    Ok((nums[0], nums[1], nums[2]))
-}
-
-fn satisfies(client: &str, min: &str, max: &str) -> Result<bool, String> {
-    let c = parse_semver(client)?;
-    Ok(c >= parse_semver(min)? && c <= parse_semver(max)?)
 }
 
 #[given(expr = "a node of kind {string} with id {string}")]
 fn given_a_node(_world: &mut AqcWorld, _kind: String, _id: String) {
-}
-
-#[given(expr = "the server advertises AQC version {string} through {string}")]
-fn given_advertised_range(world: &mut AqcWorld, min: String, max: String) {
-    world.advertised_min = min;
-    world.advertised_max = max;
 }
 
 #[when(expr = "I run FocusQuery for {string}")]
@@ -365,32 +332,6 @@ fn then_field_is_empty_array(world: &mut AqcWorld, field: String) {
 fn then_server_advertises(world: &mut AqcWorld, min: String, max: String) {
     assert_eq!(world.body["min_version"].as_str().unwrap(), min);
     assert_eq!(world.body["max_version"].as_str().unwrap(), max);
-}
-
-#[then(expr = "the client accepts the advertised range")]
-fn then_client_accepts(world: &mut AqcWorld) {
-    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max)
-        .unwrap_or_else(|e| panic!("expected a well-formed advertised range [{}, {}], got: {e}", world.advertised_min, world.advertised_max));
-    assert!(result, "expected client version {} to satisfy [{}, {}]", harness_client_version(), world.advertised_min, world.advertised_max);
-}
-
-#[then(expr = "the client rejects the advertised range")]
-fn then_client_rejects(world: &mut AqcWorld) {
-    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max)
-        .unwrap_or_else(|e| panic!("expected a well-formed advertised range [{}, {}], got: {e}", world.advertised_min, world.advertised_max));
-    assert!(!result, "expected client version {} to be REJECTED by [{}, {}]", harness_client_version(), world.advertised_min, world.advertised_max);
-}
-
-#[then(expr = "the malformed advertisement fails loud")]
-fn then_malformed_advertisement_fails_loud(world: &mut AqcWorld) {
-    let result = satisfies(harness_client_version(), &world.advertised_min, &world.advertised_max);
-    assert!(
-        result.is_err(),
-        "expected the semver-range check to fail loud (Err) on advertised range [{}, {}], got {:?}",
-        world.advertised_min,
-        world.advertised_max,
-        result
-    );
 }
 
 #[tokio::main]

@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Bible Atlas API
   description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.
-  version: 0.8.0
+  version: 0.9.0
 paths:
   /api/books:
     get:
@@ -175,9 +175,8 @@ paths:
       - meta
       summary: The range of contract versions this server answers for.
       description: |-
-        A consumer checks the range at startup and refuses to run against a server
-        outside the one it was built for. The two schema versions identify the
-        compiled data set behind the responses.
+        The two schema versions identify the compiled data set behind the
+        responses.
       operationId: contract
       responses:
         '200':

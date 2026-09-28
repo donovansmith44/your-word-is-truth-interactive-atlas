@@ -55,16 +55,17 @@ public class ConformanceTests
         return dir!.FullName;
     }
 
+    internal static string ClientRoot => Path.Combine(RepoRoot(), "client");
+
     private static IEnumerable<string> ClientSourceFiles()
     {
-        var clientDir = Path.Combine(RepoRoot(), "client");
-        return Directory.EnumerateFiles(clientDir, "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(clientDir, "*.razor", SearchOption.AllDirectories))
+        return Directory.EnumerateFiles(ClientRoot, "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(ClientRoot, "*.razor", SearchOption.AllDirectories))
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                         && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
     }
 
-    private static string ProgramCsText() => File.ReadAllText(Path.Combine(RepoRoot(), "client", "Program.cs"));
+    private static string ProgramCsText() => File.ReadAllText(Path.Combine(ClientRoot, "Program.cs"));
 
     /// A minimal <see cref="IJSInProcessRuntime"/> test double -- every
     /// member throws. `LocalStore.Probe`/`.Read`/`.Write` (client/LocalStore.cs)
@@ -939,7 +940,7 @@ public class ConformanceTests
         // atom value types) -- if a future edit changes that shape, this
         // fails loud rather than leaving the exemption's justification
         // silently stale.
-        var text = File.ReadAllText(Path.Combine(RepoRoot(), "client", "ViewStateService.cs"));
+        var text = File.ReadAllText(Path.Combine(ClientRoot, "ViewStateService.cs"));
 
         Assert.Contains("public sealed class MapViewState", text);
         Assert.Contains("public sealed class ReaderViewState", text);
@@ -964,7 +965,7 @@ public class ConformanceTests
         // of a raw URL-path sniff -- this exemption was ruled correct for
         // TODAY'S single reader/world distinction, not a permanent
         // blessing on route-string sniffing in general.
-        var text = File.ReadAllText(Path.Combine(RepoRoot(), "client", "Layout", "MainLayout.razor"));
+        var text = File.ReadAllText(Path.Combine(ClientRoot, "Layout", "MainLayout.razor"));
 
         Assert.Contains("Nav.ToBaseRelativePath(Nav.Uri).StartsWith(\"world\"", text);
         // Confirms the exemption's own precondition: this is a route-path
@@ -1104,7 +1105,7 @@ public class ConformanceTests
     [Fact]
     public void OneScriptureSelectorLaw_EveryNonReaderPickerMountIsFollowGuarded()
     {
-        var pages = Directory.GetFiles(Path.Combine(RepoRoot(), "client", "Pages"), "*.razor");
+        var pages = Directory.GetFiles(Path.Combine(ClientRoot, "Pages"), "*.razor");
         var violations = new List<string>();
         foreach (var page in pages)
         {

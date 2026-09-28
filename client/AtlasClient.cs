@@ -166,11 +166,6 @@ public sealed class AtlasClient
 
     public Task<SourcesDocument> Sources() => _sourcesCache.Get(() => GetRequired<SourcesDocument>("api/sources"));
 
-    public async Task<Contract.Contract> Contract(CancellationToken cancellationToken = default)
-    {
-        return await GetRequired<Contract.Contract>("api/contract", cancellationToken);
-    }
-
     public Task<EdgePage> NodeEdges(string nodeId, EdgeKind kind, int? cursor = null, int limit = 200) =>
         GetRequired<EdgePage>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
 
@@ -193,9 +188,9 @@ public sealed class AtlasClient
 
     private readonly Dictionary<Corpus, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new();
 
-    private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
+    private async Task<T> GetRequired<T>(string relativeUrl)
     {
-        var result = await _http.GetFromJsonAsync<T>(relativeUrl, cancellationToken);
+        var result = await _http.GetFromJsonAsync<T>(relativeUrl);
         return result ?? throw new InvalidOperationException($"empty response body from {relativeUrl}");
     }
 }

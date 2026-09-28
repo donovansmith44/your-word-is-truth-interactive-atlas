@@ -6,9 +6,9 @@ the Rust (`cucumber`) and C# (Reqnroll) step definitions. A phrase not
 listed here has no business appearing in a `.feature` file — add it here
 first, in the same commit as its first use.
 
-The corpus uses 31 distinct step phrases (verified by extracting every
-`Given`/`When`/`Then`/`And` line across all six `.feature` files and
-normalizing quoted values/integers). All 31 are defined below. Where the
+The corpus uses 28 distinct step phrases (verified by extracting every
+`Given`/`When`/`Then`/`And` line across all eight `.feature` files and
+normalizing quoted values/integers). All 28 are defined below. Where the
 two bindings genuinely differ in PROOF DEPTH (not merely implementation),
 the difference is stated explicitly in that phrase's own entry — never
 left to a code comment alone: the divergence between the two bindings is
@@ -80,41 +80,7 @@ exactly what an incomplete glossary hides.
   — the wire node id, `graph_wire::encode_node_id`'s own grammar. Both
   sides read this from the SAME field of the SAME already-loaded
   response; no separate request is made by this step on either side.
-- **"I query `<path>`"** — `GET <path>` (only ever `/api/contract` in
-  this corpus).
-
-## Setup / assertion phrases ("Given"/"Then" on the versioning surface)
-
-- **"the server advertises AQC version `<min>` through `<max>`"** — used
-  as BOTH a `Given` (sets the scenario's own advertised-range state
-  directly, no HTTP call, for testing `AqcContract.Satisfies` against an
-  arbitrary range) and a `Then` (asserts the LAST response's own
-  `min_version`/`max_version` fields equal `<min>`/`<max>` exactly — only
-  meaningful after "I query `/api/contract`"). Two separate step bindings
-  per side, same phrase text, disambiguated by Gherkin keyword.
-- **"the client accepts the advertised range"** / **"the client rejects
-  the advertised range"** — `AqcContract.Satisfies(ContractDto)` (C#, the
-  real production implementation) returns true/false for the scenario's
-  own advertised `min_version`/`max_version` against the client's own
-  compiled `AqcContract.ClientVersion`. Rust: an independent local mirror
-  of the SAME semver-range check (`satisfies()`, this file's own — there
-  is no Rust CONSUMER in this app for `AqcContract` to live on) — the two
-  sides prove the SAME pass/fail outcome via two separately-written
-  implementations, which is itself part of what phrase parity is for.
-- **"the malformed advertisement fails loud"** — asserts the semver-range
-  check itself FAILS LOUD (raises/returns an error signal, distinct from
-  a well-formed `false`) when either advertised bound is not a
-  `MAJOR.MINOR.PATCH` string. C#: `AqcContract.Satisfies` throws
-  `FormatException` (the REAL production implementation — the same one
-  `App.razor`'s own `catch (FormatException)` branch routes to
-  `CheckState.Mismatch`). Rust: this file's own `satisfies()` mirror
-  returns `Err` (refactored from a panicking `.expect()` specifically so
-  this phrase can assert the failure as a value rather than catching a
-  panic). Only ever used with `Given the server advertises AQC version
-  "garbage" through "0.1.0"` immediately before it — proves the CHECK
-  fails loud; the BROWSER actually rendering the mismatch page for this
-  same input is proven separately, Playwright-only (see "the app shows
-  the contract-mismatch page," below).
+- **"I query `<path>`"** — `GET <path>`.
 
 ## Assertion phrases ("Then")
 
@@ -218,19 +184,7 @@ exactly what an incomplete glossary hides.
 - **"the units' `ref` fields are `<a>`, `<b>`, `<c>` in order"** — the
   last TextWindowQuery response's own `units[].ref` values equal
   `[<a>,<b>,<c>]` in that exact order.
-
-## Playwright-only phrases (marked explicitly — not bound by either Gherkin harness)
-
-- **"the app shows the contract-mismatch page"** — never appears in a
-  `.feature` file; describes `tests/ux/contract-versioning.spec.ts`'s own
-  browser-level assertion (`Pages/ContractMismatch.razor`'s own testid
-  present in the DOM instead of the ordinary app shell — see that spec's
-  own two cases, happy path and mocked mismatch). Listed here only
-  because this file's own stated contract is phrase parity between the
-  two Gherkin bindings, and a reader should not mistake this entry for a
-  third binding of a corpus phrase.
-- **"the app loads normally despite an unreachable `/api/contract`"** —
-  Playwright-only: `route.abort()` on `/api/
-  contract`, asserting the ordinary app shell (`nav-world`) renders
-  regardless — the surviving policy `App.razor`'s narrowed catch still
-  covers (network failures are not a mismatch).
+- **"the server advertises AQC version `<min>` through `<max>`"** — the
+  last response's own `min_version`/`max_version` fields equal
+  `<min>`/`<max>` exactly; only meaningful after "I query
+  `/api/contract`".
