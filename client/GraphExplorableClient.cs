@@ -18,7 +18,7 @@ public sealed class GraphExplorableClient : IExplorableClient
 
     public async Task<EdgePage> Edges(string id, EdgeKind kind, int? cursor = null, int limit = 20)
     {
-        var url = $"api/node/{Uri.EscapeDataString(id)}/edges?kind={Uri.EscapeDataString(kind.Label())}&limit={limit}";
+        var url = $"api/node/{Uri.EscapeDataString(id)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}";
         if (cursor is int c)
         {
             url += $"&cursor={c}";

@@ -40,27 +40,4 @@ public sealed class EdgeKindsTests
         Assert.Equal(DeclaredSymmetricKinds, symmetric.Length);
         Assert.Equal(symmetric, duals);
     }
-
-    [Fact]
-    public void Label_round_trips_through_Parse_for_every_kind()
-    {
-        // Arrange
-        var kinds = Enum.GetValues<EdgeKind>();
-        // Act
-        var back = kinds.Select(k => EdgeKinds.Parse(k.Label())).ToArray();
-        // Assert
-        Assert.Equal(kinds, back);
-        Assert.Equal("member-of", EdgeKind.MemberOf.Label());
-    }
-
-    [Fact]
-    public void Parse_rejects_an_undeclared_label()
-    {
-        // Arrange
-        var label = "cited";
-        // Act
-        Action act = () => EdgeKinds.Parse(label);
-        // Assert
-        Assert.Throws<FormatException>(act);
-    }
 }

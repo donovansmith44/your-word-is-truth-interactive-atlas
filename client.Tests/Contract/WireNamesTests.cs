@@ -11,16 +11,46 @@ public sealed class WireNamesTests
     {
         // Arrange
         var options = new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } };
-        var members = typeof(EdgeKind).Assembly.GetTypes()
-            .Where(t => t.IsEnum && t.Namespace == typeof(EdgeKind).Namespace)
-            .SelectMany(t => Enum.GetValues(t).Cast<Enum>())
-            .ToList();
+        var members = GeneratedEnumMembers();
         // Act
         var actual = members.Select(WireNameOf).ToList();
         var expected = members.Select(m => JsonSerializer.Serialize(m, m.GetType(), options).Trim('"')).ToList();
         // Assert
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void Parse_inverts_WireName_for_every_member_of_every_generated_enum()
+    {
+        // Arrange
+        var members = GeneratedEnumMembers();
+        // Act
+        var parsed = members.Select(m => ParseAs(m.GetType(), WireNameOf(m))).ToList();
+        // Assert
+        Assert.Equal(members, parsed);
+    }
+
+    [Fact]
+    public void Parse_rejects_a_name_the_enum_does_not_declare()
+    {
+        // Arrange
+        var undeclared = "cited";
+        // Act
+        Action act = () => WireNames.Parse<EdgeKind>(undeclared);
+        // Assert
+        Assert.Throws<FormatException>(act);
+    }
+
+    private static List<Enum> GeneratedEnumMembers() =>
+        typeof(EdgeKind).Assembly.GetTypes()
+            .Where(t => t.IsEnum && t.Namespace == typeof(EdgeKind).Namespace)
+            .SelectMany(t => Enum.GetValues(t).Cast<Enum>())
+            .ToList();
+
+    private static Enum ParseAs(Type enumType, string name) =>
+        (Enum)typeof(WireNames).GetMethod(nameof(WireNames.Parse))!
+            .MakeGenericMethod(enumType)
+            .Invoke(null, new object[] { name })!;
 
     private static string WireNameOf(Enum value) =>
         (string)typeof(WireNames).GetMethod(nameof(WireNames.WireName))!

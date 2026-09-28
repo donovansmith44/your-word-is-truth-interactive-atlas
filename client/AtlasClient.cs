@@ -172,7 +172,7 @@ public sealed class AtlasClient
     }
 
     public Task<EdgePage> NodeEdges(string nodeId, EdgeKind kind, int? cursor = null, int limit = 200) =>
-        GetRequired<EdgePage>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind.Label())}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
+        GetRequired<EdgePage>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind.WireName())}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
 
     public Task<NodeCard> NodeCard(string nodeId) =>
         GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(nodeId)}");
