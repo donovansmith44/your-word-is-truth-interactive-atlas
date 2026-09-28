@@ -121,7 +121,7 @@ featureFiles dir = do
 -- broken gate, and a broken gate must say so before it reports on
 -- anything.
 -- The pact is a DIRECTORY of fragments, one per crate that owns a
--- transport (`http.json` from atlas-server, `cli.json` from atlas-cli),
+-- transport (`http.json` from atlas-contract, `cli.json` from atlas-cli),
 -- merged here. One recorder per transport-owning crate is a smaller rule
 -- than one recorder reaching across crate boundaries, and merging is the
 -- cheap half of it.
@@ -138,7 +138,7 @@ loadPact dir = do
         pure [ dir | isFile ]
   case fragments of
     [] -> die' ("no recorded pact at " <> T.pack dir
-                <> "\n  Generate it with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-server --test contract_pact\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-cli --test contract_pact_cli")
+                <> "\n  Generate it with:\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-contract --test contract_pact\n    ATLAS_BLESS_PACT=1 cargo test -p atlas-cli --test contract_pact_cli")
     fs -> do
       maps <- mapM loadFragment fs
       let merged = Map.unions maps

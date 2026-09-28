@@ -68,7 +68,7 @@ O(n)-scan bottleneck in the compose path to index away -- one cheap
 n=1,735 event filter exists and measured immaterial). `scene_byte_identity.rs`
 proves the response shape is unchanged.
 
-## Query surface (`cargo bench -p atlas-server`, from `server/`)
+## Query surface (`cargo bench -p atlas-contract`, from `server/`)
 
 Criterion's own full statistical output (mean/median/stddev per query,
 outlier detection) is the authoritative source -- these are the headline
@@ -78,12 +78,12 @@ figures whenever investigating a regression `tests/perf_smoke.rs` flagged.
 **PERF-2b's own Phase 3 pass (re-confirmed, table below UNCHANGED)**: every
 number in this section stays PERF-2a's own recorded baseline -- PERF-2b
 touched zero query-serving code (only `Graph::build_indexes`, a
-startup-time cost). Re-running `cargo bench -p atlas-server` this batch, on
+startup-time cost). Re-running `cargo bench -p atlas-contract` this batch, on
 the SAME machine, DID show criterion reporting small ("Performance has
 improved", 5-18%) deltas across nearly every group here -- disclosed as
 machine/thermal variance between the two runs, NOT a code-driven win: no
-diff touches `atlas-core::scene`, `atlas_server::handlers`, or
-`atlas_server::graph_handlers`, so there is no mechanism by which any
+diff touches `atlas-core::scene` or the query handlers now in
+`atlas_contract`, so there is no mechanism by which any
 number in THIS section could have legitimately moved. (The one exception,
 `artifact_load`, DID move for a real, code-attributable reason -- see that
 section below, which reports it separately with its own before/after.)
@@ -541,7 +541,7 @@ composed bytes are unchanged (`scene_byte_identity.rs`, 25 pinned hashes).
 | `scene_scripture_chapter` | 26.0 ms | 26.2-36.7 ms | 50 ms |
 
 Reproduced this task, one more single sample each (debug build, same
-`timing-gates.sh`-style invocation, `cargo test -p atlas-server --test
+`timing-gates.sh`-style invocation, `cargo test -p atlas-contract --test
 perf_smoke -- --ignored --exact <name> --test-threads=1 --nocapture`):
 22.9297 ms / 11.5472 ms / 25.5281 ms -- all three inside (the middle one
 marginally below the low end of) CONTENTION-1's own ten-run spread, i.e.

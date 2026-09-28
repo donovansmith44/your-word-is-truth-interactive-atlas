@@ -1,13 +1,12 @@
-# AQC v0.1.0 -- FocusQuery(descriptor) -> Focus (spec §2, §3).
+# FocusQuery(descriptor) -> one node's card.
 # GET /api/node/{id} -- server/atlas-contract/src/graph.rs::node_card.
 #
 # The Examples: table below is GENERATED, not hand-authored -- see
 # server/atlas-contract/src/bins/export_aqc_examples.rs. It draws one seed id per
-# NODE KIND the real committed graph materializes (spec §3: "every node kind
-# sampled from the graph"), verified live against that graph at export time
-# (a stale seed id fails the exporter loud, not silently). Re-running the
-# exporter against an unchanged graph reproduces this table byte-identical
-# (deterministic; never wall-clock random).
+# NODE KIND the real committed graph materializes, verified live against that
+# graph at export time, so a stale seed id fails the exporter loud rather than
+# silently. Re-running the exporter against an unchanged graph reproduces this
+# table byte-identical; nothing in it is wall-clock random.
 Feature: FocusQuery -- one node's card, by descriptor
 
   Scenario Outline: every sampled node kind resolves to a valid Focus card

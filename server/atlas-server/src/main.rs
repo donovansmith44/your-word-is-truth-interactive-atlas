@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
         // invocation of this binary and spares it a second flag for each.
         let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
         let curated_dir = args.data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| PathBuf::from("../data/curated"));
-        println!("atlas-graph: --build-from-raw -- building in memory from {} (dev fallback, disclosed)", raw_dir.display());
+        println!("atlas-graph: --build-from-raw -- building in memory from {}", raw_dir.display());
         let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
         // `GraphService::build` runs the KJV fidelity law as part of construction and
         // refuses to construct on a violation, so reaching the line after it is
@@ -95,14 +95,14 @@ async fn main() -> Result<()> {
     println!("atlas-graph: {} complete in {load_elapsed:?}", if args.build_from_raw { "from-raw build" } else { "sections open" });
 
     println!(
-        "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped, disclosed), graph version {}",
+        "atlas-graph: {} KJV text units, {} cites edges ({} negative-vote rows dropped), graph version {}",
         graph.stats.kjv_verses,
         graph.stats.cites_rows,
         graph.stats.cites_dropped_negative_votes,
         atlas_graph::version_hex(graph.version())
     );
     println!(
-        "atlas-graph (M-B event world): {} events ({} dated), {} narratives ({} succession rows), {} anchors, {} attests rows, {} located-at rows, {} dated-by rows",
+        "atlas-graph: {} events ({} dated), {} narratives ({} succession rows), {} anchors, {} attests rows, {} located-at rows, {} dated-by rows",
         graph.event_world_stats.events,
         graph.event_world_stats.dated_events,
         graph.event_world_stats.narratives,

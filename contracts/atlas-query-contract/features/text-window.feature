@@ -1,16 +1,15 @@
-# AQC v0.1.0 -- TextWindowQuery(ref, radius) -> verses, including per-verse
-# annotation spans. GET /api/text?ref=&n=&dir=&scope=&corpus= --
-# server/atlas-server/src/graph_handlers.rs::text_window. The route's own URL
-# is spelled out in the scenario that pins it, not only here: a route named
-# nowhere but a comment is a route with no promise, and
-# atlas-contract/tests/contract_coverage.rs is the law that says so.
+# TextWindowQuery(ref, n, dir, scope, corpus) -> units of text, including the
+# per-verse annotation spans. GET /api/text --
+# server/atlas-contract/src/graph.rs::text_window. The route's own URL is spelled
+# out in the scenario that pins it, not only here: a route named nowhere but a
+# comment is a route with no promise, and
+# server/atlas-contract/tests/contract_coverage.rs is the law that says so.
 #
-# RED-1's alignment law (spec §2, the annotation-spans law this feature
-# exists to pin): words_of_christ is the FIRST annotation layer -- the
-# general shape every future per-verse annotation layer follows. Every span
-# must lie strictly within the length of the SAME verse's own text; a span
-# reaching into a neighboring verse, or past its own verse's end, is a
-# contract violation, not merely a display bug.
+# The annotation-spans law this feature exists to pin: words_of_christ is the
+# FIRST annotation layer -- the general shape every future per-verse annotation
+# layer follows. Every span must lie strictly within the length of the SAME
+# verse's own text; a span reaching into a neighboring verse, or past its own
+# verse's end, is a contract violation, not merely a display bug.
 Feature: TextWindowQuery -- a window of verses with annotation spans
 
   Scenario: a single-verse window carries the real KJV text

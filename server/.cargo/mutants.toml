@@ -34,15 +34,10 @@
 # graph-types is NOT reachable from here: a file outside the workspace root
 # yields zero mutants however it is globbed, so that crate carries its own
 # `graph-types/.cargo/mutants.toml` and is run from its own directory.
-examine_globs = [
-  "atlas-contract/src/document.rs",
-  "atlas-contract/src/error.rs",
-  "atlas-contract/src/wire/*.rs",
-  "atlas-contract/src/bins/export_contract.rs",
-  "atlas-contract/src/meta.rs", "atlas-contract/src/map.rs", "atlas-contract/src/reading.rs",
-  "atlas-contract/src/catechism.rs", "atlas-contract/src/places.rs", "atlas-contract/src/events.rs",
-  "atlas-contract/src/graph.rs", "atlas-contract/src/contents.rs",
-]
+
+# The scope is the CRATE, not a list of its files: a file added to it is in scope
+# the day it is added, where a list is one more place to forget.
+examine_globs = ["atlas-contract/src/**/*.rs"]
 exclude_re = ["wall-clock gate"]
 test_tool = "cargo"
 # The crate that OWNS the examined files, not the workspace: the workspace

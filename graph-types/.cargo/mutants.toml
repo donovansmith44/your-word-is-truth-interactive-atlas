@@ -22,11 +22,9 @@
 # feature set that file is empty. This crate's own reason for `--in-place`:
 # `tests/toolchain_pin.rs` reads the repository's `rust-toolchain.toml`, which
 # sits above the tree cargo-mutants would otherwise copy.
-examine_globs = [
-  "src/id.rs",
-  "src/edge.rs",
-  "src/wire_form.rs",
-]
+
+# The scope is the CRATE, for the reason `server/.cargo/mutants.toml` gives.
+examine_globs = ["src/**/*.rs"]
 
 # EQUIVALENT MUTANTS -- alive in both feature states, and observationally
 # indistinguishable from the code they replace:

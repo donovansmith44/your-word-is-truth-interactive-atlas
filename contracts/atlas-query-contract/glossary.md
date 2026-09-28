@@ -23,7 +23,7 @@ two bindings is exactly what an incomplete glossary hides).
 - **"the real committed graph"** — the graph built from `data/raw` +
   `data/curated` via the SAME compile path `atlas_etl::compile::compile` +
   `GraphService::build` every real-data integration test in
-  `server/atlas-server/tests/` already uses (`real_app()`'s own pattern) —
+  `server/atlas-contract/tests/` already uses (`real_app()`'s own pattern) —
   never a synthetic fixture. On the C# side: the committed provider-exported
   fixture files under `contracts/atlas-query-contract/fixtures/` (§ below),
   since the C# harness proves DESERIALIZATION, not a second live server.
@@ -36,7 +36,7 @@ two bindings is exactly what an incomplete glossary hides).
   round-trips through `graph_wire::{encode,decode}_node_id`, resolves
   against the live graph) is what actually proves the claim, BEFORE the
   id is ever written into an `Examples:` table.
-- **"the live server"** (Rust only) — the real `atlas_server::app::build`
+- **"the live server"** (Rust only) — the real `atlas_contract::app::build`
   `Router`, exercised in-process via `tower::ServiceExt::oneshot` (no socket
   bound) — the SAME idiom `tests/graph_api.rs`'s own `real_app()` uses.
 - **"the committed fixture for `<query>`"** (C# only) — the JSON file

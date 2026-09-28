@@ -11,21 +11,20 @@ const MISUSE_EXIT: i32 = 2;
 const USAGE_LINE: &str = "usage: export_contract [--check]\n";
 const NOTHING: &str = "";
 
-const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
-    ".md",
-    ".rs",
+/// Words that name this project's own development rather than what it serves: a
+/// batch, a ruling, a fix round, a ticket, a version stamp, a date, a numbered
+/// requirement. No document a reader outside this repository reads may carry one,
+/// and neither may the contract corpus, which is read by whoever has to keep the
+/// two harnesses agreeing.
+const NAMES_THIS_PROJECTS_OWN_HISTORY: [&str; 26] = [
     "2026",
-    "atlas_contract",
-    "atlas_core",
-    "atlas_graph",
+    "aqc v",
     "batch",
     "brief",
     "controller",
     "design doc",
     "fix round",
     "fixme",
-    "graph_wire",
-    "graphquery",
     "hotfix",
     "m-a",
     "m-b",
@@ -36,6 +35,7 @@ const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
     "principles",
     "prov-",
     "q-",
+    "red-1",
     "requirement ",
     " review",
     "ruling",
@@ -44,6 +44,12 @@ const FORBIDDEN_IN_PUBLISHED_PROSE: [&str; 31] = [
     "todo",
     "\u{a7}",
 ];
+
+/// Words that name the code behind this API rather than the API. A consumer of the
+/// published document has none of it in hand, so naming it there says nothing; the
+/// contract corpus, which is read from inside this repository, names it freely.
+const NAMES_THE_CODE_BEHIND_THE_API: [&str; 7] = [".md", ".rs", "atlas_contract", "atlas_core", "atlas_graph", "graph_wire", "graphquery"];
+
 
 #[derive(Debug, PartialEq)]
 enum Freshness {
@@ -59,7 +65,7 @@ struct CommittedDocument {
 }
 
 #[derive(Debug, PartialEq)]
-struct InternalHistoryHit {
+struct ForbiddenWordHit {
     line: usize,
     token: &'static str,
     text: String,
@@ -293,22 +299,49 @@ fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTr
 }
 
 #[test]
-fn the_published_contract_names_no_internal_history() {
+fn the_published_contract_names_no_internal_history_and_none_of_the_code_behind_it() {
     // Arrange
     let document = atlas_contract::document::openapi_yaml();
     // Act
-    let hits: Vec<InternalHistoryHit> = document
-        .lines()
+    let hits = forbidden_words_in(&document, &[&NAMES_THIS_PROJECTS_OWN_HISTORY, &NAMES_THE_CODE_BEHIND_THE_API]);
+    // Assert
+    assert_eq!(hits, Vec::<ForbiddenWordHit>::new());
+}
+
+#[test]
+fn no_comment_in_the_query_contract_corpus_names_this_projects_own_history() {
+    // Arrange
+    let features = contracts_root().join("atlas-query-contract").join("features");
+    // Act
+    let hits: Vec<ForbiddenWordHit> = feature_comments(&features).iter().flat_map(|comments| forbidden_words_in(comments, &[&NAMES_THIS_PROJECTS_OWN_HISTORY])).collect();
+    // Assert
+    assert_eq!(hits, Vec::<ForbiddenWordHit>::new());
+}
+
+/// Every comment line of every feature file, one string per file, so a hit names
+/// the line the corpus itself carries.
+fn feature_comments(features: &std::path::Path) -> Vec<String> {
+    std::fs::read_dir(features)
+        .expect("the query contract keeps its features in one directory")
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "feature"))
+        .map(|path| std::fs::read_to_string(&path).expect("a feature file this walk found must be readable"))
+        .map(|text| text.lines().filter(|line| line.trim_start().starts_with('#')).collect::<Vec<_>>().join("\n"))
+        .collect()
+}
+
+fn forbidden_words_in(text: &str, vocabularies: &[&[&'static str]]) -> Vec<ForbiddenWordHit> {
+    text.lines()
         .enumerate()
         .flat_map(|(number, text)| {
             let line = number + 1;
             let haystack = text.to_ascii_lowercase();
-            FORBIDDEN_IN_PUBLISHED_PROSE
+            vocabularies
                 .iter()
+                .flat_map(|vocabulary| vocabulary.iter())
                 .filter(move |token| haystack.contains(**token))
-                .map(move |token| InternalHistoryHit { line, token, text: text.trim().to_string() })
+                .map(move |token| ForbiddenWordHit { line, token, text: text.trim().to_string() })
         })
-        .collect();
-    // Assert
-    assert_eq!(hits, Vec::<InternalHistoryHit>::new());
+        .collect()
 }

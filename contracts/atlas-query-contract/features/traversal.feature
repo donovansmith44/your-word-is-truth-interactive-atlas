@@ -1,4 +1,4 @@
-# AQC v0.1.0 -- TraversalQuery(descriptor, frontierGroup, page?) -> [Focus refs].
+# TraversalQuery(descriptor, frontier, page?) -> the frontier's targets.
 # GET /api/node/{id}/edges?kind=&cursor=&limit= --
 # server/atlas-contract/src/graph.rs::node_edges.
 Feature: TraversalQuery -- expand one frontier abstraction into traversable targets

@@ -1,11 +1,10 @@
-# AQC v0.6.0 -- ContentsQuery(corpus) -> the containment forest, two levels
-# deep. GET /api/contents/{corpus} -- server/atlas-server/src/contents.rs.
+# ContentsQuery(corpus) -> the containment forest, two levels deep.
+# GET /api/contents/{corpus} -- server/atlas-contract/src/contents.rs::contents.
 #
-# D4 (owner, 2026-09-15, verbatim: "Table of contents = a tree ... Stop at the
-# level of ARTICLE (BoC) or TOPIC (Small Catechism). Pages are not a
-# meaningful way of thinking about things."): the tree IS the graph's own
-# containment forest (Container nodes + contains edges), read through the
-# port; nothing here is a hand-maintained list.
+# The tree IS the graph's own containment forest (Container nodes and contains
+# edges), read through the port -- nothing here is a hand-maintained list -- and it
+# stops at the chapter of a book and the article of a Concord document, which is
+# the level a reader navigates by.
 Feature: ContentsQuery -- the containment forest as a table of contents
 
   Scenario: the Bible's contents are books then chapters

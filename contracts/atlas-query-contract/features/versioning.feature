@@ -1,6 +1,6 @@
-# AQC v0.8.0 (CONTRACT-1a; v0.7.0 D5; v0.6.0 D3; v0.5.0 LEX-1; v0.4.0 DB-4c; v0.3.0 DB-4b; v0.2.0 DB-4a; v0.1.0 before) -- /api/contract advertisement + fail-loud mismatch (spec §2's
-# versioning law, the house fail-loud law). This is the ONE new behavioral
-# surface this batch adds -- server/atlas-contract/src/meta.rs::contract,
+# /api/contract advertises the range of contract versions this server answers
+# for, and a consumer outside that range must fail loud rather than run on.
+# GET /api/contract -- server/atlas-contract/src/meta.rs::contract,
 # client/AqcContract.cs::Satisfies.
 Feature: Versioning -- the server advertises its AQC range; the client fails loud on mismatch
 
@@ -17,24 +17,16 @@ Feature: Versioning -- the server advertises its AQC range; the client fails lou
     Given the server advertises AQC version "0.9.0" through "1.0.0"
     Then the client rejects the advertised range
 
-  # Fix round 1 (Q-4/§0, controller ruling): a MALFORMED advertisement is
-  # the deployment-skew case this gate exists for, not a network failure --
-  # App.razor's own catch used to swallow this into "loads normally" (the
-  # exact fail-loud violation the house law forbids). Binds on both Gherkin
-  # sides (AqcContract.Satisfies / this file's own local `satisfies`
-  # mirror, both returning/raising a fail-loud result on a malformed
-  # semver string).
+  # A MALFORMED advertisement is the deployment-skew case this check exists for,
+  # not a network failure, so it must raise rather than read as agreement. Both
+  # bindings assert that: AqcContract.Satisfies, and this file's own local mirror
+  # of it.
   Scenario: a malformed advertised version is a mismatch, loud
     Given the server advertises AQC version "garbage" through "0.8.0"
     Then the malformed advertisement fails loud
 
-  # Fix round 1 (Q-5/§0, controller ruling): Playwright-only (browser-level
-  # fail-loud surface -- not exercised by either Gherkin harness, which
-  # never render a page; also, "unreachable" and "hangs, then times out"
-  # are not phrases either harness's own fixture/live-request model can
-  # express honestly): see tests/ux/contract-versioning.spec.ts --
-  # (1) happy path (real /api/contract, app loads normally), (2) a
-  # mocked-mismatch response (the app shows the contract-mismatch page,
-  # never the ordinary shell), (3) an UNREACHABLE /api/contract
-  # (route.abort()) -- the app loads normally rather than hanging or
-  # failing (App.razor's own 2s CancellationToken timeout, Q-5).
+  # Playwright-only: "unreachable" and "hangs, then times out" are browser-level
+  # behaviours neither Gherkin harness can express honestly, since neither renders
+  # a page. See tests/ux/contract-versioning.spec.ts for the three cases -- the
+  # happy path, a mocked mismatch the app must show its mismatch page for, and an
+  # unreachable /api/contract, which must load normally rather than hang.
