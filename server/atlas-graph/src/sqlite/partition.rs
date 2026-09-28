@@ -86,7 +86,6 @@ pub fn node_kind_of_ordinal(o: i64) -> Option<NodeKind> {
     ALL.get(usize::try_from(o).ok()?).copied()
 }
 
-/// One `edge_index` row before it is written.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeEntryOut {
     pub subject: Position,

@@ -176,7 +176,6 @@ impl Pass for NormalizePass {
     }
     fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
         crate::kjv_adapter::normalize(ctx).context("normalizing the KJV canon/verses into TextUnit nodes")?;
-        // Ordered after the KJV adapter for narrative sense, not out of any data dependency.
         crate::bible_container_adapter::normalize(ctx).context("normalizing the canon into book/chapter Container nodes + Contains rows")?;
         crate::brainfuel_adapter::normalize(ctx);
         crate::xref_adapter::normalize(ctx).context("normalizing the raw cross-references TSV into cites rows")?;
@@ -208,8 +207,6 @@ impl Pass for MergeAliasPass {
         crate::concord_adapter::merge_alias(ctx);
         crate::person_adapter::merge_alias(ctx);
         crate::peoples_adapter::merge_alias(ctx);
-        // Description filling only READS already-built nodes, so it has no ordering dependency here.
-        // Two statements rather than `ctx.x = f(ctx)`: the latter would borrow `ctx` twice at once.
         let description_stats = crate::description_adapter::fill_descriptions(ctx);
         ctx.description_stats = description_stats;
         Ok(())

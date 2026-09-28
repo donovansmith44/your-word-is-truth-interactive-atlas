@@ -23,8 +23,8 @@ use rusqlite::{Connection, OpenFlags};
 pub const SCHEMA_VERSION: u32 = 14;
 /// Every section file's `PRAGMA application_id`: the ASCII bytes `BLGA`.
 pub const APPLICATION_ID: u32 = 0x424C_4741;
-/// Bytes per hash column (`node.pid`, `edge_index.edge_id`): the current
-/// `ContentHash` width — 8 while `canon-ids` is off, 16 once it is on.
+/// Bytes per hash column (`node.pid`, `edge_index.edge_id`): the current `ContentHash` width -- 8 while
+/// `canon-ids` is off, 16 once it is on.
 pub const HASH_WIDTH: usize = std::mem::size_of::<ContentHash>();
 
 #[derive(Debug)]

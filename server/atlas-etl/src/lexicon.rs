@@ -36,7 +36,7 @@ pub struct LexEntry {
     pub root: Option<String>,
 }
 
-/// One CoNLL-U token, matched or not (the `token` inventory, spec §5.7).
+/// One CoNLL-U token, matched or not: the whole word inventory, not only the aligned ones.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenRow {
     pub book: BookId,

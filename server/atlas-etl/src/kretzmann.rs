@@ -1,7 +1,6 @@
 //! Parses the vendored commentary pages into verse-anchored units. The source renders two DIFFERENT templates for
 //! one idea: an interleaved, sub-verse bold lemma followed by prose, and a whole-verse quote block followed by
-//! flowing prose. LEMMA-EXCISION is binding -- a unit's text is the commentator's own prose, never a byte of the
-//! quoted verse, which survives only as excised fragments for the conservation check.
+//! prose. LEMMA-EXCISION is binding: a unit's text is the commentator's prose, never a byte of the quoted verse.
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
@@ -215,7 +214,6 @@ fn article_slice(html: &str) -> Result<&str> {
     Ok(&html[gt..end])
 }
 
-/// Splits the body into its footnote-definition section, if any, and the remaining main content.
 fn split_off_footnotes(body: &str) -> (&str, Option<&str>) {
     match body.find(r#"<section data-footnotes"#) {
         None => (body, None),
@@ -404,9 +402,8 @@ fn segment(body: &str) -> Vec<Segment<'_>> {
 }
 
 /// Finds the first INLINE verse-boundary marker matching the source's own "v. N" mid-sentence citation shape, a real
-/// transcription convention where a boundary is rendered as literal text instead of a tag. A candidate matches only
-/// when its number is EXACTLY the verse after the one currently open, which is what tells a genuine boundary from an
-/// ordinary backward cross-reference, and a non-alphabetic byte must precede the "v" so book abbreviations never fire.
+/// transcription convention. It matches only when the number is EXACTLY the verse after the one open, which tells a
+/// genuine boundary from a backward cross-reference, and a non-alphabetic byte must precede the "v".
 fn find_inline_verse_marker(text: &str, expected_next: Option<u16>) -> Option<(usize, usize, u16)> {
     let expected = expected_next?;
     let mut search_from = 0usize;
@@ -893,18 +890,15 @@ fn decode_one_entity(name: &str) -> Option<char> {
 pub enum DeviationClass {
     /// Exact byte match against the canonical (restored) verse text.
     Exact,
-    /// A DISCLOSED EQUIVALENCE: the concatenation differs from canonical only by case and punctuation. It covers both
-    /// observed classes -- the reverential case convention, and the boundary punctuation the digital edition
-    /// introduces by rendering each fragment as its own sentence. Mechanical and symmetric: the underlying word
-    /// sequence must still match exactly, so it can never mask a content difference.
+    /// A DISCLOSED EQUIVALENCE: the concatenation differs from canonical only by case and punctuation, covering the
+    /// reverential case convention and the boundary punctuation the digital edition introduces. Mechanical and
+    /// symmetric: the underlying word sequence must still match exactly, so it can never mask a content difference.
     MechanicalCaseAndPunct,
-    /// A THIRD disclosed class, found by mining the real corpus: the digital edition systematically modernizes
-    /// archaic spelling. The variant table is curated and auditable -- never a fuzzy or edit-distance guess, which
-    /// could silently equate two different words -- and applies on top of case and punctuation normalization, so this
-    /// class still requires the same word sequence, position for position.
+    /// A THIRD disclosed class: the digital edition systematically modernizes archaic spelling. The variant table is
+    /// curated and auditable -- never a fuzzy or edit-distance guess, which could equate two different words -- and
+    /// applies on top of case and punctuation, so this class still requires the same word sequence, position by position.
     MechanicalCaseSpellingAndPunct,
-    /// Neither of the above -- a genuine content deviation, collected for
-    /// per-case resolution (decision 3's own deviation policy).
+    /// Neither of the above: a genuine content deviation, collected for per-case resolution.
     Mismatch,
 }
 
@@ -944,10 +938,9 @@ fn is_word_separator(c: char) -> bool {
     c.is_whitespace() || c.is_ascii_punctuation() || matches!(c, '\u{2013}' | '\u{2014}' | '\u{2018}' | '\u{2019}' | '\u{201A}' | '\u{201C}' | '\u{201D}' | '\u{201E}' | '\u{2026}')
 }
 
-/// Curated (modernized -> canonical) spelling pairs, built exclusively from real corpus mismatches occurring at least
-/// twice, each manually confirmed to be the SAME word differently spelled. Word-choice pairs, a meaning change, and a
-/// genuine canon-internal name-form variance were deliberately excluded and stay disclosed mismatches: collapsing any
-/// of them here could mask a real difference.
+/// Curated (modernized -> canonical) spelling pairs, built from real corpus mismatches occurring at least twice,
+/// each manually confirmed to be the SAME word differently spelled. Word-choice pairs, a meaning change and a
+/// canon-internal name-form variance are excluded and stay disclosed mismatches: collapsing any would mask a difference.
 const SPELLING_VARIANTS: &[(&str, &str)] = &[
     ("show", "shew"), ("shows", "shews"), ("showed", "shewed"), ("showeth", "sheweth"), ("showing", "shewing"), ("showest", "shewest"), ("showbread", "shewbread"),
     ("honor", "honour"), ("honors", "honours"), ("honored", "honoured"), ("honorable", "honourable"), ("honoreth", "honoureth"), ("honorest", "honourest"),
@@ -1046,7 +1039,6 @@ const SPELLING_VARIANTS: &[(&str, &str)] = &[
     ("zedec", "zedek"),
 ];
 
-/// Applies the spelling table word by word on top of the case-and-punctuation key.
 fn spelling_key(s: &str) -> String {
     mechanical_key(s).split(' ').map(spelling_normalize_word).collect::<Vec<_>>().join(" ")
 }
@@ -1057,13 +1049,9 @@ fn spelling_normalize_word(w: &str) -> &str {
     SPELLING_VARIANTS.iter().find(|&&(american, _)| american == w).map(|&(_, british)| british).unwrap_or(w)
 }
 
-// THE OVER-EXCISION GUARD: a bolded run occasionally carries the commentator's own prose in the SAME span as genuine
-// verse text, and the two real instances refute any prefix-only or suffix-only split -- one is prose then verse, the
-// other verse, then an aside, then verse again. So a fragment's words are reconciled against the verse's remaining
-// canonical words by recursive LONGEST-COMMON-BLOCK matching, never a plain longest common subsequence: an LCS may
-// match a coincidental word repeat inside a prose block and steal a position from the genuine clause, which really did
-// tear two real spans apart. Anchoring on the single longest contiguous run first leaves nothing for such a repeat to
-// steal. Whatever stays unmatched returns to stored prose.
+// THE OVER-EXCISION GUARD: a bolded run can carry the commentator's own prose in the SAME span as genuine verse
+// text, so its words are reconciled against the verse's remaining canonical words by recursive LONGEST-COMMON-BLOCK
+// matching -- not a subsequence, where a coincidental repeat steals a position -- and what stays unmatched is prose.
 
 /// Below this many words, an unmatched run is treated as RETAINED lemma rather than recovered prose: a single
 /// substituted or dropped word would otherwise be ripped out of the verse text as if it were commentary.
@@ -1122,8 +1110,7 @@ fn longest_common_block(frag: &[(String, usize, usize)], canon: &[(String, usize
 
 /// Recursively partitions both sides by anchoring on the longest common block, then recursing on the piece strictly
 /// before it and the piece strictly after. `frag_base` offsets into the FULL fragment word list, since the slices
-/// shrink with each call. Returns the largest canonical byte offset any block consumed, which advances the caller's
-/// per-verse cursor.
+/// shrink each call. Returns the largest canonical byte offset any block consumed, advancing the caller's cursor.
 fn align_recursive(frag: &[(String, usize, usize)], canon: &[(String, usize, usize)], frag_base: usize, is_matched: &mut [bool]) -> usize {
     if frag.is_empty() || canon.is_empty() {
         return 0;
@@ -1140,10 +1127,9 @@ fn align_recursive(frag: &[(String, usize, usize)], canon: &[(String, usize, usi
     left_end.max(this_end).max(right_end)
 }
 
-/// Reconciles one fragment against its verse's REMAINING canonical text -- the per-verse cursor exists because a verse
-/// split across several fragments must resume where the prior one left off -- and returns the retained lemma and the
-/// recovered prose, the latter empty in the common fully-matched case. A canonical entry missing for that verse is a
-/// graceful no-op: the whole fragment stays lemma, so the guard never requires canonical data to keep working.
+/// Reconciles one fragment against its verse's REMAINING canonical text -- the per-verse cursor exists because a
+/// verse split across fragments must resume where the prior one left off -- returning the retained lemma and the
+/// recovered prose. A missing canonical entry is a no-op: the whole fragment stays lemma rather than failing.
 fn apply_over_excision_guard(book_code: &str, chapter: u16, v: u16, raw_text: &str, kjv_verses: &HashMap<String, String>, verse_cursor: &mut BTreeMap<u16, usize>) -> (String, String) {
     let Some(canonical) = kjv_verses.get(&format!("{book_code}.{chapter}.{v}")) else {
         return (raw_text.to_string(), String::new());
@@ -1253,8 +1239,7 @@ pub enum ReadingViewSegment {
 
 /// For every verse in canonical spine order, that verse's own text followed by the stored prose of every unit whose
 /// range covers it, in document order -- the same range-covers-verse question each commentary row encodes. A verse
-/// with no covering unit contributes only its own segment, which is lawful. Deliberately the shape a real reading
-/// view would use, so the law it serves proves real logic rather than a stand-in.
+/// with no covering unit contributes only its own segment, which is lawful.
 pub fn compose_reading_view(canonical: &BTreeMap<(u8, u16, u16), String>, corpus: &KretzmannCorpus) -> Vec<ReadingViewSegment> {
     let mut by_chapter: HashMap<(u8, u16), &ParsedChapter> = HashMap::new();
     for chapter in &corpus.chapters {
@@ -1303,9 +1288,8 @@ pub struct DateClause {
 }
 
 /// Scans stored prose for verbatim dating clauses: PARSING ONLY, never interpretation. Both real orderings of a
-/// B.C./A.D. year marker are matched, an adjacent "about" sets the approximate flag, and Anno Mundi markers are
-/// matched defensively though the real corpus has none. Reign-year formulas are deliberately NOT extracted: the row
-/// has no field for them, so forcing one would fabricate, and the caller counts that class instead.
+/// B.C./A.D. marker are matched, an adjacent "about" sets the approximate flag, and Anno Mundi is matched
+/// defensively. A reign-year formula is deliberately not extracted -- the row has no field for it -- and is counted.
 pub fn extract_date_clauses(text: &str) -> Vec<DateClause> {
     const MARKERS: &[(&str, Calendar)] = &[("B. C.", Calendar::Bc), ("A. D.", Calendar::Ad), ("B.C.", Calendar::Bc), ("A.D.", Calendar::Ad), ("Anno Mundi", Calendar::Am), ("A. M.", Calendar::Am)];
 

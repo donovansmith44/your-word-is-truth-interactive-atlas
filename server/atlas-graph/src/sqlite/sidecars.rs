@@ -1,6 +1,5 @@
-//! The nine former compiled JSON sidecars, folded into core's tables losslessly: every field of
-//! every loaded struct lands in a column, because no JSON sidecar is read any more. `unfold` is the
-//! inverse the served path uses.
+//! The nine former compiled JSON sidecars, folded into core's tables losslessly: every field of every loaded
+//! struct lands in a column, because nothing reads a JSON sidecar. `unfold` is the inverse the served path uses.
 
 use std::collections::HashMap;
 

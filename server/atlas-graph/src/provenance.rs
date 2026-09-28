@@ -75,8 +75,6 @@ impl ProvenanceIndex {
         self.by_family.get(name).map(|s| s.iter().cloned().collect()).unwrap_or_default()
     }
 
-    /// Every family name this index actually swept, sorted. Introspection for the one law that
-    /// asserts this sweep and the test's own family list name the same families.
     pub fn families(&self) -> Vec<&'static str> {
         self.by_family.keys().copied().collect()
     }

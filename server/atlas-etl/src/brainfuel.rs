@@ -255,10 +255,9 @@ pub struct KjvCrossCheckReport {
     pub examples: Vec<KjvMismatch>,
 }
 
-/// Compares the vendored KJV column against our own canonical text at every aligned position, by RAW byte
-/// equality with no normalization: this reports the honest literal number and a caller may categorize further.
-/// Mismatches are DISCLOSED, never imported -- our base is authoritative -- and `example_cap` bounds only the
-/// examples, never the count.
+/// Compares the vendored KJV column against our own canonical text at every aligned position, by RAW byte equality
+/// with no normalization: this reports the honest literal number and a caller may categorize further. Mismatches
+/// are DISCLOSED, never imported, and `example_cap` bounds only the examples, never the count.
 pub fn kjv_cross_check(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String, String>, example_cap: usize) -> KjvCrossCheckReport {
     let mut compared = 0;
     let mut raw_mismatches = 0;
@@ -283,8 +282,7 @@ pub fn kjv_cross_check(corpus: &BrainFuelCorpus, our_kjv_verses: &HashMap<String
 
 /// Transfers the vendored CASE onto `ours` wherever the two are equal under ASCII case-folding, and `None` where
 /// they are not -- a caller MUST treat `None` as "touch nothing here". It walks `ours`'s own bytes and flips only
-/// the ones the other side disagrees on, so "characters unchanged, case only" is provable byte by byte. Every
-/// byte it changes is single-byte ASCII on both sides, so the result is always valid UTF-8.
+/// what the other side disagrees on, and every byte it changes is single-byte ASCII, so the result stays UTF-8.
 pub fn restore_verse_case(ours: &str, theirs: &str) -> Option<String> {
     if !ours.eq_ignore_ascii_case(theirs) {
         return None;
@@ -357,9 +355,8 @@ pub enum RestorationOutcome {
     /// Pass-1 class: whole verse case-fold-equal. Carries the fully
     /// restored text (byte-identical to `ours` when already agreeing).
     WholeVerse(String),
-    /// Pass-2 class (batch KJV-CASE-2): a folded-in superscription
-    /// prefix, kept byte-identical, ahead of a case-restored tail.
-    /// Carries the fully restored text (untouched prefix + restored tail).
+    /// The superscription class: a folded-in prefix kept byte-identical ahead of a case-restored tail. Carries the
+    /// fully restored text.
     Superscription(String),
     /// Named in `SUPERSCRIPTION_EXCLUSIONS` -- restore nothing.
     Excluded,
@@ -390,10 +387,9 @@ pub fn classify_and_restore(dot_ref: &str, ours: &str, theirs: &str) -> Restorat
     }
 }
 
-/// Per-class tallies. The two whole-verse buckets are the positions where the case genuinely differed and where
-/// the bytes already agreed; the other four subdivide the rest by the tail-alignment rule -- a restored
-/// superscription tail, an excluded position, the unexpected mirror case, and true residue. Every compared
-/// position falls into exactly one bucket, so `compared` is always their sum.
+/// Per-class tallies. The two whole-verse buckets are the positions where the case differed and where the bytes
+/// already agreed; the other four subdivide the rest -- a restored superscription tail, an excluded position, the
+/// unexpected mirror case, true residue. Every compared position falls into exactly one, so `compared` is the sum.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct CaseRestorationReport {
     pub compared: usize,

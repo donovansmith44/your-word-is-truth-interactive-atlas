@@ -58,7 +58,6 @@ pub fn concord_locus_values(l: &Locus<ConcordTag>) -> [Value; 7] {
     )
 }
 
-/// Corpus from the `TextRef` arm.
 pub fn text_locus_values(l: &TextLocus) -> [Value; 7] {
     match &l.at {
         TextRef::Bible(v) => {
@@ -143,13 +142,11 @@ fn read_concord_ref(row: &Row, i: usize) -> Result<ConcordRef, SqliteError> {
     })
 }
 
-/// Seven columns from `i`.
 pub fn read_bible_locus(row: &Row, i: usize) -> Result<Locus<BibleTag>, SqliteError> {
     expect_corpus(row, i, BibleTag::ID)?;
     Ok(Locus { unit: read_verse_ref(row, i + 1)?, span: read_span(row, i + 4)? })
 }
 
-/// Seven columns from `i`.
 pub fn read_concord_locus(row: &Row, i: usize) -> Result<Locus<ConcordTag>, SqliteError> {
     expect_corpus(row, i, ConcordTag::ID)?;
     Ok(Locus { unit: read_concord_ref(row, i + 1)?, span: read_span(row, i + 4)? })

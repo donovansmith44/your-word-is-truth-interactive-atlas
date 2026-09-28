@@ -1,7 +1,6 @@
-//! Parsing OSIS-style `Book.Chapter.Verse` references, as the raw geocoding, Theographic and
-//! cross-reference sources all spell them. Their book abbreviations do not match atlas-core's codes
-//! even case-insensitively, so the book is resolved through `canon::resolve_alias`, which matches code,
-//! osis or name, and the `VerseId` is built by hand.
+//! Parsing OSIS-style `Book.Chapter.Verse` references, whose book abbreviations do not match atlas-core's codes even
+//! case-insensitively, so the book resolves through `canon::resolve_alias` -- which matches code, osis or name --
+//! and the `VerseId` is built by hand.
 
 use atlas_core::canon::resolve_alias;
 use atlas_core::refs::VerseId;

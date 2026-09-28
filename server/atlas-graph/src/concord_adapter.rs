@@ -44,8 +44,6 @@ pub fn text_unit_id(part: u8, article: u16, paragraph: u16) -> AnyNodeId {
     AnyNodeId { kind: NodeKind::TextUnit, raw: format!("concord/{part}.{article}.{paragraph}") }
 }
 
-/// The inverse of `text_unit_id`: `None` for anything not shaped like one of this adapter's own ids,
-/// never a panic.
 pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
     if id.kind != NodeKind::TextUnit {
         return None;
@@ -110,10 +108,9 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 provenance: ProvenanceId::from("concord"),
                 justification: Default::default(),
             });
-            // Document contains article as a Container row, the book-contains-chapter shape: one row
-            // per article, in article order, which is load-bearing -- contents trees and `member-of`
-            // pages read it. A paragraph is reachable through its article, as a verse through its
-            // chapter.
+            // Document contains article as a Container row, the book-contains-chapter shape: one row per
+            // article, in article order, which is load-bearing -- contents trees and `member-of` pages read it.
+            // A paragraph is reachable through its article, as a verse through its chapter.
             ctx.graph.contains_concord.push(Contains {
                 container: doc_container.clone(),
                 content: ContainerContent::Container(art_container),

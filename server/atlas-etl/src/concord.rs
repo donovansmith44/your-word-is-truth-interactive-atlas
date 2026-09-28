@@ -36,10 +36,9 @@ fn is_skipped_article(doc_key: &str, slug: &str) -> bool {
     doc_key == "small-catechism" && (slug == "/small-catechism/prefaratory-notes/" || slug == "/small-catechism/small-catechism-pdf/")
 }
 
-/// The Smalcald Articles are the one exception: that document's root page embeds only a one-paragraph editorial
-/// blurb per Part, and the real numbered article text lives on separate per-article pages with a DIFFERENT
-/// template -- an `<h2>` title followed directly by numbered paragraphs, with no anchor-and-section wrapper.
-/// Those pages are vendored separately and spliced in after their own Part's blurb, which is real text and stays.
+/// The Smalcald Articles are the one exception: that document's root page embeds only a one-paragraph editorial blurb
+/// per Part, and the real numbered article text lives on separate per-article pages with a DIFFERENT template -- an
+/// `<h2>` title followed directly by numbered paragraphs. Those pages are vendored and spliced in after the blurb.
 struct SmalcaldExtra {
     after_slug: &'static str,
     file_stem: &'static str,
@@ -308,10 +307,9 @@ struct Marker {
     end: usize,
 }
 
-/// Finds every paragraph-marker span. Its class-name prefix renders empty on a few documents, a template quirk,
-/// so matching keys on the constant substrings either way. A marker's `start` is its own opening `<span`, walked
-/// back from the attribute match, so a gap between markers always ends at a clean tag boundary: a mid-attribute
-/// cut would leave a dangling fragment that the tag stripper would stop on, swallowing the rest of the gap.
+/// Finds every paragraph-marker span. Its class-name prefix renders empty on a few documents, a template quirk, so
+/// matching keys on the constant substrings either way. A marker's `start` is its own opening `<span`, so a gap
+/// between markers ends at a clean tag boundary: a mid-attribute cut leaves a fragment the stripper stops on.
 fn find_markers(body: &str) -> Vec<Marker> {
     let mut out = Vec::new();
     let mut search_from = 0usize;
@@ -469,10 +467,9 @@ fn clean_paragraph_text(raw: &str) -> String {
     collapse_ws(&decoded)
 }
 
-/// Excises a paragraph whose entire content is one bold span: the source is inconsistent, rendering a
-/// sub-section label as a heading on some documents and as a bare bold paragraph on others. The adjacency test
-/// is narrow on purpose -- bold text midway through real confessional prose has other text in the same
-/// paragraph and never matches, so it is left untouched.
+/// Excises a paragraph whose entire content is one bold span: the source renders a sub-section label as a heading on
+/// some documents and as a bare bold paragraph on others. The adjacency test is narrow on purpose -- bold text midway
+/// through real prose has other text in the same paragraph and never matches.
 fn strip_standalone_strong_paragraphs(s: &str) -> String {
     const OPEN: &str = "<p><strong>";
     const CLOSE: &str = "</strong></p>";
@@ -598,7 +595,6 @@ fn decode_one_entity(name: &str) -> Option<char> {
     })
 }
 
-/// Collapses every run of whitespace, meaningless once the tags are stripped, to a single space, trimmed.
 fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }

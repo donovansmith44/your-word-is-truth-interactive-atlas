@@ -76,10 +76,9 @@ fn heading_anchors_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> 
     seen_books.into_iter().filter_map(|b| best.remove(&b).map(|(_, _, v)| v)).collect()
 }
 
-/// A chapter strictly after a group's own anchor chapter that the group covers AT its opening verse
-/// continues this container's heading there. Verse 1 is always the chapter boundary in KJV
-/// versification, so no canon lookup is needed, and a chapter covered only mid-way is not a
-/// continuation point -- whichever container truly opens it answers for itself.
+/// A chapter strictly after a group's own anchor chapter that the group covers AT its opening verse continues
+/// this container's heading there. Verse 1 is always the chapter boundary in KJV versification, so no canon
+/// lookup is needed, and a chapter covered only mid-way belongs to whichever container truly opens it.
 fn continuation_candidates_for(verses: &[String], witnesses: &[EventWitnessPayload]) -> Vec<String> {
     let groups: Vec<Vec<atlas_core::refs::VerseId>> = if !witnesses.is_empty() {
         witnesses

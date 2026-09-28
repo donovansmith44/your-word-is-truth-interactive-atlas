@@ -1,6 +1,6 @@
-//! The sections read back into the `Graph` that wrote them, for the tests and benches that used to
-//! load one whole artifact. Nothing on the served path calls this: `GraphService::from_sections`
-//! reads companions, not whole tables.
+//! The sections read back into the `Graph` that wrote them, for the tests and benches that want one whole
+//! graph. Nothing on the served path calls this: `GraphService::from_sections` reads companions, not whole
+//! tables.
 
 use std::path::Path;
 

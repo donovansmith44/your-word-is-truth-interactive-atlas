@@ -576,7 +576,6 @@ pub fn extra_index_ddl(section: Section) -> &'static [&'static str] {
     }
 }
 
-/// A family's `CREATE TABLE` text, including its `_locus` / `_step` sub-tables.
 pub fn family_ddl(f: RowFamily) -> &'static str {
     match f {
         RowFamily::ContainsBible => DDL_CONTAINS_BIBLE,
@@ -607,7 +606,6 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
     }
 }
 
-/// The family's `CREATE UNIQUE INDEX <family>_ord` plus every secondary index it declares.
 pub fn family_index_ddl(f: RowFamily) -> &'static str {
     match f {
         RowFamily::ContainsBible => IDX_CONTAINS_BIBLE,

@@ -72,10 +72,10 @@ struct PersonFields {
 #[derive(Debug, Clone, Default)]
 pub struct PeopleStats {
     pub total: usize,
-    /// D5: kinship record links seen / dropped (no person behind the record, or a self-link).
+    /// Kinship record links seen and dropped: no person behind the record, or a self-link.
     pub kin_refs_total: usize,
     pub kin_refs_unresolved: usize,
-    /// D5: `timeline` record links seen / dropped (no event behind the record).
+    /// `timeline` record links seen and dropped: no event behind the record.
     pub timeline_refs_total: usize,
     pub timeline_refs_unresolved: usize,
     pub with_verses: usize,

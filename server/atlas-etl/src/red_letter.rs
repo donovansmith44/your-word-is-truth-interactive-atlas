@@ -25,7 +25,7 @@ pub struct AlignmentStats {
     pub verses_with_source_markup: usize,
     /// Every source span found, across every verse: the exact, case-insensitive and not-found counts summed.
     pub source_spans_total: usize,
-    /// Case-sensitive verbatim substring match (the GAZ-1 law, unmodified).
+    /// A case-sensitive verbatim substring match.
     pub exact: usize,
     /// The disclosed case class: found only case-insensitively.
     pub case_insensitive: usize,
@@ -40,10 +40,9 @@ pub struct RedLetterCorpus {
     pub stats: AlignmentStats,
 }
 
-/// Extracts `name="value"` from a raw tag, returning `None` for an absent attribute rather than panicking on an
-/// unexpected shape. It searches for a LEADING SPACE before the name: `sID=` is a trailing substring of `osisID=`,
-/// so a bare search matches inside that attribute's own value and returns silently wrong data, which then makes
-/// the verse quietly never close. Every real attribute here is preceded by whitespace.
+/// Extracts `name="value"` from a raw tag, returning `None` for an absent attribute rather than panicking. It
+/// searches for a LEADING SPACE before the name: `sID=` is a trailing substring of `osisID=`, so a bare search
+/// matches inside that attribute's value and returns wrong data, which makes the verse quietly never close.
 fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let pat = format!(" {name}=\"");
     let start = tag.find(&pat)? + pat.len();
@@ -92,17 +91,15 @@ fn ascii_ci_find(haystack: &str, needle: &str) -> Option<usize> {
 }
 
 /// Collapses whitespace runs to one space and trims: the source's XML is PRETTY-PRINTED, so a raw span text can
-/// carry a newline where our prose has an ordinary space, and an unnormalized search silently missed real spans.
-/// Only the NEEDLE ever needs this -- our own text is already ordinary single-spaced prose, so the haystack is
-/// never touched.
+/// carry a newline where our prose has an ordinary space, and an unnormalized search misses real spans. Only the
+/// NEEDLE needs this -- our own text is already ordinary single-spaced prose, so the haystack is never touched.
 fn normalize_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// Aligns one verse's raw spans against OUR text, left to right with an advancing cursor; every input span counts,
-/// found or not. The residual not-found class is real and disclosed: a small share of source spans genuinely fail
-/// both tiers, every one a spelling or punctuation difference from our canon, and none is bridged by a wider fuzzy
-/// match -- only case-insensitivity is an authorized second tier.
+/// found or not. The residual not-found class is real and disclosed -- each one a spelling or punctuation
+/// difference from our canon -- and none is bridged: only case-insensitivity is an authorized second tier.
 fn align_verse(spans_raw: &[String], canon_text: &str, stats: &mut AlignmentStats) -> Vec<(usize, usize)> {
     let mut cursor = 0usize;
     let mut aligned = Vec::new();

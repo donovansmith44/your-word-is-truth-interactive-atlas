@@ -1,7 +1,6 @@
-//! Joins Theographic's event, place and verse records into compiled events; their cross-references are
-//! 14-char Airtable record ids. A `startDate` is an ASTRONOMICAL year, so `-4003` is 4004 BC: it is
-//! converted to the no-year-zero convention, and an unparseable or year-zero date drops the event rather
-//! than failing.
+//! Joins Theographic's event, place and verse records into compiled events; their cross-references are 14-char
+//! Airtable record ids. A `startDate` is an ASTRONOMICAL year, so `-4003` is 4004 BC: it converts to the
+//! no-year-zero convention, and an unparseable or year-zero date drops the event rather than failing.
 
 use std::collections::HashMap;
 
@@ -119,10 +118,9 @@ pub fn event_ids_by_record(events_json: &str) -> Result<HashMap<String, String>>
         .collect())
 }
 
-/// Joins events to places by case-insensitive name match against `place_slug_by_name`, whose keys must
-/// already be lowercased. A place name with no geo match gets a `Place` synthesized from Theographic's own
-/// latitude/longitude -- in that order, unlike the geocoding bundle's -- and those places are returned
-/// alongside the events so the caller can merge them.
+/// Joins events to places by case-insensitive name match against `place_slug_by_name`, whose keys must already be
+/// lowercased. A place name with no geo match gets a `Place` synthesized from Theographic's own latitude/longitude --
+/// in that order, unlike the geocoding bundle's -- and those places are returned alongside the events to be merged.
 pub fn parse_events(
     places_json: &str,
     verses_json: &str,

@@ -18,8 +18,8 @@ fn main() -> Result<()> {
     let out = compile(&raw_dir, &curated_dir)?;
     let rpt = out.report;
 
-    // Nothing is written under the compiled directory any more -- the graph compile folds this same
-    // in-memory `AtlasData` into the SQLite sections; this binary validates and reports.
+    // Nothing is written under the compiled directory: the graph compile folds this same in-memory `AtlasData` into
+    // the SQLite sections, and this binary validates and reports.
     let text = report::write(&rpt);
     print!("{text}");
 

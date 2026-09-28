@@ -22,7 +22,6 @@ use rusqlite::{Connection, Row, Transaction};
 use super::columns::JustificationWriter;
 use super::SqliteError;
 
-/// One row of one family, borrowed from the Graph (the writer's input).
 #[derive(Clone, Copy, Debug)]
 pub enum RowRef<'a> {
     ContainsBible(&'a Contains<BibleTag>),

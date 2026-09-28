@@ -42,8 +42,6 @@ fn canonical_book_index(code: &str) -> Option<u8> {
     atlas_core::canon::BOOKS.iter().position(|b| b.code == code).map(|i| i as u8)
 }
 
-/// The inverse of `book_container_id`: `None` for anything not shaped like one of this adapter's own
-/// book ids, a non-canonical alias spelling included, never a panic.
 pub fn decode_book_container(id: &AnyNodeId) -> Option<u8> {
     if id.kind != NodeKind::Container {
         return None;
@@ -52,7 +50,6 @@ pub fn decode_book_container(id: &AnyNodeId) -> Option<u8> {
     canonical_book_index(code)
 }
 
-/// The inverse of `chapter_container_id`, with the same strictness as `decode_book_container`.
 pub fn decode_chapter_container(id: &AnyNodeId) -> Option<(u8, u16)> {
     if id.kind != NodeKind::Container {
         return None;

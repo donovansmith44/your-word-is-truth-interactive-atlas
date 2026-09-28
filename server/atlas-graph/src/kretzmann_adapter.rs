@@ -43,8 +43,7 @@ fn scripture_ground(range: &BibleLocusRange) -> BTreeSet<Ground> {
     grounds
 }
 
-/// The `Source` node, one `CommentaryItem` per unit and one `CommentsOn` row per unit, in document
-/// order. Absent `ctx.kretzmann` is a true no-op.
+/// The `Source` node, one `CommentaryItem` per unit and one `CommentsOn` row per unit, in document order.
 pub fn normalize(ctx: &mut BuildCtx) -> KretzmannAdapterStats {
     let mut stats = KretzmannAdapterStats::default();
     let Some(corpus): Option<&KretzmannCorpus> = ctx.kretzmann else {

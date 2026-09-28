@@ -188,7 +188,6 @@ pub fn derive_chronology(atlas: &AtlasData) -> ChronologyDerivation {
     ChronologyDerivation { order, placements, resolved, source_meta }
 }
 
-/// The chronology derivation the `dated_by` and `temporal_adjacency` rows are built from.
 pub struct Chronology {
     pub chrono: ChronologyDerivation,
 }
@@ -198,9 +197,9 @@ impl Chronology {
         Self::from_derivation(derive_chronology(atlas))
     }
 
-/// Wraps an ALREADY-COMPUTED derivation, so the artifact path -- which has no `AtlasData` to re-derive
-/// from -- reconstructs the same value, and the compile step reuses the derivation the RESOLVE stage
-/// already computed instead of running it twice.
+    /// Wraps an ALREADY-COMPUTED derivation, so the artifact path -- which has no `AtlasData` to re-derive from
+    /// -- reconstructs the same value, and the compile step reuses the derivation the RESOLVE stage already
+    /// computed instead of running it twice.
     pub fn from_derivation(chrono: ChronologyDerivation) -> Chronology {
         Chronology { chrono }
     }

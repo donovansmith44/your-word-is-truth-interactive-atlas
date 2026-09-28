@@ -1,7 +1,5 @@
-//! Storage, adapters and the in-memory graph build over `atlas-graph-types`.
-//!
-//! The storage/query port lives entirely in `atlas_graph_types::store`; this crate defines no
-//! competing trait, only implementations of it.
+//! Storage, adapters and the in-memory graph build over `atlas-graph-types`, whose `store` module owns the one
+//! storage/query port: this crate defines no competing trait, only implementations of it.
 
 pub mod attestation_pending;
 pub mod bible_container_adapter;

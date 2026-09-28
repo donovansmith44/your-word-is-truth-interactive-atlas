@@ -188,10 +188,9 @@ pub fn container_containment_is_a_forest(graph: &Graph) -> Result<(), String> {
     Ok(())
 }
 
-/// An `Analogue` row asserts its two ends are DISTINCT events, so a self-loop asserts the opposite of
-/// what the relation means, and a duplicate row for one unordered pair would double the symmetric edge.
-/// Kinship is likewise acyclic -- nobody is their own ancestor -- and no `parent-of` pair is stated
-/// twice: the source states each link from both ends and the adapter merges them.
+/// An `Analogue` row asserts its two ends are DISTINCT events, so a self-loop asserts the opposite of what the
+/// relation means, and a duplicate row for one unordered pair would double the symmetric edge. Kinship is
+/// likewise acyclic, and no `parent-of` pair is stated twice: the source states each link from both ends.
 pub fn kinship_is_acyclic(graph: &Graph) -> Result<(), String> {
     use std::collections::{BTreeMap, BTreeSet};
     let mut children: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
@@ -256,10 +255,9 @@ pub fn analogue_rows_join_two_distinct_events(graph: &Graph) -> Result<(), Strin
     Ok(())
 }
 
-/// No verse belongs to the `Attests` set of two distinct events: a shared verse fabricates a parallel,
-/// since `Attests` is what the parallels capability walks. The law is stated against the declared
-/// inventory -- an undeclared collision or a drifted count fails the build -- and a declared row pins
-/// the shared-verse COUNT, not the shared-verse SET.
+/// No verse belongs to the `Attests` set of two distinct events: a shared verse fabricates a parallel, since
+/// `Attests` is what the parallels capability walks. Stated against the declared inventory -- an undeclared
+/// collision or a drifted count fails the build -- and a declared row pins the COUNT, not the verse SET.
 pub fn attestation_is_exclusive(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
 
@@ -344,10 +342,9 @@ pub fn attestation_inventory_has_no_stale_rows(graph: &Graph) -> Result<(), Stri
     Ok(())
 }
 
-/// Rebuilding the indexes from this graph's row tables alone must reproduce the indexes it serves,
-/// entry for entry and in order, which catches any step writing into them outside `build_indexes` and
-/// its one row-derived post-step. Not a per-build pass: it would double every build's index cost for a
-/// property only a code change can break.
+/// Rebuilding the indexes from this graph's row tables alone must reproduce the indexes it serves, entry for
+/// entry and in order, catching any step that writes into them outside `build_indexes` and its one row-derived
+/// post-step. Not a per-build pass: that would double every build's index cost for a code-change-only risk.
 pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     use std::collections::BTreeMap;
     // The indexes are a pure function of exactly the rows and nodes cloned here.

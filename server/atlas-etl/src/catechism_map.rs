@@ -185,10 +185,9 @@ fn expand_whole_chapter(book: BookId, chapter: u32, verses: &HashMap<String, Str
     Ok(())
 }
 
-/// Walks forward one verse at a time through the compiled text: if the next verse number in the chapter exists
-/// it is next, otherwise the chapter has ended and the next chapter's verse 1 is. Fails loudly if the endpoint
-/// is never reached within a generous bound, since a malformed or inverted range is a citation-integrity error
-/// rather than something to truncate silently.
+/// Walks forward one verse at a time through the compiled text: if the next verse number in the chapter exists it is
+/// next, otherwise the chapter has ended and the next chapter's verse 1 is. Fails loudly if the endpoint is never
+/// reached within a generous bound: a malformed or inverted range is a citation-integrity error, not a truncation.
 #[allow(clippy::too_many_arguments)]
 fn expand_cross_chapter(
     book: BookId,

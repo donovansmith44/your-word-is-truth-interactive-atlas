@@ -108,8 +108,7 @@ pub struct GraphService {
     /// takes. The port cannot serve this: an edge entry carries the target's first verse and its votes,
     /// never the row's own `target_display`. Private now, so the from-sources paths answer as sections do.
     mem_cross_refs: Option<HashMap<String, Vec<CrossRef>>>,
-    /// DB-4c: optional sections the manifest lists but the deployment
-    /// lacks (spec §11: their kinds are uninhabited); empty on the Mem arm.
+    /// Optional sections the manifest lists but this deployment lacks; empty on the in-memory arm.
     absent_sections: Vec<Section>,
     /// dot-ref -> the KJV sub-verse char-offset spans. Not derivable from the graph at all -- it needs
     /// the original OSIS alignment -- so `assemble` takes it as an already-resolved parameter.
@@ -122,8 +121,7 @@ pub struct GraphService {
     scene_source: std::sync::OnceLock<crate::scene_source::GraphSceneSource>,
 }
 
-/// The longest KJV chapter (Psalm 119) has 176 verses; this probe width is
-/// a comfortable, documented margin -- see `chapter_span` below.
+/// The longest KJV chapter has 176 verses, so this probe width is a comfortable margin.
 const MAX_CHAPTER_SPAN_PROBE: usize = 200;
 
 impl GraphService {
@@ -203,8 +201,6 @@ impl GraphService {
         Ok(Self::assemble(graph, stats, event_world_stats, Chronology::from_derivation(chrono), red_letter_spans, None))
     }
 
-    /// The test-fixture path: no raw source BYTES exist to re-derive "expected" from, so the fidelity
-    /// law does not apply here -- there is nothing independent to check the already-typed input against.
     pub fn from_canon_and_verses(canon: &Canon, verses: &HashMap<String, String>, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
         Self::from_canon_and_verses_with_eras(canon, verses, xrefs_tsv, atlas, &[])
     }
@@ -229,10 +225,9 @@ impl GraphService {
         Self::from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter(&kjv_json, &xrefs_tsv, atlas, &eras, brainfuel.as_ref(), concord.as_ref(), kretzmann.as_ref(), red_letter.as_ref())
     }
 
-    /// Takes an ALREADY-BUILT `Chronology`, because the artifact path has no `AtlasData` at all and
-    /// every caller builds one however it can. `sidecars`, when present, fold into the graph's extra
-    /// tables before `publish`, so this service's version IS the manifest root; `None` publishes a root
-    /// that is disclosed as not the manifest's.
+    /// Takes an ALREADY-BUILT `Chronology`, because the artifact path has no `AtlasData` to re-derive from.
+    /// `sidecars`, when present, fold into the graph's extra tables before `publish`, so this service's version
+    /// IS the manifest root; `None` publishes a root that is disclosed as not the manifest's.
     fn assemble(
         mut graph: Graph,
         stats: BuildStats,
@@ -280,10 +275,9 @@ impl GraphService {
         }
     }
 
-    /// Opens the committed sections: one connection per worker, every companion the handlers read loaded
-    /// from the section tables. A manifest whose root does not recompute, a required section missing or
-    /// failing its transport hash, an unknown `user_version` or an unwritable cache all refuse before
-    /// anything is served; an absent OPTIONAL section is one stderr line. The `AtlasData` is not finished.
+    /// Opens the committed sections, one connection per worker, loading every companion the handlers read. A
+    /// manifest whose root does not recompute, a required section missing or failing its transport hash, an unknown
+    /// `user_version` or an unwritable cache all refuse before anything is served. The `AtlasData` is un-finished.
     pub fn from_sections(data_dir: &Path) -> anyhow::Result<(GraphService, AtlasData, SourcesDocument)> {
         use crate::sqlite::source::{CommittedZstdSource, SectionLayout};
         let layout = SectionLayout::under(data_dir);
@@ -533,7 +527,7 @@ impl GraphService {
     }
 }
 
-    /// The curated eras beside `raw_dir`: the one other filesystem read this crate performs.
+/// The curated eras beside `raw_dir`: the one other filesystem read this crate performs.
 fn load_eras(raw_dir: &Path) -> anyhow::Result<Vec<atlas_core::data::Era>> {
     let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
     let path = curated_dir.join("eras.toml");

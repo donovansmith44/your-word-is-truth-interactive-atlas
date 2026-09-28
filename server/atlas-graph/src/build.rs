@@ -15,7 +15,7 @@ pub struct BuildStats {
     pub kjv_verses: usize,
     pub cites_rows: usize,
     pub cites_dropped_negative_votes: usize,
-    /// LEX-1: the lexicon adapter's own counts (all zero without the corpus).
+    /// The lexicon adapter's own counts, all zero without the corpus.
     pub lexicon: crate::lexicon_adapter::LexiconAdapterStats,
 }
 

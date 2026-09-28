@@ -45,7 +45,6 @@ impl SectionLayout {
         self.sections_dir().join(format!("{name}.{logical}.sqlite.zst"))
     }
 
-    /// `<cache>/<logical>.sqlite`.
     pub fn cache_path(&self, logical: &str) -> PathBuf {
         self.cache_dir.join(format!("{logical}.sqlite"))
     }

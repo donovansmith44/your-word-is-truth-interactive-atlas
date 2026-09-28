@@ -97,10 +97,9 @@ fn best_lonlat(raw: &RawAncient) -> Option<(f64, f64)> {
     Some((lon, lat))
 }
 
-/// A record with no resolvable coordinate is skipped rather than failing: geocoding coverage is
-/// inherently partial, and the report surfaces the gap as a percentage. Slugs are our own kebab-case of
-/// `friendly_id`, not the upstream slug, so same-named places collide and take `-2`, `-3` suffixes in
-/// encounter order.
+/// A record with no resolvable coordinate is skipped rather than failing: geocoding coverage is inherently partial,
+/// and the report surfaces the gap as a percentage. Slugs are our own kebab-case of `friendly_id`, not the upstream
+/// slug, so same-named places collide and take `-2`, `-3` suffixes in encounter order.
 pub fn parse(input: &str) -> Result<Vec<Place>> {
     let mut places = Vec::new();
     let mut slug_counts: HashMap<String, u32> = HashMap::new();

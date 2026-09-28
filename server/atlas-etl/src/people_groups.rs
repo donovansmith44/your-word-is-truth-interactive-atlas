@@ -38,8 +38,7 @@ pub struct PeopleGroupStats {
     pub total: usize,
     /// Records with no usable, non-empty name: dropped rather than fatal, and counted.
     pub no_name: usize,
-    /// PG-1B rider: groups carrying >=1 resolved verse link (2 of 23 in
-    /// the real committed data: Tribe of Judah, Nation of Israel).
+    /// Groups carrying at least one resolved verse link: two of the twenty-three in the real data.
     pub with_verses: usize,
     /// Total raw `verses` foreign-key entries seen across all records, before resolution.
     pub verse_refs_total: usize,

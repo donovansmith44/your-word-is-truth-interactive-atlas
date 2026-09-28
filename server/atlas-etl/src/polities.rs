@@ -40,10 +40,9 @@ fn color_seed(id: &str) -> u8 {
     (sum % POLITY_TINT_COUNT) as u8
 }
 
-/// Assigns one distinct tint per id by starting at each id's seed and linear-probing forward for a bucket no
-/// EARLIER id in this call claimed. `sorted_ids` MUST already be sorted by the caller; that fixed order plus a
-/// deterministic probe is what makes the assignment reproducible. Past palette size a probe that finds nothing
-/// free falls back to its own seed, accepting a collision rather than spinning.
+/// Assigns one distinct tint per id by starting at each id's seed and linear-probing forward for a bucket no EARLIER
+/// id in this call claimed. `sorted_ids` MUST already be sorted by the caller; that fixed order plus a deterministic
+/// probe is what makes the result reproducible. Past palette size a probe falls back to its seed, accepting a collision.
 pub fn assign_color_keys(sorted_ids: &[&str]) -> Vec<u8> {
     let mut used = vec![false; POLITY_TINT_COUNT as usize];
     let mut out = Vec::with_capacity(sorted_ids.len());
@@ -109,10 +108,9 @@ fn segments_intersect(p1: (f64, f64), p2: (f64, f64), p3: (f64, f64), p4: (f64, 
     false
 }
 
-/// Is `ring` a simple polygon -- no two non-adjacent edges crossing? The ring may arrive closed, with its
-/// first point repeated last as the curated convention has it, or open; a repeated closing point is stripped
-/// so it is never mistaken for a separate vertex. Fewer than three distinct points is vacuously simple, and
-/// the validator hard-fails such a ring for other reasons anyway.
+/// Is `ring` a simple polygon -- no two non-adjacent edges crossing? It may arrive closed, with its first point
+/// repeated last as the curated convention has it, or open; a repeated closing point is stripped so it is never
+/// mistaken for a separate vertex. Fewer than three distinct points is vacuously simple.
 pub fn ring_is_simple(ring: &[(f64, f64)]) -> bool {
     let open: &[(f64, f64)] = if ring.len() >= 2 && ring[0] == ring[ring.len() - 1] { &ring[..ring.len() - 1] } else { ring };
     let n = open.len();

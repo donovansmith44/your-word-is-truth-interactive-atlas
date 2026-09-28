@@ -2,7 +2,6 @@
 //! against. The law fails both ways: an undeclared collision fails the build, and so does a stale
 //! declaration, so the queue can only ever shrink deliberately.
 
-/// One declared, still-unresolved attestation collision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pending {
     /// The lexicographically FIRST of the two event ids (the pair is

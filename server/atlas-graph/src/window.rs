@@ -1,7 +1,6 @@
-//! Reading-order queries built entirely on `atlas_graph_types::store::GraphQuery`: every function
-//! here takes `&dyn GraphQuery` and touches nothing else, so it works against any implementor. Ref
-//! resolution, which needs the reading-spine reverse index the port does not model, lives on
-//! `GraphService` instead.
+//! Reading-order queries built entirely on `atlas_graph_types::store::GraphQuery`: every function here takes
+//! `&dyn GraphQuery` and touches nothing else, so ref resolution -- which needs the reading-spine reverse index
+//! the port does not model -- lives on `GraphService` instead.
 
 use atlas_graph_types::id::AnyNodeId;
 use atlas_graph_types::node::NodePayload;

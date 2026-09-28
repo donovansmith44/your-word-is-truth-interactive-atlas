@@ -31,14 +31,12 @@ use crate::sections::Section;
 #[derive(Debug, Clone)]
 pub struct WrittenSection {
     pub section: Section,
-    /// The uncompressed file: `<cache>/<logical>.sqlite`.
     pub path: PathBuf,
     /// The committed blob: `<compiled>/sections/<name>.<logical>.sqlite.zst`.
     pub blob_path: PathBuf,
     pub logical: String,
     /// SHA-256 of the blob, 64 hex: the manifest's transport hash.
     pub blob: String,
-    /// Compressed size (the manifest's `bytes`).
     pub bytes: u64,
     pub uncompressed_bytes: u64,
     /// The blob already existed with the recorded hash: not recompressed.

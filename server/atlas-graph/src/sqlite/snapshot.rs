@@ -29,7 +29,7 @@ pub struct SqliteSnapshot {
     version: GraphVersion,
     /// Manifest order, attached sections only.
     present: Vec<Section>,
-    /// Optional sections the manifest lists whose blob is absent (spec §11).
+    /// Optional sections the manifest lists whose blob is absent.
     absent: Vec<Section>,
     manifest: Manifest,
     /// `PRAGMA mmap_size` on every connection: the attached files' sum, capped.

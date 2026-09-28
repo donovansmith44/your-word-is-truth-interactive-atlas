@@ -124,10 +124,9 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         }
     }
 
-    // The account-to-mention retype is applied here, after witnesses are attached and before anything reads
-    // the event set, so exactly one place settles an event's attested verse list. A named verse is stripped
-    // from the event's `verses` AND from every witness row, since stripping one alone would silently leave
-    // the attestation alive. A row that retypes nothing fails loud: it is a stale correction.
+    // The account-to-mention retype happens here, after witnesses are attached and before anything reads the event
+    // set, so exactly one place settles an event's attested verse list. A named verse is stripped from the event's
+    // `verses` AND every witness row -- one alone would leave the attestation alive -- and a no-op row fails loud.
     let (event_mentions, event_analogues) =
         curated::parse_attestation_corrections(&read(&curated_dir.join("attestation-corrections.toml"))?)?;
     // The witness loop only assigned into the events vector, never reordered it, so the index map built above
@@ -151,9 +150,8 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
         let after: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
         // KNOWN LIMIT: the match is exact string equality against stored entries that may themselves be RANGE
-        // strings, so a verse living INSIDE a range is not stripped. The bail below catches that for a
-        // single-verse row, but a multi-verse row with one exact match and one inside a range would apply
-        // partially and pass. A new row targeting a verse inside a range must split the range first.
+        // strings, so a verse INSIDE a range is not stripped. The bail below catches that for a single-verse row,
+        // but a multi-verse row with one exact match and one inside a range applies partially and passes.
         if after == before {
             bail!(
                 "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids.",

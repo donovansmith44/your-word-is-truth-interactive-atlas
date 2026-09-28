@@ -138,10 +138,9 @@ pub fn expand_verse_ref(raw: &str, context: &str, out: &mut Vec<String>) -> Resu
     Ok(())
 }
 
-/// Hard-errors rather than soft-dropping: this is our own authored data, held to a higher bar than third-party
-/// raw rows. `kind` gates which fields are required in BOTH directions -- an `event` row must carry places and
-/// both years, a `general` row must carry none of them, and a row carrying both a `general` kind and a date is
-/// a hard error, since one of the two is a mistake.
+/// Hard-errors rather than soft-dropping: this is our own authored data, held to a higher bar than third-party rows.
+/// `kind` gates which fields are required in BOTH directions -- an `event` row carries places and both years, a
+/// `general` row none of them -- and a row carrying both a `general` kind and a date is a hard error.
 pub fn parse_events_extra(input: &str) -> Result<Vec<Event>> {
     let f: EventsFile =
         toml::from_str(input).context("events-extra.toml: invalid TOML or does not match the [[event]] schema")?;

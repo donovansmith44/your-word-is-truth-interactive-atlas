@@ -179,8 +179,7 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
     Ok((stats, ews))
 }
 
-/// The cross-refs authored by the span's member verses, keyed by dot-ref, each list in `ord` order
-/// carrying the row's own `target_display`. A seek on `xref_by_from`, not a scan.
+/// A seek on `xref_by_from`, never a scan.
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {
     let base = "SELECT from_a, from_b, from_c, target_display, votes FROM kjv.cross_refs";
     let (sql, params): (String, Vec<i64>) = match span {

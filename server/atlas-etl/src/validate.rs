@@ -75,10 +75,9 @@ pub fn run(data: &AtlasData) -> Result<()> {
             errors.push(format!("event '{}' has invalid kind '{}' (expected one of {:?})", e.id, e.kind, ALLOWED_EVENT_KINDS));
         }
 
-        // Every witness must name a real canon book and cite at least one verse: an authored-but-empty witness
-        // is a curator mistake, not a valid "no evidence" state -- an event with no parallel account simply
-        // carries no witness row. Two witnesses of the SAME book whose verse sets intersect are likewise a
-        // mistake, an account split in two or a copy-paste, so they are checked pairwise per book.
+        // Every witness must name a real canon book and cite at least one verse: an authored-but-empty witness is a
+        // curator mistake, not a valid "no evidence" state -- an event with no parallel account carries no witness
+        // row at all. Two witnesses of the SAME book whose verse sets intersect are likewise a mistake.
         let mut by_book: HashMap<&str, Vec<&atlas_core::data::EventWitness>> = HashMap::new();
         for w in &e.witnesses {
             let ctx = format!("event '{}' witness ({})", e.id, w.book);
@@ -124,10 +123,9 @@ pub fn run(data: &AtlasData) -> Result<()> {
             }
         }
 
-        // The heading anchors use ONLY the witness rows once any exist, never falling back to the top-level
-        // verses, so a top-level book with no matching witness row silently loses its reader heading -- the real
-        // bug that once dropped 72 events' headings. A fallback there would mask the curation gap, so this guard
-        // is the fix: it applies only once witnesses exist, and resolves both sides through the same aliasing.
+        // The heading anchors use ONLY the witness rows once any exist, never falling back to the top-level verses,
+        // so a top-level book with no matching witness row silently loses its reader heading -- the real bug that
+        // once dropped 72 events' headings. A fallback there would mask the curation gap, so this guard is the fix.
         if !e.witnesses.is_empty() {
             let witness_books: HashSet<&str> =
                 e.witnesses.iter().filter_map(|w| atlas_core::canon::resolve_alias(&w.book)).map(|b| b.code()).collect();
@@ -531,10 +529,9 @@ pub fn run_place_names_kjv(aliases: &[PlaceNameAlias], places: &[Place], verses:
                     errors.push(format!("{ctx}: kjv name '{kjv_name}' is equal to '{}' own canonical name -- noise, not a genuine mismatch", a.id));
                 }
 
-                // Every curated alias must be a case-sensitive verbatim substring of the text of EVERY verse
-                // listed for it: a wording appearing in no listed verse is an authoring mistake. Dashes are
-                // normalized first, because this text typesets compound names with a real en dash while curated
-                // aliases are authored with a plain hyphen.
+                // Every curated alias must be a case-sensitive verbatim substring of the text of EVERY verse listed
+                // for it: a wording appearing in no listed verse is an authoring mistake. Dashes are normalized
+                // first, because this text typesets compound names with an en dash while aliases use a hyphen.
                 let normalized_name = normalize_dashes(kjv_name);
                 for v in &a.verses {
                     // An unresolvable verse is already reported by the parse loop below, not duplicated here.
@@ -618,10 +615,9 @@ pub fn run_catechism(parts: &[CatechismPart], verses: &HashMap<String, String>) 
     bail!("catechism validation failed with {} error(s):\n{}", errors.len(), joined);
 }
 
-/// Validates the curated same-place merge table against the REAL pre-merge place set, before any merge has
-/// applied: the merge itself must treat a missing id as a no-op to stay idempotent, but at this point a missing
-/// id is unambiguously a curation mistake. Every pair's REAL distance is also checked against the threshold, in
-/// every build profile and against live coordinates, unlike the debug assertion inside the merge.
+/// Validates the curated same-place merge table against the REAL pre-merge place set, before any merge has applied:
+/// the merge itself must treat a missing id as a no-op to stay idempotent, but here a missing id is unambiguously a
+/// curation mistake. Every pair's REAL distance is checked too, in every build profile and against live coordinates.
 pub fn run_place_merges(pairs: &[PlaceMerge], places: &[Place]) -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
     let by_id: HashMap<&str, &Place> = places.iter().map(|p| (p.id.as_str(), p)).collect();
@@ -719,9 +715,9 @@ pub fn run_event_merges(merge_pairs: &[EventMerge], distinct_pairs: &[EventDisti
             ));
         }
     }
-    // The sweep also compares layer-0 against layer-0, the shape neither this loop nor the title-based sweep
-    // used to catch, since with neither side carrying the richer provenance there is no obvious survivor to
-    // pick. Same threshold, same exemptions, same unordered keying.
+    // The sweep also compares layer-0 against layer-0, the shape a verse-overlap or title-similarity pass alone
+    // misses: with neither side carrying the richer provenance, there is no obvious survivor to pick. Same
+    // threshold, same exemptions, same unordered keying.
     for i in 0..layer0.len() {
         for j_idx in (i + 1)..layer0.len() {
             let (a, b) = (layer0[i], layer0[j_idx]);

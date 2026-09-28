@@ -49,7 +49,6 @@ fn locus_range(from: (u8, u16, u16), to: (u8, u16, u16)) -> Option<BibleLocusRan
     BibleLocusRange::new(f, t).ok()
 }
 
-/// Absent `ctx.red_letter` is a true no-op.
 pub fn normalize(ctx: &mut BuildCtx) -> RedLetterAdapterStats {
     let mut stats = RedLetterAdapterStats::default();
     let Some(corpus) = ctx.red_letter else {

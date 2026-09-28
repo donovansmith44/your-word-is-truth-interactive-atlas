@@ -28,7 +28,6 @@ fn verse_locus(vref: &str) -> Option<TextLocus> {
     Some(TextLocus::from(atlas_graph_types::text::BibleLocus::whole(vr)))
 }
 
-/// One node per catechism item, across every part.
 pub fn normalize(ctx: &mut BuildCtx) -> CatechismAdapterStats {
     let mut stats = CatechismAdapterStats::default();
     for part in &ctx.atlas.catechism {
