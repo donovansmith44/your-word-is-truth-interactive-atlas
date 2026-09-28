@@ -24,31 +24,18 @@ public sealed class PascalCasePropertyNamesTests
         Assert.Equal(["Name", "EdgeSummary", "BirthYear", "AlsoCalled", "MemberOf"], generated);
     }
 
-    [Fact]
-    public void An_integer_property_named_like_its_record_is_named_Number()
+    [Theory]
+    [InlineData("Verse", "verse")]
+    [InlineData("Chapter", "chapter")]
+    public void An_integer_property_named_like_its_record_is_named_Number(string recordName, string propertyName)
     {
         // Arrange
-        var verse = new JsonSchema { Type = JsonObjectType.Object };
-        verse.Properties["verse"] = new JsonSchemaProperty { Type = JsonObjectType.Integer };
-        var names = new PascalCasePropertyNames(new Dictionary<string, JsonSchema> { ["Verse"] = verse });
+        var record = new JsonSchema { Type = JsonObjectType.Object };
+        record.Properties[propertyName] = new JsonSchemaProperty { Type = JsonObjectType.Integer };
+        var names = new PascalCasePropertyNames(new Dictionary<string, JsonSchema> { [recordName] = record });
 
         // Act
-        var generated = names.Generate(verse.Properties["verse"]);
-
-        // Assert
-        Assert.Equal("Number", generated);
-    }
-
-    [Fact]
-    public void An_integer_property_named_like_its_record_stays_Number_for_a_differently_named_record()
-    {
-        // Arrange
-        var chapter = new JsonSchema { Type = JsonObjectType.Object };
-        chapter.Properties["chapter"] = new JsonSchemaProperty { Type = JsonObjectType.Integer };
-        var names = new PascalCasePropertyNames(new Dictionary<string, JsonSchema> { ["Chapter"] = chapter });
-
-        // Act
-        var generated = names.Generate(chapter.Properties["chapter"]);
+        var generated = names.Generate(record.Properties[propertyName]);
 
         // Assert
         Assert.Equal("Number", generated);
@@ -82,7 +69,9 @@ public sealed class PascalCasePropertyNamesTests
 
         // Assert
         var exception = Assert.Throws<InvalidOperationException>(generate);
-        Assert.Contains("Quote", exception.Message);
-        Assert.Contains("quote", exception.Message);
+        Assert.Equal(
+            "Record 'Quote' has a property 'quote' whose generated name 'Quote' collides with the record's own name (schema type String); " +
+            "C# forbids a member named like its type, and no naming rule covers this schema shape. Decide a name for it in PascalCasePropertyNames.",
+            exception.Message);
     }
 }

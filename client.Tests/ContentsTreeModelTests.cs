@@ -11,6 +11,8 @@ public class ContentsTreeModelTests
     private const string GenesisOne = "Container:bible-chapter-GEN-1";
     private const string GenesisTwo = "Container:bible-chapter-GEN-2";
     private const string ExodusOne = "Container:bible-chapter-EXO-1";
+    private const int RootDepth = 0;
+    private const int ChildDepth = 1;
 
     private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
     [
@@ -50,10 +52,16 @@ public class ContentsTreeModelTests
     {
         // Arrange
         var model = Sample();
+        var (genesis, exodus) = (model.Roots[0], model.Roots[1]);
         // Act
-        var rows = Rows(model);
+        var rows = model.Flatten();
         // Assert
-        Assert.Equal([(Genesis, 0, true, false, false), (Exodus, 0, true, false, false)], rows);
+        Assert.Equal(
+            [
+                new Row(genesis, RootDepth, Expandable: true, Expanded: false, Current: false),
+                new Row(exodus, RootDepth, Expandable: true, Expanded: false, Current: false),
+            ],
+            rows);
     }
 
     [Fact]
@@ -61,12 +69,18 @@ public class ContentsTreeModelTests
     {
         // Arrange
         var model = Sample();
+        var (genesis, exodus) = (model.Roots[0], model.Roots[1]);
         // Act
         model.Toggle(Genesis);
         // Assert
         Assert.Equal(
-            [(Genesis, 0, true, true, false), (GenesisOne, 1, false, false, false), (GenesisTwo, 1, false, false, false), (Exodus, 0, true, false, false)],
-            Rows(model));
+            [
+                new Row(genesis, RootDepth, Expandable: true, Expanded: true, Current: false),
+                new Row(genesis.Children[0], ChildDepth, Expandable: false, Expanded: false, Current: false),
+                new Row(genesis.Children[1], ChildDepth, Expandable: false, Expanded: false, Current: false),
+                new Row(exodus, RootDepth, Expandable: true, Expanded: false, Current: false),
+            ],
+            model.Flatten());
     }
 
     [Fact]
@@ -74,7 +88,7 @@ public class ContentsTreeModelTests
     {
         // Arrange
         var model = Sample();
-        var before = Rows(model);
+        var before = model.Flatten();
         // Act
         foreach (var id in new[] { Exodus, Genesis, Exodus })
         {
@@ -82,7 +96,7 @@ public class ContentsTreeModelTests
             model.Toggle(id);
         }
         // Assert
-        Assert.Equal(before, Rows(model));
+        Assert.Equal(before, model.Flatten());
     }
 
     [Fact]
@@ -90,10 +104,17 @@ public class ContentsTreeModelTests
     {
         // Arrange
         var model = Sample();
+        var (genesis, exodus) = (model.Roots[0], model.Roots[1]);
         // Act
         model.ExpandPathTo("EXO.1");
         // Assert
-        Assert.Equal([(Genesis, 0, true, false, false), (Exodus, 0, true, true, false), (ExodusOne, 1, false, false, true)], Rows(model));
+        Assert.Equal(
+            [
+                new Row(genesis, RootDepth, Expandable: true, Expanded: false, Current: false),
+                new Row(exodus, RootDepth, Expandable: true, Expanded: true, Current: false),
+                new Row(exodus.Children[0], ChildDepth, Expandable: false, Expanded: false, Current: true),
+            ],
+            model.Flatten());
     }
 
     [Fact]
@@ -112,10 +133,16 @@ public class ContentsTreeModelTests
     {
         // Arrange
         var model = Sample();
+        var (genesis, exodus) = (model.Roots[0], model.Roots[1]);
         // Act
         model.Toggle(GenesisOne);
         // Assert
-        Assert.Empty(model.ExpandedIds);
+        Assert.Equal(
+            [
+                new Row(genesis, RootDepth, Expandable: true, Expanded: false, Current: false),
+                new Row(exodus, RootDepth, Expandable: true, Expanded: false, Current: false),
+            ],
+            model.Flatten());
     }
 
     [Fact]
@@ -128,7 +155,4 @@ public class ContentsTreeModelTests
         // Assert
         Assert.Equal([Exodus], model.ExpandedIds);
     }
-
-    private static (string Id, int Depth, bool Expandable, bool Expanded, bool Current)[] Rows(ContentsTreeModel model) =>
-        model.Flatten().Select(r => (r.Node.Id, r.Depth, r.Expandable, r.Expanded, r.Current)).ToArray();
 }

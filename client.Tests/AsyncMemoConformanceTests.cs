@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Tests.State;
 using BibleAtlas.Client.Contract;
 using System.Text.RegularExpressions;
 
@@ -37,27 +38,6 @@ namespace BibleAtlas.Client.Tests;
 /// </summary>
 public class AsyncMemoConformanceTests
 {
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "client")))
-        {
-            dir = dir.Parent;
-        }
-
-        Assert.NotNull(dir);
-        return dir!.FullName;
-    }
-
-    private static IEnumerable<string> ClientSourceFiles()
-    {
-        var clientDir = Path.Combine(RepoRoot(), "client");
-        return Directory.EnumerateFiles(clientDir, "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(clientDir, "*.razor", SearchOption.AllDirectories))
-            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
-    }
-
     private static string Normalize(string path) => path.Replace('\\', '/');
 
     // Same disclosed-limitation stripper as ConformanceTests.cs's own
@@ -137,9 +117,9 @@ public class AsyncMemoConformanceTests
     public void NoRealSiteOutsideAsyncMemoItself()
     {
         var violations = new List<string>();
-        foreach (var file in ClientSourceFiles())
+        foreach (var file in ConformanceTests.ClientSourceFiles())
         {
-            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            var relative = Normalize(Path.GetRelativePath(ConformanceTests.RepoRoot(), file));
             if (relative == "client/Explore/AsyncMemo.cs")
             {
                 continue; // the one sanctioned definition site -- AsyncMemo<T>.Get itself uses no `??=` at all (a plain `if (_task is { } current)` check), but excluded explicitly per the ruling's own wording regardless

@@ -454,26 +454,12 @@ public class EffectRegistryTests
     [Fact]
     public void NoDirectAtomSubscriptionByEffects_MaterializeIsOnlyEverCalledFromEffectRegistry()
     {
-        var repoRoot = FindRepoRoot();
-        var clientDir = Path.Combine(repoRoot, "client");
-        Assert.True(Directory.Exists(clientDir), $"expected a client/ directory under {repoRoot}");
-
+        var clientDir = ConformanceTests.ClientRoot;
         var materializeCallers = new List<string>();
         var pattern = new Regex(@"\.Materialize\(", RegexOptions.Compiled);
 
-        foreach (var file in Directory.EnumerateFiles(clientDir, "*.cs", SearchOption.AllDirectories)
-                     .Concat(Directory.EnumerateFiles(clientDir, "*.razor", SearchOption.AllDirectories)))
+        foreach (var file in ConformanceTests.ClientSourceFiles())
         {
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-                file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-            {
-                continue;
-            }
-
-            // Fix round 1 (cheap hardening, review's own caveat on this
-            // test): excludes by RELATIVE PATH now, not bare basename -- a
-            // second file named "EffectRegistry.cs" anywhere else under
-            // client/ would previously have been wrongly exempted too.
             var relative = Path.GetRelativePath(clientDir, file).Replace(Path.DirectorySeparatorChar, '/');
             var text = File.ReadAllText(file);
             if (pattern.IsMatch(text) && relative != "State/EffectRegistry.cs")
@@ -485,17 +471,5 @@ public class EffectRegistryTests
         Assert.True(materializeCallers.Count == 0,
             "IStateEffect<T>.Materialize must only ever be invoked from client/State/EffectRegistry.cs (the registry's own Changed subscription/reconcile-on-claim call) -- " +
             "found direct call(s) in: " + string.Join(", ", materializeCallers));
-    }
-
-    private static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "client")))
-        {
-            dir = dir.Parent;
-        }
-
-        Assert.NotNull(dir);
-        return dir!.FullName;
     }
 }

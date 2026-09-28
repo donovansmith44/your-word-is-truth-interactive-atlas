@@ -57,18 +57,6 @@ public class ViewRegistryConformanceTests
             .Select(f => (string)f.GetValue(null)!)
             .ToList();
 
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "client")))
-        {
-            dir = dir.Parent;
-        }
-
-        Assert.NotNull(dir);
-        return dir!.FullName;
-    }
-
     private static string Capitalize(string name) => char.ToUpperInvariant(name[0]) + name[1..];
 
     // ------------------------------------------------------------------
@@ -286,7 +274,7 @@ public class ViewRegistryConformanceTests
     public void HatchConformance_EveryHatchsHostView_RendersThroughCompositionSplit()
     {
         var registry = BuildRegistry();
-        var repoRoot = RepoRoot();
+        var repoRoot = ConformanceTests.RepoRoot();
         var checkedHostViews = new HashSet<string>();
 
         foreach (var view in registry.All)

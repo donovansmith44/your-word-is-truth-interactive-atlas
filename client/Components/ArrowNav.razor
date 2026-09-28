@@ -184,9 +184,10 @@ else
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        // Adjacent is always a narrative/timeline event by construction here (NarrativeAdjacentEvent carries no Kind field) -- not a guessed literal
-        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, EventKind.Event));
+        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, AnAdjacentIsAlwaysAnEvent));
     }
+
+    private const EventKind AnAdjacentIsAlwaysAnEvent = EventKind.Event;
 
     private const int LongLabelThreshold = 24;
     private bool LabelIsLong => Adjacent is not null && Adjacent.Label.Length > LongLabelThreshold;

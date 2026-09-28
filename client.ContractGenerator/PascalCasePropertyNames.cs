@@ -11,7 +11,7 @@ public sealed class PascalCasePropertyNames : IPropertyNameGenerator
 
     public PascalCasePropertyNames(IDictionary<string, JsonSchema> definitions) =>
         declaringRecordNames = definitions.ToDictionary(
-            entry => (JsonSchema)entry.Value,
+            entry => entry.Value,
             entry => entry.Key,
             (IEqualityComparer<JsonSchema>)ReferenceEqualityComparer.Instance);
 

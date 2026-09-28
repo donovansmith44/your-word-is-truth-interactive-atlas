@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Tests.State;
 using System.Text.RegularExpressions;
 using BibleAtlas.Client.Explore;
 
@@ -23,18 +24,6 @@ namespace BibleAtlas.Client.Tests;
 /// </summary>
 public class PopoverChromeConformanceTests
 {
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "client")))
-        {
-            dir = dir.Parent;
-        }
-
-        Assert.NotNull(dir);
-        return dir!.FullName;
-    }
-
     // Same disclosed-limitation stripper AsyncMemoConformanceTests.cs/
     // ConformanceTests.cs already establish -- applied so this file's own
     // doc comments (which name real testids like "popover-chip-map" in
@@ -43,7 +32,7 @@ public class PopoverChromeConformanceTests
 
     private static IEnumerable<string> ExploreNodeFiles()
     {
-        var exploreDir = Path.Combine(RepoRoot(), "client", "Explore");
+        var exploreDir = Path.Combine(ConformanceTests.RepoRoot(), "client", "Explore");
         return Directory.EnumerateFiles(exploreDir, "*Node.cs", SearchOption.TopDirectoryOnly);
     }
 
@@ -102,7 +91,7 @@ public class PopoverChromeConformanceTests
 
         foreach (var file in ExploreNodeFiles())
         {
-            var relative = Normalize(Path.GetRelativePath(RepoRoot(), file));
+            var relative = Normalize(Path.GetRelativePath(ConformanceTests.RepoRoot(), file));
             var text = StripLineComments(File.ReadAllText(file));
 
             var kindMatch = KindPattern.Match(text);

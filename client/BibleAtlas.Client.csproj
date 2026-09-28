@@ -16,16 +16,24 @@
     <ContractDocument>$(MSBuildProjectDirectory)/../contracts/openapi.yaml</ContractDocument>
     <ContractVocabulary>$(MSBuildProjectDirectory)/../contracts/atlas-graph-contract/fixtures/graph-vocabulary.json</ContractVocabulary>
     <GeneratedWire>$(MSBuildProjectDirectory)/$(BaseIntermediateOutputPath)Contract/Wire.g.cs</GeneratedWire>
+    <ContractGeneratorProject>$(MSBuildProjectDirectory)/../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj</ContractGeneratorProject>
+    <ContractGeneratorAssets>$(MSBuildProjectDirectory)/../client.ContractGenerator/obj/project.assets.json</ContractGeneratorAssets>
+    <ContractGeneratorHost>$(DOTNET_HOST_PATH)</ContractGeneratorHost>
+    <ContractGeneratorHost Condition="'$(ContractGeneratorHost)' == ''">dotnet</ContractGeneratorHost>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="$(ContractVocabulary)" LogicalName="graph-vocabulary.json" />
   </ItemGroup>
 
-  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract">
-    <MSBuild Projects="../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj" Targets="Restore"
+  <Target Name="RestoreContractGenerator" BeforeTargets="BuildContractGenerator"
+          Inputs="$(ContractGeneratorProject)" Outputs="$(ContractGeneratorAssets)">
+    <MSBuild Projects="$(ContractGeneratorProject)" Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
-    <MSBuild Projects="../client.ContractGenerator/BibleAtlas.Client.ContractGenerator.csproj" Targets="Build">
+  </Target>
+
+  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract">
+    <MSBuild Projects="$(ContractGeneratorProject)" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="ContractGenerator" />
     </MSBuild>
   </Target>
@@ -33,7 +41,7 @@
   <Target Name="GenerateContract" BeforeTargets="CoreCompile"
           Inputs="$(ContractDocument);@(ContractGenerator)"
           Outputs="$(GeneratedWire)">
-    <Exec Command="&quot;$(DOTNET_HOST_PATH)&quot; &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
+    <Exec Command="&quot;$(ContractGeneratorHost)&quot; &quot;@(ContractGenerator)&quot; &quot;$(ContractDocument)&quot; &quot;$(GeneratedWire)&quot;" />
   </Target>
 
   <Target Name="IncludeGeneratedContract" AfterTargets="GenerateContract" BeforeTargets="CoreCompile">

@@ -73,6 +73,7 @@ public class AqcSteps
         ["not-even-a-colon-pair"] = "focus-bad-ref",
     };
 
+    private Query? _query;
     private int _status;
     private JsonElement _body;
     private string? _capturedRef;
@@ -173,7 +174,7 @@ public class AqcSteps
     [When("I run FocusQuery for \"([^\"]+)\"")]
     public void WhenFocusQuery(string id)
     {
-        (_status, _body) = LoadFixture(FocusFixtureNameForRequest(id));
+        Answer(Query.Focus, FocusFixtureNameForRequest(id));
         _focusRequestedId = id;
     }
 
@@ -181,7 +182,7 @@ public class AqcSteps
     public void WhenFocusQueryCaptured()
     {
         if (_capturedRef is null) throw new InvalidOperationException("no focus reference was captured yet");
-        (_status, _body) = LoadFixture(FocusFixtureNameForCapturedIdentity(_capturedRef));
+        Answer(Query.Focus, FocusFixtureNameForCapturedIdentity(_capturedRef));
     }
 
     [When("I run TraversalQuery for \"([^\"]+)\" frontier \"([^\"]+)\"")]
@@ -198,7 +199,7 @@ public class AqcSteps
             ("text-unit:JHN.3.16", "not-a-real-kind") => "traversal-bad-kind",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TraversalQuery '{id}'/'{kind}'."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.Traversal, name);
     }
 
     [When("I run TraversalQuery for \"([^\"]+)\" frontier \"([^\"]+)\" with limit (\\d+)")]
@@ -209,11 +210,11 @@ public class AqcSteps
             ("text-unit:JHN.3.16", "cites", 1) => "traversal-cites-limit1",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TraversalQuery '{id}'/'{kind}' limit {limit}."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.Traversal, name);
     }
 
     [When("I run TextWindowQuery for \"([^\"]+)\" radius (\\d+)")]
-    public void WhenTextWindow(string sref, int n) => (_status, _body) = LoadFixture(TextWindowFixture(sref, n));
+    public void WhenTextWindow(string sref, int n) => Answer(Query.TextWindow, TextWindowFixture(sref, n));
 
     // A query and the URL it is served at must resolve to the SAME fixture,
     // so the name is decided once here and the URL-form step below calls this
@@ -235,7 +236,7 @@ public class AqcSteps
             ("JHN.3.16", 1, "not-a-real-corpus") => "text-window-bad-corpus",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TextWindowQuery '{sref}' radius {n} corpus '{corpus}'."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.TextWindow, name);
     }
 
     [When("I run TextWindowQuery for \"([^\"]+)\" radius (\\d+) with scope \"([^\"]+)\"")]
@@ -246,7 +247,7 @@ public class AqcSteps
             ("JHN.3.16", 1, "not-a-real-scope") => "text-window-bad-scope",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for TextWindowQuery '{sref}' radius {n} scope '{scope}'."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.TextWindow, name);
     }
 
     [When("I run a chapter-scoped TextWindowQuery for \"([^\"]+)\" with dir \"([^\"]+)\"")]
@@ -257,11 +258,11 @@ public class AqcSteps
             ("JHN.3", "backward") => "text-window-chapter-backward-bad-dir",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for chapter-scoped TextWindowQuery '{cref}' dir '{dir}'."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.TextWindow, name);
     }
 
     [When("I run SceneQuery for the time window \"([^\"]+)\"-\"([^\"]+)\"")]
-    public void WhenSceneTime(string from, string to) => (_status, _body) = LoadFixture(SceneTimeFixture(from, to));
+    public void WhenSceneTime(string from, string to) => Answer(Query.Scene, SceneTimeFixture(from, to));
 
     private static string SceneTimeFixture(string from, string to) => (from, to) switch
     {
@@ -271,7 +272,7 @@ public class AqcSteps
     };
 
     [When("I run SceneQuery for scripture ref \"([^\"]+)\"")]
-    public void WhenSceneScripture(string sref) => (_status, _body) = LoadFixture(SceneScriptureFixture(sref));
+    public void WhenSceneScripture(string sref) => Answer(Query.Scene, SceneScriptureFixture(sref));
 
     private static string SceneScriptureFixture(string sref) => sref switch
     {
@@ -304,16 +305,34 @@ public class AqcSteps
             "/api/place/hazor-1?from=notayear" => "place-period-bad-window",
             _ => throw new NotSupportedException($"AqcSteps: no fixture mapped for path '{path}'."),
         };
-        (_status, _body) = LoadFixture(name);
+        Answer(Query.ByPath, name);
     }
 
     [When("I capture the returned focus reference")]
     public void WhenCaptureFocusRef()
     {
         // A FocusQuery answers with a NodeCard, a TraversalQuery with an EdgePage.
-        _capturedRef = _body.TryGetProperty("id", out _)
-            ? Body<NodeCard>().Id
-            : Body<EdgePage>().Entries.First().Node.Id;
+        _capturedRef = _query switch
+        {
+            Query.Focus => Body<NodeCard>().Id,
+            Query.Traversal => Body<EdgePage>().Entries.First().Node.Id,
+            _ => throw new InvalidOperationException($"a {_query} answer carries no focus reference"),
+        };
+    }
+
+    private void Answer(Query query, string fixture)
+    {
+        (_status, _body) = LoadFixture(fixture);
+        _query = query;
+    }
+
+    private enum Query
+    {
+        Focus,
+        Traversal,
+        TextWindow,
+        Scene,
+        ByPath,
     }
 
     private T Body<T>() => _body.Deserialize<T>() ?? throw new InvalidOperationException($"the last response is not a {typeof(T).Name}");
@@ -364,9 +383,12 @@ public class AqcSteps
     [Then("every frontier group is a relations! family")]
     public void ThenEveryFrontierIsARelationsFamily()
     {
-        IReadOnlyList<EdgeKind> kinds = _body.TryGetProperty("edge_summary", out _)
-            ? Body<NodeCard>().EdgeSummary.Select(e => e.Kind).ToList()
-            : [Body<EdgePage>().Kind];
+        IReadOnlyList<EdgeKind> kinds = _query switch
+        {
+            Query.Focus => Body<NodeCard>().EdgeSummary.Select(e => e.Kind).ToList(),
+            Query.Traversal => [Body<EdgePage>().Kind],
+            _ => throw new InvalidOperationException($"a {_query} answer carries no frontier groups"),
+        };
         Assert.All(kinds, kind => Assert.True(Enum.IsDefined(kind)));
     }
 
