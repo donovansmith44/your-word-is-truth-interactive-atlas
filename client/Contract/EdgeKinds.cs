@@ -17,10 +17,7 @@ public static class EdgeKinds
 
     private const string VocabularyResource = "graph-vocabulary.json";
 
-    // JsonStringEnumConverter<EdgeKind> (on every EdgeKind property in Wire.g.cs) reads
-    // JsonStringEnumMemberName, not EnumMember -- that is the attribute System.Text.Json
-    // actually consults when it serializes an EdgeKind, so it is the one source of truth
-    // for the wire label, even though NSwag also emits the DataContract EnumMember pair.
+    // The attribute JsonStringEnumConverter<T> reads, so the label is the one the wire carries.
     private static readonly IReadOnlyDictionary<EdgeKind, string> Labels =
         Enum.GetValues<EdgeKind>().ToDictionary(k => k, k =>
             typeof(EdgeKind).GetField(k.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name);
