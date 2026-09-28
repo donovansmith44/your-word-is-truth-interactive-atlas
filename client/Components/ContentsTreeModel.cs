@@ -1,3 +1,5 @@
+using BibleAtlas.Client.Contract;
+
 namespace BibleAtlas.Client.Components;
 
 public sealed class ContentsTreeModel
@@ -28,17 +30,17 @@ public sealed class ContentsTreeModel
     public IReadOnlyList<Node> Roots { get; }
     public string? CurrentId { get; private set; }
 
-    public static ContentsTreeModel From(ContentsOut contents) =>
+    public static ContentsTreeModel From(Contract.Contents contents) =>
         new(
-            contents.Corpus,
+            contents.Corpus.WireName(),
             contents.Roots.Select(r => new Node
             {
                 Id = r.Id,
                 Title = r.Title,
-                Kind = r.Kind,
-                Group = r.Group,
+                Kind = r.Kind.WireName(),
+                Group = r.Group?.WireName(),
                 Ref = r.Ref,
-                Children = r.Children.Select(c => new Node { Id = c.Id, Title = c.Title, Kind = c.Kind, Ref = c.Ref, Count = c.Count }).ToList(),
+                Children = r.Children.Select(c => new Node { Id = c.Id, Title = c.Title, Kind = c.Kind.WireName(), Ref = c.Ref, Count = c.Count }).ToList(),
             }).ToList());
 
     public bool IsExpanded(string id) => _expanded.Contains(id);

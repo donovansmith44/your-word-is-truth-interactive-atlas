@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -1655,7 +1656,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
                 return null;
         }
 
-        EdgePageDto page;
+        EdgePage page;
         try
         {
             page = await ctx.Graph.Edges(wireId, EdgeSectionRegistry.Mentions.EdgeKind, cursor: null, limit: EdgeSectionRegistry.Mentions.InitialClamp);
@@ -1665,7 +1666,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
             return null;
         }
 
-        var persons = page.Entries.Where(e => e.Node.Kind == "Person").ToList();
+        var persons = page.Entries.Where(e => e.Node.Kind == PositionKind.Person).ToList();
         if (persons.Count == 0)
         {
             return null;
@@ -1730,8 +1731,8 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
         }
 
         var spec = EdgeSectionRegistry.MentionedIn;
-        NodeCardDto card;
-        EdgePageDto page;
+        NodeCard card;
+        EdgePage page;
         try
         {
             var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
@@ -1745,7 +1746,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind.Value)?.Count ?? page.Entries.Count;
+        var total = card.Edge_summary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
 
         RenderFragment body = builder =>
         {
@@ -1784,7 +1785,7 @@ public sealed class CommentaryItemProseSection : IPopoverSectionProvider
             return null;
         }
 
-        NodeCardDto card;
+        NodeCard card;
         try
         {
             card = await ctx.Graph.Card(item.Id);
@@ -1821,7 +1822,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRefDto> units;
+        List<NodeRef> units;
         try
         {
             // The whole frontier, not the first page: an item's catechism-link edges are
@@ -1851,7 +1852,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
             builder.CloseElement();
 
             builder.OpenComponent<Components.ConcordUnitList>(seq++);
-            builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRefDto>)units);
+            builder.AddAttribute(seq++, "Items", (IReadOnlyList<NodeRef>)units);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
         };
@@ -1874,7 +1875,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
         try
         {
             items = (await CatechismLinks.AllTargetsAsync(api, unit.NodeId))
-                .Where(n => n.Kind == "CatechismItem")
+                .Where(n => n.Kind == PositionKind.CatechismItem)
                 .Select(n => new CatechismRefDto(n.Id.StartsWith("CatechismItem:", StringComparison.Ordinal) ? n.Id["CatechismItem:".Length..] : n.Id, n.Label))
                 .ToList();
         }
@@ -1949,13 +1950,13 @@ public sealed class ConcordUnitTextSection : IPopoverSectionProvider
 
 internal static class CatechismLinks
 {
-    public static async Task<List<NodeRefDto>> AllTargetsAsync(AtlasClient api, string nodeId)
+    public static async Task<List<NodeRef>> AllTargetsAsync(AtlasClient api, string nodeId)
     {
-        var targets = new List<NodeRefDto>();
+        var targets = new List<NodeRef>();
         int? cursor = null;
         do
         {
-            var page = await api.NodeEdges(nodeId, "catechism-link", cursor: cursor, limit: 200);
+            var page = await api.NodeEdges(nodeId, EdgeKind.CatechismLink, cursor: cursor, limit: 200);
             targets.AddRange(page.Entries.Select(e => e.Node));
             cursor = page.Next;
         }
@@ -2009,7 +2010,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             return null;
         }
 
-        PersonLifeDto? life;
+        PersonLife? life;
         try
         {
             life = (await person.CardAsync(() => ctx.Graph.Card(person.PersonId))).Person;
@@ -2029,14 +2030,14 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
         {
             line = "Eternal";
         }
-        else if (life.BirthYear is int b || life.DeathYear is int d0)
+        else if (life.Birth_year is int b || life.Death_year is int d0)
         {
             var parts = new List<string>();
-            if (life.BirthYear is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
-            if (life.DeathYear is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
+            if (life.Birth_year is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
+            if (life.Death_year is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
             line = string.Join(" \u00b7 ", parts);
         }
-        else if (life.FirstYear is int first && life.LastYear is int last)
+        else if (life.First_year is int first && life.Last_year is int last)
         {
             line = $"Mentioned across c. {PersonNode.Year(first)} \u2013 {PersonNode.Year(last)}";
         }
@@ -2054,9 +2055,9 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "data-testid", "person-life");
             builder.AddContent(seq++, line);
             builder.CloseElement();
-            if (life.Eternal && life.EternalGrounds.Count > 0)
+            if (life.Eternal && life.Eternal_grounds.Count > 0)
             {
-                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.EternalGrounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, "person-eternal-ground", life.Eternal_grounds.Select(g => (g, g, (IExplorable)new VerseNode(g))), ctx);
             }
         };
         return new PopoverSection("person-life", body);
@@ -2074,10 +2075,10 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRefDto> events;
+        List<NodeRef> events;
         try
         {
-            events = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("participates-in"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            events = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParticipatesIn, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
         }
         catch (Exception)
         {
@@ -2109,16 +2110,16 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRefDto> parents, partners, children;
-        var siblings = new List<NodeRefDto>();
+        List<NodeRef> parents, partners, children;
+        var siblings = new List<NodeRef>();
         try
         {
-            parents = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("child-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            partners = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("partner-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            children = (await ctx.Graph.Edges(person.PersonId, new EdgeKindId("parent-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            partners = (await ctx.Graph.Edges(person.PersonId, EdgeKind.PartnerOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
             foreach (var parent in parents)
             {
-                var theirs = (await ctx.Graph.Edges(parent.Id, new EdgeKindId("parent-of"), cursor: null, limit: 200)).Entries.Select(e => e.Node);
+                var theirs = (await ctx.Graph.Edges(parent.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node);
                 foreach (var s in theirs)
                 {
                     if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))

@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -6,7 +7,7 @@ public sealed class PersonNode : IExplorable
 {
     private readonly string _personId;
     private readonly string _label;
-    private readonly AsyncMemo<NodeCardDto> _card = new();
+    private readonly AsyncMemo<NodeCard> _card = new();
 
     public PersonNode(string personId, string label)
     {
@@ -18,13 +19,13 @@ public sealed class PersonNode : IExplorable
     public string Title => _label;
     public string Kind => "Person";
 
-    public Task<NodeCardDto> CardAsync(Func<Task<NodeCardDto>> fetch) => _card.Get(fetch);
+    public Task<NodeCard> CardAsync(Func<Task<NodeCard>> fetch) => _card.Get(fetch);
 
     public static string Year(int y) => YearText.Format(y);
 
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
-        PersonLifeDto? life;
+        PersonLife? life;
         try
         {
             life = (await CardAsync(() => api.NodeCard(_personId))).Person;
@@ -40,17 +41,17 @@ public sealed class PersonNode : IExplorable
         }
 
         var chips = new List<Exploration>();
-        if (life.BirthYear is int born)
+        if (life.Birth_year is int born)
         {
             chips.Add(new Exploration($"Born c. {Year(born)}", "popover-chip-year-born", new ExplorationTarget.NavigateWorld($"from={born}&to={born}")));
         }
 
-        if (life.DeathYear is int died)
+        if (life.Death_year is int died)
         {
             chips.Add(new Exploration($"Died c. {Year(died)}", "popover-chip-year-died", new ExplorationTarget.NavigateWorld($"from={died}&to={died}")));
         }
 
-        if (chips.Count == 0 && life.FirstYear is int first && life.LastYear is int last)
+        if (chips.Count == 0 && life.First_year is int first && life.Last_year is int last)
         {
             chips.Add(new Exploration($"Mentioned across c. {Year(first)} - {Year(last)}", "popover-chip-year-span", new ExplorationTarget.NavigateWorld($"from={first}&to={last}")));
         }

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -61,13 +62,13 @@ public class GraphExplorableClientTests
         // rather than asserting one specific percent-encoding of it.
         Assert.Equal("/api/node/text-unit:JHN.3.16", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Equal("text-unit:JHN.3.16", card.Id);
-        Assert.Equal("TextUnit", card.Kind);
+        Assert.Equal(NodeKind.TextUnit, card.Kind);
         Assert.Equal("JHN.3.16", card.Label);
         Assert.Equal("kjv", card.Provenance);
         Assert.Equal("abc123", card.Version);
-        Assert.Single(card.EdgeSummary);
-        Assert.Equal("cites", card.EdgeSummary[0].Kind);
-        Assert.Equal(178, card.EdgeSummary[0].Count);
+        Assert.Single(card.Edge_summary);
+        Assert.Equal(EdgeKind.Cites, card.Edge_summary[0].Kind);
+        Assert.Equal(178, card.Edge_summary[0].Count);
     }
 
     [Fact]
@@ -78,17 +79,17 @@ public class GraphExplorableClientTests
             {"kind":"cites","entries":[{"edge":"e1","node":{"id":"text-unit:ROM.3.23","kind":"TextUnit","label":"ROM.3.23"}}],"next":null,"version":"abc123"}
             """;
 
-        var page = await client.Edges("text-unit:JHN.3.16", new EdgeKindId("cites"), cursor: null, limit: 5);
+        var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
 
         Assert.Equal("/api/node/text-unit:JHN.3.16/edges", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Contains("kind=cites", handler.LastRequestUri.Query);
         Assert.Contains("limit=5", handler.LastRequestUri.Query);
         Assert.DoesNotContain("cursor=", handler.LastRequestUri.Query);
-        Assert.Equal("cites", page.Kind);
+        Assert.Equal(EdgeKind.Cites, page.Kind);
         Assert.Single(page.Entries);
         Assert.Equal("e1", page.Entries[0].Edge);
         Assert.Equal("text-unit:ROM.3.23", page.Entries[0].Node.Id);
-        Assert.Equal("TextUnit", page.Entries[0].Node.Kind);
+        Assert.Equal(PositionKind.TextUnit, page.Entries[0].Node.Kind);
         Assert.Null(page.Next);
     }
 
@@ -98,7 +99,7 @@ public class GraphExplorableClientTests
         var (client, handler) = MakeClient();
         handler.ResponseBody = """{"kind":"cites","entries":[],"next":7,"version":"abc123"}""";
 
-        var page = await client.Edges("text-unit:JHN.3.16", new EdgeKindId("cites"), cursor: 3, limit: 1);
+        var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: 3, limit: 1);
 
         Assert.Contains("cursor=3", handler.LastRequestUri!.Query);
         Assert.Equal(7, page.Next);
@@ -112,7 +113,7 @@ public class GraphExplorableClientTests
             {"units":[{"ref":"JHN.3.16","text":"For God so loved the world..."}],"next":"JHN.3.17","version":"abc123"}
             """;
 
-        var window = await client.Reading("JHN.3.16", 1, "onward");
+        var window = await client.Reading("JHN.3.16", 1, WindowDir.Onward);
 
         Assert.Equal("/api/text", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
         Assert.Contains("ref=JHN.3.16", handler.LastRequestUri.Query);

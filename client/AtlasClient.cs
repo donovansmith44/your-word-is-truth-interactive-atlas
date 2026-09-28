@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Json;
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 
@@ -170,27 +171,27 @@ public sealed class AtlasClient
         return await GetRequired<ContractDto>("api/contract", cancellationToken);
     }
 
-    public Task<EdgePageDto> NodeEdges(string nodeId, string kind, int? cursor = null, int limit = 200) =>
-        GetRequired<EdgePageDto>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind)}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
+    public Task<EdgePage> NodeEdges(string nodeId, EdgeKind kind, int? cursor = null, int limit = 200) =>
+        GetRequired<EdgePage>($"api/node/{Uri.EscapeDataString(nodeId)}/edges?kind={Uri.EscapeDataString(kind.Label())}&limit={limit}" + (cursor is int c ? $"&cursor={c}" : ""));
 
-    public Task<NodeCardDto> NodeCard(string nodeId) =>
-        GetRequired<NodeCardDto>($"api/node/{Uri.EscapeDataString(nodeId)}");
+    public Task<NodeCard> NodeCard(string nodeId) =>
+        GetRequired<NodeCard>($"api/node/{Uri.EscapeDataString(nodeId)}");
 
-    public Task<TextWindowDto> ConcordUnit(string citation) =>
-        GetRequired<TextWindowDto>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
+    public Task<TextWindow> ConcordUnit(string citation) =>
+        GetRequired<TextWindow>($"api/text?ref={Uri.EscapeDataString(citation)}&n=1&corpus=concord");
 
-    public Task<ContentsOut> Contents(string corpus)
+    public Task<Contract.Contents> Contents(string corpus)
     {
         if (!_contentsCache.TryGetValue(corpus, out var memo))
         {
-            memo = new Explore.AsyncMemo<ContentsOut>();
+            memo = new Explore.AsyncMemo<Contract.Contents>();
             _contentsCache[corpus] = memo;
         }
 
-        return memo.Get(() => GetRequired<ContentsOut>($"api/contents/{Uri.EscapeDataString(corpus)}"));
+        return memo.Get(() => GetRequired<Contract.Contents>($"api/contents/{Uri.EscapeDataString(corpus)}"));
     }
 
-    private readonly Dictionary<string, Explore.AsyncMemo<ContentsOut>> _contentsCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Explore.AsyncMemo<Contract.Contents>> _contentsCache = new(StringComparer.Ordinal);
 
     private async Task<T> GetRequired<T>(string relativeUrl, CancellationToken cancellationToken = default)
     {

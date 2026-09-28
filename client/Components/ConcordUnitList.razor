@@ -1,3 +1,4 @@
+@using BibleAtlas.Client.Contract
 @using BibleAtlas.Client.Explore
 
 @if (Items.Count > 0)
@@ -15,10 +16,10 @@
 }
 
 @code {
-    [Parameter, EditorRequired] public IReadOnlyList<NodeRefDto> Items { get; set; } = Array.Empty<NodeRefDto>();
+    [Parameter, EditorRequired] public IReadOnlyList<NodeRef> Items { get; set; } = Array.Empty<NodeRef>();
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private static string CitationOf(NodeRefDto unit) =>
+    private static string CitationOf(NodeRef unit) =>
         unit.Id.StartsWith("text-unit:", StringComparison.Ordinal) ? unit.Id["text-unit:".Length..] : unit.Label;
 
     private static string Slug(string citation) => citation.Replace(' ', '-').Replace('.', '-');

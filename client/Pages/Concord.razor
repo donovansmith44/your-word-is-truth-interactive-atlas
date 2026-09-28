@@ -1,4 +1,5 @@
 @page "/concord"
+@using BibleAtlas.Client.Contract
 @using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
 @using BibleAtlas.Client.Views
@@ -105,7 +106,7 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.EdgeSummary.Count > 0)
+                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.Edge_summary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
                                      tabindex="0" role="button"
@@ -154,14 +155,14 @@
     private abstract record ConcordRenderRow;
     private sealed record PartHeadingRow(int Part, string Title) : ConcordRenderRow;
     private sealed record ArticleHeadingRow(int Part, int Article) : ConcordRenderRow;
-    private sealed record UnitRow(TextUnitDto Unit) : ConcordRenderRow;
+    private sealed record UnitRow(TextUnit Unit) : ConcordRenderRow;
 
     private static readonly List<BookTocEntry> EmptyToc = new();
 
     [Parameter] public bool? SplitMode { get; set; }
 
     private string _currentRef = DefaultRef;
-    private List<TextUnitDto> _units = new();
+    private List<TextUnit> _units = new();
     private string? _nextRef;
     private string? _prevRef;
     private bool _loading = true;
@@ -220,7 +221,7 @@
     private Task JumpToPartAsync(int part)
     {
         _currentRef = ConcordToc.StartRef(part);
-        return LoadWindowAsync(_currentRef, "onward");
+        return LoadWindowAsync(_currentRef, WindowDir.Onward);
     }
 
     private ContentsTreeModel? _contents;
@@ -287,7 +288,7 @@
         {
             _appliedRefQuery = r;
             _currentRef = CitationOfQuery(r);
-            await LoadWindowAsync(_currentRef, "onward");
+            await LoadWindowAsync(_currentRef, WindowDir.Onward);
         }
     }
 
@@ -307,7 +308,7 @@
             _currentRef = CitationOfQuery(r);
         }
 
-        await LoadWindowAsync(_currentRef, "onward");
+        await LoadWindowAsync(_currentRef, WindowDir.Onward);
         await LoadContentsAsync();
     }
 
@@ -317,14 +318,14 @@
         var article = _jumpArticle is > 0 ? _jumpArticle.Value : 1;
         var paragraph = _jumpParagraph is > 0 ? _jumpParagraph.Value : 1;
         _currentRef = $"BoC {part}.{article}.{paragraph}";
-        return LoadWindowAsync(_currentRef, "onward");
+        return LoadWindowAsync(_currentRef, WindowDir.Onward);
     }
 
-    private Task GoForward() => _nextRef is { } next ? LoadWindowAsync(next, "onward") : Task.CompletedTask;
+    private Task GoForward() => _nextRef is { } next ? LoadWindowAsync(next, WindowDir.Onward) : Task.CompletedTask;
 
-    private Task GoBackward() => _prevRef is { } prev ? LoadWindowAsync(prev, "backward") : Task.CompletedTask;
+    private Task GoBackward() => _prevRef is { } prev ? LoadWindowAsync(prev, WindowDir.Backward) : Task.CompletedTask;
 
-    private async Task LoadWindowAsync(string fromRef, string dir)
+    private async Task LoadWindowAsync(string fromRef, WindowDir dir)
     {
         var myRequest = ++_requestId;
         _loading = true;
@@ -335,18 +336,18 @@
 
         try
         {
-            var window = await Graph.Reading(fromRef, PageSize, dir, corpus: "concord");
+            var window = await Graph.Reading(fromRef, PageSize, dir, corpus: Corpus.Concord);
             if (myRequest != _requestId)
             {
                 return;
             }
 
-            _units = window.Units;
+            _units = window.Units.ToList();
 
             // dir=backward's window ends at fromRef inclusive, so fromRef
             // reappears as the last row here; trim the duplicate and point
             // Next back at fromRef so paging forward doesn't skip it.
-            if (dir == "backward" && _units.Count > 0 && _units[^1].Ref == fromRef)
+            if (dir == WindowDir.Backward && _units.Count > 0 && _units[^1].Ref == fromRef)
             {
                 _units.RemoveAt(_units.Count - 1);
                 _nextRef = fromRef;
@@ -399,9 +400,9 @@
         }
     }
 
-    private void OnExplore(TextUnitDto unit) => _activeNode = new ConcordUnitNode(unit.Ref, unit.Text);
+    private void OnExplore(TextUnit unit) => _activeNode = new ConcordUnitNode(unit.Ref, unit.Text);
 
-    private void OnUnitKeyDown(KeyboardEventArgs e, TextUnitDto unit)
+    private void OnUnitKeyDown(KeyboardEventArgs e, TextUnit unit)
     {
         if (e.Key == "Enter")
         {

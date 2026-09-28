@@ -1,5 +1,6 @@
 using BibleAtlas.Client;
 using BibleAtlas.Client.Components;
+using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Tests;
 
@@ -10,18 +11,18 @@ namespace BibleAtlas.Client.Tests;
 /// </summary>
 public class ContentsTreeModelTests
 {
-    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new ContentsOut("bible", "v", new List<ContentsRootOut>
+    private static ContentsTreeModel Sample() => ContentsTreeModel.From(new BibleAtlas.Client.Contract.Contents(Corpus.Bible, new List<ContentsRoot>
     {
-        new("Container:bible-book-GEN", "Genesis", "book", "OT", "GEN.1", new List<ContentsChildOut>
+        new(new List<ContentsChild>
         {
-            new("Container:bible-chapter-GEN-1", "1", "chapter", "GEN.1", 31),
-            new("Container:bible-chapter-GEN-2", "2", "chapter", "GEN.2", 25),
-        }),
-        new("Container:bible-book-EXO", "Exodus", "book", "OT", "EXO.1", new List<ContentsChildOut>
+            new(31, "Container:bible-chapter-GEN-1", ContentsChildKind.Chapter, "GEN.1", "1"),
+            new(25, "Container:bible-chapter-GEN-2", ContentsChildKind.Chapter, "GEN.2", "2"),
+        }, Testament.OT, "Container:bible-book-GEN", ContentsRootKind.Book, "GEN.1", "Genesis"),
+        new(new List<ContentsChild>
         {
-            new("Container:bible-chapter-EXO-1", "1", "chapter", "EXO.1", 22),
-        }),
-    }));
+            new(22, "Container:bible-chapter-EXO-1", ContentsChildKind.Chapter, "EXO.1", "1"),
+        }, Testament.OT, "Container:bible-book-EXO", ContentsRootKind.Book, "EXO.1", "Exodus"),
+    }, "v"));
 
     [Fact]
     public void Collapsed_by_default_shows_only_roots()

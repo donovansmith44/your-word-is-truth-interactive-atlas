@@ -1,3 +1,4 @@
+@using BibleAtlas.Client.Contract
 @using BibleAtlas.Client.Explore
 @inject IExplorableClient Explorable
 
@@ -40,13 +41,13 @@
 @code {
     [Parameter, EditorRequired] public string PersonId { get; set; } = default!;
     [Parameter] public string? Provenance { get; set; }
-    [Parameter, EditorRequired] public List<EdgeEntryDto> InitialEntries { get; set; } = new();
+    [Parameter, EditorRequired] public IReadOnlyList<EdgeEntry> InitialEntries { get; set; } = Array.Empty<EdgeEntry>();
     [Parameter] public int? InitialNext { get; set; }
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public bool ShowHeading { get; set; } = true;
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    private List<EdgeEntryDto> _entries = new();
+    private IReadOnlyList<EdgeEntry> _entries = Array.Empty<EdgeEntry>();
     private int? _next;
     private bool _loading;
     private bool _initialized;
