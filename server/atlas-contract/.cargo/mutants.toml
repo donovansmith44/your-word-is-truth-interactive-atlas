@@ -32,6 +32,11 @@ test_tool = "cargo"
 #   contract_coverage        byte for byte
 #   aqc_corpus_generation    aqc_export.rs, query.rs -- the AQC corpus
 #   contract_pact            load.rs -- the recorded evidence replayed
+#   regenerated_aqc_corpus   bins/export_aqc_examples.rs -- the exporter run as a
+#                            process, the only thing that can kill a mutant of a
+#                            `main`. 55 s, and cargo runs test targets in NAME
+#                            order, so it is reached only by a mutant that has
+#                            already survived every cheaper target above
 #   scene_byte_identity      map.rs -- the scene's bytes off the committed
 #                            sections, 1.1 s
 #   sources_api              meta.rs -- the source registry endpoints
@@ -54,6 +59,7 @@ additional_cargo_test_args = [
   "--test", "contract_coverage",
   "--test", "aqc_corpus_generation",
   "--test", "contract_pact",
+  "--test", "regenerated_aqc_corpus",
   "--test", "scene_byte_identity",
   "--test", "sources_api",
 ]

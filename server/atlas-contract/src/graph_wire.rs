@@ -104,6 +104,7 @@ mod tests {
             (NodeKind::Container, "bible-book-GEN", "Container:bible-book-GEN"),
             (NodeKind::Container, "bible-chapter-GEN-1", "Container:bible-chapter-GEN-1"),
             (NodeKind::Container, "concord-doc-small-catechism", "Container:concord-doc-small-catechism"),
+            (NodeKind::LexiconEntry, "H430", "LexiconEntry:H430"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

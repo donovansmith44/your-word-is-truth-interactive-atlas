@@ -138,26 +138,7 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
                 m.event_id
             );
         };
-        let strip: HashSet<&str> = m.verses.iter().map(|s| s.as_str()).collect();
-        let e = &mut all_events[idx];
-        let before: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
-        e.verses.retain(|v| !strip.contains(v.as_str()));
-        for w in &mut e.witnesses {
-            for verses in w.translations.values_mut() {
-                verses.retain(|v| !strip.contains(v.as_str()));
-            }
-        }
-        e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
-        let after: usize = e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>();
-        // KNOWN LIMIT: the match is exact string equality against stored entries that may themselves be RANGE
-        // strings, so a verse INSIDE a range is not stripped. The bail below catches that for a single-verse row,
-        // but a multi-verse row with one exact match and one inside a range applies partially and passes.
-        if after == before {
-            bail!(
-                "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids.",
-                m.event_id
-            );
-        }
+        apply_mention_correction(&mut all_events[idx], &m.verses)?;
     }
     for a in &event_analogues {
         for id in [&a.a, &a.b] {
@@ -448,6 +429,38 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     Ok(CompileOutput { data, report, place_history_list, place_name_alias_list })
 }
 
+/// Strips the corrected verses from the event's OWN list and from every witness row: one
+/// alone would leave the attestation alive. A row that removed nothing is refused.
+///
+/// KNOWN LIMIT: the match is exact string equality against stored entries that may
+/// themselves be RANGE strings, so a verse INSIDE a range is not stripped. The refusal
+/// catches that for a single-verse row, but a multi-verse row with one exact match and one
+/// inside a range applies partially and passes.
+fn apply_mention_correction(e: &mut atlas_core::data::Event, corrected: &[String]) -> Result<()> {
+    let strip: HashSet<&str> = corrected.iter().map(String::as_str).collect();
+    let before = attested_verse_count(e);
+    e.verses.retain(|v| !strip.contains(v.as_str()));
+    for w in &mut e.witnesses {
+        for verses in w.translations.values_mut() {
+            verses.retain(|v| !strip.contains(v.as_str()));
+        }
+    }
+    e.witnesses.retain(|w| w.translations.values().any(|v| !v.is_empty()));
+    if attested_verse_count(e) == before {
+        bail!(
+            "data/curated/attestation-corrections.toml: [[mention]] row for event '{}' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids.",
+            e.id
+        );
+    }
+    Ok(())
+}
+
+/// Every verse this event attests, its own and its witnesses' alike -- the one count both
+/// sides of a mention correction are measured by.
+fn attested_verse_count(e: &atlas_core::data::Event) -> usize {
+    e.verses.len() + e.witnesses.iter().map(|w| w.translations.values().map(|v| v.len()).sum::<usize>()).sum::<usize>()
+}
+
 /// Reads every polity file under the directory, sorted by filename and so by polity id, which is what makes
 /// the processing and report order deterministic.
 fn process_polities(polities_curated_dir: &Path) -> Result<(Vec<Polity>, Vec<PolityStats>)> {
@@ -628,4 +641,60 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     bail!(
         "data/curated/ is incomplete -- create it per Task 5 (curated data authoring) before running the ETL.\nMissing:\n{list}"
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use atlas_core::data::{Event, EventWitness};
+    use atlas_core::time::TimeRange;
+
+    const CORRECTED_VERSE: &str = "MAT.8.1";
+
+    fn event_attesting_the_corrected_verse_twice() -> Event {
+        Event {
+            id: "rob_leper_healed".into(),
+            label: "A leper healed".into(),
+            when: TimeRange::new(30, 30).unwrap(),
+            verses: vec![CORRECTED_VERSE.into(), "MRK.1.40".into()],
+            witnesses: vec![EventWitness {
+                book: "MAT".into(),
+                translations: HashMap::from([("kjv".to_string(), vec![CORRECTED_VERSE.to_string()])]),
+                ref_note: None,
+                robertson_section: None,
+            }],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn a_correction_strips_the_verse_from_the_events_own_list_and_from_its_witness_rows() {
+        // Arrange
+        let mut event = event_attesting_the_corrected_verse_twice();
+
+        // Act
+        apply_mention_correction(&mut event, &[CORRECTED_VERSE.to_string()]).expect("a correction that removes something is accepted");
+
+        // Assert
+        assert_eq!(
+            (event.verses, event.witnesses),
+            (vec!["MRK.1.40".to_string()], vec![]),
+            "the witness row emptied by the strip is dropped with it"
+        );
+    }
+
+    #[test]
+    fn a_correction_that_was_never_attested_is_refused_and_names_the_event() {
+        // Arrange
+        let mut event = event_attesting_the_corrected_verse_twice();
+
+        // Act
+        let refusal = apply_mention_correction(&mut event, &["LUK.5.12".to_string()]).expect_err("a correction that removes nothing is stale");
+
+        // Assert
+        assert_eq!(
+            refusal.to_string(),
+            "data/curated/attestation-corrections.toml: [[mention]] row for event 'rob_leper_healed' removed NOTHING -- none of its verses were ever attested by that event (note: matching is exact-string, so a verse inside a RANGE entry will not match). A correction that corrects nothing is stale; delete the row or fix the ids."
+        );
+    }
 }

@@ -9,6 +9,20 @@ fn contract_dir() -> PathBuf {
     repo_root().join("contracts").join("atlas-query-contract")
 }
 
+const SLASH_BEARING_WIRE_ID: &str = "CommentaryItem:kretzmann/0.1.0";
+
+#[test]
+fn a_wire_id_is_path_encoded_only_where_a_slash_would_split_the_route() {
+    // Arrange
+    let id = SLASH_BEARING_WIRE_ID;
+
+    // Act
+    let encoded = atlas_contract::aqc_export::path_encode(id);
+
+    // Assert
+    assert_eq!(encoded, "CommentaryItem:kretzmann%2F0.1.0");
+}
+
 #[test]
 fn regenerated_features_match_the_committed_files() {
     let features_dir = contract_dir().join("features");

@@ -1743,6 +1743,24 @@ fn run_no_two_opinions_agreeing_placements_pass_even_though_unlisted() {
 }
 
 #[test]
+fn run_no_two_opinions_reports_a_pair_that_agrees_on_its_start_and_order_but_not_its_end() {
+    // Arrange
+    let events = vec![
+        placed_event("span-a", "A leper healed", 30, 30, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+        placed_event("span-b", "Healing the Leper", 30, 31, 450, &["MAT.8.2", "MAT.8.3", "MAT.8.4"]),
+    ];
+
+    // Act
+    let refusal = atlas_etl::validate::run_no_two_opinions(&[], &events).expect_err("two placements that end in different years disagree");
+
+    // Assert
+    assert!(
+        refusal.to_string().contains("'span-a'") && refusal.to_string().contains("'span-b'") && refusal.to_string().contains("DISAGREE"),
+        "{refusal}"
+    );
+}
+
+#[test]
 fn run_no_two_opinions_below_threshold_overlap_passes_regardless_of_placement() {
     let events = vec![
         placed_event("low-a", "Event A", 30, 30, 0, &["MAT.8.1", "MAT.8.2", "MAT.8.3", "MAT.8.4"]),

@@ -180,11 +180,20 @@ mkdir -p "$MERGED"
 for outcome in caught missed unviable timeout; do
   cat "$OUT"/*/mutants.out/"$outcome.txt" 2>/dev/null | sort -u > "$MERGED/$outcome.txt"
 done
-# The union: a name any run caught is caught, whatever another run made of it.
-for outcome in missed unviable timeout; do
-  grep -vxF -f "$MERGED/caught.txt" "$MERGED/$outcome.txt" > "$MERGED/$outcome.tmp"
+# THE UNION, and the whole reason graph-types is run twice. A mutant of a
+# `#[cfg(feature = ...)]` arm that is switched OFF is not applied to anything the
+# compiler sees, so it survives every test and is reported MISSED; the run that
+# switches that arm ON is the one whose verdict is real. So: a name any run
+# caught is caught, a name any run found unviable is unviable, and only what
+# every run merely missed is a survivor.
+for outcome in missed timeout; do
+  cat "$MERGED/caught.txt" "$MERGED/unviable.txt" | sort -u > "$MERGED/decided.tmp"
+  grep -vxF -f "$MERGED/decided.tmp" "$MERGED/$outcome.txt" > "$MERGED/$outcome.tmp"
   mv "$MERGED/$outcome.tmp" "$MERGED/$outcome.txt"
 done
+grep -vxF -f "$MERGED/caught.txt" "$MERGED/unviable.txt" > "$MERGED/unviable.tmp"
+mv "$MERGED/unviable.tmp" "$MERGED/unviable.txt"
+rm -f "$MERGED/decided.tmp"
 
 {
   echo "# Merged mutation gate: $SHARDS shards, ${ELAPSED}s wall clock"

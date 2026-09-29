@@ -1145,6 +1145,125 @@ mod heading_collision_tests {
         Narrative { id: "narr".into(), name: "N".into(), color: "#000".into(), legs: vec![leg_id.to_string()] }
     }
 
+    const SECTIONED_VERSE: &str = "ACT.2.1";
+
+    fn sectioned_only(id: &str, mark: impl FnOnce(&mut Event)) -> Event {
+        let mut e = Event {
+            id: id.into(),
+            label: format!("An event whose only claim to a heading is its {id}"),
+            when: crate::time::TimeRange::new(33, 33).unwrap(),
+            verses: vec![SECTIONED_VERSE.into()],
+            ..Default::default()
+        };
+        mark(&mut e);
+        e
+    }
+
+    fn heading_of(event: Event) -> Option<HeadingEntry> {
+        AtlasData::new(Canon { books: vec![] }, vec![], vec![event], vec![], vec![], vec![], HashMap::new(), HashMap::new())
+            .finish()
+            .heading_for_verse(SECTIONED_VERSE)
+            .cloned()
+    }
+
+    #[test]
+    fn an_acts_section_alone_makes_an_event_head_its_verse() {
+        // Arrange
+        let event = sectioned_only("acts_section", |e| e.acts_section = Some("Acts fixture section".into()));
+
+        // Act
+        let heading = heading_of(event);
+
+        // Assert
+        assert_eq!(
+            heading,
+            Some(HeadingEntry {
+                event_id: "acts_section".into(),
+                title: "An event whose only claim to a heading is its acts_section".into(),
+                kind: EventKind::Event,
+            })
+        );
+    }
+
+    #[test]
+    fn an_atlas_section_alone_makes_an_event_head_its_verse() {
+        // Arrange
+        let event = sectioned_only("atlas_section", |e| e.atlas_section = Some("Atlas fixture section".into()));
+
+        // Act
+        let heading = heading_of(event);
+
+        // Assert
+        assert_eq!(
+            heading,
+            Some(HeadingEntry {
+                event_id: "atlas_section".into(),
+                title: "An event whose only claim to a heading is its atlas_section".into(),
+                kind: EventKind::Event,
+            })
+        );
+    }
+
+    #[test]
+    fn a_kjv_superscription_alone_makes_an_event_head_its_verse() {
+        // Arrange
+        let event = sectioned_only("kjv_superscription", |e| e.kjv_superscription = Some("A Psalm of David".into()));
+
+        // Act
+        let heading = heading_of(event);
+
+        // Assert
+        assert_eq!(
+            heading,
+            Some(HeadingEntry {
+                event_id: "kjv_superscription".into(),
+                title: "An event whose only claim to a heading is its kjv_superscription".into(),
+                kind: EventKind::Event,
+            })
+        );
+    }
+
+    #[test]
+    fn two_label_only_containers_sharing_a_verse_are_no_anchor_collision() {
+        // Arrange
+        let mut second_bare = bare_leg();
+        second_bare.id = "other_bare_leg".into();
+        let narratives = vec![Narrative {
+            id: "narr".into(),
+            name: "N".into(),
+            color: "#000".into(),
+            legs: vec!["bare_leg".into(), "other_bare_leg".into()],
+        }];
+
+        // Act
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], vec![bare_leg(), second_bare], narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+
+        // Assert
+        assert_eq!(data.heading_anchor_collisions().to_vec(), Vec::<(String, String, String)>::new());
+    }
+
+    #[test]
+    fn two_curated_containers_sharing_a_verse_are_an_anchor_collision() {
+        // Arrange
+        let mut second_rich = rich_leg();
+        second_rich.id = "other_rich_leg".into();
+        let narratives = vec![Narrative {
+            id: "narr".into(),
+            name: "N".into(),
+            color: "#000".into(),
+            legs: vec!["rich_leg".into(), "other_rich_leg".into()],
+        }];
+
+        // Act
+        let data = AtlasData::new(Canon { books: vec![] }, vec![], vec![rich_leg(), second_rich], narratives, vec![], vec![], HashMap::new(), HashMap::new()).finish();
+
+        // Assert
+        assert_eq!(
+            data.heading_anchor_collisions().to_vec(),
+            vec![("JHN.12.1".to_string(), "rich_leg".to_string(), "other_rich_leg".to_string())]
+        );
+    }
+
     #[test]
     fn heading_collision_prefers_the_richer_event_when_bare_is_first_in_order() {
         let events = vec![bare_leg(), rich_leg()];

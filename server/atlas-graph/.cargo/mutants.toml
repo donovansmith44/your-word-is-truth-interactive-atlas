@@ -29,6 +29,15 @@ test_tool = "cargo"
 #   lexicon_section_real_data        lexicon_adapter.rs
 #   heading_precedence               heading.rs -- its only cover, 56 s
 #   description_real_data            description_adapter.rs -- its only cover, 46 s
+#   version_root_regression          lib.rs's `version_hex` -- the committed root
+#                                    is asserted as a hex string, so nothing else
+#                                    witnesses that function. 54 s, and last in
+#                                    NAME order, so only a mutant that survived
+#                                    every target above reaches it
+#   the_compile_step                 bins/compile_graph.rs -- the binary refusing a
+#                                    missing --data-dir, which is the only thing
+#                                    that can kill a mutant of a `main` without
+#                                    rewriting the committed sections. 0.1 s
 #
 # `sections_startup` and `sqlite_real_data` are absent because they hold nothing
 # but wall-clock gates, which `exclude_re` skips anyway: each is `0 passed, 1
@@ -51,4 +60,6 @@ additional_cargo_test_args = [
   "--test", "lexicon_section_real_data",
   "--test", "heading_precedence",
   "--test", "description_real_data",
+  "--test", "the_compile_step",
+  "--test", "version_root_regression",
 ]

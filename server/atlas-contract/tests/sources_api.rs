@@ -33,6 +33,18 @@ async fn get(app: &axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {
     (status, json)
 }
 
+#[test]
+fn load_sources_reads_the_curated_registry_back_out_of_the_committed_sections() {
+    // Arrange
+    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+
+    // Act
+    let loaded = atlas_contract::load::load_sources(&compiled).expect("the committed sections must carry the source registry");
+
+    // Assert
+    assert_eq!(loaded, real_sources_document());
+}
+
 #[tokio::test]
 async fn get_api_sources_returns_every_real_curated_source_and_category() {
     let data = demo_fixture();

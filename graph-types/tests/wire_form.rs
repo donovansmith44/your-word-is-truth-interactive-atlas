@@ -96,3 +96,13 @@ fn schema_component_names_are_the_type_names() {
     assert_eq!(node, "NodeKind");
     assert_eq!(edge, "EdgeKind");
 }
+
+#[test]
+fn a_relation_read_from_something_that_is_not_a_label_is_refused_by_name() {
+    // Arrange
+    let not_a_label = "1";
+    // Act
+    let refusal = serde_json::from_str::<EdgeKind>(not_a_label).expect_err("only a label reads back as a relation");
+    // Assert
+    assert_eq!(refusal.to_string(), "invalid type: integer `1`, expected one of the EdgeKind labels at line 1 column 1");
+}

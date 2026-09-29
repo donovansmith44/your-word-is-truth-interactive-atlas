@@ -334,6 +334,37 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     #[test]
+    fn an_event_with_no_curated_witness_gets_one_synthesised_from_its_own_verses() {
+        // Arrange
+        let event = Event {
+            id: "leper_healed".into(),
+            label: "A leper healed".into(),
+            when: TimeRange::new(30, 30).unwrap(),
+            verses: vec!["MRK.1.40".into(), "MRK.1.41".into()],
+            ..Default::default()
+        };
+
+        // Act
+        let witnesses = witnesses_for(&event);
+
+        // Assert
+        assert_eq!(
+            witnesses,
+            vec![EventWitness {
+                book: "MRK".into(),
+                verse_groups: vec![VerseGroup {
+                    book: "MRK".into(),
+                    chapter: 1,
+                    verses: vec!["MRK.1.40".into(), "MRK.1.41".into()],
+                    count: 2,
+                }],
+                ref_note: None,
+                robertson_section: None,
+            }]
+        );
+    }
+
+    #[test]
     fn time_scene_lights_only_intersecting() {
         let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());

@@ -582,4 +582,63 @@ mod tests {
         assert!(violations.is_empty());
         assert!(deferred.is_empty());
     }
+
+    const BOUNDARY_YEAR: Year = -500;
+
+    fn data_with_one_era_boundary(events: Vec<Event>) -> AtlasData {
+        let mut d = AtlasData::new(
+            crate::data::Canon { books: vec![] },
+            vec![],
+            events,
+            vec![],
+            vec![],
+            vec![],
+            HashMap::new(),
+            HashMap::new(),
+        );
+        d.chronology_anchors = vec![anchor("exile-begins", BOUNDARY_YEAR, Some("boundary"), true)];
+        // GEN closes before the boundary, JER opens after it, so an event citing GEN reads
+        // "before" and the boundary event, citing JER, reads "after".
+        d.book_narration_windows = vec![window("GEN", -700, -600), window("JER", -490, -480)];
+        d.finish()
+    }
+
+    #[test]
+    fn the_one_event_whose_books_close_before_a_boundary_yet_sorts_after_it_is_the_only_violation() {
+        // Arrange
+        let data = data_with_one_era_boundary(vec![
+            event("boundary", BOUNDARY_YEAR, BOUNDARY_YEAR, &["JER.1.1"]),
+            event("late_dated_early_narrated", -400, -400, &["GEN.12.1"]),
+        ]);
+
+        // Act
+        let violations = era_boundary_violations(&data);
+
+        // Assert
+        assert_eq!(
+            violations,
+            vec![EraBoundaryViolation {
+                event_id: "late_dated_early_narrated".into(),
+                label: "late_dated_early_narrated".into(),
+                boundary_id: "exile-begins".into(),
+                boundary_year: BOUNDARY_YEAR,
+                side: "before",
+            }]
+        );
+    }
+
+    #[test]
+    fn an_event_that_sorts_on_the_side_its_books_narrate_is_no_violation() {
+        // Arrange
+        let data = data_with_one_era_boundary(vec![
+            event("boundary", BOUNDARY_YEAR, BOUNDARY_YEAR, &["JER.1.1"]),
+            event("early_dated_early_narrated", -600, -600, &["GEN.12.1"]),
+        ]);
+
+        // Act
+        let violations = era_boundary_violations(&data);
+
+        // Assert
+        assert_eq!(violations, vec![]);
+    }
 }

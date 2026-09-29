@@ -842,6 +842,19 @@ mod tests {
     }
 
     #[test]
+    fn cross_book_duplicate_candidate_false_when_only_one_side_is_general_kind() {
+        // Arrange
+        let dated = dated_event("dated", "Paul arrives at Rome", 60, &["rome"]);
+        let general = Event { kind: EventKind::General, ..dated_event("general", "Paul arrives at Rome", 60, &["rome"]) };
+
+        // Act
+        let both_orders = (cross_book_duplicate_candidate(&dated, &general), cross_book_duplicate_candidate(&general, &dated));
+
+        // Assert
+        assert_eq!(both_orders, (false, false));
+    }
+
+    #[test]
     fn cross_book_duplicate_candidate_true_for_the_confirmed_theo_384_pr_rome_shape() {
         let a = dated_event("theo-384", "Paul arrives at Rome", 60, &["rome"]);
         let b = dated_event("pr_rome", "Paul arrives at Rome", 60, &["rome"]);
