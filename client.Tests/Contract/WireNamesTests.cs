@@ -38,7 +38,8 @@ public sealed class WireNamesTests
         // Act
         Action act = () => WireNames.Parse<EdgeKind>(undeclared);
         // Assert
-        Assert.Throws<FormatException>(act);
+        var thrown = Assert.Throws<FormatException>(act);
+        Assert.Equal("'cited' is not a declared EdgeKind", thrown.Message);
     }
 
     [Fact]

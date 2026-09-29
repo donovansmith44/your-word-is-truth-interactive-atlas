@@ -155,4 +155,95 @@ public class ContentsTreeModelTests
         // Assert
         Assert.Equal([Exodus], model.ExpandedIds);
     }
+
+    [Fact]
+    public void SetExpanded_replaces_a_prior_expansion_rather_than_adding_to_it()
+    {
+        // Arrange
+        var model = Sample();
+        model.SetExpanded([Genesis]);
+        // Act
+        model.SetExpanded([Exodus]);
+        // Assert
+        Assert.Equal([Exodus], model.ExpandedIds);
+    }
+
+    private const string Leaf = "Container:leaf";
+    private const string Grove = "Container:grove";
+    private const string GroveOne = "Container:grove-1";
+
+    private static ContentsTreeModel WithALeafRoot() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
+    [
+        new(id: Leaf, title: "Leaf", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "LEAF.1", children: []),
+        new(id: Grove, title: "Grove", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GROVE.1", children:
+        [
+            new(id: GroveOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GROVE.1", count: 1),
+        ]),
+    ]));
+
+    [Fact]
+    public void A_root_with_no_children_is_not_expandable()
+    {
+        // Arrange
+        var model = WithALeafRoot();
+        // Act
+        var leaf = model.Roots[0];
+        // Assert
+        Assert.False(leaf.Expandable);
+    }
+
+    [Fact]
+    public void Toggle_on_a_root_with_no_children_leaves_nothing_expanded_even_though_another_root_is_expandable()
+    {
+        // Arrange
+        var model = WithALeafRoot();
+        // Act
+        model.Toggle(Leaf);
+        // Assert
+        Assert.Empty(model.ExpandedIds);
+    }
+
+    [Fact]
+    public void Expand_adds_an_id_whose_root_is_expandable()
+    {
+        // Arrange
+        var model = Sample();
+        // Act
+        model.Expand(Genesis);
+        // Assert
+        Assert.Equal([Genesis], model.ExpandedIds);
+    }
+
+    [Fact]
+    public void Expand_ignores_an_id_no_root_carries_even_though_another_root_is_expandable()
+    {
+        // Arrange
+        var model = Sample();
+        // Act
+        model.Expand("nonexistent-id");
+        // Assert
+        Assert.Empty(model.ExpandedIds);
+    }
+
+    [Fact]
+    public void ExpandPathTo_leaves_the_current_id_unset_when_nothing_matches_the_ref()
+    {
+        // Arrange
+        var model = WithALeafRoot();
+        // Act
+        model.ExpandPathTo("nothing-matches-this");
+        // Assert
+        Assert.Null(model.CurrentId);
+    }
+
+    [Fact]
+    public void ExpandPathTo_sets_the_current_id_to_a_root_whose_own_ref_matches_when_no_child_does()
+    {
+        // Arrange
+        var model = WithALeafRoot();
+        // Act
+        model.ExpandPathTo("LEAF.1");
+        // Assert
+        Assert.Equal(Leaf, model.CurrentId);
+    }
 }

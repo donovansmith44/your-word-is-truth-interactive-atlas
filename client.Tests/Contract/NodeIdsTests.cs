@@ -33,6 +33,17 @@ public sealed class NodeIdsTests
     }
 
     [Fact]
+    public void LocalPart_of_an_id_whose_kind_prefix_is_empty_is_the_text_after_the_colon()
+    {
+        // Arrange
+        var node = new NodeRef(id: ":foo", kind: PositionKind.TextUnit, label: ":foo");
+        // Act
+        var local = NodeIds.LocalPart(node);
+        // Assert
+        Assert.Equal("foo", local);
+    }
+
+    [Fact]
     public void LocalPart_of_an_id_with_no_kind_fails_naming_the_id()
     {
         // Arrange

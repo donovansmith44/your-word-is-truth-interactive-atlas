@@ -61,9 +61,7 @@ public class GraphExplorableClientTests
         var page = await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites, cursor: null, limit: 5);
 
         Assert.Equal("/api/node/text-unit:JHN.3.16/edges", Uri.UnescapeDataString(handler.LastRequestUri!.AbsolutePath));
-        Assert.Contains("kind=cites", handler.LastRequestUri.Query);
-        Assert.Contains("limit=5", handler.LastRequestUri.Query);
-        Assert.DoesNotContain("cursor=", handler.LastRequestUri.Query);
+        Assert.Equal("?kind=cites&limit=5", handler.LastRequestUri.Query);
         Assert.Equal(EdgeKind.Cites, page.Kind);
         Assert.Single(page.Entries);
         Assert.Equal("e1", page.Entries[0].Edge);
