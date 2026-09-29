@@ -93,7 +93,9 @@ dependencies = [
  "atlas-core",
  "atlas-graph",
  "atlas-graph-types",
+ "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]
