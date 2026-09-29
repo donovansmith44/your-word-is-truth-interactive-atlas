@@ -14,6 +14,7 @@ pub mod store;
 #[cfg(any(feature = "serde", feature = "openapi"))]
 pub mod wire_form;
 pub mod canon;
+pub mod raw_manifest;
 pub mod sections;
 pub mod sha256;
 pub mod vocabulary;
