@@ -3,6 +3,10 @@ use std::collections::HashSet;
 use atlas_core::data::{Canon, Event, EventWitness};
 use atlas_core::event_merge::{cross_book_duplicate_candidate, title_jaccard, EVENT_DISTINCT_PAIRS};
 
+mod common;
+
+use common::{curated_dir, raw_dir};
+
 fn robertson_table() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for n in 1..=184 {
@@ -95,8 +99,8 @@ fn honestly_omitted() -> HashSet<&'static str> {
 }
 
 fn read_curated(name: &str) -> String {
-    let path = format!("{}/../../data/curated/{name}", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"))
+    let path = curated_dir().join(name);
+    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()))
 }
 
 fn extract_section_tokens(text: &str) -> HashSet<String> {
@@ -241,8 +245,7 @@ fn real_compiled_data() -> atlas_core::data::AtlasData {
     static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            let data_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+            atlas_etl::compile::compile(&raw_dir(), &curated_dir())
                 .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
                 .data
         })

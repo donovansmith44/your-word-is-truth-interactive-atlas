@@ -1,19 +1,17 @@
 use std::collections::HashMap;
-use std::path::Path;
 
-fn brainfuel_root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw/brain-fuel-bible")
-}
+mod common;
+
+use common::raw_dir;
 
 fn corpus() -> atlas_etl::brainfuel::BrainFuelCorpus {
-    atlas_etl::brainfuel::read_all(&brainfuel_root()).expect(
+    atlas_etl::brainfuel::read_all(&raw_dir().join("brain-fuel-bible")).expect(
         "data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step (data/fetch-raw.ps1) first",
     )
 }
 
 fn our_kjv_verses() -> HashMap<String, String> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
+    let kjv_json = std::fs::read_to_string(raw_dir().join("kjv.json")).expect("data/raw/kjv.json must exist");
     atlas_etl::kjv::parse(&kjv_json).expect("our own kjv.json must parse").1
 }
 

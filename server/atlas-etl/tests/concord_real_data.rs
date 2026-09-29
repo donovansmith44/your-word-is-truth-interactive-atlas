@@ -1,13 +1,11 @@
-use std::path::Path;
-
 use atlas_etl::concord;
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
-}
+mod common;
+
+use common::{curated_dir, raw_dir};
 
 fn corpus() -> concord::ConcordCorpus {
-    concord::read_all(&data_dir().join("raw/concord"), &data_dir().join("curated")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first")
+    concord::read_all(&raw_dir().join("concord"), &curated_dir()).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first")
 }
 
 #[test]

@@ -1,14 +1,13 @@
 use std::collections::BTreeSet;
-use std::path::Path;
 
 use atlas_etl::lexicon::{read_all, LexiconCorpus, LexiconStats, LAYER_GREEK, LAYER_HEBREW};
 
-fn root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw/brain-fuel-bible")
-}
+mod common;
+
+use common::raw_dir;
 
 fn corpus() -> LexiconCorpus {
-    read_all(&root()).expect("data/raw/brain-fuel-bible/{lexicon,morph} must exist -- run data/fetch-raw.ps1 first")
+    read_all(&raw_dir().join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible/{lexicon,morph} must exist -- run data/fetch-raw.ps1 first")
 }
 
 #[test]

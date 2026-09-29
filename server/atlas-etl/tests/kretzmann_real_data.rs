@@ -1,28 +1,27 @@
 use std::collections::BTreeMap;
-use std::path::Path;
 
 use atlas_etl::kretzmann::{self, Calendar, DeviationClass};
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
-}
+mod common;
+
+use common::raw_dir;
 
 fn real_corpus() -> kretzmann::KretzmannCorpus {
     let kjv_verses = real_kjv_verses();
-    kretzmann::read_all(&data_dir().join("raw/kretzmann"), &kjv_verses).expect("read_all must succeed over the real vendored corpus (data/fetch-raw.ps1 must have run)")
+    kretzmann::read_all(&raw_dir().join("kretzmann"), &kjv_verses).expect("read_all must succeed over the real vendored corpus (data/fetch-raw.ps1 must have run)")
 }
 
 fn real_kjv_verses() -> std::collections::HashMap<String, String> {
-    let kjv_json = std::fs::read_to_string(data_dir().join("raw/kjv.json")).expect("data/raw/kjv.json must exist");
+    let kjv_json = std::fs::read_to_string(raw_dir().join("kjv.json")).expect("data/raw/kjv.json must exist");
     let (_canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
     verses
 }
 
 fn real_canonical() -> BTreeMap<(u8, u16, u16), String> {
-    let dir = data_dir();
-    let kjv_json = std::fs::read_to_string(dir.join("raw/kjv.json")).expect("data/raw/kjv.json must exist");
+    let dir = raw_dir();
+    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
     let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
-    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("raw/brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
+    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
     let (restored, _report) = atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &verses);
 
     let mut canonical = BTreeMap::new();
@@ -210,7 +209,7 @@ fn inline_verse_marker_instances_reclassify_to_their_own_verse_not_the_preceding
 
 #[test]
 fn mat_26_60_to_61_inline_verse_marker_lands_as_v61_lemma_not_v60_prose_end_to_end() {
-    let html = std::fs::read_to_string(data_dir().join("raw/kretzmann/matthew/26.html")).expect("data/raw/kretzmann/matthew/26.html must exist");
+    let html = std::fs::read_to_string(raw_dir().join("kretzmann/matthew/26.html")).expect("data/raw/kretzmann/matthew/26.html must exist");
     assert!(html.contains(" v. 61 and said, This fellow said, I am able to destroy the Temple of God, and to build it in three days. "), "the real source's own inline marker text must still read as originally traced");
     assert!(!html.contains(r#"<sup id="v61">"#), "MAT 26:61 must still lack a real <sup> marker in the source -- otherwise this test's own premise no longer holds");
 
@@ -239,7 +238,7 @@ fn mat_26_60_to_61_inline_verse_marker_lands_as_v61_lemma_not_v60_prose_end_to_e
 fn over_excision_guard_recovers_exo_20_12_and_rut_4_11_prose_verbatim_against_the_source_html() {
     let corpus = real_corpus();
 
-    let exo20_html = std::fs::read_to_string(data_dir().join("raw/kretzmann/exodus/20.html")).expect("data/raw/kretzmann/exodus/20.html must exist");
+    let exo20_html = std::fs::read_to_string(raw_dir().join("kretzmann/exodus/20.html")).expect("data/raw/kretzmann/exodus/20.html must exist");
     let exo_span = strong_span_starting_with(&exo20_html, "with heart, mouth");
     let exo = corpus.chapters.iter().find(|c| c.book_index == 1 && c.chapter == 20).expect("Exodus 20 must be in the corpus");
     let exo_unit = exo
@@ -251,7 +250,7 @@ fn over_excision_guard_recovers_exo_20_12_and_rut_4_11_prose_verbatim_against_th
     let exo_recovered = exo_unit.text.split(" It is the first commandment").next().unwrap();
     assert_eq!(format!("{exo_recovered} {}", exo_frag.text), exo_span, "EXO 20:12: recovered prose + excised lemma must reconstruct the real source <strong> span exactly");
 
-    let rut4_html = std::fs::read_to_string(data_dir().join("raw/kretzmann/ruth/4.html")).expect("data/raw/kretzmann/ruth/4.html must exist");
+    let rut4_html = std::fs::read_to_string(raw_dir().join("kretzmann/ruth/4.html")).expect("data/raw/kretzmann/ruth/4.html must exist");
     let rut_span = strong_span_starting_with(&rut4_html, "The Lord make the woman");
     let rut = corpus.chapters.iter().find(|c| c.book_index == 7 && c.chapter == 4).expect("Ruth 4 must be in the corpus");
     let rut_unit = rut

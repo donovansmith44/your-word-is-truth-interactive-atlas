@@ -1,22 +1,20 @@
-use std::path::Path;
-
 use atlas_etl::red_letter;
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
-}
+mod common;
+
+use common::raw_dir;
 
 fn real_restored_verses() -> std::collections::HashMap<String, String> {
-    let dir = data_dir();
-    let kjv_json = std::fs::read_to_string(dir.join("raw/kjv.json")).expect("data/raw/kjv.json must exist");
+    let dir = raw_dir();
+    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
     let (_canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
-    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("raw/brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
+    let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
     atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &verses).0
 }
 
 fn real_corpus() -> red_letter::RedLetterCorpus {
     let verses = real_restored_verses();
-    red_letter::read_all(&data_dir().join("raw/red-letter"), &verses).expect("red_letter::read_all must succeed over the real vendored source (data/fetch-raw.ps1 must have run)")
+    red_letter::read_all(&raw_dir().join("red-letter"), &verses).expect("red_letter::read_all must succeed over the real vendored source (data/fetch-raw.ps1 must have run)")
 }
 
 #[test]
