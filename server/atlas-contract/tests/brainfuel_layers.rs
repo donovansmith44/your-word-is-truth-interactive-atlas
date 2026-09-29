@@ -13,27 +13,30 @@ use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::TranslationId;
 
-fn real_atlas_data() -> AtlasData {
-    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
+/// The real corpus and the graph built from it, both shared: every reader below only reads them,
+/// and building either one per test cost this file six compiles and six graph builds.
+fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
+    static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
             let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
+            let data = atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
                 .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data
+                .data;
+            let graph = GraphService::build(&data_dir.join("raw"), &data)
+                .expect("data/raw/{kjv.json,xrefs/cross_references.txt,brain-fuel-bible} must exist and satisfy the fidelity law");
+            (Arc::new(data), Arc::new(graph))
         })
         .clone()
 }
 
-fn real_graph() -> GraphService {
-    let raw = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    GraphService::build(&raw, &real_atlas_data()).expect("data/raw/{kjv.json,xrefs/cross_references.txt,brain-fuel-bible} must exist and satisfy the fidelity law")
+fn real_graph() -> Arc<GraphService> {
+    real_atlas().1
 }
 
 fn real_app() -> axum::Router {
-    let data = real_atlas_data();
-    let graph = real_graph();
-    atlas_contract::app::build(Arc::new(data), Arc::new(graph), None)
+    let (data, graph) = real_atlas();
+    atlas_contract::app::build(data, graph, None)
 }
 
 async fn get_json(app: axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {

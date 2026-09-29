@@ -1,0 +1,51 @@
+# cargo-mutants for atlas-graph. The HOUSE RULES are stated once, in
+# `server/.cargo/mutants.toml`; this file adds only what is true of this crate.
+#
+#     cargo mutants --in-place --config atlas-graph/.cargo/mutants.toml   # from server/
+#
+# The globs are WORKSPACE-relative, as they are in every sibling config.
+examine_globs = ["atlas-graph/src/**/*.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# THE COVERING TARGETS, and why this crate needs a list at all. Its suite is 33
+# integration targets and ~23 minutes, because sixteen of them compile the whole
+# of `data/raw` in process (~50 s each) to build a real graph. The thirteen below
+# are the ones that witness the mutated files, and they cost ~210 s together:
+#
+#   --lib                            fidelity.rs and every adapter's own tests
+#   sqlite_laws                      sqlite/{blob,columns,ddl,logical,manifest,
+#                                    partition,snapshot,writer}.rs, sections.rs,
+#                                    event_world.rs -- 25 tests in 1.6 s
+#   sections_real_data               sections.rs, sqlite/reload.rs
+#   reload_real_data                 sqlite/reload.rs over the committed blobs
+#   serve_real_data                  sqlite/serve.rs, service.rs
+#   extras_real_data                 sqlite/extras.rs, sqlite/sidecars.rs
+#   port_widening_real_data          service.rs, legacy.rs, concord_adapter.rs
+#   provenance_registry_real_data    provenance.rs
+#   kjv_case_artifact_real_data      kjv_adapter.rs, window.rs
+#   brainfuel_adapter_real_data      brainfuel_adapter.rs, pipeline.rs
+#   lexicon_section_real_data        lexicon_adapter.rs
+#   heading_precedence               heading.rs -- its only cover, 56 s
+#   description_real_data            description_adapter.rs -- its only cover, 46 s
+#
+# `sections_startup` and `sqlite_real_data` are absent because they hold nothing
+# but wall-clock gates, which `exclude_re` skips anyway: each is `0 passed, 1
+# ignored`. The sixteen raw-compiling targets are absent because a target above
+# already witnesses the same files. A mutant this list reports MISSED is re-run
+# against the crate's WHOLE suite before it counts as a survivor.
+additional_cargo_test_args = [
+  "-p", "atlas-graph",
+  "--lib",
+  "--test", "sqlite_laws",
+  "--test", "sections_real_data",
+  "--test", "reload_real_data",
+  "--test", "serve_real_data",
+  "--test", "extras_real_data",
+  "--test", "port_widening_real_data",
+  "--test", "provenance_registry_real_data",
+  "--test", "kjv_case_artifact_real_data",
+  "--test", "brainfuel_adapter_real_data",
+  "--test", "lexicon_section_real_data",
+  "--test", "heading_precedence",
+  "--test", "description_real_data",
+]

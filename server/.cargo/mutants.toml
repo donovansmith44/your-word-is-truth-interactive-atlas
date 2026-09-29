@@ -1,11 +1,25 @@
-# cargo-mutants, scoped to the contract crate (PRINCIPLES 3: 100 % mutation
-# coverage minus logical equivalents, every equivalent recorded in the tool's
-# own configuration and never in an inline comment).
+# cargo-mutants (PRINCIPLES 3: 100 % mutation coverage minus logical
+# equivalents, every equivalent recorded in the tool's own configuration and
+# never in an inline comment; PRINCIPLES 3a: one sharded run per batch).
 #
-# THIS FILE IS THE ONE STATEMENT OF THE HOUSE RULES for this tool. The
-# standing procedure in `server/Cargo.toml` carries the commands and points
-# here; `graph-types/.cargo/mutants.toml` adds only what is true of that
-# crate. Nothing below is repeated in either of them.
+# THIS FILE IS THE ONE STATEMENT OF THE HOUSE RULES for this tool, and the
+# reference semantics of the gate: the scope is every crate in the workspace
+# and the per-mutant test command is the whole workspace suite. Every other
+# config in the repository -- `server/<crate>/.cargo/mutants.toml`,
+# `graph-types/.cargo/mutants.toml` -- adds only what is true of its own crate:
+# its scope and the covering targets that kill its mutants. Nothing below is
+# repeated in any of them.
+#
+# HOW THE GATE IS RUN, and the only way it is run:
+#
+#   bash scripts/mutants-parallel.sh -n 8 -b <batch base>
+#
+# That script shards the crate runs across throwaway git worktrees and merges
+# their outcomes into one summary; it is also where the reason worktrees are
+# used at all, and the reason a shard's data is COPIED and never linked, are
+# written down. A bare `cargo mutants --in-place` from this directory is this
+# file's semantics -- correct, and the whole workspace suite per mutant, which
+# is over twenty minutes each. It is the definition, not the procedure.
 #
 # WHY `.cargo/`: cargo-mutants 27 reads `.cargo/mutants.toml` and nothing
 # else. A `mutants.toml` at the package root is silently ignored -- the run
@@ -16,18 +30,19 @@
 # until scoop's gcc is on PATH --
 #   PATH="$HOME/scoop/apps/gcc/current/bin:$PATH" cargo install cargo-mutants --locked
 #
-# Run, from server/:
-#   cargo mutants --in-place                                    # the whole scope
-#   cargo mutants --in-place -e atlas-contract/src/reading.rs    # all but one file
+# `--in-place` is not a preference: a copied tree cannot build this workspace
+# at all. `server/` is the workspace root, so cargo-mutants' copy holds
+# `server/**` and nothing else, while `atlas-graph` depends on
+# `path = "../../graph-types"`, a SIBLING of the workspace root. Measured at
+# 27.1.0: the unmutated baseline fails in under a second with `failed to read
+# <tmp>/graph-types/Cargo.toml`, before a mutant is applied. Several crates'
+# tests also anchor the real corpus and the published contracts at
+# `env!("CARGO_MANIFEST_DIR")/../../data` and `/../../contracts`, both above
+# the copied root. `--in-place` and `--jobs` are exclusive, which is why
+# concurrency is worktrees rather than jobs.
 #
-# `--in-place` is not a preference. atlas-contract's tests anchor the real
-# corpus and the published contracts at `env!("CARGO_MANIFEST_DIR")/../../data`
-# and `/../../contracts`, both of which sit ABOVE the workspace root that
-# cargo-mutants otherwise copies, so in a copied tree every one of them fails
-# and the baseline is red before a single mutant is applied.
-#
-# `examine_globs` is the DECLARED scope and a run narrows it with `-e`, never
-# with `-f`: a command-line `-f` is UNIONED with this list rather than
+# `examine_globs` is the DECLARED scope and a run narrows it with `-e`/`-F`,
+# never with `-f`: a command-line `-f` is UNIONED with this list rather than
 # replacing it (verified against 27.1.0 -- `-f one/file.rs` still listed all
 # 310 mutants of the declared scope), so `-f` cannot narrow a run at all.
 #
@@ -35,13 +50,15 @@
 # yields zero mutants however it is globbed, so that crate carries its own
 # `graph-types/.cargo/mutants.toml` and is run from its own directory.
 
-# The scope is the CRATE, not a list of its files: a file added to it is in scope
-# the day it is added, where a list is one more place to forget.
-examine_globs = ["atlas-contract/src/**/*.rs"]
+# The scope is EVERY CRATE, not a list of files or of crates: a file or a crate
+# added to the workspace is in scope the day it is added, where a list is one
+# more place to forget -- and a narrow glob makes a later `-D` run find zero
+# mutants silently.
+examine_globs = ["*/src/**/*.rs"]
 exclude_re = ["wall-clock gate"]
 test_tool = "cargo"
-# The crate that OWNS the examined files, not the workspace: the workspace
-# suite is ~20 minutes and would be paid once per mutant. atlas-contract's own
-# suite carries the byte-identity, coverage and pact tests that kill these
-# files' mutants.
-additional_cargo_test_args = ["-p", "atlas-contract"]
+# The whole workspace suite, which is what "a mutant is caught" means when no
+# crate is named. The per-crate configs narrow this to the targets that cover
+# their own files; a mutant they report MISSED is confirmed against its own
+# crate's whole suite before it counts as a survivor.
+additional_cargo_test_args = ["--workspace"]

@@ -4,10 +4,10 @@
 # `server/.cargo/mutants.toml`. This file adds only what is true of THIS
 # crate: which files, which feature states, and its own equivalents.
 #
-# THE RUN IS TWO RUNS, from THIS directory, and the score is their UNION:
-#
-#   cd graph-types && cargo mutants --in-place --features serde,openapi   # canon-ids OFF
-#   cd graph-types && cargo mutants --in-place --all-features             # canon-ids ON
+# THE RUN IS TWO RUNS, from THIS directory, and the score is their UNION.
+# `scripts/mutants-parallel.sh` is what runs them -- it declares the two
+# feature sets and merges the two outcomes, so they are not spelled out a
+# second time here.
 #
 # Both are required, and neither alone is a score. `id.rs`, `edge.rs` and
 # `ContentAddressed::pid` each carry a `#[cfg(feature = "canon-ids")]` arm and
@@ -41,3 +41,6 @@ exclude_re = [
   "replace <impl std::hash::Hash for NodeId<K>>::hash with \\(\\)",
 ]
 test_tool = "cargo"
+# THE COVERING TARGETS: this crate's whole suite, which is the seven law
+# targets and the unit tests beside the types, all of it under three seconds.
+# There is nothing here to narrow away.

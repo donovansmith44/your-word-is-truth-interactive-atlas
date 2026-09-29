@@ -1,0 +1,14 @@
+# cargo-mutants for atlas-server. The HOUSE RULES are stated once, in
+# `server/.cargo/mutants.toml`; this file adds only what is true of this crate.
+#
+#     cargo mutants --in-place --config atlas-server/.cargo/mutants.toml   # from server/
+#
+# The globs are WORKSPACE-relative, as they are in every sibling config.
+examine_globs = ["atlas-server/src/**/*.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# THE COVERING TARGET: `tests/startup.rs`, which runs the real binary. This
+# crate is one `main` -- argument parsing, the two load paths, the listener --
+# and the only honest way to kill a mutant of it is a process boundary, so the
+# suite is one target and the whole crate is it.
+additional_cargo_test_args = ["-p", "atlas-server"]

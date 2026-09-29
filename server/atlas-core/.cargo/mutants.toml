@@ -2,35 +2,38 @@
 # `server/.cargo/mutants.toml`; this file adds only what is true here.
 #
 # WHY IT EXISTS: cargo-mutants discovers ONE config, the workspace root's
-# (`server/.cargo/mutants.toml`), whose `examine_globs` name atlas-contract
-# paths only. Nothing in this package matches them, and a command-line `-f`/
-# `-F` is UNIONED with the declared scope rather than narrowing it, so a run
-# for this crate found ZERO mutants however it was spelled -- silently, exit 0.
+# (`server/.cargo/mutants.toml`), whose scope is the whole workspace and whose
+# per-mutant test command is therefore the whole workspace suite. Nothing about
+# THIS crate's covering tests can be said there, and a command-line `-f`/`-F`
+# narrows the files without touching the test command, so the per-crate scope
+# and the per-crate covering targets are one file per crate, named with
+# `--config`. `scripts/mutants-parallel.sh` names them all.
 #
 # THIS FILE IS NOT DISCOVERED. Being one level deeper than the workspace root,
-# it is read only when it is NAMED, which is what the command below does.
-# Measured, at cargo-mutants 27.1.0: without `--config` the run lists nothing;
-# with it, 29 mutants in the examined file. `--no-config -F atlas-core/src/
-# canon.rs` lists the same 29, but drops `additional_cargo_test_args` with the
-# rest of the config and so pays the whole 20-minute workspace suite per
-# mutant instead of this crate's own sub-second one.
+# it is read only when it is NAMED:
 #
-# RUN FROM THIS DIRECTORY:
-#
-#     cd server/atlas-core && cargo mutants --in-place --config .cargo/mutants.toml
+#     cargo mutants --in-place --config atlas-core/.cargo/mutants.toml   # from server/
 #
 # The globs below are WORKSPACE-relative (`atlas-core/src/...`), the same
-# spelling the sibling config uses, even though this file sits one level
+# spelling the sibling configs use, even though this file sits one level
 # deeper: cargo-mutants resolves every path against the workspace root it
 # discovers, not against the config's own directory. A package-relative
 # `src/canon.rs` silently matches nothing.
 #
-# `--in-place` for the same reason the sibling states: this crate's tests are
-# fast, but its `golden.rs` fixture is read from a path above the workspace
-# root, which a copied tree does not carry.
-examine_globs = ["atlas-core/src/canon.rs"]
+# `--in-place` for the reason `server/.cargo/mutants.toml` states (a copied
+# tree cannot resolve `../graph-types` at all); this crate adds one of its own,
+# `tests/golden.rs`, whose fixture is read from `../../tests/fixtures`, above
+# the workspace root.
+
+# The scope is the CRATE, not a list of its files: a file added to it is in
+# scope the day it is added, where a list is one more place to forget -- and a
+# one-file glob makes a later `-D` run find zero mutants silently.
+examine_globs = ["atlas-core/src/**/*.rs"]
 exclude_re = ["wall-clock gate"]
 test_tool = "cargo"
-# This crate's own suite, not the workspace's: it is 220 tests in under a
-# second, and it is what covers the examined file.
+# THE COVERING TARGETS: this crate's whole suite, because all of it is fast --
+# 221 unit tests in 0.7 s, plus `golden` and
+# `no_atlas_data_in_public_signatures`, each under a second. There is nothing
+# here to narrow away, and `atlas-core` is the crate every other one depends
+# on, so `--test` filters would only risk a false survivor.
 additional_cargo_test_args = ["-p", "atlas-core"]

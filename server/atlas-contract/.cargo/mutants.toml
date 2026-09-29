@@ -1,0 +1,54 @@
+# cargo-mutants for atlas-contract. The HOUSE RULES are stated once, in
+# `server/.cargo/mutants.toml`; this file adds only what is true of this crate.
+#
+#     cargo mutants --in-place --config atlas-contract/.cargo/mutants.toml   # from server/
+#
+# The globs are WORKSPACE-relative, as they are in every sibling config.
+#
+# This crate's tests anchor the real corpus and the published contracts at
+# `env!("CARGO_MANIFEST_DIR")/../../data` and `/../../contracts`, both above the
+# workspace root, which is a second reason for `--in-place` beyond the one the
+# house rules give.
+examine_globs = ["atlas-contract/src/**/*.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# THE COVERING TARGETS, and why each is here. This crate is the served surface
+# and the published contract, 392 mutants over 21 files, and its whole suite is
+# ~250 s -- twenty-seven hours for the batch. The eight targets below are the
+# ones that actually witness those files, and they cost ~40 s together:
+#
+#   --lib                    the wire types' own unit tests
+#   api                      app.rs, error.rs, map.rs, events.rs, places.rs,
+#                            reference.rs -- the router over the demo world
+#   graph_api                graph.rs, graph_wire.rs, reading.rs, contents.rs,
+#                            catechism.rs -- 61 tests over the real corpus, and
+#                            the deepest cover this crate has
+#   contract_generation      document.rs, wire/**, bins/export_contract.rs --
+#   contract_api             the published documents, regenerated and compared
+#   contract_coverage        byte for byte
+#   aqc_corpus_generation    aqc_export.rs, query.rs -- the AQC corpus
+#   contract_pact            load.rs -- the recorded evidence replayed
+#   scene_byte_identity      map.rs -- the scene's bytes off the committed
+#                            sections, 1.1 s
+#   sources_api              meta.rs -- the source registry endpoints
+#
+# DELIBERATELY ABSENT, each because a target above witnesses the same files for
+# a fraction of the time: aqc_cucumber (56 s), brainfuel_layers (72 s),
+# graph_conformance (28 s), graph_equivalence (72 s), perf_smoke (wall-clock
+# gates only), no_legacy_event_reads (a source scan, not a behaviour). A mutant
+# this list reports MISSED is re-run against the crate's WHOLE suite before it
+# counts as a survivor -- that confirmation is the one place the absent targets
+# get their say.
+additional_cargo_test_args = [
+  "-p", "atlas-contract",
+  "--lib",
+  "--test", "api",
+  "--test", "graph_api",
+  "--test", "contract_generation",
+  "--test", "contract_api",
+  "--test", "contract_coverage",
+  "--test", "aqc_corpus_generation",
+  "--test", "contract_pact",
+  "--test", "scene_byte_identity",
+  "--test", "sources_api",
+]

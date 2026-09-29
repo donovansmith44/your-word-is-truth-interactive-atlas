@@ -1,0 +1,18 @@
+# cargo-mutants for atlas-cli. The HOUSE RULES -- `.cargo/`, `--in-place`,
+# narrowing with `-e`/`-F` and never `-f`, the install line, and why this file
+# is NAMED rather than discovered -- are stated once, in
+# `server/.cargo/mutants.toml`. This file adds only what is true of this crate.
+#
+#     cargo mutants --in-place --config atlas-cli/.cargo/mutants.toml   # from server/
+#
+# The globs are WORKSPACE-relative, as they are in every sibling config.
+examine_globs = ["atlas-cli/src/**/*.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# THE COVERING TARGETS: this crate's whole suite, and it cannot be narrowed.
+# `tests/cli.rs` (58 tests, 46 s) drives the real `bibex` binary through a
+# process boundary and is the ONLY test of anything in `src/commands/` or of
+# `main`'s argument parsing; `tests/contract_pact_cli.rs` (1.8 s) records the
+# CLI pact against that same binary; the bin's own unit tests are 0.1 s. There
+# is nothing here whose removal would save a measurable second.
+additional_cargo_test_args = ["-p", "atlas-cli"]

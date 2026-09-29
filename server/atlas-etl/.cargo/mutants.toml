@@ -1,0 +1,18 @@
+# cargo-mutants for atlas-etl. The HOUSE RULES are stated once, in
+# `server/.cargo/mutants.toml`; this file adds only what is true of this crate.
+#
+#     cargo mutants --in-place --config atlas-etl/.cargo/mutants.toml   # from server/
+#
+# The globs are WORKSPACE-relative, as they are in every sibling config.
+examine_globs = ["atlas-etl/src/**/*.rs"]
+exclude_re = ["wall-clock gate"]
+test_tool = "cargo"
+# THE COVERING TARGETS: this crate's whole suite. Everything mutated here is a
+# parser or a validator over `data/raw` and `data/curated`, and the tests that
+# read those two directories are spread across every target -- the 174 unit
+# tests beside the parsers (0.5 s), `coverage` (28 s, the curated-file laws),
+# `sources_validate`, `fixtures`, and one `*_real_data` target per corpus.
+# Narrowing would have to name nearly all of them, and naming nearly all of
+# them is a list that goes stale; the one target that would be worth dropping,
+# `coverage`, is also the only cover for `curated.rs` and `validate.rs`.
+additional_cargo_test_args = ["-p", "atlas-etl"]

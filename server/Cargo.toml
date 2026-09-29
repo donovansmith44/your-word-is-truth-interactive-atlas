@@ -47,26 +47,27 @@ resolver = "2"
 # the section count, not the grand total alone. Canonical ground truth at
 # f988f1b: 747 passed (727 + 20) across 37 sections.
 #
-# THE MUTATION LEG (CONTRACT-1a; PRINCIPLES 3, 100 % mutation coverage minus
-# recorded equivalents) is the FOURTH command of a full standing block, run
-# after the three above -- THREE invocations, and the graph-types pair is one
-# score, not either of them:
-#   cargo mutants --in-place                                              # from server/
-#   (cd ../graph-types && cargo mutants --in-place --features serde,openapi)
-#   (cd ../graph-types && cargo mutants --in-place --all-features)
-# The two graph-types runs are scored as their UNION: that crate keeps a
-# `canon-ids` arm and a `not(canon-ids)` arm of the same functions, and a
-# mutation of whichever arm is switched off is a no-op that survives every
-# test, so a mutant is alive only when BOTH runs miss it.
-# Every run reports mutants tested / caught / missed / unviable / timeout per
-# file; a missed mutant is killed by a test or recorded as an equivalent in
-# the relevant config, never with an inline `#[mutants::skip]`.
-# Why `.cargo/`, why `--in-place`, why a run narrows with `-e`/`-F` and never
-# with `-f`, and how cargo-mutants was installed on this windows-gnu host:
-# `server/.cargo/mutants.toml`, which is also where the examined scope and
-# every equivalent mutant with its reason live. `graph-types` carries its own
-# `.cargo/mutants.toml` and is run from its own directory because a file
-# outside this workspace root yields ZERO mutants however it is globbed here.
+# THE MUTATION LEG (PRINCIPLES 3, 100 % mutation coverage minus recorded
+# equivalents; PRINCIPLES 3a, once per BATCH at its close, sharded) is the
+# FOURTH command of a full standing block, run after the three above -- ONE
+# invocation, from the repository root:
+#   bash scripts/mutants-parallel.sh -n 8 -b <the batch's base commit>
+# It shards every crate's run across eight throwaway git worktrees, scores
+# graph-types' two feature states as one union, and merges the outcomes into
+# `mutants.out-merged/summary.txt`: tested / caught / missed / unviable /
+# timeout per file. It replaces the three serial invocations this block carried
+# through CONTRACT-1a, which were 419 s per mutant and 160 h for a batch; the
+# measured numbers and the design are in BENCHMARKS.md under "Mutation gate".
+# A missed mutant is killed by a test or recorded as an equivalent in the
+# relevant config, never with an inline `#[mutants::skip]`.
+# Why `.cargo/`, why `--in-place` (and so why worktrees rather than `--jobs`),
+# why a run narrows with `-e`/`-F` and never with `-f`, and how cargo-mutants
+# was installed on this windows-gnu host: `server/.cargo/mutants.toml`, which
+# is the whole statement of the house rules. Each crate then carries its own
+# `<crate>/.cargo/mutants.toml` naming its scope and the covering test targets
+# that kill its mutants; `graph-types` carries its own and is run from its own
+# directory because a file outside this workspace root yields ZERO mutants
+# however it is globbed here.
 #
 # Batch CORP-2a (2026-08-25, the Book of Concord corpus, data half): moved
 # to 788 passed (767 + 21) across 39 sections. Workspace +35 across +2
