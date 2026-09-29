@@ -4,6 +4,7 @@ pub mod find;
 pub mod help;
 pub mod kinds;
 pub mod node;
+pub mod raw;
 pub mod tutorial;
 pub mod verify;
 pub mod verse;

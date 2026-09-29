@@ -1,16 +1,21 @@
 //! `bibex verify [--section <name>]` -- recompute each cached section's logical hash, each
 //! committed blob's transport hash and the manifest root, print them against the manifest,
-//! and exit non-zero on any mismatch.
+//! and exit non-zero on any mismatch. A full verify also walks `data/raw` against
+//! `data/raw/MANIFEST.toml` and names the file that moved.
 
-use std::path::Path;
+use std::fmt;
+use std::path::{Path, PathBuf};
 
+use atlas_cli::raw::{read_manifest as read_raw_manifest, walk, MANIFEST_FILE};
 use atlas_graph::sections::Section;
 use atlas_graph::sqlite::blob::sha256_hex_of_file;
 use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
 use atlas_graph::sqlite::manifest::{read_manifest, root_of, Manifest};
 use atlas_graph::sqlite::open_read_only;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout, SectionSource};
+use atlas_graph_types::raw_manifest::RawHash;
 
+use crate::commands::raw::{drift, leaves, raw_dir_beside, Drift};
 use crate::error::CliError;
 
 pub struct SectionReport {
@@ -33,20 +38,45 @@ pub struct Report {
     pub manifest: Manifest,
     pub recomputed_root: String,
     pub sections: Vec<SectionReport>,
+    /// `None` under `--section`: that asks about one compiled section, and the raw tree is not one.
+    pub raw: Option<RawSection>,
+}
+
+/// The raw tree beside the compiled one (D1: a sibling of the compiled chain, never a link in it).
+pub enum RawSection {
+    /// Nothing to check against, and not a failure: a fresh clone has the manifest and no tree.
+    Unrecorded(Unrecorded),
+    Checked { root: RawHash, files: usize, drift: Vec<Drift> },
+}
+
+pub enum Unrecorded {
+    NoManifest { manifest: PathBuf },
+    NoFiles { raw_dir: PathBuf },
 }
 
 impl Report {
-    pub fn failures(&self) -> Vec<String> {
+    fn compiled_failures(&self) -> Vec<String> {
         self.sections.iter().flat_map(|s| s.failures.iter().cloned()).collect()
+    }
+    fn raw_failures(&self) -> Vec<String> {
+        match &self.raw {
+            Some(RawSection::Checked { drift, .. }) => drift.iter().map(raw_failure).collect(),
+            Some(RawSection::Unrecorded(_)) | None => Vec::new(),
+        }
     }
     pub fn checks(&self) -> usize {
         // Two checks per section -- transport and logical, the schema counted with the
-        // logical one -- plus the root.
-        1 + self.sections.len() * 2
+        // logical one -- plus the root, plus the raw tree when there is one to check.
+        let raw = match &self.raw {
+            Some(RawSection::Checked { .. }) => 1,
+            Some(RawSection::Unrecorded(_)) | None => 0,
+        };
+        1 + self.sections.len() * 2 + raw
     }
 }
 
 const DO: &str = "recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served";
+const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
@@ -156,7 +186,46 @@ pub fn check(data_dir: &Path, only: Option<&str>) -> Result<Report, CliError> {
         }
         sections.push(r);
     }
-    Ok(Report { manifest, recomputed_root, sections })
+    let raw = match only {
+        Some(_) => None,
+        None => Some(check_raw(data_dir)?),
+    };
+    Ok(Report { manifest, recomputed_root, sections, raw })
+}
+
+/// The manifest is looked for before the tree is walked, so a clone with neither pays nothing;
+/// a walked tree with no files is unrecorded too, so an emptied `data/raw` can never pass.
+fn check_raw(data_dir: &Path) -> Result<RawSection, CliError> {
+    let raw_dir = raw_dir_beside(data_dir);
+    let manifest = raw_dir.join(MANIFEST_FILE);
+    if !manifest.is_file() {
+        return Ok(RawSection::Unrecorded(Unrecorded::NoManifest { manifest }));
+    }
+    let walked = walk(&raw_dir).map_err(|e| CliError::integrity_failed(format!("{} could not be walked", raw_dir.display()), e.to_string(), DO_RAW))?;
+    let files = leaves(&walked.datasets);
+    if files == 0 {
+        return Ok(RawSection::Unrecorded(Unrecorded::NoFiles { raw_dir }));
+    }
+    let recorded = read_raw_manifest(&manifest).map_err(|e| CliError::integrity_failed(format!("{} does not verify", manifest.display()), e.to_string(), DO_RAW))?;
+    Ok(RawSection::Checked { root: walked.root, files, drift: drift(&recorded.datasets, &walked.datasets) })
+}
+
+fn raw_failure(drift: &Drift) -> String {
+    match drift {
+        Drift::Missing { path } => format!("raw {path}: MISSING"),
+        Drift::Extra { path } => format!("raw {path}: EXTRA (not in {MANIFEST_FILE})"),
+        Drift::Truncated { path, recorded, found } => format!("raw {path}: TRUNCATED manifest {recorded} bytes file {found}"),
+        Drift::Changed { path, recorded, found } => format!("raw {path}: MISMATCH manifest {} file {}", recorded.hex(), found.hex()),
+    }
+}
+
+impl fmt::Display for Unrecorded {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Unrecorded::NoManifest { manifest } => write!(f, "no {MANIFEST_FILE} at {}", manifest.display()),
+            Unrecorded::NoFiles { raw_dir } => write!(f, "{} has no files", raw_dir.display()),
+        }
+    }
 }
 
 fn commas(n: u64) -> String {
@@ -198,27 +267,35 @@ fn render(report: &Report) -> String {
         if root_ok { "OK" } else { "MISMATCH" },
         report.manifest.sections.len()
     ));
+    match &report.raw {
+        Some(RawSection::Unrecorded(why)) => out.push_str(&format!("raw: unrecorded ({why})\n")),
+        Some(RawSection::Checked { root, files, .. }) => out.push_str(&format!("raw {} OK ({} files)\n", root.hex(), commas(*files as u64))),
+        None => {}
+    }
     out
 }
 
+/// The raw tree is one check however many files drifted: every drifted file is named, but the
+/// count says how many checks failed, not how many lines say so.
 fn fail(report: &Report) -> Option<CliError> {
-    let failures = report.failures();
-    if failures.is_empty() {
-        return None;
-    }
-    Some(CliError::integrity_failed(
-        format!("{} of {} checks failed", failures.len(), report.checks()),
-        failures.join("; "),
-        DO,
-    ))
+    let compiled = report.compiled_failures();
+    let raw = report.raw_failures();
+    let do_ = match (compiled.is_empty(), raw.is_empty()) {
+        (true, true) => return None,
+        (false, true) => DO.to_string(),
+        (true, false) => DO_RAW.to_string(),
+        (false, false) => format!("{DO}; {DO_RAW}"),
+    };
+    let failed = compiled.len() + usize::from(!raw.is_empty());
+    let failures: Vec<String> = compiled.into_iter().chain(raw).collect();
+    Some(CliError::integrity_failed(format!("{failed} of {} checks failed", report.checks()), failures.join("; "), do_))
 }
 
 pub fn run(data_dir: &Path, only: Option<&str>) -> Result<String, CliError> {
     let report = check(data_dir, only)?;
-    let text = render(&report);
     match fail(&report) {
         Some(e) => Err(e),
-        None => Ok(text),
+        None => Ok(render(&report)),
     }
 }
 
@@ -244,6 +321,11 @@ pub fn run_json(data_dir: &Path, only: Option<&str>) -> Result<serde_json::Value
             })
         })
         .collect();
+    let raw = match &report.raw {
+        Some(RawSection::Unrecorded(why)) => serde_json::json!({ "status": "unrecorded", "why": why.to_string() }),
+        Some(RawSection::Checked { root, files, .. }) => serde_json::json!({ "status": "ok", "root": root.hex(), "files": files }),
+        None => serde_json::Value::Null,
+    };
     Ok(serde_json::json!({
         "root": {
             "manifest": report.manifest.root,
@@ -251,5 +333,6 @@ pub fn run_json(data_dir: &Path, only: Option<&str>) -> Result<serde_json::Value
             "ok": report.manifest.root == report.recomputed_root,
         },
         "sections": sections,
+        "raw": raw,
     }))
 }

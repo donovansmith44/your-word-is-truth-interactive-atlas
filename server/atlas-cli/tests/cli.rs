@@ -677,9 +677,11 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
         assert!(line.contains("logical ") && line.contains(" OK ") && line.contains("transport OK"), "{line}");
         assert!(line.contains(" -> ") && line.contains(" bytes"), "sizes: {line}");
     }
+    let root = text.lines().find(|l| l.starts_with("root ")).unwrap();
+    assert!(root.contains(" OK (recomputed from 5 section lines)"), "{text}");
     let last = text.lines().last().unwrap();
-    assert!(last.starts_with("root ") && last.contains(" OK (recomputed from 5 section lines)"), "{text}");
-    assert_eq!(text.lines().count(), 6);
+    assert!(last.starts_with("raw: unrecorded (no MANIFEST.toml at "), "{text}");
+    assert_eq!(text.lines().count(), 7);
 
     let (o, v) = run_json(&["verify"]);
     assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
@@ -690,6 +692,7 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     assert_eq!(sections.len(), 5);
     assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == 14));
     assert!(sections.iter().all(|s| s["uncompressed_bytes"].as_u64().unwrap() > s["bytes"].as_u64().unwrap()));
+    assert_eq!(v["raw"]["status"], "unrecorded");
 
     let o = run_with_data_dir(&["verify", "--section", "concord"]);
     assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));
