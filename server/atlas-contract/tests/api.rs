@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Polity, PolityEra};
+use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Person, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -663,6 +663,27 @@ async fn catechism_span_and_item_endpoints() {
     let (st, body) = call(&app, "/api/catechism/item/does-not-exist").await;
     assert_eq!(st, 404);
     assert_eq!(body["error"]["code"], "not_found");
+}
+
+const YEAR_ZERO: i32 = 0;
+
+#[tokio::test]
+async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_defect() {
+    // Arrange
+    let mut data = demo_fixture();
+    data.people.push(Person { id: "nobody_0".into(), name: "Nobody".into(), birth_year: Some(YEAR_ZERO), verse_links: vec!["GEN.1.1".into()], ..Default::default() });
+    let data: AtlasData = data.finish();
+    let graph = graph_fixture_for(&data);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
+
+    // Act
+    let answer = call(&app, "/api/node/Person:nobody_0").await;
+
+    // Assert
+    assert_eq!(
+        answer,
+        (StatusCode::INTERNAL_SERVER_ERROR, serde_json::json!({ "error": { "code": "internal", "message": "nobody_0 records a year zero" } }))
+    );
 }
 
 fn square_ring() -> Vec<(f64, f64)> {

@@ -89,22 +89,11 @@ pub fn openapi() -> OpenApi {
 /// READ a data file free to go on reading whatever that file carries.
 fn close_every_object(doc: &mut OpenApi) {
     for schema in doc.components.iter_mut().flat_map(|components| components.schemas.values_mut()) {
-        close(schema);
-    }
-}
-
-// An externally tagged enum publishes each variant as a `oneOf` member whose one
-// property holds another object, so closing reaches into both.
-fn close(schema: &mut RefOr<Schema>) {
-    match schema {
-        RefOr::T(Schema::Object(object)) => {
+        if let RefOr::T(Schema::Object(object)) = schema {
             if matches!(object.schema_type, SchemaType::Type(Type::Object)) && object.additional_properties.is_none() {
                 object.additional_properties = Some(Box::new(AdditionalProperties::FreeForm(false)));
             }
-            object.properties.values_mut().for_each(close);
         }
-        RefOr::T(Schema::OneOf(one_of)) => one_of.items.iter_mut().for_each(close),
-        _ => {}
     }
 }
 
@@ -134,18 +123,26 @@ pub fn aqc_schema_json() -> String {
     serde_json::to_string_pretty(&out).expect("the AQC schema serialises") + "\n"
 }
 
+/// A reference is a `$ref`, or one of the subtypes a discriminator's `mapping` names.
 fn point_references_at_shapes(value: &mut Value) {
     match value {
         Value::Object(map) => {
             for (key, child) in map.iter_mut() {
-                match child.as_str() {
-                    Some(target) if key == "$ref" => *child = Value::String(target.replace(COMPONENT_REFERENCE, SHAPE_REFERENCE)),
-                    _ => point_references_at_shapes(child),
+                match (key.as_str(), child) {
+                    ("$ref", reference @ Value::String(_)) => point_at_shape(reference),
+                    ("mapping", Value::Object(subtypes)) => subtypes.values_mut().for_each(point_at_shape),
+                    (_, child) => point_references_at_shapes(child),
                 }
             }
         }
         Value::Array(items) => items.iter_mut().for_each(point_references_at_shapes),
         _ => {}
+    }
+}
+
+fn point_at_shape(reference: &mut Value) {
+    if let Value::String(target) = reference {
+        *target = target.replace(COMPONENT_REFERENCE, SHAPE_REFERENCE);
     }
 }
 

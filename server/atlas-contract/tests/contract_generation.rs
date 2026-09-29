@@ -260,14 +260,26 @@ fn families_every_route_names(document: &serde_json::Value) -> Vec<String> {
 
 /// The names of every schema that says it is an object and does not refuse the
 /// fields it has not declared, wherever in the document it stands.
+/// An object is closed by its own `additionalProperties: false`, or, as a member of
+/// an `allOf`, by that `allOf`'s `unevaluatedProperties: false`. The one object open
+/// by design is a discriminator's base: each of its subtypes adds its own parts.
 fn open_objects(value: &serde_json::Value, at: String) -> Vec<String> {
     let mut open = Vec::new();
     match value {
         serde_json::Value::Object(map) => {
-            if map.get("type") == Some(&serde_json::json!("object")) && map.get("additionalProperties") != Some(&serde_json::json!(false)) {
+            let is_object = map.get("type") == Some(&serde_json::json!("object"));
+            if is_object && map.get("additionalProperties") != Some(&serde_json::json!(false)) && !map.contains_key("discriminator") {
                 open.push(at.clone());
             }
-            open.extend(map.iter().flat_map(|(key, child)| open_objects(child, format!("{at}/{key}"))));
+            let closes_its_members = map.get("unevaluatedProperties") == Some(&serde_json::json!(false));
+            for (key, child) in map {
+                match (key.as_str(), child) {
+                    ("allOf", serde_json::Value::Array(members)) if closes_its_members => open.extend(members.iter().enumerate().flat_map(|(index, member)| {
+                        member.as_object().into_iter().flatten().flat_map(|(key, child)| open_objects(child, format!("{at}/allOf/{index}/{key}"))).collect::<Vec<_>>()
+                    })),
+                    _ => open.extend(open_objects(child, format!("{at}/{key}"))),
+                }
+            }
         }
         serde_json::Value::Array(items) => open.extend(items.iter().enumerate().flat_map(|(index, item)| open_objects(item, format!("{at}/{index}")))),
         _ => {}
@@ -282,14 +294,16 @@ fn unresolved_references(value: &serde_json::Value, prefix: &str, defined: &serd
     references.into_iter().filter(|reference| reference.strip_prefix(prefix).is_none_or(|name| !names.contains(name))).collect()
 }
 
+/// A reference is a `$ref`, or one of the subtypes a discriminator's `mapping` names.
 fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTreeSet<String>) {
     match value {
         serde_json::Value::Object(map) => {
             for (key, child) in map {
-                match child.as_str() {
-                    Some(target) if key == "$ref" => {
+                match (key.as_str(), child) {
+                    ("$ref", serde_json::Value::String(target)) => {
                         out.insert(target.to_string());
                     }
+                    ("mapping", serde_json::Value::Object(subtypes)) => out.extend(subtypes.values().filter_map(serde_json::Value::as_str).map(str::to_string)),
                     _ => collect_references(child, out),
                 }
             }

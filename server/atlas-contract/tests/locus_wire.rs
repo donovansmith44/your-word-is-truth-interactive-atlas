@@ -17,23 +17,23 @@ const HAZOR_STARTS: usize = 22;
 const HAZOR_ENDS: usize = 27;
 
 #[test]
-fn a_bible_ref_serialises_externally_tagged_with_the_book_code() {
+fn a_bible_ref_serialises_tagged_with_its_corpus_beside_the_book_code() {
     // Arrange
     let r = TextRef::Bible { book: BookId(GENESIS), chapter: 1, verse: 1 };
     // Act
     let json = serde_json::to_value(&r).unwrap();
     // Assert
-    assert_eq!(json, serde_json::json!({ "bible": { "book": "GEN", "chapter": 1, "verse": 1 } }));
+    assert_eq!(json, serde_json::json!({ "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 }));
 }
 
 #[test]
-fn a_concord_ref_serialises_externally_tagged() {
+fn a_concord_ref_serialises_tagged_with_its_corpus() {
     // Arrange
     let r = TextRef::Concord { part: 7, article: 2, paragraph: 1 };
     // Act
     let json = serde_json::to_value(&r).unwrap();
     // Assert
-    assert_eq!(json, serde_json::json!({ "concord": { "part": 7, "article": 2, "paragraph": 1 } }));
+    assert_eq!(json, serde_json::json!({ "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 }));
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn a_point_at_a_unit_edge_omits_its_word() {
     // Act
     let json = serde_json::to_value(&point).unwrap();
     // Assert
-    assert_eq!(json, serde_json::json!({ "unit": { "bible": { "book": "GEN", "chapter": 1, "verse": 1 } } }));
+    assert_eq!(json, serde_json::json!({ "unit": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 } }));
 }
 
 #[test]
@@ -193,4 +193,51 @@ fn a_bible_refs_book_publishes_as_one_of_the_canons_codes() {
     let book = &document["components"]["schemas"]["BookId"];
     // Assert
     assert_eq!(*book, serde_json::json!({ "type": "string", "description": "A book of the Bible, by its canon code.", "enum": canon_codes }));
+}
+
+#[test]
+fn a_text_ref_publishes_as_a_base_naming_its_corpus_with_one_subtype_per_corpus() {
+    // Arrange
+    let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+    let unit_number = serde_json::json!({ "type": "integer", "format": "int32", "minimum": 0 });
+    // Act
+    let schemas = ["TextRef", "BibleRef", "ConcordRef"].map(|name| document["components"]["schemas"][name].clone());
+    // Assert
+    assert_eq!(
+        schemas,
+        [
+            serde_json::json!({
+                "type": "object",
+                "description": "One unit of a corpus's text, named by the corpus it belongs to.",
+                "required": ["corpus"],
+                "properties": { "corpus": { "type": "string", "enum": ["bible", "concord"] } },
+                "additionalProperties": true,
+                "discriminator": { "propertyName": "corpus", "mapping": { "bible": "#/components/schemas/BibleRef", "concord": "#/components/schemas/ConcordRef" } },
+            }),
+            serde_json::json!({
+                "description": "A verse of the Bible.",
+                "allOf": [
+                    { "$ref": "#/components/schemas/TextRef" },
+                    {
+                        "type": "object",
+                        "required": ["book", "chapter", "verse"],
+                        "properties": { "book": { "$ref": "#/components/schemas/BookId" }, "chapter": unit_number, "verse": unit_number },
+                    },
+                ],
+                "unevaluatedProperties": false,
+            }),
+            serde_json::json!({
+                "description": "A paragraph of the Book of Concord.",
+                "allOf": [
+                    { "$ref": "#/components/schemas/TextRef" },
+                    {
+                        "type": "object",
+                        "required": ["part", "article", "paragraph"],
+                        "properties": { "part": unit_number, "article": unit_number, "paragraph": unit_number },
+                    },
+                ],
+                "unevaluatedProperties": false,
+            }),
+        ]
+    );
 }

@@ -839,6 +839,27 @@ paths:
                 type: string
 components:
   schemas:
+    BibleRef:
+      allOf:
+      - $ref: '#/components/schemas/TextRef'
+      - type: object
+        required:
+        - book
+        - chapter
+        - verse
+        properties:
+          book:
+            $ref: '#/components/schemas/BookId'
+          chapter:
+            type: integer
+            format: int32
+            minimum: 0
+          verse:
+            type: integer
+            format: int32
+            minimum: 0
+      description: A verse of the Bible.
+      unevaluatedProperties: false
     BookId:
       type: string
       description: A book of the Bible, by its canon code.
@@ -1077,6 +1098,29 @@ components:
           items:
             $ref: '#/components/schemas/Verse'
       additionalProperties: false
+    ConcordRef:
+      allOf:
+      - $ref: '#/components/schemas/TextRef'
+      - type: object
+        required:
+        - part
+        - article
+        - paragraph
+        properties:
+          article:
+            type: integer
+            format: int32
+            minimum: 0
+          paragraph:
+            type: integer
+            format: int32
+            minimum: 0
+          part:
+            type: integer
+            format: int32
+            minimum: 0
+      description: A paragraph of the Book of Concord.
+      unevaluatedProperties: false
     Confidence:
       type: string
       description: How a claim was arrived at.
@@ -2568,59 +2612,22 @@ components:
       - OT
       - NT
     TextRef:
-      oneOf:
-      - type: object
-        required:
-        - bible
-        properties:
-          bible:
-            type: object
-            required:
-            - book
-            - chapter
-            - verse
-            properties:
-              book:
-                $ref: '#/components/schemas/BookId'
-                description: The book's canon code, such as `GEN`.
-              chapter:
-                type: integer
-                format: int32
-                minimum: 0
-              verse:
-                type: integer
-                format: int32
-                minimum: 0
-            additionalProperties: false
-        additionalProperties: false
-      - type: object
-        required:
-        - concord
-        properties:
-          concord:
-            type: object
-            required:
-            - part
-            - article
-            - paragraph
-            properties:
-              article:
-                type: integer
-                format: int32
-                minimum: 0
-              paragraph:
-                type: integer
-                format: int32
-                minimum: 0
-              part:
-                type: integer
-                format: int32
-                minimum: 0
-            additionalProperties: false
-        additionalProperties: false
-      description: |-
-        One unit of a corpus's text: a verse of the Bible, or a paragraph of the Book
-        of Concord.
+      type: object
+      description: One unit of a corpus's text, named by the corpus it belongs to.
+      required:
+      - corpus
+      properties:
+        corpus:
+          type: string
+          enum:
+          - bible
+          - concord
+      additionalProperties: true
+      discriminator:
+        mapping:
+          bible: '#/components/schemas/BibleRef'
+          concord: '#/components/schemas/ConcordRef'
+        propertyName: corpus
     TextScope:
       type: string
       description: |-

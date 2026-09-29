@@ -5,6 +5,7 @@ use atlas_core::{time, CoreError};
 const EN_DASH: &str = " – ";
 const FIRST_KINGS: u8 = 10;
 const YEAR_ZERO: i32 = 0;
+const THE_LABEL_A_YEAR_ZERO_WOULD_CARRY: &str = "AD 0";
 
 #[test]
 fn a_year_is_labelled_bc_before_christ_and_ad_after() {
@@ -24,6 +25,16 @@ fn there_is_no_year_zero() {
     let year = Year::of(value);
     // Assert
     assert_eq!(year, Err(CoreError::ZeroYear));
+}
+
+#[test]
+fn a_year_read_off_the_wire_is_refused_at_year_zero_as_one_made_here_is() {
+    // Arrange
+    let wire = serde_json::json!({ "value": YEAR_ZERO, "label": THE_LABEL_A_YEAR_ZERO_WOULD_CARRY });
+    // Act
+    let year = serde_json::from_value::<Year>(wire).map_err(|e| e.to_string());
+    // Assert
+    assert_eq!(year, Err(CoreError::ZeroYear.to_string()));
 }
 
 #[test]
@@ -70,7 +81,7 @@ fn a_claim_travels_with_its_range_its_verses_and_its_note() {
         serde_json::json!({
             "when": { "from": { "value": -966, "label": "966 BC" }, "to": { "value": -966, "label": "966 BC" }, "label": "966 BC" },
             "label": "c. 966 BC",
-            "verses": [ { "from": { "unit": { "bible": { "book": "1KI", "chapter": 6, "verse": 1 } } }, "to": { "unit": { "bible": { "book": "1KI", "chapter": 6, "verse": 1 } } } } ],
+            "verses": [ { "from": { "unit": { "corpus": "bible", "book": "1KI", "chapter": 6, "verse": 1 } }, "to": { "unit": { "corpus": "bible", "book": "1KI", "chapter": 6, "verse": 1 } } } ],
             "note": "traditional",
         })
     );

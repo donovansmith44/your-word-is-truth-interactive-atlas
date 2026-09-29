@@ -1553,7 +1553,7 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "GEN.1.1",
-            "locus": { "bible": { "book": "GEN", "chapter": 1, "verse": 1 } },
+            "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
             "text": "In the beginning God created the heaven and the earth.",
             "words_of_christ": [],
             "edge_summary": [
@@ -1583,7 +1583,7 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
         window["units"],
         serde_json::json!([{
             "ref": "BoC 7.2.1",
-            "locus": { "concord": { "part": 7, "article": 2, "paragraph": 1 } },
+            "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
             "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
             "words_of_christ": [],
             "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
@@ -1608,7 +1608,7 @@ async fn a_contents_child_carries_the_locus_it_opens_at() {
             "title": "1",
             "kind": "chapter",
             "ref": "GEN.1",
-            "locus": { "bible": { "book": "GEN", "chapter": 1, "verse": 1 } },
+            "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
             "count": VERSES_IN_GENESIS_1,
         })
     );
@@ -1620,7 +1620,7 @@ const PARAGRAPHS_IN_THE_PREFACE: usize = 25;
 async fn a_contents_root_opens_at_the_locus_its_first_child_opens_at() {
     // Arrange
     let app = compiled_app();
-    let preface_opens_at = serde_json::json!({ "concord": { "part": 1, "article": 1, "paragraph": 1 } });
+    let preface_opens_at = serde_json::json!({ "corpus": "concord", "part": 1, "article": 1, "paragraph": 1 });
 
     // Act
     let (status, contents, _) = get(&app, "/api/contents/concord").await;

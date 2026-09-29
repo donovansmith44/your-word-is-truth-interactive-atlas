@@ -3,17 +3,19 @@ use atlas_graph::kjv_adapter::KJV_TRANSLATION;
 use atlas_graph_types::text::{self, BibleLocusRange, TokenSpan, TranslationId, VerseRef};
 use atlas_graph_types::EdgeKind;
 use serde::{Serialize, Serializer};
-use utoipa::ToSchema;
+use utoipa::openapi::extensions::Extensions;
+use utoipa::openapi::schema::{AdditionalProperties, AllOfBuilder, ObjectBuilder, Schema, SchemaType, Type};
+use utoipa::openapi::{Ref, RefOr};
+use utoipa::{PartialSchema, ToSchema};
 
 use super::NodeRef;
 
 /// One unit of a corpus's text: a verse of the Bible, or a paragraph of the Book
-/// of Concord.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
-#[serde(rename_all = "lowercase", deny_unknown_fields)]
+/// of Concord. Each is tagged with its corpus on the wire, beside its own parts.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "corpus", rename_all = "lowercase", deny_unknown_fields)]
 pub enum TextRef {
     Bible {
-        /// The book's canon code, such as `GEN`.
         #[serde(serialize_with = "canon_code")]
         book: BookId,
         chapter: u16,
@@ -43,6 +45,62 @@ impl From<&text::TextRef> for TextRef {
 
 fn canon_code<S: Serializer>(book: &BookId, s: S) -> Result<S::Ok, S::Error> {
     s.serialize_str(book.code())
+}
+
+const CORPUS: &str = "corpus";
+const TEXT_REF: &str = "One unit of a corpus's text, named by the corpus it belongs to.";
+
+/// One corpus a `TextRef` can name: the tag serde writes for its variant, and the
+/// component that publishes that variant's parts.
+struct Subtype {
+    tag: &'static str,
+    name: &'static str,
+    description: &'static str,
+}
+
+const BIBLE: Subtype = Subtype { tag: "bible", name: "BibleRef", description: "A verse of the Bible." };
+const CONCORD: Subtype = Subtype { tag: "concord", name: "ConcordRef", description: "A paragraph of the Book of Concord." };
+const SUBTYPES: [Subtype; 2] = [BIBLE, CONCORD];
+
+// NSwag generates a sum type only from OpenAPI inheritance -- a base naming the
+// discriminator, and one `allOf` subtype per variant -- and utoipa derives that shape
+// for no enum, so it is written out here. utoipa's schema model has no field for an
+// object's `discriminator` or an `allOf`'s `unevaluatedProperties`; its extensions
+// serialise their keys as given, so both keywords travel there. The base is open
+// because each subtype adds its own parts; each subtype is closed over the base and
+// its parts together.
+impl PartialSchema for TextRef {
+    fn schema() -> RefOr<Schema> {
+        let tags = ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).enum_values(Some(SUBTYPES.map(|s| s.tag)));
+        let mapping: serde_json::Map<String, serde_json::Value> =
+            SUBTYPES.iter().map(|s| (s.tag.to_string(), Ref::from_schema_name(s.name).ref_location.into())).collect();
+        ObjectBuilder::new()
+            .schema_type(SchemaType::Type(Type::Object))
+            .description(Some(TEXT_REF))
+            .property(CORPUS, tags)
+            .required(CORPUS)
+            .additional_properties(Some(AdditionalProperties::FreeForm(true)))
+            .extensions(Some(Extensions::from_iter([("discriminator", serde_json::json!({ "propertyName": CORPUS, "mapping": mapping }))])))
+            .into()
+    }
+}
+
+impl ToSchema for TextRef {
+    fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
+        schemas.push((BIBLE.name.to_string(), subtype(&BIBLE, [("book", Ref::from_schema_name(<BookId as ToSchema>::name()).into()), ("chapter", u16::schema()), ("verse", u16::schema())])));
+        schemas.push((CONCORD.name.to_string(), subtype(&CONCORD, [("part", u8::schema()), ("article", u16::schema()), ("paragraph", u16::schema())])));
+        schemas.push((<BookId as ToSchema>::name().to_string(), BookId::schema()));
+    }
+}
+
+fn subtype<const N: usize>(corpus: &Subtype, parts: [(&str, RefOr<Schema>); N]) -> RefOr<Schema> {
+    let own = parts.into_iter().fold(ObjectBuilder::new().schema_type(SchemaType::Type(Type::Object)), |object, (name, part)| object.property(name, part).required(name));
+    AllOfBuilder::new()
+        .item(Ref::from_schema_name(TextRef::name()))
+        .item(own)
+        .description(Some(corpus.description))
+        .extensions(Some(Extensions::from_iter([("unevaluatedProperties", false)])))
+        .into()
 }
 
 /// A place in a corpus's text: a unit, and where one word of it is named, that

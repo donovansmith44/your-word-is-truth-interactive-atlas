@@ -10,11 +10,29 @@ const EN_DASH: &str = " – ";
 
 /// A year, negative for BC, with the label a reader sees for it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, try_from = "LabelledYear")]
 pub struct Year {
     pub value: i32,
     /// Such as `1447 BC` or `AD 30`.
     pub label: String,
+}
+
+/// A year as it arrives: read through `Year::of`, so that year zero is refused on
+/// the way in as it is everywhere else, and the label is the one written here.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LabelledYear {
+    value: i32,
+    #[serde(rename = "label")]
+    _label: String,
+}
+
+impl TryFrom<LabelledYear> for Year {
+    type Error = CoreError;
+
+    fn try_from(arriving: LabelledYear) -> Result<Year, CoreError> {
+        Year::of(arriving.value)
+    }
 }
 
 impl Year {

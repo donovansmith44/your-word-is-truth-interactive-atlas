@@ -1,5 +1,36 @@
 {
   "$defs": {
+    "BibleRef": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TextRef"
+        },
+        {
+          "properties": {
+            "book": {
+              "$ref": "#/$defs/BookId"
+            },
+            "chapter": {
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "verse": {
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "book",
+            "chapter",
+            "verse"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "BookId": {
       "enum": [
         "GEN",
@@ -254,6 +285,39 @@
         "verses"
       ],
       "type": "object"
+    },
+    "ConcordRef": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TextRef"
+        },
+        {
+          "properties": {
+            "article": {
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "paragraph": {
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "part": {
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "part",
+            "article",
+            "paragraph"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
     },
     "Confidence": {
       "enum": [
@@ -1940,76 +2004,27 @@
       "type": "string"
     },
     "TextRef": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "bible": {
-              "additionalProperties": false,
-              "properties": {
-                "book": {
-                  "$ref": "#/$defs/BookId"
-                },
-                "chapter": {
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "verse": {
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "book",
-                "chapter",
-                "verse"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "bible"
-          ],
-          "type": "object"
+      "additionalProperties": true,
+      "discriminator": {
+        "mapping": {
+          "bible": "#/$defs/BibleRef",
+          "concord": "#/$defs/ConcordRef"
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "concord": {
-              "additionalProperties": false,
-              "properties": {
-                "article": {
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "paragraph": {
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "part": {
-                  "format": "int32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "part",
-                "article",
-                "paragraph"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
+        "propertyName": "corpus"
+      },
+      "properties": {
+        "corpus": {
+          "enum": [
+            "bible",
             "concord"
           ],
-          "type": "object"
+          "type": "string"
         }
-      ]
+      },
+      "required": [
+        "corpus"
+      ],
+      "type": "object"
     },
     "TextScope": {
       "enum": [
