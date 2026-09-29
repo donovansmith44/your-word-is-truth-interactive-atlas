@@ -1048,6 +1048,20 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     let extras = Extras::graph_derived(&g, &chrono, &red).unwrap();
     let verse = extras.table("verse").unwrap();
     assert!(verse.rows.iter().any(|r| r == &vec![Col::Text("TextUnit:bible/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]), "{:?}", verse.rows);
+    let token = |verse: i64, ord: i64, char_start: i64, char_end: i64| {
+        vec![Col::Int(1), Col::Int(1), Col::Int(verse), Col::Int(ord), Col::Int(char_start), Col::Int(char_end)]
+    };
+    assert_eq!(
+        extras.table("kjv_token").unwrap().rows,
+        vec![
+            token(1, 0, 0, 2),
+            token(1, 1, 3, 6),
+            token(1, 2, 7, 16),
+            token(2, 0, 0, 3),
+            token(2, 1, 4, 7),
+            token(2, 2, 8, 13),
+        ]
+    );
     let ed = extras.table("event_date").unwrap();
     assert_eq!(
         ed.rows[0],

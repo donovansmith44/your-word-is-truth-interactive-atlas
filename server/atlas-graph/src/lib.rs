@@ -16,6 +16,7 @@ pub mod fidelity;
 pub mod fulfillment_adapter;
 pub mod heading;
 pub mod kjv_adapter;
+pub mod kjv_tokens;
 pub mod kretzmann_adapter;
 pub mod law_check;
 pub mod legacy;

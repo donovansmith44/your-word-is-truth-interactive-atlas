@@ -159,7 +159,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 15;
+pub const SECTION_SCHEMA_VERSION: u32 = 16;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
@@ -244,7 +244,7 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
             "source_entry",
             "provenance_entry",
         ],
-        Section::Kjv => &["verse", "red_letter_span"],
+        Section::Kjv => &["verse", "red_letter_span", "kjv_token"],
         Section::Concord => &["concord_unit"],
         Section::Kretzmann => &[],
         Section::Lexicon => &["lexicon_entry", "lexicon_domain", "token"],
@@ -456,7 +456,7 @@ mod laws {
 
     #[test]
     fn extra_tables_follow_the_graph_native_tables_and_move_the_root() {
-        assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span"]);
+        assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span", "kjv_token"]);
         assert_eq!(extra_tables_of(Section::Concord), &["concord_unit"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
         assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "lexicon_domain", "token"]);

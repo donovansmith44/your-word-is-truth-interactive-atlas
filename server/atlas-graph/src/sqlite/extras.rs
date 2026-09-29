@@ -11,6 +11,7 @@ use atlas_graph_types::chrono::PlacementBasis;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::sections::{extra_line_body, Section};
+use atlas_graph_types::text::TranslationId;
 use rusqlite::{Connection, Transaction};
 
 use super::SqliteError;
@@ -65,6 +66,12 @@ pub static RED_LETTER_SPAN: TableSpec = TableSpec {
     columns: &["book", "chapter", "verse", "ord", "start", "end_"],
     pk: &["book", "chapter", "verse", "ord"],
 };
+/// The verse's own text is the source; a token's offsets are Unicode-scalar, into that text.
+pub static KJV_TOKEN: TableSpec = TableSpec {
+    name: "kjv_token",
+    columns: &["book", "chapter", "verse", "ord", "char_start", "char_end"],
+    pk: &["book", "chapter", "verse", "ord"],
+};
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
 pub static LEXICON_ENTRY: TableSpec = TableSpec {
@@ -109,7 +116,7 @@ static CORE_SPECS: [&TableSpec; 26] = [
     &super::sidecars::SOURCE_ENTRY,
     &super::sidecars::PROVENANCE_ENTRY,
 ];
-static KJV_SPECS: [&TableSpec; 2] = [&VERSE, &RED_LETTER_SPAN];
+static KJV_SPECS: [&TableSpec; 3] = [&VERSE, &RED_LETTER_SPAN, &KJV_TOKEN];
 static CONCORD_SPECS: [&TableSpec; 1] = [&CONCORD_UNIT];
 static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
 
@@ -216,7 +223,7 @@ impl Extras {
         red_letter: &HashMap<String, Vec<(usize, usize)>>,
     ) -> Result<Extras, SqliteError> {
         let resolved = &chrono.resolved;
-        let (mut place, mut era, mut polity_era, mut verse, mut concord) = (vec![], vec![], vec![], vec![], vec![]);
+        let (mut place, mut era, mut polity_era, mut verse, mut kjv_token, mut concord) = (vec![], vec![], vec![], vec![], vec![], vec![]);
         let (mut lexicon_entry, mut lexicon_domain) = (vec![], vec![]);
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
@@ -252,8 +259,21 @@ impl Extras {
                         lexicon_domain.push(vec![Col::Text(id.clone()), Col::Int(i as i64), Col::Text(code.clone())]);
                     }
                 }
-                NodePayload::TextUnit { .. } => {
+                NodePayload::TextUnit { renderings, .. } => {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
+                        let text = renderings
+                            .get(&TranslationId(crate::kjv_adapter::KJV_TRANSLATION.to_string()))
+                            .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
+                        for t in crate::kjv_tokens::tokenize(text) {
+                            kjv_token.push(vec![
+                                Col::Int(b as i64),
+                                Col::Int(c as i64),
+                                Col::Int(v as i64),
+                                Col::Int(t.ord as i64),
+                                Col::Int(t.char_start as i64),
+                                Col::Int(t.char_end as i64),
+                            ]);
+                        }
                         verse.push(vec![Col::Text(id), Col::Int(b as i64), Col::Int(c as i64), Col::Int(v as i64)]);
                     } else if let Some((p, a, par)) = crate::concord_adapter::decode_text_unit(&n.id) {
                         concord.push(vec![Col::Text(id), Col::Int(p as i64), Col::Int(a as i64), Col::Int(par as i64)]);
@@ -315,6 +335,7 @@ impl Extras {
             ExtraTable { spec: &HEADING_INDEX, rows: heading_rows },
             ExtraTable { spec: &VERSE, rows: verse },
             ExtraTable { spec: &RED_LETTER_SPAN, rows: red },
+            ExtraTable { spec: &KJV_TOKEN, rows: kjv_token },
             ExtraTable { spec: &CONCORD_UNIT, rows: concord },
             ExtraTable { spec: &LEXICON_ENTRY, rows: lexicon_entry },
             ExtraTable { spec: &LEXICON_DOMAIN, rows: lexicon_domain },

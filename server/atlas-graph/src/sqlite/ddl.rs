@@ -539,6 +539,11 @@ CREATE TABLE red_letter_span (
   start INTEGER NOT NULL, end_ INTEGER NOT NULL,
   PRIMARY KEY (book, chapter, verse, ord)
 ) WITHOUT ROWID;
+CREATE TABLE kjv_token (
+  book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL, ord INTEGER NOT NULL,
+  char_start INTEGER NOT NULL, char_end INTEGER NOT NULL,
+  PRIMARY KEY (book, chapter, verse, ord)
+) WITHOUT ROWID;
 ";
 const EXTRA_INDEX_DDL_KJV: &str = "
 CREATE UNIQUE INDEX verse_by_ref ON verse (book, chapter, verse);
