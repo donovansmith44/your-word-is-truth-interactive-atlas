@@ -18,7 +18,7 @@ use super::columns::JustificationWriter;
 use super::ddl::{create_indexes, create_tables};
 use super::blob::{compress_file, sha256_hex_of_file, BLOB_CEILING};
 use super::extras::{insert_table, table_specs_of, Extras};
-use super::manifest::read_manifest;
+use super::manifest::{raw_manifest_path, read_manifest, recorded_raw_root};
 use super::source::SectionLayout;
 use super::logical::logical_hash;
 use atlas_graph_types::sections::logical_dump_section;
@@ -258,6 +258,7 @@ pub fn write_sections(
     std::fs::create_dir_all(&layout.cache_dir)?;
     // A previous manifest that fails its own root check is treated as absent.
     let previous = read_manifest(&layout.manifest_path()).ok();
+    let raw_root = recorded_raw_root(&raw_manifest_path(layout))?;
     let parts = partition(g)?;
     let mut written = Vec::with_capacity(parts.len());
     for p in &parts {
@@ -296,7 +297,7 @@ pub fn write_sections(
         }
         _ => now_rfc3339(),
     };
-    let manifest = Manifest { schema: MANIFEST_SCHEMA, compiler: compiler.to_string(), built, root, sections };
+    let manifest = Manifest { schema: MANIFEST_SCHEMA, compiler: compiler.to_string(), built, root, raw_root, sections };
     if previous.as_ref() != Some(&manifest) {
         write_manifest(&manifest, &layout.manifest_path())?;
     }

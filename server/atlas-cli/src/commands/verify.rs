@@ -264,10 +264,25 @@ fn render(report: &Report) -> String {
     ));
     match &report.raw {
         Some(RawSection::Unrecorded(why)) => out.push_str(&format!("raw: unrecorded ({why})\n")),
-        Some(RawSection::Checked { root, files, .. }) => out.push_str(&format!("raw {} OK ({} files)\n", root.hex(), commas(*files as u64))),
+        Some(RawSection::Checked { root, files, .. }) => out.push_str(&format!(
+            "raw {} OK ({} files{})\n",
+            root.hex(),
+            commas(*files as u64),
+            compiled_from(report.manifest.raw_root.as_ref(), root)
+        )),
         None => {}
     }
     out
+}
+
+/// D1 keeps the raw root out of the compiled root, so a tree the sections were not compiled from
+/// is said, not failed: the artifact is stale against its inputs, and both still verify.
+fn compiled_from(recorded: Option<&RawHash>, walked: &RawHash) -> String {
+    match recorded {
+        Some(recorded) if recorded == walked => "; the sections were compiled from it".to_string(),
+        Some(recorded) => format!("; the sections were compiled from raw {}, not from this tree", recorded.hex()),
+        None => String::new(),
+    }
 }
 
 /// The raw tree is one check however many files drifted: every drifted file is named, but the
@@ -326,6 +341,7 @@ pub fn run_json(data_dir: &Path, only: Option<&str>) -> Result<serde_json::Value
             "manifest": report.manifest.root,
             "recomputed": report.recomputed_root,
             "ok": report.manifest.root == report.recomputed_root,
+            "raw_root": report.manifest.raw_root.map(|h| h.hex()),
         },
         "sections": sections,
         "raw": raw,

@@ -2,6 +2,7 @@ schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
 built = "2026-09-29T15:03:32Z"
 root = "31e118e8e6d47276ebeec3ed23d53217"
+raw_root = "ca285021ab2a62274ca84741bd50629c"
 
 [[section]]
 name = "core"

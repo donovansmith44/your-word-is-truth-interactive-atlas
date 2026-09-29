@@ -663,6 +663,7 @@ fn the_manifest_round_trips_and_its_root_is_over_the_section_lines_only() {
         compiler: "test".into(),
         built: "2026-09-17T00:00:00Z".into(),
         root: root.clone(),
+        raw_root: None,
         sections: sections.clone(),
     };
     let dir = std::env::temp_dir().join(format!("db2b-manifest-{}", std::process::id()));
@@ -1173,6 +1174,7 @@ fn a_schema_bump_recompresses_every_blob_even_where_no_logical_moved() {
         compiler: current.compiler.clone(),
         built: current.built.clone(),
         root: root_of(&older_sections),
+        raw_root: None,
         sections: older_sections,
     };
     write_manifest(&older, &layout.manifest_path()).unwrap();

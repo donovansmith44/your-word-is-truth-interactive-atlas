@@ -681,7 +681,7 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     let root = text.lines().find(|l| l.starts_with("root ")).unwrap();
     assert!(root.contains(" OK (recomputed from 5 section lines)"), "{text}");
     let last = text.lines().last().unwrap();
-    assert!(last.starts_with("raw ") && last.contains(" OK (") && last.ends_with(" files)"), "{text}");
+    assert!(last.starts_with("raw ") && last.contains(" OK (") && last.ends_with(" files; the sections were compiled from it)"), "{text}");
     assert_eq!(text.lines().count(), 7);
 
     let (o, v) = run_json(&["verify"]);
@@ -694,6 +694,7 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == atlas_graph::sqlite::SCHEMA_VERSION));
     assert!(sections.iter().all(|s| s["uncompressed_bytes"].as_u64().unwrap() > s["bytes"].as_u64().unwrap()));
     assert_eq!(v["raw"]["status"], "ok");
+    assert_eq!(v["root"]["raw_root"], v["raw"]["root"]);
 
     let o = run_with_data_dir(&["verify", "--section", "concord"]);
     assert_eq!(o.status.code(), Some(0), "stderr: {}", stderr(&o));

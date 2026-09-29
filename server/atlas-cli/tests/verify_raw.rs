@@ -4,7 +4,7 @@ use std::process::{Command, Output};
 
 use atlas_cli::raw::{walk, write_manifest, MANIFEST_FILE};
 use atlas_graph::sqlite::manifest::{root_of, write_manifest as write_compiled_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
-use atlas_graph_types::raw_manifest::{RawEntry, Sha256};
+use atlas_graph_types::raw_manifest::{RawEntry, RawHash, Sha256};
 use atlas_graph_types::sha256::sha256;
 use serde_json::{json, Value};
 
@@ -17,6 +17,7 @@ const ANCIENT_GROWN: &[u8] = b"ancient places and more\n";
 const ADDED: &[u8] = b"added\n";
 const FIXTURE_ROOT: &str = "eb1eaed77201691558ffd5df9731229b";
 const FIXTURE_FILES: usize = 3;
+const OTHER_RAW_ROOT: &str = "ffffffffffffffffffffffffffffffff";
 const ANCIENT_SHA256: &str = "fca704c93e62cc48ceea501492fe072215bcf717ffccc7a69d37226f9cbee568";
 
 const OPTIONAL_SECTION: &str = "concord";
@@ -76,12 +77,21 @@ impl Fixture {
     }
 
     fn record_compiled(&self, name: &str, required: bool) {
+        self.record_compiled_with(name, required, None);
+    }
+
+    fn record_compiled_from(&self, raw_root: &str) {
+        self.record_compiled_with(OPTIONAL_SECTION, false, Some(RawHash::parse(raw_root).expect("a fixture raw root is hex")));
+    }
+
+    fn record_compiled_with(&self, name: &str, required: bool, raw_root: Option<RawHash>) {
         let sections = vec![section(name, required)];
         let manifest = Manifest {
             schema: MANIFEST_SCHEMA,
             compiler: "verify-raw fixture".into(),
             built: "2026-09-29T00:00:00Z".into(),
             root: root_of(&sections),
+            raw_root,
             sections,
         };
         write_compiled_manifest(&manifest, &self.compiled().join("manifest.toml")).expect("the compiled manifest must be writable");
@@ -120,7 +130,7 @@ impl Fixture {
 
     fn compiled_json(&self) -> Value {
         json!({
-            "root": { "manifest": self.compiled_root(), "recomputed": self.compiled_root(), "ok": true },
+            "root": { "manifest": self.compiled_root(), "recomputed": self.compiled_root(), "ok": true, "raw_root": null },
             "sections": [{
                 "name": OPTIONAL_SECTION,
                 "required": false,
@@ -221,6 +231,55 @@ fn verify_prints_the_raw_root_when_the_tree_matches_its_manifest() {
 
     // Act
     let result = bibex(&fixture, &["verify"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn verify_says_the_sections_were_compiled_from_the_tree_it_walked() {
+    // Arrange
+    let fixture = recorded_fixture("compiled-from-it");
+    fixture.record_compiled_from(FIXTURE_ROOT);
+    let expected = format!("{OPTIONAL_SECTION_LINE}{}raw {FIXTURE_ROOT} OK ({FIXTURE_FILES} files; the sections were compiled from it)
+", fixture.root_line());
+
+    // Act
+    let result = bibex(&fixture, &["verify"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn verify_names_the_other_tree_the_sections_were_compiled_from() {
+    // Arrange
+    let fixture = recorded_fixture("compiled-from-another");
+    fixture.record_compiled_from(OTHER_RAW_ROOT);
+    let expected = format!(
+        "{OPTIONAL_SECTION_LINE}{}raw {FIXTURE_ROOT} OK ({FIXTURE_FILES} files; the sections were compiled from raw {OTHER_RAW_ROOT}, not from this tree)
+",
+        fixture.root_line()
+    );
+
+    // Act
+    let result = bibex(&fixture, &["verify"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn verify_json_carries_the_raw_root_the_sections_were_compiled_from() {
+    // Arrange
+    let fixture = recorded_fixture("compiled-from-json");
+    fixture.record_compiled_from(FIXTURE_ROOT);
+    let mut expected = fixture.compiled_json();
+    expected["root"]["raw_root"] = json!(FIXTURE_ROOT);
+    expected["raw"] = json!({ "status": "ok", "root": FIXTURE_ROOT, "files": FIXTURE_FILES });
+
+    // Act
+    let result = bibex_json(&fixture, &["verify"]);
 
     // Assert
     assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
