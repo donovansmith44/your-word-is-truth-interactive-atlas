@@ -101,3 +101,18 @@ wrong; fix the spec.
 18. **Newspaper order.** A file reads top-down: the public entry point
     first, then what it calls, then what those call. Helpers sit below
     their first caller, never above.
+
+## Running work is not to be edited under itself (2026-09-29)
+
+19. **Never edit a shell script while an instance of it is running.** Bash
+    re-reads a script by BYTE OFFSET, so an edit mid-run resumes the running
+    instance at the wrong place. CONTRACT-1's mutation gate lost its merge
+    step this way after four hours of shard work (the shard outcomes
+    survived; the merge was redone by hand). The same rule already held for
+    the tree under a `cargo mutants --in-place` run: edit a copy, or wait.
+20. **A throwaway git worktree never has ignored data linked into it.**
+    `git worktree remove --force` FOLLOWS an NTFS junction or symlink and
+    deletes the real files through it — this destroyed 374 MB of `data/raw`
+    on 2026-09-28. A shard copies what it needs (`robocopy`), or every link
+    is removed with `cmd /c rmdir` BEFORE the worktree is. Scan for reparse
+    points and require zero before any `worktree remove`.
