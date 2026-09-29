@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-use atlas_graph::sqlite::source::sibling_dir;
+use atlas_graph::sqlite::source::{sibling_dir, SectionLayout};
 use atlas_graph_types::store::{GraphPublisher, MemStore};
 
 /// The sections' home IS `--data-dir`; `--sections-cache <dir>` overrides the unpack cache the uncompressed
@@ -45,7 +45,7 @@ fn main() -> Result<()> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     let (data_dir, sections_cache) = parse_args(&raw)?;
 
-    let raw_dir = sibling_dir(&data_dir, "raw");
+    let raw_dir = SectionLayout::under(&data_dir).raw_dir();
     let curated_dir = sibling_dir(&data_dir, "curated");
     // `data/exports/` is a committed directory, unlike the gitignored raw tree.
     let exports_dir = sibling_dir(&data_dir, "exports");
@@ -266,8 +266,8 @@ fn main() -> Result<()> {
     // The sections are written LAST, after the artifact, the spans and every export are on disk, so a
     // section failure never leaves the served artifact unwritten.
     let layout = match sections_cache {
-        Some(cache) => atlas_graph::sqlite::source::SectionLayout { compiled_dir: data_dir.clone(), cache_dir: cache },
-        None => atlas_graph::sqlite::source::SectionLayout::under(&data_dir),
+        Some(cache) => SectionLayout { compiled_dir: data_dir.clone(), cache_dir: cache },
+        None => SectionLayout::under(&data_dir),
     };
     println!(
         "atlas-graph-compile: DB-4b -- writing SQLite sections to {} (cache {}) ...",
