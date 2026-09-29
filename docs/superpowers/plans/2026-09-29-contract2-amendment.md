@@ -356,3 +356,10 @@ CREATE TABLE red_letter_span (book INTEGER NOT NULL, chapter INTEGER NOT NULL, v
 - OPEN-7 — accepted: the Concord text is stored as words only (R-C2-W4 reaches T8a).
 - OPEN-8 — accepted: the Kjv section's logical hash is the layer hash; no manifest field, no tokenizer version.
 - OPEN-9 — accepted: the spike's comparison (case-insensitive; word-internal ’ / – / - folded), without KRETZ-ACCEPT-1's equivalence classes; misses stay verse-range and are counted.
+
+## DEFERRED by the owner (2026-09-29, later the same evening) — the words-as-base inversion goes to the queue
+Owner: "Don't worry about the KJV word layer thing right now, that can wait … stick to the plan and add the addition stuff on the queue unless there's a good reason not to (duplication of effort or critical path stuff)." Applied:
+- **Task 6 reverts to the original plan's "KJV token layer"** (tokens derived from the stored verses). Kept because dropping them would duplicate later work, or because the plan needs them: F0-25's helper step, the spike's tokenizer, `kjv_token` in the **Kjv** section (D13 REVISED — the queued inversion wants it there), D20's lossless token law, OPEN-1 (stacked ETL lane), OPEN-2, OPEN-8.
+- **Already landed, kept:** R-C2-W2 (`TextPoint { unit, word }` in T2, d38344b). It is on the plan's critical path (T7/T8 spans use it) and costs nothing to keep.
+- **QUEUED (not in CONTRACT-2):** R-C2-W4 (stored verse text dropped, verses composed from words); OPEN-3's red-letter word spans; R-C2-W3 / **Task 8c** (Kretzmann comments anchored on word spans) with OPEN-6 and OPEN-9; OPEN-7 (Concord text stored as words only); the eBible Strong's and italics copy (already a later batch); the FOCUS-7 direction of Kretzmann as a generic "text anchored on text".
+- The wave schedule loses T8c (wave 4 is T5 ∥ T10a only).
