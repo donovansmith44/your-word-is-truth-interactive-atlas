@@ -1474,3 +1474,40 @@ async fn genesis_is_a_member_of_the_bible_root() {
         })
     );
 }
+
+
+const SMALL_CATECHISM: &str = "Container:concord-doc-small-catechism";
+const LARGE_CATECHISM: &str = "Container:concord-doc-large-catechism";
+const TEN_COMMANDMENTS: &str = "Container:concord-art-small-catechism-2";
+const THE_CREED: &str = "Container:concord-art-small-catechism-3";
+
+#[tokio::test]
+async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_the_creed() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (documents_status, documents, _) = get(&app, &format!("/api/node/{SMALL_CATECHISM}/edges?kind=follows-in")).await;
+    let (articles_status, articles, _) = get(&app, &format!("/api/node/{TEN_COMMANDMENTS}/edges?kind=follows-in")).await;
+
+    // Assert
+    assert_eq!((documents_status, articles_status), (StatusCode::OK, StatusCode::OK), "{documents} {articles}");
+    assert_eq!(
+        documents,
+        serde_json::json!({
+            "kind": "follows-in",
+            "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } ],
+            "next": null,
+            "version": documents["version"].clone(),
+        })
+    );
+    assert_eq!(
+        articles,
+        serde_json::json!({
+            "kind": "follows-in",
+            "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } ],
+            "next": null,
+            "version": articles["version"].clone(),
+        })
+    );
+}

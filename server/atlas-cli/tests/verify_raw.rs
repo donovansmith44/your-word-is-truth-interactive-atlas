@@ -23,7 +23,7 @@ const OPTIONAL_SECTION: &str = "concord";
 const REQUIRED_SECTION: &str = "core";
 const ZERO_LOGICAL: &str = "00000000000000000000000000000000";
 const ZERO_BLOB: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-const SECTION_SCHEMA: u32 = 14;
+const SECTION_SCHEMA: u32 = atlas_graph::sqlite::SCHEMA_VERSION;
 const OPTIONAL_SECTION_LINE: &str = "concord    logical 00000000000000000000000000000000  skipped  transport absent (optional) 0 bytes\n";
 
 const EXIT_OK: i32 = 0;

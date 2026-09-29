@@ -30,6 +30,9 @@ const SHOWN_ROWS: usize = 3_188;
 const CORPUS_ROOTS: usize = 2;
 const BOOKS_IN_THE_BIBLE: usize = 66;
 const DOCUMENTS_IN_THE_CONCORD: usize = 10;
+const ARTICLES_IN_THE_CONCORD: usize = 135;
+const CONCORD_DOCUMENT_STEPS: usize = DOCUMENTS_IN_THE_CONCORD - 1;
+const CONCORD_ARTICLE_STEPS: usize = ARTICLES_IN_THE_CONCORD - DOCUMENTS_IN_THE_CONCORD;
 
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
@@ -178,7 +181,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::ContainsConcord, 270 + DOCUMENTS_IN_THE_CONCORD),
         (RowFamily::Attests, 33_355),
         (RowFamily::Succession, 13),
-        (RowFamily::CanonSuccession, 1_253),
+        (RowFamily::CanonSuccession, 1_253 + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS),
         (RowFamily::DatedBy, 912),
         (RowFamily::LocatedAt, 955),
         (RowFamily::Fulfills, 24),
@@ -204,7 +207,11 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::MapSuccession, MAP_STEPS),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 917_443 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD, "the committed graph carries exactly 917,443 rows plus what the maps show and their steps, plus each corpus root's members");
+    assert_eq!(
+        total,
+        917_443 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS,
+        "the committed graph carries exactly 917,443 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps"
+    );
 
     assert_eq!(
         round_trip_family(

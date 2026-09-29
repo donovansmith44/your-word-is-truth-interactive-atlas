@@ -19,7 +19,7 @@ pub trait SectionSource {
 pub struct SectionLayout {
     /// `data/compiled`: `manifest.toml` and `sections/`.
     pub compiled_dir: PathBuf,
-    /// `data/cache/sections`: `<logical>.sqlite`, gitignored.
+    /// `data/cache/sections`: `<logical>.<schema_version>.sqlite`, gitignored.
     pub cache_dir: PathBuf,
 }
 
@@ -45,8 +45,10 @@ impl SectionLayout {
         self.sections_dir().join(format!("{name}.{logical}.sqlite.zst"))
     }
 
-    pub fn cache_path(&self, logical: &str) -> PathBuf {
-        self.cache_dir.join(format!("{logical}.sqlite"))
+    /// The unpacked file's bytes are a function of the section's content AND the schema it was
+    /// written under, so the name carries both: a schema bump never finds a stale unpack.
+    pub fn cache_path(&self, logical: &str, schema_version: u32) -> PathBuf {
+        self.cache_dir.join(format!("{logical}.{schema_version}.sqlite"))
     }
 }
 
@@ -62,7 +64,7 @@ pub struct CommittedZstdSource {
 
 impl SectionSource for CommittedZstdSource {
     fn resolve(&self, entry: &ManifestSection) -> Result<PathBuf, SectionError> {
-        let cache = self.layout.cache_path(&entry.logical);
+        let cache = self.layout.cache_path(&entry.logical, entry.schema_version);
         if cache.is_file() {
             return Ok(cache);
         }

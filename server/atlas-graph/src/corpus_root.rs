@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(format!("{:?}", root.payload), format!("{:?}", NodePayload::Container { title: TITLE.to_string() }));
         assert_eq!(root.provenance, PROVENANCE);
         assert_eq!(graph.nodes.len(), 1);
-        assert_eq!(format!("{rows:?}"), format!("{:?}", [root_contains(&members[0]), root_contains(&members[1])]));
+        assert_eq!(rows, [root_contains(&members[0]), root_contains(&members[1])]);
     }
 
     #[test]

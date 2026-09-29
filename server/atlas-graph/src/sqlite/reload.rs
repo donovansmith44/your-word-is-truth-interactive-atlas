@@ -17,6 +17,7 @@ use super::source::{CommittedZstdSource, SectionLayout};
 use super::{open_read_only, SqliteError};
 use crate::sections::{row_tables_of, spine_corpus, Section};
 use atlas_graph_types::canon::RowFamily;
+use std::collections::BTreeMap;
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
@@ -64,11 +65,12 @@ fn push_row(g: &mut Graph, ord: i64, row: RowOwned) -> Result<(), SqliteError> {
     Ok(())
 }
 
-/// Reads every present section back into one `Graph`, merging `contains_bible`'s two section homes
-/// by their shared global `ord`, then rebuilds the derived indexes.
+/// Reads every present section back into one `Graph`: a family's rows are gathered from every
+/// section that homes it and pushed in their shared global `ord`, then the derived indexes are
+/// rebuilt.
 pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present: &[Section]) -> Result<Graph, SqliteError> {
     let mut g = Graph::default();
-    let mut contains_bible: Vec<(i64, RowOwned)> = Vec::new();
+    let mut rows_by_family: BTreeMap<RowFamily, Vec<(i64, RowOwned)>> = BTreeMap::new();
     for ms in &manifest.sections {
         let Some(section) = section_named(&ms.name) else {
             return Err(SqliteError(format!("manifest names an unknown section {}", ms.name)));
@@ -76,7 +78,7 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
         if !present.contains(&section) {
             continue;
         }
-        let conn = open_read_only(&layout.cache_path(&ms.logical))?;
+        let conn = open_read_only(&layout.cache_path(&ms.logical, ms.schema_version))?;
         {
             let mut stmt = conn.prepare("SELECT payload FROM node")?;
             let mut rows = stmt.query([])?;
@@ -87,14 +89,7 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
             }
         }
         for family in row_tables_of(section) {
-            let rows = read_rows(&conn, *family)?;
-            if *family == RowFamily::ContainsBible {
-                contains_bible.extend(rows);
-            } else {
-                for (ord, row) in rows {
-                    push_row(&mut g, ord, row)?;
-                }
-            }
+            rows_by_family.entry(*family).or_default().extend(read_rows(&conn, *family)?);
         }
         if let Some(corpus) = spine_corpus(section) {
             let mut stmt = conn.prepare("SELECT node_id FROM reading_spine ORDER BY ord")?;
@@ -114,9 +109,11 @@ pub fn graph_from_sections(layout: &SectionLayout, manifest: &Manifest, present:
             g.extra_tables.insert(spec.name, bodies);
         }
     }
-    contains_bible.sort_by_key(|(ord, _)| *ord);
-    for (ord, row) in contains_bible {
-        push_row(&mut g, ord, row)?;
+    for (_, mut rows) in rows_by_family {
+        rows.sort_by_key(|(ord, _)| *ord);
+        for (ord, row) in rows {
+            push_row(&mut g, ord, row)?;
+        }
     }
     g.build_indexes();
     crate::event_world::add_justified_by(&mut g);

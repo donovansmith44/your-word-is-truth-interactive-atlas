@@ -240,7 +240,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("analogue", &["attestation-corrections"]),
     ("attests", &["event-witnesses"]),
     ("authored", &["curated-books"]),
-    ("canon_succession", &["kjv"]),
+    ("canon_succession", &["concord", "kjv"]),
     ("catechism", &["concord-sc-overlap", "curated-catechism"]),
     ("comments_on", &["kretzmann"]),
     ("confesses", &[]),

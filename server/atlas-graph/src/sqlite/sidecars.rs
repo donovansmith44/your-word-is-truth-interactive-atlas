@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use atlas_core::data::{
+    EventId,
     AtlasData, BookMeta, BookNarrationWindow, Canon, CanonBook, CatechismItem, CatechismPart, CatechismQuestion,
     ChronologyAnchor, Landmark, LandmarkKind, LandmarkSize, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory,
     PlaceNameAlias, PlaceNameEntry,
@@ -50,7 +51,7 @@ pub static CATECHISM_QUESTION_VERSE: TableSpec = TableSpec {
 };
 pub static PLACE_HISTORY: TableSpec = TableSpec {
     name: "place_history",
-    columns: &["place_id", "est_from", "est_to", "est_note", "dest_from", "dest_to", "dest_note"],
+    columns: &["place_id", "est_from", "est_to", "est_note", "est_event", "dest_from", "dest_to", "dest_note", "dest_event"],
     pk: &["place_id"],
 };
 pub static PLACE_HISTORY_NAME: TableSpec = TableSpec {
@@ -146,10 +147,10 @@ fn ring_json(ring: &[(f64, f64)]) -> Result<String, SqliteError> {
     Ok(String::from_utf8(serialize(&Value::Arr(points))).expect("canonical JSON is UTF-8"))
 }
 
-fn claim_cols(c: &Option<PlaceDateClaim>) -> [Col; 3] {
+fn claim_cols(c: &Option<PlaceDateClaim>) -> [Col; 4] {
     match c {
-        Some(c) => [i(c.when.from_year), i(c.when.to_year), ot(&c.note)],
-        None => [Col::Null, Col::Null, Col::Null],
+        Some(c) => [i(c.when.from_year), i(c.when.to_year), ot(&c.note), ow(c.event.as_ref().map(|e| e.0.as_str()))],
+        None => [Col::Null, Col::Null, Col::Null, Col::Null],
     }
 }
 
@@ -221,9 +222,9 @@ pub fn fold_sidecars(atlas: &AtlasData, sources: &SourcesDocument) -> Result<Vec
     let mut histories: Vec<_> = atlas.place_history.values().collect();
     histories.sort_by(|a, b| a.id.as_bytes().cmp(b.id.as_bytes()));
     for h in histories {
-        let [ef, et, en] = claim_cols(&h.established);
-        let [df, dt, dn] = claim_cols(&h.destroyed);
-        ph.push(vec![t(&h.id), ef, et, en, df, dt, dn]);
+        let [ef, et, en, ee] = claim_cols(&h.established);
+        let [df, dt, dn, de] = claim_cols(&h.destroyed);
+        ph.push(vec![t(&h.id), ef, et, en, ee, df, dt, dn, de]);
         for (ord, n) in h.names.iter().enumerate() {
             ph_name.push(vec![t(&h.id), i(ord as i64), t(&n.name), i(n.when.from_year), i(n.when.to_year)]);
             for (vord, v) in n.verses.iter().enumerate() {
@@ -483,14 +484,19 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
     for r in rows(&PLACE_HISTORY)? {
         let t = "place_history";
         let id = text(&r[0], t)?;
-        let claim = |f: &Col, to: &Col, note: &Col| -> Result<Option<PlaceDateClaim>, SqliteError> {
+        let claim = |f: &Col, to: &Col, note: &Col, event: &Col| -> Result<Option<PlaceDateClaim>, SqliteError> {
             Ok(match (opt_int(f, t)?, opt_int(to, t)?) {
-                (Some(from_year), Some(to_year)) => Some(PlaceDateClaim { when: TimeRange { from_year, to_year }, verses: Vec::new(), note: opt_text(note, t)?, event: None }),
+                (Some(from_year), Some(to_year)) => Some(PlaceDateClaim {
+                    when: TimeRange { from_year, to_year },
+                    verses: Vec::new(),
+                    note: opt_text(note, t)?,
+                    event: opt_text(event, t)?.map(EventId::new),
+                }),
                 _ => None,
             })
         };
-        let established = claim(&r[1], &r[2], &r[3])?;
-        let destroyed = claim(&r[4], &r[5], &r[6])?;
+        let established = claim(&r[1], &r[2], &r[3], &r[4])?;
+        let destroyed = claim(&r[5], &r[6], &r[7], &r[8])?;
         place_history.insert(id.clone(), PlaceHistory { id, names: Vec::new(), blurbs: Vec::new(), established, destroyed });
     }
     for r in rows(&PLACE_HISTORY_NAME)? {

@@ -195,7 +195,7 @@ pub type BibleLocusRange = LocusRange<BibleTag>;
 
 /// A SET of same-corpus loci. The empty set is a lawful identity, overlaps between containers
 /// are lawful, and contiguity is not assumed.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct LocusSet<C: Corpus>(pub BTreeSet<Locus<C>>);
 
 impl<C: Corpus> Default for LocusSet<C> {

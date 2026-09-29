@@ -19,8 +19,9 @@ use std::path::Path;
 use atlas_graph_types::id::ContentHash;
 use rusqlite::{Connection, OpenFlags};
 
-/// Every section file's `PRAGMA user_version`.
-pub const SCHEMA_VERSION: u32 = 14;
+/// Every section file's `PRAGMA user_version`: the manifest's own schema version, so a file and
+/// the line that lists it can never disagree.
+pub const SCHEMA_VERSION: u32 = atlas_graph_types::sections::SECTION_SCHEMA_VERSION;
 /// Every section file's `PRAGMA application_id`: the ASCII bytes `BLGA`.
 pub const APPLICATION_ID: u32 = 0x424C_4741;
 /// Bytes per hash column (`node.pid`, `edge_index.edge_id`): the current `ContentHash` width -- 8 while

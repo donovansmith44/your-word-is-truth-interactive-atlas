@@ -2,23 +2,40 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::OnceLock;
 
+use atlas_etl::concord::DOCUMENTS;
+use atlas_graph::concord_adapter::CONCORD_CORPUS;
+use atlas_graph::corpus_root::corpus_root_id;
+use atlas_graph::kjv_adapter::BIBLE_CORPUS;
 use atlas_graph::sections::{
-    justified_by_source_family, section_of_contains_bible, section_of_family, section_of_node,
-    section_of_justified_by, Section,
+    justified_by_source_family, section_of_canon_succession, section_of_contains_bible, section_of_family,
+    section_of_node, section_of_justified_by, Section,
 };
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::chrono::ChronoTarget;
-use atlas_graph_types::edge::{at, entry_id, EdgeId, Namesake, RelationId};
+use atlas_graph_types::edge::{at, entry_id, CanonSuccession, EdgeId, Namesake, RelationId};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::text::{ConcordRef, TextLocus, TextRef, VerseRef};
 
+const ROOTS_PER_CORPUS: usize = 1;
+const DOCUMENT_STEPS: usize = DOCUMENTS.len() - 1;
+
+fn data_dir() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
+}
+
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
-        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
+        atlas_graph::sqlite::reload::committed_graph(&data_dir().join("compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
     })
+}
+
+fn article_steps() -> usize {
+    let concord = atlas_etl::concord::read_all(&data_dir().join("raw/concord"), &data_dir().join("curated"))
+        .expect("data/raw/concord + data/curated/concord-titles.toml must read -- run data/fetch-raw.ps1 first");
+    concord.documents.iter().map(|document| document.articles.len() - 1).sum()
 }
 
 fn bible_verse_node_id(v: &VerseRef) -> AnyNodeId {
@@ -48,6 +65,7 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
 
     let mut by_section: BTreeMap<Section, usize> = BTreeMap::new();
     let mut kjv_text_units = 0usize;
+    let mut kjv_root_containers = 0usize;
     let mut kjv_book_containers = 0usize;
     let mut kjv_chapter_containers = 0usize;
 
@@ -59,12 +77,14 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
             match &node.payload {
                 NodePayload::TextUnit { .. } => kjv_text_units += 1,
                 NodePayload::Container { .. } => {
-                    if id.raw.starts_with("bible-book-") {
+                    if *id == corpus_root_id(BIBLE_CORPUS).erase() {
+                        kjv_root_containers += 1;
+                    } else if id.raw.starts_with("bible-book-") {
                         kjv_book_containers += 1;
                     } else if id.raw.starts_with("bible-chapter-") {
                         kjv_chapter_containers += 1;
                     } else {
-                        panic!("a Kjv container must be a book or chapter container: {id:?}");
+                        panic!("a Kjv container must be the corpus root or a book or chapter container: {id:?}");
                     }
                 }
                 other => panic!("unexpected Kjv node payload for {id:?}: {other:?}"),
@@ -81,12 +101,13 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
     assert_eq!(total, g.nodes.len(), "every node must map to exactly one section");
 
     assert_eq!(kjv_text_units, 31_102, "Kjv text units");
+    assert_eq!(kjv_root_containers, ROOTS_PER_CORPUS, "Kjv corpus root");
     assert_eq!(kjv_book_containers, 66, "Kjv book containers");
     assert_eq!(kjv_chapter_containers, 1_189, "Kjv chapter containers");
     assert_eq!(
         *by_section.get(&Section::Kjv).unwrap(),
-        kjv_text_units + kjv_book_containers + kjv_chapter_containers,
-        "Kjv section total must be exactly its text units + book + chapter containers"
+        kjv_text_units + kjv_root_containers + kjv_book_containers + kjv_chapter_containers,
+        "Kjv section total must be exactly its text units + its root + book + chapter containers"
     );
 
     assert_eq!(*by_section.get(&Section::Kretzmann).unwrap(), 50_602, "Kretzmann node count");
@@ -96,7 +117,7 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
         .iter()
         .filter(|(id, node)| match &node.payload {
             NodePayload::TextUnit { corpus, .. } => *corpus == "concord",
-            NodePayload::Container { .. } => id.raw.starts_with("concord-"),
+            NodePayload::Container { .. } => **id == corpus_root_id(CONCORD_CORPUS).erase() || id.raw.starts_with("concord-"),
             _ => false,
         })
         .count();
@@ -125,6 +146,14 @@ struct Sweep {
     missing: usize,
 }
 
+fn sections_of<T>(rows: &[T], section_of: impl Fn(&T) -> Section) -> BTreeMap<Section, usize> {
+    let mut out = BTreeMap::new();
+    for row in rows {
+        *out.entry(section_of(row)).or_default() += 1;
+    }
+    out
+}
+
 fn sweep<T>(rows: &[T], g: &Graph, subject: impl Fn(&T) -> AnyNodeId) -> Sweep {
     let mut out = Sweep { rows: rows.len(), sections: BTreeMap::new(), missing: 0 };
     for row in rows {
@@ -147,8 +176,8 @@ enum Expect {
 fn every_row_of_every_family_maps_to_a_section() {
     let g = committed_graph();
 
-    let kjv_families =
-        [RowFamily::CanonSuccession, RowFamily::CrossRefs, RowFamily::SpokenBy, RowFamily::SpokenAt];
+    let per_row_families = [RowFamily::ContainsBible, RowFamily::CanonSuccession];
+    let kjv_families = [RowFamily::CrossRefs, RowFamily::SpokenBy, RowFamily::SpokenAt];
     let core_families = [
         RowFamily::Attests,
         RowFamily::Succession,
@@ -195,21 +224,33 @@ fn every_row_of_every_family_maps_to_a_section() {
     accounted.extend(concord_families);
     accounted.extend(kretzmann_families);
     accounted.extend(lexicon_families);
-    accounted.push(RowFamily::ContainsBible);
+    accounted.extend(per_row_families);
     accounted.sort_by_key(|f| f.ordinal());
     assert_eq!(accounted, RowFamily::ALL.to_vec(), "every family must be classified exactly once");
 
-    let mut contains_bible_sections: BTreeMap<Section, usize> = BTreeMap::new();
-    for row in &g.contains_bible {
-        *contains_bible_sections.entry(section_of_contains_bible(row)).or_default() += 1;
-    }
+    let contains_bible_sections = sections_of(&g.contains_bible, section_of_contains_bible);
     println!("DB-2a CONTAINS_BIBLE SECTIONS: {contains_bible_sections:?}");
     assert!(!g.contains_bible.is_empty(), "the shipped graph must carry contains_bible rows");
     assert_eq!(
-        contains_bible_sections.get(&Section::Kjv).copied().unwrap_or(0),
-        g.contains_bible.len(),
-        "every shipped contains_bible row is a book/chapter container today (Kjv)"
+        contains_bible_sections,
+        BTreeMap::from([(Section::Kjv, g.contains_bible.len())]),
+        "every shipped contains_bible row names the Bible root or a book/chapter container (Kjv)"
     );
+
+    let concord_steps = DOCUMENT_STEPS + article_steps();
+    let canon_succession_sections = sections_of(&g.canon_succession, section_of_canon_succession);
+    println!("DB-2a CANON_SUCCESSION SECTIONS: {canon_succession_sections:?}");
+    assert_eq!(
+        canon_succession_sections,
+        BTreeMap::from([(Section::Kjv, g.canon_succession.len() - concord_steps), (Section::Concord, concord_steps)]),
+        "the Bible's steps in Kjv; one step between each pair of Concord documents and each pair of articles within a document, in Concord"
+    );
+    let filed_away_from_their_prior: Vec<&CanonSuccession> = g
+        .canon_succession
+        .iter()
+        .filter(|row| section_of_node(&g.nodes[&row.prior.erase()]) != section_of_canon_succession(row))
+        .collect();
+    assert_eq!(filed_away_from_their_prior, Vec::<&CanonSuccession>::new(), "a step lives in the section of the container it steps from");
 
     let mut swept: Vec<(RowFamily, Expect, Sweep)> = Vec::new();
     macro_rules! subject {
@@ -223,9 +264,6 @@ fn every_row_of_every_family_maps_to_a_section() {
         .erase());
     subject!(attests, RowFamily::Attests, Expect::SameAsFamily, |r| r.event.erase());
     subject!(succession, RowFamily::Succession, Expect::SameAsFamily, |r| r.narrative.erase());
-    subject!(canon_succession, RowFamily::CanonSuccession, Expect::SameAsFamily, |r| r
-        .prior
-        .erase());
     subject!(dated_by, RowFamily::DatedBy, Expect::SameAsFamily, |r| r.event.erase());
     subject!(located_at, RowFamily::LocatedAt, Expect::SameAsFamily, |r| r.event.erase());
     subject!(fulfills, RowFamily::Fulfills, Expect::Elsewhere(&[Section::Kjv]), |r| {
@@ -289,8 +327,7 @@ fn every_row_of_every_family_maps_to_a_section() {
         );
     }
 
-    let mut covered: Vec<RowFamily> =
-        swept.iter().map(|(f, _, _)| *f).chain([RowFamily::ContainsBible]).collect();
+    let mut covered: Vec<RowFamily> = swept.iter().map(|(f, _, _)| *f).chain(per_row_families).collect();
     covered.sort_by_key(|f| f.ordinal());
     assert_eq!(covered, RowFamily::ALL.to_vec(), "every family must be swept exactly once");
 

@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 use atlas_graph::sqlite::manifest::read_manifest;
 use atlas_graph::sqlite::snapshot::SqliteSnapshot;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
+use atlas_graph::sqlite::SCHEMA_VERSION;
 use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
@@ -23,9 +24,9 @@ fn sections() -> &'static SqliteSnapshot {
 }
 
 const PINNED: [(&str, &str); 4] = [
-    ("core", "f92948735c4b4cc3e3934a85b44f4168"),
-    ("kjv", "abec1ca14dacb605148520b8d59cb4ec"),
-    ("concord", "3ef8508fa6e6782f4aa96376674b6b7f"),
+    ("core", "f0088b69dccd54dfd79e43b4b961c87d"),
+    ("kjv", "a97cc311938de640be6e525f32b263b6"),
+    ("concord", "1b6b2b4cf4a9462f2d24140354973799"),
     ("kretzmann", "cfebcd669fe2737850598fbc8b57ff24"),
 ];
 
@@ -41,7 +42,7 @@ fn the_other_four_sections_hashes_are_byte_identical_and_the_lexicon_line_is_fif
     let lx = &m.sections[4];
     assert_eq!(lx.name, "lexicon");
     assert!(!lx.required, "the lexicon section is optional (spec 2.1)");
-    assert_eq!(lx.schema_version, 14);
+    assert_eq!(lx.schema_version, SCHEMA_VERSION);
     assert!(lx.bytes < 104_857_600, "under GitHub's per-file limit: {} bytes", lx.bytes);
     assert!(lx.bytes > 1_000_000, "a real section, not an empty one: {} bytes", lx.bytes);
     assert_ne!(m.root, "9c9697b846cd8625e475b135c7dea11e", "the root moves once (a fifth manifest line)");

@@ -1,10 +1,10 @@
 //! A node lives in the section of the adapter that authored it, and a row's family says which
-//! adapter authored it -- except the one family whose section follows the container each row
-//! names, which is therefore decided per row and never by family alone.
+//! adapter authored it -- except the families whose section follows the container each row
+//! names, which are therefore decided per row and never by family alone.
 
 use crate::canon::ids::any_node_id_str;
 use crate::canon::{encode_row_in_family, obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
-use crate::edge::{Contains, EdgeId, RelationId};
+use crate::edge::{CanonSuccession, Contains, EdgeId, RelationId};
 use crate::graph::Graph;
 use crate::id::ContentHash;
 use crate::node::{Node, NodePayload};
@@ -46,16 +46,17 @@ impl Section {
     }
 }
 
-/// The one prefix test both the node and the per-row answers use. Stated as the narrow
-/// book/chapter prefixes rather than the bare corpus one, so a future container that shares
-/// the corpus prefix without that shape cannot inherit its section by accident.
+/// The one test both the node and the per-row answers use. A corpus root's raw id IS the corpus
+/// key, matched exactly; beneath it the narrow book/chapter prefixes rather than the bare corpus
+/// one, so a future container that shares the corpus prefix without that shape cannot inherit
+/// its section by accident.
 fn section_of_container_raw(raw: &str) -> Section {
-    if raw.starts_with("bible-book-") || raw.starts_with("bible-chapter-") {
-        Section::Kjv
-    } else if raw.starts_with("concord-") {
-        Section::Concord
-    } else {
-        Section::Core
+    match raw {
+        BibleTag::ID => Section::Kjv,
+        ConcordTag::ID => Section::Concord,
+        _ if raw.starts_with("bible-book-") || raw.starts_with("bible-chapter-") => Section::Kjv,
+        _ if raw.starts_with("concord-") => Section::Concord,
+        _ => Section::Core,
     }
 }
 
@@ -88,17 +89,13 @@ pub fn section_of_node(node: &Node) -> Section {
     }
 }
 
-/// Asking this for the per-row family is a caller error, not a silently wrong answer.
+/// Asking this for a per-row family is a caller error, not a silently wrong answer.
 pub fn section_of_family(f: RowFamily) -> Section {
     match f {
-        RowFamily::ContainsBible => panic!(
-            "ContainsBible has no per-family section -- it is split by row; \
-             call section_of_contains_bible instead"
-        ),
-        RowFamily::CanonSuccession
-        | RowFamily::CrossRefs
-        | RowFamily::SpokenBy
-        | RowFamily::SpokenAt => Section::Kjv,
+        RowFamily::ContainsBible | RowFamily::CanonSuccession => {
+            panic!("{f:?} has no per-family section -- it is split by the container each row names")
+        }
+        RowFamily::CrossRefs | RowFamily::SpokenBy | RowFamily::SpokenAt => Section::Kjv,
         RowFamily::ContainsConcord | RowFamily::Quotes | RowFamily::Confesses => Section::Concord,
         RowFamily::CommentsOn => Section::Kretzmann,
         RowFamily::Attests
@@ -128,17 +125,22 @@ pub fn section_of_contains_bible(row: &Contains<BibleTag>) -> Section {
     section_of_container_raw(&row.container.0)
 }
 
+/// The per-row answer: a step lives with the container it steps from.
+pub fn section_of_canon_succession(row: &CanonSuccession) -> Section {
+    section_of_container_raw(&row.prior.0)
+}
+
 /// These entries are synthesised from a row's own justification rather than authored, so one
-/// lives in the section of that source row -- through the per-row rule for the one family
-/// that needs it. The signature stays general so a future source family needs no new function.
+/// lives in the section of that source row -- through the per-row rule for the families that
+/// need it. The signature stays general so a future source family needs no new function.
 pub fn section_of_justified_by(
     source_family: RowFamily,
     source_container_raw: Option<&str>,
 ) -> Section {
     match source_family {
-        RowFamily::ContainsBible => section_of_container_raw(
+        RowFamily::ContainsBible | RowFamily::CanonSuccession => section_of_container_raw(
             source_container_raw
-                .expect("a ContainsBible justified-by source carries its container's raw id"),
+                .expect("a per-row family's justified-by source carries its container's raw id"),
         ),
         other => section_of_family(other),
     }
@@ -157,9 +159,9 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 14;
+pub const SECTION_SCHEMA_VERSION: u32 = 15;
 
-/// The per-row family appears under both of its homes.
+/// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
     match section {
         Section::Core => &[
@@ -190,7 +192,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::SpokenBy,
             RowFamily::SpokenAt,
         ],
-        Section::Concord => &[RowFamily::ContainsConcord, RowFamily::Quotes, RowFamily::Confesses],
+        Section::Concord => &[RowFamily::ContainsConcord, RowFamily::CanonSuccession, RowFamily::Quotes, RowFamily::Confesses],
         Section::Kretzmann => &[RowFamily::CommentsOn],
         Section::Lexicon => &[RowFamily::Occurs],
     }
@@ -290,8 +292,8 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
         line(&mut out, "node", &n.encode());
     }
     macro_rules! rows {
-        ($family:expr, $vec:expr) => {
-            for row in $vec.iter() {
+        ($family:expr, $rows:expr) => {
+            for row in $rows {
                 line(&mut out, $family.name(), &encode_row_in_family($family, row.to_value()));
             }
         };
@@ -299,38 +301,34 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
     for f in row_tables_of(section) {
         let f = *f;
         match f {
-            RowFamily::ContainsBible => {
-                for row in g.contains_bible.iter().filter(|r| section_of_contains_bible(r) == section) {
-                    line(&mut out, f.name(), &encode_row_in_family(f, row.to_value()));
-                }
-            }
-            RowFamily::ContainsConcord => rows!(f, g.contains_concord),
-            RowFamily::Attests => rows!(f, g.attests),
-            RowFamily::Succession => rows!(f, g.succession),
-            RowFamily::CanonSuccession => rows!(f, g.canon_succession),
-            RowFamily::DatedBy => rows!(f, g.dated_by),
-            RowFamily::LocatedAt => rows!(f, g.located_at),
-            RowFamily::Fulfills => rows!(f, g.fulfills),
-            RowFamily::Typology => rows!(f, g.typology),
-            RowFamily::NamedAfter => rows!(f, g.named_after),
-            RowFamily::Catechism => rows!(f, g.catechism),
-            RowFamily::CommentsOn => rows!(f, g.comments_on),
-            RowFamily::SpokenBy => rows!(f, g.spoken_by),
-            RowFamily::SpokenAt => rows!(f, g.spoken_at),
-            RowFamily::Mentions => rows!(f, g.mentions),
-            RowFamily::CrossRefs => rows!(f, g.cross_refs),
-            RowFamily::Quotes => rows!(f, g.quotes),
-            RowFamily::Confesses => rows!(f, g.confesses),
-            RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible),
-            RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency),
-            RowFamily::Analogue => rows!(f, g.analogue),
-            RowFamily::Occurs => rows!(f, g.occurs),
-            RowFamily::ParentOf => rows!(f, g.parent_of),
-            RowFamily::Partners => rows!(f, g.partners),
-            RowFamily::Participates => rows!(f, g.participates),
-            RowFamily::Authored => rows!(f, g.authored),
-            RowFamily::Shown => rows!(f, g.shown),
-            RowFamily::MapSuccession => rows!(f, g.map_succession),
+            RowFamily::ContainsBible => rows!(f, g.contains_bible.iter().filter(|r| section_of_contains_bible(r) == section)),
+            RowFamily::CanonSuccession => rows!(f, g.canon_succession.iter().filter(|r| section_of_canon_succession(r) == section)),
+            RowFamily::ContainsConcord => rows!(f, g.contains_concord.iter()),
+            RowFamily::Attests => rows!(f, g.attests.iter()),
+            RowFamily::Succession => rows!(f, g.succession.iter()),
+            RowFamily::DatedBy => rows!(f, g.dated_by.iter()),
+            RowFamily::LocatedAt => rows!(f, g.located_at.iter()),
+            RowFamily::Fulfills => rows!(f, g.fulfills.iter()),
+            RowFamily::Typology => rows!(f, g.typology.iter()),
+            RowFamily::NamedAfter => rows!(f, g.named_after.iter()),
+            RowFamily::Catechism => rows!(f, g.catechism.iter()),
+            RowFamily::CommentsOn => rows!(f, g.comments_on.iter()),
+            RowFamily::SpokenBy => rows!(f, g.spoken_by.iter()),
+            RowFamily::SpokenAt => rows!(f, g.spoken_at.iter()),
+            RowFamily::Mentions => rows!(f, g.mentions.iter()),
+            RowFamily::CrossRefs => rows!(f, g.cross_refs.iter()),
+            RowFamily::Quotes => rows!(f, g.quotes.iter()),
+            RowFamily::Confesses => rows!(f, g.confesses.iter()),
+            RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible.iter()),
+            RowFamily::TemporalAdjacency => rows!(f, g.temporal_adjacency.iter()),
+            RowFamily::Analogue => rows!(f, g.analogue.iter()),
+            RowFamily::Occurs => rows!(f, g.occurs.iter()),
+            RowFamily::ParentOf => rows!(f, g.parent_of.iter()),
+            RowFamily::Partners => rows!(f, g.partners.iter()),
+            RowFamily::Participates => rows!(f, g.participates.iter()),
+            RowFamily::Authored => rows!(f, g.authored.iter()),
+            RowFamily::Shown => rows!(f, g.shown.iter()),
+            RowFamily::MapSuccession => rows!(f, g.map_succession.iter()),
         }
     }
     if let Some(corpus) = spine_corpus(section) {
@@ -444,9 +442,9 @@ mod laws {
         let borrowed: Vec<(&str, &str, u32, bool)> = lines.iter().map(|(n, l, v, r)| (n.as_str(), l.as_str(), *v, *r)).collect();
         let text = String::from_utf8(manifest_lines(&borrowed)).unwrap();
         assert_eq!(text.lines().count(), 5);
-        assert!(text.ends_with(&format!("lexicon|{}|14|false\n", lines[4].1)), "the lexicon line is last and optional");
-        assert!(text.starts_with(&format!("core|{}|14|true\n", lines[0].1)));
-        assert!(text.contains("|14|false\n"), "concord and kretzmann are optional");
+        assert!(text.ends_with(&format!("lexicon|{}|{SECTION_SCHEMA_VERSION}|false\n", lines[4].1)), "the lexicon line is last and optional");
+        assert!(text.starts_with(&format!("core|{}|{SECTION_SCHEMA_VERSION}|true\n", lines[0].1)));
+        assert!(text.contains(&format!("|{SECTION_SCHEMA_VERSION}|false\n")), "concord and kretzmann are optional");
         assert_eq!(version_root(&g), root_of_lines(text.as_bytes()));
         let mut g2 = fixture();
         g2.located_at[0].provenance = "q".into();
@@ -499,6 +497,16 @@ mod laws {
     }
 
     #[test]
+    fn a_corpus_root_files_under_its_corpus_section_like_the_containers_beneath_it() {
+        // Arrange
+        let shapes = ["bible", "bible-book-GEN", "concord", "concord-doc-small-catechism"];
+        // Act
+        let sections = shapes.map(section_of_container_raw);
+        // Assert
+        assert_eq!(sections, [Section::Kjv, Section::Kjv, Section::Concord, Section::Concord]);
+    }
+
+    #[test]
     fn placement_moved_verbatim_and_every_family_has_one_home() {
         assert_eq!(section_of_family(RowFamily::CommentsOn), Section::Kretzmann);
         assert_eq!(section_of_justified_by(RowFamily::ContainsBible, Some("bible-chapter-GEN-1")), Section::Kjv);
@@ -509,7 +517,7 @@ mod laws {
         assert_eq!(Section::SHIPPED.to_vec(), Section::MANIFEST_ORDER.to_vec());
         for f in RowFamily::ALL {
             let homes = Section::SHIPPED.iter().filter(|s| row_tables_of(**s).contains(&f)).count();
-            assert_eq!(homes, if f == RowFamily::ContainsBible { 2 } else { 1 }, "{f:?}");
+            assert_eq!(homes, if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession) { 2 } else { 1 }, "{f:?}");
         }
     }
 }

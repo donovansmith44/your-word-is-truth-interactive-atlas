@@ -130,7 +130,7 @@
             "name": "Shows"
         }
     ],
-    "section_schema_version": 14,
+    "section_schema_version": 15,
     "symmetric": [
         {
             "label": "analogous-to",

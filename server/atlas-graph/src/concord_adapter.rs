@@ -1,12 +1,13 @@
 //! The Book of Concord corpus: one TextUnit node per paragraph, whose raw id is
 //! `concord/{part}.{article}.{paragraph}` -- the spelling `Graph::build_indexes` derives from a
 //! `TextRef::Concord`. A container's id is `concord-doc-{key}` or `concord-art-{key}-{article}`, and
-//! one corpus root contains every document.
+//! one corpus root contains every document. Each document follows the one before it, and each
+//! article the one before it within its document.
 
 use std::collections::BTreeSet;
 
 use atlas_etl::concord::{ConcordCorpus, ScOverlapRow};
-use atlas_graph_types::edge::{CatechismLink, ContainerContent, Contains};
+use atlas_graph_types::edge::{CanonSuccession, CatechismLink, ContainerContent, Contains};
 use atlas_graph_types::graph::ReadingSpine;
 use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -78,10 +79,12 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
     };
     let mut order: Vec<AnyNodeId> = Vec::new();
     let mut documents: Vec<ContainerNodeId> = Vec::new();
+    let mut articles_by_document: Vec<Vec<ContainerNodeId>> = Vec::new();
 
     for doc in &bundle.corpus.documents {
         stats.documents += 1;
         let doc_container = doc_container_id(doc.key);
+        let mut articles: Vec<ContainerNodeId> = Vec::new();
 
         for article in &doc.articles {
             stats.articles += 1;
@@ -117,10 +120,11 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             // A paragraph is reachable through its article, as a verse through its chapter.
             ctx.graph.contains_concord.push(Contains {
                 container: doc_container.clone(),
-                content: ContainerContent::Container(art_container),
+                content: ContainerContent::Container(art_container.clone()),
                 provenance: ProvenanceId::from("concord"),
                 justification: Default::default(),
             });
+            articles.push(art_container);
         }
 
         ctx.graph.nodes.insert(
@@ -128,12 +132,32 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: "concord".to_string() },
         );
         documents.push(doc_container);
+        articles_by_document.push(articles);
     }
 
     let root_rows = corpus_root::mint(&mut ctx.graph, CONCORD_CORPUS, CONCORD_TITLE, "concord", &documents);
     ctx.graph.contains_concord.extend(root_rows);
+    ctx.graph.canon_succession.extend(steps_between(&documents));
+    for articles in &articles_by_document {
+        ctx.graph.canon_succession.extend(steps_between(articles));
+    }
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
     stats
+}
+
+/// One `CanonSuccession` row per adjacent pair, in the order given: the documents come out of
+/// the parsed corpus in reading order and the articles of a document likewise, so `windows(2)`
+/// IS the step list.
+fn steps_between(containers: &[ContainerNodeId]) -> Vec<CanonSuccession> {
+    containers
+        .windows(2)
+        .map(|pair| CanonSuccession {
+            prior: pair[0].clone(),
+            next: pair[1].clone(),
+            provenance: ProvenanceId::from("concord"),
+            justification: Default::default(),
+        })
+        .collect()
 }
 
 /// Runs in MERGE/ALIAS rather than NORMALIZE because it cross-references the CatechismItem nodes
@@ -315,6 +339,45 @@ mod tests {
         let up = PositionRef(Position::Node(art_container.erase())).edges(&ctx.graph, &atlas_graph_types::explore::EdgeQuery { kind: inverse, cursor: None, limit: 10 });
         assert_eq!(up.entries.len(), 1);
         assert_eq!(up.entries[0].node, Position::Node(doc_container.erase()));
+    }
+
+    #[test]
+    fn each_document_is_followed_by_the_next_and_each_article_by_the_next_within_its_document() {
+        // Arrange
+        let canon = Canon { books: vec![] };
+        let verses = HashMap::new();
+        let atlas = crate::event_world::empty_atlas();
+        let mut corpus = tiny_corpus();
+        corpus.documents[0].articles.push(ConcordArticle {
+            article: 5,
+            slug: "/augsburg-confession/of-the-ministry/".into(),
+            title: "Article V. Of the Ministry.".into(),
+            paragraphs: vec![ConcordParagraph { paragraph: 1, source_label: "1".into(), text: "That we may obtain this faith, the Ministry of Teaching the Gospel was instituted.".into() }],
+        });
+        let bundle = ConcordBundle { corpus, sc_overlap: vec![] };
+        let mut ctx = ctx_with_concord(&canon, &verses, &atlas, &bundle);
+
+        // Act
+        normalize(&mut ctx);
+
+        // Assert
+        assert_eq!(
+            ctx.graph.canon_succession,
+            vec![
+                CanonSuccession {
+                    prior: doc_container_id("augsburg-confession"),
+                    next: doc_container_id("small-catechism"),
+                    provenance: ProvenanceId::from("concord"),
+                    justification: Default::default(),
+                },
+                CanonSuccession {
+                    prior: article_container_id("augsburg-confession", 4),
+                    next: article_container_id("augsburg-confession", 5),
+                    provenance: ProvenanceId::from("concord"),
+                    justification: Default::default(),
+                },
+            ]
+        );
     }
 
     #[test]

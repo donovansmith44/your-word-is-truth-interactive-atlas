@@ -160,7 +160,7 @@ pub enum GroundTarget {
     Source(SourceId),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ContainerContent<C: Corpus> {
     Loci(LocusSet<C>),
     Container(ContainerNodeId),
@@ -175,7 +175,7 @@ impl<C: Corpus> Clone for ContainerContent<C> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Contains<C: Corpus> {
     pub container: ContainerNodeId,
     pub content: ContainerContent<C>,
@@ -183,7 +183,7 @@ pub struct Contains<C: Corpus> {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CanonSuccession {
     pub prior: ContainerNodeId,
     pub next: ContainerNodeId,

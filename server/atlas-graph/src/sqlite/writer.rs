@@ -207,12 +207,14 @@ fn write_one(
     drop(conn);
 
     let uncompressed_bytes = std::fs::metadata(&tmp)?.len();
-    let path = layout.cache_path(&logical);
+    let path = layout.cache_path(&logical, SCHEMA_VERSION);
     let _ = std::fs::remove_file(&path);
     std::fs::rename(&tmp, &path)?;
 
     let blob_path = layout.blob_path(name, &logical);
-    let prev = previous.and_then(|m| m.sections.iter().find(|s| s.name == name && s.logical == logical));
+    // A blob's bytes carry the schema version its file was stamped with, so a previous manifest
+    // vouches for one only under the schema this build writes.
+    let prev = previous.and_then(|m| m.sections.iter().find(|s| s.name == name && s.logical == logical && s.schema_version == SCHEMA_VERSION));
     let (blob, bytes, reused_blob) = match prev {
         Some(prev) if blob_path.is_file() && sha256_hex_of_file(&blob_path)? == prev.blob => (prev.blob.clone(), prev.bytes, true),
         _ => {

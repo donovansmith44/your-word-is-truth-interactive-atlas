@@ -15,7 +15,7 @@ use atlas_graph_types::node::Node;
 use super::ddl::{has_spine, row_tables_of};
 use super::rows::RowRef;
 use super::SqliteError;
-use crate::sections::{section_of_contains_bible, section_of_justified_by, section_of_node, Section};
+use crate::sections::{section_of_canon_succession, section_of_contains_bible, section_of_justified_by, section_of_node, Section};
 
 pub const DIR_FORWARD: i64 = 0;
 pub const DIR_INVERSE: i64 = 1;
@@ -103,27 +103,24 @@ pub struct SectionPartition<'a> {
     pub spine: Option<(&'static str, &'a [AnyNodeId])>,
 }
 
-/// The global ord is the row's index in its family Vec -- the same number for the core and kjv
-/// halves of `contains_bible`, so an ord is unique within its family across sections.
+/// The global ord is the row's index in its family Vec -- the same number for both halves of a
+/// per-row family, so an ord is unique within its family across sections.
 pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, RowRef<'a>)> {
     fn all<'a, T>(f: RowFamily, v: &'a [T], wrap: fn(&'a T) -> RowRef<'a>) -> Vec<(RowFamily, i64, RowRef<'a>)> {
         v.iter().enumerate().map(|(i, r)| (f, i as i64, wrap(r))).collect()
+    }
+    fn split<'a, T>(f: RowFamily, v: &'a [T], s: Section, section_of: fn(&T) -> Section, wrap: fn(&'a T) -> RowRef<'a>) -> Vec<(RowFamily, i64, RowRef<'a>)> {
+        v.iter().enumerate().filter(|(_, r)| section_of(r) == s).map(|(i, r)| (f, i as i64, wrap(r))).collect()
     }
     let mut out = Vec::new();
     for f in row_tables_of(s) {
         let f = *f;
         out.extend(match f {
-            RowFamily::ContainsBible => g
-                .contains_bible
-                .iter()
-                .enumerate()
-                .filter(|(_, r)| section_of_contains_bible(r) == s)
-                .map(|(i, r)| (f, i as i64, RowRef::ContainsBible(r)))
-                .collect(),
+            RowFamily::ContainsBible => split(f, &g.contains_bible, s, section_of_contains_bible, RowRef::ContainsBible),
             RowFamily::ContainsConcord => all(f, &g.contains_concord, RowRef::ContainsConcord),
             RowFamily::Attests => all(f, &g.attests, RowRef::Attests),
             RowFamily::Succession => all(f, &g.succession, RowRef::Succession),
-            RowFamily::CanonSuccession => all(f, &g.canon_succession, RowRef::CanonSuccession),
+            RowFamily::CanonSuccession => split(f, &g.canon_succession, s, section_of_canon_succession, RowRef::CanonSuccession),
             RowFamily::DatedBy => all(f, &g.dated_by, RowRef::DatedBy),
             RowFamily::LocatedAt => all(f, &g.located_at, RowRef::LocatedAt),
             RowFamily::Fulfills => all(f, &g.fulfills, RowRef::Fulfills),
@@ -161,6 +158,7 @@ pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<S
         let id = Graph::edge_id_of(&e);
         let container = match e.family {
             RowFamily::ContainsBible => Some(g.contains_bible[e.row_ord].container.0.clone()),
+            RowFamily::CanonSuccession => Some(g.canon_succession[e.row_ord].prior.0.clone()),
             _ => None,
         };
         map.entry(id).or_default().push((e.family, e.row_ord as i64, container));

@@ -84,7 +84,7 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
         }
         assert_eq!(tables.contains("reading_spine"), matches!(s, Section::Kjv | Section::Concord));
         let uv: u32 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(uv, 14);
+        assert_eq!(uv, SCHEMA_VERSION);
         assert_eq!(logical_table_order(s)[0], "node");
     }
     let mut homes: std::collections::BTreeMap<RowFamily, usize> = Default::default();
@@ -96,7 +96,7 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
     for f in RowFamily::ALL {
         assert_eq!(
             homes.get(&f).copied().unwrap_or(0),
-            if f == RowFamily::ContainsBible { 2 } else { 1 },
+            if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession) { 2 } else { 1 },
             "{f:?}"
         );
     }
@@ -272,9 +272,15 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         .expect("a distinct, non-empty chain"),
     );
     g.canon_succession.push(CanonSuccession {
-        prior: ContainerNodeId::new("bible/GEN.50"),
-        next: ContainerNodeId::new("bible/EXO.1"),
+        prior: ContainerNodeId::new("bible-chapter-GEN-50"),
+        next: ContainerNodeId::new("bible-chapter-EXO-1"),
         provenance: "canon".into(),
+        justification: Justification::default(),
+    });
+    g.canon_succession.push(CanonSuccession {
+        prior: ContainerNodeId::new("concord-doc-preface"),
+        next: ContainerNodeId::new("concord-doc-ecumenical-creeds"),
+        provenance: "concord".into(),
         justification: Justification::default(),
     });
     g.dated_by.push(DatedBy {
@@ -584,7 +590,7 @@ fn every_family_round_trips_through_its_columns_with_identical_canon_bytes() {
     }
 }
 
-use atlas_graph::sqlite::manifest::{read_manifest, root_of, Manifest, ManifestSection};
+use atlas_graph::sqlite::manifest::{read_manifest, root_of, write_manifest, Manifest, ManifestSection};
 use atlas_graph::sqlite::partition::{edge_row_map, partition};
 use atlas_graph::sqlite::writer::write_sections;
 
@@ -647,7 +653,7 @@ fn the_manifest_round_trips_and_its_root_is_over_the_section_lines_only() {
         logical: logical.into(),
         blob: "00".repeat(32),
         bytes: 1,
-        schema_version: 14,
+        schema_version: SCHEMA_VERSION,
     };
     let sections = vec![s("core", true, &"a".repeat(32)), s("kjv", true, &"b".repeat(32)), s("concord", false, &"c".repeat(32))];
     let root = root_of(&sections);
@@ -684,7 +690,7 @@ fn the_writer_produces_five_files_named_by_logical_hash_and_a_manifest_in_order(
     let (m, written) = write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
     assert_eq!(m.sections.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["core", "kjv", "concord", "kretzmann", "lexicon"]);
     for (w, ms) in written.iter().zip(&m.sections) {
-        assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.sqlite", ms.logical), "the cache file is named by the logical hash");
+        assert_eq!(w.path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite", ms.logical, ms.schema_version), "the cache file is named by the logical hash and the schema version");
         assert_eq!(w.blob_path.file_name().unwrap().to_str().unwrap(), format!("{}.{}.sqlite.zst", ms.name, ms.logical));
         assert_eq!(ms.blob.len(), 64);
         assert_eq!(ms.bytes, std::fs::metadata(&w.blob_path).unwrap().len(), "bytes = the compressed size");
@@ -1099,7 +1105,7 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
     let (m, written) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
     assert_eq!(written.len(), 5);
     for w in &written {
-        assert_eq!(w.path, layout.cache_path(&w.logical));
+        assert_eq!(w.path, layout.cache_path(&w.logical, SCHEMA_VERSION));
         assert_eq!(w.blob_path, layout.blob_path(w.section.name(), &w.logical));
         assert!(w.blob_path.is_file() && w.path.is_file());
         assert_eq!(sha256_hex_of_file(&w.blob_path).unwrap(), w.blob);
@@ -1109,7 +1115,7 @@ fn the_writer_lands_cache_files_blobs_and_a_manifest_and_the_source_resolves_by_
         let ms = m.sections.iter().find(|s| s.name == w.section.name()).unwrap();
         assert_eq!((ms.blob.as_str(), ms.bytes), (w.blob.as_str(), w.bytes));
     }
-    let core_cache = layout.cache_path(&written[0].logical);
+    let core_cache = layout.cache_path(&written[0].logical, SCHEMA_VERSION);
     let before = std::fs::read(&core_cache).unwrap();
     std::fs::remove_file(&core_cache).unwrap();
     let src = CommittedZstdSource { layout: layout.clone() };
@@ -1148,6 +1154,35 @@ fn a_corrupt_optional_blob_is_loud_where_a_missing_one_is_merely_absent() {
     std::fs::remove_file(&concord.blob_path).unwrap();
     let snap = open_written(&dir).unwrap();
     assert_eq!(snap.present(), &[Section::Core, Section::Kjv, Section::Kretzmann, Section::Lexicon], "a missing optional blob is simply absent");
+}
+
+#[test]
+fn a_schema_bump_recompresses_every_blob_even_where_no_logical_moved() {
+    // Arrange
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4b-bump-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let layout = layout_under(&dir);
+    let (current, _) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+    let older_sections: Vec<ManifestSection> =
+        current.sections.iter().map(|s| ManifestSection { schema_version: SCHEMA_VERSION - 1, ..s.clone() }).collect();
+    let older = Manifest {
+        schema: current.schema,
+        compiler: current.compiler.clone(),
+        built: current.built.clone(),
+        root: root_of(&older_sections),
+        sections: older_sections,
+    };
+    write_manifest(&older, &layout.manifest_path()).unwrap();
+
+    // Act
+    let (rebuilt, written) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
+
+    // Assert
+    assert_eq!(written.iter().map(|w| w.reused_blob).collect::<Vec<bool>>(), vec![false; written.len()]);
+    assert_eq!(rebuilt.sections.iter().map(|s| s.schema_version).collect::<Vec<u32>>(), vec![SCHEMA_VERSION; written.len()]);
 }
 
 #[test]
@@ -1191,7 +1226,7 @@ fn the_blob_constants_are_the_specs() {
     let layout = SectionLayout::under(std::path::Path::new("data/compiled"));
     assert_eq!(layout.cache_dir, std::path::Path::new("data").join("cache").join("sections"));
     assert_eq!(layout.blob_path("core", "abc"), std::path::Path::new("data/compiled").join("sections").join("core.abc.sqlite.zst"));
-    assert_eq!(layout.cache_path("abc"), std::path::Path::new("data").join("cache").join("sections").join("abc.sqlite"));
+    assert_eq!(layout.cache_path("abc", SCHEMA_VERSION), std::path::Path::new("data").join("cache").join("sections").join(format!("abc.{SCHEMA_VERSION}.sqlite")));
 }
 
 #[test]
@@ -1205,7 +1240,7 @@ fn the_snapshot_opens_one_connection_per_worker_and_every_one_answers() {
     write_sections(&g, &Extras::default(), "test", &layout).unwrap();
     let snap = SqliteSnapshot::open_with_workers(&layout.manifest_path(), &CommittedZstdSource { layout: layout.clone() }, 3).unwrap();
     assert_eq!(snap.workers(), 3);
-    let expected: u64 = snap.manifest().sections.iter().map(|s| std::fs::metadata(layout.cache_path(&s.logical)).unwrap().len()).sum();
+    let expected: u64 = snap.manifest().sections.iter().map(|s| std::fs::metadata(layout.cache_path(&s.logical, s.schema_version)).unwrap().len()).sum();
     assert!(expected > 0 && snap.mmap_bytes() == expected, "mmap_size = the attached files' sum");
     for _ in 0..6 {
         snap.with_conn(|c| {
@@ -1256,10 +1291,35 @@ fn a_section_with_an_unknown_user_version_is_refused_like_an_old_artifact() {
     let _ = std::fs::remove_dir_all(&dir);
     let layout = layout_under(&dir);
     let (m, _) = write_sections(&g, &Extras::default(), "test", &layout).unwrap();
-    let concord = layout.cache_path(&m.sections[2].logical);
+    let concord = layout.cache_path(&m.sections[2].logical, m.sections[2].schema_version);
     let conn = rusqlite::Connection::open(&concord).unwrap();
     conn.execute_batch("PRAGMA user_version = 99;").unwrap();
     drop(conn);
     let err = open_written(&dir).unwrap_err().to_string();
-    assert!(err.contains("section concord user_version 99 unsupported") && err.contains("understands 14"), "{err}");
+    assert!(err.contains("section concord user_version 99 unsupported") && err.contains(&format!("understands {SCHEMA_VERSION}")), "{err}");
+}
+
+use atlas_core::data::demo_fixture;
+use atlas_core::sources::SourcesDocument;
+use atlas_graph::sqlite::sidecars::{fold_sidecars, unfold};
+
+#[test]
+fn a_place_date_claim_round_trips_through_the_sidecar_with_the_event_it_names() {
+    // Arrange
+    let mut atlas = demo_fixture();
+    atlas.place_history.get_mut("hebron").unwrap().established.as_mut().unwrap().event = Some(EventId::new("theo-87"));
+    let mut extras = Extras::default();
+    extras.extend(fold_sidecars(&atlas, &SourcesDocument::default()).unwrap());
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db4b-claim-event-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &extras, "test", &layout_under(&dir)).unwrap();
+
+    // Act
+    let (unfolded, _) = open_written(&dir).unwrap().with_conn(unfold).unwrap();
+
+    // Assert
+    assert_eq!(unfolded.place_history, atlas.place_history);
 }

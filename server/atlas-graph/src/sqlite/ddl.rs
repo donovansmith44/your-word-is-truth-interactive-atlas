@@ -487,8 +487,8 @@ CREATE TABLE catechism_question_verse (
 ) WITHOUT ROWID;
 CREATE TABLE place_history (
   place_id TEXT PRIMARY KEY,
-  est_from INTEGER, est_to INTEGER, est_note TEXT,
-  dest_from INTEGER, dest_to INTEGER, dest_note TEXT
+  est_from INTEGER, est_to INTEGER, est_note TEXT, est_event TEXT,
+  dest_from INTEGER, dest_to INTEGER, dest_note TEXT, dest_event TEXT
 ) WITHOUT ROWID;
 CREATE TABLE place_history_name (
   place_id TEXT NOT NULL, ord INTEGER NOT NULL, name TEXT NOT NULL, from_year INTEGER NOT NULL, to_year INTEGER NOT NULL,

@@ -20,7 +20,7 @@ async fn api_contract_answers_the_whole_advertisement_and_nothing_besides() {
         "min_version": "0.9.0",
         "max_version": "0.9.0",
         "manifest_schema": 1,
-        "section_schema_version": 14,
+        "section_schema_version": 15,
     });
     // Act
     let answered = get_json(&app, "/api/contract").await;

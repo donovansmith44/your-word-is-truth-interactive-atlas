@@ -497,6 +497,7 @@ fn node_plain_output_is_byte_unchanged_by_the_json_addition() {
         "  dated-by         1\n",
         "  dates            1\n",
         "  located-at       1\n",
+        "  shown-on         1\n",
         "  temporal-adjacency 2\n",
     );
     assert_eq!(stdout(&o), expected, "node's plain output must be byte-identical to its pre-BIBEX-1 form");
@@ -690,7 +691,7 @@ fn verify_passes_on_the_committed_sections_and_names_every_section_and_the_root(
     assert_eq!(v["root"]["manifest"], v["root"]["recomputed"]);
     let sections = v["sections"].as_array().unwrap();
     assert_eq!(sections.len(), 5);
-    assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == 14));
+    assert!(sections.iter().all(|s| s["transport"] == "ok" && s["logical_check"] == "ok" && s["schema_version"] == atlas_graph::sqlite::SCHEMA_VERSION));
     assert!(sections.iter().all(|s| s["uncompressed_bytes"].as_u64().unwrap() > s["bytes"].as_u64().unwrap()));
     assert_eq!(v["raw"]["status"], "ok");
 
