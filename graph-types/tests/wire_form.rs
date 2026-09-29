@@ -1,5 +1,6 @@
 #![cfg(all(feature = "serde", feature = "openapi"))]
 
+use atlas_graph_types::id::{EventId, PlaceId};
 use atlas_graph_types::{EdgeKind, NodeKind};
 use utoipa::PartialSchema;
 
@@ -8,6 +9,7 @@ use common::{DECLARED_EDGE_KINDS, DECLARED_NODE_KINDS};
 
 const NODE_KIND_DESCRIPTION: &str = "What kind of thing one node of this atlas stands for.";
 const EDGE_KIND_DESCRIPTION: &str = "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.";
+const EVENT_ID_DESCRIPTION: &str = "The id of one Event node.";
 
 #[test]
 fn serialize_emits_the_name_and_the_label() {
@@ -106,4 +108,38 @@ fn a_relation_read_from_something_that_is_not_a_label_is_refused_by_name() {
     let refusal = serde_json::from_str::<EdgeKind>(not_a_label).expect_err("only a label reads back as a relation");
     // Assert
     assert_eq!(refusal.to_string(), "invalid type: integer `1`, expected one of the EdgeKind labels at line 1 column 1");
+}
+
+#[test]
+fn a_typed_node_id_is_written_as_its_raw_id_and_reads_back_from_it() {
+    // Arrange
+    let id = EventId::new("theo-87");
+    // Act
+    let json = serde_json::to_string(&id).unwrap();
+    let back: EventId = serde_json::from_str(&json).unwrap();
+    // Assert
+    assert_eq!(json, "\"theo-87\"");
+    assert_eq!(back, id);
+}
+
+#[test]
+fn a_typed_node_id_read_from_something_that_is_not_a_string_is_refused_by_its_kind() {
+    // Arrange
+    let not_an_id = "1";
+    // Act
+    let refusal = serde_json::from_str::<EventId>(not_an_id).expect_err("only a string reads back as an id");
+    // Assert
+    assert_eq!(refusal.to_string(), "invalid type: integer `1`, expected the id of one Event node at line 1 column 1");
+}
+
+#[test]
+fn a_typed_node_id_schema_is_a_string_named_for_its_kind() {
+    // Arrange
+    use utoipa::ToSchema;
+    // Act
+    let names = [<EventId as ToSchema>::name(), <PlaceId as ToSchema>::name()];
+    let schema = serde_json::to_value(EventId::schema()).unwrap();
+    // Assert
+    assert_eq!(names, ["EventId", "PlaceId"]);
+    assert_eq!(schema, serde_json::json!({ "type": "string", "description": EVENT_ID_DESCRIPTION }));
 }
