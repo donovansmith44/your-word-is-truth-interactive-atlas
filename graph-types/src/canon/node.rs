@@ -52,7 +52,8 @@ const PERSON_KEYS: &[&str] = &[
 const PEOPLE_GROUP_KEYS: &[&str] = &["description", "label"];
 const ANCHOR_KEYS: &[&str] = &["at", "citation"];
 const ERA_KEYS: &[&str] = &["from_year", "label", "to_year"];
-const MAP_KEYS: &[&str] = &["from_year", "label", "to_year"];
+// A map's payload is its era's window.
+const MAP_KEYS: &[&str] = ERA_KEYS;
 const POLITY_KEYS: &[&str] = &["color_key", "eras", "label"];
 const LABEL_ONLY_KEYS: &[&str] = &["label"];
 const COMMENTARY_ITEM_KEYS: &[&str] = &["heading", "text", "work"];
