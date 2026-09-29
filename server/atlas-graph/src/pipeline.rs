@@ -358,6 +358,25 @@ mod pipeline_tests {
         assert!(format!("{err:#}").contains("always_fails"), "the error must name which pass failed: {err:#}");
     }
 
+    const A_SOURCE_NAMING_ONE_VERSE: &str =
+        r#"{"books":[{"name":"Genesis","chapters":[{"chapter":1,"verses":[{"verse":1,"text":"In the beginning God created the heaven and the earth."}]}]}]}"#;
+
+    #[test]
+    fn the_law_check_stage_refuses_a_graph_its_own_source_does_not_agree_with() {
+        // Arrange
+        let (canon, verses, atlas) = empty_ctx();
+        let mut ctx = BuildCtx::new(&canon, &verses, Some(A_SOURCE_NAMING_ONE_VERSE), "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+
+        // Act
+        let refusal = run_pipeline(&mut ctx, &pipeline()).expect_err("an empty canon cannot satisfy a source that names a verse");
+
+        // Assert
+        assert!(
+            format!("{refusal:#}").contains("law_check") && format!("{refusal:#}").contains("KJV adapter fidelity law"),
+            "{refusal:#}"
+        );
+    }
+
     #[test]
     fn full_pipeline_over_a_trivial_fixture_is_green() {
         let (canon, verses, atlas) = empty_ctx();
