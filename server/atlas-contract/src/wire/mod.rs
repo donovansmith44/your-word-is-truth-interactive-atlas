@@ -7,6 +7,7 @@ pub mod map;
 pub mod meta;
 pub mod places;
 pub mod reading;
+pub mod time;
 
 pub use catechism::*;
 pub use contents::*;
@@ -17,3 +18,4 @@ pub use map::*;
 pub use meta::*;
 pub use places::*;
 pub use reading::*;
+pub use time::*;

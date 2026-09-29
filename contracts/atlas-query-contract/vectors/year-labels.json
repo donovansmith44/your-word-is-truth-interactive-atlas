@@ -1,0 +1,93 @@
+{
+  "claims": [
+    {
+      "from": -1003,
+      "label": "c. 1003 BC",
+      "note": "traditional",
+      "to": -1003
+    },
+    {
+      "from": -586,
+      "label": "586 BC",
+      "note": null,
+      "to": -586
+    },
+    {
+      "from": -1447,
+      "label": "c. 1447 – 1400 BC",
+      "note": "traditional",
+      "to": -1400
+    }
+  ],
+  "ranges": [
+    {
+      "from": -1450,
+      "label": "1450 – 1400 BC",
+      "to": -1400
+    },
+    {
+      "from": -1447,
+      "label": "1447 – 1400 BC",
+      "to": -1400
+    },
+    {
+      "from": -1447,
+      "label": "1447 BC",
+      "to": -1447
+    },
+    {
+      "from": -5,
+      "label": "5 BC – AD 30",
+      "to": 30
+    },
+    {
+      "from": 33,
+      "label": "AD 33",
+      "to": 33
+    },
+    {
+      "from": 1,
+      "label": "AD 1 – 100",
+      "to": 100
+    },
+    {
+      "from": 30,
+      "label": "AD 30 – 70",
+      "to": 70
+    }
+  ],
+  "years": [
+    {
+      "label": "4004 BC",
+      "value": -4004
+    },
+    {
+      "label": "1447 BC",
+      "value": -1447
+    },
+    {
+      "label": "1 BC",
+      "value": -1
+    },
+    {
+      "label": "AD 1",
+      "value": 1
+    },
+    {
+      "label": "AD 30",
+      "value": 30
+    },
+    {
+      "label": "AD 33",
+      "value": 33
+    },
+    {
+      "label": "AD 100",
+      "value": 100
+    },
+    {
+      "label": "AD 2000",
+      "value": 2000
+    }
+  ]
+}
