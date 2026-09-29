@@ -95,6 +95,21 @@ fn parse_verify_args(rest: &[String]) -> Result<Option<String>, CliError> {
     }
 }
 
+/// The verbs under `raw`. One today; the type is the list.
+enum RawVerb {
+    Bless,
+}
+
+fn parse_raw_verb(rest: &[String]) -> Result<RawVerb, CliError> {
+    const USAGE: &str = "usage: bibex raw bless";
+    const DO: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml";
+    match &rest[1..] {
+        [verb] if verb == "bless" => Ok(RawVerb::Bless),
+        [] => Err(CliError::bad_usage("'raw' requires a verb", USAGE, DO)),
+        other => Err(CliError::bad_usage(format!("unrecognized arguments for 'raw': {}", other.join(" ")), USAGE, DO)),
+    }
+}
+
 fn check_no_kinds_args(rest: &[String]) -> Result<(), CliError> {
     if rest.len() > 1 {
         return Err(CliError::bad_usage(format!("'kinds' takes no arguments, got {}", rest.len() - 1), "usage: bibex kinds", "run 'bibex kinds' with no arguments"));
@@ -148,9 +163,12 @@ fn run(args: &[String]) -> Result<String, CliError> {
             let only = parse_verify_args(&rest)?;
             commands::verify::run(&data_dir, only.as_deref())
         }
+        "raw" => match parse_raw_verb(&rest)? {
+            RawVerb::Bless => commands::raw::bless(&data_dir),
+        },
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
-            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, tutorial, help",
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, raw, tutorial, help",
             "run 'bibex help' for the full list",
         )),
     }
@@ -213,9 +231,12 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
             let only = parse_verify_args(&rest)?;
             commands::verify::run_json(&data_dir, only.as_deref())
         }
+        "raw" => match parse_raw_verb(&rest)? {
+            RawVerb::Bless => commands::raw::bless_json(&data_dir),
+        },
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
-            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, tutorial, help",
+            "'atlas' only knows verse, chapter, node, edges, find, kinds, verify, raw, tutorial, help",
             "run 'bibex help' for the full list",
         )),
     }

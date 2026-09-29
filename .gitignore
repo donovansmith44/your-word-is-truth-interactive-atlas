@@ -18,6 +18,7 @@ client/obj/
 # clone runs with zero downloads.
 data/raw/*
 !data/raw/README.md
+!data/raw/MANIFEST.toml
 # DB-2b: section build outputs (spec §2.3 unpack cache; committed sections arrive at DB-4)
 data/cache/
 

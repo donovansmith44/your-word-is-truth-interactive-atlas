@@ -27,10 +27,17 @@ const SECTION_SCHEMA: u32 = 14;
 const OPTIONAL_SECTION_LINE: &str = "concord    logical 00000000000000000000000000000000  skipped  transport absent (optional) 0 bytes\n";
 
 const EXIT_OK: i32 = 0;
+const EXIT_DATA_LOAD_FAILED: i32 = 5;
 const EXIT_INTEGRITY_FAILED: i32 = 6;
+const EXIT_BAD_USAGE: i32 = 4;
 
 const DO_COMPILED: &str = "recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served";
 const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
+const DO_BLESS_EMPTY: &str = "run data/fetch-raw.ps1 (or restore data/raw from the archive), check it with 'bibex verify', then bless";
+const DO_BLESS_UNREADABLE: &str = "restore data/raw/MANIFEST.toml from git, or delete it deliberately, then bless again";
+const DO_BLESS_UNWALKABLE: &str = "pass --data-dir so that data/raw sits beside it, and fetch the raw tree first with data/fetch-raw.ps1";
+const DO_BLESS_UNWRITABLE: &str = "check that data/raw is writable";
+const DO_RAW_VERB: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml";
 
 struct Fixture {
     dir: PathBuf,
@@ -168,6 +175,18 @@ fn hex_of(bytes: &[u8]) -> String {
 
 fn integrity_failed(failed: usize, checks: usize, failures: &str, do_: &str) -> String {
     format!("atlas: error (integrity_failed): {failed} of {checks} checks failed -- {failures} -- {do_}\n")
+}
+
+fn data_load_failed(what: &str, why: &str, do_: &str) -> String {
+    format!("atlas: error (data_load_failed): {what} -- {why} -- {do_}\n")
+}
+
+fn bad_usage(what: &str, why: &str, do_: &str) -> String {
+    format!("atlas: error (bad_usage): {what} -- {why} -- {do_}\n")
+}
+
+fn walked_root(fixture: &Fixture) -> String {
+    walk(&fixture.raw()).expect("the fixture tree must walk").root.hex()
 }
 
 #[test]
@@ -419,4 +438,212 @@ fn a_tree_the_walk_cannot_read_is_an_integrity_failure() {
 
     // Assert
     assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), expected));
+}
+
+#[test]
+fn raw_bless_records_the_tree_and_says_there_was_no_previous_manifest() {
+    // Arrange
+    let fixture = Fixture::named("bless-first");
+    fixture.write("kretzmann/volume-1.txt", VOLUME_ONE);
+    fixture.write("geo/modern.jsonl", MODERN);
+    fixture.write("geo/ancient.jsonl", ANCIENT);
+    fixture.make_dir("empty");
+    let expected = format!("raw {FIXTURE_ROOT} recorded ({FIXTURE_FILES} files) at {}\nprevious none\n", fixture.manifest_path().display());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+    assert_eq!(bibex(&fixture, &["verify"]), (Some(EXIT_OK), format!("{OPTIONAL_SECTION_LINE}{}raw {FIXTURE_ROOT} OK ({FIXTURE_FILES} files)\n", fixture.root_line()), String::new()));
+}
+
+#[test]
+fn raw_bless_prints_added_removed_and_changed_against_the_previous_manifest() {
+    // Arrange
+    let fixture = recorded_fixture("bless-diff");
+    fixture.write("geo/added.jsonl", ADDED);
+    fixture.write("geo/ancient.jsonl", ANCIENT_TRUNCATED);
+    fixture.remove("kretzmann/volume-1.txt");
+    let expected = format!(
+        "raw {} recorded ({FIXTURE_FILES} files) at {}\nprevious {FIXTURE_ROOT}\nadded geo/added.jsonl\nremoved kretzmann/volume-1.txt\nchanged geo/ancient.jsonl\n",
+        walked_root(&fixture),
+        fixture.manifest_path().display()
+    );
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+    assert_eq!(bibex(&fixture, &["verify"]), (Some(EXIT_OK), format!("{OPTIONAL_SECTION_LINE}{}raw {} OK ({FIXTURE_FILES} files)\n", fixture.root_line(), walked_root(&fixture)), String::new()));
+}
+
+#[test]
+fn raw_bless_says_unchanged_when_nothing_moved() {
+    // Arrange
+    let fixture = recorded_fixture("bless-unchanged");
+    let expected = format!("raw {FIXTURE_ROOT} recorded ({FIXTURE_FILES} files) at {}\nprevious {FIXTURE_ROOT}\nunchanged\n", fixture.manifest_path().display());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_bless_json_carries_the_root_and_the_diff() {
+    // Arrange
+    let fixture = recorded_fixture("bless-json");
+    fixture.write("geo/added.jsonl", ADDED);
+    fixture.write("geo/ancient.jsonl", ANCIENT_FLIPPED);
+    fixture.remove("kretzmann/volume-1.txt");
+    let expected = json!({
+        "root": walked_root(&fixture),
+        "files": FIXTURE_FILES,
+        "manifest": fixture.manifest_path().display().to_string(),
+        "previous": FIXTURE_ROOT,
+        "added": ["geo/added.jsonl"],
+        "removed": ["kretzmann/volume-1.txt"],
+        "changed": ["geo/ancient.jsonl"],
+    });
+
+    // Act
+    let result = bibex_json(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_bless_json_says_previous_null_on_a_first_blessing() {
+    // Arrange
+    let fixture = Fixture::named("bless-json-first");
+    fixture.write("geo/ancient.jsonl", ANCIENT);
+    let expected = json!({
+        "root": walked_root(&fixture),
+        "files": 1,
+        "manifest": fixture.manifest_path().display().to_string(),
+        "previous": null,
+        "added": [],
+        "removed": [],
+        "changed": [],
+    });
+
+    // Act
+    let result = bibex_json(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_bless_refuses_an_empty_tree_and_leaves_the_previous_manifest_untouched() {
+    // Arrange
+    let fixture = recorded_fixture("bless-empty");
+    let previous = fixture.manifest_text();
+    fixture.remove_dir("geo");
+    fixture.remove_dir("kretzmann");
+    let expected = data_load_failed(
+        &format!("{} has no files to record", fixture.raw().display()),
+        "an empty tree is what a killed fetch or a followed junction leaves behind, and a blessing would make it the truth",
+        DO_BLESS_EMPTY,
+    );
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_DATA_LOAD_FAILED), String::new(), expected));
+    assert_eq!(fixture.manifest_text(), previous);
+}
+
+#[test]
+fn raw_bless_refuses_to_overwrite_a_previous_manifest_it_cannot_read() {
+    // Arrange
+    let fixture = recorded_fixture("bless-unreadable");
+    let forged = fixture.manifest_text().replace(FIXTURE_ROOT, ZERO_LOGICAL);
+    fs::write(fixture.manifest_path(), &forged).expect("the forged manifest must be writable");
+    let expected = format!(
+        "atlas: error (integrity_failed): {} does not read, so there is nothing to diff against -- manifest root {ZERO_LOGICAL} does not recompute from its datasets ({FIXTURE_ROOT}) -- {DO_BLESS_UNREADABLE}\n",
+        fixture.manifest_path().display()
+    );
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), expected));
+    assert_eq!(fixture.manifest_text(), forged);
+}
+
+#[test]
+fn raw_bless_refuses_when_there_is_no_raw_tree_to_walk() {
+    // Arrange
+    let fixture = Fixture::named("bless-no-tree");
+    let why = fs::read_dir(fixture.raw()).expect_err("the fixture has no raw tree").to_string();
+    let expected = data_load_failed(&format!("{} could not be walked", fixture.raw().display()), &why, DO_BLESS_UNWALKABLE);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_DATA_LOAD_FAILED), String::new(), expected));
+    assert!(!fixture.manifest_path().exists());
+}
+
+#[test]
+fn raw_bless_refuses_when_the_manifest_cannot_be_written() {
+    // Arrange
+    let fixture = Fixture::named("bless-unwritable");
+    fixture.write("geo/ancient.jsonl", ANCIENT);
+    fixture.make_dir(MANIFEST_FILE);
+    let why = fs::write(fixture.manifest_path(), b"").expect_err("a directory cannot be written as a file").to_string();
+    let expected = data_load_failed(&format!("{} could not be written", fixture.manifest_path().display()), &why, DO_BLESS_UNWRITABLE);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "bless"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_DATA_LOAD_FAILED), String::new(), expected));
+}
+
+#[test]
+fn raw_without_a_verb_is_bad_usage() {
+    // Arrange
+    let fixture = Fixture::named("raw-bare");
+    let expected = bad_usage("'raw' requires a verb", "usage: bibex raw bless", DO_RAW_VERB);
+
+    // Act
+    let result = bibex(&fixture, &["raw"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+#[test]
+fn raw_with_anything_but_bless_is_bad_usage() {
+    // Arrange
+    let fixture = Fixture::named("raw-other");
+    let expected = bad_usage("unrecognized arguments for 'raw': curse now", "usage: bibex raw bless", DO_RAW_VERB);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "curse", "now"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+#[test]
+fn raw_bless_json_with_a_bad_verb_is_the_same_bad_usage_as_an_envelope() {
+    // Arrange
+    let fixture = Fixture::named("raw-other-json");
+    let expected = json!({ "error": { "code": "bad_usage", "message": "'raw' requires a verb -- usage: bibex raw bless", "hint": DO_RAW_VERB } });
+
+    // Act
+    let (code, stdout, stderr) = bibex(&fixture, &["--json", "raw"]);
+
+    // Assert
+    assert_eq!((code, stdout, serde_json::from_str::<Value>(&stderr).expect("a JSON envelope on stderr")), (Some(EXIT_BAD_USAGE), String::new(), expected));
 }
