@@ -1,6 +1,6 @@
 use atlas_graph::sqlite::blob::sha256_hex_of_file;
 use atlas_graph::sqlite::extras::Extras;
-use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout, SectionSource};
+use atlas_graph::sqlite::source::{sibling_dir, CommittedZstdSource, SectionLayout, SectionSource};
 use atlas_graph::sqlite::{
     hash_bytes, hash_from_bytes, open_read_only, stamp_pragmas, APPLICATION_ID, HASH_WIDTH,
     SCHEMA_VERSION,
@@ -1229,6 +1229,30 @@ fn the_blob_constants_are_the_specs() {
     assert_eq!(layout.cache_dir, std::path::Path::new("data").join("cache").join("sections"));
     assert_eq!(layout.blob_path("core", "abc"), std::path::Path::new("data/compiled").join("sections").join("core.abc.sqlite.zst"));
     assert_eq!(layout.cache_path("abc", SCHEMA_VERSION), std::path::Path::new("data").join("cache").join("sections").join(format!("abc.{SCHEMA_VERSION}.sqlite")));
+}
+
+#[test]
+fn the_raw_tree_and_the_other_data_directories_sit_beside_the_compiled_one() {
+    // Arrange
+    let compiled = std::path::Path::new("data/compiled");
+
+    // Act
+    let found = (SectionLayout::under(compiled).raw_dir(), sibling_dir(compiled, "curated"), sibling_dir(std::path::Path::new("compiled"), "raw"));
+
+    // Assert
+    assert_eq!(found, (std::path::Path::new("data").join("raw"), std::path::Path::new("data").join("curated"), std::path::PathBuf::from("raw")));
+}
+
+#[test]
+fn a_directory_with_no_parent_keeps_its_siblings_under_itself() {
+    // Arrange
+    let root = std::path::Path::new("/");
+
+    // Act
+    let raw = sibling_dir(root, "raw");
+
+    // Assert
+    assert_eq!(raw, std::path::Path::new("/").join("raw"));
 }
 
 #[test]

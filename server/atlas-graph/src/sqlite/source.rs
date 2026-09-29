@@ -27,8 +27,12 @@ impl SectionLayout {
     /// The documented layout under a `data/compiled` directory: the cache is its sibling
     /// `data/cache/sections`.
     pub fn under(data_dir: &Path) -> SectionLayout {
-        let parent = data_dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from("."));
-        SectionLayout { compiled_dir: data_dir.to_path_buf(), cache_dir: parent.join("cache").join("sections") }
+        SectionLayout { compiled_dir: data_dir.to_path_buf(), cache_dir: sibling_dir(data_dir, "cache").join("sections") }
+    }
+
+    /// `data/raw`, the inputs the sections were compiled from.
+    pub fn raw_dir(&self) -> PathBuf {
+        sibling_dir(&self.compiled_dir, "raw")
     }
 
     pub fn manifest_path(&self) -> PathBuf {
@@ -50,6 +54,12 @@ impl SectionLayout {
     pub fn cache_path(&self, logical: &str, schema_version: u32) -> PathBuf {
         self.cache_dir.join(format!("{logical}.{schema_version}.sqlite"))
     }
+}
+
+/// `data/compiled`, `data/raw`, `data/curated`, `data/exports` and `data/cache` are siblings, so
+/// each is found from any other.
+pub fn sibling_dir(dir: &Path, name: &str) -> PathBuf {
+    dir.parent().unwrap_or(dir).join(name)
 }
 
 /// Whether a `resolve` error means the blob is simply absent -- an optional section a deployment

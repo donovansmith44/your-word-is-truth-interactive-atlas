@@ -20,6 +20,7 @@ use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphSnapshot, GraphS
 
 use crate::sections::Section;
 use crate::sqlite::snapshot::SqliteSnapshot;
+use crate::sqlite::source::sibling_dir;
 
 /// The port handle a `GraphService` serves through: the in-memory store's snapshot or the committed
 /// sections. Every arm delegates the whole port, so a handler never sees which one it holds, and either
@@ -537,8 +538,7 @@ pub fn narrative_legs_of(graph: &Graph) -> BTreeMap<String, Vec<String>> {
 
 /// The curated eras beside `raw_dir`: the one other filesystem read this crate performs.
 fn load_eras(raw_dir: &Path) -> anyhow::Result<Vec<atlas_core::data::Era>> {
-    let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
-    let path = curated_dir.join("eras.toml");
+    let path = sibling_dir(raw_dir, "curated").join("eras.toml");
     let text = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     atlas_etl::curated::parse_eras(&text).with_context(|| format!("parsing {}", path.display()))
 }
@@ -561,7 +561,7 @@ fn load_concord(raw_dir: &Path) -> anyhow::Result<Option<crate::concord_adapter:
     if !root.is_dir() {
         return Ok(None);
     }
-    let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    let curated_dir = sibling_dir(raw_dir, "curated");
     let corpus = atlas_etl::concord::read_all(&root, &curated_dir).with_context(|| format!("reading vendored Concord data from {}", root.display()))?;
     let overlap_path = curated_dir.join("concord-sc-overlap.toml");
     let overlap_text = std::fs::read_to_string(&overlap_path).with_context(|| format!("reading {}", overlap_path.display()))?;

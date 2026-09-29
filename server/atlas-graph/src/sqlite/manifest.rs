@@ -93,9 +93,8 @@ pub fn read_manifest(path: &Path) -> Result<Manifest, SqliteError> {
     Ok(m)
 }
 
-/// `data/raw/MANIFEST.toml`, a sibling of the compiled directory as `data/cache` is.
 pub fn raw_manifest_path(layout: &SectionLayout) -> PathBuf {
-    layout.compiled_dir.join("..").join("raw").join("MANIFEST.toml")
+    layout.raw_dir().join("MANIFEST.toml")
 }
 
 /// The root `bibex raw bless` recorded, or `None` where no manifest was ever written (a fresh

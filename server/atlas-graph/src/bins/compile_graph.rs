@@ -2,10 +2,11 @@
 //! directory's siblings. Before writing anything it rebuilds the graph a second time from the identical
 //! sources and runs the conformance law between them, so that expensive check happens here, never at startup.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Instant;
 
 use anyhow::{Context, Result};
+use atlas_graph::sqlite::source::sibling_dir;
 use atlas_graph_types::store::{GraphPublisher, MemStore};
 
 /// The sections' home IS `--data-dir`; `--sections-cache <dir>` overrides the unpack cache the uncompressed
@@ -44,10 +45,10 @@ fn main() -> Result<()> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     let (data_dir, sections_cache) = parse_args(&raw)?;
 
-    let raw_dir = data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| Path::new("../data/raw").to_path_buf());
-    let curated_dir = data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    let raw_dir = sibling_dir(&data_dir, "raw");
+    let curated_dir = sibling_dir(&data_dir, "curated");
     // `data/exports/` is a committed directory, unlike the gitignored raw tree.
-    let exports_dir = data_dir.parent().map(|p| p.join("exports")).unwrap_or_else(|| Path::new("../data/exports").to_path_buf());
+    let exports_dir = sibling_dir(&data_dir, "exports");
 
     let atlas = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
     let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).with_context(|| format!("reading {}", raw_dir.join("kjv.json").display()))?;

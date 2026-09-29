@@ -1,10 +1,11 @@
-//! Walking `data/raw` into the raw input tree, and `MANIFEST.toml` as its text form. The tree
-//! carries bytes ([`Sha256`], [`RawHash`]); the TOML boundary is the only place they are hex.
+//! Walking `data/raw` into the raw input tree, `MANIFEST.toml` as its text form, and the drift
+//! between the two. The tree carries bytes ([`Sha256`], [`RawHash`]); the TOML boundary is the
+//! only place they are hex.
 
 use std::fmt;
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use atlas_graph_types::raw_manifest::{node_hash, HexError, RawEntry, RawHash, RawLeaf, RawNode, Sha256};
 use atlas_graph_types::sha256::sha256;
@@ -268,6 +269,138 @@ impl fmt::Display for ManifestError {
             ManifestError::Root { recorded, recomputed } => {
                 write!(f, "manifest root {} does not recompute from its datasets ({})", recorded.hex(), recomputed.hex())
             }
+        }
+    }
+}
+
+pub const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
+
+/// How a walked tree differs from a recorded one, by path from the root of `data/raw`. Kept as
+/// values so `verify` can name each in its own words and `bless` in its.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Drift {
+    Missing { path: String },
+    Extra { path: String },
+    Truncated { path: String, recorded: u64, found: u64 },
+    Changed { path: String, recorded: Sha256, found: Sha256 },
+    LinkAdded { path: String },
+    LinkRemoved { path: String },
+}
+
+pub enum Unrecorded {
+    NoManifest { manifest: PathBuf },
+    NoFiles { raw_dir: PathBuf },
+}
+
+/// The datasets by name, then the links: a link is not content and moves no hash, so it is
+/// compared as a list of its own, and one added or removed is a change the tree must see.
+pub fn drift(recorded: &RawManifest, walked: &RawManifest) -> Vec<Drift> {
+    let mut out = Vec::new();
+    drift_into("", &recorded.datasets, &walked.datasets, &mut out);
+    out.extend(link_drift(&recorded.links, &walked.links));
+    out
+}
+
+pub fn drift_at(path: &str, recorded: &RawEntry, found: Option<&RawEntry>) -> Vec<Drift> {
+    let mut out = Vec::new();
+    match found {
+        None => out.push(Drift::Missing { path: path.into() }),
+        Some(found) => drift_of_pair(path, recorded, found, &mut out),
+    }
+    out
+}
+
+pub fn link_drift(recorded: &[String], walked: &[String]) -> Vec<Drift> {
+    let removed = recorded.iter().filter(|path| !walked.contains(path)).map(|path| Drift::LinkRemoved { path: path.clone() });
+    let added = walked.iter().filter(|path| !recorded.contains(path)).map(|path| Drift::LinkAdded { path: path.clone() });
+    removed.chain(added).collect()
+}
+
+pub fn leaves(entries: &[RawEntry]) -> usize {
+    entries
+        .iter()
+        .map(|entry| match entry {
+            RawEntry::Leaf(_) => 1,
+            RawEntry::Node(node) => leaves(&node.children),
+        })
+        .sum()
+}
+
+fn drift_into(parent: &str, recorded: &[RawEntry], walked: &[RawEntry], out: &mut Vec<Drift>) {
+    let mut recorded = recorded.iter().peekable();
+    let mut walked = walked.iter().peekable();
+    loop {
+        match (recorded.peek(), walked.peek()) {
+            (None, None) => return,
+            (Some(r), None) => {
+                out.push(Drift::Missing { path: relative_path(parent, r.name()) });
+                recorded.next();
+            }
+            (None, Some(w)) => {
+                out.push(Drift::Extra { path: relative_path(parent, w.name()) });
+                walked.next();
+            }
+            (Some(r), Some(w)) => match r.name().cmp(w.name()) {
+                std::cmp::Ordering::Less => {
+                    out.push(Drift::Missing { path: relative_path(parent, r.name()) });
+                    recorded.next();
+                }
+                std::cmp::Ordering::Greater => {
+                    out.push(Drift::Extra { path: relative_path(parent, w.name()) });
+                    walked.next();
+                }
+                std::cmp::Ordering::Equal => {
+                    drift_of_pair(&relative_path(parent, r.name()), r, w, out);
+                    recorded.next();
+                    walked.next();
+                }
+            },
+        }
+    }
+}
+
+fn drift_of_pair(path: &str, recorded: &RawEntry, walked: &RawEntry, out: &mut Vec<Drift>) {
+    match (recorded, walked) {
+        (RawEntry::Leaf(r), RawEntry::Leaf(w)) => {
+            if r.sha256 == w.sha256 {
+                return;
+            }
+            if w.bytes < r.bytes {
+                out.push(Drift::Truncated { path: path.into(), recorded: r.bytes, found: w.bytes });
+            } else {
+                out.push(Drift::Changed { path: path.into(), recorded: r.sha256, found: w.sha256 });
+            }
+        }
+        (RawEntry::Node(r), RawEntry::Node(w)) => {
+            if r.hash != w.hash {
+                drift_into(path, &r.children, &w.children, out);
+            }
+        }
+        (RawEntry::Leaf(_), RawEntry::Node(_)) | (RawEntry::Node(_), RawEntry::Leaf(_)) => {
+            out.push(Drift::Missing { path: path.into() });
+            out.push(Drift::Extra { path: path.into() });
+        }
+    }
+}
+
+impl fmt::Display for Drift {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Drift::Missing { path } => write!(f, "raw {path}: MISSING"),
+            Drift::Extra { path } => write!(f, "raw {path}: EXTRA (not in {MANIFEST_FILE})"),
+            Drift::Truncated { path, recorded, found } => write!(f, "raw {path}: TRUNCATED manifest {recorded} bytes file {found}"),
+            Drift::Changed { path, recorded, found } => write!(f, "raw {path}: MISMATCH manifest {} file {}", recorded.hex(), found.hex()),
+            Drift::LinkAdded { path } => write!(f, "raw {path}: LINK (a junction or symlink {MANIFEST_FILE} does not list)"),
+            Drift::LinkRemoved { path } => write!(f, "raw {path}: LINK MISSING ({MANIFEST_FILE} lists a junction or symlink there)"),
+        }
+    }
+}
+
+impl fmt::Display for Unrecorded {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Unrecorded::NoManifest { manifest } => write!(f, "no {MANIFEST_FILE} at {}", manifest.display()),
+            Unrecorded::NoFiles { raw_dir } => write!(f, "{} has no files", raw_dir.display()),
         }
     }
 }

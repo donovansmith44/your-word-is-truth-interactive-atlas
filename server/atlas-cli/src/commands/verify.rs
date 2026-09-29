@@ -3,10 +3,9 @@
 //! and exit non-zero on any mismatch. A full verify also walks `data/raw` against
 //! `data/raw/MANIFEST.toml` and names the file that moved.
 
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use atlas_cli::raw::{read_manifest as read_raw_manifest, walk, MANIFEST_FILE};
+use atlas_cli::raw::{drift, leaves, read_manifest as read_raw_manifest, walk, Drift, Unrecorded, DO_RAW, MANIFEST_FILE};
 use atlas_graph::sections::Section;
 use atlas_graph::sqlite::blob::sha256_hex_of_file;
 use atlas_graph::sqlite::logical::{logical_dump_of_db, logical_hash};
@@ -15,7 +14,7 @@ use atlas_graph::sqlite::open_read_only;
 use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout, SectionSource};
 use atlas_graph_types::raw_manifest::RawHash;
 
-use crate::commands::raw::{drift, leaves, raw_dir_beside, Drift};
+use crate::commands::commas;
 use crate::error::CliError;
 
 pub struct SectionReport {
@@ -49,18 +48,13 @@ pub enum RawSection {
     Checked { root: RawHash, files: usize, drift: Vec<Drift> },
 }
 
-pub enum Unrecorded {
-    NoManifest { manifest: PathBuf },
-    NoFiles { raw_dir: PathBuf },
-}
-
 impl Report {
     fn compiled_failures(&self) -> Vec<String> {
         self.sections.iter().flat_map(|s| s.failures.iter().cloned()).collect()
     }
     fn raw_failures(&self) -> Vec<String> {
         match &self.raw {
-            Some(RawSection::Checked { drift, .. }) => drift.iter().map(raw_failure).collect(),
+            Some(RawSection::Checked { drift, .. }) => drift.iter().map(Drift::to_string).collect(),
             Some(RawSection::Unrecorded(_)) | None => Vec::new(),
         }
     }
@@ -76,7 +70,6 @@ impl Report {
 }
 
 const DO: &str = "recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served";
-pub(crate) const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
@@ -196,7 +189,7 @@ pub fn check(data_dir: &Path, only: Option<&str>) -> Result<Report, CliError> {
 /// The manifest is looked for before the tree is walked, so a clone with neither pays nothing;
 /// a walked tree with no files is unrecorded too, so an emptied `data/raw` can never pass.
 fn check_raw(data_dir: &Path) -> Result<RawSection, CliError> {
-    let raw_dir = raw_dir_beside(data_dir);
+    let raw_dir = SectionLayout::under(data_dir).raw_dir();
     let manifest = raw_dir.join(MANIFEST_FILE);
     if !manifest.is_file() {
         return Ok(RawSection::Unrecorded(Unrecorded::NoManifest { manifest }));
@@ -208,38 +201,6 @@ fn check_raw(data_dir: &Path) -> Result<RawSection, CliError> {
     }
     let recorded = read_raw_manifest(&manifest).map_err(|e| CliError::integrity_failed(format!("{} does not verify", manifest.display()), e.to_string(), DO_RAW))?;
     Ok(RawSection::Checked { root: walked.root, files, drift: drift(&recorded, &walked) })
-}
-
-pub(crate) fn raw_failure(drift: &Drift) -> String {
-    match drift {
-        Drift::Missing { path } => format!("raw {path}: MISSING"),
-        Drift::Extra { path } => format!("raw {path}: EXTRA (not in {MANIFEST_FILE})"),
-        Drift::Truncated { path, recorded, found } => format!("raw {path}: TRUNCATED manifest {recorded} bytes file {found}"),
-        Drift::Changed { path, recorded, found } => format!("raw {path}: MISMATCH manifest {} file {}", recorded.hex(), found.hex()),
-        Drift::LinkAdded { path } => format!("raw {path}: LINK (a junction or symlink {MANIFEST_FILE} does not list)"),
-        Drift::LinkRemoved { path } => format!("raw {path}: LINK MISSING ({MANIFEST_FILE} lists a junction or symlink there)"),
-    }
-}
-
-impl fmt::Display for Unrecorded {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Unrecorded::NoManifest { manifest } => write!(f, "no {MANIFEST_FILE} at {}", manifest.display()),
-            Unrecorded::NoFiles { raw_dir } => write!(f, "{} has no files", raw_dir.display()),
-        }
-    }
-}
-
-pub(crate) fn commas(n: u64) -> String {
-    let s = n.to_string();
-    let mut out = String::with_capacity(s.len() + s.len() / 3);
-    for (i, c) in s.chars().enumerate() {
-        if i > 0 && (s.len() - i) % 3 == 0 {
-            out.push(',');
-        }
-        out.push(c);
-    }
-    out
 }
 
 /// Only a report with no failures is rendered (`run` fails first), so a section here is `ok`

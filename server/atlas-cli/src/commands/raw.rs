@@ -1,22 +1,15 @@
-//! `bibex raw bless` -- the one writer of `data/raw/MANIFEST.toml`. A separate verb, never a
-//! `--fix` on `verify` (D4: a pin that is re-blessed as a matter of routine stops being read), and
-//! it refuses an empty tree, which is what a killed fetch or a followed junction leaves behind.
-//! `bibex raw check <path>` -- one path against its record, answered by exit code so a fetch
-//! script can guard on it without reading the manifest itself: 0 as recorded, `not_found` when
-//! the manifest has no such path, `integrity_failed` naming what differs.
-//! The drift between a recorded tree and a walked one lives here too: `verify` reports it,
-//! `bless` summarizes it, `check` answers for one path.
+//! `bibex raw bless` and `bibex raw check <path>`. Blessing is a verb of its own, never a `--fix`
+//! on `verify`: a pin that is re-blessed as a matter of routine stops being read.
 
 use std::path::{Component, Path, PathBuf};
 
-use atlas_cli::raw::{read_manifest, walk, walk_at, write_manifest, RawManifest, MANIFEST_FILE};
-use atlas_graph_types::raw_manifest::{RawEntry, RawHash, Sha256};
+use atlas_cli::raw::{drift, drift_at, leaves, link_drift, read_manifest, walk, walk_at, write_manifest, Drift, RawManifest, Unrecorded, DO_RAW, MANIFEST_FILE};
+use atlas_graph::sqlite::source::SectionLayout;
+use atlas_graph_types::raw_manifest::{RawEntry, RawHash};
 
-use crate::commands::verify::{commas, raw_failure, Unrecorded, DO_RAW};
+use crate::commands::commas;
 use crate::error::CliError;
 
-/// `data/raw` sits beside `data/compiled`, as `data/cache` does.
-const RAW_DIR: &str = "raw";
 const DO_UNRECORDED: &str = "fetch it, then record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
 const WHY_BAD_PATH: &str = "'raw check' takes one path relative to data/raw: plain names joined by a path separator, no '.', '..' or root";
 const DO_BAD_PATH: &str = "name a file or directory as MANIFEST.toml spells it, e.g. kjv.json or brain-fuel-bible/lexicon";
@@ -78,10 +71,6 @@ pub fn check_json(data_dir: &Path, path: &str) -> Result<serde_json::Value, CliE
     })
 }
 
-pub fn raw_dir_beside(data_dir: &Path) -> PathBuf {
-    data_dir.parent().unwrap_or(data_dir).join(RAW_DIR)
-}
-
 /// A path found as recorded: the manifest's spelling of it and what the disk holds there.
 struct Checked {
     path: String,
@@ -90,7 +79,7 @@ struct Checked {
 
 fn perform_check(data_dir: &Path, arg: &str) -> Result<Checked, CliError> {
     let path = manifest_path_of(arg)?;
-    let raw_dir = raw_dir_beside(data_dir);
+    let raw_dir = SectionLayout::under(data_dir).raw_dir();
     let manifest = raw_dir.join(MANIFEST_FILE);
     if !manifest.is_file() {
         return Err(unrecorded(&path, Unrecorded::NoManifest { manifest }.to_string()));
@@ -132,21 +121,12 @@ fn entry_at<'a>(entries: &'a [RawEntry], path: &str) -> Option<&'a RawEntry> {
         Some((first, rest)) => (first, Some(rest)),
         None => (path, None),
     };
-    let entry = entries.iter().find(|entry| name_of(entry) == first)?;
+    let entry = entries.iter().find(|entry| entry.name() == first)?;
     match (rest, entry) {
         (None, _) => Some(entry),
         (Some(rest), RawEntry::Node(node)) => entry_at(&node.children, rest),
         (Some(_), RawEntry::Leaf(_)) => None,
     }
-}
-
-fn drift_at(path: &str, recorded: &RawEntry, found: Option<&RawEntry>) -> Vec<Drift> {
-    let mut out = Vec::new();
-    match found {
-        None => out.push(Drift::Missing { path: path.into() }),
-        Some(found) => drift_of_pair(path, recorded, found, &mut out),
-    }
-    out
 }
 
 fn unrecorded(path: &str, why: String) -> CliError {
@@ -158,45 +138,8 @@ fn not_as_recorded(path: &str, drift: &[Drift]) -> CliError {
         1 => "1 path differs".to_string(),
         n => format!("{} paths differ", commas(n as u64)),
     };
-    let failures: Vec<String> = drift.iter().map(raw_failure).collect();
+    let failures: Vec<String> = drift.iter().map(Drift::to_string).collect();
     CliError::integrity_failed(format!("raw {path} is not as recorded ({differ})"), failures.join("; "), DO_RAW)
-}
-
-/// How a walked tree differs from a recorded one, by path from the root of `data/raw`. Kept as
-/// values so `verify` can name each in its own words and `bless` in its.
-#[derive(Debug, PartialEq, Eq)]
-pub enum Drift {
-    Missing { path: String },
-    Extra { path: String },
-    Truncated { path: String, recorded: u64, found: u64 },
-    Changed { path: String, recorded: Sha256, found: Sha256 },
-    LinkAdded { path: String },
-    LinkRemoved { path: String },
-}
-
-/// The datasets by name, then the links: a link is not content and moves no hash, so it is
-/// compared as a list of its own, and one added or removed is a change the tree must see.
-pub fn drift(recorded: &RawManifest, walked: &RawManifest) -> Vec<Drift> {
-    let mut out = Vec::new();
-    drift_into("", &recorded.datasets, &walked.datasets, &mut out);
-    out.extend(link_drift(&recorded.links, &walked.links));
-    out
-}
-
-fn link_drift(recorded: &[String], walked: &[String]) -> Vec<Drift> {
-    let removed = recorded.iter().filter(|path| !walked.contains(path)).map(|path| Drift::LinkRemoved { path: path.clone() });
-    let added = walked.iter().filter(|path| !recorded.contains(path)).map(|path| Drift::LinkAdded { path: path.clone() });
-    removed.chain(added).collect()
-}
-
-pub fn leaves(entries: &[RawEntry]) -> usize {
-    entries
-        .iter()
-        .map(|entry| match entry {
-            RawEntry::Leaf(_) => 1,
-            RawEntry::Node(node) => leaves(&node.children),
-        })
-        .sum()
 }
 
 struct Blessing {
@@ -220,7 +163,7 @@ impl Previous {
 }
 
 fn perform(data_dir: &Path) -> Result<Blessing, CliError> {
-    let raw_dir = raw_dir_beside(data_dir);
+    let raw_dir = SectionLayout::under(data_dir).raw_dir();
     let walked = walk(&raw_dir).map_err(|e| {
         CliError::data_load_failed(
             format!("{} could not be walked", raw_dir.display()),
@@ -262,76 +205,4 @@ fn previous_at(manifest: &Path, walked: &RawManifest) -> Result<Option<Previous>
         }
     }
     Ok(Some(previous))
-}
-
-fn drift_into(parent: &str, recorded: &[RawEntry], walked: &[RawEntry], out: &mut Vec<Drift>) {
-    let mut recorded = recorded.iter().peekable();
-    let mut walked = walked.iter().peekable();
-    loop {
-        match (recorded.peek(), walked.peek()) {
-            (None, None) => return,
-            (Some(r), None) => {
-                out.push(Drift::Missing { path: path_under(parent, name_of(r)) });
-                recorded.next();
-            }
-            (None, Some(w)) => {
-                out.push(Drift::Extra { path: path_under(parent, name_of(w)) });
-                walked.next();
-            }
-            (Some(r), Some(w)) => match name_of(r).cmp(name_of(w)) {
-                std::cmp::Ordering::Less => {
-                    out.push(Drift::Missing { path: path_under(parent, name_of(r)) });
-                    recorded.next();
-                }
-                std::cmp::Ordering::Greater => {
-                    out.push(Drift::Extra { path: path_under(parent, name_of(w)) });
-                    walked.next();
-                }
-                std::cmp::Ordering::Equal => {
-                    drift_of_pair(&path_under(parent, name_of(r)), r, w, out);
-                    recorded.next();
-                    walked.next();
-                }
-            },
-        }
-    }
-}
-
-fn drift_of_pair(path: &str, recorded: &RawEntry, walked: &RawEntry, out: &mut Vec<Drift>) {
-    match (recorded, walked) {
-        (RawEntry::Leaf(r), RawEntry::Leaf(w)) => {
-            if r.sha256 == w.sha256 {
-                return;
-            }
-            if w.bytes < r.bytes {
-                out.push(Drift::Truncated { path: path.into(), recorded: r.bytes, found: w.bytes });
-            } else {
-                out.push(Drift::Changed { path: path.into(), recorded: r.sha256, found: w.sha256 });
-            }
-        }
-        (RawEntry::Node(r), RawEntry::Node(w)) => {
-            if r.hash != w.hash {
-                drift_into(path, &r.children, &w.children, out);
-            }
-        }
-        (RawEntry::Leaf(_), RawEntry::Node(_)) | (RawEntry::Node(_), RawEntry::Leaf(_)) => {
-            out.push(Drift::Missing { path: path.into() });
-            out.push(Drift::Extra { path: path.into() });
-        }
-    }
-}
-
-fn name_of(entry: &RawEntry) -> &str {
-    match entry {
-        RawEntry::Leaf(leaf) => &leaf.name,
-        RawEntry::Node(node) => &node.name,
-    }
-}
-
-fn path_under(parent: &str, name: &str) -> String {
-    if parent.is_empty() {
-        name.to_string()
-    } else {
-        format!("{parent}/{name}")
-    }
 }

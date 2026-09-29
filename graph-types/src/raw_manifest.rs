@@ -80,7 +80,7 @@ pub enum RawEntry {
 }
 
 impl RawEntry {
-    fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         match self {
             RawEntry::Leaf(leaf) => &leaf.name,
             RawEntry::Node(node) => &node.name,
