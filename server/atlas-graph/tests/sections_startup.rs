@@ -1,4 +1,5 @@
-use std::path::Path;
+mod common;
+
 use std::time::{Duration, Instant};
 
 use atlas_graph::service::GraphService;
@@ -8,7 +9,7 @@ const STARTUP_CEILING: Duration = Duration::from_secs(4);
 #[test]
 #[ignore = "wall-clock gate: run serialized via scripts/timing-gates.sh (CONTENTION-1)"]
 fn the_served_path_starts_under_the_ceiling() {
-    let compiled = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled");
+    let compiled = common::compiled_dir();
     let _ = GraphService::from_sections(&compiled).expect("the committed sections open");
     let t0 = Instant::now();
     let (graph, data, sources) = GraphService::from_sections(&compiled).expect("the committed sections open");

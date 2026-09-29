@@ -1,6 +1,8 @@
+mod common;
+
 use std::collections::BTreeMap;
-use std::path::Path;
-use std::sync::OnceLock;
+
+use common::{committed_graph, CORPUS_ROOTS, MAPS};
 
 use atlas_graph_types::canon::ids::{parse_position, position_str};
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily};
@@ -24,22 +26,13 @@ fn blr(from: (u8, u16, u16), to: (u8, u16, u16)) -> BibleLocusRange {
     .expect("a test range must be ordered")
 }
 
-const MAPS: usize = 10;
 const MAP_STEPS: usize = MAPS - 1;
 const SHOWN_ROWS: usize = 3_188;
-const CORPUS_ROOTS: usize = 2;
 const BOOKS_IN_THE_BIBLE: usize = 66;
 const DOCUMENTS_IN_THE_CONCORD: usize = 10;
 const ARTICLES_IN_THE_CONCORD: usize = 135;
 const CONCORD_DOCUMENT_STEPS: usize = DOCUMENTS_IN_THE_CONCORD - 1;
 const CONCORD_ARTICLE_STEPS: usize = ARTICLES_IN_THE_CONCORD - DOCUMENTS_IN_THE_CONCORD;
-
-fn committed_graph() -> &'static Graph {
-    static CACHED: OnceLock<Graph> = OnceLock::new();
-    CACHED.get_or_init(|| {
-        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
-    })
-}
 
 #[test]
 fn every_node_round_trips_and_re_encodes_identically() {
@@ -286,43 +279,21 @@ struct RealSources {
 }
 
 fn real_sources() -> RealSources {
-    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-    let raw_dir = data_dir.join("raw");
-    let curated_dir = data_dir.join("curated");
-
-    let kjv_json =
-        std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt"))
-        .expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = atlas_etl::compile::compile(&raw_dir, &curated_dir)
-        .expect("data/raw + data/curated must compile")
-        .data;
+    let atlas = common::compile_real_atlas();
     let eras = atlas.eras.clone();
-    let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible"))
-        .expect("data/raw/brain-fuel-bible must exist");
-    let concord_corpus = atlas_etl::concord::read_all(&raw_dir.join("concord"), &curated_dir)
-        .expect("data/raw/concord must exist");
-    let sc_overlap_text = std::fs::read_to_string(curated_dir.join("concord-sc-overlap.toml"))
-        .expect("data/curated/concord-sc-overlap.toml must exist");
-    let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text)
-        .expect("concord-sc-overlap.toml must parse");
-    let kretzmann = atlas_etl::kretzmann::read_all(&raw_dir.join("kretzmann"), &atlas.verses)
-        .expect("data/raw/kretzmann must exist");
+    let brainfuel = common::brainfuel_corpus();
+    let kretzmann = common::kretzmann_corpus(&atlas.verses);
     let (restored_verses, _case_report) =
         atlas_etl::brainfuel::restore_kjv_case(&brainfuel, &atlas.verses);
-    let red_letter = atlas_etl::red_letter::read_all(&raw_dir.join("red-letter"), &restored_verses)
-        .expect("data/raw/red-letter must exist");
+    let red_letter = common::red_letter_corpus(&restored_verses);
 
     RealSources {
-        kjv_json,
-        xrefs_tsv,
+        kjv_json: common::kjv_json(),
+        xrefs_tsv: common::cross_references_tsv(),
         atlas,
         eras,
         brainfuel,
-        concord: atlas_graph::concord_adapter::ConcordBundle {
-            corpus: concord_corpus,
-            sc_overlap,
-        },
+        concord: common::concord_bundle(),
         kretzmann,
         red_letter,
     }

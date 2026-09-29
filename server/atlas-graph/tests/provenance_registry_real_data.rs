@@ -1,18 +1,9 @@
+mod common;
+
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-fn real_graph() -> &'static atlas_graph_types::graph::Graph {
-    static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
-    GRAPH.get_or_init(|| {
-        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
-    })
-}
-
-fn registry() -> atlas_core::sources::SourcesDocument {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/sources.json");
-    let json = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{} must exist: {e}", path.display()));
-    serde_json::from_str(&json).expect("data/compiled/sources.json must parse as a SourcesDocument")
-}
+use common::{committed_graph, sources_registry};
 
 fn provenance_by_family(g: &atlas_graph_types::graph::Graph) -> BTreeMap<&'static str, BTreeSet<String>> {
     let mut out: BTreeMap<&'static str, BTreeSet<String>> = BTreeMap::new();
@@ -67,8 +58,8 @@ fn distinct_provenance_kinds(g: &atlas_graph_types::graph::Graph) -> BTreeSet<St
 
 #[test]
 fn every_distinct_provenance_id_in_the_artifact_resolves_to_a_registry_source() {
-    let g = real_graph();
-    let doc = registry();
+    let g = committed_graph();
+    let doc = sources_registry();
     let source_ids: BTreeSet<&str> = doc.sources.iter().map(|s| s.id.as_str()).collect();
 
     let mut unresolved: Vec<String> = Vec::new();
@@ -99,8 +90,8 @@ fn every_distinct_provenance_id_in_the_artifact_resolves_to_a_registry_source() 
 
 #[test]
 fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
-    let g = real_graph();
-    let doc = registry();
+    let g = committed_graph();
+    let doc = sources_registry();
     let carried = distinct_provenance_kinds(g);
 
     let orphaned: Vec<&str> = doc.provenances.iter().map(|p| p.id.as_str()).filter(|id| !carried.contains(*id)).collect();
@@ -112,7 +103,7 @@ fn every_declared_provenance_row_is_inhabited_by_the_real_artifact() {
 }
 
 fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
-    let types_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../graph-types/src");
+    let types_dir = common::graph_types_src_dir();
     let mut out: BTreeMap<String, usize> = BTreeMap::new();
 
     let mut stack: Vec<(PathBuf, String)> = vec![(types_dir.clone(), String::new())];
@@ -155,7 +146,7 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
 
     let total_decls: usize = per_file.values().sum();
     let row_structs = total_decls - node_decls - per_file["store.rs"];
-    let families = provenance_by_family(real_graph());
+    let families = provenance_by_family(committed_graph());
     assert_eq!(
         families.len(),
         row_structs + 1 + 1,
@@ -168,7 +159,7 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
 
 #[test]
 fn the_runtime_index_and_the_test_sweep_name_exactly_the_same_families() {
-    let g = real_graph();
+    let g = committed_graph();
     let swept: Vec<&str> = provenance_by_family(g).keys().copied().collect();
     let indexed: Vec<&str> = atlas_graph::provenance::ProvenanceIndex::build(g).families();
     assert_eq!(
@@ -181,7 +172,7 @@ fn the_runtime_index_and_the_test_sweep_name_exactly_the_same_families() {
 
 #[test]
 fn the_distinct_provenance_inventory_of_the_real_artifact_is_pinned() {
-    let kinds: Vec<String> = distinct_provenance_kinds(real_graph()).into_iter().collect();
+    let kinds: Vec<String> = distinct_provenance_kinds(committed_graph()).into_iter().collect();
     assert_eq!(kinds, PINNED_INVENTORY.iter().map(|s| s.to_string()).collect::<Vec<_>>(), "the artifact's distinct provenance-kind inventory changed");
 }
 
@@ -220,7 +211,7 @@ const PINNED_INVENTORY: &[&str] = &[
 
 #[test]
 fn the_per_family_provenance_map_of_the_real_artifact_is_pinned() {
-    let actual: BTreeMap<&'static str, Vec<String>> = provenance_by_family(real_graph())
+    let actual: BTreeMap<&'static str, Vec<String>> = provenance_by_family(committed_graph())
         .into_iter()
         .map(|(fam, set)| (fam, set.iter().map(|id| kind_of(id).to_string()).collect::<BTreeSet<_>>().into_iter().collect()))
         .collect();

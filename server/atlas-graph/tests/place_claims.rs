@@ -1,4 +1,4 @@
-use std::path::Path;
+mod common;
 
 use atlas_core::data::AtlasData;
 use atlas_core::refs::VerseId;
@@ -37,7 +37,7 @@ struct ClaimedEvent {
 #[test]
 fn the_curated_place_date_claims_name_these_events() {
     // Arrange
-    let (atlas, _) = real_atlas_and_graph();
+    let atlas = common::real_atlas();
     let claimed = |place: &str, claim: Claim, event: Option<&str>| ClaimedEvent { place: place.to_string(), claim, event: event.map(EventId::new) };
     // Act
     let mut named: Vec<ClaimedEvent> = atlas
@@ -61,14 +61,8 @@ fn the_curated_place_date_claims_name_these_events() {
     );
 }
 
-fn real_atlas_and_graph() -> (AtlasData, Graph) {
-    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-    let raw_dir = data_dir.join("raw");
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = atlas_etl::compile::compile(&raw_dir, &data_dir.join("curated")).expect("data/raw + data/curated must compile").data;
-    let (graph, ..) = atlas_graph::build::build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real committed sources must build");
-    (atlas, graph)
+fn real_atlas_and_graph() -> (&'static AtlasData, Graph) {
+    (common::real_atlas(), common::kjv_and_atlas_build(&[]).0)
 }
 
 fn event_is_attested_in(graph: &Graph, event: &EventId, verse: &str) -> bool {

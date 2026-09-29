@@ -1,41 +1,26 @@
+mod common;
+
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
 
 use atlas_core::chronology::{anchor_deferral, is_exempted, is_recounting};
 use atlas_core::data::AtlasData;
-use atlas_graph::build::build_graph_from_sources;
 use atlas_graph::event_world::{self};
 use atlas_graph::Chronology;
 use atlas_graph_types::chrono::temporal_order;
 use atlas_graph_types::edge::Attests;
 
-fn load_real_atlas() -> AtlasData {
-    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data
-        })
-        .clone()
-}
-
 struct RealGraph {
-    atlas: AtlasData,
+    atlas: &'static AtlasData,
     graph: atlas_graph_types::graph::Graph,
     resolved: HashMap<String, atlas_graph_types::chrono::ResolvedPlacement>,
 }
 
 fn build_real() -> RealGraph {
-    let atlas = load_real_atlas();
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let (graph, _kjv_stats, _ew_stats, chrono) = build_graph_from_sources(&kjv_json, &xrefs_tsv, &atlas).expect("the real graph must build");
+    let atlas = common::real_atlas();
+    let (graph, _kjv_stats, _ew_stats, chrono) = common::kjv_and_atlas_build(&[]);
 
-    let anchor_years = Chronology::anchor_years(&atlas);
-    let event_years = Chronology::event_years(&atlas);
+    let anchor_years = Chronology::anchor_years(atlas);
+    let event_years = Chronology::event_years(atlas);
     let mut resolved = HashMap::new();
     for row in &graph.dated_by {
         let id = row.event.0.clone();
@@ -114,7 +99,7 @@ fn e2_every_dated_event_adheres_to_its_graph_attested_books_own_narration_window
         let mut books: Vec<&str> = graph_witness_books(&rg.graph.attests, event_id).into_iter().collect();
         books.sort_unstable();
         for book in books {
-            let Some(w) = window_for(&rg.atlas, book) else { continue };
+            let Some(w) = window_for(rg.atlas, book) else { continue };
             if year < w.from_year || year > w.to_year {
                 violations.push(format!("'{event_id}': year {year} outside '{book}''s own narration window {}..{}", w.from_year, w.to_year));
             }
@@ -176,7 +161,7 @@ fn e4_dated_events_agree_with_era_boundary_anchors_under_the_graphs_own_temporal
             let mut all_before = true;
             let mut all_after = true;
             for book in &books {
-                match window_for(&rg.atlas, book) {
+                match window_for(rg.atlas, book) {
                     Some(w) => {
                         if w.to_year > b.year {
                             all_before = false;
@@ -227,8 +212,7 @@ fn theo_87_nimrods_kingdom_resolves_to_the_corrected_traditional_year() {
 
 #[test]
 fn the_chronology_order_is_total_and_carried_by_seq() {
-    let atlas = load_real_atlas();
-    let chrono = event_world::derive_chronology(&atlas);
+    let chrono = event_world::derive_chronology(common::real_atlas());
     assert!(chrono.order.len() > 800, "hundreds of dated events: {}", chrono.order.len());
     let mut years: Vec<i32> = Vec::with_capacity(chrono.order.len());
     let mut seqs: Vec<u32> = Vec::with_capacity(chrono.order.len());

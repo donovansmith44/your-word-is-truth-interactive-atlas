@@ -1,22 +1,11 @@
+mod common;
+
 use std::collections::HashMap;
-use std::path::Path;
 
 use atlas_core::data::{AtlasData, Canon};
 use atlas_graph::pipeline::{self, BuildCtx};
 use atlas_graph_types::id::{PersonId, PlaceId};
 use atlas_graph_types::node::NodePayload;
-
-fn real_atlas_data() -> AtlasData {
-    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data
-        })
-        .clone()
-}
 
 fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasData, canon: &'a Canon, verses: &'a HashMap<String, String>) -> BuildCtx<'a> {
     let mut ctx = BuildCtx::new(canon, verses, Some(kjv_json), xrefs_tsv, atlas);
@@ -26,13 +15,12 @@ fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasDat
 
 #[test]
 fn hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data() {
-    let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = real_atlas_data();
+    let kjv_json = common::kjv_json();
+    let xrefs_tsv = common::cross_references_tsv();
+    let atlas = common::real_atlas();
     let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
 
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     let hebron_id = PlaceId::new("hebron").erase();
     let hebron = ctx.graph.nodes.get(&hebron_id).expect("a compiled Place node with id 'hebron' must exist over the real geo data");
@@ -61,13 +49,12 @@ fn hebron_and_moses_carry_non_empty_descriptions_over_the_real_compiled_data() {
 
 #[test]
 fn description_fill_rates_over_the_real_compiled_data_are_reported_honestly() {
-    let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = real_atlas_data();
+    let kjv_json = common::kjv_json();
+    let xrefs_tsv = common::cross_references_tsv();
+    let atlas = common::real_atlas();
     let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
 
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
     let s = &ctx.description_stats;
 
     println!("ENT-1a DESCRIPTION FILL RATES (real compiled data):");

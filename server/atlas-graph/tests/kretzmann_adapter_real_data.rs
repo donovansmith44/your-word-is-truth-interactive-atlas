@@ -1,45 +1,10 @@
-use std::path::Path;
+mod common;
 
-fn real_atlas_data() -> atlas_core::data::AtlasData {
-    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile")
-                .data
-        })
-        .clone()
-}
+use common::OptionalCorpora;
 
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
-    GRAPH.get_or_init(|| {
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-        let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-        let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-        let atlas = real_atlas_data();
-        let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
-        let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord"), &dir.parent().unwrap().join("curated")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
-        let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
-        let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
-        let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
-        let (_, kjv_verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
-        let kretzmann_corpus = atlas_etl::kretzmann::read_all(&dir.join("kretzmann"), &kjv_verses).expect("data/raw/kretzmann must exist -- run data/fetch-raw.ps1 first");
-
-        let (mut graph, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann(
-            &kjv_json,
-            &xrefs_tsv,
-            &atlas,
-            &atlas.eras,
-            Some(&brainfuel),
-            Some(&concord_bundle),
-            Some(&kretzmann_corpus),
-        )
-        .expect("the real committed sources must build");
-        graph.build_indexes();
-        graph
-    })
+    GRAPH.get_or_init(|| common::indexed_raw_graph(OptionalCorpora { kretzmann: true, red_letter: false }))
 }
 
 #[test]

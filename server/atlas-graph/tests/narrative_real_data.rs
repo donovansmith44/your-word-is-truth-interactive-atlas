@@ -2,45 +2,33 @@
 //! `AtlasData`, and Cargo cannot resolve that as a dev-dependency cycle from `atlas-core`: the
 //! returned `atlas_core::data::AtlasData` would be two distinct types with the same name.
 
+mod common;
+
 use atlas_core::data::AtlasData;
 use atlas_core::narrative::global_timeline_position;
 
-    fn load_real_compiled_data() -> AtlasData {
-        static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
-        CACHED
-            .get_or_init(|| {
-                let data_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-                let raw_dir = data_dir.join("raw");
-                let curated_dir = data_dir.join("curated");
-                atlas_etl::compile::compile(&raw_dir, &curated_dir)
-                    .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                    .data
-            })
-            .clone()
-    }
-
     #[test]
     fn global_timeline_real_compiled_data_has_well_over_450_dated_events() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
         let dated = d.events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event).count();
         assert!(dated >= 450, "expected n>=450 dated events, got {dated}");
     }
 
     #[test]
     fn global_timeline_true_extremes_of_the_real_atlas() {
-        let d = load_real_compiled_data();
-        let creation = global_timeline_position(&d, "theo-1").expect("theo-1 'Creation of all things' is the atlas's true first dated event");
+        let d = common::real_atlas();
+        let creation = global_timeline_position(d, "theo-1").expect("theo-1 'Creation of all things' is the atlas's true first dated event");
         assert!(creation.prior.is_none(), "the true first dated event of the whole atlas has no prior");
 
-        let rome = global_timeline_position(&d, "pr_rome").expect("pr_rome 'Paul arrives at Rome' is a real dated event");
+        let rome = global_timeline_position(d, "pr_rome").expect("pr_rome 'Paul arrives at Rome' is a real dated event");
         assert!(rome.following.is_some(), "pr_rome is no longer the atlas's own last event -- real, later-calibrated Acts content now follows it");
-        let imprisonment = global_timeline_position(&d, "theo-385").expect("theo-385 'Paul's First Roman imprisonment' is a dated event");
+        let imprisonment = global_timeline_position(d, "theo-385").expect("theo-385 'Paul's First Roman imprisonment' is a dated event");
         assert!(imprisonment.following.is_none(), "theo-385 is now the atlas's true last dated event");
     }
 
     #[test]
     fn m_d1_the_three_remaining_duplicate_pairs_are_rectified_on_the_real_graph() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
 
         assert!(d.event_by_id("theo-384").is_none(), "theo-384 'Paul arrives at Rome' (the Theographic freebie) must be merged away");
         assert!(d.event_by_id("pr_rome").is_some(), "pr_rome survives -- this atlas's own narrative-integrated identity");
@@ -69,7 +57,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn amendment_c_baptism_precedes_temptation_on_the_global_timeline() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
 
         assert!(d.event_by_id("theo-267").is_none(), "the Theographic-scale Baptism duplicate must be merged away");
         assert!(d.event_by_id("theo-268").is_none(), "the Theographic-scale Temptation duplicate must be merged away");
@@ -80,7 +68,7 @@ use atlas_core::narrative::global_timeline_position;
         let temptation_idx = d.timeline_position("rob_temptation").expect("rob_temptation is a dated event");
         assert!(baptism_idx < temptation_idx, "Baptism must sort strictly before Temptation on the global timeline");
 
-        let baptism_pos = global_timeline_position(&d, "jm_jordan").unwrap();
+        let baptism_pos = global_timeline_position(d, "jm_jordan").unwrap();
         assert_eq!(
             baptism_pos.following.as_ref().map(|e| e.id.as_str()),
             Some("rob_temptation"),
@@ -90,7 +78,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn amendment_d_monotonicity_audit_reading_order_vs_global_timeline() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
 
         let mut by_book: std::collections::HashMap<String, Vec<(String, u32)>> = std::collections::HashMap::new();
         for e in d.events.iter().filter(|e| e.kind == atlas_core::data::EventKind::Event) {
@@ -197,7 +185,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn fix_round_1_era_boundary_gate_passion_cluster_sorts_before_every_act_witnessed_event() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
 
         let passion_cluster: Vec<&str> = d.events.iter().map(|e| e.id.as_str()).filter(|id| id.starts_with("pw_")).collect();
         assert!(!passion_cluster.is_empty(), "the real compiled data must have pw_* Passion-Week events to check against");
@@ -231,7 +219,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn fix_round_1_within_acts_section_events_follow_acts_chapter_order() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
 
         let mut acts_section_events: Vec<(&str, (u16, u16))> = d
             .events
@@ -257,7 +245,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e1_every_bound_anchor_equals_its_compiled_events_own_from_year() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
         let bound: Vec<&atlas_core::data::ChronologyAnchor> = d.chronology_anchors.iter().filter(|a| a.event_id.is_some()).collect();
         assert!(bound.len() >= 15, "expected the real curated anchor table to bind well over 15 rows to real events, got {}", bound.len());
 
@@ -298,7 +286,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e2_every_compiled_dated_event_adheres_to_its_witness_books_own_narration_window() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
         assert!(!d.book_narration_windows.is_empty(), "the real compiled data must carry real narration windows");
         let violations = atlas_core::chronology::window_violations(&d.events, &d.book_narration_windows);
         assert!(
@@ -311,7 +299,7 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e3_bound_anchors_sorted_by_table_year_are_monotone_on_the_global_timeline() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
         let mut bound: Vec<&atlas_core::data::ChronologyAnchor> =
             d.chronology_anchors.iter().filter(|a| a.event_id.is_some() && atlas_core::chronology::anchor_deferral(&a.id).is_none()).collect();
         assert!(bound.len() >= 12, "expected well over 12 non-deferred bound anchors, got {}", bound.len());
@@ -340,11 +328,11 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e4_dated_events_agree_with_era_boundary_anchors_on_the_global_timeline() {
-        let d = load_real_compiled_data();
+        let d = common::real_atlas();
         let boundary_count = d.chronology_anchors.iter().filter(|a| a.era_boundary).count();
         assert!(boundary_count >= 6, "expected the real curated table to carry well over 6 era_boundary anchors, got {boundary_count}");
 
-        let violations = atlas_core::chronology::era_boundary_violations(&d);
+        let violations = atlas_core::chronology::era_boundary_violations(d);
         assert!(
             violations.is_empty(),
             "E4 era-partition violated for {} event(s):\n{}",
@@ -359,8 +347,8 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e5_solomon_gibeons_neighbors_are_solomon_era_never_saul_persecution_era() {
-        let d = load_real_compiled_data();
-        let pos = global_timeline_position(&d, "1ki_solomon_gibeon").expect("1ki_solomon_gibeon is a dated event");
+        let d = common::real_atlas();
+        let pos = global_timeline_position(d, "1ki_solomon_gibeon").expect("1ki_solomon_gibeon is a dated event");
 
         let prior = pos.prior.as_ref().expect("1ki_solomon_gibeon has a PRIOR neighbor");
         let following = pos.following.as_ref().expect("1ki_solomon_gibeon has a FOLLOWING neighbor");
@@ -372,7 +360,7 @@ use atlas_core::narrative::global_timeline_position;
         assert_eq!(following.id, "1ki_hiram_temple_prep", "FOLLOWING must be Solomon's own temple preparations with Hiram (-1013), Solomon-era");
         let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
         let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
-        let solomon_crowned = anchor_year(&d, "solomon-crowned");
+        let solomon_crowned = anchor_year(d, "solomon-crowned");
         let tolerance = 5;
         assert!(
             (solomon_crowned - tolerance..=solomon_crowned + tolerance).contains(&prior_year),
@@ -388,8 +376,8 @@ use atlas_core::narrative::global_timeline_position;
 
     #[test]
     fn e5_df_ramahs_neighbors_are_saul_persecution_era_never_solomon_era() {
-        let d = load_real_compiled_data();
-        let pos = global_timeline_position(&d, "df_ramah").expect("df_ramah is a dated event");
+        let d = common::real_atlas();
+        let pos = global_timeline_position(d, "df_ramah").expect("df_ramah is a dated event");
 
         let prior = pos.prior.as_ref().expect("df_ramah has a PRIOR neighbor");
         let following = pos.following.as_ref().expect("df_ramah has a FOLLOWING neighbor");
@@ -401,7 +389,7 @@ use atlas_core::narrative::global_timeline_position;
         assert_eq!(following.id, "df_nob", "FOLLOWING must be the chain's own next leg, df_nob (-1061)");
         let prior_year = d.event_by_id(&prior.id).unwrap().when.from_year;
         let following_year = d.event_by_id(&following.id).unwrap().when.from_year;
-        let david_hebron = anchor_year(&d, "david-hebron");
+        let david_hebron = anchor_year(d, "david-hebron");
         assert!(prior_year <= david_hebron, "PRIOR '{}' ({prior_year}) must be at or before the Saul-persecution/united-monarchy transition (david-hebron, {david_hebron})", prior.id);
         assert!(following_year <= david_hebron, "FOLLOWING '{}' ({following_year}) must be Saul-persecution-era, not Solomon-era (at or before david-hebron, {david_hebron})", following.id);
     }

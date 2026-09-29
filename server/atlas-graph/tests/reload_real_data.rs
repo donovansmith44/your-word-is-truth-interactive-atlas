@@ -1,19 +1,14 @@
-use std::path::Path;
+mod common;
+
+use common::{CORPUS_ROOTS, MAPS};
 
 use atlas_graph::sqlite::reload::committed_graph;
 use atlas_graph_types::sections::{logical_dump_section, version_root, Section};
 
-const MAPS: usize = 10;
-const CORPUS_ROOTS: usize = 2;
-
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
-}
-
 #[test]
 fn the_sections_read_back_into_the_graph_that_wrote_them() {
     let t = std::time::Instant::now();
-    let (g, snap) = committed_graph(&data_dir()).unwrap();
+    let (g, snap) = committed_graph(&common::compiled_dir()).unwrap();
     println!("DB-5 RELOAD: {} nodes read back in {:?}", g.nodes.len(), t.elapsed());
     assert_eq!(version_root(&g).hex(), snap.manifest().root, "the read-back graph publishes the manifest root");
     for s in Section::SHIPPED {

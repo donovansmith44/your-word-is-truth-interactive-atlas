@@ -1,22 +1,11 @@
+mod common;
+
 use std::collections::HashMap;
-use std::path::Path;
 
 use atlas_core::data::{AtlasData, Canon};
 use atlas_graph::pipeline::{self, BuildCtx};
 use atlas_graph_types::edge::Ground;
 use atlas_graph_types::text::BibleLocusRange;
-
-fn real_atlas_data() -> AtlasData {
-    static CACHED: std::sync::OnceLock<AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data
-        })
-        .clone()
-}
 
 fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasData, canon: &'a Canon, verses: &'a HashMap<String, String>) -> BuildCtx<'a> {
     let mut ctx = BuildCtx::new(canon, verses, Some(kjv_json), xrefs_tsv, atlas);
@@ -26,11 +15,10 @@ fn build_real_ctx<'a>(kjv_json: &'a str, xrefs_tsv: &'a str, atlas: &'a AtlasDat
     ctx
 }
 
-fn real_ctx_pieces() -> (AtlasData, Canon, HashMap<String, String>, String, String) {
-    let raw_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = real_atlas_data();
+fn real_ctx_pieces() -> (&'static AtlasData, Canon, HashMap<String, String>, String, String) {
+    let kjv_json = common::kjv_json();
+    let xrefs_tsv = common::cross_references_tsv();
+    let atlas = common::real_atlas();
     let (canon, verses) = atlas_etl::kjv::parse(&kjv_json).expect("kjv.json must parse");
     (atlas, canon, verses, kjv_json, xrefs_tsv)
 }
@@ -41,7 +29,7 @@ fn exact_seeded_row_counts() {
     assert_eq!(atlas.fulfillment_seeds.len(), 24, "data/curated/fulfillments.toml must author exactly 24 [[fulfillment]] rows");
     assert_eq!(atlas.typology_seeds.len(), 16, "data/curated/typology.toml must author exactly 16 [[typology]] rows");
 
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
     assert_eq!(ctx.graph.fulfills.len(), 24, "every curated fulfillment row's own locus must parse -- zero runtime omissions expected");
     assert_eq!(ctx.graph.typology.len(), 16, "every curated typology row's own locus must parse -- zero runtime omissions expected");
 }
@@ -49,7 +37,7 @@ fn exact_seeded_row_counts() {
 #[test]
 fn every_fulfillment_and_typology_row_has_a_scripture_ground() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     assert!(atlas_graph::fulfillment_adapter::every_fulfillment_row_has_a_scripture_ground(&ctx.graph).is_ok());
     assert!(atlas_graph::fulfillment_adapter::every_typology_row_has_a_scripture_ground(&ctx.graph).is_ok());
@@ -70,7 +58,7 @@ fn every_fulfillment_and_typology_row_has_a_scripture_ground() {
 #[test]
 fn every_locus_in_every_row_resolves_to_a_real_kjv_verse() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     fn assert_range_is_real(verses: &HashMap<String, String>, range: &BibleLocusRange, label: &str) {
         let from = &range.from.unit;
@@ -97,7 +85,7 @@ fn every_locus_in_every_row_resolves_to_a_real_kjv_verse() {
 #[test]
 fn spot_check_isaiah_7_14_fulfilled_in_matthew_1_22_23() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     let row = ctx
         .graph
@@ -113,7 +101,7 @@ fn spot_check_isaiah_7_14_fulfilled_in_matthew_1_22_23() {
 #[test]
 fn spot_check_melchizedek_typology_row() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     let row = ctx.graph.typology.iter().find(|r| r.note.as_deref() == Some("Melchizedek")).expect("a Melchizedek typology row must exist");
     assert_eq!(atlas_graph::kjv_adapter::dot_ref(row.type_passage.from.unit.book, row.type_passage.from.unit.chapter, row.type_passage.from.unit.verse), "GEN.14.18");
@@ -125,7 +113,7 @@ fn spot_check_melchizedek_typology_row() {
 #[test]
 fn the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
 
     let as_fulfillment = ctx
         .graph
@@ -145,7 +133,7 @@ fn the_passover_lamb_exo_12_46_jhn_19_36_appears_in_both_tables() {
 #[test]
 fn fulfillment_and_typology_rows_add_zero_nodes() {
     let (atlas, canon, verses, kjv_json, xrefs_tsv) = real_ctx_pieces();
-    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, &atlas, &canon, &verses);
+    let ctx = build_real_ctx(&kjv_json, &xrefs_tsv, atlas, &canon, &verses);
     assert!(ctx.graph.fulfills.len() > 0 && ctx.graph.typology.len() > 0, "fixture sanity: real rows exist");
     for row in &ctx.graph.fulfills {
         let from_id = atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::TextUnit, raw: format!("bible/{}.{}.{}", row.prophecy.from.unit.book, row.prophecy.from.unit.chapter, row.prophecy.from.unit.verse) };

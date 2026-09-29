@@ -1,19 +1,9 @@
-use std::path::Path;
+mod common;
+
+use common::{OptionalCorpora, RawSources};
 
 use atlas_graph::exports;
 use atlas_graph_types::store::{GraphPublisher, MemStore};
-
-fn real_atlas_data() -> atlas_core::data::AtlasData {
-    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data
-        })
-        .clone()
-}
 
 #[derive(Clone)]
 struct Built {
@@ -30,19 +20,10 @@ fn built() -> Built {
     static CACHED: std::sync::OnceLock<Built> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-            let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-            let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-            let atlas = real_atlas_data();
-            let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
-            let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord"), &dir.parent().unwrap().join("curated")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
-            let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
-            let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
-            let concord_bundle = atlas_graph::concord_adapter::ConcordBundle { corpus: concord_corpus, sc_overlap };
+            let atlas = common::real_atlas();
+            let sources = RawSources::read(OptionalCorpora { kretzmann: false, red_letter: false });
 
-            let (mut graph, _stats, _ews, chrono) =
-                atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel), Some(&concord_bundle))
-                    .expect("the real committed sources must build");
+            let (mut graph, _stats, _ews, chrono) = sources.build_graph(&atlas.eras);
             graph.build_indexes();
             atlas_graph::event_world::add_justified_by(&mut graph);
             let chronology = atlas_graph::Chronology::from_derivation(chrono);
@@ -60,8 +41,7 @@ fn built() -> Built {
             let version = store.publish(graph);
             let actual_hex = atlas_graph::version_hex(version);
 
-            let svc = atlas_graph::GraphService::from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel), Some(&concord_bundle))
-                .expect("GraphService must build the same real sources");
+            let svc = sources.build_service(&atlas.eras);
             let expected_hex = atlas_graph::version_hex(svc.version());
 
             Built { gazetteer, events, spans, anchors, order_len, actual_hex, expected_hex }
@@ -116,12 +96,7 @@ fn law_every_span_interval_is_well_formed() {
 
 #[test]
 fn export_hash_1_atlas_version_root_does_not_change_when_only_a_dated_events_own_resolved_placement_does() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-    let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = real_atlas_data();
-
-    let (graph, _stats, _ews, chrono) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras).expect("the real committed sources must build");
+    let (graph, _stats, _ews, chrono) = common::kjv_and_atlas_build(&common::real_atlas().eras);
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
     let event_id = chronology.chrono.order.first().cloned().expect("the real compiled data must have at least one dated event");

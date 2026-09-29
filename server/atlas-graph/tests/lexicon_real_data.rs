@@ -1,31 +1,20 @@
-use std::path::Path;
+mod common;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::id::NodeKind;
 use atlas_graph_types::text::TextRef;
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
-}
-
 fn built() -> (atlas_graph_types::graph::Graph, atlas_graph::build::BuildStats) {
-    let raw = data_dir().join("raw");
-    let curated = data_dir().join("curated");
-    let atlas = atlas_etl::compile::compile(&raw, &curated).expect("the ETL compiles").data;
-    let kjv_json = std::fs::read_to_string(raw.join("kjv.json")).unwrap();
-    let xrefs_tsv = std::fs::read_to_string(raw.join("xrefs/cross_references.txt")).unwrap();
-    let brainfuel = atlas_etl::brainfuel::read_all(&raw.join("brain-fuel-bible")).expect("brain-fuel");
-    let lexicon = atlas_etl::lexicon::read_all(&raw.join("brain-fuel-bible")).expect("the vendored lexicon + morphology");
     let (mut g, stats, _, _) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord_and_kretzmann_and_red_letter_and_lexicon(
-        &kjv_json,
-        &xrefs_tsv,
-        &atlas,
+        &common::kjv_json(),
+        &common::cross_references_tsv(),
+        common::real_atlas(),
         &[],
-        Some(&brainfuel),
+        Some(&common::brainfuel_corpus()),
         None,
         None,
         None,
-        Some(&lexicon),
+        Some(&common::lexicon_corpus()),
     )
     .expect("the real sources build");
     g.build_indexes();

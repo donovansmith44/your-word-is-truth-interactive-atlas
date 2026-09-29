@@ -1,22 +1,12 @@
-use std::collections::BTreeSet;
-use std::path::Path;
+mod common;
 
-use atlas_graph::build::build_graph_from_sources_with_eras;
+use std::collections::BTreeSet;
+
 use atlas_graph::heading::build_heading_index;
 use atlas_graph_types::id::NodeKind;
 
 fn real_graph() -> (atlas_graph_types::graph::Graph, std::collections::HashMap<String, atlas_graph_types::chrono::ResolvedPlacement>) {
-    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-    let raw_dir = data_dir.join("raw");
-    let curated_dir = data_dir.join("curated");
-
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let out = atlas_etl::compile::compile(&raw_dir, &curated_dir).expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify");
-    let atlas = out.data;
-    let eras = atlas.eras.clone();
-
-    let (graph, _stats, _ews, chrono) = build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &eras).expect("the real committed sources must build");
+    let (graph, _stats, _ews, chrono) = common::kjv_and_atlas_build(&common::real_atlas().eras);
     (graph, chrono.resolved)
 }
 

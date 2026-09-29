@@ -1,33 +1,23 @@
-use std::path::Path;
+mod common;
 
 use atlas_graph::sqlite::extras::{table_specs_of, Col, Extras};
 use atlas_graph::sqlite::sidecars::fold_sidecars;
-use atlas_graph::sqlite::snapshot::SqliteSnapshot;
-use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
+use atlas_graph::sqlite::source::SectionLayout;
 use atlas_graph_types::sections::Section;
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
-}
-
 struct Sidecars {
-    atlas: atlas_core::data::AtlasData,
+    atlas: &'static atlas_core::data::AtlasData,
     sources: atlas_core::sources::SourcesDocument,
 }
 fn sidecars() -> &'static Sidecars {
     static CACHED: std::sync::OnceLock<Sidecars> = std::sync::OnceLock::new();
-    CACHED.get_or_init(|| {
-        let data = data_dir().parent().unwrap().to_path_buf();
-        let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
-        let sources = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
-        Sidecars { atlas, sources }
-    })
+    CACHED.get_or_init(|| Sidecars { atlas: common::real_atlas(), sources: common::sources_registry() })
 }
 
 #[test]
 fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
     let sc = sidecars();
-    let tables = fold_sidecars(&sc.atlas, &sc.sources).unwrap();
+    let tables = fold_sidecars(sc.atlas, &sc.sources).unwrap();
     let mut ex = Extras::default();
     ex.extend(tables);
     let names: Vec<&str> = ex.tables.iter().map(|t| t.spec.name).collect();
@@ -87,7 +77,7 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
             "{id} has an alias_ord 1 row"
         );
     }
-    let again = fold_sidecars(&sc.atlas, &sc.sources).unwrap();
+    let again = fold_sidecars(sc.atlas, &sc.sources).unwrap();
     let mut ex2 = Extras::default();
     ex2.extend(again);
     for (a, b) in ex.tables.iter().zip(&ex2.tables) {
@@ -97,17 +87,15 @@ fn the_real_sidecars_fold_losslessly_into_twenty_one_tables() {
 
 #[test]
 fn the_committed_manifest_root_recomputes_from_graph_bin_plus_the_sidecars() {
-    let (service, _, _) = atlas_graph::service::GraphService::from_sections(&data_dir()).expect("the sections open");
-    let manifest = atlas_graph::sqlite::manifest::read_manifest(&data_dir().join("manifest.toml")).expect("manifest.toml is committed");
+    let service = common::committed_service();
+    let manifest = atlas_graph::sqlite::manifest::read_manifest(&SectionLayout::under(&common::compiled_dir()).manifest_path()).expect("manifest.toml is committed");
     assert_eq!(service.version().0.hex(), manifest.root, "one root: the served version and data/compiled/manifest.toml");
 }
 
 #[test]
 fn unfold_is_the_inverse_of_fold_on_the_real_sidecars() {
     let sc = sidecars();
-    let layout = SectionLayout::under(&data_dir());
-    let snap = SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout }).unwrap();
-    let (atlas, sources) = snap.with_conn(atlas_graph::sqlite::sidecars::unfold).unwrap();
+    let (atlas, sources) = common::committed_sections().with_conn(atlas_graph::sqlite::sidecars::unfold).unwrap();
     assert_eq!(sources, sc.sources);
     assert_eq!(atlas.canon, sc.atlas.canon);
     let mut a_meta = atlas.books_meta.clone();

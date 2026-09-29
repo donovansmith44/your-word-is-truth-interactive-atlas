@@ -1,27 +1,15 @@
-use std::path::Path;
-use std::sync::OnceLock;
+mod common;
+
+use common::committed_sections;
 
 use atlas_graph::sqlite::manifest::read_manifest;
-use atlas_graph::sqlite::snapshot::SqliteSnapshot;
-use atlas_graph::sqlite::source::{CommittedZstdSource, SectionLayout};
+use atlas_graph::sqlite::source::SectionLayout;
 use atlas_graph::sqlite::SCHEMA_VERSION;
 use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::sections::Section;
 use atlas_graph_types::store::GraphQuery;
-
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
-}
-
-fn sections() -> &'static SqliteSnapshot {
-    static CACHED: OnceLock<SqliteSnapshot> = OnceLock::new();
-    CACHED.get_or_init(|| {
-        let layout = SectionLayout::under(&data_dir());
-        SqliteSnapshot::open(&layout.manifest_path(), &CommittedZstdSource { layout }).expect("the committed sections open")
-    })
-}
 
 const PINNED: [(&str, &str); 4] = [
     ("core", "f0088b69dccd54dfd79e43b4b961c87d"),
@@ -32,7 +20,7 @@ const PINNED: [(&str, &str); 4] = [
 
 #[test]
 fn the_other_four_sections_hashes_are_byte_identical_and_the_lexicon_line_is_fifth_and_optional() {
-    let m = read_manifest(&SectionLayout::under(&data_dir()).manifest_path()).expect("manifest.toml");
+    let m = read_manifest(&SectionLayout::under(&common::compiled_dir()).manifest_path()).expect("manifest.toml");
     let names: Vec<&str> = m.sections.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(names, Section::MANIFEST_ORDER.iter().map(|s| s.name()).collect::<Vec<_>>());
     for (name, logical) in PINNED {
@@ -57,7 +45,7 @@ fn node_of(p: &Position) -> AnyNodeId {
 
 #[test]
 fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
-    let snap = sections();
+    let snap = committed_sections();
     assert_eq!(snap.present(), &Section::MANIFEST_ORDER[..]);
     let page = snap.nodes_of_kind(NodeKind::LexiconEntry, None, 1);
     assert_eq!(page.ids[0].raw, "G0001", "id (byte) order: the first Greek entry");
@@ -86,7 +74,7 @@ fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
 
 #[test]
 fn an_entrys_concordance_is_in_canonical_order_and_the_payload_is_as_published() {
-    let snap = sections();
+    let snap = committed_sections();
     let logos = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
     let first = snap.edges_with_nodes(&logos, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 3 });
     let mat = atlas_core::canon::resolve_alias("Matthew").unwrap().0;

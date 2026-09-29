@@ -1,30 +1,15 @@
 #![allow(clippy::type_complexity)]
 
-use std::collections::{BTreeMap, HashMap};
-use std::path::Path;
-use std::sync::OnceLock;
+mod common;
 
-use atlas_graph::service::GraphService;
+use std::collections::{BTreeMap, HashMap};
+
+use common::{committed_graph, committed_service};
+
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-
-fn committed_graph() -> &'static Graph {
-    static CACHED: OnceLock<Graph> = OnceLock::new();
-    CACHED.get_or_init(|| {
-        atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
-    })
-}
-
-fn service() -> &'static GraphService {
-    static S: OnceLock<GraphService> = OnceLock::new();
-    S.get_or_init(|| {
-        GraphService::from_sections(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled"))
-            .expect("from_sections")
-            .0
-    })
-}
 
 fn oracle_ids(g: &Graph, kind: NodeKind) -> Vec<AnyNodeId> {
     g.nodes.keys().filter(|id| id.kind == kind).cloned().collect()
@@ -46,7 +31,7 @@ fn oracle_era_ids(g: &Graph) -> Vec<AnyNodeId> {
 #[test]
 fn the_five_alphabetical_id_lists_equal_nodes_of_kind() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     for kind in [NodeKind::Polity, NodeKind::Narrative, NodeKind::Event, NodeKind::Place, NodeKind::Person] {
         let got = s.ids_of_kind(kind);
         assert_eq!(got, oracle_ids(g, kind), "{kind:?}");
@@ -60,7 +45,7 @@ fn the_five_alphabetical_id_lists_equal_nodes_of_kind() {
 #[test]
 fn the_eras_wire_order_is_reproduced_by_sorting_the_payloads() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     let snap = s.snapshot();
     let mut got: Vec<(i32, AnyNodeId)> = s
         .ids_of_kind(NodeKind::Era)
@@ -104,7 +89,7 @@ fn oracle_persons_by_verse(g: &Graph) -> HashMap<String, Vec<(String, String)>> 
 #[test]
 fn every_spine_slot_is_answered_by_position_of_and_nothing_else_is() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     let bible = oracle_positions(g, "bible");
     assert!(!bible.is_empty());
     for (id, want) in &bible {
@@ -124,7 +109,7 @@ fn every_spine_slot_is_answered_by_position_of_and_nothing_else_is() {
 #[test]
 fn persons_at_verse_equals_the_retired_persons_by_verse_over_every_verse() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     let oracle = oracle_persons_by_verse(g);
     assert!(oracle.len() > 1000, "the shipped graph mentions persons in thousands of verses: {}", oracle.len());
     let mut inhabited = 0usize;
@@ -174,7 +159,7 @@ fn oracle_temporal_neighbors(g: &Graph, order: &[String]) -> HashMap<String, (Op
 #[test]
 fn per_edge_provenance_through_row_provenance_equals_the_retired_index_for_every_event() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     let (attests, mentions, analogue) = oracle_provenance(g);
     assert!(attests.len() > 500 && !analogue.is_empty(), "attests {} analogue {}", attests.len(), analogue.len());
     for id in s.ids_of_kind(NodeKind::Event) {
@@ -190,7 +175,7 @@ fn per_edge_provenance_through_row_provenance_equals_the_retired_index_for_every
 #[test]
 fn temporal_neighbors_of_equals_the_retired_map_over_every_dated_event() {
     let g = committed_graph();
-    let s = service();
+    let s = committed_service();
     let oracle = oracle_temporal_neighbors(g, &s.chronology.chrono.order);
     assert!(oracle.len() > 800, "{}", oracle.len());
     let mut dated = 0usize;

@@ -1,33 +1,13 @@
-use std::path::Path;
+mod common;
 
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::store::GraphQuery;
 
-fn real_atlas_data() -> atlas_core::data::AtlasData {
-    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile")
-                .data
-        })
-        .clone()
-}
-
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
-    GRAPH.get_or_init(|| {
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-        let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-        let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-        let atlas = real_atlas_data();
-        let (graph, ..) = atlas_graph::build::build_graph_from_sources_with_eras(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras)
-            .expect("the real committed sources must build");
-        graph
-    })
+    GRAPH.get_or_init(|| common::kjv_and_atlas_build(&common::real_atlas().eras).0)
 }
 
 fn chapter(code: &str, n: u16) -> Position {

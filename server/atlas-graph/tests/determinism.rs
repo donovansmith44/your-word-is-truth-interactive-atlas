@@ -1,20 +1,9 @@
-use std::path::Path;
+mod common;
 
 fn real_sources() -> (String, String, atlas_core::data::AtlasData, Vec<atlas_core::data::Era>, atlas_etl::brainfuel::BrainFuelCorpus) {
-    let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-    let raw_dir = data_dir.join("raw");
-    let curated_dir = data_dir.join("curated");
-
-    let kjv_json = std::fs::read_to_string(raw_dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-    let xrefs_tsv = std::fs::read_to_string(raw_dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-    let atlas = atlas_etl::compile::compile(&raw_dir, &curated_dir)
-        .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-        .data;
+    let atlas = common::compile_real_atlas();
     let eras = atlas.eras.clone();
-    let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible"))
-        .expect("data/raw/brain-fuel-bible must exist -- run the CORP-1a vendoring step first");
-
-    (kjv_json, xrefs_tsv, atlas, eras, brainfuel)
+    (common::kjv_json(), common::cross_references_tsv(), atlas, eras, common::brainfuel_corpus())
 }
 
 fn build_and_dump(kjv_json: &str, xrefs_tsv: &str, atlas: &atlas_core::data::AtlasData, eras: &[atlas_core::data::Era], brainfuel: &atlas_etl::brainfuel::BrainFuelCorpus) -> (String, Vec<Vec<u8>>) {
@@ -22,9 +11,7 @@ fn build_and_dump(kjv_json: &str, xrefs_tsv: &str, atlas: &atlas_core::data::Atl
         atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel(kjv_json, xrefs_tsv, atlas, eras, Some(brainfuel)).expect("the real committed sources must build");
     graph.build_indexes();
     atlas_graph::event_world::add_justified_by(&mut graph);
-    let sources_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled/sources.json");
-    let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(sources_path).expect("sources.json")).expect("sources.json parses");
-    let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &std::collections::HashMap::new(), atlas, &sources, &[]).expect("the fold");
+    let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &std::collections::HashMap::new(), atlas, &common::sources_registry(), &[]).expect("the fold");
     extras.attach(&mut graph);
     let root = atlas_graph_types::sections::version_root(&graph).hex();
     let dumps = atlas_graph_types::sections::Section::SHIPPED.iter().map(|s| atlas_graph_types::sections::logical_dump_section(&graph, *s)).collect();

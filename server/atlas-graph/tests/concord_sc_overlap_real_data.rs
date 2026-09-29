@@ -1,47 +1,25 @@
-use std::path::Path;
+mod common;
 
-use atlas_graph::concord_adapter::ConcordBundle;
+use common::OptionalCorpora;
+
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId, SymRelationId};
 use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
 use atlas_graph_types::id::Position;
 use atlas_graph_types::text::TextRef;
 
-fn real_atlas_data() -> atlas_core::data::AtlasData {
-    static CACHED: std::sync::OnceLock<atlas_core::data::AtlasData> = std::sync::OnceLock::new();
-    CACHED
-        .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile")
-                .data
-        })
-        .clone()
-}
-
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
     static GRAPH: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
-    GRAPH.get_or_init(|| {
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw");
-        let kjv_json = std::fs::read_to_string(dir.join("kjv.json")).expect("data/raw/kjv.json must exist");
-        let xrefs_tsv = std::fs::read_to_string(dir.join("xrefs/cross_references.txt")).expect("data/raw/xrefs/cross_references.txt must exist");
-        let atlas = real_atlas_data();
-        let brainfuel = atlas_etl::brainfuel::read_all(&dir.join("brain-fuel-bible")).expect("data/raw/brain-fuel-bible must exist");
-        let concord_corpus = atlas_etl::concord::read_all(&dir.join("concord"), &dir.parent().unwrap().join("curated")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first");
-        let sc_overlap_text = std::fs::read_to_string(dir.parent().unwrap().join("curated/concord-sc-overlap.toml")).expect("data/curated/concord-sc-overlap.toml must exist");
-        let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).expect("concord-sc-overlap.toml must parse");
-        let curated_row_count = sc_overlap.len();
-        assert_eq!(curated_row_count, 33, "the curated table's own [[link]] entry count -- one per CatechismItem, before paragraph-list expansion");
-        let bundle = ConcordBundle { corpus: concord_corpus, sc_overlap };
-
-        let (mut graph, ..) = atlas_graph::build::build_graph_from_sources_with_eras_and_brainfuel_and_concord(&kjv_json, &xrefs_tsv, &atlas, &atlas.eras, Some(&brainfuel), Some(&bundle))
-            .expect("the real committed sources must build");
-        graph.build_indexes();
-        graph
-    })
+    GRAPH.get_or_init(|| common::indexed_raw_graph(OptionalCorpora { kretzmann: false, red_letter: false }))
 }
 
 fn concord_locus_links(graph: &atlas_graph_types::graph::Graph) -> Vec<&atlas_graph_types::edge::CatechismLink> {
     graph.catechism.iter().filter(|l| matches!(l.locus.at, TextRef::Concord(_))).collect()
+}
+
+#[test]
+fn the_curated_sc_overlap_table_authors_one_link_per_catechism_item() {
+    let curated_row_count = common::sc_overlap().len();
+    assert_eq!(curated_row_count, 33, "the curated table's own [[link]] entry count -- one per CatechismItem, before paragraph-list expansion");
 }
 
 #[test]

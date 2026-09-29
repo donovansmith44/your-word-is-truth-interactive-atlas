@@ -1,3 +1,5 @@
+mod common;
+
 use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Instant;
@@ -24,20 +26,12 @@ fn open_written(dir: &Path) -> Result<SqliteSnapshot, atlas_graph::sqlite::Sqlit
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::store::{assert_answers_match, GraphSnapshot};
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
-}
-
 fn committed_graph() -> &'static (Graph, Extras) {
     static CACHED: OnceLock<(Graph, Extras)> = OnceLock::new();
     CACHED.get_or_init(|| {
-        let (graph, snap) = atlas_graph::sqlite::reload::committed_graph(&data_dir()).expect("the committed sections read back");
+        let (graph, snap) = atlas_graph::sqlite::reload::committed_graph(&common::compiled_dir()).expect("the committed sections read back");
         let (chrono, red_letter) = snap.with_conn(|c| Ok((atlas_graph::sqlite::serve::load_chronology(c)?, atlas_graph::sqlite::serve::load_red_letter_spans(c)?))).expect("companions");
-        let data = data_dir().parent().unwrap().to_path_buf();
-        let atlas = atlas_etl::compile::compile(&data.join("raw"), &data.join("curated")).expect("the ETL compiles").data;
-        let sources: atlas_core::sources::SourcesDocument = serde_json::from_str(&std::fs::read_to_string(data_dir().join("sources.json")).unwrap()).unwrap();
-        let lexicon = atlas_etl::lexicon::read_all(&data.join("raw").join("brain-fuel-bible")).expect("the vendored lexicon + morphology");
-        let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, &atlas, &sources, &lexicon.tokens).expect("the fold");
+        let extras = atlas_graph::sqlite::extras::compute(&graph, &chrono, &red_letter, common::real_atlas(), &common::sources_registry(), &common::lexicon_corpus().tokens).expect("the fold");
         (graph, extras)
     })
 }
@@ -85,7 +79,7 @@ fn the_full_real_graph_is_admitted_over_the_sqlite_backend_and_the_logical_hashe
         "determinism: every logical hash"
     );
     assert_eq!(read_manifest(&layout_under(&dir).manifest_path()).unwrap().root, m1.root);
-    let committed = read_manifest(&data_dir().join("manifest.toml")).expect("data/compiled/manifest.toml is committed");
+    let committed = read_manifest(&SectionLayout::under(&common::compiled_dir()).manifest_path()).expect("data/compiled/manifest.toml is committed");
     assert_eq!(committed.root, m1.root, "data/compiled/manifest.toml's root is this graph's (recompile if the sidecars or the graph moved)");
     assert_eq!(
         committed.sections.iter().map(|s| (&s.name, &s.logical)).collect::<Vec<_>>(),

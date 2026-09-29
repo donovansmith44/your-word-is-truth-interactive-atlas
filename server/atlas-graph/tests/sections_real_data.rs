@@ -1,6 +1,8 @@
+mod common;
+
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
-use std::sync::OnceLock;
+
+use common::committed_graph;
 
 use atlas_etl::concord::DOCUMENTS;
 use atlas_graph::corpus_root::corpus_root_id;
@@ -19,20 +21,8 @@ use atlas_graph_types::text::{BibleTag, ConcordRef, ConcordTag, Corpus, TextLocu
 const ROOTS_PER_CORPUS: usize = 1;
 const DOCUMENT_STEPS: usize = DOCUMENTS.len() - 1;
 
-fn data_dir() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
-}
-
-fn committed_graph() -> &'static Graph {
-    static CACHED: OnceLock<Graph> = OnceLock::new();
-    CACHED.get_or_init(|| {
-        atlas_graph::sqlite::reload::committed_graph(&data_dir().join("compiled")).expect("the committed sections read back (run atlas-graph-compile first)").0
-    })
-}
-
 fn concord_articles() -> usize {
-    let concord = atlas_etl::concord::read_all(&data_dir().join("raw/concord"), &data_dir().join("curated"))
-        .expect("data/raw/concord + data/curated/concord-titles.toml must read -- run data/fetch-raw.ps1 first");
+    let concord = common::concord_corpus();
     concord.documents.iter().map(|document| document.articles.len()).sum()
 }
 
