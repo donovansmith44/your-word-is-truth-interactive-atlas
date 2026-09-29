@@ -191,7 +191,7 @@ pub struct CanonSuccession {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Attests {
     pub event: EventId,
     pub attestation: BibleLocusRange,
@@ -199,7 +199,7 @@ pub struct Attests {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Succession {
     pub narrative: NarrativeId,
     pub chain: Vec<EventId>,
@@ -231,7 +231,7 @@ pub enum ChainError {
     Duplicate,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LocatedAt {
     pub event: EventId,
     pub place: PlaceId,
@@ -239,7 +239,7 @@ pub struct LocatedAt {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fulfills {
     pub prophecy: BibleLocusRange,
     pub fulfillment: BibleLocusRange,
@@ -247,7 +247,7 @@ pub struct Fulfills {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Typology {
     pub type_passage: BibleLocusRange,
     pub antitype_passage: BibleLocusRange,
@@ -256,7 +256,7 @@ pub struct Typology {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NamedAfter {
     pub namesake: Namesake,
     pub eponym: PersonId,
@@ -264,14 +264,14 @@ pub struct NamedAfter {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Namesake {
     PeopleGroup(PeopleGroupId),
     Place(PlaceId),
     Polity(PolityId),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CatechismLink {
     pub locus: TextLocus,
     pub item: CatechismItemId,
@@ -279,7 +279,7 @@ pub struct CatechismLink {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommentsOn {
     pub item: CommentaryItemId,
     pub on: BibleLocusRange,
@@ -287,7 +287,7 @@ pub struct CommentsOn {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpokenBy {
     pub locus: BibleLocusRange,
     pub speaker: PersonId,
@@ -295,7 +295,7 @@ pub struct SpokenBy {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpokenAt {
     pub locus: BibleLocusRange,
     pub place: PlaceId,
@@ -303,7 +303,7 @@ pub struct SpokenAt {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MentionedEntity {
     Place(PlaceId),
     Person(PersonId),
@@ -311,42 +311,42 @@ pub enum MentionedEntity {
     Event(EventId),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Mentions {
     pub locus: TextLocus,
     pub entity: MentionedEntity,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Analogue {
     pub a: EventId,
     pub b: EventId,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Occurs {
     pub entry: LexiconEntryId,
     pub locus: TextLocus,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParentOf {
     pub parent: PersonId,
     pub child: PersonId,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Partners {
     pub a: PersonId,
     pub b: PersonId,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Participates {
     pub person: PersonId,
     pub event: EventId,
@@ -377,14 +377,14 @@ pub struct MapSuccession {
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TemporalAdjacency {
     pub earlier: EventId,
     pub later: EventId,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrossRef {
     pub from: TextLocus,
     pub to: TextLocus,
@@ -394,14 +394,14 @@ pub struct CrossRef {
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Quotes {
     pub quoting: TextLocus,
     pub quoted: BibleLocusRange,
     pub provenance: ProvenanceId,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Confesses {
     pub confessing: ConcordLocus,
     pub confessed: BibleLocusRange,
@@ -409,7 +409,7 @@ pub struct Confesses {
     pub justification: Justification,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Corresponds<C: Corpus> {
     pub a: crate::text::Locus<C>,
     pub b: crate::text::Locus<C>,

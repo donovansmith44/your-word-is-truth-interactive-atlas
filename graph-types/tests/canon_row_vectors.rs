@@ -55,13 +55,13 @@ fn full_justification() -> Justification {
     Justification { text: Some("Jordan, at Bethabara".into()), grounds }
 }
 
-fn round_trip<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily) -> String {
+fn round_trip<T: Canon + std::fmt::Debug + PartialEq>(row: &T, family: RowFamily) -> String {
     let bytes = row.encode();
     let text = String::from_utf8(bytes.clone()).expect("canonical bytes are UTF-8");
     let back = T::decode(&bytes)
         .unwrap_or_else(|e| panic!("{} failed to decode its own bytes: {e}", family.name()));
     assert_eq!(back.encode(), bytes, "{} is not a byte fixed point", family.name());
-    assert_eq!(format!("{back:?}"), format!("{row:?}"), "{} lost content", family.name());
+    assert_eq!(&back, row, "{} lost content", family.name());
     assert_eq!(
         String::from_utf8(encode_row_in_family(family, row.to_value())).unwrap(),
         format!("{{\"family\":\"{}\",\"row\":{text}}}", family.name()),
@@ -71,16 +71,11 @@ fn round_trip<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily) -> String 
     text
 }
 
-fn golden_row<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily, golden: &str) {
+fn golden_row<T: Canon + std::fmt::Debug + PartialEq>(row: &T, family: RowFamily, golden: &str) {
     assert_eq!(round_trip(row, family), golden, "{} golden bytes moved", family.name());
     let back = T::decode(golden.as_bytes())
         .unwrap_or_else(|e| panic!("{} golden bytes failed to decode: {e}", family.name()));
-    assert_eq!(
-        format!("{back:?}"),
-        format!("{row:?}"),
-        "{} golden bytes must decode back to the row",
-        family.name()
-    );
+    assert_eq!(&back, row, "{} golden bytes must decode back to the row", family.name());
 }
 
 #[test]

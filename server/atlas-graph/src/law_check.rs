@@ -493,7 +493,7 @@ mod tests {
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling shown.node reference");
 
         // Assert
-        assert_eq!((err.relation, err.field, err.missing), ("shown", "node", PlaceId::new("nowhere").erase()));
+        assert_eq!(err, DanglingReference { relation: "shown", field: "node", missing: PlaceId::new("nowhere").erase() });
     }
 
     #[test]

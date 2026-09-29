@@ -221,9 +221,7 @@ fn place_node_golden_bytes() {
         r#"{"id":"Place:jerusalem","payload":{"Place":{"aliases":["Salem"],"canonical":"Jerusalem","description":null,"lat":31.7767,"lon":35.2345}},"provenance":"openbible-geo"}"#
     );
     let back = Node::decode(&bytes).unwrap();
-    assert_eq!(back.id, n.id);
-    assert_eq!(back.provenance, n.provenance);
-    assert_eq!(format!("{:?}", back.payload), format!("{:?}", n.payload));
+    assert_eq!(back, n);
 }
 
 const MALFORMED_NODES: &[(&[u8], &str)] = &[
@@ -348,14 +346,7 @@ fn round_trip(n: &Node) {
             String::from_utf8_lossy(&bytes)
         ),
     };
-    assert_eq!(back.id, n.id);
-    assert_eq!(back.provenance, n.provenance);
-    assert_eq!(
-        format!("{:?}", back.payload),
-        format!("{:?}", n.payload),
-        "payload changed for {}",
-        n.id.raw
-    );
+    assert_eq!(&back, n, "node changed for {}", n.id.raw);
     assert_eq!(back.encode(), bytes, "re-encode is not a fixed point for {}", n.id.raw);
 }
 

@@ -150,11 +150,13 @@ mod tests {
             ctx.graph.map_succession,
             vec![MapSuccession { prior: map_node_id("patriarchs"), next: map_node_id("conquest"), provenance: PROVENANCE.into() }]
         );
-        let patriarchs = ctx.graph.node(&map_node_id("patriarchs").erase()).unwrap();
         assert_eq!(
-            format!("{:?}", patriarchs.payload),
-            format!("{:?}", NodePayload::Map { label: "Patriarchs".into(), from_year: -2100, to_year: -1877 })
+            ctx.graph.node(&map_node_id("patriarchs").erase()),
+            Some(Node {
+                id: map_node_id("patriarchs").erase(),
+                payload: NodePayload::Map { label: "Patriarchs".into(), from_year: -2100, to_year: -1877 },
+                provenance: PROVENANCE.into(),
+            })
         );
-        assert_eq!(patriarchs.provenance, PROVENANCE);
     }
 }

@@ -10,7 +10,7 @@ use crate::text::LayerMap;
 /// Kept fully structured rather than collapsed to a display string, so a consumer
 /// reconstructs the account losslessly from the payload alone. `translations` is a
 /// `BTreeMap` for determinism: a hashed order must never ride into bytes that get hashed.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EventWitnessPayload {
     pub book: String,
     pub translations: BTreeMap<String, Vec<String>>,
@@ -20,14 +20,14 @@ pub struct EventWitnessPayload {
 
 /// Kept fully structured rather than collapsed to prose, so the wire reconstructs it
 /// losslessly from the payload alone.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PolityDeltaPayload {
     pub event: String,
     pub verses: Vec<String>,
     pub ref_note: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PolityEraPayload {
     pub name: String,
     pub from_year: i32,
@@ -38,7 +38,7 @@ pub struct PolityEraPayload {
     pub fall: Option<PolityDeltaPayload>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum NodePayload {
     /// One node per position in the reading spine, carrying every layer's rendering as
     /// payload (the canonical layer required, the rest optional), so chains stay homogeneous.
@@ -115,7 +115,7 @@ pub enum NodePayload {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Node {
     pub id: AnyNodeId,
     pub payload: NodePayload,

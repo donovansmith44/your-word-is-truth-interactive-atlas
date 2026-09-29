@@ -48,7 +48,7 @@ fn polity_node(p: &atlas_core::data::Polity) -> Node {
 }
 
 /// One era of one polity whose years overlap a window: what a map draws a border for.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Reign {
     pub polity: AnyNodeId,
     pub color_key: u8,
@@ -114,13 +114,15 @@ mod tests {
         normalize(&mut ctx);
 
         // Act
-        let reigns: Vec<(String, u8, String, i32)> = reigns_in(&ctx.graph, &TimeRange::new(-400, -300).unwrap())
-            .into_iter()
-            .map(|r| (r.polity.raw, r.color_key, r.era.name, r.era.from_year))
-            .collect();
+        let reigns = reigns_in(&ctx.graph, &TimeRange::new(-400, -300).unwrap());
 
         // Assert
-        assert_eq!(reigns, vec![("egypt".to_string(), 3, "Egypt".to_string(), -3100), ("egypt".to_string(), 3, "Ptolemaic Egypt".to_string(), -332)]);
+        let reign = |name: &str, from_year: i32, to_year: i32| Reign {
+            polity: polity_node_id("egypt"),
+            color_key: 3,
+            era: PolityEraPayload { name: name.into(), from_year, to_year, rings: vec![], ref_note: String::new(), transition: None, fall: None },
+        };
+        assert_eq!(reigns, vec![reign("Egypt", -3100, -332), reign("Ptolemaic Egypt", -332, -30)]);
     }
 
     #[test]

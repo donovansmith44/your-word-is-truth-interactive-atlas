@@ -69,9 +69,10 @@ mod tests {
 
         // Assert
         let root = graph.nodes.get(&corpus_root_id::<BibleTag>().erase()).expect("the root node");
-        assert_eq!(root.id, corpus_root_id::<BibleTag>().erase());
-        assert_eq!(format!("{:?}", root.payload), format!("{:?}", NodePayload::Container { title: TITLE.to_string() }));
-        assert_eq!(root.provenance, PROVENANCE);
+        assert_eq!(
+            root,
+            &Node { id: corpus_root_id::<BibleTag>().erase(), payload: NodePayload::Container { title: TITLE.to_string() }, provenance: PROVENANCE.to_string() }
+        );
         assert_eq!(graph.nodes.len(), 1);
         assert_eq!(rows, [root_contains(&members[0]), root_contains(&members[1])]);
     }

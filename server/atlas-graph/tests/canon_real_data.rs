@@ -52,13 +52,7 @@ fn every_node_round_trips_and_re_encodes_identically() {
         let back = Node::decode(&bytes)
             .unwrap_or_else(|e| panic!("node {id:?} failed to decode its own bytes: {e}"));
         assert_eq!(back.encode(), bytes, "node {id:?} is not a byte fixed point");
-        assert_eq!(&back.id, id, "node {id:?} lost its id");
-        assert_eq!(back.provenance, n.provenance, "node {id:?} lost its provenance");
-        assert_eq!(
-            format!("{:?}", back.payload),
-            format!("{:?}", n.payload),
-            "node {id:?} lost payload content"
-        );
+        assert_eq!(&back, n, "node {id:?} lost content");
         *by_kind.entry(format!("{:?}", id.kind)).or_default() += 1;
         count += 1;
     }
