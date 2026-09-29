@@ -9,6 +9,7 @@ use atlas_core::time::TimeRange;
 use serde::Deserialize;
 
 use crate::catechism_map::{Deut5Entry, MappingFile, MappingOverride};
+use crate::concord::ConcordTitleOverride;
 
 #[derive(Deserialize)]
 struct ErasFile {
@@ -741,10 +742,44 @@ pub fn parse_typology(input: &str) -> Result<Vec<TypologySeed>> {
     Ok(f.typology)
 }
 
+#[derive(Deserialize)]
+struct ConcordTitlesFile {
+    article: Vec<ConcordTitleOverride>,
+}
+
+pub fn parse_concord_titles(input: &str) -> Result<Vec<ConcordTitleOverride>> {
+    let f: ConcordTitlesFile = toml::from_str(input).context("concord-titles.toml: invalid TOML or does not match the [[article]] schema")?;
+    Ok(f.article)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use atlas_core::data::{LandmarkKind, LandmarkSize};
+
+    #[test]
+    fn parse_concord_titles_reads_valid_toml() {
+        // Arrange
+        let toml = "[[article]]\ndocument = \"small-catechism\"\narticle = 2\ntitle = \"I. The Ten Commandments\"\n\n[[article]]\ndocument = \"small-catechism\"\narticle = 6\ntitle = \"V. Confession\"\n";
+        // Act
+        let titles = parse_concord_titles(toml).unwrap();
+        // Assert
+        assert_eq!(
+            titles,
+            vec![
+                ConcordTitleOverride { document: "small-catechism".to_string(), article: 2, title: "I. The Ten Commandments".to_string() },
+                ConcordTitleOverride { document: "small-catechism".to_string(), article: 6, title: "V. Confession".to_string() },
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_concord_titles_rejects_malformed_toml() {
+        // Act
+        let refused = (parse_concord_titles("not valid toml [[[").is_err(), parse_concord_titles("[[article]]\ndocument = \"small-catechism\"\narticle = 2\n").is_err());
+        // Assert
+        assert_eq!(refused, (true, true));
+    }
 
     #[test]
     fn parse_landmarks_reads_valid_toml() {

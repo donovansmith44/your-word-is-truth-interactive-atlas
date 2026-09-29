@@ -1,0 +1,21 @@
+# Article titles as served. The vendored raw HTML numbers only two of the six
+# chief parts; the six are numbered here and the preface and appendices are not.
+[[article]]
+document = "small-catechism"
+article = 2
+title = "I. The Ten Commandments"
+
+[[article]]
+document = "small-catechism"
+article = 5
+title = "IV. The Sacrament of Holy Baptism"
+
+[[article]]
+document = "small-catechism"
+article = 6
+title = "V. Confession"
+
+[[article]]
+document = "small-catechism"
+article = 7
+title = "VI. The Sacrament of the Altar"

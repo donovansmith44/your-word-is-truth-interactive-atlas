@@ -561,8 +561,8 @@ fn load_concord(raw_dir: &Path) -> anyhow::Result<Option<crate::concord_adapter:
     if !root.is_dir() {
         return Ok(None);
     }
-    let corpus = atlas_etl::concord::read_all(&root).with_context(|| format!("reading vendored Concord data from {}", root.display()))?;
     let curated_dir = raw_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| Path::new("../data/curated").to_path_buf());
+    let corpus = atlas_etl::concord::read_all(&root, &curated_dir).with_context(|| format!("reading vendored Concord data from {}", root.display()))?;
     let overlap_path = curated_dir.join("concord-sc-overlap.toml");
     let overlap_text = std::fs::read_to_string(&overlap_path).with_context(|| format!("reading {}", overlap_path.display()))?;
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&overlap_text).with_context(|| format!("parsing {}", overlap_path.display()))?;

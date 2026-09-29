@@ -2,12 +2,12 @@ use std::path::Path;
 
 use atlas_etl::concord;
 
-fn root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/raw/concord")
+fn data_dir() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
 }
 
 fn corpus() -> concord::ConcordCorpus {
-    concord::read_all(&root()).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first")
+    concord::read_all(&data_dir().join("raw/concord"), &data_dir().join("curated")).expect("data/raw/concord must exist -- run data/fetch-raw.ps1 first")
 }
 
 #[test]
@@ -101,4 +101,27 @@ fn smalcald_articles_extras_are_spliced_after_their_own_part_blurb_in_toc_order(
     assert_eq!(article_nums, (1..=28).collect::<Vec<_>>());
     let of_sin = doc.articles.iter().find(|a| a.slug == "/smalcald-articles/iii/of-sin/").unwrap();
     assert!(of_sin.paragraphs[0].text.starts_with("Here we must confess, as Paul says in Rom. 5:12, that sin originated"));
+}
+
+const SMALL_CATECHISM_TITLES_AS_SERVED: [&str; 10] = [
+    "Luther's Preface to the Small Catechism",
+    "I. The Ten Commandments",
+    "II. The Creed",
+    "III. The Lord's Prayer",
+    "IV. The Sacrament of Holy Baptism",
+    "V. Confession",
+    "VI. The Sacrament of the Altar",
+    "Daily Prayers",
+    "Table of Duties",
+    "Christian Questions and their Answers",
+];
+
+#[test]
+fn the_small_catechism_articles_are_numbered_by_chief_part_and_the_appendices_are_not() {
+    // Arrange
+    let c = corpus();
+    // Act
+    let titles: Vec<&str> = c.documents.iter().find(|d| d.key == "small-catechism").unwrap().articles.iter().map(|a| a.title.as_str()).collect();
+    // Assert
+    assert_eq!(titles, SMALL_CATECHISM_TITLES_AS_SERVED);
 }

@@ -680,7 +680,7 @@
             "id": "Container:concord-art-small-catechism-2",
             "kind": "article",
             "ref": "BoC 7.2.1",
-            "title": "The Ten Commandments"
+            "title": "I. The Ten Commandments"
           },
           {
             "count": 3,
@@ -701,21 +701,21 @@
             "id": "Container:concord-art-small-catechism-5",
             "kind": "article",
             "ref": "BoC 7.5.1",
-            "title": "The Sacrament of Holy Baptism"
+            "title": "IV. The Sacrament of Holy Baptism"
           },
           {
             "count": 4,
             "id": "Container:concord-art-small-catechism-6",
             "kind": "article",
             "ref": "BoC 7.6.1",
-            "title": "How Christians should be taught to Confess"
+            "title": "V. Confession"
           },
           {
             "count": 5,
             "id": "Container:concord-art-small-catechism-7",
             "kind": "article",
             "ref": "BoC 7.7.1",
-            "title": "The Sacrament of the Altar"
+            "title": "VI. The Sacrament of the Altar"
           },
           {
             "count": 4,
@@ -1007,7 +1007,7 @@
         "title": "Formula of Concord: Solid Declaration"
       }
     ],
-    "version": "dd6b8af02ba03231cc4ff714822dafcb"
+    "version": "21778a12819692c916538c558ab5900a"
   },
   "status": 200
 }

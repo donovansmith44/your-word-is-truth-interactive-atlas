@@ -89,7 +89,7 @@ fn main() -> Result<()> {
 
     let concord_root = raw_dir.join("concord");
     println!("atlas-graph-compile: reading vendored Concord (Book of Concord) data from {}...", concord_root.display());
-    let concord_corpus = atlas_etl::concord::read_all(&concord_root).with_context(|| format!("reading {}", concord_root.display()))?;
+    let concord_corpus = atlas_etl::concord::read_all(&concord_root, &curated_dir).with_context(|| format!("reading {}", concord_root.display()))?;
     let sc_overlap_path = curated_dir.join("concord-sc-overlap.toml");
     let sc_overlap_text = std::fs::read_to_string(&sc_overlap_path).with_context(|| format!("reading {}", sc_overlap_path.display()))?;
     let sc_overlap = atlas_etl::concord::parse_sc_overlap(&sc_overlap_text).with_context(|| format!("parsing {}", sc_overlap_path.display()))?;

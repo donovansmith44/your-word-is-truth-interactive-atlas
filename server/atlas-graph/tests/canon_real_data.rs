@@ -296,7 +296,7 @@ fn real_sources() -> RealSources {
     let eras = atlas.eras.clone();
     let brainfuel = atlas_etl::brainfuel::read_all(&raw_dir.join("brain-fuel-bible"))
         .expect("data/raw/brain-fuel-bible must exist");
-    let concord_corpus = atlas_etl::concord::read_all(&raw_dir.join("concord"))
+    let concord_corpus = atlas_etl::concord::read_all(&raw_dir.join("concord"), &curated_dir)
         .expect("data/raw/concord must exist");
     let sc_overlap_text = std::fs::read_to_string(curated_dir.join("concord-sc-overlap.toml"))
         .expect("data/curated/concord-sc-overlap.toml must exist");

@@ -175,7 +175,10 @@ impl ConcordCorpus {
 }
 
 /// The one filesystem-touching entry point; every other function in this module is pure `&str`-in / data-out.
-pub fn read_all(root: &Path) -> Result<ConcordCorpus> {
+pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
+    let titles_path = curated_dir.join("concord-titles.toml");
+    let titles_text = std::fs::read_to_string(&titles_path).with_context(|| format!("reading {}", titles_path.display()))?;
+    let titles = crate::curated::parse_concord_titles(&titles_text)?;
     let mut docs = Vec::with_capacity(DOCUMENTS.len());
     let mut stats = ConcordStats::default();
     for spec in DOCUMENTS {
@@ -195,7 +198,21 @@ pub fn read_all(root: &Path) -> Result<ConcordCorpus> {
         stats.skipped_articles += skipped;
         docs.push(doc);
     }
+    apply_title_overrides(&mut docs, &titles)?;
     Ok(ConcordCorpus { documents: docs, stats })
+}
+
+/// Keyed by the served `(document, article)` position, which is final only after the Smalcald splice has
+/// renumbered; an override that names no article is a curation error, never a silent no-op.
+fn apply_title_overrides(docs: &mut [ConcordDocument], titles: &[ConcordTitleOverride]) -> Result<()> {
+    for t in titles {
+        let article = docs.iter_mut().find(|d| d.key == t.document).and_then(|d| d.articles.iter_mut().find(|a| a.article == t.article));
+        match article {
+            Some(a) => a.title = t.title.clone(),
+            None => anyhow::bail!("concord-titles.toml: no article {} in document '{}' to retitle as '{}'", t.article, t.document, t.title),
+        }
+    }
+    Ok(())
 }
 
 /// The SAME function runs over all ten documents: nothing here branches on which document it is except the skip
@@ -608,6 +625,14 @@ pub struct ScOverlapRow {
     pub paragraphs: Vec<u16>,
 }
 
+/// One curated title served in place of the vendored heading, at that document's served article position.
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+pub struct ConcordTitleOverride {
+    pub document: String,
+    pub article: u16,
+    pub title: String,
+}
+
 #[derive(serde::Deserialize)]
 struct ScOverlapFile {
     link: Vec<ScOverlapRow>,
@@ -622,6 +647,37 @@ pub fn parse_sc_overlap(input: &str) -> Result<Vec<ScOverlapRow>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn document(key: &'static str, titles: &[&str]) -> ConcordDocument {
+        let articles = titles.iter().enumerate().map(|(i, t)| ConcordArticle { article: (i + 1) as u16, slug: format!("/{key}/{i}/"), title: t.to_string(), paragraphs: Vec::new() }).collect();
+        ConcordDocument { part: 1, key, title: key, articles }
+    }
+
+    fn titles_of(docs: &[ConcordDocument]) -> Vec<Vec<&str>> {
+        docs.iter().map(|d| d.articles.iter().map(|a| a.title.as_str()).collect()).collect()
+    }
+
+    #[test]
+    fn a_curated_title_replaces_exactly_the_named_article_of_the_named_document() {
+        // Arrange
+        let mut docs = vec![document("preface", &["Preface", "Second"]), document("small-catechism", &["Preface", "The Ten Commandments"])];
+        let titles = vec![ConcordTitleOverride { document: "small-catechism".to_string(), article: 2, title: "I. The Ten Commandments".to_string() }];
+        // Act
+        apply_title_overrides(&mut docs, &titles).unwrap();
+        // Assert
+        assert_eq!(titles_of(&docs), vec![vec!["Preface", "Second"], vec!["Preface", "I. The Ten Commandments"]]);
+    }
+
+    #[test]
+    fn a_curated_title_naming_no_article_is_refused_with_its_own_row_named() {
+        // Arrange
+        let mut docs = vec![document("small-catechism", &["Preface"])];
+        let titles = vec![ConcordTitleOverride { document: "small-catechism".to_string(), article: 2, title: "I. The Ten Commandments".to_string() }];
+        // Act
+        let refused = apply_title_overrides(&mut docs, &titles).unwrap_err().to_string();
+        // Assert
+        assert_eq!(refused, "concord-titles.toml: no article 2 in document 'small-catechism' to retitle as 'I. The Ten Commandments'");
+    }
 
     const SC_FIRST_COMMANDMENT: &str = r#"<h4 id="the-first-commandment"><strong>The First Commandment.</strong></h4>
 <h4 id="hahahugoshortcode-s0-hbhbthou-shalt-have-no-other-gods"><span id="0001" class="bocanchor"> </span><span id="sc-ten-commandments-0001" class="bocanchor"><span id="sc-ten-commandments-0001-acontent" class="bocanchor-content">1</span></span>Thou shalt have no other gods.</h4>
