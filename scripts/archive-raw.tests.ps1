@@ -31,9 +31,9 @@ function New-RawFixture {
     Set-Content -LiteralPath (Join-Path $raw 'theographic.zip') -Value 'theographic bytes' -NoNewline
     Set-Content -LiteralPath (Join-Path $raw 'cross-references.zip') -Value 'cross reference bytes' -NoNewline
     Set-Content -LiteralPath (Join-Path $raw 'catechism-mapping.zip') -Value 'catechism bytes' -NoNewline
-    $bless = Invoke-ProcessCapture -FilePath $script:BibexPath -ArgumentList @('raw', 'bless', '--data-dir', $compiled)
+    $bless = Invoke-ProcessCapture -FilePath $script:BibexPath -ArgumentList @('--json', 'raw', 'bless', '--data-dir', $compiled)
     if ($bless.ExitCode -ne 0) { throw "fixture bless failed: $($bless.StdErr)$($bless.StdOut)" }
-    [pscustomobject]@{ Root = $root; Compiled = $compiled; Raw = $raw }
+    [pscustomobject]@{ Compiled = $compiled; Raw = $raw; RawRoot = ($bless.StdOut | ConvertFrom-Json).root }
 }
 
 function New-DestinationDir {
@@ -66,25 +66,39 @@ Describe 'archive-raw' {
         $action = { Invoke-ArchiveRaw -RawDir $fixture.Raw -Destination $destination -BibexPath $script:BibexPath -SevenZipExe '7z' -ArchivedEntries $ArchivedEntries }
 
         # Assert
-        $action | Should Throw "data/raw does not verify -- refusing to archive it -- atlas: error (integrity_failed):"
+        $action | Should Throw 'data/raw does not verify -- refusing to archive it -- integrity_failed: '
         $action | Should Throw 'raw geo/ancient.jsonl: MISMATCH'
+        Test-Path -LiteralPath $destination | Should Be $false
+    }
+
+    It 'refuses to archive a tree that has no manifest, naming the manifest it looked for' {
+        # Arrange
+        $fixture = New-RawFixture -Name 'unrecorded'
+        $manifestPath = Join-Path $fixture.Raw 'MANIFEST.toml'
+        Remove-Item -LiteralPath $manifestPath
+        $destination = New-DestinationDir -Name 'unrecorded'
+
+        # Act
+        $action = { Invoke-ArchiveRaw -RawDir $fixture.Raw -Destination $destination -BibexPath $script:BibexPath -SevenZipExe '7z' -ArchivedEntries $ArchivedEntries }
+
+        # Assert
+        $action | Should Throw "data/raw is not recorded -- refusing to archive it -- no MANIFEST.toml at $manifestPath"
         Test-Path -LiteralPath $destination | Should Be $false
     }
 
     It 'refuses to overwrite an archive whose root already exists at the destination' {
         # Arrange
         $fixture = New-RawFixture -Name 'existing-root'
-        $manifest = Read-TopLevelManifest -ManifestPath (Join-Path $fixture.Raw 'MANIFEST.toml')
         $destination = New-DestinationDir -Name 'existing-root'
         New-Item -ItemType Directory -Force -Path $destination | Out-Null
-        $existingPath = Join-Path $destination "bible-atlas-data-raw-2020-01-01-raw-$($manifest.Root).7z"
+        $existingPath = Join-Path $destination "bible-atlas-data-raw-2020-01-01-raw-$($fixture.RawRoot).7z"
         Set-Content -LiteralPath $existingPath -Value 'placeholder' -NoNewline
 
         # Act
         $action = { Invoke-ArchiveRaw -RawDir $fixture.Raw -Destination $destination -BibexPath $script:BibexPath -SevenZipExe '7z' -ArchivedEntries $ArchivedEntries }
 
         # Assert
-        $action | Should Throw "an archive for root $($manifest.Root) already exists at $existingPath -- refusing to overwrite it"
+        $action | Should Throw "an archive for root $($fixture.RawRoot) already exists at $existingPath -- refusing to overwrite it"
         (Get-Content -LiteralPath $existingPath -Raw) | Should Be 'placeholder'
         (Get-ChildItem -Path $destination -File).Count | Should Be 1
     }
@@ -92,21 +106,20 @@ Describe 'archive-raw' {
     It 'archives the six datasets, verifies the round trip, and prints the summary' {
         # Arrange
         $fixture = New-RawFixture -Name 'happy'
-        $manifest = Read-TopLevelManifest -ManifestPath (Join-Path $fixture.Raw 'MANIFEST.toml')
         $destination = New-DestinationDir -Name 'happy'
 
         # Act
         $output = & $PSScriptRoot\archive-raw.ps1 -RawDir $fixture.Raw -Destination $destination -BibexPath $script:BibexPath
 
         # Assert
-        $expectedArchive = Join-Path $destination "bible-atlas-data-raw-$(Get-Date -Format 'yyyy-MM-dd')-raw-$($manifest.Root).7z"
+        $expectedArchive = Join-Path $destination "bible-atlas-data-raw-$(Get-Date -Format 'yyyy-MM-dd')-raw-$($fixture.RawRoot).7z"
         Test-Path -LiteralPath $expectedArchive | Should Be $true
         $size = (Get-Item -LiteralPath $expectedArchive).Length
         $sizeMiB = [math]::Round($size / 1MB, 1)
         $expected = @(
             "archive $expectedArchive"
             "size $sizeMiB MiB ($size bytes)"
-            "root $($manifest.Root)"
+            "root $($fixture.RawRoot)"
             "restore: 7z x `"$expectedArchive`" -o`"$($fixture.Raw)`" -y"
         ) -join "`n"
         ($output -join "`n") | Should Be $expected

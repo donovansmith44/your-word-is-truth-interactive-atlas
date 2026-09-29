@@ -54,27 +54,6 @@ function Invoke-ProcessCapture {
     }
 }
 
-# Reads only the manifest's TOP-LEVEL `[[dataset]]` blocks (name + hash, or name + sha256) --
-# the datasets this script archives are always top-level, and a directory's own node hash never
-# depends on its siblings (raw_manifest::node_hash), so this is all a round-trip check needs; it
-# is deliberately not a general TOML reader.
-function Read-TopLevelManifest {
-    param([string]$ManifestPath)
-    $root = $null
-    $datasets = @{}
-    $inTopLevelDataset = $false
-    $currentName = $null
-    foreach ($line in Get-Content -LiteralPath $ManifestPath) {
-        if ($line -match '^root\s*=\s*"([0-9a-f]+)"$') { $root = $Matches[1]; continue }
-        if ($line -eq '[[dataset]]') { $inTopLevelDataset = $true; $currentName = $null; continue }
-        if ($line -match '^\[\[dataset\.') { $inTopLevelDataset = $false; continue }
-        if (-not $inTopLevelDataset) { continue }
-        if ($line -match '^name\s*=\s*"(.*)"$') { $currentName = $Matches[1]; continue }
-        if ($currentName -and $line -match '^(?:hash|sha256)\s*=\s*"([0-9a-f]+)"$') { $datasets[$currentName] = $Matches[1] }
-    }
-    [pscustomobject]@{ Root = $root; Datasets = $datasets }
-}
-
 function Test-SevenZipAvailable {
     param([string]$Exe)
     [bool](Get-Command $Exe -ErrorAction SilentlyContinue)
@@ -133,29 +112,20 @@ function Invoke-ArchiveRaw {
     if (-not (Test-Path -LiteralPath $BibexPath)) {
         throw "bibex not found at $BibexPath -- build it first (cargo build --release -p atlas-cli, from server/)"
     }
-    if (-not (Test-Path -LiteralPath $manifestPath)) {
-        throw "no manifest at $manifestPath -- nothing recorded to archive"
-    }
-
-    $verify = Invoke-ProcessCapture -FilePath $BibexPath -ArgumentList @('verify', '--data-dir', $compiledDir)
+    $verify = Invoke-ProcessCapture -FilePath $BibexPath -ArgumentList @('--json', 'verify', '--data-dir', $compiledDir)
     if ($verify.ExitCode -ne 0) {
-        throw "data/raw does not verify -- refusing to archive it -- $($verify.StdErr)$($verify.StdOut)"
+        $failure = ($verify.StdErr | ConvertFrom-Json).error
+        throw "data/raw does not verify -- refusing to archive it -- $($failure.code): $($failure.message)"
     }
-
-    $manifest = Read-TopLevelManifest -ManifestPath $manifestPath
-    if (-not $manifest.Root) { throw "$manifestPath has no root line" }
-
-    $recordedHashes = @{}
-    foreach ($entry in $ArchivedEntries) {
-        if (-not $manifest.Datasets.ContainsKey($entry.Name)) {
-            throw "$manifestPath has no top-level entry named '$($entry.Name)' -- cannot archive it"
-        }
-        $recordedHashes[$entry.Name] = $manifest.Datasets[$entry.Name]
+    $raw = ($verify.StdOut | ConvertFrom-Json).raw
+    if ($raw.status -ne 'ok') {
+        throw "data/raw is not recorded -- refusing to archive it -- $($raw.why)"
     }
+    $root = $raw.root
 
-    $existing = Get-ExistingArchiveForRoot -Destination $Destination -Root $manifest.Root
+    $existing = Get-ExistingArchiveForRoot -Destination $Destination -Root $root
     if ($existing) {
-        throw "an archive for root $($manifest.Root) already exists at $($existing.FullName) -- refusing to overwrite it"
+        throw "an archive for root $root already exists at $($existing.FullName) -- refusing to overwrite it"
     }
 
     if (-not (Test-Path -LiteralPath $Destination)) { New-Item -ItemType Directory -Force -Path $Destination | Out-Null }
@@ -165,7 +135,7 @@ function Invoke-ArchiveRaw {
         Write-Warning '7z not found on PATH -- falling back to Compress-Archive (.zip, slower and larger than 7z -mx5)'
     }
     $extension = if ($sevenZipAvailable) { '.7z' } else { '.zip' }
-    $archiveName = New-ArchiveFileName -Root $manifest.Root -Extension $extension
+    $archiveName = New-ArchiveFileName -Root $root -Extension $extension
     $archivePath = Join-Path $Destination $archiveName
 
     $names = $ArchivedEntries | ForEach-Object { $_.Name }
@@ -178,16 +148,12 @@ function Invoke-ArchiveRaw {
     try {
         Expand-RawArchive -ArchivePath $archivePath -DestinationDir $tempRawDir -SevenZipAvailable $sevenZipAvailable -SevenZipExe $SevenZipExe
 
-        $bless = Invoke-ProcessCapture -FilePath $BibexPath -ArgumentList @('raw', 'bless', '--data-dir', $tempCompiledDir)
-        if ($bless.ExitCode -ne 0) {
-            throw "the archived copy did not bless cleanly during round-trip verification -- $($bless.StdErr)$($bless.StdOut)"
-        }
-        $roundTrip = Read-TopLevelManifest -ManifestPath (Join-Path $tempRawDir 'MANIFEST.toml')
+        # An entry's hash never depends on its siblings, so the recorded manifest answers for each one alone.
+        Copy-Item -LiteralPath $manifestPath -Destination $tempRawDir
         foreach ($entry in $ArchivedEntries) {
-            $expected = $recordedHashes[$entry.Name]
-            $found = $roundTrip.Datasets[$entry.Name]
-            if ($found -ne $expected) {
-                throw "round-trip verification failed for $($entry.Name): archive has $found, $manifestPath recorded $expected"
+            $check = Invoke-ProcessCapture -FilePath $BibexPath -ArgumentList @('raw', 'check', $entry.Name, '--data-dir', $tempCompiledDir)
+            if ($check.ExitCode -ne 0) {
+                throw "round-trip verification failed for $($entry.Name) -- $($check.StdErr)$($check.StdOut)"
             }
         }
     } finally {
@@ -204,7 +170,7 @@ function Invoke-ArchiveRaw {
     [pscustomobject]@{
         Path            = $archivePath
         SizeBytes       = $size
-        Root            = $manifest.Root
+        Root            = $root
         RestoreCommand  = $restoreCommand
     }
 }
