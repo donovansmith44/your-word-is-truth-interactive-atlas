@@ -3,6 +3,9 @@ use std::path::Path;
 use atlas_graph::sqlite::reload::committed_graph;
 use atlas_graph_types::sections::{logical_dump_section, version_root, Section};
 
+const MAPS: usize = 10;
+const CORPUS_ROOTS: usize = 2;
+
 fn data_dir() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")
 }
@@ -18,7 +21,7 @@ fn the_sections_read_back_into_the_graph_that_wrote_them() {
         let ms = snap.manifest().sections.iter().find(|m| m.name == s.name()).unwrap();
         assert_eq!(hash, ms.logical, "{s:?}: the read-back dump is the section's own");
     }
-    assert_eq!(g.nodes.len(), 6263 + 32357 + 3972 + 50602 + 13548);
+    assert_eq!(g.nodes.len(), 6263 + 32357 + 3972 + 50602 + 13548 + MAPS + CORPUS_ROOTS);
     assert_eq!(g.cross_refs.len(), 343558);
     assert_eq!(g.reading["bible"].order.len(), 31102);
     assert_eq!(g.occurs.len(), 431_280, "LEX-1: one Occurs row per aligned token");
