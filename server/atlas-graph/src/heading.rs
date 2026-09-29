@@ -215,3 +215,23 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
 
     winners.into_iter().map(|(verse, (_, entry))| (verse, entry)).collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const THE_SAME_LAYER: u8 = 1;
+
+    #[test]
+    fn the_kind_tier_puts_a_dated_event_ahead_of_a_general_passage_whatever_their_chronology() {
+        // Arrange
+        let general = precedence(THE_SAME_LAYER, EventKind::General, 3000, 9999, "a_general_passage");
+        let event = precedence(THE_SAME_LAYER, EventKind::Event, -4004, 0, "z_dated_event");
+
+        // Act
+        let winner = std::cmp::max(general, event.clone());
+
+        // Assert
+        assert_eq!(winner, event);
+    }
+}
