@@ -51,13 +51,16 @@ resolver = "2"
 # equivalents; PRINCIPLES 3a, once per BATCH at its close, sharded) is the
 # FOURTH command of a full standing block, run after the three above -- ONE
 # invocation, from the repository root:
-#   bash scripts/mutants-parallel.sh -n 8 -b <the batch's base commit>
-# It shards every crate's run across eight throwaway git worktrees, scores
+#   bash scripts/mutants-parallel.sh -n 4 -b <the batch's base commit>
+# It shards every crate's run across four throwaway git worktrees, scores
 # graph-types' two feature states as one union, and merges the outcomes into
 # `mutants.out-merged/summary.txt`: tested / caught / missed / unviable /
-# timeout per file. It replaces the three serial invocations this block carried
-# through CONTRACT-1a, which were 419 s per mutant and 160 h for a batch; the
-# measured numbers and the design are in BENCHMARKS.md under "Mutation gate".
+# timeout per file. FOUR, not eight: the shard count here is bound by memory,
+# not by cores -- each shard's heaviest test process holds a whole real
+# `GraphService`, and eight of them exhausted this box's RAM mid-`atlas-graph`.
+# BENCHMARKS.md's "Mutation gate" section has the measurements, and the three
+# serial invocations this block carried through CONTRACT-1a -- 419 s per mutant,
+# 160 h for a batch -- are what it replaces.
 # A missed mutant is killed by a test or recorded as an equivalent in the
 # relevant config, never with an inline `#[mutants::skip]`.
 # Why `.cargo/`, why `--in-place` (and so why worktrees rather than `--jobs`),

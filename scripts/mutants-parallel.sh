@@ -5,11 +5,15 @@
 # (the crate's scope and the covering test targets that kill its mutants) and
 # its own CARGO_TARGET_DIR; the shards' outcomes are merged into ONE summary.
 #
-#   bash scripts/mutants-parallel.sh -n 8 -b 78f51ff        the batch's gate
+#   bash scripts/mutants-parallel.sh -n 4 -b 78f51ff        the batch's gate
 #   bash scripts/mutants-parallel.sh -n 2 -F 'merge\.rs'    one file, 2 shards
 #   bash scripts/mutants-parallel.sh -n 1 -F 'merge\.rs'    the same, serial
 #
-#   -n N      shards (default 8)
+#   -n N      shards (default 4 -- MEMORY, not cores, is the ceiling here: a
+#             shard's heaviest test process holds a whole real GraphService, and
+#             eight of them exhausted this box's RAM mid-atlas-graph. Eight is
+#             safe for atlas-contract, atlas-core, atlas-cli and graph-types
+#             alone; BENCHMARKS.md's "Mutation gate" has the numbers)
 #   -b REF    score only the lines changed since REF (cargo-mutants `--in-diff`)
 #   -F RE     cargo-mutants `--re`, matched against the names `--list` prints,
 #             which begin with the file path -- the only way to narrow a run to
@@ -50,7 +54,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SHARD_ROOT="C:/mut"
-SHARDS=8
+SHARDS=4
 BASE=""
 EXAMINE_RE=""
 KEEP=0
