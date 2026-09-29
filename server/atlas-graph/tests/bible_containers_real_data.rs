@@ -77,8 +77,8 @@ fn the_real_canon_declares_every_container_row() {
     }
     assert_eq!(loci_rows, 1189, "one Loci row per chapter");
     assert_eq!(loci, 31_102, "one verse locus per KJV verse");
-    assert_eq!(child_rows, 1189, "one book ⊃ chapter row per chapter -- an edge per child, never a list");
-    assert_eq!(g.contains_bible.len(), 2378);
+    assert_eq!(child_rows, 1189 + books, "one book ⊃ chapter row per chapter and one root ⊃ book row per book -- an edge per child, never a list");
+    assert_eq!(g.contains_bible.len(), 2378 + books);
 
     assert_eq!(g.canon_succession.len(), 1253, "1,188 chapter steps + 65 book steps, pairwise");
 }

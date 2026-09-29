@@ -1,6 +1,7 @@
 //! One `Container` node per Bible book and per chapter, with declared rows for chapter contains
-//! verses, book contains chapter (one pairwise row per child) and the canon succession steps. A book
-//! container's raw id is `bible-book-{CODE}`, a chapter's `bible-chapter-{CODE}-{chapter}`.
+//! verses, book contains chapter (one pairwise row per child) and the canon succession steps, under
+//! one corpus root that contains every book. A book container's raw id is `bible-book-{CODE}`, a
+//! chapter's `bible-chapter-{CODE}-{chapter}`.
 
 use std::collections::BTreeSet;
 
@@ -11,7 +12,11 @@ use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
 
+use crate::corpus_root;
+use crate::kjv_adapter::BIBLE_CORPUS;
 use crate::pipeline::BuildCtx;
+
+const BIBLE_TITLE: &str = "The Holy Bible";
 
 /// The registry id (`data/curated/sources.toml`) every `authored` row carries: an authorship is this
 /// project's own curated claim, whichever source the person node came from.
@@ -162,6 +167,9 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
         });
         stats.book_steps += 1;
     }
+
+    let root_rows = corpus_root::mint(&mut ctx.graph, BIBLE_CORPUS, BIBLE_TITLE, "kjv", &all_books);
+    ctx.graph.contains_bible.extend(root_rows);
 
     ctx.graph.authored.extend(authored_rows(&ctx.atlas.book_authorship));
 
@@ -348,6 +356,7 @@ mod tests {
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let stats = normalize(&mut ctx).unwrap();
         assert_eq!(stats, BibleContainerStats::default());
+        assert!(ctx.graph.nodes.is_empty());
         assert!(ctx.graph.contains_bible.is_empty());
         assert!(ctx.graph.canon_succession.is_empty());
     }
@@ -362,7 +371,7 @@ mod tests {
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let stats = normalize(&mut ctx).unwrap();
         assert_eq!(stats.verse_loci, 2);
-        assert_eq!(ctx.graph.contains_bible.len(), 2);
+        assert_eq!(ctx.graph.contains_bible.len(), 3, "the chapter's loci, the book's chapter, the root's book");
         let loci_rows: Vec<_> = ctx
             .graph
             .contains_bible

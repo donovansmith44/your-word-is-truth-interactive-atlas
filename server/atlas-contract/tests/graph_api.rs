@@ -1411,3 +1411,66 @@ async fn every_edge_of(app: &axum::Router, id: &str, kind: &str) -> Vec<serde_js
         }
     }
 }
+
+const BIBLE_ROOT: &str = "Container:bible";
+const CONCORD_ROOT: &str = "Container:concord";
+const BOOKS_IN_THE_BIBLE: usize = 66;
+const DOCUMENTS_IN_THE_CONCORD: usize = 10;
+
+#[tokio::test]
+async fn each_corpus_has_one_root_that_contains_its_top_level_containers() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (bible_status, bible, _) = get(&app, &format!("/api/node/{BIBLE_ROOT}")).await;
+    let (concord_status, concord, _) = get(&app, &format!("/api/node/{CONCORD_ROOT}")).await;
+
+    // Assert
+    assert_eq!((bible_status, concord_status), (StatusCode::OK, StatusCode::OK), "{bible} {concord}");
+    let (bible_version, concord_version) = (bible["version"].clone(), concord["version"].clone());
+    assert_eq!(
+        bible,
+        serde_json::json!({
+            "id": BIBLE_ROOT,
+            "kind": "Container",
+            "label": "The Holy Bible",
+            "provenance": "kjv",
+            "edge_summary": [ { "kind": "contains", "count": BOOKS_IN_THE_BIBLE } ],
+            "version": bible_version,
+        })
+    );
+    assert_eq!(
+        concord,
+        serde_json::json!({
+            "id": CONCORD_ROOT,
+            "kind": "Container",
+            "label": "The Book of Concord",
+            "provenance": "concord",
+            "edge_summary": [ { "kind": "contains", "count": DOCUMENTS_IN_THE_CONCORD } ],
+            "version": concord_version,
+        })
+    );
+}
+
+#[tokio::test]
+async fn genesis_is_a_member_of_the_bible_root() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Container:bible-book-GEN/edges?kind=member-of").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{page}");
+    let version = page["version"].clone();
+    assert_eq!(
+        page,
+        serde_json::json!({
+            "kind": "member-of",
+            "entries": [ { "edge": page["entries"][0]["edge"].clone(), "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } ],
+            "next": null,
+            "version": version,
+        })
+    );
+}

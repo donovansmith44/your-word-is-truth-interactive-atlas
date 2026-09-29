@@ -27,6 +27,9 @@ fn blr(from: (u8, u16, u16), to: (u8, u16, u16)) -> BibleLocusRange {
 const MAPS: usize = 10;
 const MAP_STEPS: usize = MAPS - 1;
 const SHOWN_ROWS: usize = 3_188;
+const CORPUS_ROOTS: usize = 2;
+const BOOKS_IN_THE_BIBLE: usize = 66;
+const DOCUMENTS_IN_THE_CONCORD: usize = 10;
 
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
@@ -61,7 +64,7 @@ fn every_node_round_trips_and_re_encodes_identically() {
     for (kind, n) in &by_kind {
         println!("  node {kind}: {n}");
     }
-    assert_eq!(count, 106_742 + MAPS, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1) plus one Map per era");
+    assert_eq!(count, 106_742 + MAPS + CORPUS_ROOTS, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1) plus one Map per era and one root per corpus");
 }
 
 fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
@@ -171,8 +174,8 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(walked, RowFamily::ALL.to_vec(), "families must be walked in ordinal order");
 
     let expected: Vec<(RowFamily, usize)> = vec![
-        (RowFamily::ContainsBible, 2_378),
-        (RowFamily::ContainsConcord, 270),
+        (RowFamily::ContainsBible, 2_378 + BOOKS_IN_THE_BIBLE),
+        (RowFamily::ContainsConcord, 270 + DOCUMENTS_IN_THE_CONCORD),
         (RowFamily::Attests, 33_355),
         (RowFamily::Succession, 13),
         (RowFamily::CanonSuccession, 1_253),
@@ -201,7 +204,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::MapSuccession, MAP_STEPS),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 917_443 + SHOWN_ROWS + MAP_STEPS, "the committed graph carries exactly 917,443 rows plus what the maps show and their steps");
+    assert_eq!(total, 917_443 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD, "the committed graph carries exactly 917,443 rows plus what the maps show and their steps, plus each corpus root's members");
 
     assert_eq!(
         round_trip_family(

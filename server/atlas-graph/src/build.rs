@@ -191,7 +191,7 @@ mod tests {
     fn builds_one_text_unit_per_verse_in_canon_order() {
         let (graph, stats, ..) = build_graph_from_sources(KJV_FIXTURE, XREFS_FIXTURE, &crate::event_world::empty_atlas()).unwrap();
         assert_eq!(stats.kjv_verses, 4);
-        assert_eq!(graph.nodes.len(), 10);
+        assert_eq!(graph.nodes.len(), 11, "4 verses + 3 books + 3 chapters + the corpus root");
         let spine = graph.reading.get(kjv_adapter::BIBLE_CORPUS).expect("bible reading spine must exist");
         assert_eq!(spine.order.len(), 4);
         let decoded: Vec<_> = spine.order.iter().map(|id| kjv_adapter::decode_text_unit(id).unwrap()).collect();

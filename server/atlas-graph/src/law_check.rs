@@ -387,6 +387,9 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.parent_of = graph.parent_of.clone();
     fresh.partners = graph.partners.clone();
     fresh.participates = graph.participates.clone();
+    fresh.authored = graph.authored.clone();
+    fresh.shown = graph.shown.clone();
+    fresh.map_succession = graph.map_succession.clone();
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 

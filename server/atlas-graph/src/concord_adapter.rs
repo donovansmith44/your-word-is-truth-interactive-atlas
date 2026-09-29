@@ -1,6 +1,7 @@
 //! The Book of Concord corpus: one TextUnit node per paragraph, whose raw id is
 //! `concord/{part}.{article}.{paragraph}` -- the spelling `Graph::build_indexes` derives from a
-//! `TextRef::Concord`. A container's id is `concord-doc-{key}` or `concord-art-{key}-{article}`.
+//! `TextRef::Concord`. A container's id is `concord-doc-{key}` or `concord-art-{key}-{article}`, and
+//! one corpus root contains every document.
 
 use std::collections::BTreeSet;
 
@@ -12,9 +13,11 @@ use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{ConcordRef, ConcordTag, Locus, LocusSet, TextLocus, TranslationId};
 
+use crate::corpus_root;
 use crate::pipeline::BuildCtx;
 
 pub const CONCORD_CORPUS: &str = "concord";
+const CONCORD_TITLE: &str = "The Book of Concord";
 /// The canonical rendering layer for the whole Concord corpus: one translation, unlike the Bible
 /// corpus's many, and a key deliberately distinct from the KJV's -- this is not that translation.
 pub const CONCORD_TRANSLATION: &str = "bente-dau";
@@ -74,6 +77,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
         return stats;
     };
     let mut order: Vec<AnyNodeId> = Vec::new();
+    let mut documents: Vec<ContainerNodeId> = Vec::new();
 
     for doc in &bundle.corpus.documents {
         stats.documents += 1;
@@ -123,8 +127,11 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             doc_container.erase(),
             Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: "concord".to_string() },
         );
+        documents.push(doc_container);
     }
 
+    let root_rows = corpus_root::mint(&mut ctx.graph, CONCORD_CORPUS, CONCORD_TITLE, "concord", &documents);
+    ctx.graph.contains_concord.extend(root_rows);
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
     stats
 }
