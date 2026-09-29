@@ -203,12 +203,7 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
     // Competing CONTINUATION candidates at one still-open verse -- two containers both continuing
     // through it -- resolve by the same precedence tuple the primary pass uses.
     for (verse, prec, entry) in continuation_candidates {
-        let should_replace = match winners.get(&verse) {
-            None => true,
-            Some((_, existing)) if !existing.is_continuation => false,
-            Some((incumbent, _)) => prec > *incumbent,
-        };
-        if should_replace {
+        if continuation_displaces(winners.get(&verse), &prec) {
             winners.insert(verse, (prec, entry));
         }
     }
@@ -216,11 +211,51 @@ pub fn build_heading_index(graph: &Graph, resolved: &HashMap<String, ResolvedPla
     winners.into_iter().map(|(verse, (_, entry))| (verse, entry)).collect()
 }
 
+/// A continuation never displaces a heading that OPENS at its verse, however it is placed;
+/// between two continuations the same precedence tuple the primary pass uses decides.
+fn continuation_displaces(incumbent: Option<&(Precedence, Heading)>, candidate: &Precedence) -> bool {
+    match incumbent {
+        None => true,
+        Some((_, existing)) if !existing.is_continuation => false,
+        Some((placed, _)) => candidate > placed,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const THE_SAME_LAYER: u8 = 1;
+
+    fn heading(event_id: &str, is_continuation: bool) -> Heading {
+        Heading { event_id: event_id.into(), title: event_id.into(), kind: EventKind::Event, is_continuation }
+    }
+
+    #[test]
+    fn a_continuation_never_displaces_a_heading_that_opens_at_the_verse() {
+        // Arrange
+        let opener = (precedence(0, EventKind::General, 3000, 9999, "a_weak_opener"), heading("a_weak_opener", false));
+        let continuing = precedence(THE_SAME_LAYER, EventKind::Event, -4004, 0, "z_strong_continuation");
+
+        // Act
+        let displaces = continuation_displaces(Some(&opener), &continuing);
+
+        // Assert
+        assert!(!displaces);
+    }
+
+    #[test]
+    fn between_two_continuations_at_one_verse_the_stronger_precedence_wins() {
+        // Arrange
+        let weaker = (precedence(0, EventKind::General, 3000, 9999, "a_weak_continuation"), heading("a_weak_continuation", true));
+        let stronger = precedence(THE_SAME_LAYER, EventKind::Event, -4004, 0, "z_strong_continuation");
+
+        // Act
+        let displaces = (continuation_displaces(Some(&weaker), &stronger), continuation_displaces(Some(&weaker), &weaker.0));
+
+        // Assert
+        assert_eq!(displaces, (true, false));
+    }
 
     #[test]
     fn the_kind_tier_puts_a_dated_event_ahead_of_a_general_passage_whatever_their_chronology() {
