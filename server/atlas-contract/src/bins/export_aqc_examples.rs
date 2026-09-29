@@ -2,7 +2,7 @@
 //! root's `.gitignore` carries a broad `**/bin/` rule for the client's build
 //! output; the `[[bin]]` table in `Cargo.toml` names this path explicitly.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use atlas_core::data::AtlasData;
@@ -13,6 +13,9 @@ use atlas_contract::graph_wire::{decode_node_id, encode_node_id};
 use axum::body::Body;
 use axum::http::Request;
 use tower::ServiceExt;
+
+const USAGE: &str = "usage: export_aqc_examples [CONTRACT_DIR]";
+const MISUSE: i32 = 2;
 
 async fn capture(app: &axum::Router, uri: &str) -> serde_json::Value {
     let response = app.clone().oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap()).await.unwrap();
@@ -26,6 +29,14 @@ async fn capture(app: &axum::Router, uri: &str) -> serde_json::Value {
 async fn main() -> anyhow::Result<()> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let repo_root = manifest_dir.join("../..");
+    let contract_dir = match Vec::from_iter(std::env::args().skip(1)).as_slice() {
+        [] => repo_root.join("contracts").join("atlas-query-contract"),
+        [dir] => PathBuf::from(dir),
+        _ => {
+            eprintln!("{USAGE}");
+            std::process::exit(MISUSE);
+        }
+    };
     let data_dir = repo_root.join("data");
     let raw_dir = data_dir.join("raw");
 
@@ -44,12 +55,13 @@ async fn main() -> anyhow::Result<()> {
         snap.node(&decoded).unwrap_or_else(|| panic!("export_aqc_examples: seed id '{wire_id}' does not resolve against the real committed graph -- the curated record it names may have been renamed or removed; pick a new seed"));
     }
 
-    let features_dir = repo_root.join("contracts").join("atlas-query-contract").join("features");
+    let features_dir = contract_dir.join("features");
+    std::fs::create_dir_all(&features_dir)?;
     std::fs::write(features_dir.join("focus-query.feature"), aqc_export::focus_query_feature())?;
     std::fs::write(features_dir.join("exploration-roundtrip.feature"), aqc_export::exploration_roundtrip_feature())?;
 
     let app = atlas_contract::app::build(Arc::new(data), Arc::new(graph), None);
-    let fixtures_dir = repo_root.join("contracts").join("atlas-query-contract").join("fixtures");
+    let fixtures_dir = contract_dir.join("fixtures");
     std::fs::create_dir_all(&fixtures_dir)?;
 
     let mut identity_index: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();

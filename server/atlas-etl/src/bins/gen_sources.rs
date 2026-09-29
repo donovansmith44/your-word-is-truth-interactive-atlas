@@ -3,15 +3,25 @@
 //! auto-discovered `src/bin/`, because this repo's `.gitignore` excludes every `bin/` directory.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+
+const USAGE: &str = "usage: gen_sources [OUTPUT_PATH]";
+const MISUSE: i32 = 2;
 
 fn main() -> Result<()> {
     let repo_root = Path::new("..");
     let sources_toml_path = repo_root.join("data").join("curated").join("sources.toml");
     let licenses_path = repo_root.join("LICENSES.md");
-    let compiled_path = repo_root.join("data").join("compiled").join("sources.json");
+    let compiled_path = match Vec::from_iter(std::env::args().skip(1)).as_slice() {
+        [] => repo_root.join("data").join("compiled").join("sources.json"),
+        [path] => PathBuf::from(path),
+        _ => {
+            eprintln!("{USAGE}");
+            std::process::exit(MISUSE);
+        }
+    };
 
     let toml_input = fs::read_to_string(&sources_toml_path)
         .with_context(|| format!("reading {}", sources_toml_path.display()))?;

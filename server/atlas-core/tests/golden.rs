@@ -38,10 +38,6 @@ fn sample_scene() -> Scene {
 fn golden_scene_fixture() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/golden-scene.json");
     let json = serde_json::to_string_pretty(&sample_scene()).unwrap();
-    if !path.exists() {
-        fs::create_dir_all(path.parent().unwrap()).unwrap();
-        fs::write(&path, &json).unwrap();
-    }
     let on_disk = fs::read_to_string(&path).unwrap().replace("\r\n", "\n");
     assert_eq!(on_disk.trim(), json.trim(), "wire format drifted from committed golden fixture");
     let back: Scene = serde_json::from_str(&on_disk).unwrap();
