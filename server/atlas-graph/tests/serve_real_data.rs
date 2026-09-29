@@ -65,6 +65,26 @@ fn the_heading_index_red_letter_spans_and_narrative_legs_are_the_artifacts() {
     assert!(h.len() > 100 && r.len() > 1000 && l.len() == 13, "{} {} {}", h.len(), r.len(), l.len());
 }
 
+/// The families are swept, not derived, so `artifact()` cannot witness them: it reads the same
+/// rows through the same function. Pinned to the one family every section has.
+const THE_NODE_FAMILY: &str = "nodes";
+
+#[test]
+fn the_provenance_sweep_reads_back_at_least_the_node_family_with_real_provenance_ids() {
+    // Arrange
+    let snap = sections();
+
+    // Act
+    let families = snap.with_conn(|c| load_provenance_families(c, snap.present())).unwrap();
+
+    // Assert
+    assert!(
+        families.len() > 1 && families[THE_NODE_FAMILY].iter().all(|id| !id.is_empty()) && !families[THE_NODE_FAMILY].is_empty(),
+        "{:?}",
+        families.keys().collect::<Vec<_>>()
+    );
+}
+
 #[test]
 fn the_provenance_families_are_the_artifacts() {
     let a = artifact();

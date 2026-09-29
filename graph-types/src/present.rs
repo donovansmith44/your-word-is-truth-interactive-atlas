@@ -98,3 +98,34 @@ impl Presentable for Card {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::id::NodeKind;
+
+    const EVERY_SURFACE: [Surface; 4] = [Surface::Reader, Surface::Map, Surface::Popover, Surface::Timeline];
+
+    fn every_position_kind() -> Vec<PositionKind> {
+        NodeKind::ALL
+            .iter()
+            .copied()
+            .map(PositionKind::Node)
+            .chain(EdgeKind::all().map(PositionKind::Edge))
+            .chain([PositionKind::Exploration])
+            .collect()
+    }
+
+    #[test]
+    fn every_position_kind_takes_focus_on_every_surface_until_the_policy_table_lands() {
+        // Arrange
+        let kinds = every_position_kind();
+
+        // Act
+        let refused: Vec<(Surface, PositionKind)> =
+            EVERY_SURFACE.iter().flat_map(|s| kinds.iter().map(move |k| (*s, *k))).filter(|(s, k)| !focusable(*s, *k)).collect();
+
+        // Assert
+        assert_eq!(refused, vec![]);
+    }
+}
