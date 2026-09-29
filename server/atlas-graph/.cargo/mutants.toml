@@ -15,6 +15,7 @@ test_tool = "cargo"
 #   --lib                            fidelity.rs and every adapter's own tests
 #   --bins                           compile_graph.rs's own tests, which `--lib`
 #                                    does NOT select
+#   blob_concurrency                 sqlite/blob.rs place() -- a refused rename's two arms
 #   sqlite_laws                      sqlite/{blob,columns,ddl,logical,manifest,
 #                                    partition,snapshot,writer}.rs, sections.rs,
 #                                    event_world.rs -- 25 tests in 1.6 s
@@ -48,6 +49,7 @@ additional_cargo_test_args = [
   "-p", "atlas-graph",
   "--lib",
   "--bins",
+  "--test", "blob_concurrency",
   "--test", "sqlite_laws",
   "--test", "sections_real_data",
   "--test", "reload_real_data",
