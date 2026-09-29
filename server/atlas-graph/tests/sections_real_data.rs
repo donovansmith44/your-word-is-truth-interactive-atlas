@@ -14,7 +14,7 @@ use atlas_graph_types::edge::{at, entry_id, CanonSuccession, EdgeId, Namesake, R
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
-use atlas_graph_types::text::{BibleTag, ConcordRef, ConcordTag, TextLocus, TextRef, VerseRef};
+use atlas_graph_types::text::{BibleTag, ConcordRef, ConcordTag, Corpus, TextLocus, TextRef, VerseRef};
 
 const ROOTS_PER_CORPUS: usize = 1;
 const DOCUMENT_STEPS: usize = DOCUMENTS.len() - 1;
@@ -30,10 +30,10 @@ fn committed_graph() -> &'static Graph {
     })
 }
 
-fn article_steps() -> usize {
+fn concord_articles() -> usize {
     let concord = atlas_etl::concord::read_all(&data_dir().join("raw/concord"), &data_dir().join("curated"))
         .expect("data/raw/concord + data/curated/concord-titles.toml must read -- run data/fetch-raw.ps1 first");
-    concord.documents.iter().map(|document| document.articles.len() - 1).sum()
+    concord.documents.iter().map(|document| document.articles.len()).sum()
 }
 
 fn bible_verse_node_id(v: &VerseRef) -> AnyNodeId {
@@ -66,6 +66,8 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
     let mut kjv_root_containers = 0usize;
     let mut kjv_book_containers = 0usize;
     let mut kjv_chapter_containers = 0usize;
+    let mut concord_text_units = 0usize;
+    let mut concord_containers = 0usize;
 
     for (id, node) in &g.nodes {
         let section = section_of_node(node);
@@ -86,6 +88,13 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
                     }
                 }
                 other => panic!("unexpected Kjv node payload for {id:?}: {other:?}"),
+            }
+        }
+        if section == Section::Concord {
+            match &node.payload {
+                NodePayload::TextUnit { .. } => concord_text_units += 1,
+                NodePayload::Container { .. } => concord_containers += 1,
+                other => panic!("unexpected Concord node payload for {id:?}: {other:?}"),
             }
         }
     }
@@ -110,19 +119,10 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
 
     assert_eq!(*by_section.get(&Section::Kretzmann).unwrap(), 50_602, "Kretzmann node count");
 
-    let concord_independent = g
-        .nodes
-        .iter()
-        .filter(|(id, node)| match &node.payload {
-            NodePayload::TextUnit { corpus, .. } => *corpus == "concord",
-            NodePayload::Container { .. } => **id == corpus_root_id::<ConcordTag>().erase() || id.raw.starts_with("concord-"),
-            _ => false,
-        })
-        .count();
     assert_eq!(
-        *by_section.get(&Section::Concord).unwrap_or(&0),
-        concord_independent,
-        "Concord section total must equal its text units + containers"
+        (concord_text_units, concord_containers),
+        (g.reading[ConcordTag::ID].order.len(), ROOTS_PER_CORPUS + DOCUMENTS.len() + concord_articles()),
+        "the Concord section holds its reading spine's text units, its root, its documents and their articles"
     );
 
     assert_eq!(by_section.get(&Section::Lexicon), Some(&13_548), "LEX-1: the 13,548 LexiconEntry nodes");
@@ -235,7 +235,7 @@ fn every_row_of_every_family_maps_to_a_section() {
         "every shipped contains_bible row names the Bible root or a book/chapter container (Kjv)"
     );
 
-    let concord_steps = DOCUMENT_STEPS + article_steps();
+    let concord_steps = DOCUMENT_STEPS + concord_articles() - DOCUMENTS.len();
     let canon_succession_sections = sections_of(&g.canon_succession, section_of_canon_succession);
     println!("DB-2a CANON_SUCCESSION SECTIONS: {canon_succession_sections:?}");
     assert_eq!(
