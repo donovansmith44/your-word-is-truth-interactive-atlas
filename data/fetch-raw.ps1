@@ -1,14 +1,66 @@
+# Every guard here is data/raw/MANIFEST.toml (RAW-INTEGRITY): a file that exists is kept only
+# when bibex finds it as recorded, a vendored subtree only when its node hash recomputes, so a
+# download killed mid-way or a half-copied directory is fetched again instead of trusted
+# forever (both happened on 2026-09-28). -WhatIf reports every fetch and copy without doing one.
+[CmdletBinding(SupportsShouldProcess)]
+param([string]$DataDir)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$raw = Join-Path $PSScriptRoot 'raw'
-New-Item -ItemType Directory -Force $raw | Out-Null
+if (-not $DataDir) { $DataDir = $PSScriptRoot }
+$raw = Join-Path $DataDir 'raw'
+$compiled = Join-Path $DataDir 'compiled'
 
-function Fetch($url, $out) {
-  $path = Join-Path $raw $out
-  if (Test-Path $path) { Write-Output "have $out"; return }
-  Write-Output "fetch $url"
-  Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+# bibex is the one reader of MANIFEST.toml: the guards ask it rather than parse the manifest here.
+# cargo runs from server/ because it reads .cargo/config.toml from the working directory, not
+# from the manifest's; built elsewhere, the rustflags differ and the whole tree recompiles.
+Push-Location (Join-Path $PSScriptRoot '..\server')
+try {
+  $bibex = (cargo build --release -p atlas-cli --message-format=json |
+    ConvertFrom-Json | Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'bibex' }).executable
+  if ($LASTEXITCODE -ne 0 -or -not $bibex) { throw "bibex did not build (cargo exit $LASTEXITCODE)" }
+} finally { Pop-Location }
+
+# bibex raw check answers by exit code; any other code is a bibex failure, not an answer.
+$AsRecorded = 0; $NotFound = 3; $IntegrityFailed = 6
+# Why $out must be fetched, or $null when it is as recorded; what differs is named on stderr.
+function Reason($out) {
+  & $bibex --data-dir $compiled raw check $out | Out-Host
+  switch ($LASTEXITCODE) {
+    $AsRecorded { $null }
+    $NotFound { 'unrecorded in MANIFEST.toml; bless after this run' }
+    $IntegrityFailed { 'not as recorded' }
+    default { throw "bibex raw check $out exited $LASTEXITCODE" }
+  }
+}
+
+function Fetch {
+  [CmdletBinding(SupportsShouldProcess)]
+  param($url, $out)
+  $why = Reason $out
+  if ($why -and $PSCmdlet.ShouldProcess($out, "fetch $url ($why)")) {
+    Write-Output "fetch $url ($why)"
+    $path = Join-Path $raw $out
+    New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
+    Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+  }
+}
+
+# A subtree is replaced whole, never merged: Copy-Item onto a directory that already exists
+# nests the copy inside it, and Expand-Archive -Force leaves files the archive no longer has.
+function Cleared($path) {
+  if (Test-Path $path) { Remove-Item $path -Recurse -Force }
+  $path
+}
+
+function Unpack {
+  [CmdletBinding(SupportsShouldProcess)]
+  param($zip, $into)
+  $why = Reason $into
+  if ($why -and $PSCmdlet.ShouldProcess($into, "unpack $zip ($why)")) {
+    Write-Output "unpack $zip -> $into ($why)"
+    Expand-Archive (Join-Path $raw $zip) (Cleared (Join-Path $raw $into))
+  }
 }
 
 # KJV text (single-file JSON; fallback repo noted in raw/README.md)
@@ -17,17 +69,15 @@ Fetch 'https://raw.githubusercontent.com/scrollmapper/bible_databases/master/for
 # OpenBible geocoding bundle
 # NOTE: the old a.openbible.info/geo/data.zip bundle now 403s (removed from S3/CloudFront).
 # openbible.info's geocoding data moved to GitHub as JSON Lines files (no single zip); see data/raw/README.md.
-$geoDir = Join-Path $raw 'geo'
-New-Item -ItemType Directory -Force $geoDir | Out-Null
 foreach ($f in 'ancient.jsonl','modern.jsonl','geometry.jsonl','image.jsonl','source.jsonl') {
   Fetch "https://raw.githubusercontent.com/openbibleinfo/Bible-Geocoding-Data/master/data/$f" "geo\$f"
 }
 # Theographic metadata (whole repo)
 Fetch 'https://github.com/robertrouse/theographic-bible-metadata/archive/refs/heads/master.zip' 'theographic.zip'
-if (-not (Test-Path (Join-Path $raw 'theographic'))) { Expand-Archive (Join-Path $raw 'theographic.zip') (Join-Path $raw 'theographic') }
+Unpack 'theographic.zip' 'theographic'
 # Cross references (TSV with votes)
 Fetch 'https://a.openbible.info/data/cross-references.zip' 'cross-references.zip'
-if (-not (Test-Path (Join-Path $raw 'xrefs'))) { Expand-Archive (Join-Path $raw 'cross-references.zip') (Join-Path $raw 'xrefs') }
+Unpack 'cross-references.zip' 'xrefs'
 
 # Batch F2: the user's own catechism verse-mapping repo (brain-fuel/catechism)
 # -- "I gave you the mapping very explicitly in the catechism repo" (user
@@ -39,9 +89,7 @@ if (-not (Test-Path (Join-Path $raw 'xrefs'))) { Expand-Archive (Join-Path $raw 
 # own header for exactly which files this ingests vs. deliberately defers.
 $catechismSha = '0be24fee92e6333f817c4c2a08f99cf7c5274295'
 Fetch "https://github.com/brain-fuel/catechism/archive/$catechismSha.zip" 'catechism-mapping.zip'
-if (-not (Test-Path (Join-Path $raw "catechism-mapping\catechism-$catechismSha"))) {
-  Expand-Archive (Join-Path $raw 'catechism-mapping.zip') (Join-Path $raw 'catechism-mapping')
-}
+Unpack 'catechism-mapping.zip' 'catechism-mapping'
 # Batch CORP-1a: brain-fuel/bible editions (Clementine Vulgate, Westminster
 # Leningrad Codex, Douay-Rheims, Biblia 1776, Karl XII:s Bibel, Greek Textus
 # Receptus) -- owner order (verbatim, via the controller): "3 - take all.
@@ -57,17 +105,30 @@ if (-not (Test-Path (Join-Path $raw "catechism-mapping\catechism-$catechismSha")
 # license disposition and data/raw/README.md for the verified JSON shape.
 $bibleSha = '94d44842cb242e8aa840330748e03d2803f2a7c1'
 $bibleVendored = Join-Path $raw 'brain-fuel-bible'
-if (-not (Test-Path $bibleVendored)) {
-  Fetch "https://github.com/brain-fuel/bible/archive/$bibleSha.zip" 'brain-fuel-bible-src.zip'
-  $bibleExtractTmp = Join-Path $raw 'brain-fuel-bible-src-extract'
-  Expand-Archive (Join-Path $raw 'brain-fuel-bible-src.zip') $bibleExtractTmp
-  $srcRoot = Join-Path $bibleExtractTmp "bible-$bibleSha"
+$bibleSrc = $null
+# The pinned archive is not part of data/raw (the copied parts are what the manifest records),
+# so it is fetched at most once per run, only when a part below needs it, and never under data/raw,
+# where a killed run would leave it as an EXTRA tree no guard repairs.
+function BibleSource {
+  if (-not $script:bibleSrc) {
+    $url = "https://github.com/brain-fuel/bible/archive/$bibleSha.zip"
+    $extract = Cleared (Join-Path $env:TEMP "bible-atlas-brain-fuel-bible-$bibleSha")
+    $zip = "$extract.zip"
+    Write-Output "fetch $url (the pinned upstream; discarded after the copy)"
+    Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+    Expand-Archive $zip $extract
+    Remove-Item $zip -Force
+    $script:bibleSrc = Join-Path $extract "bible-$bibleSha"
+  }
+  $script:bibleSrc
+}
+$editions = @('data', 'ot', 'nt') | Where-Object { Reason "brain-fuel-bible\$_" }
+if ($editions -and $PSCmdlet.ShouldProcess("brain-fuel-bible: $($editions -join ', ')", "re-copy the editions from brain-fuel/bible@$bibleSha")) {
+  $srcRoot = BibleSource
   New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'data') | Out-Null
-  Copy-Item (Join-Path $srcRoot 'data\books.json') (Join-Path $bibleVendored 'data\books.json')
-  Copy-Item (Join-Path $srcRoot 'bible\ot') (Join-Path $bibleVendored 'ot') -Recurse
-  Copy-Item (Join-Path $srcRoot 'bible\nt') (Join-Path $bibleVendored 'nt') -Recurse
-  Remove-Item $bibleExtractTmp -Recurse -Force
-  Remove-Item (Join-Path $raw 'brain-fuel-bible-src.zip') -Force
+  Copy-Item (Join-Path $srcRoot 'data\books.json') (Join-Path $bibleVendored 'data\books.json') -Force
+  Copy-Item (Join-Path $srcRoot 'bible\ot') (Cleared (Join-Path $bibleVendored 'ot')) -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'bible\nt') (Cleared (Join-Path $bibleVendored 'nt')) -Recurse -Force
 }
 # LEX-1 (spec 2026-09-14 relational-artifact-design, section 7.1): from the
 # SAME pinned commit, the lexicon (`lexicon/{grc,hbo}`: 13,548 Strong's
@@ -76,25 +137,20 @@ if (-not (Test-Path $bibleVendored)) {
 # Strong= alignment, CC BY 4.0 STEPBible). NOT `morph/lxx` (owner's standing
 # "no apocrypha for now"). Guarded separately so an existing CORP-1a vendoring
 # gains the two directories without re-copying the editions.
-if (-not (Test-Path (Join-Path $bibleVendored 'lexicon')) -or -not (Test-Path (Join-Path $bibleVendored 'morph'))) {
-  Fetch "https://github.com/brain-fuel/bible/archive/$bibleSha.zip" 'brain-fuel-bible-src.zip'
-  $bibleExtractTmp = Join-Path $raw 'brain-fuel-bible-src-extract'
-  if (-not (Test-Path $bibleExtractTmp)) { Expand-Archive (Join-Path $raw 'brain-fuel-bible-src.zip') $bibleExtractTmp }
-  $srcRoot = Join-Path $bibleExtractTmp "bible-$bibleSha"
+$lexicon = @('lexicon', 'morph') | Where-Object { Reason "brain-fuel-bible\$_" }
+if ($lexicon -and $PSCmdlet.ShouldProcess("brain-fuel-bible: $($lexicon -join ', ')", "re-copy the lexicon and morphology from brain-fuel/bible@$bibleSha")) {
+  $srcRoot = BibleSource
   New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'lexicon') | Out-Null
   New-Item -ItemType Directory -Force (Join-Path $bibleVendored 'morph') | Out-Null
-  Copy-Item (Join-Path $srcRoot 'lexicon\grc') (Join-Path $bibleVendored 'lexicon\grc') -Recurse -Force
-  Copy-Item (Join-Path $srcRoot 'lexicon\hbo') (Join-Path $bibleVendored 'lexicon\hbo') -Recurse -Force
-  Copy-Item (Join-Path $srcRoot 'morph
-t') (Join-Path $bibleVendored 'morph
-t') -Recurse -Force
-  Copy-Item (Join-Path $srcRoot 'morph\ot') (Join-Path $bibleVendored 'morph\ot') -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'lexicon\grc') (Cleared (Join-Path $bibleVendored 'lexicon\grc')) -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'lexicon\hbo') (Cleared (Join-Path $bibleVendored 'lexicon\hbo')) -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'morph\nt') (Cleared (Join-Path $bibleVendored 'morph\nt')) -Recurse -Force
+  Copy-Item (Join-Path $srcRoot 'morph\ot') (Cleared (Join-Path $bibleVendored 'morph\ot')) -Recurse -Force
   # upstream's own README and LICENSE travel with the data: attribution is a license condition
   Copy-Item (Join-Path $srcRoot 'README.md') (Join-Path $bibleVendored 'UPSTREAM-README.md') -Force -ErrorAction SilentlyContinue
   Copy-Item (Join-Path $srcRoot 'LICENSE*') $bibleVendored -Force -ErrorAction SilentlyContinue
-  Remove-Item $bibleExtractTmp -Recurse -Force
-  Remove-Item (Join-Path $raw 'brain-fuel-bible-src.zip') -Force
 }
+if ($bibleSrc) { Remove-Item (Split-Path $bibleSrc) -Recurse -Force }
 
 # Historical border snapshots are NOT fetched -- Batch L (license
 # remediation) removed the aourednik/historical-basemaps (GPL-3.0) source
@@ -120,8 +176,6 @@ t') -Recurse -Force
 # then the six 16th-century confessional documents, then the Formula of
 # Concord's two forms) -- see server/atlas-etl/src/concord.rs's own
 # module doc comment for the part-numbering this order feeds.
-$concordDir = Join-Path $raw 'concord'
-New-Item -ItemType Directory -Force $concordDir | Out-Null
 $concordDocs = @(
   'preface',
   'ecumenical-creeds',
@@ -147,8 +201,6 @@ foreach ($doc in $concordDocs) {
 # `<a href><h3>...</section>` wrapper at all -- see concord.rs's own
 # module doc comment). Vendored into their own subdirectory so the
 # document-root fetch above stays uniform across all ten documents.
-$smalcaldSubDir = Join-Path $raw 'concord\smalcald-sub'
-New-Item -ItemType Directory -Force $smalcaldSubDir | Out-Null
 $smalcaldSubArticles = @(
   'i/nature-of-god', 'i/the-father', 'i/the-son', 'i/the-work-of-salvation',
   'ii/first-and-chief-article', 'ii/of-the-mass', 'ii/of-chapters-and-cloisters', 'ii/of-the-papacy',
@@ -183,8 +235,6 @@ foreach ($sub in $smalcaldSubArticles) {
 # first probe") -- no verified URL scheme exists to fall back to, so a
 # primary-fetch failure (after retries) is a genuine MISSING page, disclosed
 # below, never silently guessed at with an unverified fallback URL.
-$kretzmannDir = Join-Path $raw 'kretzmann'
-New-Item -ItemType Directory -Force $kretzmannDir | Out-Null
 $kretzmannBooks = @(
   @('genesis',50), @('exodus',40), @('leviticus',27), @('numbers',36), @('deuteronomy',34),
   @('joshua',24), @('judges',21), @('ruth',4), @('1-samuel',31), @('2-samuel',24),
@@ -205,30 +255,41 @@ $kretzmannTotal = ($kretzmannBooks | ForEach-Object { $_[1] } | Measure-Object -
 $kretzmannFetched = 0
 $kretzmannHad = 0
 $kretzmannMissing = @()
-foreach ($book in $kretzmannBooks) {
-  $slug = $book[0]; $chapters = $book[1]
-  $bookDir = Join-Path $kretzmannDir $slug
-  New-Item -ItemType Directory -Force $bookDir | Out-Null
-  for ($c = 1; $c -le $chapters; $c++) {
-    $out = Join-Path $bookDir "$c.html"
-    if (Test-Path $out) { $kretzmannHad++; continue }
-    $url = "https://kretzmanncommentary.org/$slug/$c"
-    $ok = $false
-    for ($attempt = 1; $attempt -le 3 -and -not $ok; $attempt++) {
-      try {
-        Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -TimeoutSec 30
-        $ok = $true
-      } catch {
-        if ($attempt -lt 3) { Start-Sleep -Milliseconds (500 * $attempt) }
+# One check of the whole commentary is the fast path (a page check reads the manifest each
+# time), trusted only when it is as recorded AND holds every page the table expects; otherwise
+# each page is checked on its own.
+$commentary = & $bibex --json --data-dir $compiled raw check kretzmann | ConvertFrom-Json
+if ($LASTEXITCODE -eq $AsRecorded -and $commentary.files -eq $kretzmannTotal) {
+  Write-Output "kretzmann as recorded: $($commentary.files) pages, hash $($commentary.hash)"
+  $kretzmannHad = $kretzmannTotal
+} else {
+  foreach ($book in $kretzmannBooks) {
+    $slug = $book[0]; $chapters = $book[1]
+    for ($c = 1; $c -le $chapters; $c++) {
+      $out = "kretzmann\$slug\$c.html"
+      $why = Reason $out
+      if (-not $why) { $kretzmannHad++; continue }
+      $url = "https://kretzmanncommentary.org/$slug/$c"
+      if (-not $PSCmdlet.ShouldProcess($out, "fetch $url ($why)")) { continue }
+      $path = Join-Path $raw $out
+      New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null
+      $ok = $false
+      for ($attempt = 1; $attempt -le 3 -and -not $ok; $attempt++) {
+        try {
+          Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing -TimeoutSec 30
+          $ok = $true
+        } catch {
+          if ($attempt -lt 3) { Start-Sleep -Milliseconds (500 * $attempt) }
+        }
       }
+      if ($ok) {
+        $kretzmannFetched++
+      } else {
+        Write-Output "kretzmann MISSING (primary failed x3, no verified fallback): $slug/$c"
+        $kretzmannMissing += "$slug/$c"
+      }
+      Start-Sleep -Milliseconds 200
     }
-    if ($ok) {
-      $kretzmannFetched++
-    } else {
-      Write-Output "kretzmann MISSING (primary failed x3, no verified fallback): $slug/$c"
-      $kretzmannMissing += "$slug/$c"
-    }
-    Start-Sleep -Milliseconds 200
   }
 }
 Write-Output "kretzmann fetch: $kretzmannFetched fetched, $kretzmannHad already cached, $($kretzmannMissing.Count) missing of $kretzmannTotal total pages"
@@ -250,15 +311,22 @@ Write-Output "kretzmann fetch: $kretzmannFetched fetched, $kretzmannHad already 
 # OSIS header. Pinned to a commit SHA (not `master`) for reproducibility,
 # the same discipline `catechism-mapping`/`brain-fuel-bible` above already
 # follow.
-$redLetterDir = Join-Path $raw 'red-letter'
-New-Item -ItemType Directory -Force $redLetterDir | Out-Null
 Fetch 'https://raw.githubusercontent.com/seven1m/open-bibles/f257a3559025c3f873b48a75019f53a9354ed7de/eng-kjv.osis.xml' 'red-letter\eng-kjv.osis.xml'
 
 # Vendor Leaflet 1.9.4 into the client (deterministic, offline-friendly)
 $vendor = Join-Path $PSScriptRoot '..\client\wwwroot\vendor\leaflet'
-New-Item -ItemType Directory -Force $vendor | Out-Null
 foreach ($f in 'leaflet.js','leaflet.css') {
   $p = Join-Path $vendor $f
-  if (-not (Test-Path $p)) { Invoke-WebRequest "https://unpkg.com/leaflet@1.9.4/dist/$f" -OutFile $p -UseBasicParsing }
+  if (-not (Test-Path $p) -and $PSCmdlet.ShouldProcess($p, "fetch https://unpkg.com/leaflet@1.9.4/dist/$f")) {
+    New-Item -ItemType Directory -Force $vendor | Out-Null
+    Invoke-WebRequest "https://unpkg.com/leaflet@1.9.4/dist/$f" -OutFile $p -UseBasicParsing
+  }
+}
+
+# The run ends with the verifier the build gate uses, so a fetch that left the tree short of its
+# record fails here, naming the files, and not at the next verify.
+& $bibex --data-dir $compiled verify | Out-Host
+if ($LASTEXITCODE -ne 0) {
+  throw "data/raw is not what data/raw/MANIFEST.toml records (bibex verify exit $LASTEXITCODE; the paths are named above) -- a deliberate change is recorded with 'bibex raw bless'"
 }
 Write-Output 'fetch-raw complete'

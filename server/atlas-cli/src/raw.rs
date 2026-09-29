@@ -65,18 +65,50 @@ fn children_of(dir: &Path, relative: &str, skip: &[&str], links: &mut Vec<String
     let mut children = Vec::with_capacity(named.len());
     for (name, entry) in named {
         let path = relative_path(relative, &name);
-        let kind = entry.file_type()?;
-        if kind.is_symlink() {
-            links.push(path);
-        } else if kind.is_dir() {
-            let grandchildren = children_of(&entry.path(), &path, &[], links)?;
-            children.push(RawEntry::Node(RawNode { name, hash: node_hash(&grandchildren), children: grandchildren }));
-        } else {
-            let bytes = fs::read(entry.path()).map_err(|e| io::Error::new(e.kind(), format!("{}: {e}", entry.path().display())))?;
-            children.push(RawEntry::Leaf(RawLeaf { name, sha256: Sha256(sha256(&bytes)), bytes: bytes.len() as u64 }));
+        if let Some(child) = entry_of(name, &entry.path(), &path, entry.file_type()?, links)? {
+            children.push(child);
         }
     }
     Ok(children)
+}
+
+/// A link is listed, never followed or hashed, so it yields no entry.
+fn entry_of(name: String, path: &Path, relative: &str, kind: fs::FileType, links: &mut Vec<String>) -> io::Result<Option<RawEntry>> {
+    if kind.is_symlink() {
+        links.push(relative.to_string());
+        return Ok(None);
+    }
+    if kind.is_dir() {
+        let children = children_of(path, relative, &[], links)?;
+        return Ok(Some(RawEntry::Node(RawNode { name, hash: node_hash(&children), children })));
+    }
+    let bytes = fs::read(path).map_err(|e| io::Error::new(e.kind(), format!("{}: {e}", path.display())))?;
+    Ok(Some(RawEntry::Leaf(RawLeaf { name, sha256: Sha256(sha256(&bytes)), bytes: bytes.len() as u64 })))
+}
+
+/// What stands at one path under the root, hashed as [`walk`] would hash it: `entry` is `None`
+/// when nothing is there or a link is, and `links` lists every reparse point met, the path
+/// itself included when it is one, so a link is never mistaken for content that is missing.
+pub struct Found {
+    pub entry: Option<RawEntry>,
+    pub links: Vec<String>,
+}
+
+/// `relative` is in the manifest's spelling (`/`-separated, no root). Absence is an answer, not
+/// an error: a caller asks precisely to learn whether the path is there.
+pub fn walk_at(root: &Path, relative: &str) -> io::Result<Found> {
+    let path = relative.split('/').fold(root.to_path_buf(), |path, component| path.join(component));
+    let name = match relative.rfind('/') {
+        Some(slash) => &relative[slash + 1..],
+        None => relative,
+    };
+    let mut links = Vec::new();
+    let entry = match fs::symlink_metadata(&path) {
+        Ok(meta) => entry_of(name.to_string(), &path, relative, meta.file_type(), &mut links)?,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => None,
+        Err(e) => return Err(e),
+    };
+    Ok(Found { entry, links })
 }
 
 fn relative_path(parent: &str, name: &str) -> String {

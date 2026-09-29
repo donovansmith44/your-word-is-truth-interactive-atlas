@@ -367,6 +367,31 @@ manifest does not read (`integrity_failed`, exit 6: restore it from git or
 delete it deliberately). `bibex raw` alone, or any other verb, is
 `bad_usage`.
 
+### `bibex raw check <path>` (RAW-INTEGRITY)
+
+One file or directory under `data/raw` against its record, so that
+`data/fetch-raw.ps1` can guard every fetch on the manifest without reading
+it (the script asks, `bibex` reads `MANIFEST.toml`: one parser). The path
+is relative to `data/raw` in the manifest's spelling (names joined by `/`;
+the host's own separator is accepted too), and the answer is the exit code:
+
+```
+raw kjv.json <64 hex> OK (8,400,187 bytes)                exit 0: the size and SHA-256 are as recorded
+raw brain-fuel-bible/lexicon <32 hex> OK (23,681 files)   exit 0: the directory's node hash recomputes
+```
+
+- `not_found` (exit 3): `raw <path> is not in MANIFEST.toml` -- no file or
+  directory is recorded there, or there is no manifest at all; the hint is
+  to fetch it and bless.
+- `integrity_failed` (exit 6): `raw <path> is not as recorded (<n> paths
+  differ)` -- the WHY names every path in `verify`'s own words (`MISSING`,
+  `EXTRA`, `TRUNCATED`, `MISMATCH`, `LINK`, `LINK MISSING`); for a
+  directory that is the whole subtree, so a half-copied `lexicon/` or an
+  emptied `morph/` is named file by file. A manifest that does not read,
+  or a path that cannot be read, is `integrity_failed` naming it.
+- `bad_usage` (exit 4): no path, more than one, or a path that is not
+  plain names (`.`, `..`, a root).
+
 ## Error taxonomy
 
 Every failure path below prints to **stderr**, in the fixed shape:
@@ -384,10 +409,10 @@ nothing on a clean run.
 |---|---|---|---|
 | `bad_usage` | 4 | the command line itself is unparseable — unknown subcommand, unknown flag, missing a required positional/flag value, or extra positional arguments the command doesn't take | `atlas: error (bad_usage): unrecognized subcommand 'vers' -- 'atlas' only knows verse, chapter, node, edges, find, kinds, verify, raw, tutorial, help -- run 'bibex help' for the full list` |
 | `bad_ref` | 2 | a ref/id argument does not parse against its own grammar (locus grammar for `verse`/`chapter`, wire-id grammar for `node`/`edges`, an unrecognized `--kind` label for `edges`) | `atlas: error (bad_ref): 'GEN.1.99.3' is not a valid verse/Concord reference -- expected BOOK.CHAPTER.VERSE (e.g. GEN.1.1) or "BoC PART.ARTICLE.PARAGRAPH" -- check the book code and the dot-separated parts` |
-| `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no node with that raw id -- try 'atlas find <term>' to locate the id you meant` |
+| `not_found` | 3 | the ref/id parses cleanly but names nothing this graph has — a real book+chapter+verse number combination that exceeds the chapter's own length, a well-formed id of a real kind that isn't in the graph; (RAW-INTEGRITY) a `raw check` path `MANIFEST.toml` records no file or directory at | `atlas: error (not_found): no node named 'Event:not-a-real-event' -- the id parsed fine but this graph has no node with that raw id -- try 'atlas find <term>' to locate the id you meant` |
 | `data_load_failed` | 5 | the sections (`manifest.toml`, a required blob) are missing, unreadable, or refused at open, before any command's own logic runs | `atlas: error (data_load_failed): could not load ../data/compiled/graph.bin -- reading ../data/compiled/graph.bin: The system cannot find the path specified. (os error 3) -- run 'cargo run -p atlas-graph --bin atlas-graph-compile' from server/ first, or pass --data-dir to point at a directory that already has graph.bin` |
 | `empty_result` | 1 | the command ran correctly end-to-end but the honest answer is zero rows (`find` with no matches; `edges` for an inhabited-elsewhere-but-empty-here kind) | `atlas: error (empty_result): no matches for 'zzqx' -- searched Place/Event/Narrative/Era/Polity labels -- try a shorter or different substring` |
-| `integrity_failed` | 6 | (DB-4b) `bibex verify` found the data on disk disagreeing with its manifest: a section's logical or transport hash mismatch, a required section's blob missing, a manifest whose root does not recompute; (RAW-INTEGRITY) a raw file missing, extra, truncated or changed against `data/raw/MANIFEST.toml`, a link added or removed, or a raw manifest that does not read | `atlas: error (integrity_failed): 1 of 9 checks failed -- concord: transport MISMATCH manifest 0a77... file 3b19... -- recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served` |
+| `integrity_failed` | 6 | (DB-4b) `bibex verify` found the data on disk disagreeing with its manifest: a section's logical or transport hash mismatch, a required section's blob missing, a manifest whose root does not recompute; (RAW-INTEGRITY) a raw file missing, extra, truncated or changed against `data/raw/MANIFEST.toml`, a link added or removed, or a raw manifest that does not read; a `raw check` path that differs from its record | `atlas: error (integrity_failed): 1 of 9 checks failed -- concord: transport MISMATCH manifest 0a77... file 3b19... -- recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served` |
 
 "Empty result" is intentionally its OWN class, distinct from `not_found`:
 `not_found` means the id/ref you asked about does not exist at all;
@@ -515,6 +540,7 @@ with a failure:
 | `bibex find <term>` | array of `{kind, id, label}` | `[{"kind":"Person","id":"Person:moses_2108","label":"Moses"}]` |
 | `bibex verify` | `{root: {manifest, recomputed, ok}, sections: [{name, required, logical, blob, bytes, transport, logical_check, schema_version, uncompressed_bytes}], raw}` (DB-4b; `transport` is `ok`/`missing`/`absent`/`mismatch`, `logical_check` is `ok`/`mismatch`/`skipped`; a failure is the error envelope, exit 6. RAW-INTEGRITY: `raw` is `{status: "ok", root, files}`, `{status: "unrecorded", why}`, or `null` under `--section`) | `{"root":{"manifest":"e5d6...","recomputed":"e5d6...","ok":true},"sections":[{"name":"core","required":true,...}],"raw":{"status":"ok","root":"ca28...","files":27408}}` |
 | `bibex raw bless` | `{root, files, manifest, previous, added: [path], removed: [path], changed: [path]}` (RAW-INTEGRITY; `previous` is the previous manifest's root or `null` on a first blessing; a link counts as added or removed; a refusal is the error envelope) | `{"root":"ca28...","files":27408,"manifest":"../data/raw/MANIFEST.toml","previous":null,"added":[],"removed":[],"changed":[]}` |
+| `bibex raw check <path>` | `{path, sha256, bytes}` for a file, `{path, hash, files}` for a directory (RAW-INTEGRITY; `path` in the manifest's spelling; a path that differs or is unrecorded is the error envelope, exit 6 or 3) | `{"path":"kjv.json","sha256":"f0b0...","bytes":8400187}` |
 | `bibex kinds` | array of `{token, relation, direction}` | `[{"token":"cites","relation":"Cites","direction":"forward"}, ...]` |
 
 ## ID discoverability (BIBEX-1 addendum, ticket 2 — owner order mid-batch,

@@ -76,7 +76,7 @@ impl Report {
 }
 
 const DO: &str = "recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served";
-const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
+pub(crate) const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
 
 fn section_named(name: &str) -> Option<Section> {
     Section::MANIFEST_ORDER.iter().copied().find(|s| s.name() == name)
@@ -210,7 +210,7 @@ fn check_raw(data_dir: &Path) -> Result<RawSection, CliError> {
     Ok(RawSection::Checked { root: walked.root, files, drift: drift(&recorded, &walked) })
 }
 
-fn raw_failure(drift: &Drift) -> String {
+pub(crate) fn raw_failure(drift: &Drift) -> String {
     match drift {
         Drift::Missing { path } => format!("raw {path}: MISSING"),
         Drift::Extra { path } => format!("raw {path}: EXTRA (not in {MANIFEST_FILE})"),

@@ -15,6 +15,8 @@ pub fn text() -> String {
     out.push_str("                                    the file that moved (exit 6, integrity_failed, on any mismatch)\n");
     out.push_str("  raw bless                        record data/raw in data/raw/MANIFEST.toml: prints the root and what\n");
     out.push_str("                                    moved since the previous manifest; refuses an empty tree\n");
+    out.push_str("  raw check <path>                 one file or directory under data/raw against its record, by exit\n");
+    out.push_str("                                    code: 0 as recorded, 3 not in the manifest, 6 differs (paths named)\n");
     out.push_str("  tutorial                         a guided, numbered walkthrough (real queries, real output)\n");
     out.push_str("  help                             this text\n\n");
     out.push_str("global flags:\n");

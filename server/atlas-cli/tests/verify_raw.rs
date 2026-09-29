@@ -4,7 +4,7 @@ use std::process::{Command, Output};
 
 use atlas_cli::raw::{walk, write_manifest, MANIFEST_FILE};
 use atlas_graph::sqlite::manifest::{root_of, write_manifest as write_compiled_manifest, Manifest, ManifestSection, MANIFEST_SCHEMA};
-use atlas_graph_types::raw_manifest::Sha256;
+use atlas_graph_types::raw_manifest::{RawEntry, Sha256};
 use atlas_graph_types::sha256::sha256;
 use serde_json::{json, Value};
 
@@ -30,6 +30,7 @@ const EXIT_OK: i32 = 0;
 const EXIT_DATA_LOAD_FAILED: i32 = 5;
 const EXIT_INTEGRITY_FAILED: i32 = 6;
 const EXIT_BAD_USAGE: i32 = 4;
+const EXIT_NOT_FOUND: i32 = 3;
 
 const DO_COMPILED: &str = "recompile (cargo run -p atlas-graph --bin atlas-graph-compile, from server/) or restore data/compiled from git; a tampered or truncated section must never be served";
 const DO_RAW: &str = "restore data/raw from the archive under Documents/bible-atlas-backups or refetch it with data/fetch-raw.ps1; if the change was deliberate, record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
@@ -37,7 +38,12 @@ const DO_BLESS_EMPTY: &str = "run data/fetch-raw.ps1 (or restore data/raw from t
 const DO_BLESS_UNREADABLE: &str = "restore data/raw/MANIFEST.toml from git, or delete it deliberately, then bless again";
 const DO_BLESS_UNWALKABLE: &str = "pass --data-dir so that data/raw sits beside it, and fetch the raw tree first with data/fetch-raw.ps1";
 const DO_BLESS_UNWRITABLE: &str = "check that data/raw is writable";
-const DO_RAW_VERB: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml";
+const DO_RAW_VERB: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml, or 'bibex raw check <path>' to ask whether one path is as recorded";
+const RAW_USAGE: &str = "usage: bibex raw bless | bibex raw check <path>";
+const WHY_UNRECORDED: &str = "MANIFEST.toml has no file or directory at that path";
+const DO_UNRECORDED: &str = "fetch it, then record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
+const WHY_BAD_PATH: &str = "'raw check' takes one path relative to data/raw: plain names joined by a path separator, no '.', '..' or root";
+const DO_BAD_PATH: &str = "name a file or directory as MANIFEST.toml spells it, e.g. kjv.json or brain-fuel-bible/lexicon";
 
 struct Fixture {
     dir: PathBuf,
@@ -662,7 +668,7 @@ fn raw_bless_refuses_when_the_manifest_cannot_be_written() {
 fn raw_without_a_verb_is_bad_usage() {
     // Arrange
     let fixture = Fixture::named("raw-bare");
-    let expected = bad_usage("'raw' requires a verb", "usage: bibex raw bless", DO_RAW_VERB);
+    let expected = bad_usage("'raw' requires a verb", RAW_USAGE, DO_RAW_VERB);
 
     // Act
     let result = bibex(&fixture, &["raw"]);
@@ -672,10 +678,10 @@ fn raw_without_a_verb_is_bad_usage() {
 }
 
 #[test]
-fn raw_with_anything_but_bless_is_bad_usage() {
+fn raw_with_a_verb_it_does_not_know_is_bad_usage() {
     // Arrange
     let fixture = Fixture::named("raw-other");
-    let expected = bad_usage("unrecognized arguments for 'raw': curse now", "usage: bibex raw bless", DO_RAW_VERB);
+    let expected = bad_usage("unrecognized arguments for 'raw': curse now", RAW_USAGE, DO_RAW_VERB);
 
     // Act
     let result = bibex(&fixture, &["raw", "curse", "now"]);
@@ -688,11 +694,383 @@ fn raw_with_anything_but_bless_is_bad_usage() {
 fn raw_bless_json_with_a_bad_verb_is_the_same_bad_usage_as_an_envelope() {
     // Arrange
     let fixture = Fixture::named("raw-other-json");
-    let expected = json!({ "error": { "code": "bad_usage", "message": "'raw' requires a verb -- usage: bibex raw bless", "hint": DO_RAW_VERB } });
+    let expected = json!({ "error": { "code": "bad_usage", "message": format!("'raw' requires a verb -- {RAW_USAGE}"), "hint": DO_RAW_VERB } });
 
     // Act
     let (code, stdout, stderr) = bibex(&fixture, &["--json", "raw"]);
 
     // Assert
     assert_eq!((code, stdout, serde_json::from_str::<Value>(&stderr).expect("a JSON envelope on stderr")), (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+fn not_found(what: &str, why: &str, do_: &str) -> String {
+    format!("atlas: error (not_found): {what} -- {why} -- {do_}\n")
+}
+
+fn not_as_recorded(path: &str, differ: &str, failures: &str) -> String {
+    format!("atlas: error (integrity_failed): raw {path} is not as recorded ({differ}) -- {failures} -- {DO_RAW}\n")
+}
+
+fn walked_hash_of(fixture: &Fixture, dataset: &str) -> String {
+    let walked = walk(&fixture.raw()).expect("the fixture tree must walk");
+    match walked.datasets.iter().find(|entry| matches!(entry, RawEntry::Node(node) if node.name == dataset)) {
+        Some(RawEntry::Node(node)) => node.hash.hex(),
+        _ => panic!("the fixture has no directory named {dataset}"),
+    }
+}
+
+#[test]
+fn raw_check_of_a_recorded_file_that_matches_prints_its_hash_and_size() {
+    // Arrange
+    let fixture = recorded_fixture("check-file");
+    let expected = format!("raw geo/ancient.jsonl {ANCIENT_SHA256} OK ({} bytes)\n", ANCIENT.len());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_check_of_a_recorded_directory_that_matches_prints_its_hash_and_file_count() {
+    // Arrange
+    let fixture = recorded_fixture("check-dir");
+    let expected = format!("raw geo {} OK (2 files)\n", walked_hash_of(&fixture, "geo"));
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_check_json_carries_the_file_hash_and_size() {
+    // Arrange
+    let fixture = recorded_fixture("check-file-json");
+    let expected = json!({ "path": "geo/ancient.jsonl", "sha256": ANCIENT_SHA256, "bytes": ANCIENT.len() });
+
+    // Act
+    let result = bibex_json(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_check_json_carries_the_directory_hash_and_file_count() {
+    // Arrange
+    let fixture = recorded_fixture("check-dir-json");
+    let expected = json!({ "path": "geo", "hash": walked_hash_of(&fixture, "geo"), "files": 2 });
+
+    // Act
+    let result = bibex_json(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+/// Windows only: `\` is a separator there and a name character elsewhere.
+#[cfg(windows)]
+#[test]
+fn raw_check_accepts_the_path_in_windows_spelling_and_answers_in_the_manifests() {
+    // Arrange
+    let fixture = recorded_fixture("check-backslash");
+    let expected = format!("raw geo/ancient.jsonl {ANCIENT_SHA256} OK ({} bytes)\n", ANCIENT.len());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo\\ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
+}
+
+#[test]
+fn raw_check_of_a_truncated_file_exits_6_naming_it_with_both_sizes() {
+    // Arrange
+    let fixture = recorded_fixture("check-truncated");
+    fixture.write("geo/ancient.jsonl", ANCIENT_TRUNCATED);
+    let failure = format!("raw geo/ancient.jsonl: TRUNCATED manifest {} bytes file {}", ANCIENT.len(), ANCIENT_TRUNCATED.len());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo/ancient.jsonl", "1 path differs", &failure)));
+}
+
+#[test]
+fn raw_check_of_a_flipped_file_names_both_hashes() {
+    // Arrange
+    let fixture = recorded_fixture("check-flipped");
+    fixture.write("geo/ancient.jsonl", ANCIENT_FLIPPED);
+    let failure = format!("raw geo/ancient.jsonl: MISMATCH manifest {ANCIENT_SHA256} file {}", hex_of(ANCIENT_FLIPPED));
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo/ancient.jsonl", "1 path differs", &failure)));
+}
+
+#[test]
+fn raw_check_of_a_missing_file_is_missing() {
+    // Arrange
+    let fixture = recorded_fixture("check-missing-file");
+    fixture.remove("kretzmann/volume-1.txt");
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "kretzmann/volume-1.txt"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("kretzmann/volume-1.txt", "1 path differs", "raw kretzmann/volume-1.txt: MISSING")));
+}
+
+#[test]
+fn raw_check_of_a_missing_directory_is_missing() {
+    // Arrange
+    let fixture = recorded_fixture("check-missing-dir");
+    fixture.remove_dir("kretzmann");
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "kretzmann"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("kretzmann", "1 path differs", "raw kretzmann: MISSING")));
+}
+
+#[test]
+fn raw_check_of_a_half_copied_directory_names_every_file_that_differs() {
+    // Arrange
+    let fixture = recorded_fixture("check-half-copied");
+    fixture.write("geo/ancient.jsonl", ANCIENT_TRUNCATED);
+    fixture.remove("geo/modern.jsonl");
+    let failures = format!("raw geo/ancient.jsonl: TRUNCATED manifest {} bytes file {}; raw geo/modern.jsonl: MISSING", ANCIENT.len(), ANCIENT_TRUNCATED.len());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "2 paths differ", &failures)));
+}
+
+#[test]
+fn raw_check_of_an_emptied_directory_names_every_recorded_file_as_missing() {
+    // Arrange
+    let fixture = recorded_fixture("check-emptied");
+    fixture.remove_dir("geo");
+    fixture.make_dir("geo");
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "2 paths differ", "raw geo/ancient.jsonl: MISSING; raw geo/modern.jsonl: MISSING")));
+}
+
+#[test]
+fn raw_check_of_a_directory_with_an_extra_file_names_it_as_extra() {
+    // Arrange
+    let fixture = recorded_fixture("check-extra");
+    fixture.write("geo/added.jsonl", ADDED);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "1 path differs", "raw geo/added.jsonl: EXTRA (not in MANIFEST.toml)")));
+}
+
+#[test]
+fn raw_check_of_a_file_standing_where_a_directory_was_recorded_is_missing_and_extra_at_once() {
+    // Arrange
+    let fixture = recorded_fixture("check-kind-swap");
+    fixture.remove_dir("empty");
+    fixture.write("empty", ADDED);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "empty"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("empty", "2 paths differ", "raw empty: MISSING; raw empty: EXTRA (not in MANIFEST.toml)")));
+}
+
+#[test]
+fn raw_check_of_a_path_the_manifest_does_not_record_is_not_found() {
+    // Arrange
+    let fixture = recorded_fixture("check-unrecorded");
+    fixture.write("geo/added.jsonl", ADDED);
+    let expected = not_found("raw geo/added.jsonl is not in MANIFEST.toml", WHY_UNRECORDED, DO_UNRECORDED);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/added.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_NOT_FOUND), String::new(), expected));
+}
+
+#[test]
+fn raw_check_of_a_path_below_a_recorded_file_is_not_found() {
+    // Arrange
+    let fixture = recorded_fixture("check-below-file");
+    let expected = not_found("raw geo/ancient.jsonl/line is not in MANIFEST.toml", WHY_UNRECORDED, DO_UNRECORDED);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl/line"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_NOT_FOUND), String::new(), expected));
+}
+
+#[test]
+fn raw_check_with_no_manifest_is_not_found_naming_the_manifest() {
+    // Arrange
+    let fixture = Fixture::named("check-no-manifest");
+    fixture.write("geo/ancient.jsonl", ANCIENT);
+    let expected = not_found("raw geo/ancient.jsonl is not in MANIFEST.toml", &format!("no MANIFEST.toml at {}", fixture.manifest_path().display()), DO_UNRECORDED);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_NOT_FOUND), String::new(), expected));
+}
+
+#[test]
+fn raw_check_against_a_manifest_that_does_not_recompute_is_an_integrity_failure() {
+    // Arrange
+    let fixture = recorded_fixture("check-bad-manifest");
+    let forged = fixture.manifest_text().replace(FIXTURE_ROOT, ZERO_LOGICAL);
+    fs::write(fixture.manifest_path(), forged).expect("the forged manifest must be writable");
+    let expected = format!(
+        "atlas: error (integrity_failed): {} does not verify -- manifest root {ZERO_LOGICAL} does not recompute from its datasets ({FIXTURE_ROOT}) -- {DO_RAW}\n",
+        fixture.manifest_path().display()
+    );
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), expected));
+}
+
+#[cfg(windows)]
+#[test]
+fn raw_check_of_a_junction_standing_where_a_directory_was_recorded_is_missing_and_a_link() {
+    // Arrange
+    let fixture = recorded_fixture("check-junction-in-place");
+    fixture.remove_dir("geo");
+    let link = fixture.junction("geo");
+    let failures = "raw geo: MISSING; raw geo: LINK (a junction or symlink MANIFEST.toml does not list)";
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+    fs::remove_dir(&link).expect("the junction must be removable on its own");
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "2 paths differ", failures)));
+}
+
+#[cfg(windows)]
+#[test]
+fn raw_check_of_a_directory_holding_an_unlisted_junction_names_the_link() {
+    // Arrange
+    let fixture = recorded_fixture("check-junction-inside");
+    let link = fixture.junction("geo/linked");
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+    fs::remove_dir(&link).expect("the junction must be removable on its own");
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "1 path differs", "raw geo/linked: LINK (a junction or symlink MANIFEST.toml does not list)")));
+}
+
+#[cfg(windows)]
+#[test]
+fn raw_check_of_a_directory_whose_listed_junction_is_gone_names_the_missing_link() {
+    // Arrange
+    let fixture = recorded_fixture("check-junction-gone");
+    let link = fixture.junction("geo/linked");
+    fixture.record();
+    fs::remove_dir(&link).expect("the junction must be removable on its own");
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "1 path differs", "raw geo/linked: LINK MISSING (MANIFEST.toml lists a junction or symlink there)")));
+}
+
+/// Windows only: an exclusive open (share mode 0) is the one portable way this test can make a
+/// file unreadable without elevation; other hosts have no share modes.
+#[cfg(windows)]
+#[test]
+fn raw_check_of_a_file_it_cannot_read_names_the_file() {
+    // Arrange
+    use std::os::windows::fs::OpenOptionsExt;
+    let fixture = recorded_fixture("check-unreadable");
+    let locked = fixture.raw().join("geo").join("ancient.jsonl");
+    let _hold = fs::OpenOptions::new().read(true).share_mode(0).open(&locked).expect("the fixture file must open exclusively");
+    let why = fs::read(&locked).expect_err("an exclusively held file must not read").to_string();
+    let expected = format!("atlas: error (integrity_failed): raw geo/ancient.jsonl could not be read -- {}: {why} -- {DO_RAW}\n", locked.display());
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo/ancient.jsonl"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), expected));
+}
+
+#[test]
+fn raw_check_without_a_path_is_bad_usage() {
+    // Arrange
+    let fixture = Fixture::named("check-no-path");
+    let expected = bad_usage("'raw check' requires a <path> argument", RAW_USAGE, DO_RAW_VERB);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+#[test]
+fn raw_check_with_more_than_a_path_is_bad_usage() {
+    // Arrange
+    let fixture = Fixture::named("check-two-paths");
+    let expected = bad_usage("unrecognized arguments for 'raw': check geo kretzmann", RAW_USAGE, DO_RAW_VERB);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "geo", "kretzmann"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+#[test]
+fn raw_check_of_a_path_that_climbs_out_of_data_raw_is_bad_usage() {
+    // Arrange
+    let fixture = recorded_fixture("check-climbs");
+    let expected = bad_usage("'../kjv.json' is not a path under data/raw", WHY_BAD_PATH, DO_BAD_PATH);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", "../kjv.json"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
+}
+
+#[test]
+fn raw_check_of_an_empty_path_is_bad_usage() {
+    // Arrange
+    let fixture = recorded_fixture("check-empty-path");
+    let expected = bad_usage("'' is not a path under data/raw", WHY_BAD_PATH, DO_BAD_PATH);
+
+    // Act
+    let result = bibex(&fixture, &["raw", "check", ""]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_BAD_USAGE), String::new(), expected));
 }

@@ -1,19 +1,25 @@
 //! `bibex raw bless` -- the one writer of `data/raw/MANIFEST.toml`. A separate verb, never a
 //! `--fix` on `verify` (D4: a pin that is re-blessed as a matter of routine stops being read), and
 //! it refuses an empty tree, which is what a killed fetch or a followed junction leaves behind.
+//! `bibex raw check <path>` -- one path against its record, answered by exit code so a fetch
+//! script can guard on it without reading the manifest itself: 0 as recorded, `not_found` when
+//! the manifest has no such path, `integrity_failed` naming what differs.
 //! The drift between a recorded tree and a walked one lives here too: `verify` reports it,
-//! `bless` summarizes it.
+//! `bless` summarizes it, `check` answers for one path.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
-use atlas_cli::raw::{read_manifest, walk, write_manifest, RawManifest, MANIFEST_FILE};
+use atlas_cli::raw::{read_manifest, walk, walk_at, write_manifest, RawManifest, MANIFEST_FILE};
 use atlas_graph_types::raw_manifest::{RawEntry, RawHash, Sha256};
 
-use crate::commands::verify::commas;
+use crate::commands::verify::{commas, raw_failure, Unrecorded, DO_RAW};
 use crate::error::CliError;
 
 /// `data/raw` sits beside `data/compiled`, as `data/cache` does.
 const RAW_DIR: &str = "raw";
+const DO_UNRECORDED: &str = "fetch it, then record it with 'bibex raw bless' and commit data/raw/MANIFEST.toml";
+const WHY_BAD_PATH: &str = "'raw check' takes one path relative to data/raw: plain names joined by a path separator, no '.', '..' or root";
+const DO_BAD_PATH: &str = "name a file or directory as MANIFEST.toml spells it, e.g. kjv.json or brain-fuel-bible/lexicon";
 
 pub fn bless(data_dir: &Path) -> Result<String, CliError> {
     let blessing = perform(data_dir)?;
@@ -56,8 +62,104 @@ pub fn bless_json(data_dir: &Path) -> Result<serde_json::Value, CliError> {
     }))
 }
 
+pub fn check(data_dir: &Path, path: &str) -> Result<String, CliError> {
+    let checked = perform_check(data_dir, path)?;
+    Ok(match checked.entry {
+        RawEntry::Leaf(leaf) => format!("raw {} {} OK ({} bytes)\n", checked.path, leaf.sha256.hex(), commas(leaf.bytes)),
+        RawEntry::Node(node) => format!("raw {} {} OK ({} files)\n", checked.path, node.hash.hex(), commas(leaves(&node.children) as u64)),
+    })
+}
+
+pub fn check_json(data_dir: &Path, path: &str) -> Result<serde_json::Value, CliError> {
+    let checked = perform_check(data_dir, path)?;
+    Ok(match checked.entry {
+        RawEntry::Leaf(leaf) => serde_json::json!({ "path": checked.path, "sha256": leaf.sha256.hex(), "bytes": leaf.bytes }),
+        RawEntry::Node(node) => serde_json::json!({ "path": checked.path, "hash": node.hash.hex(), "files": leaves(&node.children) }),
+    })
+}
+
 pub fn raw_dir_beside(data_dir: &Path) -> PathBuf {
     data_dir.parent().unwrap_or(data_dir).join(RAW_DIR)
+}
+
+/// A path found as recorded: the manifest's spelling of it and what the disk holds there.
+struct Checked {
+    path: String,
+    entry: RawEntry,
+}
+
+fn perform_check(data_dir: &Path, arg: &str) -> Result<Checked, CliError> {
+    let path = manifest_path_of(arg)?;
+    let raw_dir = raw_dir_beside(data_dir);
+    let manifest = raw_dir.join(MANIFEST_FILE);
+    if !manifest.is_file() {
+        return Err(unrecorded(&path, Unrecorded::NoManifest { manifest }.to_string()));
+    }
+    let recorded = read_manifest(&manifest).map_err(|e| CliError::integrity_failed(format!("{} does not verify", manifest.display()), e.to_string(), DO_RAW))?;
+    let Some(entry) = entry_at(&recorded.datasets, &path) else {
+        return Err(unrecorded(&path, format!("{MANIFEST_FILE} has no file or directory at that path")));
+    };
+    let found = walk_at(&raw_dir, &path).map_err(|e| CliError::integrity_failed(format!("raw {path} could not be read"), e.to_string(), DO_RAW))?;
+    let under = format!("{path}/");
+    let recorded_links: Vec<String> = recorded.links.iter().filter(|link| link.starts_with(&under)).cloned().collect();
+    let mut drift = drift_at(&path, entry, found.entry.as_ref());
+    drift.extend(link_drift(&recorded_links, &found.links));
+    match found.entry {
+        Some(entry) if drift.is_empty() => Ok(Checked { path, entry }),
+        _ => Err(not_as_recorded(&path, &drift)),
+    }
+}
+
+/// The argument in the manifest's spelling: the host's separators become `/`, and anything
+/// that is not a plain name (`.`, `..`, a root or prefix) is refused rather than resolved.
+fn manifest_path_of(arg: &str) -> Result<String, CliError> {
+    let not_a_path = || CliError::bad_usage(format!("'{arg}' is not a path under data/raw"), WHY_BAD_PATH, DO_BAD_PATH);
+    let mut names = Vec::new();
+    for component in Path::new(arg).components() {
+        match component {
+            Component::Normal(name) => names.push(name.to_string_lossy().into_owned()),
+            _ => return Err(not_a_path()),
+        }
+    }
+    if names.is_empty() {
+        return Err(not_a_path());
+    }
+    Ok(names.join("/"))
+}
+
+fn entry_at<'a>(entries: &'a [RawEntry], path: &str) -> Option<&'a RawEntry> {
+    let (first, rest) = match path.split_once('/') {
+        Some((first, rest)) => (first, Some(rest)),
+        None => (path, None),
+    };
+    let entry = entries.iter().find(|entry| name_of(entry) == first)?;
+    match (rest, entry) {
+        (None, _) => Some(entry),
+        (Some(rest), RawEntry::Node(node)) => entry_at(&node.children, rest),
+        (Some(_), RawEntry::Leaf(_)) => None,
+    }
+}
+
+fn drift_at(path: &str, recorded: &RawEntry, found: Option<&RawEntry>) -> Vec<Drift> {
+    let mut out = Vec::new();
+    match found {
+        None => out.push(Drift::Missing { path: path.into() }),
+        Some(found) => drift_of_pair(path, recorded, found, &mut out),
+    }
+    out
+}
+
+fn unrecorded(path: &str, why: String) -> CliError {
+    CliError::not_found(format!("raw {path} is not in {MANIFEST_FILE}"), why, DO_UNRECORDED)
+}
+
+fn not_as_recorded(path: &str, drift: &[Drift]) -> CliError {
+    let differ = match drift.len() {
+        1 => "1 path differs".to_string(),
+        n => format!("{} paths differ", commas(n as u64)),
+    };
+    let failures: Vec<String> = drift.iter().map(raw_failure).collect();
+    CliError::integrity_failed(format!("raw {path} is not as recorded ({differ})"), failures.join("; "), DO_RAW)
 }
 
 /// How a walked tree differs from a recorded one, by path from the root of `data/raw`. Kept as
@@ -77,9 +179,14 @@ pub enum Drift {
 pub fn drift(recorded: &RawManifest, walked: &RawManifest) -> Vec<Drift> {
     let mut out = Vec::new();
     drift_into("", &recorded.datasets, &walked.datasets, &mut out);
-    out.extend(recorded.links.iter().filter(|path| !walked.links.contains(path)).map(|path| Drift::LinkRemoved { path: path.clone() }));
-    out.extend(walked.links.iter().filter(|path| !recorded.links.contains(path)).map(|path| Drift::LinkAdded { path: path.clone() }));
+    out.extend(link_drift(&recorded.links, &walked.links));
     out
+}
+
+fn link_drift(recorded: &[String], walked: &[String]) -> Vec<Drift> {
+    let removed = recorded.iter().filter(|path| !walked.contains(path)).map(|path| Drift::LinkRemoved { path: path.clone() });
+    let added = walked.iter().filter(|path| !recorded.contains(path)).map(|path| Drift::LinkAdded { path: path.clone() });
+    removed.chain(added).collect()
 }
 
 pub fn leaves(entries: &[RawEntry]) -> usize {

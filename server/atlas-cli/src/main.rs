@@ -95,16 +95,19 @@ fn parse_verify_args(rest: &[String]) -> Result<Option<String>, CliError> {
     }
 }
 
-/// The verbs under `raw`. One today; the type is the list.
+/// The verbs under `raw`; the type is the list.
 enum RawVerb {
     Bless,
+    Check(String),
 }
 
 fn parse_raw_verb(rest: &[String]) -> Result<RawVerb, CliError> {
-    const USAGE: &str = "usage: bibex raw bless";
-    const DO: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml";
+    const USAGE: &str = "usage: bibex raw bless | bibex raw check <path>";
+    const DO: &str = "run 'bibex raw bless' to record data/raw in data/raw/MANIFEST.toml, or 'bibex raw check <path>' to ask whether one path is as recorded";
     match &rest[1..] {
         [verb] if verb == "bless" => Ok(RawVerb::Bless),
+        [verb, path] if verb == "check" => Ok(RawVerb::Check(path.clone())),
+        [verb] if verb == "check" => Err(CliError::bad_usage("'raw check' requires a <path> argument", USAGE, DO)),
         [] => Err(CliError::bad_usage("'raw' requires a verb", USAGE, DO)),
         other => Err(CliError::bad_usage(format!("unrecognized arguments for 'raw': {}", other.join(" ")), USAGE, DO)),
     }
@@ -165,6 +168,7 @@ fn run(args: &[String]) -> Result<String, CliError> {
         }
         "raw" => match parse_raw_verb(&rest)? {
             RawVerb::Bless => commands::raw::bless(&data_dir),
+            RawVerb::Check(path) => commands::raw::check(&data_dir, &path),
         },
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),
@@ -233,6 +237,7 @@ fn run_json(args: &[String]) -> Result<serde_json::Value, CliError> {
         }
         "raw" => match parse_raw_verb(&rest)? {
             RawVerb::Bless => commands::raw::bless_json(&data_dir),
+            RawVerb::Check(path) => commands::raw::check_json(&data_dir, &path),
         },
         other => Err(CliError::bad_usage(
             format!("unrecognized subcommand '{other}'"),

@@ -1,7 +1,8 @@
 # data/raw — actual fetched formats (ground truth for atlas-etl)
 
-This directory is gitignored and populated by `data/fetch-raw.ps1` (idempotent — skips
-files that already exist; delete a file/folder and re-run to refresh it). Everything
+This directory is gitignored and populated by `data/fetch-raw.ps1` (idempotent — a file
+is kept only when `bibex raw check` finds it as `MANIFEST.toml` records it; anything
+else is fetched again, and the run ends with `bibex verify`). Everything
 below was recorded by actually opening the downloaded files on 2026-08-17. Per spec
 §4.3: **the compiled schema (data/compiled/*.json), not this raw schema, is the
 contract** — this file exists so atlas-etl's parsers are written against reality.
@@ -30,23 +31,10 @@ vendored Leaflet 1.9.4 files fetched clean on the original URLs — verified wit
 
 ## Verified: `powershell -NoProfile -ExecutionPolicy Bypass -File data/fetch-raw.ps1`
 
-First run fetched all artifacts (after the two URL fixes above); second run printed
-`have <file>` for every artifact, confirming idempotency. Final directory listing:
-
-```
-data/raw/kjv.json                                    8,400,187 bytes
-data/raw/geo/ancient.jsonl                           11,550,193 bytes
-data/raw/geo/modern.jsonl                              3,224,520 bytes
-data/raw/geo/geometry.jsonl                              155,985 bytes
-data/raw/geo/image.jsonl                                1,469,114 bytes
-data/raw/geo/source.jsonl                                 225,544 bytes
-data/raw/theographic.zip                              23,970,583 bytes
-data/raw/theographic/theographic-bible-metadata-master/...  (extracted)
-data/raw/cross-references.zip                          1,982,837 bytes
-data/raw/xrefs/cross_references.txt                        (extracted)
-client/wwwroot/vendor/leaflet/leaflet.js                 147,552 bytes
-client/wwwroot/vendor/leaflet/leaflet.css                 14,806 bytes
-```
+First run fetched all artifacts (after the two URL fixes above); a rerun finds every
+file as recorded and fetches nothing. The size and SHA-256 of every fetched file, and
+the hash of every directory, are in `MANIFEST.toml` beside this file (written by
+`bibex raw bless`, read by `bibex verify` and `bibex raw check <path>`).
 
 ---
 
