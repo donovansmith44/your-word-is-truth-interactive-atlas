@@ -4,6 +4,7 @@
 
 use std::io::Write;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use atlas_graph_types::sha256::sha256;
 
@@ -67,8 +68,9 @@ pub fn decompress_verified(blob: &Path, expected_sha256: &str, dst: &Path) -> Re
     if let Some(parent) = dst.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let tmp = dst.with_extension("sqlite.tmp");
-    let _ = std::fs::remove_file(&tmp);
+    // Each unpack owns its tmp: with one shared name, a second caller materialising the same cold
+    // section truncates or deletes the first caller's half-written file.
+    let tmp = dst.with_extension(format!("sqlite.{}.{}.tmp", std::process::id(), UNPACK_SEQ.fetch_add(1, Ordering::Relaxed)));
     let unpack = || -> Result<(), SqliteError> {
         let mut dec = zstd::stream::Decoder::new(&compressed[..]).map_err(zerr)?;
         let mut out = std::io::BufWriter::new(std::fs::File::create(&tmp)?);
@@ -80,7 +82,22 @@ pub fn decompress_verified(blob: &Path, expected_sha256: &str, dst: &Path) -> Re
         let _ = std::fs::remove_file(&tmp);
         return Err(SqliteError(format!("unpacking {}: {e}", blob.display())));
     }
-    let _ = std::fs::remove_file(dst);
-    std::fs::rename(&tmp, dst)?;
+    place(&tmp, dst)?;
     Ok(std::fs::metadata(dst)?.len())
+}
+
+static UNPACK_SEQ: AtomicU64 = AtomicU64::new(0);
+
+/// Renames the unpacked `tmp` over `dst`. A rename refused because another caller's copy already
+/// sits there, held open, still succeeds when that copy holds the same bytes: a materialised
+/// section is a materialised section, whoever wrote it.
+fn place(tmp: &Path, dst: &Path) -> Result<(), SqliteError> {
+    let Err(refused) = std::fs::rename(tmp, dst) else { return Ok(()) };
+    let mine = sha256_hex_of_file(tmp);
+    let _ = std::fs::remove_file(tmp);
+    match sha256_hex_of_file(dst) {
+        Ok(theirs) if theirs == mine? => Ok(()),
+        Ok(_) => Err(SqliteError(format!("cannot replace {} ({refused}): it holds a different file", dst.display()))),
+        Err(e) => Err(SqliteError(format!("cannot replace {} ({refused}): {e}", dst.display()))),
+    }
 }
