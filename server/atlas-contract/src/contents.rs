@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
+use atlas_graph::corpus_root::corpus_root_id;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
+use atlas_graph_types::text::{BibleTag, ConcordTag};
 use axum::extract::{Path, State};
 use axum::Json;
 
@@ -24,10 +26,9 @@ const CONTAINS: EdgeKind = EdgeKind::Directed(RelationId::Contains, Direction::F
 pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path<String>) -> Result<Json<wire::Contents>, ApiError> {
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
-    let top_level = members(&snap, &atlas_graph::corpus_root::corpus_root_id(corpus.name()).erase());
     let roots = match corpus {
-        wire::Corpus::Bible => top_level.iter().filter_map(|book| book_root(&snap, book)).collect(),
-        wire::Corpus::Concord => top_level.iter().map(|document| document_root(&snap, document)).collect(),
+        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().filter_map(|book| book_root(&snap, book)).collect(),
+        wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect(),
     };
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }

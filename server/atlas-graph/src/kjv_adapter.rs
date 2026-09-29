@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use atlas_core::data::Canon;
 use atlas_graph_types::id::{AnyNodeId, NodeKind};
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{LayerMap, TranslationId};
+use atlas_graph_types::text::{BibleTag, Corpus, LayerMap, TranslationId};
 
-/// The Bible corpus id and the one translation layer compiled here; both must stay equal to
-/// `BibleTag::ID` and `atlas_core::translation::DEFAULT_TRANSLATION`.
-pub const BIBLE_CORPUS: &str = "bible";
+pub const BIBLE_CORPUS: &str = BibleTag::ID;
+/// The one translation layer compiled here; must stay equal to
+/// `atlas_core::translation::DEFAULT_TRANSLATION`.
 pub const KJV_TRANSLATION: &str = "kjv";
 
 /// One parsed KJV verse, already resolved to its canon position.

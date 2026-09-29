@@ -13,7 +13,6 @@ use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
 
 use crate::corpus_root;
-use crate::kjv_adapter::BIBLE_CORPUS;
 use crate::pipeline::BuildCtx;
 
 const BIBLE_TITLE: &str = "The Holy Bible";
@@ -168,7 +167,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
         stats.book_steps += 1;
     }
 
-    let root_rows = corpus_root::mint(&mut ctx.graph, BIBLE_CORPUS, BIBLE_TITLE, "kjv", &all_books);
+    let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, BIBLE_TITLE, "kjv", &all_books);
     ctx.graph.contains_bible.extend(root_rows);
 
     ctx.graph.authored.extend(authored_rows(&ctx.atlas.book_authorship));

@@ -3,9 +3,7 @@ use std::path::Path;
 use std::sync::OnceLock;
 
 use atlas_etl::concord::DOCUMENTS;
-use atlas_graph::concord_adapter::CONCORD_CORPUS;
 use atlas_graph::corpus_root::corpus_root_id;
-use atlas_graph::kjv_adapter::BIBLE_CORPUS;
 use atlas_graph::sections::{
     justified_by_source_family, section_of_canon_succession, section_of_contains_bible, section_of_family,
     section_of_node, section_of_justified_by, Section,
@@ -16,7 +14,7 @@ use atlas_graph_types::edge::{at, entry_id, CanonSuccession, EdgeId, Namesake, R
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
-use atlas_graph_types::text::{ConcordRef, TextLocus, TextRef, VerseRef};
+use atlas_graph_types::text::{BibleTag, ConcordRef, ConcordTag, TextLocus, TextRef, VerseRef};
 
 const ROOTS_PER_CORPUS: usize = 1;
 const DOCUMENT_STEPS: usize = DOCUMENTS.len() - 1;
@@ -77,7 +75,7 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
             match &node.payload {
                 NodePayload::TextUnit { .. } => kjv_text_units += 1,
                 NodePayload::Container { .. } => {
-                    if *id == corpus_root_id(BIBLE_CORPUS).erase() {
+                    if *id == corpus_root_id::<BibleTag>().erase() {
                         kjv_root_containers += 1;
                     } else if id.raw.starts_with("bible-book-") {
                         kjv_book_containers += 1;
@@ -117,7 +115,7 @@ fn every_node_maps_to_exactly_one_section_with_the_expected_per_section_counts()
         .iter()
         .filter(|(id, node)| match &node.payload {
             NodePayload::TextUnit { corpus, .. } => *corpus == "concord",
-            NodePayload::Container { .. } => **id == corpus_root_id(CONCORD_CORPUS).erase() || id.raw.starts_with("concord-"),
+            NodePayload::Container { .. } => **id == corpus_root_id::<ConcordTag>().erase() || id.raw.starts_with("concord-"),
             _ => false,
         })
         .count();

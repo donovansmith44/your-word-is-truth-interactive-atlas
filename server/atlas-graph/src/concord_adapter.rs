@@ -12,12 +12,12 @@ use atlas_graph_types::graph::ReadingSpine;
 use atlas_graph_types::id::{AnyNodeId, CatechismItemId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{ConcordRef, ConcordTag, Locus, LocusSet, TextLocus, TranslationId};
+use atlas_graph_types::text::{ConcordRef, ConcordTag, Corpus, Locus, LocusSet, TextLocus, TranslationId};
 
 use crate::corpus_root;
 use crate::pipeline::BuildCtx;
 
-pub const CONCORD_CORPUS: &str = "concord";
+pub const CONCORD_CORPUS: &str = ConcordTag::ID;
 const CONCORD_TITLE: &str = "The Book of Concord";
 /// The canonical rendering layer for the whole Concord corpus: one translation, unlike the Bible
 /// corpus's many, and a key deliberately distinct from the KJV's -- this is not that translation.
@@ -135,7 +135,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
         articles_by_document.push(articles);
     }
 
-    let root_rows = corpus_root::mint(&mut ctx.graph, CONCORD_CORPUS, CONCORD_TITLE, "concord", &documents);
+    let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, CONCORD_TITLE, "concord", &documents);
     ctx.graph.contains_concord.extend(root_rows);
     ctx.graph.canon_succession.extend(steps_between(&documents));
     for articles in &articles_by_document {

@@ -10,17 +10,17 @@ use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::Corpus;
 
-pub fn corpus_root_id(corpus: &str) -> ContainerNodeId {
-    ContainerNodeId::new(corpus)
+pub fn corpus_root_id<C: Corpus>() -> ContainerNodeId {
+    ContainerNodeId::new(C::ID)
 }
 
 /// The root node and one row per member, in the order given. An empty corpus mints nothing: a
 /// root over no members would be a fabricated node in a graph built from an empty fixture.
-pub fn mint<C: Corpus>(graph: &mut Graph, corpus: &str, title: &str, provenance: &str, members: &[ContainerNodeId]) -> Vec<Contains<C>> {
+pub fn mint<C: Corpus>(graph: &mut Graph, title: &str, provenance: &str, members: &[ContainerNodeId]) -> Vec<Contains<C>> {
     if members.is_empty() {
         return Vec::new();
     }
-    let root = corpus_root_id(corpus);
+    let root = corpus_root_id::<C>();
     graph.nodes.insert(
         root.erase(),
         Node { id: root.erase(), payload: NodePayload::Container { title: title.to_string() }, provenance: provenance.to_string() },
@@ -39,9 +39,9 @@ pub fn mint<C: Corpus>(graph: &mut Graph, corpus: &str, title: &str, provenance:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph_types::text::BibleTag;
+    use atlas_graph_types::sections::{section_of_node, Section};
+    use atlas_graph_types::text::{BibleTag, ConcordTag};
 
-    const CORPUS: &str = "bible";
     const TITLE: &str = "The Holy Bible";
     const PROVENANCE: &str = "kjv";
 
@@ -51,7 +51,7 @@ mod tests {
 
     fn root_contains(member: &ContainerNodeId) -> Contains<BibleTag> {
         Contains {
-            container: corpus_root_id(CORPUS),
+            container: corpus_root_id::<BibleTag>(),
             content: ContainerContent::Container(member.clone()),
             provenance: ProvenanceId::from(PROVENANCE),
             justification: Default::default(),
@@ -65,15 +65,30 @@ mod tests {
         let members = [book("GEN"), book("EXO")];
 
         // Act
-        let rows: Vec<Contains<BibleTag>> = mint(&mut graph, CORPUS, TITLE, PROVENANCE, &members);
+        let rows = mint::<BibleTag>(&mut graph, TITLE, PROVENANCE, &members);
 
         // Assert
-        let root = graph.nodes.get(&corpus_root_id(CORPUS).erase()).expect("the root node");
-        assert_eq!(root.id, corpus_root_id(CORPUS).erase());
+        let root = graph.nodes.get(&corpus_root_id::<BibleTag>().erase()).expect("the root node");
+        assert_eq!(root.id, corpus_root_id::<BibleTag>().erase());
         assert_eq!(format!("{:?}", root.payload), format!("{:?}", NodePayload::Container { title: TITLE.to_string() }));
         assert_eq!(root.provenance, PROVENANCE);
         assert_eq!(graph.nodes.len(), 1);
         assert_eq!(rows, [root_contains(&members[0]), root_contains(&members[1])]);
+    }
+
+    #[test]
+    fn the_root_minted_for_a_corpus_files_under_that_corpus_section() {
+        // Arrange
+        let mut graph = Graph::default();
+        let member = [ContainerNodeId::new("anything")];
+
+        // Act
+        mint::<BibleTag>(&mut graph, TITLE, PROVENANCE, &member);
+        mint::<ConcordTag>(&mut graph, "The Book of Concord", "concord", &member);
+
+        // Assert
+        let sections = [BibleTag::ID, ConcordTag::ID].map(|corpus| section_of_node(&graph.nodes[&ContainerNodeId::new(corpus).erase()]));
+        assert_eq!(sections, [Section::Kjv, Section::Concord]);
     }
 
     #[test]
@@ -82,7 +97,7 @@ mod tests {
         let mut graph = Graph::default();
 
         // Act
-        let rows: Vec<Contains<BibleTag>> = mint(&mut graph, CORPUS, TITLE, PROVENANCE, &[]);
+        let rows = mint::<BibleTag>(&mut graph, TITLE, PROVENANCE, &[]);
 
         // Assert
         assert!(graph.nodes.is_empty());
