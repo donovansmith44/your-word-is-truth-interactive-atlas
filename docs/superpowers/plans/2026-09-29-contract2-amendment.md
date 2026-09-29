@@ -345,3 +345,14 @@ CREATE TABLE red_letter_span (book INTEGER NOT NULL, chapter INTEGER NOT NULL, v
 - **Coverage:** R-C2-P1 (§2; every task's CS and expected-red line; T11 alone moves FIX/VER), W1 (T6 tokenizer, 790,892 pin, word identity, no per-word hash), W2 (§4, T2, T1's `DateClaim.verses`, T4/T5/T8c loci), W3 (T8c), W4 (T6 storage, composition law, red letter as words, gates before/after; T11 again), D1–D22 (§1 table, each placed in its task), D13 revised (T6 Kjv section), D16 as amended (T8c, T10b), D19 (T10b, T11), F0-25 (T6 Step 0).
 - **Gaps:** every guess the rulings force is an OPEN item; nothing under "(pending OPEN-n)" is presented as ruled.
 - **Type consistency:** `TextSpan`/`TextPoint` (T2) are what `DateClaim.verses` (T1), `EdgeEntry.loci` (T4, T8c), `PlaceDetail` claims (T5) carry; `Wording` (T6) is what T7a's `locate`, T7b's anchors, T8a's Concord layer and T8c's alignment read; `TokenSpan` (existing) is every stored word span; `Anchor` (T2) is what T7b/T8b emit and T10b renders.
+
+## Controller rulings on the OPEN items (2026-09-29, final — implementers do not re-open)
+- OPEN-1 — accepted: T6 → T7a → T8a → T8c build as a stack of `wip/` branches (each based on the previous); the controller lands the stack just before the one rebuild, so the tracked schema-15 artifact stays readable for T3–T5.
+- OPEN-2 — accepted: R-C2-W4's "gate 8" means the `/api/text` gates 6 and 7 plus startup gate 9; they decide whether composition stays. Gate 8 is D13's write measure. T6 reports a relative before/after on its loaded box; T11 judges against ceilings and baselines.
+- OPEN-3 — REVISED, not the proposal: no served red-letter byte changes. A red-letter span is a word span plus a typed end, `SpanEnd::{AtWord, ThroughPunctuation}` (not a bool), recorded per span from the source, so all 2,063 served spans reproduce exactly — MAT.11.27, MAT.13.17 and LUK.10.22 included. A law pins the 2,063 against today's served spans.
+- OPEN-4 — (a) accepted: `Year::of` returns `Result` (year zero refused); `TimeRange::of` takes the validated core range; recorded as a PRINCIPLES-12 interface change to the signed §3 signature (the Haskell bar is binding). (b) REVISED: `TextRef.book: BookId` (`atlas_core::refs::BookId`, exists), with a wire form that writes the canon code, so the wire bytes stay a string; no `String` exception.
+- OPEN-5 — accepted: `TextPoint.word` indexes the corpus's base layer; a span in any other layer is refused with `Err(ForeignLayer)`.
+- OPEN-6 — accepted: T8c serves `EdgeEntry.loci` on comments-on entries only; commentary reader anchors go to FOCUS-7.
+- OPEN-7 — accepted: the Concord text is stored as words only (R-C2-W4 reaches T8a).
+- OPEN-8 — accepted: the Kjv section's logical hash is the layer hash; no manifest field, no tokenizer version.
+- OPEN-9 — accepted: the spike's comparison (case-insensitive; word-internal ’ / – / - folded), without KRETZ-ACCEPT-1's equivalence classes; misses stay verse-range and are counted.
