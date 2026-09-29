@@ -320,6 +320,19 @@ mod tests {
     }
 
     #[test]
+    fn a_key_repeated_with_the_very_same_text_is_no_ambiguity_and_keeps_its_description() {
+        // Arrange
+        const REPEATED_TEXT: &str = "A city in the lowlands of Judah.";
+        let pairs = [("libnah".to_string(), REPEATED_TEXT), ("libnah".to_string(), REPEATED_TEXT)];
+
+        // Act
+        let resolved = collision_checked(pairs.into_iter());
+
+        // Assert
+        assert_eq!(resolved, HashMap::from([("libnah".to_string(), REPEATED_TEXT)]));
+    }
+
+    #[test]
     fn ambiguous_dict_lookup_with_differing_text_resolves_to_none_not_a_guess() {
         let atlas = atlas_with(vec![], vec![easton("Salt", "Text A about salt.", "unmatched", "unmatched", None, None), easton("SALT", "Text B, a different entry.", "unmatched", "unmatched", None, None)]);
         let canon = Canon { books: vec![] };
