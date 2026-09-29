@@ -15,7 +15,8 @@
         "Translation",
         "PeopleGroup",
         "CommentaryItem",
-        "LexiconEntry"
+        "LexiconEntry",
+        "Map"
     ],
     "relations": [
         {

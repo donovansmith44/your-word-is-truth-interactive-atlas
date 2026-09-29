@@ -316,6 +316,22 @@ CREATE TABLE authored (
 );
 ";
 const IDX_AUTHORED: &str = "CREATE UNIQUE INDEX authored_ord ON authored (ord);";
+const DDL_SHOWN: &str = "
+CREATE TABLE shown (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  map_id TEXT NOT NULL, node_kind INTEGER NOT NULL, node_id TEXT NOT NULL,
+  provenance TEXT NOT NULL
+);
+";
+const IDX_SHOWN: &str = "CREATE UNIQUE INDEX shown_ord ON shown (ord);";
+const DDL_MAP_SUCCESSION: &str = "
+CREATE TABLE map_succession (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  prior_id TEXT NOT NULL, next_id TEXT NOT NULL,
+  provenance TEXT NOT NULL
+);
+";
+const IDX_MAP_SUCCESSION: &str = "CREATE UNIQUE INDEX map_succession_ord ON map_succession (ord);";
 
 const DDL_CROSS_REFS: &str = "
 CREATE TABLE cross_refs (
@@ -612,6 +628,8 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::Partners => DDL_PARTNERS,
         RowFamily::Participates => DDL_PARTICIPATES,
         RowFamily::Authored => DDL_AUTHORED,
+        RowFamily::Shown => DDL_SHOWN,
+        RowFamily::MapSuccession => DDL_MAP_SUCCESSION,
     }
 }
 
@@ -643,6 +661,8 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::Partners => IDX_PARTNERS,
         RowFamily::Participates => IDX_PARTICIPATES,
         RowFamily::Authored => IDX_AUTHORED,
+        RowFamily::Shown => IDX_SHOWN,
+        RowFamily::MapSuccession => IDX_MAP_SUCCESSION,
     }
 }
 

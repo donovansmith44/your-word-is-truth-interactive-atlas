@@ -63,7 +63,13 @@ pub fn node_kind_ordinal(k: NodeKind) -> i64 {
         NodeKind::PeopleGroup => 12,
         NodeKind::CommentaryItem => 13,
         NodeKind::LexiconEntry => 14,
+        NodeKind::Map => 15,
     }
+}
+
+/// The inverse of `node_kind_ordinal`: `ALL` is declaration order, which is the ordinal.
+pub fn node_kind_of_ordinal(code: i64) -> Option<NodeKind> {
+    NodeKind::ALL.get(usize::try_from(code).ok()?).copied()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -133,6 +139,8 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::Partners => all(f, &g.partners, RowRef::Partners),
             RowFamily::Participates => all(f, &g.participates, RowRef::Participates),
             RowFamily::Authored => all(f, &g.authored, RowRef::Authored),
+            RowFamily::Shown => all(f, &g.shown, RowRef::Shown),
+            RowFamily::MapSuccession => all(f, &g.map_succession, RowRef::MapSuccession),
             RowFamily::CrossRefs => all(f, &g.cross_refs, RowRef::CrossRefs),
             RowFamily::SpokenBy => all(f, &g.spoken_by, RowRef::SpokenBy),
             RowFamily::SpokenAt => all(f, &g.spoken_at, RowRef::SpokenAt),
@@ -276,4 +284,20 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
         });
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_kind_reads_back_from_the_ordinal_it_is_written_as() {
+        // Arrange
+        let every_kind = NodeKind::ALL;
+        // Act
+        let back: Vec<Option<NodeKind>> = every_kind.iter().map(|kind| node_kind_of_ordinal(node_kind_ordinal(*kind))).collect();
+        // Assert
+        assert_eq!(back, every_kind.map(Some).to_vec());
+        assert_eq!(node_kind_of_ordinal(every_kind.len() as i64), None);
+    }
 }

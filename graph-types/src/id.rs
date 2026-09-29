@@ -11,7 +11,7 @@ crate::vocabulary! {
     #[derive(PartialOrd, Ord, Hash)]
     NodeKind {
         TextUnit, Container, Event, Narrative, Place, Person, Anchor, Era, Polity,
-        CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry,
+        CatechismItem, Source, Translation, PeopleGroup, CommentaryItem, LexiconEntry, Map,
     }
 }
 
@@ -52,6 +52,7 @@ kind_tags! {
     PeopleGroupTag => PeopleGroup,
     CommentaryItemTag => CommentaryItem,
     LexiconEntryTag => LexiconEntry,
+    MapTag => Map,
 }
 
 #[derive(Debug)]
@@ -108,6 +109,7 @@ pub type TranslationNodeId = NodeId<TranslationTag>;
 pub type PeopleGroupId = NodeId<PeopleGroupTag>;
 pub type CommentaryItemId = NodeId<CommentaryItemTag>;
 pub type LexiconEntryId = NodeId<LexiconEntryTag>;
+pub type MapId = NodeId<MapTag>;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AnyNodeId {

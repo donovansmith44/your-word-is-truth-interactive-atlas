@@ -89,6 +89,9 @@ pub enum NodePayload {
     Anchor { at: TimePoint, citation: String },
     /// The range rides the payload: there is no edge kind for "when".
     Era { label: String, from_year: i32, to_year: i32 },
+    /// The world at an era's window, drawn. What it shows rides `shows` edges, never the
+    /// payload, so the map and its era can never disagree about what was in view.
+    Map { label: String, from_year: i32, to_year: i32 },
     /// `color_key` is constant across a polity's eras, even as an era's name changes.
     Polity { label: String, color_key: u8, eras: Vec<PolityEraPayload> },
     CatechismItem { label: String },
@@ -181,6 +184,7 @@ pub fn card(n: &dyn NodeData) -> Card {
         | NodePayload::Narrative { label, .. }
         | NodePayload::Person { label, .. }
         | NodePayload::Era { label, .. }
+        | NodePayload::Map { label, .. }
         | NodePayload::Polity { label, .. }
         | NodePayload::CatechismItem { label }
         | NodePayload::Source { label }

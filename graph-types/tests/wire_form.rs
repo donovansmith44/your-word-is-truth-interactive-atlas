@@ -4,9 +4,8 @@ use atlas_graph_types::{EdgeKind, NodeKind};
 use utoipa::PartialSchema;
 
 mod common;
-use common::DECLARED_EDGE_KINDS;
+use common::{DECLARED_EDGE_KINDS, DECLARED_NODE_KINDS};
 
-const DECLARED_NODE_KINDS: usize = 15;
 const NODE_KIND_DESCRIPTION: &str = "What kind of thing one node of this atlas stands for.";
 const EDGE_KIND_DESCRIPTION: &str = "A relation between two nodes, named in the direction it is travelled: the label one frontier of a node is asked for by.";
 

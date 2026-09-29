@@ -7,12 +7,12 @@ use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
     Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, SpokenAt, SpokenBy,
+    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
 };
 use crate::id::{
-    AnchorTag, CatechismItemTag, CommentaryItemTag, ContainerTag, EraTag, EventTag, KindTag, LexiconEntryTag,
-    NarrativeTag, NodeId, PeopleGroupTag, PersonTag, PlaceTag, PolityTag, SourceTag,
+    AnchorTag, AnyNodeId, CatechismItemTag, CommentaryItemTag, ContainerTag, EraTag, EventTag, KindTag, LexiconEntryTag,
+    MapTag, NarrativeTag, NodeId, PeopleGroupTag, PersonTag, PlaceTag, PolityTag, SourceTag,
 };
 use crate::text::{
     ConcordRef, Corpus, Locus, LocusRange, LocusSet, TextLocus, TextRef, TokenSpan, TranslationId,
@@ -57,10 +57,12 @@ pub enum RowFamily {
     Partners,
     Participates,
     Authored,
+    Shown,
+    MapSuccession,
 }
 
 impl RowFamily {
-    pub const ALL: [RowFamily; 26] = [
+    pub const ALL: [RowFamily; 28] = [
         RowFamily::ContainsBible,
         RowFamily::ContainsConcord,
         RowFamily::Attests,
@@ -87,6 +89,8 @@ impl RowFamily {
         RowFamily::Partners,
         RowFamily::Participates,
         RowFamily::Authored,
+        RowFamily::Shown,
+        RowFamily::MapSuccession,
     ];
 
     /// The table name as the schema spells it.
@@ -118,6 +122,8 @@ impl RowFamily {
             RowFamily::Partners => "partners",
             RowFamily::Participates => "participates",
             RowFamily::Authored => "authored",
+            RowFamily::Shown => "shown",
+            RowFamily::MapSuccession => "map_succession",
         }
     }
 
@@ -214,6 +220,13 @@ fn field_id<K: KindTag>(
 ) -> Result<NodeId<K>, CanonError> {
     let (v, p) = field(m, path, key)?;
     id_from_value::<K>(v, &p)
+}
+
+/// A field that may name a node of any kind rides the same `Kind:raw` spelling, read back
+/// without narrowing.
+fn field_any_id(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<AnyNodeId, CanonError> {
+    let (v, p) = field(m, path, key)?;
+    parse_any_node_id(&expect_str(v, &p)?, &p)
 }
 
 /// A unit variant's payload is `null` and nothing else -- the same closedness the member check
@@ -639,6 +652,8 @@ const PARENT_OF_KEYS: &[&str] = &["child", "parent", "provenance"];
 const PARTNERS_KEYS: &[&str] = &["a", "b", "provenance"];
 const PARTICIPATES_KEYS: &[&str] = &["event", "person", "provenance"];
 const AUTHORED_KEYS: &[&str] = &["book", "justification", "person", "provenance"];
+const SHOWN_KEYS: &[&str] = &["map", "node", "provenance"];
+const MAP_SUCCESSION_KEYS: &[&str] = &["next", "prior", "provenance"];
 
 impl<C: Corpus> Canon for Contains<C>
 where
@@ -1207,6 +1222,48 @@ impl Canon for Authored {
     }
 }
 
+impl Canon for Shown {
+    fn to_value(&self) -> Value {
+        let Self { map, node, provenance } = self;
+        obj(vec![
+            ("map", id_value(map)),
+            ("node", str_value(&any_node_id_str(node))),
+            ("provenance", str_value(provenance)),
+        ])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, SHOWN_KEYS)?;
+        Ok(Shown {
+            map: field_id::<MapTag>(m, ROOT, "map")?,
+            node: field_any_id(m, ROOT, "node")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
+impl Canon for MapSuccession {
+    fn to_value(&self) -> Value {
+        let Self { prior, next, provenance } = self;
+        obj(vec![
+            ("next", id_value(next)),
+            ("prior", id_value(prior)),
+            ("provenance", str_value(provenance)),
+        ])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, MAP_SUCCESSION_KEYS)?;
+        Ok(MapSuccession {
+            prior: field_id::<MapTag>(m, ROOT, "prior")?,
+            next: field_id::<MapTag>(m, ROOT, "next")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+        })
+    }
+}
+
 /// The total family-to-relation map: every family lowers into exactly one relation, so a
 /// family and a relation spelled differently are reconciled in one place.
 impl RowFamily {
@@ -1238,6 +1295,8 @@ impl RowFamily {
             RowFamily::Partners => Symmetric(S::Partners),
             RowFamily::Participates => Directed(R::Participates),
             RowFamily::Authored => Directed(R::AuthoredBy),
+            RowFamily::Shown => Directed(R::Shows),
+            RowFamily::MapSuccession => Directed(R::Succession),
         }
     }
 }

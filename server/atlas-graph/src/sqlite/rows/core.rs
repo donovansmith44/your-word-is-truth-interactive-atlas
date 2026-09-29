@@ -6,8 +6,8 @@ use std::collections::BTreeSet;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
-    MentionedEntity, Mentions, NamedAfter, Namesake, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
-use atlas_graph_types::id::{AnchorId, ContainerNodeId, EraId, EventId, NodeId};
+    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
+use atlas_graph_types::id::{AnchorId, AnyNodeId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
     BibleTag, ConcordRef, Corpus, Locus, LocusSet, TokenSpan, VerseRef,
 };
@@ -18,6 +18,7 @@ use super::super::columns::{
     bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
     read_text_locus, span_values, text_locus_values, JustificationWriter,
 };
+use super::super::partition::{node_kind_of_ordinal, node_kind_ordinal};
 use super::super::SqliteError;
 use super::{authored, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
 
@@ -518,5 +519,37 @@ pub fn read_authored(conn: &Connection) -> Result<Vec<(i64, Authored)>, SqliteEr
             provenance: col(row, D + 2, "provenance")?,
             justification: read_justification_at(conn, row, D + 3)?,
         })
+    })
+}
+
+/// The one heterogeneous id column: a map shows nodes of several kinds, so the kind rides beside
+/// the raw id as the same ordinal the `node` table writes.
+const COLS_SHOWN: &str = "map_id, node_kind, node_id, provenance";
+
+pub fn insert_shown(tx: &Transaction, ord: i64, row: &Shown) -> Result<(), SqliteError> {
+    insert(tx, "shown", COLS_SHOWN, ord, vec![text(&row.map.0), int(node_kind_ordinal(row.node.kind)), text(&row.node.raw), text(&row.provenance)])
+}
+
+pub fn read_shown(conn: &Connection) -> Result<Vec<(i64, Shown)>, SqliteError> {
+    read_all(conn, "shown", COLS_SHOWN, |row| {
+        let code: i64 = col(row, D + 1, "node_kind")?;
+        let kind = node_kind_of_ordinal(code).ok_or_else(|| SqliteError(format!("shown node_kind {code} names no kind")))?;
+        Ok(Shown {
+            map: id_col(row, D, "map_id")?,
+            node: AnyNodeId { kind, raw: col(row, D + 2, "node_id")? },
+            provenance: col(row, D + 3, "provenance")?,
+        })
+    })
+}
+
+const COLS_MAP_SUCCESSION: &str = "prior_id, next_id, provenance";
+
+pub fn insert_map_succession(tx: &Transaction, ord: i64, row: &MapSuccession) -> Result<(), SqliteError> {
+    insert(tx, "map_succession", COLS_MAP_SUCCESSION, ord, vec![text(&row.prior.0), text(&row.next.0), text(&row.provenance)])
+}
+
+pub fn read_map_succession(conn: &Connection) -> Result<Vec<(i64, MapSuccession)>, SqliteError> {
+    read_all(conn, "map_succession", COLS_MAP_SUCCESSION, |row| {
+        Ok(MapSuccession { prior: id_col(row, D, "prior_id")?, next: id_col(row, D + 1, "next_id")?, provenance: col(row, D + 2, "provenance")? })
     })
 }

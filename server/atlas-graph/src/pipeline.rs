@@ -1,6 +1,6 @@
-//! The compiler pipeline contract: `normalize -> merge/alias -> resolve -> derive -> index ->
-//! law-check`, as an ordered list of passes that is DATA rather than a hardcoded call chain, so
-//! backing a pass out is removing its entry from the list.
+//! The compiler pipeline contract: `normalize -> merge/alias -> resolve -> derive -> index -> map ->
+//! index -> law-check`, as an ordered list of passes that is DATA rather than a hardcoded call chain,
+//! so backing a pass out is removing its entry from the list.
 
 use anyhow::{Context, Result};
 
@@ -249,6 +249,17 @@ impl Pass for IndexPass {
     }
 }
 
+struct MapPass;
+impl Pass for MapPass {
+    fn name(&self) -> &'static str {
+        "map"
+    }
+    fn run(&self, ctx: &mut BuildCtx) -> Result<()> {
+        crate::map_adapter::derive(ctx).context("deriving one Map per era from the scene at its window")?;
+        Ok(())
+    }
+}
+
 struct LawCheckPass;
 impl Pass for LawCheckPass {
     fn name(&self) -> &'static str {
@@ -303,6 +314,10 @@ pub fn pipeline() -> Vec<Box<dyn Pass>> {
         Box::new(ResolvePass),
         Box::new(DerivePass),
         Box::new(IndexPass),
+        // The map pass reads the world through the port, which needs the first index, and authors
+        // the rows the served index must carry, which needs the second.
+        Box::new(MapPass),
+        Box::new(IndexPass),
         Box::new(LawCheckPass),
     ]
 }
@@ -325,9 +340,9 @@ mod pipeline_tests {
     }
 
     #[test]
-    fn the_six_named_stages_run_in_the_documented_order() {
+    fn the_named_stages_run_in_the_documented_order() {
         let names: Vec<&str> = pipeline().iter().map(|p| p.name()).collect();
-        assert_eq!(names, vec!["normalize", "merge_alias", "resolve", "derive", "index", "law_check"]);
+        assert_eq!(names, vec!["normalize", "merge_alias", "resolve", "derive", "index", "map", "index", "law_check"]);
     }
 
     #[test]
@@ -335,7 +350,7 @@ mod pipeline_tests {
         let (canon, verses, atlas) = empty_ctx();
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
         let reduced: Vec<Box<dyn Pass>> = pipeline().into_iter().filter(|p| p.name() != "law_check").collect();
-        assert_eq!(reduced.len(), 5, "every OTHER stage stays -- only law_check was backed out");
+        assert_eq!(reduced.len(), 7, "every OTHER stage stays -- only law_check was backed out");
         assert!(run_pipeline(&mut ctx, &reduced).is_ok(), "a reduced pipeline still runs the passes it DOES list");
         assert_eq!(ctx.graph.nodes.len(), 0, "an empty fixture still builds an empty (not fabricated) graph");
     }
@@ -381,6 +396,6 @@ mod pipeline_tests {
     fn full_pipeline_over_a_trivial_fixture_is_green() {
         let (canon, verses, atlas) = empty_ctx();
         let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
-        run_pipeline(&mut ctx, &pipeline()).expect("the full six-stage pipeline must run clean over an empty-but-honest fixture");
+        run_pipeline(&mut ctx, &pipeline()).expect("the full pipeline must run clean over an empty-but-honest fixture");
     }
 }

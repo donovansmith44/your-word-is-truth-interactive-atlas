@@ -236,10 +236,7 @@ impl GraphService {
         red_letter_spans: HashMap<String, Vec<(usize, usize)>>,
         sidecars: Option<(&AtlasData, &SourcesDocument)>,
     ) -> Self {
-        let mut narrative_legs: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        for row in &graph.succession {
-            narrative_legs.insert(row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect());
-        }
+        let narrative_legs = narrative_legs_of(&graph);
         let heading_index = crate::heading::build_heading_index(&graph, &chronology.chrono.resolved);
         // The non-graph section tables ride the graph into the version root, computed from the same
         // values the section writer folds.
@@ -355,17 +352,8 @@ impl GraphService {
     }
 
     /// Every node id of one kind, in id byte order, drained from the port.
-    pub fn ids_of_kind(&self, kind: atlas_graph_types::id::NodeKind) -> Vec<AnyNodeId> {
-        let mut out: Vec<AnyNodeId> = Vec::new();
-        let mut cursor = None;
-        loop {
-            let page = self.snapshot.nodes_of_kind(kind, cursor, 4096);
-            out.extend(page.ids);
-            match page.next {
-                Some(c) => cursor = Some(c),
-                None => break out,
-            }
-        }
+    pub fn ids_of_kind(&self, kind: NodeKind) -> Vec<AnyNodeId> {
+        ids_of_kind(&self.snapshot, kind)
     }
 
     /// The distinct, sorted provenance of every row behind the edges of one kind at one position. A
@@ -525,6 +513,26 @@ impl GraphService {
     pub fn scene_source(&self, sidecars: &AtlasData) -> &crate::scene_source::GraphSceneSource {
         self.scene_source.get_or_init(|| crate::scene_source::GraphSceneSource::build(self, sidecars))
     }
+}
+
+/// Every node id of one kind, in id byte order, drained from any port handle.
+pub fn ids_of_kind(q: &impl GraphQuery, kind: NodeKind) -> Vec<AnyNodeId> {
+    let mut out: Vec<AnyNodeId> = Vec::new();
+    let mut cursor = None;
+    loop {
+        let page = q.nodes_of_kind(kind, cursor, 4096);
+        out.extend(page.ids);
+        match page.next {
+            Some(c) => cursor = Some(c),
+            None => break out,
+        }
+    }
+}
+
+/// narrative id -> its `succession` row's chain, in order: the single source for a narrative's legs,
+/// never duplicated onto the node payload. A narrative with no legs has no entry at all.
+pub fn narrative_legs_of(graph: &Graph) -> BTreeMap<String, Vec<String>> {
+    graph.succession.iter().map(|row| (row.narrative.0.clone(), row.chain.iter().map(|e| e.0.clone()).collect())).collect()
 }
 
 /// The curated eras beside `raw_dir`: the one other filesystem read this crate performs.

@@ -2,8 +2,10 @@
 //! (polity, era): a polity's id and `color_key` are constant across its eras, so splitting them
 //! would either duplicate that identity or need a relation to tie the pieces back together.
 
-use atlas_graph_types::id::PolityId;
+use atlas_core::time::TimeRange;
+use atlas_graph_types::id::{AnyNodeId, NodeKind, PolityId};
 use atlas_graph_types::node::{Node, NodePayload, PolityEraPayload};
+use atlas_graph_types::store::GraphQuery;
 
 use crate::pipeline::BuildCtx;
 
@@ -45,6 +47,31 @@ fn polity_node(p: &atlas_core::data::Polity) -> Node {
     }
 }
 
+/// One era of one polity whose years overlap a window: what a map draws a border for.
+#[derive(Debug, Clone)]
+pub struct Reign {
+    pub polity: AnyNodeId,
+    pub color_key: u8,
+    pub era: PolityEraPayload,
+}
+
+/// Every reign overlapping `window`, by polity and then oldest era first, so a border change
+/// paints older beneath newer.
+pub fn reigns_in(q: &impl GraphQuery, window: &TimeRange) -> Vec<Reign> {
+    let mut out: Vec<Reign> = Vec::new();
+    for id in crate::service::ids_of_kind(q, NodeKind::Polity) {
+        let Some(node) = q.node(&id) else { continue };
+        let NodePayload::Polity { color_key, eras, .. } = node.payload else { continue };
+        for era in eras {
+            if window.intersects(&TimeRange { from_year: era.from_year, to_year: era.to_year }) {
+                out.push(Reign { polity: id.clone(), color_key, era });
+            }
+        }
+    }
+    out.sort_by(|a, b| (&a.polity.raw, a.era.from_year).cmp(&(&b.polity.raw, b.era.from_year)));
+    out
+}
+
 pub fn normalize(ctx: &mut BuildCtx) -> PolityAdapterStats {
     let mut stats = PolityAdapterStats::default();
     for p in &ctx.atlas.polities {
@@ -67,6 +94,33 @@ mod tests {
         let mut d = AtlasData::new(Canon { books: vec![] }, vec![], vec![], vec![], vec![], vec![], HashMap::new(), HashMap::new()).finish();
         d.polities = vec![p];
         d
+    }
+
+    #[test]
+    fn the_reigns_in_a_window_are_every_overlapping_era_by_polity_then_oldest_first() {
+        // Arrange
+        let atlas = atlas_with_polity(Polity {
+            id: "egypt".into(),
+            color_key: 3,
+            eras: vec![
+                PolityEra { name: "Ptolemaic Egypt".into(), from: -332, to: -30, ref_note: String::new(), rings: vec![], transition: None, fall: None },
+                PolityEra { name: "Egypt".into(), from: -3100, to: -332, ref_note: String::new(), rings: vec![], transition: None, fall: None },
+                PolityEra { name: "Roman Egypt".into(), from: -30, to: 395, ref_note: String::new(), rings: vec![], transition: None, fall: None },
+            ],
+        });
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+
+        // Act
+        let reigns: Vec<(String, u8, String, i32)> = reigns_in(&ctx.graph, &TimeRange::new(-400, -300).unwrap())
+            .into_iter()
+            .map(|r| (r.polity.raw, r.color_key, r.era.name, r.era.from_year))
+            .collect();
+
+        // Assert
+        assert_eq!(reigns, vec![("egypt".to_string(), 3, "Egypt".to_string(), -3100), ("egypt".to_string(), 3, "Ptolemaic Egypt".to_string(), -332)]);
     }
 
     #[test]

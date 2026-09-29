@@ -52,6 +52,8 @@ fn push_row(g: &mut Graph, ord: i64, row: RowOwned) -> Result<(), SqliteError> {
         RowOwned::Partners(r) => push!(g.partners, r, "partners"),
         RowOwned::Participates(r) => push!(g.participates, r, "participates"),
         RowOwned::Authored(r) => push!(g.authored, r, "authored"),
+        RowOwned::Shown(r) => push!(g.shown, r, "shown"),
+        RowOwned::MapSuccession(r) => push!(g.map_succession, r, "map_succession"),
         RowOwned::CrossRefs(r) => push!(g.cross_refs, r, "cross_refs"),
         RowOwned::SpokenBy(r) => push!(g.spoken_by, r, "spoken_by"),
         RowOwned::SpokenAt(r) => push!(g.spoken_at, r, "spoken_at"),

@@ -52,6 +52,7 @@ const PERSON_KEYS: &[&str] = &[
 const PEOPLE_GROUP_KEYS: &[&str] = &["description", "label"];
 const ANCHOR_KEYS: &[&str] = &["at", "citation"];
 const ERA_KEYS: &[&str] = &["from_year", "label", "to_year"];
+const MAP_KEYS: &[&str] = &["from_year", "label", "to_year"];
 const POLITY_KEYS: &[&str] = &["color_key", "eras", "label"];
 const LABEL_ONLY_KEYS: &[&str] = &["label"];
 const COMMENTARY_ITEM_KEYS: &[&str] = &["heading", "text", "work"];
@@ -170,6 +171,14 @@ fn payload_to_value(p: &NodePayload) -> Value {
         ),
         NodePayload::Era { label, from_year, to_year } => variant(
             "Era",
+            obj(vec![
+                ("from_year", Value::Int(i64::from(*from_year))),
+                ("label", str_value(label)),
+                ("to_year", Value::Int(i64::from(*to_year))),
+            ]),
+        ),
+        NodePayload::Map { label, from_year, to_year } => variant(
+            "Map",
             obj(vec![
                 ("from_year", Value::Int(i64::from(*from_year))),
                 ("label", str_value(label)),
@@ -303,6 +312,14 @@ fn payload_from_value(v: &Value, path: &str) -> Result<NodePayload, CanonError> 
         "Era" => {
             expect_exact_keys(m, &p, ERA_KEYS)?;
             Ok(NodePayload::Era {
+                label: field_str(m, &p, "label")?,
+                from_year: field_i32(m, &p, "from_year")?,
+                to_year: field_i32(m, &p, "to_year")?,
+            })
+        }
+        "Map" => {
+            expect_exact_keys(m, &p, MAP_KEYS)?;
+            Ok(NodePayload::Map {
                 label: field_str(m, &p, "label")?,
                 from_year: field_i32(m, &p, "from_year")?,
                 to_year: field_i32(m, &p, "to_year")?,

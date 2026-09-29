@@ -2,13 +2,15 @@
 //! verse text and none of `AtlasData`'s derived index web, only the derivations its readers ask for,
 //! and its construction sequence must stay `AtlasData::finish()`'s, step for step.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use atlas_core::data::{Event, Narrative, Place, PlaceHistory, PlaceNameAlias};
 use atlas_core::refs::{ScriptureRef, VerseId};
 use atlas_core::scene_source::SceneSource;
 use atlas_core::time::TimeRange;
+use atlas_graph_types::store::GraphQuery;
 
+use crate::event_world::ChronologyDerivation;
 use crate::service::GraphService;
 
 /// Deliberately neither `Clone` -- exactly one such copy exists per process -- nor `Debug`, since a
@@ -42,22 +44,32 @@ pub struct GraphSceneSource {
 }
 
 impl GraphSceneSource {
+    /// The source a finished service serves from.
+    pub fn build(gs: &GraphService, sidecars: &atlas_core::data::AtlasData) -> Self {
+        Self::over(&gs.snapshot(), &gs.chronology.chrono, &gs.narrative_legs, sidecars)
+    }
+
+    /// Over any port handle: a finished service's snapshot, or the compiler's in-progress graph once
+    /// its indexes are built, so a map composed at compile time reads exactly what a request reads.
     /// Only `sidecars`' curated-JSON maps are read, so a bare, un-`finish()`ed `AtlasData` is safe and
     /// intended here: none of its graph-derived fields is touched. The sequence below is
     /// `AtlasData::finish()`'s, step for step, and must stay that way.
-    pub fn build(gs: &GraphService, sidecars: &atlas_core::data::AtlasData) -> Self {
-        let snap = gs.snapshot();
-
+    pub fn over(
+        q: &impl GraphQuery,
+        chrono: &ChronologyDerivation,
+        narrative_legs: &BTreeMap<String, Vec<String>>,
+        sidecars: &atlas_core::data::AtlasData,
+    ) -> Self {
         // Materialised in node id order, which is the pre-sort insertion order the stable sort below
         // preserves for every `from_year` tie, so it is load-bearing.
         use atlas_graph_types::id::NodeKind;
-        let mut events: Vec<Event> = gs.ids_of_kind(NodeKind::Event).iter().filter_map(|id| crate::legacy::event_from_node(id, &snap, &gs.chronology.chrono)).collect();
-        let mut places: Vec<Place> = gs.ids_of_kind(NodeKind::Place).iter().filter_map(|id| crate::legacy::place_from_node(id, &snap)).collect();
+        use crate::service::ids_of_kind;
+        let mut events: Vec<Event> = ids_of_kind(q, NodeKind::Event).iter().filter_map(|id| crate::legacy::event_from_node(id, q, chrono)).collect();
+        let mut places: Vec<Place> = ids_of_kind(q, NodeKind::Place).iter().filter_map(|id| crate::legacy::place_from_node(id, q)).collect();
         let empty_legs: Vec<String> = Vec::new();
-        let mut narratives: Vec<Narrative> = gs
-            .ids_of_kind(NodeKind::Narrative)
+        let mut narratives: Vec<Narrative> = ids_of_kind(q, NodeKind::Narrative)
             .iter()
-            .filter_map(|id| crate::legacy::narrative_from_node(id, &snap, gs.narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
+            .filter_map(|id| crate::legacy::narrative_from_node(id, q, narrative_legs.get(&id.raw).unwrap_or(&empty_legs)))
             .collect();
 
         // The curated same-place dedupe comes FIRST: it rewrites `events[*].places` as well as

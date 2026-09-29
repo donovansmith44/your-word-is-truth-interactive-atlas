@@ -54,6 +54,7 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
         "CommentaryItem" => Some(AnyNodeId { kind: NodeKind::CommentaryItem, raw: rest.to_string() }),
         "Container" => Some(AnyNodeId { kind: NodeKind::Container, raw: rest.to_string() }),
         "LexiconEntry" => Some(AnyNodeId { kind: NodeKind::LexiconEntry, raw: rest.to_string() }),
+        "Map" => Some(AnyNodeId { kind: NodeKind::Map, raw: rest.to_string() }),
         _ => None,
     }
 }
@@ -105,6 +106,7 @@ mod tests {
             (NodeKind::Container, "bible-chapter-GEN-1", "Container:bible-chapter-GEN-1"),
             (NodeKind::Container, "concord-doc-small-catechism", "Container:concord-doc-small-catechism"),
             (NodeKind::LexiconEntry, "H430", "LexiconEntry:H430"),
+            (NodeKind::Map, "era-primeval", "Map:era-primeval"),
         ] {
             let id = AnyNodeId { kind, raw: raw.to_string() };
             let wire = encode_node_id(&id);

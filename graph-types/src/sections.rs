@@ -80,6 +80,7 @@ pub fn section_of_node(node: &Node) -> Section {
         | NodePayload::PeopleGroup { .. }
         | NodePayload::Anchor { .. }
         | NodePayload::Era { .. }
+        | NodePayload::Map { .. }
         | NodePayload::Polity { .. }
         | NodePayload::CatechismItem { .. }
         | NodePayload::Source { .. }
@@ -115,7 +116,9 @@ pub fn section_of_family(f: RowFamily) -> Section {
         | RowFamily::ParentOf
         | RowFamily::Partners
         | RowFamily::Participates
-        | RowFamily::Authored => Section::Core,
+        | RowFamily::Authored
+        | RowFamily::Shown
+        | RowFamily::MapSuccession => Section::Core,
         RowFamily::Occurs => Section::Lexicon,
     }
 }
@@ -177,6 +180,8 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::Partners,
             RowFamily::Participates,
             RowFamily::Authored,
+            RowFamily::Shown,
+            RowFamily::MapSuccession,
         ],
         Section::Kjv => &[
             RowFamily::ContainsBible,
@@ -324,6 +329,8 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::Partners => rows!(f, g.partners),
             RowFamily::Participates => rows!(f, g.participates),
             RowFamily::Authored => rows!(f, g.authored),
+            RowFamily::Shown => rows!(f, g.shown),
+            RowFamily::MapSuccession => rows!(f, g.map_succession),
         }
     }
     if let Some(corpus) = spine_corpus(section) {

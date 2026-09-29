@@ -24,6 +24,10 @@ fn blr(from: (u8, u16, u16), to: (u8, u16, u16)) -> BibleLocusRange {
     .expect("a test range must be ordered")
 }
 
+const MAPS: usize = 10;
+const MAP_STEPS: usize = MAPS - 1;
+const SHOWN_ROWS: usize = 3_188;
+
 fn committed_graph() -> &'static Graph {
     static CACHED: OnceLock<Graph> = OnceLock::new();
     CACHED.get_or_init(|| {
@@ -57,7 +61,7 @@ fn every_node_round_trips_and_re_encodes_identically() {
     for (kind, n) in &by_kind {
         println!("  node {kind}: {n}");
     }
-    assert_eq!(count, 106_742, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1)");
+    assert_eq!(count, 106_742 + MAPS, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1) plus one Map per era");
 }
 
 fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {
@@ -109,6 +113,8 @@ fn every_row_of_every_family_round_trips() {
         partners,
         participates,
         authored,
+        shown,
+        map_succession,
         reading: _,
         extra_tables: _,
         indexes: _,
@@ -151,6 +157,8 @@ fn every_row_of_every_family_round_trips() {
     fam!(partners, RowFamily::Partners);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
+    fam!(shown, RowFamily::Shown);
+    fam!(map_succession, RowFamily::MapSuccession);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -189,9 +197,11 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::Partners, 104),
         (RowFamily::Participates, 714),
         (RowFamily::Authored, 0),
+        (RowFamily::Shown, SHOWN_ROWS),
+        (RowFamily::MapSuccession, MAP_STEPS),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 917_411, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5)");
+    assert_eq!(total, 917_411 + SHOWN_ROWS + MAP_STEPS, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5) plus what the maps show and their steps");
 
     assert_eq!(
         round_trip_family(
@@ -389,6 +399,8 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(partners, RowFamily::Partners);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
+    fam!(shown, RowFamily::Shown);
+    fam!(map_succession, RowFamily::MapSuccession);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

@@ -98,19 +98,19 @@ pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
 
     // `ids_of_kind` answers in id order; this response's order is chronological.
     let snap = graph.snapshot();
-    let mut eras: Vec<(i32, Era)> = graph
+    let mut eras: Vec<Era> = graph
         .ids_of_kind(atlas_graph_types::id::NodeKind::Era)
         .into_iter()
         .filter_map(|id| {
             let node = snap.node(&id)?;
             match node.payload {
-                NodePayload::Era { label, from_year, to_year } => Some((from_year, Era { id: id.raw.clone(), name: label, from_year, to_year })),
+                NodePayload::Era { label, from_year, to_year } => Some(Era { id: id.raw.clone(), name: label, from_year, to_year }),
                 _ => None,
             }
         })
         .collect();
-    eras.sort_by(|a, b| (a.0, &a.1.id).cmp(&(b.0, &b.1.id)));
-    Json(eras.into_iter().map(|(_, e)| e).collect())
+    atlas_graph::era_adapter::chronological(&mut eras);
+    Json(eras)
 }
 
 /// Every narrative in this atlas: its name, the colour its arrows are drawn in, and the ordered events it runs through.
@@ -150,34 +150,22 @@ pub async fn polities(
     State(graph): State<Arc<GraphService>>,
     Contract(asked): Contract<SceneWindow>,
 ) -> Result<Json<wire::Polities>, ApiError> {
-    use atlas_graph_types::node::NodePayload;
-
     let window = asked.span()?;
-
     let snap = graph.snapshot();
-    let mut out: Vec<wire::Polity> = Vec::new();
-    for id in &graph.ids_of_kind(atlas_graph_types::id::NodeKind::Polity) {
-        let Some(node) = snap.node(id) else { continue };
-        let NodePayload::Polity { color_key, eras, .. } = node.payload else { continue };
-        for era in &eras {
-            let era_range = TimeRange { from_year: era.from_year, to_year: era.to_year };
-            if window.intersects(&era_range) {
-                out.push(wire::Polity {
-                    id: id.raw.clone(),
-                    name: era.name.clone(),
-                    from: era.from_year,
-                    to: era.to_year,
-                    rings: wire::rings(&era.rings),
-                    color_key,
-                    transition: era.transition.as_ref().map(|d| curated_delta(d, era.from_year)),
-                    fall: era.fall.as_ref().map(|d| curated_delta(d, era.from_year)),
-                });
-            }
-        }
-    }
-    out.sort_by(|a, b| a.id.cmp(&b.id).then(a.from.cmp(&b.from)));
-
-    Ok(Json(wire::Polities { polities: out }))
+    let polities = atlas_graph::polity_adapter::reigns_in(&snap, &window)
+        .into_iter()
+        .map(|reign| wire::Polity {
+            id: reign.polity.raw,
+            name: reign.era.name,
+            from: reign.era.from_year,
+            to: reign.era.to_year,
+            rings: wire::rings(&reign.era.rings),
+            color_key: reign.color_key,
+            transition: reign.era.transition.as_ref().map(|d| curated_delta(d, reign.era.from_year)),
+            fall: reign.era.fall.as_ref().map(|d| curated_delta(d, reign.era.from_year)),
+        })
+        .collect();
+    Ok(Json(wire::Polities { polities }))
 }
 
 /// `for_era_from` is unobservable here -- it is `skip_serializing`, so nothing

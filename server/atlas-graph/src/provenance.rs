@@ -59,6 +59,8 @@ impl ProvenanceIndex {
         sweep!("partners", partners);
         sweep!("participates", participates);
         sweep!("authored", authored);
+        sweep!("shown", shown);
+        sweep!("map_succession", map_succession);
 
         ProvenanceIndex { by_family }
     }

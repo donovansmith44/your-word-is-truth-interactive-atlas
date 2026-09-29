@@ -73,6 +73,14 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
     }
+    for row in &graph.shown {
+        check("shown", "map", row.map.erase())?;
+        check("shown", "node", row.node.clone())?;
+    }
+    for row in &graph.map_succession {
+        check("map_succession", "prior", row.prior.erase())?;
+        check("map_succession", "next", row.next.erase())?;
+    }
     for row in &graph.comments_on {
         check("comments_on", "item", row.item.erase())?;
     }
@@ -464,6 +472,21 @@ mod tests {
         let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling mentions.entity reference");
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
+    }
+
+    #[test]
+    fn red_when_a_shown_row_names_a_node_the_map_has_no_node_for() {
+        // Arrange
+        let mut graph = Graph::default();
+        let map = atlas_graph_types::id::MapId::new("era-primeval");
+        graph.nodes.insert(map.erase(), Node { id: map.erase(), payload: NodePayload::Map { label: "Primeval".into(), from_year: -4004, to_year: -2167 }, provenance: "test".into() });
+        graph.shown.push(atlas_graph_types::edge::Shown { map, node: PlaceId::new("nowhere").erase(), provenance: "test".into() });
+
+        // Act
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling shown.node reference");
+
+        // Assert
+        assert_eq!((err.relation, err.field, err.missing), ("shown", "node", PlaceId::new("nowhere").erase()));
     }
 
     #[test]

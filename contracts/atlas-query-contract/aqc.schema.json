@@ -1093,7 +1093,8 @@
         "Translation",
         "PeopleGroup",
         "CommentaryItem",
-        "LexiconEntry"
+        "LexiconEntry",
+        "Map"
       ],
       "type": "string"
     },
@@ -1414,6 +1415,7 @@
         "PeopleGroup",
         "CommentaryItem",
         "LexiconEntry",
+        "Map",
         "Edge"
       ],
       "type": "string"

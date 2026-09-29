@@ -59,6 +59,7 @@ pub fn node_label(n: &Node) -> Option<&str> {
         | NodePayload::Person { label, .. }
         | NodePayload::PeopleGroup { label, .. }
         | NodePayload::Era { label, .. }
+        | NodePayload::Map { label, .. }
         | NodePayload::Polity { label, .. }
         | NodePayload::CatechismItem { label }
         | NodePayload::Source { label }

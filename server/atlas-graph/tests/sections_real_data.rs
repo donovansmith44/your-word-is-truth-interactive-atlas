@@ -166,6 +166,8 @@ fn every_row_of_every_family_maps_to_a_section() {
         RowFamily::Partners,
         RowFamily::Participates,
         RowFamily::Authored,
+        RowFamily::Shown,
+        RowFamily::MapSuccession,
     ];
     let concord_families = [RowFamily::ContainsConcord, RowFamily::Quotes, RowFamily::Confesses];
     let kretzmann_families = [RowFamily::CommentsOn];
@@ -273,6 +275,8 @@ fn every_row_of_every_family_maps_to_a_section() {
     subject!(partners, RowFamily::Partners, Expect::SameAsFamily, |r| r.a.erase());
     subject!(participates, RowFamily::Participates, Expect::SameAsFamily, |r| r.person.erase());
     subject!(authored, RowFamily::Authored, Expect::NoRows, |r| r.book.erase());
+    subject!(shown, RowFamily::Shown, Expect::SameAsFamily, |r| r.map.erase());
+    subject!(map_succession, RowFamily::MapSuccession, Expect::SameAsFamily, |r| r.prior.erase());
 
     println!("DB-2a SUBJECT SWEEP: {} families", swept.len());
     for (family, expect, s) in &swept {

@@ -63,8 +63,8 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Authored, Ground, Justification, Occurs, ParentOf, Participates, Partners};
-use atlas_graph_types::id::{AnchorId, SourceId, LexiconEntryId};
+use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, ParentOf, Participates, Partners, Shown};
+use atlas_graph_types::id::{AnchorId, MapId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
 
@@ -405,6 +405,8 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
     g.authored.push(Authored { book: ContainerNodeId::new("bible-book-GEN"), person: PersonId::new("moses_2108"), provenance: "books".into(), justification: Justification::default() });
+    g.shown.push(Shown { map: MapId::new("era-patriarchs"), node: PlaceId::new("ur-1").erase(), provenance: "curated-eras".into() });
+    g.map_succession.push(MapSuccession { prior: MapId::new("era-patriarchs"), next: MapId::new("era-exodus"), provenance: "curated-eras".into() });
 
     let node = |kind: NodeKind, raw: &str, payload: NodePayload| Node {
         id: AnyNodeId { kind, raw: raw.to_string() },
@@ -439,6 +441,7 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
             NodePayload::Place { canonical: "Ur".into(), lat: 30.96, lon: 46.1, aliases: vec![], description: None },
         ),
         node(NodeKind::Era, "patriarchs", NodePayload::Era { label: "Patriarchs".into(), from_year: -2100, to_year: -1800 }),
+        node(NodeKind::Map, "era-patriarchs", NodePayload::Map { label: "Patriarchs".into(), from_year: -2100, to_year: -1800 }),
         node(
             NodeKind::LexiconEntry,
             "G3056",
@@ -546,6 +549,8 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::Partners => out.extend(g.partners.iter().map(RowRef::Partners)),
             RowFamily::Participates => out.extend(g.participates.iter().map(RowRef::Participates)),
             RowFamily::Authored => out.extend(g.authored.iter().map(RowRef::Authored)),
+            RowFamily::Shown => out.extend(g.shown.iter().map(RowRef::Shown)),
+            RowFamily::MapSuccession => out.extend(g.map_succession.iter().map(RowRef::MapSuccession)),
         }
     }
     out

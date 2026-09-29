@@ -7,8 +7,8 @@ use crate::edge::{
     at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
-    Succession, TemporalAdjacency, Typology,
+    LocatedAt, MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
+    Shown, Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
 use crate::id::{AnyNodeId, NodeKind, Position};
@@ -64,6 +64,8 @@ pub struct Graph {
     pub partners: Vec<Partners>,
     pub participates: Vec<Participates>,
     pub authored: Vec<Authored>,
+    pub shown: Vec<Shown>,
+    pub map_succession: Vec<MapSuccession>,
 
     // Built, never authored.
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -332,6 +334,20 @@ impl Graph {
                 M::None,
             ));
         }
+        for (i, row) in self.shown.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Shown, i, EdgeRel::Directed(RelationId::Shows), (
+                at(&row.map.erase()),
+                at(&row.node),
+                M::None,
+            ));
+        }
+        for (i, row) in self.map_succession.iter().enumerate() {
+            push_edge(&mut out, RowFamily::MapSuccession, i, EdgeRel::Directed(RelationId::Succession), (
+                at(&row.prior.erase()),
+                at(&row.next.erase()),
+                M::None,
+            ));
+        }
         out
     }
 
@@ -384,6 +400,8 @@ impl Graph {
             F::Partners => self.partners.get(row_ord).map(|r| r.provenance.as_str()),
             F::Participates => self.participates.get(row_ord).map(|r| r.provenance.as_str()),
             F::Authored => self.authored.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Shown => self.shown.get(row_ord).map(|r| r.provenance.as_str()),
+            F::MapSuccession => self.map_succession.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 

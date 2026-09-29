@@ -10,6 +10,9 @@ use atlas_graph_types::node::{
 use atlas_graph_types::text::TranslationId;
 use std::collections::BTreeMap;
 
+mod common;
+use common::DECLARED_NODE_KINDS;
+
 fn obj(pairs: &[(&str, Value)]) -> Value {
     Value::Obj(pairs.iter().map(|(k, v)| (k.to_string(), v.clone())).collect())
 }
@@ -173,6 +176,7 @@ fn every_node_kind_names_itself_with_its_debug_name() {
         NodeKind::PeopleGroup,
         NodeKind::CommentaryItem,
         NodeKind::LexiconEntry,
+        NodeKind::Map,
     ];
     assert_eq!(all, NodeKind::ALL, "NodeKind::ALL is the one list; this array mirrors it");
     for k in all {
@@ -493,6 +497,15 @@ fn every_payload_variant_round_trips() {
             provenance: "atlas".into(),
         },
         Node {
+            id: nid(NodeKind::Map, "era-divided-kingdom"),
+            payload: NodePayload::Map {
+                label: "Divided Kingdom".into(),
+                from_year: -975,
+                to_year: -586,
+            },
+            provenance: "curated-eras".into(),
+        },
+        Node {
             id: nid(NodeKind::Polity, "egypt"),
             payload: NodePayload::Polity {
                 label: "Egypt".into(),
@@ -620,11 +633,12 @@ fn every_payload_variant_round_trips() {
             NodePayload::Source { .. } => "Source",
             NodePayload::Translation { .. } => "Translation",
             NodePayload::LexiconEntry { .. } => "LexiconEntry",
+            NodePayload::Map { .. } => "Map",
         })
         .collect();
     seen.sort_unstable();
     seen.dedup();
-    assert_eq!(seen.len(), 15, "every variant must appear: {seen:?}");
+    assert_eq!(seen.len(), DECLARED_NODE_KINDS, "every variant must appear: {seen:?}");
 
     for n in &nodes {
         round_trip(n);
@@ -696,6 +710,22 @@ fn the_node_goldens_stay_control_character_free() {
 }
 
 #[test]
+fn a_map_encodes_as_its_eras_window_under_its_name() {
+    // Arrange
+    use atlas_graph_types::canon::Canon;
+    let map = Node {
+        id: nid(NodeKind::Map, "era-primeval"),
+        payload: NodePayload::Map { label: "Primeval".into(), from_year: -4004, to_year: -2167 },
+        provenance: "curated-eras".into(),
+    };
+    // Act
+    let bytes = String::from_utf8(map.encode()).unwrap();
+    // Assert
+    assert_eq!(bytes, r#"{"id":"Map:era-primeval","payload":{"Map":{"from_year":-4004,"label":"Primeval","to_year":-2167}},"provenance":"curated-eras"}"#);
+    round_trip(&map);
+}
+
+#[test]
 fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
     use atlas_graph_types::canon::ids::*;
     use atlas_graph_types::canon::Canon;
@@ -706,8 +736,7 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
     assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::Shows));
     assert_eq!(RelationId::Occurs.forward_label(), "occurs-in");
     assert_eq!(RelationId::Occurs.inverse_label(), "words");
-    assert_eq!(NodeKind::ALL.len(), 15);
-    assert_eq!(NodeKind::ALL.last().copied(), Some(NodeKind::LexiconEntry));
+    assert_eq!(NodeKind::ALL.last().copied(), Some(NodeKind::Map));
     let full = Node {
         id: nid(NodeKind::LexiconEntry, "G3056"),
         payload: NodePayload::LexiconEntry {

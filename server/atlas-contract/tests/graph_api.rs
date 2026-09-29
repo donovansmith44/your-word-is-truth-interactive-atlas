@@ -1307,7 +1307,6 @@ async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
     );
 }
 
-const DECLARED_NODE_KINDS: usize = 15;
 const POSITION_KIND_DESCRIPTION: &str = "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.";
 const THE_ONE_EDGE_POSITION: usize = 1;
 const EDGE_POSITION_NAME: &str = "Edge";
@@ -1321,9 +1320,20 @@ fn every_position_kind_serialises_to_the_string_the_frontier_already_carried() {
     let json = serde_json::to_value(&every_position_kind).unwrap();
 
     // Assert
-    let expected = every_position_kind_name();
-    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
-    assert_eq!(json, serde_json::json!(expected));
+    assert_eq!(json, serde_json::json!(every_position_kind_name()));
+}
+
+#[test]
+fn the_published_position_kind_enum_is_every_node_kind_of_the_vocabulary_then_edge() {
+    // Arrange
+    let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+
+    // Act
+    let published = document["components"]["schemas"]["PositionKind"]["enum"].clone();
+
+    // Assert
+    assert_eq!(published.as_array().unwrap().len(), NodeKind::ALL.len() + THE_ONE_EDGE_POSITION);
+    assert_eq!(published, serde_json::json!(every_position_kind_name()));
 }
 
 fn every_position_kind_name() -> Vec<&'static str> {
@@ -1339,6 +1349,65 @@ fn the_position_kind_schema_is_a_flat_string_enum_of_every_node_kind_then_edge()
     let schema = serde_json::to_value(<PositionKind as utoipa::PartialSchema>::schema()).unwrap();
 
     // Assert
-    assert_eq!(expected.len(), DECLARED_NODE_KINDS + THE_ONE_EDGE_POSITION);
     assert_eq!(schema, serde_json::json!({ "type": "string", "description": POSITION_KIND_DESCRIPTION, "enum": expected }));
+}
+
+const FIRST_ERA: &str = "primeval";
+const FIRST_ERA_MAP: &str = "Map:era-primeval";
+const FIRST_ERA_NAME: &str = "Primeval";
+const THE_NEXT_MAP: usize = 1;
+const FIRST_ERA_SHOWN_BY_KIND: [(&str, usize); 3] = [("Event", 5), ("Place", 235), ("Polity", 3)];
+
+#[tokio::test]
+async fn the_map_for_the_first_era_shows_its_events_places_and_polities_and_is_followed_by_the_next() {
+    // Arrange
+    let app = compiled_app();
+    let (_, eras, _) = get(&app, "/api/eras").await;
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/node/{FIRST_ERA_MAP}")).await;
+    let shown = every_edge_of(&app, FIRST_ERA_MAP, "shows").await;
+
+    // Assert
+    assert_eq!(eras[0]["id"], FIRST_ERA);
+    assert_eq!(status, StatusCode::OK, "{card}");
+    let version = card["version"].clone();
+    let shows: usize = FIRST_ERA_SHOWN_BY_KIND.iter().map(|(_, n)| n).sum();
+    assert_eq!(
+        card,
+        serde_json::json!({
+            "id": FIRST_ERA_MAP,
+            "kind": "Map",
+            "label": FIRST_ERA_NAME,
+            "provenance": "curated-eras",
+            "edge_summary": [
+                { "kind": "follows-in", "count": THE_NEXT_MAP },
+                { "kind": "shows", "count": shows },
+            ],
+            "version": version,
+        })
+    );
+    let mut shown_by_kind: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    for entry in &shown {
+        *shown_by_kind.entry(entry["node"]["kind"].as_str().unwrap()).or_default() += 1;
+    }
+    assert_eq!(shown_by_kind, std::collections::BTreeMap::from(FIRST_ERA_SHOWN_BY_KIND));
+}
+
+async fn every_edge_of(app: &axum::Router, id: &str, kind: &str) -> Vec<serde_json::Value> {
+    let mut entries: Vec<serde_json::Value> = Vec::new();
+    let mut cursor: Option<u64> = None;
+    loop {
+        let uri = match cursor {
+            Some(c) => format!("/api/node/{id}/edges?kind={kind}&limit=200&cursor={c}"),
+            None => format!("/api/node/{id}/edges?kind={kind}&limit=200"),
+        };
+        let (status, page, _) = get(app, &uri).await;
+        assert_eq!(status, StatusCode::OK, "{page}");
+        entries.extend(page["entries"].as_array().unwrap().iter().cloned());
+        match page["next"].as_u64() {
+            Some(next) => cursor = Some(next),
+            None => break entries,
+        }
+    }
 }

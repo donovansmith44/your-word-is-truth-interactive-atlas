@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::id::{
     AnchorId, AnyNodeId, CatechismItemId, CommentaryItemId, ContainerNodeId, ContentAddressed,
-    EventId, Interned, LexiconEntryId,
+    EventId, Interned, LexiconEntryId, MapId,
     NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
 use crate::ingest::ProvenanceId;
@@ -359,6 +359,22 @@ pub struct Authored {
     pub person: PersonId,
     pub provenance: ProvenanceId,
     pub justification: Justification,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Shown {
+    pub map: MapId,
+    pub node: AnyNodeId,
+    pub provenance: ProvenanceId,
+}
+
+/// The third row family lowering into `Succession`, beside `Succession` and `CanonSuccession`:
+/// a Map is not a container, so `CanonSuccession`'s typed ids cannot carry it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MapSuccession {
+    pub prior: MapId,
+    pub next: MapId,
+    pub provenance: ProvenanceId,
 }
 
 #[derive(Clone, Debug)]

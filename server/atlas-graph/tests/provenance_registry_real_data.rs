@@ -48,6 +48,8 @@ fn provenance_by_family(g: &atlas_graph_types::graph::Graph) -> BTreeMap<&'stati
     sweep!(partners);
     sweep!(participates);
     sweep!(authored);
+    sweep!(shown);
+    sweep!(map_succession);
     out
 }
 
@@ -141,7 +143,7 @@ fn provenance_field_decls_per_file() -> BTreeMap<String, usize> {
 fn the_sweep_covers_every_provenance_bearing_row_family() {
     let per_file = provenance_field_decls_per_file();
 
-    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 24), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
+    let expected: BTreeMap<String, usize> = [("chrono.rs", 1usize), ("edge.rs", 26), ("node.rs", 2), ("store.rs", 1)].into_iter().map(|(f, n)| (f.to_string(), n)).collect();
     assert_eq!(
         per_file, expected,
         "graph-types' `pub provenance:` field declarations moved. If a NEW row family appeared, add it to \
@@ -248,6 +250,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("dated_by", &["chronology-derivation"]),
     ("fulfills", &["curated-fulfillment"]),
     ("located_at", &["curated", "theographic"]),
+    ("map_succession", &["curated-eras"]),
     (
         "mentions",
         &[
@@ -263,6 +266,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("parent_of", &["theographic-people"]),
     ("participates", &["theographic-people"]),
     ("partners", &["theographic-people"]),
+    ("shown", &["curated-eras"]),
     (
         "nodes",
         &[

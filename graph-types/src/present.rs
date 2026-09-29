@@ -1,17 +1,7 @@
 //! Presentation laws travel as server data, so a stylesheet can never re-decide one.
 
-use crate::edge::EdgeKind;
 use crate::graph::Graph;
-use crate::id::PositionKind;
 use crate::node::Card;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Surface {
-    Reader,
-    Map,
-    Popover,
-    Timeline,
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PresentationContext {
@@ -22,55 +12,6 @@ pub enum PresentationContext {
     Pin,
     CitationRow,
     Marker,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Renderer {
-    EntryList,
-    TextFlow,
-    MapPins,
-    TimelineRows,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SectionStyle {
-    Standard,
-    Quiet,
-    SuperscriptMarker,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SectionOrder {
-    VotesRanked,
-    Chain,
-    Canonical,
-    ResolvedDate,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SectionSpec {
-    pub kind: EdgeKind,
-    pub renderer: Renderer,
-    pub style: SectionStyle,
-    /// Clamp; hidden remainder MUST be signaled with the true count.
-    pub initial: u8,
-    pub order: SectionOrder,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
-pub struct FrontierPresentation {
-    pub sections: Vec<SectionSpec>,
-}
-
-/// Which position kinds can take focus, per surface. The policy table has not landed: this
-/// signature is the design, and every kind is focusable until it does.
-pub fn focusable(_surface: Surface, _kind: PositionKind) -> bool {
-    true
-}
-
-/// How a focus of a given kind displays its frontier, per surface.
-pub fn display(_surface: Surface, _kind: PositionKind) -> FrontierPresentation {
-    FrontierPresentation::default()
 }
 
 /// A rendered form — the closed vocabulary the client knows how to draw.
@@ -96,36 +37,5 @@ impl Presentable for Card {
             PresentationContext::Pin => Presentation::PinLabel(self.label.clone()),
             _ => Presentation::Text(self.label.clone()),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::id::NodeKind;
-
-    const EVERY_SURFACE: [Surface; 4] = [Surface::Reader, Surface::Map, Surface::Popover, Surface::Timeline];
-
-    fn every_position_kind() -> Vec<PositionKind> {
-        NodeKind::ALL
-            .iter()
-            .copied()
-            .map(PositionKind::Node)
-            .chain(EdgeKind::all().map(PositionKind::Edge))
-            .chain([PositionKind::Exploration])
-            .collect()
-    }
-
-    #[test]
-    fn every_position_kind_takes_focus_on_every_surface_until_the_policy_table_lands() {
-        // Arrange
-        let kinds = every_position_kind();
-
-        // Act
-        let refused: Vec<(Surface, PositionKind)> =
-            EVERY_SURFACE.iter().flat_map(|s| kinds.iter().map(move |k| (*s, *k))).filter(|(s, k)| !focusable(*s, *k)).collect();
-
-        // Assert
-        assert_eq!(refused, vec![]);
     }
 }

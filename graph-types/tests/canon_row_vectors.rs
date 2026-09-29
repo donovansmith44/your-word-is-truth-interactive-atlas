@@ -5,11 +5,11 @@ use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, SpokenAt, SpokenBy,
+    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
 };
 use atlas_graph_types::id::{
-    AnchorId, CatechismItemId, CommentaryItemId, ContainerNodeId, EraId, EventId, LexiconEntryId, NarrativeId,
+    AnchorId, CatechismItemId, CommentaryItemId, ContainerNodeId, EraId, EventId, LexiconEntryId, MapId, NarrativeId,
     PeopleGroupId, PersonId, PlaceId, PolityId, SourceId,
 };
 use atlas_graph_types::text::{
@@ -17,7 +17,7 @@ use atlas_graph_types::text::{
     LocusSet, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef,
 };
 
-const DECLARED_ROW_FAMILIES: usize = 26;
+const DECLARED_ROW_FAMILIES: usize = 28;
 
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
@@ -85,7 +85,7 @@ fn golden_row<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily, golden: &s
 
 #[test]
 fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
-    assert_eq!(RowFamily::ALL.len(), DECLARED_ROW_FAMILIES, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7) + D5's parent_of/partners/participates + FOCUS-0's authored");
+    assert_eq!(RowFamily::ALL.len(), DECLARED_ROW_FAMILIES, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7) + D5's parent_of/partners/participates + FOCUS-0's authored, shown and map_succession");
     let names: Vec<&'static str> = RowFamily::ALL.iter().map(|f| f.name()).collect();
     let unique = {
         let mut n = names.clone();
@@ -123,6 +123,8 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
             "partners",
             "participates",
             "authored",
+            "shown",
+            "map_succession",
         ],
         "the table names and their ORDER are the spec's own (spec 5, then 5.7); the order IS the ordinal"
     );
@@ -437,6 +439,18 @@ fn every_row_family_round_trips_with_hand_built_data() {
         },
         RowFamily::Authored,
         r#"{"book":"Container:bible-book-GEN","justification":{"grounds":[],"text":null},"person":"Person:moses_2108","provenance":"books"}"#
+    );
+
+    law!(
+        Shown { map: MapId::new("era-primeval"), node: PlaceId::new("ur-1").erase(), provenance: "curated-eras".into() },
+        RowFamily::Shown,
+        r#"{"map":"Map:era-primeval","node":"Place:ur-1","provenance":"curated-eras"}"#
+    );
+
+    law!(
+        MapSuccession { prior: MapId::new("era-primeval"), next: MapId::new("era-patriarchs"), provenance: "curated-eras".into() },
+        RowFamily::MapSuccession,
+        r#"{"next":"Map:era-patriarchs","prior":"Map:era-primeval","provenance":"curated-eras"}"#
     );
 
     assert_eq!(
