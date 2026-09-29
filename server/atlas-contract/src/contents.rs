@@ -27,7 +27,7 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
     let snap = graph.snapshot();
     let corpus = wire::Corpus::named(&corpus).ok_or_else(|| ApiError::not_found("corpus"))?;
     let roots = match corpus {
-        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().filter_map(|book| book_root(&snap, book)).collect(),
+        wire::Corpus::Bible => members(&snap, &corpus_root_id::<BibleTag>().erase()).iter().map(|book| book_root(&snap, book)).collect(),
         wire::Corpus::Concord => members(&snap, &corpus_root_id::<ConcordTag>().erase()).iter().map(|document| document_root(&snap, document)).collect(),
     };
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
@@ -53,8 +53,10 @@ fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
     out
 }
 
-fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Option<wire::ContentsRoot> {
-    let index = atlas_graph::bible_container_adapter::decode_book_container(book)? as usize;
+/// A member of the Bible's root that is not a book is a defect in the graph, never a book to leave out.
+fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> wire::ContentsRoot {
+    let index = atlas_graph::bible_container_adapter::decode_book_container(book)
+        .unwrap_or_else(|| panic!("the Bible's root contains {}, which is not a book container", book.raw)) as usize;
     let code = atlas_core::canon::BOOKS[index].code;
     let children: Vec<wire::ContentsChild> = members(snap, book)
         .iter()
@@ -70,14 +72,14 @@ fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> Option<wire::Contents
         })
         .collect();
     let r#ref = children.first().map(|c| c.r#ref.clone()).unwrap_or_else(|| format!("{code}.1"));
-    Some(wire::ContentsRoot {
+    wire::ContentsRoot {
         id: encode_node_id(book),
         title: title_of(snap, book),
         kind: wire::ContentsRootKind::Book,
         group: Some(atlas_core::canon::Testament::of_book_index(index)),
         r#ref,
         children,
-    })
+    }
 }
 
 fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> wire::ContentsRoot {
@@ -113,4 +115,21 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     use utoipa_axum::routes;
     utoipa_axum::router::OpenApiRouter::new()
         .routes(routes!(contents))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use atlas_graph_types::graph::Graph;
+    use atlas_graph_types::id::ContainerNodeId;
+
+    #[test]
+    #[should_panic(expected = "the Bible's root contains concord-part-1, which is not a book container")]
+    fn a_member_of_the_bibles_root_that_is_not_a_book_is_a_graph_defect_not_a_silent_omission() {
+        // Arrange
+        let not_a_book = ContainerNodeId::new("concord-part-1").erase();
+
+        // Act
+        book_root(&Graph::default(), &not_a_book);
+    }
 }

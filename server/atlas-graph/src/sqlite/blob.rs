@@ -95,9 +95,36 @@ fn place(tmp: &Path, dst: &Path) -> Result<(), SqliteError> {
     let Err(refused) = std::fs::rename(tmp, dst) else { return Ok(()) };
     let mine = sha256_hex_of_file(tmp);
     let _ = std::fs::remove_file(tmp);
+    let cannot = |why: String| SqliteError(format!("cannot replace {} ({refused}): {why}", dst.display()));
+    let mine = mine.map_err(|e| cannot(format!("{} cannot be read: {e}", tmp.display())))?;
     match sha256_hex_of_file(dst) {
-        Ok(theirs) if theirs == mine? => Ok(()),
-        Ok(_) => Err(SqliteError(format!("cannot replace {} ({refused}): it holds a different file", dst.display()))),
-        Err(e) => Err(SqliteError(format!("cannot replace {} ({refused}): {e}", dst.display()))),
+        Ok(theirs) if theirs == mine => Ok(()),
+        Ok(_) => Err(cannot("it holds a different file".to_string())),
+        Err(e) => Err(cannot(e.to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_refused_rename_whose_unpacked_copy_cannot_be_read_names_the_refusal() {
+        // Arrange
+        let dir = std::env::temp_dir().join(format!("blob-place-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let tmp = dir.join("gone.sqlite.tmp");
+        let dst = dir.join("held.sqlite");
+        std::fs::write(&dst, b"another caller's copy").unwrap();
+        let not_found = std::io::Error::from_raw_os_error(2);
+
+        // Act
+        let err = place(&tmp, &dst).unwrap_err();
+
+        // Assert
+        assert_eq!(
+            err.0,
+            format!("cannot replace {} ({not_found}): {} cannot be read: io: {not_found}", dst.display(), tmp.display())
+        );
     }
 }
