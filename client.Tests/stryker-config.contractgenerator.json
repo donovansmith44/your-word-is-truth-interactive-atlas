@@ -1,0 +1,13 @@
+{
+  "stryker-config": {
+    "project": "BibleAtlas.Client.ContractGenerator.csproj",
+    "mutate": [
+      "**/PascalCasePropertyNames.cs",
+      "**/ContractGeneration.cs",
+      "!**/obj/**"
+    ],
+    "thresholds": { "high": 100, "low": 100, "break": 100 },
+    "reporters": ["progress", "html", "json"],
+    "concurrency": 4
+  }
+}

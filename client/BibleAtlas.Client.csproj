@@ -32,7 +32,14 @@
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
   </Target>
 
-  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract">
+  <!-- Stryker's Buildalyzer based project analysis captures this nested in process build's own
+       Csc invocation as though it belonged to THIS project (a Buildalyzer limitation with nested
+       MSBuild tasks), crashing on a file path resolved against the wrong project directory. The
+       mutation gate sets SkipContractGeneratorRebuild=true, having already built both this project
+       and the generator itself, so GenerateContract's own Inputs/Outputs finds $(GeneratedWire)
+       already current and skips its Exec too; no other caller sets this property. -->
+  <Target Name="BuildContractGenerator" BeforeTargets="GenerateContract"
+          Condition="'$(SkipContractGeneratorRebuild)' != 'true'">
     <MSBuild Projects="$(ContractGeneratorProject)" Targets="Build">
       <Output TaskParameter="TargetOutputs" ItemName="ContractGenerator" />
     </MSBuild>

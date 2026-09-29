@@ -1,0 +1,20 @@
+{
+  "stryker-config": {
+    "project": "BibleAtlas.Client.csproj",
+    "mutate": [
+      "**/Contract/EdgeKinds.cs",
+      "**/Contract/NodeIds.cs",
+      "**/Contract/WireNames.cs",
+      "**/RequiredResponses.cs",
+      "**/Components/ContentsTreeModel.cs",
+      "**/IExplorableClient.cs",
+      "**/GraphExplorableClient.cs",
+      "**/AtlasClient.cs",
+      "**/Explore/EdgeSectionRegistry.cs",
+      "!**/obj/**"
+    ],
+    "thresholds": { "high": 100, "low": 100, "break": 100 },
+    "reporters": ["progress", "html", "json"],
+    "concurrency": 4
+  }
+}
