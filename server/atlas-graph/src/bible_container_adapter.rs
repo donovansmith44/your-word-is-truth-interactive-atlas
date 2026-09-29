@@ -146,26 +146,12 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
         all_books.push(book_container);
     }
 
-    // `all_chapters`/`all_books` come out of the canon walk already in canon order, so `windows(2)`
-    // IS the step list: no re-sort, and nothing derived from ids.
-    for w in all_chapters.windows(2) {
-        ctx.graph.canon_succession.push(CanonSuccession {
-            prior: w[0].clone(),
-            next: w[1].clone(),
-            provenance: ProvenanceId::from("kjv"),
-            justification: Default::default(),
-        });
-        stats.chapter_steps += 1;
-    }
-    for w in all_books.windows(2) {
-        ctx.graph.canon_succession.push(CanonSuccession {
-            prior: w[0].clone(),
-            next: w[1].clone(),
-            provenance: ProvenanceId::from("kjv"),
-            justification: Default::default(),
-        });
-        stats.book_steps += 1;
-    }
+    let chapter_steps = CanonSuccession::steps_between(&all_chapters, "kjv");
+    stats.chapter_steps = chapter_steps.len();
+    ctx.graph.canon_succession.extend(chapter_steps);
+    let book_steps = CanonSuccession::steps_between(&all_books, "kjv");
+    stats.book_steps = book_steps.len();
+    ctx.graph.canon_succession.extend(book_steps);
 
     let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, BIBLE_TITLE, "kjv", &all_books);
     ctx.graph.contains_bible.extend(root_rows);

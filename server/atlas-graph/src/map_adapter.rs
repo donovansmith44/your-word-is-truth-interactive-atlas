@@ -57,10 +57,9 @@ pub fn derive(ctx: &mut BuildCtx) -> Result<MapAdapterStats> {
         maps.push(map);
         stats.maps += 1;
     }
-    for step in maps.windows(2) {
-        ctx.graph.map_succession.push(MapSuccession { prior: step[0].clone(), next: step[1].clone(), provenance: ProvenanceId::from(PROVENANCE) });
-        stats.steps += 1;
-    }
+    let steps = MapSuccession::steps_between(&maps, PROVENANCE);
+    stats.steps = steps.len();
+    ctx.graph.map_succession.extend(steps);
     Ok(stats)
 }
 

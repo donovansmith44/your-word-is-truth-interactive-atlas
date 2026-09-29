@@ -137,27 +137,12 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
 
     let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, CONCORD_TITLE, "concord", &documents);
     ctx.graph.contains_concord.extend(root_rows);
-    ctx.graph.canon_succession.extend(steps_between(&documents));
+    ctx.graph.canon_succession.extend(CanonSuccession::steps_between(&documents, "concord"));
     for articles in &articles_by_document {
-        ctx.graph.canon_succession.extend(steps_between(articles));
+        ctx.graph.canon_succession.extend(CanonSuccession::steps_between(articles, "concord"));
     }
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
     stats
-}
-
-/// One `CanonSuccession` row per adjacent pair, in the order given: the documents come out of
-/// the parsed corpus in reading order and the articles of a document likewise, so `windows(2)`
-/// IS the step list.
-fn steps_between(containers: &[ContainerNodeId]) -> Vec<CanonSuccession> {
-    containers
-        .windows(2)
-        .map(|pair| CanonSuccession {
-            prior: pair[0].clone(),
-            next: pair[1].clone(),
-            provenance: ProvenanceId::from("concord"),
-            justification: Default::default(),
-        })
-        .collect()
 }
 
 /// Runs in MERGE/ALIAS rather than NORMALIZE because it cross-references the CatechismItem nodes

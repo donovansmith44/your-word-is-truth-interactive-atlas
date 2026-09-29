@@ -518,3 +518,70 @@ pub fn entry_id_symmetric(rel: SymRelationId, a: &Position, b: &Position) -> Edg
 pub fn at(n: &AnyNodeId) -> Position {
     Position::Node(n.clone())
 }
+
+/// One step per adjacent pair of `ids`, in the order given: a list handed over in reading order
+/// IS its succession, so nothing is re-sorted or derived from the ids.
+pub fn steps_between<Id: Clone, Step>(ids: &[Id], step: impl Fn(Id, Id) -> Step) -> Vec<Step> {
+    ids.windows(2).map(|pair| step(pair[0].clone(), pair[1].clone())).collect()
+}
+
+impl CanonSuccession {
+    pub fn steps_between(containers: &[ContainerNodeId], provenance: &str) -> Vec<CanonSuccession> {
+        steps_between(containers, |prior, next| CanonSuccession {
+            prior,
+            next,
+            provenance: ProvenanceId::from(provenance),
+            justification: Justification::default(),
+        })
+    }
+}
+
+impl MapSuccession {
+    pub fn steps_between(maps: &[MapId], provenance: &str) -> Vec<MapSuccession> {
+        steps_between(maps, |prior, next| MapSuccession { prior, next, provenance: ProvenanceId::from(provenance) })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PROVENANCE: &str = "test";
+
+    fn canon_step(prior: &str, next: &str) -> CanonSuccession {
+        CanonSuccession {
+            prior: ContainerNodeId::new(prior),
+            next: ContainerNodeId::new(next),
+            provenance: ProvenanceId::from(PROVENANCE),
+            justification: Justification::default(),
+        }
+    }
+
+    #[test]
+    fn containers_in_reading_order_step_from_each_to_the_next_and_a_lone_container_steps_nowhere() {
+        // Arrange
+        let three = [ContainerNodeId::new("a"), ContainerNodeId::new("b"), ContainerNodeId::new("c")];
+        let one = [ContainerNodeId::new("a")];
+
+        // Act
+        let steps = (CanonSuccession::steps_between(&three, PROVENANCE), CanonSuccession::steps_between(&one, PROVENANCE));
+
+        // Assert
+        assert_eq!(steps, (vec![canon_step("a", "b"), canon_step("b", "c")], vec![]));
+    }
+
+    #[test]
+    fn maps_in_era_order_step_from_each_to_the_next() {
+        // Arrange
+        let maps = [MapId::new("era-patriarchs"), MapId::new("era-conquest")];
+
+        // Act
+        let steps = MapSuccession::steps_between(&maps, PROVENANCE);
+
+        // Assert
+        assert_eq!(
+            steps,
+            vec![MapSuccession { prior: MapId::new("era-patriarchs"), next: MapId::new("era-conquest"), provenance: ProvenanceId::from(PROVENANCE) }]
+        );
+    }
+}
