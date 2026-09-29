@@ -879,3 +879,128 @@ catch their divergence. DISCLOSED: with SEVERAL divergences at once the
 reported one is whichever worker reached it first rather than the
 lowest-numbered position; with one -- every planted case, and every real
 regression observed -- the panic is identical.
+
+## Mutation gate (CONTRACT-1, 2026-09-28): ~160 h -> 2.1 h
+
+PRINCIPLES 3a asks for one mutation run per batch, "sharded across cores or
+worktrees so it finishes in minutes, not hours." Through CONTRACT-1a the leg was
+three serial `cargo mutants --in-place` invocations at a measured **419 s per
+mutant**: CONTRACT-1 has **1 240 in-diff mutants in `server/` and 68 in
+`graph-types/` (x2 feature states)**, so that shape is **~160 hours** for this
+batch. This section is what replaced it and what each step bought.
+
+### Why `--jobs` is not available here, measured
+
+cargo-mutants parallelises by copying the tree per job. The copy root is the
+workspace root, `server/`, so a copy holds `server/**` and nothing else --
+while `atlas-graph` depends on `path = "../../graph-types"`, a SIBLING of that
+root. At cargo-mutants 27.1.0 the unmutated baseline fails in 0.66 s:
+
+```
+error: failed to load manifest for workspace member `<tmp>\atlas-core`
+Caused by: failed to read `C:\Users\donov\AppData\Local\Temp\graph-types\Cargo.toml`
+```
+
+No repo-root resolver in the test helpers changes that -- the manifest cannot be
+read at all -- so `--in-place` is forced, and `--in-place` and `--jobs` are
+mutually exclusive. The concurrency is therefore one git worktree per shard
+(`scripts/mutants-parallel.sh`), each with its own `CARGO_TARGET_DIR` and its
+own robocopy'd COPY of the two gitignored inputs, `data/raw` (397 MB, 27 409
+files, 5.9 s with `/MT:8`) and `data/cache` (655 MB). Never a junction or a
+symlink: `git worktree remove --force` follows one and deletes the real files
+through it, which is how 374 MB of `data/raw` was destroyed earlier the same
+day.
+
+### Step 1a: the per-mutant test command, scoped per crate
+
+The 419 s was the whole `atlas-contract` suite per mutant. Every test target in
+the workspace was timed once, serially, on a quiet box (71 binaries, all green),
+which is what the per-crate `additional_cargo_test_args` lists in each
+`<crate>/.cargo/mutants.toml` are chosen from. The expensive ones:
+
+| test target | seconds |
+|---|---|
+| `graph_api` (atlas-contract) | 238.7 |
+| `canon_real_data` | 110.5 |
+| `determinism` | 101.8 |
+| `lexicon_real_data` (atlas-graph) | 79.1 |
+| `exports_laws` | 77.0 |
+| `graph_equivalence` | 72.1 |
+| `brainfuel_layers` | 72.0 |
+| `chronology_laws` | 57.0 |
+| `aqc_cucumber` | 56.4 |
+| `heading_precedence` | 55.8 |
+| `cli` (atlas-cli) | 46.3 |
+| `atlas_graph` lib | 23.8 |
+| `coverage` (atlas-etl) | 28.4 |
+| `sqlite_laws` | 2.8 |
+| `scene_byte_identity` | 2.4 |
+| `api` (atlas-contract) | 1.3 |
+| `serve_real_data` | 0.4 |
+
+The floor under every real-corpus target is the same ~50 s:
+`atlas_etl::compile::compile(data/raw, data/curated)` plus
+`GraphService::build`. A target that pays it once (they all cache in a
+`OnceLock`) costs ~50 s however few tests it holds; a target that reads the
+committed `data/compiled` sections instead costs 0.1-30 s.
+
+### Step 1b: two fixtures that paid that floor per test
+
+`graph_api` and `brainfuel_layers` cached the compiled `AtlasData` but built a
+fresh `GraphService` inside the per-test router helper -- 41 and 6 whole graph
+builds over the same immutable corpus. Both now share one behind an `Arc`, as
+the server itself does:
+
+| test target | before | after |
+|---|---|---|
+| `graph_api` | 238.7 s | 54.0 s |
+| `brainfuel_layers` | 72.0 s | 54.9 s |
+
+
+### Step 2: the sharded run, and why N is 4 and not 8
+
+`scripts/mutants-parallel.sh -n N -b <base>` creates N throwaway worktrees of
+HEAD, runs one cargo-mutants invocation per crate per shard, and merges the
+shards' `caught/missed/unviable/timeout` name lists into one summary. The two
+graph-types feature states are scored as a UNION: a name any run caught is
+caught, a name any run found UNVIABLE is unviable, and only what every run
+merely missed is a survivor. Without the unviable half of that rule the run
+reports false survivors -- `store.rs`'s `version_of` and its `position_kind` are
+unviable in the state where their `#[cfg(not(canon-ids))]` arm compiles and
+"missed" only in the state where it does not.
+
+| N | what happened |
+|---|---|
+| 8 | 4.3x throughput (`atlas-cli`'s suite: 43 s alone, 84-88 s with eight running, so contention is 1.85x, well under the divisor). Held 12-13 GB free through `atlas-contract`. **Then `atlas-graph` began and free RAM fell to 2.4 GB**, and the harness reaped the run for memory. |
+| 6 | Free RAM fell to 0.8 GB inside `atlas-etl` -- ~3.5 GB per shard. |
+| 4 | ~5.5 GB per shard at peak, transient dips to ~1 GB, recovering to 20 GB. Completed. |
+
+So the gate's concurrency on this box is bound by MEMORY, not cores: a shard's
+heaviest test process holds a whole real `GraphService` plus the compiled
+`AtlasData`, and the real-corpus crates (`atlas-etl`, `atlas-graph`) want
+3.5-5.5 GB each. **N = 4** for a run that includes them; N = 8 is safe for
+`atlas-contract`, `atlas-core`, `atlas-cli` and `graph-types` alone.
+
+### The numbers
+
+| leg | mutants | wall clock | per mutant |
+|---|---|---|---|
+| serial, whole crate suite per mutant (the CONTRACT-1a shape) | 1 376 | ~160 h (extrapolated from the recorded 419 s) | 419 s |
+| scoped, serial (`-n 1`, measured on `atlas-contract/src/app.rs`) | — | 6 mutants in 4 min | **40 s** (10.5x off) |
+| scoped + 8 shards (`atlas-cli`, `atlas-contract`, `atlas-core`) | 942 | 2.0 h | 7.6 s |
+| scoped + 4 shards (`atlas-etl`, `atlas-graph`, `graph-types`) | 365 | 2.1 h | 20.6 s |
+
+A caught mutant is cheap and a surviving one is dear, which is why the per-crate
+`--test` lists are ordered by cost in NAME order (cargo runs test targets
+alphabetically, not in the order the command line gives them): `cargo test`
+stops at the first target that fails, so a mutant the 1.3 s `api` target kills
+never pays the 54 s `graph_api` one. The three targets added for this batch --
+`regenerated_aqc_corpus`, `the_compile_step`, `version_root_regression` -- are
+named so they sort last for exactly that reason.
+
+### The self-test
+
+`bash scripts/mutants-parallel.sh -n 2 -c atlas-core -F 'atlas-core/src/merge\.rs'`
+and the same with `-n 1`: both report `30 tested, 30 caught, 0 missed, 0
+timeout, 0 unviable` for that file, and `diff` of the two runs' `caught.txt`
+is empty -- the merged summary of two shards is the serial summary.
