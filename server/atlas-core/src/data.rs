@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
-pub use atlas_graph_types::id::EventId;
+pub use atlas_graph_types::id::{EventId, PersonId};
 
 /// One book of the canon: its code, its name, and how many verses each of its
 /// chapters holds.
@@ -285,7 +285,7 @@ pub struct BookMeta {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BookAuthorship {
     pub book: String,
-    pub author_ids: Vec<String>,
+    pub author_ids: Vec<PersonId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 use atlas_core::data::BookAuthorship;
 use atlas_graph_types::edge::{Authored, CanonSuccession, ContainerContent, Contains, Justification};
-use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind, PersonId};
+use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
@@ -168,7 +168,7 @@ pub fn authored_rows(books: &[BookAuthorship]) -> Vec<Authored> {
         .flat_map(|b| {
             b.author_ids.iter().map(|person| Authored {
                 book: book_container_id(&b.book),
-                person: PersonId::new(person.clone()),
+                person: person.clone(),
                 provenance: ProvenanceId::from(AUTHORSHIP_PROVENANCE),
                 justification: Justification::default(),
             })
@@ -182,7 +182,7 @@ mod tests {
     use atlas_core::data::{Canon, CanonBook};
     use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
     use atlas_graph_types::explore::{EdgeQuery, Explorable, PositionRef};
-    use atlas_graph_types::id::Position;
+    use atlas_graph_types::id::{PersonId, Position};
     use std::collections::HashMap;
 
     fn tiny_canon() -> Canon {
@@ -370,7 +370,7 @@ mod tests {
     }
 
     fn book_authorship(code: &str, author_ids: &[&str]) -> BookAuthorship {
-        BookAuthorship { book: code.to_string(), author_ids: author_ids.iter().map(|id| id.to_string()).collect() }
+        BookAuthorship { book: code.to_string(), author_ids: author_ids.iter().copied().map(PersonId::new).collect() }
     }
 
     fn genesis_by_moses() -> Authored {

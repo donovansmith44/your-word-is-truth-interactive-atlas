@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -50,7 +50,7 @@ struct BookToml {
     code: String,
     author: String,
     #[serde(default)]
-    author_ids: Vec<String>,
+    author_ids: Vec<PersonId>,
     #[serde(default)]
     write_place: Option<String>,
     #[serde(default)]

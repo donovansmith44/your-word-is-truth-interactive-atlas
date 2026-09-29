@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookAuthorship, BookMeta, BookNarrationWindow, Canon, ChronologyAnchor, CrossRef, Era, Event, EventId, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{AtlasData, BookAuthorship, BookMeta, BookNarrationWindow, Canon, ChronologyAnchor, CrossRef, Era, Event, EventId, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra};
 use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
@@ -188,7 +188,7 @@ fn curated_author_ids_are_read_per_book_and_a_book_without_them_has_none() {
     assert_eq!(
         books.authorship,
         vec![
-            BookAuthorship { book: "GEN".into(), author_ids: vec!["moses_2108".into()] },
+            BookAuthorship { book: "GEN".into(), author_ids: vec![PersonId::new("moses_2108")] },
             BookAuthorship { book: "EXO".into(), author_ids: vec![] },
         ]
     );
