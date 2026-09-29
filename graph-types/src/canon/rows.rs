@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
-    Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
+    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
     Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
@@ -56,10 +56,11 @@ pub enum RowFamily {
     ParentOf,
     Partners,
     Participates,
+    Authored,
 }
 
 impl RowFamily {
-    pub const ALL: [RowFamily; 25] = [
+    pub const ALL: [RowFamily; 26] = [
         RowFamily::ContainsBible,
         RowFamily::ContainsConcord,
         RowFamily::Attests,
@@ -85,6 +86,7 @@ impl RowFamily {
         RowFamily::ParentOf,
         RowFamily::Partners,
         RowFamily::Participates,
+        RowFamily::Authored,
     ];
 
     /// The table name as the schema spells it.
@@ -115,6 +117,7 @@ impl RowFamily {
             RowFamily::ParentOf => "parent_of",
             RowFamily::Partners => "partners",
             RowFamily::Participates => "participates",
+            RowFamily::Authored => "authored",
         }
     }
 
@@ -635,6 +638,7 @@ const OCCURS_KEYS: &[&str] = &["entry", "locus", "provenance"];
 const PARENT_OF_KEYS: &[&str] = &["child", "parent", "provenance"];
 const PARTNERS_KEYS: &[&str] = &["a", "b", "provenance"];
 const PARTICIPATES_KEYS: &[&str] = &["event", "person", "provenance"];
+const AUTHORED_KEYS: &[&str] = &["book", "justification", "person", "provenance"];
 
 impl<C: Corpus> Canon for Contains<C>
 where
@@ -1180,6 +1184,29 @@ impl Canon for Participates {
     }
 }
 
+impl Canon for Authored {
+    fn to_value(&self) -> Value {
+        let Self { book, person, provenance, justification } = self;
+        obj(vec![
+            ("book", id_value(book)),
+            ("justification", justification.to_value()),
+            ("person", id_value(person)),
+            ("provenance", str_value(provenance)),
+        ])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, AUTHORED_KEYS)?;
+        Ok(Authored {
+            book: field_id::<ContainerTag>(m, ROOT, "book")?,
+            person: field_id::<PersonTag>(m, ROOT, "person")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+            justification: field_sub::<Justification>(m, ROOT, "justification")?,
+        })
+    }
+}
+
 /// The total family-to-relation map: every family lowers into exactly one relation, so a
 /// family and a relation spelled differently are reconciled in one place.
 impl RowFamily {
@@ -1210,6 +1237,7 @@ impl RowFamily {
             RowFamily::ParentOf => Directed(R::ParentOf),
             RowFamily::Partners => Symmetric(S::Partners),
             RowFamily::Participates => Directed(R::Participates),
+            RowFamily::Authored => Directed(R::AuthoredBy),
         }
     }
 }

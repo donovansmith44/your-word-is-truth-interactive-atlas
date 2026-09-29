@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
-    Analogue, Attests, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
+    Analogue, Attests, Authored, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
     MentionedEntity, Mentions, NamedAfter, Namesake, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
 use atlas_graph_types::id::{AnchorId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
@@ -500,5 +500,23 @@ pub fn insert_participates(tx: &Transaction, ord: i64, row: &Participates) -> Re
 pub fn read_participates(conn: &Connection) -> Result<Vec<(i64, Participates)>, SqliteError> {
     read_all(conn, "participates", COLS_PARTICIPATES, |row| {
         Ok(Participates { person: id_col(row, D, "person_id")?, event: id_col(row, D + 1, "event_id")?, provenance: col(row, D + 2, "provenance")? })
+    })
+}
+
+const COLS_AUTHORED: &str = "book_id, person_id, provenance, justification_id";
+
+pub fn insert_authored(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &Authored) -> Result<(), SqliteError> {
+    let j = authored(tx, jw, &row.justification)?;
+    insert(tx, "authored", COLS_AUTHORED, ord, vec![text(&row.book.0), text(&row.person.0), text(&row.provenance), j])
+}
+
+pub fn read_authored(conn: &Connection) -> Result<Vec<(i64, Authored)>, SqliteError> {
+    read_all(conn, "authored", COLS_AUTHORED, |row| {
+        Ok(Authored {
+            book: id_col(row, D, "book_id")?,
+            person: id_col(row, D + 1, "person_id")?,
+            provenance: col(row, D + 2, "provenance")?,
+            justification: read_justification_at(conn, row, D + 3)?,
+        })
     })
 }

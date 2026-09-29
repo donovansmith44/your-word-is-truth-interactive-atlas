@@ -308,6 +308,14 @@ const IDX_PARTICIPATES: &str = "
 CREATE UNIQUE INDEX participates_ord ON participates (ord);
 CREATE INDEX participates_by_event ON participates (event_id, ord);
 ";
+const DDL_AUTHORED: &str = "
+CREATE TABLE authored (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  book_id TEXT NOT NULL, person_id TEXT NOT NULL,
+  provenance TEXT NOT NULL, justification_id INTEGER
+);
+";
+const IDX_AUTHORED: &str = "CREATE UNIQUE INDEX authored_ord ON authored (ord);";
 
 const DDL_CROSS_REFS: &str = "
 CREATE TABLE cross_refs (
@@ -603,6 +611,7 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::ParentOf => DDL_PARENT_OF,
         RowFamily::Partners => DDL_PARTNERS,
         RowFamily::Participates => DDL_PARTICIPATES,
+        RowFamily::Authored => DDL_AUTHORED,
     }
 }
 
@@ -633,6 +642,7 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::ParentOf => IDX_PARENT_OF,
         RowFamily::Partners => IDX_PARTNERS,
         RowFamily::Participates => IDX_PARTICIPATES,
+        RowFamily::Authored => IDX_AUTHORED,
     }
 }
 

@@ -63,7 +63,7 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Ground, Justification, Occurs, ParentOf, Participates, Partners};
+use atlas_graph_types::edge::{Authored, Ground, Justification, Occurs, ParentOf, Participates, Partners};
 use atlas_graph_types::id::{AnchorId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
@@ -404,6 +404,7 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.parent_of.push(ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() });
     g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
+    g.authored.push(Authored { book: ContainerNodeId::new("bible-book-GEN"), person: PersonId::new("moses_2108"), provenance: "books".into(), justification: Justification::default() });
 
     let node = |kind: NodeKind, raw: &str, payload: NodePayload| Node {
         id: AnyNodeId { kind, raw: raw.to_string() },
@@ -544,6 +545,7 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::ParentOf => out.extend(g.parent_of.iter().map(RowRef::ParentOf)),
             RowFamily::Partners => out.extend(g.partners.iter().map(RowRef::Partners)),
             RowFamily::Participates => out.extend(g.participates.iter().map(RowRef::Participates)),
+            RowFamily::Authored => out.extend(g.authored.iter().map(RowRef::Authored)),
         }
     }
     out

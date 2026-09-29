@@ -11,7 +11,7 @@ pub mod lexicon;
 use atlas_graph_types::canon::{Canon, RowFamily, Value as CanonValue};
 use atlas_graph_types::chrono::DatedBy;
 use atlas_graph_types::edge::{
-    Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, Contains,
+    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, Contains,
     Corresponds, CrossRef, Fulfills, Justification, LocatedAt, Mentions, NamedAfter, Occurs, ParentOf, Participates, Partners, Quotes,
     SpokenAt, SpokenBy, Succession, TemporalAdjacency, Typology,
 };
@@ -49,6 +49,7 @@ pub enum RowRef<'a> {
     ParentOf(&'a ParentOf),
     Partners(&'a Partners),
     Participates(&'a Participates),
+    Authored(&'a Authored),
 }
 
 /// Owned rows read back (the reader's output) -- the same 21 arms.
@@ -79,6 +80,7 @@ pub enum RowOwned {
     ParentOf(ParentOf),
     Partners(Partners),
     Participates(Participates),
+    Authored(Authored),
 }
 
 macro_rules! per_arm {
@@ -109,6 +111,7 @@ macro_rules! per_arm {
             Self::ParentOf($r) => $body,
             Self::Partners($r) => $body,
             Self::Participates($r) => $body,
+            Self::Authored($r) => $body,
         }
     };
 }
@@ -141,6 +144,7 @@ macro_rules! family_of {
             Self::ParentOf(_) => RowFamily::ParentOf,
             Self::Partners(_) => RowFamily::Partners,
             Self::Participates(_) => RowFamily::Participates,
+            Self::Authored(_) => RowFamily::Authored,
         }
     };
 }
@@ -170,6 +174,7 @@ impl<'a> RowRef<'a> {
             Self::SpokenAt(r) => Some(&r.justification),
             Self::Confesses(r) => Some(&r.justification),
             Self::CommentsOn(r) => Some(&r.justification),
+            Self::Authored(r) => Some(&r.justification),
             Self::Mentions(_)
             | Self::CorrespondsBible(_)
             | Self::TemporalAdjacency(_)
@@ -218,6 +223,7 @@ impl RowOwned {
             Self::ParentOf(r) => RowRef::ParentOf(r),
             Self::Partners(r) => RowRef::Partners(r),
             Self::Participates(r) => RowRef::Participates(r),
+            Self::Authored(r) => RowRef::Authored(r),
         }
     }
 }
@@ -249,6 +255,7 @@ pub fn insert_row(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row:
         RowRef::ParentOf(r) => core::insert_parent_of(tx, ord, r),
         RowRef::Partners(r) => core::insert_partners(tx, ord, r),
         RowRef::Participates(r) => core::insert_participates(tx, ord, r),
+        RowRef::Authored(r) => core::insert_authored(tx, jw, ord, r),
     }
 }
 
@@ -285,6 +292,7 @@ pub fn read_rows(conn: &Connection, family: RowFamily) -> Result<Vec<(i64, RowOw
         RowFamily::ParentOf => wrap(core::read_parent_of(conn)?, RowOwned::ParentOf),
         RowFamily::Partners => wrap(core::read_partners(conn)?, RowOwned::Partners),
         RowFamily::Participates => wrap(core::read_participates(conn)?, RowOwned::Participates),
+        RowFamily::Authored => wrap(core::read_authored(conn)?, RowOwned::Authored),
     })
 }
 

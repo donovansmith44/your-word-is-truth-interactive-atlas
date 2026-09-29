@@ -108,6 +108,7 @@ fn every_row_of_every_family_round_trips() {
         parent_of,
         partners,
         participates,
+        authored,
         reading: _,
         extra_tables: _,
         indexes: _,
@@ -149,6 +150,7 @@ fn every_row_of_every_family_round_trips() {
     fam!(parent_of, RowFamily::ParentOf);
     fam!(partners, RowFamily::Partners);
     fam!(participates, RowFamily::Participates);
+    fam!(authored, RowFamily::Authored);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -186,6 +188,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::ParentOf, 1_776),
         (RowFamily::Partners, 104),
         (RowFamily::Participates, 714),
+        (RowFamily::Authored, 0),
     ];
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(total, 917_411, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5)");
@@ -385,6 +388,7 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(parent_of, RowFamily::ParentOf);
     fam!(partners, RowFamily::Partners);
     fam!(participates, RowFamily::Participates);
+    fam!(authored, RowFamily::Authored);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

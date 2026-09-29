@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily, Value, ROOT};
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
-    Analogue, Attests, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
+    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
     Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
@@ -16,6 +16,8 @@ use atlas_graph_types::text::{
     BibleLocus, BibleLocusRange, BibleTag, ConcordLocus, ConcordRef, ConcordTag, Locus, LocusRange,
     LocusSet, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef,
 };
+
+const DECLARED_ROW_FAMILIES: usize = 26;
 
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
@@ -83,7 +85,7 @@ fn golden_row<T: Canon + std::fmt::Debug>(row: &T, family: RowFamily, golden: &s
 
 #[test]
 fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
-    assert_eq!(RowFamily::ALL.len(), 25, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7) + D5's parent_of/partners/participates");
+    assert_eq!(RowFamily::ALL.len(), DECLARED_ROW_FAMILIES, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7) + D5's parent_of/partners/participates + FOCUS-0's authored");
     let names: Vec<&'static str> = RowFamily::ALL.iter().map(|f| f.name()).collect();
     let unique = {
         let mut n = names.clone();
@@ -91,7 +93,7 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
         n.dedup();
         n.len()
     };
-    assert_eq!(unique, 25, "table names must be distinct: {names:?}");
+    assert_eq!(unique, DECLARED_ROW_FAMILIES, "table names must be distinct: {names:?}");
     assert_eq!(
         names,
         vec![
@@ -120,6 +122,7 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
             "parent_of",
             "partners",
             "participates",
+            "authored",
         ],
         "the table names and their ORDER are the spec's own (spec 5, then 5.7); the order IS the ordinal"
     );
@@ -127,7 +130,7 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
         assert_eq!(f.ordinal() as usize, i, "{} sits at ordinal {i}", f.name());
         assert_eq!(RowFamily::from_ordinal(f.ordinal()), Some(*f));
     }
-    assert_eq!(RowFamily::from_ordinal(25), None, "the enum is closed at 25");
+    assert_eq!(RowFamily::from_ordinal(DECLARED_ROW_FAMILIES as u8), None, "the enum is closed at {DECLARED_ROW_FAMILIES}");
 }
 
 #[test]
@@ -423,6 +426,17 @@ fn every_row_family_round_trips_with_hand_built_data() {
         Participates { person: PersonId::new("abraham_1"), event: EventId::new("theo-12"), provenance: "theographic-people".into() },
         RowFamily::Participates,
         r#"{"event":"Event:theo-12","person":"Person:abraham_1","provenance":"theographic-people"}"#
+    );
+
+    law!(
+        Authored {
+            book: ContainerNodeId::new("bible-book-GEN"),
+            person: PersonId::new("moses_2108"),
+            provenance: "books".into(),
+            justification: Justification::default(),
+        },
+        RowFamily::Authored,
+        r#"{"book":"Container:bible-book-GEN","justification":{"grounds":[],"text":null},"person":"Person:moses_2108","provenance":"books"}"#
     );
 
     assert_eq!(

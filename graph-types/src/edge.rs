@@ -353,6 +353,14 @@ pub struct Participates {
     pub provenance: ProvenanceId,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Authored {
+    pub book: ContainerNodeId,
+    pub person: PersonId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
+}
+
 #[derive(Clone, Debug)]
 pub struct TemporalAdjacency {
     pub earlier: EventId,

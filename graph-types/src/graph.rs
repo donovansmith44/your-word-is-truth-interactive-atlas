@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use crate::edge::{
-    at, Analogue, Attests, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
+    at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
     LocatedAt, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
@@ -63,6 +63,7 @@ pub struct Graph {
     pub parent_of: Vec<ParentOf>,
     pub partners: Vec<Partners>,
     pub participates: Vec<Participates>,
+    pub authored: Vec<Authored>,
 
     // Built, never authored.
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -324,6 +325,13 @@ impl Graph {
                 M::None,
             ));
         }
+        for (i, row) in self.authored.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Authored, i, EdgeRel::Directed(RelationId::AuthoredBy), (
+                at(&row.book.erase()),
+                at(&row.person.erase()),
+                M::None,
+            ));
+        }
         out
     }
 
@@ -375,6 +383,7 @@ impl Graph {
             F::ParentOf => self.parent_of.get(row_ord).map(|r| r.provenance.as_str()),
             F::Partners => self.partners.get(row_ord).map(|r| r.provenance.as_str()),
             F::Participates => self.participates.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Authored => self.authored.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 
