@@ -116,3 +116,26 @@ wrong; fix the spec.
     on 2026-09-28. A shard copies what it needs (`robocopy`), or every link
     is removed with `cmd /c rmdir` BEFORE the worktree is. Scan for reparse
     points and require zero before any `worktree remove`.
+
+## Parallel work and its critical sections (owner, 2026-09-29)
+
+21. **Serialize the shared artifact, parallelize everything else.** The
+    program's batches and their tasks run concurrently by default. Only these
+    are critical sections, held by ONE agent at a time:
+    - the mutation gate (PRINCIPLES 3a already makes it once per batch, which
+      is itself the mutex — no two gates can overlap if no batch runs two);
+    - regenerating `contracts/openapi.yaml` and `aqc.schema.json`;
+    - re-blessing pacts and fixtures, and anything that moves the version root;
+    - appending to `relations!`, which is positional.
+
+    Everything else — implementation, unit and integration tests, reviews,
+    client work — runs in parallel. The critical sections are minutes; the
+    work around them is the wall-clock.
+22. **A batch names its base commit explicitly.** While batches interleave,
+    "every line this batch changed" is only well defined against a written-down
+    base (`--base <sha>`, never `@{upstream}`, which moves the moment anyone
+    pushes — CONTRACT-1a's ruling R34 was exactly this bug). The base goes in
+    the batch's ledger at its first task and is passed to every gate.
+23. **Pair unlike work.** Memory, not cores, is this machine's ceiling (the
+    mutation gate died at N=8 and was reaped). Two Rust-heavy jobs contend; a
+    Rust-heavy job beside a C#-heavy one does not.
