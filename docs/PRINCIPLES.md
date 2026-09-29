@@ -15,14 +15,20 @@ wrong; fix the spec.
    mutant is either killed by a test or recorded as an equivalent mutant
    with its reason, in the mutation tool's configuration, never in an
    inline comment. Tooling: Stryker.NET for C#, cargo-mutants for Rust.
-3a. **Mutation runs once per batch, at its close, concurrently.** A batch is
-   the program's unit as the owner names it (CONTRACT-1 is 1a and 1b
-   together), not a plan or a task. A task proves itself with its tests and
-   the pacts; the mutation run is a batch-level gate over every line the
-   batch changed, Rust and C# in one pass, like the timing
-   gates, and it is sharded across cores or worktrees so it finishes in
-   minutes, not hours. Surviving mutants get one fix dispatch of tests;
-   equivalents go in the tool's configuration with their reasons.
+3a. **Mutation runs once per batch at its close, concurrently -- or less
+   often, by the owner's call.** A batch is the program's unit as the owner
+   names it (CONTRACT-1 is 1a and 1b together), not a plan or a task. A task
+   proves itself with its tests and the pacts; the mutation run is a gate
+   over every line changed since the LAST run, Rust and C# in one pass,
+   sharded so it finishes in hours, not days. A run measures the current
+   tests against the current code and does not care which batch changed a
+   line, so one run over several batches is the same measurement as one per
+   batch, and nothing is "made up" afterwards (owner, 2026-09-29: "running
+   them once or twice gives enough information"). When the owner wants the
+   wall-clock for implementation instead, the run is deferred and
+   `.superpowers/MUTATION-GATE-DEBT.md` names the base the next one measures
+   from. Surviving mutants get one fix dispatch of tests; equivalents go in
+   the tool's configuration with their reasons.
 4. **Zero lines of dead code.** No unreachable branches, no unused members,
    no "kept for later", no commented-out code, no backwards-compatibility
    shims for callers that no longer exist.
