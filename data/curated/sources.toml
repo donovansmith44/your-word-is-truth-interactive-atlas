@@ -465,6 +465,12 @@ source = "our-curated-work"
 confidence = "Curated"
 
 [[provenance]]
+id = "curated-books"
+source = "our-curated-work"
+confidence = "Curated"
+locator = "books.toml author_ids"
+
+[[provenance]]
 id = "chronology-anchors"
 source = "our-curated-work"
 confidence = "Curated"

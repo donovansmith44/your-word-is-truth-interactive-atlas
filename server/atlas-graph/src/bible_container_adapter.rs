@@ -4,13 +4,18 @@
 
 use std::collections::BTreeSet;
 
-use atlas_graph_types::edge::{CanonSuccession, ContainerContent, Contains};
-use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind};
+use atlas_core::data::BookAuthorship;
+use atlas_graph_types::edge::{Authored, CanonSuccession, ContainerContent, Contains, Justification};
+use atlas_graph_types::id::{AnyNodeId, ContainerNodeId, NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
 
 use crate::pipeline::BuildCtx;
+
+/// The registry id (`data/curated/sources.toml`) every `authored` row carries: an authorship is this
+/// project's own curated claim, whichever source the person node came from.
+const AUTHORSHIP_PROVENANCE: &str = "curated-books";
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct BibleContainerStats {
@@ -158,7 +163,24 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
         stats.book_steps += 1;
     }
 
+    ctx.graph.authored.extend(authored_rows(&ctx.atlas.book_authorship));
+
     Ok(stats)
+}
+
+/// One `Authored` row per curated author id, in file order; a book without ids contributes none.
+pub fn authored_rows(books: &[BookAuthorship]) -> Vec<Authored> {
+    books
+        .iter()
+        .flat_map(|b| {
+            b.author_ids.iter().map(|person| Authored {
+                book: book_container_id(&b.book),
+                person: PersonId::new(person.clone()),
+                provenance: ProvenanceId::from(AUTHORSHIP_PROVENANCE),
+                justification: Justification::default(),
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -351,5 +373,46 @@ mod tests {
             })
             .collect();
         assert_eq!(loci_rows, vec![2]);
+    }
+
+    fn book_authorship(code: &str, author_ids: &[&str]) -> BookAuthorship {
+        BookAuthorship { book: code.to_string(), author_ids: author_ids.iter().map(|id| id.to_string()).collect() }
+    }
+
+    fn genesis_by_moses() -> Authored {
+        Authored {
+            book: ContainerNodeId::new("bible-book-GEN"),
+            person: PersonId::new("moses_2108"),
+            provenance: ProvenanceId::from("curated-books"),
+            justification: Justification::default(),
+        }
+    }
+
+    #[test]
+    fn a_book_with_curated_author_ids_is_authored_by_each_of_them_and_nothing_else_is() {
+        // Arrange
+        let books = vec![book_authorship("GEN", &["moses_2108"]), book_authorship("PSA", &[])];
+
+        // Act
+        let rows = authored_rows(&books);
+
+        // Assert
+        assert_eq!(rows, vec![genesis_by_moses()]);
+    }
+
+    #[test]
+    fn normalize_lowers_the_curated_authorship_into_authored_rows() {
+        // Arrange
+        let canon = tiny_canon();
+        let verses = tiny_verses();
+        let mut atlas = crate::event_world::empty_atlas();
+        atlas.book_authorship = vec![book_authorship("GEN", &["moses_2108"])];
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+
+        // Act
+        normalize(&mut ctx).unwrap();
+
+        // Assert
+        assert_eq!(ctx.graph.authored, vec![genesis_by_moses()]);
     }
 }

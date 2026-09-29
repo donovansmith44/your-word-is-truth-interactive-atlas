@@ -274,7 +274,7 @@ fn every_row_of_every_family_maps_to_a_section() {
     subject!(parent_of, RowFamily::ParentOf, Expect::SameAsFamily, |r| r.parent.erase());
     subject!(partners, RowFamily::Partners, Expect::SameAsFamily, |r| r.a.erase());
     subject!(participates, RowFamily::Participates, Expect::SameAsFamily, |r| r.person.erase());
-    subject!(authored, RowFamily::Authored, Expect::NoRows, |r| r.book.erase());
+    subject!(authored, RowFamily::Authored, Expect::Elsewhere(&[Section::Kjv]), |r| r.book.erase());
     subject!(shown, RowFamily::Shown, Expect::SameAsFamily, |r| r.map.erase());
     subject!(map_succession, RowFamily::MapSuccession, Expect::SameAsFamily, |r| r.prior.erase());
 

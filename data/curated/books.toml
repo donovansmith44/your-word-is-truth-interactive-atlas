@@ -1,26 +1,31 @@
 [[book]]
 code = "GEN"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_from = -1445
 write_to = -1405
 [[book]]
 code = "EXO"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_from = -1445
 write_to = -1405
 [[book]]
 code = "LEV"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_from = -1445
 write_to = -1405
 [[book]]
 code = "NUM"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_from = -1445
 write_to = -1405
 [[book]]
 code = "DEU"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_from = -1407
 write_to = -1406
 [[book]]
@@ -108,18 +113,21 @@ write_to = -700
 [[book]]
 code = "ECC"
 author = "Solomon"
+author_ids = ["solomon_2762"]
 write_place = "jerusalem"
 write_from = -935
 write_to = -931
 [[book]]
 code = "SNG"
 author = "Solomon"
+author_ids = ["solomon_2762"]
 write_place = "jerusalem"
 write_from = -960
 write_to = -950
 [[book]]
 code = "ISA"
 author = "Isaiah"
+author_ids = ["isaiah_617"]
 write_place = "jerusalem"
 write_from = -700
 write_to = -680
@@ -137,6 +145,7 @@ write_to = -585
 [[book]]
 code = "EZK"
 author = "Ezekiel"
+author_ids = ["ezekiel_1237"]
 # write_place: brief guessed "babylon", but geo ancient.jsonl has no plain
 # "Babylon" slug -- it has 3 name-collision entries. babylon-1 (32.5433,
 # 44.4222) is literal Mesopotamian Babylon near the Euphrates and carries
@@ -158,6 +167,7 @@ write_to = -530
 [[book]]
 code = "HOS"
 author = "Hosea"
+author_ids = ["hosea_1555"]
 write_from = -750
 write_to = -710
 [[book]]
@@ -178,6 +188,7 @@ write_to = -580
 [[book]]
 code = "JON"
 author = "Jonah"
+author_ids = ["jonah_1689"]
 write_from = -780
 write_to = -750
 [[book]]
@@ -188,11 +199,13 @@ write_to = -700
 [[book]]
 code = "NAM"
 author = "Nahum"
+author_ids = ["nahum_2145"]
 write_from = -650
 write_to = -630
 [[book]]
 code = "HAB"
 author = "Habakkuk"
+author_ids = ["habakkuk_1334"]
 write_from = -609
 write_to = -605
 [[book]]
@@ -203,6 +216,7 @@ write_to = -620
 [[book]]
 code = "HAG"
 author = "Haggai"
+author_ids = ["haggai_1349"]
 write_place = "jerusalem"
 write_from = -520
 write_to = -520
@@ -215,12 +229,14 @@ write_to = -480
 [[book]]
 code = "MAL"
 author = "Malachi"
+author_ids = ["malachi_1899"]
 write_place = "jerusalem"
 write_from = -430
 write_to = -420
 [[book]]
 code = "MAT"
 author = "Matthew"
+author_ids = ["matthew_1971"]
 write_from = 50
 write_to = 60
 [[book]]
@@ -232,6 +248,7 @@ write_to = 65
 [[book]]
 code = "LUK"
 author = "Luke"
+author_ids = ["luke_1836"]
 write_from = 60
 write_to = 62
 [[book]]
@@ -243,29 +260,34 @@ write_to = 95
 [[book]]
 code = "ACT"
 author = "Luke"
+author_ids = ["luke_1836"]
 write_place = "rome"
 write_from = 62
 write_to = 64
 [[book]]
 code = "ROM"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "corinth"
 write_from = 57
 write_to = 57
 [[book]]
 code = "1CO"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "ephesus"
 write_from = 55
 write_to = 55
 [[book]]
 code = "2CO"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_from = 56
 write_to = 56
 [[book]]
 code = "GAL"
 author = "Paul"
+author_ids = ["paul_2479"]
 # write_place: brief guessed "antioch", but geo ancient.jsonl has no plain
 # "Antioch" slug -- two name-collision entries. antioch-1 (36.2267, 36.1717)
 # is Syrian Antioch-on-the-Orontes (Acts 11 church, Paul's sending base);
@@ -278,52 +300,61 @@ write_to = 49
 [[book]]
 code = "EPH"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "rome"
 write_from = 60
 write_to = 62
 [[book]]
 code = "PHP"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "rome"
 write_from = 61
 write_to = 62
 [[book]]
 code = "COL"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "rome"
 write_from = 60
 write_to = 62
 [[book]]
 code = "1TH"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "corinth"
 write_from = 51
 write_to = 51
 [[book]]
 code = "2TH"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "corinth"
 write_from = 51
 write_to = 52
 [[book]]
 code = "1TI"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_from = 62
 write_to = 64
 [[book]]
 code = "2TI"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "rome"
 write_from = 66
 write_to = 67
 [[book]]
 code = "TIT"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_from = 63
 write_to = 65
 [[book]]
 code = "PHM"
 author = "Paul"
+author_ids = ["paul_2479"]
 write_place = "rome"
 write_from = 60
 write_to = 62
@@ -371,6 +402,7 @@ write_to = 95
 [[book]]
 code = "JUD"
 author = "Jude"
+author_ids = ["jude_1756"]
 write_from = 65
 write_to = 80
 [[book]]

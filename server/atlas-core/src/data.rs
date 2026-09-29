@@ -277,6 +277,15 @@ pub struct BookMeta {
     pub write_to: Option<i32>,
 }
 
+/// Who wrote one book, as curated Person ids. A compile-time input only: the graph lowers it into
+/// `authored` rows, which is why it is not a `BookMeta` field -- that struct is persisted by the
+/// sidecar and served, and a fact the graph carries is not stored a second time.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BookAuthorship {
+    pub book: String,
+    pub author_ids: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CrossRef {
     pub target: String,
@@ -539,6 +548,9 @@ pub struct AtlasData {
 
     #[serde(skip)]
     pub people: Vec<Person>,
+
+    #[serde(skip)]
+    pub book_authorship: Vec<BookAuthorship>,
 
     #[serde(skip)]
     pub easton: Vec<EastonEntry>,

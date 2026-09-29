@@ -385,6 +385,12 @@
       "locator": null
     },
     {
+      "id": "curated-books",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "books.toml author_ids"
+    },
+    {
       "id": "chronology-anchors",
       "source": "our-curated-work",
       "confidence": "Curated",

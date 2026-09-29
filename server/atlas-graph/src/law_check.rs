@@ -7,7 +7,7 @@ use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DanglingReference {
     pub relation: &'static str,
     pub field: &'static str,
@@ -140,6 +140,10 @@ pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReferen
     for row in &graph.participates {
         check("participates", "person", row.person.erase())?;
         check("participates", "event", row.event.erase())?;
+    }
+    for row in &graph.authored {
+        check("authored", "book", row.book.erase())?;
+        check("authored", "person", row.person.erase())?;
     }
 
     Ok(())
@@ -666,6 +670,62 @@ mod tests {
         });
 
         assert!(every_authored_edge_resolves(&graph).is_ok());
+    }
+
+    fn authored(book: &atlas_graph_types::id::ContainerNodeId, person: &str) -> atlas_graph_types::edge::Authored {
+        atlas_graph_types::edge::Authored {
+            book: book.clone(),
+            person: atlas_graph_types::id::PersonId::new(person),
+            provenance: "test".into(),
+            justification: Justification::default(),
+        }
+    }
+
+    #[test]
+    fn red_when_an_authored_row_names_a_person_with_no_node() {
+        // Arrange
+        let mut graph = Graph::default();
+        let genesis = container_node(&mut graph, "bible-book-GEN");
+        graph.authored.push(authored(&genesis, "nowhere"));
+
+        // Act
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling person");
+
+        // Assert
+        assert_eq!(
+            err,
+            DanglingReference { relation: "authored", field: "person", missing: atlas_graph_types::id::PersonId::new("nowhere").erase() }
+        );
+    }
+
+    #[test]
+    fn red_when_an_authored_row_names_a_book_with_no_node() {
+        // Arrange
+        let mut graph = Graph::default();
+        let unbuilt = atlas_graph_types::id::ContainerNodeId::new("bible-book-XXX");
+        graph.authored.push(authored(&unbuilt, "moses_2108"));
+
+        // Act
+        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling book");
+
+        // Assert
+        assert_eq!(err, DanglingReference { relation: "authored", field: "book", missing: unbuilt.erase() });
+    }
+
+    #[test]
+    fn green_when_an_authored_row_resolves_to_its_book_and_its_person() {
+        // Arrange
+        let mut graph = Graph::default();
+        let genesis = container_node(&mut graph, "bible-book-GEN");
+        let moses = atlas_graph_types::id::PersonId::new("moses_2108").erase();
+        graph.nodes.insert(moses.clone(), Node { id: moses, payload: NodePayload::Person { label: "Moses".into(), gender: None, birth_year: None, death_year: None, also_called: vec![], description: None, first_year: None, last_year: None, eternal: false, eternal_grounds: vec![] }, provenance: "test".into() });
+        graph.authored.push(authored(&genesis, "moses_2108"));
+
+        // Act
+        let verdict = every_authored_edge_resolves(&graph);
+
+        // Assert
+        assert!(verdict.is_ok());
     }
 
     fn container_node(graph: &mut Graph, raw: &str) -> atlas_graph_types::id::ContainerNodeId {

@@ -82,7 +82,7 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     let eras = curated::parse_eras(&read(&curated_dir.join("eras.toml"))?)?;
     let chronology_anchors = curated::parse_chronology_anchors(&read(&curated_dir.join("chronology-anchors.toml"))?)?;
     let book_narration_windows = curated::parse_book_narration_windows(&read(&curated_dir.join("book-narration-windows.toml"))?)?;
-    let mut books_meta = curated::parse_books(&read(&curated_dir.join("books.toml"))?)?;
+    let curated::CuratedBooks { meta: mut books_meta, authorship: book_authorship } = curated::parse_books(&read(&curated_dir.join("books.toml"))?)?;
     let events_extra = curated::parse_events_extra(&read(&curated_dir.join("events-extra.toml"))?)?;
     let narratives = read_narratives(&curated_dir.join("narratives"))?;
 
@@ -286,6 +286,7 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     // bijections, mentions completeness, the eponym-existence conditional, the Scripture-ground rule -- live
     // at the graph adapters, which run them unconditionally at law-check time.
     data.people = people_list;
+    data.book_authorship = book_authorship;
     data.easton = easton_list;
     data.people_groups = people_groups_list;
     data.people_group_seeds = people_group_seeds;

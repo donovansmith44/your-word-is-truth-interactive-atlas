@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use atlas_core::data::{AtlasData, BookMeta, BookNarrationWindow, Canon, ChronologyAnchor, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
+use atlas_core::data::{AtlasData, BookAuthorship, BookMeta, BookNarrationWindow, Canon, ChronologyAnchor, CrossRef, Era, Event, EventWitness, LandMaskRegion, Narrative, Place, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra};
 use atlas_core::event_merge::{EventDistinct, EventMerge};
 use atlas_core::merge::PlaceMerge;
 use atlas_core::time::TimeRange;
@@ -177,6 +177,24 @@ fn xrefs_filter_missing_first_verse_drops_and_counts() {
 }
 
 #[test]
+fn curated_author_ids_are_read_per_book_and_a_book_without_them_has_none() {
+    // Arrange
+    let input = include_str!("fixtures/books-sample.toml");
+
+    // Act
+    let books = atlas_etl::curated::parse_books(input).unwrap();
+
+    // Assert
+    assert_eq!(
+        books.authorship,
+        vec![
+            BookAuthorship { book: "GEN".into(), author_ids: vec!["moses_2108".into()] },
+            BookAuthorship { book: "EXO".into(), author_ids: vec![] },
+        ]
+    );
+}
+
+#[test]
 fn curated_parsers_handle_valid_toml_and_expand_verse_ranges() {
     let eras = atlas_etl::curated::parse_eras(include_str!("fixtures/eras-sample.toml")).unwrap();
     assert_eq!(eras.len(), 2);
@@ -184,10 +202,10 @@ fn curated_parsers_handle_valid_toml_and_expand_verse_ranges() {
     assert_eq!(eras[0].from_year, -4004);
 
     let books = atlas_etl::curated::parse_books(include_str!("fixtures/books-sample.toml")).unwrap();
-    assert_eq!(books.len(), 2);
-    assert_eq!(books[0].book, "GEN");
-    assert_eq!(books[0].write_place.as_deref(), Some("some-place"));
-    assert_eq!(books[1].write_place, None);
+    assert_eq!(books.meta.len(), 2);
+    assert_eq!(books.meta[0].book, "GEN");
+    assert_eq!(books.meta[0].write_place.as_deref(), Some("some-place"));
+    assert_eq!(books.meta[1].write_place, None);
 
     let narrative = atlas_etl::curated::parse_narrative(include_str!("fixtures/narrative-sample.toml")).unwrap();
     assert_eq!(narrative.id, "exodus");

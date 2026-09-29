@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -50,6 +50,8 @@ struct BookToml {
     code: String,
     author: String,
     #[serde(default)]
+    author_ids: Vec<String>,
+    #[serde(default)]
     write_place: Option<String>,
     #[serde(default)]
     write_from: Option<i32>,
@@ -62,13 +64,27 @@ struct BooksFile {
     book: Vec<BookToml>,
 }
 
+/// One file, two compiled views: the served metadata and the authorship the graph lowers into rows.
+#[derive(Debug, PartialEq)]
+pub struct CuratedBooks {
+    pub meta: Vec<BookMeta>,
+    pub authorship: Vec<BookAuthorship>,
+}
+
 /// The TOML field is `code` while the compiled field is `book`: this wrapper does that one rename.
-pub fn parse_books(input: &str) -> Result<Vec<BookMeta>> {
+pub fn parse_books(input: &str) -> Result<CuratedBooks> {
     let f: BooksFile = toml::from_str(input).context("books.toml: invalid TOML or does not match the [[book]] schema")?;
-    Ok(f.book
+    let (meta, authorship) = f
+        .book
         .into_iter()
-        .map(|b| BookMeta { book: b.code, author: b.author, write_place: b.write_place, write_from: b.write_from, write_to: b.write_to })
-        .collect())
+        .map(|b| {
+            (
+                BookMeta { book: b.code.clone(), author: b.author, write_place: b.write_place, write_from: b.write_from, write_to: b.write_to },
+                BookAuthorship { book: b.code, author_ids: b.author_ids },
+            )
+        })
+        .unzip();
+    Ok(CuratedBooks { meta, authorship })
 }
 
 /// One file holds exactly one narrative, as bare top-level fields rather than an array of tables, hence the

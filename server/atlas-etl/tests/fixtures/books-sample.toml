@@ -1,6 +1,7 @@
 [[book]]
 code = "GEN"
 author = "Moses"
+author_ids = ["moses_2108"]
 write_place = "some-place"
 write_from = -1445
 write_to = -1405

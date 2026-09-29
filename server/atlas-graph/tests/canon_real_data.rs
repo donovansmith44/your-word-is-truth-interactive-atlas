@@ -196,12 +196,12 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::ParentOf, 1_776),
         (RowFamily::Partners, 104),
         (RowFamily::Participates, 714),
-        (RowFamily::Authored, 0),
+        (RowFamily::Authored, 32),
         (RowFamily::Shown, SHOWN_ROWS),
         (RowFamily::MapSuccession, MAP_STEPS),
     ];
     assert_eq!(counts, expected, "per-family row counts");
-    assert_eq!(total, 917_411 + SHOWN_ROWS + MAP_STEPS, "the committed graph carries exactly 917,411 rows (483,412 + 431,280 Occurs at LEX-1 + 125 at D3 + 2,594 kin/partner/participation rows at D5) plus what the maps show and their steps");
+    assert_eq!(total, 917_443 + SHOWN_ROWS + MAP_STEPS, "the committed graph carries exactly 917,443 rows plus what the maps show and their steps");
 
     assert_eq!(
         round_trip_family(

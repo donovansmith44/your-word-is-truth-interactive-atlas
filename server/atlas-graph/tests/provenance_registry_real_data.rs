@@ -193,6 +193,7 @@ const PINNED_INVENTORY: &[&str] = &[
     "concord",
     "concord-sc-overlap",
     "curated",
+    "curated-books",
     "curated-catechism",
     "curated-eras",
     "curated-fulfillment",
@@ -238,7 +239,7 @@ fn the_per_family_provenance_map_of_the_real_artifact_is_pinned() {
 const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("analogue", &["attestation-corrections"]),
     ("attests", &["event-witnesses"]),
-    ("authored", &[]),
+    ("authored", &["curated-books"]),
     ("canon_succession", &["kjv"]),
     ("catechism", &["concord-sc-overlap", "curated-catechism"]),
     ("comments_on", &["kretzmann"]),
