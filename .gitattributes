@@ -37,3 +37,8 @@ contracts/*/*.schema.json   text eol=lf
 # bytes, which autocrlf must never touch).
 data/compiled/sections/*.sqlite.zst binary
 data/compiled/manifest.toml text eol=lf
+
+# `the_etl_binaries` regenerates this registry and compares it byte for byte
+# with the checked-out copy; the generator writes LF, so a CRLF checkout fails
+# the first run after every checkout.
+data/compiled/sources.json text eol=lf
