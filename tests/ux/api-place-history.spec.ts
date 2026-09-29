@@ -133,11 +133,13 @@ test('established/destroyed are window-independent: same values regardless of wh
     when: { from_year: -1003, to_year: -1003 },
     verses: ['2SA.5.6', '2SA.5.7', '2SA.5.9'],
     note: 'traditional',
+    event: 'sam2_jerusalem_captured',
   });
   expect(early.history.destroyed).toEqual({
     when: { from_year: -586, to_year: -586 },
     verses: ['2KI.25.9', '2KI.25.10'],
     note: null,
+    event: 'exl_jerusalem',
   });
 });
 
