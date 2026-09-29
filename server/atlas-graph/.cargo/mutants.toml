@@ -13,6 +13,8 @@ test_tool = "cargo"
 # are the ones that witness the mutated files, and they cost ~210 s together:
 #
 #   --lib                            fidelity.rs and every adapter's own tests
+#   --bins                           compile_graph.rs's own tests, which `--lib`
+#                                    does NOT select
 #   sqlite_laws                      sqlite/{blob,columns,ddl,logical,manifest,
 #                                    partition,snapshot,writer}.rs, sections.rs,
 #                                    event_world.rs -- 25 tests in 1.6 s
@@ -36,6 +38,7 @@ test_tool = "cargo"
 additional_cargo_test_args = [
   "-p", "atlas-graph",
   "--lib",
+  "--bins",
   "--test", "sqlite_laws",
   "--test", "sections_real_data",
   "--test", "reload_real_data",

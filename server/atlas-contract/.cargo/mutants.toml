@@ -18,6 +18,10 @@ test_tool = "cargo"
 # ones that actually witness those files, and they cost ~40 s together:
 #
 #   --lib                    the wire types' own unit tests
+#   --bins                   the exporters' own unit tests, which `--lib` does
+#                            NOT select: `export_contract`'s `mode` is covered
+#                            by a `#[cfg(test)]` module in the bin itself, and
+#                            without this its mutants survive (measured)
 #   api                      app.rs, error.rs, map.rs, events.rs, places.rs,
 #                            reference.rs -- the router over the demo world
 #   graph_api                graph.rs, graph_wire.rs, reading.rs, contents.rs,
@@ -42,6 +46,7 @@ test_tool = "cargo"
 additional_cargo_test_args = [
   "-p", "atlas-contract",
   "--lib",
+  "--bins",
   "--test", "api",
   "--test", "graph_api",
   "--test", "contract_generation",

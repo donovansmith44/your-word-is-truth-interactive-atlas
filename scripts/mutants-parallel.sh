@@ -33,12 +33,19 @@
 # WHY THE DATA IS COPIED AND NEVER LINKED: `git worktree remove --force`
 # FOLLOWS an NTFS junction or symlink and deletes the real files through it --
 # that is how 374 MB of `data/raw` was destroyed on 2026-09-28. A shard gets its
-# own robocopy'd COPY of the gitignored `data/raw`, and everything else its
-# tests read -- `data/compiled`, `data/curated`, `contracts/`,
-# `tests/fixtures/`, `rust-toolchain.toml` -- is tracked and so is already in
-# the checkout. Nothing outside a shard's own worktree is ever written: the
-# section cache a shard materialises lands in its own `data/cache`, which is
-# why this script does NOT point the tests at the main repository's data.
+# own robocopy'd COPY of the two gitignored inputs, `data/raw` and `data/cache`;
+# everything else its tests read -- `data/compiled`, `data/curated`,
+# `contracts/`, `tests/fixtures/`, `rust-toolchain.toml` -- is tracked and so is
+# already in the checkout. Nothing outside a shard's own worktree is ever
+# written, which is why this script does NOT point the tests at the main
+# repository's data.
+#
+# `data/cache` is copied rather than left to materialise itself because
+# `decompress_verified` unpacks a section through a tmp path that carries no
+# process id: the 58 `bibex` processes `atlas-cli`'s suite spawns in parallel
+# then race on the same `<logical>.sqlite.tmp` and the baseline goes red
+# ("required section core unavailable: cannot find the file"). Handing every
+# shard a warm cache means no test materialises anything.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -74,6 +81,24 @@ wanted() {
   [ ${#ONLY_CRATES[@]} -eq 0 ] || printf '%s\n' "${ONLY_CRATES[@]}" | grep -qx "$1"
 }
 
+# The one way a shard worktree is ever deleted, before a run and after it. A
+# reparse point inside it would make either deletion reach the real files it
+# points at -- `git worktree remove --force` and `rm -rf` both follow one -- so
+# zero is the only count this proceeds on.
+remove_worktree() {
+  local wt="$1" links
+  [ -d "$wt" ] || return 0
+  links=$(powershell -NoProfile -Command \
+    "(Get-ChildItem '$wt' -Recurse -Force -Attributes ReparsePoint -ErrorAction SilentlyContinue | Measure-Object).Count" | tr -d '\r')
+  if [ "$links" != "0" ]; then
+    echo "REFUSING to delete $wt: $links reparse point(s) -- 'cmd /c rmdir' each one first" >&2
+    exit 70
+  fi
+  git -C "$ROOT" worktree remove --force "$wt" >/dev/null 2>&1
+  rm -rf "$wt"
+  git -C "$ROOT" worktree prune
+}
+
 # name <tab> directory to run in <tab> config path <tab> extra cargo-mutants args
 runs() {
   for config in "$ROOT"/server/*/.cargo/mutants.toml; do
@@ -107,8 +132,7 @@ START=$(date +%s)
 
 shard() {
   local i="$1" wt="$SHARD_ROOT/s$1" target="$SHARD_ROOT/t$1"
-  rm -rf "$wt"
-  git -C "$ROOT" worktree prune
+  remove_worktree "$wt"
   # The target directory OUTLIVES the worktree: a shard's path is the same on
   # every run, so cargo's cache is still warm and a re-run pays no cold build.
   mkdir -p "$target"
@@ -119,16 +143,19 @@ shard() {
     echo "shard $i: worktree add failed" >> "$OUT/exits.txt"
     return
   fi
-  # MSYS_NO_PATHCONV: Git Bash otherwise rewrites `/E` into the path `E:/` and
-  # robocopy rejects it as an invalid parameter.
-  MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
-    robocopy "$(cygpath -w "$ROOT/data/raw")" "$(cygpath -w "$wt/data/raw")" \
-      /E /NFL /NDL /NJH /NJS /NP /MT:8 >/dev/null 2>&1
-  # Robocopy reports what it did, not whether it failed: 0-7 are successes.
-  if [ $? -ge 8 ]; then
-    echo "shard $i: robocopy of data/raw failed" >> "$OUT/exits.txt"
-    return
-  fi
+  local gitignored
+  for gitignored in data/raw data/cache; do
+    # MSYS_NO_PATHCONV: Git Bash otherwise rewrites `/E` into the path `E:/`
+    # and robocopy rejects it as an invalid parameter.
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+      robocopy "$(cygpath -w "$ROOT/$gitignored")" "$(cygpath -w "$wt/$gitignored")" \
+        /E /NFL /NDL /NJH /NJS /NP /MT:8 >/dev/null 2>&1
+    # Robocopy reports what it did, not whether it failed: 0-7 are successes.
+    if [ $? -ge 8 ]; then
+      echo "shard $i: robocopy of $gitignored failed" >> "$OUT/exits.txt"
+      return
+    fi
+  done
   local name dir config features args
   while IFS=$'\t' read -r name dir config features; do
     args=(--in-place --config "$config" --shard "$i/$SHARDS"
@@ -179,19 +206,7 @@ done
 } | tee "$MERGED/summary.txt"
 
 if [ "$KEEP" -eq 0 ]; then
-  for i in $(seq 0 $((SHARDS - 1))); do
-    wt="$SHARD_ROOT/s$i"
-    [ -d "$wt" ] || continue
-    # A reparse point in the worktree would make `git worktree remove --force`
-    # delete the real files it points at. Zero is the only acceptable count.
-    links=$(powershell -NoProfile -Command \
-      "(Get-ChildItem '$wt' -Recurse -Force -Attributes ReparsePoint | Measure-Object).Count" | tr -d '\r')
-    if [ "$links" != "0" ]; then
-      echo "REFUSING to remove $wt: $links reparse point(s) -- 'cmd /c rmdir' each one first" >&2
-      exit 70
-    fi
-    git -C "$ROOT" worktree remove --force "$wt"
-  done
+  for i in $(seq 0 $((SHARDS - 1))); do remove_worktree "$SHARD_ROOT/s$i"; done
 fi
 
 [ ! -s "$MERGED/missed.txt" ] && [ ! -s "$MERGED/timeout.txt" ]
