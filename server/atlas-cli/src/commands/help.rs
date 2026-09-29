@@ -11,7 +11,10 @@ pub fn text() -> String {
     out.push_str("  find <term>                      name lookup across Place/Event/Narrative/Era/Polity/Person/CatechismItem\n");
     out.push_str("  kinds                            the full edge-kind vocabulary (--kind tokens) for 'edges'\n");
     out.push_str("  verify [--section <name>]        recompute every section's logical hash, blob hash and the root against\n");
-    out.push_str("                                    manifest.toml (exit 6, integrity_failed, on any mismatch)\n");
+    out.push_str("                                    manifest.toml, and data/raw against data/raw/MANIFEST.toml, naming\n");
+    out.push_str("                                    the file that moved (exit 6, integrity_failed, on any mismatch)\n");
+    out.push_str("  raw bless                        record data/raw in data/raw/MANIFEST.toml: prints the root and what\n");
+    out.push_str("                                    moved since the previous manifest; refuses an empty tree\n");
     out.push_str("  tutorial                         a guided, numbered walkthrough (real queries, real output)\n");
     out.push_str("  help                             this text\n\n");
     out.push_str("global flags:\n");

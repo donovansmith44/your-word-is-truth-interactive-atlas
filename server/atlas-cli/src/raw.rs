@@ -72,7 +72,7 @@ fn children_of(dir: &Path, relative: &str, skip: &[&str], links: &mut Vec<String
             let grandchildren = children_of(&entry.path(), &path, &[], links)?;
             children.push(RawEntry::Node(RawNode { name, hash: node_hash(&grandchildren), children: grandchildren }));
         } else {
-            let bytes = fs::read(entry.path())?;
+            let bytes = fs::read(entry.path()).map_err(|e| io::Error::new(e.kind(), format!("{}: {e}", entry.path().display())))?;
             children.push(RawEntry::Leaf(RawLeaf { name, sha256: Sha256(sha256(&bytes)), bytes: bytes.len() as u64 }));
         }
     }

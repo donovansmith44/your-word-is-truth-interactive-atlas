@@ -68,11 +68,17 @@ pub enum Drift {
     Extra { path: String },
     Truncated { path: String, recorded: u64, found: u64 },
     Changed { path: String, recorded: Sha256, found: Sha256 },
+    LinkAdded { path: String },
+    LinkRemoved { path: String },
 }
 
-pub fn drift(recorded: &[RawEntry], walked: &[RawEntry]) -> Vec<Drift> {
+/// The datasets by name, then the links: a link is not content and moves no hash, so it is
+/// compared as a list of its own, and one added or removed is a change the tree must see.
+pub fn drift(recorded: &RawManifest, walked: &RawManifest) -> Vec<Drift> {
     let mut out = Vec::new();
-    drift_into("", recorded, walked, &mut out);
+    drift_into("", &recorded.datasets, &walked.datasets, &mut out);
+    out.extend(recorded.links.iter().filter(|path| !walked.links.contains(path)).map(|path| Drift::LinkRemoved { path: path.clone() }));
+    out.extend(walked.links.iter().filter(|path| !recorded.links.contains(path)).map(|path| Drift::LinkAdded { path: path.clone() }));
     out
 }
 
@@ -141,10 +147,10 @@ fn previous_at(manifest: &Path, walked: &RawManifest) -> Result<Option<Previous>
         )
     })?;
     let mut previous = Previous { root: recorded.root, added: Vec::new(), removed: Vec::new(), changed: Vec::new() };
-    for d in drift(&recorded.datasets, &walked.datasets) {
+    for d in drift(&recorded, walked) {
         match d {
-            Drift::Extra { path } => previous.added.push(path),
-            Drift::Missing { path } => previous.removed.push(path),
+            Drift::Extra { path } | Drift::LinkAdded { path } => previous.added.push(path),
+            Drift::Missing { path } | Drift::LinkRemoved { path } => previous.removed.push(path),
             Drift::Truncated { path, .. } | Drift::Changed { path, .. } => previous.changed.push(path),
         }
     }

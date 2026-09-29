@@ -130,6 +130,24 @@ impl Fixture {
     }
 }
 
+/// Windows only: `mklink /J` needs no elevation, so it runs on every Windows host; other hosts
+/// have no junctions. The target lives inside the fixture, so a worst-case follow could only
+/// reach the test's own files.
+#[cfg(windows)]
+impl Fixture {
+    fn junction(&self, relative: &str) -> PathBuf {
+        let elsewhere = self.dir.join("elsewhere");
+        fs::create_dir_all(&elsewhere).expect("the junction target must be creatable");
+        let link = relative.split('/').fold(self.raw(), |path, component| path.join(component));
+        let made = Command::new("cmd")
+            .args(["/C", "mklink", "/J", link.to_str().expect("utf-8 path"), elsewhere.to_str().expect("utf-8 path")])
+            .output()
+            .expect("cmd must run");
+        assert!(made.status.success(), "mklink /J: {}", String::from_utf8_lossy(&made.stderr));
+        link
+    }
+}
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(self.dir.parent().expect("the fixture data directory has a parent"));
@@ -424,20 +442,51 @@ fn section_json_carries_no_raw_answer() {
 /// file unreadable without elevation; other hosts have no share modes.
 #[cfg(windows)]
 #[test]
-fn a_tree_the_walk_cannot_read_is_an_integrity_failure() {
+fn a_file_the_walk_cannot_read_is_named_in_the_integrity_failure() {
     // Arrange
     use std::os::windows::fs::OpenOptionsExt;
     let fixture = recorded_fixture("unreadable");
     let locked = fixture.raw().join("geo").join("ancient.jsonl");
     let _hold = fs::OpenOptions::new().read(true).share_mode(0).open(&locked).expect("the fixture file must open exclusively");
     let why = fs::read(&locked).expect_err("an exclusively held file must not read").to_string();
-    let expected = format!("atlas: error (integrity_failed): {} could not be walked -- {why} -- {DO_RAW}\n", fixture.raw().display());
+    let expected = format!("atlas: error (integrity_failed): {} could not be walked -- {}: {why} -- {DO_RAW}\n", fixture.raw().display(), locked.display());
 
     // Act
     let result = bibex(&fixture, &["verify"]);
 
     // Assert
     assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), expected));
+}
+
+#[cfg(windows)]
+#[test]
+fn a_junction_the_manifest_does_not_list_is_named_as_a_link() {
+    // Arrange
+    let fixture = recorded_fixture("link-added");
+    let link = fixture.junction("geo/linked");
+
+    // Act
+    let result = bibex(&fixture, &["verify"]);
+    fs::remove_dir(&link).expect("the junction must be removable on its own");
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), integrity_failed(1, 4, "raw geo/linked: LINK (a junction or symlink MANIFEST.toml does not list)", DO_RAW)));
+}
+
+#[cfg(windows)]
+#[test]
+fn a_junction_the_manifest_lists_but_the_tree_has_lost_is_named_as_a_missing_link() {
+    // Arrange
+    let fixture = recorded_fixture("link-removed");
+    let link = fixture.junction("geo/linked");
+    fixture.record();
+    fs::remove_dir(&link).expect("the junction must be removable on its own");
+
+    // Act
+    let result = bibex(&fixture, &["verify"]);
+
+    // Assert
+    assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), integrity_failed(1, 4, "raw geo/linked: LINK MISSING (MANIFEST.toml lists a junction or symlink there)", DO_RAW)));
 }
 
 #[test]

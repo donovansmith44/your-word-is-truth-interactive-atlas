@@ -207,7 +207,7 @@ fn check_raw(data_dir: &Path) -> Result<RawSection, CliError> {
         return Ok(RawSection::Unrecorded(Unrecorded::NoFiles { raw_dir }));
     }
     let recorded = read_raw_manifest(&manifest).map_err(|e| CliError::integrity_failed(format!("{} does not verify", manifest.display()), e.to_string(), DO_RAW))?;
-    Ok(RawSection::Checked { root: walked.root, files, drift: drift(&recorded.datasets, &walked.datasets) })
+    Ok(RawSection::Checked { root: walked.root, files, drift: drift(&recorded, &walked) })
 }
 
 fn raw_failure(drift: &Drift) -> String {
@@ -216,6 +216,8 @@ fn raw_failure(drift: &Drift) -> String {
         Drift::Extra { path } => format!("raw {path}: EXTRA (not in {MANIFEST_FILE})"),
         Drift::Truncated { path, recorded, found } => format!("raw {path}: TRUNCATED manifest {recorded} bytes file {found}"),
         Drift::Changed { path, recorded, found } => format!("raw {path}: MISMATCH manifest {} file {}", recorded.hex(), found.hex()),
+        Drift::LinkAdded { path } => format!("raw {path}: LINK (a junction or symlink {MANIFEST_FILE} does not list)"),
+        Drift::LinkRemoved { path } => format!("raw {path}: LINK MISSING ({MANIFEST_FILE} lists a junction or symlink there)"),
     }
 }
 
@@ -240,20 +242,13 @@ pub(crate) fn commas(n: u64) -> String {
     out
 }
 
+/// Only a report with no failures is rendered (`run` fails first), so a section here is `ok`
+/// or `skipped` logically and `ok` or `absent` in transport; the failing states never reach it.
 fn render(report: &Report) -> String {
     let mut out = String::new();
     for s in &report.sections {
-        let logical = match s.logical_check {
-            "ok" => "OK".to_string(),
-            "skipped" => "skipped".to_string(),
-            _ => s.failures.iter().find(|f| f.contains("logical") || f.contains("schema") || !f.contains("transport")).map(|f| format!("MISMATCH ({})", f.trim_start_matches(&format!("{}: ", s.name)))).unwrap_or_else(|| "MISMATCH".into()),
-        };
-        let transport = match s.transport {
-            "ok" => "OK".to_string(),
-            "absent" => "absent (optional)".to_string(),
-            "missing" => "MISSING".to_string(),
-            _ => s.failures.iter().find(|f| f.contains("transport") || f.contains("unreadable")).map(|f| format!("MISMATCH ({})", f.trim_start_matches(&format!("{}: ", s.name)))).unwrap_or_else(|| "MISMATCH".into()),
-        };
+        let logical = if s.logical_check == "ok" { "OK" } else { "skipped" };
+        let transport = if s.transport == "ok" { "OK" } else { "absent (optional)" };
         let sizes = match s.uncompressed_bytes {
             Some(u) => format!("{} -> {} bytes", commas(u), commas(s.bytes)),
             None => format!("{} bytes", commas(s.bytes)),
