@@ -85,7 +85,7 @@ pub struct EdgeEntry {
 /// A reference to something the graph holds: enough to show it, and the id to
 /// fetch it with. The `kind` is one of the graph's node kinds, or `Edge` when
 /// the reference is to an edge, which can be explored in its own right.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NodeRef {
     pub id: String,
