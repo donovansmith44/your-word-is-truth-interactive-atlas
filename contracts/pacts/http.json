@@ -3224,9 +3224,9 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "max_version": "0.9.0",
-        "min_version": "0.9.0",
-        "section_schema_version": 14
+        "max_version": "0.10.0",
+        "min_version": "0.10.0",
+        "section_schema_version": 15
       },
       "status": 200
     },
@@ -3600,7 +3600,7 @@
             "verse": 31
           }
         ],
-        "version": "18c7546b435791ee9422be8f32fbb5fa"
+        "version": "31e118e8e6d47276ebeec3ed23d53217"
       },
       "status": 200
     },
@@ -4865,6 +4865,10 @@
             "kind": "located-at"
           },
           {
+            "count": 1,
+            "kind": "shown-on"
+          },
+          {
             "count": 2,
             "kind": "temporal-adjacency"
           }
@@ -4873,7 +4877,7 @@
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "18c7546b435791ee9422be8f32fbb5fa"
+        "version": "31e118e8e6d47276ebeec3ed23d53217"
       },
       "status": 200
     },
@@ -4888,13 +4892,17 @@
           {
             "count": 11,
             "kind": "mentioned-in"
+          },
+          {
+            "count": 10,
+            "kind": "shown-on"
           }
         ],
         "id": "Place:hazor-1",
         "kind": "Place",
         "label": "Hazor 1",
         "provenance": "curated-places",
-        "version": "18c7546b435791ee9422be8f32fbb5fa"
+        "version": "31e118e8e6d47276ebeec3ed23d53217"
       },
       "status": 200
     },
@@ -4920,7 +4928,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "18c7546b435791ee9422be8f32fbb5fa"
+        "version": "31e118e8e6d47276ebeec3ed23d53217"
       },
       "status": 200
     },
@@ -10152,6 +10160,12 @@
           },
           {
             "confidence": "Curated",
+            "id": "curated-books",
+            "locator": "books.toml author_ids",
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
             "id": "chronology-anchors",
             "locator": null,
             "source": "our-curated-work"
@@ -10878,7 +10892,8 @@
           "Translation",
           "PeopleGroup",
           "CommentaryItem",
-          "LexiconEntry"
+          "LexiconEntry",
+          "Map"
         ],
         "relations": [
           {
@@ -10992,7 +11007,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 14,
+        "section_schema_version": 15,
         "symmetric": [
           {
             "label": "analogous-to",

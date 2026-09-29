@@ -34,6 +34,18 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.14.0** (Batch FOCUS-0) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved; the vocabulary grew).**
+  authored-by and shows; Map nodes per era; corpus roots; Concord succession;
+  Small Catechism titles; place claims name events. `RelationId` gains
+  `AuthoredBy` (`authored-by`/`authored`) and `Shows` (`shows`/`shown-on`),
+  both APPENDED LAST -- positional codes unchanged for every earlier relation;
+  `NodeKind` gains `Map`; the section schema moves 14 -> 15. Re-blessed: the
+  `vocabulary` fixture (two relations, one node kind, the schema version);
+  `node-event-ab-ur` and `node-place-hazor-1` each gain a `shown-on` count;
+  `kretzmann-chapter-gen-1` carries the new version root; the `contract`
+  fixture follows the AQC 0.10.0 advertisement. No edge id outside the new
+  families moved; no scenario text moved.
+
 - **0.13.0** (Batch CONTRACT-1b) — **MINOR under the 0.x policy (MAJOR class: a blessed fixture moved).**
   The `contract` fixture follows the AQC 0.9.0 advertisement -- `min_version`/
   `max_version` 0.8.0 -> 0.9.0, the only two fields `transport/http.feature`'s

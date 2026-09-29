@@ -35,6 +35,10 @@
           {
             "count": 11,
             "kind": "mentioned-in"
+          },
+          {
+            "count": 10,
+            "kind": "shown-on"
           }
         ],
         "id": "Place:hazor-1",

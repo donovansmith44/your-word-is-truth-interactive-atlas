@@ -25,8 +25,8 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
 
 /// Pre-launch there is no range of earlier contract versions to support, so the
 /// minimum and the maximum are the one version this server implements.
-pub const MIN_SUPPORTED_VERSION: &str = "0.9.0";
-pub const MAX_SUPPORTED_VERSION: &str = "0.9.0";
+pub const MIN_SUPPORTED_VERSION: &str = "0.10.0";
+pub const MAX_SUPPORTED_VERSION: &str = "0.10.0";
 
 /// The range of contract versions this server answers for.
 ///

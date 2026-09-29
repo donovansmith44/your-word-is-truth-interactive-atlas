@@ -8,13 +8,17 @@
       {
         "count": 4,
         "kind": "mentioned-in"
+      },
+      {
+        "count": 10,
+        "kind": "shown-on"
       }
     ],
     "id": "Place:ur-1",
     "kind": "Place",
     "label": "Ur 1",
     "provenance": "curated-places",
-    "version": "21778a12819692c916538c558ab5900a"
+    "version": "f3eab9b319696aeb098aaf47fffc050e"
   },
   "status": 200
 }

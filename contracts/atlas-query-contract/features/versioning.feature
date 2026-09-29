@@ -7,4 +7,4 @@ Feature: Versioning -- the server advertises its AQC range
   Scenario: the server advertises the supported AQC version range
     When I query "/api/contract"
     Then the response is a valid "Contract"
-    And the server advertises AQC version "0.9.0" through "0.9.0"
+    And the server advertises AQC version "0.10.0" through "0.10.0"

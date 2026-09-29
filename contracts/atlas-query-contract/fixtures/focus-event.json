@@ -22,6 +22,10 @@
         "kind": "located-at"
       },
       {
+        "count": 1,
+        "kind": "shown-on"
+      },
+      {
         "count": 2,
         "kind": "temporal-adjacency"
       }
@@ -30,7 +34,7 @@
     "kind": "Event",
     "label": "Terah's family leaves Ur",
     "provenance": "curated",
-    "version": "21778a12819692c916538c558ab5900a"
+    "version": "f3eab9b319696aeb098aaf47fffc050e"
   },
   "status": 200
 }

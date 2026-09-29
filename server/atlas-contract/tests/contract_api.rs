@@ -17,8 +17,8 @@ async fn api_contract_answers_the_whole_advertisement_and_nothing_besides() {
     // Arrange
     let app = app();
     let expected = serde_json::json!({
-        "min_version": "0.9.0",
-        "max_version": "0.9.0",
+        "min_version": "0.10.0",
+        "max_version": "0.10.0",
         "manifest_schema": 1,
         "section_schema_version": 15,
     });

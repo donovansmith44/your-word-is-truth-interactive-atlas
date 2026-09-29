@@ -21,6 +21,10 @@
             "kind": "located-at"
         },
         {
+            "count": 1,
+            "kind": "shown-on"
+        },
+        {
             "count": 2,
             "kind": "temporal-adjacency"
         }
