@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
+use atlas_graph::sqlite::source::{sibling_dir, SectionLayout};
 use atlas_graph::GraphService;
 
 struct Args {
@@ -67,11 +68,8 @@ async fn main() -> Result<()> {
 
     let load_start = std::time::Instant::now();
     let (graph, data) = if args.build_from_raw {
-        // `data/raw` and `data/curated` are siblings of `--data-dir`'s own
-        // `data/compiled` under one `data/` parent, which is true of every real
-        // invocation of this binary and spares it a second flag for each.
-        let raw_dir = args.data_dir.parent().map(|p| p.join("raw")).unwrap_or_else(|| PathBuf::from("../data/raw"));
-        let curated_dir = args.data_dir.parent().map(|p| p.join("curated")).unwrap_or_else(|| PathBuf::from("../data/curated"));
+        let raw_dir = SectionLayout::under(&args.data_dir).raw_dir();
+        let curated_dir = sibling_dir(&args.data_dir, "curated");
         println!("atlas-graph: --build-from-raw -- building in memory from {}", raw_dir.display());
         let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
         // `GraphService::build` runs the KJV fidelity law as part of construction and
