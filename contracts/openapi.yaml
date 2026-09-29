@@ -1455,6 +1455,9 @@ components:
             The sources behind the passages that narrate this event, for this event
             rather than for the corpus. Omitted when there are none.
       additionalProperties: false
+    EventId:
+      type: string
+      description: The id of one Event node.
     EventKind:
       type: string
       description: |-
@@ -1917,6 +1920,13 @@ components:
       - when
       - verses
       properties:
+        event:
+          oneOf:
+          - $ref: '#/components/schemas/EventId'
+            description: |-
+              The event this founding or fall is, when the verses attest one; absent for a
+              claim inferred from later references rather than narrated.
+          - type: 'null'
         note:
           type:
           - string

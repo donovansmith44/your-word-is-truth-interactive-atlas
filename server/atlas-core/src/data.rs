@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::time::{TimeRange, Year};
 
+pub use atlas_graph_types::id::EventId;
+
 /// One book of the canon: its code, its name, and how many verses each of its
 /// chapters holds.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
@@ -384,6 +386,10 @@ pub struct PlaceDateClaim {
     /// A qualifier such as `traditional`, shown as a leading "c." on the date;
     /// absent when the date needs none.
     pub note: Option<String>,
+    /// The event this founding or fall is, when the verses attest one; absent for a
+    /// claim inferred from later references rather than narrated.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event: Option<EventId>,
 }
 
 /// `id` matches a real compiled place id; most places have no record at all.
@@ -1095,6 +1101,7 @@ pub fn demo_fixture() -> AtlasData {
                 when: TimeRange::new(-2000, -2000).unwrap(),
                 verses: vec!["GEN.23.19".into()],
                 note: Some("traditional".into()),
+                event: None,
             }),
             destroyed: None,
         },

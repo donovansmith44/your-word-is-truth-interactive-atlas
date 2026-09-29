@@ -116,6 +116,7 @@ id = "jerusalem"
   # from (df_hebron's own -1010 Hebron-anointing + ~7.5 years).
   verses = ["2SA.5.6", "2SA.5.7", "2SA.5.9"]
   note = "traditional"
+  event = "sam2_jerusalem_captured"
 
   [place.destroyed]
   year = -586
@@ -126,6 +127,7 @@ id = "jerusalem"
   # 25 ties this to an explicit regnal-year chain (Zedekiah's 9th/11th
   # years), the firmest-dated event in this file.
   verses = ["2KI.25.9", "2KI.25.10"]
+  event = "exl_jerusalem"
 
   [[place.blurb]]
   text = "Once the Jebusite stronghold of Jebus, the city became Israel's capital after David's conquest and the site of Solomon's temple, until Babylon burned it in 586 BC."
@@ -276,6 +278,7 @@ id = "nineveh"
   # dispersion, GEN.10.10 "the beginning of his kingdom was Babel".
   verses = ["GEN.10.11"]
   note = "traditional"
+  event = "theo-87"
 
   [[place.blurb]]
   text = "Founded by Asshur out of Nimrod's kingdom of Babel, Nineveh grew into one of the great cities of the ancient Near East."
@@ -342,6 +345,7 @@ id = "samaria_1022"
   # theo-176 event ("Reign of Omri").
   verses = ["1KI.16.24"]
   note = "traditional"
+  event = "theo-176"
 
   [place.destroyed]
   year = -722
@@ -351,6 +355,7 @@ id = "samaria_1022"
   # qualifier -- externally synchronized to Assyrian records, same firm
   # standing as Jerusalem's 586 BC destruction above.
   verses = ["2KI.17.5", "2KI.17.6"]
+  event = "2ki_fall_of_samaria"
 
   [[place.blurb]]
   text = "Omri built his new capital on a hill he bought from Shemer, and it remained the northern kingdom's royal city until Assyria besieged and took it, exiling Israel."
@@ -375,6 +380,7 @@ id = "shiloh"
   # cq_shiloh event exactly.
   verses = ["JOS.18.1"]
   note = "traditional"
+  event = "cq_shiloh"
 
   [place.destroyed]
   from = -1104

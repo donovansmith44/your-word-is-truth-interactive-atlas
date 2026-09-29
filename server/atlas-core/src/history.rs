@@ -351,7 +351,7 @@ mod tests {
     use crate::data::PlaceDateClaim;
 
     fn claim(from: Year, to: Year) -> PlaceDateClaim {
-        PlaceDateClaim { when: range(from, to), verses: vec![], note: None }
+        PlaceDateClaim { when: range(from, to), verses: vec![], note: None, event: None }
     }
 
     fn history_with_dates(established: Option<PlaceDateClaim>, destroyed: Option<PlaceDateClaim>) -> PlaceHistory {

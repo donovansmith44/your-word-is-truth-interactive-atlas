@@ -26,6 +26,7 @@ id = "jerusalem"
   year = -1003
   verses = ["2SA.5.7"]
   note = "traditional"
+  event = "sam2_jerusalem_captured"
 
   [place.destroyed]
   from = -586

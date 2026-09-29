@@ -485,7 +485,7 @@ pub fn unfold(conn: &Connection) -> Result<(AtlasData, SourcesDocument), SqliteE
         let id = text(&r[0], t)?;
         let claim = |f: &Col, to: &Col, note: &Col| -> Result<Option<PlaceDateClaim>, SqliteError> {
             Ok(match (opt_int(f, t)?, opt_int(to, t)?) {
-                (Some(from_year), Some(to_year)) => Some(PlaceDateClaim { when: TimeRange { from_year, to_year }, verses: Vec::new(), note: opt_text(note, t)? }),
+                (Some(from_year), Some(to_year)) => Some(PlaceDateClaim { when: TimeRange { from_year, to_year }, verses: Vec::new(), note: opt_text(note, t)?, event: None }),
                 _ => None,
             })
         };

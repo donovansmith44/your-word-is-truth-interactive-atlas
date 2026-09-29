@@ -672,6 +672,9 @@
       ],
       "type": "object"
     },
+    "EventId": {
+      "type": "string"
+    },
     "EventKind": {
       "enum": [
         "event",
@@ -1197,6 +1200,16 @@
     "PlaceDateClaim": {
       "additionalProperties": false,
       "properties": {
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EventId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "note": {
           "type": [
             "string",

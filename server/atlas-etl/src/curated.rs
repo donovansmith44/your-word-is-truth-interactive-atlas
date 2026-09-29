@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -453,6 +453,8 @@ struct DateClaimToml {
     verses: Vec<String>,
     #[serde(default)]
     note: Option<String>,
+    #[serde(default)]
+    event: Option<EventId>,
 }
 
 fn resolve_date_claim(claim: DateClaimToml, place_id: &str, field: &str) -> Result<PlaceDateClaim> {
@@ -470,7 +472,7 @@ fn resolve_date_claim(claim: DateClaimToml, place_id: &str, field: &str) -> Resu
         }
     }
     .map_err(|src| anyhow::anyhow!("place '{place_id}' {field}: {src}"))?;
-    Ok(PlaceDateClaim { when, verses: claim.verses, note: claim.note })
+    Ok(PlaceDateClaim { when, verses: claim.verses, note: claim.note, event: claim.event })
 }
 
 pub fn parse_place_history(input: &str) -> Result<Vec<PlaceHistory>> {
