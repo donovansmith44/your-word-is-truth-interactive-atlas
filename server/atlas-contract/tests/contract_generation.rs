@@ -160,6 +160,8 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
             { "name": "Occurs",       "forward": "occurs-in",       "inverse": "words" },
             { "name": "ParentOf",     "forward": "parent-of",       "inverse": "child-of" },
             { "name": "Participates", "forward": "participates-in", "inverse": "participants" },
+            { "name": "AuthoredBy",   "forward": "authored-by",     "inverse": "authored" },
+            { "name": "Shows",        "forward": "shows",           "inverse": "shown-on" },
         ],
         "symmetric": [
             { "name": "Analogue",          "label": "analogous-to" },

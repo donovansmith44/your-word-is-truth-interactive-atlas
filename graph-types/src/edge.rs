@@ -85,7 +85,9 @@ relations! {
         DerivedFrom => "derived-from" / "derives",
         Occurs      => "occurs-in" / "words",
         ParentOf     => "parent-of" / "child-of",
-        Participates => "participates-in" / "participants"
+        Participates => "participates-in" / "participants",
+        AuthoredBy   => "authored-by" / "authored",
+        Shows        => "shows" / "shown-on"
     }
     symmetric {
         Analogue          => "analogous-to",

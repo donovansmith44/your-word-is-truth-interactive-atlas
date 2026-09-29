@@ -1235,6 +1235,10 @@ components:
       - child-of
       - participates-in
       - participants
+      - authored-by
+      - authored
+      - shows
+      - shown-on
       - analogous-to
       - catechism-link
       - corresponds-to
@@ -2833,6 +2837,12 @@ x-atlas-relations:
   - forward: participates-in
     inverse: participants
     name: Participates
+  - forward: authored-by
+    inverse: authored
+    name: AuthoredBy
+  - forward: shows
+    inverse: shown-on
+    name: Shows
   symmetric:
   - label: analogous-to
     name: Analogue

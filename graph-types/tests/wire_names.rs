@@ -1,8 +1,7 @@
 use atlas_graph_types::{Direction, EdgeKind, NodeKind, RelationId, SymRelationId};
 
-const DECLARED_DIRECTED_RELATIONS: usize = 20;
-const DECLARED_SYMMETRIC_RELATIONS: usize = 6;
-const DECLARED_EDGE_KINDS: usize = 2 * DECLARED_DIRECTED_RELATIONS + DECLARED_SYMMETRIC_RELATIONS;
+mod common;
+use common::{DECLARED_DIRECTED_RELATIONS, DECLARED_EDGE_KINDS, DECLARED_SYMMETRIC_RELATIONS};
 
 #[test]
 fn every_name_round_trips_through_named() {
@@ -33,6 +32,16 @@ fn named_rejects_an_undeclared_kind() {
     let kind = NodeKind::named(name);
     // Assert
     assert_eq!(kind, None);
+}
+
+#[test]
+fn the_declared_counts_are_the_lengths_of_the_two_relation_manifests() {
+    // Arrange
+    let expected = (DECLARED_DIRECTED_RELATIONS, DECLARED_SYMMETRIC_RELATIONS);
+    // Act
+    let declared = (RelationId::ALL.len(), SymRelationId::ALL.len());
+    // Assert
+    assert_eq!(declared, expected);
 }
 
 #[test]
