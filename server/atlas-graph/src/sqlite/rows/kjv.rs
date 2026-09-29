@@ -10,7 +10,7 @@ use super::super::columns::{
     read_text_locus, text_locus_values, JustificationWriter,
 };
 use super::super::SqliteError;
-use super::{authored, id_col, insert, int, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, int, read_all, read_justification_at, text, D};
 
 const COLS_CANON_SUCCESSION: &str = "prior_id, next_id, provenance, justification_id";
 
@@ -20,7 +20,7 @@ pub fn insert_canon_succession(
     ord: i64,
     row: &CanonSuccession,
 ) -> Result<(), SqliteError> {
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, "canon_succession", COLS_CANON_SUCCESSION, ord, vec![text(&row.prior.0), text(&row.next.0), text(&row.provenance), j])
 }
 
@@ -76,7 +76,7 @@ pub fn insert_spoken_by(tx: &Transaction, jw: &mut JustificationWriter, ord: i64
     v.extend(bible_range_values(&row.locus));
     v.push(text(&row.speaker.0));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "spoken_by", COLS_SPOKEN_BY, ord, v)
 }
 
@@ -101,7 +101,7 @@ pub fn insert_spoken_at(tx: &Transaction, jw: &mut JustificationWriter, ord: i64
     v.extend(bible_range_values(&row.locus));
     v.push(text(&row.place.0));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "spoken_at", COLS_SPOKEN_AT, ord, v)
 }
 

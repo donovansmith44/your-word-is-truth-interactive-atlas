@@ -23,7 +23,7 @@ impl std::error::Error for DanglingReference {}
 
 /// Every node-typed endpoint of every authored row resolves to a real node. Fail-loud on the FIRST
 /// dangling reference, naming the relation, the field and the missing id.
-pub fn every_authored_edge_resolves(graph: &Graph) -> Result<(), DanglingReference> {
+pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReference> {
     let has = |id: &AnyNodeId| graph.nodes.contains_key(id);
     let check = |relation: &'static str, field: &'static str, id: AnyNodeId| -> Result<(), DanglingReference> {
         if has(&id) {
@@ -427,7 +427,7 @@ mod tests {
     #[test]
     fn green_on_an_empty_graph() {
         let graph = Graph::default();
-        assert!(every_authored_edge_resolves(&graph).is_ok());
+        assert!(every_row_reference_resolves(&graph).is_ok());
     }
 
     #[test]
@@ -456,7 +456,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling reference");
         assert_eq!(err.relation, "located_at");
         assert_eq!(err.field, "event");
     }
@@ -476,7 +476,7 @@ mod tests {
             entity: MentionedEntity::Place(atlas_graph_types::id::PlaceId::new("nowhere")),
             provenance: "test".into(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling mentions.entity reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling mentions.entity reference");
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
     }
@@ -490,7 +490,7 @@ mod tests {
         graph.shown.push(atlas_graph_types::edge::Shown { map, node: PlaceId::new("nowhere").erase(), provenance: "test".into() });
 
         // Act
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling shown.node reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling shown.node reference");
 
         // Assert
         assert_eq!(err, DanglingReference { relation: "shown", field: "node", missing: PlaceId::new("nowhere").erase() });
@@ -505,7 +505,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling catechism.item reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling catechism.item reference");
         assert_eq!(err.relation, "catechism");
         assert_eq!(err.field, "item");
     }
@@ -521,7 +521,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling comments_on.item reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling comments_on.item reference");
         assert_eq!(err.relation, "comments_on");
         assert_eq!(err.field, "item");
     }
@@ -539,7 +539,7 @@ mod tests {
         let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 0, chapter: 1, verse: 1 })).unwrap();
         graph.comments_on.push(atlas_graph_types::edge::CommentsOn { item: CommentaryItemId::new("kretzmann/0.1.0"), on: range, provenance: "test".into(), justification: Justification::default() });
 
-        assert!(every_authored_edge_resolves(&graph).is_ok());
+        assert!(every_row_reference_resolves(&graph).is_ok());
     }
 
     #[test]
@@ -553,7 +553,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling spoken_by.speaker reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling spoken_by.speaker reference");
         assert_eq!(err.relation, "spoken_by");
         assert_eq!(err.field, "speaker");
     }
@@ -571,7 +571,7 @@ mod tests {
         let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
         graph.spoken_by.push(atlas_graph_types::edge::SpokenBy { locus: range, speaker: PersonId::new("jesus_905"), provenance: "test".into(), justification: Justification::default() });
 
-        assert!(every_authored_edge_resolves(&graph).is_ok());
+        assert!(every_row_reference_resolves(&graph).is_ok());
     }
 
     #[test]
@@ -585,7 +585,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling spoken_at.place reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling spoken_at.place reference");
         assert_eq!(err.relation, "spoken_at");
         assert_eq!(err.field, "place");
     }
@@ -602,7 +602,7 @@ mod tests {
         let range = BibleLocusRange::new(atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 }), atlas_graph_types::text::Locus::whole(VerseRef { book: 39, chapter: 4, verse: 19 })).unwrap();
         graph.spoken_at.push(atlas_graph_types::edge::SpokenAt { locus: range, place: PlaceId::new("capernaum"), provenance: "test".into(), justification: Justification::default() });
 
-        assert!(every_authored_edge_resolves(&graph).is_ok());
+        assert!(every_row_reference_resolves(&graph).is_ok());
     }
 
     #[test]
@@ -614,7 +614,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling named_after.namesake reference");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling named_after.namesake reference");
         assert_eq!(err.relation, "named_after");
         assert_eq!(err.field, "namesake");
     }
@@ -633,7 +633,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err = every_authored_edge_resolves(&graph).expect_err("the namesake resolves; the eponym must still be caught");
+        let err = every_row_reference_resolves(&graph).expect_err("the namesake resolves; the eponym must still be caught");
         assert_eq!(err.relation, "named_after");
         assert_eq!(err.field, "eponym");
     }
@@ -672,7 +672,7 @@ mod tests {
             justification: Justification::default(),
         });
 
-        assert!(every_authored_edge_resolves(&graph).is_ok());
+        assert!(every_row_reference_resolves(&graph).is_ok());
     }
 
     fn authored(book: &atlas_graph_types::id::ContainerNodeId, person: &str) -> atlas_graph_types::edge::Authored {
@@ -692,7 +692,7 @@ mod tests {
         graph.authored.push(authored(&genesis, "nowhere"));
 
         // Act
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling person");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling person");
 
         // Assert
         assert_eq!(
@@ -709,7 +709,7 @@ mod tests {
         graph.authored.push(authored(&unbuilt, "moses_2108"));
 
         // Act
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling book");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling book");
 
         // Assert
         assert_eq!(err, DanglingReference { relation: "authored", field: "book", missing: unbuilt.erase() });
@@ -725,7 +725,7 @@ mod tests {
         graph.authored.push(authored(&genesis, "moses_2108"));
 
         // Act
-        let verdict = every_authored_edge_resolves(&graph);
+        let verdict = every_row_reference_resolves(&graph);
 
         // Assert
         assert!(verdict.is_ok());
@@ -753,7 +753,7 @@ mod tests {
     fn red_when_a_contains_row_names_a_container_with_no_node() {
         let mut graph = Graph::default();
         graph.contains_bible.push(child_row(&atlas_graph_types::id::ContainerNodeId::new("bible-book-GEN"), &atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-1")));
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling container");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling container");
         assert_eq!(err.relation, "contains_bible");
         assert_eq!(err.field, "container");
     }
@@ -763,7 +763,7 @@ mod tests {
         let mut graph = Graph::default();
         let book = container_node(&mut graph, "bible-book-GEN");
         graph.contains_bible.push(child_row(&book, &atlas_graph_types::id::ContainerNodeId::new("bible-chapter-GEN-99")));
-        let err = every_authored_edge_resolves(&graph).expect_err("must catch the dangling child");
+        let err = every_row_reference_resolves(&graph).expect_err("must catch the dangling child");
         assert_eq!(err.relation, "contains_bible");
         assert_eq!(err.field, "content.container");
 
@@ -775,7 +775,7 @@ mod tests {
             provenance: "test".into(),
             justification: Justification::default(),
         });
-        let err2 = every_authored_edge_resolves(&graph2).expect_err("must catch the dangling next");
+        let err2 = every_row_reference_resolves(&graph2).expect_err("must catch the dangling next");
         assert_eq!(err2.relation, "canon_succession");
         assert_eq!(err2.field, "next");
     }
@@ -926,7 +926,7 @@ mod tests {
         let mut graph = Graph::default();
         let a = event_node(&mut graph, "rob_leper_healed");
         graph.analogue.push(Analogue { a, b: EventId::new("nowhere"), provenance: "test".into() });
-        let err = every_authored_edge_resolves(&graph).expect_err("the dangling analogue end must be caught");
+        let err = every_row_reference_resolves(&graph).expect_err("the dangling analogue end must be caught");
         assert_eq!(err.relation, "analogue");
         assert_eq!(err.field, "b");
 
@@ -936,7 +936,7 @@ mod tests {
             entity: MentionedEntity::Event(EventId::new("nowhere")),
             provenance: "test".into(),
         });
-        let err2 = every_authored_edge_resolves(&graph2).expect_err("the dangling mentions.entity Event must be caught");
+        let err2 = every_row_reference_resolves(&graph2).expect_err("the dangling mentions.entity Event must be caught");
         assert_eq!(err2.relation, "mentions");
         assert_eq!(err2.field, "entity");
     }

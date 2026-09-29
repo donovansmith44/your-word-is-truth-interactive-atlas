@@ -42,7 +42,7 @@ fn the_adapter_authors_every_entry_and_one_occurs_row_per_aligned_token() {
     assert_eq!(stats.lexicon.occurs, 431_280);
     assert_eq!(g.occurs.len(), 431_280);
     assert_eq!(g.nodes.values().filter(|n| n.id.kind == NodeKind::LexiconEntry).count(), 13_548);
-    atlas_graph::law_check::every_authored_edge_resolves(&g).expect("every Occurs row's entry and verse exist");
+    atlas_graph::law_check::every_row_reference_resolves(&g).expect("every Occurs row's entry and verse exist");
 }
 
 #[test]

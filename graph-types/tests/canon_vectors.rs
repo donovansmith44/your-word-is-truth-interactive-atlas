@@ -160,26 +160,7 @@ fn ids_round_trip_including_colons_in_raw() {
 #[test]
 fn every_node_kind_names_itself_with_its_debug_name() {
     use atlas_graph_types::canon::ids::*;
-    let all = [
-        NodeKind::TextUnit,
-        NodeKind::Container,
-        NodeKind::Event,
-        NodeKind::Narrative,
-        NodeKind::Place,
-        NodeKind::Person,
-        NodeKind::Anchor,
-        NodeKind::Era,
-        NodeKind::Polity,
-        NodeKind::CatechismItem,
-        NodeKind::Source,
-        NodeKind::Translation,
-        NodeKind::PeopleGroup,
-        NodeKind::CommentaryItem,
-        NodeKind::LexiconEntry,
-        NodeKind::Map,
-    ];
-    assert_eq!(all, NodeKind::ALL, "NodeKind::ALL is the one list; this array mirrors it");
-    for k in all {
+    for k in NodeKind::ALL {
         assert_eq!(node_kind_str(k), format!("{k:?}"));
         assert_eq!(parse_node_kind(node_kind_str(k), "$.kind").unwrap(), k);
     }

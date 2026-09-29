@@ -322,7 +322,7 @@ pub(super) fn int(i: i64) -> Value {
     Value::Integer(i)
 }
 
-pub(super) fn authored(tx: &Transaction, jw: &mut JustificationWriter, j: &Justification) -> Result<Value, SqliteError> {
+pub(super) fn justification_row(tx: &Transaction, jw: &mut JustificationWriter, j: &Justification) -> Result<Value, SqliteError> {
     Ok(jw.write(tx, j)?.map(Value::Integer).unwrap_or(Value::Null))
 }
 

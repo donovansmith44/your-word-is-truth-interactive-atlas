@@ -18,6 +18,7 @@ use crate::corpus_root;
 use crate::pipeline::BuildCtx;
 
 pub const CONCORD_CORPUS: &str = ConcordTag::ID;
+pub const PROVENANCE: &str = "concord";
 const CONCORD_TITLE: &str = "The Book of Concord";
 /// The canonical rendering layer for the whole Concord corpus: one translation, unlike the Bible
 /// corpus's many, and a key deliberately distinct from the KJV's -- this is not that translation.
@@ -97,7 +98,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
                 renderings.insert(TranslationId(CONCORD_TRANSLATION.to_string()), p.text.clone());
                 ctx.graph.nodes.insert(
                     unit_id.clone(),
-                    Node { id: unit_id.clone(), payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: "concord".to_string() },
+                    Node { id: unit_id.clone(), payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() },
                 );
                 order.push(unit_id);
 
@@ -107,12 +108,12 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             let art_container = article_container_id(doc.key, article.article);
             ctx.graph.nodes.insert(
                 art_container.erase(),
-                Node { id: art_container.erase(), payload: NodePayload::Container { title: article.title.clone() }, provenance: "concord".to_string() },
+                Node { id: art_container.erase(), payload: NodePayload::Container { title: article.title.clone() }, provenance: PROVENANCE.to_string() },
             );
             ctx.graph.contains_concord.push(Contains {
                 container: art_container.clone(),
                 content: ContainerContent::Loci(LocusSet(art_content)),
-                provenance: ProvenanceId::from("concord"),
+                provenance: ProvenanceId::from(PROVENANCE),
                 justification: Default::default(),
             });
             // Document contains article as a Container row, the book-contains-chapter shape: one row per
@@ -121,7 +122,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
             ctx.graph.contains_concord.push(Contains {
                 container: doc_container.clone(),
                 content: ContainerContent::Container(art_container.clone()),
-                provenance: ProvenanceId::from("concord"),
+                provenance: ProvenanceId::from(PROVENANCE),
                 justification: Default::default(),
             });
             articles.push(art_container);
@@ -129,17 +130,17 @@ pub fn normalize(ctx: &mut BuildCtx) -> ConcordAdapterStats {
 
         ctx.graph.nodes.insert(
             doc_container.erase(),
-            Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: "concord".to_string() },
+            Node { id: doc_container.erase(), payload: NodePayload::Container { title: doc.title.to_string() }, provenance: PROVENANCE.to_string() },
         );
         documents.push(doc_container);
         articles_by_document.push(articles);
     }
 
-    let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, CONCORD_TITLE, "concord", &documents);
+    let root_rows = corpus_root::mint::<ConcordTag>(&mut ctx.graph, CONCORD_TITLE, PROVENANCE, &documents);
     ctx.graph.contains_concord.extend(root_rows);
-    ctx.graph.canon_succession.extend(CanonSuccession::steps_between(&documents, "concord"));
+    ctx.graph.canon_succession.extend(CanonSuccession::steps_between(&documents, PROVENANCE));
     for articles in &articles_by_document {
-        ctx.graph.canon_succession.extend(CanonSuccession::steps_between(articles, "concord"));
+        ctx.graph.canon_succession.extend(CanonSuccession::steps_between(articles, PROVENANCE));
     }
     ctx.graph.reading.insert(CONCORD_CORPUS, ReadingSpine { order });
     stats
@@ -352,13 +353,13 @@ mod tests {
                 CanonSuccession {
                     prior: doc_container_id("augsburg-confession"),
                     next: doc_container_id("small-catechism"),
-                    provenance: ProvenanceId::from("concord"),
+                    provenance: ProvenanceId::from(PROVENANCE),
                     justification: Default::default(),
                 },
                 CanonSuccession {
                     prior: article_container_id("augsburg-confession", 4),
                     next: article_container_id("augsburg-confession", 5),
-                    provenance: ProvenanceId::from("concord"),
+                    provenance: ProvenanceId::from(PROVENANCE),
                     justification: Default::default(),
                 },
             ]
@@ -409,7 +410,7 @@ mod tests {
         assert!(ctx.graph.catechism.is_empty(), "no dangling CatechismLink row was authored");
 
         ctx.graph.build_indexes();
-        crate::law_check::every_authored_edge_resolves(&ctx.graph).expect("no row this adapter authors may dangle, even over a partial-fixture build");
+        crate::law_check::every_row_reference_resolves(&ctx.graph).expect("no row this adapter authors may dangle, even over a partial-fixture build");
     }
 
     #[test]

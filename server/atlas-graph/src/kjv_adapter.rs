@@ -13,6 +13,7 @@ pub const BIBLE_CORPUS: &str = BibleTag::ID;
 /// The one translation layer compiled here; must stay equal to
 /// `atlas_core::translation::DEFAULT_TRANSLATION`.
 pub const KJV_TRANSLATION: &str = "kjv";
+pub const PROVENANCE: &str = "kjv";
 
 /// One parsed KJV verse, already resolved to its canon position.
 #[derive(Debug, Clone)]
@@ -100,6 +101,6 @@ pub fn verse_node(v: &KjvVerse) -> Node {
     Node {
         id: verse_node_id(v.book_index, v.chapter, v.verse),
         payload: NodePayload::TextUnit { corpus: BIBLE_CORPUS, renderings },
-        provenance: "kjv".to_string(),
+        provenance: PROVENANCE.to_string(),
     }
 }

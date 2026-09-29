@@ -20,7 +20,7 @@ use super::super::columns::{
 };
 use super::super::partition::{node_kind_of_ordinal, node_kind_ordinal};
 use super::super::SqliteError;
-use super::{authored, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
 
 /// The three integer columns of a `contains_*_locus` row, per corpus ref.
 pub trait Abc: Sized {
@@ -77,7 +77,7 @@ where
         ContainerContent::Container(c) => text(&c.0),
         ContainerContent::Loci(_) => Value::Null,
     };
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, table, COLS_CONTAINS, ord, vec![text(&row.container.0), child, text(&row.provenance), j])?;
     if let ContainerContent::Loci(set) = &row.content {
         let sql = format!("INSERT INTO {table}_locus (contains_id, ord, {COLS_CONTAINS_LOCUS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
@@ -133,7 +133,7 @@ pub fn insert_attests(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, 
     let mut v = vec![text(&row.event.0)];
     v.extend(bible_range_values(&row.attestation));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "attests", COLS_ATTESTS, ord, v)
 }
 
@@ -151,7 +151,7 @@ pub fn read_attests(conn: &Connection) -> Result<Vec<(i64, Attests)>, SqliteErro
 const COLS_SUCCESSION: &str = "narrative_id, provenance, justification_id";
 
 pub fn insert_succession(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &Succession) -> Result<(), SqliteError> {
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, "succession", COLS_SUCCESSION, ord, vec![text(&row.narrative.0), text(&row.provenance), j])?;
     let mut stmt = tx.prepare_cached("INSERT INTO succession_step (succession_id, ord, event_id) VALUES (?, ?, ?)")?;
     for (i, e) in row.chain.iter().enumerate() {
@@ -207,7 +207,7 @@ pub fn insert_dated_by(tx: &Transaction, jw: &mut JustificationWriter, ord: i64,
         PlacementBasis::Traditional => 1,
     };
     let [y, m, d] = dur;
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(
         tx,
         "dated_by",
@@ -265,7 +265,7 @@ pub fn read_dated_by(conn: &Connection) -> Result<Vec<(i64, DatedBy)>, SqliteErr
 const COLS_LOCATED_AT: &str = "event_id, place_id, provenance, justification_id";
 
 pub fn insert_located_at(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &LocatedAt) -> Result<(), SqliteError> {
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, "located_at", COLS_LOCATED_AT, ord, vec![text(&row.event.0), text(&row.place.0), text(&row.provenance), j])
 }
 
@@ -292,7 +292,7 @@ pub fn insert_fulfills(tx: &Transaction, jw: &mut JustificationWriter, ord: i64,
     v.extend(bible_range_values(&row.prophecy));
     v.extend(bible_range_values(&row.fulfillment));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "fulfills", COLS_FULFILLS, ord, v)
 }
 
@@ -320,7 +320,7 @@ pub fn insert_typology(tx: &Transaction, jw: &mut JustificationWriter, ord: i64,
     v.extend(bible_range_values(&row.antitype_passage));
     v.push(opt_text(&row.note));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "typology", COLS_TYPOLOGY, ord, v)
 }
 
@@ -344,7 +344,7 @@ pub fn insert_named_after(tx: &Transaction, jw: &mut JustificationWriter, ord: i
         Namesake::Place(p) => (1, &p.0),
         Namesake::Polity(p) => (2, &p.0),
     };
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, "named_after", COLS_NAMED_AFTER, ord, vec![int(kind), text(raw), text(&row.eponym.0), text(&row.provenance), j])
 }
 
@@ -375,7 +375,7 @@ pub fn insert_catechism(tx: &Transaction, jw: &mut JustificationWriter, ord: i64
     v.extend(text_locus_values(&row.locus));
     v.push(text(&row.item.0));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "catechism", COLS_CATECHISM, ord, v)
 }
 
@@ -507,7 +507,7 @@ pub fn read_participates(conn: &Connection) -> Result<Vec<(i64, Participates)>, 
 const COLS_AUTHORED: &str = "book_id, person_id, provenance, justification_id";
 
 pub fn insert_authored(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &Authored) -> Result<(), SqliteError> {
-    let j = authored(tx, jw, &row.justification)?;
+    let j = justification_row(tx, jw, &row.justification)?;
     insert(tx, "authored", COLS_AUTHORED, ord, vec![text(&row.book.0), text(&row.person.0), text(&row.provenance), j])
 }
 

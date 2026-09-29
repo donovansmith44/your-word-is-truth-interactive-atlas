@@ -4,7 +4,7 @@ use rusqlite::{Connection, Transaction};
 
 use super::super::columns::{bible_range_values, col, read_bible_range, JustificationWriter};
 use super::super::SqliteError;
-use super::{authored, id_col, insert, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, read_all, read_justification_at, text, D};
 
 const COLS_COMMENTS_ON: &str = "item_id, \
  on_from_corpus, on_from_a, on_from_b, on_from_c, on_from_layer, on_from_start, on_from_end, \
@@ -16,7 +16,7 @@ pub fn insert_comments_on(tx: &Transaction, jw: &mut JustificationWriter, ord: i
     v.push(text(&row.item.0));
     v.extend(bible_range_values(&row.on));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "comments_on", COLS_COMMENTS_ON, ord, v)
 }
 

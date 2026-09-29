@@ -13,6 +13,7 @@ use atlas_graph_types::node::{Node, NodePayload};
 use atlas_graph_types::text::{BibleTag, Locus, LocusSet, VerseRef};
 
 use crate::corpus_root;
+use crate::kjv_adapter::PROVENANCE;
 use crate::pipeline::BuildCtx;
 
 const BIBLE_TITLE: &str = "The Holy Bible";
@@ -95,7 +96,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
             Node {
                 id: book_container.erase(),
                 payload: NodePayload::Container { title: info.name.to_string() },
-                provenance: "kjv".to_string(),
+                provenance: PROVENANCE.to_string(),
             },
         );
         stats.books += 1;
@@ -108,7 +109,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
                 Node {
                     id: chapter_container.erase(),
                     payload: NodePayload::Container { title: format!("{} {}", info.name, chapter) },
-                    provenance: "kjv".to_string(),
+                    provenance: PROVENANCE.to_string(),
                 },
             );
             stats.chapters += 1;
@@ -127,7 +128,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
                 ctx.graph.contains_bible.push(Contains {
                     container: chapter_container.clone(),
                     content: ContainerContent::Loci(LocusSet(content)),
-                    provenance: ProvenanceId::from("kjv"),
+                    provenance: ProvenanceId::from(PROVENANCE),
                     justification: Default::default(),
                 });
             }
@@ -135,7 +136,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
             ctx.graph.contains_bible.push(Contains {
                 container: book_container.clone(),
                 content: ContainerContent::Container(chapter_container.clone()),
-                provenance: ProvenanceId::from("kjv"),
+                provenance: ProvenanceId::from(PROVENANCE),
                 justification: Default::default(),
             });
             stats.book_chapter_rows += 1;
@@ -146,14 +147,14 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
         all_books.push(book_container);
     }
 
-    let chapter_steps = CanonSuccession::steps_between(&all_chapters, "kjv");
+    let chapter_steps = CanonSuccession::steps_between(&all_chapters, PROVENANCE);
     stats.chapter_steps = chapter_steps.len();
     ctx.graph.canon_succession.extend(chapter_steps);
-    let book_steps = CanonSuccession::steps_between(&all_books, "kjv");
+    let book_steps = CanonSuccession::steps_between(&all_books, PROVENANCE);
     stats.book_steps = book_steps.len();
     ctx.graph.canon_succession.extend(book_steps);
 
-    let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, BIBLE_TITLE, "kjv", &all_books);
+    let root_rows = corpus_root::mint::<BibleTag>(&mut ctx.graph, BIBLE_TITLE, PROVENANCE, &all_books);
     ctx.graph.contains_bible.extend(root_rows);
 
     ctx.graph.authored.extend(authored_rows(&ctx.atlas.book_authorship));
@@ -161,7 +162,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
     Ok(stats)
 }
 
-pub fn authored_rows(books: &[BookAuthorship]) -> Vec<Authored> {
+fn authored_rows(books: &[BookAuthorship]) -> Vec<Authored> {
     books
         .iter()
         .flat_map(|b| {
@@ -376,7 +377,7 @@ mod tests {
         Authored {
             book: ContainerNodeId::new("bible-book-GEN"),
             person: PersonId::new("moses_2108"),
-            provenance: ProvenanceId::from("curated-books"),
+            provenance: ProvenanceId::from(AUTHORSHIP_PROVENANCE),
             justification: Justification::default(),
         }
     }

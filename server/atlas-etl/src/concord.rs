@@ -184,7 +184,7 @@ pub fn read_all(root: &Path, curated_dir: &Path) -> Result<ConcordCorpus> {
     for spec in DOCUMENTS {
         let path = root.join(format!("{}.html", spec.key));
         let html = std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-        let (mut doc, mut disclosures, skipped) = parse_document_full(&html, spec)?;
+        let (mut doc, mut disclosures, skipped) = parse_document(&html, spec)?;
         if spec.key == "smalcald-articles" {
             let extra_disclosures = splice_smalcald_extras(&mut doc, &root.join("smalcald-sub"))?;
             disclosures.extend(extra_disclosures);
@@ -217,12 +217,7 @@ fn apply_title_overrides(docs: &mut [ConcordDocument], titles: &[ConcordTitleOve
 
 /// The SAME function runs over all ten documents: nothing here branches on which document it is except the skip
 /// list and the single-article fallback title, both disclosed structural facts rather than parsing forks.
-pub fn parse_document(html: &str, spec: &ConcordDocSpec) -> Result<ConcordDocument> {
-    let (doc, _disclosures, _skipped) = parse_document_full(html, spec)?;
-    Ok(doc)
-}
-
-fn parse_document_full(html: &str, spec: &ConcordDocSpec) -> Result<(ConcordDocument, Vec<String>, usize)> {
+fn parse_document(html: &str, spec: &ConcordDocSpec) -> Result<(ConcordDocument, Vec<String>, usize)> {
     let main = main_content_slice(html);
     let raw_articles = find_articles(main);
     let mut articles = Vec::new();
@@ -790,7 +785,7 @@ in His sight. Rom. 3 and 4.</p>"#;
 <p><span id="a" class="bocanchor"> </span><span id="a-acontent" class="bocanchor-content">1</span>To the Readers.</p>
 </main></div><footer>...</footer>"#;
         let spec = ConcordDocSpec { part: 1, key: "preface", title: "Preface to the Book of Concord" };
-        let doc = parse_document(html, &spec).unwrap();
+        let (doc, _disclosures, _skipped) = parse_document(html, &spec).unwrap();
         assert_eq!(doc.articles.len(), 1);
         assert_eq!(doc.articles[0].article, 1);
         assert_eq!(doc.articles[0].title, "Preface to the Book of Concord");
@@ -806,7 +801,7 @@ in His sight. Rom. 3 and 4.</p>"#;
 <section><p><span id="a" class="bocanchor"> </span><span id="a-acontent" class="bocanchor-content">1</span>Thou shalt have no other gods.</p></section>
 </main></div><footer>...</footer>"#;
         let spec = ConcordDocSpec { part: 7, key: "small-catechism", title: "The Small Catechism" };
-        let (doc, disclosures, skipped) = parse_document_full(html, &spec).unwrap();
+        let (doc, disclosures, skipped) = parse_document(html, &spec).unwrap();
         assert_eq!(skipped, 1);
         assert_eq!(doc.articles.len(), 1, "only the real Ten Commandments article survives");
         assert_eq!(doc.articles[0].article, 1, "article numbering is not perturbed by a skipped predecessor");

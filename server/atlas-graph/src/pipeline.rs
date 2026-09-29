@@ -270,7 +270,7 @@ impl Pass for LawCheckPass {
                 .map_err(|e| anyhow::anyhow!("{e}"))
                 .context("KJV adapter fidelity law (bijection + reconstruction)")?;
         }
-        crate::law_check::every_authored_edge_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
+        crate::law_check::every_row_reference_resolves(&ctx.graph).context("referential integrity of authored edge rows")?;
         crate::law_check::container_containment_is_a_forest(&ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("NODE1-ROWS-1 container-containment forest law (acyclicity + single-parent)")?;
@@ -284,7 +284,7 @@ impl Pass for LawCheckPass {
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("ATTEST-1 Analogue distinctness law (L4)")?;
         // The adapter-specific halves only: referential integrity of these rows' endpoints is already
-        // covered by `every_authored_edge_resolves` above, so re-checking it here would duplicate it.
+        // covered by `every_row_reference_resolves` above, so re-checking it here would duplicate it.
         crate::person_adapter::check_person_fidelity(ctx.atlas, &ctx.graph)
             .map_err(|e| anyhow::anyhow!("{e}"))
             .context("Theographic person adapter fidelity law (bijection + mentions completeness)")?;

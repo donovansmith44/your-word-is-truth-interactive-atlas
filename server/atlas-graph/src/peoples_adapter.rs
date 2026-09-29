@@ -708,7 +708,7 @@ mod tests {
     fn referential_integrity_of_peoplegroup_mentions_is_already_covered_by_the_generic_law() {
         let mut graph = Graph::default();
         graph.mentions.push(Mentions { locus: verse_locus("GEN.1.1").unwrap(), entity: MentionedEntity::PeopleGroup(PeopleGroupId::new("nowhere")), provenance: ProvenanceId::from("test") });
-        let err = crate::law_check::every_authored_edge_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");
+        let err = crate::law_check::every_row_reference_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
     }

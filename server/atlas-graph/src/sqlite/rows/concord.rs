@@ -10,7 +10,7 @@ use super::super::columns::{
     read_text_locus, text_locus_values, JustificationWriter,
 };
 use super::super::SqliteError;
-use super::{authored, insert, read_all, read_justification_at, text, D};
+use super::{justification_row, insert, read_all, read_justification_at, text, D};
 
 const COLS_QUOTES: &str = "\
  quoting_corpus, quoting_a, quoting_b, quoting_c, quoting_layer, quoting_start, quoting_end, \
@@ -47,7 +47,7 @@ pub fn insert_confesses(tx: &Transaction, jw: &mut JustificationWriter, ord: i64
     v.extend(concord_locus_values(&row.confessing));
     v.extend(bible_range_values(&row.confessed));
     v.push(text(&row.provenance));
-    v.push(authored(tx, jw, &row.justification)?);
+    v.push(justification_row(tx, jw, &row.justification)?);
     insert(tx, "confesses", COLS_CONFESSES, ord, v)
 }
 

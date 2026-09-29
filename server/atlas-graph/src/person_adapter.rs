@@ -363,7 +363,7 @@ mod tests {
             entity: MentionedEntity::Person(PersonId::new("nowhere")),
             provenance: ProvenanceId::from(PROVENANCE),
         });
-        let err = crate::law_check::every_authored_edge_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");
+        let err = crate::law_check::every_row_reference_resolves(&graph).expect_err("the EXISTING generic law must catch this -- no new code needed");
         assert_eq!(err.relation, "mentions");
         assert_eq!(err.field, "entity");
     }

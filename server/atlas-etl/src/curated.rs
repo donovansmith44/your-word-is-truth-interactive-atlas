@@ -791,12 +791,22 @@ mod tests {
         );
     }
 
+    const CONCORD_TITLES_REFUSED: &str = "concord-titles.toml: invalid TOML or does not match the [[article]] schema";
+
     #[test]
-    fn parse_concord_titles_rejects_malformed_toml() {
+    fn parse_concord_titles_refuses_text_that_is_not_toml_naming_the_file() {
         // Act
-        let refused = (parse_concord_titles("not valid toml [[[").is_err(), parse_concord_titles("[[article]]\ndocument = \"small-catechism\"\narticle = 2\n").is_err());
+        let refused = parse_concord_titles("not valid toml [[[").unwrap_err();
         // Assert
-        assert_eq!(refused, (true, true));
+        assert_eq!(refused.to_string(), CONCORD_TITLES_REFUSED);
+    }
+
+    #[test]
+    fn parse_concord_titles_refuses_an_article_without_a_title_naming_the_file() {
+        // Act
+        let refused = parse_concord_titles("[[article]]\ndocument = \"small-catechism\"\narticle = 2\n").unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), CONCORD_TITLES_REFUSED);
     }
 
     #[test]
