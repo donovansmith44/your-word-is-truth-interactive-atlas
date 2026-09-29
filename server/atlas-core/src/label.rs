@@ -1,7 +1,7 @@
 //! Years as a reader reads them. Every label the atlas shows for a year or a span
 //! of years is written here, once.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::{time, CoreError};
@@ -9,7 +9,7 @@ use crate::{time, CoreError};
 const EN_DASH: &str = " – ";
 
 /// A year, negative for BC, with the label a reader sees for it.
-#[derive(Debug, Clone, PartialEq, Serialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Year {
     pub value: i32,
@@ -25,8 +25,9 @@ impl Year {
         }
     }
 
-    // `value` is never zero: `of` refuses it, and a validated range holds none.
-    fn labelled(value: i32) -> Year {
+    // Only for a value read off a validated range, which holds no year zero; any other
+    // value goes through `of`, which refuses it.
+    pub(crate) fn labelled(value: i32) -> Year {
         let label = match Era::of(value) {
             Era::BeforeChrist => format!("{} BC", value.unsigned_abs()),
             Era::AnnoDomini => format!("AD {value}"),
@@ -37,7 +38,7 @@ impl Year {
 
 /// A span of years, both ends included, with the label a reader sees for it: an
 /// era both ends share is named once.
-#[derive(Debug, Clone, PartialEq, Serialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TimeRange {
     pub from: Year,

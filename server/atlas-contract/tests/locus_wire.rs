@@ -183,3 +183,14 @@ fn first_samuel(chapter: u16, verse: u16) -> VerseRef {
 fn words(layer: &str, first: u16, last: u16) -> TokenSpan {
     TokenSpan { layer: TranslationId(layer.to_string()), start: first, end: last }
 }
+
+#[test]
+fn a_bible_refs_book_publishes_as_one_of_the_canons_codes() {
+    // Arrange
+    let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+    let canon_codes: Vec<&str> = atlas_core::canon::BOOKS.iter().map(|book| book.code).collect();
+    // Act
+    let book = &document["components"]["schemas"]["BookId"];
+    // Assert
+    assert_eq!(*book, serde_json::json!({ "type": "string", "description": "A book of the Bible, by its canon code.", "enum": canon_codes }));
+}

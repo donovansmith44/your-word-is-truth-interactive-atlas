@@ -89,11 +89,22 @@ pub fn openapi() -> OpenApi {
 /// READ a data file free to go on reading whatever that file carries.
 fn close_every_object(doc: &mut OpenApi) {
     for schema in doc.components.iter_mut().flat_map(|components| components.schemas.values_mut()) {
-        if let RefOr::T(Schema::Object(object)) = schema {
+        close(schema);
+    }
+}
+
+// An externally tagged enum publishes each variant as a `oneOf` member whose one
+// property holds another object, so closing reaches into both.
+fn close(schema: &mut RefOr<Schema>) {
+    match schema {
+        RefOr::T(Schema::Object(object)) => {
             if matches!(object.schema_type, SchemaType::Type(Type::Object)) && object.additional_properties.is_none() {
                 object.additional_properties = Some(Box::new(AdditionalProperties::FreeForm(false)));
             }
+            object.properties.values_mut().for_each(close);
         }
+        RefOr::T(Schema::OneOf(one_of)) => one_of.items.iter_mut().for_each(close),
+        _ => {}
     }
 }
 

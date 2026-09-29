@@ -14,6 +14,7 @@ use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
+use atlas_graph_types::text::VerseRef;
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
@@ -42,10 +43,10 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Reference(NodeRef
     let person = match &node.payload {
         atlas_graph_types::node::NodePayload::Person { gender, birth_year, death_year, also_called, first_year, last_year, eternal, eternal_grounds, .. } => Some(wire::PersonLife {
             gender: gender.clone(),
-            birth_year: *birth_year,
-            death_year: *death_year,
-            first_year: *first_year,
-            last_year: *last_year,
+            birth: recorded_year(*birth_year, &node_id)?,
+            death: recorded_year(*death_year, &node_id)?,
+            first: recorded_year(*first_year, &node_id)?,
+            last: recorded_year(*last_year, &node_id)?,
             eternal: *eternal,
             eternal_grounds: eternal_grounds.clone(),
             also_called: also_called.clone(),
@@ -63,6 +64,11 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Reference(NodeRef
         person,
         description,
     }))
+}
+
+/// A year zero in a person's record is this atlas's own data defect, never a year to show.
+fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
+    year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
 }
 
 pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
@@ -204,7 +210,13 @@ pub async fn text_window(
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(wire::TextUnit { r#ref: format!("BoC {p}.{a}.{para}"), text, words_of_christ: Vec::new(), edge_summary: unit_edge_summary(&snap, id) })
+                Some(wire::TextUnit {
+                    r#ref: format!("BoC {p}.{a}.{para}"),
+                    locus: wire::TextRef::Concord { part: p, article: a, paragraph: para },
+                    text,
+                    words_of_christ: Vec::new(),
+                    edge_summary: unit_edge_summary(&snap, id),
+                })
             })
             .collect();
 
@@ -250,7 +262,8 @@ pub async fn text_window(
             let text = window::render(&snap, id)?;
             let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
             let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            Some(wire::TextUnit { r#ref, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
+            let locus = wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v });
+            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 

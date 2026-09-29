@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::time::{TimeRange, Year};
+use crate::label::{TimeRange, Year};
 
 /// The map at one moment of enquiry: which places are lit, which are only
 /// present, and which arrows run between them.
@@ -55,11 +55,9 @@ pub struct ScenePlace {
     pub events: Vec<SceneEvent>,
     /// The year this place was founded, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<i32>)]
     pub existence_from: Option<Year>,
     /// The year it ceased to exist, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<i32>)]
     pub existence_to: Option<Year>,
     /// The ids of other records for this same place, folded into this one. Omitted
     /// when there are none.
@@ -84,11 +82,9 @@ pub struct QuietPlace {
     pub total_events: u32,
     /// The year this place was founded, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<i32>)]
     pub existence_from: Option<Year>,
     /// The year it ceased to exist, where that is recorded; absent otherwise.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<i32>)]
     pub existence_to: Option<Year>,
     /// The ids of other records for this same place, folded into this one. Omitted
     /// when there are none.

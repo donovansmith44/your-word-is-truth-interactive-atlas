@@ -251,15 +251,13 @@ pub struct Narrative {
 }
 
 /// A named stretch of this atlas's timeline.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Era {
     pub id: String,
     pub name: String,
     /// The first year of the era, negative for BC.
-    #[schema(value_type = i32)]
     pub from_year: Year,
     /// The last year of the era.
-    #[schema(value_type = i32)]
     pub to_year: Year,
 }
 

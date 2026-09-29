@@ -19,7 +19,7 @@ pub mod xrefs;
 
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum CoreError {
     #[error("year cannot be zero")]
     ZeroYear,
@@ -27,10 +27,6 @@ pub enum CoreError {
     InvertedRange,
     #[error("invalid scripture reference: {0}")]
     BadRef(String),
-    #[error("reading {path}: {source}")]
-    Io { path: String, #[source] source: std::io::Error },
-    #[error("parsing {path}: {source}")]
-    Json { path: String, #[source] source: serde_json::Error },
     #[error("unknown translation '{0}' (this atlas only compiles KJV today)")]
     UnknownTranslation(String),
 }

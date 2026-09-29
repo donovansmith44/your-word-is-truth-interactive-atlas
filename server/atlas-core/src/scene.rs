@@ -3,8 +3,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::data::Event;
+use crate::data::{Event, PlaceHistory};
 use crate::history::{resolve_display_name, resolve_existence};
+use crate::label;
 use crate::refs::{ScriptureRef, VerseId};
 use crate::scene_source::SceneSource;
 use crate::time::TimeRange;
@@ -16,7 +17,7 @@ pub fn compose_time_scene(d: &dyn SceneSource, w: TimeRange) -> Scene {
     let quiet = quiet_places(d, &places, w);
     let arrows = build_arrows(d, &w, None);
     let narratives = legend(d, &w, None, &arrows);
-    Scene { mode: SceneMode::Time, window: Some(w), r#ref: None, places, quiet_places: quiet, arrows, narratives }
+    Scene { mode: SceneMode::Time, window: Some(label::TimeRange::of(w)), r#ref: None, places, quiet_places: quiet, arrows, narratives }
 }
 
 /// Lit places are the union of those touched by an event with a verse inside `r` and those
@@ -47,11 +48,11 @@ pub fn compose_scripture_scene(d: &dyn SceneSource, r: &ScriptureRef) -> Scene {
         let mention = SceneEvent {
             id: format!("mention-{}", place.id),
             label: "Mentioned".into(),
-            when: TimeRange::new(-4004, 100).unwrap(),
+            when: label::TimeRange::of(TimeRange::undated()),
             verse_groups: verse_groups_for(&matched, Some(r)),
         };
         let events = vec![mention];
-        let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
+        let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
         places.push(ScenePlace {
             id: place.id.clone(),
             name: place.name.clone(),
@@ -139,7 +140,7 @@ fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, na
         .into_iter()
         .filter_map(|(pid, evs)| {
             let place = d.place_by_id(pid)?;
-            let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
+            let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
             Some(ScenePlace {
                 id: place.id.clone(),
                 name: place.name.clone(),
@@ -152,7 +153,7 @@ fn lit_places(d: &dyn SceneSource, kept: &[&Event], r: Option<&ScriptureRef>, na
                     .map(|e| SceneEvent {
                         id: e.id.clone(),
                         label: e.label.clone(),
-                        when: e.when,
+                        when: label::TimeRange::of(e.when),
                         verse_groups: verse_groups_for(&e.verses, r),
                     })
                     .collect(),
@@ -177,7 +178,7 @@ fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> V
         .filter(|id| !lit_ids.contains(id.as_str()))
         .filter_map(|id| {
             let place = d.place_by_id(id)?;
-            let (existence_from, existence_to) = resolve_existence(d.place_history_for(&place.id));
+            let (existence_from, existence_to) = labelled_existence(d.place_history_for(&place.id));
             Some(QuietPlace {
                 id: place.id.clone(),
                 display_name: resolve_display_name(&place.name, d.place_history_for(&place.id), Some(window), d.place_name_alias_for(&place.id)),
@@ -194,10 +195,16 @@ fn quiet_places(d: &dyn SceneSource, lit: &[ScenePlace], window: TimeRange) -> V
     out
 }
 
+/// Both bounds are read off curated ranges, which hold no year zero.
+fn labelled_existence(history: Option<&PlaceHistory>) -> (Option<label::Year>, Option<label::Year>) {
+    let (from, to) = resolve_existence(history);
+    (from.map(label::Year::labelled), to.map(label::Year::labelled))
+}
+
 /// Public so the verse and place endpoints build this shape from here instead of
 /// duplicating the grouping. Passes no ref: neither is scoped to one, so nothing to rank.
 pub fn to_scene_event(e: &Event) -> SceneEvent {
-    SceneEvent { id: e.id.clone(), label: e.label.clone(), when: e.when, verse_groups: verse_groups_for(&e.verses, None) }
+    SceneEvent { id: e.id.clone(), label: e.label.clone(), when: label::TimeRange::of(e.when), verse_groups: verse_groups_for(&e.verses, None) }
 }
 
 /// One book's account of an event: the passage it narrates the event in, and any
@@ -333,6 +340,11 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::{HashMap, HashSet};
 
+    const SARAH_BURIED: i32 = -2000;
+    const KIRJATH_ARBA_NAMED: i32 = -4004;
+    const CAMP_AT_GILGAL: i32 = -1406;
+    const JERICHO_FALLS: i32 = -1405;
+
     #[test]
     fn an_event_with_no_curated_witness_gets_one_synthesised_from_its_own_verses() {
         // Arrange
@@ -404,12 +416,55 @@ mod tests {
     }
 
     #[test]
-    fn existence_bounds_propagate_to_a_lit_scene_place() {
+    fn a_scene_place_with_one_claim_has_one_labelled_end() {
+        // Arrange
         let d = crate::data::demo_fixture();
-        let s = compose_time_scene(&d, TimeRange::new(-2000, -2000).unwrap());
-        let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be lit at exactly -2000");
-        assert_eq!(hebron.existence_from, Some(-4004));
-        assert_eq!(hebron.existence_to, None);
+        let sarah_buried = TimeRange::new(SARAH_BURIED, SARAH_BURIED).unwrap();
+        // Act
+        let scene = compose_time_scene(&d, sarah_buried);
+        // Assert
+        assert_eq!(
+            scene.places,
+            vec![ScenePlace {
+                id: "hebron".into(),
+                name: "Hebron".into(),
+                display_name: "Hebron".into(),
+                lat: 31.5326,
+                lon: 35.0998,
+                brightness: 1,
+                events: vec![SceneEvent {
+                    id: "e5".into(),
+                    label: "Sarah buried at Machpelah".into(),
+                    when: label::TimeRange {
+                        from: label::Year { value: SARAH_BURIED, label: "2000 BC".into() },
+                        to: label::Year { value: SARAH_BURIED, label: "2000 BC".into() },
+                        label: "2000 BC".into(),
+                    },
+                    verse_groups: vec![VerseGroup { book: "GEN".into(), chapter: 23, verses: vec!["GEN.23.1".into(), "GEN.23.19".into()], count: 2 }],
+                }],
+                existence_from: Some(label::Year { value: KIRJATH_ARBA_NAMED, label: "4004 BC".into() }),
+                existence_to: None,
+                merged_ids: vec![],
+            }]
+        );
+    }
+
+    #[test]
+    fn a_time_scene_names_the_window_it_answers_with_its_label() {
+        // Arrange
+        let d = crate::data::demo_fixture();
+        let conquest = TimeRange::new(CAMP_AT_GILGAL, JERICHO_FALLS).unwrap();
+        // Act
+        let window = compose_time_scene(&d, conquest).window;
+        // Assert
+        assert_eq!(
+            window,
+            Some(label::TimeRange {
+                from: label::Year { value: CAMP_AT_GILGAL, label: "1406 BC".into() },
+                to: label::Year { value: JERICHO_FALLS, label: "1405 BC".into() },
+                label: "1406 – 1405 BC".into(),
+            })
+        );
     }
 
     #[test]
@@ -417,11 +472,11 @@ mod tests {
         let d = crate::data::demo_fixture();
         let s = compose_time_scene(&d, TimeRange::new(-1406, -1405).unwrap());
         let hebron = s.quiet_places.iter().find(|p| p.id == "hebron").expect("hebron is quiet in this window");
-        assert_eq!(hebron.existence_from, Some(-4004));
+        assert_eq!(hebron.existence_from, Some(label::Year { value: KIRJATH_ARBA_NAMED, label: "4004 BC".into() }));
         assert_eq!(hebron.existence_to, None);
         for p in &s.places {
             if p.id != "hebron" {
-                assert_eq!((p.existence_from, p.existence_to), (None, None), "{} has no curated history", p.id);
+                assert_eq!((&p.existence_from, &p.existence_to), (&None, &None), "{} has no curated history", p.id);
             }
         }
     }
@@ -432,7 +487,7 @@ mod tests {
         let s = compose_scripture_scene(&d, &ScriptureRef::parse("GEN.13.18").unwrap());
         let hebron = s.places.iter().find(|p| p.id == "hebron").expect("hebron should be mention-lit");
         assert!(hebron.events[0].id.starts_with("mention-"));
-        assert_eq!(hebron.existence_from, Some(-4004));
+        assert_eq!(hebron.existence_from, Some(label::Year { value: KIRJATH_ARBA_NAMED, label: "4004 BC".into() }));
         assert_eq!(hebron.existence_to, None);
     }
 
@@ -464,7 +519,7 @@ mod tests {
         let mention = &hebron.events[0];
         assert_eq!(mention.id, "mention-hebron");
         assert_eq!(mention.label, "Mentioned");
-        assert_eq!(mention.when, TimeRange::new(-4004, 100).unwrap());
+        assert_eq!(mention.when, label::TimeRange::of(TimeRange::undated()));
         assert_eq!(mention.verse_groups.len(), 1);
         assert_eq!(mention.verse_groups[0].book, "GEN");
         assert_eq!(mention.verse_groups[0].chapter, 13);
@@ -800,7 +855,10 @@ mod tests {
             for p in &s.places {
                 prop_assert!(!p.events.is_empty());
                 prop_assert_eq!(p.brightness, (p.events.len() as u8).min(5));
-                for e in &p.events { prop_assert!(e.when.intersects(&w)); }
+                for e in &p.events {
+                    let when = TimeRange { from_year: e.when.from.value, to_year: e.when.to.value };
+                    prop_assert!(when.intersects(&w));
+                }
             }
         }
         #[test]

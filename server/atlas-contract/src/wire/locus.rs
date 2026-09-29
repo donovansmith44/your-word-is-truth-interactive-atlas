@@ -15,7 +15,6 @@ pub enum TextRef {
     Bible {
         /// The book's canon code, such as `GEN`.
         #[serde(serialize_with = "canon_code")]
-        #[schema(value_type = String)]
         book: BookId,
         chapter: u16,
         verse: u16,

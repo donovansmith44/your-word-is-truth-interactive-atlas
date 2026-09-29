@@ -33,16 +33,15 @@ pub struct NodeCard {
 pub struct PersonLife {
     /// Absent when the source records none.
     pub gender: Option<String>,
-    /// The year of birth where one is recorded, negative for BC; most people have
-    /// none.
-    pub birth_year: Option<i32>,
+    /// The year of birth where one is recorded; most people have none.
+    pub birth: Option<super::Year>,
     /// The year of death where one is recorded.
-    pub death_year: Option<i32>,
+    pub death: Option<super::Year>,
     /// The earliest year at which this person is mentioned -- the span of mentions,
     /// never a lifespan.
-    pub first_year: Option<i32>,
+    pub first: Option<super::Year>,
     /// The latest year at which this person is mentioned.
-    pub last_year: Option<i32>,
+    pub last: Option<super::Year>,
     /// True for a person Scripture presents as eternal, who therefore carries no
     /// years at all.
     pub eternal: bool,
@@ -157,6 +156,8 @@ pub struct TextWindow {
 #[serde(deny_unknown_fields)]
 pub struct TextUnit {
     pub r#ref: String,
+    /// The same unit as `ref`, by its parts.
+    pub locus: super::TextRef,
     pub text: String,
     /// The spans of `text` that are the words of Christ, in order. Always empty
     /// outside Scripture.

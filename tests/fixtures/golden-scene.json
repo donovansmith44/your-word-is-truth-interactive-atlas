@@ -1,8 +1,15 @@
 {
   "mode": "time",
   "window": {
-    "from_year": -1450,
-    "to_year": -1400
+    "from": {
+      "value": -1450,
+      "label": "1450 BC"
+    },
+    "to": {
+      "value": -1400,
+      "label": "1400 BC"
+    },
+    "label": "1450 – 1400 BC"
   },
   "places": [
     {
@@ -17,8 +24,15 @@
           "id": "ev_jericho_falls",
           "label": "The walls of Jericho fall",
           "when": {
-            "from_year": -1406,
-            "to_year": -1406
+            "from": {
+              "value": -1406,
+              "label": "1406 BC"
+            },
+            "to": {
+              "value": -1406,
+              "label": "1406 BC"
+            },
+            "label": "1406 BC"
           },
           "verse_groups": [
             {
@@ -42,8 +56,14 @@
       "lat": 32.0553,
       "lon": 35.2897,
       "total_events": 3,
-      "existence_from": -1399,
-      "existence_to": -1050
+      "existence_from": {
+        "value": -1399,
+        "label": "1399 BC"
+      },
+      "existence_to": {
+        "value": -1050,
+        "label": "1050 BC"
+      }
     }
   ],
   "arrows": [

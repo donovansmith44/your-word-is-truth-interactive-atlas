@@ -13,6 +13,7 @@ pub fn next_year(y: Year) -> Year {
 /// A span of years on this atlas's scale: negative for BC, positive for AD, with
 /// no year zero. A single year is a span whose ends are equal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(as = YearSpan)]
 pub struct TimeRange {
     #[schema(value_type = i32)]
     pub from_year: Year,

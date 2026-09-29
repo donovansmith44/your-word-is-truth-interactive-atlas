@@ -1,5 +1,76 @@
 {
   "$defs": {
+    "BookId": {
+      "enum": [
+        "GEN",
+        "EXO",
+        "LEV",
+        "NUM",
+        "DEU",
+        "JOS",
+        "JDG",
+        "RUT",
+        "1SA",
+        "2SA",
+        "1KI",
+        "2KI",
+        "1CH",
+        "2CH",
+        "EZR",
+        "NEH",
+        "EST",
+        "JOB",
+        "PSA",
+        "PRO",
+        "ECC",
+        "SNG",
+        "ISA",
+        "JER",
+        "LAM",
+        "EZK",
+        "DAN",
+        "HOS",
+        "JOL",
+        "AMO",
+        "OBA",
+        "JON",
+        "MIC",
+        "NAM",
+        "HAB",
+        "ZEP",
+        "HAG",
+        "ZEC",
+        "MAL",
+        "MAT",
+        "MRK",
+        "LUK",
+        "JHN",
+        "ACT",
+        "ROM",
+        "1CO",
+        "2CO",
+        "GAL",
+        "EPH",
+        "PHP",
+        "COL",
+        "1TH",
+        "2TH",
+        "1TI",
+        "2TI",
+        "TIT",
+        "PHM",
+        "HEB",
+        "JAS",
+        "1PE",
+        "2PE",
+        "1JN",
+        "2JN",
+        "3JN",
+        "JUD",
+        "REV"
+      ],
+      "type": "string"
+    },
     "BookMeta": {
       "additionalProperties": false,
       "properties": {
@@ -229,6 +300,9 @@
         "kind": {
           "$ref": "#/$defs/ContentsChildKind"
         },
+        "locus": {
+          "$ref": "#/$defs/TextRef"
+        },
         "ref": {
           "type": "string"
         },
@@ -241,6 +315,7 @@
         "title",
         "kind",
         "ref",
+        "locus",
         "count"
       ],
       "type": "object"
@@ -277,6 +352,9 @@
         "kind": {
           "$ref": "#/$defs/ContentsRootKind"
         },
+        "locus": {
+          "$ref": "#/$defs/TextRef"
+        },
         "ref": {
           "type": "string"
         },
@@ -289,6 +367,7 @@
         "title",
         "kind",
         "ref",
+        "locus",
         "children"
       ],
       "type": "object"
@@ -491,7 +570,7 @@
           "type": "integer"
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/EraId"
         },
         "name": {
           "type": "string"
@@ -499,15 +578,22 @@
         "to_year": {
           "format": "int32",
           "type": "integer"
+        },
+        "window": {
+          "$ref": "#/$defs/TimeRange"
         }
       },
       "required": [
         "id",
         "name",
         "from_year",
-        "to_year"
+        "to_year",
+        "window"
       ],
       "type": "object"
+    },
+    "EraId": {
+      "type": "string"
     },
     "ErrorBody": {
       "additionalProperties": false,
@@ -642,7 +728,7 @@
         "when": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimeRange"
+              "$ref": "#/$defs/YearSpan"
             },
             {
               "type": "null"
@@ -1130,18 +1216,24 @@
           },
           "type": "array"
         },
-        "birth_year": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+        "birth": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
-        "death_year": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+        "death": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "eternal": {
@@ -1153,11 +1245,14 @@
           },
           "type": "array"
         },
-        "first_year": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+        "first": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "gender": {
@@ -1166,11 +1261,14 @@
             "null"
           ]
         },
-        "last_year": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+        "last": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
@@ -1223,7 +1321,7 @@
           "type": "array"
         },
         "when": {
-          "$ref": "#/$defs/TimeRange"
+          "$ref": "#/$defs/YearSpan"
         }
       },
       "required": [
@@ -1349,10 +1447,13 @@
           "type": "integer"
         },
         "id": {
-          "type": "string"
+          "$ref": "#/$defs/PolityId"
         },
         "name": {
           "type": "string"
+        },
+        "reign": {
+          "$ref": "#/$defs/TimeRange"
         },
         "rings": {
           "items": {
@@ -1383,6 +1484,7 @@
         "name",
         "from",
         "to",
+        "reign",
         "rings",
         "color_key"
       ],
@@ -1410,6 +1512,9 @@
         "ref_note"
       ],
       "type": "object"
+    },
+    "PolityId": {
+      "type": "string"
     },
     "PositionKind": {
       "enum": [
@@ -1466,17 +1571,23 @@
           "type": "string"
         },
         "existence_from": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "existence_to": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "id": {
@@ -1684,17 +1795,23 @@
           "type": "array"
         },
         "existence_from": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "existence_to": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Year"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "id": {
@@ -1822,6 +1939,78 @@
       ],
       "type": "string"
     },
+    "TextRef": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bible": {
+              "additionalProperties": false,
+              "properties": {
+                "book": {
+                  "$ref": "#/$defs/BookId"
+                },
+                "chapter": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "verse": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "book",
+                "chapter",
+                "verse"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "bible"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "concord": {
+              "additionalProperties": false,
+              "properties": {
+                "article": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "paragraph": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "part": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "part",
+                "article",
+                "paragraph"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "concord"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "TextScope": {
       "enum": [
         "verse",
@@ -1838,6 +2027,9 @@
           },
           "type": "array"
         },
+        "locus": {
+          "$ref": "#/$defs/TextRef"
+        },
         "ref": {
           "type": "string"
         },
@@ -1853,6 +2045,7 @@
       },
       "required": [
         "ref",
+        "locus",
         "text",
         "words_of_christ",
         "edge_summary"
@@ -1887,18 +2080,20 @@
     "TimeRange": {
       "additionalProperties": false,
       "properties": {
-        "from_year": {
-          "format": "int32",
-          "type": "integer"
+        "from": {
+          "$ref": "#/$defs/Year"
         },
-        "to_year": {
-          "format": "int32",
-          "type": "integer"
+        "label": {
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/Year"
         }
       },
       "required": [
-        "from_year",
-        "to_year"
+        "from",
+        "to",
+        "label"
       ],
       "type": "object"
     },
@@ -2078,7 +2273,7 @@
         "when": {
           "oneOf": [
             {
-              "$ref": "#/$defs/TimeRange"
+              "$ref": "#/$defs/YearSpan"
             },
             {
               "type": "null"
@@ -2149,6 +2344,41 @@
       "required": [
         "start",
         "end"
+      ],
+      "type": "object"
+    },
+    "Year": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "type": "object"
+    },
+    "YearSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "from_year": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "to_year": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "from_year",
+        "to_year"
       ],
       "type": "object"
     }

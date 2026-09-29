@@ -264,7 +264,7 @@ async fn verse_chapter_place_and_404() {
     assert_eq!(events.len(), 2);
     assert_eq!(events[0]["id"], "e2");
     assert_eq!(events[1]["id"], "e3");
-    assert!(events[0]["when"]["from_year"].as_i64().unwrap() <= events[1]["when"]["from_year"].as_i64().unwrap());
+    assert!(events[0]["when"]["from"]["value"].as_i64().unwrap() <= events[1]["when"]["from"]["value"].as_i64().unwrap());
 
     let (st, body) = call(&app, "/api/place/does-not-exist").await;
     assert_eq!(st, 404);
@@ -694,6 +694,63 @@ fn app_with_test_polities() -> axum::Router {
     let data: AtlasData = data.finish();
     let graph = graph_fixture_for(&data);
     atlas_contract::app::build(Arc::new(data), graph, None)
+}
+
+#[tokio::test]
+async fn an_era_carries_its_window_beside_the_integers_the_edge_suite_consumes() {
+    // Arrange
+    let app = app();
+
+    // Act
+    let (status, eras) = call(&app, "/api/eras").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{eras}");
+    assert_eq!(
+        eras,
+        serde_json::json!([
+            {
+                "id": "patriarchs",
+                "name": "Patriarchs",
+                "from_year": -2166,
+                "to_year": -1877,
+                "window": { "from": { "value": -2166, "label": "2166 BC" }, "to": { "value": -1877, "label": "1877 BC" }, "label": "2166 – 1877 BC" },
+            },
+            {
+                "id": "conquest-judges",
+                "name": "Conquest & Judges",
+                "from_year": -1406,
+                "to_year": -1051,
+                "window": { "from": { "value": -1406, "label": "1406 BC" }, "to": { "value": -1051, "label": "1051 BC" }, "label": "1406 – 1051 BC" },
+            },
+        ])
+    );
+}
+
+#[tokio::test]
+async fn a_polity_carries_its_reign_beside_its_integers() {
+    // Arrange
+    let app = app_with_test_polities();
+
+    // Act
+    let (status, polities) = call(&app, "/api/polities?from=-2000&to=-1900").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{polities}");
+    assert_eq!(
+        polities,
+        serde_json::json!({
+            "polities": [{
+                "id": "egypt",
+                "name": "Egypt",
+                "from": -2100,
+                "to": -1200,
+                "reign": { "from": { "value": -2100, "label": "2100 BC" }, "to": { "value": -1200, "label": "1200 BC" }, "label": "2100 – 1200 BC" },
+                "rings": [square_ring()],
+                "color_key": 3,
+            }],
+        })
+    );
 }
 
 #[tokio::test]

@@ -1,17 +1,18 @@
-use atlas_core::{time::TimeRange, wire::*};
+use atlas_core::label::{TimeRange, Year};
+use atlas_core::{time, wire::*};
 use std::{fs, path::Path};
 
 fn sample_scene() -> Scene {
     Scene {
         mode: SceneMode::Time,
-        window: Some(TimeRange::new(-1450, -1400).unwrap()),
+        window: Some(TimeRange::of(time::TimeRange::new(-1450, -1400).unwrap())),
         r#ref: None,
         places: vec![ScenePlace {
             id: "jericho".into(), name: "Jericho".into(), display_name: "Jericho".into(), lat: 31.8703, lon: 35.4436,
             brightness: 2,
             events: vec![SceneEvent {
                 id: "ev_jericho_falls".into(), label: "The walls of Jericho fall".into(),
-                when: TimeRange::new(-1406, -1406).unwrap(),
+                when: TimeRange::of(time::TimeRange::new(-1406, -1406).unwrap()),
                 verse_groups: vec![VerseGroup { book: "JOS".into(), chapter: 6,
                     verses: vec!["JOS.6.1".into(), "JOS.6.20".into()], count: 27 }],
             }],
@@ -21,8 +22,8 @@ fn sample_scene() -> Scene {
         }],
         quiet_places: vec![QuietPlace {
             id: "shiloh".into(), display_name: "Shiloh".into(), lat: 32.0553, lon: 35.2897, total_events: 3,
-            existence_from: Some(-1399),
-            existence_to: Some(-1050),
+            existence_from: Some(Year::of(-1399).unwrap()),
+            existence_to: Some(Year::of(-1050).unwrap()),
             merged_ids: vec![],
         }],
         arrows: vec![SceneArrow { narrative: "conquest".into(), color: "#7C3AED".into(),

@@ -1232,11 +1232,11 @@ async fn person_card_carries_life_years_kin_and_events() {
     assert_eq!(st, 200, "{body}");
     assert_eq!(body["kind"], "Person");
     let person = &body["person"];
-    assert_eq!(person["birth_year"], -1575, "{person}");
-    assert_eq!(person["death_year"], -1452, "{person}");
+    assert_eq!(person["birth"]["value"], -1575, "{person}");
+    assert_eq!(person["death"]["value"], -1452, "{person}");
     assert_eq!(person["eternal"], false);
-    assert!(person["first_year"].is_i64() && person["last_year"].is_i64(), "the corpus-mention span is always computed: {person}");
-    assert!(person["first_year"].as_i64().unwrap() <= person["last_year"].as_i64().unwrap());
+    assert!(person["first"]["value"].is_i64() && person["last"]["value"].is_i64(), "the corpus-mention span is always computed: {person}");
+    assert!(person["first"]["value"].as_i64().unwrap() <= person["last"]["value"].as_i64().unwrap());
 
     let count = |kind: &str| body["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == kind).map(|e| e["count"].as_u64().unwrap()).unwrap_or(0);
     assert_eq!(count("child-of"), 2, "Amram and Jochebed: {}", body["edge_summary"]);
@@ -1270,8 +1270,8 @@ async fn god_is_eternal_and_the_card_says_why() {
     assert_eq!(st, 200, "{body}");
     let person = &body["person"];
     assert_eq!(person["eternal"], true, "{person}");
-    assert_eq!(person["birth_year"], serde_json::Value::Null);
-    assert_eq!(person["death_year"], serde_json::Value::Null);
+    assert_eq!(person["birth"], serde_json::Value::Null);
+    assert_eq!(person["death"], serde_json::Value::Null);
     let grounds: Vec<&str> = person["eternal_grounds"].as_array().unwrap().iter().map(|g| g.as_str().unwrap()).collect();
     assert_eq!(grounds, vec!["PSA.90.2", "REV.1.8"]);
 }
@@ -1508,6 +1508,141 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
             "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } ],
             "next": null,
             "version": articles["version"].clone(),
+        })
+    );
+}
+
+const MOSES: &str = "Person:moses_2108";
+
+#[tokio::test]
+async fn a_person_card_carries_labelled_years() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/node/{MOSES}")).await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{card}");
+    assert_eq!(
+        card["person"],
+        serde_json::json!({
+            "gender": "Male",
+            "birth": { "value": -1572, "label": "1572 BC" },
+            "death": { "value": -1453, "label": "1453 BC" },
+            "first": { "value": -1700, "label": "1700 BC" },
+            "last": { "value": 96, "label": "AD 96" },
+            "eternal": false,
+            "eternal_grounds": [],
+            "also_called": [],
+        })
+    );
+}
+
+#[tokio::test]
+async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=GEN.1.1&n=1").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{window}");
+    assert_eq!(
+        window["units"],
+        serde_json::json!([{
+            "ref": "GEN.1.1",
+            "locus": { "bible": { "book": "GEN", "chapter": 1, "verse": 1 } },
+            "text": "In the beginning God created the heaven and the earth.",
+            "words_of_christ": [],
+            "edge_summary": [
+                { "kind": "member-of", "count": 1 },
+                { "kind": "attests", "count": 1 },
+                { "kind": "mentions", "count": 1 },
+                { "kind": "cites", "count": 61 },
+                { "kind": "cited-by", "count": 35 },
+                { "kind": "commented-on-by", "count": 1 },
+                { "kind": "catechism-link", "count": 3 },
+            ],
+        }])
+    );
+}
+
+#[tokio::test]
+async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=BoC%207.2.1&corpus=concord").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{window}");
+    assert_eq!(
+        window["units"],
+        serde_json::json!([{
+            "ref": "BoC 7.2.1",
+            "locus": { "concord": { "part": 7, "article": 2, "paragraph": 1 } },
+            "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
+            "words_of_christ": [],
+            "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
+        }])
+    );
+}
+
+#[tokio::test]
+async fn a_contents_child_carries_the_locus_it_opens_at() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, contents, _) = get(&app, "/api/contents/bible").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{contents}");
+    assert_eq!(
+        contents["roots"][0]["children"][0],
+        serde_json::json!({
+            "id": GENESIS_1,
+            "title": "1",
+            "kind": "chapter",
+            "ref": "GEN.1",
+            "locus": { "bible": { "book": "GEN", "chapter": 1, "verse": 1 } },
+            "count": VERSES_IN_GENESIS_1,
+        })
+    );
+}
+
+const PARAGRAPHS_IN_THE_PREFACE: usize = 25;
+
+#[tokio::test]
+async fn a_contents_root_opens_at_the_locus_its_first_child_opens_at() {
+    // Arrange
+    let app = compiled_app();
+    let preface_opens_at = serde_json::json!({ "concord": { "part": 1, "article": 1, "paragraph": 1 } });
+
+    // Act
+    let (status, contents, _) = get(&app, "/api/contents/concord").await;
+
+    // Assert
+    assert_eq!(status, StatusCode::OK, "{contents}");
+    assert_eq!(
+        contents["roots"][0],
+        serde_json::json!({
+            "id": "Container:concord-doc-preface",
+            "title": "Preface to the Book of Concord",
+            "kind": "document",
+            "ref": "BoC 1.1.1",
+            "locus": preface_opens_at,
+            "children": [{
+                "id": "Container:concord-art-preface-1",
+                "title": "Preface to the Book of Concord",
+                "kind": "article",
+                "ref": "BoC 1.1.1",
+                "locus": preface_opens_at,
+                "count": PARAGRAPHS_IN_THE_PREFACE,
+            }],
         })
     );
 }

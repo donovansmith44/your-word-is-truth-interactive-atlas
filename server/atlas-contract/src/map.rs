@@ -11,6 +11,7 @@ use atlas_core::scene::{compose_scripture_scene, compose_time_scene};
 use atlas_core::time::{TimeRange, Year};
 use atlas_core::wire::Scene;
 use atlas_graph::GraphService;
+use atlas_graph_types::id::{EraId, PolityId};
 use atlas_graph_types::store::GraphQuery;
 
 use crate::error::{ApiError, ReferenceRefusals, WindowRefusals};
@@ -92,8 +93,8 @@ impl ContractParams for ScripturePassage {
 }
 
 /// Every named stretch of this atlas's timeline, with its year bounds, oldest first.
-#[utoipa::path(get, path = "/api/eras", responses((status = 200, body = Vec<atlas_core::data::Era>)), tag = "map")]
-pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
+#[utoipa::path(get, path = "/api/eras", responses((status = 200, body = Vec<wire::Era>)), tag = "map")]
+pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<wire::Era>> {
     use atlas_graph_types::node::NodePayload;
 
     // `ids_of_kind` answers in id order; this response's order is chronological.
@@ -110,7 +111,17 @@ pub async fn eras(State(graph): State<Arc<GraphService>>) -> Json<Vec<Era>> {
         })
         .collect();
     atlas_graph::era_adapter::chronological(&mut eras);
-    Json(eras)
+    Json(
+        eras.into_iter()
+            .map(|era| wire::Era { window: curated_span(era.from_year, era.to_year), id: EraId::new(era.id), name: era.name, from_year: era.from_year, to_year: era.to_year })
+            .collect(),
+    )
+}
+
+/// An era's or a reign's years were checked as a range when they were curated; the graph
+/// carries them on as two integers.
+fn curated_span(from_year: Year, to_year: Year) -> wire::TimeRange {
+    wire::TimeRange::of(TimeRange { from_year, to_year })
 }
 
 /// Every narrative in this atlas: its name, the colour its arrows are drawn in, and the ordered events it runs through.
@@ -155,10 +166,11 @@ pub async fn polities(
     let polities = atlas_graph::polity_adapter::reigns_in(&snap, &window)
         .into_iter()
         .map(|reign| wire::Polity {
-            id: reign.polity.raw,
+            id: PolityId::new(reign.polity.raw),
             name: reign.era.name,
             from: reign.era.from_year,
             to: reign.era.to_year,
+            reign: curated_span(reign.era.from_year, reign.era.to_year),
             rings: wire::rings(&reign.era.rings),
             color_key: reign.color_key,
             transition: reign.era.transition.as_ref().map(|d| curated_delta(d, reign.era.from_year)),

@@ -45,7 +45,7 @@ pub async fn place(
         })
         .map(|e| to_scene_event(&e))
         .collect();
-    events.sort_by_key(|e| e.when.from_year);
+    events.sort_by_key(|e| e.when.from.value);
 
     let window = asked.period()?;
 

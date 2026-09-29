@@ -23,7 +23,7 @@ fn there_is_no_year_zero() {
     // Act
     let year = Year::of(value);
     // Assert
-    assert!(matches!(year, Err(CoreError::ZeroYear)));
+    assert_eq!(year, Err(CoreError::ZeroYear));
 }
 
 #[test]
@@ -113,4 +113,38 @@ fn the_vectors_document_is_the_same_rules_written_out() {
 
 fn core_range(from: i32, to: i32) -> time::TimeRange {
     time::TimeRange::new(from, to).expect("every range here is in order and names no year zero")
+}
+
+#[test]
+fn the_document_publishes_the_labelled_span_as_time_range_and_the_computed_one_as_year_span() {
+    // Arrange
+    let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+    let year = serde_json::json!({ "$ref": "#/components/schemas/Year" });
+    let integer = serde_json::json!({ "type": "integer", "format": "int32" });
+    // Act
+    let published = (&document["components"]["schemas"]["TimeRange"], &document["components"]["schemas"]["YearSpan"]);
+    // Assert
+    assert_eq!(
+        published,
+        (
+            &serde_json::json!({
+                "type": "object",
+                "description": "A span of years, both ends included, with the label a reader sees for it: an\nera both ends share is named once.",
+                "required": ["from", "to", "label"],
+                "properties": {
+                    "from": year,
+                    "to": year,
+                    "label": { "type": "string", "description": format!("Such as `1450{EN_DASH}1400 BC`, `5 BC{EN_DASH}AD 30` or, for a single year, `AD 33`.") },
+                },
+                "additionalProperties": false,
+            }),
+            &serde_json::json!({
+                "type": "object",
+                "description": "A span of years on this atlas's scale: negative for BC, positive for AD, with\nno year zero. A single year is a span whose ends are equal.",
+                "required": ["from_year", "to_year"],
+                "properties": { "from_year": integer, "to_year": integer },
+                "additionalProperties": false,
+            }),
+        )
+    );
 }

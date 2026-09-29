@@ -7,7 +7,7 @@ use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::{BibleTag, ConcordTag};
+use atlas_graph_types::text::{BibleTag, ConcordTag, VerseRef};
 use axum::extract::{Path, State};
 use axum::Json;
 
@@ -59,22 +59,25 @@ fn book_root<S: GraphQuery>(snap: &S, book: &AnyNodeId) -> wire::ContentsRoot {
         .iter()
         .filter_map(|child| {
             let (_, chapter) = atlas_graph::bible_container_adapter::decode_chapter_container(child)?;
+            let (b, c, v) = members(snap, child).into_iter().find_map(|verse| atlas_graph::kjv_adapter::decode_text_unit(&verse))?;
             Some(wire::ContentsChild {
                 id: encode_node_id(child),
                 title: chapter.to_string(),
                 kind: wire::ContentsChildKind::Chapter,
                 r#ref: format!("{code}.{chapter}"),
+                locus: wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v }),
                 count: member_count(snap, child),
             })
         })
         .collect();
-    let r#ref = children.first().map(|c| c.r#ref.clone()).unwrap_or_else(|| format!("{code}.1"));
+    let (r#ref, locus) = opening(book, &children);
     wire::ContentsRoot {
         id: encode_node_id(book),
         title: title_of(snap, book),
         kind: wire::ContentsRootKind::Book,
         group: Some(atlas_core::canon::Testament::of_book_index(index)),
         r#ref,
+        locus,
         children,
     }
 }
@@ -83,18 +86,26 @@ fn document_root<S: GraphQuery>(snap: &S, document: &AnyNodeId) -> wire::Content
     let children: Vec<wire::ContentsChild> = members(snap, document)
         .iter()
         .filter_map(|article| {
-            let first = members(snap, article).into_iter().find_map(|p| atlas_graph::concord_adapter::decode_text_unit(&p))?;
+            let (part, number, paragraph) = members(snap, article).into_iter().find_map(|p| atlas_graph::concord_adapter::decode_text_unit(&p))?;
             Some(wire::ContentsChild {
                 id: encode_node_id(article),
                 title: title_of(snap, article),
                 kind: wire::ContentsChildKind::Article,
-                r#ref: format!("BoC {}.{}.{}", first.0, first.1, first.2),
+                r#ref: format!("BoC {part}.{number}.{paragraph}"),
+                locus: wire::TextRef::Concord { part, article: number, paragraph },
                 count: member_count(snap, article),
             })
         })
         .collect();
-    let r#ref = children.first().map(|c| c.r#ref.clone()).unwrap_or_default();
-    wire::ContentsRoot { id: encode_node_id(document), title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, children }
+    let (r#ref, locus) = opening(document, &children);
+    wire::ContentsRoot { id: encode_node_id(document), title: title_of(snap, document), kind: wire::ContentsRootKind::Document, group: None, r#ref, locus, children }
+}
+
+/// A top-level entry opens where its first child does. One with no child to open at is
+/// a defect in the graph, never an entry to point at nothing.
+fn opening(root: &AnyNodeId, children: &[wire::ContentsChild]) -> (String, wire::TextRef) {
+    let first = children.first().unwrap_or_else(|| panic!("{} contains nothing to open at", root.raw));
+    (first.r#ref.clone(), first.locus.clone())
 }
 
 fn member_count<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> usize {
@@ -128,5 +139,25 @@ mod tests {
 
         // Act
         book_root(&Graph::default(), &not_a_book);
+    }
+
+    #[test]
+    #[should_panic(expected = "bible-book-GEN contains nothing to open at")]
+    fn a_book_with_no_chapter_to_open_at_is_a_graph_defect_not_an_entry_pointing_nowhere() {
+        // Arrange
+        let genesis = atlas_graph::bible_container_adapter::book_container_id("GEN").erase();
+
+        // Act
+        book_root(&Graph::default(), &genesis);
+    }
+
+    #[test]
+    #[should_panic(expected = "concord-doc-preface contains nothing to open at")]
+    fn a_document_with_no_article_to_open_at_is_a_graph_defect_not_an_entry_pointing_nowhere() {
+        // Arrange
+        let preface = ContainerNodeId::new("concord-doc-preface").erase();
+
+        // Act
+        document_root(&Graph::default(), &preface);
     }
 }

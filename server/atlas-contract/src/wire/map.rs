@@ -1,4 +1,5 @@
 use atlas_core::data::PolityDelta;
+use atlas_graph_types::id::{EraId, PolityId};
 use serde::Serialize;
 use utoipa::openapi::schema::{ArrayBuilder, ObjectBuilder, SchemaType, Type};
 use utoipa::openapi::{RefOr, Schema};
@@ -40,6 +41,20 @@ pub struct LandMask {
     pub rings: Vec<Vec<Point>>,
 }
 
+/// A named stretch of this atlas's timeline.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Era {
+    pub id: EraId,
+    pub name: String,
+    /// The first year of the era, negative for BC.
+    pub from_year: i32,
+    /// The last year of the era.
+    pub to_year: i32,
+    /// The era's years, labelled.
+    pub window: super::TimeRange,
+}
+
 /// The polity borders in view for the span of years asked about.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -53,13 +68,15 @@ pub struct Polities {
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Polity {
-    pub id: String,
+    pub id: PolityId,
     /// The polity's name during this era.
     pub name: String,
     /// The first year of this era, negative for BC.
     pub from: i32,
     /// The last year of this era.
     pub to: i32,
+    /// This era's years, labelled.
+    pub reign: super::TimeRange,
     /// This era's border, as closed rings of [latitude, longitude] points, in
     /// degrees.
     pub rings: Vec<Vec<Point>>,
