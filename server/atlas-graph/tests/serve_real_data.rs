@@ -34,6 +34,27 @@ fn the_chronology_loaded_from_event_date_is_the_artifacts() {
     assert!(!s.source_meta.is_empty());
 }
 
+/// The two flags `load_heading_index` reads back, pinned to real rows: comparing the section read
+/// against `artifact()` cannot see a mistake here, because that service reads the same rows through
+/// the same function.
+const A_CONTINUED_HEADING: (&str, &str, bool) = ("1CH.16.1", "sam2_ark_to_jerusalem", true);
+const AN_OPENING_HEADING: (&str, &str, bool) = ("1CH.1.1", "1ch_genealogy_patriarchs_to_edom", false);
+
+#[test]
+fn the_heading_index_says_which_of_its_rows_continue_earlier_coverage_and_which_open_it() {
+    // Arrange
+    let expected = [A_CONTINUED_HEADING, AN_OPENING_HEADING];
+
+    // Act
+    let index = sections().with_conn(load_heading_index).unwrap();
+
+    // Assert
+    assert_eq!(
+        expected.map(|(verse, _, _)| (index[verse].event_id.as_str(), index[verse].is_continuation)),
+        expected.map(|(_, event_id, is_continuation)| (event_id, is_continuation))
+    );
+}
+
 #[test]
 fn the_heading_index_red_letter_spans_and_narrative_legs_are_the_artifacts() {
     let a = artifact();
@@ -91,3 +112,4 @@ fn cross_refs_for_span_is_the_companions_slice() {
     assert!(one["JHN.3.16"].len() > 10, "JHN.3.16 has many cross-refs: {}", one["JHN.3.16"].len());
     assert_eq!(one.len(), 1);
 }
+

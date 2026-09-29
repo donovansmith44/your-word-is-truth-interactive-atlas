@@ -416,6 +416,23 @@ mod tests {
     }
 
     #[test]
+    fn red_when_a_person_is_stated_as_their_own_parent() {
+        // Arrange
+        let mut graph = Graph::default();
+        graph.parent_of.push(atlas_graph_types::edge::ParentOf {
+            parent: atlas_graph_types::id::PersonId::new("adam_1"),
+            child: atlas_graph_types::id::PersonId::new("adam_1"),
+            provenance: "test".into(),
+        });
+
+        // Act
+        let refusal = kinship_is_acyclic(&graph).expect_err("no one is their own parent");
+
+        // Assert
+        assert_eq!(refusal, "kinship: 'adam_1' is stated as their own parent");
+    }
+
+    #[test]
     fn red_when_a_located_at_row_names_a_place_with_no_node() {
         let mut graph = Graph::default();
         graph.located_at.push(LocatedAt {
