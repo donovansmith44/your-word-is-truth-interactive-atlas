@@ -3,6 +3,8 @@
 //! filesystem and reusable by both the walker (`atlas-cli`, which builds these values from
 //! `data/raw`) and the verifier and writer that read and produce them.
 
+use std::fmt::Write;
+
 use crate::sha256::sha256_prefixed_128;
 
 /// Domain separation for the raw tree, distinct from `canon::DOMAIN_PREFIX` (the compiled
@@ -10,7 +12,45 @@ use crate::sha256::sha256_prefixed_128;
 /// identical bytes.
 pub const RAW_DOMAIN_PREFIX: &[u8] = b"bible-atlas/raw/1\n";
 
-/// A fetched file. `sha256` is the full 64-hex digest of its bytes -- a raw file's bytes are
+/// A file's full SHA-256 digest. The tree carries bytes; only the manifest's TOML boundary
+/// spells it as 64 lowercase hex digits, via [`Sha256::hex`] and [`Sha256::parse`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Sha256(pub [u8; 32]);
+
+/// A directory node's 128-bit domain-prefixed hash, the width D2 fixes for every build; spelled
+/// as 32 lowercase hex digits at the TOML boundary only.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RawHash(pub [u8; 16]);
+
+/// Why a hex spelling is not a hash: the manifest has one spelling (lowercase, exact width), so
+/// anything else is refused with its position rather than read leniently.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HexError {
+    Length { expected: usize, found: usize },
+    Digit { at: usize, found: char },
+}
+
+impl Sha256 {
+    pub fn hex(&self) -> String {
+        hex_of(&self.0)
+    }
+
+    pub fn parse(text: &str) -> Result<Self, HexError> {
+        bytes_of(text).map(Sha256)
+    }
+}
+
+impl RawHash {
+    pub fn hex(&self) -> String {
+        hex_of(&self.0)
+    }
+
+    pub fn parse(text: &str) -> Result<Self, HexError> {
+        bytes_of(text).map(RawHash)
+    }
+}
+
+/// A fetched file. `sha256` is the full digest of its bytes -- a raw file's bytes are
 /// its whole identity (D2), unlike the compiled sections' logical/transport split, so it
 /// earns full width rather than the sections' 128-bit truncation. `bytes` is carried for a
 /// human reading `MANIFEST.toml` and for the fetch script to reject a truncated download
@@ -19,7 +59,7 @@ pub const RAW_DOMAIN_PREFIX: &[u8] = b"bible-atlas/raw/1\n";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawLeaf {
     pub name: String,
-    pub sha256: String,
+    pub sha256: Sha256,
     pub bytes: u64,
 }
 
@@ -28,7 +68,7 @@ pub struct RawLeaf {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RawNode {
     pub name: String,
-    pub hash: String,
+    pub hash: RawHash,
     pub children: Vec<RawEntry>,
 }
 
@@ -57,13 +97,13 @@ impl RawEntry {
 
 /// `<name>|<64-hex sha256>\n`. Never `bytes` (D3).
 pub fn leaf_line(leaf: &RawLeaf) -> String {
-    format!("{}|{}\n", leaf.name, leaf.sha256)
+    format!("{}|{}\n", leaf.name, leaf.sha256.hex())
 }
 
 /// `<name>|<32-hex node hash>\n`, so a change deep in a subtree moves exactly its ancestors'
 /// lines and nothing else.
 pub fn node_line(node: &RawNode) -> String {
-    format!("{}|{}\n", node.name, node.hash)
+    format!("{}|{}\n", node.name, node.hash.hex())
 }
 
 /// The roll-up over `entries`: each entry's line (a leaf's or a nested node's), name-ordered
@@ -76,21 +116,38 @@ pub fn node_line(node: &RawNode) -> String {
 /// every build -- the raw tree is a domain of its own and must not inherit the graph's
 /// feature-gated identity width. An empty `entries` is a defined state (the hash of the
 /// prefix alone), not a panic: an empty fetched directory is real.
-pub fn node_hash(entries: &[RawEntry]) -> String {
+pub fn node_hash(entries: &[RawEntry]) -> RawHash {
     let mut ordered: Vec<&RawEntry> = entries.iter().collect();
     ordered.sort_by(|a, b| a.name().cmp(b.name()));
     let mut lines = Vec::new();
     for entry in ordered {
         lines.extend_from_slice(entry.line().as_bytes());
     }
-    hex128(sha256_prefixed_128(RAW_DOMAIN_PREFIX, &lines))
+    RawHash(sha256_prefixed_128(RAW_DOMAIN_PREFIX, &lines))
 }
 
-fn hex128(bytes: [u8; 16]) -> String {
-    use std::fmt::Write;
-    let mut s = String::with_capacity(32);
+fn hex_of(bytes: &[u8]) -> String {
+    let mut text = String::with_capacity(bytes.len() * 2);
     for b in bytes {
-        let _ = write!(s, "{b:02x}");
+        let _ = write!(text, "{b:02x}");
     }
-    s
+    text
+}
+
+fn bytes_of<const WIDTH: usize>(text: &str) -> Result<[u8; WIDTH], HexError> {
+    let expected = WIDTH * 2;
+    let found = text.chars().count();
+    if found != expected {
+        return Err(HexError::Length { expected, found });
+    }
+    let mut out = [0u8; WIDTH];
+    for (at, digit) in text.chars().enumerate() {
+        let value = match digit {
+            '0'..='9' => digit as u8 - b'0',
+            'a'..='f' => digit as u8 - b'a' + 10,
+            _ => return Err(HexError::Digit { at, found: digit }),
+        };
+        out[at / 2] = (out[at / 2] << 4) | value;
+    }
+    Ok(out)
 }
