@@ -146,9 +146,6 @@ impl Fixture {
     }
 }
 
-/// Windows only: `mklink /J` needs no elevation, so it runs on every Windows host; other hosts
-/// have no junctions. The target lives inside the fixture, so a worst-case follow could only
-/// reach the test's own files.
 #[cfg(windows)]
 impl Fixture {
     fn junction(&self, relative: &str) -> PathBuf {
@@ -503,8 +500,6 @@ fn section_json_carries_no_raw_answer() {
     assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
 }
 
-/// Windows only: an exclusive open (share mode 0) is the one portable way this test can make a
-/// file unreadable without elevation; other hosts have no share modes.
 #[cfg(windows)]
 #[test]
 fn a_file_the_walk_cannot_read_is_named_in_the_integrity_failure() {
@@ -830,7 +825,6 @@ fn raw_check_json_carries_the_directory_hash_and_file_count() {
     assert_eq!(result, (Some(EXIT_OK), expected, String::new()));
 }
 
-/// Windows only: `\` is a separator there and a name character elsewhere.
 #[cfg(windows)]
 #[test]
 fn raw_check_accepts_the_path_in_windows_spelling_and_answers_in_the_manifests() {
@@ -1062,8 +1056,6 @@ fn raw_check_of_a_directory_whose_listed_junction_is_gone_names_the_missing_link
     assert_eq!(result, (Some(EXIT_INTEGRITY_FAILED), String::new(), not_as_recorded("geo", "1 path differs", "raw geo/linked: LINK MISSING (MANIFEST.toml lists a junction or symlink there)")));
 }
 
-/// Windows only: an exclusive open (share mode 0) is the one portable way this test can make a
-/// file unreadable without elevation; other hosts have no share modes.
 #[cfg(windows)]
 #[test]
 fn raw_check_of_a_file_it_cannot_read_names_the_file() {

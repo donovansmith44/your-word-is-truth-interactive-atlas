@@ -63,8 +63,6 @@ pub fn derive(ctx: &mut BuildCtx) -> Result<MapAdapterStats> {
     Ok(stats)
 }
 
-/// Every drawable thing in the scene, once each, in id order: the lit and the quiet places, the
-/// events at the lit places, the narratives in the legend, and the polities reigning in the window.
 fn shown_in(scene: &Scene, polities: Vec<AnyNodeId>) -> Vec<AnyNodeId> {
     let places = scene
         .places

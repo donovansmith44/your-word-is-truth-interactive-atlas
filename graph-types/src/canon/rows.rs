@@ -222,8 +222,6 @@ fn field_id<K: KindTag>(
     id_from_value::<K>(v, &p)
 }
 
-/// A field that may name a node of any kind rides the same `Kind:raw` spelling, read back
-/// without narrowing.
 fn field_any_id(m: &BTreeMap<String, Value>, path: &str, key: &str) -> Result<AnyNodeId, CanonError> {
     let (v, p) = field(m, path, key)?;
     parse_any_node_id(&expect_str(v, &p)?, &p)

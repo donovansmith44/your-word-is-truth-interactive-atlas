@@ -61,7 +61,7 @@ fn every_node_round_trips_and_re_encodes_identically() {
     for (kind, n) in &by_kind {
         println!("  node {kind}: {n}");
     }
-    assert_eq!(count, 106_742 + MAPS + CORPUS_ROOTS, "the committed graph carries exactly 106,742 nodes (93,194 + 13,548 LexiconEntry at LEX-1) plus one Map per era and one root per corpus");
+    assert_eq!(count, 106_742 + MAPS + CORPUS_ROOTS, "the committed graph carries its 106,742 text, container, world and lexicon nodes plus one Map per era and one root per corpus");
 }
 
 fn round_trip_family<T: Canon>(rows: &[T], family: RowFamily) -> usize {

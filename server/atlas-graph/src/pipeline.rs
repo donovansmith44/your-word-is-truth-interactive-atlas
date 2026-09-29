@@ -1,6 +1,5 @@
-//! The compiler pipeline contract: `normalize -> merge/alias -> resolve -> derive -> index -> map ->
-//! index -> law-check`, as an ordered list of passes that is DATA rather than a hardcoded call chain,
-//! so backing a pass out is removing its entry from the list.
+//! The compiler pipeline is an ordered list of passes that is DATA rather than a hardcoded call
+//! chain, so backing a pass out is removing its entry from the list.
 
 use anyhow::{Context, Result};
 

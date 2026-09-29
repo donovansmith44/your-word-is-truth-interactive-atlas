@@ -1,7 +1,7 @@
-# Every guard here is data/raw/MANIFEST.toml (RAW-INTEGRITY): a file that exists is kept only
-# when bibex finds it as recorded, a vendored subtree only when its node hash recomputes, so a
-# download killed mid-way or a half-copied directory is fetched again instead of trusted
-# forever (both happened on 2026-09-28). -WhatIf reports every fetch and copy without doing one.
+# Every guard here is data/raw/MANIFEST.toml: a file that exists is kept only when bibex finds
+# it as recorded, a vendored subtree only when its node hash recomputes, so a download killed
+# mid-way or a half-copied directory is fetched again instead of trusted forever. -WhatIf
+# reports every fetch and copy without doing one.
 [CmdletBinding(SupportsShouldProcess)]
 param([string]$DataDir)
 $ErrorActionPreference = 'Stop'

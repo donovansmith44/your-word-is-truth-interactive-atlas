@@ -80,7 +80,7 @@ fn golden_row<T: Canon + std::fmt::Debug + PartialEq>(row: &T, family: RowFamily
 
 #[test]
 fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
-    assert_eq!(RowFamily::ALL.len(), DECLARED_ROW_FAMILIES, "spec 5 names 21 row tables + LEX-1's occurs (spec 5.7) + D5's parent_of/partners/participates + FOCUS-0's authored, shown and map_succession");
+    assert_eq!(RowFamily::ALL.len(), DECLARED_ROW_FAMILIES, "every row table the graph persists is one family in RowFamily::ALL");
     let names: Vec<&'static str> = RowFamily::ALL.iter().map(|f| f.name()).collect();
     let unique = {
         let mut n = names.clone();

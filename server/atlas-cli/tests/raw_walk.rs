@@ -234,9 +234,6 @@ fn two_walks_agree_and_every_level_is_name_ordered_whatever_order_the_files_were
     );
 }
 
-/// A junction is the mechanism that emptied `data/raw` on 2026-09-28; `mklink /J` needs no
-/// elevation, so this proof runs on every Windows host. Other hosts have no junctions to prove
-/// against.
 #[cfg(windows)]
 #[test]
 fn a_junction_is_listed_as_a_link_and_never_followed_into_its_target() {
@@ -305,11 +302,9 @@ fn the_readme_and_the_manifest_itself_are_kept_by_git_and_so_are_not_leaves() {
     );
 }
 
-/// NTFS accepts a lone surrogate in a name; the manifest cannot spell one, so the walk refuses
-/// rather than record a name that is not the file's.
 #[cfg(windows)]
 #[test]
-fn a_name_the_manifest_cannot_spell_is_refused() {
+fn a_name_holding_a_lone_surrogate_the_manifest_cannot_spell_is_refused() {
     // Arrange
     use std::os::windows::ffi::OsStringExt;
     let fixture = three_files_in_two_directories_and_one_empty("unspellable");

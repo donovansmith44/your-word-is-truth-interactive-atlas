@@ -1,9 +1,7 @@
-# RAW-INTEGRITY Task 6: the copy of data/raw that survives a worktree removal
-# (PRINCIPLES 20 -- 2026-09-28 lost 374 MB of data/raw when a junctioned worktree was force-
-# removed). Archives the trees that have no pinned upstream source (geo, concord, kretzmann)
-# plus the three raw zips still on disk, to a path outside every worktree, refusing to run over
-# a tree that does not verify and refusing to silently overwrite an existing backup of the same
-# root.
+# The copy of data/raw that survives a worktree removal. Archives the trees that have no pinned
+# upstream source (geo, concord, kretzmann) plus the three raw zips still on disk, to a path
+# outside every worktree, refusing to run over a tree that does not verify and refusing to
+# silently overwrite an existing backup of the same root.
 [CmdletBinding()]
 param(
     [string]$RawDir = (Join-Path (Split-Path -Parent $PSScriptRoot) 'data\raw'),

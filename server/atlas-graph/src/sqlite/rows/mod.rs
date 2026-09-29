@@ -54,7 +54,7 @@ pub enum RowRef<'a> {
     MapSuccession(&'a MapSuccession),
 }
 
-/// Owned rows read back (the reader's output) -- the same 21 arms.
+/// Owned rows read back (the reader's output).
 #[derive(Clone, Debug)]
 pub enum RowOwned {
     ContainsBible(Contains<BibleTag>),

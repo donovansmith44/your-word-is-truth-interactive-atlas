@@ -25,9 +25,8 @@ atlas-contract = { path = "../atlas-contract" }
 # directly, never a `#[derive(Serialize)]` struct.
 serde_json = "1"
 
-# RAW-INTEGRITY: data/raw/MANIFEST.toml is read and written through the same
-# serde/toml pair atlas-graph's compiled manifest already resolves -- two new
-# edges in the dependency graph, no new crate.
+# data/raw/MANIFEST.toml is read and written through the same serde/toml pair
+# atlas-graph's compiled manifest already resolves: no new crate.
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 

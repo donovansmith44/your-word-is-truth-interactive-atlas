@@ -1,6 +1,3 @@
-//! `decompress_verified` under contention: many callers materialising one section into one cache
-//! path from cold, at once, and what the cache holds afterwards.
-
 use std::path::{Path, PathBuf};
 use std::sync::Barrier;
 
@@ -88,8 +85,6 @@ mod refused_rename {
     use std::fs::File;
     use std::os::windows::fs::OpenOptionsExt;
 
-    /// SQLite's share mode for an open section: readers and writers may join, nobody may delete or
-    /// replace the file underneath it.
     const SQLITE_SHARE_MODE: u32 = FILE_SHARE_READ | FILE_SHARE_WRITE;
     const FILE_SHARE_READ: u32 = 0x1;
     const FILE_SHARE_WRITE: u32 = 0x2;

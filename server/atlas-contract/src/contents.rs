@@ -33,9 +33,6 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
     Ok(Json(wire::Contents { corpus, version: atlas_graph::version_hex(graph.version()), roots }))
 }
 
-/// Every `contains` target of `container`, in the declared row order the port
-/// answers in: books in canon order, documents in reading order, chapters in
-/// canon order, articles in article order.
 fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
     let mut out = Vec::new();
     let mut cursor = None;

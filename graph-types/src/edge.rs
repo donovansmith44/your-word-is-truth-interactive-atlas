@@ -519,8 +519,8 @@ pub fn at(n: &AnyNodeId) -> Position {
     Position::Node(n.clone())
 }
 
-/// One step per adjacent pair of `ids`, in the order given: a list handed over in reading order
-/// IS its succession, so nothing is re-sorted or derived from the ids.
+/// A list handed over in reading order IS its succession: nothing is re-sorted or derived from
+/// the ids.
 pub fn steps_between<Id: Clone, Step>(ids: &[Id], step: impl Fn(Id, Id) -> Step) -> Vec<Step> {
     ids.windows(2).map(|pair| step(pair[0].clone(), pair[1].clone())).collect()
 }

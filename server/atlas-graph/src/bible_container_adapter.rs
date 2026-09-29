@@ -161,7 +161,6 @@ pub fn normalize(ctx: &mut BuildCtx) -> anyhow::Result<BibleContainerStats> {
     Ok(stats)
 }
 
-/// One `Authored` row per curated author id, in file order; a book without ids contributes none.
 pub fn authored_rows(books: &[BookAuthorship]) -> Vec<Authored> {
     books
         .iter()
