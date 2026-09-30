@@ -3,6 +3,7 @@
 //! and adds only the companions that port does not model, such as a reading-spine reverse lookup.
 
 use std::collections::{BTreeMap, HashMap};
+use std::ops::RangeInclusive;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -154,6 +155,10 @@ impl MemRowsAtLocus {
         }
         rows
     }
+}
+
+fn held_in<U: Ord + Clone, S: Clone>(held: &BTreeMap<U, Vec<S>>, units: &RangeInclusive<U>) -> BTreeMap<U, Vec<S>> {
+    held.range(units.clone()).filter(|(_, spans)| !spans.is_empty()).map(|(unit, spans)| (unit.clone(), spans.clone())).collect()
 }
 
 /// The longest KJV chapter has 176 verses, so this probe width is a comfortable margin.
@@ -378,17 +383,17 @@ impl GraphService {
         }
     }
 
-    pub fn mention_spans_at(&self, verse: &VerseRef) -> Result<Vec<MentionSpan>, SqliteError> {
+    pub fn mention_spans_in(&self, verses: &RangeInclusive<VerseRef>) -> Result<BTreeMap<VerseRef, Vec<MentionSpan>>, SqliteError> {
         match &self.rows_at_locus {
-            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::mention_spans_at(c, verse)),
-            RowsAtLocus::InMemory(rows) => Ok(rows.mention_spans.get(verse).cloned().unwrap_or_default()),
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::mention_spans_in(c, verses)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.mention_spans, verses)),
         }
     }
 
-    pub fn citation_spans_at(&self, paragraph: &ConcordRef) -> Result<Vec<CitationSpan>, SqliteError> {
+    pub fn citation_spans_in(&self, paragraphs: &RangeInclusive<ConcordRef>) -> Result<BTreeMap<ConcordRef, Vec<CitationSpan>>, SqliteError> {
         match &self.rows_at_locus {
-            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::citation_spans_at(c, paragraph)),
-            RowsAtLocus::InMemory(rows) => Ok(rows.citation_spans.get(paragraph).cloned().unwrap_or_default()),
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::citation_spans_in(c, paragraphs)),
+            RowsAtLocus::InMemory(rows) => Ok(held_in(&rows.citation_spans, paragraphs)),
         }
     }
 

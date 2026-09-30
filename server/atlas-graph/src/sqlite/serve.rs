@@ -1,5 +1,6 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::ops::RangeInclusive;
 
 use atlas_core::data::CrossRef;
 use atlas_core::refs::ScriptureRef;
@@ -10,7 +11,7 @@ use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 use rusqlite::Connection;
 
 use super::partition::node_kind_ordinal;
-use super::rows::core::read_mentions_at;
+use super::rows::core::read_mentions_in;
 use super::rows::kjv::read_cross_refs_from;
 use super::SqliteError;
 use crate::build::BuildStats;
@@ -185,13 +186,37 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
 }
 
 /// A seek on `xref_by_from`, never a scan.
-pub fn mention_spans_at(conn: &Connection, verse: &VerseRef) -> Result<Vec<MentionSpan>, SqliteError> {
-    Ok(read_mentions_at(conn, &TextRef::Bible(verse.clone()))?.iter().filter_map(MentionSpan::of).collect())
+pub fn mention_spans_in(conn: &Connection, verses: &RangeInclusive<VerseRef>) -> Result<BTreeMap<VerseRef, Vec<MentionSpan>>, SqliteError> {
+    let rows = read_mentions_in(conn, &TextRef::Bible(verses.start().clone()), &TextRef::Bible(verses.end().clone()))?;
+    Ok(by_unit(rows.iter().filter_map(|row| Some((bible_unit(&row.locus.at)?, MentionSpan::of(row)?)))))
 }
 
-pub fn citation_spans_at(conn: &Connection, paragraph: &ConcordRef) -> Result<Vec<CitationSpan>, SqliteError> {
+pub fn citation_spans_in(conn: &Connection, paragraphs: &RangeInclusive<ConcordRef>) -> Result<BTreeMap<ConcordRef, Vec<CitationSpan>>, SqliteError> {
     let table = format!("{}.cross_refs", Section::Concord.name());
-    Ok(read_cross_refs_from(conn, &table, &TextRef::Concord(paragraph.clone()))?.iter().filter_map(CitationSpan::of).collect())
+    let rows = read_cross_refs_from(conn, &table, &TextRef::Concord(paragraphs.start().clone()), &TextRef::Concord(paragraphs.end().clone()))?;
+    Ok(by_unit(rows.iter().filter_map(|row| Some((concord_unit(&row.from.at)?, CitationSpan::of(row)?)))))
+}
+
+fn by_unit<U: Ord, S>(spans: impl Iterator<Item = (U, S)>) -> BTreeMap<U, Vec<S>> {
+    let mut out: BTreeMap<U, Vec<S>> = BTreeMap::new();
+    for (unit, span) in spans {
+        out.entry(unit).or_default().push(span);
+    }
+    out
+}
+
+fn bible_unit(at: &TextRef) -> Option<VerseRef> {
+    match at {
+        TextRef::Bible(verse) => Some(verse.clone()),
+        TextRef::Concord(_) => None,
+    }
+}
+
+fn concord_unit(at: &TextRef) -> Option<ConcordRef> {
+    match at {
+        TextRef::Concord(paragraph) => Some(paragraph.clone()),
+        TextRef::Bible(_) => None,
+    }
 }
 
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {

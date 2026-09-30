@@ -150,6 +150,26 @@ fn a_bible_locus_with_a_span_round_trips_through_seven_columns() {
 }
 
 #[test]
+fn a_mentions_row_naming_no_kind_of_entity_is_refused_when_a_window_reads_it() {
+    // Arrange
+    let conn = rusqlite::Connection::open_in_memory().unwrap();
+    create_tables(&conn, Section::Core).unwrap();
+    conn.execute(
+        "INSERT INTO mentions (id, ord, locus_corpus, locus_a, locus_b, locus_c, locus_layer, locus_start, locus_end, entity_kind, entity_id, provenance) \
+         VALUES (0, 0, ?1, 0, 1, 1, NULL, NULL, NULL, 9, 'hazor-1', 'test')",
+        [<BibleTag as atlas_graph_types::text::Corpus>::ID],
+    )
+    .unwrap();
+    let genesis_1_1 = VerseRef { book: 0, chapter: 1, verse: 1 };
+
+    // Act
+    let read = atlas_graph::sqlite::serve::mention_spans_in(&conn, &(genesis_1_1.clone()..=genesis_1_1)).map_err(|e| e.0);
+
+    // Assert
+    assert_eq!(read, Err("mentions entity_kind 9 is not 0..3".to_string()));
+}
+
+#[test]
 fn a_justification_with_three_ground_kinds_round_trips_and_an_empty_one_is_null() {
     let conn = rusqlite::Connection::open_in_memory().unwrap();
     create_tables(&conn, Section::Core).unwrap();
@@ -821,6 +841,28 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
         assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
     }
     assert_eq!(snap.version().0, atlas_graph_types::sections::version_root(&g), "SqliteSnapshot::version is the manifest root = the in-memory root");
+}
+
+#[test]
+fn the_sqlite_snapshot_reads_many_nodes_at_once_exactly_as_it_reads_each_one() {
+    // Arrange
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("c2-nodes-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let held: Vec<atlas_graph_types::id::AnyNodeId> = g.nodes.keys().rev().cloned().collect();
+    let absent = atlas_graph_types::id::AnyNodeId { kind: atlas_graph_types::id::NodeKind::Place, raw: "nowhere".into() };
+    let asked: Vec<atlas_graph_types::id::AnyNodeId> = held.iter().cloned().chain([absent, held[0].clone()]).collect();
+    let bytes = |node: Option<atlas_graph_types::node::Node>| node.map(|n| atlas_graph_types::id::ContentAddressed::canonical_bytes(&n));
+
+    // Act
+    let at_once: Vec<Option<Vec<u8>>> = snap.nodes(&asked).into_iter().map(bytes).collect();
+
+    // Assert
+    assert_eq!(at_once, asked.iter().map(|id| bytes(snap.node(id))).collect::<Vec<_>>());
 }
 
 #[test]

@@ -4,8 +4,8 @@ use rusqlite::types::Value;
 use rusqlite::{Connection, Row, Transaction};
 
 use super::super::columns::{
-    at_unit, bible_range_values, col, opt_text_locus_values, read_bible_range, read_opt_text_locus,
-    read_text_locus, text_locus_values, unit_values, JustificationWriter,
+    between_units, bible_range_values, col, opt_text_locus_values, read_bible_range, read_opt_text_locus,
+    read_text_locus, text_locus_values, units_values, JustificationWriter,
 };
 use super::super::SqliteError;
 use super::{justification_row, id_col, insert, int, read_all, read_justification_at, read_where, text, D};
@@ -54,8 +54,8 @@ pub fn read_cross_refs(conn: &Connection) -> Result<Vec<(i64, CrossRef)>, Sqlite
     read_all(conn, "cross_refs", COLS_CROSS_REFS, cross_ref_row)
 }
 
-pub fn read_cross_refs_from(conn: &Connection, table: &str, from: &TextRef) -> Result<Vec<CrossRef>, SqliteError> {
-    let rows = read_where(conn, table, COLS_CROSS_REFS, &at_unit("from"), unit_values(from), cross_ref_row)?;
+pub fn read_cross_refs_from(conn: &Connection, table: &str, first: &TextRef, last: &TextRef) -> Result<Vec<CrossRef>, SqliteError> {
+    let rows = read_where(conn, table, COLS_CROSS_REFS, &between_units("from"), units_values(first, last), cross_ref_row)?;
     Ok(rows.into_iter().map(|(_, row)| row).collect())
 }
 

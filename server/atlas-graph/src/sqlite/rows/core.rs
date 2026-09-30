@@ -15,8 +15,8 @@ use rusqlite::types::Value;
 use rusqlite::{Connection, Row, Transaction};
 
 use super::super::columns::{
-    at_unit, bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
-    read_text_locus, span_values, text_locus_values, unit_values, JustificationWriter,
+    between_units, bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
+    read_text_locus, span_values, text_locus_values, units_values, JustificationWriter,
 };
 use super::super::partition::{node_kind_of_ordinal, node_kind_ordinal};
 use super::super::SqliteError;
@@ -412,8 +412,8 @@ pub fn read_mentions(conn: &Connection) -> Result<Vec<(i64, Mentions)>, SqliteEr
     read_all(conn, "mentions", COLS_MENTIONS, mention_row)
 }
 
-pub fn read_mentions_at(conn: &Connection, unit: &TextRef) -> Result<Vec<Mentions>, SqliteError> {
-    let rows = read_where(conn, "mentions", COLS_MENTIONS, &at_unit("locus"), unit_values(unit), mention_row)?;
+pub fn read_mentions_in(conn: &Connection, first: &TextRef, last: &TextRef) -> Result<Vec<Mentions>, SqliteError> {
+    let rows = read_where(conn, "mentions", COLS_MENTIONS, &between_units("locus"), units_values(first, last), mention_row)?;
     Ok(rows.into_iter().map(|(_, row)| row).collect())
 }
 

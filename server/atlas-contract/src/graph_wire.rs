@@ -1,6 +1,9 @@
 //! The wire form of a node id: a round-trippable string a caller hands back.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
+use atlas_graph_types::node::Node;
 use atlas_graph_types::store::GraphQuery;
 
 use crate::wire::{NodeRef, PositionKind};
@@ -60,19 +63,36 @@ pub fn decode_node_id(s: &str) -> Option<AnyNodeId> {
 }
 
 pub fn describe_node(id: &AnyNodeId, query: &dyn GraphQuery) -> String {
-    match id.kind {
-        NodeKind::TextUnit => {
-            if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
-                return atlas_graph::kjv_adapter::dot_ref(book, chapter, verse);
-            }
-            if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
-                use atlas_graph_types::text::Corpus;
-                return atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph });
-            }
-            "text unit".to_string()
-        }
-        _ => query.node(id).map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string()),
+    text_unit_label(id).unwrap_or_else(|| node_label(id, query.node(id)))
+}
+
+pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> BTreeMap<AnyNodeId, NodeRef> {
+    let read: Vec<AnyNodeId> = ids.iter().filter(|id| text_unit_label(id).is_none()).cloned().collect();
+    let mut nodes: BTreeMap<AnyNodeId, Option<Node>> = read.iter().cloned().zip(query.nodes(&read)).collect();
+    ids.iter()
+        .map(|id| {
+            let label = text_unit_label(id).unwrap_or_else(|| node_label(id, nodes.remove(id).flatten()));
+            (id.clone(), NodeRef { id: encode_node_id(id), kind: PositionKind::Node(id.kind), label })
+        })
+        .collect()
+}
+
+fn text_unit_label(id: &AnyNodeId) -> Option<String> {
+    if id.kind != NodeKind::TextUnit {
+        return None;
     }
+    if let Some((book, chapter, verse)) = atlas_graph::kjv_adapter::decode_text_unit(id) {
+        return Some(atlas_graph::kjv_adapter::dot_ref(book, chapter, verse));
+    }
+    if let Some((part, article, paragraph)) = atlas_graph::concord_adapter::decode_text_unit(id) {
+        use atlas_graph_types::text::Corpus;
+        return Some(atlas_graph_types::text::ConcordTag::cite(&atlas_graph_types::text::ConcordRef { part, article, paragraph }));
+    }
+    Some("text unit".to_string())
+}
+
+fn node_label(id: &AnyNodeId, node: Option<Node>) -> String {
+    node.map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string())
 }
 
 /// A position rendered as the wire reference it becomes. An edge position really

@@ -1,4 +1,6 @@
 use std::cell::OnceCell;
+use std::collections::{BTreeMap, BTreeSet};
+use std::ops::RangeInclusive;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -18,6 +20,7 @@ use atlas_graph::kjv_adapter::verse_node_id;
 use atlas_graph::runs;
 use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
+use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
 use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
@@ -27,7 +30,7 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_position, encode_node_id};
+use crate::graph_wire::{describe_nodes, describe_position, encode_node_id};
 use crate::query::{self, AsGiven, Contract, ContractParams};
 use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
 use crate::wire;
@@ -355,23 +358,7 @@ pub async fn text_window(
         let n = asked.units();
 
         let ids = window::window(&snap, corpus.name(), start, n, dir);
-        let units: Vec<wire::TextUnit> = ids
-            .iter()
-            .filter_map(|id| {
-                let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
-                let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                let paragraph = ConcordRef { part: p, article: a, paragraph: para };
-                Some(citation_anchors(&graph, &snap, &paragraph, &text).map(|anchors| wire::TextUnit {
-                    r#ref: format!("BoC {p}.{a}.{para}"),
-                    locus: wire::TextRef::Concord { part: p, article: a, paragraph: para },
-                    text,
-                    words_of_christ: Vec::new(),
-                    heading: None,
-                    anchors,
-                    edge_summary: unit_edge_summary(&snap, id),
-                }))
-            })
-            .collect::<Result<_, _>>()?;
+        let units = concord_text_units(&graph, &snap, &ids)?;
 
         let unit_at = |pos: usize| {
             snap.reading_window(corpus.name(), pos, 1)
@@ -408,19 +395,7 @@ pub async fn text_window(
     };
 
     let ids = window::window(&snap, corpus.name(), start, n, dir);
-    let units: Vec<wire::TextUnit> = ids
-        .iter()
-        .filter_map(|id| {
-            let (b, c, v) = atlas_graph::kjv_adapter::decode_text_unit(id)?;
-            let text = window::render(&snap, id)?;
-            let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
-            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            let verse = VerseRef { book: b, chapter: c, verse: v };
-            let locus = wire::TextRef::of_verse(&verse);
-            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, &snap));
-            Some(mention_anchors(&graph, &snap, &verse, &text).map(|anchors| wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(&snap, id) }))
-        })
-        .collect::<Result<_, _>>()?;
+    let units = bible_text_units(&graph, &snap, &ids)?;
 
     let unit_at = |pos: usize| {
         snap.reading_window(corpus.name(), pos, 1)
@@ -503,19 +478,82 @@ impl ContractParams for TextWindowQuery {
 const MENTIONS: EdgeKind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
 const CITES: EdgeKind = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
 
-fn mention_anchors(graph: &GraphService, snap: &impl GraphQuery, verse: &VerseRef, text: &str) -> Result<Vec<wire::Anchor>, ApiError> {
-    let spans = graph.mention_spans_at(verse).map_err(|e| ApiError::internal(&format!("the mentions of a verse could not be read: {e}")))?;
-    Ok(anchors_over(text, MENTIONS, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(span.entity.node_id()), snap)))))
+pub fn bible_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
+    let verses: Vec<(&AnyNodeId, VerseRef)> = ids
+        .iter()
+        .filter_map(|id| atlas_graph::kjv_adapter::decode_text_unit(id).map(|(book, chapter, verse)| (id, VerseRef { book, chapter, verse })))
+        .collect();
+    let mut links = mention_links(graph, snap, verses.iter().map(|(_, verse)| verse))?;
+    Ok(verses
+        .into_iter()
+        .filter_map(|(id, verse)| {
+            let text = window::render(snap, id)?;
+            let r#ref = atlas_graph::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse);
+            let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
+            let locus = wire::TextRef::of_verse(&verse);
+            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, snap));
+            let anchors = anchors_over(&text, MENTIONS, links.remove(&verse).unwrap_or_default());
+            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(snap, id) })
+        })
+        .collect())
 }
 
-fn citation_anchors(graph: &GraphService, snap: &impl GraphQuery, paragraph: &ConcordRef, text: &str) -> Result<Vec<wire::Anchor>, ApiError> {
-    let spans = graph.citation_spans_at(paragraph).map_err(|e| ApiError::internal(&format!("the citations of a paragraph could not be read: {e}")))?;
-    Ok(anchors_over(text, CITES, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)), snap)))))
+pub fn concord_text_units(graph: &GraphService, snap: &impl GraphQuery, ids: &[AnyNodeId]) -> Result<Vec<wire::TextUnit>, ApiError> {
+    let paragraphs: Vec<(&AnyNodeId, ConcordRef)> = ids
+        .iter()
+        .filter_map(|id| atlas_graph::concord_adapter::decode_text_unit(id).map(|(part, article, paragraph)| (id, ConcordRef { part, article, paragraph })))
+        .collect();
+    let mut links = citation_links(graph, snap, paragraphs.iter().map(|(_, paragraph)| paragraph))?;
+    Ok(paragraphs
+        .into_iter()
+        .filter_map(|(id, paragraph)| {
+            let text = window::render_layer(snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
+            let anchors = anchors_over(&text, CITES, links.remove(&paragraph).unwrap_or_default());
+            let ConcordRef { part, article, paragraph } = paragraph;
+            Some(wire::TextUnit {
+                r#ref: format!("BoC {part}.{article}.{paragraph}"),
+                locus: wire::TextRef::Concord { part, article, paragraph },
+                text,
+                words_of_christ: Vec::new(),
+                heading: None,
+                anchors,
+                edge_summary: unit_edge_summary(snap, id),
+            })
+        })
+        .collect())
 }
 
-fn anchors_over(text: &str, kind: EdgeKind, links: impl Iterator<Item = (TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {
+type Links<U> = BTreeMap<U, Vec<(TokenSpan, wire::NodeRef)>>;
+
+fn mention_links<'a>(graph: &GraphService, snap: &impl GraphQuery, verses: impl Iterator<Item = &'a VerseRef> + Clone) -> Result<Links<VerseRef>, ApiError> {
+    let Some(window) = units_spanned(verses) else { return Ok(Links::new()) };
+    let spans = graph.mention_spans_in(&window).map_err(|e| unreadable_rows("mentions", &e))?;
+    let entities: BTreeSet<AnyNodeId> = spans.values().flatten().map(|span| span.entity.node_id()).collect();
+    let named = describe_nodes(&entities, snap);
+    Ok(spans.into_iter().map(|(verse, spans)| (verse, spans.into_iter().map(|span| (span.words, named[&span.entity.node_id()].clone())).collect())).collect())
+}
+
+fn citation_links<'a>(graph: &GraphService, snap: &impl GraphQuery, paragraphs: impl Iterator<Item = &'a ConcordRef> + Clone) -> Result<Links<ConcordRef>, ApiError> {
+    let Some(window) = units_spanned(paragraphs) else { return Ok(Links::new()) };
+    let spans = graph.citation_spans_in(&window).map_err(|e| unreadable_rows("citations", &e))?;
+    Ok(spans
+        .into_iter()
+        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)), snap))).collect()))
+        .collect())
+}
+
+fn units_spanned<'a, U: Ord + Clone + 'a>(units: impl Iterator<Item = &'a U> + Clone) -> Option<RangeInclusive<U>> {
+    Some(units.clone().min()?.clone()..=units.max()?.clone())
+}
+
+fn unreadable_rows(rows: &str, error: &SqliteError) -> ApiError {
+    ApiError::internal(&format!("the {rows} of a reading window could not be read: {error}"))
+}
+
+fn anchors_over(text: &str, kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {
     let words = tokens::tokenize(text);
     let mut anchors: Vec<wire::Anchor> = links
+        .into_iter()
         .map(|(span, node)| {
             let chars = tokens::chars_of(&span, &words).unwrap_or_else(|| panic!("the words {}..={} of {} lie past the text of the unit they are stored on", span.start, span.end, node.id));
             wire::Anchor { start: chars.start, end: chars.end, kind, node }
@@ -553,6 +591,21 @@ mod tests {
     const GENESIS: u8 = 0;
 
     #[test]
+    fn a_reading_window_whose_anchor_rows_cannot_be_read_is_refused_as_an_internal_error() {
+        // Arrange
+        let unreadable = SqliteError("mentions entity_kind 9 is not 0..3".to_string());
+
+        // Act
+        let refused = unreadable_rows("mentions", &unreadable);
+
+        // Assert
+        assert_eq!(
+            (refused.status, refused.code, refused.message),
+            (StatusCode::INTERNAL_SERVER_ERROR, crate::error::ErrorCode::Internal, "the mentions of a reading window could not be read: mentions entity_kind 9 is not 0..3".to_string())
+        );
+    }
+
+    #[test]
     #[should_panic(expected = "Event:ab_ur attests verses, but the graph holds no such event")]
     fn an_attestation_whose_event_the_graph_cannot_read_is_a_graph_defect_not_an_entry_without_its_account() {
         // Arrange
@@ -570,7 +623,7 @@ mod tests {
         let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: wire::PositionKind::Node(NodeKind::Place), label: "Hazor 1".to_string() };
 
         // Act
-        anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, std::iter::once((past_the_end, hazor)));
+        anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, vec![(past_the_end, hazor)]);
     }
 
     #[test]

@@ -2,6 +2,7 @@
 //! equal the in-memory `Graph`'s -- `assert_answers_match` is the judge -- and it holds one
 //! read-only connection per worker, a query taking the first free one.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -267,6 +268,23 @@ impl GraphQuery for SqliteSnapshot {
             })
         })
         .unwrap_or(None)
+    }
+
+    fn nodes(&self, ids: &[AnyNodeId]) -> Vec<Option<Node>> {
+        let keys: Vec<String> = ids.iter().map(any_node_id_str).collect();
+        let read = self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached("SELECT id, payload FROM all_node WHERE id IN (SELECT value FROM json_each(?1))")?;
+            let asked = serde_json::to_string(&keys).map_err(|e| SqliteError(format!("node ids as a JSON array: {e}")))?;
+            let mut rows = stmt.query([asked])?;
+            let mut held: HashMap<String, Node> = HashMap::new();
+            while let Some(row) = rows.next()? {
+                let payload: Vec<u8> = row.get(1)?;
+                held.insert(row.get(0)?, Node::decode(&payload)?);
+            }
+            Ok(held)
+        })
+        .unwrap_or_default();
+        keys.iter().map(|key| read.get(key).cloned()).collect()
     }
 
     fn derive(&self, pid: &Pid) -> Option<Vec<u8>> {
