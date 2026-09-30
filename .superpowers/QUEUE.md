@@ -51,6 +51,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-16 (server wire): `PositionKind` is `NodeKind` + `Edge`, so every client mapping from a served position is partial.** Closure: FOCUS-1 Task 0 (F1-2) splits the edge position into its own wire shape.
 - **F-17 (server wire): the corpus is absent from `NodeRef`/`NodeCard`,** so the client parses ids to learn it (`HomeSurfaces`). Closure: `corpus` on the wire (a CONTRACT item, FOCUS-2/3).
 - **F-18 (client): `RevealPageSize` restates the server's page clamp.** Closure: the served page size is the one declaration.
+- **F-19 (FOCUS-1, client tests): the atom set was hand-declared in 4 places in ConformanceTests** — CLOSED in FOCUS-1 T6 (derived by reflection).
+- **F-20 (client): `IIntent.Name` is read by nothing outside tests** (rule 4). Closure: delete it across all atoms, or give it a reader.
+- **F-21 (server wire): an edge position is not fetchable via `/api/node`**; only `justified-by` serves edge positions. Closure: serve them only where a Sequence presents them (the Event/narrative batch), never as frontier neighbours.
+- **F-22 (client, T3's table): `Affordance.Arrows` carries no direction.** Closure: `Arrows(ArrowDirection)`.
+- **F-23 (contract): frontier section headings are the edge kind's wire name; no served display label.** Closure: a `label` per edge kind in the vocabulary document (O-BADGE's category).
+- **F-24 (client): `SectionOrder` is read by nothing on the new path** (rule 4). Closure: the view orders by it, or it goes.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
