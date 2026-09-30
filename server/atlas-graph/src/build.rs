@@ -18,6 +18,7 @@ pub struct BuildStats {
     /// The lexicon adapter's own counts, all zero without the corpus.
     pub lexicon: crate::lexicon_adapter::LexiconAdapterStats,
     pub mention_spans: crate::mention_spans::MentionSpanStats,
+    pub concord_citations: crate::citations::CitationStats,
 }
 
 pub fn build_graph_from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<(Graph, BuildStats, EventWorldStats, ChronologyDerivation)> {

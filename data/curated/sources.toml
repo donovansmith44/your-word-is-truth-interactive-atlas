@@ -413,6 +413,14 @@ source = "catechism-mapping"
 confidence = "Derived"
 locator = "Small Catechism / Book of Concord overlap"
 
+# The Book of Concord's own citations of Scripture ("Matt. 5:3"), found in its
+# text by the compiler rather than authored one at a time.
+[[provenance]]
+id = "concord-citations"
+source = "book-of-concord"
+confidence = "Derived"
+locator = "Scripture citations in the Book of Concord's text"
+
 # --- Our Own Curated Work -------------------------------------------------
 # TOTAL-CAPTURE HONESTY (the ATTEST-1 leper lesson): a hand-authored row
 # must say so. Every id below resolves to "Our Own Curated Work", so a row

@@ -553,6 +553,11 @@ const EXTRA_DDL_CONCORD: &str = "
 CREATE TABLE concord_unit (
   node_id TEXT PRIMARY KEY, part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL
 ) WITHOUT ROWID;
+CREATE TABLE concord_token (
+  part INTEGER NOT NULL, article INTEGER NOT NULL, paragraph INTEGER NOT NULL, ord INTEGER NOT NULL,
+  char_start INTEGER NOT NULL, char_end INTEGER NOT NULL,
+  PRIMARY KEY (part, article, paragraph, ord)
+) WITHOUT ROWID;
 ";
 const EXTRA_INDEX_DDL_CONCORD: &str = "
 CREATE UNIQUE INDEX concord_by_ref ON concord_unit (part, article, paragraph);

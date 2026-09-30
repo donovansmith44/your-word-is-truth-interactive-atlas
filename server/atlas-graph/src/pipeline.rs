@@ -183,6 +183,7 @@ impl Pass for NormalizePass {
         crate::polity_adapter::normalize(ctx);
         crate::catechism_adapter::normalize(ctx);
         crate::concord_adapter::normalize(ctx);
+        ctx.stats.concord_citations = crate::citations::cite_scripture(&mut ctx.graph);
         crate::kretzmann_adapter::normalize(ctx);
         crate::person_adapter::normalize(ctx);
         crate::red_letter_adapter::normalize(ctx);

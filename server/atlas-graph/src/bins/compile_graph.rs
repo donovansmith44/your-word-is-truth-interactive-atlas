@@ -162,8 +162,12 @@ fn main() -> Result<()> {
         stats.lexicon.entries, stats.lexicon.occurs, stats.lexicon.tokens_unmatched, stats.lexicon.tokens_without_entry, stats.lexicon.tokens_off_canon
     );
     println!(
-        "atlas-graph-compile: mention spans -- {} located on the words they name, {} place and person mentions left verse-level (no name found on whole words)",
+        "atlas-graph-compile: mention spans -- {} located on the words they name, {} place and person names not found on whole words",
         stats.mention_spans.located, stats.mention_spans.unlocatable
+    );
+    println!(
+        "atlas-graph-compile: Concord citations -- {} cite Scripture from their words; refused {} not on whole words, {} naming a verse the Bible lacks",
+        stats.concord_citations.cited, stats.concord_citations.off_words, stats.concord_citations.no_such_verse
     );
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 

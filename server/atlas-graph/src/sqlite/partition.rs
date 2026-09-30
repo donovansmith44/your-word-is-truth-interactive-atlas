@@ -15,7 +15,7 @@ use atlas_graph_types::node::Node;
 use super::ddl::{has_spine, row_tables_of};
 use super::rows::RowRef;
 use super::SqliteError;
-use crate::sections::{section_of_canon_succession, section_of_contains_bible, section_of_justified_by, section_of_node, Section};
+use crate::sections::{section_of_canon_succession, section_of_contains_bible, section_of_cross_ref, section_of_node, section_of_row, Section};
 
 pub const DIR_FORWARD: i64 = 0;
 pub const DIR_INVERSE: i64 = 1;
@@ -138,7 +138,7 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::Authored => all(f, &g.authored, RowRef::Authored),
             RowFamily::Shown => all(f, &g.shown, RowRef::Shown),
             RowFamily::MapSuccession => all(f, &g.map_succession, RowRef::MapSuccession),
-            RowFamily::CrossRefs => all(f, &g.cross_refs, RowRef::CrossRefs),
+            RowFamily::CrossRefs => split(f, &g.cross_refs, s, section_of_cross_ref, RowRef::CrossRefs),
             RowFamily::SpokenBy => all(f, &g.spoken_by, RowRef::SpokenBy),
             RowFamily::SpokenAt => all(f, &g.spoken_at, RowRef::SpokenAt),
             RowFamily::Quotes => all(f, &g.quotes, RowRef::Quotes),
@@ -152,16 +152,10 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
 /// Edge id -> EVERY row minting it, in `row_edges` order. Two rows CAN mint one id (two tokens of
 /// one lexicon entry in one verse share `(rel, subject, object)`) and each has its own index entry,
 /// so the k-th index entry under an id belongs to the k-th row.
-pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> {
-    let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64, Option<String>)>> = BTreeMap::new();
+pub fn edge_row_map(g: &Graph) -> BTreeMap<EdgeId, Vec<(RowFamily, i64)>> {
+    let mut map: BTreeMap<EdgeId, Vec<(RowFamily, i64)>> = BTreeMap::new();
     for e in g.row_edges() {
-        let id = Graph::edge_id_of(&e);
-        let container = match e.family {
-            RowFamily::ContainsBible => Some(g.contains_bible[e.row_ord].container.0.clone()),
-            RowFamily::CanonSuccession => Some(g.canon_succession[e.row_ord].prior.0.clone()),
-            _ => None,
-        };
-        map.entry(id).or_default().push((e.family, e.row_ord as i64, container));
+        map.entry(Graph::edge_id_of(&e)).or_default().push((e.family, e.row_ord as i64));
     }
     map
 }
@@ -190,7 +184,7 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     }
 
     let map = edge_row_map(g);
-    let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64, Option<String>)>, SqliteError> {
+    let rows_of = |eid: &EdgeId| -> Result<&Vec<(RowFamily, i64)>, SqliteError> {
         map.get(eid).ok_or_else(|| SqliteError(format!("index entry {} names no row (edge_row_map)", eid.0)))
     };
     // Keyed by subject as well as id and direction: a symmetric row's entries sit under BOTH ends,
@@ -198,7 +192,7 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
     let mut seen: BTreeMap<(EdgeId, i64, String), usize> = BTreeMap::new();
     let mut edges: Vec<Vec<EdgeEntryOut>> = vec![Vec::new(); sections.len()];
     let mut place = |subject: &Position, rel: i64, dir: i64, ord: usize, object: &Position, eid: &EdgeId, meta: &EdgeMeta, justified: bool| -> Result<(), SqliteError> {
-        let (fam, row_id, container) = if justified {
+        let (fam, row_id) = if justified {
             // A justified-by entry runs edge -> ground node, so the forward reading has the source
             // edge as subject and the inverse reading has it as object. Either way the row is the
             // first behind that id, since grounds are synthesised per id.
@@ -221,7 +215,7 @@ pub fn partition(g: &Graph) -> Result<Vec<SectionPartition<'_>>, SqliteError> {
             *k += 1;
             row
         };
-        let section = section_of_justified_by(*fam, container.as_deref());
+        let section = section_of_row(g, *fam, *row_id as usize);
         edges[slot(section)].push(EdgeEntryOut {
             subject: subject.clone(),
             rel,

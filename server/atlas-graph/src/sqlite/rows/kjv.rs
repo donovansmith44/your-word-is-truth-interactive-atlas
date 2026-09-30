@@ -1,5 +1,6 @@
 //! The row families of the `kjv` section other than `contains_bible`, which goes through
-//! `core::insert_contains`/`read_contains` over the same DDL.
+//! `core::insert_contains`/`read_contains` over the same DDL. `cross_refs` is also written to the
+//! `concord` section, which holds the Book of Concord's citations of Scripture.
 
 use atlas_graph_types::edge::{CanonSuccession, CrossRef, SpokenAt, SpokenBy};
 use rusqlite::types::Value;

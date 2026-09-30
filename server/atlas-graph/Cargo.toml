@@ -38,6 +38,7 @@ anyhow = "1"
 # so the fidelity law's "expected" side shares no parsing code with the
 # adapter path it's checking. See fidelity.rs's own module doc comment.
 serde_json = "1"
+regex = "1"
 # CONTRACT-1a ruling R23: `heading::Heading` is served verbatim by
 # `GET /api/chapter/{cref}`, so it carries its own schema rather than being
 # restated as a near-twin in the contract crate.

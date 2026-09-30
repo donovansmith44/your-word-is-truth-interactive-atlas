@@ -128,10 +128,9 @@ pub fn load_provenance_families(
     }
     for section in present {
         for family in row_tables_of(*section) {
-            let name: &'static str = family.name();
-            let mut stmt = conn.prepare(&format!("SELECT DISTINCT provenance FROM {}.{}", schema_of(*section), name))?;
+            let mut stmt = conn.prepare(&format!("SELECT DISTINCT provenance FROM {}.{}", schema_of(*section), family.name()))?;
             let ids = stmt.query_map([], |r| r.get::<_, String>(0))?;
-            let set = out.entry(name).or_default();
+            let set = out.entry(crate::provenance::family_key(*family, *section)).or_default();
             for id in ids {
                 set.insert(id?);
             }
@@ -140,6 +139,7 @@ pub fn load_provenance_families(
     for f in RowFamily::ALL {
         out.entry(f.name()).or_default();
     }
+    out.entry(crate::provenance::family::CONCORD_CITATIONS).or_default();
     Ok(out)
 }
 
@@ -163,6 +163,7 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
         cites_dropped_negative_votes: 0,
         lexicon: Default::default(),
         mention_spans: Default::default(),
+        concord_citations: Default::default(),
     };
     let ews = EventWorldStats {
         places: count_kind(conn, NodeKind::Place)?,

@@ -4,12 +4,12 @@
 
 use crate::canon::ids::any_node_id_str;
 use crate::canon::{encode_row_in_family, obj, serialize, str_value, Canon, RowFamily, Value, DOMAIN_PREFIX};
-use crate::edge::{CanonSuccession, Contains, EdgeId, RelationId};
+use crate::edge::{CanonSuccession, Contains, CrossRef, EdgeId, RelationId};
 use crate::graph::Graph;
 use crate::id::ContentHash;
 use crate::node::{Node, NodePayload};
 use crate::sha256::sha256_prefixed_128;
-use crate::text::{BibleTag, ConcordTag, Corpus};
+use crate::text::{BibleTag, ConcordTag, Corpus, TextRef};
 
 /// The five per-corpus sections. `Lexicon` has no inhabitant yet: it exists so the manifest
 /// order below is already the final list.
@@ -92,10 +92,10 @@ pub fn section_of_node(node: &Node) -> Section {
 /// Asking this for a per-row family is a caller error, not a silently wrong answer.
 pub fn section_of_family(f: RowFamily) -> Section {
     match f {
-        RowFamily::ContainsBible | RowFamily::CanonSuccession => {
-            panic!("{f:?} has no per-family section -- it is split by the container each row names")
+        RowFamily::ContainsBible | RowFamily::CanonSuccession | RowFamily::CrossRefs => {
+            panic!("{f:?} has no per-family section -- it is split by what each row names")
         }
-        RowFamily::CrossRefs | RowFamily::SpokenBy | RowFamily::SpokenAt => Section::Kjv,
+        RowFamily::SpokenBy | RowFamily::SpokenAt => Section::Kjv,
         RowFamily::ContainsConcord | RowFamily::Quotes | RowFamily::Confesses => Section::Concord,
         RowFamily::CommentsOn => Section::Kretzmann,
         RowFamily::Attests
@@ -130,18 +130,23 @@ pub fn section_of_canon_succession(row: &CanonSuccession) -> Section {
     section_of_container_raw(&row.prior.0)
 }
 
-/// These entries are synthesised from a row's own justification rather than authored, so one
-/// lives in the section of that source row -- through the per-row rule for the families that
-/// need it. The signature stays general so a future source family needs no new function.
-pub fn section_of_justified_by(
-    source_family: RowFamily,
-    source_container_raw: Option<&str>,
-) -> Section {
-    match source_family {
-        RowFamily::ContainsBible | RowFamily::CanonSuccession => section_of_container_raw(
-            source_container_raw
-                .expect("a per-row family's justified-by source carries its container's raw id"),
-        ),
+/// The per-row answer: a citation lives with the text that cites, so the Book of Concord's
+/// citations of Scripture ship with the Book of Concord.
+pub fn section_of_cross_ref(row: &CrossRef) -> Section {
+    match row.from.at {
+        TextRef::Bible(_) => Section::Kjv,
+        TextRef::Concord(_) => Section::Concord,
+    }
+}
+
+/// The section of the row at `row_ord` of `family`: the family's own, or for a family split per
+/// row, the one that row names. A synthesised justified-by entry lives in the section of its
+/// source row, so this answers for it too.
+pub fn section_of_row(g: &Graph, family: RowFamily, row_ord: usize) -> Section {
+    match family {
+        RowFamily::ContainsBible => section_of_contains_bible(&g.contains_bible[row_ord]),
+        RowFamily::CanonSuccession => section_of_canon_succession(&g.canon_succession[row_ord]),
+        RowFamily::CrossRefs => section_of_cross_ref(&g.cross_refs[row_ord]),
         other => section_of_family(other),
     }
 }
@@ -192,7 +197,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::SpokenBy,
             RowFamily::SpokenAt,
         ],
-        Section::Concord => &[RowFamily::ContainsConcord, RowFamily::CanonSuccession, RowFamily::Quotes, RowFamily::Confesses],
+        Section::Concord => &[RowFamily::ContainsConcord, RowFamily::CanonSuccession, RowFamily::CrossRefs, RowFamily::Quotes, RowFamily::Confesses],
         Section::Kretzmann => &[RowFamily::CommentsOn],
         Section::Lexicon => &[RowFamily::Occurs],
     }
@@ -245,7 +250,7 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
             "provenance_entry",
         ],
         Section::Kjv => &["verse", "red_letter_span", "kjv_token"],
-        Section::Concord => &["concord_unit"],
+        Section::Concord => &["concord_unit", "concord_token"],
         Section::Kretzmann => &[],
         Section::Lexicon => &["lexicon_entry", "lexicon_domain", "token"],
     }
@@ -316,7 +321,7 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::SpokenBy => rows!(f, g.spoken_by.iter()),
             RowFamily::SpokenAt => rows!(f, g.spoken_at.iter()),
             RowFamily::Mentions => rows!(f, g.mentions.iter()),
-            RowFamily::CrossRefs => rows!(f, g.cross_refs.iter()),
+            RowFamily::CrossRefs => rows!(f, g.cross_refs.iter().filter(|r| section_of_cross_ref(r) == section)),
             RowFamily::Quotes => rows!(f, g.quotes.iter()),
             RowFamily::Confesses => rows!(f, g.confesses.iter()),
             RowFamily::CorrespondsBible => rows!(f, g.corresponds_bible.iter()),
@@ -392,8 +397,9 @@ pub fn version_root(g: &Graph) -> ContentHash {
 #[cfg(test)]
 mod laws {
     use super::*;
-    use crate::edge::{Analogue, Justification, LocatedAt};
+    use crate::edge::{Analogue, CrossRef, Justification, LocatedAt};
     use crate::id::{AnyNodeId, EventId, NodeKind, PlaceId};
+    use crate::text::{ConcordRef, TextLocus, TextRef, VerseRef};
 
     fn unit(raw: &str, corpus: &'static str) -> Node {
         let mut renderings = crate::text::LayerMap::new();
@@ -457,7 +463,7 @@ mod laws {
     #[test]
     fn extra_tables_follow_the_graph_native_tables_and_move_the_root() {
         assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span", "kjv_token"]);
-        assert_eq!(extra_tables_of(Section::Concord), &["concord_unit"]);
+        assert_eq!(extra_tables_of(Section::Concord), &["concord_unit", "concord_token"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
         assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "lexicon_domain", "token"]);
         assert_eq!(extra_tables_of(Section::Core).len(), 26);
@@ -509,15 +515,64 @@ mod laws {
     #[test]
     fn placement_moved_verbatim_and_every_family_has_one_home() {
         assert_eq!(section_of_family(RowFamily::CommentsOn), Section::Kretzmann);
-        assert_eq!(section_of_justified_by(RowFamily::ContainsBible, Some("bible-chapter-GEN-1")), Section::Kjv);
-        assert_eq!(section_of_justified_by(RowFamily::ContainsBible, Some("passage-creation")), Section::Core);
         assert_eq!(row_tables_of(Section::Lexicon), &[RowFamily::Occurs]);
         assert_eq!(section_of_family(RowFamily::Occurs), Section::Lexicon);
         assert_eq!(Section::SHIPPED.len(), 5);
         assert_eq!(Section::SHIPPED.to_vec(), Section::MANIFEST_ORDER.to_vec());
         for f in RowFamily::ALL {
             let homes = Section::SHIPPED.iter().filter(|s| row_tables_of(**s).contains(&f)).count();
-            assert_eq!(homes, if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession) { 2 } else { 1 }, "{f:?}");
+            assert_eq!(homes, if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession | RowFamily::CrossRefs) { 2 } else { 1 }, "{f:?}");
+        }
+    }
+
+    #[test]
+    fn a_citation_lives_in_the_section_of_the_text_that_cites() {
+        // Arrange
+        let (bible, concord) = (citation(TextRef::Bible(VERSE)), citation(TextRef::Concord(PARAGRAPH)));
+        // Act
+        let sections = [section_of_cross_ref(&bible), section_of_cross_ref(&concord)];
+        // Assert
+        assert_eq!(sections, [Section::Kjv, Section::Concord]);
+    }
+
+    #[test]
+    fn a_citation_is_dumped_with_the_section_of_the_text_that_cites() {
+        // Arrange
+        let mut g = Graph::default();
+        g.cross_refs = vec![citation(TextRef::Bible(VERSE)), citation(TextRef::Concord(PARAGRAPH))];
+        // Act
+        let dumps = [Section::Kjv, Section::Concord].map(|s| String::from_utf8(logical_dump_section(&g, s)).unwrap());
+        // Assert
+        assert_eq!(
+            dumps,
+            [
+                concat!(
+                    "cross_refs\t",
+                    r#"{"family":"cross_refs","row":{"from":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    "\n"
+                )
+                .to_string(),
+                concat!(
+                    "cross_refs\t",
+                    r#"{"family":"cross_refs","row":{"from":{"at":{"Concord":{"article":2,"paragraph":3,"part":7}},"span":null},"provenance":"p","target_display":"GEN.1.1","to":{"at":{"Bible":{"book":0,"chapter":1,"verse":1}},"span":null},"to_last":null,"votes":0}}"#,
+                    "\n"
+                )
+                .to_string(),
+            ]
+        );
+    }
+
+    const VERSE: VerseRef = VerseRef { book: 0, chapter: 1, verse: 1 };
+    const PARAGRAPH: ConcordRef = ConcordRef { part: 7, article: 2, paragraph: 3 };
+
+    fn citation(from: TextRef) -> CrossRef {
+        CrossRef {
+            from: TextLocus { at: from, span: None },
+            to: TextLocus { at: TextRef::Bible(VERSE), span: None },
+            to_last: None,
+            target_display: "GEN.1.1".into(),
+            votes: 0,
+            provenance: "p".into(),
         }
     }
 }

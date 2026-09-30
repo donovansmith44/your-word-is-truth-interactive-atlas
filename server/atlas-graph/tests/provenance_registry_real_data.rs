@@ -160,7 +160,8 @@ fn the_sweep_covers_every_provenance_bearing_row_family() {
 #[test]
 fn the_runtime_index_and_the_test_sweep_name_exactly_the_same_families() {
     let g = committed_graph();
-    let swept: Vec<&str> = provenance_by_family(g).keys().copied().collect();
+    let mut swept: Vec<&str> = provenance_by_family(g).keys().copied().chain([atlas_graph::provenance::family::CONCORD_CITATIONS]).collect();
+    swept.sort();
     let indexed: Vec<&str> = atlas_graph::provenance::ProvenanceIndex::build(g).families();
     assert_eq!(
         swept, indexed,
@@ -182,6 +183,7 @@ const PINNED_INVENTORY: &[&str] = &[
     "chronology-anchors",
     "chronology-derivation",
     "concord",
+    "concord-citations",
     "concord-sc-overlap",
     "curated",
     "curated-books",
@@ -223,7 +225,7 @@ fn the_per_family_provenance_map_of_the_real_artifact_is_pinned() {
 
     assert_eq!(actual, expected, "the artifact's per-family provenance map changed");
 
-    assert_eq!(actual["cross_refs"], vec!["openbible.info-cross-references".to_string()]);
+    assert_eq!(actual["cross_refs"], vec!["concord-citations".to_string(), "openbible.info-cross-references".to_string()]);
     assert_eq!(actual["catechism"], vec!["concord-sc-overlap".to_string(), "curated-catechism".to_string()]);
 }
 
@@ -238,7 +240,7 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ("contains_bible", &["kjv"]),
     ("contains_concord", &["concord"]),
     ("corresponds_bible", &[]),
-    ("cross_refs", &["openbible.info-cross-references"]),
+    ("cross_refs", &["concord-citations", "openbible.info-cross-references"]),
     ("dated_by", &["chronology-derivation"]),
     ("fulfills", &["curated-fulfillment"]),
     ("located_at", &["curated", "theographic"]),

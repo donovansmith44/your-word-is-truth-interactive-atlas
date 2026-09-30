@@ -6,6 +6,7 @@ pub mod bible_container_adapter;
 pub mod brainfuel_adapter;
 pub mod build;
 pub mod catechism_adapter;
+pub mod citations;
 pub mod concord_adapter;
 pub mod corpus_root;
 pub mod description_adapter;

@@ -7,12 +7,12 @@ use common::committed_graph;
 use atlas_etl::concord::DOCUMENTS;
 use atlas_graph::corpus_root::corpus_root_id;
 use atlas_graph::sections::{
-    justified_by_source_family, section_of_canon_succession, section_of_contains_bible, section_of_family,
-    section_of_node, section_of_justified_by, Section,
+    justified_by_source_family, section_of_canon_succession, section_of_contains_bible, section_of_cross_ref,
+    section_of_family, section_of_node, Section,
 };
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::chrono::ChronoTarget;
-use atlas_graph_types::edge::{at, entry_id, CanonSuccession, EdgeId, Namesake, RelationId};
+use atlas_graph_types::edge::{at, entry_id, CanonSuccession, CrossRef, EdgeId, Namesake, RelationId};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
@@ -164,8 +164,8 @@ enum Expect {
 fn every_row_of_every_family_maps_to_a_section() {
     let g = committed_graph();
 
-    let per_row_families = [RowFamily::ContainsBible, RowFamily::CanonSuccession];
-    let kjv_families = [RowFamily::CrossRefs, RowFamily::SpokenBy, RowFamily::SpokenAt];
+    let per_row_families = [RowFamily::ContainsBible, RowFamily::CanonSuccession, RowFamily::CrossRefs];
+    let kjv_families = [RowFamily::SpokenBy, RowFamily::SpokenAt];
     let core_families = [
         RowFamily::Attests,
         RowFamily::Succession,
@@ -240,6 +240,16 @@ fn every_row_of_every_family_maps_to_a_section() {
         .collect();
     assert_eq!(filed_away_from_their_prior, Vec::<&CanonSuccession>::new(), "a step lives in the section of the container it steps from");
 
+    let cross_ref_sections = sections_of(&g.cross_refs, section_of_cross_ref);
+    println!("CONTRACT-2 CROSS_REFS SECTIONS: {cross_ref_sections:?}");
+    assert_eq!(cross_ref_sections.keys().copied().collect::<Vec<_>>(), vec![Section::Kjv, Section::Concord], "the Bible's cross references in Kjv; the Book of Concord's citations in Concord");
+    let filed_away_from_the_text_that_cites: Vec<&CrossRef> = g
+        .cross_refs
+        .iter()
+        .filter(|row| g.nodes.get(&text_node_id(&row.from)).is_some_and(|node| section_of_node(node) != section_of_cross_ref(row)))
+        .collect();
+    assert_eq!(filed_away_from_the_text_that_cites, Vec::<&CrossRef>::new(), "a citation lives in the section of the text that cites");
+
     let mut swept: Vec<(RowFamily, Expect, Sweep)> = Vec::new();
     macro_rules! subject {
         ($field:ident, $family:expr, $expect:expr, $of:expr) => {
@@ -281,7 +291,6 @@ fn every_row_of_every_family_maps_to_a_section() {
     subject!(mentions, RowFamily::Mentions, Expect::Elsewhere(&[Section::Kjv]), |r| {
         text_node_id(&r.locus)
     });
-    subject!(cross_refs, RowFamily::CrossRefs, Expect::SameAsFamily, |r| text_node_id(&r.from));
     subject!(quotes, RowFamily::Quotes, Expect::NoRows, |r| text_node_id(&r.quoting));
     subject!(confesses, RowFamily::Confesses, Expect::NoRows, |r| {
         concord_ref_node_id(&r.confessing.unit)
@@ -346,15 +355,7 @@ fn every_row_of_every_family_maps_to_a_section() {
             }
         }
 
-        let expected_missing = usize::from(*family == RowFamily::CrossRefs);
-        assert_eq!(
-            s.missing,
-            expected_missing,
-            "{}: subjects with no node (cross_refs carries exactly the one known \
-             xref_adapter data-quality gap, bible/63.1.15; every other family carries none) -- \
-             a different count means this pre-existing issue changed shape",
-            family.name()
-        );
+        assert_eq!(s.missing, 0, "{}: every subject is a node", family.name());
     }
 
     let missing_from: Vec<String> = g
@@ -371,14 +372,14 @@ fn every_row_of_every_family_maps_to_a_section() {
 fn justified_by_entries_share_their_source_rows_section() {
     let g = committed_graph();
 
-    let mut from_rows: BTreeMap<EdgeId, (RowFamily, Option<String>)> = BTreeMap::new();
+    let mut from_rows: BTreeMap<EdgeId, RowFamily> = BTreeMap::new();
     let mut grounded: BTreeSet<EdgeId> = BTreeSet::new();
 
     let mut record = |edge_id: EdgeId, family: RowFamily, has_grounds: bool| {
         if has_grounds {
             grounded.insert(edge_id.clone());
         }
-        if let Some((seen, _)) = from_rows.get(&edge_id) {
+        if let Some(seen) = from_rows.get(&edge_id) {
             assert_eq!(
                 *seen,
                 family,
@@ -386,7 +387,7 @@ fn justified_by_entries_share_their_source_rows_section() {
                  object) key is not unique across families"
             );
         }
-        from_rows.insert(edge_id, (family, None));
+        from_rows.insert(edge_id, family);
     };
 
     for row in &g.dated_by {
@@ -449,23 +450,13 @@ fn justified_by_entries_share_their_source_rows_section() {
                 panic!("a justified-by SUBJECT must be an edge position, found a node: {pos:?}")
             }
         };
-        let (family, container_raw) = from_rows.get(edge_id).unwrap_or_else(|| {
+        let family = from_rows.get(edge_id).unwrap_or_else(|| {
             panic!(
                 "justified-by subject `{edge_id:?}` is not the edge id of any dated_by / \
                  fulfills / typology / named_after row"
             )
         });
-        let section = section_of_justified_by(*family, container_raw.as_deref());
-        let row_section = match *family {
-            RowFamily::ContainsBible => unreachable!("no ContainsBible justified-by source today"),
-            other => section_of_family(other),
-        };
-        assert_eq!(
-            section, row_section,
-            "a justified-by entry's section must equal its source ROW's own section \
-             (row family {})",
-            family.name()
-        );
+        let section = section_of_family(*family);
         assert_eq!(
             justified_by_source_family(edge_id),
             Some(*family),

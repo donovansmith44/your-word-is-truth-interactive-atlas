@@ -2,7 +2,7 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use common::{committed_graph, CORPUS_ROOTS, MAPS};
+use common::{committed_graph, CONCORD_CITATIONS, CORPUS_ROOTS, MAPS};
 
 use atlas_graph_types::canon::ids::{parse_position, position_str};
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily};
@@ -179,7 +179,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::SpokenBy, 470),
         (RowFamily::SpokenAt, 6_381),
         (RowFamily::Mentions, 41_548),
-        (RowFamily::CrossRefs, 343_558),
+        (RowFamily::CrossRefs, 343_558 + CONCORD_CITATIONS),
         (RowFamily::Quotes, 0),
         (RowFamily::Confesses, 0),
         (RowFamily::CorrespondsBible, 0),
@@ -196,8 +196,8 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        923_139 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS,
-        "the committed graph carries exactly 923,139 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps"
+        923_139 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
+        "the committed graph carries exactly 923,139 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
     );
 
     assert_eq!(

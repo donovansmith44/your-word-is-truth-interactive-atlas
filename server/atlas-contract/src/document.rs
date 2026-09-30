@@ -53,13 +53,14 @@ pub struct RenderedDocument {
     pub contents: String,
 }
 
-pub const GENERATED_DOCUMENTS: [GeneratedDocument; 6] = [
+pub const GENERATED_DOCUMENTS: [GeneratedDocument; 7] = [
     GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
     GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },
     GeneratedDocument { path: "atlas-graph-contract/fixtures/graph-vocabulary.json", render: graph_vocabulary_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/year-labels.json", render: year_labels_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/attestation-runs.json", render: attestation_runs_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/mention-spans.json", render: mention_spans_json },
+    GeneratedDocument { path: "atlas-query-contract/vectors/citation-grammar.json", render: citation_grammar_json },
 ];
 
 pub fn generated_files() -> Vec<RenderedDocument> {
@@ -368,6 +369,87 @@ const MENTION_CASES: [MentionCase; 13] = [
         persons: &[NamedEntity { id: "sheba_1", name: "Sheba" }],
         mentions: &[FoundMention { start: 13, end: 18, kind: MentionKind::Place, id: "sheba" }],
     },
+];
+
+/// Where a citation of Scripture is found inside a text: each case's text and the citations it holds,
+/// as character ranges and the verses they cite. The grammar's cases come first, then one case for
+/// every name a citation may give a book, each citing that book's first verse. The compiler's scan
+/// replays these.
+pub fn citation_grammar_json() -> String {
+    let named = atlas_graph::citations::book_names().into_iter().map(|(name, book)| {
+        let text = format!("{name} {FIRST}:{FIRST}");
+        json!({
+            "name": format!("a_citation_naming_{}", name.to_lowercase().replace(' ', "_")),
+            "citations": [{ "start": 0, "end": text.chars().count(), "cites": format!("{}.{FIRST}.{FIRST}", book.code()) }],
+            "text": text,
+        })
+    });
+    let cases: Vec<Value> = CITATION_CASES.iter().map(|case| json!(case)).chain(named).collect();
+    serde_json::to_string_pretty(&json!({"cases": cases})).expect("the citation-grammar vectors serialise") + "\n"
+}
+
+/// Every book has a first chapter and a first verse, so a citation of them names a verse whatever
+/// the book.
+const FIRST: u16 = 1;
+
+#[derive(Serialize)]
+struct CitationCase {
+    name: &'static str,
+    text: &'static str,
+    citations: &'static [FoundCitation],
+}
+
+#[derive(Serialize)]
+struct FoundCitation {
+    start: usize,
+    end: usize,
+    cites: &'static str,
+}
+
+const NO_CITATIONS: &[FoundCitation] = &[];
+
+const CITATION_CASES: [CitationCase; 17] = [
+    CitationCase { name: "plain_prose_cites_nothing", text: "We believe, teach, and confess.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "an_abbreviation_its_period_a_chapter_and_a_verse",
+        text: "As Christ says, Matt. 5:3, blessed are the poor.",
+        citations: &[FoundCitation { start: 16, end: 25, cites: "MAT.5.3" }],
+    },
+    CitationCase { name: "a_book_named_in_full", text: "For God so loved the world, John 3:16.", citations: &[FoundCitation { start: 28, end: 37, cites: "JHN.3.16" }] },
+    CitationCase { name: "a_numbered_book", text: "Of the Sacrament, 1 Cor. 11:23.", citations: &[FoundCitation { start: 18, end: 30, cites: "1CO.11.23" }] },
+    CitationCase { name: "a_range_keeps_its_whole_range", text: "Obey the rulers, Rom. 13:1-4.", citations: &[FoundCitation { start: 17, end: 28, cites: "ROM.13.1-4" }] },
+    CitationCase { name: "a_comma_may_part_the_chapter_from_the_verse", text: "Kiss the Son, Ps. 2, 12.", citations: &[FoundCitation { start: 14, end: 23, cites: "PSA.2.12" }] },
+    CitationCase {
+        name: "the_period_after_an_abbreviation_may_be_left_out",
+        text: "He led captivity captive, Eph 4:8.",
+        citations: &[FoundCitation { start: 26, end: 33, cites: "EPH.4.8" }],
+    },
+    CitationCase {
+        name: "a_longer_name_wins_over_the_shorter_it_begins_with",
+        text: "Charity suffereth long, 1 Corinthians 13:4.",
+        citations: &[FoundCitation { start: 24, end: 42, cites: "1CO.13.4" }],
+    },
+    CitationCase { name: "an_ambiguous_abbreviation_cites_nothing", text: "Paul planted, Cor. 3:6; have this mind, Phil. 2:5.", citations: NO_CITATIONS },
+    CitationCase { name: "an_unlisted_abbreviation_cites_nothing", text: "Woe unto him that striveth, Is. 45:9.", citations: NO_CITATIONS },
+    CitationCase { name: "a_name_inside_a_longer_word_cites_nothing", text: "Regen. 1:1 is no book.", citations: NO_CITATIONS },
+    CitationCase { name: "names_are_matched_in_their_own_case", text: "As it is written, matt. 5:3.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "two_citations_in_one_text_are_both_found",
+        text: "Gal. 1:8 and Matt. 7:15 warn us.",
+        citations: &[FoundCitation { start: 0, end: 8, cites: "GAL.1.8" }, FoundCitation { start: 13, end: 23, cites: "MAT.7.15" }],
+    },
+    CitationCase { name: "a_range_that_runs_backward_cites_nothing", text: "See Matt. 5:9-3.", citations: NO_CITATIONS },
+    CitationCase {
+        name: "a_letter_after_the_verse_is_left_outside_the_citation",
+        text: "Love is the fulfilling, Rom. 13:8f.",
+        citations: &[FoundCitation { start: 24, end: 33, cites: "ROM.13.8" }],
+    },
+    CitationCase {
+        name: "chapters_and_verses_run_to_three_digits",
+        text: "Thy word is a lamp, Ps. 119:105.",
+        citations: &[FoundCitation { start: 20, end: 31, cites: "PSA.119.105" }],
+    },
+    CitationCase { name: "offsets_count_characters_not_bytes", text: "Christ’s own word, John 3:16.", citations: &[FoundCitation { start: 19, end: 28, cites: "JHN.3.16" }] },
 ];
 
 #[cfg(test)]

@@ -4,7 +4,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::graph::Graph;
+use atlas_graph_types::sections::{section_of_cross_ref, Section};
 
 /// One row family's name, spelled as the `Graph` field name verbatim so a reader can check a call
 /// site against the struct. Only the families a wire surface cites are named here.
@@ -14,6 +16,18 @@ pub mod family {
     pub const ATTESTS: &str = "attests";
     pub const MENTIONS: &str = "mentions";
     pub const ANALOGUE: &str = "analogue";
+    /// The `cross_refs` rows the Book of Concord's section holds: its citations of Scripture.
+    pub const CONCORD_CITATIONS: &str = "concord_citations";
+}
+
+/// The key a row's provenance is filed under: its family's name, except that the Book of Concord's
+/// citations of Scripture are kept apart from the Bible's cross references, so a verse's cross
+/// references are attributed to the sources of those rows alone.
+pub fn family_key(row_family: RowFamily, section: Section) -> &'static str {
+    match (row_family, section) {
+        (RowFamily::CrossRefs, Section::Concord) => family::CONCORD_CITATIONS,
+        _ => row_family.name(),
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -48,7 +62,12 @@ impl ProvenanceIndex {
         sweep!("spoken_by", spoken_by);
         sweep!("spoken_at", spoken_at);
         sweep!(family::MENTIONS, mentions);
-        sweep!(family::CROSS_REFS, cross_refs);
+        for section in [Section::Kjv, Section::Concord] {
+            by_family.entry(family_key(RowFamily::CrossRefs, section)).or_default();
+        }
+        for row in &g.cross_refs {
+            by_family.entry(family_key(RowFamily::CrossRefs, section_of_cross_ref(row))).or_default().insert(row.provenance.clone());
+        }
         sweep!("quotes", quotes);
         sweep!("confesses", confesses);
         sweep!("corresponds_bible", corresponds_bible);
@@ -109,5 +128,28 @@ mod tests {
         let ix = ProvenanceIndex::build(&g);
         assert_eq!(ix.by_family(family::CROSS_REFS), vec!["openbible.info-cross-references".to_string()]);
         assert!(ix.by_family("no-such-family").is_empty());
+    }
+
+    #[test]
+    fn the_book_of_concords_citations_are_attributed_apart_from_the_bibles_cross_references() {
+        // Arrange
+        let mut g = Graph::default();
+        let concord = atlas_graph_types::text::TextLocus { at: atlas_graph_types::text::TextRef::Concord(atlas_graph_types::text::ConcordRef { part: 3, article: 1, paragraph: 1 }), span: None };
+        let cites = |from: atlas_graph_types::text::TextLocus, provenance: &str| atlas_graph_types::edge::CrossRef {
+            from,
+            to: locus(),
+            to_last: None,
+            target_display: "MAT.8.3".to_string(),
+            votes: 0,
+            provenance: provenance.into(),
+        };
+        g.cross_refs = vec![cites(locus(), "openbible.info-cross-references"), cites(concord, "concord-citations")];
+        // Act
+        let ix = ProvenanceIndex::build(&g);
+        // Assert
+        assert_eq!(
+            (ix.by_family(family::CROSS_REFS), ix.by_family(family::CONCORD_CITATIONS)),
+            (vec!["openbible.info-cross-references".to_string()], vec!["concord-citations".to_string()])
+        );
     }
 }

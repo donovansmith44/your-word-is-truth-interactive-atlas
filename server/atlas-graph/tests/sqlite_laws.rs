@@ -96,7 +96,7 @@ fn every_section_schema_creates_in_memory_and_lists_its_tables() {
     for f in RowFamily::ALL {
         assert_eq!(
             homes.get(&f).copied().unwrap_or(0),
-            if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession) { 2 } else { 1 },
+            if matches!(f, RowFamily::ContainsBible | RowFamily::CanonSuccession | RowFamily::CrossRefs) { 2 } else { 1 },
             "{f:?}"
         );
     }
@@ -376,6 +376,14 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         votes: 7,
         provenance: "openbible-xrefs".into(),
     });
+    g.cross_refs.push(CrossRef {
+        from: TextLocus { at: TextRef::Concord(ConcordRef { part: 1, article: 1, paragraph: 1 }), span: Some(TokenSpan::new(TranslationId("bente-dau".into()), 0, 0).unwrap()) },
+        to: tl(1, 1, 1),
+        to_last: Some(tl(1, 1, 2)),
+        target_display: "GEN.1.1-2".into(),
+        votes: 0,
+        provenance: "concord-citations".into(),
+    });
     g.quotes.push(Quotes { quoting: tl(40, 4, 4), quoted: blr((5, 8, 3), (5, 8, 3)), provenance: "curated/quotes".into() });
     g.confesses.push(Confesses {
         confessing: cl(1, 2, 3),
@@ -426,7 +434,7 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     for n in [
         node(NodeKind::TextUnit, "bible/1.1.1", unit("bible", "kjv", "In the beginning")),
         node(NodeKind::TextUnit, "bible/1.1.2", unit("bible", "kjv", "And the earth")),
-        node(NodeKind::TextUnit, "concord/1.1.1", unit("concord", "en", "We believe")),
+        node(NodeKind::TextUnit, "concord/1.1.1", unit("concord", "bente-dau", "We believe")),
         node(NodeKind::Container, "passage-creation", NodePayload::Container { title: "Creation".into() }),
         node(NodeKind::Container, "bible-book-GEN", NodePayload::Container { title: "Genesis".into() }),
         node(NodeKind::Container, "bible-chapter-GEN-1", NodePayload::Container { title: "Genesis 1".into() }),
@@ -618,9 +626,8 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     for p in &parts {
         for e in &p.edges {
             if e.rel != justified_code {
-                let rows = &map[&e.edge_id];
-                let (_, _, raw) = rows.iter().find(|(fam, ord, _)| (e.row_family, e.row_id) == (*fam, *ord)).unwrap_or_else(|| panic!("entry {:?} names a row that does not mint its id", (e.row_family, e.row_id)));
-                assert_eq!(atlas_graph::sections::section_of_justified_by(e.row_family, raw.as_deref()), p.section);
+                assert!(map[&e.edge_id].contains(&(e.row_family, e.row_id)), "entry {:?} names a row that does not mint its id", (e.row_family, e.row_id));
+                assert_eq!(atlas_graph::sections::section_of_row(&g, e.row_family, e.row_id as usize), p.section);
             } else {
                 saw_justified = true;
                 let end = if e.dir == 0 { &e.subject } else { &e.object };
@@ -628,9 +635,8 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
                     atlas_graph_types::id::Position::Edge(id) => id,
                     other => panic!("justified-by source end must be an edge, got {other:?}"),
                 };
-                let (fam, ord, raw) = &map[source][0];
-                assert_eq!((e.row_family, e.row_id), (*fam, *ord));
-                assert_eq!(atlas_graph::sections::section_of_justified_by(*fam, raw.as_deref()), p.section);
+                assert_eq!((e.row_family, e.row_id), map[source][0]);
+                assert_eq!(atlas_graph::sections::section_of_row(&g, e.row_family, e.row_id as usize), p.section);
             }
         }
     }
@@ -1083,6 +1089,13 @@ fn the_graph_derived_extras_of_the_specimen_round_trip_and_agree_with_the_attach
     assert_eq!(extras.table("polity_era").unwrap().rows.len(), 2);
     assert_eq!(extras.table("era").unwrap().rows.len(), 1);
     assert_eq!(extras.table("concord_unit").unwrap().rows, vec![vec![Col::Text("TextUnit:concord/1.1.1".into()), Col::Int(1), Col::Int(1), Col::Int(1)]]);
+    assert_eq!(
+        extras.table("concord_token").unwrap().rows,
+        vec![
+            vec![Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(0), Col::Int(0), Col::Int(2)],
+            vec![Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(1), Col::Int(3), Col::Int(10)],
+        ]
+    );
 
     extras.attach(&mut g);
     assert_eq!(g.extra_tables["place"], vec![b"{\"canonical\":\"Ur\",\"lat\":30.96,\"lon\":46.1,\"node_id\":\"Place:ur-1\"}".to_vec()]);

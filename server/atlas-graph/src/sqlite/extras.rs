@@ -73,6 +73,12 @@ pub static KJV_TOKEN: TableSpec = TableSpec {
 };
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
+/// The paragraph's own text is the source; a token's offsets are Unicode-scalar, into that text.
+pub static CONCORD_TOKEN: TableSpec = TableSpec {
+    name: "concord_token",
+    columns: &["part", "article", "paragraph", "ord", "char_start", "char_end"],
+    pk: &["part", "article", "paragraph", "ord"],
+};
 pub static LEXICON_ENTRY: TableSpec = TableSpec {
     name: "lexicon_entry",
     columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
@@ -116,7 +122,7 @@ static CORE_SPECS: [&TableSpec; 26] = [
     &super::sidecars::PROVENANCE_ENTRY,
 ];
 static KJV_SPECS: [&TableSpec; 3] = [&VERSE, &RED_LETTER_SPAN, &KJV_TOKEN];
-static CONCORD_SPECS: [&TableSpec; 1] = [&CONCORD_UNIT];
+static CONCORD_SPECS: [&TableSpec; 2] = [&CONCORD_UNIT, &CONCORD_TOKEN];
 static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
 
 pub fn table_specs_of(section: Section) -> &'static [&'static TableSpec] {
@@ -222,7 +228,7 @@ impl Extras {
         red_letter: &HashMap<String, Vec<(usize, usize)>>,
     ) -> Result<Extras, SqliteError> {
         let resolved = &chrono.resolved;
-        let (mut place, mut era, mut polity_era, mut verse, mut kjv_token, mut concord) = (vec![], vec![], vec![], vec![], vec![], vec![]);
+        let (mut place, mut era, mut polity_era, mut verse, mut kjv_token, mut concord, mut concord_token) = (vec![], vec![], vec![], vec![], vec![], vec![], vec![]);
         let (mut lexicon_entry, mut lexicon_domain) = (vec![], vec![]);
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
@@ -262,18 +268,12 @@ impl Extras {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
                         let text = crate::kjv_adapter::kjv_text(n)
                             .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
-                        for t in crate::tokens::tokenize(text) {
-                            kjv_token.push(vec![
-                                Col::Int(b as i64),
-                                Col::Int(c as i64),
-                                Col::Int(v as i64),
-                                Col::Int(t.ord as i64),
-                                Col::Int(t.char_start as i64),
-                                Col::Int(t.char_end as i64),
-                            ]);
-                        }
+                        kjv_token.extend(token_rows([b as i64, c as i64, v as i64], text));
                         verse.push(vec![Col::Text(id), Col::Int(b as i64), Col::Int(c as i64), Col::Int(v as i64)]);
                     } else if let Some((p, a, par)) = crate::concord_adapter::decode_text_unit(&n.id) {
+                        let text = crate::concord_adapter::concord_text(n)
+                            .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no Concord text to tokenize")))?;
+                        concord_token.extend(token_rows([p as i64, a as i64, par as i64], text));
                         concord.push(vec![Col::Text(id), Col::Int(p as i64), Col::Int(a as i64), Col::Int(par as i64)]);
                     } else {
                         return Err(SqliteError(format!("TextUnit {id} is neither a bible nor a concord unit")));
@@ -335,6 +335,7 @@ impl Extras {
             ExtraTable { spec: &RED_LETTER_SPAN, rows: red },
             ExtraTable { spec: &KJV_TOKEN, rows: kjv_token },
             ExtraTable { spec: &CONCORD_UNIT, rows: concord },
+            ExtraTable { spec: &CONCORD_TOKEN, rows: concord_token },
             ExtraTable { spec: &LEXICON_ENTRY, rows: lexicon_entry },
             ExtraTable { spec: &LEXICON_DOMAIN, rows: lexicon_domain },
         ]);
@@ -364,6 +365,14 @@ impl Extras {
             .collect();
         ExtraTable { spec: &TOKEN, rows }
     }
+}
+
+/// One row per word of a unit's text, keyed by the unit's three numbers, then the word's ordinal.
+fn token_rows(unit: [i64; 3], text: &str) -> impl Iterator<Item = Vec<Col>> + '_ {
+    crate::tokens::tokenize(text).into_iter().map(move |t| {
+        let [a, b, c] = unit;
+        vec![Col::Int(a), Col::Int(b), Col::Int(c), Col::Int(t.ord as i64), Col::Int(t.char_start as i64), Col::Int(t.char_end as i64)]
+    })
 }
 
 fn opt_text(v: &Option<String>) -> Col {
