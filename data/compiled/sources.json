@@ -381,6 +381,12 @@
       "locator": null
     },
     {
+      "id": "curated-parentage",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "parentage.toml"
+    },
+    {
       "id": "curated-books",
       "source": "our-curated-work",
       "confidence": "Curated",
