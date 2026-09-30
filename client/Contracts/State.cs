@@ -63,6 +63,7 @@ public static class AtomNames
     public const string Locus = "locus";
     public const string TimeWindow = "time-window";
     public const string FocusStack = "focus-stack";
+    public const string Exploration = "exploration";
     public const string Selection = "selection";
     public const string ViewArrangement = "view-arrangement";
 }
