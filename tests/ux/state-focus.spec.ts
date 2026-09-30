@@ -42,15 +42,12 @@ test('ST-3/R3: the popover back-stack (now a FocusStack dispatch, not a local St
   await expect(page.getByTestId('popover')).toHaveCount(0);
 });
 
-test('ST-3/Adjudication D: a Back landing is recorded in the trail (G2\'s own shipped rule, preserved through the FocusStack re-plumb)', async ({ page }) => {
-  // The regression door an earlier fix-round draft shipped through
-  // undetected (Adjudication D, S-1 -- CRITICAL): saved-explorations.spec.ts's
-  // own round-trip test never presses Back before saving, so it stayed
-  // green even when Back stopped recording trail entries. This test presses
-  // it: GEN.1.1 -> push "About this book" (GEN) -> Back -> save -- the
-  // hamburger's own saved trail must list THREE nodes (GEN.1.1 -> GEN ->
-  // GEN.1.1), not two, proving the "return to X" entry the Back landing
-  // itself produces is genuinely recorded.
+test('ST-3/Adjudication D, under FOCUS-1 R1/R17: going back follows the dual link -- the breadcrumb collapses the return, the saved trail keeps it', async ({ page }) => {
+  // Back is a traversal of the dual edge (spec §10 R1), so it is a hop the
+  // trail records: GEN.1.1 -> "About this book" (the book container) ->
+  // Back -> save lists THREE nodes (GEN.1.1 -> Genesis -> GEN.1.1). The
+  // popover's breadcrumb, by contrast, collapses a hop followed by its own
+  // return (R17), so after the Back there is nothing left to go back to.
   await page.goto('/read/GEN/1');
   await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
@@ -60,6 +57,7 @@ test('ST-3/Adjudication D: a Back landing is recorded in the trail (G2\'s own sh
 
   await page.getByTestId('popover-breadcrumb-back').click();
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
+  await expect(page.getByTestId('popover-breadcrumb-back')).toHaveCount(0);
 
   await page.getByTestId('popover-save-exploration').click();
   await page.getByTestId('popover-close').click();
@@ -71,9 +69,9 @@ test('ST-3/Adjudication D: a Back landing is recorded in the trail (G2\'s own sh
   await expect(item).toContainText('GEN.1.1 → GEN.1.1'); // auto-name is "first title -> last title" -- both ends are GEN.1.1, proving the trail genuinely returned to it
 
   await item.locator('.hamburger-exploration-summary').click();
-  await expect(page.getByTestId('exploration-node-0')).toContainText('GEN.1.1');
-  await expect(page.getByTestId('exploration-node-1')).toContainText('GEN');
-  await expect(page.getByTestId('exploration-node-2')).toContainText('GEN.1.1'); // the Back-landing entry itself
+  await expect(page.getByTestId('exploration-node-0')).toHaveText('GEN.1.1');
+  await expect(page.getByTestId('exploration-node-1')).toHaveText('Genesis'); // the served label of the book container the hop resolved to
+  await expect(page.getByTestId('exploration-node-2')).toHaveText('GEN.1.1'); // the Back-landing entry itself
 });
 
 test('ST-3/R3: closing the popover and reopening a DIFFERENT node starts a fresh back-stack (never inherits a prior session\'s stack)', async ({ page }) => {
