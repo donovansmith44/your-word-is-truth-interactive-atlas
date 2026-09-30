@@ -47,6 +47,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 ## One machine, shared (PRINCIPLES 19, 20, 23)
 - **Working copies:** every item gets its own worktree, `git -c core.autocrlf=false worktree add -b lane/<agent>/<item-id> ~/w/<item-id> <base>` (map-generator items: `~/w/mg-<item-id>`), and its own target directory, `CARGO_TARGET_DIR=~/mut/<agent>-<item-id>`. Use `cargo -j 4`, prefixed `nice -n 10`. Delete the target directory when the item lands.
 - **Memory is the ceiling.** Pair unlike work: at most one Rust-heavy build per agent at a time, and prefer C# beside Rust.
+- **The mutation run owns the machine.** Only one agent ever runs it (it holds `heavy`, with "mutation" in the lock message). While a `heavy` lock says "mutation", the other agent runs no `cargo`, `dotnet` or Playwright at all; only reading, reviews, analyses and docs. The run uses `scripts/mutants-parallel.sh -n 3` in WSL (not 4: each shard's test process holds a whole real graph, and 8 shards exhausted 31 GB on Windows). Before starting, `free -g` must show at least 18 GB available; otherwise wait. Stryker (C#) runs after the Rust shards finish, not beside them.
 - **Data:** never link `data/raw` or `data/cache` into a worktree; copy them (`cp -r ~/src/bible-atlas/data/raw/. <wt>/data/raw/`, same for `data/cache`). Before any `git worktree remove`, `find <wt> -type l | wc -l` must print 0.
 - **Ports:**
   - Claude uses 8000 and 5000; Codex uses 8100 and 5100 for servers it starts by hand (`atlas-server --port 8100`). The map-generator workbench uses 8090.
