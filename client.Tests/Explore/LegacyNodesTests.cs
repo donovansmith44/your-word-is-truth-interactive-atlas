@@ -9,28 +9,28 @@ public sealed class LegacyNodesTests
     public void A_served_node_reopens_as_the_legacy_node_that_stands_for_it_or_takes_the_generic_path()
     {
         // Arrange
-        var served = new Explorable[]
+        var served = new[]
         {
-            new(NodeKind.TextUnit, "text-unit:GEN.1.1", "GEN.1.1"),
-            new(NodeKind.TextUnit, "text-unit:BoC 7.2.1", "BoC 7.2.1"),
-            new(NodeKind.Container, "Container:bible-chapter-GEN-1", "Genesis 1"),
-            new(NodeKind.Container, "Container:bible-book-GEN", "Genesis"),
-            new(NodeKind.Container, "Container:bible", "The Holy Bible"),
-            new(NodeKind.Container, "Container:concord-art-preface-1", "Preface"),
-            new(NodeKind.Event, "Event:ab_ur", "Terah's family leaves Ur"),
-            new(NodeKind.Narrative, "Narrative:exodus", "The Exodus"),
-            new(NodeKind.Place, "Place:hazor-1", "Hazor 1"),
-            new(NodeKind.Person, "Person:moses_2108", "Moses"),
-            new(NodeKind.Anchor, "Anchor:a", "1000 BC"),
-            new(NodeKind.Era, "Era:e", "Judges"),
-            new(NodeKind.Polity, "Polity:egypt", "Ptolemaic Egypt"),
-            new(NodeKind.CatechismItem, "CatechismItem:commandment-1", "The First Commandment"),
-            new(NodeKind.Source, "Source:kjv", "KJV"),
-            new(NodeKind.Translation, "Translation:kjv", "KJV"),
-            new(NodeKind.PeopleGroup, "PeopleGroup:p", "Philistines"),
-            new(NodeKind.CommentaryItem, "CommentaryItem:kretzmann/0.1.0", "The Creation of Chaos and Light"),
-            new(NodeKind.LexiconEntry, "LexiconEntry:H7225", "H7225"),
-            new(NodeKind.Map, "Map:m", "Canaan"),
+            Resolved.Node(NodeKind.TextUnit, "text-unit:GEN.1.1", "GEN.1.1"),
+            Resolved.Node(NodeKind.TextUnit, "text-unit:BoC 7.2.1", "BoC 7.2.1"),
+            Resolved.Node(NodeKind.Container, "Container:bible-chapter-GEN-1", "Genesis 1"),
+            Resolved.Node(NodeKind.Container, "Container:bible-book-GEN", "Genesis"),
+            Resolved.Node(NodeKind.Container, "Container:bible", "The Holy Bible"),
+            Resolved.Node(NodeKind.Container, "Container:concord-art-preface-1", "Preface"),
+            Resolved.Node(NodeKind.Event, "Event:ab_ur", "Terah's family leaves Ur"),
+            Resolved.Node(NodeKind.Narrative, "Narrative:exodus", "The Exodus"),
+            Resolved.Node(NodeKind.Place, "Place:hazor-1", "Hazor 1"),
+            Resolved.Node(NodeKind.Person, "Person:moses_2108", "Moses"),
+            Resolved.Node(NodeKind.Anchor, "Anchor:a", "1000 BC"),
+            Resolved.Node(NodeKind.Era, "Era:e", "Judges"),
+            Resolved.Node(NodeKind.Polity, "Polity:egypt", "Ptolemaic Egypt"),
+            Resolved.Node(NodeKind.CatechismItem, "CatechismItem:commandment-1", "The First Commandment"),
+            Resolved.Node(NodeKind.Source, "Source:kjv", "KJV"),
+            Resolved.Node(NodeKind.Translation, "Translation:kjv", "KJV"),
+            Resolved.Node(NodeKind.PeopleGroup, "PeopleGroup:p", "Philistines"),
+            Resolved.Node(NodeKind.CommentaryItem, "CommentaryItem:kretzmann/0.1.0", "The Creation of Chaos and Light"),
+            Resolved.Node(NodeKind.LexiconEntry, "LexiconEntry:H7225", "H7225"),
+            Resolved.Node(NodeKind.Map, "Map:m", "Canaan"),
         };
         // Act
         var reopened = served.Select(node => Shape(LegacyNodes.For(node))).ToList();
@@ -67,7 +67,7 @@ public sealed class LegacyNodesTests
         // Arrange
         var everyKind = Enum.GetValues<NodeKind>();
         // Act
-        var answered = everyKind.Select(kind => Record.Exception(() => LegacyNodes.For(new Explorable(kind, "x:y", "y")))).ToList();
+        var answered = everyKind.Select(kind => Record.Exception(() => LegacyNodes.For(Resolved.Node(kind, "x:y", "y")))).ToList();
         // Assert
         Assert.All(answered, exception => Assert.Null(exception));
     }
@@ -90,11 +90,11 @@ public sealed class LegacyNodesTests
             new CommentaryItemNode("kretzmann/0.1.0", "The Creation of Chaos and Light"),
             new AuthorNode("GEN"),
             new TimeAndPlaceNode("hazor-1", "Hazor 1", "ab_ur", TwoThousandBc, "Terah's family leaves Ur", []),
-            new YearNode(TwoThousandBc, new Explorable(NodeKind.Event, "Event:ab_ur", "Terah's family leaves Ur")),
+            new YearNode(TwoThousandBc, ServedGraph.Ref(NodeKind.Event, "Event:ab_ur", "Terah's family leaves Ur")),
             new PolityDeltaNode("egypt", "Egypt", "fall", TwoThousandBc.From, TwoThousandBc.To, null, [], null),
         };
         // Act
-        var reopened = legacy.Select(node => (Shape(LegacyNodes.For(node.Identity)), LegacyNodes.For(node.Identity)?.Identity == node.Identity)).ToList();
+        var reopened = legacy.Select(node => Reopened(Resolved.Node(node.Identity))).ToList();
         // Assert
         Assert.Equal(
             [
@@ -119,6 +119,12 @@ public sealed class LegacyNodesTests
     private const string GenericPath = "generic";
 
     private static string Shape(IExplorable? node) => node is null ? GenericPath : $"{node.GetType().Name} {node.Title}";
+
+    private static (string Shape, bool KeepsItsIdentity) Reopened(Explorable identity)
+    {
+        var again = LegacyNodes.For(identity);
+        return (Shape(again), again is not null && Resolved.Node(again.Identity) == identity);
+    }
 
     private static readonly Year Year2000Bc = new(label: "2000 BC", value: -2000);
     private static readonly TimeRange TwoThousandBc = new(from: Year2000Bc, label: "2000 BC", to: Year2000Bc);

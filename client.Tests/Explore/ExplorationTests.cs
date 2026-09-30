@@ -10,16 +10,16 @@ public sealed class ExplorationTests
     private const string Genesis3Id = "Container:bible-chapter-GEN-3";
     private const string GenesisId = "Container:bible-book-GEN";
 
-    private static readonly Explorable Genesis1 = new(NodeKind.Container, Genesis1Id, "Genesis 1");
-    private static readonly Explorable Genesis2 = new(NodeKind.Container, Genesis2Id, "Genesis 2");
-    private static readonly Explorable Genesis3 = new(NodeKind.Container, Genesis3Id, "Genesis 3");
-    private static readonly Explorable Genesis = new(NodeKind.Container, GenesisId, "Genesis");
+    private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, "Genesis 1");
+    private static readonly Explorable Genesis2 = Resolved.Node(NodeKind.Container, Genesis2Id, "Genesis 2");
+    private static readonly Explorable Genesis3 = Resolved.Node(NodeKind.Container, Genesis3Id, "Genesis 3");
+    private static readonly Explorable Genesis = Resolved.Node(NodeKind.Container, GenesisId, "Genesis");
 
-    private static readonly Link ToGenesis2 = new(EdgeKind.FollowsIn, Genesis2);
-    private static readonly Link ToGenesis3 = new(EdgeKind.FollowsIn, Genesis3);
-    private static readonly Link BackToGenesis1 = new(EdgeKind.PrecedesIn, Genesis1);
-    private static readonly Link BackToGenesis2 = new(EdgeKind.PrecedesIn, Genesis2);
-    private static readonly Link UpToGenesis = new(EdgeKind.MemberOf, Genesis);
+    private static readonly Step ToGenesis2 = new(EdgeKind.FollowsIn, Genesis2);
+    private static readonly Step ToGenesis3 = new(EdgeKind.FollowsIn, Genesis3);
+    private static readonly Step BackToGenesis1 = new(EdgeKind.PrecedesIn, Genesis1);
+    private static readonly Step BackToGenesis2 = new(EdgeKind.PrecedesIn, Genesis2);
+    private static readonly Step UpToGenesis = new(EdgeKind.MemberOf, Genesis);
 
     [Fact]
     public void An_exploration_that_has_gone_nowhere_is_at_its_start()
@@ -35,7 +35,7 @@ public sealed class ExplorationTests
     }
 
     [Fact]
-    public void Following_a_link_appends_it_and_moves_the_current_node()
+    public void Following_a_step_appends_it_and_moves_the_current_node()
     {
         // Arrange
         var exploration = new Exploration(Genesis1, []);
@@ -48,7 +48,7 @@ public sealed class ExplorationTests
     }
 
     [Fact]
-    public void Going_back_follows_the_dual_of_the_last_link_to_the_node_it_left()
+    public void Going_back_follows_the_dual_of_the_last_step_to_the_node_it_left()
     {
         // Arrange
         var exploration = new Exploration(Genesis1, [ToGenesis2]);
@@ -100,7 +100,7 @@ public sealed class ExplorationTests
     }
 
     [Fact]
-    public void The_breadcrumb_collapses_a_link_followed_by_its_dual()
+    public void The_breadcrumb_collapses_a_step_followed_by_its_dual()
     {
         // Arrange
         var exploration = new Exploration(Genesis1, [ToGenesis2, BackToGenesis1, UpToGenesis]);
@@ -116,7 +116,7 @@ public sealed class ExplorationTests
     public void The_breadcrumb_keeps_a_revisit_that_is_not_an_immediate_return()
     {
         // Arrange
-        var downToGenesis1 = new Link(EdgeKind.Contains, Genesis1);
+        var downToGenesis1 = new Step(EdgeKind.Contains, Genesis1);
         var exploration = new Exploration(Genesis1, [ToGenesis2, UpToGenesis, downToGenesis1]);
 
         // Act
@@ -130,7 +130,7 @@ public sealed class ExplorationTests
     public void The_breadcrumb_keeps_a_return_to_the_right_node_under_the_wrong_kind()
     {
         // Arrange
-        var upToGenesis1 = new Link(EdgeKind.MemberOf, Genesis1);
+        var upToGenesis1 = new Step(EdgeKind.MemberOf, Genesis1);
         var exploration = new Exploration(Genesis1, [ToGenesis2, upToGenesis1]);
 
         // Act
@@ -141,10 +141,10 @@ public sealed class ExplorationTests
     }
 
     [Fact]
-    public void Two_explorations_with_the_same_start_and_links_are_equal_whatever_lists_hold_them()
+    public void Two_explorations_with_the_same_start_and_steps_are_equal_whatever_lists_hold_them()
     {
         // Arrange
-        var (a, b) = (new Exploration(Genesis1, [ToGenesis2]), new Exploration(Genesis1, new List<Link> { ToGenesis2 }));
+        var (a, b) = (new Exploration(Genesis1, [ToGenesis2]), new Exploration(Genesis1, new List<Step> { ToGenesis2 }));
 
         // Act
         var (equal, sameHash) = (a == b, a.GetHashCode() == b.GetHashCode());
@@ -154,7 +154,7 @@ public sealed class ExplorationTests
     }
 
     [Fact]
-    public void Two_explorations_with_different_links_are_not_equal()
+    public void Two_explorations_with_different_steps_are_not_equal()
     {
         // Arrange
         var (a, b) = (new Exploration(Genesis1, [ToGenesis2]), new Exploration(Genesis1, []));

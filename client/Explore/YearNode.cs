@@ -11,10 +11,10 @@ public sealed class YearNode : IExplorable
 
     public static YearNode? Of(string placeId, PlaceDate date) =>
         date.Claim.Event is { } attested
-            ? new YearNode(placeId, date, new Explorable(NodeKind.Event, attested.Id, attested.Label))
+            ? new YearNode(placeId, date, attested)
             : null;
 
-    private YearNode(string placeId, PlaceDate date, Explorable attested)
+    private YearNode(string placeId, PlaceDate date, NodeRef attested)
     {
         PlaceId = placeId;
         Label = date.Label;
@@ -25,7 +25,7 @@ public sealed class YearNode : IExplorable
         _isEventTime = false;
     }
 
-    public YearNode(TimeRange when, Explorable @event)
+    public YearNode(TimeRange when, NodeRef @event)
     {
         PlaceId = "";
         Label = "";
@@ -40,7 +40,7 @@ public sealed class YearNode : IExplorable
     public string Label { get; }
     public string Title { get; }
     public string Kind => "Year";
-    public Explorable Identity { get; }
+    public NodeRef Identity { get; }
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

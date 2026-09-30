@@ -8,31 +8,98 @@ public sealed class ExplorableTests
     private const string Genesis1Id = "Container:bible-chapter-GEN-1";
     private const string Genesis1Label = "Genesis 1";
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
+    private const string Genesis2Label = "Genesis 2";
     private const string LegacyGenesis1Label = "GEN.1";
+    private const int VersesInGenesis1 = 31;
+    private const int SecondPageCursor = 20;
 
-    private static readonly Explorable Genesis1 = new(NodeKind.Container, Genesis1Id, Genesis1Label);
+    private static readonly FrontierGroup[] Genesis1Groups =
+    [
+        new(EdgeKind.Contains, VersesInGenesis1),
+        new(EdgeKind.MemberOf, 1),
+        new(EdgeKind.FollowsIn, 1),
+    ];
+
+    private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups);
+    private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);
+    private static readonly NodeRef LegacyGenesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, "GEN.2");
 
     [Fact]
-    public void An_explorable_made_from_a_node_card_carries_its_kind_id_and_label()
+    public void A_resolved_node_carries_the_served_kind_id_and_label()
     {
         // Arrange
-        var card = new NodeCard(
-            book: null, catechism: null, description: null, edgeSummary: [], @event: null,
-            id: Genesis1Id, kind: NodeKind.Container, label: Genesis1Label,
-            person: null, place: null, provenance: "kjv", version: "v");
+        var genesis1 = Genesis1;
 
         // Act
-        var explorable = Explorable.From(card);
+        var identity = (genesis1.Kind, genesis1.Id, genesis1.Label);
 
         // Assert
-        Assert.Equal((NodeKind.Container, Genesis1Id, Genesis1Label), (explorable.Kind, explorable.Id, explorable.Label));
+        Assert.Equal((NodeKind.Container, Genesis1Id, Genesis1Label), identity);
+    }
+
+    [Fact]
+    public void The_frontier_groups_are_the_cards_edge_summary_in_declaration_order()
+    {
+        // Arrange
+        var genesis1 = Genesis1;
+
+        // Act
+        var groups = genesis1.Groups;
+
+        // Assert
+        Assert.Equal(Genesis1Groups, groups);
+    }
+
+    [Fact]
+    public async Task A_frontier_group_pages_to_links_in_server_order()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, SecondPageCursor, Genesis2Ref));
+        var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
+
+        // Act
+        var page = await genesis1.Links(EdgeKind.FollowsIn);
+
+        // Assert
+        Assert.Equal(new Page<Link>([new Link(EdgeKind.FollowsIn, Genesis2Ref)], SecondPageCursor), page);
+    }
+
+    [Fact]
+    public async Task Links_of_a_kind_the_frontier_does_not_declare_are_an_empty_page_without_asking_the_graph()
+    {
+        // Arrange
+        var genesis1 = Genesis1;
+
+        // Act
+        var page = await genesis1.Links(EdgeKind.Mentions);
+
+        // Assert
+        Assert.Equal(new Page<Link>([], null), page);
+    }
+
+    [Fact]
+    public async Task Links_are_paged_by_the_clients_one_default_page_size()
+    {
+        // Arrange
+        var graph = new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.Container, Genesis1Id, Genesis1Label, Genesis1Groups))
+            .Serving(Genesis1Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis2Ref));
+        var genesis1 = Resolved.Node(graph, ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label));
+
+        // Act
+        await genesis1.Links(EdgeKind.FollowsIn);
+
+        // Assert
+        Assert.Equal(IExplorableClient.DefaultPageSize, graph.LimitAsked);
     }
 
     [Fact]
     public void Two_explorables_with_the_same_kind_and_id_are_equal_whatever_their_labels()
     {
         // Arrange
-        var legacyGenesis1 = new Explorable(NodeKind.Container, Genesis1Id, LegacyGenesis1Label);
+        var legacyGenesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, LegacyGenesis1Label);
 
         // Act
         var (equal, sameHash) = (Genesis1 == legacyGenesis1, Genesis1.GetHashCode() == legacyGenesis1.GetHashCode());
@@ -45,7 +112,7 @@ public sealed class ExplorableTests
     public void Two_explorables_with_different_ids_are_not_equal()
     {
         // Arrange
-        var genesis2 = new Explorable(NodeKind.Container, Genesis2Id, Genesis1Label);
+        var genesis2 = Resolved.Node(NodeKind.Container, Genesis2Id, Genesis2Label);
 
         // Act
         var equal = Genesis1 == genesis2;
@@ -58,7 +125,7 @@ public sealed class ExplorableTests
     public void Two_explorables_with_different_kinds_are_not_equal()
     {
         // Arrange
-        var asTextUnit = new Explorable(NodeKind.TextUnit, Genesis1Id, Genesis1Label);
+        var asTextUnit = Resolved.Node(NodeKind.TextUnit, Genesis1Id, Genesis1Label);
 
         // Act
         var equal = Genesis1 == asTextUnit;
@@ -74,35 +141,46 @@ public sealed class ExplorableTests
         Explorable? nothing = null;
 
         // Act
-        var equal = Genesis1.Equals(nothing);
+        var (equalsNothing, isNothing, differsFromNothing) = (Genesis1.Equals(nothing), Genesis1 == nothing, Genesis1 != nothing);
 
         // Assert
-        Assert.False(equal);
+        Assert.Equal((false, false, true), (equalsNothing, isNothing, differsFromNothing));
     }
 
     [Fact]
     public void Two_links_to_the_same_node_under_the_same_kind_are_equal_whatever_the_labels()
     {
         // Arrange
-        var genesis2 = new Explorable(NodeKind.Container, Genesis2Id, "Genesis 2");
-        var legacyGenesis2 = new Explorable(NodeKind.Container, Genesis2Id, "GEN.2");
+        var (a, b) = (new Link(EdgeKind.FollowsIn, Genesis2Ref), new Link(EdgeKind.FollowsIn, LegacyGenesis2Ref));
 
         // Act
-        var (a, b) = (new Link(EdgeKind.FollowsIn, genesis2), new Link(EdgeKind.FollowsIn, legacyGenesis2));
+        var (equal, sameHash) = (a == b, a.GetHashCode() == b.GetHashCode());
 
         // Assert
-        Assert.Equal(a, b);
+        Assert.Equal((true, true), (equal, sameHash));
     }
 
     [Fact]
-    public void Two_pages_with_the_same_links_and_next_cursor_are_equal()
+    public void Two_links_to_the_same_node_under_different_kinds_are_not_equal()
     {
         // Arrange
-        var toGenesis2 = new Link(EdgeKind.FollowsIn, new Explorable(NodeKind.Container, Genesis2Id, "Genesis 2"));
-        const int nextCursor = 20;
+        var (a, b) = (new Link(EdgeKind.FollowsIn, Genesis2Ref), new Link(EdgeKind.Contains, Genesis2Ref));
 
         // Act
-        var (a, b) = (new Page<Link>([toGenesis2], nextCursor), new Page<Link>([toGenesis2], nextCursor));
+        var equal = a == b;
+
+        // Assert
+        Assert.False(equal);
+    }
+
+    [Fact]
+    public void Two_pages_with_the_same_links_and_next_cursor_are_equal_whatever_lists_hold_them()
+    {
+        // Arrange
+        var toGenesis2 = new Link(EdgeKind.FollowsIn, Genesis2Ref);
+
+        // Act
+        var (a, b) = (new Page<Link>([toGenesis2], SecondPageCursor), new Page<Link>(new List<Link> { toGenesis2 }, SecondPageCursor));
 
         // Assert
         Assert.Equal((true, true), (a == b, a.GetHashCode() == b.GetHashCode()));
@@ -112,40 +190,12 @@ public sealed class ExplorableTests
     public void Two_pages_with_different_links_are_not_equal()
     {
         // Arrange
-        var toGenesis2 = new Link(EdgeKind.FollowsIn, new Explorable(NodeKind.Container, Genesis2Id, "Genesis 2"));
+        var toGenesis2 = new Link(EdgeKind.FollowsIn, Genesis2Ref);
 
         // Act
         var (a, b) = (new Page<Link>([toGenesis2], null), new Page<Link>([], null));
 
         // Assert
         Assert.NotEqual(a, b);
-    }
-
-    [Fact]
-    public async Task A_frontier_pages_its_links_by_the_clients_one_default_page_size_when_no_limit_is_given()
-    {
-        // Arrange
-        var frontier = new RecordingFrontier(Genesis1, [new FrontierGroup(EdgeKind.Contains, 31)]);
-
-        // Act
-        await frontier.Links(EdgeKind.Contains);
-
-        // Assert
-        Assert.Equal(IExplorableClient.DefaultPageSize, frontier.LimitAsked);
-    }
-
-    private sealed class RecordingFrontier(Explorable node, IReadOnlyList<FrontierGroup> groups) : IFrontier
-    {
-        public int? LimitAsked { get; private set; }
-
-        public Explorable Node => node;
-
-        public IReadOnlyList<FrontierGroup> Groups => groups;
-
-        public Task<Page<Link>> Links(EdgeKind kind, int? cursor = null, int limit = IExplorableClient.DefaultPageSize)
-        {
-            LimitAsked = limit;
-            return Task.FromResult(new Page<Link>([], null));
-        }
     }
 }

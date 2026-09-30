@@ -18,7 +18,7 @@ public sealed class VerseNode : IExplorable
 
     public string Title => _vref;
     public string Kind => "Verse";
-    public Explorable Identity => new(NodeKind.TextUnit, NodeIds.Of(NodeKind.TextUnit, _vref), _vref);
+    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.TextUnit, _vref), kind: PositionKind.TextUnit, label: _vref);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

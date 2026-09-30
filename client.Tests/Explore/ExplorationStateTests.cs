@@ -11,10 +11,10 @@ public sealed class ExplorationStateTests
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
     private const string PopoverOrigin = "popover";
 
-    private static readonly Explorable Genesis1 = new(NodeKind.Container, Genesis1Id, "Genesis 1");
-    private static readonly Explorable Genesis2 = new(NodeKind.Container, Genesis2Id, "Genesis 2");
-    private static readonly Link ToGenesis2 = new(EdgeKind.FollowsIn, Genesis2);
-    private static readonly Link BackToGenesis1 = new(EdgeKind.PrecedesIn, Genesis1);
+    private static readonly Explorable Genesis1 = Resolved.Node(NodeKind.Container, Genesis1Id, "Genesis 1");
+    private static readonly Explorable Genesis2 = Resolved.Node(NodeKind.Container, Genesis2Id, "Genesis 2");
+    private static readonly Step ToGenesis2 = new(EdgeKind.FollowsIn, Genesis2);
+    private static readonly Step BackToGenesis1 = new(EdgeKind.PrecedesIn, Genesis1);
 
     private static readonly ExplorationState Closed = new ExplorationState.Closed();
     private static readonly ExplorationState AtGenesis1 = new ExplorationState.Open(new Exploration(Genesis1, []));
@@ -60,7 +60,7 @@ public sealed class ExplorationStateTests
     }
 
     [Fact]
-    public void Follow_appends_the_link_and_Back_appends_its_dual()
+    public void Follow_appends_the_step_and_Back_appends_its_dual()
     {
         // Arrange
         var (follow, back) = (new ExplorationIntent.Follow(ToGenesis2), new ExplorationIntent.Back());
@@ -76,7 +76,7 @@ public sealed class ExplorationStateTests
     }
 
     [Fact]
-    public void Following_the_same_link_twice_is_two_hops()
+    public void Following_the_same_step_twice_is_two_hops()
     {
         // Arrange
         var follow = new ExplorationIntent.Follow(ToGenesis2);

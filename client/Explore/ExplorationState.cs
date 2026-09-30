@@ -39,11 +39,11 @@ public abstract record ExplorationIntent : IIntent<ExplorationState>
                 : new ExplorationState.Open(new Exploration(Node, []));
     }
 
-    public sealed record Follow(Link Link, string? Origin = null) : ExplorationIntent(Origin)
+    public sealed record Follow(Step Step, string? Origin = null) : ExplorationIntent(Origin)
     {
         public override string Name => "exploration-follow";
 
-        public override ExplorationState Apply(ExplorationState current) => current.Continue(e => e.Follow(Link));
+        public override ExplorationState Apply(ExplorationState current) => current.Continue(e => e.Follow(Step));
     }
 
     public sealed record Back(string? Origin = null) : ExplorationIntent(Origin)

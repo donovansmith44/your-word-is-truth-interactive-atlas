@@ -12,7 +12,7 @@ public sealed class AuthorNode : IExplorable
 
     public string Title => _bookCode;
     public string Kind => "Author";
-    public Explorable Identity => new BookNode(_bookCode).Identity;
+    public NodeRef Identity => new BookNode(_bookCode).Identity;
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

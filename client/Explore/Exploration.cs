@@ -2,45 +2,47 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
-public sealed record Exploration(Explorable Start, IReadOnlyList<Link> Links)
+public sealed record Step(EdgeKind Kind, Explorable Target);
+
+public sealed record Exploration(Explorable Start, IReadOnlyList<Step> Steps)
 {
-    public Explorable Current => Links.Count == 0 ? Start : Links[^1].Target;
+    public Explorable Current => Steps.Count == 0 ? Start : Steps[^1].Target;
 
-    public IReadOnlyList<Link> Breadcrumb => Links.Aggregate(new List<Link>(), Collapse);
+    public IReadOnlyList<Step> Breadcrumb => Steps.Aggregate(new List<Step>(), Collapse);
 
-    public Exploration Follow(Link link) => this with { Links = [.. Links, link] };
+    public Exploration Follow(Step step) => this with { Steps = [.. Steps, step] };
 
     public Exploration Back()
     {
         var crumbs = Breadcrumb;
         return crumbs.Count == 0
             ? this
-            : Follow(new Link(crumbs[^1].Kind.Dual(), SourceOf(crumbs, crumbs.Count - 1)));
+            : Follow(new Step(crumbs[^1].Kind.Dual(), SourceOf(crumbs, crumbs.Count - 1)));
     }
 
     public bool Equals(Exploration? other) =>
-        other is not null && Start == other.Start && Links.SequenceEqual(other.Links);
+        other is not null && Start == other.Start && Steps.SequenceEqual(other.Steps);
 
-    public override int GetHashCode() => Links.Aggregate(Start.GetHashCode(), HashCode.Combine);
+    public override int GetHashCode() => Steps.Aggregate(Start.GetHashCode(), HashCode.Combine);
 
-    private List<Link> Collapse(List<Link> crumbs, Link link)
+    private List<Step> Collapse(List<Step> crumbs, Step step)
     {
-        if (Retraces(crumbs, link))
+        if (Retraces(crumbs, step))
         {
             crumbs.RemoveAt(crumbs.Count - 1);
         }
         else
         {
-            crumbs.Add(link);
+            crumbs.Add(step);
         }
 
         return crumbs;
     }
 
-    private bool Retraces(List<Link> crumbs, Link link) =>
+    private bool Retraces(List<Step> crumbs, Step step) =>
         crumbs.Count > 0
-        && link.Kind == crumbs[^1].Kind.Dual()
-        && link.Target == SourceOf(crumbs, crumbs.Count - 1);
+        && step.Kind == crumbs[^1].Kind.Dual()
+        && step.Target == SourceOf(crumbs, crumbs.Count - 1);
 
-    private Explorable SourceOf(IReadOnlyList<Link> hops, int index) => index == 0 ? Start : hops[index - 1].Target;
+    private Explorable SourceOf(IReadOnlyList<Step> hops, int index) => index == 0 ? Start : hops[index - 1].Target;
 }
