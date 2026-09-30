@@ -743,7 +743,7 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             return null;
         }
 
-        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveAsync(api, date.Verses)));
+        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveSpansAsync(api, date.Claim.Verses)));
 
         RenderFragment body = builder =>
         {

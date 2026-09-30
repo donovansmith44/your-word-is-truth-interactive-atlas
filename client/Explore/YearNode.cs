@@ -6,7 +6,7 @@ namespace BibleAtlas.Client.Explore;
 public sealed class YearNode : IExplorable
 {
     private readonly TimeRange _when;
-    private readonly IReadOnlyList<string> _verses;
+    private readonly IReadOnlyList<TextSpan> _verses;
     private readonly bool _isEventTime;
 
     public YearNode(string placeId, PlaceDate date)
@@ -15,7 +15,7 @@ public sealed class YearNode : IExplorable
         Label = date.Label;
         Title = $"{date.Label} {date.Claim.Label}";
         _when = date.Claim.When;
-        _verses = date.Verses;
+        _verses = date.Claim.Verses;
         _isEventTime = false;
     }
 
@@ -25,7 +25,7 @@ public sealed class YearNode : IExplorable
         Label = "";
         Title = when.Label;
         _when = when;
-        _verses = new List<string>();
+        _verses = [];
         _isEventTime = true;
     }
 
@@ -37,10 +37,10 @@ public sealed class YearNode : IExplorable
     public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         var list = new List<Exploration>();
-        foreach (var vref in _verses)
+        foreach (var span in _verses)
         {
-            var v = vref;
-            list.Add(new Exploration(v, $"popover-chip-verse-{v}", new ExplorationTarget.Push(new VerseNode(v))));
+            var reference = CanonRef.SpanOf(span);
+            list.Add(new Exploration(reference, $"popover-chip-verse-{reference}", new ExplorationTarget.Push(new VerseNode(CanonRef.VerseOf(CanonRef.FirstVerseOf(span))))));
         }
 
         list.Add(new Exploration("Show this time on the map", "popover-chip-map",

@@ -333,7 +333,7 @@
         {
             var detail = await Atlas.PlaceHistory(Place.Id, WindowFrom, WindowTo);
             _history = detail.History;
-            _dates = PlaceDates.Of((await Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))).Place, detail.History);
+            _dates = PlaceDates.Of((await Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))).Place);
         }
         catch (Exception)
         {

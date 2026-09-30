@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
@@ -11,6 +12,14 @@ internal static class CanonRef
         var m = HeadPattern.Match(target);
         return m.Success ? m.Value : target;
     }
+
+    public static string VerseOf(BibleRef verse) => $"{verse.Book.WireName()}.{verse.Chapter}.{verse.Verse}";
+
+    public static string SpanOf(TextSpan span) => PassageGrouping.SpanRef(VerseOf(FirstVerseOf(span)), VerseOf(LastVerseOf(span)));
+
+    public static BibleRef FirstVerseOf(TextSpan span) => (BibleRef)span.From.Unit;
+
+    public static BibleRef LastVerseOf(TextSpan span) => (BibleRef)span.To.Unit;
 
     public static (string Book, int Chapter, int Verse) ParseVerse(string vref)
     {

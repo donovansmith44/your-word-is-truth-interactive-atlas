@@ -63,9 +63,48 @@ public sealed class ChapterTextTests
         var verses = await VerseTextResolver.ResolveAsync(atlas.Client(), ["GEN.1.1"]);
 
         // Assert
-        Assert.Equivalent(
-            new[] { new PassageListVerse("GEN.1.1", "In the beginning God created the heaven and the earth.", Anchors: [god], WordsOfChrist: []) },
-            verses,
-            strict: true);
+        Assert.Equal(
+            InOrder([new PassageListVerse("GEN.1.1", "In the beginning God created the heaven and the earth.", Anchors: [god], WordsOfChrist: [])]),
+            InOrder(verses));
     }
+
+    [Fact]
+    public async Task A_span_across_chapters_reads_every_verse_from_its_first_through_its_last()
+    {
+        // Arrange
+        var atlas = new StubbedAtlas(new Dictionary<string, string>
+        {
+            ["/api/text?ref=MAT.5&scope=chapter"] = Window(("MAT.5.47", "MAT", 5, 47), ("MAT.5.48", "MAT", 5, 48)),
+            ["/api/text?ref=MAT.6&scope=chapter"] = Window(("MAT.6.1", "MAT", 6, 1), ("MAT.6.2", "MAT", 6, 2)),
+            ["/api/text?ref=MAT.7&scope=chapter"] = Window(("MAT.7.1", "MAT", 7, 1), ("MAT.7.2", "MAT", 7, 2)),
+        });
+        var sermon = new TextSpan(from: new TextPoint(unit: new BibleRef(BookId.MAT, 5, 48), word: null), to: new TextPoint(unit: new BibleRef(BookId.MAT, 7, 1), word: null));
+
+        // Act
+        var verses = await VerseTextResolver.ResolveSpansAsync(atlas.Client(), [sermon]);
+
+        // Assert
+        Assert.Equal(
+            InOrder(new[] { "MAT.5.48", "MAT.6.1", "MAT.6.2", "MAT.7.1" }.Select(vref => new PassageListVerse(vref, "", Anchors: [], WordsOfChrist: []))),
+            InOrder(verses));
+    }
+
+    [Fact]
+    public async Task A_span_whose_text_cannot_be_read_resolves_to_no_verses()
+    {
+        // Arrange
+        var atlas = new StubbedAtlas("not a text window");
+        var zion = new TextSpan(from: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null), to: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null));
+
+        // Act
+        var verses = await VerseTextResolver.ResolveSpansAsync(atlas.Client(), [zion]);
+
+        // Assert
+        Assert.Equal([], verses);
+    }
+
+    private static string InOrder(IEnumerable<PassageListVerse> verses) => System.Text.Json.JsonSerializer.Serialize(verses);
+
+    private static string Window(params (string Ref, string Book, int Chapter, int Verse)[] units) =>
+        $$"""{"version":"v","units":[{{string.Join(",", units.Select(u => $$"""{"ref":"{{u.Ref}}","locus":{"corpus":"bible","book":"{{u.Book}}","chapter":{{u.Chapter}},"verse":{{u.Verse}}},"text":"","words_of_christ":[],"edge_summary":[],"anchors":[]}"""))}}]}""";
 }

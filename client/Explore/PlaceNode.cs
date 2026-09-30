@@ -96,7 +96,7 @@ public sealed class PlaceNode : IExplorable
     public Task<PlacePage> DetailAsync(AtlasClient api) => _detail.Get(() => api.PlaceHistory(_placeId, _windowFrom, _windowTo));
 
     public async Task<IReadOnlyList<PlaceDate>> DatesAsync(AtlasClient api) =>
-        PlaceDates.Of((await CardAsync(api)).Place, (await DetailAsync(api)).History);
+        PlaceDates.Of((await CardAsync(api)).Place);
 
     private Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Place, _placeId)));
 

@@ -28,7 +28,7 @@ public class YearNodeEventTimeTests
         // Arrange
         var established = new Year(label: "1003 BC", value: -1003);
         var claim = new DateClaim(@event: null, label: "c. 1003 BC", note: "traditional", verses: [], when: new TimeRange(from: established, label: "1003 BC", to: established));
-        var node = new YearNode("jerusalem", new PlaceDate("Established", claim, ["2SA.5.6"]));
+        var node = new YearNode("jerusalem", new PlaceDate("Established", claim));
 
         // Act
         var title = (node.Title, node.Kind, node.PlaceId, node.Label);
@@ -36,6 +36,29 @@ public class YearNodeEventTimeTests
         // Assert
         Assert.Equal(("Established c. 1003 BC", "Year", "jerusalem", "Established"), title);
     }
+
+    [Fact]
+    public async Task A_place_dates_chips_are_the_verses_its_claim_rests_on_then_the_map()
+    {
+        // Arrange
+        var established = new Year(label: "1003 BC", value: -1003);
+        var zion = new TextSpan(from: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null), to: new TextPoint(unit: new BibleRef(BookId._2SA, 5, 7), word: null));
+        var claim = new DateClaim(@event: null, label: "c. 1003 BC", note: "traditional", verses: [zion], when: new TimeRange(from: established, label: "1003 BC", to: established));
+        var node = new YearNode("jerusalem", new PlaceDate("Established", claim));
+
+        // Act
+        var chips = (await node.ExploreAsync(new StubbedAtlas("").Client())).Select(chip => (chip.Label, chip.ChipTestId, TargetOf(chip.Target))).ToList();
+
+        // Assert
+        Assert.Equal([("2SA.5.7", "popover-chip-verse-2SA.5.7", "Verse 2SA.5.7"), ("Show this time on the map", "popover-chip-map", "World from=-1003&to=-1003")], chips);
+    }
+
+    private static string TargetOf(ExplorationTarget target) => target switch
+    {
+        ExplorationTarget.Push { Next: VerseNode verse } => $"Verse {verse.Title}",
+        ExplorationTarget.NavigateWorld world => $"World {world.Query}",
+        _ => target.ToString(),
+    };
 
     private static readonly Year Ad30 = new(label: "AD 30", value: 30);
     private static readonly Year Ad31 = new(label: "AD 31", value: 31);

@@ -46,6 +46,36 @@ public static class VerseTextResolver
         return result;
     }
 
+    public static async Task<List<PassageListVerse>> ResolveSpansAsync(AtlasClient api, IReadOnlyList<TextSpan> spans)
+    {
+        var chapters = spans.SelectMany(ChaptersOf).Distinct().ToList();
+        Dictionary<(BookId Book, int Chapter), ChapterText> text;
+        try
+        {
+            var fetched = await Task.WhenAll(chapters.Select(c => api.ChapterText(c.Book.WireName(), c.Chapter)));
+            text = chapters.Zip(fetched).ToDictionary(pair => pair.First, pair => pair.Second);
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+
+        return spans
+            .SelectMany(span => ChaptersOf(span).SelectMany(c => text[c].Units.Where(unit => Covers(span, (BibleRef)unit.Locus))))
+            .Select(PassageListVerse.Of)
+            .ToList();
+    }
+
+    private static IEnumerable<(BookId Book, int Chapter)> ChaptersOf(TextSpan span)
+    {
+        var (first, last) = (CanonRef.FirstVerseOf(span), CanonRef.LastVerseOf(span));
+        return Enumerable.Range(first.Chapter, last.Chapter - first.Chapter + 1).Select(chapter => (first.Book, chapter));
+    }
+
+    private static bool Covers(TextSpan span, BibleRef verse) =>
+        (verse.Chapter, verse.Verse).CompareTo((CanonRef.FirstVerseOf(span).Chapter, CanonRef.FirstVerseOf(span).Verse)) >= 0
+        && (verse.Chapter, verse.Verse).CompareTo((CanonRef.LastVerseOf(span).Chapter, CanonRef.LastVerseOf(span).Verse)) <= 0;
+
     public static async Task<List<PassageListVerse>> ResolveGroupsAsync(AtlasClient api, IReadOnlyList<VerseGroup> groups)
     {
         var countByVref = new Dictionary<string, int>();
