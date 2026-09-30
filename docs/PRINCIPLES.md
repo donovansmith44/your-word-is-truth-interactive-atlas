@@ -205,3 +205,12 @@ wrong; fix the spec.
     from files under `data/`; a curated id that does not resolve fails the
     compile; a law over the server sources catches domain literals. Less
     server special-casing is the direction.
+26a. **Parsers are tools, not the system.** Owner, 2026-09-30: "Parsers and
+    things used to get data in a certain shape are tools, but not part of the
+    system that the users actually care about." The ETL (`atlas-etl`, the
+    compile binary, `scripts/`) is the tool layer: it reads raw sources with
+    their formats and quirks, once, into the artifact. Source-shape knowledge
+    lives there and nowhere else. The served system (`atlas-graph`'s readers,
+    `atlas-contract`, `atlas-server`, the client) reads the artifact and never
+    parses a raw file or scans text. Closure: the tool boundary is a crate
+    boundary; a served crate does not link the ETL.
