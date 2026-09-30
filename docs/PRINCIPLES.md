@@ -158,3 +158,12 @@ wrong; fix the spec.
     the side by separation of concerns, lists every other site in the category,
     and migrates them all under the one abstraction. The red test pins the
     category. A site-local patch is a defect.
+24a. **The review sweep checks rule 24, and offenders are reported, not
+    fixed.** Owner, 2026-09-30. Every review (a task review, a scoped
+    re-review, the whole-branch review) carries a category pass beside the
+    D.R.Y. pass and the bar: for each fix in the diff, was the category named,
+    the failed abstraction named, the side chosen, and every site migrated? A
+    site-local patch is a finding. Boy scout rule: whenever anyone finds code
+    outside the agreed abstractions, or a same-category site the fix did not
+    migrate, they REPORT it as a finding, with the category and the sites, and
+    the owner decides how it is addressed. Nobody fixes an offender on the side.
