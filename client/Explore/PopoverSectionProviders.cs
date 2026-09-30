@@ -347,8 +347,8 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         // more"); targets beyond that keep their full identity and are resolved lazily via
         // ResolveUnits on first reveal, never narrowed to a single-verse preview.
         var spans = xrefs.Select(x => (Xref: x, Span: CanonRef.TargetSpan(x.Target))).ToList();
-        var eagerSpans = spans.Take(EdgeSectionRegistry.Cites.InitialClamp).ToList();
-        var lazySpans = spans.Skip(EdgeSectionRegistry.Cites.InitialClamp).ToList();
+        var eagerSpans = spans.Take(Affordances.Cites.InitialClamp).ToList();
+        var lazySpans = spans.Skip(Affordances.Cites.InitialClamp).ToList();
         var units = await ResolveUnits(api, eagerSpans);
         var registry = await FrontierProvenance.RegistryOrNull(api);
 
@@ -365,7 +365,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
             builder.AddAttribute(seq++, "TrueTotal", xrefs.Count);
             builder.AddAttribute(seq++, "ResolveRemainingAsync", (Func<Task<IReadOnlyList<PassageSourceUnit>>>)(async () => await ResolveUnits(api, lazySpans)));
             builder.AddAttribute(seq++, "RefTestIdPrefix", "xref-item");
-            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? EdgeSectionRegistry.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : EdgeSectionRegistry.Cites.InitialClamp));
+            builder.AddAttribute(seq++, "Cap", ctx.XrefEntryPoint ? Affordances.Cites.InitialClamp : (ctx.OtherContextSectionCount > 0 ? 2 : Affordances.Cites.InitialClamp));
             builder.AddAttribute(seq++, "MoreTestId", "xrefs-more");
             builder.AddAttribute(seq++, "CollapseTestId", "xrefs-collapse");
             builder.AddAttribute(seq++, "RevealNoun", "cross-references");
@@ -1573,7 +1573,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
         EdgePage page;
         try
         {
-            page = await ctx.Graph.Edges(wireId, EdgeSectionRegistry.Mentions.EdgeKind, cursor: null, limit: EdgeSectionRegistry.Mentions.InitialClamp);
+            page = await ctx.Graph.Edges(wireId, EdgeKind.Mentions, cursor: null, limit: Affordances.Mentions.InitialClamp);
         }
         catch (Exception)
         {
@@ -1644,13 +1644,12 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var spec = EdgeSectionRegistry.MentionedIn;
         NodeCard card;
         EdgePage page;
         try
         {
             var cardTask = person.CardAsync(() => ctx.Graph.Card(person.PersonId));
-            var pageTask = ctx.Graph.Edges(person.PersonId, spec.EdgeKind, cursor: null, limit: spec.InitialClamp);
+            var pageTask = ctx.Graph.Edges(person.PersonId, EdgeKind.MentionedIn, cursor: null, limit: Affordances.MentionedIn.InitialClamp);
             await Task.WhenAll(cardTask, pageTask);
             card = cardTask.Result;
             page = pageTask.Result;
@@ -1660,7 +1659,7 @@ public sealed class PersonCardAndMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == spec.EdgeKind)?.Count ?? page.Entries.Count;
+        var total = card.EdgeSummary.FirstOrDefault(s => s.Kind == EdgeKind.MentionedIn)?.Count ?? page.Entries.Count;
 
         RenderFragment body = builder =>
         {
