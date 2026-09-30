@@ -167,3 +167,17 @@ wrong; fix the spec.
     outside the agreed abstractions, or a same-category site the fix did not
     migrate, they REPORT it as a finding, with the category and the sites, and
     the owner decides how it is addressed. Nobody fixes an offender on the side.
+24b. **Closure: offenders cannot exist.** Owner, 2026-09-30: "I want CLOSURE
+    under this principle, meaning that structurally, offenders cannot exist.
+    This is how we guarantee correctness of behavior rather than tracking down
+    countless bugs." A category is closed only when the program's structure
+    makes an offender unwritable, not merely absent: the raw thing (a rows
+    table, a label string, a transport call, a text scan) is private to the
+    module that owns its abstraction, and that abstraction is the one public
+    door; a closed vocabulary is an enum, so a new case fails to compile until
+    every match handles it; a law enumerates the category through the type
+    system (`RowFamily::ALL`, `NodeKind`, the schema's enums, the client's
+    generated types) so a site the type system cannot fence is caught by a
+    test that walks every member. A fix under rule 24 is finished when its
+    category is closed and the report names the guarantee. A FINDING is an
+    open category: its report proposes the closure, and the owner decides.
