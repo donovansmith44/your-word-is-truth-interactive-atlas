@@ -11,7 +11,6 @@ use atlas_graph_types::chrono::PlacementBasis;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::sections::{extra_line_body, Section};
-use atlas_graph_types::text::TranslationId;
 use rusqlite::{Connection, Transaction};
 
 use super::SqliteError;
@@ -259,10 +258,9 @@ impl Extras {
                         lexicon_domain.push(vec![Col::Text(id.clone()), Col::Int(i as i64), Col::Text(code.clone())]);
                     }
                 }
-                NodePayload::TextUnit { renderings, .. } => {
+                NodePayload::TextUnit { .. } => {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
-                        let text = renderings
-                            .get(&TranslationId(crate::kjv_adapter::KJV_TRANSLATION.to_string()))
+                        let text = crate::kjv_adapter::kjv_text(n)
                             .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
                         for t in crate::kjv_tokens::tokenize(text) {
                             kjv_token.push(vec![

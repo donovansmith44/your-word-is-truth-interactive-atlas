@@ -95,6 +95,14 @@ pub fn normalize(ctx: &mut crate::pipeline::BuildCtx) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The verse's KJV text: `None` for a node that is not a text unit or carries no KJV layer.
+pub fn kjv_text(node: &Node) -> Option<&str> {
+    match &node.payload {
+        NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(KJV_TRANSLATION.to_string())).map(String::as_str),
+        _ => None,
+    }
+}
+
 pub fn verse_node(v: &KjvVerse) -> Node {
     let mut renderings: LayerMap = LayerMap::new();
     renderings.insert(TranslationId(KJV_TRANSLATION.to_string()), v.text.clone());

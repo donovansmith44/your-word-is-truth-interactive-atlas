@@ -439,7 +439,7 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(body["provenance"], "theographic-people");
     let summary: Vec<serde_json::Value> = body["edge_summary"].as_array().unwrap().clone();
     let mentioned_in = summary.iter().find(|e| e["kind"] == "mentioned-in").expect("aaron_1 must carry a real mentioned-in frontier");
-    assert_eq!(mentioned_in["count"], 331, "must equal the real Theographic record's own resolved verse_links count");
+    assert_eq!(mentioned_in["count"], 347, "Aaron's 331 resolved verse links: an entry per occurrence of his name, or one for a verse where it is not found");
 
     let (st2, page, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=3").await;
     assert_eq!(st2, 200, "{page}");

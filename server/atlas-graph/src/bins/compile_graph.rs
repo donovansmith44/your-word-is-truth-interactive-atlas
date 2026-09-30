@@ -161,6 +161,10 @@ fn main() -> Result<()> {
         "atlas-graph-compile: LEX-1 -- {} LexiconEntry nodes, {} Occurs rows; skipped {} unmatched tokens, {} without an entry, {} off canon",
         stats.lexicon.entries, stats.lexicon.occurs, stats.lexicon.tokens_unmatched, stats.lexicon.tokens_without_entry, stats.lexicon.tokens_off_canon
     );
+    println!(
+        "atlas-graph-compile: mention spans -- {} located on the words they name, {} place and person mentions left verse-level (no name found on whole words)",
+        stats.mention_spans.located, stats.mention_spans.unlocatable
+    );
     let chronology = atlas_graph::Chronology::from_derivation(chrono);
 
     println!("atlas-graph-compile: ADMISSION -- rebuilding implementation #1 a second time (independent model)...");

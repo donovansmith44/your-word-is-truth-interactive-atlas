@@ -3,6 +3,10 @@
 //! both sides; everything else lies between words. Offsets count Unicode scalars, so the tokens and
 //! the text between them concatenate back to the verse.
 
+use atlas_graph_types::text::{SpanError, TokenSpan, TranslationId};
+
+use crate::kjv_adapter::KJV_TRANSLATION;
+
 /// Continues a word across itself: "Beer–sheba", "wife’s", "Tubal–cain".
 const JOINERS: [char; 4] = ['’', '\'', '–', '-'];
 
@@ -13,6 +17,11 @@ pub struct Token {
     pub ord: u16,
     pub char_start: usize,
     pub char_end: usize,
+}
+
+/// The KJV words `first` through `last` of one verse, both ends included.
+pub fn span(first: u16, last: u16) -> Result<TokenSpan, SpanError> {
+    TokenSpan::new(TranslationId(KJV_TRANSLATION.to_string()), first, last)
 }
 
 pub fn tokenize(verse: &str) -> Vec<Token> {

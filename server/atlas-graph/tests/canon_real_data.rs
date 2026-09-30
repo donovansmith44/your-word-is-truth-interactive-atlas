@@ -178,7 +178,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::CommentsOn, 50_602),
         (RowFamily::SpokenBy, 470),
         (RowFamily::SpokenAt, 6_381),
-        (RowFamily::Mentions, 35_852),
+        (RowFamily::Mentions, 41_548),
         (RowFamily::CrossRefs, 343_558),
         (RowFamily::Quotes, 0),
         (RowFamily::Confesses, 0),
@@ -196,8 +196,8 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        917_443 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS,
-        "the committed graph carries exactly 917,443 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps"
+        923_139 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS,
+        "the committed graph carries exactly 923,139 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps"
     );
 
     assert_eq!(

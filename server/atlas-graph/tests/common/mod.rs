@@ -205,6 +205,10 @@ pub fn data_dir() -> PathBuf {
     repo_dir().join("data")
 }
 
+pub fn contract_vectors_dir() -> PathBuf {
+    repo_dir().join("contracts").join("atlas-query-contract").join("vectors")
+}
+
 pub fn graph_types_src_dir() -> PathBuf {
     repo_dir().join("graph-types").join("src")
 }

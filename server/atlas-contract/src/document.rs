@@ -53,12 +53,13 @@ pub struct RenderedDocument {
     pub contents: String,
 }
 
-pub const GENERATED_DOCUMENTS: [GeneratedDocument; 5] = [
+pub const GENERATED_DOCUMENTS: [GeneratedDocument; 6] = [
     GeneratedDocument { path: "openapi.yaml", render: openapi_yaml },
     GeneratedDocument { path: "atlas-query-contract/aqc.schema.json", render: aqc_schema_json },
     GeneratedDocument { path: "atlas-graph-contract/fixtures/graph-vocabulary.json", render: graph_vocabulary_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/year-labels.json", render: year_labels_json },
     GeneratedDocument { path: "atlas-query-contract/vectors/attestation-runs.json", render: attestation_runs_json },
+    GeneratedDocument { path: "atlas-query-contract/vectors/mention-spans.json", render: mention_spans_json },
 ];
 
 pub fn generated_files() -> Vec<RenderedDocument> {
@@ -240,6 +241,134 @@ struct ClaimVector {
     when: time::TimeRange,
     note: Option<&'static str>,
 }
+
+/// Where the name search finds a place or a person inside a text: each case's names and the mentions
+/// they yield, as character ranges. The compiler's search replays these.
+pub fn mention_spans_json() -> String {
+    serde_json::to_string_pretty(&json!({"cases": MENTION_CASES})).expect("the mention-span vectors serialise") + "\n"
+}
+
+#[derive(Serialize)]
+struct MentionCase {
+    name: &'static str,
+    text: &'static str,
+    places: &'static [NamedEntity],
+    persons: &'static [NamedEntity],
+    mentions: &'static [FoundMention],
+}
+
+#[derive(Serialize)]
+struct NamedEntity {
+    id: &'static str,
+    name: &'static str,
+}
+
+#[derive(Serialize)]
+struct FoundMention {
+    start: usize,
+    end: usize,
+    kind: MentionKind,
+    id: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "lowercase")]
+enum MentionKind {
+    Place,
+    Person,
+}
+
+const NO_NAMES: &[NamedEntity] = &[];
+const NO_MENTIONS: &[FoundMention] = &[];
+const JERUSALEM: NamedEntity = NamedEntity { id: "jerusalem", name: "Jerusalem" };
+
+const MENTION_CASES: [MentionCase; 13] = [
+    MentionCase {
+        name: "a_text_with_no_names_to_search_mentions_nothing",
+        text: "In the beginning God created the heaven.",
+        places: NO_NAMES,
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase { name: "an_empty_text_mentions_nothing", text: "", places: &[JERUSALEM], persons: NO_NAMES, mentions: NO_MENTIONS },
+    MentionCase {
+        name: "a_name_inside_the_text_is_one_mention",
+        text: "Abram dwelt in Hebron by the plain of Mamre.",
+        places: &[NamedEntity { id: "hebron", name: "Hebron" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 15, end: 21, kind: MentionKind::Place, id: "hebron" }],
+    },
+    MentionCase {
+        name: "a_name_at_the_very_start_is_found",
+        text: "Jerusalem was besieged.",
+        places: &[JERUSALEM],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 0, end: 9, kind: MentionKind::Place, id: "jerusalem" }],
+    },
+    MentionCase {
+        name: "a_name_at_the_very_end_is_found",
+        text: "They came to Jericho",
+        places: &[NamedEntity { id: "jericho", name: "Jericho" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 13, end: 20, kind: MentionKind::Place, id: "jericho" }],
+    },
+    MentionCase { name: "differently_cased_text_never_matches", text: "go up to JERUSALEM now.", places: &[JERUSALEM], persons: NO_NAMES, mentions: NO_MENTIONS },
+    MentionCase {
+        name: "exactly_cased_text_still_matches",
+        text: "go up to Jerusalem now.",
+        places: &[JERUSALEM],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 9, end: 18, kind: MentionKind::Place, id: "jerusalem" }],
+    },
+    MentionCase {
+        name: "two_names_apart_are_both_found",
+        text: "From Bethlehem to Jerusalem is a short journey.",
+        places: &[JERUSALEM, NamedEntity { id: "bethlehem", name: "Bethlehem" }],
+        persons: NO_NAMES,
+        mentions: &[
+            FoundMention { start: 5, end: 14, kind: MentionKind::Place, id: "bethlehem" },
+            FoundMention { start: 18, end: 27, kind: MentionKind::Place, id: "jerusalem" },
+        ],
+    },
+    MentionCase {
+        name: "longer_containing_name_wins_over_a_shorter_substring_name",
+        text: "They journeyed to Beersheba and rested.",
+        places: &[NamedEntity { id: "beersheba", name: "Beersheba" }, NamedEntity { id: "sheba", name: "Sheba" }],
+        persons: NO_NAMES,
+        mentions: &[FoundMention { start: 18, end: 27, kind: MentionKind::Place, id: "beersheba" }],
+    },
+    MentionCase {
+        name: "unmatched_place_is_simply_absent_not_an_error",
+        text: "The LORD spake unto Moses.",
+        places: &[NamedEntity { id: "egypt", name: "Egypt" }],
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase {
+        name: "place_name_longer_than_text_never_throws",
+        text: "Ur",
+        places: &[NamedEntity { id: "mesopotamia", name: "Mesopotamia" }],
+        persons: NO_NAMES,
+        mentions: NO_MENTIONS,
+    },
+    MentionCase {
+        name: "a_person_is_found_as_a_place_is",
+        text: "And Abram went down into Egypt.",
+        places: &[NamedEntity { id: "egypt", name: "Egypt" }],
+        persons: &[NamedEntity { id: "abram", name: "Abram" }],
+        mentions: &[
+            FoundMention { start: 4, end: 9, kind: MentionKind::Person, id: "abram" },
+            FoundMention { start: 25, end: 30, kind: MentionKind::Place, id: "egypt" },
+        ],
+    },
+    MentionCase {
+        name: "a_name_both_a_place_and_a_person_bear_goes_to_the_place",
+        text: "The queen of Sheba heard.",
+        places: &[NamedEntity { id: "sheba", name: "Sheba" }],
+        persons: &[NamedEntity { id: "sheba_1", name: "Sheba" }],
+        mentions: &[FoundMention { start: 13, end: 18, kind: MentionKind::Place, id: "sheba" }],
+    },
+];
 
 #[cfg(test)]
 mod tests {

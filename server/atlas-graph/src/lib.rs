@@ -20,6 +20,7 @@ pub mod kjv_tokens;
 pub mod kretzmann_adapter;
 pub mod law_check;
 pub mod legacy;
+pub mod mention_spans;
 pub mod lexicon_adapter;
 pub mod map_adapter;
 pub mod peoples_adapter;

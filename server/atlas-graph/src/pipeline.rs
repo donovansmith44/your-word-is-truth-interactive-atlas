@@ -206,6 +206,7 @@ impl Pass for MergeAliasPass {
         crate::concord_adapter::merge_alias(ctx);
         crate::person_adapter::merge_alias(ctx);
         crate::peoples_adapter::merge_alias(ctx);
+        ctx.stats.mention_spans = crate::mention_spans::locate_mentions(ctx);
         let description_stats = crate::description_adapter::fill_descriptions(ctx);
         ctx.description_stats = description_stats;
         Ok(())

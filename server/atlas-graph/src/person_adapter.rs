@@ -8,7 +8,7 @@ use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{EventId, NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
 use atlas_graph_types::node::{Node, NodePayload};
-use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef};
+use atlas_graph_types::text::{BibleLocus, TextLocus, TextRef, VerseRef};
 
 use crate::pipeline::BuildCtx;
 
@@ -195,20 +195,23 @@ pub fn check_person_fidelity(atlas: &AtlasData, graph: &Graph) -> Result<(), Per
     }
 
     // A fresh count over `graph.mentions`'s own row table rather than the derived index: counting
-    // through the index would only check `merge_alias` against itself.
+    // through the index would only check `merge_alias` against itself. A verse link is one run of rows
+    // at its verse, since each occurrence the verse names is a row of its own.
     for p in &atlas.people {
         if reclassified.contains(&p.id) {
             continue;
         }
         let expected = p.verse_links.len();
-        let actual = graph
+        let loci: Vec<&TextRef> = graph
             .mentions
             .iter()
             .filter(|row| matches!(&row.entity, MentionedEntity::Person(pid) if pid.0 == p.id))
-            .count();
+            .map(|row| &row.locus.at)
+            .collect();
+        let actual = loci.chunk_by(|a, b| a == b).count();
         if actual != expected {
             return Err(PersonFidelityViolation(format!(
-                "mentions completeness: person '{}' has {} resolved verse_link(s) but {} mentions row(s) in the built graph",
+                "mentions completeness: person '{}' has {} resolved verse_link(s) but mentions rows at {} verse(s) in the built graph",
                 p.id, expected, actual
             )));
         }
@@ -353,6 +356,27 @@ mod tests {
         });
         let err = check_person_fidelity(&atlas, &ctx.graph).expect_err("must catch the incomplete mentions rows");
         assert!(err.0.contains("mentions completeness"), "unexpected message: {}", err.0);
+    }
+
+    #[test]
+    fn a_verse_link_the_verse_names_twice_is_complete_as_two_located_rows() {
+        // Arrange
+        let atlas = atlas_with_people(vec![person("abraham_58", "Abram", &["GEN.12.11", "GEN.12.14"])]);
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        let at_word = |ord: u16| TextLocus::from(BibleLocus {
+            unit: VerseRef { book: 0, chapter: 12, verse: 11 },
+            span: Some(crate::kjv_tokens::span(ord, ord).expect("one word")),
+        });
+        for locus in [at_word(0), at_word(9), verse_locus("GEN.12.14").expect("a canonical ref")] {
+            ctx.graph.mentions.push(Mentions { locus, entity: MentionedEntity::Person(PersonId::new("abraham_58")), provenance: ProvenanceId::from(PROVENANCE) });
+        }
+        // Act
+        let verdict = check_person_fidelity(&atlas, &ctx.graph);
+        // Assert
+        assert_eq!(verdict, Ok(()));
     }
 
     #[test]

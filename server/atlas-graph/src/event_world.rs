@@ -259,16 +259,17 @@ pub fn place_stub_node_id(id: &str) -> atlas_graph_types::id::AnyNodeId {
 fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
     // The KJV aliases ride the payload because a `Named` row's object is a bare string with no `Position`
     // to index through the generic port: the payload is the queryable form.
-    let aliases: Vec<String> = atlas
-        .place_name_aliases_for(&p.id)
-        .iter()
-        .filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned())
-        .collect();
+    let aliases = kjv_aliases_of(atlas, &p.id);
     Node {
         id: PlaceId::new(p.id.clone()).erase(),
         payload: NodePayload::Place { canonical: p.name.clone(), lat: p.lat, lon: p.lon, aliases, description: None },
         provenance: "curated-places".to_string(),
     }
+}
+
+/// The names a place's KJV aliases give it, in alias order.
+pub fn kjv_aliases_of(atlas: &AtlasData, place: &str) -> Vec<String> {
+    atlas.place_name_aliases_for(place).iter().filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned()).collect()
 }
 
 fn event_provenance(id: &str) -> &'static str {

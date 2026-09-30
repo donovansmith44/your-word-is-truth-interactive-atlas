@@ -460,6 +460,8 @@ impl GraphService {
 
     /// Every PERSON the `mentions` relation attests at one verse, `(id, label)` in row order. Only
     /// `Person` targets: a PeopleGroup mention is a different wire field, and the kind keeps them apart.
+    /// A person the verse names more than once has a row per occurrence, and their rows follow one
+    /// another, so each person is listed once.
     pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
         use atlas_graph_types::explore::EdgeQuery;
@@ -482,7 +484,10 @@ impl GraphService {
             }
             match page.next {
                 Some(c) => cursor = Some(c),
-                None => break out,
+                None => {
+                    out.dedup();
+                    break out;
+                }
             }
         }
     }
@@ -694,6 +699,41 @@ mod tests {
         let svc = provenance_service(g);
         assert_eq!(svc.event_mentions_provenance("theo-249"), vec!["event-mentions".to_string()]);
         assert_eq!(svc.provenance.by_family(crate::provenance::family::MENTIONS), vec!["event-mentions".to_string(), "theographic-people".to_string()]);
+    }
+
+    #[test]
+    fn a_person_named_twice_in_a_verse_is_listed_there_once() {
+        use atlas_graph_types::edge::{MentionedEntity, Mentions};
+        use atlas_graph_types::id::PersonId;
+        use atlas_graph_types::node::{Node, NodePayload};
+        use atlas_graph_types::text::{BibleLocus, TextLocus, VerseRef};
+        // Arrange
+        let (abram, sarai) = (PersonId::new("abraham_58"), PersonId::new("sarah_1"));
+        let mut g = Graph::default();
+        for (id, label) in [(&abram, "Abram"), (&sarai, "Sarai")] {
+            let payload = NodePayload::Person {
+                label: label.into(),
+                gender: None,
+                birth_year: None,
+                death_year: None,
+                also_called: vec![],
+                description: None,
+                first_year: None,
+                last_year: None,
+                eternal: false,
+                eternal_grounds: vec![],
+            };
+            g.nodes.insert(id.clone().erase(), Node { id: id.clone().erase(), payload, provenance: "test".into() });
+        }
+        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: VerseRef { book: 0, chapter: 12, verse: 11 }, span: Some(crate::kjv_tokens::span(ord, ord).expect("one word")) });
+        for (ord, person) in [(0, &abram), (9, &abram), (13, &sarai)] {
+            g.mentions.push(Mentions { locus: at_word(ord), entity: MentionedEntity::Person(person.clone()), provenance: "test".into() });
+        }
+        let svc = provenance_service(g);
+        // Act
+        let persons = svc.persons_at_verse(0, 12, 11);
+        // Assert
+        assert_eq!(persons, vec![("abraham_58".to_string(), "Abram".to_string()), ("sarah_1".to_string(), "Sarai".to_string())]);
     }
 
     #[test]
