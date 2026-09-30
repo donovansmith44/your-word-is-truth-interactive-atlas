@@ -13,7 +13,6 @@ public static class AppServices
         services.AddSingleton(_ => new StateAtom<Locus>(AtomNames.Locus, Locus.Default));
         services.AddSingleton(_ => new StateAtom<TimeWindow>(AtomNames.TimeWindow, TimeWindow.Default));
         services.AddSingleton(_ => new StateAtom<ViewArrangement>(AtomNames.ViewArrangement, ViewArrangement.Default));
-        services.AddSingleton(_ => new StateAtom<FocusStack>(AtomNames.FocusStack, FocusStack.Empty));
         services.AddSingleton(_ => new StateAtom<ExplorationState>(AtomNames.Exploration, new ExplorationState.Closed()));
         services.AddSingleton(sp => new PaneScopes(
             sp.GetRequiredService<StateAtom<ViewArrangement>>(),

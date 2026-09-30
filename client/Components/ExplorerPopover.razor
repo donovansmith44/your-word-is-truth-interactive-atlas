@@ -4,11 +4,12 @@
 @using BibleAtlas.Client.Views
 @inject AtlasClient Atlas
 @inject IExplorableClient GraphClient
+@inject IExplorer Explorer
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject SavedExplorationsService SavedExplorations
-@inject StateAtom<FocusStack> FocusStackAtom
-@inject OwnershipRegistry FocusOwnership
+@inject StateAtom<ExplorationState> ExplorationAtom
+@inject OwnershipRegistry Ownership
 @inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @implements IPopoverSectionContext
@@ -24,23 +25,23 @@
      style="@(VerseAnchorStyle ?? PaneRectStyle)" data-testid="popover" tabindex="-1" @ref="_panelRef" @onkeydown="OnKeyDown"
      @onpointerenter="OnPanelPointerEnter" @onpointerleave="OnPanelPointerLeave">
     <div class="popover-head">
-        @if (FocusValue.Stack.Count > 1)
+        @if (Exploration is { Breadcrumb.Count: > 0 })
         {
             <button type="button" class="popover-breadcrumb-back" data-testid="popover-breadcrumb-back"
                     aria-label="Back" title="Back" @onclick="Back">&lsaquo;</button>
         }
-        <p class="popover-title" data-testid="popover-title" data-ref="@(IsRefKind(Current.Kind) ? "true" : "false")">@Current.Title</p>
-        @if (_explorations.Count > 0)
+        <p class="popover-title" data-testid="popover-title" data-ref="@(IsText ? "true" : "false")">@Title</p>
+        @if (_chips.Count > 0)
         {
             <div class="popover-head-actions" data-testid="popover-head-actions">
-                @foreach (var ex in _explorations)
+                @foreach (var chip in _chips)
                 {
-                    <button type="button" class="popover-head-action" data-testid="@ex.ChipTestId"
-                            aria-label="@ex.Label" title="@ex.Label" @onclick="() => Activate(ex)">@ChipGlyph(ex.ChipTestId)</button>
+                    <button type="button" class="popover-head-action" data-testid="@chip.ChipTestId"
+                            aria-label="@chip.Label" title="@chip.Label" @onclick="() => Activate(chip)">@ChipGlyph(chip.ChipTestId)</button>
                 }
             </div>
         }
-        @if (SavedExplorations.Available)
+        @if (SavedExplorations.Available && Exploration is not null)
         {
             <button type="button" class="popover-save-exploration@(_justSaved ? " popover-save-exploration-saved" : "")"
                     data-testid="popover-save-exploration" aria-label="Save this exploration" title="Save this exploration"
@@ -49,7 +50,7 @@
         <button type="button" class="popover-close" data-testid="popover-close" aria-label="Close" title="Close" @onclick="RequestClose">&times;</button>
     </div>
 
-    <div class="popover-body" data-testid="popover-body" @key="@($"body:{Current.Title}")">
+    <div class="popover-body" data-testid="popover-body" @key="@($"body:{Exploration?.Current.Id}")">
         @if (_usingSectionRegistry)
         {
             @foreach (var section in _sections)
@@ -70,8 +71,6 @@
     [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
 
-    [Parameter] public IReadOnlyList<IExplorable>? SeedStack { get; set; }
-
     [Parameter] public bool InSplit { get; set; }
     [Parameter] public EventCallback<string> OnNavigateWorldInSplit { get; set; }
 
@@ -84,36 +83,39 @@
     [Parameter] public EventCallback OnPanelPointerEnter { get; set; }
     [Parameter] public EventCallback OnPanelPointerLeave { get; set; }
 
-    private Projection<FocusStack>? _focusProjectionBacking;
-    private Projection<FocusStack> _focusProjection => _focusProjectionBacking ??= new Projection<FocusStack>(FocusStackAtom);
-    private FocusStack _frozenSnapshot = FocusStack.Empty;
+    private Projection<ExplorationState>? _projectionBacking;
+    private Projection<ExplorationState> _projection => _projectionBacking ??= new Projection<ExplorationState>(ExplorationAtom);
+    private ExplorationState _frozenSnapshot = new ExplorationState.Closed();
+    private readonly RenderedLegacyNodes _rendered = new();
+    private readonly RequestSeries _requests = new();
+    private OwnershipClaim? _claim;
+    private IExplorable? _legacy;
+    private bool _justSaved;
 
-    private FocusStack FocusValue => _frozenSnapshot;
+    private Exploration? Exploration => (_frozenSnapshot as ExplorationState.Open)?.Exploration;
+
+    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root.Title;
+
+    private bool IsText => Exploration?.Current.Kind is NodeKind.TextUnit or NodeKind.Container;
 
     private void SyncSnapshot()
     {
         if (_claim?.IsCurrent == true)
         {
-            _frozenSnapshot = _focusProjection.Value;
+            _frozenSnapshot = _projection.Value;
         }
     }
 
-    private IExplorable Current => FocusValue.Current!.Node;
-
-    private OwnershipClaim? _claim;
-
-    private bool _justSaved;
-
-    private void ApplyLocally(IIntent<FocusStack> intent)
+    private void ApplyLocally(ExplorationIntent intent)
     {
-        if (intent is not Reset)
+        if (intent is not ExplorationIntent.Reset)
         {
             _justSaved = false;
         }
 
         if (_claim?.IsCurrent == true)
         {
-            FocusStackAtom.Dispatch(intent);
+            ExplorationAtom.Dispatch(intent);
             SyncSnapshot();
         }
         else
@@ -122,14 +124,13 @@
         }
     }
 
-    // "Claim = reconcile": whenever the shared atom goes Empty (only Reset ever produces that) and this instance is not the current owner but still holds a real session of its own, it reclaims and re-seeds the atom from that session -- otherwise the atom simply stays Reset. Safe under multiple simultaneously-superseded instances because Blazor WASM is single-threaded: the first subscriber to reclaim does so via a synchronous, re-entrant Dispatch, so every other subscriber (nested or later in the original pass) reads the atom AFTER the reclaim already landed and correctly no-ops.
-    private void OnFocusStackChanged()
+    private void OnExplorationChanged()
     {
-        if (_claim?.IsCurrent != true && FocusStackAtom.Value == FocusStack.Empty && _frozenSnapshot != FocusStack.Empty)
+        if (_claim?.IsCurrent != true && ExplorationAtom.Value is ExplorationState.Closed && _frozenSnapshot is ExplorationState.Open own)
         {
             _claim?.Dispose();
-            _claim = FocusOwnership.Claim(AtomNames.FocusStack);
-            FocusStackAtom.Dispatch(new Reseed(_frozenSnapshot));
+            _claim = Ownership.Claim(AtomNames.Exploration);
+            ExplorationAtom.Dispatch(new ExplorationIntent.Reseed(own.Exploration));
         }
 
         SyncSnapshot();
@@ -138,23 +139,30 @@
 
     private void SaveExploration()
     {
-        SavedExplorations.Save(FocusValue.Trail);
+        SavedExplorations.Save(Trail.Select(Descriptor).ToList());
         _justSaved = true;
     }
 
+    private IEnumerable<Explorable> Trail =>
+        Exploration is { } exploration ? exploration.Steps.Select(step => step.Target).Prepend(exploration.Start) : [];
+
+    private ExplorationDescriptor Descriptor(Explorable node) =>
+        _rendered.For(node) is { } legacy
+            ? ExplorationDescriptor.Capture(legacy)
+            : new ExplorationDescriptor(node.Kind.ToString(), node.Id, node.Label);
+
     public void Dispose()
     {
-        // unsubscribe before dispatching Reset: dispatching first would synchronously re-enter this instance's own OnFocusStackChanged (still _claim.IsCurrent at that instant) while Blazor is mid-teardown of this component
-        FocusStackAtom.Changed -= OnFocusStackChanged;
-
-        ApplyLocally(new Reset());
+        ExplorationAtom.Changed -= OnExplorationChanged;
+        _requests.Stop();
+        ApplyLocally(new ExplorationIntent.Reset());
         _claim?.Dispose();
     }
 
-    private IReadOnlyList<Chip> _explorations = Array.Empty<Chip>();
+    private IReadOnlyList<Chip> _chips = [];
     private RenderFragment _body = _ => { };
     private bool _usingSectionRegistry;
-    private IReadOnlyList<PopoverSection> _sections = Array.Empty<PopoverSection>();
+    private IReadOnlyList<PopoverSection> _sections = [];
     private ElementReference _panelRef;
     private bool _focused;
 
@@ -224,19 +232,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _claim = FocusOwnership.Claim(AtomNames.FocusStack);
-        FocusStackAtom.Changed += OnFocusStackChanged;
+        _claim = Ownership.Claim(AtomNames.Exploration);
+        ExplorationAtom.Changed += OnExplorationChanged;
 
-        // seeded via ONE atomic dispatch (SeedFromTrail), never a separate Reset followed by a second Visit/SeedFromTrail: two dispatches would make the atom observably Empty in between, long enough for another live popover's own reclaim logic to see "Empty" and steal ownership away from this brand-new instance before it ever seeds.
-        if (SeedStack is { Count: > 0 } seed)
+        var request = _requests.Next();
+        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(Root.Identity))) is not { } start)
         {
-            ApplyLocally(new SeedFromTrail(seed));
-        }
-        else
-        {
-            ApplyLocally(new SeedFromTrail(new[] { Root }));
+            return;
         }
 
+        _rendered.Remember(start, Root);
+        ApplyLocally(new ExplorationIntent.Open(start));
         await LoadCurrent();
     }
 
@@ -293,57 +299,104 @@
 
     private async Task LoadCurrent()
     {
-        // cleared before the fetches below (not left holding the PREVIOUS node's content): Current.Title already reflects the new node synchronously, so without this clear, Blazor's own render-on-first-await would show the new title beside the wrong node's stale sections for the whole fetch duration (a real live-caught bug, an xref chain showing HAB.1.7's title over JER.52.25's own six-item list).
-        _sections = Array.Empty<PopoverSection>();
-        _explorations = Array.Empty<Chip>();
-        _body = _ => { };
+        if (Exploration is not { } exploration)
+        {
+            return;
+        }
 
-        var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(Current)).ToList();
+        var request = _requests.Next();
+        _legacy = _rendered.For(exploration.Current);
+        _sections = [];
+        _chips = [];
+        _body = _ => { };
+        _usingSectionRegistry = false;
+
+        if (_legacy is { } legacy && !await LoadLegacy(legacy, request))
+        {
+            return;
+        }
+
+        await SyncNarrativeFocusAsync();
+    }
+
+    private async Task<bool> LoadLegacy(IExplorable legacy, Request request)
+    {
+        var applicable = PopoverSectionRegistry.Providers.Where(p => p.AppliesTo(legacy)).ToList();
         _usingSectionRegistry = applicable.Count > 0;
 
         try
         {
-            var explorationsTask = Current.ExploreAsync(Atlas);
-
             if (_usingSectionRegistry)
             {
-                var sectionTasks = applicable.Select(p => p.ResolveAsync(Current, Atlas, this)).ToList();
-                await Task.WhenAll(sectionTasks.Cast<Task>().Append(explorationsTask));
-                var resolved = sectionTasks.Select(t => t.Result).Where(s => s is not null).Select(s => s!).ToList();
+                if (await request.Fetch(() => Task.WhenAll(applicable.Select(p => p.ResolveAsync(legacy, Atlas, this))), () => legacy.ExploreAsync(Atlas)) is not ({ } sections, { } chips))
+                {
+                    return false;
+                }
+
+                var resolved = sections.Where(s => s is not null).Select(s => s!).ToList();
                 _sections = XrefEntryPoint ? resolved.OrderByDescending(s => s.Testid == "xrefs").ToList() : resolved;
-                _explorations = explorationsTask.Result;
+                _chips = chips;
             }
             else
             {
-                var bodyTask = Current.BodyAsync(Atlas);
-                await Task.WhenAll(explorationsTask, bodyTask);
-                _sections = Array.Empty<PopoverSection>();
-                _explorations = explorationsTask.Result;
-                _body = bodyTask.Result;
+                if (await request.Fetch(() => legacy.ExploreAsync(Atlas), () => legacy.BodyAsync(Atlas)) is not ({ } chips, { } body))
+                {
+                    return false;
+                }
+
+                _chips = chips;
+                _body = body;
             }
         }
         catch (Exception)
         {
-            _explorations = Array.Empty<Chip>();
-            _sections = Array.Empty<PopoverSection>();
-            _usingSectionRegistry = false;
-            _body = builder =>
+            if (request.Superseded)
             {
-                builder.OpenElement(0, "p");
-                builder.AddAttribute(1, "class", "popover-meta");
-                builder.AddContent(2, "Couldn't load this — check your connection and try again.");
-                builder.CloseElement();
-            };
+                return false;
+            }
+
+            ShowCouldNotLoad();
         }
 
-        await SyncNarrativeFocusAsync();
+        return true;
+    }
+
+    private async Task<Explorable?> Arriving(Request request, Task<Explorable?> resolution)
+    {
+        try
+        {
+            return await resolution;
+        }
+        catch (Exception)
+        {
+            if (!request.Superseded)
+            {
+                ShowCouldNotLoad();
+            }
+
+            return null;
+        }
+    }
+
+    private void ShowCouldNotLoad()
+    {
+        _chips = [];
+        _sections = [];
+        _usingSectionRegistry = false;
+        _body = builder =>
+        {
+            builder.OpenElement(0, "p");
+            builder.AddAttribute(1, "class", "popover-meta");
+            builder.AddContent(2, "Couldn't load this — check your connection and try again.");
+            builder.CloseElement();
+        };
     }
 
     private async Task SyncNarrativeFocusAsync()
     {
         try
         {
-            if (Current is INarrativeAware aware)
+            if (_legacy is INarrativeAware aware)
             {
                 var result = await aware.NarrativePositionsAsync(Atlas);
                 var narrativeIds = result.Narrative.Select(p => p.NarrativeId).Distinct().ToList();
@@ -362,7 +415,14 @@
 
     public async Task PushAsync(IExplorable node, EdgeKind via)
     {
-        ApplyLocally(new Visit(node));
+        var request = _requests.Next();
+        if (await Arriving(request, request.Fetch(() => Explorer.Follow(new Link(via, node.Identity)))) is not { } target)
+        {
+            return;
+        }
+
+        _rendered.Remember(target, node);
+        ApplyLocally(new ExplorationIntent.Follow(new Step(via, target)));
         await LoadCurrent();
         StateHasChanged();
     }
@@ -375,7 +435,7 @@
 
     public int OtherContextSectionCount => _sections.Count(s => s.Testid is not ("verse-text" or "xrefs"));
 
-    public bool XrefEntryPoint => Current is VerseNode { XrefEntryPoint: true };
+    public bool XrefEntryPoint => _legacy is VerseNode { XrefEntryPoint: true };
 
     public IExplorableClient Graph => GraphClient;
 
@@ -399,8 +459,7 @@
         switch (ex.Target)
         {
             case ChipTarget.Push push:
-                ApplyLocally(new Visit(push.Next));
-                await LoadCurrent();
+                await PushAsync(push.Next, push.Via);
                 break;
 
             case ChipTarget.NavigateWorld world:
@@ -422,12 +481,12 @@
 
     private async Task Back()
     {
-        if (FocusValue.Stack.Count <= 1)
+        if (Exploration is not { Breadcrumb.Count: > 0 })
         {
             return;
         }
 
-        ApplyLocally(new BibleAtlas.Client.State.Back());
+        ApplyLocally(new ExplorationIntent.Back());
         await LoadCurrent();
     }
 
@@ -450,8 +509,6 @@
             await RequestClose();
         }
     }
-
-    private static bool IsRefKind(string kind) => kind is "Verse" or "Passage" or "Chapter" or "Book";
 
     private static string ChipGlyph(string chipTestId) => chipTestId switch
     {

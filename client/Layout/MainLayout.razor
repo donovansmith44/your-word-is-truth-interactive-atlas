@@ -66,7 +66,7 @@
 
 @if (_hamburgerActiveNode is not null)
 {
-    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" SeedStack="_hamburgerSeedStack" OnClose="CloseHamburgerPopover" />
+    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" OnClose="CloseHamburgerPopover" />
 }
 
 @if (_hamburgerError is not null)
@@ -107,7 +107,6 @@
     private ElementReference _hamburgerPanelRef;
 
     private IExplorable? _hamburgerActiveNode;
-    private IReadOnlyList<IExplorable>? _hamburgerSeedStack;
     private string? _hamburgerError;
 
     private void ToggleHamburger()
@@ -140,7 +139,6 @@
         try
         {
             var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas, Graph)));
-            _hamburgerSeedStack = nodes;
             _hamburgerActiveNode = nodes[^1];
         }
         catch (Exception)
@@ -152,7 +150,6 @@
     private void CloseHamburgerPopover()
     {
         _hamburgerActiveNode = null;
-        _hamburgerSeedStack = null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -187,7 +184,6 @@
     {
         _showHamburger = false;
         _hamburgerActiveNode = null;
-        _hamburgerSeedStack = null;
         StateHasChanged();
     }
 
