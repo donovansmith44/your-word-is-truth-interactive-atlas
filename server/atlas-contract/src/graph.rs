@@ -1,3 +1,4 @@
+use std::cell::OnceCell;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -10,6 +11,8 @@ use utoipa::IntoParams;
 use atlas_core::data::{AtlasData, Canon};
 use atlas_core::refs::VerseId;
 use atlas_core::scene::{accounts_of, Account};
+use atlas_graph::event_world::ChronologyDerivation;
+use atlas_graph::kjv_adapter::verse_node_id;
 use atlas_graph::runs;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
@@ -109,6 +112,7 @@ pub async fn node_edges(
 
     // A PeopleGroup wire id does not decode, so an entry naming one would hand the
     // caller a reference it cannot fetch a card for.
+    let this_event = OnceCell::new();
     let entries = page
         .entries
         .iter()
@@ -119,51 +123,65 @@ pub async fn node_edges(
                 EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone())),
                 EdgeMeta::None => (None, None),
             };
-            let attestation = match (asked.kind, &e.node) {
-                (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => Some(attestation(&node_id, verse, Reading::ItsAccount, &snap, &graph, &data.canon)?),
-                (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => Some(attestation(event, &node_id, Reading::ItsVerse, &snap, &graph, &data.canon)?),
-                _ => None,
+            let (loci, note) = match (asked.kind, &e.node) {
+                (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
+                    let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
+                    let (_, account) = accounts.holding(verse);
+                    (Some(account.runs(&data.canon).to_vec()), account.note.clone())
+                }
+                (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
+                    let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
+                    let (verse, account) = accounts.holding(&node_id);
+                    (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
+                }
+                _ => (None, None),
             };
-            let (loci, note) = match attestation {
-                Some(Attestation { loci, note }) => (Some(loci), note),
-                None => (None, None),
-            };
-            Ok(wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note })
+            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note }
         })
-        .collect::<Result<_, ApiError>>()?;
+        .collect();
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// What an attestation entry says of the account it belongs to.
-struct Attestation {
-    loci: Vec<wire::TextSpan>,
+/// An event's accounts, read once for every attestation of it a page lists. Every
+/// attestation row is built from one of these accounts, so an event the graph cannot
+/// read back, or a verse none of its accounts reads, is this atlas's own defect.
+struct EventAccounts {
+    event: AnyNodeId,
+    accounts: Vec<AccountOf>,
+}
+
+/// One account of an event: the verses it reads, how it is cited where that needed
+/// saying, and -- only once something asks -- the runs those verses read on in.
+struct AccountOf {
+    verses: Vec<VerseRef>,
     note: Option<String>,
+    runs: OnceCell<Vec<wire::TextSpan>>,
 }
 
-/// From the event, an attestation reads as the runs of its whole account; from the
-/// verse, as the verse it stands on.
-enum Reading {
-    ItsAccount,
-    ItsVerse,
+impl EventAccounts {
+    fn read(event: &AnyNodeId, snap: &impl GraphQuery, chrono: &ChronologyDerivation) -> EventAccounts {
+        let record = atlas_graph::legacy::event_from_node(event, snap, chrono)
+            .unwrap_or_else(|| panic!("{} attests verses, but the graph holds no such event", encode_node_id(event)));
+        let accounts = accounts_of(&record).into_iter().map(|account| AccountOf { verses: account_verses(&account), note: account.ref_note, runs: OnceCell::new() }).collect();
+        EventAccounts { event: event.clone(), accounts }
+    }
+
+    fn holding(&self, verse: &AnyNodeId) -> (&VerseRef, &AccountOf) {
+        self.accounts
+            .iter()
+            .find_map(|account| account.verses.iter().find(|v| verse_node_id(v.book, v.chapter, v.verse) == *verse).map(|v| (v, account)))
+            .unwrap_or_else(|| panic!("the attestation of {} at {} belongs to none of its accounts", encode_node_id(&self.event), encode_node_id(verse)))
+    }
 }
 
-/// Every attestation row is built from one of its event's accounts, so a verse no
-/// account holds is this atlas's own defect.
-fn attestation(event: &AnyNodeId, verse: &AnyNodeId, reading: Reading, snap: &impl GraphQuery, graph: &GraphService, canon: &Canon) -> Result<Attestation, ApiError> {
-    let untraced = || ApiError::internal(&format!("the attestation of {} at {} belongs to none of its accounts", event.raw, verse.raw));
-    let (book, chapter, verse_number) = atlas_graph::kjv_adapter::decode_text_unit(verse).ok_or_else(untraced)?;
-    let attested = VerseRef { book, chapter, verse: verse_number };
-    let event = atlas_graph::legacy::event_from_node(event, snap, &graph.chronology.chrono).ok_or_else(untraced)?;
-    let account = accounts_of(&event).into_iter().find(|account| account_verses(account).contains(&attested)).ok_or_else(untraced)?;
-    let loci = match reading {
-        Reading::ItsAccount => {
-            let verses: Vec<BibleLocusRange> = account_verses(&account).into_iter().map(|v| BibleLocusRange { from: Locus::whole(v.clone()), to: Locus::whole(v) }).collect();
+impl AccountOf {
+    fn runs(&self, canon: &Canon) -> &[wire::TextSpan] {
+        self.runs.get_or_init(|| {
+            let verses: Vec<BibleLocusRange> = self.verses.iter().map(|v| BibleLocusRange { from: Locus::whole(v.clone()), to: Locus::whole(v.clone()) }).collect();
             runs::coalesce(&verses, canon).iter().map(|run| wire::TextSpan::of_bible_range(run).expect("runs of whole verses count no words")).collect()
-        }
-        Reading::ItsVerse => vec![wire::TextSpan::whole(wire::TextRef::of_verse(&attested))],
-    };
-    Ok(Attestation { loci, note: account.ref_note })
+        })
+    }
 }
 
 fn account_verses(account: &Account) -> Vec<VerseRef> {
@@ -414,4 +432,33 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
         .routes(routes!(node_card))
         .routes(routes!(node_edges))
         .routes(routes!(text_window))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use atlas_graph::event_world::event_node_id;
+    use atlas_graph_types::graph::Graph;
+
+    const GENESIS: u8 = 0;
+
+    #[test]
+    #[should_panic(expected = "Event:ab_ur attests verses, but the graph holds no such event")]
+    fn an_attestation_whose_event_the_graph_cannot_read_is_a_graph_defect_not_an_entry_without_its_account() {
+        // Arrange
+        let unread = event_node_id("ab_ur");
+
+        // Act
+        EventAccounts::read(&unread, &Graph::default(), &ChronologyDerivation::default());
+    }
+
+    #[test]
+    #[should_panic(expected = "the attestation of Event:ab_ur at text-unit:GEN.1.2 belongs to none of its accounts")]
+    fn an_attestation_at_a_verse_none_of_its_accounts_reads_is_a_graph_defect_not_an_entry_without_its_account() {
+        // Arrange
+        let accounts = EventAccounts { event: event_node_id("ab_ur"), accounts: vec![AccountOf { verses: vec![VerseRef { book: GENESIS, chapter: 1, verse: 1 }], note: None, runs: OnceCell::new() }] };
+
+        // Act
+        accounts.holding(&verse_node_id(GENESIS, 1, 2));
+    }
 }

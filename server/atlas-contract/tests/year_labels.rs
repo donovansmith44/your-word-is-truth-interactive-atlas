@@ -59,6 +59,34 @@ fn a_range_names_the_era_once_when_both_ends_share_it_and_twice_otherwise() {
 }
 
 #[test]
+fn a_range_read_off_the_wire_is_refused_when_it_ends_before_it_starts_as_one_made_here_is() {
+    // Arrange
+    let wire = serde_json::json!({
+        "from": { "value": -1400, "label": "1400 BC" },
+        "to": { "value": -1450, "label": "1450 BC" },
+        "label": format!("1400{EN_DASH}1450 BC"),
+    });
+    // Act
+    let range = serde_json::from_value::<TimeRange>(wire).map_err(|e| e.to_string());
+    // Assert
+    assert_eq!(range, Err(CoreError::InvertedRange.to_string()));
+}
+
+#[test]
+fn a_range_read_off_the_wire_carries_the_label_written_here_not_the_one_it_arrived_with() {
+    // Arrange
+    let wire = serde_json::json!({
+        "from": { "value": -1450, "label": "1450 BC" },
+        "to": { "value": -1400, "label": "1400 BC" },
+        "label": "fifteenth century BC",
+    });
+    // Act
+    let range = serde_json::from_value::<TimeRange>(wire).map_err(|e| e.to_string());
+    // Assert
+    assert_eq!(range, Ok(TimeRange::of(core_range(-1450, -1400))));
+}
+
+#[test]
 fn a_claim_with_a_note_is_labelled_circa() {
     // Arrange
     let claims = [(-1003, -1003, Some("traditional")), (-586, -586, None), (-1447, -1400, Some("traditional"))];

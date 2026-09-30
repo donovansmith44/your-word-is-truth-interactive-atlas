@@ -57,7 +57,7 @@ impl Year {
 /// A span of years, both ends included, with the label a reader sees for it: an
 /// era both ends share is named once.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, try_from = "LabelledRange")]
 pub struct TimeRange {
     pub from: Year,
     pub to: Year,
@@ -75,6 +75,26 @@ impl TimeRange {
             _ => format!("{}{EN_DASH}{}", from.label, to.label),
         };
         TimeRange { from, to, label }
+    }
+}
+
+/// A span as it arrives: read through `TimeRange::of`, so that a span ending before it
+/// starts is refused on the way in as it is everywhere else, and the label is the one
+/// written here.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LabelledRange {
+    from: Year,
+    to: Year,
+    #[serde(rename = "label")]
+    _label: String,
+}
+
+impl TryFrom<LabelledRange> for TimeRange {
+    type Error = CoreError;
+
+    fn try_from(arriving: LabelledRange) -> Result<TimeRange, CoreError> {
+        time::TimeRange::new(arriving.from.value, arriving.to.value).map(TimeRange::of)
     }
 }
 

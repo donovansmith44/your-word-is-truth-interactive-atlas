@@ -2,6 +2,7 @@ use atlas_core::refs::BookId;
 use atlas_graph::kjv_adapter::KJV_TRANSLATION;
 use atlas_graph_types::text::{self, BibleLocusRange, TokenSpan, TranslationId, VerseRef};
 use atlas_graph_types::EdgeKind;
+use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::schema::{AdditionalProperties, AllOfBuilder, ObjectBuilder, Schema, SchemaType, Type};
@@ -12,20 +13,10 @@ use super::NodeRef;
 
 /// One unit of a corpus's text: a verse of the Bible, or a paragraph of the Book
 /// of Concord. Each is tagged with its corpus on the wire, beside its own parts.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(tag = "corpus", rename_all = "lowercase", deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TextRef {
-    Bible {
-        #[serde(serialize_with = "canon_code")]
-        book: BookId,
-        chapter: u16,
-        verse: u16,
-    },
-    Concord {
-        part: u8,
-        article: u16,
-        paragraph: u16,
-    },
+    Bible { book: BookId, chapter: u16, verse: u16 },
+    Concord { part: u8, article: u16, paragraph: u16 },
 }
 
 impl TextRef {
@@ -43,14 +34,39 @@ impl From<&text::TextRef> for TextRef {
     }
 }
 
-fn canon_code<S: Serializer>(book: &BookId, s: S) -> Result<S::Ok, S::Error> {
-    s.serialize_str(book.code())
+// Written out rather than derived: serde's attributes take only literals, and the
+// corpus tags and part names are declared once, below, for this and the schema alike.
+impl Serialize for TextRef {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut unit = s.serialize_map(None)?;
+        match self {
+            TextRef::Bible { book, chapter, verse } => {
+                unit.serialize_entry(CORPUS, BIBLE.tag)?;
+                unit.serialize_entry(BOOK, book.code())?;
+                unit.serialize_entry(CHAPTER, chapter)?;
+                unit.serialize_entry(VERSE, verse)?;
+            }
+            TextRef::Concord { part, article, paragraph } => {
+                unit.serialize_entry(CORPUS, CONCORD.tag)?;
+                unit.serialize_entry(PART, part)?;
+                unit.serialize_entry(ARTICLE, article)?;
+                unit.serialize_entry(PARAGRAPH, paragraph)?;
+            }
+        }
+        unit.end()
+    }
 }
 
 const CORPUS: &str = "corpus";
+const BOOK: &str = "book";
+const CHAPTER: &str = "chapter";
+const VERSE: &str = "verse";
+const PART: &str = "part";
+const ARTICLE: &str = "article";
+const PARAGRAPH: &str = "paragraph";
 const TEXT_REF: &str = "One unit of a corpus's text, named by the corpus it belongs to.";
 
-/// One corpus a `TextRef` can name: the tag serde writes for its variant, and the
+/// One corpus a `TextRef` can name: the tag its variant is written with, and the
 /// component that publishes that variant's parts.
 struct Subtype {
     tag: &'static str,
@@ -87,8 +103,8 @@ impl PartialSchema for TextRef {
 
 impl ToSchema for TextRef {
     fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
-        schemas.push((BIBLE.name.to_string(), subtype(&BIBLE, [("book", Ref::from_schema_name(<BookId as ToSchema>::name()).into()), ("chapter", u16::schema()), ("verse", u16::schema())])));
-        schemas.push((CONCORD.name.to_string(), subtype(&CONCORD, [("part", u8::schema()), ("article", u16::schema()), ("paragraph", u16::schema())])));
+        schemas.push((BIBLE.name.to_string(), subtype(&BIBLE, [(BOOK, Ref::from_schema_name(<BookId as ToSchema>::name()).into()), (CHAPTER, u16::schema()), (VERSE, u16::schema())])));
+        schemas.push((CONCORD.name.to_string(), subtype(&CONCORD, [(PART, u8::schema()), (ARTICLE, u16::schema()), (PARAGRAPH, u16::schema())])));
         schemas.push((<BookId as ToSchema>::name().to_string(), BookId::schema()));
     }
 }
