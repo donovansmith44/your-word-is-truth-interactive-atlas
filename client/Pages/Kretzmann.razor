@@ -175,7 +175,8 @@
     private List<MergedVerseRow> _rows = new();
     private bool _loading = true;
     private string? _error;
-    private int _requestId;
+    private readonly RequestSeries _startup = new();
+    private readonly RequestSeries _chapters = new();
     private IExplorable? _activeNode;
     private IEscapeHatch? _followHatchBacking;
 
@@ -205,7 +206,7 @@
 
         try
         {
-            _toc = await Atlas.Books();
+            _toc = await _startup.Next().Fetch(() => Atlas.Books());
         }
         catch (Exception)
         {
@@ -401,7 +402,7 @@
 
     private async Task LoadChapterAsync()
     {
-        var myRequest = ++_requestId;
+        var request = _chapters.Next();
         var book = _book;
         var chapterNum = _chapterNum;
         _loading = true;
@@ -423,19 +424,12 @@
 
         try
         {
-            var chapterTask = Atlas.Chapter(book, chapterNum);
-            var textTask = Atlas.ChapterText(book, chapterNum);
-            var commentaryTask = Atlas.KretzmannChapter(book, chapterNum);
-            await Task.WhenAll(chapterTask, textTask, commentaryTask);
-
-            if (myRequest != _requestId)
+            if (await request.Fetch(() => Atlas.Chapter(book, chapterNum), () => Atlas.ChapterText(book, chapterNum), () => Atlas.KretzmannChapter(book, chapterNum)) is not { } loaded)
             {
                 return;
             }
 
-            var chapter = chapterTask.Result;
-            var text = textTask.Result;
-            var doc = commentaryTask.Result;
+            var (chapter, text, doc) = loaded;
 
             string? lastHeading = null;
             var commentaryByVerse = new Dictionary<int, List<CommentaryItemRow>>();
@@ -470,7 +464,7 @@
         }
         catch (Exception)
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -489,11 +483,11 @@
             return;
         }
 
-        var myRequest = _requestId;
+        var request = _chapters.Current;
         await _proseFetchGate.WaitAsync();
         try
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -501,7 +495,11 @@
             string? text;
             try
             {
-                var card = await Graph.Card(itemId);
+                if (await request.Fetch(() => Graph.Card(itemId)) is not { } card)
+                {
+                    return;
+                }
+
                 text = card.Description;
             }
             catch (Exception)
@@ -509,7 +507,7 @@
                 text = null;
             }
 
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }

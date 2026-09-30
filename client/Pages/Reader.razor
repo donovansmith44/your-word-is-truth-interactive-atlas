@@ -208,7 +208,8 @@
     private int? _anchorVerse;
     private (int From, int To)? _passageRange;
 
-    private int _requestId;
+    private readonly RequestSeries _startup = new();
+    private readonly RequestSeries _chapters = new();
     private string? _scrolledFragment;
     private IJSObjectReference? _readerJs;
 
@@ -259,7 +260,7 @@
 
         try
         {
-            _toc = await Atlas.Books();
+            _toc = await _startup.Next().Fetch(() => Atlas.Books());
         }
         catch (Exception)
         {
@@ -371,7 +372,7 @@
 
     private async Task LoadChapter()
     {
-        var myRequest = ++_requestId;
+        var request = _chapters.Next();
 
         if (_loadedBook is { } prevBook && _loadedChapterNum is { } prevChapterNum)
         {
@@ -388,17 +389,12 @@
 
         try
         {
-            var chapterTask = Atlas.Chapter(_book, _chapterNum);
-            var textTask = Atlas.ChapterText(_book, _chapterNum);
-            var chapter = await chapterTask;
-            var text = await textTask;
-            if (myRequest != _requestId)
+            if (await request.Fetch(() => Atlas.Chapter(_book, _chapterNum), () => Atlas.ChapterText(_book, _chapterNum)) is not { } loaded)
             {
                 return;
             }
 
-            _chapter = chapter;
-            _text = text;
+            (_chapter, _text) = loaded;
             _loadedBook = _book;
             _loadedChapterNum = _chapterNum;
             _errorMessage = null;
@@ -407,7 +403,7 @@
         }
         catch (Exception)
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }

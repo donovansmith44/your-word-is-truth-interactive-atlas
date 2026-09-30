@@ -213,7 +213,8 @@
 
     private int _from = DefaultFrom;
     private int _to = DefaultTo;
-    private CancellationTokenSource? _fetchCts;
+    private readonly RequestSeries _scenes = new();
+    private readonly RequestSeries _startup = new();
 
     private ElementReference _mapEl;
     private MapInterop? _mapInterop;
@@ -293,7 +294,7 @@
 
         try
         {
-            _eras = await Atlas.Eras();
+            _eras = await _startup.Next().Fetch(() => Atlas.Eras());
         }
         catch (Exception)
         {
@@ -302,7 +303,7 @@
 
         try
         {
-            _landmarks = await Atlas.Landmarks();
+            _landmarks = await _startup.Next().Fetch(() => Atlas.Landmarks());
         }
         catch (Exception)
         {
@@ -310,7 +311,7 @@
 
         try
         {
-            _landMask = await Atlas.LandMask();
+            _landMask = await _startup.Next().Fetch(() => Atlas.LandMask());
         }
         catch (Exception)
         {
@@ -318,7 +319,7 @@
 
         try
         {
-            _polityRoster = await Atlas.Polities(-4004, 100);
+            _polityRoster = await _startup.Next().Fetch(() => Atlas.Polities(-4004, 100));
         }
         catch (Exception)
         {
@@ -783,13 +784,11 @@
     private async Task DebouncedLoadScene(int from, int to, string? focusPlaceId = null)
     {
         await JS.InvokeVoidAsync("performance.mark", "atlas:scene-start");
-        _fetchCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _fetchCts = cts;
+        var request = _scenes.Next();
 
         try
         {
-            await Task.Delay(60, cts.Token);
+            await Task.Delay(60, request.Token);
         }
         catch (OperationCanceledException)
         {
@@ -798,8 +797,7 @@
 
         try
         {
-            var scene = await Atlas.SceneTime(from, to);
-            if (cts.IsCancellationRequested)
+            if (await request.Fetch(() => Atlas.SceneTime(from, to)) is not { } scene)
             {
                 return;
             }
@@ -832,7 +830,7 @@
         }
         catch (Exception)
         {
-            if (!cts.IsCancellationRequested)
+            if (!request.Superseded)
             {
                 _errorMessage = "Couldn't load that time window -- check your connection and try again.";
             }
@@ -842,13 +840,13 @@
             StateHasChanged();
         }
 
-        if (!cts.IsCancellationRequested)
+        if (!request.Superseded)
         {
-            await LoadPolitiesFor(from, to, cts);
+            await LoadPolitiesFor(from, to, request);
         }
     }
 
-    private async Task LoadPolitiesFor(int from, int to, CancellationTokenSource cts)
+    private async Task LoadPolitiesFor(int from, int to, Request request)
     {
         if (_mapInterop is not null)
         {
@@ -857,8 +855,7 @@
 
         try
         {
-            var polities = await Atlas.Polities(from, to);
-            if (cts.IsCancellationRequested)
+            if (await request.Fetch(() => Atlas.Polities(from, to)) is not { } polities)
             {
                 return;
             }
@@ -881,13 +878,11 @@
 
     private async Task DebouncedLoadScriptureScene(string sref)
     {
-        _fetchCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _fetchCts = cts;
+        var request = _scenes.Next();
 
         try
         {
-            await Task.Delay(150, cts.Token);
+            await Task.Delay(150, request.Token);
         }
         catch (OperationCanceledException)
         {
@@ -896,8 +891,7 @@
 
         try
         {
-            var scene = await Atlas.SceneScripture(sref);
-            if (cts.IsCancellationRequested)
+            if (await request.Fetch(() => Atlas.SceneScripture(sref)) is not { } scene)
             {
                 return;
             }
@@ -916,7 +910,7 @@
         }
         catch (Exception)
         {
-            if (!cts.IsCancellationRequested)
+            if (!request.Superseded)
             {
                 _errorMessage = $"Couldn't load {sref} -- check your connection and try again.";
             }
@@ -926,14 +920,18 @@
             StateHasChanged();
         }
 
-        await LabelTheSlidersWindow();
+        await LabelTheSlidersWindow(request);
     }
 
-    private async Task LabelTheSlidersWindow()
+    private async Task LabelTheSlidersWindow(Request request)
     {
         try
         {
-            _timeWindow = await SliderWindow.ServedFor(Atlas, _timeWindow, _from, _to);
+            if (await SliderWindow.ServedFor(request, Atlas, _timeWindow, _from, _to) is { } window)
+            {
+                _timeWindow = window;
+            }
+
             StateHasChanged();
         }
         catch (Exception)
@@ -1221,7 +1219,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        _fetchCts?.Cancel();
+        _scenes.Stop();
         _closeCts?.Cancel();
 
         LocusAtom.Changed -= OnLocusChanged;

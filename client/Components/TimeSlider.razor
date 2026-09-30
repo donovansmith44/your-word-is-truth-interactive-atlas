@@ -5,7 +5,7 @@
 <div class="slider" data-testid="slider" aria-disabled="@(Disabled ? "true" : "false")">
     <input class="slider-readout"
            data-testid="slider-readout"
-           value="@_readoutText"
+           value="@_readout.Text"
            spellcheck="false"
            aria-label="Time window"
            @oninput="OnReadoutInput"
@@ -88,8 +88,7 @@
     // pointer events, not a keyboard path.
     [Parameter] public bool Disabled { get; set; }
 
-    private string _readoutText = "";
-    private TimeRange? _shownWindow;
+    private Draft _readout = Draft.Empty;
 
     private string? _dragTarget; // "from" | "to" | null when idle
     private int _dragFrom;
@@ -102,10 +101,9 @@
 
     protected override void OnParametersSet()
     {
-        if (Window is { } served && served != _shownWindow)
+        if (Window is { } served)
         {
-            _shownWindow = served;
-            _readoutText = served.Label;
+            _readout = _readout.Served(served.Label);
         }
     }
 
@@ -116,7 +114,7 @@
             return;
         }
 
-        _readoutText = e.Value?.ToString() ?? "";
+        _readout = _readout.Type(e.Value?.ToString() ?? "");
     }
 
     private async Task OnReadoutKeyDown(KeyboardEventArgs e)
@@ -126,8 +124,9 @@
             return;
         }
 
-        if (YearInput.Read(_readoutText) is { } typed)
+        if (YearInput.Read(_readout.Text) is { } typed)
         {
+            _readout = _readout.Committed();
             await OnWindowChange.InvokeAsync((typed.FromYear, typed.ToYear));
         }
     }
@@ -139,6 +138,7 @@
             return;
         }
 
+        _readout = _readout.Discarded();
         await OnWindowChange.InvokeAsync((era.FromYear, era.ToYear));
     }
 
@@ -196,6 +196,7 @@
         _dragTarget = null;
         if (from != From || to != To)
         {
+            _readout = _readout.Discarded();
             await OnWindowChange.InvokeAsync((from, to));
         }
     }

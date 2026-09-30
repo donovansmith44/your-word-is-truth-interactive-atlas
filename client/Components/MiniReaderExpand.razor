@@ -65,6 +65,7 @@ else
     private bool _expanded;
     private Chapter? _chapter;
     private ChapterText? _text;
+    private readonly RequestSeries _chapters = new();
     private string? _error;
     private bool _scrolledThisExpand;
     private readonly AsyncMemo<IJSObjectReference> _readerJs = new();
@@ -79,10 +80,10 @@ else
             _error = null;
             try
             {
-                var chapterTask = Atlas.Chapter(Book, Chapter);
-                var textTask = Atlas.ChapterText(Book, Chapter);
-                _text = await textTask;
-                _chapter = await chapterTask;
+                if (await _chapters.Next().Fetch(() => Atlas.Chapter(Book, Chapter), () => Atlas.ChapterText(Book, Chapter)) is { } loaded)
+                {
+                    (_chapter, _text) = loaded;
+                }
             }
             catch (Exception)
             {

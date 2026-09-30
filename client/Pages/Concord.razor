@@ -165,7 +165,7 @@
     private string? _prevRef;
     private bool _loading = true;
     private string? _error;
-    private int _requestId;
+    private readonly RequestSeries _windows = new();
     private IExplorable? _activeNode;
 
     // Navigation here never triggers a Blazor route change, so the router's
@@ -216,12 +216,18 @@
     }
 
     private ContentsTreeModel? _contents;
+    private readonly RequestSeries _startup = new();
 
     private async Task LoadContentsAsync()
     {
         try
         {
-            _contents = ContentsTreeModel.From(await Atlas.Contents(Corpus.Concord));
+            if (await _startup.Next().Fetch(() => Atlas.Contents(Corpus.Concord)) is not { } contents)
+            {
+                return;
+            }
+
+            _contents = ContentsTreeModel.From(contents);
             SyncContentsToPosition();
         }
         catch (Exception)
@@ -308,7 +314,7 @@
 
     private async Task LoadWindowAsync(string fromRef, WindowDir dir)
     {
-        var myRequest = ++_requestId;
+        var request = _windows.Next();
         _loading = true;
         _error = null;
         _activeNode = null;
@@ -317,8 +323,7 @@
 
         try
         {
-            var window = await Graph.Reading(fromRef, PageSize, dir, corpus: Corpus.Concord);
-            if (myRequest != _requestId)
+            if (await request.Fetch(() => Graph.Reading(fromRef, PageSize, dir, corpus: Corpus.Concord)) is not { } window)
             {
                 return;
             }
@@ -344,7 +349,7 @@
         }
         catch (Exception)
         {
-            if (myRequest != _requestId)
+            if (request.Superseded)
             {
                 return;
             }
@@ -353,7 +358,7 @@
         }
         finally
         {
-            if (myRequest == _requestId)
+            if (!request.Superseded)
             {
                 _loading = false;
                 StateHasChanged();

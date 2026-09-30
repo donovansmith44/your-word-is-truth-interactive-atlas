@@ -18,7 +18,7 @@ public sealed class SliderWindowTests
         var atlas = new StubbedAtlas(GospelsToAd33Scene);
 
         // Act
-        var served = await SliderWindow.ServedFor(atlas.Client(), known: null, from: -5, to: 33);
+        var served = await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: null, from: -5, to: 33);
 
         // Assert
         Assert.Equal((GospelsToAd33, "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
@@ -31,7 +31,7 @@ public sealed class SliderWindowTests
         var atlas = new StubbedAtlas(GospelsToAd33Scene);
 
         // Act
-        var served = await SliderWindow.ServedFor(atlas.Client(), known: GospelsToAd33, from: -5, to: 33);
+        var served = await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: GospelsToAd33, from: -5, to: 33);
 
         // Assert
         Assert.Equal((GospelsToAd33, 0), (served, atlas.Asked.Count));
@@ -48,11 +48,27 @@ public sealed class SliderWindowTests
         // Act
         var served = new[]
         {
-            await SliderWindow.ServedFor(atlas.Client(), known: endingElsewhere, from: -5, to: 33),
-            await SliderWindow.ServedFor(atlas.Client(), known: startingElsewhere, from: -5, to: 33),
+            await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: endingElsewhere, from: -5, to: 33),
+            await SliderWindow.ServedFor(new RequestSeries().Next(), atlas.Client(), known: startingElsewhere, from: -5, to: 33),
         };
 
         // Assert
         Assert.Equal((GospelsToAd33, GospelsToAd33, "/api/scene?from=-5&to=33 /api/scene?from=-5&to=33"), (served[0], served[1], string.Join(" ", atlas.Asked)));
+    }
+
+    [Fact]
+    public async Task A_label_answered_after_a_newer_request_went_out_is_not_served()
+    {
+        // Arrange
+        var atlas = new StubbedAtlas(GospelsToAd33Scene);
+        var series = new RequestSeries();
+        var request = series.Next();
+        series.Next();
+
+        // Act
+        var served = await SliderWindow.ServedFor(request, atlas.Client(), known: null, from: -5, to: 33);
+
+        // Assert
+        Assert.Equal((null, "/api/scene?from=-5&to=33"), (served, string.Join(" ", atlas.Asked)));
     }
 }

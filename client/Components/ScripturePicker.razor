@@ -25,11 +25,11 @@
 
     <input class="picker-verse" type="number" data-testid="picker-verse-from" aria-label="From verse"
            min="1" max="@MaxVerse" disabled="@(SelectedChapter is null)"
-           value="@_verseFromText" @oninput="OnVerseFromInput" />
+           value="@_verseFrom.Text" @oninput="OnVerseFromInput" />
     <span class="picker-verse-sep" aria-hidden="true">&ndash;</span>
     <input class="picker-verse" type="number" data-testid="picker-verse-to" aria-label="To verse"
            min="1" max="@MaxVerse" disabled="@(SelectedChapter is null)"
-           value="@_verseToText" @oninput="OnVerseToInput" />
+           value="@_verseTo.Text" @oninput="OnVerseToInput" />
 
     <button type="button" class="picker-apply" data-testid="picker-apply" @onclick="Apply">Go</button>
 </div>
@@ -49,11 +49,12 @@
     [Parameter] public int SyncToken { get; set; }
     private int _syncedToken;
 
+    private readonly RequestSeries _startup = new();
     private List<CanonBook>? _toc;
     private string _bookCode = "";
     private string _chapterText = "";
-    private string _verseFromText = "";
-    private string _verseToText = "";
+    private Draft _verseFrom = Draft.Empty;
+    private Draft _verseTo = Draft.Empty;
 
     // The last (book, chapter) actually synced to the dropdowns -- distinct from
     // _bookCode/_chapterText, which the user's own live selection also mutates.
@@ -66,8 +67,8 @@
     // await) keeps the unconditional _toc[0] fallback below from clobbering that sync once this resolves.
     protected override async Task OnInitializedAsync()
     {
-        _toc = await Atlas.Books();
-        if (_toc.Count == 0)
+        _toc = await _startup.Next().Fetch(() => Atlas.Books());
+        if (_toc is null || _toc.Count == 0)
         {
             return;
         }
@@ -103,8 +104,8 @@
         _syncedToken = SyncToken;
         _bookCode = book;
         _chapterText = chapter.ToString();
-        _verseFromText = "";
-        _verseToText = "";
+        _verseFrom = Draft.Empty;
+        _verseTo = Draft.Empty;
     }
 
     private CanonBook? SelectedBookEntry => _toc?.FirstOrDefault(b => b.Code == _bookCode);
@@ -118,18 +119,18 @@
     private void OnBookChanged()
     {
         _chapterText = "";
-        _verseFromText = "";
-        _verseToText = "";
+        _verseFrom = Draft.Empty;
+        _verseTo = Draft.Empty;
     }
 
     private void OnChapterChanged()
     {
-        _verseFromText = "";
-        _verseToText = "";
+        _verseFrom = Draft.Empty;
+        _verseTo = Draft.Empty;
     }
 
-    private void OnVerseFromInput(ChangeEventArgs e) => _verseFromText = e.Value?.ToString() ?? "";
-    private void OnVerseToInput(ChangeEventArgs e) => _verseToText = e.Value?.ToString() ?? "";
+    private void OnVerseFromInput(ChangeEventArgs e) => _verseFrom = _verseFrom.Type(e.Value?.ToString() ?? "");
+    private void OnVerseToInput(ChangeEventArgs e) => _verseTo = _verseTo.Type(e.Value?.ToString() ?? "");
 
     private async Task Apply()
     {
@@ -142,10 +143,10 @@
         if (SelectedChapter is int chapter)
         {
             sref = $"{sref}.{chapter}";
-            if (int.TryParse(_verseFromText, out var from) && from >= 1 && from <= MaxVerse)
+            if (int.TryParse(_verseFrom.Text, out var from) && from >= 1 && from <= MaxVerse)
             {
                 sref = $"{sref}.{from}";
-                if (int.TryParse(_verseToText, out var to) && to > from && to <= MaxVerse)
+                if (int.TryParse(_verseTo.Text, out var to) && to > from && to <= MaxVerse)
                 {
                     sref = $"{sref}-{to}";
                 }
