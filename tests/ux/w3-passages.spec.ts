@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch W3 ("whole-Bible titled verse containers," third run -- Job,
@@ -56,7 +57,7 @@ test('req 1b NAMED CASE, this run\'s own new authoring: Psalm 14 and Psalm 53 (t
   // Open via Psalm 14 (a real navigation path) and confirm PARALLEL
   // ACCOUNTS shows both entries.
   await page.goto('/read/PSA/14');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('verse-event-psa_014').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();

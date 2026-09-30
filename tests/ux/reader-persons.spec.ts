@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 import { loadToc } from './lib/canon';
 
@@ -135,7 +136,7 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     if (!found) return;
 
     await page.goto(`/read/${found.book}/${found.chapter}`);
-    await page.getByTestId(`verse-line-${found.verse}`).click();
+    await openVerse(page, found.verse);
     await expect(page.getByTestId('popover-title')).toHaveText(`${found.book}.${found.chapter}.${found.verse}`);
     await expect(page.getByTestId('persons-section-heading')).toHaveCount(0);
     for (const person of found.persons) {
@@ -152,7 +153,7 @@ test.describe('Batch P: PERSONS section + the person popover', () => {
     test.skip(!empty, 'no sampled verse carried zero Person mentions');
     if (!empty) return;
     await page.goto(`/read/${empty.book}/${empty.chapter}`);
-    await page.getByTestId(`verse-line-${empty.verse}`).click();
+    await openVerse(page, empty.verse);
     await expect(page.getByTestId('popover-title')).toHaveText(`${empty.book}.${empty.chapter}.${empty.verse}`);
     await expect(page.getByTestId('persons-section-heading')).toHaveCount(0);
   });

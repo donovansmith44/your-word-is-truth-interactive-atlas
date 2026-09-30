@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { api } from './lib/api';
 
 // D5 (owner, 2026-09-15, verbatim: "when we click on a person's name
 // there's no point to just see every verse that name is mentioned ... i
@@ -75,9 +76,10 @@ test('PERSON-3: God is eternal -- no years, no year chips, the grounds are explo
 });
 
 test('PERSON-4: Jesus is the eternal Son of God, born of the Virgin Mary, the son of Joseph as was supposed', async ({ page }) => {
+  const jesus = await api.node('Person:jesus_905');
   await page.goto('/read/LUK/3');
-  await page.getByTestId('verse-mention-person-23-jesus_905').first().click();
-  await expect(page.getByTestId('popover-title')).toHaveText('Jesus');
+  await page.getByTestId('verse-mention-person-22-jesus_905').first().click();
+  await expect(page.getByTestId('popover-title')).toHaveText(jesus.label);
   await expect(page.getByTestId('person-family-parents-eternal')).toHaveText('Father (eternal Son of God)');
   await expect(page.getByTestId('person-parents-eternal-god_1324')).toHaveText('God');
   await expect(page.getByTestId('person-family-parents-virgin')).toHaveText('Mother (born of the Virgin)');

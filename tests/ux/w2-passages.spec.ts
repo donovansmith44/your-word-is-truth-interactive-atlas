@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch W2 ("whole-Bible titled verse containers," second run -- the
@@ -25,7 +26,7 @@ test('req 1b OWNER ACCEPTANCE CASE: the temple dedication expands to per-account
   const kiWitness = detail.witnesses.find((w: any) => w.book === '1KI');
   const [book, chapter, verse] = kiWitness.verse_groups[0].verses[0].split('.');
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-1ki_temple_dedication').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Solomon dedicates the temple');
 
@@ -71,7 +72,7 @@ test('req 1b NAMED CASE: 2 Kings 18-20 / Isaiah 36-39 / 2 Chronicles 32 (Hezekia
   expect(book).toBe('ISA'); // Isaiah was not yet a container-covered book at W2 authoring time -- still a legal witness target then; fully covered as of Batch W4 (stale comment corrected, no assertion here ever depended on Isaiah's own coverage state).
 
   await page.goto(`/read/${book}/${chapter}`);
-  await page.getByTestId(`verse-line-${verse}`).click();
+  await openVerse(page, verse);
   await page.getByTestId('verse-event-2ki_rabshakeh_message').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection.getByTestId('event-section-heading')).toHaveText('PARALLEL ACCOUNTS');

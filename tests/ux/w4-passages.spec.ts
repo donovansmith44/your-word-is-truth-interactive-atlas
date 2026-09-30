@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch W4 ("whole-Bible titled verse containers," fourth run -- the
@@ -44,7 +45,7 @@ test('req 1b NAMED CASE (2 Kings 18-20 || Isaiah 36-39, Crockett sections 175-17
   // Isaiah authoring makes possible) and confirm PARALLEL ACCOUNTS shows
   // all three witnesses.
   await page.goto('/read/ISA/36');
-  await page.getByTestId('verse-line-2').click();
+  await openVerse(page, 2);
   await page.getByTestId('verse-event-2ki_rabshakeh_message').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();
@@ -67,7 +68,7 @@ test('req 1b NAMED CASE, this run\'s own new authoring (both sides): Isaiah 2:2-
   expect(micWitness.verse_groups[0].verses[0]).toBe('MIC.4.1');
 
   await page.goto('/read/ISA/2');
-  await page.getByTestId('verse-line-2').click();
+  await openVerse(page, 2);
   await page.getByTestId('verse-event-isa_mountain_of_the_lords_house').click();
   const witnessesSection = page.getByTestId('popover-section-event-witnesses');
   await expect(witnessesSection).toBeVisible();

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch HOTFIX-4 requirement 1 ("whole-DAG chronological traversal"),
@@ -188,7 +189,7 @@ test('HOTFIX-4 req 2/5, TRAV-1/CHRONO-3: a general-kind container shows no trave
   expect(positions.timeline, 'a general-kind event carries NO timeline key at all, not an empty object').toBeFalsy();
 
   await page.goto('/read/LUK/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('verse-event-rob_luke_preface').click();
   await expect(page.getByTestId('popover-title')).toHaveText('Luke\'s preface to Theophilus');
 
@@ -900,7 +901,7 @@ test('EV-1/dup-death regression: MAT.8.3 cites exactly ONE event -- after ATTEST
   expect(verseOut.events.map((e: any) => e.id), 'MAT.8.3 must cite exactly one event id, never two independently-dated opinions about the identical pericope').toEqual(['mat_leper_healed']);
 
   await page.goto('/read/MAT/8');
-  await page.getByTestId('verse-line-3').click();
+  await openVerse(page, 3);
   await expect(page.getByTestId('popover-title')).toHaveText('MAT.8.3');
 
   const eventSection = page.getByTestId('popover-section-event-membership');

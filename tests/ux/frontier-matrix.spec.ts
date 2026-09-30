@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // EVT-3 Ticket 1 (the smart-frontier restructure), spec §4e conformance,
@@ -53,7 +54,7 @@ async function openEventPopover(page: any, eventId: string) {
 
 test('DIRECTION-B/Verse x CrossReferences: GEN.1.1 renders real, non-empty cross-references', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-section-xrefs')).toBeVisible();
   await expect(page.locator('[data-testid^="xref-item-"]').first()).toBeVisible();
 });
@@ -64,7 +65,7 @@ test('DIRECTION-B/Verse x Parallels: a Nazareth-visit witness verse renders a re
   const matWitness = detail.witnesses.find((w: any) => w.book === 'MAT');
   const v = parseVerse(matWitness.verse_groups[0].verses[0]);
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-section-parallels')).toBeVisible();
 });
 
@@ -73,7 +74,7 @@ test('DIRECTION-B/Verse x EventMembership: a jm_egypt witness verse renders a re
   expect(detail.kind).toBe('event');
   const v = parseVerse(detail.witnesses[0].verse_groups[0].verses[0]);
   await page.goto(`/read/${v.book}/${v.chapter}`);
-  await page.getByTestId(`verse-line-${v.verse}`).click();
+  await openVerse(page, v.verse);
   await expect(page.getByTestId('popover-section-event-membership')).toBeVisible();
   await expect(page.getByTestId('verse-event-jm_egypt')).toBeVisible();
 });
@@ -82,13 +83,13 @@ test('DIRECTION-B/Verse x PassageMembership: PSA.119.105 renders a real general-
   const detail = await api.verse('PSA.119.105');
   expect(detail.events.some((e: any) => e.kind === 'general'), 'PSA.119.105 must genuinely cite a general-kind passage for this test to mean anything').toBe(true);
   await page.goto('/read/PSA/119');
-  await page.getByTestId('verse-line-105').click();
+  await openVerse(page, 105);
   await expect(page.getByTestId('popover-section-passage-membership')).toBeVisible();
 });
 
 test('DIRECTION-B/Verse x CatechismSupport: MAT.28.19 renders a real THE SMALL CATECHISM citation', async ({ page }) => {
   await page.goto('/read/MAT/28');
-  await page.getByTestId('verse-line-19').click();
+  await openVerse(page, 19);
   await expect(page.getByTestId('popover-section-catechism')).toBeVisible();
   await expect(page.locator('[data-testid^="catechism-item-"]').first()).toBeVisible();
 });

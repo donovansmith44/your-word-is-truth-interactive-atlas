@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 
 // Batch ST-3 -- Selection & FocusStack atoms (controller rulings R2/R3/R4).
 // selection-tray.spec.ts/saved-explorations.spec.ts (both G2) already pin
@@ -18,7 +19,7 @@ test.beforeEach(async ({ page }) => {
 
 test('ST-3/R3: the popover back-stack (now a FocusStack dispatch, not a local Stack<T>) still drills in and backs out exactly as before', async ({ page }) => {
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
   await expect(page.getByTestId('popover-breadcrumb-back')).toHaveCount(0); // one entry -- nothing to back INTO yet
 
@@ -51,7 +52,7 @@ test('ST-3/Adjudication D: a Back landing is recorded in the trail (G2\'s own sh
   // GEN.1.1), not two, proving the "return to X" entry the Back landing
   // itself produces is genuinely recorded.
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.1');
 
   await page.getByTestId('popover-chip-book').click();
@@ -95,13 +96,13 @@ test('ST-3/R3: closing the popover and reopening a DIFFERENT node starts a fresh
   // (a genuine multi-instance Playwright equivalent was investigated and
   // found impractical -- see that file's own header for why).
   await page.goto('/read/GEN/1');
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await page.getByTestId('popover-chip-book').click(); // GEN -- a 2-deep stack
   await expect(page.getByTestId('popover-breadcrumb-back')).toBeVisible();
   await page.getByTestId('popover-close').click();
   await expect(page.getByTestId('popover')).toHaveCount(0);
 
-  await page.getByTestId('verse-line-2').click();
+  await openVerse(page, 2);
   await expect(page.getByTestId('popover-title')).toHaveText('GEN.1.2');
   // A stale, un-reset atom would still hold the prior session's 2-deep
   // stack (GEN.1.1 -> GEN), making THIS back button visible even though

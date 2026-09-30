@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 
 // Batch RED-1 (owner order 2026-08-25, verbatim: "Red letters on Jesus'
@@ -74,7 +75,7 @@ test.describe('Batch RED-1: red letters (words of Christ)', () => {
 
   test('RED-1: red letters also render in the verse popover focal preview (a peek), not just the primary reader column', async ({ page }) => {
     await page.goto('/read/MAT/4');
-    await page.getByTestId('verse-line-19').click();
+    await openVerse(page, 19);
     await expect(page.getByTestId('popover-title')).toHaveText('MAT.4.19');
     // VerseTextSection's own compact FOCUS preview -- the SAME MentionText
     // component, the SAME rule, a genuinely different rendering surface
@@ -96,7 +97,7 @@ test.describe('Batch RED-1: red letters (words of Christ)', () => {
 
   test('RED-1: a parallel-account cross-reference preview also renders its own red letters (PassageList.razor coverage)', async ({ page }) => {
     await page.goto('/read/MAT/4');
-    await page.getByTestId('verse-line-19').click();
+    await openVerse(page, 19);
     await expect(page.getByTestId('popover-title')).toHaveText('MAT.4.19');
     const xrefSection = page.getByTestId('xrefs-section-heading');
     await expect(xrefSection).toBeVisible();

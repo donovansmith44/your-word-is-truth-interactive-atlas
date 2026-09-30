@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbChapterRef, arbVerseRef } from './lib/canon';
@@ -148,7 +149,7 @@ test('READ-3: cross-ref chains push and pop breadcrumbs faithfully', async ({ pa
   await fcAssert(fc.asyncProperty(arbVerseRef(toc), fc.array(fc.nat(4), { maxLength: 3 }), async (vref, picks) => {
     const [b, c, v] = vref.split('.');
     await page.goto(`/read/${b}/${c}`);
-    await page.getByTestId(`verse-line-${v}`).click();
+    await openVerse(page, v);
     const titles = [vref];
     for (const pick of picks) {
       const items = page.getByTestId(/^xref-item-/);

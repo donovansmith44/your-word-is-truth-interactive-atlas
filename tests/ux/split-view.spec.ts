@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 import { loadToc } from './lib/canon';
 import { LIT_MARKER_TESTID, VISIBLE_LIT_MARKER_SELECTOR } from './lib/markers';
@@ -503,7 +504,7 @@ test('PANE-ANCHOR-1: a verse popover opened from the reader pane stays fully wit
   await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
 
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover')).toBeVisible();
 
   const readerBox = await page.getByTestId('reader-root').boundingBox();
@@ -569,7 +570,7 @@ test('PANE-ANCHOR-1: full-page (non-split) popovers stay viewport-centered, unaf
   await page.goto('/read/GEN/12');
   await expect(page.getByTestId('split-view')).toHaveCount(0);
 
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover')).toBeVisible();
   const popoverBox = await page.getByTestId('popover').boundingBox();
   expect(popoverBox).toBeTruthy();
@@ -646,7 +647,7 @@ test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll po
   const longest = await longestChapter(toc);
 
   await page.goto(`/read/${longest.book}/${longest.chapter}`);
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-backdrop')).toBeVisible();
 
   // Sampled at rest (0), mid-scroll, and deep-scroll -- the SAME box every
@@ -678,7 +679,7 @@ test('BACKDROP-1: the popover backdrop covers the full viewport at any scroll po
 
   await page.goto(`/read/${longest.book}/${longest.chapter}?split=world`);
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
-  await page.getByTestId('verse-line-1').click();
+  await openVerse(page, 1);
   await expect(page.getByTestId('popover-backdrop')).toBeVisible();
 
   // The reader pane's own box (what the backdrop USED to be scoped to,
