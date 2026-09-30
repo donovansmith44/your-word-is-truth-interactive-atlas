@@ -10,8 +10,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use atlas_graph::sqlite::source::{sibling_dir, SectionLayout};
-use atlas_graph::GraphService;
+use atlas_graph::sqlite::source::SectionLayout;
 
 struct Args {
     data_dir: PathBuf,
@@ -68,24 +67,9 @@ async fn main() -> Result<()> {
 
     let load_start = std::time::Instant::now();
     let (graph, data) = if args.build_from_raw {
-        let raw_dir = SectionLayout::under(&args.data_dir).raw_dir();
-        let curated_dir = sibling_dir(&args.data_dir, "curated");
-        println!("atlas-graph: --build-from-raw -- building in memory from {}", raw_dir.display());
-        let data = atlas_etl::compile::compile(&raw_dir, &curated_dir).with_context(|| format!("compiling {} + {}", raw_dir.display(), curated_dir.display()))?.data;
-        // `GraphService::build` runs the KJV fidelity law as part of construction and
-        // refuses to construct on a violation, so reaching the line after it is
-        // already proof that the law held.
-        let graph = GraphService::build(&raw_dir, &data)
-            .with_context(|| format!("building the explorable graph from {} (kjv.json + xrefs/cross_references.txt)", raw_dir.display()))?;
-        // Primes the graph-backed scene source, which the artifact path primes inside
-        // `atlas_contract::load`: without this the first scene, chapter or narrative
-        // request on this path would pay the whole materialisation inline.
-        graph.scene_source(&data);
-        (graph, data)
+        println!("atlas-graph: --build-from-raw -- building in memory from {}", SectionLayout::under(&args.data_dir).raw_dir().display());
+        atlas_contract::load::build_from_raw(&args.data_dir)?
     } else {
-        // Through `atlas_contract::load`, which the pact recorder calls too, so the
-        // recorded evidence the contract gate runs against cannot drift from what
-        // this binary actually serves.
         atlas_contract::load::load_graph_and_data(&args.data_dir)?
     };
     let data = Arc::new(data);

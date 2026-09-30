@@ -18,13 +18,8 @@ fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            let data_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data");
-            let data = atlas_etl::compile::compile(&data_dir.join("raw"), &data_dir.join("curated"))
-                .expect("data/raw + data/curated must compile -- run `cargo run -p atlas-etl` from server/ first to verify")
-                .data;
-            let graph = GraphService::build(&data_dir.join("raw"), &data)
-                .expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
-            (Arc::new(data.finish()), Arc::new(graph))
+            let (graph, data) = atlas_contract::load::build_from_raw(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("data/raw + data/curated must compile into a graph");
+            (Arc::new(data), Arc::new(graph))
         })
         .clone()
 }
