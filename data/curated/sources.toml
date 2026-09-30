@@ -110,16 +110,6 @@ link = "https://github.com/STEPBible"
 licenses_row_key = "STEPBible TAGNT"
 
 [[source]]
-id = "macula"
-category = "scripture"
-title = "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)"
-what_it_is = "Clear Bible's MACULA datasets: Louw-Nida section references for the Greek NT and SDBH lexical-domain codes for the Hebrew OT (semantic domains per word)."
-what_we_built = "Each lexicon entry carries its sorted semantic-domain codes (the lexicon section's domain table), written so a later thesaurus-by-domain query can answer from them; no endpoint reads them yet."
-license = "CC BY 4.0"
-link = "https://github.com/Clear-Bible/macula-greek"
-licenses_row_key = "MACULA Greek and Hebrew"
-
-[[source]]
 id = "strongs"
 category = "scripture"
 title = "Strong's Exhaustive Concordance dictionaries (James Strong, 1890)"
@@ -338,14 +328,14 @@ source = "brainfuel-bible"
 confidence = "Imported"
 
 # LEX-1: the lexicon section. Entry nodes are the Strong's dictionary text
-# with TBESG's gloss and MACULA's domains folded in (one id, the STEPBible
+# with TBESG's gloss folded in (one id, the STEPBible
 # row says what it draws on); the word-alignment rows are STEPBible's own
 # NT (TAGNT) and OT (TAHOT) assertions.
 [[provenance]]
 id = "stepbible-tbesg"
 source = "stepbible"
 confidence = "Imported"
-locator = "lexicon entries (Strong's 1890 text + TBESG gloss + MACULA domains)"
+locator = "lexicon entries (Strong's 1890 text + TBESG gloss)"
 
 [[provenance]]
 id = "stepbible-tagnt"

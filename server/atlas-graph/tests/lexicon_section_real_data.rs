@@ -83,13 +83,12 @@ fn an_entrys_concordance_is_in_canonical_order_and_the_payload_is_as_published()
     assert!(verses.windows(2).all(|w| w[0] < w[1]), "canonical reading order: {verses:?}");
     let node = snap.node(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() }).unwrap();
     match node.payload {
-        atlas_graph_types::node::NodePayload::LexiconEntry { strong, lang, lemma, translit, glosses, domains, root, .. } => {
+        atlas_graph_types::node::NodePayload::LexiconEntry { strong, lang, lemma, translit, glosses, root, .. } => {
             assert_eq!(strong, "G3056");
             assert_eq!(lang, "grc");
             assert_eq!(lemma, "λ\u{1f79}γος");
             assert_eq!(translit.as_deref(), Some("lógos"));
             assert_eq!(glosses[1], "word");
-            assert!(domains.contains(&"13.115".to_string()));
             assert_eq!(root.as_deref(), Some("G3004"));
         }
         other => panic!("{other:?}"),

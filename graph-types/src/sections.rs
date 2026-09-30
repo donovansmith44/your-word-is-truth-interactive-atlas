@@ -252,7 +252,7 @@ pub fn extra_tables_of(section: Section) -> &'static [&'static str] {
         Section::Kjv => &["verse", "red_letter_span", "kjv_token"],
         Section::Concord => &["concord_unit", "concord_token"],
         Section::Kretzmann => &[],
-        Section::Lexicon => &["lexicon_entry", "lexicon_domain", "token"],
+        Section::Lexicon => &["lexicon_entry", "token"],
     }
 }
 
@@ -465,7 +465,7 @@ mod laws {
         assert_eq!(extra_tables_of(Section::Kjv), &["verse", "red_letter_span", "kjv_token"]);
         assert_eq!(extra_tables_of(Section::Concord), &["concord_unit", "concord_token"]);
         assert!(extra_tables_of(Section::Kretzmann).is_empty());
-        assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "lexicon_domain", "token"]);
+        assert_eq!(extra_tables_of(Section::Lexicon), &["lexicon_entry", "token"]);
         assert_eq!(extra_tables_of(Section::Core).len(), 26);
         let order = logical_table_order(Section::Core);
         assert_eq!(order.last().copied(), Some("provenance_entry"));

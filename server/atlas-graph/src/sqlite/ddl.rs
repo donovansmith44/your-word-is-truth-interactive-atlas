@@ -570,10 +570,6 @@ CREATE TABLE lexicon_entry (
   strong TEXT NOT NULL, lang TEXT NOT NULL,
   lemma TEXT NOT NULL, translit TEXT, pos TEXT, root_strong TEXT
 ) WITHOUT ROWID;
-CREATE TABLE lexicon_domain (
-  node_id TEXT NOT NULL, ord INTEGER NOT NULL, code TEXT NOT NULL,
-  PRIMARY KEY (node_id, ord)
-) WITHOUT ROWID;
 CREATE TABLE token (
   book INTEGER NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
   layer TEXT NOT NULL,
@@ -587,7 +583,6 @@ CREATE TABLE token (
 const EXTRA_INDEX_DDL_LEXICON: &str = "
 CREATE UNIQUE INDEX lexicon_by_strong ON lexicon_entry (strong);
 CREATE INDEX lexicon_by_lemma ON lexicon_entry (lang, lemma);
-CREATE INDEX domain_by_code ON lexicon_domain (code, node_id);
 ";
 
 pub fn extra_ddl(section: Section) -> &'static [&'static str] {

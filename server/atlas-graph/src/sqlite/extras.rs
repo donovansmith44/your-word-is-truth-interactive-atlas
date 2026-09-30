@@ -84,7 +84,6 @@ pub static LEXICON_ENTRY: TableSpec = TableSpec {
     columns: &["node_id", "strong", "lang", "lemma", "translit", "pos", "root_strong"],
     pk: &["node_id"],
 };
-pub static LEXICON_DOMAIN: TableSpec = TableSpec { name: "lexicon_domain", columns: &["node_id", "ord", "code"], pk: &["node_id", "ord"] };
 pub static TOKEN: TableSpec = TableSpec {
     name: "token",
     columns: &["book", "chapter", "verse", "layer", "ord", "form", "lemma", "xpos", "translit", "strong", "aligned"],
@@ -123,7 +122,7 @@ static CORE_SPECS: [&TableSpec; 26] = [
 ];
 static KJV_SPECS: [&TableSpec; 3] = [&VERSE, &RED_LETTER_SPAN, &KJV_TOKEN];
 static CONCORD_SPECS: [&TableSpec; 2] = [&CONCORD_UNIT, &CONCORD_TOKEN];
-static LEXICON_SPECS: [&TableSpec; 3] = [&LEXICON_ENTRY, &LEXICON_DOMAIN, &TOKEN];
+static LEXICON_SPECS: [&TableSpec; 2] = [&LEXICON_ENTRY, &TOKEN];
 
 pub fn table_specs_of(section: Section) -> &'static [&'static TableSpec] {
     match section {
@@ -229,7 +228,7 @@ impl Extras {
     ) -> Result<Extras, SqliteError> {
         let resolved = &chrono.resolved;
         let (mut place, mut era, mut polity_era, mut verse, mut kjv_token, mut concord, mut concord_token) = (vec![], vec![], vec![], vec![], vec![], vec![], vec![]);
-        let (mut lexicon_entry, mut lexicon_domain) = (vec![], vec![]);
+        let mut lexicon_entry = vec![];
         for n in g.nodes.values() {
             let id = any_node_id_str(&n.id);
             match &n.payload {
@@ -250,7 +249,7 @@ impl Extras {
                         ]);
                     }
                 }
-                NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, domains, root, .. } => {
+                NodePayload::LexiconEntry { strong, lang, lemma, translit, pos, root, .. } => {
                     lexicon_entry.push(vec![
                         Col::Text(id.clone()),
                         Col::Text(strong.clone()),
@@ -260,9 +259,6 @@ impl Extras {
                         opt_text(pos),
                         opt_text(root),
                     ]);
-                    for (i, code) in domains.iter().enumerate() {
-                        lexicon_domain.push(vec![Col::Text(id.clone()), Col::Int(i as i64), Col::Text(code.clone())]);
-                    }
                 }
                 NodePayload::TextUnit { .. } => {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
@@ -337,7 +333,6 @@ impl Extras {
             ExtraTable { spec: &CONCORD_UNIT, rows: concord },
             ExtraTable { spec: &CONCORD_TOKEN, rows: concord_token },
             ExtraTable { spec: &LEXICON_ENTRY, rows: lexicon_entry },
-            ExtraTable { spec: &LEXICON_DOMAIN, rows: lexicon_domain },
         ]);
         Ok(out)
     }

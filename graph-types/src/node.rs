@@ -101,7 +101,7 @@ pub enum NodePayload {
     Source { label: String },
     Translation { label: String },
     /// Keyed by its Strong's number, which is the node id's raw part. `glosses`/`senses` in
-    /// source order, `domains` sorted.
+    /// source order.
     LexiconEntry {
         strong: String,
         lang: String,
@@ -110,7 +110,6 @@ pub enum NodePayload {
         pos: Option<String>,
         glosses: Vec<String>,
         senses: Vec<String>,
-        domains: Vec<String>,
         root: Option<String>,
     },
 }

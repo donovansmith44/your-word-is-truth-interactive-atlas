@@ -58,7 +58,6 @@ fn author_entries(ctx: &mut BuildCtx, corpus: &LexiconCorpus, stats: &mut Lexico
                 pos: e.pos.clone(),
                 glosses: e.glosses.clone(),
                 senses: e.senses.clone(),
-                domains: e.domains.clone(),
                 root: e.root.clone(),
             },
             provenance: ProvenanceId::from(PROVENANCE_ENTRY),
