@@ -1,6 +1,5 @@
-@using BibleAtlas.Client.Explore
 @using BibleAtlas.Client.State
-@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
+@inject StateAtom<IReadOnlyList<NodeRef>> SelectionAtom
 @implements IDisposable
 
 @{
@@ -18,9 +17,8 @@
                 var item = items[i];
                 <li>
                     <span class="selection-chip" data-testid="@($"selection-chip-{i}")">
-                        <span class="selection-chip-kind">@item.Kind</span>
-                        <span class="selection-chip-title">@item.Title</span>
-                        <button type="button" class="selection-chip-remove" aria-label="@($"Remove {item.Title} from selection")"
+                        <span class="selection-chip-title">@item.Label</span>
+                        <button type="button" class="selection-chip-remove" aria-label="@($"Remove {item.Label} from selection")"
                                 @onclick="() => SelectionAtom.Dispatch(new RemoveSelection(item))">&times;</button>
                     </span>
                 </li>
@@ -31,8 +29,6 @@
 }
 
 @code {
-    // A dispatch from another component's handler onto this shared atom doesn't automatically
-    // re-render this separate instance, so it subscribes to the atom's Changed event instead.
     protected override void OnInitialized() => SelectionAtom.Changed += OnChanged;
 
     private void OnChanged() => InvokeAsync(StateHasChanged);

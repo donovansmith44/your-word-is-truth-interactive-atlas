@@ -8,7 +8,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
-@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
+@inject StateAtom<IReadOnlyList<NodeRef>> SelectionAtom
 @inject PaneScopes Panes
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 
@@ -418,9 +418,9 @@
         _activeNode = node;
     }
 
-    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
 
-    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
 
     private void ResetXrefEntryState()
     {

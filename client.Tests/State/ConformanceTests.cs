@@ -224,10 +224,10 @@ public class ConformanceTests
         RegexOptions.Compiled);
 
     private static readonly Regex SelectionShapedListPattern = new(
-        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:List|IReadOnlyList|ImmutableArray)<ExplorationDescriptor>\s+(_\w+)",
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?(?:List|IReadOnlyList|ImmutableArray)<NodeRef>\s+(_\w+)",
         RegexOptions.Compiled);
     private static readonly Regex SelectionShapedArrayPattern = new(
-        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?ExplorationDescriptor\[\]\s+(_\w+)",
+        @"(?:private|public|protected|internal)\s+(?:static\s+)?(?:readonly\s+)?NodeRef\[\]\s+(_\w+)",
         RegexOptions.Compiled);
 
     [Fact]
@@ -257,7 +257,7 @@ public class ConformanceTests
     [Fact]
     public void NoComponentHeldSharedState_PlantedImmutableArraySelectionViolation_IsCaught()
     {
-        const string planted = "private readonly ImmutableArray<ExplorationDescriptor> _selectionCopy;";
+        const string planted = "private readonly ImmutableArray<NodeRef> _selectionCopy;";
 
         Assert.Matches(SelectionShapedListPattern, planted);
     }
@@ -265,7 +265,7 @@ public class ConformanceTests
     [Fact]
     public void NoComponentHeldSharedState_PlantedArraySelectionViolation_IsCaught()
     {
-        const string planted = "private ExplorationDescriptor[] _selectionCopy;";
+        const string planted = "private NodeRef[] _selectionCopy;";
 
         Assert.Matches(SelectionShapedArrayPattern, planted);
     }

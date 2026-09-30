@@ -11,7 +11,7 @@
 @inject ViewRegistry Registry
 @inject IJSRuntime JS
 @inject ViewStateService ViewState
-@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
+@inject StateAtom<IReadOnlyList<NodeRef>> SelectionAtom
 
 <PageTitle>Bible Explorer &mdash; Kretzmann</PageTitle>
 
@@ -548,9 +548,9 @@
     // VerseLine/MentionScan already branch a Ctrl/Cmd-click away from
     // OnExplore into these callbacks instead; leaving them unwired makes
     // the click a dead gesture (no popover, no tray add), not a no-op.
-    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+    private void OnLineToggleSelect(VerseNode node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
 
-    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+    private void OnMentionToggleSelect(IExplorable node) => SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
 
     private void OpenChapter()
     {

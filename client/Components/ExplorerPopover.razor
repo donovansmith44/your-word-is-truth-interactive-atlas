@@ -10,7 +10,7 @@
 @inject SavedExplorationsService SavedExplorations
 @inject StateAtom<ExplorationState> ExplorationAtom
 @inject OwnershipRegistry Ownership
-@inject StateAtom<IReadOnlyList<ExplorationDescriptor>> SelectionAtom
+@inject StateAtom<IReadOnlyList<NodeRef>> SelectionAtom
 @inject StateAtom<ViewArrangement> ViewArrangementAtom
 @implements IPopoverSectionContext
 @implements IDisposable
@@ -438,7 +438,7 @@
 
     public Task ToggleSelectAsync(IExplorable node)
     {
-        SelectionAtom.Dispatch(new ToggleSelection(ExplorationDescriptor.Capture(node)));
+        SelectionAtom.Dispatch(new ToggleSelection(node.Identity));
         return Task.CompletedTask;
     }
 

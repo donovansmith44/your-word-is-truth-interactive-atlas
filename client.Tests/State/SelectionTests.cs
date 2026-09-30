@@ -1,98 +1,105 @@
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Contracts;
-using BibleAtlas.Client.Explore;
 using BibleAtlas.Client.State;
 
 namespace BibleAtlas.Client.Tests.State;
 
-/// <summary>
-/// Batch ST-3 (R2/R5): law + shape coverage for the Selection atom
-/// (Toggle/Remove/Clear) -- an <c>IReadOnlyList{ExplorationDescriptor}</c>
-/// value, using <see cref="SequenceEqualityComparer{T}"/> (see that type's
-/// own header for why the default comparer would be wrong here). Toggle's
-/// own deliberate NON-idempotence (per-intent sense) is tested as a NEGATIVE
-/// control, same "Increment" precedent StateAtomLawTests.cs already
-/// established -- the POSITIVE property this atom actually promises is
-/// "idempotent TOGGLE-PAIRS" (R5's own phrasing): two toggles of the SAME
-/// descriptor return to the ORIGINAL list.
-/// </summary>
 public class SelectionTests
 {
-    private static StateAtom<IReadOnlyList<ExplorationDescriptor>> NewAtom(IReadOnlyList<ExplorationDescriptor>? initial = null) =>
-        new("selection", initial ?? Selection.Empty, SequenceEqualityComparer<ExplorationDescriptor>.Instance);
+    private const int PairedTogglesPerRun = 25;
+    private const int DispatchesPerRun = 30;
+    private const int FoldedDispatchesPerRun = 40;
+    private const int ProjectionsWatching = 4;
+    private const int PoolSize = 6;
 
-    private static ExplorationDescriptor D(string key) => new("Place", key, key);
+    private static StateAtom<IReadOnlyList<NodeRef>> NewAtom(IReadOnlyList<NodeRef>? initial = null) =>
+        new("selection", initial ?? Selection.Empty, SequenceEqualityComparer<NodeRef>.Instance);
 
-    // ------------------------------------------------------------------
-    // SequenceEqualityComparer: proves the atom's OWN law 2 depends on it
-    // (a naive default comparer would treat two content-equal-but-distinct
-    // List instances as different, breaking idempotence for every intent
-    // here, since every Apply below returns a FRESH list).
-    // ------------------------------------------------------------------
+    private static NodeRef Place(string id) => ServedGraph.Ref(NodeKind.Place, $"Place:{id}", id);
+
+    private static List<NodeRef> Pool() => Enumerable.Range(0, PoolSize).Select(i => Place($"item-{i}")).ToList();
 
     [Fact]
-    public void Law2_Idempotence_ADispatchThatReproducesTheCurrentListRaisesNoChanged()
+    public void A_dispatch_that_reproduces_the_current_list_raises_no_change()
     {
-        // ClearSelection on an already-empty atom is the simplest case: two
-        // SEPARATE Array.Empty<T> "lists" (well, the same static instance
-        // here, but Toggle/Remove below build genuinely fresh List<T>
-        // instances) must compare equal for law 2 to hold at all.
+        // Arrange
         var atom = NewAtom();
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
+        var changes = 0;
+        atom.Changed += () => changes++;
 
+        // Act
         atom.Dispatch(new ClearSelection());
 
-        Assert.Equal(0, changedCount);
+        // Assert
+        Assert.Equal(0, changes);
     }
 
     [Fact]
-    public void SequenceEqualityComparer_TwoDistinctListInstancesWithTheSameContentAreEqual()
+    public void Two_distinct_lists_with_the_same_nodes_in_the_same_order_are_one_selection()
     {
-        var a = new List<ExplorationDescriptor> { D("x"), D("y") };
-        var b = new List<ExplorationDescriptor> { D("x"), D("y") };
-        Assert.NotSame(a, b);
-        Assert.True(SequenceEqualityComparer<ExplorationDescriptor>.Instance.Equals(a, b));
+        // Arrange
+        var a = new List<NodeRef> { Place("x"), Place("y") };
+        var b = new List<NodeRef> { Place("x"), Place("y") };
+
+        // Act
+        var same = SequenceEqualityComparer<NodeRef>.Instance.Equals(a, b);
+
+        // Assert
+        Assert.Equal((false, true), (ReferenceEquals(a, b), same));
     }
 
     [Fact]
-    public void SequenceEqualityComparer_OrderMatters_SelectionIsAnOrderedList()
+    public void A_selection_is_ordered_so_the_same_nodes_in_another_order_are_another_selection()
     {
-        var a = new List<ExplorationDescriptor> { D("x"), D("y") };
-        var b = new List<ExplorationDescriptor> { D("y"), D("x") };
-        Assert.False(SequenceEqualityComparer<ExplorationDescriptor>.Instance.Equals(a, b));
+        // Arrange
+        var a = new List<NodeRef> { Place("x"), Place("y") };
+        var b = new List<NodeRef> { Place("y"), Place("x") };
+
+        // Act
+        var same = SequenceEqualityComparer<NodeRef>.Instance.Equals(a, b);
+
+        // Assert
+        Assert.False(same);
     }
 
-    // ------------------------------------------------------------------
-    // Toggle: not-selected -> selected -> not-selected. Idempotent
-    // TOGGLE-PAIRS (R5's own phrasing), NOT literal per-intent idempotence
-    // (negative control, mirroring StateAtomLawTests.cs's own Increment).
-    // ------------------------------------------------------------------
-
     [Fact]
-    public void Toggle_NotYetSelected_AddsIt()
+    public void Toggling_a_node_not_yet_selected_adds_it()
     {
+        // Arrange
         var atom = NewAtom();
-        atom.Dispatch(new ToggleSelection(D("place-1")));
-        Assert.Equal(new[] { D("place-1") }, atom.Value);
+
+        // Act
+        atom.Dispatch(new ToggleSelection(Place("place-1")));
+
+        // Assert
+        Assert.Equal([Place("place-1")], atom.Value);
     }
 
     [Fact]
-    public void Toggle_AlreadySelected_RemovesIt()
+    public void Toggling_a_selected_node_removes_it()
     {
-        var atom = NewAtom(new List<ExplorationDescriptor> { D("place-1") });
-        atom.Dispatch(new ToggleSelection(D("place-1")));
+        // Arrange
+        var atom = NewAtom([Place("place-1")]);
+
+        // Act
+        atom.Dispatch(new ToggleSelection(Place("place-1")));
+
+        // Assert
         Assert.Empty(atom.Value);
     }
 
     [Fact]
-    public void IdempotentTogglePairs_TwoTogglesOfTheSameDescriptorReturnToTheOriginalList()
+    public void Two_toggles_of_the_same_node_return_to_the_original_selection()
     {
-        var original = new List<ExplorationDescriptor> { D("existing") };
+        // Arrange
+        var original = new List<NodeRef> { Place("existing") };
         var atom = NewAtom(original);
 
-        atom.Dispatch(new ToggleSelection(D("place-1")));
-        atom.Dispatch(new ToggleSelection(D("place-1")));
+        // Act
+        atom.Dispatch(new ToggleSelection(Place("place-1")));
+        atom.Dispatch(new ToggleSelection(Place("place-1")));
 
+        // Assert
         Assert.Equal(original, atom.Value);
     }
 
@@ -100,158 +107,169 @@ public class SelectionTests
     [InlineData(8001)]
     [InlineData(8002)]
     [InlineData(8003)]
-    public void IdempotentTogglePairs_HoldsOverAGeneratedSequenceOfPairedToggles(int seed)
+    public void Paired_toggles_cancel_over_any_generated_sequence(int seed)
     {
+        // Arrange
         var rng = new Random(seed);
-        var pool = Enumerable.Range(0, 6).Select(i => D($"item-{i}")).ToList();
+        var pool = Pool();
         var atom = NewAtom();
-        var before = atom.Value;
+        var afterEachPair = new List<IReadOnlyList<NodeRef>>();
 
-        for (var i = 0; i < 25; i++)
+        // Act
+        for (var i = 0; i < PairedTogglesPerRun; i++)
         {
-            var d = pool[rng.Next(pool.Count)];
-            atom.Dispatch(new ToggleSelection(d));
-            atom.Dispatch(new ToggleSelection(d)); // immediately paired -- must cancel
-
-            Assert.Equal(before, atom.Value); // every pair returns to whatever preceded it
-            before = atom.Value;
+            var node = pool[rng.Next(pool.Count)];
+            atom.Dispatch(new ToggleSelection(node));
+            atom.Dispatch(new ToggleSelection(node));
+            afterEachPair.Add(atom.Value);
         }
+
+        // Assert
+        Assert.All(afterEachPair, value => Assert.Empty(value));
     }
 
     [Fact]
-    public void NegativeControl_ToggleIsNotIndividuallyIdempotent_RedispatchingTheSameInstanceTwiceFlipsTwice()
+    public void The_same_toggle_dispatched_twice_flips_twice()
     {
-        // Same shape as StateAtomLawTests.cs's own Increment negative
-        // control -- proves the atom isn't silently swallowing every
-        // redispatch (which would make the pair-cancellation test above
-        // vacuous): the SAME ToggleSelection instance, dispatched twice,
-        // genuinely fires Changed twice.
+        // Arrange
         var atom = NewAtom();
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
+        var changes = 0;
+        atom.Changed += () => changes++;
+        var toggle = new ToggleSelection(Place("place-1"));
 
-        var toggle = new ToggleSelection(D("place-1"));
+        // Act
         atom.Dispatch(toggle);
         atom.Dispatch(toggle);
 
-        Assert.Equal(2, changedCount);
-        Assert.Empty(atom.Value); // added then removed
+        // Assert
+        Assert.Equal((2, 0), (changes, atom.Value.Count));
     }
 
     [Fact]
-    public void Toggle_IdentityIsKindAndKey_NeverTitle()
+    public void A_node_is_the_same_selection_by_kind_and_id_whatever_its_label()
     {
-        // R2/SelectionTrayService's own pre-atom rule, verbatim: identity is
-        // Kind+Key, never Title (cached display text).
-        var atom = NewAtom(new List<ExplorationDescriptor> { new("Place", "p1", "Old Name") });
-        atom.Dispatch(new ToggleSelection(new ExplorationDescriptor("Place", "p1", "New Name")));
-        Assert.Empty(atom.Value); // matched and removed despite the differing Title
-    }
+        // Arrange
+        var atom = NewAtom([ServedGraph.Ref(NodeKind.Place, "Place:p1", "Old Name")]);
 
-    // ------------------------------------------------------------------
-    // Remove / Clear: genuinely idempotent (standard law 2 sense).
-    // ------------------------------------------------------------------
+        // Act
+        atom.Dispatch(new ToggleSelection(ServedGraph.Ref(NodeKind.Place, "Place:p1", "New Name")));
 
-    [Fact]
-    public void Remove_AnAbsentDescriptor_IsAStructuralNoOp()
-    {
-        var atom = NewAtom(new List<ExplorationDescriptor> { D("a") });
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
-
-        atom.Dispatch(new RemoveSelection(D("not-there")));
-
-        Assert.Equal(0, changedCount);
-        Assert.Equal(new[] { D("a") }, atom.Value);
-    }
-
-    [Fact]
-    public void Law2_Idempotence_RedispatchingTheSameRemoveInstanceIsANoOp()
-    {
-        var atom = NewAtom(new List<ExplorationDescriptor> { D("a"), D("b") });
-        var remove = new RemoveSelection(D("a"));
-        atom.Dispatch(remove);
-        var afterFirst = atom.Value;
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
-
-        atom.Dispatch(remove);
-
-        Assert.Equal(afterFirst, atom.Value);
-        Assert.Equal(0, changedCount);
-    }
-
-    [Fact]
-    public void Law2_Idempotence_ClearIsIdempotent()
-    {
-        var atom = NewAtom(new List<ExplorationDescriptor> { D("a") });
-        atom.Dispatch(new ClearSelection());
-        var changedCount = 0;
-        atom.Changed += () => changedCount++;
-
-        atom.Dispatch(new ClearSelection());
-
-        Assert.Equal(0, changedCount);
+        // Assert
         Assert.Empty(atom.Value);
     }
 
-    // ------------------------------------------------------------------
-    // Law 5 (agreement) / Law 4 (confluence), generated -- same idiom as
-    // ConfluenceAgreementLawTests.cs (ST-1).
-    // ------------------------------------------------------------------
+    [Fact]
+    public void Removing_a_node_that_is_not_selected_changes_nothing()
+    {
+        // Arrange
+        var atom = NewAtom([Place("a")]);
+        var changes = 0;
+        atom.Changed += () => changes++;
+
+        // Act
+        atom.Dispatch(new RemoveSelection(Place("not-there")));
+
+        // Assert
+        Assert.Equal(WholeValue.Of(new { Changes = 0, Value = new[] { Place("a") } }), WholeValue.Of(new { Changes = changes, atom.Value }));
+    }
+
+    [Fact]
+    public void Removing_matches_by_kind_and_id_whatever_the_label()
+    {
+        // Arrange
+        var atom = NewAtom([ServedGraph.Ref(NodeKind.Place, "Place:p1", "Old Name"), Place("b")]);
+
+        // Act
+        atom.Dispatch(new RemoveSelection(ServedGraph.Ref(NodeKind.Place, "Place:p1", "New Name")));
+
+        // Assert
+        Assert.Equal([Place("b")], atom.Value);
+    }
+
+    [Fact]
+    public void Redispatching_the_same_remove_is_a_no_op()
+    {
+        // Arrange
+        var atom = NewAtom([Place("a"), Place("b")]);
+        var remove = new RemoveSelection(Place("a"));
+        atom.Dispatch(remove);
+        var changes = 0;
+        atom.Changed += () => changes++;
+
+        // Act
+        atom.Dispatch(remove);
+
+        // Assert
+        Assert.Equal(WholeValue.Of(new { Changes = 0, Value = new[] { Place("b") } }), WholeValue.Of(new { Changes = changes, atom.Value }));
+    }
+
+    [Fact]
+    public void Clearing_an_already_empty_selection_is_a_no_op()
+    {
+        // Arrange
+        var atom = NewAtom([Place("a")]);
+        atom.Dispatch(new ClearSelection());
+        var changes = 0;
+        atom.Changed += () => changes++;
+
+        // Act
+        atom.Dispatch(new ClearSelection());
+
+        // Assert
+        Assert.Equal((0, 0), (changes, atom.Value.Count));
+    }
 
     [Theory]
     [InlineData(8101)]
     [InlineData(8102)]
-    public void Law5_Agreement_AllProjectionsAgreeAfterEveryDispatch(int seed)
+    public void Every_projection_agrees_with_the_atom_after_every_dispatch(int seed)
     {
+        // Arrange
         var rng = new Random(seed);
-        var pool = Enumerable.Range(0, 5).Select(i => D($"item-{i}")).ToList();
+        var pool = Pool();
         var atom = NewAtom();
-        var projections = Enumerable.Range(0, 4).Select(_ => new Projection<IReadOnlyList<ExplorationDescriptor>>(atom)).ToList();
+        var projections = Enumerable.Range(0, ProjectionsWatching).Select(_ => new Projection<IReadOnlyList<NodeRef>>(atom)).ToList();
+        var disagreements = 0;
 
-        for (var i = 0; i < 30; i++)
+        // Act
+        for (var i = 0; i < DispatchesPerRun; i++)
         {
-            var d = pool[rng.Next(pool.Count)];
-            IIntent<IReadOnlyList<ExplorationDescriptor>> intent = rng.Next(3) switch
-            {
-                0 => new ToggleSelection(d),
-                1 => new RemoveSelection(d),
-                _ => new ClearSelection(),
-            };
-            atom.Dispatch(intent);
-
-            foreach (var projection in projections)
-            {
-                Assert.Equal(atom.Value, projection.Value);
-            }
+            atom.Dispatch(AnyIntent(rng, pool));
+            disagreements += projections.Count(projection => !ReferenceEquals(projection.Value, atom.Value));
         }
+
+        // Assert
+        Assert.Equal(0, disagreements);
     }
 
     [Theory]
     [InlineData(8111)]
-    public void Law4_Confluence_FinalValueMatchesAPureFoldOverTheSameSequence(int seed)
+    public void The_final_selection_is_a_pure_fold_of_the_dispatched_intents(int seed)
     {
+        // Arrange
         var rng = new Random(seed);
-        var pool = Enumerable.Range(0, 5).Select(i => D($"item-{i}")).ToList();
-        var intents = Enumerable.Range(0, 40).Select(_ =>
-        {
-            var d = pool[rng.Next(pool.Count)];
-            return (IIntent<IReadOnlyList<ExplorationDescriptor>>)(rng.Next(3) switch
-            {
-                0 => new ToggleSelection(d),
-                1 => new RemoveSelection(d),
-                _ => new ClearSelection(),
-            });
-        }).ToList();
-
+        var pool = Pool();
+        var intents = Enumerable.Range(0, FoldedDispatchesPerRun).Select(_ => AnyIntent(rng, pool)).ToList();
         var atom = NewAtom();
+
+        // Act
         foreach (var intent in intents)
         {
             atom.Dispatch(intent);
         }
 
-        var expected = intents.Aggregate(Selection.Empty, (acc, intent) => intent.Apply(acc));
-        Assert.Equal(expected, atom.Value, SequenceEqualityComparer<ExplorationDescriptor>.Instance);
+        // Assert
+        Assert.Equal(intents.Aggregate(Selection.Empty, (acc, intent) => intent.Apply(acc)), atom.Value, SequenceEqualityComparer<NodeRef>.Instance);
+    }
+
+    private static IIntent<IReadOnlyList<NodeRef>> AnyIntent(Random rng, List<NodeRef> pool)
+    {
+        var node = pool[rng.Next(pool.Count)];
+        return rng.Next(3) switch
+        {
+            0 => new ToggleSelection(node),
+            1 => new RemoveSelection(node),
+            _ => new ClearSelection(),
+        };
     }
 }
