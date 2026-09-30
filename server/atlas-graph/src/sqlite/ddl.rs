@@ -52,6 +52,7 @@ CREATE TABLE edge_index (
   meta_kind      INTEGER NOT NULL,
   meta_narrative TEXT,
   meta_votes     INTEGER,
+  meta_parentage TEXT,
   row_family     INTEGER NOT NULL,
   row_id         INTEGER NOT NULL,
   PRIMARY KEY (subject, rel, dir, ord)
@@ -281,22 +282,22 @@ CREATE INDEX occurs_by_locus ON occurs (locus_a, locus_b, locus_c, locus_layer, 
 const DDL_PARENT_OF: &str = "
 CREATE TABLE parent_of (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
-  parent_id TEXT NOT NULL, child_id TEXT NOT NULL,
-  provenance TEXT NOT NULL
+  parent_id TEXT NOT NULL, child_id TEXT NOT NULL, parentage TEXT NOT NULL,
+  provenance TEXT NOT NULL, justification_id INTEGER
 );
 ";
 const IDX_PARENT_OF: &str = "
 CREATE UNIQUE INDEX parent_of_ord ON parent_of (ord);
 CREATE INDEX parent_of_by_child ON parent_of (child_id, ord);
 ";
-const DDL_PARTNERS: &str = "
-CREATE TABLE partners (
+const DDL_SPOUSES: &str = "
+CREATE TABLE spouses (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
   a_id TEXT NOT NULL, b_id TEXT NOT NULL,
   provenance TEXT NOT NULL
 );
 ";
-const IDX_PARTNERS: &str = "CREATE UNIQUE INDEX partners_ord ON partners (ord);";
+const IDX_SPOUSES: &str = "CREATE UNIQUE INDEX spouses_ord ON spouses (ord);";
 const DDL_PARTICIPATES: &str = "
 CREATE TABLE participates (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -630,7 +631,7 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::Analogue => DDL_ANALOGUE,
         RowFamily::Occurs => DDL_OCCURS,
         RowFamily::ParentOf => DDL_PARENT_OF,
-        RowFamily::Partners => DDL_PARTNERS,
+        RowFamily::Spouses => DDL_SPOUSES,
         RowFamily::Participates => DDL_PARTICIPATES,
         RowFamily::Authored => DDL_AUTHORED,
         RowFamily::Shown => DDL_SHOWN,
@@ -663,7 +664,7 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::Analogue => IDX_ANALOGUE,
         RowFamily::Occurs => IDX_OCCURS,
         RowFamily::ParentOf => IDX_PARENT_OF,
-        RowFamily::Partners => IDX_PARTNERS,
+        RowFamily::Spouses => IDX_SPOUSES,
         RowFamily::Participates => IDX_PARTICIPATES,
         RowFamily::Authored => IDX_AUTHORED,
         RowFamily::Shown => IDX_SHOWN,

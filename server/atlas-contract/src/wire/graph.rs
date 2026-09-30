@@ -195,6 +195,8 @@ pub struct EdgeEntry {
     /// How the account this attestation belongs to is cited, where it needed saying.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parentage: Option<atlas_graph_types::edge::Parentage>,
 }
 
 /// A reference to something the graph holds: enough to show it, and the id to

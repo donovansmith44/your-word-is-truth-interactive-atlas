@@ -1241,7 +1241,7 @@ async fn person_card_carries_life_years_kin_and_events() {
     let count = |kind: &str| body["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == kind).map(|e| e["count"].as_u64().unwrap()).unwrap_or(0);
     assert_eq!(count("child-of"), 2, "Amram and Jochebed: {}", body["edge_summary"]);
     assert_eq!(count("parent-of"), 4, "Nadab, Abihu, Eleazar, Ithamar: {}", body["edge_summary"]);
-    assert_eq!(count("partner-of"), 1, "Elisheba: {}", body["edge_summary"]);
+    assert_eq!(count("spouse-of"), 1, "Elisheba: {}", body["edge_summary"]);
     assert!(count("participates-in") >= 1, "Aaron's timeline must reach at least one real Event node: {}", body["edge_summary"]);
 
     let (st2, parents, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=child-of").await;
@@ -1254,10 +1254,10 @@ async fn person_card_carries_life_years_kin_and_events() {
     assert_eq!(st3, 200, "{children}");
     assert!(children["entries"].as_array().unwrap().iter().any(|e| e["node"]["id"] == "Person:aaron_1"), "{children}");
 
-    let (st4, partners, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=partner-of").await;
-    assert_eq!(st4, 200, "{partners}");
-    assert_eq!(partners["entries"].as_array().unwrap().len(), 1);
-    assert_eq!(partners["entries"][0]["node"]["id"], "Person:aaron_1");
+    let (st4, spouses, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=spouse-of").await;
+    assert_eq!(st4, 200, "{spouses}");
+    assert_eq!(spouses["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(spouses["entries"][0]["node"]["id"], "Person:aaron_1");
 
     let (_, event, _) = get(&app, "/api/node/Event:ab_ur").await;
     assert!(event.get("person").is_none(), "{event}");
@@ -2034,6 +2034,72 @@ async fn a_small_catechism_paragraph_that_cites_scripture_serves_cites_anchors()
                 { "start": 212, "end": 222, "kind": "cites", "node": { "id": "text-unit:1PE.3.6", "kind": "TextUnit", "label": "1PE.3.6" } },
                 { "start": 224, "end": 233, "kind": "cites", "node": { "id": "text-unit:EPH.5.22", "kind": "TextUnit", "label": "EPH.5.22" } },
             ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn jesus_is_the_eternal_son_of_god_born_of_the_virgin_mary_and_the_supposed_son_of_joseph() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:jesus_905/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "eternal" },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" }, "parentage": "legal" },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" }, "parentage": "virgin" },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn abrahams_spouses_are_hagar_keturah_and_sarah() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:abraham_58/edges?kind=spouse-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("spouse-of"),
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn adam_and_eve_were_created_by_god_and_seth_was_born_to_them() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (adam_status, adam, _) = get(&app, "/api/node/Person:adam_78/edges?kind=child-of").await;
+    let (eve_status, eve, _) = get(&app, "/api/node/Person:eve_1231/edges?kind=child-of").await;
+    let (seth_status, seth, _) = get(&app, "/api/node/Person:seth_2504/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (adam_status, adam["entries"].clone(), eve_status, eve["entries"].clone(), seth_status, seth["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            StatusCode::OK,
+            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": seth["entries"][0]["edge"], "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" }, "parentage": "natural" },
+                { "edge": seth["entries"][1]["edge"], "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" }, "parentage": "natural" },
+            ]),
         )
     );
 }

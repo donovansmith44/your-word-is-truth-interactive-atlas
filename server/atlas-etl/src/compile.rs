@@ -66,6 +66,8 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
         person.eternal = true;
         person.eternal_grounds = grounds;
     }
+    let parentage_seeds = curated::parse_parentage(&read(&curated_dir.join("parentage.toml"))?)?;
+    parentage_names_only_people(&parentage_seeds, &people_list)?;
 
     let easton_json = read(&theo_dir.join("easton.json"))?;
     let (easton_list, easton_stats) = easton::parse_easton(&easton_json, &places_json)?;
@@ -294,6 +296,7 @@ pub fn compile(raw_dir: &Path, curated_dir: &Path) -> Result<CompileOutput> {
     data.named_after_seeds = named_after_seeds;
     data.fulfillment_seeds = fulfillment_seeds;
     data.typology_seeds = typology_seeds;
+    data.parentage_seeds = parentage_seeds;
     data.event_mentions = event_mentions;
     data.event_analogues = event_analogues;
 
@@ -644,10 +647,56 @@ fn check_curated_inputs_exist(curated_dir: &Path) -> Result<()> {
     );
 }
 
+fn parentage_names_only_people(seeds: &[atlas_core::data::ParentageSeed], people: &[atlas_core::data::Person]) -> Result<()> {
+    for id in seeds.iter().flat_map(|seed| [&seed.parent, &seed.child]) {
+        if !people.iter().any(|p| p.id == *id) {
+            bail!("parentage.toml names '{id}', which is not a Theographic person");
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use atlas_core::data::{Event, EventWitness};
+
+    fn parentage(parent: &str, child: &str) -> atlas_core::data::ParentageSeed {
+        atlas_core::data::ParentageSeed {
+            parent: parent.to_string(),
+            child: child.to_string(),
+            parentage: atlas_graph_types::edge::Parentage::Created,
+            justification: Default::default(),
+        }
+    }
+
+    fn person(id: &str) -> atlas_core::data::Person {
+        atlas_core::data::Person { id: id.to_string(), ..Default::default() }
+    }
+
+    #[test]
+    fn parentage_naming_only_people_passes() {
+        // Act
+        let checked = parentage_names_only_people(&[parentage("god_1324", "adam_78")], &[person("god_1324"), person("adam_78")]);
+        // Assert
+        assert!(checked.is_ok());
+    }
+
+    #[test]
+    fn parentage_naming_an_unknown_parent_is_refused() {
+        // Act
+        let refused = parentage_names_only_people(&[parentage("nobody_1", "adam_78")], &[person("adam_78")]).unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "parentage.toml names 'nobody_1', which is not a Theographic person");
+    }
+
+    #[test]
+    fn parentage_naming_an_unknown_child_is_refused() {
+        // Act
+        let refused = parentage_names_only_people(&[parentage("god_1324", "nobody_1")], &[person("god_1324")]).unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "parentage.toml names 'nobody_1', which is not a Theographic person");
+    }
     use atlas_core::time::TimeRange;
 
     const CORRECTED_VERSE: &str = "MAT.8.1";

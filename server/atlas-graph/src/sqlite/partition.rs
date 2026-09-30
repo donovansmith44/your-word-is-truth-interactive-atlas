@@ -133,7 +133,7 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::Analogue => all(f, &g.analogue, RowRef::Analogue),
             RowFamily::Occurs => all(f, &g.occurs, RowRef::Occurs),
             RowFamily::ParentOf => all(f, &g.parent_of, RowRef::ParentOf),
-            RowFamily::Partners => all(f, &g.partners, RowRef::Partners),
+            RowFamily::Spouses => all(f, &g.spouses, RowRef::Spouses),
             RowFamily::Participates => all(f, &g.participates, RowRef::Participates),
             RowFamily::Authored => all(f, &g.authored, RowRef::Authored),
             RowFamily::Shown => all(f, &g.shown, RowRef::Shown),

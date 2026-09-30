@@ -22,6 +22,7 @@ pub enum EdgeMeta {
     None,
     Narrative(crate::id::NarrativeId),
     Votes(u32),
+    Parentage(crate::edge::Parentage),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

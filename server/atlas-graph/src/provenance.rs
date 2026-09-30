@@ -75,7 +75,7 @@ impl ProvenanceIndex {
         sweep!(family::ANALOGUE, analogue);
         sweep!("occurs", occurs);
         sweep!("parent_of", parent_of);
-        sweep!("partners", partners);
+        sweep!("spouses", spouses);
         sweep!("participates", participates);
         sweep!("authored", authored);
         sweep!("shown", shown);

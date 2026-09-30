@@ -2105,16 +2105,17 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        List<NodeRef> parents, partners, children;
+        List<EdgeEntry> parents, children;
+        List<NodeRef> spouses;
         var siblings = new List<NodeRef>();
         try
         {
-            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            partners = (await ctx.Graph.Edges(person.PersonId, EdgeKind.PartnerOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            foreach (var parent in parents)
+            parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.ToList();
+            spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.ToList();
+            foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))))
             {
-                var theirs = (await ctx.Graph.Edges(parent.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Select(e => e.Node);
+                var theirs = (await ctx.Graph.Edges(parent.Node.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Select(e => e.Node);
                 foreach (var s in theirs)
                 {
                     if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))
@@ -2129,7 +2130,8 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        if (parents.Count + partners.Count + children.Count + siblings.Count == 0)
+        var groups = Kinship.Groups(parents, spouses, children, siblings);
+        if (groups.Count == 0)
         {
             return null;
         }
@@ -2137,19 +2139,14 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
         RenderFragment body = builder =>
         {
             var seq = PersonSectionRendering.Heading(builder, 0, "FAMILY", "person-family-heading");
-            foreach (var (label, testid, people) in new[] { ("Parents", "parents", parents), ("Partners", "partners", partners), ("Children", "children", children), ("Siblings", "siblings", siblings) })
+            foreach (var group in groups)
             {
-                if (people.Count == 0)
-                {
-                    continue;
-                }
-
                 builder.OpenElement(seq++, "p");
                 builder.AddAttribute(seq++, "class", "person-family-label");
-                builder.AddAttribute(seq++, "data-testid", $"person-family-{testid}");
-                builder.AddContent(seq++, $"{label} ({people.Count})");
+                builder.AddAttribute(seq++, "data-testid", $"person-family-{group.TestId}");
+                builder.AddContent(seq++, group.Heading);
                 builder.CloseElement();
-                seq = PersonSectionRendering.Chips(builder, seq, $"person-{testid}", people.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
+                seq = PersonSectionRendering.Chips(builder, seq, $"person-{group.TestId}", group.People.Select(p => (NodeIds.LocalPart(p), p.Label, (IExplorable)new PersonNode(p.Id, p.Label))), ctx);
             }
         };
         return new PopoverSection("person-family", body);

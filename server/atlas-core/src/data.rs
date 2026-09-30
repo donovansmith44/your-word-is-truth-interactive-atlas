@@ -61,7 +61,7 @@ pub struct Person {
     #[serde(default)]
     pub children: Vec<String>,
     #[serde(default)]
-    pub partners: Vec<String>,
+    pub spouses: Vec<String>,
     #[serde(default)]
     pub first_year: Option<i32>,
     #[serde(default)]
@@ -102,6 +102,14 @@ pub struct PeopleGroupSeed {
 pub struct PeopleGroupReclassify {
     pub person_slug: String,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParentageSeed {
+    pub parent: String,
+    pub child: String,
+    pub parentage: atlas_graph_types::edge::Parentage,
+    pub justification: atlas_graph_types::edge::Justification,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -603,6 +611,8 @@ pub struct AtlasData {
     pub fulfillment_seeds: Vec<FulfillmentSeed>,
     #[serde(skip)]
     pub typology_seeds: Vec<TypologySeed>,
+    #[serde(skip)]
+    pub parentage_seeds: Vec<ParentageSeed>,
     #[serde(skip)]
     pub event_mentions: Vec<EventMentionSeed>,
     #[serde(skip)]

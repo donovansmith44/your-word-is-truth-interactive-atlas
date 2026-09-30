@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
+    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Spouses, Quotes, RelationId,
     Shown, Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -61,7 +61,7 @@ pub struct Graph {
     pub occurs: Vec<Occurs>,
     /// One row per (parent, child) pair.
     pub parent_of: Vec<ParentOf>,
-    pub partners: Vec<Partners>,
+    pub spouses: Vec<Spouses>,
     pub participates: Vec<Participates>,
     pub authored: Vec<Authored>,
     pub shown: Vec<Shown>,
@@ -304,11 +304,11 @@ impl Graph {
             push_edge(&mut out, RowFamily::ParentOf, i, EdgeRel::Directed(RelationId::ParentOf), (
                 at(&row.parent.erase()),
                 at(&row.child.erase()),
-                M::None,
+                M::Parentage(row.parentage),
             ));
         }
-        for (i, row) in self.partners.iter().enumerate() {
-            push_edge(&mut out, RowFamily::Partners, i, EdgeRel::Symmetric(S::Partners), (
+        for (i, row) in self.spouses.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Spouses, i, EdgeRel::Symmetric(S::Spouses), (
                 at(&row.a.erase()),
                 at(&row.b.erase()),
                 M::None,
@@ -391,7 +391,7 @@ impl Graph {
             F::Analogue => self.analogue.get(row_ord).map(|r| r.provenance.as_str()),
             F::Occurs => self.occurs.get(row_ord).map(|r| r.provenance.as_str()),
             F::ParentOf => self.parent_of.get(row_ord).map(|r| r.provenance.as_str()),
-            F::Partners => self.partners.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Spouses => self.spouses.get(row_ord).map(|r| r.provenance.as_str()),
             F::Participates => self.participates.get(row_ord).map(|r| r.provenance.as_str()),
             F::Authored => self.authored.get(row_ord).map(|r| r.provenance.as_str()),
             F::Shown => self.shown.get(row_ord).map(|r| r.provenance.as_str()),
@@ -835,6 +835,30 @@ mod tests {
         assert_eq!(event_side.entries.len(), 1, "the EVENT's own inverse 'mentioned-in' frontier lists the verse back -- L3's mention-only frontier");
         assert_eq!(event_side.entries[0].node, crate::id::Position::Node(verse_id));
         assert_eq!(event_side.entries[0].edge, verse_side.entries[0].edge, "the SAME edge id, from either end");
+    }
+
+    #[test]
+    fn a_parent_of_row_carries_its_parentage_on_both_ends() {
+        // Arrange
+        let mut g = Graph::default();
+        let (father, son) = (crate::id::PersonId::new("god_1324"), crate::id::PersonId::new("jesus_905"));
+        g.parent_of.push(crate::edge::ParentOf {
+            parent: father.clone(),
+            child: son.clone(),
+            parentage: crate::edge::Parentage::Eternal,
+            provenance: ProvenanceId::from("test"),
+            justification: Default::default(),
+        });
+        g.build_indexes();
+        let query = |kind| EdgeQuery { kind, cursor: None, limit: 10 };
+        // Act
+        let children = PositionRef(crate::id::Position::Node(father.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Forward)));
+        let parents = PositionRef(crate::id::Position::Node(son.erase())).edges(&g, &query(EdgeKind::Directed(RelationId::ParentOf, Direction::Inverse)));
+        // Assert
+        assert_eq!(
+            (children.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>(), parents.entries.iter().map(|e| e.meta.clone()).collect::<Vec<_>>()),
+            (vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)], vec![crate::explore::EdgeMeta::Parentage(crate::edge::Parentage::Eternal)])
+        );
     }
 }
 

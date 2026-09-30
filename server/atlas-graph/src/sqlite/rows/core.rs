@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
-    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
+    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, Parentage, ParentOf, Participates, Spouses};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
     BibleTag, ConcordRef, Corpus, Locus, LocusSet, TextRef, TokenSpan, VerseRef,
@@ -475,27 +475,35 @@ pub fn read_analogue(conn: &Connection) -> Result<Vec<(i64, Analogue)>, SqliteEr
     })
 }
 
-const COLS_PARENT_OF: &str = "parent_id, child_id, provenance";
+const COLS_PARENT_OF: &str = "parent_id, child_id, parentage, provenance, justification_id";
 
-pub fn insert_parent_of(tx: &Transaction, ord: i64, row: &ParentOf) -> Result<(), SqliteError> {
-    insert(tx, "parent_of", COLS_PARENT_OF, ord, vec![text(&row.parent.0), text(&row.child.0), text(&row.provenance)])
+pub fn insert_parent_of(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &ParentOf) -> Result<(), SqliteError> {
+    let j = justification_row(tx, jw, &row.justification)?;
+    insert(tx, "parent_of", COLS_PARENT_OF, ord, vec![text(&row.parent.0), text(&row.child.0), text(row.parentage.name()), text(&row.provenance), j])
 }
 
 pub fn read_parent_of(conn: &Connection) -> Result<Vec<(i64, ParentOf)>, SqliteError> {
     read_all(conn, "parent_of", COLS_PARENT_OF, |row| {
-        Ok(ParentOf { parent: id_col(row, D, "parent_id")?, child: id_col(row, D + 1, "child_id")?, provenance: col(row, D + 2, "provenance")? })
+        let parentage: String = col(row, D + 2, "parentage")?;
+        Ok(ParentOf {
+            parent: id_col(row, D, "parent_id")?,
+            child: id_col(row, D + 1, "child_id")?,
+            parentage: Parentage::named(&parentage).ok_or_else(|| SqliteError(format!("parent_of parentage {parentage:?} is not a Parentage")))?,
+            provenance: col(row, D + 3, "provenance")?,
+            justification: read_justification_at(conn, row, D + 4)?,
+        })
     })
 }
 
-const COLS_PARTNERS: &str = "a_id, b_id, provenance";
+const COLS_SPOUSES: &str = "a_id, b_id, provenance";
 
-pub fn insert_partners(tx: &Transaction, ord: i64, row: &Partners) -> Result<(), SqliteError> {
-    insert(tx, "partners", COLS_PARTNERS, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
+pub fn insert_spouses(tx: &Transaction, ord: i64, row: &Spouses) -> Result<(), SqliteError> {
+    insert(tx, "spouses", COLS_SPOUSES, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
 }
 
-pub fn read_partners(conn: &Connection) -> Result<Vec<(i64, Partners)>, SqliteError> {
-    read_all(conn, "partners", COLS_PARTNERS, |row| {
-        Ok(Partners { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
+pub fn read_spouses(conn: &Connection) -> Result<Vec<(i64, Spouses)>, SqliteError> {
+    read_all(conn, "spouses", COLS_SPOUSES, |row| {
+        Ok(Spouses { a: id_col(row, D, "a_id")?, b: id_col(row, D + 1, "b_id")?, provenance: col(row, D + 2, "provenance")? })
     })
 }
 

@@ -126,9 +126,9 @@ pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("parent_of", "parent", row.parent.erase())?;
         check("parent_of", "child", row.child.erase())?;
     }
-    for row in &graph.partners {
-        check("partners", "a", row.a.erase())?;
-        check("partners", "b", row.b.erase())?;
+    for row in &graph.spouses {
+        check("spouses", "a", row.a.erase())?;
+        check("spouses", "b", row.b.erase())?;
     }
     for row in &graph.participates {
         check("participates", "person", row.person.erase())?;
@@ -378,7 +378,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.analogue = graph.analogue.clone();
     fresh.occurs = graph.occurs.clone();
     fresh.parent_of = graph.parent_of.clone();
-    fresh.partners = graph.partners.clone();
+    fresh.spouses = graph.spouses.clone();
     fresh.participates = graph.participates.clone();
     fresh.authored = graph.authored.clone();
     fresh.shown = graph.shown.clone();
@@ -430,7 +430,9 @@ mod tests {
         graph.parent_of.push(atlas_graph_types::edge::ParentOf {
             parent: atlas_graph_types::id::PersonId::new("adam_1"),
             child: atlas_graph_types::id::PersonId::new("adam_1"),
+            parentage: atlas_graph_types::edge::Parentage::Natural,
             provenance: "test".into(),
+            justification: Default::default(),
         });
 
         // Act

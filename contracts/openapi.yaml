@@ -1422,6 +1422,10 @@ components:
           - string
           - 'null'
           description: How the account this attestation belongs to is cited, where it needed saying.
+        parentage:
+          oneOf:
+          - $ref: '#/components/schemas/Parentage'
+          - type: 'null'
         votes:
           type:
           - integer
@@ -1483,7 +1487,7 @@ components:
       - corresponds-to
       - parallel
       - temporal-adjacency
-      - partner-of
+      - spouse-of
     EdgePage:
       type: object
       description: One page of a node's neighbours of a single kind.
@@ -2162,6 +2166,15 @@ components:
         label:
           type: string
       additionalProperties: false
+    Parentage:
+      type: string
+      description: 'How a parent stands to a child. Every parent-of row is natural unless Scripture declares otherwise: God the Father begets the Son from eternity, the Virgin Mary bore Him, Joseph was His father as was supposed, and God created Adam and Eve.'
+      enum:
+      - natural
+      - eternal
+      - virgin
+      - legal
+      - created
     PersonLife:
       type: object
       description: What is recorded about one person's life.
@@ -3335,5 +3348,5 @@ x-atlas-relations:
     name: Parallel
   - label: temporal-adjacency
     name: TemporalAdjacency
-  - label: partner-of
-    name: Partners
+  - label: spouse-of
+    name: Spouses

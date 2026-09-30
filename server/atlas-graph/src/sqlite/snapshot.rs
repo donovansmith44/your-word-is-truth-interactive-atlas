@@ -8,7 +8,7 @@ use std::sync::Mutex;
 
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
-use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind};
+use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, Parentage};
 use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
 use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
@@ -216,7 +216,7 @@ impl SqliteSnapshot {
         let start = q.cursor.unwrap_or(0);
         self.with_conn(|conn| {
             let mut stmt = conn.prepare_cached(
-                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes FROM all_edge_index                  WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 ORDER BY ord LIMIT ?5",
+                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index                  WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 ORDER BY ord LIMIT ?5",
             )?;
             let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, q.limit as i64 + 1])?;
             let mut entries = Vec::new();
@@ -231,13 +231,15 @@ impl SqliteSnapshot {
                 let meta_kind: i64 = row.get(2)?;
                 let narrative: Option<String> = row.get(3)?;
                 let votes: Option<i64> = row.get(4)?;
-                let meta = match (meta_kind, narrative, votes) {
-                    (0, None, None) => EdgeMeta::None,
-                    (1, Some(n), None) => EdgeMeta::Narrative(NarrativeId::new(n)),
-                    (2, None, Some(v)) => EdgeMeta::Votes(
+                let parentage: Option<String> = row.get(5)?;
+                let meta = match (meta_kind, narrative, votes, parentage.as_deref().map(Parentage::named)) {
+                    (0, None, None, None) => EdgeMeta::None,
+                    (1, Some(n), None, None) => EdgeMeta::Narrative(NarrativeId::new(n)),
+                    (2, None, Some(v), None) => EdgeMeta::Votes(
                         u32::try_from(v).map_err(|_| SqliteError(format!("meta_votes {v} out of range")))?,
                     ),
-                    (k, n, v) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}) is malformed"))),
+                    (3, None, None, Some(Some(p))) => EdgeMeta::Parentage(p),
+                    (k, n, v, _) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}, {parentage:?}) is malformed"))),
                 };
                 entries.push(EdgeEntry {
                     edge: EdgeId(format!("{rel_name}:{}", hash_from_bytes(&blob)?.hex())),

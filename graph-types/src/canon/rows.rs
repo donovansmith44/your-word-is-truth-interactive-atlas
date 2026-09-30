@@ -7,7 +7,7 @@ use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
     Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
-    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, Shown, SpokenAt, SpokenBy,
+    MapSuccession, Mentions, NamedAfter, Namesake, Occurs, Parentage, ParentOf, Participates, Spouses, Quotes, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
 };
 use crate::id::{
@@ -54,7 +54,7 @@ pub enum RowFamily {
     Analogue,
     Occurs,
     ParentOf,
-    Partners,
+    Spouses,
     Participates,
     Authored,
     Shown,
@@ -86,7 +86,7 @@ impl RowFamily {
         RowFamily::Analogue,
         RowFamily::Occurs,
         RowFamily::ParentOf,
-        RowFamily::Partners,
+        RowFamily::Spouses,
         RowFamily::Participates,
         RowFamily::Authored,
         RowFamily::Shown,
@@ -119,7 +119,7 @@ impl RowFamily {
             RowFamily::Analogue => "analogue",
             RowFamily::Occurs => "occurs",
             RowFamily::ParentOf => "parent_of",
-            RowFamily::Partners => "partners",
+            RowFamily::Spouses => "spouses",
             RowFamily::Participates => "participates",
             RowFamily::Authored => "authored",
             RowFamily::Shown => "shown",
@@ -646,8 +646,8 @@ const CORRESPONDS_KEYS: &[&str] = &["a", "b", "provenance"];
 const TEMPORAL_ADJACENCY_KEYS: &[&str] = &["earlier", "later", "provenance"];
 const ANALOGUE_KEYS: &[&str] = &["a", "b", "provenance"];
 const OCCURS_KEYS: &[&str] = &["entry", "locus", "provenance"];
-const PARENT_OF_KEYS: &[&str] = &["child", "parent", "provenance"];
-const PARTNERS_KEYS: &[&str] = &["a", "b", "provenance"];
+const PARENT_OF_KEYS: &[&str] = &["child", "justification", "parent", "parentage", "provenance"];
+const SPOUSES_KEYS: &[&str] = &["a", "b", "provenance"];
 const PARTICIPATES_KEYS: &[&str] = &["event", "person", "provenance"];
 const AUTHORED_KEYS: &[&str] = &["book", "justification", "person", "provenance"];
 const SHOWN_KEYS: &[&str] = &["map", "node", "provenance"];
@@ -1146,10 +1146,27 @@ impl Canon for Occurs {
     }
 }
 
+impl Canon for Parentage {
+    fn to_value(&self) -> Value {
+        str_value(self.name())
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let name = expect_str(v, ROOT)?;
+        Parentage::named(&name).map_or_else(|| unknown_variant(&name, ROOT.to_string()), Ok)
+    }
+}
+
 impl Canon for ParentOf {
     fn to_value(&self) -> Value {
-        let Self { parent, child, provenance } = self;
-        obj(vec![("child", id_value(child)), ("parent", id_value(parent)), ("provenance", str_value(provenance))])
+        let Self { parent, child, parentage, provenance, justification } = self;
+        obj(vec![
+            ("child", id_value(child)),
+            ("justification", justification.to_value()),
+            ("parent", id_value(parent)),
+            ("parentage", parentage.to_value()),
+            ("provenance", str_value(provenance)),
+        ])
     }
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
@@ -1158,12 +1175,14 @@ impl Canon for ParentOf {
         Ok(ParentOf {
             parent: field_id::<PersonTag>(m, ROOT, "parent")?,
             child: field_id::<PersonTag>(m, ROOT, "child")?,
+            parentage: field_sub::<Parentage>(m, ROOT, "parentage")?,
             provenance: field_str(m, ROOT, "provenance")?,
+            justification: field_sub::<Justification>(m, ROOT, "justification")?,
         })
     }
 }
 
-impl Canon for Partners {
+impl Canon for Spouses {
     fn to_value(&self) -> Value {
         let Self { a, b, provenance } = self;
         obj(vec![("a", id_value(a)), ("b", id_value(b)), ("provenance", str_value(provenance))])
@@ -1171,8 +1190,8 @@ impl Canon for Partners {
 
     fn from_value(v: &Value) -> Result<Self, CanonError> {
         let m = expect_obj(v, ROOT)?;
-        expect_exact_keys(m, ROOT, PARTNERS_KEYS)?;
-        Ok(Partners {
+        expect_exact_keys(m, ROOT, SPOUSES_KEYS)?;
+        Ok(Spouses {
             a: field_id::<PersonTag>(m, ROOT, "a")?,
             b: field_id::<PersonTag>(m, ROOT, "b")?,
             provenance: field_str(m, ROOT, "provenance")?,
@@ -1290,7 +1309,7 @@ impl RowFamily {
             RowFamily::Analogue => Symmetric(S::Analogue),
             RowFamily::Occurs => Directed(R::Occurs),
             RowFamily::ParentOf => Directed(R::ParentOf),
-            RowFamily::Partners => Symmetric(S::Partners),
+            RowFamily::Spouses => Symmetric(S::Spouses),
             RowFamily::Participates => Directed(R::Participates),
             RowFamily::Authored => Directed(R::AuthoredBy),
             RowFamily::Shown => Directed(R::Shows),

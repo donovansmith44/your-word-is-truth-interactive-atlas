@@ -63,7 +63,7 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, ParentOf, Participates, Partners, Shown};
+use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, Parentage, ParentOf, Participates, Spouses, Shown};
 use atlas_graph_types::id::{AnchorId, MapId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
@@ -415,8 +415,21 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
     g.occurs.push(Occurs { entry: LexiconEntryId::new("G3056"), locus: word(1, 1, 1, "greek_textus_receptus", 3), provenance: "stepbible-tagnt".into() });
     g.occurs.push(Occurs { entry: LexiconEntryId::new("H0430"), locus: word(1, 1, 2, "hebrew_masoretic", 2), provenance: "stepbible-tahot".into() });
 
-    g.parent_of.push(ParentOf { parent: PersonId::new("abraham_1"), child: PersonId::new("isaac_1"), provenance: "theographic-people".into() });
-    g.partners.push(Partners { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
+    g.parent_of.push(ParentOf {
+        parent: PersonId::new("abraham_1"),
+        child: PersonId::new("isaac_1"),
+        parentage: Parentage::Natural,
+        provenance: "theographic-people".into(),
+        justification: Justification::default(),
+    });
+    g.parent_of.push(ParentOf {
+        parent: PersonId::new("god_1324"),
+        child: PersonId::new("adam_78"),
+        parentage: Parentage::Created,
+        provenance: "curated-parentage".into(),
+        justification: Justification { text: None, grounds: [Ground::Scripture(blr((41, 3, 38), (41, 3, 38)))].into_iter().collect() },
+    });
+    g.spouses.push(Spouses { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
     g.authored.push(Authored { book: ContainerNodeId::new("bible-book-GEN"), person: PersonId::new("moses_2108"), provenance: "books".into(), justification: Justification::default() });
     g.shown.push(Shown { map: MapId::new("era-patriarchs"), node: PlaceId::new("ur-1").erase(), provenance: "curated-eras".into() });
@@ -558,7 +571,7 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::CommentsOn => out.extend(g.comments_on.iter().map(RowRef::CommentsOn)),
             RowFamily::Occurs => out.extend(g.occurs.iter().map(RowRef::Occurs)),
             RowFamily::ParentOf => out.extend(g.parent_of.iter().map(RowRef::ParentOf)),
-            RowFamily::Partners => out.extend(g.partners.iter().map(RowRef::Partners)),
+            RowFamily::Spouses => out.extend(g.spouses.iter().map(RowRef::Spouses)),
             RowFamily::Participates => out.extend(g.participates.iter().map(RowRef::Participates)),
             RowFamily::Authored => out.extend(g.authored.iter().map(RowRef::Authored)),
             RowFamily::Shown => out.extend(g.shown.iter().map(RowRef::Shown)),

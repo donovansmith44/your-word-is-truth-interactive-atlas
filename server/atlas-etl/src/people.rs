@@ -57,8 +57,8 @@ struct PersonFields {
     mother: Vec<String>,
     #[serde(default)]
     children: Vec<String>,
-    #[serde(default)]
-    partners: Vec<String>,
+    #[serde(default, rename = "partners")]
+    spouses: Vec<String>,
     /// Every record carries both, and they bound the corpus mentions, never a life.
     #[serde(default)]
     min_year: Option<i64>,
@@ -172,7 +172,7 @@ pub fn parse_people_full(people_json: &str, verses_json: &str, events_json: Opti
         let father = kin(&f.father);
         let mother = kin(&f.mother);
         let children = kin(&f.children);
-        let partners = kin(&f.partners);
+        let spouses = kin(&f.spouses);
         let mut timeline: Vec<String> = Vec::new();
         for rec_id in &f.timeline {
             stats.timeline_refs_total += 1;
@@ -198,7 +198,7 @@ pub fn parse_people_full(people_json: &str, verses_json: &str, events_json: Opti
             father,
             mother,
             children,
-            partners,
+            spouses,
             first_year: f.min_year.and_then(|y| i32::try_from(y).ok()),
             last_year: f.max_year.and_then(|y| i32::try_from(y).ok()),
             timeline,
@@ -379,7 +379,7 @@ mod tests {
         let (people, stats) = parse_people_full(people_json, VERSES_FIXTURE, Some(events_json)).unwrap();
         let abraham = people.iter().find(|p| p.id == "abraham_1").unwrap();
         assert_eq!(abraham.children, vec!["isaac_1"]);
-        assert_eq!(abraham.partners, vec!["sarah_1"]);
+        assert_eq!(abraham.spouses, vec!["sarah_1"]);
         assert_eq!((abraham.first_year, abraham.last_year), (Some(-1997), Some(-1821)));
         assert_eq!(abraham.timeline, vec!["theo-12"]);
         assert!(!abraham.eternal && abraham.eternal_grounds.is_empty(), "eternity is curated, never parsed");

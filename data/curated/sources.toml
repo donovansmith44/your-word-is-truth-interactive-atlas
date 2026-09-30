@@ -463,6 +463,12 @@ source = "our-curated-work"
 confidence = "Curated"
 
 [[provenance]]
+id = "curated-parentage"
+source = "our-curated-work"
+confidence = "Curated"
+locator = "parentage.toml"
+
+[[provenance]]
 id = "curated-books"
 source = "our-curated-work"
 confidence = "Curated"

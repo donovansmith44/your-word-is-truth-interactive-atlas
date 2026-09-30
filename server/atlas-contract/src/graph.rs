@@ -201,10 +201,11 @@ pub async fn node_edges(
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
-            let (votes, narrative) = match &e.meta {
-                EdgeMeta::Votes(votes) => (Some(*votes), None),
-                EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone())),
-                EdgeMeta::None => (None, None),
+            let (votes, narrative, parentage) = match &e.meta {
+                EdgeMeta::Votes(votes) => (Some(*votes), None, None),
+                EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
+                EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
+                EdgeMeta::None => (None, None, None),
             };
             let (loci, note) = match (asked.kind, &e.node) {
                 (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
@@ -219,7 +220,7 @@ pub async fn node_edges(
                 }
                 _ => (None, None),
             };
-            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note }
+            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage }
         })
         .collect();
 

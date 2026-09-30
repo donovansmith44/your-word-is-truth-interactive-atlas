@@ -111,7 +111,7 @@ pub fn section_of_family(f: RowFamily) -> Section {
         | RowFamily::TemporalAdjacency
         | RowFamily::Analogue
         | RowFamily::ParentOf
-        | RowFamily::Partners
+        | RowFamily::Spouses
         | RowFamily::Participates
         | RowFamily::Authored
         | RowFamily::Shown
@@ -164,7 +164,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 16;
+pub const SECTION_SCHEMA_VERSION: u32 = 17;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
@@ -184,7 +184,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::TemporalAdjacency,
             RowFamily::Analogue,
             RowFamily::ParentOf,
-            RowFamily::Partners,
+            RowFamily::Spouses,
             RowFamily::Participates,
             RowFamily::Authored,
             RowFamily::Shown,
@@ -329,7 +329,7 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::Analogue => rows!(f, g.analogue.iter()),
             RowFamily::Occurs => rows!(f, g.occurs.iter()),
             RowFamily::ParentOf => rows!(f, g.parent_of.iter()),
-            RowFamily::Partners => rows!(f, g.partners.iter()),
+            RowFamily::Spouses => rows!(f, g.spouses.iter()),
             RowFamily::Participates => rows!(f, g.participates.iter()),
             RowFamily::Authored => rows!(f, g.authored.iter()),
             RowFamily::Shown => rows!(f, g.shown.iter()),

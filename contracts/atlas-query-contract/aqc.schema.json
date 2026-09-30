@@ -661,6 +661,16 @@
             "null"
           ]
         },
+        "parentage": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Parentage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "votes": {
           "format": "int32",
           "minimum": 0,
@@ -727,7 +737,7 @@
         "corresponds-to",
         "parallel",
         "temporal-adjacency",
-        "partner-of"
+        "spouse-of"
       ],
       "type": "string"
     },
@@ -1517,6 +1527,16 @@
         "label"
       ],
       "type": "object"
+    },
+    "Parentage": {
+      "enum": [
+        "natural",
+        "eternal",
+        "virgin",
+        "legal",
+        "created"
+      ],
+      "type": "string"
     },
     "PersonLife": {
       "additionalProperties": false,

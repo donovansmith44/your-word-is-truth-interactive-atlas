@@ -180,7 +180,7 @@ fn every_row_of_every_family_maps_to_a_section() {
         RowFamily::TemporalAdjacency,
         RowFamily::Analogue,
         RowFamily::ParentOf,
-        RowFamily::Partners,
+        RowFamily::Spouses,
         RowFamily::Participates,
         RowFamily::Authored,
         RowFamily::Shown,
@@ -307,7 +307,7 @@ fn every_row_of_every_family_maps_to_a_section() {
     subject!(analogue, RowFamily::Analogue, Expect::SameAsFamily, |r| r.a.erase());
     subject!(occurs, RowFamily::Occurs, Expect::SameAsFamily, |r| r.entry.erase());
     subject!(parent_of, RowFamily::ParentOf, Expect::SameAsFamily, |r| r.parent.erase());
-    subject!(partners, RowFamily::Partners, Expect::SameAsFamily, |r| r.a.erase());
+    subject!(spouses, RowFamily::Spouses, Expect::SameAsFamily, |r| r.a.erase());
     subject!(participates, RowFamily::Participates, Expect::SameAsFamily, |r| r.person.erase());
     subject!(authored, RowFamily::Authored, Expect::Elsewhere(&[Section::Kjv]), |r| r.book.erase());
     subject!(shown, RowFamily::Shown, Expect::SameAsFamily, |r| r.map.erase());

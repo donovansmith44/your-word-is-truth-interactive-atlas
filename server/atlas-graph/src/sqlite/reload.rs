@@ -50,7 +50,7 @@ fn push_row(g: &mut Graph, ord: i64, row: RowOwned) -> Result<(), SqliteError> {
         RowOwned::Analogue(r) => push!(g.analogue, r, "analogue"),
         RowOwned::Occurs(r) => push!(g.occurs, r, "occurs"),
         RowOwned::ParentOf(r) => push!(g.parent_of, r, "parent_of"),
-        RowOwned::Partners(r) => push!(g.partners, r, "partners"),
+        RowOwned::Spouses(r) => push!(g.spouses, r, "spouses"),
         RowOwned::Participates(r) => push!(g.participates, r, "participates"),
         RowOwned::Authored(r) => push!(g.authored, r, "authored"),
         RowOwned::Shown(r) => push!(g.shown, r, "shown"),

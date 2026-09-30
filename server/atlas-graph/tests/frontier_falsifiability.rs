@@ -22,7 +22,7 @@ fn relation_row_count(graph: &atlas_graph_types::graph::Graph, kind: atlas_graph
         EdgeKind::Symmetric(S::TemporalAdjacency) => graph.temporal_adjacency.len(),
         EdgeKind::Symmetric(S::Analogue) => graph.analogue.len(),
         EdgeKind::Directed(R::ParentOf, _) => graph.parent_of.len(),
-        EdgeKind::Symmetric(S::Partners) => graph.partners.len(),
+        EdgeKind::Symmetric(S::Spouses) => graph.spouses.len(),
         EdgeKind::Directed(R::Participates, _) => graph.participates.len(),
         other => panic!(
             "frontier_falsifiability.rs's relation_row_count has no mapping for {other:?} -- \

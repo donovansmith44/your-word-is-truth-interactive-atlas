@@ -95,7 +95,7 @@ relations! {
         Corresponds       => "corresponds-to",
         Parallel          => "parallel",
         TemporalAdjacency => "temporal-adjacency",
-        Partners          => "partner-of"
+        Spouses           => "spouse-of"
     }
 }
 
@@ -343,15 +343,29 @@ pub struct Occurs {
     pub provenance: ProvenanceId,
 }
 
+crate::vocabulary! {
+    #[doc = "How a parent stands to a child. Every parent-of row is natural unless Scripture declares otherwise: God the Father begets the Son from eternity, the Virgin Mary bore Him, Joseph was His father as was supposed, and God created Adam and Eve."]
+    #[derive(PartialOrd, Ord, Hash)]
+    Parentage {
+        Natural => "natural",
+        Eternal => "eternal",
+        Virgin => "virgin",
+        Legal => "legal",
+        Created => "created",
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParentOf {
     pub parent: PersonId,
     pub child: PersonId,
+    pub parentage: Parentage,
     pub provenance: ProvenanceId,
+    pub justification: Justification,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Partners {
+pub struct Spouses {
     pub a: PersonId,
     pub b: PersonId,
     pub provenance: ProvenanceId,

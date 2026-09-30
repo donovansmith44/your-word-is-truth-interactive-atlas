@@ -29,13 +29,12 @@ test('PERSON-1: a person card reads LIFE (years as explorable positions), EVENTS
   const events = page.locator('[data-testid^="person-event-"]');
   expect(await events.count()).toBeGreaterThan(0);
 
-  // FAMILY: parents / partners / children / siblings (derived), every name explorable.
   await expect(page.getByTestId('person-family-heading')).toHaveText('FAMILY');
   await expect(page.getByTestId('person-family-parents')).toHaveText('Parents (2)');
   await expect(page.getByTestId('person-parents-amram_242')).toHaveText('Amram');
   await expect(page.getByTestId('person-parents-jochebed_1645')).toHaveText('Jochebed');
-  await expect(page.getByTestId('person-family-partners')).toHaveText('Partners (1)');
-  await expect(page.getByTestId('person-partners-elisheba_1162')).toBeVisible();
+  await expect(page.getByTestId('person-family-spouses')).toHaveText('Spouses (1)');
+  await expect(page.getByTestId('person-spouses-elisheba_1162')).toBeVisible();
   await expect(page.getByTestId('person-family-children')).toHaveText('Children (4)');
   await expect(page.getByTestId('person-family-siblings')).toHaveText('Siblings (2)');
   await expect(page.getByTestId('person-siblings-moses_2108')).toHaveText('Moses');
@@ -73,4 +72,18 @@ test('PERSON-3: God is eternal -- no years, no year chips, the grounds are explo
   await expect(page.getByTestId('person-eternal-ground-REV-1-8')).toBeVisible();
   await page.getByTestId('person-eternal-ground-PSA-90-2').click();
   await expect(page.getByTestId('popover-title')).toHaveText('PSA.90.2');
+});
+
+test('PERSON-4: Jesus is the eternal Son of God, born of the Virgin Mary, the son of Joseph as was supposed', async ({ page }) => {
+  await page.goto('/read/LUK/3');
+  await page.getByTestId('verse-mention-person-23-jesus_905').first().click();
+  await expect(page.getByTestId('popover-title')).toHaveText('Jesus');
+  await expect(page.getByTestId('person-family-parents-eternal')).toHaveText('Father (eternal Son of God)');
+  await expect(page.getByTestId('person-parents-eternal-god_1324')).toHaveText('God');
+  await expect(page.getByTestId('person-family-parents-virgin')).toHaveText('Mother (born of the Virgin)');
+  await expect(page.getByTestId('person-parents-virgin-mary_1938')).toBeVisible();
+  await expect(page.getByTestId('person-family-parents-legal')).toHaveText('Legal father (as was supposed)');
+  await expect(page.getByTestId('person-parents-legal-joseph_1715')).toBeVisible();
+  await expect(page.getByTestId('person-family-parents')).toHaveCount(0);
+  await expect(page.getByTestId('person-siblings-adam_78')).toHaveCount(0);
 });

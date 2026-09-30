@@ -36,7 +36,7 @@ fn provenance_by_family(g: &atlas_graph_types::graph::Graph) -> BTreeMap<&'stati
     sweep!(analogue);
     sweep!(occurs);
     sweep!(parent_of);
-    sweep!(partners);
+    sweep!(spouses);
     sweep!(participates);
     sweep!(authored);
     sweep!(shown);
@@ -192,6 +192,7 @@ const PINNED_INVENTORY: &[&str] = &[
     "curated-fulfillment",
     "curated-named-after",
     "curated-narratives",
+    "curated-parentage",
     "curated-people-groups",
     "curated-places",
     "curated-polities",
@@ -257,10 +258,10 @@ const PINNED_FAMILIES: &[(&str, &[&str])] = &[
     ),
     ("named_after", &["curated-named-after"]),
     ("occurs", &["stepbible-tagnt", "stepbible-tahot"]),
-    ("parent_of", &["theographic-people"]),
+    ("parent_of", &["curated-parentage", "theographic-people"]),
     ("participates", &["theographic-people"]),
-    ("partners", &["theographic-people"]),
     ("shown", &["curated-eras"]),
+    ("spouses", &["theographic-people"]),
     (
         "nodes",
         &[

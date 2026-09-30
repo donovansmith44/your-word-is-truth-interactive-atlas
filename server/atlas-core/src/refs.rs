@@ -41,6 +41,10 @@ impl VerseId {
             _ => Err(crate::CoreError::BadRef(s.to_string())),
         }
     }
+
+    pub fn locus(&self) -> atlas_graph_types::text::BibleLocus {
+        atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: self.book.0, chapter: self.chapter, verse: self.verse })
+    }
 }
 
 impl Serialize for VerseId {
@@ -140,6 +144,16 @@ mod tests {
         assert!(ScriptureRef::parse("GEN.0.1").is_err());
         assert!(ScriptureRef::parse("EXO.14.31-21").is_err());
     }
+    #[test]
+    fn a_verse_id_is_the_whole_verse_locus_of_its_book_chapter_and_verse() {
+        // Arrange
+        let verse = VerseId::parse_canonical("LUK.3.38").unwrap();
+        // Act
+        let locus = verse.locus();
+        // Assert
+        assert_eq!(locus, atlas_graph_types::text::BibleLocus::whole(atlas_graph_types::text::VerseRef { book: 41, chapter: 3, verse: 38 }));
+    }
+
     #[test]
     fn empty_segment_rejected() {
         assert!(ScriptureRef::parse("gen..1").is_err());

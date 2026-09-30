@@ -3,7 +3,7 @@
 //! because a kind is a fact, no record is ever built as both.
 
 use atlas_core::data::AtlasData;
-use atlas_graph_types::edge::{Mentions, MentionedEntity, ParentOf, Participates, Partners};
+use atlas_graph_types::edge::{Justification, Mentions, MentionedEntity, ParentOf, Parentage, Participates, Spouses};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{EventId, NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -15,6 +15,8 @@ use crate::pipeline::BuildCtx;
 /// The provenance tag every Person node and every Person `mentions` row carries: one constant, not
 /// two independently-typed literals.
 pub const PROVENANCE: &str = "theographic-people";
+
+pub const PARENTAGE_PROVENANCE: &str = "curated-parentage";
 
 fn verse_locus(vref: &str) -> Option<TextLocus> {
     let vid = atlas_core::refs::VerseId::parse_canonical(vref).ok()?;
@@ -49,7 +51,7 @@ pub struct PersonAdapterStats {
     /// Kinship and participation rows, and the links skipped because their other end is not a Person
     /// node -- a reclassified people group -- or, for the timeline, not an Event node.
     pub parent_of_rows: usize,
-    pub partners_rows: usize,
+    pub spouses_rows: usize,
     pub participates_rows: usize,
     pub kin_links_skipped: usize,
     pub timeline_links_skipped: usize,
@@ -91,13 +93,10 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
         }
     }
 
-    // Theographic states each parent link from BOTH ends, so the pairs are collected into ONE ordered
-    // set and minted once; partners likewise, ordered a < b. A link whose other end is not a node of
-    // the right kind is skipped and counted, never left dangling.
     use std::collections::BTreeSet;
     let is_person = |id: &str| !reclassified.contains(id) && ctx.graph.nodes.contains_key(&PersonId::new(id.to_string()).erase());
     let mut parent_child: BTreeSet<(String, String)> = BTreeSet::new();
-    let mut partner_pairs: BTreeSet<(String, String)> = BTreeSet::new();
+    let mut spouse_pairs: BTreeSet<(String, String)> = BTreeSet::new();
     let mut participation: Vec<(String, String)> = Vec::new();
     for p in &ctx.atlas.people {
         if reclassified.contains(&p.id) {
@@ -117,10 +116,10 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
                 stats.kin_links_skipped += 1;
             }
         }
-        for partner in &p.partners {
-            if is_person(partner) && *partner != p.id {
-                let (a, b) = if p.id < *partner { (p.id.clone(), partner.clone()) } else { (partner.clone(), p.id.clone()) };
-                partner_pairs.insert((a, b));
+        for spouse in &p.spouses {
+            if is_person(spouse) && *spouse != p.id {
+                let (a, b) = if p.id < *spouse { (p.id.clone(), spouse.clone()) } else { (spouse.clone(), p.id.clone()) };
+                spouse_pairs.insert((a, b));
             } else {
                 stats.kin_links_skipped += 1;
             }
@@ -133,21 +132,26 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
             }
         }
     }
-    for (parent, child) in parent_child {
-        ctx.graph.parent_of.push(ParentOf { parent: PersonId::new(parent), child: PersonId::new(child), provenance: ProvenanceId::from(PROVENANCE) });
+    let mut parentage: std::collections::BTreeMap<(String, String), (Parentage, &str, Justification)> =
+        parent_child.into_iter().map(|pair| (pair, (Parentage::Natural, PROVENANCE, Justification::default()))).collect();
+    for seed in &ctx.atlas.parentage_seeds {
+        parentage.insert((seed.parent.clone(), seed.child.clone()), (seed.parentage, PARENTAGE_PROVENANCE, seed.justification.clone()));
+    }
+    for ((parent, child), (kind, provenance, justification)) in parentage {
+        ctx.graph.parent_of.push(ParentOf { parent: PersonId::new(parent), child: PersonId::new(child), parentage: kind, provenance: ProvenanceId::from(provenance), justification });
         stats.parent_of_rows += 1;
     }
-    for (a, b) in partner_pairs {
-        ctx.graph.partners.push(Partners { a: PersonId::new(a), b: PersonId::new(b), provenance: ProvenanceId::from(PROVENANCE) });
-        stats.partners_rows += 1;
+    for (a, b) in spouse_pairs {
+        ctx.graph.spouses.push(Spouses { a: PersonId::new(a), b: PersonId::new(b), provenance: ProvenanceId::from(PROVENANCE) });
+        stats.spouses_rows += 1;
     }
     for (person, event) in participation {
         ctx.graph.participates.push(Participates { person: PersonId::new(person), event: EventId::new(event), provenance: ProvenanceId::from(PROVENANCE) });
         stats.participates_rows += 1;
     }
     eprintln!(
-        "D5 PERSON KIN/PARTICIPATION: {} parent-of row(s), {} partner-of row(s), {} participates-in row(s); {} kin link(s) and {} timeline link(s) skipped (other end not a Person / Event node)",
-        stats.parent_of_rows, stats.partners_rows, stats.participates_rows, stats.kin_links_skipped, stats.timeline_links_skipped
+        "D5 PERSON KIN/PARTICIPATION: {} parent-of row(s), {} spouse-of row(s), {} participates-in row(s); {} kin link(s) and {} timeline link(s) skipped (other end not a Person / Event node)",
+        stats.parent_of_rows, stats.spouses_rows, stats.participates_rows, stats.kin_links_skipped, stats.timeline_links_skipped
     );
     stats
 }
@@ -432,5 +436,81 @@ mod tests {
         normalize(&mut ctx);
         merge_alias(&mut ctx);
         assert!(check_person_fidelity(&atlas, &ctx.graph).is_ok(), "one Person node (Aaron) for two source records, one reclassified -- must be green, not a false bijection failure");
+    }
+
+    fn kin(id: &str, fathers: &[&str], mothers: &[&str], spouses: &[&str]) -> Person {
+        Person {
+            id: id.into(),
+            name: id.into(),
+            father: fathers.iter().map(|s| s.to_string()).collect(),
+            mother: mothers.iter().map(|s| s.to_string()).collect(),
+            spouses: spouses.iter().map(|s| s.to_string()).collect(),
+            ..Default::default()
+        }
+    }
+
+    fn grounded(verse: u16) -> atlas_graph_types::edge::Justification {
+        let unit = atlas_graph_types::text::BibleLocus::whole(VerseRef { book: 42, chapter: 3, verse });
+        atlas_graph_types::edge::Justification {
+            text: None,
+            grounds: [atlas_graph_types::edge::Ground::Scripture(atlas_graph_types::text::LocusRange { from: unit.clone(), to: unit })].into_iter().collect(),
+        }
+    }
+
+    fn seed(parent: &str, child: &str, parentage: Parentage, verse: u16) -> atlas_core::data::ParentageSeed {
+        atlas_core::data::ParentageSeed { parent: parent.into(), child: child.into(), parentage, justification: grounded(verse) }
+    }
+
+    fn row(parent: &str, child: &str, parentage: Parentage, provenance: &str, justification: atlas_graph_types::edge::Justification) -> ParentOf {
+        ParentOf { parent: PersonId::new(parent), child: PersonId::new(child), parentage, provenance: provenance.into(), justification }
+    }
+
+    #[test]
+    fn a_declared_parentage_types_the_pair_the_source_states_and_adds_the_pair_it_lacks() {
+        // Arrange
+        let mut atlas = atlas_with_people(vec![
+            kin("god_1324", &[], &[], &[]),
+            kin("adam_78", &["god_1324"], &[], &[]),
+            kin("seth_2504", &["adam_78"], &[], &[]),
+            kin("joseph_1715", &[], &[], &[]),
+            kin("mary_1938", &[], &[], &[]),
+            kin("jesus_905", &["joseph_1715"], &["mary_1938"], &[]),
+        ]);
+        atlas.parentage_seeds = vec![
+            seed("god_1324", "jesus_905", Parentage::Eternal, 16),
+            seed("mary_1938", "jesus_905", Parentage::Virgin, 35),
+            seed("god_1324", "adam_78", Parentage::Created, 38),
+        ];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        // Act
+        merge_alias(&mut ctx);
+        // Assert
+        assert_eq!(
+            ctx.graph.parent_of,
+            vec![
+                row("adam_78", "seth_2504", Parentage::Natural, PROVENANCE, Default::default()),
+                row("god_1324", "adam_78", Parentage::Created, PARENTAGE_PROVENANCE, grounded(38)),
+                row("god_1324", "jesus_905", Parentage::Eternal, PARENTAGE_PROVENANCE, grounded(16)),
+                row("joseph_1715", "jesus_905", Parentage::Natural, PROVENANCE, Default::default()),
+                row("mary_1938", "jesus_905", Parentage::Virgin, PARENTAGE_PROVENANCE, grounded(35)),
+            ]
+        );
+    }
+
+    #[test]
+    fn spouses_stated_from_both_ends_are_one_row() {
+        // Arrange
+        let atlas = atlas_with_people(vec![kin("abraham_58", &[], &[], &["sarah_2473"]), kin("sarah_2473", &[], &[], &["abraham_58"])]);
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        // Act
+        merge_alias(&mut ctx);
+        // Assert
+        assert_eq!(ctx.graph.spouses, vec![Spouses { a: PersonId::new("abraham_58"), b: PersonId::new("sarah_2473"), provenance: PROVENANCE.into() }]);
     }
 }

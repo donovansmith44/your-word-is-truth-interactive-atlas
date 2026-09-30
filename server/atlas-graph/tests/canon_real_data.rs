@@ -103,7 +103,7 @@ fn every_row_of_every_family_round_trips() {
         analogue,
         occurs,
         parent_of,
-        partners,
+        spouses,
         participates,
         authored,
         shown,
@@ -147,7 +147,7 @@ fn every_row_of_every_family_round_trips() {
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
     fam!(parent_of, RowFamily::ParentOf);
-    fam!(partners, RowFamily::Partners);
+    fam!(spouses, RowFamily::Spouses);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
@@ -186,8 +186,8 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
         (RowFamily::Occurs, 431_280),
-        (RowFamily::ParentOf, 1_776),
-        (RowFamily::Partners, 104),
+        (RowFamily::ParentOf, 1_777),
+        (RowFamily::Spouses, 104),
         (RowFamily::Participates, 714),
         (RowFamily::Authored, 32),
         (RowFamily::Shown, SHOWN_ROWS),
@@ -196,8 +196,8 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        932_872 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
-        "the committed graph carries exactly 932,872 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
+        932_873 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
+        "the committed graph carries exactly 932,873 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
     );
 
     assert_eq!(
@@ -371,7 +371,7 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(analogue, RowFamily::Analogue);
     fam!(occurs, RowFamily::Occurs);
     fam!(parent_of, RowFamily::ParentOf);
-    fam!(partners, RowFamily::Partners);
+    fam!(spouses, RowFamily::Spouses);
     fam!(participates, RowFamily::Participates);
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
