@@ -83,6 +83,20 @@ public class GraphExplorableClientTests
     }
 
     [Fact]
+    public async Task Edges_asks_for_the_one_default_page_size_when_no_limit_is_given()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.ResponseBody = """{"kind":"cites","entries":[],"next":null,"version":"abc123"}""";
+
+        // Act
+        await client.Edges("text-unit:JHN.3.16", EdgeKind.Cites);
+
+        // Assert
+        Assert.Equal($"?kind=cites&limit={IExplorableClient.DefaultPageSize}", handler.LastRequestUri!.Query);
+    }
+
+    [Fact]
     public async Task Reading_RequestsTheTextWindowEndpoint_AndDeserializesTheRealWireShape()
     {
         var (client, handler) = MakeClient();
