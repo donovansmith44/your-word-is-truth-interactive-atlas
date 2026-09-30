@@ -29,7 +29,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 12. **O-MG-LOCAL:** Your Windows copy of map-generator (`Documents/the-best-maps-ever`) has 2 commits on `master` that were never pushed: `91d089c` "A source travels with its terms…" and `089a4bf` "RCA: why 6e349a3 broke the map…". Push them as they are, hand them to CX-M0 for review, or drop them?
 13. **O-CATECHISM:** Post the license request drafted at `.superpowers/sdd/queue-name-model/catechism-license-request.md` on github.com/brain-fuel/catechism. The fallback is our own mapping from the public-domain 1921 Triglot.
 14. **O-GODLINK:** with persons linked in verse text (CONTRACT-2), "God" and "LORD" are links in nearly every verse (8,587 verses for God). Keep every occurrence linked, or link only the first in a window/chapter?
-15. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+15. **O-BADGE:** FOCUS-1 drops the client-derived kind badge ("Passage"/"Verse") from the trail and selection tray and shows the served label only (rule 25). Want a served display kind on the card instead (a contract item)?
+16. **O-FINDINGS:** FOCUS-1 touches the files of F-6, F-7 (popover level), F-9 and F-12 (rewritten files). Close them inside FOCUS-1 (yes/no per finding)?
+17. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
@@ -43,6 +45,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-10 (fix wave, client): PlaceCard's measurement guard** (`PlaceCard.razor:305-319`) — a stale-result check by hand. Closure: the card's `RequestSeries` covers it.
 - **F-11 (fix wave, client): the picker's "served change discards the draft" policy** (`ScripturePicker.razor`, `_synced`) is not named by the `Draft` type. Closure: `Draft.Follow(served)` if the owner wants it typed.
 - **F-12 (rule 9): pre-existing comments** remain around every site the wave touched; the wave added none. Closure: A-STRIP.
+- **F-13 (FOCUS-1 prep, server/ETL, the container law): no passage container exists.** The ETL mints chapter/book/bible and Concord doc/article containers only; titled passages are not nodes, so a passage cannot be an Explorable identity. FOCUS-1 uses the first verse's TextUnit (F1-3); closure: FOCUS-3's ETL mints Container nodes for titled passages.
+- **F-14 (FOCUS-1 prep, client): `FocusKind`/`FrontierMatrix` mirror the graph vocabulary as strings.** Closure: the generated `NodeKind`/`EdgeKind` enums are the only vocabulary on the client.
+- **F-15 (client): `IExplorable.Kind` is a string.** Closure: `NodeKind`.
+- **F-16 (server wire): `PositionKind` is `NodeKind` + `Edge`, so every client mapping from a served position is partial.** Closure: FOCUS-1 Task 0 (F1-2) splits the edge position into its own wire shape.
+- **F-17 (server wire): the corpus is absent from `NodeRef`/`NodeCard`,** so the client parses ids to learn it (`HomeSurfaces`). Closure: `corpus` on the wire (a CONTRACT item, FOCUS-2/3).
+- **F-18 (client): `RevealPageSize` restates the server's page clamp.** Closure: the served page size is the one declaration.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
@@ -55,7 +63,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
-- **Status:** claimed:claude:2026-09-30T15:10-04:00 (prep first: re-anchor the plan on `678a0d2`, wave schedule, defects; ledger `.superpowers/sdd/2026-09-30-focus1-types/`)
+- **Status:** claimed:claude:2026-09-30T15:10-04:00 — prep done (29 defects ruled, F1-1..F1-8 in the ledger `.superpowers/sdd/2026-09-30-focus1-types/progress.md`); wave 1 running (T1+Chip ∥ T3 ∥ Task 0: `NodeRef.kind: NodeKind`, the one Rust task).
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
