@@ -30,11 +30,11 @@ public sealed class PolityDeltaNode : IExplorable
         Title = $"{polityName}, {from.Label} → {to.Label}";
     }
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on the map", "popover-chip-map", new ExplorationTarget.NavigateWorld($"from={From.Value}&to={To.Value}")),
+            new Chip("Show on the map", "popover-chip-map", new ChipTarget.NavigateWorld($"from={From.Value}&to={To.Value}")),
         };
         return Task.FromResult(list);
     }

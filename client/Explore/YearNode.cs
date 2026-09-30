@@ -34,19 +34,19 @@ public sealed class YearNode : IExplorable
     public string Title { get; }
     public string Kind => "Year";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        var list = new List<Exploration>();
+        var list = new List<Chip>();
         foreach (var span in _verses)
         {
             var reference = CanonRef.SpanOf(span);
-            list.Add(new Exploration(reference, $"popover-chip-verse-{reference}", new ExplorationTarget.Push(new VerseNode(CanonRef.VerseOf(CanonRef.FirstVerseOf(span))))));
+            list.Add(new Chip(reference, $"popover-chip-verse-{reference}", new ChipTarget.Push(new VerseNode(CanonRef.VerseOf(CanonRef.FirstVerseOf(span))))));
         }
 
-        list.Add(new Exploration("Show this time on the map", "popover-chip-map",
-            new ExplorationTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")));
+        list.Add(new Chip("Show this time on the map", "popover-chip-map",
+            new ChipTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")));
 
-        return Task.FromResult<IReadOnlyList<Exploration>>(list);
+        return Task.FromResult<IReadOnlyList<Chip>>(list);
     }
 
     // Never actually invoked once YearFrontierSection is registered for Kind == "Year" --

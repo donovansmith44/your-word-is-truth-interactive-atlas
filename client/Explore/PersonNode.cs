@@ -21,7 +21,7 @@ public sealed class PersonNode : IExplorable
 
     public Task<NodeCard> CardAsync(Func<Task<NodeCard>> fetch) => _card.Get(fetch);
 
-    public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         PersonLife? life;
         try
@@ -30,28 +30,28 @@ public sealed class PersonNode : IExplorable
         }
         catch (Exception)
         {
-            return Array.Empty<Exploration>();
+            return Array.Empty<Chip>();
         }
 
         if (life is null || life.Eternal)
         {
-            return Array.Empty<Exploration>();
+            return Array.Empty<Chip>();
         }
 
-        var chips = new List<Exploration>();
+        var chips = new List<Chip>();
         if (life.Birth is { } born)
         {
-            chips.Add(new Exploration(Born(born), "popover-chip-year-born", new ExplorationTarget.NavigateWorld($"from={born.Value}&to={born.Value}")));
+            chips.Add(new Chip(Born(born), "popover-chip-year-born", new ChipTarget.NavigateWorld($"from={born.Value}&to={born.Value}")));
         }
 
         if (life.Death is { } died)
         {
-            chips.Add(new Exploration(Died(died), "popover-chip-year-died", new ExplorationTarget.NavigateWorld($"from={died.Value}&to={died.Value}")));
+            chips.Add(new Chip(Died(died), "popover-chip-year-died", new ChipTarget.NavigateWorld($"from={died.Value}&to={died.Value}")));
         }
 
         if (chips.Count == 0 && life.First is { } first && life.Last is { } last)
         {
-            chips.Add(new Exploration(MentionedAcross(first, last), "popover-chip-year-span", new ExplorationTarget.NavigateWorld($"from={first.Value}&to={last.Value}")));
+            chips.Add(new Chip(MentionedAcross(first, last), "popover-chip-year-span", new ChipTarget.NavigateWorld($"from={first.Value}&to={last.Value}")));
         }
 
         return chips;

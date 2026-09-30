@@ -11,16 +11,16 @@ public sealed class BookNode : IExplorable
     public string Title => _bookCode;
     public string Kind => "Book";
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"ref={Uri.EscapeDataString(_bookCode)}")),
-            new Exploration("Read in context", "popover-chip-context",
-                new ExplorationTarget.NavigateReader(_bookCode, 1, null)),
-            new Exploration("About this book", "popover-chip-book",
-                new ExplorationTarget.Push(new AuthorNode(_bookCode))),
+            new Chip("Show on /world", "popover-chip-map",
+                new ChipTarget.NavigateWorld($"ref={Uri.EscapeDataString(_bookCode)}")),
+            new Chip("Read in context", "popover-chip-context",
+                new ChipTarget.NavigateReader(_bookCode, 1, null)),
+            new Chip("About this book", "popover-chip-book",
+                new ChipTarget.Push(new AuthorNode(_bookCode))),
         };
         return Task.FromResult(list);
     }

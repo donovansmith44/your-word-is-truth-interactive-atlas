@@ -31,12 +31,12 @@ public sealed class PlaceNode : IExplorable
     // left null (a no-op click) if nobody wires it.
     public Func<IExplorable, Task>? OnSelectEvent { get; set; }
 
-    public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
-        IReadOnlyList<Exploration> list = new[]
+        IReadOnlyList<Chip> list = new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld("from=-4004&to=100")),
+            new Chip("Show on /world", "popover-chip-map",
+                new ChipTarget.NavigateWorld("from=-4004&to=100")),
         };
         return Task.FromResult(list);
     }

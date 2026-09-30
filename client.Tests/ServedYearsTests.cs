@@ -35,7 +35,7 @@ public sealed class ServedYearsTests
         var explorations = await node.ExploreAsync(Unreached);
 
         // Assert
-        Assert.Equal([new Exploration("Show on /world", "popover-chip-map", new ExplorationTarget.NavigateWorld("from=-1406&to=-1400"))], explorations);
+        Assert.Equal([new Chip("Show on /world", "popover-chip-map", new ChipTarget.NavigateWorld("from=-1406&to=-1400"))], explorations);
     }
 
     [Fact]
@@ -50,8 +50,8 @@ public sealed class ServedYearsTests
         // Assert
         Assert.Equal(
             [
-                new Exploration("Born c. 1571 BC", "popover-chip-year-born", new ExplorationTarget.NavigateWorld("from=-1571&to=-1571")),
-                new Exploration("Died c. 1451 BC", "popover-chip-year-died", new ExplorationTarget.NavigateWorld("from=-1451&to=-1451")),
+                new Chip("Born c. 1571 BC", "popover-chip-year-born", new ChipTarget.NavigateWorld("from=-1571&to=-1571")),
+                new Chip("Died c. 1451 BC", "popover-chip-year-died", new ChipTarget.NavigateWorld("from=-1451&to=-1451")),
             ],
             explorations);
     }
@@ -66,7 +66,7 @@ public sealed class ServedYearsTests
         var explorations = await node.ExploreAsync(Unreached);
 
         // Assert
-        Assert.Equal([new Exploration("Mentioned across c. 1406 BC – 1400 BC", "popover-chip-year-span", new ExplorationTarget.NavigateWorld("from=-1406&to=-1400"))], explorations);
+        Assert.Equal([new Chip("Mentioned across c. 1406 BC – 1400 BC", "popover-chip-year-span", new ChipTarget.NavigateWorld("from=-1406&to=-1400"))], explorations);
     }
 
     [Fact]

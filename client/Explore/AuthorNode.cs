@@ -15,17 +15,17 @@ public sealed class AuthorNode : IExplorable
     public string Title => _bookCode;
     public string Kind => "Author";
 
-    public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
+    public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         if ((await Load(api)).Book is not { WritePlace: not null, Written: { } written })
         {
-            return Array.Empty<Exploration>();
+            return Array.Empty<Chip>();
         }
 
         return new[]
         {
-            new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={written.From.Value}&to={written.To.Value}")),
+            new Chip("Show on /world", "popover-chip-map",
+                new ChipTarget.NavigateWorld($"from={written.From.Value}&to={written.To.Value}")),
         };
     }
 

@@ -53,10 +53,10 @@ public class YearNodeEventTimeTests
         Assert.Equal([("2SA.5.7", "popover-chip-verse-2SA.5.7", "Verse 2SA.5.7"), ("Show this time on the map", "popover-chip-map", "World from=-1003&to=-1003")], chips);
     }
 
-    private static string TargetOf(ExplorationTarget target) => target switch
+    private static string TargetOf(ChipTarget target) => target switch
     {
-        ExplorationTarget.Push { Next: VerseNode verse } => $"Verse {verse.Title}",
-        ExplorationTarget.NavigateWorld world => $"World {world.Query}",
+        ChipTarget.Push { Next: VerseNode verse } => $"Verse {verse.Title}",
+        ChipTarget.NavigateWorld world => $"World {world.Query}",
         _ => target.ToString(),
     };
 

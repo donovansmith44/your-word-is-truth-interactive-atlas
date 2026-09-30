@@ -43,7 +43,7 @@ public class FrontierMatrixConformanceTests
     private sealed record FakeNode(string Kind) : IExplorable
     {
         public string Title => Kind;
-        public Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api) => throw new NotSupportedException("AppliesTo must never call this -- it's the cheap, synchronous half of the provider contract.");
+        public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) => throw new NotSupportedException("AppliesTo must never call this -- it's the cheap, synchronous half of the provider contract.");
         public Task<RenderFragment> BodyAsync(AtlasClient api) => throw new NotSupportedException("AppliesTo must never call this -- it's the cheap, synchronous half of the provider contract.");
     }
 
