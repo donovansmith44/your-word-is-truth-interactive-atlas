@@ -2,7 +2,7 @@ mod common;
 
 use atlas_graph::citations::CitationStats;
 
-const OFF_WORDS: usize = 92;
+const OFF_WORDS: usize = 0;
 const NO_SUCH_VERSE: usize = 0;
 
 #[test]

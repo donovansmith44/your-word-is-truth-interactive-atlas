@@ -408,7 +408,7 @@ struct FoundCitation {
 
 const NO_CITATIONS: &[FoundCitation] = &[];
 
-const CITATION_CASES: [CitationCase; 17] = [
+const CITATION_CASES: [CitationCase; 20] = [
     CitationCase { name: "plain_prose_cites_nothing", text: "We believe, teach, and confess.", citations: NO_CITATIONS },
     CitationCase {
         name: "an_abbreviation_its_period_a_chapter_and_a_verse",
@@ -440,8 +440,23 @@ const CITATION_CASES: [CitationCase; 17] = [
     },
     CitationCase { name: "a_range_that_runs_backward_cites_nothing", text: "See Matt. 5:9-3.", citations: NO_CITATIONS },
     CitationCase {
-        name: "a_letter_after_the_verse_is_left_outside_the_citation",
+        name: "and_following_after_the_verse_is_inside_the_citation_which_cites_the_stated_verse_only",
         text: "Love is the fulfilling, Rom. 13:8f.",
+        citations: &[FoundCitation { start: 24, end: 34, cites: "ROM.13.8" }],
+    },
+    CitationCase {
+        name: "a_doubled_and_following_is_inside_the_citation_too",
+        text: "Of the Law, Rom. 7:14ff, it is written.",
+        citations: &[FoundCitation { start: 12, end: 23, cites: "ROM.7.14" }],
+    },
+    CitationCase {
+        name: "the_latin_and_following_is_inside_the_citation_too",
+        text: "The apostles in Acts 15:10sqq. strove.",
+        citations: &[FoundCitation { start: 16, end: 29, cites: "ACT.15.10" }],
+    },
+    CitationCase {
+        name: "letters_after_the_verse_that_are_no_and_following_are_left_outside_the_citation",
+        text: "Love is the fulfilling, Rom. 13:8fold.",
         citations: &[FoundCitation { start: 24, end: 33, cites: "ROM.13.8" }],
     },
     CitationCase {

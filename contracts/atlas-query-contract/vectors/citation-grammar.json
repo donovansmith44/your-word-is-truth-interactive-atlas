@@ -127,12 +127,45 @@
       "citations": [
         {
           "cites": "ROM.13.8",
+          "end": 34,
+          "start": 24
+        }
+      ],
+      "name": "and_following_after_the_verse_is_inside_the_citation_which_cites_the_stated_verse_only",
+      "text": "Love is the fulfilling, Rom. 13:8f."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.7.14",
+          "end": 23,
+          "start": 12
+        }
+      ],
+      "name": "a_doubled_and_following_is_inside_the_citation_too",
+      "text": "Of the Law, Rom. 7:14ff, it is written."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ACT.15.10",
+          "end": 29,
+          "start": 16
+        }
+      ],
+      "name": "the_latin_and_following_is_inside_the_citation_too",
+      "text": "The apostles in Acts 15:10sqq. strove."
+    },
+    {
+      "citations": [
+        {
+          "cites": "ROM.13.8",
           "end": 33,
           "start": 24
         }
       ],
-      "name": "a_letter_after_the_verse_is_left_outside_the_citation",
-      "text": "Love is the fulfilling, Rom. 13:8f."
+      "name": "letters_after_the_verse_that_are_no_and_following_are_left_outside_the_citation",
+      "text": "Love is the fulfilling, Rom. 13:8fold."
     },
     {
       "citations": [

@@ -1,9 +1,11 @@
 //! Where the Book of Concord cites Scripture, found once here so the reader never searches for it.
 //! The grammar is the one the reader used: a book, named in full or by an abbreviation, then a
-//! chapter and a verse, and optionally the last verse of a range in that chapter. Each citation in a
+//! chapter and a verse, and optionally the last verse of a range in that chapter or an "and
+//! following" (`f`, `ff`, `sq`, `sqq`) written onto the verse. Each citation in a
 //! paragraph becomes a `cites` row from the paragraph's words that spell it to the verses it names; a
 //! citation that does not lie on whole words, or names a verse the Bible does not hold, is refused
-//! and counted, never guessed at.
+//! and counted, never guessed at. An "and following" cites the stated verse only: how far it runs
+//! is the author's to say, and the citation does not say it.
 
 use std::ops::Range;
 use std::sync::LazyLock;
@@ -29,7 +31,7 @@ pub struct Citation {
 }
 
 /// `cited` counts the rows written; `off_words` the citations refused because they do not start
-/// where a word starts and end where a word ends ("Rom. 13:8f"); `no_such_verse` those refused
+/// where a word starts and end where a word ends ("Rom. 13:8a"); `no_such_verse` those refused
 /// because a verse they name is not in the Bible.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct CitationStats {
@@ -187,13 +189,14 @@ struct Grammar {
 
 /// Longest name first: an alternation tries left to right, so "1 Corinthians" must be offered
 /// before "1 Cor", or the shorter name would win and strand "inthians". Digits are ASCII, which is
-/// what a chapter or verse number parses from.
+/// what a chapter or verse number parses from. An "and following" must end its word, so the
+/// citation still ends where a word ends; other letters after the verse stay outside it.
 static GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
     let names = book_names();
     let mut longest_first: Vec<&str> = names.iter().map(|(name, _)| *name).collect();
     longest_first.sort_by_key(|name| std::cmp::Reverse(name.len()));
     let alternation = longest_first.iter().map(|name| regex::escape(name)).collect::<Vec<_>>().join("|");
-    let pattern = Regex::new(&format!(r"\b(?<book>{alternation})\.?\s+(?<chapter>[0-9]{{1,3}})[,:]\s*(?<verse>[0-9]{{1,3}})(?:-(?<last>[0-9]{{1,3}}))?"))
+    let pattern = Regex::new(&format!(r"\b(?<book>{alternation})\.?\s+(?<chapter>[0-9]{{1,3}})[,:]\s*(?<verse>[0-9]{{1,3}})(?:-(?<last>[0-9]{{1,3}})|(?:ff?|sqq?)\b)?"))
         .expect("the citation grammar compiles");
     Grammar { pattern, names }
 });
@@ -263,9 +266,17 @@ mod tests {
     }
 
     #[test]
+    fn and_following_cites_the_stated_verse_from_the_whole_word_that_says_it() {
+        // Act
+        let cited = cite_in("Rom. 13:1ff.");
+        // Assert
+        assert_eq!(cited, (vec![citation(0, 2, verse("ROM", 13, 1), None, "ROM.13.1")], CitationStats { cited: 1, off_words: 0, no_such_verse: 0 }));
+    }
+
+    #[test]
     fn a_citation_that_ends_inside_a_word_is_refused_and_counted() {
         // Act
-        let cited = cite_in("Rom. 13:1f");
+        let cited = cite_in("Rom. 13:1fold");
         // Assert
         assert_eq!(cited, (vec![], CitationStats { cited: 0, off_words: 1, no_such_verse: 0 }));
     }

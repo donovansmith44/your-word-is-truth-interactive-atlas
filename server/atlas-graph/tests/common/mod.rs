@@ -20,7 +20,7 @@ use atlas_graph_types::graph::Graph;
 pub const MAPS: usize = 10;
 pub const CORPUS_ROOTS: usize = 2;
 /// The Book of Concord's citations of Scripture that lie on its words and name verses the Bible holds.
-pub const CONCORD_CITATIONS: usize = 1_154;
+pub const CONCORD_CITATIONS: usize = 1_246;
 
 /// A from-raw build always reads the KJV, its cross references, the atlas, brain-fuel and the
 /// Concord; these are the corpora a suite adds to that.
