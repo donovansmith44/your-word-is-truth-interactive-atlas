@@ -51,14 +51,14 @@ public sealed class KinshipTests
     public void Jesus_reads_the_eternal_father_the_virgin_mother_and_the_supposed_father_each_under_its_own_label()
     {
         // Act
-        var groups = Kinship.Groups(parents: [Kin(God, Parentage.Eternal), Kin(Joseph, Parentage.Legal), Kin(Mary, Parentage.Virgin)], spouses: [], children: [], siblings: [James]);
+        var groups = Kinship.Groups(parents: [Kin(God, Parentage.Eternal), Kin(Joseph, Parentage.Legal), Kin(Mary, Parentage.Virgin)], spouses: [], children: [], siblings: [], brethren: [James]);
         // Assert
         Assert.Equal(
             [
                 "Father (eternal Son of God) | parents-eternal | Person:god_1324",
                 "Mother (born of the Virgin) | parents-virgin | Person:mary_1938",
                 "Legal father (as was supposed) | parents-legal | Person:joseph_1715",
-                "Siblings (1) | siblings | Person:james_719",
+                "Brethren (1) | brethren | Person:james_719",
             ],
             Shape(groups));
     }
@@ -67,7 +67,7 @@ public sealed class KinshipTests
     public void God_reads_his_only_begotten_son_apart_from_the_man_and_woman_he_created()
     {
         // Act
-        var groups = Kinship.Groups(parents: [], spouses: [], children: [Kin(Adam, Parentage.Created), Kin(Eve, Parentage.Created), Kin(Jesus, Parentage.Eternal)], siblings: []);
+        var groups = Kinship.Groups(parents: [], spouses: [], children: [Kin(Adam, Parentage.Created), Kin(Eve, Parentage.Created), Kin(Jesus, Parentage.Eternal)], siblings: [], brethren: []);
         // Assert
         Assert.Equal(
             [
@@ -78,10 +78,10 @@ public sealed class KinshipTests
     }
 
     [Fact]
-    public void A_natural_family_reads_parents_spouses_children_and_siblings_with_their_counts()
+    public void A_family_reads_parents_spouses_children_siblings_and_brethren_with_their_counts()
     {
         // Act
-        var groups = Kinship.Groups(parents: [Kin(Joseph, Parentage.Natural), Kin(Mary, Parentage.Natural)], spouses: [Eve], children: [Kin(Adam, Parentage.Natural)], siblings: [Jesus]);
+        var groups = Kinship.Groups(parents: [Kin(Joseph, Parentage.Natural), Kin(Mary, Parentage.Natural)], spouses: [Eve], children: [Kin(Adam, Parentage.Natural)], siblings: [Jesus], brethren: [James]);
         // Assert
         Assert.Equal(
             [
@@ -89,6 +89,7 @@ public sealed class KinshipTests
                 "Spouses (1) | spouses | Person:eve_1231",
                 "Children (1) | children | Person:adam_78",
                 "Siblings (1) | siblings | Person:jesus_905",
+                "Brethren (1) | brethren | Person:james_719",
             ],
             Shape(groups));
     }

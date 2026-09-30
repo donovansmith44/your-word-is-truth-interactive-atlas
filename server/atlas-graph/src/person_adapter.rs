@@ -3,7 +3,7 @@
 //! because a kind is a fact, no record is ever built as both.
 
 use atlas_core::data::AtlasData;
-use atlas_graph_types::edge::{Justification, Mentions, MentionedEntity, ParentOf, Parentage, Participates, Spouses};
+use atlas_graph_types::edge::{Brethren, Justification, Mentions, MentionedEntity, ParentOf, Parentage, Participates, Spouses};
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{EventId, NodeKind, PersonId};
 use atlas_graph_types::ingest::ProvenanceId;
@@ -17,6 +17,8 @@ use crate::pipeline::BuildCtx;
 pub const PROVENANCE: &str = "theographic-people";
 
 pub const PARENTAGE_PROVENANCE: &str = "curated-parentage";
+
+pub const BRETHREN_PROVENANCE: &str = "curated-brethren";
 
 fn verse_locus(vref: &str) -> Option<TextLocus> {
     let vid = atlas_core::refs::VerseId::parse_canonical(vref).ok()?;
@@ -52,6 +54,7 @@ pub struct PersonAdapterStats {
     /// node -- a reclassified people group -- or, for the timeline, not an Event node.
     pub parent_of_rows: usize,
     pub spouses_rows: usize,
+    pub brethren_rows: usize,
     pub participates_rows: usize,
     pub kin_links_skipped: usize,
     pub timeline_links_skipped: usize,
@@ -132,6 +135,9 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
             }
         }
     }
+    for excluded in &ctx.atlas.parentage_exclusions {
+        parent_child.remove(&(excluded.parent.clone(), excluded.child.clone()));
+    }
     let mut parentage: std::collections::BTreeMap<(String, String), (Parentage, &str, Justification)> =
         parent_child.into_iter().map(|pair| (pair, (Parentage::Natural, PROVENANCE, Justification::default()))).collect();
     for seed in &ctx.atlas.parentage_seeds {
@@ -140,6 +146,16 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
     for ((parent, child), (kind, provenance, justification)) in parentage {
         ctx.graph.parent_of.push(ParentOf { parent: PersonId::new(parent), child: PersonId::new(child), parentage: kind, provenance: ProvenanceId::from(provenance), justification });
         stats.parent_of_rows += 1;
+    }
+    let brethren: std::collections::BTreeMap<(String, String), Justification> = ctx
+        .atlas
+        .brethren_seeds
+        .iter()
+        .map(|seed| (if seed.a < seed.b { (seed.a.clone(), seed.b.clone()) } else { (seed.b.clone(), seed.a.clone()) }, seed.justification.clone()))
+        .collect();
+    for ((a, b), justification) in brethren {
+        ctx.graph.brethren.push(Brethren { a: PersonId::new(a), b: PersonId::new(b), provenance: ProvenanceId::from(BRETHREN_PROVENANCE), justification });
+        stats.brethren_rows += 1;
     }
     for (a, b) in spouse_pairs {
         ctx.graph.spouses.push(Spouses { a: PersonId::new(a), b: PersonId::new(b), provenance: ProvenanceId::from(PROVENANCE) });
@@ -150,8 +166,8 @@ pub fn merge_alias(ctx: &mut BuildCtx) -> PersonAdapterStats {
         stats.participates_rows += 1;
     }
     eprintln!(
-        "D5 PERSON KIN/PARTICIPATION: {} parent-of row(s), {} spouse-of row(s), {} participates-in row(s); {} kin link(s) and {} timeline link(s) skipped (other end not a Person / Event node)",
-        stats.parent_of_rows, stats.spouses_rows, stats.participates_rows, stats.kin_links_skipped, stats.timeline_links_skipped
+        "D5 PERSON KIN/PARTICIPATION: {} parent-of row(s), {} spouse-of row(s), {} brethren-of row(s), {} participates-in row(s); {} kin link(s) and {} timeline link(s) skipped (other end not a Person / Event node)",
+        stats.parent_of_rows, stats.spouses_rows, stats.brethren_rows, stats.participates_rows, stats.kin_links_skipped, stats.timeline_links_skipped
     );
     stats
 }
@@ -512,5 +528,48 @@ mod tests {
         merge_alias(&mut ctx);
         // Assert
         assert_eq!(ctx.graph.spouses, vec![Spouses { a: PersonId::new("abraham_58"), b: PersonId::new("sarah_2473"), provenance: PROVENANCE.into() }]);
+    }
+
+    #[test]
+    fn an_excluded_pair_yields_no_row_though_the_source_states_it_from_both_ends() {
+        // Arrange
+        let mut atlas = atlas_with_people(vec![
+            Person { children: vec!["james_719".into(), "jesus_905".into()], ..kin("mary_1938", &[], &[], &[]) },
+            kin("james_719", &[], &["mary_1938"], &[]),
+            kin("jesus_905", &[], &["mary_1938"], &[]),
+        ]);
+        atlas.parentage_exclusions = vec![atlas_core::data::ParentageExclusion { parent: "mary_1938".into(), child: "james_719".into() }];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        // Act
+        merge_alias(&mut ctx);
+        // Assert
+        assert_eq!(ctx.graph.parent_of, vec![row("mary_1938", "jesus_905", Parentage::Natural, PROVENANCE, Default::default())]);
+    }
+
+    #[test]
+    fn brethren_are_one_ordered_row_per_declared_pair_carrying_their_grounds() {
+        // Arrange
+        let mut atlas = atlas_with_people(vec![kin("jesus_905", &[], &[], &[]), kin("james_719", &[], &[], &[]), kin("simon_2747", &[], &[], &[])]);
+        atlas.brethren_seeds = vec![
+            atlas_core::data::BrethrenSeed { a: "jesus_905".into(), b: "simon_2747".into(), justification: grounded(55) },
+            atlas_core::data::BrethrenSeed { a: "jesus_905".into(), b: "james_719".into(), justification: grounded(19) },
+        ];
+        let canon = Canon { books: vec![] };
+        let verses: HashMap<String, String> = HashMap::new();
+        let mut ctx = BuildCtx::new(&canon, &verses, None, "From Verse\tTo Verse\tVotes\t#comment\n", &atlas);
+        normalize(&mut ctx);
+        // Act
+        merge_alias(&mut ctx);
+        // Assert
+        assert_eq!(
+            ctx.graph.brethren,
+            vec![
+                Brethren { a: PersonId::new("james_719"), b: PersonId::new("jesus_905"), provenance: BRETHREN_PROVENANCE.into(), justification: grounded(19) },
+                Brethren { a: PersonId::new("jesus_905"), b: PersonId::new("simon_2747"), provenance: BRETHREN_PROVENANCE.into(), justification: grounded(55) },
+            ]
+        );
     }
 }

@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use crate::edge::{
-    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
+    Analogue, Attests, Authored, Brethren, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
     MapSuccession, Mentions, NamedAfter, Namesake, Occurs, Parentage, ParentOf, Participates, Spouses, Quotes, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
@@ -59,10 +59,11 @@ pub enum RowFamily {
     Authored,
     Shown,
     MapSuccession,
+    Brethren,
 }
 
 impl RowFamily {
-    pub const ALL: [RowFamily; 28] = [
+    pub const ALL: [RowFamily; 29] = [
         RowFamily::ContainsBible,
         RowFamily::ContainsConcord,
         RowFamily::Attests,
@@ -91,6 +92,7 @@ impl RowFamily {
         RowFamily::Authored,
         RowFamily::Shown,
         RowFamily::MapSuccession,
+        RowFamily::Brethren,
     ];
 
     /// The table name as the schema spells it.
@@ -124,6 +126,7 @@ impl RowFamily {
             RowFamily::Authored => "authored",
             RowFamily::Shown => "shown",
             RowFamily::MapSuccession => "map_succession",
+            RowFamily::Brethren => "brethren",
         }
     }
 
@@ -648,6 +651,7 @@ const ANALOGUE_KEYS: &[&str] = &["a", "b", "provenance"];
 const OCCURS_KEYS: &[&str] = &["entry", "locus", "provenance"];
 const PARENT_OF_KEYS: &[&str] = &["child", "justification", "parent", "parentage", "provenance"];
 const SPOUSES_KEYS: &[&str] = &["a", "b", "provenance"];
+const BRETHREN_KEYS: &[&str] = &["a", "b", "justification", "provenance"];
 const PARTICIPATES_KEYS: &[&str] = &["event", "person", "provenance"];
 const AUTHORED_KEYS: &[&str] = &["book", "justification", "person", "provenance"];
 const SHOWN_KEYS: &[&str] = &["map", "node", "provenance"];
@@ -1199,6 +1203,24 @@ impl Canon for Spouses {
     }
 }
 
+impl Canon for Brethren {
+    fn to_value(&self) -> Value {
+        let Self { a, b, provenance, justification } = self;
+        obj(vec![("a", id_value(a)), ("b", id_value(b)), ("justification", justification.to_value()), ("provenance", str_value(provenance))])
+    }
+
+    fn from_value(v: &Value) -> Result<Self, CanonError> {
+        let m = expect_obj(v, ROOT)?;
+        expect_exact_keys(m, ROOT, BRETHREN_KEYS)?;
+        Ok(Brethren {
+            a: field_id::<PersonTag>(m, ROOT, "a")?,
+            b: field_id::<PersonTag>(m, ROOT, "b")?,
+            provenance: field_str(m, ROOT, "provenance")?,
+            justification: field_sub::<Justification>(m, ROOT, "justification")?,
+        })
+    }
+}
+
 impl Canon for Participates {
     fn to_value(&self) -> Value {
         let Self { person, event, provenance } = self;
@@ -1314,6 +1336,7 @@ impl RowFamily {
             RowFamily::Authored => Directed(R::AuthoredBy),
             RowFamily::Shown => Directed(R::Shows),
             RowFamily::MapSuccession => Directed(R::Succession),
+            RowFamily::Brethren => Symmetric(S::Brethren),
         }
     }
 }

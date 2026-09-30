@@ -23,7 +23,7 @@ public static class Kinship
 
     public static Parentage Of(EdgeEntry entry) => entry.Parentage!.Value;
 
-    public static IReadOnlyList<KinGroup> Groups(IReadOnlyList<EdgeEntry> parents, IReadOnlyList<NodeRef> spouses, IReadOnlyList<EdgeEntry> children, IReadOnlyList<NodeRef> siblings)
+    public static IReadOnlyList<KinGroup> Groups(IReadOnlyList<EdgeEntry> parents, IReadOnlyList<NodeRef> spouses, IReadOnlyList<EdgeEntry> children, IReadOnlyList<NodeRef> siblings, IReadOnlyList<NodeRef> brethren)
     {
         IEnumerable<KinGroup> all =
         [
@@ -31,6 +31,7 @@ public static class Kinship
             Counted("Spouses", "spouses", spouses),
             .. ByParentage(children, "children", AsChild),
             Counted("Siblings", "siblings", siblings),
+            Counted("Brethren", "brethren", brethren),
         ];
         return all.Where(g => g.People.Count > 0).ToList();
     }

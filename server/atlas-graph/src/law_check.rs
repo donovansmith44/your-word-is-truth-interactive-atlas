@@ -130,6 +130,10 @@ pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReferen
         check("spouses", "a", row.a.erase())?;
         check("spouses", "b", row.b.erase())?;
     }
+    for row in &graph.brethren {
+        check("brethren", "a", row.a.erase())?;
+        check("brethren", "b", row.b.erase())?;
+    }
     for row in &graph.participates {
         check("participates", "person", row.person.erase())?;
         check("participates", "event", row.event.erase())?;
@@ -383,6 +387,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
     fresh.authored = graph.authored.clone();
     fresh.shown = graph.shown.clone();
     fresh.map_succession = graph.map_succession.clone();
+    fresh.brethren = graph.brethren.clone();
     fresh.build_indexes();
     crate::event_world::add_justified_by(&mut fresh);
 

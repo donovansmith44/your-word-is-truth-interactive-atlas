@@ -737,7 +737,8 @@
         "corresponds-to",
         "parallel",
         "temporal-adjacency",
-        "spouse-of"
+        "spouse-of",
+        "brethren-of"
       ],
       "type": "string"
     },

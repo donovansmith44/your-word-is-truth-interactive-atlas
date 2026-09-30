@@ -138,6 +138,7 @@ pub fn rows_of_section<'a>(g: &'a Graph, s: Section) -> Vec<(RowFamily, i64, Row
             RowFamily::Authored => all(f, &g.authored, RowRef::Authored),
             RowFamily::Shown => all(f, &g.shown, RowRef::Shown),
             RowFamily::MapSuccession => all(f, &g.map_succession, RowRef::MapSuccession),
+            RowFamily::Brethren => all(f, &g.brethren, RowRef::Brethren),
             RowFamily::CrossRefs => split(f, &g.cross_refs, s, section_of_cross_ref, RowRef::CrossRefs),
             RowFamily::SpokenBy => all(f, &g.spoken_by, RowRef::SpokenBy),
             RowFamily::SpokenAt => all(f, &g.spoken_at, RowRef::SpokenAt),

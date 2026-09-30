@@ -108,6 +108,7 @@ fn every_row_of_every_family_round_trips() {
         authored,
         shown,
         map_succession,
+        brethren,
         reading: _,
         extra_tables: _,
         indexes: _,
@@ -152,6 +153,7 @@ fn every_row_of_every_family_round_trips() {
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
     fam!(map_succession, RowFamily::MapSuccession);
+    fam!(brethren, RowFamily::Brethren);
 
     let total: usize = counts.iter().map(|(_, n)| *n).sum();
     println!("DB-2a ROW CANON: {total} rows round-tripped across {} families", counts.len());
@@ -186,18 +188,19 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::TemporalAdjacency, 911),
         (RowFamily::Analogue, 1),
         (RowFamily::Occurs, 431_280),
-        (RowFamily::ParentOf, 1_777),
+        (RowFamily::ParentOf, 1_769),
         (RowFamily::Spouses, 104),
         (RowFamily::Participates, 714),
         (RowFamily::Authored, 32),
         (RowFamily::Shown, SHOWN_ROWS),
         (RowFamily::MapSuccession, MAP_STEPS),
+        (RowFamily::Brethren, 4),
     ];
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        932_873 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
-        "the committed graph carries exactly 932,873 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
+        932_869 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
+        "the committed graph carries exactly 932,869 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
     );
 
     assert_eq!(
@@ -376,6 +379,7 @@ fn encoding_is_deterministic_across_two_independent_builds() {
     fam!(authored, RowFamily::Authored);
     fam!(shown, RowFamily::Shown);
     fam!(map_succession, RowFamily::MapSuccession);
+    fam!(brethren, RowFamily::Brethren);
 
     println!(
         "DB-2a DETERMINISM: {} nodes ({node_bytes} canon bytes) + {rows} rows byte-identical across two independent builds",

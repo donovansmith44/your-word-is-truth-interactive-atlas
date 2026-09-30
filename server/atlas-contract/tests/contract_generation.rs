@@ -170,6 +170,7 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
             { "name": "Parallel",          "label": "parallel" },
             { "name": "TemporalAdjacency", "label": "temporal-adjacency" },
             { "name": "Spouses",           "label": "spouse-of" },
+            { "name": "Brethren",          "label": "brethren-of" },
         ],
     });
     // Act

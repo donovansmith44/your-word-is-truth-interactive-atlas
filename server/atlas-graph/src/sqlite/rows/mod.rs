@@ -12,7 +12,7 @@ use atlas_graph_types::canon::{Canon, RowFamily, Value as CanonValue};
 use atlas_graph_types::chrono::DatedBy;
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, Contains,
-    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, MapSuccession, Mentions, NamedAfter, Occurs, ParentOf, Participates, Spouses, Quotes,
+    Corresponds, CrossRef, Fulfills, Justification, LocatedAt, MapSuccession, Mentions, NamedAfter, Occurs, ParentOf, Participates, Spouses, Brethren, Quotes,
     Shown, SpokenAt, SpokenBy, Succession, TemporalAdjacency, Typology,
 };
 use atlas_graph_types::text::{BibleTag, ConcordTag};
@@ -52,6 +52,7 @@ pub enum RowRef<'a> {
     Authored(&'a Authored),
     Shown(&'a Shown),
     MapSuccession(&'a MapSuccession),
+    Brethren(&'a Brethren),
 }
 
 /// Owned rows read back (the reader's output).
@@ -85,6 +86,7 @@ pub enum RowOwned {
     Authored(Authored),
     Shown(Shown),
     MapSuccession(MapSuccession),
+    Brethren(Brethren),
 }
 
 macro_rules! per_arm {
@@ -118,6 +120,7 @@ macro_rules! per_arm {
             Self::Authored($r) => $body,
             Self::Shown($r) => $body,
             Self::MapSuccession($r) => $body,
+            Self::Brethren($r) => $body,
         }
     };
 }
@@ -153,6 +156,7 @@ macro_rules! family_of {
             Self::Authored(_) => RowFamily::Authored,
             Self::Shown(_) => RowFamily::Shown,
             Self::MapSuccession(_) => RowFamily::MapSuccession,
+            Self::Brethren(_) => RowFamily::Brethren,
         }
     };
 }
@@ -184,6 +188,7 @@ impl<'a> RowRef<'a> {
             Self::CommentsOn(r) => Some(&r.justification),
             Self::Authored(r) => Some(&r.justification),
             Self::ParentOf(r) => Some(&r.justification),
+            Self::Brethren(r) => Some(&r.justification),
             Self::Mentions(_)
             | Self::CorrespondsBible(_)
             | Self::TemporalAdjacency(_)
@@ -236,6 +241,7 @@ impl RowOwned {
             Self::Authored(r) => RowRef::Authored(r),
             Self::Shown(r) => RowRef::Shown(r),
             Self::MapSuccession(r) => RowRef::MapSuccession(r),
+            Self::Brethren(r) => RowRef::Brethren(r),
         }
     }
 }
@@ -270,6 +276,7 @@ pub fn insert_row(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row:
         RowRef::Authored(r) => core::insert_authored(tx, jw, ord, r),
         RowRef::Shown(r) => core::insert_shown(tx, ord, r),
         RowRef::MapSuccession(r) => core::insert_map_succession(tx, ord, r),
+        RowRef::Brethren(r) => core::insert_brethren(tx, jw, ord, r),
     }
 }
 
@@ -309,6 +316,7 @@ pub fn read_rows(conn: &Connection, family: RowFamily) -> Result<Vec<(i64, RowOw
         RowFamily::Authored => wrap(core::read_authored(conn)?, RowOwned::Authored),
         RowFamily::Shown => wrap(core::read_shown(conn)?, RowOwned::Shown),
         RowFamily::MapSuccession => wrap(core::read_map_succession(conn)?, RowOwned::MapSuccession),
+        RowFamily::Brethren => wrap(core::read_brethren(conn)?, RowOwned::Brethren),
     })
 }
 

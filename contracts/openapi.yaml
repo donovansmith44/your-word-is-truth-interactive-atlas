@@ -1488,6 +1488,7 @@ components:
       - parallel
       - temporal-adjacency
       - spouse-of
+      - brethren-of
     EdgePage:
       type: object
       description: One page of a node's neighbours of a single kind.
@@ -3350,3 +3351,5 @@ x-atlas-relations:
     name: TemporalAdjacency
   - label: spouse-of
     name: Spouses
+  - label: brethren-of
+    name: Brethren

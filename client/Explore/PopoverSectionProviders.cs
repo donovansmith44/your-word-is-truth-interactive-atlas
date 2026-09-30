@@ -2106,13 +2106,14 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
         }
 
         List<EdgeEntry> parents, children;
-        List<NodeRef> spouses;
+        List<NodeRef> spouses, brethren;
         var siblings = new List<NodeRef>();
         try
         {
             parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.ToList();
             spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
             children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.ToList();
+            brethren = (await ctx.Graph.Edges(person.PersonId, EdgeKind.BrethrenOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
             foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))))
             {
                 var theirs = (await ctx.Graph.Edges(parent.Node.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Select(e => e.Node);
@@ -2130,7 +2131,7 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
             return null;
         }
 
-        var groups = Kinship.Groups(parents, spouses, children, siblings);
+        var groups = Kinship.Groups(parents, spouses, children, siblings, brethren);
         if (groups.Count == 0)
         {
             return null;

@@ -85,5 +85,7 @@ test('PERSON-4: Jesus is the eternal Son of God, born of the Virgin Mary, the so
   await expect(page.getByTestId('person-family-parents-legal')).toHaveText('Legal father (as was supposed)');
   await expect(page.getByTestId('person-parents-legal-joseph_1715')).toBeVisible();
   await expect(page.getByTestId('person-family-parents')).toHaveCount(0);
-  await expect(page.getByTestId('person-siblings-adam_78')).toHaveCount(0);
+  await expect(page.getByTestId('person-family-siblings')).toHaveCount(0);
+  await expect(page.getByTestId('person-family-brethren')).toHaveText('Brethren (4)');
+  await expect(page.getByTestId('person-brethren-james_719')).toBeVisible();
 });

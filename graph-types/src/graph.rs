@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Spouses, Quotes, RelationId,
+    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Spouses, Quotes, RelationId, Brethren,
     Shown, Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -66,6 +66,7 @@ pub struct Graph {
     pub authored: Vec<Authored>,
     pub shown: Vec<Shown>,
     pub map_succession: Vec<MapSuccession>,
+    pub brethren: Vec<Brethren>,
 
     // Built, never authored.
     pub reading: BTreeMap<&'static str, ReadingSpine>,
@@ -314,6 +315,13 @@ impl Graph {
                 M::None,
             ));
         }
+        for (i, row) in self.brethren.iter().enumerate() {
+            push_edge(&mut out, RowFamily::Brethren, i, EdgeRel::Symmetric(S::Brethren), (
+                at(&row.a.erase()),
+                at(&row.b.erase()),
+                M::None,
+            ));
+        }
         for (i, row) in self.participates.iter().enumerate() {
             push_edge(&mut out, RowFamily::Participates, i, EdgeRel::Directed(RelationId::Participates), (
                 at(&row.person.erase()),
@@ -396,6 +404,7 @@ impl Graph {
             F::Authored => self.authored.get(row_ord).map(|r| r.provenance.as_str()),
             F::Shown => self.shown.get(row_ord).map(|r| r.provenance.as_str()),
             F::MapSuccession => self.map_succession.get(row_ord).map(|r| r.provenance.as_str()),
+            F::Brethren => self.brethren.get(row_ord).map(|r| r.provenance.as_str()),
         }
     }
 

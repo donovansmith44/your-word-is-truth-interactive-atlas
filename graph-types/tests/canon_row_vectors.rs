@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::canon::{encode_row_in_family, Canon, RowFamily, Value, ROOT};
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
-    Analogue, Attests, Authored, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
+    Analogue, Attests, Authored, Brethren, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent,
     Contains, Corresponds, CrossRef, Fulfills, Ground, Justification, LocatedAt, MentionedEntity,
     MapSuccession, Mentions, NamedAfter, Namesake, Occurs, Parentage, ParentOf, Participates, Quotes, Spouses, Shown, SpokenAt, SpokenBy,
     Succession, TemporalAdjacency, Typology,
@@ -17,7 +17,7 @@ use atlas_graph_types::text::{
     LocusSet, TextLocus, TextRef, TokenSpan, TranslationId, VerseRef,
 };
 
-const DECLARED_ROW_FAMILIES: usize = 28;
+const DECLARED_ROW_FAMILIES: usize = 29;
 
 fn vr(book: u8, chapter: u16, verse: u16) -> VerseRef {
     VerseRef { book, chapter, verse }
@@ -120,6 +120,7 @@ fn the_row_family_manifest_is_closed_and_ordinal_indexed() {
             "authored",
             "shown",
             "map_succession",
+            "brethren",
         ],
         "the table names and their ORDER are the spec's own (spec 5, then 5.7); the order IS the ordinal"
     );
@@ -464,6 +465,17 @@ fn every_row_family_round_trips_with_hand_built_data() {
         MapSuccession { prior: MapId::new("era-primeval"), next: MapId::new("era-patriarchs"), provenance: "curated-eras".into() },
         RowFamily::MapSuccession,
         r#"{"next":"Map:era-patriarchs","prior":"Map:era-primeval","provenance":"curated-eras"}"#
+    );
+
+    law!(
+        Brethren {
+            a: PersonId::new("james_719"),
+            b: PersonId::new("jesus_905"),
+            provenance: "curated-brethren".into(),
+            justification: Justification { text: None, grounds: [Ground::Scripture(blr((47, 1, 19), (47, 1, 19)))].into_iter().collect() },
+        },
+        RowFamily::Brethren,
+        r#"{"a":"Person:james_719","b":"Person:jesus_905","justification":{"grounds":[{"Scripture":{"from":{"span":null,"unit":{"book":47,"chapter":1,"verse":19}},"to":{"span":null,"unit":{"book":47,"chapter":1,"verse":19}}}}],"text":null},"provenance":"curated-brethren"}"#
     );
 
     assert_eq!(

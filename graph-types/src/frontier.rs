@@ -194,6 +194,7 @@ impl Capability {
                 FrontierEdge { kind: EK::Directed(R::ParentOf, D::Forward), target: Some(G::Person) },
                 FrontierEdge { kind: EK::Directed(R::ParentOf, D::Inverse), target: Some(G::Person) },
                 FrontierEdge { kind: EK::Symmetric(S::Spouses), target: Some(G::Person) },
+                FrontierEdge { kind: EK::Symmetric(S::Brethren), target: Some(G::Person) },
             ],
             Capability::Participation => {
                 &[FrontierEdge { kind: EK::Directed(R::Participates, D::Forward), target: Some(G::Event) }]
@@ -414,7 +415,7 @@ mod tests {
             assert!(!allows(kind, Capability::Participation), "{kind:?} must not claim Participation");
         }
         let kin: Vec<EK> = Capability::Kin.edges().iter().map(|e| e.kind).collect();
-        assert_eq!(kin, vec![EK::Directed(R::ParentOf, D::Forward), EK::Directed(R::ParentOf, D::Inverse), EK::Symmetric(S::Spouses)]);
+        assert_eq!(kin, vec![EK::Directed(R::ParentOf, D::Forward), EK::Directed(R::ParentOf, D::Inverse), EK::Symmetric(S::Spouses), EK::Symmetric(S::Brethren)]);
         assert!(Capability::Kin.edges().iter().all(|e| e.target == Some(crate::id::NodeKind::Person)));
         assert_eq!(Capability::Participation.edges()[0].kind, EK::Directed(R::Participates, D::Forward));
         assert_eq!(Capability::Participation.edges()[0].target, Some(crate::id::NodeKind::Event));

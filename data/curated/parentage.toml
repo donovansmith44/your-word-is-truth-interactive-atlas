@@ -10,6 +10,10 @@
 # added; a declared pair the source states is typed.
 #
 # kind: eternal | virgin | legal | created
+#
+# An [[exclusion]] names a parent -> child pair the source states and this
+# atlas refuses (R-C2-R9): the compile fails loud unless the source states
+# the pair, and the pair then yields no row at all.
 
 # The Father begets the Son from eternity: "the only begotten of the Father"
 # (John 1:14), "the only begotten Son, which is in the bosom of the Father"
@@ -49,3 +53,49 @@ parent = "god_1324"
 child = "eve_1231"
 kind = "created"
 grounds = ["GEN.2.22"]
+
+# R-C2-R9 (owner, 2026-09-30): Mary is ever virgin (Smalcald Articles I.IV;
+# Formula of Concord SD VIII.24). Theographic makes James, Joses, Simon and
+# Jude children of Mary and of Joseph. Scripture calls them the Lord's
+# "brethren" (Matt 13:55; Mark 6:3; Gal 1:19) and never says whose sons they
+# were, so neither parent row stands. brethren.toml links them to Jesus.
+
+[[exclusion]]
+parent = "mary_1938"
+child = "james_719"
+grounds = ["MAT.13.55", "MRK.6.3", "GAL.1.19"]
+
+[[exclusion]]
+parent = "joseph_1715"
+child = "james_719"
+grounds = ["MAT.13.55", "MRK.6.3", "GAL.1.19"]
+
+[[exclusion]]
+parent = "mary_1938"
+child = "joses_1721"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[exclusion]]
+parent = "joseph_1715"
+child = "joses_1721"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[exclusion]]
+parent = "mary_1938"
+child = "simon_2747"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[exclusion]]
+parent = "joseph_1715"
+child = "simon_2747"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[exclusion]]
+parent = "mary_1938"
+child = "jude_1756"
+grounds = ["MAT.13.55", "MRK.6.3"]
+
+[[exclusion]]
+parent = "joseph_1715"
+child = "jude_1756"
+grounds = ["MAT.13.55", "MRK.6.3"]

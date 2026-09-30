@@ -105,6 +105,19 @@ pub struct PeopleGroupReclassify {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ParentageExclusion {
+    pub parent: String,
+    pub child: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BrethrenSeed {
+    pub a: String,
+    pub b: String,
+    pub justification: atlas_graph_types::edge::Justification,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ParentageSeed {
     pub parent: String,
     pub child: String,
@@ -613,6 +626,10 @@ pub struct AtlasData {
     pub typology_seeds: Vec<TypologySeed>,
     #[serde(skip)]
     pub parentage_seeds: Vec<ParentageSeed>,
+    #[serde(skip)]
+    pub parentage_exclusions: Vec<ParentageExclusion>,
+    #[serde(skip)]
+    pub brethren_seeds: Vec<BrethrenSeed>,
     #[serde(skip)]
     pub event_mentions: Vec<EventMentionSeed>,
     #[serde(skip)]

@@ -2103,3 +2103,46 @@ async fn adam_and_eve_were_created_by_god_and_seth_was_born_to_them() {
         )
     );
 }
+
+#[tokio::test]
+async fn the_brethren_of_jesus_are_james_joses_simon_and_jude() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Person:jesus_905/edges?kind=brethren-of").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([
+                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } },
+                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } },
+                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } },
+                { "edge": page["entries"][3]["edge"], "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_as_was_supposed() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (mary_status, mary, _) = get(&app, "/api/node/Person:mary_1938/edges?kind=parent-of").await;
+    let (joseph_status, joseph, _) = get(&app, "/api/node/Person:joseph_1715/edges?kind=parent-of").await;
+    let (james_status, james, _) = get(&app, "/api/node/Person:james_719/edges?kind=child-of").await;
+    // Assert
+    assert_eq!(
+        (mary_status, mary["entries"].clone(), joseph_status, joseph["entries"].clone(), james_status, james["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "virgin" }]),
+            StatusCode::OK,
+            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "legal" }]),
+            StatusCode::OK,
+            serde_json::json!([]),
+        )
+    );
+}

@@ -115,7 +115,8 @@ pub fn section_of_family(f: RowFamily) -> Section {
         | RowFamily::Participates
         | RowFamily::Authored
         | RowFamily::Shown
-        | RowFamily::MapSuccession => Section::Core,
+        | RowFamily::MapSuccession
+        | RowFamily::Brethren => Section::Core,
         RowFamily::Occurs => Section::Lexicon,
     }
 }
@@ -164,7 +165,7 @@ pub fn justified_by_source_family(source_edge_id: &EdgeId) -> Option<RowFamily> 
 }
 
 /// Part of every manifest line, and therefore part of the root.
-pub const SECTION_SCHEMA_VERSION: u32 = 17;
+pub const SECTION_SCHEMA_VERSION: u32 = 18;
 
 /// A per-row family appears under both of its homes.
 pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
@@ -189,6 +190,7 @@ pub fn row_tables_of(section: Section) -> &'static [RowFamily] {
             RowFamily::Authored,
             RowFamily::Shown,
             RowFamily::MapSuccession,
+            RowFamily::Brethren,
         ],
         Section::Kjv => &[
             RowFamily::ContainsBible,
@@ -334,6 +336,7 @@ pub fn logical_dump_section(g: &Graph, section: Section) -> Vec<u8> {
             RowFamily::Authored => rows!(f, g.authored.iter()),
             RowFamily::Shown => rows!(f, g.shown.iter()),
             RowFamily::MapSuccession => rows!(f, g.map_succession.iter()),
+            RowFamily::Brethren => rows!(f, g.brethren.iter()),
         }
     }
     if let Some(corpus) = spine_corpus(section) {

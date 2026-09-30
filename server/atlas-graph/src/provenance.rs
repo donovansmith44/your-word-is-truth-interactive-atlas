@@ -80,6 +80,7 @@ impl ProvenanceIndex {
         sweep!("authored", authored);
         sweep!("shown", shown);
         sweep!("map_succession", map_succession);
+        sweep!("brethren", brethren);
 
         ProvenanceIndex { by_family }
     }

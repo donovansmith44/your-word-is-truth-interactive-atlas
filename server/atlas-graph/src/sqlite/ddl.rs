@@ -298,6 +298,14 @@ CREATE TABLE spouses (
 );
 ";
 const IDX_SPOUSES: &str = "CREATE UNIQUE INDEX spouses_ord ON spouses (ord);";
+const DDL_BRETHREN: &str = "
+CREATE TABLE brethren (
+  id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
+  a_id TEXT NOT NULL, b_id TEXT NOT NULL,
+  provenance TEXT NOT NULL, justification_id INTEGER
+);
+";
+const IDX_BRETHREN: &str = "CREATE UNIQUE INDEX brethren_ord ON brethren (ord);";
 const DDL_PARTICIPATES: &str = "
 CREATE TABLE participates (
   id INTEGER PRIMARY KEY, ord INTEGER NOT NULL,
@@ -636,6 +644,7 @@ pub fn family_ddl(f: RowFamily) -> &'static str {
         RowFamily::Authored => DDL_AUTHORED,
         RowFamily::Shown => DDL_SHOWN,
         RowFamily::MapSuccession => DDL_MAP_SUCCESSION,
+        RowFamily::Brethren => DDL_BRETHREN,
     }
 }
 
@@ -669,6 +678,7 @@ pub fn family_index_ddl(f: RowFamily) -> &'static str {
         RowFamily::Authored => IDX_AUTHORED,
         RowFamily::Shown => IDX_SHOWN,
         RowFamily::MapSuccession => IDX_MAP_SUCCESSION,
+        RowFamily::Brethren => IDX_BRETHREN,
     }
 }
 

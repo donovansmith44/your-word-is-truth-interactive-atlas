@@ -95,7 +95,8 @@ relations! {
         Corresponds       => "corresponds-to",
         Parallel          => "parallel",
         TemporalAdjacency => "temporal-adjacency",
-        Spouses           => "spouse-of"
+        Spouses           => "spouse-of",
+        Brethren          => "brethren-of"
     }
 }
 
@@ -369,6 +370,14 @@ pub struct Spouses {
     pub a: PersonId,
     pub b: PersonId,
     pub provenance: ProvenanceId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Brethren {
+    pub a: PersonId,
+    pub b: PersonId,
+    pub provenance: ProvenanceId,
+    pub justification: Justification,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

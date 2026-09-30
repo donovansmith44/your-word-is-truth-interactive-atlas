@@ -63,7 +63,7 @@ use atlas_graph::sqlite::columns::{
 };
 use atlas_graph::sqlite::ddl::{create_indexes, create_tables, logical_table_order, row_tables_of};
 use atlas_graph_types::canon::{Canon, RowFamily};
-use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, Parentage, ParentOf, Participates, Spouses, Shown};
+use atlas_graph_types::edge::{Authored, Ground, Justification, MapSuccession, Occurs, Parentage, ParentOf, Participates, Spouses, Shown, Brethren};
 use atlas_graph_types::id::{AnchorId, MapId, SourceId, LexiconEntryId};
 use atlas_graph_types::text::{BibleTag, Locus, LocusRange, TokenSpan, TranslationId, VerseRef};
 use std::collections::BTreeSet;
@@ -430,6 +430,12 @@ fn specimen_graph() -> atlas_graph_types::graph::Graph {
         justification: Justification { text: None, grounds: [Ground::Scripture(blr((41, 3, 38), (41, 3, 38)))].into_iter().collect() },
     });
     g.spouses.push(Spouses { a: PersonId::new("abraham_1"), b: PersonId::new("sarah_1"), provenance: "theographic-people".into() });
+    g.brethren.push(Brethren {
+        a: PersonId::new("james_719"),
+        b: PersonId::new("jesus_905"),
+        provenance: "curated-brethren".into(),
+        justification: Justification { text: None, grounds: [Ground::Scripture(blr((47, 1, 19), (47, 1, 19)))].into_iter().collect() },
+    });
     g.participates.push(Participates { person: PersonId::new("abraham_1"), event: EventId::new("jesus-baptized"), provenance: "theographic-people".into() });
     g.authored.push(Authored { book: ContainerNodeId::new("bible-book-GEN"), person: PersonId::new("moses_2108"), provenance: "books".into(), justification: Justification::default() });
     g.shown.push(Shown { map: MapId::new("era-patriarchs"), node: PlaceId::new("ur-1").erase(), provenance: "curated-eras".into() });
@@ -576,6 +582,7 @@ fn rows_of_section_explicit(g: &atlas_graph_types::graph::Graph, s: Section) -> 
             RowFamily::Authored => out.extend(g.authored.iter().map(RowRef::Authored)),
             RowFamily::Shown => out.extend(g.shown.iter().map(RowRef::Shown)),
             RowFamily::MapSuccession => out.extend(g.map_succession.iter().map(RowRef::MapSuccession)),
+            RowFamily::Brethren => out.extend(g.brethren.iter().map(RowRef::Brethren)),
         }
     }
     out

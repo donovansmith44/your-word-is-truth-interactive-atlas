@@ -3,7 +3,7 @@
 //! that exists in the text -- belongs to `validate`. A curator-friendly range expands into single verses.
 
 use anyhow::{bail, Context, Result};
-use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, ParentageSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra, TypologySeed};
+use atlas_core::data::{BookAuthorship, BookMeta, BookNarrationWindow, CatechismItem, CatechismPart, ChronologyAnchor, Era, Event, EventId, EventKind, FulfillmentSeed, Landmark, LandMaskRegion, Narrative, NamedAfterSeed, BrethrenSeed, ParentageExclusion, ParentageSeed, PeopleGroupReclassify, PeopleGroupSeed, PlaceBlurbEntry, PlaceDateClaim, PlaceHistory, PlaceNameAlias, PlaceNameEntry, PersonId, Polity, PolityDelta, PolityEra, TypologySeed};
 use atlas_core::refs::ScriptureRef;
 use atlas_core::time::TimeRange;
 use serde::Deserialize;
@@ -405,6 +405,8 @@ pub fn parse_people_eternal(input: &str) -> Result<Vec<(String, Vec<String>)>> {
 struct ParentageFile {
     #[serde(default)]
     parentage: Vec<ParentageToml>,
+    #[serde(default)]
+    exclusion: Vec<ExclusionToml>,
 }
 
 #[derive(Deserialize)]
@@ -416,10 +418,34 @@ struct ParentageToml {
     grounds: Vec<String>,
 }
 
-pub fn parse_parentage(input: &str) -> Result<Vec<ParentageSeed>> {
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExclusionToml {
+    parent: String,
+    child: String,
+    grounds: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct CuratedParentage {
+    pub declared: Vec<ParentageSeed>,
+    pub excluded: Vec<ParentageExclusion>,
+}
+
+fn scripture_justification(file: &str, pair: &str, grounds: &[String]) -> Result<atlas_graph_types::edge::Justification> {
+    let mut set = std::collections::BTreeSet::new();
+    for g in grounds {
+        let vid = atlas_core::refs::VerseId::parse_canonical(g).map_err(|err| anyhow::anyhow!("{file}: {pair} ground {g:?} is not a canonical verse ref: {err}"))?;
+        let unit = vid.locus();
+        set.insert(atlas_graph_types::edge::Ground::Scripture(atlas_graph_types::text::LocusRange { from: unit.clone(), to: unit }));
+    }
+    Ok(atlas_graph_types::edge::Justification { text: None, grounds: set })
+}
+
+pub fn parse_parentage(input: &str) -> Result<CuratedParentage> {
     let f: ParentageFile = toml::from_str(input).map_err(|_| anyhow::anyhow!("parentage.toml: invalid TOML or does not match the [[parentage]] schema"))?;
     let mut pairs = std::collections::BTreeSet::new();
-    let mut out = Vec::with_capacity(f.parentage.len());
+    let mut declared = Vec::with_capacity(f.parentage.len());
     for e in f.parentage {
         let pair = format!("'{}' -> '{}'", e.parent, e.child);
         if e.kind == atlas_graph_types::edge::Parentage::Natural {
@@ -431,18 +457,48 @@ pub fn parse_parentage(input: &str) -> Result<Vec<ParentageSeed>> {
         if !pairs.insert((e.parent.clone(), e.child.clone())) {
             bail!("parentage.toml: {pair} is declared twice");
         }
-        let mut grounds = std::collections::BTreeSet::new();
-        for g in &e.grounds {
-            let vid = atlas_core::refs::VerseId::parse_canonical(g).map_err(|err| anyhow::anyhow!("parentage.toml: {pair} ground {g:?} is not a canonical verse ref: {err}"))?;
-            let unit = vid.locus();
-            grounds.insert(atlas_graph_types::edge::Ground::Scripture(atlas_graph_types::text::LocusRange { from: unit.clone(), to: unit }));
+        let justification = scripture_justification("parentage.toml", &pair, &e.grounds)?;
+        declared.push(ParentageSeed { parent: e.parent, child: e.child, parentage: e.kind, justification });
+    }
+    let mut excluded = Vec::with_capacity(f.exclusion.len());
+    for e in f.exclusion {
+        let pair = format!("'{}' -> '{}'", e.parent, e.child);
+        if e.grounds.is_empty() {
+            bail!("parentage.toml: {pair} is excluded without Scripture grounds");
         }
-        out.push(ParentageSeed {
-            parent: e.parent,
-            child: e.child,
-            parentage: e.kind,
-            justification: atlas_graph_types::edge::Justification { text: None, grounds },
-        });
+        if !pairs.insert((e.parent.clone(), e.child.clone())) {
+            bail!("parentage.toml: {pair} is declared twice");
+        }
+        scripture_justification("parentage.toml", &pair, &e.grounds)?;
+        excluded.push(ParentageExclusion { parent: e.parent, child: e.child });
+    }
+    Ok(CuratedParentage { declared, excluded })
+}
+
+#[derive(Deserialize)]
+struct BrethrenFile {
+    #[serde(default)]
+    brethren: Vec<BrethrenToml>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BrethrenToml {
+    a: String,
+    b: String,
+    grounds: Vec<String>,
+}
+
+pub fn parse_brethren(input: &str) -> Result<Vec<BrethrenSeed>> {
+    let f: BrethrenFile = toml::from_str(input).map_err(|_| anyhow::anyhow!("brethren.toml: invalid TOML or does not match the [[brethren]] schema"))?;
+    let mut out = Vec::with_capacity(f.brethren.len());
+    for e in f.brethren {
+        let pair = format!("'{}' -> '{}'", e.a, e.b);
+        if e.grounds.is_empty() {
+            bail!("brethren.toml: {pair} are brethren without Scripture grounds");
+        }
+        let justification = scripture_justification("brethren.toml", &pair, &e.grounds)?;
+        out.push(BrethrenSeed { a: e.a, b: e.b, justification });
     }
     Ok(out)
 }
@@ -1256,7 +1312,7 @@ grounds = [{ from = "GEN.36.8", to = "GEN.36.9" }, { from = "GEN.25.30" }]
         // Arrange
         let toml = "[[parentage]]\nparent = \"god_1324\"\nchild = \"jesus_905\"\nkind = \"eternal\"\ngrounds = [\"JHN.3.16\"]\n";
         // Act
-        let seeds = parse_parentage(toml).unwrap();
+        let seeds = parse_parentage(toml).unwrap().declared;
         // Assert
         assert_eq!(
             seeds,
@@ -1309,5 +1365,70 @@ grounds = [{ from = "GEN.36.8", to = "GEN.36.9" }, { from = "GEN.25.30" }]
         let refused = parse_parentage("[[parentage]]\nparent = \"a\"\nchild = \"b\"\nkind = \"adoptive\"\ngrounds = [\"GEN.1.1\"]\n").unwrap_err();
         // Assert
         assert_eq!(refused.to_string(), "parentage.toml: invalid TOML or does not match the [[parentage]] schema");
+    }
+
+    #[test]
+    fn parse_parentage_reads_an_exclusion_of_a_pair_the_source_wrongly_states() {
+        // Arrange
+        let toml = "[[exclusion]]\nparent = \"mary_1938\"\nchild = \"james_719\"\ngrounds = [\"MAT.13.55\"]\n";
+        // Act
+        let parentage = parse_parentage(toml).unwrap();
+        // Assert
+        assert_eq!(
+            (parentage.declared, parentage.excluded),
+            (vec![], vec![ParentageExclusion { parent: "mary_1938".to_string(), child: "james_719".to_string() }])
+        );
+    }
+
+    #[test]
+    fn parse_parentage_refuses_an_exclusion_without_scripture_grounds() {
+        // Act
+        let refused = parse_parentage("[[exclusion]]\nparent = \"mary_1938\"\nchild = \"james_719\"\ngrounds = []\n").unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "parentage.toml: 'mary_1938' -> 'james_719' is excluded without Scripture grounds");
+    }
+
+    #[test]
+    fn parse_parentage_refuses_a_pair_both_declared_and_excluded() {
+        // Arrange
+        let toml = "[[parentage]]\nparent = \"mary_1938\"\nchild = \"jesus_905\"\nkind = \"virgin\"\ngrounds = [\"LUK.1.35\"]\n[[exclusion]]\nparent = \"mary_1938\"\nchild = \"jesus_905\"\ngrounds = [\"LUK.1.35\"]\n";
+        // Act
+        let refused = parse_parentage(toml).unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "parentage.toml: 'mary_1938' -> 'jesus_905' is declared twice");
+    }
+
+    #[test]
+    fn parse_brethren_reads_brethren_with_their_scripture_grounds() {
+        // Arrange
+        let toml = "[[brethren]]\na = \"jesus_905\"\nb = \"james_719\"\ngrounds = [\"JHN.3.16\"]\n";
+        // Act
+        let brethren = parse_brethren(toml).unwrap();
+        // Assert
+        assert_eq!(brethren, vec![BrethrenSeed { a: "jesus_905".to_string(), b: "james_719".to_string(), justification: john_3_16() }]);
+    }
+
+    #[test]
+    fn parse_brethren_refuses_brethren_without_scripture_grounds() {
+        // Act
+        let refused = parse_brethren("[[brethren]]\na = \"jesus_905\"\nb = \"james_719\"\ngrounds = []\n").unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "brethren.toml: 'jesus_905' -> 'james_719' are brethren without Scripture grounds");
+    }
+
+    #[test]
+    fn parse_brethren_refuses_a_ground_that_is_not_a_canonical_verse() {
+        // Act
+        let refused = parse_brethren("[[brethren]]\na = \"jesus_905\"\nb = \"james_719\"\ngrounds = [\"Gal 1:19\"]\n").unwrap_err();
+        // Assert
+        assert!(refused.to_string().starts_with("brethren.toml: 'jesus_905' -> 'james_719' ground \"Gal 1:19\" is not a canonical verse ref: "), "{refused}");
+    }
+
+    #[test]
+    fn parse_brethren_refuses_text_outside_its_schema() {
+        // Act
+        let refused = parse_brethren("[[brethren]]\na = \"x\"\n").unwrap_err();
+        // Assert
+        assert_eq!(refused.to_string(), "brethren.toml: invalid TOML or does not match the [[brethren]] schema");
     }
 }

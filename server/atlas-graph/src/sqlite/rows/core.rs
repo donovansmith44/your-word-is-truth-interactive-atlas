@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use atlas_graph_types::chrono::{DatePlacement, DatedBy, Duration, PlacementBasis};
 use atlas_graph_types::edge::{
     Analogue, Attests, Authored, CatechismLink, ContainerContent, Contains, Corresponds, Fulfills, LocatedAt,
-    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, Parentage, ParentOf, Participates, Spouses};
+    MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, Parentage, ParentOf, Participates, Spouses, Brethren};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
     BibleTag, ConcordRef, Corpus, Locus, LocusSet, TextRef, TokenSpan, VerseRef,
@@ -496,6 +496,24 @@ pub fn read_parent_of(conn: &Connection) -> Result<Vec<(i64, ParentOf)>, SqliteE
 }
 
 const COLS_SPOUSES: &str = "a_id, b_id, provenance";
+
+const COLS_BRETHREN: &str = "a_id, b_id, provenance, justification_id";
+
+pub fn insert_brethren(tx: &Transaction, jw: &mut JustificationWriter, ord: i64, row: &Brethren) -> Result<(), SqliteError> {
+    let j = justification_row(tx, jw, &row.justification)?;
+    insert(tx, "brethren", COLS_BRETHREN, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance), j])
+}
+
+pub fn read_brethren(conn: &Connection) -> Result<Vec<(i64, Brethren)>, SqliteError> {
+    read_all(conn, "brethren", COLS_BRETHREN, |row| {
+        Ok(Brethren {
+            a: id_col(row, D, "a_id")?,
+            b: id_col(row, D + 1, "b_id")?,
+            provenance: col(row, D + 2, "provenance")?,
+            justification: read_justification_at(conn, row, D + 3)?,
+        })
+    })
+}
 
 pub fn insert_spouses(tx: &Transaction, ord: i64, row: &Spouses) -> Result<(), SqliteError> {
     insert(tx, "spouses", COLS_SPOUSES, ord, vec![text(&row.a.0), text(&row.b.0), text(&row.provenance)])
