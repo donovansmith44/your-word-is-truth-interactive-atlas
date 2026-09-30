@@ -17,13 +17,19 @@ public sealed class GeneratedUsageTests
         var schemas = ContractSchemas();
         var generatedTypeNames = schemas.Keys.Where(name => !IsInlinedArray(schemas[name])).ToHashSet();
         var readerSources = ProjectsThatReadGeneratedTypes.Select(ConformanceTests.SourceUnder).ToList();
-        var roots = generatedTypeNames.Where(name => readerSources.Any(source => NamesType(name, source))).ToHashSet();
+        var roots = generatedTypeNames.Where(name => readerSources.Any(source => NamesType(name, source))).Union(ShapesTheCorpusValidates()).ToHashSet();
         var computedUnread = generatedTypeNames.Except(ReachableFrom(roots, schemas)).ToHashSet();
         // Act
         var declaredUnread = ContractGeneration.Unread;
         // Assert
         Assert.Equal(computedUnread, declaredUnread);
     }
+
+    private static IEnumerable<string> ShapesTheCorpusValidates() =>
+        Directory.GetFiles(Path.Combine(ConformanceTests.RepoRoot(), "contracts", "atlas-query-contract", "features"), "*.feature")
+            .SelectMany(feature => Regex.Matches(File.ReadAllText(feature), ValidShapeStep).Select(m => m.Groups[1].Value));
+
+    private const string ValidShapeStep = "the response is a valid \"([^\"]+)\"";
 
     private static Dictionary<string, JsonElement> ContractSchemas()
     {

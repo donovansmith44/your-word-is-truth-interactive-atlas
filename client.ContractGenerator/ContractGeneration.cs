@@ -30,7 +30,7 @@ public static class ContractGeneration
         },
     };
 
-    public static readonly IReadOnlySet<string> Unread = new HashSet<string> { "Contract" };
+    public static readonly IReadOnlySet<string> Unread = new HashSet<string>();
 
     // A discriminator base is open in the document only so that JSON Schema lets its allOf
     // subtypes' own properties through, and each subtype is closed there by
