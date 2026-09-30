@@ -116,7 +116,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane B: maps (Codex, repo `mapgen` unless noted)
 
 ### CX-M0: map-generator hygiene
-- **Status:** ready
+- **Status:** claimed:codex:2026-09-30T12:33:21+00:00
 - **Repo / base:** `mapgen`, `origin/master` = `6608db4`. (Your Windows copy's `master` also has 2 unpushed commits, O-MG-LOCAL; work from `6608db4`, not from them.)
 - **Worktree:** `git -C ~/src/map-generator worktree add -b lane/codex/CX-M0 ~/w/mg-CX-M0 6608db4`
 - **Files:** `crates/*/Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `crates/map-types/tests/toolchain_pin.rs`, `scripts/demo.sh`, the PDF.
@@ -130,6 +130,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
   5. `git rm "Saltwater (Notation and Tab).pdf"` (HEAD only; history is O-PDF).
 - **Gates (in WSL, after `. ~/.bible-atlas-env`):** `CARGO_TARGET_DIR=~/mut/codex-CX-M0 nice -n 10 cargo test --workspace -j 4`; `make demo` then `curl -s localhost:8090/api/meta` answers; `make contract-gates` (GHC 9.6.7 + cabal are installed via ghcup); `make stop`.
 - **Done when:** all of the above, pushed to `lane/codex/CX-M0`, reviewed. The controller then fast-forwards `master`.
+
+- **Execution notes:** Queue read from origin/prep/v1-go until prep lands. Workspace Cargo.toml is explicitly authorized by step 3. Owner priority: audit 1446, 1406 and 1200 BC first; seed concerns are oversized Edom and Davidic-era content at 1406 BC. CX-R3/R2 await a concrete CONTRACT-2 close base.
 
 ### CX-M1: a map gallery for choosing a style
 - **Status:** blocked:CX-M0
