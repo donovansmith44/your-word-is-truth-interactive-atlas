@@ -57,7 +57,7 @@ public sealed class ChapterTextTests
     {
         // Arrange
         var atlas = new StubbedAtlas(Genesis1Opening);
-        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: "Person:god_1324", kind: PositionKind.Person, label: "God"), start: 17);
+        var god = new Anchor(end: 20, kind: EdgeKind.Mentions, node: new NodeRef(id: "Person:god_1324", kind: NodeKind.Person, label: "God"), start: 17);
 
         // Act
         var verses = await VerseTextResolver.ResolveAsync(atlas.Client(), ["GEN.1.1"]);

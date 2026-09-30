@@ -6,7 +6,7 @@ use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::Node;
 use atlas_graph_types::store::GraphQuery;
 
-use crate::wire::{NodeRef, PositionKind};
+use crate::wire::{EdgeRef, NodeRef, PositionRef};
 
 pub fn encode_node_id(id: &AnyNodeId) -> String {
     match id.kind {
@@ -72,7 +72,7 @@ pub fn describe_nodes(ids: &BTreeSet<AnyNodeId>, query: &dyn GraphQuery) -> BTre
     ids.iter()
         .map(|id| {
             let label = text_unit_label(id).unwrap_or_else(|| node_label(id, nodes.remove(id).flatten()));
-            (id.clone(), NodeRef { id: encode_node_id(id), kind: PositionKind::Node(id.kind), label })
+            (id.clone(), labelled(id, label))
         })
         .collect()
 }
@@ -95,19 +95,44 @@ fn node_label(id: &AnyNodeId, node: Option<Node>) -> String {
     node.map(|n| atlas_graph_types::node::card(&n).label).unwrap_or_else(|| id.kind.name().to_string())
 }
 
-/// A position rendered as the wire reference it becomes. An edge position really
-/// is served -- a `justified-by` row reached through its own `justifies`
-/// frontier -- so both variants resolve and neither panics.
-pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> NodeRef {
+pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> PositionRef {
     match pos {
-        Position::Node(id) => NodeRef { id: encode_node_id(id), kind: PositionKind::Node(id.kind), label: describe_node(id, query) },
-        Position::Edge(eid) => NodeRef { id: format!("edge:{}", eid.0), kind: PositionKind::Edge, label: eid.0.clone() },
+        Position::Node(id) => PositionRef::Node { node: node_ref(id, query) },
+        Position::Edge(eid) => PositionRef::Edge { edge: EdgeRef { id: eid.0.clone() } },
     }
+}
+
+pub fn node_ref(id: &AnyNodeId, query: &dyn GraphQuery) -> NodeRef {
+    labelled(id, describe_node(id, query))
+}
+
+fn labelled(id: &AnyNodeId, label: String) -> NodeRef {
+    NodeRef { id: encode_node_id(id), kind: id.kind, label }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const A_DATING: &str = "DatedBy:00ff";
+
+    #[test]
+    fn a_position_is_described_as_the_node_or_the_edge_it_names() {
+        // Arrange
+        let graph = atlas_graph_types::graph::Graph::default();
+        let verse = decode_node_id("text-unit:JHN.3.16").unwrap();
+        let dating = atlas_graph_types::edge::EdgeId(A_DATING.to_string());
+        // Act
+        let described = [describe_position(&Position::Node(verse), &graph), describe_position(&Position::Edge(dating), &graph)];
+        // Assert
+        assert_eq!(
+            described,
+            [
+                PositionRef::Node { node: NodeRef { id: "text-unit:JHN.3.16".to_string(), kind: NodeKind::TextUnit, label: "JHN.3.16".to_string() } },
+                PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+            ]
+        );
+    }
 
     #[test]
     fn event_narrative_anchor_place_ids_round_trip_through_the_wire_form() {

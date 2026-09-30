@@ -4,11 +4,11 @@ use atlas_graph_types::text::{self, BibleLocusRange, TokenSpan, TranslationId, V
 use atlas_graph_types::EdgeKind;
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use utoipa::openapi::extensions::Extensions;
-use utoipa::openapi::schema::{AdditionalProperties, AllOfBuilder, ObjectBuilder, Schema, SchemaType, Type};
+use utoipa::openapi::schema::Schema;
 use utoipa::openapi::{Ref, RefOr};
 use utoipa::{PartialSchema, ToSchema};
 
+use super::union::{case_of, tagged_by, Case};
 use super::NodeRef;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,48 +62,22 @@ const ARTICLE: &str = "article";
 const PARAGRAPH: &str = "paragraph";
 const TEXT_REF: &str = "One unit of a corpus's text, named by the corpus it belongs to.";
 
-struct Subtype {
-    tag: &'static str,
-    name: &'static str,
-    description: &'static str,
-}
-
-const BIBLE: Subtype = Subtype { tag: "bible", name: "BibleRef", description: "A verse of the Bible." };
-const CONCORD: Subtype = Subtype { tag: "concord", name: "ConcordRef", description: "A paragraph of the Book of Concord." };
-const SUBTYPES: [Subtype; 2] = [BIBLE, CONCORD];
+const BIBLE: Case = Case { tag: "bible", name: "BibleRef", description: "A verse of the Bible." };
+const CONCORD: Case = Case { tag: "concord", name: "ConcordRef", description: "A paragraph of the Book of Concord." };
+const CASES: [Case; 2] = [BIBLE, CONCORD];
 
 impl PartialSchema for TextRef {
     fn schema() -> RefOr<Schema> {
-        let tags = ObjectBuilder::new().schema_type(SchemaType::Type(Type::String)).enum_values(Some(SUBTYPES.map(|s| s.tag)));
-        let mapping: serde_json::Map<String, serde_json::Value> =
-            SUBTYPES.iter().map(|s| (s.tag.to_string(), Ref::from_schema_name(s.name).ref_location.into())).collect();
-        ObjectBuilder::new()
-            .schema_type(SchemaType::Type(Type::Object))
-            .description(Some(TEXT_REF))
-            .property(CORPUS, tags)
-            .required(CORPUS)
-            .additional_properties(Some(AdditionalProperties::FreeForm(true)))
-            .extensions(Some(Extensions::from_iter([("discriminator", serde_json::json!({ "propertyName": CORPUS, "mapping": mapping }))])))
-            .into()
+        tagged_by(CORPUS, &CASES, TEXT_REF)
     }
 }
 
 impl ToSchema for TextRef {
     fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
-        schemas.push((BIBLE.name.to_string(), subtype(&BIBLE, [(BOOK, Ref::from_schema_name(<BookId as ToSchema>::name()).into()), (CHAPTER, u16::schema()), (VERSE, u16::schema())])));
-        schemas.push((CONCORD.name.to_string(), subtype(&CONCORD, [(PART, u8::schema()), (ARTICLE, u16::schema()), (PARAGRAPH, u16::schema())])));
+        schemas.push((BIBLE.name.to_string(), case_of(&TextRef::name(), &BIBLE, [(BOOK, Ref::from_schema_name(<BookId as ToSchema>::name()).into()), (CHAPTER, u16::schema()), (VERSE, u16::schema())])));
+        schemas.push((CONCORD.name.to_string(), case_of(&TextRef::name(), &CONCORD, [(PART, u8::schema()), (ARTICLE, u16::schema()), (PARAGRAPH, u16::schema())])));
         schemas.push((<BookId as ToSchema>::name().to_string(), BookId::schema()));
     }
-}
-
-fn subtype<const N: usize>(corpus: &Subtype, parts: [(&str, RefOr<Schema>); N]) -> RefOr<Schema> {
-    let own = parts.into_iter().fold(ObjectBuilder::new().schema_type(SchemaType::Type(Type::Object)), |object, (name, part)| object.property(name, part).required(name));
-    AllOfBuilder::new()
-        .item(Ref::from_schema_name(TextRef::name()))
-        .item(own)
-        .description(Some(corpus.description))
-        .extensions(Some(Extensions::from_iter([("unevaluatedProperties", false)])))
-        .into()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]

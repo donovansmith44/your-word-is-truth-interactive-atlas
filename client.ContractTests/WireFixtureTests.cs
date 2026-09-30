@@ -31,9 +31,9 @@ public sealed class WireFixtureTests
         var json = FixtureBody(GraphContract, "edges-hazor-1-site-of.json");
         // Act
         var page = JsonSerializer.Deserialize<EdgePage>(json)!;
-        var kinds = (page.Kind, page.Entries.Select(e => e.Node.Kind).Distinct().ToArray());
+        var kinds = (page.Kind, page.Entries.Nodes().Select(n => n.Kind).Distinct().ToArray());
         // Assert
-        Assert.Equivalent((EdgeKind.SiteOf, new[] { PositionKind.Event }), kinds);
+        Assert.Equivalent((EdgeKind.SiteOf, new[] { NodeKind.Event }), kinds);
     }
 
     private const string GraphContract = "atlas-graph-contract";

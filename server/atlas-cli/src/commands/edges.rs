@@ -6,10 +6,12 @@ use atlas_graph_types::explore::EdgeQuery;
 use atlas_graph_types::id::{NodeKind, Position};
 use atlas_graph_types::store::GraphQuery;
 use atlas_contract::graph_wire::{decode_node_id, describe_position};
+use atlas_contract::wire::PositionRef;
 
 use crate::error::CliError;
 
 const DEFAULT_LIMIT: usize = 20;
+const AN_EDGE: &str = "Edge";
 const MAX_LIMIT: usize = 200;
 
 pub struct EdgesArgs<'a> {
@@ -77,8 +79,11 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
-            let node = describe_position(&e.node, &snap);
-            ResolvedEntry { edge: e.edge.0.clone(), id: node.id, kind: node.kind.name().to_string(), label: node.label }
+            let (id, kind, label) = match describe_position(&e.node, &snap) {
+                PositionRef::Node { node } => (node.id, node.kind.name().to_string(), node.label),
+                PositionRef::Edge { edge } => (edge.id.clone(), AN_EDGE.to_string(), edge.id),
+            };
+            ResolvedEntry { edge: e.edge.0.clone(), id, kind, label }
         })
         .collect();
 
