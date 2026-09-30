@@ -12,6 +12,10 @@ public sealed class GraphExplorerTests
     private const string Genesis2Id = "Container:bible-chapter-GEN-2";
     private const string ServedGenesis2Label = "Genesis 2";
     private const string LegacyGenesis2Label = "GEN.2";
+    private const string MosesId = "Person:moses_2108";
+    private const string MosesLabel = "Moses";
+    private const string HazorId = "Place:hazor-1";
+    private const string HazorLabel = "Hazor 1";
     private const string TheOneConstructingFile = "Explorer.cs";
 
     private static readonly Regex BuildsAnExplorable = new(@"\bnew Explorable\(|\bExplorable\??\s+\w+\s*=>?\s*new\(", RegexOptions.Compiled);
@@ -44,6 +48,51 @@ public sealed class GraphExplorerTests
 
         // Assert
         Assert.Equal((NodeKind.Container, Genesis2Id, ServedGenesis2Label), (genesis2.Kind, genesis2.Id, genesis2.Label));
+    }
+
+    [Fact]
+    public async Task Presenting_a_node_on_the_popover_yields_the_generic_card_until_its_kind_is_migrated()
+    {
+        // Arrange
+        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Person, MosesId, MosesLabel));
+        var explorer = new GraphExplorer(graph);
+        var moses = await explorer.Resolve(ServedGraph.Ref(NodeKind.Person, MosesId, MosesLabel));
+
+        // Act
+        var presentation = await explorer.Present(moses, Surface.Popover);
+
+        // Assert
+        Assert.Equal(new Presentation.Card(MosesLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
+    }
+
+    [Fact]
+    public async Task Presenting_a_node_on_its_home_surface_yields_the_generic_card_until_its_kind_is_migrated()
+    {
+        // Arrange
+        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, HazorId, HazorLabel));
+        var explorer = new GraphExplorer(graph);
+        var hazor = await explorer.Resolve(ServedGraph.Ref(NodeKind.Place, HazorId, HazorLabel));
+
+        // Act
+        var presentation = await explorer.Present(hazor, Surface.World);
+
+        // Assert
+        Assert.Equal(new Presentation.Card(HazorLabel, [new Presentation.Field("Provenance", ServedGraph.Provenance)]), presentation);
+    }
+
+    [Fact]
+    public async Task A_node_has_no_presentation_on_a_surface_where_its_kind_has_no_form()
+    {
+        // Arrange
+        var graph = new ServedGraph().Serving(ServedGraph.Card(NodeKind.Person, MosesId, MosesLabel));
+        var explorer = new GraphExplorer(graph);
+        var moses = await explorer.Resolve(ServedGraph.Ref(NodeKind.Person, MosesId, MosesLabel));
+
+        // Act
+        var presentation = await explorer.Present(moses, Surface.World);
+
+        // Assert
+        Assert.Null(presentation);
     }
 
     [Fact]
