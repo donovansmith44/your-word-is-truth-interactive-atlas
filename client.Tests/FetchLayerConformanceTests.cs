@@ -5,10 +5,12 @@ namespace BibleAtlas.Client.Tests;
 
 public class FetchLayerConformanceTests
 {
-    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer)\.[A-Z]\w*\(|\.Links\(", RegexOptions.Compiled);
+    private static readonly Regex FetchCall = new(@"\b(Atlas|Graph|atlas|Explorer|Maps)\.[A-Z]\w*\(|\.Links\(", RegexOptions.Compiled);
     private static readonly Regex ThroughARequest = new(@"\.Fetch\(\(\) =>", RegexOptions.Compiled);
     private static readonly Regex TypedInput = new(@"<input[^>]*@oninput", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex DraftBound = new(@"value=""@\w+\.Text""", RegexOptions.Compiled);
+
+    private static readonly Regex MapLayerFetchedDirectly = new(@"\bAtlas\.(Scene|Polities)", RegexOptions.Compiled);
 
     private static IEnumerable<(string File, int Line, string Text)> ComponentLines() =>
         ConformanceTests.ClientSourceFiles()
@@ -26,6 +28,19 @@ public class FetchLayerConformanceTests
 
         // Assert
         Assert.Equal((true, ""), (fetches.Any(), outsideTheRequest));
+    }
+
+    [Fact]
+    public void The_world_view_reads_its_map_layers_through_the_map_source_alone()
+    {
+        // Arrange
+        var world = ComponentLines().Where(l => l.File == "World.razor");
+
+        // Act
+        var direct = string.Join(", ", world.Where(l => MapLayerFetchedDirectly.IsMatch(l.Text)).Select(l => $"{l.File}:{l.Line}"));
+
+        // Assert
+        Assert.Equal((true, ""), (world.Any(), direct));
     }
 
     [Fact]
