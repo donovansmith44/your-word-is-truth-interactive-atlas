@@ -34,6 +34,19 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.15.0** (Batch CONTRACT-2) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved; a projection re-scoped; a relation renamed).**
+  The `contract` projection pins `manifest_schema` and `section_schema_version`
+  (18) in place of the retired AQC range, so its fixture re-blesses on every
+  section-schema bump; the `http.feature` scenario is renamed "the schema
+  versions the server declares". Re-blessed: `contract`; `sources` (the
+  `macula` source is gone -- its semantic domains were dropped, their source
+  being ShareAlike); `place-hazor-1` (an event's `when` is a labelled span,
+  not two integers); `node-place-hazor-1` (`mentioned-in` 11 -> 12: a verse
+  naming Hazor twice has one row per occurrence under ONE edge id);
+  `kretzmann-chapter-gen-1` (the version root). The vocabulary: `partner-of`
+  becomes `spouse-of` in its own slot, `brethren-of` is appended last. No
+  scenario added or removed.
+
 - **0.14.0** (Batch FOCUS-0) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved; the vocabulary grew).**
   authored-by and shows; Map nodes per era; corpus roots; Concord succession;
   Small Catechism titles; place claims name events. `RelationId` gains

@@ -1056,6 +1056,14 @@ resolver = "2"
 # dotnet: client.ContractTests 54/54 (47 Reqnroll scenarios + CorpusCountTests
 # + the six non-scenario tests the typed path added) -- 57/57 before, the -3
 # being those three scenarios on both sides.
+#
+# CONTRACT-2, the pushdown (P8 removed the `advertises` step):
+#
+#   AQC corpus: 47 scenarios / 194 steps (harness=false; NOT in the canonical sum)
+#
+# AQC corpus 47 -> 47 scenarios / 195 -> 194 steps: `versioning.feature`'s
+# server scenario loses its `advertises` line with the version range it
+# pinned, and is renamed for the schema versions it still pins.
 
 # DB-2b: the bundled SQLite amalgamation is C compiled by the `cc` crate at
 # the profile's opt-level -- `-O0` under `dev`, which made the DB-2b

@@ -2791,5 +2791,5 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Derived from contracts/openapi.yaml by export_contract; do not edit.",
   "title": "Atlas Query Contract -- shapes",
-  "version": "0.10.0"
+  "version": "0.11.0"
 }
