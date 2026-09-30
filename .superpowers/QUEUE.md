@@ -11,10 +11,10 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Mutation:** owed from base `13111dd` (`.superpowers/MUTATION-GATE-DEBT.md`); the roadmap defers the run to Nov 5 – Dec 31.
 - **Next for Claude:** A-C2 close → A-F1 (FOCUS-1), with A-NAMES alongside.
 - **Next for Codex:** CX-M0 → CX-M1 and CX-M2 (maps) · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
-- **Before "go":** O-PUSH (a WSL push credential) and O-CODEX (`codex login`). Without O-PUSH neither agent can claim an item, take a lock or push a lane branch.
+- **Before "go":** O-CODEX (`codex login`).
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
-1. **O-PUSH (blocks both agents):** WSL's git credential gets HTTP 403 pushing to both repos (`~/.git-credentials` holds a token without write access). Replace it with one that can push to `your-word-is-truth-interactive-atlas` and `map-generator`: e.g. `! gh auth login` after installing gh, or a fine-grained token with Contents: read/write on both repos saved via `git credential approve`. Until then the controller relays pushes through Windows git and nobody can take a lock.
+1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
 4. **O-NAMES:** Sign off the NAMES draft's types (`docs/superpowers/specs/2026-10-01-names-design.md`) and answer its §9 (5 one-line questions). It is drafted as ONE spec for the text and the maps' entity registry.

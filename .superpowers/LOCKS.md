@@ -15,7 +15,7 @@ The empty value after the `:` means "only if it doesn't exist yet". A rejected p
 
 The message must name the agent and the time, as above, so two takes never push the same commit: pushing the commit the lock already points at reports "Everything up-to-date" without checking the lease.
 
-Verified 2026-09-30 against origin: a first take created `lock/test`, a second agent's take was rejected with `stale info`, and the release deleted it. Taking a lock needs a push credential in WSL (AGENTS.md, "The machine").
+Verified 2026-09-30 against origin: a first take created `lock/test`, a second agent's take was rejected with `stale info`, and the release deleted it. Re-verified from WSL itself after `gh auth setup-git`.
 
 ## Show
 ```bash
