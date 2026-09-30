@@ -31,7 +31,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 14. **O-GODLINK:** with persons linked in verse text (CONTRACT-2), "God" and "LORD" are links in nearly every verse (8,587 verses for God). Keep every occurrence linked, or link only the first in a window/chapter?
 15. **O-BADGE:** FOCUS-1 drops the client-derived kind badge ("Passage"/"Verse") from the trail and selection tray and shows the served label only (rule 25). Want a served display kind on the card instead (a contract item)?
 16. **O-FINDINGS:** FOCUS-1 touches the files of F-6, F-7 (popover level), F-9 and F-12 (rewritten files). Close them inside FOCUS-1 (yes/no per finding)?
-17. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
+17. **O-CHOOSER:** the map's place chooser (world-cluster-chooser:213) stays open after zooming dissolves the cluster it was opened on; it fails 2 of 3 on today's build too (not FOCUS-1's). Fix it (close the chooser when its cluster dissolves)?
+18. **O-LAND-F1:** Codex has been stalled all day, so FOCUS-1 has no reviewer. Land it on my own review, or wait for Codex?
+19. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
@@ -57,6 +59,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-22 (client, T3's table): `Affordance.Arrows` carries no direction.** Closure: `Arrows(ArrowDirection)`.
 - **F-23 (contract): frontier section headings are the edge kind's wire name; no served display label.** Closure: a `label` per edge kind in the vocabulary document (O-BADGE's category).
 - **F-24 (client): `SectionOrder` is read by nothing on the new path** (rule 4). Closure: the view orders by it, or it goes.
+- **F-25 (tooling): `timing-gates.sh` writes its logs into the tree.** Closure: logs under the target dir; the tests-never-write-the-repo law covers scripts.
+- **F-27 (client): the popover title shows the legacy title (`GEN`) while the trail shows the served label (`Genesis`).** Closure: every surface reads the served label (legacy titles die per kind).
+- **F-28 (client): a FocusView section heading counts links not offered on that surface.** Closure: the count comes from `Presentation.Offers`.
+- **F-29 (client): the popover's `Root`/`Saved` are two optionals, not one sum.** Closure: `PopoverOpening = Root | Saved`.
+- **F-30 (tests): `tsc` over tests/ux has 16 pre-existing errors,** so spec types aren't enforced. Closure: tsc clean and in the gate.
+- **F-31 (client): node constructors disagree on local vs wire ids** (`PersonNode` vs the rest). Closure: one typed id on the client (FOCUS-1 R36 / A-BACKLOG).
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
@@ -69,7 +77,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
-- **Status:** claimed:claude:2026-09-30T15:10-04:00 — prep done (29 defects ruled, F1-1..F1-8 in the ledger `.superpowers/sdd/2026-09-30-focus1-types/progress.md`); wave 1 running (T1+Chip ∥ T3 ∥ Task 0: `NodeRef.kind: NodeKind`, the one Rust task).
+- **Status:** review:678a0d2..3baaeb6 (branch `lane/claude/A-F1`; close report `docs/superpowers/reports/2026-09-30-focus-1-close.md` on the branch). Gates: 1,577 Rust / 572 client / 54 contract tests green; contract gate passed; AQC 0.12.0; Playwright green except the known world-quiet-places:211 and the pre-existing world-cluster-chooser:213 (O-CHOOSER). **Codex: review this range (AGENTS.md 14b + 24a/24b), then Claude lands it.**
 - **Plan:** `docs/superpowers/plans/2026-09-27-focus1-types.md` (9 tasks), plus rulings R11–R14 in the FOCUS spec.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
