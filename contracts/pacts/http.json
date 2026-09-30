@@ -3224,9 +3224,7 @@
     "GET /api/contract": {
       "body": {
         "manifest_schema": 1,
-        "max_version": "0.10.0",
-        "min_version": "0.10.0",
-        "section_schema_version": 15
+        "section_schema_version": 18
       },
       "status": 200
     },
@@ -3236,61 +3234,171 @@
           "from_year": -4004,
           "id": "primeval",
           "name": "Primeval",
-          "to_year": -2167
+          "to_year": -2167,
+          "window": {
+            "from": {
+              "label": "4004 BC",
+              "value": -4004
+            },
+            "label": "4004 – 2167 BC",
+            "to": {
+              "label": "2167 BC",
+              "value": -2167
+            }
+          }
         },
         {
           "from_year": -2166,
           "id": "patriarchs",
           "name": "Patriarchs",
-          "to_year": -1877
+          "to_year": -1877,
+          "window": {
+            "from": {
+              "label": "2166 BC",
+              "value": -2166
+            },
+            "label": "2166 – 1877 BC",
+            "to": {
+              "label": "1877 BC",
+              "value": -1877
+            }
+          }
         },
         {
           "from_year": -1876,
           "id": "egypt-exodus",
           "name": "Egypt & Exodus",
-          "to_year": -1407
+          "to_year": -1407,
+          "window": {
+            "from": {
+              "label": "1876 BC",
+              "value": -1876
+            },
+            "label": "1876 – 1407 BC",
+            "to": {
+              "label": "1407 BC",
+              "value": -1407
+            }
+          }
         },
         {
           "from_year": -1406,
           "id": "conquest-judges",
           "name": "Conquest & Judges",
-          "to_year": -1051
+          "to_year": -1051,
+          "window": {
+            "from": {
+              "label": "1406 BC",
+              "value": -1406
+            },
+            "label": "1406 – 1051 BC",
+            "to": {
+              "label": "1051 BC",
+              "value": -1051
+            }
+          }
         },
         {
           "from_year": -1050,
           "id": "united-kingdom",
           "name": "United Kingdom",
-          "to_year": -932
+          "to_year": -932,
+          "window": {
+            "from": {
+              "label": "1050 BC",
+              "value": -1050
+            },
+            "label": "1050 – 932 BC",
+            "to": {
+              "label": "932 BC",
+              "value": -932
+            }
+          }
         },
         {
           "from_year": -931,
           "id": "divided-kingdom",
           "name": "Divided Kingdom",
-          "to_year": -587
+          "to_year": -587,
+          "window": {
+            "from": {
+              "label": "931 BC",
+              "value": -931
+            },
+            "label": "931 – 587 BC",
+            "to": {
+              "label": "587 BC",
+              "value": -587
+            }
+          }
         },
         {
           "from_year": -586,
           "id": "exile",
           "name": "Exile",
-          "to_year": -539
+          "to_year": -539,
+          "window": {
+            "from": {
+              "label": "586 BC",
+              "value": -586
+            },
+            "label": "586 – 539 BC",
+            "to": {
+              "label": "539 BC",
+              "value": -539
+            }
+          }
         },
         {
           "from_year": -538,
           "id": "return",
           "name": "Return & Second Temple",
-          "to_year": -6
+          "to_year": -6,
+          "window": {
+            "from": {
+              "label": "538 BC",
+              "value": -538
+            },
+            "label": "538 – 6 BC",
+            "to": {
+              "label": "6 BC",
+              "value": -6
+            }
+          }
         },
         {
           "from_year": -5,
           "id": "gospels",
           "name": "Gospels",
-          "to_year": 29
+          "to_year": 29,
+          "window": {
+            "from": {
+              "label": "5 BC",
+              "value": -5
+            },
+            "label": "5 BC – AD 29",
+            "to": {
+              "label": "AD 29",
+              "value": 29
+            }
+          }
         },
         {
           "from_year": 30,
           "id": "early-church",
           "name": "Early Church",
-          "to_year": 100
+          "to_year": 100,
+          "window": {
+            "from": {
+              "label": "AD 30",
+              "value": 30
+            },
+            "label": "AD 30 – 100",
+            "to": {
+              "label": "AD 100",
+              "value": 100
+            }
+          }
         }
       ],
       "status": 200
@@ -3600,7 +3708,7 @@
             "verse": 31
           }
         ],
-        "version": "31e118e8e6d47276ebeec3ed23d53217"
+        "version": "b745ec41abf7f060966f66bfe45524fb"
       },
       "status": 200
     },
@@ -4873,11 +4981,25 @@
             "kind": "temporal-adjacency"
           }
         ],
+        "event": {
+          "kind": "event",
+          "when": {
+            "from": {
+              "label": "2100 BC",
+              "value": -2100
+            },
+            "label": "2100 – 2092 BC",
+            "to": {
+              "label": "2092 BC",
+              "value": -2092
+            }
+          }
+        },
         "id": "Event:ab_ur",
         "kind": "Event",
         "label": "Terah's family leaves Ur",
         "provenance": "curated",
-        "version": "31e118e8e6d47276ebeec3ed23d53217"
+        "version": "b745ec41abf7f060966f66bfe45524fb"
       },
       "status": 200
     },
@@ -4890,7 +5012,7 @@
             "kind": "site-of"
           },
           {
-            "count": 11,
+            "count": 12,
             "kind": "mentioned-in"
           },
           {
@@ -4901,8 +5023,13 @@
         "id": "Place:hazor-1",
         "kind": "Place",
         "label": "Hazor 1",
+        "place": {
+          "display_name": "Hazor",
+          "lat": 33.018333,
+          "lon": 35.569167
+        },
         "provenance": "curated-places",
-        "version": "31e118e8e6d47276ebeec3ed23d53217"
+        "version": "b745ec41abf7f060966f66bfe45524fb"
       },
       "status": 200
     },
@@ -4928,7 +5055,7 @@
         ],
         "kind": "site-of",
         "next": null,
-        "version": "31e118e8e6d47276ebeec3ed23d53217"
+        "version": "b745ec41abf7f060966f66bfe45524fb"
       },
       "status": 200
     },
@@ -4951,8 +5078,15 @@
               }
             ],
             "when": {
-              "from_year": -1400,
-              "to_year": -1400
+              "from": {
+                "label": "1400 BC",
+                "value": -1400
+              },
+              "label": "1400 BC",
+              "to": {
+                "label": "1400 BC",
+                "value": -1400
+              }
             }
           },
           {
@@ -4971,8 +5105,15 @@
               }
             ],
             "when": {
-              "from_year": -1298,
-              "to_year": -1298
+              "from": {
+                "label": "1298 BC",
+                "value": -1298
+              },
+              "label": "1298 BC",
+              "to": {
+                "label": "1298 BC",
+                "value": -1298
+              }
             }
           }
         ],
@@ -4999,6 +5140,17 @@
             "from": -335,
             "id": "alexander-empire",
             "name": "Empire of Alexander the Great",
+            "reign": {
+              "from": {
+                "label": "335 BC",
+                "value": -335
+              },
+              "label": "335 – 323 BC",
+              "to": {
+                "label": "323 BC",
+                "value": -323
+              }
+            },
             "rings": [
               [
                 [
@@ -5293,6 +5445,17 @@
             "from": -1900,
             "id": "assyria",
             "name": "Assyria",
+            "reign": {
+              "from": {
+                "label": "1900 BC",
+                "value": -1900
+              },
+              "label": "1900 – 912 BC",
+              "to": {
+                "label": "912 BC",
+                "value": -912
+              }
+            },
             "rings": [
               [
                 [
@@ -5444,6 +5607,17 @@
             "from": -911,
             "id": "assyria",
             "name": "Neo-Assyrian Empire",
+            "reign": {
+              "from": {
+                "label": "911 BC",
+                "value": -911
+              },
+              "label": "911 – 609 BC",
+              "to": {
+                "label": "609 BC",
+                "value": -609
+              }
+            },
             "rings": [
               [
                 [
@@ -5696,6 +5870,17 @@
             "from": -2100,
             "id": "babylon",
             "name": "Babylonia",
+            "reign": {
+              "from": {
+                "label": "2100 BC",
+                "value": -2100
+              },
+              "label": "2100 – 1156 BC",
+              "to": {
+                "label": "1156 BC",
+                "value": -1156
+              }
+            },
             "rings": [
               [
                 [
@@ -5851,6 +6036,17 @@
             "from": -626,
             "id": "babylon",
             "name": "Neo-Babylonian Empire",
+            "reign": {
+              "from": {
+                "label": "626 BC",
+                "value": -626
+              },
+              "label": "626 – 539 BC",
+              "to": {
+                "label": "539 BC",
+                "value": -539
+              }
+            },
             "rings": [
               [
                 [
@@ -6043,6 +6239,17 @@
             "from": -4004,
             "id": "egypt",
             "name": "Egypt",
+            "reign": {
+              "from": {
+                "label": "4004 BC",
+                "value": -4004
+              },
+              "label": "4004 – 1550 BC",
+              "to": {
+                "label": "1550 BC",
+                "value": -1550
+              }
+            },
             "rings": [
               [
                 [
@@ -6226,6 +6433,17 @@
             "from": -1549,
             "id": "egypt",
             "name": "Egypt",
+            "reign": {
+              "from": {
+                "label": "1549 BC",
+                "value": -1549
+              },
+              "label": "1549 – 1069 BC",
+              "to": {
+                "label": "1069 BC",
+                "value": -1069
+              }
+            },
             "rings": [
               [
                 [
@@ -6454,6 +6672,17 @@
             "from": -1068,
             "id": "egypt",
             "name": "Egypt",
+            "reign": {
+              "from": {
+                "label": "1068 BC",
+                "value": -1068
+              },
+              "label": "1068 – 332 BC",
+              "to": {
+                "label": "332 BC",
+                "value": -332
+              }
+            },
             "rings": [
               [
                 [
@@ -6647,6 +6876,17 @@
             "from": -331,
             "id": "egypt",
             "name": "Ptolemaic Egypt",
+            "reign": {
+              "from": {
+                "label": "331 BC",
+                "value": -331
+              },
+              "label": "331 – 30 BC",
+              "to": {
+                "label": "30 BC",
+                "value": -30
+              }
+            },
             "rings": [
               [
                 [
@@ -6940,6 +7180,17 @@
             "from": -4004,
             "id": "elam",
             "name": "Elam",
+            "reign": {
+              "from": {
+                "label": "4004 BC",
+                "value": -4004
+              },
+              "label": "4004 – 539 BC",
+              "to": {
+                "label": "539 BC",
+                "value": -539
+              }
+            },
             "rings": [
               [
                 [
@@ -7115,6 +7366,17 @@
             "from": -1600,
             "id": "hittites",
             "name": "Hittite Empire",
+            "reign": {
+              "from": {
+                "label": "1600 BC",
+                "value": -1600
+              },
+              "label": "1600 – 1180 BC",
+              "to": {
+                "label": "1180 BC",
+                "value": -1180
+              }
+            },
             "rings": [
               [
                 [
@@ -7262,6 +7524,17 @@
             "from": -1050,
             "id": "israel",
             "name": "Kingdom of Israel (United Monarchy)",
+            "reign": {
+              "from": {
+                "label": "1050 BC",
+                "value": -1050
+              },
+              "label": "1050 – 931 BC",
+              "to": {
+                "label": "931 BC",
+                "value": -931
+              }
+            },
             "rings": [
               [
                 [
@@ -7425,6 +7698,17 @@
             "from": -930,
             "id": "israel",
             "name": "Kingdom of Israel",
+            "reign": {
+              "from": {
+                "label": "930 BC",
+                "value": -930
+              },
+              "label": "930 – 722 BC",
+              "to": {
+                "label": "722 BC",
+                "value": -722
+              }
+            },
             "rings": [
               [
                 [
@@ -7616,6 +7900,17 @@
             "from": -930,
             "id": "judah",
             "name": "Kingdom of Judah",
+            "reign": {
+              "from": {
+                "label": "930 BC",
+                "value": -930
+              },
+              "label": "930 – 587 BC",
+              "to": {
+                "label": "587 BC",
+                "value": -587
+              }
+            },
             "rings": [
               [
                 [
@@ -7775,6 +8070,17 @@
             "from": -538,
             "id": "judah",
             "name": "Yehud",
+            "reign": {
+              "from": {
+                "label": "538 BC",
+                "value": -538
+              },
+              "label": "538 – 333 BC",
+              "to": {
+                "label": "333 BC",
+                "value": -333
+              }
+            },
             "rings": [
               [
                 [
@@ -7903,6 +8209,17 @@
             "from": -164,
             "id": "judah",
             "name": "Hasmonean Judea",
+            "reign": {
+              "from": {
+                "label": "164 BC",
+                "value": -164
+              },
+              "label": "164 – 63 BC",
+              "to": {
+                "label": "63 BC",
+                "value": -63
+              }
+            },
             "rings": [
               [
                 [
@@ -8108,6 +8425,17 @@
             "from": -39,
             "id": "judah",
             "name": "Herodian Kingdom of Judea",
+            "reign": {
+              "from": {
+                "label": "39 BC",
+                "value": -39
+              },
+              "label": "39 – 4 BC",
+              "to": {
+                "label": "4 BC",
+                "value": -4
+              }
+            },
             "rings": [
               [
                 [
@@ -8340,6 +8668,17 @@
             "from": -140,
             "id": "parthian-empire",
             "name": "Parthian Empire",
+            "reign": {
+              "from": {
+                "label": "140 BC",
+                "value": -140
+              },
+              "label": "140 BC – AD 100",
+              "to": {
+                "label": "AD 100",
+                "value": 100
+              }
+            },
             "rings": [
               [
                 [
@@ -8471,6 +8810,17 @@
             "from": -539,
             "id": "persia",
             "name": "Achaemenid Persian Empire",
+            "reign": {
+              "from": {
+                "label": "539 BC",
+                "value": -539
+              },
+              "label": "539 – 331 BC",
+              "to": {
+                "label": "331 BC",
+                "value": -331
+              }
+            },
             "rings": [
               [
                 [
@@ -8715,6 +9065,17 @@
             "from": -1200,
             "id": "phoenicia",
             "name": "Phoenicia",
+            "reign": {
+              "from": {
+                "label": "1200 BC",
+                "value": -1200
+              },
+              "label": "1200 – 539 BC",
+              "to": {
+                "label": "539 BC",
+                "value": -539
+              }
+            },
             "rings": [
               [
                 [
@@ -8866,6 +9227,17 @@
             "from": -200,
             "id": "roman-empire",
             "name": "Roman Republic",
+            "reign": {
+              "from": {
+                "label": "200 BC",
+                "value": -200
+              },
+              "label": "200 – 31 BC",
+              "to": {
+                "label": "31 BC",
+                "value": -31
+              }
+            },
             "rings": [
               [
                 [
@@ -9109,6 +9481,17 @@
             "from": -30,
             "id": "roman-empire",
             "name": "Roman Empire",
+            "reign": {
+              "from": {
+                "label": "30 BC",
+                "value": -30
+              },
+              "label": "30 BC – AD 100",
+              "to": {
+                "label": "AD 100",
+                "value": 100
+              }
+            },
             "rings": [
               [
                 [
@@ -9421,6 +9804,17 @@
             "from": -301,
             "id": "seleucid-empire",
             "name": "Seleucid Empire",
+            "reign": {
+              "from": {
+                "label": "301 BC",
+                "value": -301
+              },
+              "label": "301 – 150 BC",
+              "to": {
+                "label": "150 BC",
+                "value": -150
+              }
+            },
             "rings": [
               [
                 [
@@ -9589,6 +9983,17 @@
             "from": -149,
             "id": "seleucid-empire",
             "name": "Seleucid Empire (rump)",
+            "reign": {
+              "from": {
+                "label": "149 BC",
+                "value": -149
+              },
+              "label": "149 – 64 BC",
+              "to": {
+                "label": "64 BC",
+                "value": -64
+              }
+            },
             "rings": [
               [
                 [
@@ -9785,6 +10190,17 @@
             "from": -4004,
             "id": "sumer",
             "name": "Sumer",
+            "reign": {
+              "from": {
+                "label": "4004 BC",
+                "value": -4004
+              },
+              "label": "4004 – 2004 BC",
+              "to": {
+                "label": "2004 BC",
+                "value": -2004
+              }
+            },
             "rings": [
               [
                 [
@@ -10041,7 +10457,7 @@
           {
             "confidence": "Imported",
             "id": "stepbible-tbesg",
-            "locator": "lexicon entries (Strong's 1890 text + TBESG gloss + MACULA domains)",
+            "locator": "lexicon entries (Strong's 1890 text + TBESG gloss)",
             "source": "stepbible"
           },
           {
@@ -10105,6 +10521,12 @@
             "source": "catechism-mapping"
           },
           {
+            "confidence": "Derived",
+            "id": "concord-citations",
+            "locator": "Scripture citations in the Book of Concord's text",
+            "source": "book-of-concord"
+          },
+          {
             "confidence": "Curated",
             "id": "curated",
             "locator": null,
@@ -10156,6 +10578,18 @@
             "confidence": "Curated",
             "id": "curated-named-after",
             "locator": null,
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-parentage",
+            "locator": "parentage.toml",
+            "source": "our-curated-work"
+          },
+          {
+            "confidence": "Curated",
+            "id": "curated-brethren",
+            "locator": "brethren.toml",
             "source": "our-curated-work"
           },
           {
@@ -10249,16 +10683,6 @@
             "title": "STEPBible TAGNT / TAHOT / TBESG (Tyndale House Cambridge)",
             "what_it_is": "STEPBible's Translators Amalgamated Greek NT (TAGNT), Translators Amalgamated Hebrew OT (TAHOT), and Translators Brief Exhaustive Strong's Greek (TBESG): per-word lemma, morphology, Strong's numbers and English glosses for the Greek NT and Hebrew OT, produced by STEPBible and Tyndale House Cambridge.",
             "what_we_built": "Every original-language word in the reader is aligned to its Strong's lexicon entry (the graph's Occurs rows: a verse's `words`, an entry's `occurs-in` concordance, in canonical order), and each Greek entry carries TBESG's brief English gloss. Alignment is by original-language word only -- no English word is tagged. Credit STEPBible and link to https://github.com/STEPBible."
-          },
-          {
-            "category": "scripture",
-            "id": "macula",
-            "license": "CC BY 4.0",
-            "licenses_row_key": "MACULA Greek and Hebrew",
-            "link": "https://github.com/Clear-Bible/macula-greek",
-            "title": "MACULA Greek and Hebrew Linguistic Datasets (Clear Bible Inc.)",
-            "what_it_is": "Clear Bible's MACULA datasets: Louw-Nida section references for the Greek NT and SDBH lexical-domain codes for the Hebrew OT (semantic domains per word).",
-            "what_we_built": "Each lexicon entry carries its sorted semantic-domain codes (the lexicon section's domain table), written so a later thesaurus-by-domain query can answer from them; no endpoint reads them yet."
           },
           {
             "category": "scripture",
@@ -11007,7 +11431,7 @@
             "name": "Shows"
           }
         ],
-        "section_schema_version": 15,
+        "section_schema_version": 18,
         "symmetric": [
           {
             "label": "analogous-to",
@@ -11030,8 +11454,12 @@
             "name": "TemporalAdjacency"
           },
           {
-            "label": "partner-of",
-            "name": "Partners"
+            "label": "spouse-of",
+            "name": "Spouses"
+          },
+          {
+            "label": "brethren-of",
+            "name": "Brethren"
           }
         ]
       },

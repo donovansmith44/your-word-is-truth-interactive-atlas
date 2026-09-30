@@ -17,8 +17,13 @@
     "id": "Place:ur-1",
     "kind": "Place",
     "label": "Ur 1",
+    "place": {
+      "display_name": "Ur",
+      "lat": 30.962222,
+      "lon": 46.104444
+    },
     "provenance": "curated-places",
-    "version": "f3eab9b319696aeb098aaf47fffc050e"
+    "version": "03b477816961916c7e520c183cd9531c"
   },
   "status": 200
 }

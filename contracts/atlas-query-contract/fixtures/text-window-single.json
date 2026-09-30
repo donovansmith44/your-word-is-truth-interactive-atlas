@@ -3,6 +3,28 @@
     "next": "JHN.3.17",
     "units": [
       {
+        "anchors": [
+          {
+            "end": 7,
+            "kind": "mentions",
+            "node": {
+              "id": "Person:god_1324",
+              "kind": "Person",
+              "label": "God"
+            },
+            "start": 4
+          },
+          {
+            "end": 62,
+            "kind": "mentions",
+            "node": {
+              "id": "Person:jesus_905",
+              "kind": "Person",
+              "label": "Jesus Christ"
+            },
+            "start": 59
+          }
+        ],
         "edge_summary": [
           {
             "count": 1,
@@ -21,7 +43,7 @@
             "kind": "cites"
           },
           {
-            "count": 70,
+            "count": 72,
             "kind": "cited-by"
           },
           {
@@ -29,6 +51,12 @@
             "kind": "catechism-link"
           }
         ],
+        "locus": {
+          "book": "JHN",
+          "chapter": 3,
+          "corpus": "bible",
+          "verse": 16
+        },
         "ref": "JHN.3.16",
         "text": "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
         "words_of_christ": [
@@ -39,7 +67,7 @@
         ]
       }
     ],
-    "version": "f3eab9b319696aeb098aaf47fffc050e"
+    "version": "03b477816961916c7e520c183cd9531c"
   },
   "status": 200
 }
