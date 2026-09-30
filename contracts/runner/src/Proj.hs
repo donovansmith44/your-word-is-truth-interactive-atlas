@@ -227,7 +227,11 @@ projections = Map.fromList
         [ field1 "kind" Keep
         , field1 "entries" (Each (Fields
             [ field1 "edge" Keep
-            , field1 "node" (Fields [ field1 "id" Keep, field1 "kind" Keep, field1 "label" Keep ])
+            , field1 "neighbour" (Fields
+                [ field1 "position" Keep
+                , field1 "node" (Fields [ field1 "id" Keep, field1 "kind" Keep, field1 "label" Keep ])
+                , field1 "edge" (Fields [ field1 "id" Keep ])
+                ])
             ]))
         , field1 "next" Keep
         ]
