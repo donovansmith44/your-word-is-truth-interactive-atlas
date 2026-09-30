@@ -2894,7 +2894,7 @@ components:
             units lead somewhere without asking after each one.
         heading:
           oneOf:
-          - $ref: '#/components/schemas/Heading'
+          - $ref: '#/components/schemas/UnitHeading'
             description: |-
               The pericope heading that belongs above this verse, present only where one
               opens or carries on. Always absent outside Scripture.
@@ -2968,6 +2968,26 @@ components:
           oneOf:
           - $ref: '#/components/schemas/NarrativeAdjacentEvent'
           - type: 'null'
+      additionalProperties: false
+    UnitHeading:
+      type: object
+      description: |-
+        The pericope heading above a verse: the event or titled passage that covers it,
+        whose label is the heading's words.
+      required:
+      - event
+      - kind
+      - is_continuation
+      properties:
+        event:
+          $ref: '#/components/schemas/NodeRef'
+        is_continuation:
+          type: boolean
+          description: |-
+            True when this verse carries on coverage that began in an earlier chapter
+            rather than opening it, so a reader can render it as a continued heading.
+        kind:
+          $ref: '#/components/schemas/EventKind'
       additionalProperties: false
     Verse:
       type: object

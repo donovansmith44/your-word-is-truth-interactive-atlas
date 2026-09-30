@@ -12,7 +12,8 @@ use atlas_core::data::{AtlasData, Canon, Event, Place, PlaceDateClaim};
 use atlas_core::history::resolve_display_name_and_canonical;
 use atlas_core::refs::{BookId, VerseId};
 use atlas_core::scene::{accounts_of, Account};
-use atlas_graph::event_world::ChronologyDerivation;
+use atlas_graph::event_world::{event_node_id, ChronologyDerivation};
+use atlas_graph::heading::Heading;
 use atlas_graph::kjv_adapter::verse_node_id;
 use atlas_graph::runs;
 use atlas_graph::window::{self, WindowDir};
@@ -422,7 +423,7 @@ pub async fn text_window(
             let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
             let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
             let locus = wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v });
-            let heading = graph.heading_index.get(&r#ref).cloned();
+            let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, &snap));
             Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
@@ -505,6 +506,14 @@ impl ContractParams for TextWindowQuery {
     }
 }
 
+fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> wire::UnitHeading {
+    wire::UnitHeading {
+        event: describe_position(&Position::Node(event_node_id(&heading.event_id)), snap),
+        kind: heading.kind,
+        is_continuation: heading.is_continuation,
+    }
+}
+
 fn unit_edge_summary(snap: &impl atlas_graph_types::store::GraphQuery, id: &atlas_graph_types::id::AnyNodeId) -> Vec<wire::EdgeSummaryEntry> {
     snap.edge_summary(&Position::Node(id.clone())).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect()
 }
@@ -520,7 +529,6 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph::event_world::event_node_id;
     use atlas_graph_types::graph::Graph;
 
     const GENESIS: u8 = 0;

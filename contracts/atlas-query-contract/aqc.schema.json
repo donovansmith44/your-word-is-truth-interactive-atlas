@@ -2350,7 +2350,7 @@
         "heading": {
           "oneOf": [
             {
-              "$ref": "#/$defs/Heading"
+              "$ref": "#/$defs/UnitHeading"
             },
             {
               "type": "null"
@@ -2451,6 +2451,26 @@
           ]
         }
       },
+      "type": "object"
+    },
+    "UnitHeading": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "$ref": "#/$defs/NodeRef"
+        },
+        "is_continuation": {
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/EventKind"
+        }
+      },
+      "required": [
+        "event",
+        "kind",
+        "is_continuation"
+      ],
       "type": "object"
     },
     "Verse": {

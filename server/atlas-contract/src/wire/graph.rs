@@ -1,5 +1,4 @@
 use atlas_core::data::EventKind;
-use atlas_graph::heading::Heading;
 use atlas_graph_types::id::NarrativeId;
 use atlas_graph_types::{EdgeKind, NodeKind};
 use serde::{Serialize, Serializer};
@@ -282,10 +281,22 @@ pub struct TextUnit {
     /// The pericope heading that belongs above this verse, present only where one
     /// opens or carries on. Always absent outside Scripture.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub heading: Option<Heading>,
+    pub heading: Option<UnitHeading>,
     /// How many neighbours this unit has of each kind, so a page can tell which
     /// units lead somewhere without asking after each one.
     pub edge_summary: Vec<EdgeSummaryEntry>,
+}
+
+/// The pericope heading above a verse: the event or titled passage that covers it,
+/// whose label is the heading's words.
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UnitHeading {
+    pub event: NodeRef,
+    pub kind: EventKind,
+    /// True when this verse carries on coverage that began in an earlier chapter
+    /// rather than opening it, so a reader can render it as a continued heading.
+    pub is_continuation: bool,
 }
 
 #[cfg(test)]

@@ -14,6 +14,9 @@ use atlas_graph_types::id::NodeKind;
 
 /// The real corpus and the graph built from it, both shared: the router only ever reads them, and
 /// building either one per test cost this file's 41 routers 41 compiles and 41 graph builds.
+/// The corpus is finished after the graph is built from it, as the server finishes what it
+/// reads: the compiler attaches the catechism after its own `finish()`, so without this one
+/// every catechism index the router reads is empty.
 fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
@@ -24,7 +27,7 @@ fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
                 .data;
             let graph = GraphService::build(&data_dir.join("raw"), &data)
                 .expect("data/raw/{kjv.json,xrefs/cross_references.txt} must exist and satisfy the fidelity law");
-            (Arc::new(data), Arc::new(graph))
+            (Arc::new(data.finish()), Arc::new(graph))
         })
         .clone()
 }
@@ -1556,7 +1559,7 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
             "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
             "text": "In the beginning God created the heaven and the earth.",
             "words_of_christ": [],
-            "heading": { "event_id": "theo-1", "title": "Creation of all things", "kind": "event", "is_continuation": false },
+            "heading": the_creation_heading(),
             "edge_summary": [
                 { "kind": "member-of", "count": 1 },
                 { "kind": "attests", "count": 1 },
@@ -1762,6 +1765,10 @@ fn whole_verse(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
     serde_json::json!({ "from": { "unit": bible_unit(book, chapter, verse) }, "to": { "unit": bible_unit(book, chapter, verse) } })
 }
 
+fn the_creation_heading() -> serde_json::Value {
+    serde_json::json!({ "event": { "id": "Event:theo-1", "kind": "Event", "label": "Creation of all things" }, "kind": "event", "is_continuation": false })
+}
+
 #[tokio::test]
 async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_its_end() {
     // Arrange
@@ -1788,7 +1795,7 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
 #[tokio::test]
 async fn an_event_card_carries_the_details_the_legacy_route_served() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/rob_sermon_on_the_mount").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount").await;
@@ -1810,7 +1817,7 @@ async fn an_event_card_carries_the_details_the_legacy_route_served() {
 #[tokio::test]
 async fn a_titled_passages_card_carries_its_kind_and_no_date() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/event/gen_line_of_cain").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Event:gen_line_of_cain").await;
@@ -1824,7 +1831,7 @@ async fn a_titled_passages_card_carries_its_kind_and_no_date() {
 #[tokio::test]
 async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Place:jerusalem").await;
@@ -1858,7 +1865,7 @@ async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_an
 #[tokio::test]
 async fn a_catechism_card_carries_its_prose() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/commandment-1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/CatechismItem:commandment-1").await;
@@ -1880,7 +1887,7 @@ async fn a_catechism_card_carries_its_prose() {
 #[tokio::test]
 async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_one() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/place/tigris").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Place:tigris").await;
@@ -1894,7 +1901,7 @@ async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_
 #[tokio::test]
 async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/catechism/item/baptism-1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/CatechismItem:baptism-1").await;
@@ -1916,7 +1923,7 @@ async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
 #[tokio::test]
 async fn a_book_card_carries_its_authorship_and_its_writing() {
     // Arrange
-    let app = artifact_app();
+    let app = compiled_app();
     let (_, legacy, _) = get(&app, "/api/verse/NEH.1.1").await;
     // Act
     let (status, card, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
@@ -1938,7 +1945,6 @@ async fn a_book_card_carries_its_authorship_and_its_writing() {
 async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_it_none() {
     // Arrange
     let app = compiled_app();
-    let (_, legacy, _) = get(&app, "/api/chapter/GEN.1").await;
     // Act
     let (status, window, _) = get(&app, "/api/text?ref=GEN.1.1&n=2").await;
     // Assert
@@ -1952,7 +1958,7 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     "locus": bible_unit("GEN", 1, 1),
                     "text": "In the beginning God created the heaven and the earth.",
                     "words_of_christ": [],
-                    "heading": legacy["verses"][0]["heading"],
+                    "heading": the_creation_heading(),
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
