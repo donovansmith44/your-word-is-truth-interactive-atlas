@@ -1,80 +1,37 @@
-@* A range collapses to its own first verse (ScriptureRefScan's disclosed limitation) -- the
-   popover opens on that verse, but the visible text still shows the full matched citation
-   string verbatim (e.g. "John 1, 1-5"). *@
 @using BibleAtlas.Client.Explore
 
-@foreach (var seg in _segments)
+@foreach (var (piece, index) in Numbered(AnchoredText.Segments(Text, Citations)))
 {
-    @if (seg.Sref is { } sref)
+    @if (piece.Anchor is { } citation)
     {
-        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{OwnerSlug}-{seg.Index}")"
-              tabindex="0" role="button" aria-label="@($"Explore {seg.Text}")"
-              @onclick="() => Open(sref)" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnKeyDown(e, sref))" @onkeydown:stopPropagation="true">@seg.Text</span>
+        var verse = NodeIds.LocalPart(citation.Node);
+        <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{OwnerSlug}-{index}")"
+              tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
+              @onclick="() => Open(verse)" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, verse))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
     else
     {
-        @seg.Text
+        @piece.Text
     }
 }
 
 @code {
-    private readonly record struct Segment(string Text, string? Sref, int Index);
-
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<CanonBook> Toc { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Anchor> Citations { get; set; } = default!;
     [Parameter, EditorRequired] public string ClassPrefix { get; set; } = default!;
 
     [Parameter, EditorRequired] public string OwnerSlug { get; set; } = default!;
 
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
-    // OnParametersSet runs on every render regardless of whether parameters actually changed;
-    // this guard avoids re-scanning Text on every unrelated re-render.
-    private string? _lastText;
-    private IReadOnlyList<CanonBook>? _lastToc;
-    private IReadOnlyList<Segment> _segments = Array.Empty<Segment>();
-
-    protected override void OnParametersSet()
+    private static IEnumerable<(TextPiece Piece, int Index)> Numbered(IReadOnlyList<TextPiece> pieces)
     {
-        if (_lastText == Text && ReferenceEquals(_lastToc, Toc))
-        {
-            return; // unchanged -- keep cached segments
-        }
-
-        _lastText = Text;
-        _lastToc = Toc;
-        _segments = ComputeSegments();
+        var cited = 0;
+        return pieces.Select(piece => (piece, piece.Anchor is null ? 0 : cited++));
     }
 
-    private IReadOnlyList<Segment> ComputeSegments()
-    {
-        var matches = ScriptureRefScan.Scan(Text, Toc);
-        if (matches.Count == 0)
-        {
-            return new[] { new Segment(Text, null, 0) };
-        }
+    private Task Open(string verse) => OnExplore.InvokeAsync(new VerseNode(verse));
 
-        var segments = new List<Segment>();
-        var cursor = 0;
-        var n = 0;
-        foreach (var m in matches)
-        {
-            if (m.Start > cursor)
-            {
-                segments.Add(new Segment(Text[cursor..m.Start], null, 0));
-            }
-            segments.Add(new Segment(Text.Substring(m.Start, m.Length), m.Sref, n++));
-            cursor = m.Start + m.Length;
-        }
-        if (cursor < Text.Length)
-        {
-            segments.Add(new Segment(Text[cursor..], null, 0));
-        }
-        return segments;
-    }
-
-    private Task Open(string sref) => OnExplore.InvokeAsync(new VerseNode(sref));
-
-    private Task OnKeyDown(KeyboardEventArgs e, string sref) => e.Key == "Enter" ? Open(sref) : Task.CompletedTask;
+    private Task OnKeyDown(KeyboardEventArgs e, string verse) => e.Key == "Enter" ? Open(verse) : Task.CompletedTask;
 }

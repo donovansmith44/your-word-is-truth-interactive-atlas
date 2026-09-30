@@ -99,7 +99,7 @@
                                  @onclick="@(() => OnExplore(item))" @onkeydown="@(e => OnItemKeyDown(e, item))">
                                 @if (item.Text is { } text)
                                 {
-                                    <ScriptureRefText Text="@text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="kretzmann-ref"
+                                    <ScriptureRefText Text="@text" Citations="@item.Citations" ClassPrefix="kretzmann-ref"
                                                        OwnerSlug="@Slug(item.Id)" OnExplore="OnExploreNode" />
                                 }
                                 else
@@ -141,7 +141,7 @@
 }
 
 @code {
-    private sealed record CommentaryItemRow(string Id, string Heading, string? Text, bool IsSectionStart);
+    private sealed record CommentaryItemRow(string Id, string Heading, string? Text, IReadOnlyList<Anchor> Citations, bool IsSectionStart);
 
     private sealed record MergedVerseRow(Verse Verse, List<CommentaryItemRow> CommentaryItems);
 
@@ -445,7 +445,7 @@
                     var heading = item.Heading ?? "Commentary";
                     var isSectionStart = heading != lastHeading;
                     lastHeading = heading;
-                    items.Add(new CommentaryItemRow(item.Id, heading, null, isSectionStart));
+                    items.Add(new CommentaryItemRow(item.Id, heading, null, [], isSectionStart));
                 }
                 commentaryByVerse[v.Verse] = items;
             }
@@ -525,10 +525,13 @@
     {
         _rows = _rows
             .Select(row => row.CommentaryItems.Any(i => i.Id == itemId)
-                ? row with { CommentaryItems = row.CommentaryItems.Select(i => i.Id == itemId ? i with { Text = text ?? i.Heading } : i).ToList() }
+                ? row with { CommentaryItems = row.CommentaryItems.Select(i => i.Id == itemId ? ProseOf(i, text ?? i.Heading) : i).ToList() }
                 : row)
             .ToList();
     }
+
+    private CommentaryItemRow ProseOf(CommentaryItemRow item, string prose) =>
+        item with { Text = prose, Citations = KretzmannCitationScan.Anchors(prose, _toc ?? EmptyToc) };
 
     private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);
 

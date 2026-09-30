@@ -35,12 +35,12 @@ public class ContentsTreeModelTests
         // Arrange
         var expected = new[]
         {
-            new Root(Genesis, "Genesis", "GEN.1", ContentsRootKind.Book, [
-                new Child(GenesisOne, "1", "GEN.1", ContentsChildKind.Chapter, 31),
-                new Child(GenesisTwo, "2", "GEN.2", ContentsChildKind.Chapter, 25),
+            new Root(Genesis, "Genesis", "GEN.1", GenesisOneOne, ContentsRootKind.Book, [
+                new Child(GenesisOne, "1", "GEN.1", GenesisOneOne, ContentsChildKind.Chapter, 31),
+                new Child(GenesisTwo, "2", "GEN.2", new BibleRef(BookId.GEN, 2, 1), ContentsChildKind.Chapter, 25),
             ]),
-            new Root(Exodus, "Exodus", "EXO.1", ContentsRootKind.Book, [
-                new Child(ExodusOne, "1", "EXO.1", ContentsChildKind.Chapter, 22),
+            new Root(Exodus, "Exodus", "EXO.1", ExodusOneOne, ContentsRootKind.Book, [
+                new Child(ExodusOne, "1", "EXO.1", ExodusOneOne, ContentsChildKind.Chapter, 22),
             ]),
         };
         // Act

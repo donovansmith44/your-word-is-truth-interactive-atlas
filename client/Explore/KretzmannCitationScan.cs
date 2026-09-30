@@ -3,21 +3,23 @@ using System.Text.RegularExpressions;
 
 namespace BibleAtlas.Client.Explore;
 
-public readonly record struct ScriptureRefMatch(int Start, int Length, string Sref);
-
-public static class ScriptureRefScan
+public static class KretzmannCitationScan
 {
-    // Codes verified live against this app's own /api/books response, not copied from an ETL
-    // source file (an earlier draft's copy disagreed with this app's canonical codes for
-    // several books: John is "JHN" here not "JOH", Ezekiel "EZK" not "EZE", Mark "MRK" not
-    // "MAR", James "JAS" not "JAM", Jude "JUD" not "JDE", Nahum "NAM" not "NAH", the Johannine
-    // epistles "1JN"/"2JN"/"3JN" not "1JO"/"2JO"/"3JO").
-    //
-    // Deliberately has NO entry for a bare "Cor"/"Pet"/"Phil": each is genuinely ambiguous
-    // (a bare "Cor." is at least as often an elided 2 Corinthians as 1; "Phil" is ambiguous
-    // between Philippians and Philemon), and an unlisted abbreviation is meant to be a silent
-    // miss, never a guessed misattribution. Do not add these back without verifying real
-    // corpus usage first.
+    public static IReadOnlyList<Anchor> Anchors(string prose, IReadOnlyList<CanonBook> toc)
+    {
+        var (pattern, codeByAlias) = GetOrBuild(toc);
+        return pattern.Matches(prose)
+            .Select(m => CitationOf(prose, m, $"{codeByAlias[m.Groups["book"].Value]}.{m.Groups["chapter"].Value}.{m.Groups["verse"].Value}"))
+            .ToList();
+    }
+
+    private static Anchor CitationOf(string prose, Match citation, string verse) =>
+        new(
+            end: AnchoredText.ScalarOffsetOf(prose, citation.Index + citation.Length),
+            kind: EdgeKind.Cites,
+            node: new NodeRef(id: NodeIds.Of(NodeKind.TextUnit, verse), kind: PositionKind.TextUnit, label: verse),
+            start: AnchoredText.ScalarOffsetOf(prose, citation.Index));
+
     private static readonly (string Alias, string Code)[] CitationAliases =
     {
         ("Gen", "GEN"), ("Exod", "EXO"), ("Exo", "EXO"), ("Lev", "LEV"), ("Num", "NUM"),
@@ -41,8 +43,6 @@ public static class ScriptureRefScan
         ("Jude", "JUD"), ("Rev", "REV"),
     };
 
-    // Longest-alias-first: an alternation tries left-to-right, so "1 Corinthians" must be
-    // offered before "1 Cor" or the shorter alias would win and strand " inthians" as plain text.
     private static Regex BuildPattern(IReadOnlyList<CanonBook> toc)
     {
         var tokens = new List<(string Alias, string Code)>();
@@ -60,10 +60,6 @@ public static class ScriptureRefScan
             RegexOptions.Compiled);
     }
 
-    // Cached by reference equality against the caller's own toc list: AtlasClient.Books()
-    // hands out one singleton-cached list for the app's whole lifetime, so this never goes
-    // stale, and rebuilding it (compiling a ~130-branch regex) on every render was measured
-    // as a real perf cost across this app's commentary/reading surfaces.
     private static IReadOnlyList<CanonBook>? _cachedToc;
     private static Regex? _cachedPattern;
     private static Dictionary<string, string>? _cachedCodeByAlias;
@@ -90,30 +86,5 @@ public static class ScriptureRefScan
         _cachedPattern = pattern;
         _cachedCodeByAlias = codeByAlias;
         return (pattern, codeByAlias);
-    }
-
-    public static IReadOnlyList<ScriptureRefMatch> Scan(string text, IReadOnlyList<CanonBook> toc)
-    {
-        if (string.IsNullOrEmpty(text) || toc.Count == 0)
-        {
-            return Array.Empty<ScriptureRefMatch>();
-        }
-
-        var (pattern, codeByAlias) = GetOrBuild(toc);
-
-        var results = new List<ScriptureRefMatch>();
-        foreach (Match m in pattern.Matches(text))
-        {
-            if (!codeByAlias.TryGetValue(m.Groups["book"].Value, out var code))
-            {
-                continue;
-            }
-
-            var chapter = m.Groups["chapter"].Value;
-            var verse = m.Groups["verse"].Value; // a verse range collapses to its first verse only
-            results.Add(new ScriptureRefMatch(m.Index, m.Length, $"{code}.{chapter}.{verse}"));
-        }
-
-        return results;
     }
 }

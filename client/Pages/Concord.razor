@@ -37,7 +37,7 @@
                 @if (_contents is { } contentsModel)
                 {
                     <ContentsTree Model="contentsModel" RootClickNavigates="true" TestId="concord-contents-tree"
-                                  RootTestId="@(n => $"concord-toc-part-{PartOfRef(n.Ref)}")"
+                                  RootTestId="@(n => $"concord-toc-part-{PartOf(n.Locus)}")"
                                   RootClass="concord-toc-item" RootCurrentClass="concord-toc-item-current"
                                   OnNavigate="OnContentsNavigate" />
                 }
@@ -106,13 +106,13 @@
                         else if (row is UnitRow ur)
                         {
                             var unit = ur.Unit;
-                            if (ConcordToc.IsExplorablePart(ParseRef(unit.Ref).Part) && unit.EdgeSummary.Count > 0)
+                            if (ConcordToc.IsExplorablePart(PartOf(unit.Locus)) && unit.EdgeSummary.Count > 0)
                             {
                                 <div class="concord-unit explorable" data-testid="@($"concord-unit-{Slug(unit.Ref)}")"
                                      tabindex="0" role="button"
                                      @onclick="@(() => OnExplore(unit))" @onkeydown="@(e => OnUnitKeyDown(e, unit))">
                                     <span class="concord-unit-ref">@unit.Ref</span>
-                                    <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                    <ScriptureRefText Text="@unit.Text" Citations="@unit.Anchors" ClassPrefix="concord-ref"
                                                        OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
                                 </div>
                             }
@@ -120,7 +120,7 @@
                             {
                                 <div class="concord-unit" data-testid="@($"concord-unit-{Slug(unit.Ref)}")">
                                     <span class="concord-unit-ref">@unit.Ref</span>
-                                    <ScriptureRefText Text="@unit.Text" Toc="@(_toc ?? EmptyToc)" ClassPrefix="concord-ref"
+                                    <ScriptureRefText Text="@unit.Text" Citations="@unit.Anchors" ClassPrefix="concord-ref"
                                                        OwnerSlug="@Slug(unit.Ref)" OnExplore="OnExploreNode" />
                                 </div>
                             }
@@ -157,8 +157,6 @@
     private sealed record ArticleHeadingRow(int Part, int Article) : ConcordRenderRow;
     private sealed record UnitRow(TextUnit Unit) : ConcordRenderRow;
 
-    private static readonly List<CanonBook> EmptyToc = new();
-
     [Parameter] public bool? SplitMode { get; set; }
 
     private string _currentRef = DefaultRef;
@@ -178,11 +176,9 @@
     private int? _jumpArticle;
     private int? _jumpParagraph;
 
-    private List<CanonBook>? _toc;
-
     private static string Slug(string reference) => reference.Replace(' ', '-').Replace('.', '-');
 
-    private int CurrentPart => ParseRef(_currentRef).Part;
+    private int? CurrentPart => _units.Count > 0 ? PartOf(_units[0].Locus) : null;
 
     private List<ConcordRenderRow> RenderRows
     {
@@ -193,17 +189,17 @@
             int? lastArticle = null;
             foreach (var unit in _units)
             {
-                var (part, article, _) = ParseRef(unit.Ref);
-                if (part != lastPart)
+                var locus = (ConcordRef)unit.Locus;
+                if (locus.Part != lastPart)
                 {
-                    rows.Add(new PartHeadingRow(part, ConcordToc.TitleOf(part)));
-                    lastPart = part;
+                    rows.Add(new PartHeadingRow(locus.Part, ConcordToc.TitleOf(locus.Part)));
+                    lastPart = locus.Part;
                     lastArticle = null;
                 }
-                if (article != lastArticle)
+                if (locus.Article != lastArticle)
                 {
-                    rows.Add(new ArticleHeadingRow(part, article));
-                    lastArticle = article;
+                    rows.Add(new ArticleHeadingRow(locus.Part, locus.Article));
+                    lastArticle = locus.Article;
                 }
                 rows.Add(new UnitRow(unit));
             }
@@ -211,12 +207,7 @@
         }
     }
 
-    private static (int Part, int Article, int Paragraph) ParseRef(string reference)
-    {
-        var afterPrefix = reference.StartsWith("BoC ", StringComparison.Ordinal) ? reference[4..] : reference;
-        var parts = afterPrefix.Split('.');
-        return (int.Parse(parts[0]), int.Parse(parts[1]), int.Parse(parts[2]));
-    }
+    private static int PartOf(TextRef locus) => ((ConcordRef)locus).Part;
 
     private Task JumpToPartAsync(int part)
     {
@@ -225,8 +216,6 @@
     }
 
     private ContentsTreeModel? _contents;
-
-    private static int PartOfRef(string sref) => ParseRef(sref).Part;
 
     private async Task LoadContentsAsync()
     {
@@ -248,7 +237,7 @@
             return;
         }
 
-        var doc = model.Roots.FirstOrDefault(r => PartOfRef(r.Ref) == CurrentPart);
+        var doc = model.Roots.FirstOrDefault(r => PartOf(r.Locus) == CurrentPart);
         if (doc is not null)
         {
             model.Expand(doc.Id);
@@ -264,7 +253,7 @@
     {
         if (node is ContentsTreeModel.Root { Kind: ContentsRootKind.Document })
         {
-            return JumpToPartAsync(PartOfRef(node.Ref));
+            return JumpToPartAsync(PartOf(node.Locus));
         }
 
         var citation = node.Ref.StartsWith("BoC ", StringComparison.Ordinal) ? node.Ref["BoC ".Length..] : node.Ref;
@@ -294,14 +283,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            _toc = await Atlas.Books();
-        }
-        catch (Exception)
-        {
-        }
-
         if (RefQuery is { Length: > 0 } r)
         {
             _appliedRefQuery = r;

@@ -4,14 +4,14 @@ namespace BibleAtlas.Client.Components;
 
 public sealed class ContentsTreeModel
 {
-    public abstract record Node(string Id, string Title, string Ref);
+    public abstract record Node(string Id, string Title, string Ref, TextRef Locus);
 
-    public sealed record Root(string Id, string Title, string Ref, ContentsRootKind Kind, IReadOnlyList<Child> Children) : Node(Id, Title, Ref)
+    public sealed record Root(string Id, string Title, string Ref, TextRef Locus, ContentsRootKind Kind, IReadOnlyList<Child> Children) : Node(Id, Title, Ref, Locus)
     {
         public bool Expandable => Children.Count > 0;
     }
 
-    public sealed record Child(string Id, string Title, string Ref, ContentsChildKind Kind, int Count) : Node(Id, Title, Ref);
+    public sealed record Child(string Id, string Title, string Ref, TextRef Locus, ContentsChildKind Kind, int Count) : Node(Id, Title, Ref, Locus);
 
     public sealed record Row(Node Node, int Depth, bool Expandable, bool Expanded, bool Current);
 
@@ -24,7 +24,7 @@ public sealed class ContentsTreeModel
 
     public static ContentsTreeModel From(Contract.Contents contents) =>
         new(contents.Roots
-            .Select(r => new Root(r.Id, r.Title, r.Ref, r.Kind, r.Children.Select(c => new Child(c.Id, c.Title, c.Ref, c.Kind, c.Count)).ToList()))
+            .Select(r => new Root(r.Id, r.Title, r.Ref, r.Locus, r.Kind, r.Children.Select(c => new Child(c.Id, c.Title, c.Ref, c.Locus, c.Kind, c.Count)).ToList()))
             .ToList());
 
     public IReadOnlyCollection<string> ExpandedIds => _expanded;
