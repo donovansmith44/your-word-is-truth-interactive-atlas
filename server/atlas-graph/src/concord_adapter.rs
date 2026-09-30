@@ -64,7 +64,6 @@ pub fn decode_text_unit(id: &AnyNodeId) -> Option<(u8, u16, u16)> {
     Some((part, article, paragraph))
 }
 
-/// One paragraph of the Book of Concord: a text unit whose one rendering is the corpus's own.
 pub fn paragraph_node(unit: ConcordRef, text: &str) -> Node {
     let id = text_unit_id(unit.part, unit.article, unit.paragraph);
     let mut renderings = atlas_graph_types::text::LayerMap::new();
@@ -72,7 +71,6 @@ pub fn paragraph_node(unit: ConcordRef, text: &str) -> Node {
     Node { id, payload: NodePayload::TextUnit { corpus: CONCORD_CORPUS, renderings }, provenance: PROVENANCE.to_string() }
 }
 
-/// The paragraph's text: `None` for a node that is not a Concord paragraph.
 pub fn concord_text(node: &Node) -> Option<&str> {
     crate::window::text_in(node, CONCORD_TRANSLATION)
 }

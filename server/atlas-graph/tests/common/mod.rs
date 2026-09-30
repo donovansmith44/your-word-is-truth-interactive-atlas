@@ -19,7 +19,6 @@ use atlas_graph_types::graph::Graph;
 
 pub const MAPS: usize = 10;
 pub const CORPUS_ROOTS: usize = 2;
-/// The Book of Concord's citations of Scripture that lie on its words and name verses the Bible holds.
 pub const CONCORD_CITATIONS: usize = 1_246;
 
 /// A from-raw build always reads the KJV, its cross references, the atlas, brain-fuel and the
@@ -85,7 +84,6 @@ impl RawSources {
     }
 }
 
-/// The raw inputs of the full pipeline over the real atlas; `run` borrows them for the context it builds.
 pub struct PipelineInputs {
     pub kjv_json: String,
     pub xrefs_tsv: String,

@@ -1,10 +1,3 @@
-//! Where a place or a person is named inside a verse, found once here so the reader never searches
-//! for it. A Place or Person `mentions` row at a verse becomes one row per located occurrence of the
-//! entity's names, each spanning the KJV words the name covers; a row none of whose names is found
-//! on whole words stays verse-level and is counted, and so is every occurrence that misses whole
-//! words beside a located one. PeopleGroup and Event rows have no names to search and are left as
-//! they are.
-
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Range;
@@ -20,23 +13,18 @@ use crate::kjv_adapter::{self, KJV_TRANSLATION};
 use crate::pipeline::BuildCtx;
 use crate::tokens::{self, tokenize, Token};
 
-/// One name an entity is called by.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     pub entity: MentionedEntity,
     pub text: String,
 }
 
-/// One occurrence of a name: the Unicode-scalar range of the text it covers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NameSegment {
     pub chars: Range<usize>,
     pub entity: MentionedEntity,
 }
 
-/// `located` counts the rows written with a word span, one per occurrence; `unlocatable` counts the
-/// Place and Person rows left verse-level because no name of their entity lies on whole words, and
-/// the occurrences off whole words of an entity located elsewhere in the verse.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct MentionSpanStats {
     pub located: usize,
@@ -55,8 +43,6 @@ impl MentionSpan {
     }
 }
 
-/// Runs after every Place and Person `mentions` row is written; a located row keeps its place in the
-/// row order, so a verse's occurrences follow one another in text order where its one row stood.
 pub fn locate_mentions(ctx: &mut BuildCtx) -> MentionSpanStats {
     let names = NameBook::of(ctx.atlas);
     let spans = located_spans(&ctx.graph, &names);
@@ -79,9 +65,6 @@ pub fn locate_mentions(ctx: &mut BuildCtx) -> MentionSpanStats {
     stats
 }
 
-/// C#'s ordinal `IndexOf` with `char.IsLetter` boundaries, over scalars. Names are tried places first,
-/// and the stable sort keeps that order among candidates of one start and length, so a tie goes to
-/// the place; the longest candidate at a start wins, and nothing overlaps what was accepted before it.
 pub fn scan(text: &str, names: &[Name]) -> Vec<NameSegment> {
     let chars: Vec<char> = text.chars().collect();
     let (places, others): (Vec<&Name>, Vec<&Name>) = names.iter().partition(|n| matches!(n.entity, MentionedEntity::Place(_)));
@@ -96,13 +79,10 @@ pub fn scan(text: &str, names: &[Name]) -> Vec<NameSegment> {
     accepted
 }
 
-/// `None` unless the segment starts where a word starts and ends where a word ends.
 pub fn locate(segment: &NameSegment, words: &[Token]) -> Option<TokenSpan> {
     tokens::words_covering(&segment.chars, words, KJV_TRANSLATION)
 }
 
-/// Every KJV letter is in a Unicode letter category, where `is_alphabetic` and C#'s `char.IsLetter`
-/// agree.
 fn occurrences(chars: &[char], name: &Name) -> Vec<NameSegment> {
     let wanted: Vec<char> = name.text.chars().collect();
     if wanted.is_empty() {
@@ -117,17 +97,12 @@ fn occurrences(chars: &[char], name: &Name) -> Vec<NameSegment> {
         .collect()
 }
 
-/// One row's search of its verse: the word spans its entity's names cover, and how many of its
-/// occurrences lie off whole words.
 #[derive(Clone)]
 struct Search {
     found: Vec<TokenSpan>,
     missed: usize,
 }
 
-/// Beside each row, its search, or `None` for a row not searched: every Place and Person row still
-/// at a whole verse is. Each verse is searched once, for all the names of all its rows together, so
-/// a longer name of one entity wins over a shorter name of another.
 fn located_spans(graph: &Graph, names: &NameBook) -> Vec<Option<Search>> {
     let mut rows_by_verse: BTreeMap<&VerseRef, Vec<usize>> = BTreeMap::new();
     for (i, row) in graph.mentions.iter().enumerate() {
@@ -156,9 +131,6 @@ fn located_spans(graph: &Graph, names: &NameBook) -> Vec<Option<Search>> {
     spans
 }
 
-/// The names the reader shows for each place and person: a place by its display name and every name
-/// a KJV alias gives it, a person by their label and every name they are also called. A name listed
-/// twice finds the same occurrence twice, and the second overlaps the first and is dropped.
 struct NameBook {
     places: HashMap<PlaceId, Vec<String>>,
     persons: HashMap<PersonId, Vec<String>>,

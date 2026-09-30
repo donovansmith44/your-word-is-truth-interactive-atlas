@@ -75,8 +75,6 @@
     [Parameter] public int From { get; set; }
     [Parameter] public int To { get; set; }
 
-    // The window of the time scene on show, as the server labels it; it trails From/To by one
-    // scene fetch, and a scripture scene names none.
     [Parameter] public TimeRange? Window { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
 
@@ -104,8 +102,6 @@
 
     protected override void OnParametersSet()
     {
-        // Resync only when a newly served window arrives, so a keystroke mid-edit in the readout
-        // is never clobbered before Enter is pressed.
         if (Window is { } served && served != _shownWindow)
         {
             _shownWindow = served;
@@ -272,8 +268,6 @@
 
     private int ClampToSpan(int year) => Math.Clamp(year, Eras[0].FromYear, Eras[^1].ToYear);
 
-    // A handle's year has a served label only once the scene for it has arrived; until then
-    // (mid-drag, mid-fetch) assistive tech reads aria-valuenow rather than a stale label.
     private static string? ServedLabelOf(int year, Year? served) => served?.Value == year ? served.Label : null;
 
     private double HandleX(int year) => Eras.Count == 0 ? 0 : SliderScale.YearToX(year, Eras, TrackWidthPx);

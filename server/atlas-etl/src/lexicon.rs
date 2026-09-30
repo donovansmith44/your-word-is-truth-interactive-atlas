@@ -117,8 +117,6 @@ fn non_empty(s: String) -> Option<String> {
     }
 }
 
-/// One entry file. An empty string becomes `None` on the optional fields, senses are ordered by their
-/// `id`.
 pub fn parse_entry(json: &str) -> Result<LexEntry> {
     let raw: RawEntry = serde_json::from_str(json).context("lexicon entry is not the expected JSON shape")?;
     if !(raw.strong.starts_with('G') || raw.strong.starts_with('H')) || raw.strong.len() < 5 {

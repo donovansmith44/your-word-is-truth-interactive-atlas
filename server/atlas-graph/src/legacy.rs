@@ -85,9 +85,6 @@ pub fn event_from_node(id: &AnyNodeId, q: &impl GraphQuery, chrono: &crate::even
     })
 }
 
-/// `verse_links` comes from `mentioned-in` INVERSE edges -- every TextUnit mentioning this place --
-/// decoded back to canonical dot-refs. A verse naming the place twice has two rows, one after the
-/// other, and is linked once.
 pub fn place_from_node(id: &AnyNodeId, q: &impl GraphQuery) -> Option<Place> {
     let node = q.node(id)?;
     let NodePayload::Place { canonical, lat, lon, .. } = node.payload else { return None };
@@ -113,8 +110,6 @@ pub fn narrative_from_node(id: &AnyNodeId, q: &impl GraphQuery, legs: &[String])
     Some(Narrative { id: id.raw.clone(), name: label, color, legs: legs.to_vec() })
 }
 
-/// A Bible-corpus `TextLocus`'s canonical dot-ref, the verse a word span lies in; `None` for a
-/// Concord locus, which has none.
 pub fn locus_dot_ref(l: &TextLocus) -> Option<String> {
     match &l.at {
         TextRef::Bible(v) => Some(crate::kjv_adapter::dot_ref(v.book, v.chapter, v.verse)),

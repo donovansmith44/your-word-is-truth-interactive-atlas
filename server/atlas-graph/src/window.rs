@@ -48,8 +48,6 @@ pub fn render_layer(query: &dyn GraphQuery, id: &AnyNodeId, translation: &str) -
     text_in(&query.node(id)?, translation).map(str::to_string)
 }
 
-/// A unit's text in `translation`: `None` for a node that is not a text unit or carries no such
-/// layer.
 pub fn text_in<'a>(node: &'a Node, translation: &str) -> Option<&'a str> {
     match &node.payload {
         NodePayload::TextUnit { renderings, .. } => renderings.get(&TranslationId(translation.to_string())).map(String::as_str),

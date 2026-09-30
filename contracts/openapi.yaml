@@ -838,9 +838,7 @@ components:
   schemas:
     Anchor:
       type: object
-      description: |-
-        A stretch of a unit's text that stands for something the graph holds,
-        half-open: the text from `start` up to but not including `end`.
+      description: 'A stretch of a unit''s text that stands for something the graph holds, half-open: the text from `start` up to but not including `end`, both counted in characters (Unicode scalar values, not bytes) into the unit''s text.'
       required:
       - start
       - end
@@ -849,7 +847,6 @@ components:
       properties:
         end:
           type: integer
-          description: A character offset (a Unicode scalar value, not a byte) into the owning unit's text.
           minimum: 0
         kind:
           $ref: '#/components/schemas/EdgeKind'
@@ -857,7 +854,6 @@ components:
           $ref: '#/components/schemas/NodeRef'
         start:
           type: integer
-          description: A character offset (a Unicode scalar value, not a byte) into the owning unit's text.
           minimum: 0
       additionalProperties: false
     BibleRef:
@@ -883,22 +879,19 @@ components:
       unevaluatedProperties: false
     BookDetail:
       type: object
-      description: Who wrote one book of the Bible, where, and when.
+      description: Who wrote one book of the Bible, where, and when; the place and the years are absent where they are not recorded.
       required:
       - author
       properties:
         author:
           type: string
-          description: The book's author, as this atlas records him.
         write_place:
           oneOf:
           - $ref: '#/components/schemas/NodeRef'
-            description: Where it was written, absent when that is not recorded.
           - type: 'null'
         written:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
-            description: The years it was written across, absent when it is not dated.
           - type: 'null'
       additionalProperties: false
     BookId:
@@ -1024,7 +1017,7 @@ components:
       additionalProperties: false
     CatechismDetail:
       type: object
-      description: One catechism item's own words and their explanation.
+      description: 'One catechism item''s own words and their explanation: the chief part it belongs to, the question the explanation answers, and where in Scripture its words are written, where it quotes any.'
       required:
       - part_title
       - explanation_heading
@@ -1034,24 +1027,16 @@ components:
           type: string
         explanation_heading:
           type: string
-          description: The question the explanation answers, such as "What does this mean?".
         part_title:
           type: string
-          description: The chief part this item belongs to, such as Baptism.
         text:
           type:
           - string
           - 'null'
-          description: |-
-            The item's own words -- a commandment, a petition, an article -- absent for
-            an item that has none.
         where_written:
           type:
           - string
           - 'null'
-          description: |-
-            Where in Scripture the item's own words are written, absent when it quotes
-            none.
       additionalProperties: false
     CatechismItem:
       type: object
@@ -1240,9 +1225,6 @@ components:
           $ref: '#/components/schemas/ContentsChildKind'
         locus:
           $ref: '#/components/schemas/TextRef'
-          description: |-
-            The unit this entry opens at, by its parts: a chapter's first verse, or an
-            article's first paragraph.
         ref:
           type: string
           description: |-
@@ -1290,7 +1272,6 @@ components:
           $ref: '#/components/schemas/ContentsRootKind'
         locus:
           $ref: '#/components/schemas/TextRef'
-          description: 'The unit `ref` opens at, by its parts: its first child''s.'
         ref:
           type: string
           description: 'The reference to open when this entry is chosen: its first child''s.'
@@ -1362,9 +1343,7 @@ components:
       additionalProperties: false
     DateClaim:
       type: object
-      description: |-
-        A date something is claimed to have happened at, the verses the claim rests
-        on, and the note that qualifies it where the date is not Scripture's own.
+      description: A date something is claimed to have happened at, the verses the claim rests on, the event it rests on where it names one, and the note that qualifies it where the date is not Scripture's own; the label is marked `c. ` where the claim carries a note.
       required:
       - when
       - label
@@ -1373,11 +1352,9 @@ components:
         event:
           oneOf:
           - $ref: '#/components/schemas/NodeRef'
-            description: The event the claim rests on, where it names one.
           - type: 'null'
         label:
           type: string
-          description: The span's label, marked `c. ` where the claim carries a note.
         note:
           type:
           - string
@@ -1391,7 +1368,7 @@ components:
       additionalProperties: false
     EdgeEntry:
       type: object
-      description: One neighbour, with the edge that joins it and what that edge records.
+      description: 'One neighbour, with the edge that joins it and what that edge records: `votes` only on a cross reference, `narrative` only on a narrative''s succession, `loci` and `note` only on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself), `parentage` only on a parent-of edge.'
       required:
       - edge
       - node
@@ -1407,13 +1384,9 @@ components:
           - 'null'
           items:
             $ref: '#/components/schemas/TextSpan'
-          description: |-
-            Where an attestation stands in Scripture: for `attested-in`, the runs of
-            verses its account reads on without a break; for `attests`, the verse itself.
         narrative:
           oneOf:
           - $ref: '#/components/schemas/NarrativeId'
-            description: The narrative this leg belongs to; only a narrative's succession carries it.
           - type: 'null'
         node:
           $ref: '#/components/schemas/NodeRef'
@@ -1421,7 +1394,6 @@ components:
           type:
           - string
           - 'null'
-          description: How the account this attestation belongs to is cited, where it needed saying.
         parentage:
           oneOf:
           - $ref: '#/components/schemas/Parentage'
@@ -1431,7 +1403,6 @@ components:
           - integer
           - 'null'
           format: int32
-          description: How many readers voted for this cross reference; only a citation carries it.
           minimum: 0
       additionalProperties: false
     EdgeKind:
@@ -1528,7 +1499,7 @@ components:
       additionalProperties: false
     Era:
       type: object
-      description: A named stretch of this atlas's timeline.
+      description: 'A named stretch of this atlas''s timeline: its first and last years (negative for BC) and the same years labelled.'
       required:
       - id
       - name
@@ -1539,7 +1510,6 @@ components:
         from_year:
           type: integer
           format: int32
-          description: The first year of the era, negative for BC.
         id:
           $ref: '#/components/schemas/EraId'
         name:
@@ -1547,10 +1517,8 @@ components:
         to_year:
           type: integer
           format: int32
-          description: The last year of the era.
         window:
           $ref: '#/components/schemas/TimeRange'
-          description: The era's years, labelled.
       additionalProperties: false
     EraId:
       type: string
@@ -1610,7 +1578,7 @@ components:
       additionalProperties: false
     EventDetail:
       type: object
-      description: What is recorded about one event or titled passage.
+      description: What is recorded about one event or titled passage. `when` is absent for a titled passage, which has no date; each section, the superscription and the note are absent where none is recorded.
       required:
       - kind
       properties:
@@ -1618,43 +1586,27 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The section of the outline of Acts this event falls in, absent when it has
-            none.
         atlas_section:
           type:
           - string
           - 'null'
-          description: |-
-            The titled section of this atlas's own outline of Scripture, absent when it
-            has none.
         kind:
           $ref: '#/components/schemas/EventKind'
         kjv_superscription:
           type:
           - string
           - 'null'
-          description: |-
-            The superscription the King James Version prints over this passage, absent
-            when it prints none.
         ref_note:
           type:
           - string
           - 'null'
-          description: |-
-            A note on how this event's date and grouping were arrived at, absent when
-            none was needed.
         robertson_section:
           type:
           - string
           - 'null'
-          description: |-
-            The section of Robertson's Harmony of the Gospels this event falls in, absent
-            when it has none.
         when:
           oneOf:
           - $ref: '#/components/schemas/TimeRange'
-            description: The years the event spans; absent for a titled passage, which has no date.
           - type: 'null'
       additionalProperties: false
     EventId:
@@ -2078,14 +2030,10 @@ components:
         book:
           oneOf:
           - $ref: '#/components/schemas/BookDetail'
-            description: |-
-              Who wrote a book of the Bible, where and when, present only for a book this
-              atlas records that of.
           - type: 'null'
         catechism:
           oneOf:
           - $ref: '#/components/schemas/CatechismDetail'
-            description: A catechism item's own words, present only for one.
           - type: 'null'
         description:
           type:
@@ -2104,7 +2052,6 @@ components:
         event:
           oneOf:
           - $ref: '#/components/schemas/EventDetail'
-            description: What is recorded about an event or a titled passage, present only for one.
           - type: 'null'
         id:
           type: string
@@ -2120,7 +2067,6 @@ components:
         place:
           oneOf:
           - $ref: '#/components/schemas/PlaceDetail'
-            description: Where a place is and what is recorded of its history, present only for a place.
           - type: 'null'
         provenance:
           type: string
@@ -2192,7 +2138,6 @@ components:
         birth:
           oneOf:
           - $ref: '#/components/schemas/Year'
-            description: The year of birth where one is recorded; most people have none.
           - type: 'null'
         death:
           oneOf:
@@ -2273,9 +2218,7 @@ components:
       additionalProperties: false
     PlaceDetail:
       type: object
-      description: |-
-        Where one place is, the name a reader of the King James Version knows it by, and
-        when it was founded and fell, where that is recorded.
+      description: Where one place is (latitude north positive, longitude east positive), the name a reader of the King James Version knows it by, its plain canonical name only where that differs, and when it was founded and fell, where that is recorded.
       required:
       - lat
       - lon
@@ -2285,30 +2228,22 @@ components:
           type:
           - string
           - 'null'
-          description: |-
-            The place's plain canonical name, present only when `display_name` is the
-            translation's own wording and so differs from it.
         destroyed:
           oneOf:
           - $ref: '#/components/schemas/DateClaim'
-            description: When the place was destroyed, absent when that is not recorded.
           - type: 'null'
         display_name:
           type: string
-          description: The name a reader of the King James Version knows this place by.
         established:
           oneOf:
           - $ref: '#/components/schemas/DateClaim'
-            description: When the place was founded, absent when that is not recorded.
           - type: 'null'
         lat:
           type: number
           format: double
-          description: Latitude in degrees, north positive.
         lon:
           type: number
           format: double
-          description: Longitude in degrees, east positive.
       additionalProperties: false
     PlacePage:
       type: object
@@ -2426,7 +2361,6 @@ components:
           description: The polity's name during this era.
         reign:
           $ref: '#/components/schemas/TimeRange'
-          description: This era's years, labelled.
         rings:
           type: array
           items:
@@ -2855,9 +2789,7 @@ components:
       - NT
     TextPoint:
       type: object
-      description: |-
-        A place in a corpus's text: a unit, and where one word of it is named, that
-        word.
+      description: 'A place in a corpus''s text: a unit, and where one word of it is named, that word''s position in the unit''s base text counting from zero; without a word the point is the unit''s own edge, so a span it bounds takes the unit whole.'
       required:
       - unit
       properties:
@@ -2868,10 +2800,6 @@ components:
           - integer
           - 'null'
           format: int32
-          description: |-
-            The word's position in the unit's base text, counting from zero; absent
-            where the point is the unit's own edge, so that the span it bounds takes
-            the unit whole.
           minimum: 0
       additionalProperties: false
     TextRef:
@@ -2938,13 +2866,9 @@ components:
         heading:
           oneOf:
           - $ref: '#/components/schemas/UnitHeading'
-            description: |-
-              The pericope heading that belongs above this verse, present only where one
-              opens or carries on. Always absent outside Scripture.
           - type: 'null'
         locus:
           $ref: '#/components/schemas/TextRef'
-          description: The same unit as `ref`, by its parts.
         ref:
           type: string
         text:
@@ -2981,9 +2905,7 @@ components:
       additionalProperties: false
     TimeRange:
       type: object
-      description: |-
-        A span of years, both ends included, with the label a reader sees for it: an
-        era both ends share is named once.
+      description: 'A span of years, both ends included, with the label a reader sees for it: an era both ends share is named once, as in `1450 – 1400 BC`, `5 BC – AD 30` or, for a single year, `AD 33`.'
       required:
       - from
       - to
@@ -2993,7 +2915,6 @@ components:
           $ref: '#/components/schemas/Year'
         label:
           type: string
-          description: Such as `1450 – 1400 BC`, `5 BC – AD 30` or, for a single year, `AD 33`.
         to:
           $ref: '#/components/schemas/Year'
       additionalProperties: false
@@ -3225,14 +3146,13 @@ components:
       additionalProperties: false
     Year:
       type: object
-      description: A year, negative for BC, with the label a reader sees for it.
+      description: A year, negative for BC, with the label a reader sees for it, such as `1447 BC` or `AD 30`.
       required:
       - value
       - label
       properties:
         label:
           type: string
-          description: Such as `1447 BC` or `AD 30`.
         value:
           type: integer
           format: int32

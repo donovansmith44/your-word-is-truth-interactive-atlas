@@ -260,11 +260,6 @@ fn families_every_route_names(document: &serde_json::Value) -> Vec<String> {
     named
 }
 
-/// The names of every schema that says it is an object and does not refuse the
-/// fields it has not declared, wherever in the document it stands.
-/// An object is closed by its own `additionalProperties: false`, or, as a member of
-/// an `allOf`, by that `allOf`'s `unevaluatedProperties: false`. The one object open
-/// by design is a discriminator's base: each of its subtypes adds its own parts.
 fn open_objects(value: &serde_json::Value, at: String) -> Vec<String> {
     let mut open = Vec::new();
     match value {
@@ -296,7 +291,6 @@ fn unresolved_references(value: &serde_json::Value, prefix: &str, defined: &serd
     references.into_iter().filter(|reference| reference.strip_prefix(prefix).is_none_or(|name| !names.contains(name))).collect()
 }
 
-/// A reference is a `$ref`, or one of the subtypes a discriminator's `mapping` names.
 fn collect_references(value: &serde_json::Value, out: &mut std::collections::BTreeSet<String>) {
     match value {
         serde_json::Value::Object(map) => {

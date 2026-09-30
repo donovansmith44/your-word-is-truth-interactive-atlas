@@ -131,8 +131,6 @@ pub fn section_of_canon_succession(row: &CanonSuccession) -> Section {
     section_of_container_raw(&row.prior.0)
 }
 
-/// The per-row answer: a citation lives with the text that cites, so the Book of Concord's
-/// citations of Scripture ship with the Book of Concord.
 pub fn section_of_cross_ref(row: &CrossRef) -> Section {
     match row.from.at {
         TextRef::Bible(_) => Section::Kjv,
@@ -140,9 +138,6 @@ pub fn section_of_cross_ref(row: &CrossRef) -> Section {
     }
 }
 
-/// The section of the row at `row_ord` of `family`: the family's own, or for a family split per
-/// row, the one that row names. A synthesised justified-by entry lives in the section of its
-/// source row, so this answers for it too.
 pub fn section_of_row(g: &Graph, family: RowFamily, row_ord: usize) -> Section {
     match family {
         RowFamily::ContainsBible => section_of_contains_bible(&g.contains_bible[row_ord]),

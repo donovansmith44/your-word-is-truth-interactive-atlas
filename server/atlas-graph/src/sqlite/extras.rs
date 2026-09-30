@@ -65,7 +65,6 @@ pub static RED_LETTER_SPAN: TableSpec = TableSpec {
     columns: &["book", "chapter", "verse", "ord", "start", "end_"],
     pk: &["book", "chapter", "verse", "ord"],
 };
-/// The verse's own text is the source; a token's offsets are Unicode-scalar, into that text.
 pub static KJV_TOKEN: TableSpec = TableSpec {
     name: "kjv_token",
     columns: &["book", "chapter", "verse", "ord", "char_start", "char_end"],
@@ -73,7 +72,6 @@ pub static KJV_TOKEN: TableSpec = TableSpec {
 };
 pub static CONCORD_UNIT: TableSpec =
     TableSpec { name: "concord_unit", columns: &["node_id", "part", "article", "paragraph"], pk: &["node_id"] };
-/// The paragraph's own text is the source; a token's offsets are Unicode-scalar, into that text.
 pub static CONCORD_TOKEN: TableSpec = TableSpec {
     name: "concord_token",
     columns: &["part", "article", "paragraph", "ord", "char_start", "char_end"],
@@ -362,7 +360,6 @@ impl Extras {
     }
 }
 
-/// One row per word of a unit's text, keyed by the unit's three numbers, then the word's ordinal.
 fn token_rows(unit: [i64; 3], text: &str) -> impl Iterator<Item = Vec<Col>> + '_ {
     crate::tokens::tokenize(text).into_iter().map(move |t| {
         let [a, b, c] = unit;

@@ -41,17 +41,14 @@ pub struct LandMask {
     pub rings: Vec<Vec<Point>>,
 }
 
-/// A named stretch of this atlas's timeline.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A named stretch of this atlas's timeline: its first and last years (negative for BC) and the same years labelled.")]
 pub struct Era {
     pub id: EraId,
     pub name: String,
-    /// The first year of the era, negative for BC.
     pub from_year: i32,
-    /// The last year of the era.
     pub to_year: i32,
-    /// The era's years, labelled.
     pub window: super::TimeRange,
 }
 
@@ -75,7 +72,6 @@ pub struct Polity {
     pub from: i32,
     /// The last year of this era.
     pub to: i32,
-    /// This era's years, labelled.
     pub reign: super::TimeRange,
     /// This era's border, as closed rings of [latitude, longitude] points, in
     /// degrees.

@@ -1,15 +1,9 @@
-//! An account's verses as a reader meets them: runs of verses that read on without a
-//! break, a chapter running on into the next when it was read to its last verse.
-
 use atlas_core::data::Canon;
 use atlas_core::refs::BookId;
 use atlas_graph_types::text::{BibleLocusRange, VerseRef};
 
 const FIRST_VERSE: u16 = 1;
 
-/// Every range the account attests, in any order, joined into the fewest runs that
-/// cover them. A range with a word span at its joining end never joins across it:
-/// part of a verse does not read on into the next.
 pub fn coalesce(ranges: &[BibleLocusRange], canon: &Canon) -> Vec<BibleLocusRange> {
     let mut ordered = ranges.to_vec();
     ordered.sort();

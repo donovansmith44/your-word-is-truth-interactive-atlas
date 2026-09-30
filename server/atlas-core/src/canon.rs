@@ -65,10 +65,6 @@ const FIRST_NEW_TESTAMENT_BOOK: &str = "MAT";
 
 pub const BOOKS_IN_THE_OLD_TESTAMENT: usize = position_of(FIRST_NEW_TESTAMENT_BOOK);
 
-/// The index in `BOOKS` of the book `code` names, for a code written into a constant: evaluated
-/// in a `const`, a code that names no book fails the build rather than a run. `BOOKS.iter().position(..)`
-/// is not available in a `const`, so the search is written out; `code_is` is the `&str` `==` a const
-/// context lacks.
 pub const fn position_of(code: &str) -> usize {
     let mut index = 0;
     while index < BOOKS.len() {

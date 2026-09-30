@@ -84,7 +84,6 @@ pub async fn node_card(
     }))
 }
 
-/// A year zero in a person's record is this atlas's own data defect, never a year to show.
 fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
     year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
 }
@@ -101,8 +100,6 @@ fn event_detail(event: &Event) -> wire::EventDetail {
     }
 }
 
-/// A card names a place with no years in view, so its name is the translation's own
-/// wording where one is recorded, never a period name.
 fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> wire::PlaceDetail {
     let history = data.place_history_for(&place.id);
     let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, history, None, data.place_name_alias_for(&place.id));
@@ -129,8 +126,6 @@ fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim
     wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event)
 }
 
-/// An item's id is unique only among catechism items, so any other node that shares
-/// one is not that item.
 fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismDetail> {
     if id.kind != NodeKind::CatechismItem {
         return None;
@@ -145,7 +140,6 @@ fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismD
     })
 }
 
-/// A book dated at one end only is this atlas's own data defect, never a span to show.
 fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Result<Option<wire::BookDetail>, ApiError> {
     let Some(code) = atlas_graph::bible_container_adapter::decode_book_container(id).map(|index| BookId(index).code()) else {
         return Ok(None);
@@ -227,16 +221,11 @@ pub async fn node_edges(
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
-/// An event's accounts, read once for every attestation of it a page lists. Every
-/// attestation row is built from one of these accounts, so an event the graph cannot
-/// read back, or a verse none of its accounts reads, is this atlas's own defect.
 struct EventAccounts {
     event: AnyNodeId,
     accounts: Vec<AccountOf>,
 }
 
-/// One account of an event: the verses it reads, how it is cited where that needed
-/// saying, and -- only once something asks -- the runs those verses read on in.
 struct AccountOf {
     verses: Vec<VerseRef>,
     note: Option<String>,

@@ -1,12 +1,3 @@
-//! Where the Book of Concord cites Scripture, found once here so the reader never searches for it.
-//! The grammar is the one the reader used: a book, named in full or by an abbreviation, then a
-//! chapter and a verse, and optionally the last verse of a range in that chapter or an "and
-//! following" (`f`, `ff`, `sq`, `sqq`) written onto the verse. Each citation in a
-//! paragraph becomes a `cites` row from the paragraph's words that spell it to the verses it names; a
-//! citation that does not lie on whole words, or names a verse the Bible does not hold, is refused
-//! and counted, never guessed at. An "and following" cites the stated verse only: how far it runs
-//! is the author's to say, and the citation does not say it.
-
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -23,7 +14,6 @@ use crate::tokens;
 
 pub const PROVENANCE: &str = "concord-citations";
 
-/// One citation: the Unicode-scalar range of the text that spells it, and the verses it names.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Citation {
     pub chars: Range<usize>,
@@ -45,9 +35,6 @@ impl CitationSpan {
     }
 }
 
-/// `cited` counts the rows written; `off_words` the citations refused because they do not start
-/// where a word starts and end where a word ends ("Rom. 13:8a"); `no_such_verse` those refused
-/// because a verse they name is not in the Bible.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct CitationStats {
     pub cited: usize,
@@ -55,8 +42,6 @@ pub struct CitationStats {
     pub no_such_verse: usize,
 }
 
-/// Runs once the verses and the Concord's paragraphs are nodes. Rows follow the reading order of
-/// the paragraphs, and a paragraph's citations follow one another in text order.
 pub fn cite_scripture(graph: &mut Graph) -> CitationStats {
     let mut stats = CitationStats::default();
     let mut rows = Vec::new();
@@ -88,13 +73,10 @@ pub fn cite_scripture(graph: &mut Graph) -> CitationStats {
     stats
 }
 
-/// Every citation in `text`, left to right, none overlapping. A range whose last verse comes before
-/// its first is not a citation.
 pub fn scan(text: &str) -> Vec<Citation> {
     GRAMMAR.pattern.captures_iter(text).filter_map(|found| citation(text, &found)).collect()
 }
 
-/// The citation as the canon spells a reference: `ROM.13.1` for one verse, `ROM.13.1-4` for a range.
 pub fn target_display(cites: &BibleLocusRange) -> String {
     let first = VerseId { book: BookId(cites.from.unit.book), chapter: cites.from.unit.chapter, verse: cites.from.unit.verse };
     let reference = if cites.from == cites.to {
@@ -105,8 +87,6 @@ pub fn target_display(cites: &BibleLocusRange) -> String {
     reference.to_string()
 }
 
-/// Every name a citation may give a book: the canon's own names, then these abbreviations. A name
-/// both lists give keeps the canon's book.
 pub fn book_names() -> Vec<(&'static str, BookId)> {
     let mut names: Vec<(&'static str, BookId)> = Vec::new();
     let canon = BOOKS.iter().enumerate().map(|(index, book)| (book.name, BookId(index as u8)));
@@ -118,9 +98,6 @@ pub fn book_names() -> Vec<(&'static str, BookId)> {
     names
 }
 
-/// No bare "Cor", "Pet" or "Phil": each is ambiguous (a bare "Cor." is at least as often an elided
-/// 2 Corinthians as 1; "Phil" is Philippians or Philemon), and an unlisted abbreviation is a silent
-/// miss, never a guessed misattribution. Add one only after checking how the corpus uses it.
 const ABBREVIATIONS: [(&str, BookId); 69] = [
     ("Gen", book("GEN")),
     ("Exod", book("EXO")),
@@ -202,10 +179,6 @@ struct Grammar {
     names: Vec<(&'static str, BookId)>,
 }
 
-/// Longest name first: an alternation tries left to right, so "1 Corinthians" must be offered
-/// before "1 Cor", or the shorter name would win and strand "inthians". Digits are ASCII, which is
-/// what a chapter or verse number parses from. An "and following" must end its word, so the
-/// citation still ends where a word ends; other letters after the verse stay outside it.
 static GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
     let names = book_names();
     let mut longest_first: Vec<&str> = names.iter().map(|(name, _)| *name).collect();

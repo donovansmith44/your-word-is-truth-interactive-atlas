@@ -214,9 +214,6 @@ pub fn check_person_fidelity(atlas: &AtlasData, graph: &Graph) -> Result<(), Per
         }
     }
 
-    // A fresh count over `graph.mentions`'s own row table rather than the derived index: counting
-    // through the index would only check `merge_alias` against itself. A verse link is one run of rows
-    // at its verse, since each occurrence the verse names is a row of its own.
     for p in &atlas.people {
         if reclassified.contains(&p.id) {
             continue;

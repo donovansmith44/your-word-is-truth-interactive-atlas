@@ -16,13 +16,9 @@ pub mod family {
     pub const ATTESTS: &str = "attests";
     pub const MENTIONS: &str = "mentions";
     pub const ANALOGUE: &str = "analogue";
-    /// The `cross_refs` rows the Book of Concord's section holds: its citations of Scripture.
     pub const CONCORD_CITATIONS: &str = "concord_citations";
 }
 
-/// The key a row's provenance is filed under: its family's name, except that the Book of Concord's
-/// citations of Scripture are kept apart from the Bible's cross references, so a verse's cross
-/// references are attributed to the sources of those rows alone.
 pub fn family_key(row_family: RowFamily, section: Section) -> &'static str {
     match (row_family, section) {
         (RowFamily::CrossRefs, Section::Concord) => family::CONCORD_CITATIONS,

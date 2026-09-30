@@ -26,8 +26,6 @@ pub struct Canon {
 }
 
 impl Canon {
-    /// `None` for a book or chapter this canon does not carry; a canon may hold only
-    /// some of the books, so a book is found by its code rather than its position.
     pub fn verses_in(&self, book: crate::refs::BookId, chapter: u16) -> Option<u16> {
         let chapter_index = usize::from(chapter).checked_sub(1)?;
         self.books.iter().find(|b| b.code == book.code())?.chapters.get(chapter_index).copied()
@@ -218,8 +216,6 @@ pub struct Event {
 }
 
 impl Event {
-    /// The years this event spans. A titled passage has none: the undated span it
-    /// carries is the whole atlas, which is no date to show.
     pub fn date(&self) -> Option<TimeRange> {
         match self.kind {
             EventKind::Event => Some(self.when),
@@ -319,8 +315,6 @@ pub struct BookMeta {
 }
 
 impl BookMeta {
-    /// The span the book was written across. A book dated at one end only records no
-    /// span, and none is invented for it.
     pub fn written(&self) -> Result<Option<TimeRange>, crate::CoreError> {
         match (self.write_from, self.write_to) {
             (Some(from), Some(to)) => TimeRange::new(from, to).map(Some),

@@ -26,7 +26,6 @@ pub struct ContentsRoot {
     pub group: Option<Testament>,
     /// The reference to open when this entry is chosen: its first child's.
     pub r#ref: String,
-    /// The unit `ref` opens at, by its parts: its first child's.
     pub locus: super::TextRef,
     /// The entry's chapters, or its articles.
     pub children: Vec<ContentsChild>,
@@ -42,8 +41,6 @@ pub struct ContentsChild {
     /// The reference to open for this entry: `GEN.1` for a chapter, or an
     /// article's first paragraph, such as `BoC 7.2.1`.
     pub r#ref: String,
-    /// The unit this entry opens at, by its parts: a chapter's first verse, or an
-    /// article's first paragraph.
     pub locus: super::TextRef,
     /// How many members it holds: verses of a chapter, paragraphs of an article.
     pub count: usize,

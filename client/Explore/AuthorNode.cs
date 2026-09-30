@@ -5,7 +5,6 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class AuthorNode : IExplorable
 {
-    // The graph names a book of the Bible as the container `bible-book-{canon code}`.
     private const string BookContainerPrefix = "bible-book-";
 
     private readonly string _bookCode;

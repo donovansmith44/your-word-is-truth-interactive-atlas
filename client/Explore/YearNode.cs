@@ -125,12 +125,6 @@ public sealed class YearNode : IExplorable
         return new PopoverSection("year-chronology", body);
     }
 
-    // Dedupes by id (an event attested at more than one place in this same window is one row,
-    // never one per place), then orders by the years of When with label as the final
-    // tiebreak. Two events sharing the identical When range have no finer wire signal to
-    // order by (SceneEvent carries no day/month/sequence field), so those still fall back
-    // to alphabetical -- a real improvement over pure-alphabetical, not true intra-year
-    // sequencing.
     public static List<SceneEvent> DedupeAndOrder(IEnumerable<SceneEvent> events) =>
         events
             .GroupBy(e => e.Id)

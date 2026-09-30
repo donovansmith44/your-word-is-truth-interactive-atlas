@@ -129,7 +129,6 @@ pub fn aqc_schema_json() -> String {
     serde_json::to_string_pretty(&out).expect("the AQC schema serialises") + "\n"
 }
 
-/// A reference is a `$ref`, or one of the subtypes a discriminator's `mapping` names.
 fn point_references_at_shapes(value: &mut Value) {
     match value {
         Value::Object(map) => {
@@ -205,8 +204,6 @@ fn blessed_fixture(value: &Value) -> String {
     String::from_utf8(rendered).expect("serde_json emits UTF-8")
 }
 
-/// The labels a client that reads years back from what a reader types must agree
-/// with, each written out beside the years it labels.
 pub fn year_labels_json() -> String {
     let years: Vec<Year> = VECTOR_YEARS.iter().map(|value| Year::of(*value).expect("no vector year is zero")).collect();
     let ranges: Vec<Value> = VECTOR_RANGES.iter().map(|range| TimeRange::of(*range)).map(|range| json!({"from": range.from.value, "to": range.to.value, "label": range.label})).collect();
@@ -243,8 +240,6 @@ struct ClaimVector {
     note: Option<&'static str>,
 }
 
-/// Where the name search finds a place or a person inside a text: each case's names and the mentions
-/// they yield, as character ranges. The compiler's search replays these.
 pub fn mention_spans_json() -> String {
     serde_json::to_string_pretty(&json!({"cases": MENTION_CASES})).expect("the mention-span vectors serialise") + "\n"
 }
@@ -371,10 +366,6 @@ const MENTION_CASES: [MentionCase; 13] = [
     },
 ];
 
-/// Where a citation of Scripture is found inside a text: each case's text and the citations it holds,
-/// as character ranges and the verses they cite. The grammar's cases come first, then one case for
-/// every name a citation may give a book, each citing that book's first verse. The compiler's scan
-/// replays these.
 pub fn citation_grammar_json() -> String {
     let named = atlas_graph::citations::book_names().into_iter().map(|(name, book)| {
         let text = format!("{name} {FIRST}:{FIRST}");
@@ -388,8 +379,6 @@ pub fn citation_grammar_json() -> String {
     serde_json::to_string_pretty(&json!({"cases": cases})).expect("the citation-grammar vectors serialise") + "\n"
 }
 
-/// Every book has a first chapter and a first verse, so a citation of them names a verse whatever
-/// the book.
 const FIRST: u16 = 1;
 
 #[derive(Serialize)]
@@ -529,8 +518,6 @@ mod tests {
     }
 }
 
-/// The runs an account's verses make, case by case: every verse attested, the canon
-/// they are read against, and the runs written out by hand.
 pub fn attestation_runs_json() -> String {
     let cases: Vec<Value> = runs_cases()
         .into_iter()

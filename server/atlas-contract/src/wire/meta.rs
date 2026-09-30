@@ -1,8 +1,8 @@
 use serde::Serialize;
 
-/// The schema versions of the data behind this server's responses.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The schema versions of the data behind this server's responses.")]
 pub struct Contract {
     /// The schema version of the compiled data set the responses are read from.
     #[schema(minimum = 1)]

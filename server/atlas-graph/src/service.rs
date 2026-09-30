@@ -503,10 +503,6 @@ impl GraphService {
         self.snapshot.position_of(crate::concord_adapter::CONCORD_CORPUS, &crate::concord_adapter::text_unit_id(part, article, paragraph))
     }
 
-    /// Every PERSON the `mentions` relation attests at one verse, `(id, label)` in row order. Only
-    /// `Person` targets: a PeopleGroup mention is a different wire field, and the kind keeps them apart.
-    /// A person the verse names more than once has a row per occurrence, and their rows follow one
-    /// another, so each person is listed once.
     pub fn persons_at_verse(&self, book: u8, chapter: u16, verse: u16) -> Vec<(String, String)> {
         use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
         use atlas_graph_types::explore::EdgeQuery;

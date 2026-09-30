@@ -267,7 +267,6 @@ fn place_node(p: &atlas_core::data::Place, atlas: &AtlasData) -> Node {
     }
 }
 
-/// The names a place's KJV aliases give it, in alias order.
 pub fn kjv_aliases_of(atlas: &AtlasData, place: &str) -> Vec<String> {
     atlas.place_name_aliases_for(place).iter().filter_map(|a| a.translations.get(crate::kjv_adapter::KJV_TRANSLATION).cloned()).collect()
 }

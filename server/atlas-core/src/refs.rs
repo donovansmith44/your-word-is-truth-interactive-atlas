@@ -7,8 +7,6 @@ pub struct BookId(pub u8);
 
 const BOOK_ID: &str = "A book of the Bible, by its canon code.";
 
-// Written out rather than derived: a book is an index here and its canon code on the
-// wire, so what the document publishes is the canon's list of codes.
 impl utoipa::PartialSchema for BookId {
     fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::Schema> {
         atlas_graph_types::vocabulary::string_enum(crate::canon::BOOKS.iter().map(|book| book.code), BOOK_ID.to_string())
