@@ -46,6 +46,9 @@ internal sealed class ServedGraph : IExplorableClient
 
     public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 
+    public static EdgePage Page(EdgeKind kind, int? next, params NodeRef[] nodes) =>
+        Page(kind, next, nodes.Select(PositionRef (node) => new NodePosition(node)).ToArray());
+
     public static EdgePage Page(EdgeKind kind, int? next, params PositionRef[] neighbours) =>
         new(
             entries: neighbours.Select(neighbour => new EdgeEntry(edge: EdgeId, loci: null, narrative: null, neighbour: neighbour, note: null, parentage: null, votes: null)).ToList(),

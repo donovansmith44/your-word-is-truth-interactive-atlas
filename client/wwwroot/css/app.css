@@ -6555,15 +6555,6 @@ input:focus-visible,
     cursor: pointer;
 }
 
-.hamburger-node-kind {
-    flex: none;
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .04em;
-    font-size: .78rem;
-    color: var(--bronze-ink);
-}
-
 .hamburger-node-title {
     flex: 1 1 auto;
     min-width: 0;
@@ -6631,14 +6622,6 @@ input:focus-visible,
     border: 1px solid rgba(138, 107, 61, .4);
     border-radius: 999px;
     padding: .15rem .3rem .15rem .55rem;
-}
-
-.selection-chip-kind {
-    font-family: var(--font-serif);
-    font-variant-caps: small-caps;
-    letter-spacing: .03em;
-    font-size: .74rem;
-    color: var(--bronze-ink);
 }
 
 .selection-chip-title {
