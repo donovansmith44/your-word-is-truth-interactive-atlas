@@ -108,6 +108,10 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Status:** proposed (owner, 2026-09-30: "no comments in my app code stop doing that"; PRINCIPLES 9)
 - **Scope:** everything already in `server/`, `client/` and `graph-types/` before CONTRACT-2 (the close strips CONTRACT-2's own 290 lines). Wire descriptions the OpenAPI document needs become `#[schema(description)]`. One crate per commit; `export_contract --check` shows what the document loses.
 
+### A-TOOLS-SPLIT: the tools leave the system's repo
+- **Status:** proposed (owner, 2026-09-30: "we'll have to consider ripping those tools out of our repo and giving them their own home so that the pieces we care about are as clearly segregated as necessary"). Decide after FOCUS; pairs with A-DATA-SPEC (the artifact store) and "compiled data leaving git".
+- **Shape to evaluate:** the tools (`atlas-etl`, the compile binary, `scripts/fetch-raw`, `archive-raw`, `bibex raw bless`, the ETL laws) get their own repository, whose product is the artifact plus its manifest; `graph-types` (already a root-level, non-member crate) becomes the published interface both depend on; the system repo keeps the artifact readers, `atlas-contract`, `atlas-server`, the client, the contracts, and `bibex verify` (users care that the data is what it claims). Open questions for the design: where `data/curated` lives (tool input) and how the artifact reaches the system (the store, A-DATA-SPEC); what `--build-from-raw` becomes (F-4); whether the data laws that today run in `atlas-graph`'s compile half move with the tools. Effect: the system's test suite shrinks and speeds up; the crate graph enforces 26a by construction.
+
 ### A-BACKLOG: routed items waiting for their batch
 - **Status:** proposed; each moves into the batch named, or is planned on its own.
 - FOCUS-1 R36 (typed ids): `BookId(pub u8)` with a panicking `code()`, `TranslationId(String)`, `PlaceDateClaim.verses` as strings, `SectionReport` strings, `ConcordTitleOverride.document`.
