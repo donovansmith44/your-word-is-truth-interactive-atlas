@@ -34,6 +34,7 @@ If the owner's whole message is "go" or "continue", read your GO file and follow
 
 ## Lanes and the files each may touch
 - **Lane A (Claude):** `server/`, `client/`, `graph-types/`, `contracts/`, `data/`, `tests/`, `docs/superpowers/{specs,plans}`.
+- **The backend** (PRINCIPLES 26): closed over the data — the server composes over the compiled artifact; a domain fact in server code (an id, a name, a date, a list, a special case, a pinned inventory) is an offender; it moves into `data/` with provenance and the code reads it through the graph.
 - **The client** (PRINCIPLES 25): composes over the generated contract types and nothing else; no domain parsing, formatting, scanning or arithmetic on the client; less client code is the direction.
 - **Codex:**
   - all of the `map-generator` repo

@@ -30,7 +30,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 14. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
-_None yet._
+- **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
+- **F-2 (rule 26): the attestation-pending inventory.** `server/atlas-graph/src/attestation_pending.rs` pins 889 event pairs as a `PENDING` const in code (re-swept by hand when the attests cap came off). Proposed closure: the inventory is a curated file with each pair's grounds, or is derived by the compiler as a law output, never a code literal.
+- **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
 
@@ -107,7 +109,6 @@ _None yet._
 
 ### A-BACKLOG: routed items waiting for their batch
 - **Status:** proposed; each moves into the batch named, or is planned on its own.
-- **Open category (25):** `client/CanonRef.cs` still parses references from legacy-route strings and client-built node titles (T10a/T10b left it). Closure: the legacy routes retire (FOCUS-2…7) and every ref arrives as a served `TextRef`; then `CanonRef` goes and a client law forbids reference parsing.
 - FOCUS-1 R36 (typed ids): `BookId(pub u8)` with a panicking `code()`, `TranslationId(String)`, `PlaceDateClaim.verses` as strings, `SectionReport` strings, `ConcordTitleOverride.document`.
 - A place date read from two served sources (card + place-page verse refs) → T10b / FOCUS.
 - The card details restate the legacy structs' fields until FOCUS retires the legacy routes.
