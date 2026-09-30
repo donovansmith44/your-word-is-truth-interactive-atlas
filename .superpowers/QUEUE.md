@@ -7,11 +7,12 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Repos:** `atlas` = this repo · `mapgen` = `map-generator`. On the owner's machine they are siblings: `~/src/bible-atlas` and `~/src/map-generator`.
 
 ## STATUS (the controller rewrites this at every landing)
-- **As of** 2026-09-30 morning. CONTRACT-2 is closing: Tasks 1–6, 7a, 8a, 9, 10a, the ETL landing and the one rebuild (schema 16, root `8d8dd1d0…`) are on `worktree-bible-atlas-m1`. Running: 7b+8b (anchors on text windows). Left: 10b, then 11 (the close).
-- **Mutation:** owed from base `13111dd` (`.superpowers/MUTATION-GATE-DEBT.md`); the roadmap defers the run to Nov 5 – Dec 31.
-- **Next for Claude:** A-C2 close → A-F1 (FOCUS-1), with A-NAMES alongside.
-- **Next for Codex:** CX-M0 → CX-M1 and CX-M2 (maps) · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
-- **Before "go":** O-CODEX (`codex login`).
+- **As of** 2026-09-30 afternoon. **CONTRACT-2 is CLOSED** at `678a0d2` (report: `docs/superpowers/reports/2026-09-30-contract-2-close.md`): 1,574 tests / 98 sections / 0 failures; timing gates 10/10 (gate 1 37 s → 1.0 s after an O(n²) paging fix); contract gate PASSED; semver ok; Playwright 453/2/4 (the known `world-quiet-places:211` + one load flake); AQC 0.11.0, AGC 0.15.0, graph-types 0.7.0, section schema 18, root `3e91f83b…`.
+- **The base for every new item is `678a0d2`.**
+- **Mutation:** owed (base `13111dd`; `.superpowers/MUTATION-GATE-DEBT.md`), deferred to after Nov 4 by the roadmap.
+- **Next for Claude:** A-F1 (FOCUS-1), with A-NAMES waiting on O-NAMES.
+- **Next for Codex:** CX-M0 (claimed) → CX-M1, CX-M2 · CX-R1 · CX-R2 · CX-R3 · CX-I1 (to the B2 step).
+- **Before "go":** O-CODEX (`codex login`) if not done.
 
 ## OWNER QUESTIONS (answer in one line each; agents append)
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
@@ -33,6 +34,14 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-1 (rule 26, server facts in code): the canon table.** `server/atlas-core/src/canon.rs` holds the 66 books (codes, OSIS ids, names) as a static table in code. Proposed closure: the canon becomes a curated file (`data/curated/books.toml` already exists — check what it holds) compiled into the artifact's Kjv section, and `BookId`/codes are read from it; a law forbids book literals in server code. Cost: `BookId(pub u8)` and the code-string wire form re-anchor on the data.
 - **F-2 (rule 26): the attestation-pending inventory.** `server/atlas-graph/src/attestation_pending.rs` pins 889 event pairs as a `PENDING` const in code (re-swept by hand when the attests cap came off). Proposed closure: the inventory is a curated file with each pair's grounds, or is derived by the compiler as a law output, never a code literal.
 - **F-4 (rule 26a, the tool boundary): the served crate links the ETL.** `server/atlas-contract/Cargo.toml` depends on `atlas-etl`, and `atlas-contract/src/load.rs:53` calls `atlas_etl::compile::compile` for the `--build-from-raw` path; `atlas-graph` holds both the compiler and the served readers in one crate. Proposed closure: `atlas-etl` and the compile binary are tools; `atlas-contract`/`atlas-server` depend only on the artifact readers; `--build-from-raw` becomes "compile to a scratch artifact with the tool, then serve it" (in `atlas-cli` or the compile binary), so the crate graph makes the boundary unwritable.
+- **F-5 (fix wave, server): O(position) node paging** — `graph-types/src/graph.rs` `nodes_of_kind` and `atlas-graph/src/sqlite/snapshot.rs` `nodes_of_kind` (`OFFSET`) skip `start` entries per page; not material today. Closure: a per-kind id vector / keyset paging on `(kind, id)`.
+- **F-6 (fix wave, client, rule 25): two fetch layers** — `client/GraphExplorableClient.cs:7-9` holds its own `HttpClient`; `Program.cs:25` registers a scoped one nobody injects. Closure: it composes over `AtlasClient`; the registration deleted; a source law "HttpClient appears only in AtlasClient.cs / RequiredResponses.cs / Program.cs".
+- **F-7 (fix wave, client): 14 Explore-layer fetches outside the request series** (`ExplorationDescriptor.cs:40,67,119`, `PassageBlock.cs:29,57`, `PopoverSectionProviders.cs:205,246,387,629,1285`, `BookNode.cs:30`, `ChapterNode.cs:61`, `YearNode.cs:91`, `PersonNode.cs:29`). Closure: the popover owns one `RequestSeries`; `IExplorable.ExploreAsync/BodyAsync` receive a `Request`. Until then the stale-response closure is partial.
+- **F-8 (fix wave, server tests, rule 26): literal expectations in real-data tests** (`graph_api.rs:433-446`, `lexicon_real_data.rs:67-83`, every other real-data pin in `graph_api.rs`). Closure: derive from the artifact, as the wave's three new tests do.
+- **F-9 (fix wave, client + server): saved explorations resolve a date/era BY LABEL** (`ExplorationDescriptor.cs:79,122`). Closure: `DateClaim`/`Era` publish ids on the wire (server), the client stores ids, and a client law "no function takes a label and returns a node".
+- **F-10 (fix wave, client): PlaceCard's measurement guard** (`PlaceCard.razor:305-319`) — a stale-result check by hand. Closure: the card's `RequestSeries` covers it.
+- **F-11 (fix wave, client): the picker's "served change discards the draft" policy** (`ScripturePicker.razor`, `_synced`) is not named by the `Draft` type. Closure: `Draft.Follow(served)` if the owner wants it typed.
+- **F-12 (rule 9): pre-existing comments** remain around every site the wave touched; the wave added none. Closure: A-STRIP.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
@@ -40,10 +49,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane A: Claude
 
 ### A-C2: CONTRACT-2 close
-- **Status:** claimed:claude:2026-09-29
+- **Status:** done (2026-09-30, `678a0d2`)
 - **Tracked in:** `.superpowers/sdd/2026-09-29-contract2-pushdown/progress.md` (every ruling).
-- **Left:** 7b+8b (running), 10b (client reads served anchors; `PlaceMentions`/`ScriptureRefScan` retire for the Concord), 11 (strip the 290 comment lines CONTRACT-2 added; one regeneration of fixtures and pacts; AQC 0.10.0 → 0.11.0, AGC minor; standing block; gates; Playwright in WSL).
-- **Done when:** Task 11's gates are green, the push is done, the close report is written, and `MUTATION-GATE-DEBT.md` has CONTRACT-2 appended.
+- **Closed by** Task 11 plus a fix wave under rules 24/24a/24b/25/26 (every fix names its category, its failed abstraction, its side and the closure; see the close report §6a).
 
 ### A-F1: FOCUS-1
 - **Status:** blocked:A-C2
@@ -207,7 +215,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-R3: prove the KJV → original-word alignment join
 - **Status:** ready
-- **Base:** the atlas at `@CLOSE@` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
+- **Base:** the atlas at `678a0d2` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
 - **Background:** `.superpowers/analysis/name-sources.md` already chose **BibleForgeDB** (public domain / CC0): it aligns 763,778 KJV words to specific Hebrew/Greek tokens. Its KJV edition differs from our `data/raw/kjv.json` in 452 verses; ~17.9k of its rows are flagged ERROR; its Greek needs STEPBible TAGNT's Textus Receptus.
 - **Question:** how much of OUR KJV word layer can reach a specific original token through BibleForgeDB + STEPBible TAHOT/TAGNT, and what's left?
 - **Steps:** a spike in `~/w/CX-R3` scratch space (nothing committed but the report): download BibleForgeDB and TAHOT/TAGNT into scratch; join our `kjv_token` rows (read with `sqlite3` or a small script from the unpacked Kjv section, `data/cache/sections/`) to BibleForge's words by an explicit per-verse diff, never by position; then BibleForge's original tokens to TAHOT/TAGNT tokens. Report: the percentage of our words aligned; the unaligned by kind (italic/supplied, ERROR rows, the 452 differing verses, Greek TR gaps); 20 worked examples including Gen 32:28 "Israel"; the licence text of every file used.
@@ -215,13 +223,13 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-R1: the 65 overlapping-event cases
 - **Status:** ready (they surfaced when CONTRACT-2 removed the 20-verse cap on attesting verses; landed at `68fb00f`)
-- **Base:** `@CLOSE@`. **Source:** `server/atlas-graph/src/attestation_pending.rs`, whose `PENDING` inventory grew 824 → 889 pairs when the cap came off: 65 new collisions, most of them Robertson passion-week events contained in `theo-443`/`theo-448`. `git diff 68fb00f~1 68fb00f -- server/atlas-graph/src/attestation_pending.rs` lists exactly the new pairs.
+- **Base:** `678a0d2`. **Source:** `server/atlas-graph/src/attestation_pending.rs`, whose `PENDING` inventory grew 824 → 889 pairs when the cap came off: 65 new collisions, most of them Robertson passion-week events contained in `theo-443`/`theo-448`. `git diff 68fb00f~1 68fb00f -- server/atlas-graph/src/attestation_pending.rs` lists exactly the new pairs.
 - **Deliverable:** a curation sheet, one row per case: the events (id and title), their verses, the kind of overlap (containment / overlap), and a proposed resolution with its Scripture grounds, each answerable by the owner in one line.
 - **Output:** `.superpowers/analysis/overlapping-events.md` on `lane/codex/CX-R1`. Read-only on everything else.
 
 ### CX-R2: Easton doctrinal review list (for the Pastor)
 - **Status:** ready
-- **Base:** `@CLOSE@`. **Source:** `data/raw/theographic/theographic-bible-metadata-master/json/easton.json` (Easton's Bible Dictionary, 1897, Presbyterian; it supplies the `description` of places, people and people groups). Which entities use which entry: `server/atlas-etl` (grep `easton`).
+- **Base:** `678a0d2`. **Source:** `data/raw/theographic/theographic-bible-metadata-master/json/easton.json` (Easton's Bible Dictionary, 1897, Presbyterian; it supplies the `description` of places, people and people groups). Which entities use which entry: `server/atlas-etl` (grep `easton`).
 - **Deliverable:** flag every entry that touches doctrine: baptism, the Lord's Supper, election/predestination, conversion, the law and the gospel, the church and ministry, the end times, and the like. Quote the passage and say why it may conflict with Lutheran teaching. No judgment beyond flagging.
 - **Output:** `.superpowers/analysis/easton-doctrinal-review.md` on `lane/codex/CX-R2`, sorted by how prominent the entity is in the app (its node's edge count from `bibex`/the artifact).
 - **Note:** Easton is re-sourced from its public-domain original when A-THEO replaces Theographic; the review carries over (same text).
@@ -232,7 +240,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### CX-I1: backups
 - **Status:** ready up to the B2 step, then blocked:owner (O-B2)
-- **Base:** `@CLOSE@`. **Files:** `scripts/backup/**` (new) and its tests, `scripts/backup/test/*.bats` (bats 1.14 is at `~/.local/bin/bats`).
+- **Base:** `678a0d2`. **Files:** `scripts/backup/**` (new) and its tests, `scripts/backup/test/*.bats` (bats 1.14 is at `~/.local/bin/bats`).
 - **Tools (installed):** `restic` 0.19.1, `jq` 1.8.2 in `~/.local/bin`; `bibex` is `cargo run --release -p atlas-cli --` from `server/`.
 - **Deliverable:** `scripts/backup/backup.sh` taking restic snapshots of:
   - `data/raw`, tagged `raw:<root>` from `bibex --json verify --data-dir ../data/compiled` (`.raw.root`)
