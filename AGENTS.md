@@ -16,7 +16,7 @@ The owner (Donovan) makes the rulings. Agents propose.
 ## The machine
 - **WSL2 (Ubuntu 22.04), 16 threads, 25 GB for WSL.** Repos: `~/src/bible-atlas`, `~/src/map-generator`.
 - **Toolchains are user-local.** Run `. ~/.bible-atlas-env` in the same shell before any `cargo`, `dotnet`, `node`/`npx`, `ghc` or `cabal` command; non-interactive shells load none of them otherwise. It provides Rust 1.97.1 (pinned by `rust-toolchain.toml`), .NET 10, Node 24, GHC 9.6.7 + cabal (ghcup). `restic`, `bats`, `jq` and `codex` are in `~/.local/bin`.
-- **Pushing:** both agents need a WSL git credential that can push to both repos (OWNER QUESTIONS: O-PUSH). Until it exists, only the controller can push, through `git relay-push` (a repo-local alias that pushes `worktree-bible-atlas-m1` via Windows git), and nobody can take a lock.
+- **Pushing:** WSL pushes to both repos through the GitHub CLI (`gh auth setup-git`, owner-authenticated). Verified 2026-09-30 with a push and a lock take/release.
 
 ## "go"
 If the owner's whole message is "go" or "continue", read your GO file and follow it:
