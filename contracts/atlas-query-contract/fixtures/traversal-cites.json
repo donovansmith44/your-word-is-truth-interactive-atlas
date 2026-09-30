@@ -3,181 +3,241 @@
     "entries": [
       {
         "edge": "Cites:fa43f1d5a42a2c7dacd443a1a0e105d0",
-        "node": {
-          "id": "text-unit:ROM.5.8",
-          "kind": "TextUnit",
-          "label": "ROM.5.8"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:ROM.5.8",
+            "kind": "TextUnit",
+            "label": "ROM.5.8"
+          },
+          "position": "node"
         },
         "votes": 981
       },
       {
         "edge": "Cites:eaa59650fa21a2231374997066fc8bff",
-        "node": {
-          "id": "text-unit:1JN.4.9",
-          "kind": "TextUnit",
-          "label": "1JN.4.9"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:1JN.4.9",
+            "kind": "TextUnit",
+            "label": "1JN.4.9"
+          },
+          "position": "node"
         },
         "votes": 695
       },
       {
         "edge": "Cites:91ce4174bf233de367889a44b615bbb0",
-        "node": {
-          "id": "text-unit:ROM.8.32",
-          "kind": "TextUnit",
-          "label": "ROM.8.32"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:ROM.8.32",
+            "kind": "TextUnit",
+            "label": "ROM.8.32"
+          },
+          "position": "node"
         },
         "votes": 507
       },
       {
         "edge": "Cites:6716c30c54adc9afa603169aa49fec2e",
-        "node": {
-          "id": "text-unit:JHN.3.15",
-          "kind": "TextUnit",
-          "label": "JHN.3.15"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.3.15",
+            "kind": "TextUnit",
+            "label": "JHN.3.15"
+          },
+          "position": "node"
         },
         "votes": 497
       },
       {
         "edge": "Cites:0949b073010a5d4c696954f0e01599a0",
-        "node": {
-          "id": "text-unit:JHN.11.25",
-          "kind": "TextUnit",
-          "label": "JHN.11.25"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.11.25",
+            "kind": "TextUnit",
+            "label": "JHN.11.25"
+          },
+          "position": "node"
         },
         "votes": 455
       },
       {
         "edge": "Cites:a4438ffbb4fc9917c786712dee27320e",
-        "node": {
-          "id": "text-unit:JHN.6.40",
-          "kind": "TextUnit",
-          "label": "JHN.6.40"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.6.40",
+            "kind": "TextUnit",
+            "label": "JHN.6.40"
+          },
+          "position": "node"
         },
         "votes": 396
       },
       {
         "edge": "Cites:9a51c4c1805e2d92f6548388ff5bf1e4",
-        "node": {
-          "id": "text-unit:JHN.3.36",
-          "kind": "TextUnit",
-          "label": "JHN.3.36"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.3.36",
+            "kind": "TextUnit",
+            "label": "JHN.3.36"
+          },
+          "position": "node"
         },
         "votes": 374
       },
       {
         "edge": "Cites:74dc07521ad8cc2e934b8035d3fa007d",
-        "node": {
-          "id": "text-unit:1JN.4.19",
-          "kind": "TextUnit",
-          "label": "1JN.4.19"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:1JN.4.19",
+            "kind": "TextUnit",
+            "label": "1JN.4.19"
+          },
+          "position": "node"
         },
         "votes": 349
       },
       {
         "edge": "Cites:5f2a7faec29fe4c7a2b5da5208767bc0",
-        "node": {
-          "id": "text-unit:JHN.10.28",
-          "kind": "TextUnit",
-          "label": "JHN.10.28"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.10.28",
+            "kind": "TextUnit",
+            "label": "JHN.10.28"
+          },
+          "position": "node"
         },
         "votes": 317
       },
       {
         "edge": "Cites:e3acde5fcbd7dc2fac01a0b85cadc024",
-        "node": {
-          "id": "text-unit:1TI.1.15",
-          "kind": "TextUnit",
-          "label": "1TI.1.15"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:1TI.1.15",
+            "kind": "TextUnit",
+            "label": "1TI.1.15"
+          },
+          "position": "node"
         },
         "votes": 286
       },
       {
         "edge": "Cites:80a4db76fc5e6fdb000d2d1f7b2cd9b6",
-        "node": {
-          "id": "text-unit:ROM.5.10",
-          "kind": "TextUnit",
-          "label": "ROM.5.10"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:ROM.5.10",
+            "kind": "TextUnit",
+            "label": "ROM.5.10"
+          },
+          "position": "node"
         },
         "votes": 262
       },
       {
         "edge": "Cites:c804d9923e57c8ed91ac366df4f3d531",
-        "node": {
-          "id": "text-unit:JHN.1.29",
-          "kind": "TextUnit",
-          "label": "JHN.1.29"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.1.29",
+            "kind": "TextUnit",
+            "label": "JHN.1.29"
+          },
+          "position": "node"
         },
         "votes": 237
       },
       {
         "edge": "Cites:65d484c0712cb8362f6b34efbcd089e0",
-        "node": {
-          "id": "text-unit:2TH.2.16",
-          "kind": "TextUnit",
-          "label": "2TH.2.16"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:2TH.2.16",
+            "kind": "TextUnit",
+            "label": "2TH.2.16"
+          },
+          "position": "node"
         },
         "votes": 224
       },
       {
         "edge": "Cites:d04fcb0bfcbb570efe7888a8b8a68776",
-        "node": {
-          "id": "text-unit:2CO.5.19",
-          "kind": "TextUnit",
-          "label": "2CO.5.19"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:2CO.5.19",
+            "kind": "TextUnit",
+            "label": "2CO.5.19"
+          },
+          "position": "node"
         },
         "votes": 212
       },
       {
         "edge": "Cites:4349b14d7c603da24383a5f7864f79bf",
-        "node": {
-          "id": "text-unit:EPH.2.4",
-          "kind": "TextUnit",
-          "label": "EPH.2.4"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:EPH.2.4",
+            "kind": "TextUnit",
+            "label": "EPH.2.4"
+          },
+          "position": "node"
         },
         "votes": 202
       },
       {
         "edge": "Cites:f978b8474d7e5aa1aca8c9310aa68024",
-        "node": {
-          "id": "text-unit:MAT.9.13",
-          "kind": "TextUnit",
-          "label": "MAT.9.13"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:MAT.9.13",
+            "kind": "TextUnit",
+            "label": "MAT.9.13"
+          },
+          "position": "node"
         },
         "votes": 186
       },
       {
         "edge": "Cites:ce3444a0bf8985c070806598ba19d029",
-        "node": {
-          "id": "text-unit:REV.1.5",
-          "kind": "TextUnit",
-          "label": "REV.1.5"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:REV.1.5",
+            "kind": "TextUnit",
+            "label": "REV.1.5"
+          },
+          "position": "node"
         },
         "votes": 171
       },
       {
         "edge": "Cites:6f455194f6b41942e36592c222760c0d",
-        "node": {
-          "id": "text-unit:GEN.22.12",
-          "kind": "TextUnit",
-          "label": "GEN.22.12"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:GEN.22.12",
+            "kind": "TextUnit",
+            "label": "GEN.22.12"
+          },
+          "position": "node"
         },
         "votes": 164
       },
       {
         "edge": "Cites:81711806d3800487889eb2c720a81d92",
-        "node": {
-          "id": "text-unit:JHN.1.14",
-          "kind": "TextUnit",
-          "label": "JHN.1.14"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:JHN.1.14",
+            "kind": "TextUnit",
+            "label": "JHN.1.14"
+          },
+          "position": "node"
         },
         "votes": 164
       },
       {
         "edge": "Cites:2abe12005399a3f093f2023051c66aea",
-        "node": {
-          "id": "text-unit:TIT.3.4",
-          "kind": "TextUnit",
-          "label": "TIT.3.4"
+        "neighbour": {
+          "node": {
+            "id": "text-unit:TIT.3.4",
+            "kind": "TextUnit",
+            "label": "TIT.3.4"
+          },
+          "position": "node"
         },
         "votes": 160
       }
