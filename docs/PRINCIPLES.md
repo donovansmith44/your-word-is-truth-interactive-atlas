@@ -194,3 +194,14 @@ wrong; fix the spec.
     code holds domain parsing or arithmetic (a law over the client sources),
     and a client change that adds domain logic fails review. Less client code
     is the direction; a batch that grows it must say why.
+26. **The backend is closed over the data.** Owner, 2026-09-30, the analogue
+    of 25: the server's only knowledge of the domain is the compiled artifact,
+    built from `data/raw` and `data/curated` by the ETL, and it composes over
+    that. A domain fact written in server code (a book list, an event or place
+    id, a name or alias, a date, a special case for one node, a pinned
+    inventory of pairs) is an offender (24a); its category closes by moving the
+    fact into data with its provenance and justification and having the code
+    read it through the graph (24b). Closure: facts enter only through the ETL
+    from files under `data/`; a curated id that does not resolve fails the
+    compile; a law over the server sources catches domain literals. Less
+    server special-casing is the direction.
