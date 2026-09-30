@@ -1,45 +1,45 @@
 schema = 1
 compiler = "atlas-graph-compile 0.1.0 (rustc 1.97.1)"
-built = "2026-09-30T12:21:55Z"
-root = "6ffc6df2e5dadf5099c92dc9ff40d37e"
+built = "2026-09-30T13:28:33Z"
+root = "b745ec41abf7f060966f66bfe45524fb"
 raw_root = "ca285021ab2a62274ca84741bd50629c"
 
 [[section]]
 name = "core"
 required = true
-logical = "14b08a5d7a2e49485c94b9db1c61a251"
-blob = "1b537753a5879e2287fde07a87c9a4591e540c43ce8101a1410e6461c54181b1"
-bytes = 9787142
-schema_version = 17
+logical = "c6a98eba9abf4fe3af72609e656a7418"
+blob = "17ab3520c7909dec1f91681576cfd7b7b30a6dccc79813511db4c0247aa64422"
+bytes = 9784834
+schema_version = 18
 
 [[section]]
 name = "kjv"
 required = true
 logical = "6f413a55daedb14b489139d97814d214"
-blob = "74e09df7b422f691f764078a3c69d0e4d60bc59ff30aaf4ac45d01fbdfd0b18a"
-bytes = 48419296
-schema_version = 17
+blob = "4fe493d1bcc4fe785cce51fbae1e40fbaa09f337956d4c8b10a8d946ab461467"
+bytes = 48419291
+schema_version = 18
 
 [[section]]
 name = "concord"
 required = false
 logical = "bfe52b2b8fa22a3228b5d8a8ff2e1403"
-blob = "5e01993a35a1bbeab26b3749c8ce0f68c47138dd5e39fdd5f90e44282ce2c031"
-bytes = 2209423
-schema_version = 17
+blob = "aba49c518faea2fa1d39a6b76e2cdf1e7944c007d1e864b2a0c7e33cafafe257"
+bytes = 2209422
+schema_version = 18
 
 [[section]]
 name = "kretzmann"
 required = false
 logical = "cfebcd669fe2737850598fbc8b57ff24"
-blob = "270db8fc595d5ced7e1b15799fd945e4d29088f7555a8e3336ef9597e5a506e0"
-bytes = 9165145
-schema_version = 17
+blob = "a5f0b6eac6135adef95118ba98dc56dfce96b8b35d07a6867570a46f1a6e9071"
+bytes = 9165142
+schema_version = 18
 
 [[section]]
 name = "lexicon"
 required = false
 logical = "1dc3b9dfa43d44da3eec689d3a38e288"
-blob = "b749701b14ee6069568f493ba43acde84a4496062005822cc07f16bb0225aef7"
-bytes = 42494152
-schema_version = 17
+blob = "c8236407ed39885c46feb2ab3098f8e251bd858dc67c86176f764b5baf6d5dfc"
+bytes = 42494246
+schema_version = 18

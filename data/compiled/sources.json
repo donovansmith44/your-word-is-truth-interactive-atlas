@@ -387,6 +387,12 @@
       "locator": "parentage.toml"
     },
     {
+      "id": "curated-brethren",
+      "source": "our-curated-work",
+      "confidence": "Curated",
+      "locator": "brethren.toml"
+    },
+    {
       "id": "curated-books",
       "source": "our-curated-work",
       "confidence": "Curated",
