@@ -81,7 +81,7 @@ public sealed class PlaceNode : IExplorable
 
                 builder.OpenElement(seq++, "span");
                 builder.AddAttribute(seq++, "class", "popover-event-years");
-                builder.AddContent(seq++, YearText.FormatRange(ev.When.FromYear, ev.When.ToYear));
+                builder.AddContent(seq++, ev.When.Label);
                 builder.CloseElement();
 
                 builder.CloseElement();

@@ -42,7 +42,7 @@
                  aria-valuenow="@EffectiveFrom"
                  aria-valuemin="@Eras[0].FromYear"
                  aria-valuemax="@Eras[^1].ToYear"
-                 aria-valuetext="@YearText.Format(EffectiveFrom)"
+                 aria-valuetext="@ServedLabelOf(EffectiveFrom, Window?.From)"
                  @onpointerdown="@(() => OnHandlePointerDown("from"))"
                  @onkeydown="@(e => OnHandleKeyDown("from", e))"></div>
             <div class="slider-handle slider-handle-to"
@@ -53,7 +53,7 @@
                  aria-valuenow="@EffectiveTo"
                  aria-valuemin="@Eras[0].FromYear"
                  aria-valuemax="@Eras[^1].ToYear"
-                 aria-valuetext="@YearText.Format(EffectiveTo)"
+                 aria-valuetext="@ServedLabelOf(EffectiveTo, Window?.To)"
                  @onpointerdown="@(() => OnHandlePointerDown("to"))"
                  @onkeydown="@(e => OnHandleKeyDown("to", e))"></div>
         }
@@ -74,6 +74,10 @@
     [Parameter] public List<Era> Eras { get; set; } = new();
     [Parameter] public int From { get; set; }
     [Parameter] public int To { get; set; }
+
+    // The window of the time scene on show, as the server labels it; it trails From/To by one
+    // scene fetch, and a scripture scene names none.
+    [Parameter] public TimeRange? Window { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
 
     // Fires on every pointermove while dragging (unlike OnWindowChange, which only fires at
@@ -87,8 +91,7 @@
     [Parameter] public bool Disabled { get; set; }
 
     private string _readoutText = "";
-    private int _lastFrom = int.MinValue;
-    private int _lastTo = int.MinValue;
+    private TimeRange? _shownWindow;
 
     private string? _dragTarget; // "from" | "to" | null when idle
     private int _dragFrom;
@@ -101,13 +104,12 @@
 
     protected override void OnParametersSet()
     {
-        // Resync only when From/To actually change, so a keystroke mid-edit in the readout is
-        // never clobbered before Enter is pressed.
-        if (From != _lastFrom || To != _lastTo)
+        // Resync only when a newly served window arrives, so a keystroke mid-edit in the readout
+        // is never clobbered before Enter is pressed.
+        if (Window is { } served && served != _shownWindow)
         {
-            _lastFrom = From;
-            _lastTo = To;
-            _readoutText = YearText.FormatRange(From, To);
+            _shownWindow = served;
+            _readoutText = served.Label;
         }
     }
 
@@ -128,9 +130,9 @@
             return;
         }
 
-        if (YearText.TryParse(_readoutText, out var from, out var to))
+        if (YearInput.Read(_readoutText) is { } typed)
         {
-            await OnWindowChange.InvokeAsync((from, to));
+            await OnWindowChange.InvokeAsync((typed.FromYear, typed.ToYear));
         }
     }
 
@@ -269,6 +271,10 @@
     }
 
     private int ClampToSpan(int year) => Math.Clamp(year, Eras[0].FromYear, Eras[^1].ToYear);
+
+    // A handle's year has a served label only once the scene for it has arrived; until then
+    // (mid-drag, mid-fetch) assistive tech reads aria-valuenow rather than a stale label.
+    private static string? ServedLabelOf(int year, Year? served) => served?.Value == year ? served.Label : null;
 
     private double HandleX(int year) => Eras.Count == 0 ? 0 : SliderScale.YearToX(year, Eras, TrackWidthPx);
 }

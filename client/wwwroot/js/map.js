@@ -611,10 +611,10 @@ function existenceGatesLabel(existenceFrom, existenceTo, window) {
     if (!window) {
         return false;
     }
-    if (existenceFrom != null && window.to_year < existenceFrom) {
+    if (existenceFrom != null && window.to.value < existenceFrom.value) {
         return true;
     }
-    if (existenceTo != null && window.from_year > existenceTo) {
+    if (existenceTo != null && window.from.value > existenceTo.value) {
         return true;
     }
     return false;
@@ -1334,8 +1334,7 @@ const POLITY_TINTS_DARK = [
 ];
 
 function formatYearTag(year) {
-    const label = year < 0 ? `${-year} BC` : `AD ${year}`;
-    return `c. ${label}`;
+    return `c. ${year.label}`;
 }
 
 // A narrow window can show only one internal era of a longer-lived polity, whose `to`
@@ -1377,12 +1376,12 @@ function deltaForEntry(roster, entry, from, to) {
     const endInWindow = entry.to >= from && entry.to <= to;
 
     if (endInWindow && isChronologicallyFinalEra(roster, entry)) {
-        return { kind: 'fall', delta: entry.fall, titleFrom: entry.from, titleTo: entry.to };
+        return { kind: 'fall', delta: entry.fall, titleFrom: entry.reign.from, titleTo: entry.reign.to };
     }
     if (startInWindow) {
         const prev = previousEra(roster, entry);
-        const titleFrom = prev ? prev.to : entry.from;
-        return { kind: 'transition', delta: entry.transition, titleFrom, titleTo: entry.to };
+        const titleFrom = prev ? prev.reign.to : entry.reign.from;
+        return { kind: 'transition', delta: entry.transition, titleFrom, titleTo: entry.reign.to };
     }
     return null;
 }
@@ -1944,7 +1943,7 @@ const BorderLayer = L.Layer.extend({
             'data-testid',
             `polity-year-tag-${esc(ringGroup.entry.id)}-${ringGroup.entry.from}-${ringGroup.ringIndex}`
         );
-        el.textContent = formatYearTag(ringGroup.entry.from);
+        el.textContent = formatYearTag(ringGroup.entry.reign.from);
         this._labelPane.appendChild(el);
         return { el, ringGroup, cLat, cLon };
     },

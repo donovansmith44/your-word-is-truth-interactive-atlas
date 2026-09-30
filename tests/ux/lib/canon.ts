@@ -1,11 +1,11 @@
 import fc from 'fast-check';
 import { api } from './api';
-import { SPAN } from './years';
 
 export type Toc = { code: string; name: string; chapters: number[] }[];
 let toc: Toc | null = null;
 export async function loadToc(): Promise<Toc> { return (toc ??= await api.books()); }
 
+export const SPAN = { from: -4004, to: 100 };
 export const arbYear = fc.integer({ min: SPAN.from, max: SPAN.to }).filter(y => y !== 0);
 export const arbWindow = fc.tuple(arbYear, arbYear)
   .map(([a, b]) => (a <= b ? { from: a, to: b } : { from: b, to: a }));

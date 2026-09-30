@@ -21,8 +21,6 @@ public sealed class PersonNode : IExplorable
 
     public Task<NodeCard> CardAsync(Func<Task<NodeCard>> fetch) => _card.Get(fetch);
 
-    public static string Year(int y) => YearText.Format(y);
-
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
         PersonLife? life;
@@ -41,23 +39,29 @@ public sealed class PersonNode : IExplorable
         }
 
         var chips = new List<Exploration>();
-        if (life.BirthYear is int born)
+        if (life.Birth is { } born)
         {
-            chips.Add(new Exploration($"Born c. {Year(born)}", "popover-chip-year-born", new ExplorationTarget.NavigateWorld($"from={born}&to={born}")));
+            chips.Add(new Exploration(Born(born), "popover-chip-year-born", new ExplorationTarget.NavigateWorld($"from={born.Value}&to={born.Value}")));
         }
 
-        if (life.DeathYear is int died)
+        if (life.Death is { } died)
         {
-            chips.Add(new Exploration($"Died c. {Year(died)}", "popover-chip-year-died", new ExplorationTarget.NavigateWorld($"from={died}&to={died}")));
+            chips.Add(new Exploration(Died(died), "popover-chip-year-died", new ExplorationTarget.NavigateWorld($"from={died.Value}&to={died.Value}")));
         }
 
-        if (chips.Count == 0 && life.FirstYear is int first && life.LastYear is int last)
+        if (chips.Count == 0 && life.First is { } first && life.Last is { } last)
         {
-            chips.Add(new Exploration($"Mentioned across c. {Year(first)} - {Year(last)}", "popover-chip-year-span", new ExplorationTarget.NavigateWorld($"from={first}&to={last}")));
+            chips.Add(new Exploration(MentionedAcross(first, last), "popover-chip-year-span", new ExplorationTarget.NavigateWorld($"from={first.Value}&to={last.Value}")));
         }
 
         return chips;
     }
 
     public Task<RenderFragment> BodyAsync(AtlasClient api) => Task.FromResult<RenderFragment>(_ => { });
+
+    public static string Born(Year year) => $"Born c. {year.Label}";
+
+    public static string Died(Year year) => $"Died c. {year.Label}";
+
+    public static string MentionedAcross(Year first, Year last) => $"Mentioned across c. {first.Label} \u2013 {last.Label}";
 }

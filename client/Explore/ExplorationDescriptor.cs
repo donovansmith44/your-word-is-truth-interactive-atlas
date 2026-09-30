@@ -19,7 +19,7 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
         // Key leads with the polity's own stable id so Reconstruct can re-locate
         // it even if a curator later renames it; Reconstruct still accepts the
         // older 4-field (Name+From+To only) form for descriptors saved earlier.
-        PolityDeltaNode pd => new ExplorationDescriptor("PolityDelta", $"{pd.PolityId}|{pd.PolityName}|{pd.DeltaKind}|{pd.FromYear}|{pd.ToYear}", pd.Title),
+        PolityDeltaNode pd => new ExplorationDescriptor("PolityDelta", $"{pd.PolityId}|{pd.PolityName}|{pd.DeltaKind}|{pd.From.Value}|{pd.To.Value}", pd.Title),
         PersonNode pn => new ExplorationDescriptor("Person", pn.PersonId, pn.Title),
         CommentaryItemNode ci => new ExplorationDescriptor("CommentaryItem", ci.Id, ci.Title),
         ConcordUnitNode cu => new ExplorationDescriptor("ConcordUnit", cu.Title, cu.Title),
@@ -120,20 +120,16 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                     toYear = int.Parse(parts[3]);
                 }
 
-                PolityDelta? delta = null;
-                Polity? era = null;
-                try
-                {
-                    var polities = await api.Polities(fromYear, toYear);
-                    era = polityId is not null
+                var polities = await api.Polities(fromYear, toYear);
+                var era = (polityId is not null
                         ? polities.All.FirstOrDefault(e => e.Id == polityId)
-                        : polities.All.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear);
-                    delta = deltaKind == "fall" ? era?.Fall : era?.Transition;
-                }
-                catch (Exception)
-                {
-                }
-                return new PolityDeltaNode(polityId ?? era?.Id ?? "", era?.Name ?? polityName, deltaKind, fromYear, toYear, delta?.Event, delta?.Verses ?? new List<string>(), delta?.RefNote);
+                        : polities.All.FirstOrDefault(e => e.Name == polityName && e.From == fromYear && e.To == toYear))
+                    ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: polity '{polityId ?? polityName}' is no longer on the map between {fromYear} and {toYear}.");
+                var reignEnds = polities.All.Where(e => e.Id == era.Id).SelectMany(e => new[] { e.Reign.From, e.Reign.To }).ToList();
+                Year ReignEndAt(int year) => reignEnds.FirstOrDefault(end => end.Value == year)
+                    ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: no reign of polity '{era.Id}' begins or ends in {year}.");
+                var delta = deltaKind == "fall" ? era.Fall : era.Transition;
+                return new PolityDeltaNode(era.Id, era.Name, deltaKind, ReignEndAt(fromYear), ReignEndAt(toYear), delta?.Event, delta?.Verses ?? new List<string>(), delta?.RefNote);
             }
 
             case "Person":

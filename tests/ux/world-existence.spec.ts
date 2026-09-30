@@ -45,8 +45,8 @@ test('existence gating: a place destroyed before the window shows its dot, no la
   expect(shiloh, "shiloh must be quiet (no events) in this window -- see this file's own header comment").toBeTruthy();
   // The wire itself carries shiloh's real curated bounds (Batch H's own
   // golden-fixture pin) -- established -1399, destroyed's own upper bound -1050.
-  expect(shiloh.existence_from).toBe(-1399);
-  expect(shiloh.existence_to).toBe(-1050);
+  expect(shiloh.existence_from).toEqual({ label: '1399 BC', value: -1399 });
+  expect(shiloh.existence_to).toEqual({ label: '1050 BC', value: -1050 });
 
   await page.goto(`/world?from=${AFTER_SHILOH.from}&to=${AFTER_SHILOH.to}`);
   const dot = page.getByTestId('quiet-marker-shiloh');

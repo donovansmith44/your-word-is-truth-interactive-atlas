@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { loadToc, arbChapterRef } from './lib/canon';
-import { formatRange } from './lib/years';
 import { fcAssert, RUNS_UI } from './lib/fc';
 import { LIT_MARKER_TESTID } from './lib/markers';
 
@@ -22,7 +21,7 @@ test('WORLD-6: dropdown override and return-to-time', async ({ page }) => {
     await page.getByTestId('mode-chip-return').click();
     await page.waitForURL(u => u.searchParams.get('from') === '-1446'
                             && u.searchParams.get('to') === '-1406');
-    await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(-1446, -1406));
+    await expect(page.getByTestId('slider-readout')).toHaveValue((await api.sceneTime(-1446, -1406)).window.label);
   }), RUNS_UI);
 });
 

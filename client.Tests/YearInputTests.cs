@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BibleAtlas.Client.Tests.State;
-using ReadBack = (string Label, (int From, int To)? Years);
+using BibleAtlas.Client.Contract;
+using ReadBack = (string Label, BibleAtlas.Client.Contract.YearSpan? Years);
 
 namespace BibleAtlas.Client.Tests;
 
@@ -45,12 +46,12 @@ public sealed class YearInputTests
         // Arrange
         ReadBack[] expected =
         [
-            ("1450 BC – 1400 BC", (-1450, -1400)),
-            ("1450 - 1400 BC", (-1450, -1400)),
-            ("1450-1400 BC", (-1450, -1400)),
-            ("1450–1400 BC", (-1450, -1400)),
-            ("AD 30 – AD 70", (30, 70)),
-            ("AD 30-70", (30, 70)),
+            ("1450 BC – 1400 BC", new(-1450, -1400)),
+            ("1450 - 1400 BC", new(-1450, -1400)),
+            ("1450-1400 BC", new(-1450, -1400)),
+            ("1450–1400 BC", new(-1450, -1400)),
+            ("AD 30 – AD 70", new(30, 70)),
+            ("AD 30-70", new(30, 70)),
         ];
         // Act
         var read = ReadEach(expected);
@@ -64,8 +65,8 @@ public sealed class YearInputTests
         // Arrange
         ReadBack[] expected =
         [
-            ("1450 BC – 1400", (-1450, -1400)),
-            ("30 – AD 70", (30, 70)),
+            ("1450 BC – 1400", new(-1450, -1400)),
+            ("30 – AD 70", new(30, 70)),
         ];
         // Act
         var read = ReadEach(expected);
@@ -77,7 +78,7 @@ public sealed class YearInputTests
     public void A_range_that_starts_and_ends_in_one_year_reads_as_that_year()
     {
         // Arrange
-        ReadBack[] expected = [("1447 BC – 1447 BC", (-1447, -1447))];
+        ReadBack[] expected = [("1447 BC – 1447 BC", new(-1447, -1447))];
         // Act
         var read = ReadEach(expected);
         // Assert
@@ -88,7 +89,7 @@ public sealed class YearInputTests
     public void Whitespace_around_the_text_is_ignored()
     {
         // Arrange
-        ReadBack[] expected = [("  AD 33 ", (33, 33))];
+        ReadBack[] expected = [("  AD 33 ", new(33, 33))];
         // Act
         var read = ReadEach(expected);
         // Assert
@@ -162,22 +163,22 @@ public sealed class YearInputTests
         Assert.Equal(expected, read);
     }
 
-    private static ReadBack[] ServedLabels(string section, Func<JsonElement, (int From, int To)> yearsOf)
+    private static ReadBack[] ServedLabels(string section, Func<JsonElement, YearSpan> yearsOf)
     {
         using var vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(ConformanceTests.RepoRoot(), "contracts", "atlas-query-contract", "vectors", "year-labels.json")));
         return vectors.RootElement.GetProperty(section).EnumerateArray()
-            .Select(served => (served.GetProperty("label").GetString()!, ((int, int)?)yearsOf(served)))
+            .Select(served => (served.GetProperty("label").GetString()!, (YearSpan?)yearsOf(served)))
             .ToArray();
     }
 
-    private static (int From, int To) SingleYearOf(JsonElement served)
+    private static YearSpan SingleYearOf(JsonElement served)
     {
         var year = served.GetProperty("value").GetInt32();
-        return (year, year);
+        return new YearSpan(year, year);
     }
 
-    private static (int From, int To) SpanOf(JsonElement served) =>
-        (served.GetProperty("from").GetInt32(), served.GetProperty("to").GetInt32());
+    private static YearSpan SpanOf(JsonElement served) =>
+        new(served.GetProperty("from").GetInt32(), served.GetProperty("to").GetInt32());
 
     private static ReadBack[] ReadEach(IEnumerable<ReadBack> labels) =>
         labels.Select(label => (label.Label, YearInput.Read(label.Label))).ToArray();

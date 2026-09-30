@@ -13,7 +13,7 @@ public sealed class TimeAndPlaceNode : IExplorable
     {
         PlaceId = placeId;
         EventId = eventId;
-        Title = $"{placeName}, {YearText.FormatRange(when.FromYear, when.ToYear)}";
+        Title = $"{placeName}, {when.Label}";
         _when = when;
         _label = label;
         _verseGroups = verseGroups;
@@ -29,7 +29,7 @@ public sealed class TimeAndPlaceNode : IExplorable
         IReadOnlyList<Exploration> list = new[]
         {
             new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={_when.FromYear}&to={_when.ToYear}")),
+                new ExplorationTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")),
         };
         return Task.FromResult(list);
     }

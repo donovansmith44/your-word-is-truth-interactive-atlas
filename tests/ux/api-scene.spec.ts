@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 import fc from 'fast-check';
 import { api } from './lib/api';
-import { arbWindow, arbYear } from './lib/canon';
+import { arbWindow, arbYear, SPAN } from './lib/canon';
 import { fcAssert, RUNS_API } from './lib/fc';
-import { SPAN } from './lib/years';
 
 function arrowsByNarrative(scene: any): Map<string, any[]> {
   const m = new Map<string, any[]>();
@@ -12,7 +11,7 @@ function arrowsByNarrative(scene: any): Map<string, any[]> {
   return m;
 }
 const intersects = (a: any, w: { from: number; to: number }) =>
-  a.from_year <= w.to && w.from <= a.to_year;
+  a.from.value <= w.to && w.from <= a.to.value;
 
 // Task 16 finding: plain `throw` on failure, not Playwright's `expect()`, for
 // every check inside this property's hot per-iteration loop. Root-caused
@@ -47,9 +46,9 @@ test('SCENE-1/2 + ARROW-1..7: window scene invariants', async () => {
     // + value check) rather than reaching for a deep-equal helper, to keep
     // this file's one dependency (fast-check) unchanged.
     const windowKeys = Object.keys(s.window).sort();
-    ok(windowKeys.length === 2 && windowKeys[0] === 'from_year' && windowKeys[1] === 'to_year',
-      'SCENE-1: window has extra/missing fields (expected exactly from_year, to_year)');
-    ok(s.window.from_year === w.from && s.window.to_year === w.to, 'SCENE-1: window echo mismatch');
+    ok(windowKeys.length === 3 && windowKeys[0] === 'from' && windowKeys[1] === 'label' && windowKeys[2] === 'to',
+      'SCENE-1: window has extra/missing fields (expected exactly from, label, to)');
+    ok(s.window.from.value === w.from && s.window.to.value === w.to, 'SCENE-1: window echo mismatch');
     const placeIds = new Set(s.places.map((p: any) => p.id));
     for (const p of s.places) {                                           // SCENE-2
       ok(p.events.length > 0, 'SCENE-2: place with no events');
@@ -98,7 +97,7 @@ test('SCENE-1/2 + ARROW-1..7: window scene invariants', async () => {
     // ARROW-6 needs event years: read them from the scene itself
     const whenOf = new Map(s.places.flatMap((p: any) => p.events.map((e: any) => [e.id, e.when])));
     for (const a of s.arrows) {
-      ok((whenOf.get(a.to_event) as any).from_year >= (whenOf.get(a.from_event) as any).from_year,
+      ok((whenOf.get(a.to_event) as any).from.value >= (whenOf.get(a.from_event) as any).from.value,
         'ARROW-6: to_event predates from_event');
     }
   }), RUNS_API);

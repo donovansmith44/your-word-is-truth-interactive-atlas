@@ -2025,24 +2025,7 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             return null;
         }
 
-        string? line = null;
-        if (life.Eternal)
-        {
-            line = "Eternal";
-        }
-        else if (life.BirthYear is int b || life.DeathYear is int d0)
-        {
-            var parts = new List<string>();
-            if (life.BirthYear is int born) parts.Add($"Born c. {PersonNode.Year(born)}");
-            if (life.DeathYear is int died) parts.Add($"Died c. {PersonNode.Year(died)}");
-            line = string.Join(" \u00b7 ", parts);
-        }
-        else if (life.FirstYear is int first && life.LastYear is int last)
-        {
-            line = $"Mentioned across c. {PersonNode.Year(first)} \u2013 {PersonNode.Year(last)}";
-        }
-
-        if (line is null)
+        if (LineOf(life) is not { } line)
         {
             return null;
         }
@@ -2061,6 +2044,26 @@ public sealed class PersonLifeSection : IPopoverSectionProvider
             }
         };
         return new PopoverSection("person-life", body);
+    }
+
+    public static string? LineOf(PersonLife life)
+    {
+        if (life.Eternal)
+        {
+            return "Eternal";
+        }
+
+        if (life.Birth is not null || life.Death is not null)
+        {
+            var parts = new List<string>();
+            if (life.Birth is { } born) parts.Add(PersonNode.Born(born));
+            if (life.Death is { } died) parts.Add(PersonNode.Died(died));
+            return string.Join(" \u00b7 ", parts);
+        }
+
+        return life.First is { } first && life.Last is { } last
+            ? PersonNode.MentionedAcross(first, last)
+            : null;
     }
 }
 

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client;
 
@@ -11,7 +12,7 @@ public static class YearInput
 
     private static readonly Regex Label = new($"^{Circa}{EndPattern(FirstEnd)}(?:{Dash}{EndPattern(LastEnd)})?$", RegexOptions.Compiled);
 
-    public static (int From, int To)? Read(string text)
+    public static YearSpan? Read(string text)
     {
         var match = Label.Match(text.Trim());
         if (!match.Success)
@@ -29,7 +30,7 @@ public static class YearInput
         // A served range in one era names it once ("1450 – 1400 BC", "AD 1 – 100"), so an end
         // written without an era is reckoned in the other end's.
         return (start.YearIn(end.NamedEra), end.YearIn(start.NamedEra)) is ({ } from, { } to) && from <= to
-            ? (from, to)
+            ? new YearSpan(from, to)
             : null;
     }
 

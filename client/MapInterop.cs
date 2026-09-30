@@ -29,7 +29,7 @@ public interface IMapEvents
 
     // kind is "transition" or "fall"; eventText/refNote are null and verses empty for an honestly
     // uneventful boundary (conditional presence, not a placeholder).
-    void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote);
+    void OnPolityDeltaClick(string polityId, string polityName, string kind, Year titleFrom, Year titleTo, string? eventText, string[] verses, string? refNote);
 }
 
 // Not thread-safe / not reentrant beyond normal Blazor WASM single-threaded use.
@@ -175,8 +175,8 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnMapClick() => _sink.OnMapClick();
     [JSInvokable] public void OnEscapePressed() => _sink.OnEscapePressed();
     [JSInvokable] public void OnCameraChanged(double lat, double lon, double zoom) => _sink.OnCameraChanged(lat, lon, zoom);
-    [JSInvokable] public void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote) =>
-        _sink.OnPolityDeltaClick(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
+    [JSInvokable] public void OnPolityDeltaClick(string polityId, string polityName, string kind, Year titleFrom, Year titleTo, string? eventText, string[] verses, string? refNote) =>
+        _sink.OnPolityDeltaClick(polityId, polityName, kind, titleFrom, titleTo, eventText, verses, refNote);
 }
 
 // These JS-interop return shapes deserialize via Blazor's default (camelCase) JSON options: they

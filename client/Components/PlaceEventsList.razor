@@ -9,7 +9,7 @@
     <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"place-event-{ev.Id}")"
             @onclick="@(e => OnRowClick(e, ev))">
         <span class="popover-event-label">@ev.Label</span>
-        <span class="popover-event-years">@YearText.FormatRange(ev.When.FromYear, ev.When.ToYear)</span>
+        <span class="popover-event-years">@ev.When.Label</span>
     </button>
 }
 

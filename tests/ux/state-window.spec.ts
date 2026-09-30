@@ -1,6 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
-import { formatRange } from './lib/years';
 import { LIT_MARKER_TESTID } from './lib/markers';
 
 // Batch ST-2 -- TimeWindow full ownership (controller rulings R1-R3) +
@@ -48,7 +47,7 @@ test('ST-2/R3: a time-mode window committed via the slider survives, through the
   await page.getByTestId(`slider-era-${era.id}`).click();
   await page.waitForURL(u => u.searchParams.get('from') === String(era.from_year)
                           && u.searchParams.get('to') === String(era.to_year));
-  await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(era.from_year, era.to_year));
+  await expect(page.getByTestId('slider-readout')).toHaveValue(era.window.label);
 
   // Client-side navigation (SPA routing, same running WASM app/atoms --
   // never page.goto, which would tear the app down) into a fresh split.
@@ -62,7 +61,7 @@ test('ST-2/R3: a time-mode window committed via the slider survives, through the
   // called before this instance's first render), not a page-scoped value.
   await page.getByTestId('follow-chip').click();
   await expect(page.getByTestId('follow-chip')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(era.from_year, era.to_year));
+  await expect(page.getByTestId('slider-readout')).toHaveValue(era.window.label);
   await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'false');
 });
 
@@ -240,9 +239,9 @@ test('ST-2/R4/Adjudication C: split open -> drag divider -> navigate fully away 
 
 test('ST-2/R3: ?from=&to= and ?ref= deep links still resolve identically after collapsing SyncFromQuery onto EnterTimeMode/EnterScriptureMode', async ({ page }) => {
   await page.goto('/world?from=-1450&to=-1400');
-  await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(-1450, -1400));
-  await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'false');
   const timeScene = await api.sceneTime(-1450, -1400);
+  await expect(page.getByTestId('slider-readout')).toHaveValue(timeScene.window.label);
+  await expect(page.getByTestId('slider')).toHaveAttribute('aria-disabled', 'false');
   await expect(page.getByTestId(LIT_MARKER_TESTID)).toHaveCount(timeScene.places.length);
 
   await page.goto('/world?ref=EXO.14');

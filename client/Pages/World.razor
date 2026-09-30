@@ -106,7 +106,7 @@
 
     @if (_eras is not null)
     {
-        <TimeSlider Eras="_eras" From="_from" To="_to"
+        <TimeSlider Eras="_eras" From="_from" To="_to" Window="_scene?.Window"
                     Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" OnWindowDrag="HandleWindowDrag" />
     }
 
@@ -832,7 +832,7 @@
         {
             if (!cts.IsCancellationRequested)
             {
-                _errorMessage = $"Couldn't load {YearText.FormatRange(from, to)} -- check your connection and try again.";
+                _errorMessage = "Couldn't load that time window -- check your connection and try again.";
             }
         }
         finally
@@ -1088,9 +1088,9 @@
         ViewState.Map.Zoom = zoom;
     }
 
-    public void OnPolityDeltaClick(string polityId, string polityName, string kind, int titleFromYear, int titleToYear, string? eventText, string[] verses, string? refNote)
+    public void OnPolityDeltaClick(string polityId, string polityName, string kind, Year titleFrom, Year titleTo, string? eventText, string[] verses, string? refNote)
     {
-        _activeNode = new PolityDeltaNode(polityId, polityName, kind, titleFromYear, titleToYear, eventText, verses, refNote);
+        _activeNode = new PolityDeltaNode(polityId, polityName, kind, titleFrom, titleTo, eventText, verses, refNote);
         CloseCardNow();
         StateHasChanged();
     }

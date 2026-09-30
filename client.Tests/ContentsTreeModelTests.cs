@@ -13,17 +13,19 @@ public class ContentsTreeModelTests
     private const string ExodusOne = "Container:bible-chapter-EXO-1";
     private const int RootDepth = 0;
     private const int ChildDepth = 1;
+    private static readonly BibleRef GenesisOneOne = new(BookId.GEN, 1, 1);
+    private static readonly BibleRef ExodusOneOne = new(BookId.EXO, 1, 1);
 
     private static ContentsTreeModel Sample() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
     [
-        new(id: Genesis, title: "Genesis", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GEN.1", children:
+        new(id: Genesis, title: "Genesis", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GEN.1", locus: GenesisOneOne, children:
         [
-            new(id: GenesisOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GEN.1", count: 31),
-            new(id: GenesisTwo, title: "2", kind: ContentsChildKind.Chapter, @ref: "GEN.2", count: 25),
+            new(id: GenesisOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GEN.1", locus: GenesisOneOne, count: 31),
+            new(id: GenesisTwo, title: "2", kind: ContentsChildKind.Chapter, @ref: "GEN.2", locus: new BibleRef(BookId.GEN, 2, 1), count: 25),
         ]),
-        new(id: Exodus, title: "Exodus", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "EXO.1", children:
+        new(id: Exodus, title: "Exodus", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "EXO.1", locus: ExodusOneOne, children:
         [
-            new(id: ExodusOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "EXO.1", count: 22),
+            new(id: ExodusOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "EXO.1", locus: ExodusOneOne, count: 22),
         ]),
     ]));
 
@@ -174,10 +176,10 @@ public class ContentsTreeModelTests
 
     private static ContentsTreeModel WithALeafRoot() => ContentsTreeModel.From(new Contents(corpus: Corpus.Bible, version: "v", roots:
     [
-        new(id: Leaf, title: "Leaf", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "LEAF.1", children: []),
-        new(id: Grove, title: "Grove", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GROVE.1", children:
+        new(id: Leaf, title: "Leaf", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "LEAF.1", locus: GenesisOneOne, children: []),
+        new(id: Grove, title: "Grove", kind: ContentsRootKind.Book, group: Testament.OT, @ref: "GROVE.1", locus: ExodusOneOne, children:
         [
-            new(id: GroveOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GROVE.1", count: 1),
+            new(id: GroveOne, title: "1", kind: ContentsChildKind.Chapter, @ref: "GROVE.1", locus: ExodusOneOne, count: 1),
         ]),
     ]));
 

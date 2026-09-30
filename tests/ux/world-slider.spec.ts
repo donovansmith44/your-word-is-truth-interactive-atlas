@@ -2,15 +2,15 @@ import { test, expect } from '@playwright/test';
 import fc from 'fast-check';
 import { api } from './lib/api';
 import { arbWindow } from './lib/canon';
-import { formatRange } from './lib/years';
 import { fcAssert, RUNS_UI } from './lib/fc';
 
 test('WORLD-5: typed readout drives window, URL and readout agree', async ({ page }) => {
   await page.goto('/world?from=-1450&to=-1400');
   await fcAssert(fc.asyncProperty(arbWindow, async w => {
-    await page.getByTestId('slider-readout').fill(formatRange(w.from, w.to));
+    const served = (await api.sceneTime(w.from, w.to)).window.label;
+    await page.getByTestId('slider-readout').fill(served);
     await page.getByTestId('slider-readout').press('Enter');
-    await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(w.from, w.to));
+    await expect(page.getByTestId('slider-readout')).toHaveValue(served);
     await page.waitForURL(u => u.searchParams.get('from') === String(w.from)
                             && u.searchParams.get('to') === String(w.to));
   }), RUNS_UI);
@@ -23,7 +23,7 @@ test('WORLD-7: every era is on the slider and clickable (exhaustive); clicking p
     const label = page.getByTestId(`slider-era-${e.id}`);
     await expect(label).toContainText(e.name);
     await label.click();
-    await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(e.from_year, e.to_year));
+    await expect(page.getByTestId('slider-readout')).toHaveValue(e.window.label);
 
     // CONTRACT/spec amendment (Batch C, user feedback 2026-08-19): "if I
     // select a time period in the slider, it should snap to that
@@ -102,9 +102,10 @@ test('WORLD-9: magnetic drag-release snaps a handle within ~6px of an era bounda
 
 test('NAV-1 (world/time): deep link survives reload', async ({ page }) => {
   await page.goto('/world?from=-1406&to=-1405');
-  await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(-1406, -1405));
+  const served = (await api.sceneTime(-1406, -1405)).window.label;
+  await expect(page.getByTestId('slider-readout')).toHaveValue(served);
   await page.reload();
-  await expect(page.getByTestId('slider-readout')).toHaveValue(formatRange(-1406, -1405));
+  await expect(page.getByTestId('slider-readout')).toHaveValue(served);
 });
 
 test('errors surface as toast, app keeps standing', async ({ page }) => {

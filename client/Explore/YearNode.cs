@@ -5,11 +5,11 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class YearNode : IExplorable
 {
-    private readonly TimeRange _when;
+    private readonly YearSpan _when;
     private readonly IReadOnlyList<string> _verses;
     private readonly bool _isEventTime;
 
-    public YearNode(string placeId, string label, TimeRange when, IReadOnlyList<string> verses, string? note)
+    public YearNode(string placeId, string label, YearSpan when, IReadOnlyList<string> verses, string? note)
     {
         PlaceId = placeId;
         Label = label;
@@ -19,7 +19,7 @@ public sealed class YearNode : IExplorable
         _isEventTime = false;
     }
 
-    public YearNode(TimeRange when)
+    public YearNode(YearSpan when)
     {
         PlaceId = "";
         Label = "";
@@ -126,7 +126,7 @@ public sealed class YearNode : IExplorable
     }
 
     // Dedupes by id (an event attested at more than one place in this same window is one row,
-    // never one per place), then orders by When.FromYear/ToYear with label as the final
+    // never one per place), then orders by the years of When with label as the final
     // tiebreak. Two events sharing the identical When range have no finer wire signal to
     // order by (SceneEvent carries no day/month/sequence field), so those still fall back
     // to alphabetical -- a real improvement over pure-alphabetical, not true intra-year
@@ -135,8 +135,8 @@ public sealed class YearNode : IExplorable
         events
             .GroupBy(e => e.Id)
             .Select(g => g.First())
-            .OrderBy(e => e.When.FromYear)
-            .ThenBy(e => e.When.ToYear)
+            .OrderBy(e => e.When.From.Value)
+            .ThenBy(e => e.When.To.Value)
             .ThenBy(e => e.Label, StringComparer.Ordinal)
             .ToList();
 }

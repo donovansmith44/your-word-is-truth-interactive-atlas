@@ -3,7 +3,6 @@ import fc from 'fast-check';
 import { api } from './lib/api';
 import { arbWindow } from './lib/canon';
 import { fcAssert, RUNS_UI } from './lib/fc';
-import { formatRange } from './lib/years';
 import { mergedVerses, groups, isPassage, initialShownCount, visibleGroups, spanRef } from './lib/hovercard';
 import { independentlyHoverableIds } from './lib/hoverSafety';
 import { LIT_MARKER_TESTID } from './lib/markers';
@@ -362,7 +361,7 @@ test('WORLD-11: polity labels render from the active polity eras and swap when t
   await expect(page.getByTestId('polity-label-sumer')).toHaveText('Sumer');
   await expect(page.getByTestId('polity-label-roman-empire')).toHaveCount(0);
 
-  await page.getByTestId('slider-readout').fill(formatRange(40, 60));
+  await page.getByTestId('slider-readout').fill('AD 40 – 60');
   await page.getByTestId('slider-readout').press('Enter');
   await page.waitForURL(u => u.searchParams.get('from') === '40' && u.searchParams.get('to') === '60');
 
