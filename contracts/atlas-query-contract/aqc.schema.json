@@ -31,6 +31,38 @@
       ],
       "unevaluatedProperties": false
     },
+    "BookDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "write_place": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NodeRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "written": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeRange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "author"
+      ],
+      "type": "object"
+    },
     "BookId": {
       "enum": [
         "GEN",
@@ -156,6 +188,38 @@
         "code",
         "name",
         "chapters"
+      ],
+      "type": "object"
+    },
+    "CatechismDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "explanation": {
+          "type": "string"
+        },
+        "explanation_heading": {
+          "type": "string"
+        },
+        "part_title": {
+          "type": "string"
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "where_written": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "part_title",
+        "explanation_heading",
+        "explanation"
       ],
       "type": "object"
     },
@@ -508,6 +572,45 @@
       ],
       "type": "object"
     },
+    "DateClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NodeRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verses": {
+          "items": {
+            "$ref": "#/$defs/TextSpan"
+          },
+          "type": "array"
+        },
+        "when": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "when",
+        "label",
+        "verses"
+      ],
+      "type": "object"
+    },
     "EdgeEntry": {
       "additionalProperties": false,
       "properties": {
@@ -762,6 +865,68 @@
             "null"
           ]
         },
+        "atlas_section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "$ref": "#/$defs/EventKind"
+        },
+        "kjv_superscription": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "robertson_section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "when": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TimeRange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "type": "object"
+    },
+    "EventId": {
+      "type": "string"
+    },
+    "EventKind": {
+      "enum": [
+        "event",
+        "general"
+      ],
+      "type": "string"
+    },
+    "EventPage": {
+      "additionalProperties": false,
+      "properties": {
+        "acts_section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "analogues": {
           "items": {
             "$ref": "#/$defs/EventAnalogue"
@@ -854,16 +1019,6 @@
         "provenance"
       ],
       "type": "object"
-    },
-    "EventId": {
-      "type": "string"
-    },
-    "EventKind": {
-      "enum": [
-        "event",
-        "general"
-      ],
-      "type": "string"
     },
     "EventWitness": {
       "additionalProperties": false,
@@ -1218,6 +1373,26 @@
     "NodeCard": {
       "additionalProperties": false,
       "properties": {
+        "book": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/BookDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "catechism": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CatechismDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "description": {
           "type": [
             "string",
@@ -1229,6 +1404,16 @@
             "$ref": "#/$defs/EdgeSummaryEntry"
           },
           "type": "array"
+        },
+        "event": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EventDetail"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "id": {
           "type": "string"
@@ -1243,6 +1428,16 @@
           "oneOf": [
             {
               "$ref": "#/$defs/PersonLife"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "place": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PlaceDetail"
             },
             {
               "type": "null"
@@ -1431,6 +1626,54 @@
       "type": "object"
     },
     "PlaceDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "destroyed": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateClaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "established": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/DateClaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lat": {
+          "format": "double",
+          "type": "number"
+        },
+        "lon": {
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lat",
+        "lon",
+        "display_name"
+      ],
+      "type": "object"
+    },
+    "PlacePage": {
       "additionalProperties": false,
       "properties": {
         "canonical_name": {
@@ -2113,6 +2356,16 @@
             "$ref": "#/$defs/EdgeSummaryEntry"
           },
           "type": "array"
+        },
+        "heading": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Heading"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "locus": {
           "$ref": "#/$defs/TextRef"

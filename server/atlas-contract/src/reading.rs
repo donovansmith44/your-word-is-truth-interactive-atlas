@@ -165,7 +165,7 @@ pub async fn verse(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
                 .filter(|p| !p.trim().is_empty())
                 .ok_or_else(|| ApiError::internal(&format!("event {} has no provenance to attribute this membership row to", e.id)))?;
             let se = to_scene_event(&e);
-            let when = if e.kind == atlas_core::data::EventKind::Event { Some(e.when) } else { None };
+            let when = e.date();
             Ok(wire::VerseEvent {
                 id: se.id,
                 label: se.label,

@@ -109,16 +109,15 @@ pub async fn narrative_event_positions(
 ///
 /// `{id}` is an event id handed back by another response; an id naming no event
 /// is `not_found`. A titled passage with no date carries no `when`.
-#[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventDetail), NoRefusals), tag = "events")]
-pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventDetail>, ApiError> {
+#[utoipa::path(get, path = "/api/event/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::EventPage), NoRefusals), tag = "events")]
+pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<GraphService>>, Path(id): Path<String>) -> Result<Json<wire::EventPage>, ApiError> {
     let snap = graph.snapshot();
     let e: Event = atlas_graph::legacy::event_from_node(&atlas_graph::event_world::event_node_id(&id), &snap, &graph.chronology.chrono).ok_or_else(|| ApiError::not_found("event"))?;
     let e: &Event = &e;
 
-    // A general-kind passage carries `TimeRange::undated()` -- the whole atlas span
-    // -- which would intersect every curated period-name range and let a period name
-    // be picked for a passage that has no date at all.
-    let window = if e.kind == atlas_core::data::EventKind::Event { Some(e.when) } else { None };
+    // A general-kind passage's undated span would intersect every curated period-name
+    // range and let a period name be picked for a passage that has no date at all.
+    let window = e.date();
     let places = e
         .places
         .iter()
@@ -165,7 +164,7 @@ pub async fn event(State(data): State<Arc<AtlasData>>, State(graph): State<Arc<G
         })
         .collect::<Result<Vec<_>, ApiError>>()?;
 
-    Ok(Json(wire::EventDetail {
+    Ok(Json(wire::EventPage {
         id: e.id.clone(),
         title: e.label.clone(),
         kind: e.kind,

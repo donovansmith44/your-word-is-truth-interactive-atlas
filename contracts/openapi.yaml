@@ -218,7 +218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventDetail'
+                $ref: '#/components/schemas/EventPage'
         '404':
           description: Nothing in this atlas answers to that reference.
           content:
@@ -498,7 +498,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaceDetail'
+                $ref: '#/components/schemas/PlacePage'
         '400':
           description: The reference, window or query could not be read; the body's `code` is `bad_window`.
           content:
@@ -860,6 +860,26 @@ components:
             minimum: 0
       description: A verse of the Bible.
       unevaluatedProperties: false
+    BookDetail:
+      type: object
+      description: Who wrote one book of the Bible, where, and when.
+      required:
+      - author
+      properties:
+        author:
+          type: string
+          description: The book's author, as this atlas records him.
+        write_place:
+          oneOf:
+          - $ref: '#/components/schemas/NodeRef'
+            description: Where it was written, absent when that is not recorded.
+          - type: 'null'
+        written:
+          oneOf:
+          - $ref: '#/components/schemas/TimeRange'
+            description: The years it was written across, absent when it is not dated.
+          - type: 'null'
+      additionalProperties: false
     BookId:
       type: string
       description: A book of the Bible, by its canon code.
@@ -980,6 +1000,37 @@ components:
         name:
           type: string
           description: The book's full name.
+      additionalProperties: false
+    CatechismDetail:
+      type: object
+      description: One catechism item's own words and their explanation.
+      required:
+      - part_title
+      - explanation_heading
+      - explanation
+      properties:
+        explanation:
+          type: string
+        explanation_heading:
+          type: string
+          description: The question the explanation answers, such as "What does this mean?".
+        part_title:
+          type: string
+          description: The chief part this item belongs to, such as Baptism.
+        text:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The item's own words -- a commandment, a petition, an article -- absent for
+            an item that has none.
+        where_written:
+          type:
+          - string
+          - 'null'
+          description: |-
+            Where in Scripture the item's own words are written, absent when it quotes
+            none.
       additionalProperties: false
     CatechismItem:
       type: object
@@ -1300,6 +1351,35 @@ components:
           format: int32
           description: How many readers voted for this reference. Higher sorts first.
       additionalProperties: false
+    DateClaim:
+      type: object
+      description: |-
+        A date something is claimed to have happened at, the verses the claim rests
+        on, and the note that qualifies it where the date is not Scripture's own.
+      required:
+      - when
+      - label
+      - verses
+      properties:
+        event:
+          oneOf:
+          - $ref: '#/components/schemas/NodeRef'
+            description: The event the claim rests on, where it names one.
+          - type: 'null'
+        label:
+          type: string
+          description: The span's label, marked `c. ` where the claim carries a note.
+        note:
+          type:
+          - string
+          - 'null'
+        verses:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextSpan'
+        when:
+          $ref: '#/components/schemas/TimeRange'
+      additionalProperties: false
     EdgeEntry:
       type: object
       description: One neighbour, with the edge that joins it and what that edge records.
@@ -1516,6 +1596,66 @@ components:
       additionalProperties: false
     EventDetail:
       type: object
+      description: What is recorded about one event or titled passage.
+      required:
+      - kind
+      properties:
+        acts_section:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The section of the outline of Acts this event falls in, absent when it has
+            none.
+        atlas_section:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The titled section of this atlas's own outline of Scripture, absent when it
+            has none.
+        kind:
+          $ref: '#/components/schemas/EventKind'
+        kjv_superscription:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The superscription the King James Version prints over this passage, absent
+            when it prints none.
+        ref_note:
+          type:
+          - string
+          - 'null'
+          description: |-
+            A note on how this event's date and grouping were arrived at, absent when
+            none was needed.
+        robertson_section:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The section of Robertson's Harmony of the Gospels this event falls in, absent
+            when it has none.
+        when:
+          oneOf:
+          - $ref: '#/components/schemas/TimeRange'
+            description: The years the event spans; absent for a titled passage, which has no date.
+          - type: 'null'
+      additionalProperties: false
+    EventId:
+      type: string
+      description: The id of one Event node.
+    EventKind:
+      type: string
+      description: |-
+        Which kind of container this is: an `event`, something that happened at a
+        date, or a `general` titled passage, which has none.
+      enum:
+      - event
+      - general
+    EventPage:
+      type: object
       description: One event, or one titled passage, in full.
       required:
       - id
@@ -1612,17 +1752,6 @@ components:
             The sources behind the passages that narrate this event, for this event
             rather than for the corpus. Omitted when there are none.
       additionalProperties: false
-    EventId:
-      type: string
-      description: The id of one Event node.
-    EventKind:
-      type: string
-      description: |-
-        Which kind of container this is: an `event`, something that happened at a
-        date, or a `general` titled passage, which has none.
-      enum:
-      - event
-      - general
     EventWitness:
       type: object
       description: |-
@@ -1932,6 +2061,18 @@ components:
       - edge_summary
       - version
       properties:
+        book:
+          oneOf:
+          - $ref: '#/components/schemas/BookDetail'
+            description: |-
+              Who wrote a book of the Bible, where and when, present only for a book this
+              atlas records that of.
+          - type: 'null'
+        catechism:
+          oneOf:
+          - $ref: '#/components/schemas/CatechismDetail'
+            description: A catechism item's own words, present only for one.
+          - type: 'null'
         description:
           type:
           - string
@@ -1946,6 +2087,11 @@ components:
           description: |-
             How many neighbours this node has of each kind, listing only the kinds it
             has any of.
+        event:
+          oneOf:
+          - $ref: '#/components/schemas/EventDetail'
+            description: What is recorded about an event or a titled passage, present only for one.
+          - type: 'null'
         id:
           type: string
         kind:
@@ -1956,6 +2102,11 @@ components:
           oneOf:
           - $ref: '#/components/schemas/PersonLife'
             description: Life facts, present only for a person.
+          - type: 'null'
+        place:
+          oneOf:
+          - $ref: '#/components/schemas/PlaceDetail'
+            description: Where a place is and what is recorded of its history, present only for a place.
           - type: 'null'
         provenance:
           type: string
@@ -2098,6 +2249,45 @@ components:
           description: The year claimed, or the range; a single year is a span whose ends are equal.
       additionalProperties: false
     PlaceDetail:
+      type: object
+      description: |-
+        Where one place is, the name a reader of the King James Version knows it by, and
+        when it was founded and fell, where that is recorded.
+      required:
+      - lat
+      - lon
+      - display_name
+      properties:
+        canonical_name:
+          type:
+          - string
+          - 'null'
+          description: |-
+            The place's plain canonical name, present only when `display_name` is the
+            translation's own wording and so differs from it.
+        destroyed:
+          oneOf:
+          - $ref: '#/components/schemas/DateClaim'
+            description: When the place was destroyed, absent when that is not recorded.
+          - type: 'null'
+        display_name:
+          type: string
+          description: The name a reader of the King James Version knows this place by.
+        established:
+          oneOf:
+          - $ref: '#/components/schemas/DateClaim'
+            description: When the place was founded, absent when that is not recorded.
+          - type: 'null'
+        lat:
+          type: number
+          format: double
+          description: Latitude in degrees, north positive.
+        lon:
+          type: number
+          format: double
+          description: Longitude in degrees, east positive.
+      additionalProperties: false
+    PlacePage:
       type: object
       description: |-
         One place: where it is, the events that happened there, and what is known
@@ -2717,6 +2907,13 @@ components:
           description: |-
             How many neighbours this unit has of each kind, so a page can tell which
             units lead somewhere without asking after each one.
+        heading:
+          oneOf:
+          - $ref: '#/components/schemas/Heading'
+            description: |-
+              The pericope heading that belongs above this verse, present only where one
+              opens or carries on. Always absent outside Scripture.
+          - type: 'null'
         locus:
           $ref: '#/components/schemas/TextRef'
           description: The same unit as `ref`, by its parts.

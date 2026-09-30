@@ -8,8 +8,9 @@ use axum::Json;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use atlas_core::data::{AtlasData, Canon};
-use atlas_core::refs::VerseId;
+use atlas_core::data::{AtlasData, Canon, Event, Place, PlaceDateClaim};
+use atlas_core::history::resolve_display_name_and_canonical;
+use atlas_core::refs::{BookId, VerseId};
 use atlas_core::scene::{accounts_of, Account};
 use atlas_graph::event_world::ChronologyDerivation;
 use atlas_graph::kjv_adapter::verse_node_id;
@@ -37,7 +38,11 @@ use crate::wire;
 /// Book of Concord. An id of no recognised kind is `bad_ref`; one that names no
 /// node is `not_found`.
 #[utoipa::path(get, path = "/api/node/{id}", params(("id" = String, Path)), responses((status = 200, body = wire::NodeCard), ReferenceRefusals), tag = "graph")]
-pub async fn node_card(State(graph): State<Arc<GraphService>>, Reference(NodeReference(node_id)): Reference<NodeReference>) -> Result<Json<wire::NodeCard>, ApiError> {
+pub async fn node_card(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Reference(NodeReference(node_id)): Reference<NodeReference>,
+) -> Result<Json<wire::NodeCard>, ApiError> {
     let snap = graph.snapshot();
     let node = snap.node(&node_id).ok_or_else(|| ApiError::not_found("node"))?;
 
@@ -70,12 +75,88 @@ pub async fn node_card(State(graph): State<Arc<GraphService>>, Reference(NodeRef
         version: atlas_graph::version_hex(graph.version()),
         person,
         description,
+        event: atlas_graph::legacy::event_from_node(&node_id, &snap, &graph.chronology.chrono).map(|event| event_detail(&event)),
+        place: atlas_graph::legacy::place_from_node(&node_id, &snap).map(|place| place_detail(&place, &data, &snap)),
+        catechism: catechism_detail(&node_id, &data),
+        book: book_detail(&node_id, &data, &snap)?,
     }))
 }
 
 /// A year zero in a person's record is this atlas's own data defect, never a year to show.
 fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
     year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
+}
+
+fn event_detail(event: &Event) -> wire::EventDetail {
+    wire::EventDetail {
+        kind: event.kind,
+        when: event.date().map(wire::TimeRange::of),
+        robertson_section: event.robertson_section.clone(),
+        acts_section: event.acts_section.clone(),
+        atlas_section: event.atlas_section.clone(),
+        kjv_superscription: event.kjv_superscription.clone(),
+        ref_note: event.ref_note.clone(),
+    }
+}
+
+/// A card names a place with no years in view, so its name is the translation's own
+/// wording where one is recorded, never a period name.
+fn place_detail(place: &Place, data: &AtlasData, snap: &impl GraphQuery) -> wire::PlaceDetail {
+    let history = data.place_history_for(&place.id);
+    let (display_name, canonical_name) = resolve_display_name_and_canonical(&place.name, history, None, data.place_name_alias_for(&place.id));
+    wire::PlaceDetail {
+        lat: place.lat,
+        lon: place.lon,
+        display_name,
+        canonical_name,
+        established: history.and_then(|h| h.established.as_ref()).map(|claim| date_claim(claim, snap)),
+        destroyed: history.and_then(|h| h.destroyed.as_ref()).map(|claim| date_claim(claim, snap)),
+    }
+}
+
+fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim {
+    let verses = claim
+        .verses
+        .iter()
+        .map(|v| {
+            let verse = VerseId::parse_canonical(v).expect("a place history's verses are checked when the atlas is compiled");
+            wire::TextSpan::whole(wire::TextRef::Bible { book: verse.book, chapter: verse.chapter, verse: verse.verse })
+        })
+        .collect();
+    let event = claim.event.as_ref().map(|event| describe_position(&Position::Node(event.erase()), snap));
+    wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event)
+}
+
+/// An item's id is unique only among catechism items, so any other node that shares
+/// one is not that item.
+fn catechism_detail(id: &AnyNodeId, data: &AtlasData) -> Option<wire::CatechismDetail> {
+    if id.kind != NodeKind::CatechismItem {
+        return None;
+    }
+    let (part, item) = data.catechism_item_by_id(&id.raw)?;
+    Some(wire::CatechismDetail {
+        part_title: part.title.clone(),
+        text: item.text.clone(),
+        explanation_heading: item.explanation_heading.clone(),
+        explanation: item.explanation.clone(),
+        where_written: item.where_written.clone(),
+    })
+}
+
+/// A book dated at one end only is this atlas's own data defect, never a span to show.
+fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Result<Option<wire::BookDetail>, ApiError> {
+    let Some(code) = atlas_graph::bible_container_adapter::decode_book_container(id).map(|index| BookId(index).code()) else {
+        return Ok(None);
+    };
+    let Some(meta) = data.books_meta.iter().find(|meta| meta.book == code) else {
+        return Ok(None);
+    };
+    let written = meta.written().map_err(|refused| ApiError::internal(&format!("the writing date {code} records is refused: {refused}")))?;
+    Ok(Some(wire::BookDetail {
+        author: meta.author.clone(),
+        write_place: meta.write_place.as_ref().map(|place| describe_position(&Position::Node(atlas_graph::event_world::place_stub_node_id(place)), snap)),
+        written: written.map(wire::TimeRange::of),
+    }))
 }
 
 pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
@@ -292,6 +373,7 @@ pub async fn text_window(
                     locus: wire::TextRef::Concord { part: p, article: a, paragraph: para },
                     text,
                     words_of_christ: Vec::new(),
+                    heading: None,
                     edge_summary: unit_edge_summary(&snap, id),
                 })
             })
@@ -340,7 +422,8 @@ pub async fn text_window(
             let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
             let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
             let locus = wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v });
-            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, edge_summary: unit_edge_summary(&snap, id) })
+            let heading = graph.heading_index.get(&r#ref).cloned();
+            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, edge_summary: unit_edge_summary(&snap, id) })
         })
         .collect();
 

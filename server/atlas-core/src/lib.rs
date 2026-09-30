@@ -25,6 +25,8 @@ pub enum CoreError {
     ZeroYear,
     #[error("time range is inverted (from > to)")]
     InvertedRange,
+    #[error("a span records one of its ends and not the other")]
+    OneEndedSpan,
     #[error("invalid scripture reference: {0}")]
     BadRef(String),
     #[error("unknown translation '{0}' (this atlas only compiles KJV today)")]

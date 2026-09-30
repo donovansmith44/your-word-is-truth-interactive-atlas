@@ -26,13 +26,13 @@ use crate::wire;
 /// name and description the history reports -- give both or neither, and giving
 /// neither simply leaves the place's default name in place. One year alone, a year
 /// that is not a year, and a span that ends before it starts are each `bad_window`.
-#[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), PlacePeriod), responses((status = 200, body = wire::PlaceDetail), WindowRefusals), tag = "places")]
+#[utoipa::path(get, path = "/api/place/{id}", params(("id" = String, Path), PlacePeriod), responses((status = 200, body = wire::PlacePage), WindowRefusals), tag = "places")]
 pub async fn place(
     State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
     Path(id): Path<String>,
     Contract(asked): Contract<PlacePeriod>,
-) -> Result<Json<wire::PlaceDetail>, ApiError> {
+) -> Result<Json<wire::PlacePage>, ApiError> {
     let snap = graph.snapshot();
     let place_id = atlas_graph::event_world::place_stub_node_id(&id);
     let place = atlas_graph::legacy::place_from_node(&place_id, &snap).ok_or_else(|| ApiError::not_found("place"))?;
@@ -63,7 +63,7 @@ pub async fn place(
 
     let description = crate::graph::node_description(&place_id, &snap);
 
-    Ok(Json(wire::PlaceDetail { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
+    Ok(Json(wire::PlacePage { id: place.id.clone(), name: place.name.clone(), lat: place.lat, lon: place.lon, events, history, canonical_name, description }))
 }
 
 /// The period a place's own history is reported for.

@@ -1556,6 +1556,7 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
             "locus": { "corpus": "bible", "book": "GEN", "chapter": 1, "verse": 1 },
             "text": "In the beginning God created the heaven and the earth.",
             "words_of_christ": [],
+            "heading": { "event_id": "theo-1", "title": "Creation of all things", "kind": "event", "is_continuation": false },
             "edge_summary": [
                 { "kind": "member-of", "count": 1 },
                 { "kind": "attests", "count": 1 },
@@ -1780,6 +1781,204 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
                 "loci": [{ "from": { "unit": bible_unit("MAT", 5, 1) }, "to": { "unit": bible_unit("MAT", 7, 29) } }],
                 "note": matthew["ref_note"],
             }])
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_event_card_carries_the_details_the_legacy_route_served() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/event/rob_sermon_on_the_mount").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount").await;
+    // Assert
+    assert_eq!(
+        (status, card["event"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "kind": "event",
+                "when": { "from": { "value": 31, "label": "AD 31" }, "to": { "value": 31, "label": "AD 31" }, "label": "AD 31" },
+                "robertson_section": legacy["robertson_section"],
+                "ref_note": legacy["ref_note"],
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_titled_passages_card_carries_its_kind_and_no_date() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/event/gen_line_of_cain").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/Event:gen_line_of_cain").await;
+    // Assert
+    assert_eq!(
+        (status, card["event"].clone()),
+        (StatusCode::OK, serde_json::json!({ "kind": "general", "atlas_section": legacy["atlas_section"], "ref_note": legacy["ref_note"] }))
+    );
+}
+
+#[tokio::test]
+async fn a_place_card_carries_its_coordinates_its_name_and_its_dated_founding_and_fall() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/place/jerusalem").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/Place:jerusalem").await;
+    // Assert
+    assert_eq!(
+        (status, card["place"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "lat": legacy["lat"],
+                "lon": legacy["lon"],
+                "display_name": "Jerusalem",
+                "established": {
+                    "when": { "from": { "value": -1003, "label": "1003 BC" }, "to": { "value": -1003, "label": "1003 BC" }, "label": "1003 BC" },
+                    "label": "c. 1003 BC",
+                    "verses": [whole_verse("2SA", 5, 6), whole_verse("2SA", 5, 7), whole_verse("2SA", 5, 9)],
+                    "note": "traditional",
+                    "event": { "id": "Event:sam2_jerusalem_captured", "kind": "Event", "label": "David captures Jerusalem and makes it his capital" },
+                },
+                "destroyed": {
+                    "when": { "from": { "value": -586, "label": "586 BC" }, "to": { "value": -586, "label": "586 BC" }, "label": "586 BC" },
+                    "label": "586 BC",
+                    "verses": [whole_verse("2KI", 25, 9), whole_verse("2KI", 25, 10)],
+                    "event": { "id": "Event:exl_jerusalem", "kind": "Event", "label": "Jerusalem falls to Babylon" },
+                },
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_catechism_card_carries_its_prose() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/catechism/item/commandment-1").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/CatechismItem:commandment-1").await;
+    // Assert
+    assert_eq!(
+        (status, card["catechism"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "part_title": "The Ten Commandments",
+                "text": "Thou shalt have no other gods.",
+                "explanation_heading": legacy["explanation_heading"],
+                "explanation": legacy["explanation"],
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_place_the_kjv_names_otherwise_carries_that_name_beside_its_canonical_one() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/place/tigris").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/Place:tigris").await;
+    // Assert
+    assert_eq!(
+        (status, card["place"].clone()),
+        (StatusCode::OK, serde_json::json!({ "lat": legacy["lat"], "lon": legacy["lon"], "display_name": "Hiddekel", "canonical_name": "Tigris" }))
+    );
+}
+
+#[tokio::test]
+async fn a_catechism_item_that_quotes_scripture_says_where_it_is_written() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/catechism/item/baptism-1").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/CatechismItem:baptism-1").await;
+    // Assert
+    assert_eq!(
+        (status, card["catechism"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "part_title": "The Sacrament of Holy Baptism",
+                "explanation_heading": "What is Baptism?",
+                "explanation": legacy["explanation"],
+                "where_written": legacy["where_written"],
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_book_card_carries_its_authorship_and_its_writing() {
+    // Arrange
+    let app = artifact_app();
+    let (_, legacy, _) = get(&app, "/api/verse/NEH.1.1").await;
+    // Act
+    let (status, card, _) = get(&app, "/api/node/Container:bible-book-NEH").await;
+    // Assert
+    assert_eq!(
+        (status, card["book"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "author": legacy["book_meta"]["author"],
+                "write_place": { "id": "Place:jerusalem", "kind": "Place", "label": "Jerusalem" },
+                "written": { "from": { "value": -430, "label": "430 BC" }, "to": { "value": -400, "label": "400 BC" }, "label": "430 – 400 BC" },
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_it_none() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/chapter/GEN.1").await;
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=GEN.1.1&n=2").await;
+    // Assert
+    assert_eq!(
+        (status, window["units"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([
+                {
+                    "ref": "GEN.1.1",
+                    "locus": bible_unit("GEN", 1, 1),
+                    "text": "In the beginning God created the heaven and the earth.",
+                    "words_of_christ": [],
+                    "heading": legacy["verses"][0]["heading"],
+                    "edge_summary": [
+                        { "kind": "member-of", "count": 1 },
+                        { "kind": "attests", "count": 1 },
+                        { "kind": "mentions", "count": 1 },
+                        { "kind": "cites", "count": 61 },
+                        { "kind": "cited-by", "count": 35 },
+                        { "kind": "commented-on-by", "count": 1 },
+                        { "kind": "catechism-link", "count": 3 },
+                    ],
+                },
+                {
+                    "ref": "GEN.1.2",
+                    "locus": bible_unit("GEN", 1, 2),
+                    "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+                    "words_of_christ": [],
+                    "edge_summary": [
+                        { "kind": "member-of", "count": 1 },
+                        { "kind": "attests", "count": 1 },
+                        { "kind": "mentions", "count": 2 },
+                        { "kind": "cites", "count": 7 },
+                        { "kind": "cited-by", "count": 9 },
+                        { "kind": "commented-on-by", "count": 3 },
+                        { "kind": "catechism-link", "count": 3 },
+                    ],
+                },
+            ])
         )
     );
 }

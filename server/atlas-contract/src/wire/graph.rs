@@ -1,3 +1,5 @@
+use atlas_core::data::EventKind;
+use atlas_graph::heading::Heading;
 use atlas_graph_types::id::NarrativeId;
 use atlas_graph_types::{EdgeKind, NodeKind};
 use serde::{Serialize, Serializer};
@@ -28,6 +30,19 @@ pub struct NodeCard {
     /// none is recorded. Never invented.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// What is recorded about an event or a titled passage, present only for one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event: Option<EventDetail>,
+    /// Where a place is and what is recorded of its history, present only for a place.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub place: Option<PlaceDetail>,
+    /// A catechism item's own words, present only for one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub catechism: Option<CatechismDetail>,
+    /// Who wrote a book of the Bible, where and when, present only for a book this
+    /// atlas records that of.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub book: Option<BookDetail>,
 }
 
 /// What is recorded about one person's life.
@@ -52,6 +67,92 @@ pub struct PersonLife {
     pub eternal_grounds: Vec<String>,
     /// Other names this person is known by.
     pub also_called: Vec<String>,
+}
+
+/// What is recorded about one event or titled passage.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct EventDetail {
+    pub kind: EventKind,
+    /// The years the event spans; absent for a titled passage, which has no date.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub when: Option<super::TimeRange>,
+    /// The section of Robertson's Harmony of the Gospels this event falls in, absent
+    /// when it has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub robertson_section: Option<String>,
+    /// The section of the outline of Acts this event falls in, absent when it has
+    /// none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub acts_section: Option<String>,
+    /// The titled section of this atlas's own outline of Scripture, absent when it
+    /// has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub atlas_section: Option<String>,
+    /// The superscription the King James Version prints over this passage, absent
+    /// when it prints none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kjv_superscription: Option<String>,
+    /// A note on how this event's date and grouping were arrived at, absent when
+    /// none was needed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ref_note: Option<String>,
+}
+
+/// Where one place is, the name a reader of the King James Version knows it by, and
+/// when it was founded and fell, where that is recorded.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PlaceDetail {
+    /// Latitude in degrees, north positive.
+    pub lat: f64,
+    /// Longitude in degrees, east positive.
+    pub lon: f64,
+    /// The name a reader of the King James Version knows this place by.
+    pub display_name: String,
+    /// The place's plain canonical name, present only when `display_name` is the
+    /// translation's own wording and so differs from it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub canonical_name: Option<String>,
+    /// When the place was founded, absent when that is not recorded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub established: Option<super::DateClaim>,
+    /// When the place was destroyed, absent when that is not recorded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destroyed: Option<super::DateClaim>,
+}
+
+/// One catechism item's own words and their explanation.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CatechismDetail {
+    /// The chief part this item belongs to, such as Baptism.
+    pub part_title: String,
+    /// The item's own words -- a commandment, a petition, an article -- absent for
+    /// an item that has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    /// The question the explanation answers, such as "What does this mean?".
+    pub explanation_heading: String,
+    pub explanation: String,
+    /// Where in Scripture the item's own words are written, absent when it quotes
+    /// none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub where_written: Option<String>,
+}
+
+/// Who wrote one book of the Bible, where, and when.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BookDetail {
+    /// The book's author, as this atlas records him.
+    pub author: String,
+    /// Where it was written, absent when that is not recorded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_place: Option<NodeRef>,
+    /// The years it was written across, absent when it is not dated.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub written: Option<super::TimeRange>,
 }
 
 /// How many neighbours of one kind something has.
@@ -178,6 +279,10 @@ pub struct TextUnit {
     /// The spans of `text` that are the words of Christ, in order. Always empty
     /// outside Scripture.
     pub words_of_christ: Vec<super::reading::WordsOfChristSpan>,
+    /// The pericope heading that belongs above this verse, present only where one
+    /// opens or carries on. Always absent outside Scripture.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub heading: Option<Heading>,
     /// How many neighbours this unit has of each kind, so a page can tell which
     /// units lead somewhere without asking after each one.
     pub edge_summary: Vec<EdgeSummaryEntry>,

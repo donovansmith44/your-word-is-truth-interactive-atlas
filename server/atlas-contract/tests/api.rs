@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Person, Polity, PolityEra};
+use atlas_core::data::{demo_fixture, AtlasData, Canon, Event, EventWitness, Person, Place, Polity, PolityEra};
 use atlas_core::time::TimeRange;
 use axum::body::Body;
 use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -683,6 +683,100 @@ async fn a_person_whose_record_holds_a_year_zero_is_refused_as_this_atlases_own_
     assert_eq!(
         answer,
         (StatusCode::INTERNAL_SERVER_ERROR, serde_json::json!({ "error": { "code": "internal", "message": "nobody_0 records a year zero" } }))
+    );
+}
+
+#[tokio::test]
+async fn a_book_whose_record_dates_its_writing_at_one_end_only_is_refused_as_this_atlases_own_defect() {
+    // Arrange
+    let mut data = demo_fixture();
+    let joshua = data.books_meta.iter_mut().find(|meta| meta.book == "JOS").expect("the demo atlas records Joshua");
+    joshua.write_to = None;
+    let data: AtlasData = data.finish();
+    let graph = graph_fixture_for(&data);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
+
+    // Act
+    let answer = call(&app, "/api/node/Container:bible-book-JOS").await;
+
+    // Assert
+    assert_eq!(
+        answer,
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::json!({ "error": { "code": "internal", "message": "the writing date JOS records is refused: a span records one of its ends and not the other" } })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_place_that_shares_a_catechism_items_id_carries_no_catechism_prose() {
+    // Arrange
+    let mut data = demo_fixture();
+    data.places.push(Place { id: "demo-item-1".into(), name: "Demo Item".into(), lat: 31.5, lon: 35.5, verse_links: vec!["JOS.1.1".into()] });
+    let data: AtlasData = data.finish();
+    let graph = graph_fixture_for(&data);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
+
+    // Act
+    let (status, card) = call(&app, "/api/node/Place:demo-item-1").await;
+
+    // Assert
+    assert_eq!(
+        (status, card.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "id": "Place:demo-item-1",
+                "kind": "Place",
+                "label": "Demo Item",
+                "provenance": "curated-places",
+                "edge_summary": [{ "kind": "mentioned-in", "count": 1 }],
+                "version": card["version"],
+                "place": { "lat": 31.5, "lon": 35.5, "display_name": "Demo Item" },
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_event_card_carries_every_section_and_note_its_event_records() {
+    // Arrange
+    let mut data = demo_fixture();
+    data.events.push(Event {
+        id: "e-sections".into(),
+        label: "A demo event cited by every outline".into(),
+        when: TimeRange::new(-1000, -1000).unwrap(),
+        verses: vec!["JOS.1.1".into()],
+        robertson_section: Some("Robertson §1".into()),
+        acts_section: Some("Acts §1".into()),
+        atlas_section: Some("Atlas §1".into()),
+        kjv_superscription: Some("A Psalm of David.".into()),
+        ref_note: Some("Dated by the demo atlas alone.".into()),
+        ..Default::default()
+    });
+    let data: AtlasData = data.finish();
+    let graph = graph_fixture_for(&data);
+    let app = atlas_contract::app::build(Arc::new(data), graph, None);
+
+    // Act
+    let (status, card) = call(&app, "/api/node/Event:e-sections").await;
+
+    // Assert
+    assert_eq!(
+        (status, card["event"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "kind": "event",
+                "when": { "from": { "value": -1000, "label": "1000 BC" }, "to": { "value": -1000, "label": "1000 BC" }, "label": "1000 BC" },
+                "robertson_section": "Robertson §1",
+                "acts_section": "Acts §1",
+                "atlas_section": "Atlas §1",
+                "kjv_superscription": "A Psalm of David.",
+                "ref_note": "Dated by the demo atlas alone.",
+            })
+        )
     );
 }
 

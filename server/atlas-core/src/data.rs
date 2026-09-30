@@ -196,6 +196,17 @@ pub struct Event {
     pub order_key: i32,
 }
 
+impl Event {
+    /// The years this event spans. A titled passage has none: the undated span it
+    /// carries is the whole atlas, which is no date to show.
+    pub fn date(&self) -> Option<TimeRange> {
+        match self.kind {
+            EventKind::Event => Some(self.when),
+            EventKind::General => None,
+        }
+    }
+}
+
 atlas_graph_types::vocabulary! {
     /// Which kind of container this is: an `event`, something that happened at a
     /// date, or a `general` titled passage, which has none.
@@ -284,6 +295,18 @@ pub struct BookMeta {
     pub write_from: Option<i32>,
     /// The latest year it is dated to; absent when undated.
     pub write_to: Option<i32>,
+}
+
+impl BookMeta {
+    /// The span the book was written across. A book dated at one end only records no
+    /// span, and none is invented for it.
+    pub fn written(&self) -> Result<Option<TimeRange>, crate::CoreError> {
+        match (self.write_from, self.write_to) {
+            (Some(from), Some(to)) => TimeRange::new(from, to).map(Some),
+            (None, None) => Ok(None),
+            _ => Err(crate::CoreError::OneEndedSpan),
+        }
+    }
 }
 
 /// Who wrote one book, as curated Person ids. A compile-time input only: the graph lowers it into
@@ -1518,5 +1541,99 @@ mod year_index_tests {
         assert_eq!(year_index(-2), -2);
         assert_eq!(year_index(2), 1);
         assert_eq!(year_index(1) - year_index(-1), 1);
+    }
+}
+
+#[cfg(test)]
+mod event_date_tests {
+    use super::*;
+
+    fn container(kind: EventKind, when: TimeRange) -> Event {
+        Event {
+            id: "sermon".into(),
+            label: "The Sermon on the Mount".into(),
+            when,
+            places: vec![],
+            verses: vec![],
+            kind,
+            witnesses: vec![],
+            robertson_section: None,
+            acts_section: None,
+            atlas_section: None,
+            kjv_superscription: None,
+            ref_note: None,
+            order_key: 0,
+        }
+    }
+
+    #[test]
+    fn an_events_date_is_the_span_it_was_placed_at() {
+        // Arrange
+        let placed = TimeRange::new(31, 31).unwrap();
+        let event = container(EventKind::Event, placed);
+        // Act
+        let date = event.date();
+        // Assert
+        assert_eq!(date, Some(placed));
+    }
+
+    #[test]
+    fn a_titled_passage_has_no_date_although_it_carries_the_undated_span() {
+        // Arrange
+        let passage = container(EventKind::General, TimeRange::undated());
+        // Act
+        let date = passage.date();
+        // Assert
+        assert_eq!(date, None);
+    }
+}
+
+#[cfg(test)]
+mod book_writing_tests {
+    use super::*;
+    use crate::CoreError;
+
+    fn book(write_from: Option<i32>, write_to: Option<i32>) -> BookMeta {
+        BookMeta { book: "NEH".into(), author: "Nehemiah".into(), write_place: Some("jerusalem".into()), write_from, write_to }
+    }
+
+    #[test]
+    fn a_book_dated_at_both_ends_was_written_across_that_span() {
+        // Arrange
+        let nehemiah = book(Some(-430), Some(-400));
+        // Act
+        let written = nehemiah.written();
+        // Assert
+        assert_eq!(written, Ok(Some(TimeRange::new(-430, -400).unwrap())));
+    }
+
+    #[test]
+    fn a_book_dated_at_neither_end_has_no_writing_date() {
+        // Arrange
+        let undated = book(None, None);
+        // Act
+        let written = undated.written();
+        // Assert
+        assert_eq!(written, Ok(None));
+    }
+
+    #[test]
+    fn a_book_dated_at_one_end_only_is_refused_rather_than_given_a_bound_it_does_not_record() {
+        // Arrange
+        let one_ended = [book(Some(-430), None), book(None, Some(-400))];
+        // Act
+        let written = one_ended.map(|b| b.written());
+        // Assert
+        assert_eq!(written, [Err(CoreError::OneEndedSpan), Err(CoreError::OneEndedSpan)]);
+    }
+
+    #[test]
+    fn a_book_dated_to_end_before_it_begins_is_refused() {
+        // Arrange
+        let inverted = book(Some(-400), Some(-430));
+        // Act
+        let written = inverted.written();
+        // Assert
+        assert_eq!(written, Err(CoreError::InvertedRange));
     }
 }

@@ -36,7 +36,7 @@ pub struct NarrativePosition {
 /// One event, or one titled passage, in full.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-pub struct EventDetail {
+pub struct EventPage {
     pub id: String,
     pub title: String,
     pub kind: atlas_core::data::EventKind,

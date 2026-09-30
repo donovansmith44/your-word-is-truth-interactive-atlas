@@ -7,7 +7,7 @@ use atlas_core::wire::SceneEvent;
 /// about its name and its history.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-pub struct PlaceDetail {
+pub struct PlacePage {
     pub id: String,
     pub name: String,
     /// Latitude in degrees, north positive.
