@@ -539,3 +539,23 @@ Nothing open remains; the spec awaits the plans.
 - **R17 — Back is the dual of the last un-returned hop** (`Breadcrumb[^1]`),
   so Back at the bottom is a no-op and Back-after-Back never goes forward
   (amends §3.5's literal `Links[^1]`).
+- **R18 — edges are explorable** (owner, 2026-09-30: "I already agree and want
+  explorable edges"). An edge is a graph element with a frontier of its own:
+  its two ends, its justification and provenance, and anything positioned on
+  it. So `Follow` is total and the last case of "every affordance is a
+  queried edge" closes (F-21, F1-12 retire). Types, shown for sign-off at
+  FOCUS-1's close (PRINCIPLES 12); to be built as its own batch (A-EDGES)
+  between FOCUS-1 and FOCUS-2, so FOCUS-2…9 write their rows against the
+  final table:
+  ```csharp
+  public abstract record ElementKind { Node(NodeKind); Edge(EdgeKind); }      // what an Explorable is
+  public sealed class Explorable { ElementKind Kind; string Id; string Label; Groups; Links(...); }
+  public sealed record Link(EdgeKind Kind, PositionRef Target);              // node or edge; the wire's union
+  IExplorer.Resolve(PositionRef) ; Follow(Link)                              // total
+  Presentation.Of(ElementKind, Surface)                                      // rows for edge kinds too
+  ```
+  Server: an edge card (`/api/edge/{id}`: kind, ends, provenance,
+  justification, loci, votes/narrative) and an edge's frontier (`from`,
+  `to`, `justified-by`, edge-position neighbours), in the generated document;
+  AQC minor. The edge's label is served (its kind's display label plus its
+  ends), never composed on the client.
