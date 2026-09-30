@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -16,6 +17,7 @@ public sealed class CommentaryItemNode : IExplorable
 
     public string Title { get; }
     public string Kind => "CommentaryItem";
+    public Explorable Identity => new(NodeKind.CommentaryItem, NodeIds.Of(NodeKind.CommentaryItem, _id), Title);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
         Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());

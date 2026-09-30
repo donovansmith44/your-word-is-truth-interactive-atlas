@@ -17,6 +17,7 @@ public sealed class CatechismNode : IExplorable
     public string Id => _id;
     public string Title { get; }
     public string Kind => "Catechism";
+    public Explorable Identity => new(NodeKind.CatechismItem, NodeIds.Of(NodeKind.CatechismItem, _id), Title);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api) =>
         Task.FromResult<IReadOnlyList<Chip>>(Array.Empty<Chip>());

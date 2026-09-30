@@ -16,6 +16,7 @@ public sealed class PolityDeltaNode : IExplorable
 
     public string Title { get; }
     public string Kind => "PolityDelta";
+    public Explorable Identity => new(NodeKind.Polity, NodeIds.Of(NodeKind.Polity, PolityId), PolityName);
 
     public PolityDeltaNode(string polityId, string polityName, string deltaKind, Year from, Year to, string? eventText, IReadOnlyList<string> verses, string? refNote)
     {

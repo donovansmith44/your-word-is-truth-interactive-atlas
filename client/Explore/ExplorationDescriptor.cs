@@ -78,7 +78,8 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                 var label = parts[1];
                 var date = (await new PlaceNode(placeId, placeId).DatesAsync(api)).FirstOrDefault(d => d.Label == label)
                     ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: place '{placeId}' no longer has a curated '{label}' date.");
-                return new YearNode(placeId, date);
+                return YearNode.Of(placeId, date)
+                    ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: place '{placeId}'s '{label}' date attests no event.");
             }
 
             case "Catechism":

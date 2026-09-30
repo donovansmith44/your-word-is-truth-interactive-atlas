@@ -18,13 +18,14 @@ public sealed class VerseNode : IExplorable
 
     public string Title => _vref;
     public string Kind => "Verse";
+    public Explorable Identity => new(NodeKind.TextUnit, NodeIds.Of(NodeKind.TextUnit, _vref), _vref);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
         var (book, chapter, verse) = CanonRef.ParseVerse(_vref);
         IReadOnlyList<Chip> list = new[]
         {
-            new Chip("About this book", "popover-chip-book", new ChipTarget.Push(new AuthorNode(book))),
+            new Chip("About this book", "popover-chip-book", new ChipTarget.Push(new AuthorNode(book), EdgeKind.MemberOf)),
             new Chip("Read in context", "popover-chip-context", new ChipTarget.NavigateReader(book, chapter, verse)),
         };
         return Task.FromResult(list);

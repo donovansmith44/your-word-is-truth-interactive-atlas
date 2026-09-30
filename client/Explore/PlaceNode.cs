@@ -24,6 +24,7 @@ public sealed class PlaceNode : IExplorable
 
     public string Title => _placeName;
     public string Kind => "Place";
+    public Explorable Identity => new(NodeKind.Place, NodeIds.Of(NodeKind.Place, _placeId), _placeName);
 
     public string PlaceId => _placeId;
 
@@ -98,7 +99,7 @@ public sealed class PlaceNode : IExplorable
     public async Task<IReadOnlyList<PlaceDate>> DatesAsync(AtlasClient api) =>
         PlaceDates.Of((await CardAsync(api)).Place);
 
-    private Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Place, _placeId)));
+    private Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(Identity.Id));
 
     private Task<PlacePage> Load(AtlasClient api) => DetailAsync(api);
 }

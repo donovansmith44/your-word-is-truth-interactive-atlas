@@ -5,8 +5,6 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class AuthorNode : IExplorable
 {
-    private const string BookContainerPrefix = "bible-book-";
-
     private readonly string _bookCode;
     private readonly AsyncMemo<NodeCard> _card = new();
 
@@ -14,6 +12,7 @@ public sealed class AuthorNode : IExplorable
 
     public string Title => _bookCode;
     public string Kind => "Author";
+    public Explorable Identity => new BookNode(_bookCode).Identity;
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
@@ -65,5 +64,5 @@ public sealed class AuthorNode : IExplorable
     };
 
     private Task<NodeCard> Load(AtlasClient api) =>
-        _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Container, $"{BookContainerPrefix}{_bookCode}")));
+        _card.Get(() => api.NodeCard(Identity.Id));
 }

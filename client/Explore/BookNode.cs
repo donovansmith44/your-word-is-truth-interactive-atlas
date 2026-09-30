@@ -1,3 +1,4 @@
+using BibleAtlas.Client.Contract;
 using Microsoft.AspNetCore.Components;
 
 namespace BibleAtlas.Client.Explore;
@@ -10,6 +11,7 @@ public sealed class BookNode : IExplorable
 
     public string Title => _bookCode;
     public string Kind => "Book";
+    public Explorable Identity => new(NodeKind.Container, LegacyNodes.BookContainerId(_bookCode), _bookCode);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
@@ -20,7 +22,7 @@ public sealed class BookNode : IExplorable
             new Chip("Read in context", "popover-chip-context",
                 new ChipTarget.NavigateReader(_bookCode, 1, null)),
             new Chip("About this book", "popover-chip-book",
-                new ChipTarget.Push(new AuthorNode(_bookCode))),
+                new ChipTarget.Push(new AuthorNode(_bookCode), EdgeKind.AuthoredBy)),
         };
         return Task.FromResult(list);
     }
