@@ -184,7 +184,3 @@ exactly what an incomplete glossary hides.
 - **"the units' `ref` fields are `<a>`, `<b>`, `<c>` in order"** — the
   last TextWindowQuery response's own `units[].ref` values equal
   `[<a>,<b>,<c>]` in that exact order.
-- **"the server advertises AQC version `<min>` through `<max>`"** — the
-  last response's own `min_version`/`max_version` fields equal
-  `<min>`/`<max>` exactly; only meaningful after "I query
-  `/api/contract`".

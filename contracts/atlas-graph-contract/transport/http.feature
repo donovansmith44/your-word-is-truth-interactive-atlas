@@ -18,7 +18,7 @@ Feature: HTTP — the transport the Blazor client consumes
   Vocabulary:
     | projection | any of: books, catechism-item, catechism-list, chapter, contract, edge-page, eras, event, export-format, gazetteer, kretzmann-chapter, land-mask, landmarks, narrative-event, narratives, node-card, place, polities, sources, verse, version-root, vocabulary, xref-list |
 
-  Scenario: the AQC version range the server advertises
+  Scenario: the schema versions the server declares
     When I GET /api/contract
     Then the consumed projection contract equals fixture "contract"
 

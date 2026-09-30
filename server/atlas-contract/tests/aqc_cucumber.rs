@@ -328,12 +328,6 @@ fn then_field_is_empty_array(world: &mut AqcWorld, field: String) {
     assert!(arr.is_empty(), "field '{field}' expected empty, got {} entries", arr.len());
 }
 
-#[then(expr = "the server advertises AQC version {string} through {string}")]
-fn then_server_advertises(world: &mut AqcWorld, min: String, max: String) {
-    assert_eq!(world.body["min_version"].as_str().unwrap(), min);
-    assert_eq!(world.body["max_version"].as_str().unwrap(), max);
-}
-
 #[tokio::main]
 async fn main() {
     let features_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contracts/atlas-query-contract/features");

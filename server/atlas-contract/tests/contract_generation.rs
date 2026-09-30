@@ -181,10 +181,11 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
 #[test]
 fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
     // Arrange
+    let version = std::fs::read_to_string(atlas_contract::document::contracts_root().join("atlas-query-contract/VERSION")).expect("the AQC VERSION file exists");
     let expected = serde_json::json!({
         "title": "Bible Atlas API",
         "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.",
-        "version": atlas_contract::meta::MAX_SUPPORTED_VERSION,
+        "version": version.trim(),
     });
     // Act
     let actual = serde_json::to_value(atlas_contract::document::openapi().info).expect("the document's info serialises");

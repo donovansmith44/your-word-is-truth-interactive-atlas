@@ -292,8 +292,8 @@ projections = Map.fromList
     , Fields [ field1 "format_version" Keep ]
     )
   , ( "contract"
-      -- The AQC version range this server advertises.
-    , Fields [ field1 "min_version" Keep, field1 "max_version" Keep ]
+      -- The schema versions of the data this server answers from.
+    , Fields [ field1 "manifest_schema" Keep, field1 "section_schema_version" Keep ]
     )
   , ( "sources"
       -- The source registry: every source a provenance string can resolve

@@ -375,11 +375,4 @@ public class AqcSteps
     {
         Assert.Equal(0, _body.GetProperty(field).GetArrayLength());
     }
-
-    [Then("the server advertises AQC version \"([^\"]+)\" through \"([^\"]+)\"")]
-    public void ThenServerAdvertises(string min, string max)
-    {
-        var contract = Body<Contract.Contract>();
-        Assert.Equal((min, max), (contract.MinVersion, contract.MaxVersion));
-    }
 }

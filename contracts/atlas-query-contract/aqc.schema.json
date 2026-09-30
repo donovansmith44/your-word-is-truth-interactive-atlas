@@ -515,14 +515,6 @@
           "minimum": 1,
           "type": "integer"
         },
-        "max_version": {
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-          "type": "string"
-        },
-        "min_version": {
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-          "type": "string"
-        },
         "section_schema_version": {
           "format": "int32",
           "minimum": 1,
@@ -530,8 +522,6 @@
         }
       },
       "required": [
-        "min_version",
-        "max_version",
         "manifest_schema",
         "section_schema_version"
       ],

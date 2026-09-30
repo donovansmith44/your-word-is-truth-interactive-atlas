@@ -23,20 +23,10 @@ pub async fn sources(State(sources): State<Arc<SourcesDocument>>) -> Json<Source
     Json((*sources).clone())
 }
 
-/// Pre-launch there is no range of earlier contract versions to support, so the
-/// minimum and the maximum are the one version this server implements.
-pub const MIN_SUPPORTED_VERSION: &str = "0.10.0";
-pub const MAX_SUPPORTED_VERSION: &str = "0.10.0";
-
-/// The range of contract versions this server answers for.
-///
-/// The two schema versions identify the compiled data set behind the
-/// responses.
+/// The schema versions of the compiled data set behind the responses.
 #[utoipa::path(get, path = "/api/contract", responses((status = 200, body = wire::Contract)), tag = "meta")]
 pub async fn contract() -> Json<wire::Contract> {
     Json(wire::Contract {
-        min_version: MIN_SUPPORTED_VERSION.to_string(),
-        max_version: MAX_SUPPORTED_VERSION.to_string(),
         manifest_schema: atlas_graph::sqlite::manifest::MANIFEST_SCHEMA,
         section_schema_version: atlas_graph::sections::SECTION_SCHEMA_VERSION,
     })

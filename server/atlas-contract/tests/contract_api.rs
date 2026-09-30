@@ -13,12 +13,10 @@ fn app() -> axum::Router {
 }
 
 #[tokio::test]
-async fn api_contract_answers_the_whole_advertisement_and_nothing_besides() {
+async fn the_contract_declares_only_the_schema_versions_it_was_built_with() {
     // Arrange
     let app = app();
     let expected = serde_json::json!({
-        "min_version": "0.10.0",
-        "max_version": "0.10.0",
         "manifest_schema": 1,
         "section_schema_version": 15,
     });

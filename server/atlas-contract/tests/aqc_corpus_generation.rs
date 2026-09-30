@@ -100,21 +100,6 @@ fn index_json_matches_the_identity_declared_in_seeds_and_focus_identity_extra() 
     assert_eq!(index, expected, "index.json has drifted from SEEDS/FOCUS_IDENTITY_EXTRA -- run the exporter and commit the result");
 }
 
-#[test]
-fn version_file_and_schema_version_agree_with_the_compiled_server_constants() {
-    let version_path = contract_dir().join("VERSION");
-    let version = std::fs::read_to_string(&version_path).expect("VERSION must exist");
-    let version = version.trim();
-
-    assert_eq!(version, atlas_contract::meta::MIN_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from meta::MIN_SUPPORTED_VERSION");
-    assert_eq!(version, atlas_contract::meta::MAX_SUPPORTED_VERSION, "contracts/atlas-query-contract/VERSION has drifted from meta::MAX_SUPPORTED_VERSION");
-
-    let schema_path = contract_dir().join("aqc.schema.json");
-    let schema: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&schema_path).expect("aqc.schema.json must exist")).expect("aqc.schema.json must be valid JSON");
-    let schema_version = schema["version"].as_str().expect("aqc.schema.json must have a top-level 'version' string");
-    assert_eq!(schema_version, version, "aqc.schema.json's own 'version' has drifted from VERSION");
-}
-
 fn count_scenarios_in_feature_files() -> usize {
     let features_dir = contract_dir().join("features");
     let mut total = 0usize;
