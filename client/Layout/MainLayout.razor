@@ -1,4 +1,5 @@
 @using BibleAtlas.Client.Explore
+@using BibleAtlas.Client.Views
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager Nav
@@ -66,7 +67,7 @@
 
 @if (_hamburgerSaved is not null)
 {
-    <ExplorerPopover @key="_hamburgerSaved" Saved="_hamburgerSaved" OnClose="CloseHamburgerPopover" />
+    <ExplorerPopover @key="_hamburgerSaved" Saved="_hamburgerSaved" HostView="@(IsWorld ? ViewNames.World : ViewNames.Reader)" OnClose="CloseHamburgerPopover" />
 }
 
 @if (_hamburgerNotice is not null)
