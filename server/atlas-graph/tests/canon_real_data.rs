@@ -166,7 +166,7 @@ fn every_row_of_every_family_round_trips() {
     let expected: Vec<(RowFamily, usize)> = vec![
         (RowFamily::ContainsBible, 2_378 + BOOKS_IN_THE_BIBLE),
         (RowFamily::ContainsConcord, 270 + DOCUMENTS_IN_THE_CONCORD),
-        (RowFamily::Attests, 33_355),
+        (RowFamily::Attests, 43_067),
         (RowFamily::Succession, 13),
         (RowFamily::CanonSuccession, 1_253 + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS),
         (RowFamily::DatedBy, 912),
@@ -177,7 +177,7 @@ fn every_row_of_every_family_round_trips() {
         (RowFamily::Catechism, 6_568),
         (RowFamily::CommentsOn, 50_602),
         (RowFamily::SpokenBy, 470),
-        (RowFamily::SpokenAt, 6_381),
+        (RowFamily::SpokenAt, 6_402),
         (RowFamily::Mentions, 41_548),
         (RowFamily::CrossRefs, 343_558 + CONCORD_CITATIONS),
         (RowFamily::Quotes, 0),
@@ -196,8 +196,8 @@ fn every_row_of_every_family_round_trips() {
     assert_eq!(counts, expected, "per-family row counts");
     assert_eq!(
         total,
-        923_139 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
-        "the committed graph carries exactly 923,139 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
+        932_872 + SHOWN_ROWS + MAP_STEPS + BOOKS_IN_THE_BIBLE + DOCUMENTS_IN_THE_CONCORD + CONCORD_DOCUMENT_STEPS + CONCORD_ARTICLE_STEPS + CONCORD_CITATIONS,
+        "the committed graph carries exactly 932,872 rows plus what the maps show and their steps, plus each corpus root's members, plus the Concord's document and article steps, plus its citations of Scripture"
     );
 
     assert_eq!(
