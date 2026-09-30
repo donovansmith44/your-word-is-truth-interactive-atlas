@@ -64,8 +64,8 @@ public sealed class ChapterTextTests
 
         // Assert
         Assert.Equal(
-            InOrder([new PassageListVerse("GEN.1.1", "In the beginning God created the heaven and the earth.", Anchors: [god], WordsOfChrist: [])]),
-            InOrder(verses));
+            WholeValue.Of(new[] { new PassageListVerse("GEN.1.1", "In the beginning God created the heaven and the earth.", Anchors: [god], WordsOfChrist: []) }),
+            WholeValue.Of(verses));
     }
 
     [Fact]
@@ -85,8 +85,8 @@ public sealed class ChapterTextTests
 
         // Assert
         Assert.Equal(
-            InOrder(new[] { "MAT.5.48", "MAT.6.1", "MAT.6.2", "MAT.7.1" }.Select(vref => new PassageListVerse(vref, "", Anchors: [], WordsOfChrist: []))),
-            InOrder(verses));
+            WholeValue.Of(new[] { "MAT.5.48", "MAT.6.1", "MAT.6.2", "MAT.7.1" }.Select(vref => new PassageListVerse(vref, "", Anchors: [], WordsOfChrist: []))),
+            WholeValue.Of(verses));
     }
 
     [Fact]
@@ -102,8 +102,6 @@ public sealed class ChapterTextTests
         // Assert
         Assert.Equal([], verses);
     }
-
-    private static string InOrder(IEnumerable<PassageListVerse> verses) => System.Text.Json.JsonSerializer.Serialize(verses);
 
     private static string Window(params (string Ref, string Book, int Chapter, int Verse)[] units) =>
         $$"""{"version":"v","units":[{{string.Join(",", units.Select(u => $$"""{"ref":"{{u.Ref}}","locus":{"corpus":"bible","book":"{{u.Book}}","chapter":{{u.Chapter}},"verse":{{u.Verse}}},"text":"","words_of_christ":[],"edge_summary":[],"anchors":[]}"""))}}]}""";

@@ -46,7 +46,7 @@ else
     <RevealControls Total="1" Default="0" Step="1" Shown="@(_expanded ? 1 : 0)" ShownChanged="OnShownChanged"
                      MoreTestId="@($"popover-verse-expand{TestIdSuffix}")" CollapseTestId="@($"popover-verse-collapse{TestIdSuffix}")"
                      RevealNoun="verses"
-                     MoreLabel="@(TruncatedBy > 0 ? $"+{TruncatedBy} more — read the chapter" : "Read the whole chapter")"
+                     MoreLabel="Read the whole chapter"
                      CollapseLabel="Show just this verse" />
 }
 
@@ -61,8 +61,6 @@ else
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     private bool AlreadyInCurrentReaderChapter => ViewState.IsReaderChapterMounted(Book, Chapter);
-
-    [Parameter] public int TruncatedBy { get; set; }
 
     private bool _expanded;
     private Chapter? _chapter;

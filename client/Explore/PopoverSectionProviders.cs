@@ -1098,42 +1098,10 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
 
 file static class WitnessUnitsResolver
 {
-    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventWitness> witnesses)
+    public static async Task<List<PassageSourceUnit>> ResolveAsync(AtlasClient api, IReadOnlyList<EventAccount> accounts)
     {
-        Versification? canon = null;
-        try
-        {
-            canon = Versification.From(await api.Books());
-        }
-        catch (Exception)
-        {
-        }
-
-        var units = witnesses.Select(w =>
-        {
-            var verses = PassageBlockBuilder.FlattenWitness(w);
-            return new PassageSourceUnit(verses, CoalesceAcrossChapters: true, Canon: canon);
-        }).ToList();
-
-        List<PassageListVerse> resolvedFlat;
-        try
-        {
-            var allVrefs = witnesses.SelectMany(w => w.VerseGroups.SelectMany(g => g.Verses)).ToList();
-            resolvedFlat = await VerseTextResolver.ResolveAsync(api, allVrefs);
-        }
-        catch (Exception)
-        {
-            resolvedFlat = new List<PassageListVerse>();
-        }
-        // GroupBy + first-wins, not a raw ToDictionary: defensive against a duplicate Vref
-        // across two witnesses in the network response (which ToDictionary would throw on).
-        var resolvedByVref = resolvedFlat.GroupBy(v => v.Vref).ToDictionary(g => g.Key, g => g.First());
-        return units.Select(u => new PassageSourceUnit(
-            u.Verses.Select(v =>
-            {
-                var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
-                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Anchors, resolved?.WordsOfChrist);
-            }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters, Canon: u.Canon)).ToList();
+        var verses = await Task.WhenAll(accounts.Select(account => VerseTextResolver.ResolveSpansAsync(api, account.Runs)));
+        return accounts.Zip(verses).Select(PassageSourceUnit (pair) => new AccountSourceUnit(pair.Second, pair.First)).ToList();
     }
 }
 
@@ -1149,29 +1117,23 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
         }
 
         EventPage detail;
+        IReadOnlyList<EventAccount> accounts;
         try
         {
             detail = await ev.DetailAsync(api);
+            accounts = await EventAccounts.ReadAsync(ctx.Graph, ev.EventId);
         }
         catch (Exception)
         {
             return null;
         }
 
-        if (detail.Witnesses.Count == 0)
+        if (accounts.Count == 0)
         {
             return null;
         }
 
-        List<PassageSourceUnit> units;
-        try
-        {
-            units = await WitnessUnitsResolver.ResolveAsync(api, detail.Witnesses);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var units = await WitnessUnitsResolver.ResolveAsync(api, accounts);
 
         var multi = units.Count > 1;
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -1336,56 +1298,29 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
             return null;
         }
 
-        EventPage?[] details;
-        try
+        var own = CanonRef.BibleRefOf(ownVref);
+        var accountsOfEach = await Task.WhenAll(events.Select(async e =>
         {
-            details = await Task.WhenAll(events.Select(async e =>
+            try
             {
-                try
-                {
-                    return await new EventNode(e.Id, e.Label).DetailAsync(api);
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-            }));
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        var qualifying = new List<(string Label, List<EventWitness> OtherWitnesses)>();
-        foreach (var (e, detail) in events.Zip(details))
-        {
-            if (detail is null)
-            {
-                continue;
+                return await EventAccounts.ReadAsync(ctx.Graph, e.Id);
             }
-            var others = detail.Witnesses.Where(w => !w.VerseGroups.Any(g => g.Verses.Contains(ownVref))).ToList();
-            if (others.Count > 0)
+            catch (Exception)
             {
-                qualifying.Add((e.Label, others));
+                return [];
             }
-        }
+        }));
+        var qualifying = events.Zip(accountsOfEach)
+            .Select(pair => (pair.First.Label, OtherAccounts: pair.Second.Where(account => !account.Reads(own)).ToList()))
+            .Where(q => q.OtherAccounts.Count > 0)
+            .ToList();
 
         if (qualifying.Count == 0)
         {
             return null;
         }
 
-        List<List<PassageSourceUnit>> unitsPerEvent;
-        try
-        {
-            // Task.WhenAll preserves input order, so unitsPerEvent[i] lines up with
-            // qualifying[i] in the render fragment below.
-            unitsPerEvent = (await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherWitnesses)))).ToList();
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        var unitsPerEvent = await Task.WhenAll(qualifying.Select(q => WitnessUnitsResolver.ResolveAsync(api, q.OtherAccounts)));
 
         var multiEvent = qualifying.Count > 1;
 

@@ -12,6 +12,10 @@
       "**/AtlasClient.cs",
       "**/Explore/EdgeSectionRegistry.cs",
       "**/YearInput.cs",
+      "**/Explore/AnchoredText.cs",
+      "**/Explore/ChapterText.cs",
+      "**/Explore/EventAccounts.cs",
+      "**/Explore/PlaceDates.cs",
       "!**/obj/**"
     ],
     "thresholds": { "high": 100, "low": 100, "break": 100 },

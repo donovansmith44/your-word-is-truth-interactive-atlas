@@ -39,67 +39,43 @@ import { loadToc } from './lib/canon';
 type NodeRef = { id: string; kind: string; label: string };
 type EdgePage = { kind: string; entries: { edge: string; node: NodeRef }[]; next: number | null; version: string };
 
-// O4 rework: scans real chapters (first 3 of each of up to maxChapters
-// books, the SAME sampling shape findVerseByXrefCount uses) for a verse
-// whose own `persons` field (ChapterOut.Verses[].Persons, the wire's own
-// ATTESTED-mentions index -- PersonNode.cs's own doc comment) names someone
-// whose display name is a genuine, exact-case LITERAL substring of that
-// verse's own text -- the SAME plain-text match PlaceMentions.Scan (client)
-// performs (R-D1, 2026-08-23: case-SENSITIVE, Ordinal), so this is exactly
-// the condition under which `verse-mention-person-{verse}-{personId}`
-// (Reader.razor's own in-text link, the surviving entry path -- see this
-// file's own header comment) actually renders, not merely "the wire knows
-// about a relationship." Returns every such person found (a verse may
-// literally mention more than one) plus the discovering verse ref itself,
-// so a caller can click straight into the in-text span with no intermediate
-// verse-popover hop.
+async function personsNamedIn(cref: string): Promise<{ verse: number; persons: { id: string; name: string }[] }[]> {
+  const window = await api.chapterText(cref);
+  return window.units.map((u: any) => ({
+    verse: u.locus.verse,
+    persons: [...new Map((u.anchors as { node: NodeRef }[])
+      .filter(a => a.node.kind === 'Person')
+      .map(a => [a.node.id, { id: a.node.id.slice('Person:'.length), name: a.node.label }])).values()],
+  }));
+}
+
 async function findVerseWithPersonMentions(
   toc: any,
   maxChapters = 40,
 ): Promise<{ book: string; chapter: number; verse: number; persons: { id: string; name: string }[] } | null> {
   for (const b of toc.slice(0, maxChapters)) {
     for (const ch of b.chapters.slice(0, 3)) {
-      const chapterOut = await api.chapter(`${b.code}.${ch}`);
-      for (const v of chapterOut.verses as { verse: number; text: string; persons?: { id: string; name: string }[] }[]) {
-        const persons = (v.persons || []).filter(p => v.text.includes(p.name));
-        if (persons.length > 0) {
-          return { book: b.code, chapter: ch, verse: v.verse, persons };
-        }
+      const named = (await personsNamedIn(`${b.code}.${ch}`)).find(v => v.persons.length > 0);
+      if (named) {
+        return { book: b.code, chapter: ch, ...named };
       }
     }
   }
   return null;
 }
 
-// The negative twin of findVerseWithPersonMentions above -- same bounded
-// sample, looking for the first verse whose own `persons` field is empty
-// (a real, common case: most verses attest no person at all). Bounded the
-// SAME way (never an unbounded whole-canon scan) so this stays cheap even
-// though a "not found" result is honestly possible in principle.
 async function findVerseWithoutPersonMentions(toc: any, maxChapters = 40): Promise<{ book: string; chapter: number; verse: number } | null> {
   for (const b of toc.slice(0, maxChapters)) {
     for (const ch of b.chapters.slice(0, 3)) {
-      const chapterOut = await api.chapter(`${b.code}.${ch}`);
-      for (const v of chapterOut.verses as { verse: number; persons?: { id: string; name: string }[] }[]) {
-        if (!v.persons || v.persons.length === 0) {
-          return { book: b.code, chapter: ch, verse: v.verse };
-        }
+      const unnamed = (await personsNamedIn(`${b.code}.${ch}`)).find(v => v.persons.length === 0);
+      if (unnamed) {
+        return { book: b.code, chapter: ch, verse: unnamed.verse };
       }
     }
   }
   return null;
 }
 
-// Same sweep, but keeps searching until it finds a PERSON whose own
-// `mentioned-in` edge_summary count exceeds `minCount` -- used by the
-// honest-clamp test, which needs a genuinely busy person (more mentions
-// than the initial page) rather than an arbitrary one. O4 rework: sourced
-// from `v.persons` (see findVerseWithPersonMentions above) rather than the
-// generic `mentions` edge, and returns the DISCOVERING verse itself (book/
-// chapter/verse) alongside the person -- that verse is, by construction,
-// one where the person's own name is a genuine literal text match, so the
-// caller can click straight into `verse-mention-person-{verse}-{id}` with
-// no separate "is this vref actually mentionable" check of its own.
 async function findPersonWithManyMentions(
   toc: any,
   minCount: number,
@@ -108,10 +84,9 @@ async function findPersonWithManyMentions(
   const seen = new Set<string>();
   for (const b of toc.slice(0, maxChapters)) {
     for (const ch of b.chapters.slice(0, 3)) {
-      const chapterOut = await api.chapter(`${b.code}.${ch}`);
-      for (const v of chapterOut.verses as { verse: number; text: string; persons?: { id: string; name: string }[] }[]) {
-        for (const p of v.persons || []) {
-          if (seen.has(p.id) || !v.text.includes(p.name)) continue;
+      for (const v of await personsNamedIn(`${b.code}.${ch}`)) {
+        for (const p of v.persons) {
+          if (seen.has(p.id)) continue;
           seen.add(p.id);
           const card = await api.node(`Person:${p.id}`);
           const count = (card.edge_summary as { kind: string; count: number }[]).find(s => s.kind === 'mentioned-in')?.count ?? 0;

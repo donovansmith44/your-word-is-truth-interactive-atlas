@@ -55,6 +55,7 @@ export const api = {
   // client/IExplorableClient.cs's Reading() consumes, read here directly for
   // CONTRACT-lockstep assertions (kretzmann.spec.ts/concord.spec.ts compare
   // what the Concord page renders against this raw response).
+  chapterText: (cref: string) => getJson(`/api/text?ref=${cref}&scope=chapter`),
   reading: (ref: string, n: number, opts: { dir?: string; corpus?: string } = {}) => {
     const params = new URLSearchParams({ ref, n: String(n), dir: opts.dir ?? 'onward', corpus: opts.corpus ?? 'bible' });
     return getJson(`/api/text?${params}`);
