@@ -53,10 +53,11 @@ wrong; fix the spec.
    holds: verse, passage, place, person, exploration, focus. Technical
    vocabulary stays inside the module that needs it and never leaks into
    the surface a reader of the domain code meets first.
-9. **Comments in application code are `why` comments only.** A comment
-   earns its place by stating a hidden constraint, an invariant the type
-   system cannot express, or a workaround for a specific external bug. It
-   never restates the code, names a ticket, or narrates history. Generated
+9. **No comments in application code.** Owner, 2026-09-30: "no comments in
+   my app code stop doing that." Not `//`, not `///`, not `//!`, not `<!-- -->`,
+   and no `why` exemption: a hidden constraint becomes a name, a type or a
+   test. A description the published contract needs is a
+   `#[schema(description = "…")]` attribute, not a doc comment. Generated
    files carry exactly one header line naming their source; that line is
    the whole exemption.
 10. **Comments in tests are `Arrange` / `Act` / `Assert` only.** Nothing
