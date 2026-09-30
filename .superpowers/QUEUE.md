@@ -17,7 +17,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 1. **O-PUSH (blocks both agents):** WSL's git credential gets HTTP 403 pushing to both repos (`~/.git-credentials` holds a token without write access). Replace it with one that can push to `your-word-is-truth-interactive-atlas` and `map-generator`: e.g. `! gh auth login` after installing gh, or a fine-grained token with Contents: read/write on both repos saved via `git credential approve`. Until then the controller relays pushes through Windows git and nobody can take a lock.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
-4. **O-NAMES:** Design names and entities as ONE spec covering both the text and the maps' entity registry? (Recommended: yes.)
+4. **O-NAMES:** Sign off the NAMES draft's types (`docs/superpowers/specs/2026-10-01-names-design.md`) and answer its §9 (5 one-line questions). It is drafted as ONE spec for the text and the maps' entity registry.
 5. **O-ORDER:** Can FOCUS-6 move up to right after FOCUS-1? Can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
 6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
@@ -46,7 +46,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
 
 ### A-NAMES: the NAMES spec (one registry of names and entities, for text and maps)
-- **Status:** ready (written alongside A-F1; no code)
+- **Status:** blocked:owner (O-NAMES). A types-only draft is at `docs/superpowers/specs/2026-10-01-names-design.md`, with 5 open questions in its §9.
 - **Rulings to build on (owner, 2026-09-29):**
   - A **name** is its own node, separate from the **entities** it can denote, and one name can denote entities of different kinds ("Israel": Jacob / the Israelites / the kingdom / the land; "Egypt", "Assyria", "Babylon" city vs empire, "Edom"/Esau). Entities that share a name are linked to each other (eponym: person → people → polity → land).
   - Every **occurrence** (a span of words in one text; multi-word and hyphenated names are one name) resolves to exactly one meaning, or is listed unresolved. Never guessed.
