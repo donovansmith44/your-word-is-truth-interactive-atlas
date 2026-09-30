@@ -23,7 +23,9 @@
 module Steps (allSteps) where
 
 import Data.Aeson (Value (..), eitherDecodeStrict)
+import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
+import Data.Foldable (asum)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
@@ -77,16 +79,6 @@ instance FromCapture BindName where
     in if not (T.null s) && T.all (\c -> c == '-' || c == '_' || c `elem` ['a'..'z'] || c `elem` ['A'..'Z'] || c `elem` ['0'..'9']) s
          then Right (BindName s)
          else Left ("'" <> s <> "' is not a binding name -- letters, digits, '-' and '_' only")
-
-newtype FieldName = FieldName Text deriving (Eq, Show)
-instance FromCapture FieldName where
-  capName _ = "field"
-  universe _ = Described "a JSON field name, e.g. kind"
-  renderCap (FieldName f) = f
-  parseCap t =
-    let s = T.strip t
-    in if not (T.null s) && not (T.any (== '"') s) then Right (FieldName s)
-       else Left "a field name is a bare JSON key, without quotes"
 
 -- bibex arguments legitimately contain spaces ("edges Place:hazor-1
 -- --kind site-of"), so the whitespace rule that disambiguates 'UrlPath'
@@ -275,16 +267,9 @@ readVocab w = do
       (_, []) -> Left "the graph vocabulary declares no edge families -- refusing to check anything against an empty vocabulary"
       (ks, fs) -> Right (GraphVocab ks fs)
   where
-    dig k (Object o) = maybe Null id (lookupKey k (Object o))
-    dig _ _ = Null
     families v = sort (nub (concat
       ([ strings (dig "forward" e) ++ strings (dig "inverse" e) | e <- arr (dig "relations" v) ]
        ++ [ strings (dig "label" e) | e <- arr (dig "symmetric" v) ])))
-    arr (Array a) = foldr (:) [] a
-    arr _ = []
-    strings (Array a) = [ s | String s <- foldr (:) [] a ]
-    strings (String s) = [s]
-    strings _ = []
 
 -- The first value found under key `k`, at any depth. Used only for the
 -- one-field `version-root` projection and the vocabulary's own top-level
@@ -294,43 +279,86 @@ lookupKey k v = case collectKey k v of
   (x : _) -> Just x
   []      -> Nothing
 
--- THE VOCABULARY LAW. Quantified over EVERY occurrence of the field
--- anywhere in the answer, at any depth, because the same promise has to
--- hold for a kind on a card, a kind on an edge-page entry, and a kind
--- nested in a summary row -- three shapes, one vocabulary. That is the
--- point: the law is stated once, over the graph, and every transport
--- inherits it without restating anything.
---
--- WHAT IT CHECKS, precisely, and what it does NOT -- because a law whose
--- reach is overstated is worse than a narrow one:
---
--- The atlas's wire uses the SAME key name, "kind", for TWO disjoint
--- vocabularies. On a node card, `kind` is a node kind ("Place") while
--- `edge_summary[].kind` is an edge family ("site-of"); on an edge page
--- the top-level `kind` is a family while `entries[].node.kind` is a node
--- kind. So this law checks membership in the UNION of the two declared
--- sets. It CATCHES an undeclared term appearing anywhere on any transport
--- -- a family label no `relations!` row declares, a misspelled node kind,
--- a hand-written string that drifted from the macros. It does NOT catch a
--- node kind appearing in a slot where a family belongs; that would need a
--- shape-aware law, and a shape-aware law is exactly the per-transport
--- vocabulary the addendum forbids. Stated here rather than discovered
--- later.
-checkVocabField :: Text -> World -> IO (Either Text World)
-checkVocabField fieldName w = do
+graphKindShapes :: [[K.Key]]
+graphKindShapes = [["id", "label"], ["entries"], ["count"], ["start", "end", "node"]]
+
+graphKinds :: Value -> [Text]
+graphKinds (Object o) =
+  [ s | any (all (`KM.member` o)) graphKindShapes, Just (String s) <- [KM.lookup "kind" o] ]
+    ++ concatMap graphKinds (KM.elems o)
+graphKinds (Array a) = concatMap graphKinds (arr (Array a))
+graphKinds _ = []
+
+checkGraphKinds :: World -> IO (Either Text World)
+checkGraphKinds w = do
   gv <- readVocab w
   pure $ do
     vocab <- gv
     actual <- boundValue "_last" w
-    let found = [ s | String s <- collectKey fieldName actual ]
+    let found = graphKinds actual
         declared = sort (nub (gvKinds vocab ++ gvFamilies vocab))
         strays = nub [ s | s <- found, s `notElem` declared ]
     if null found
-      then Left ("no \"" <> fieldName <> "\" field anywhere in this answer -- this law would pass vacuously, so it fails instead")
+      then Left "no node, edge page, edge summary or anchor carries a \"kind\" anywhere in this answer -- this law would pass vacuously, so it fails instead"
       else if null strays then Right w
-      else Left (T.pack (show (length strays)) <> " value(s) of \"" <> fieldName
-                 <> "\" are declared nowhere in graph-types' kind_tags!/relations! manifests: "
+      else Left (T.pack (show (length strays)) <> " graph kind(s) are declared nowhere in graph-types' kind_tags!/relations! manifests: "
                  <> T.intercalate ", " (map (\s -> "'" <> s <> "'") strays))
+
+schemaEnums :: Value -> Map.Map Text [Text]
+schemaEnums schema = Map.fromListWith (++)
+  [ (K.toText field, values)
+  | Object defs <- [dig "$defs" schema]
+  , def <- KM.elems defs
+  , Object props <- [dig "properties" def]
+  , (field, property) <- KM.toList props
+  , Just values <- [enumValues defs property] ]
+
+enumValues :: KM.KeyMap Value -> Value -> Maybe [Text]
+enumValues defs (Object o) = asum
+  [ strings <$> KM.lookup "enum" o
+  , KM.lookup "$ref" o >>= refTarget >>= (`KM.lookup` defs) >>= enumValues defs
+  , KM.lookup "items" o >>= enumValues defs
+  , KM.lookup "oneOf" o >>= asum . map (enumValues defs) . arr
+  , KM.lookup "anyOf" o >>= asum . map (enumValues defs) . arr
+  ]
+enumValues _ _ = Nothing
+
+refTarget :: Value -> Maybe K.Key
+refTarget (String r) = K.fromText <$> T.stripPrefix "#/$defs/" r
+refTarget _ = Nothing
+
+everyObject :: Value -> [KM.KeyMap Value]
+everyObject (Object o) = o : concatMap everyObject (KM.elems o)
+everyObject (Array a) = concatMap everyObject (arr (Array a))
+everyObject _ = []
+
+checkSchemaEnums :: World -> IO (Either Text World)
+checkSchemaEnums w = pure $ do
+  schema <- maybe (Left "this run was given no --schema, so it cannot read the enums the contract publishes -- pass --schema contracts/atlas-query-contract/aqc.schema.json") Right (publishedSchema w)
+  actual <- boundValue "_last" w
+  let enums = schemaEnums schema
+      carried = [ (K.toText k, s) | o <- everyObject actual, (k, v) <- KM.toList o, Map.member (K.toText k) enums, s <- strings v ]
+      strays = nub [ (f, s) | (f, s) <- carried, s `notElem` Map.findWithDefault [] f enums ]
+  if Map.null enums
+    then Left "the published schema declares no enum at all -- refusing to check anything against it"
+    else if null carried
+      then Left "no field the schema publishes as an enum appears anywhere in this answer -- this law would pass vacuously, so it fails instead"
+      else if null strays then Right w
+      else Left (T.pack (show (length strays)) <> " value(s) fall outside the enum the schema publishes for their field: "
+                 <> T.intercalate ", " (map (\(f, s) -> f <> "='" <> s <> "'") strays))
+
+dig :: Text -> Value -> Value
+dig k (Object o) = maybe Null id (lookupKey k (Object o))
+dig _ _ = Null
+
+arr :: Value -> [Value]
+arr (Array a) = foldr (:) [] a
+arr _ = []
+
+strings :: Value -> [Text]
+strings (Array a) = [ s | String s <- foldr (:) [] a ]
+strings (String s) = [s]
+strings _ = []
 
 -- ===================== THE STEPS =====================
 
@@ -406,8 +434,11 @@ allSteps =
                    <> maybe "(no leaf difference found)" id (firstDiff va vb))
 
   -- ---------------- VOCABULARY: the graph's declared families ----------
-  , mkStep Then (lit "every \"" *> capUntil @FieldName "\" in the answer names a term the graph declares") $
-      \(FieldName f) w -> checkVocabField f w
+  , mkStep Then (lit "every \"kind\" of a node, an edge page, an edge summary or an anchor in the answer names a term the graph declares") $
+      \() w -> checkGraphKinds w
+
+  , mkStep Then (lit "every field the schema publishes as an enum carries one of its values") $
+      \() w -> checkSchemaEnums w
 
   -- ---------------- WHOLE-ANSWER AND REFUSAL LAWS ----------------------
   , mkStep Then (lit "the response equals fixture " *> capRest @FixtureRef) $
