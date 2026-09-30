@@ -168,12 +168,12 @@ fn the_document_publishes_the_labelled_span_as_time_range_and_the_computed_one_a
         (
             &serde_json::json!({
                 "type": "object",
-                "description": "A span of years, both ends included, with the label a reader sees for it: an\nera both ends share is named once.",
+                "description": format!("A span of years, both ends included, with the label a reader sees for it: an era both ends share is named once, as in `1450{EN_DASH}1400 BC`, `5 BC{EN_DASH}AD 30` or, for a single year, `AD 33`."),
                 "required": ["from", "to", "label"],
                 "properties": {
                     "from": year,
                     "to": year,
-                    "label": { "type": "string", "description": format!("Such as `1450{EN_DASH}1400 BC`, `5 BC{EN_DASH}AD 30` or, for a single year, `AD 33`.") },
+                    "label": { "type": "string" },
                 },
                 "additionalProperties": false,
             }),
