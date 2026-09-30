@@ -61,7 +61,7 @@ fn the_served_sections_carry_every_entry_and_a_verses_words_in_token_order() {
     let jhn = atlas_core::canon::resolve_alias("John").unwrap().0;
     let verse = at(&atlas_graph::kjv_adapter::verse_node_id(jhn, 3, 16));
     let summary = snap.edge_summary(&verse);
-    assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(26), "26 tagged tokens, in ord (spec 7.3)");
+    assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(21), "26 tagged tokens of 21 entries: one edge per entry, in ord (spec 7.3)");
     let words = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 100 });
     let ids: Vec<String> = words.entries.iter().map(|e| node_of(&e.entry.node).raw).collect();
     assert_eq!(&ids[..5], &["G3779", "G1063", "G0025", "G3588", "G2316"], "token order, not id order");
