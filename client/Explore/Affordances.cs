@@ -35,7 +35,6 @@ public static class Affordances
 
     public static readonly Affordance.SectionList DefaultList = new(SectionStyle.Standard, InitialClamp: 20, SectionOrder.Canonical);
 
-#pragma warning disable CS8524
     public static Affordance Of(EdgeKind kind) => kind switch
     {
         EdgeKind.FollowsIn or EdgeKind.PrecedesIn => new Affordance.Arrows(),
@@ -87,5 +86,4 @@ public static class Affordances
             or EdgeKind.SpouseOf
             or EdgeKind.BrethrenOf => DefaultList,
     };
-#pragma warning restore CS8524
 }
