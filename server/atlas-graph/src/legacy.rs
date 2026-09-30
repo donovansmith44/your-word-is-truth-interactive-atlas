@@ -156,7 +156,7 @@ mod tests {
             },
         );
         let gen_13_18 = VerseRef { book: 0, chapter: 13, verse: 18 };
-        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: gen_13_18.clone(), span: Some(crate::kjv_tokens::span(ord, ord).expect("one word")) });
+        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: gen_13_18.clone(), span: Some(crate::tokens::span(crate::kjv_adapter::KJV_TRANSLATION, ord, ord).expect("one word")) });
         for locus in [at_word(4), at_word(8), TextLocus::from(BibleLocus::whole(VerseRef { book: 0, chapter: 23, verse: 19 }))] {
             graph.mentions.push(Mentions { locus, entity: MentionedEntity::Place(hebron.clone()), provenance: "test".into() });
         }

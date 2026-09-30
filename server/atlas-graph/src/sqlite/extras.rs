@@ -262,7 +262,7 @@ impl Extras {
                     if let Some((b, c, v)) = crate::kjv_adapter::decode_text_unit(&n.id) {
                         let text = crate::kjv_adapter::kjv_text(n)
                             .ok_or_else(|| SqliteError(format!("TextUnit {id} carries no KJV text to tokenize")))?;
-                        for t in crate::kjv_tokens::tokenize(text) {
+                        for t in crate::tokens::tokenize(text) {
                             kjv_token.push(vec![
                                 Col::Int(b as i64),
                                 Col::Int(c as i64),

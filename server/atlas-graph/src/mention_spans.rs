@@ -1,8 +1,9 @@
 //! Where a place or a person is named inside a verse, found once here so the reader never searches
 //! for it. A Place or Person `mentions` row at a verse becomes one row per located occurrence of the
 //! entity's names, each spanning the KJV words the name covers; a row none of whose names is found
-//! on whole words stays verse-level and is counted. PeopleGroup and Event rows have no names to
-//! search and are left as they are.
+//! on whole words stays verse-level and is counted, and so is every occurrence that misses whole
+//! words beside a located one. PeopleGroup and Event rows have no names to search and are left as
+//! they are.
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
@@ -15,9 +16,9 @@ use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{PersonId, PlaceId};
 use atlas_graph_types::text::{TextLocus, TextRef, TokenSpan, VerseRef};
 
-use crate::kjv_adapter;
-use crate::kjv_tokens::{self, tokenize, Token};
+use crate::kjv_adapter::{self, KJV_TRANSLATION};
 use crate::pipeline::BuildCtx;
+use crate::tokens::{self, tokenize, Token};
 
 /// One name an entity is called by.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,7 +35,8 @@ pub struct NameSegment {
 }
 
 /// `located` counts the rows written with a word span, one per occurrence; `unlocatable` counts the
-/// Place and Person rows left verse-level because no name of their entity lies on whole words.
+/// Place and Person rows left verse-level because no name of their entity lies on whole words, and
+/// the occurrences off whole words of an entity located elsewhere in the verse.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct MentionSpanStats {
     pub located: usize,
@@ -50,8 +52,9 @@ pub fn locate_mentions(ctx: &mut BuildCtx) -> MentionSpanStats {
     let rows = std::mem::take(&mut ctx.graph.mentions);
     for (row, searched) in rows.into_iter().zip(spans) {
         match searched {
-            Some(found) if !found.is_empty() => {
+            Some(Search { found, missed }) if !found.is_empty() => {
                 stats.located += found.len();
+                stats.unlocatable += missed;
                 ctx.graph.mentions.extend(found.into_iter().map(|span| Mentions { locus: TextLocus { at: row.locus.at.clone(), span: Some(span) }, ..row.clone() }));
             }
             Some(_) => {
@@ -82,10 +85,8 @@ pub fn scan(text: &str, names: &[Name]) -> Vec<NameSegment> {
 }
 
 /// `None` unless the segment starts where a word starts and ends where a word ends.
-pub fn locate(segment: &NameSegment, tokens: &[Token]) -> Option<TokenSpan> {
-    let first = tokens.iter().find(|t| t.char_start == segment.chars.start)?;
-    let last = tokens.iter().find(|t| t.char_end == segment.chars.end)?;
-    kjv_tokens::span(first.ord, last.ord).ok()
+pub fn locate(segment: &NameSegment, words: &[Token]) -> Option<TokenSpan> {
+    tokens::words_covering(&segment.chars, words, KJV_TRANSLATION)
 }
 
 /// Every KJV letter is in a Unicode letter category, where `is_alphabetic` and C#'s `char.IsLetter`
@@ -104,11 +105,18 @@ fn occurrences(chars: &[char], name: &Name) -> Vec<NameSegment> {
         .collect()
 }
 
-/// Beside each row, the word spans its entity's names cover in its verse, or `None` for a row not
-/// searched: every Place and Person row still at a whole verse is. Each verse is searched once, for
-/// all the names of all its rows together, so a longer name of one entity wins over a shorter name of
-/// another.
-fn located_spans(graph: &Graph, names: &NameBook) -> Vec<Option<Vec<TokenSpan>>> {
+/// One row's search of its verse: the word spans its entity's names cover, and how many of its
+/// occurrences lie off whole words.
+#[derive(Clone)]
+struct Search {
+    found: Vec<TokenSpan>,
+    missed: usize,
+}
+
+/// Beside each row, its search, or `None` for a row not searched: every Place and Person row still
+/// at a whole verse is. Each verse is searched once, for all the names of all its rows together, so
+/// a longer name of one entity wins over a shorter name of another.
+fn located_spans(graph: &Graph, names: &NameBook) -> Vec<Option<Search>> {
     let mut rows_by_verse: BTreeMap<&VerseRef, Vec<usize>> = BTreeMap::new();
     for (i, row) in graph.mentions.iter().enumerate() {
         if let (TextRef::Bible(verse), None, MentionedEntity::Place(_) | MentionedEntity::Person(_)) = (&row.locus.at, &row.locus.span, &row.entity) {
@@ -126,10 +134,11 @@ fn located_spans(graph: &Graph, names: &NameBook) -> Vec<Option<Vec<TokenSpan>>>
                 names.of_entity(entity).iter().map(|text| Name { entity: entity.clone(), text: text.clone() })
             })
             .collect();
-        let found: Vec<(MentionedEntity, TokenSpan)> = scan(text, &searched).into_iter().filter_map(|s| locate(&s, &tokens).map(|span| (s.entity, span))).collect();
+        let occurrences: Vec<(MentionedEntity, Option<TokenSpan>)> = scan(text, &searched).into_iter().map(|s| (s.entity.clone(), locate(&s, &tokens))).collect();
         for i in rows {
             let entity = &graph.mentions[i].entity;
-            spans[i] = Some(found.iter().filter(|(e, _)| e == entity).map(|(_, span)| span.clone()).collect());
+            let of_entity = occurrences.iter().filter(|(e, _)| e == entity);
+            spans[i] = Some(Search { found: of_entity.clone().filter_map(|(_, span)| span.clone()).collect(), missed: of_entity.filter(|(_, span)| span.is_none()).count() });
         }
     }
     spans
@@ -231,6 +240,17 @@ mod tests {
         let located = locate_in("And they came to Beer–Sheba.", &atlas, rows);
         // Assert
         assert_eq!(located, (vec![verse_level(MentionedEntity::Place(PlaceId::new("sheba")))], MentionSpanStats { located: 0, unlocatable: 1 }));
+    }
+
+    #[test]
+    fn an_occurrence_off_whole_words_beside_a_located_one_is_counted_unlocatable() {
+        // Arrange
+        let atlas = atlas(vec![place("sheba", "Sheba")], vec![], vec![]);
+        let rows = vec![verse_level(MentionedEntity::Place(PlaceId::new("sheba")))];
+        // Act
+        let located = locate_in("And they came to Sheba and to Beer–Sheba.", &atlas, rows);
+        // Assert
+        assert_eq!(located, (vec![at_words(MentionedEntity::Place(PlaceId::new("sheba")), 4, 4)], MentionSpanStats { located: 1, unlocatable: 1 }));
     }
 
     #[test]
@@ -365,7 +385,7 @@ mod tests {
     }
 
     fn at_words(entity: MentionedEntity, first: u16, last: u16) -> Mentions {
-        let span = kjv_tokens::span(first, last).expect("first <= last");
+        let span = tokens::span(KJV_TRANSLATION, first, last).expect("first <= last");
         Mentions { locus: TextLocus::from(BibleLocus { unit: GEN_13_18, span: Some(span) }), entity, provenance: PROVENANCE.into() }
     }
 }

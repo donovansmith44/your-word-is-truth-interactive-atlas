@@ -725,7 +725,7 @@ mod tests {
             };
             g.nodes.insert(id.clone().erase(), Node { id: id.clone().erase(), payload, provenance: "test".into() });
         }
-        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: VerseRef { book: 0, chapter: 12, verse: 11 }, span: Some(crate::kjv_tokens::span(ord, ord).expect("one word")) });
+        let at_word = |ord: u16| TextLocus::from(BibleLocus { unit: VerseRef { book: 0, chapter: 12, verse: 11 }, span: Some(crate::tokens::span(crate::kjv_adapter::KJV_TRANSLATION, ord, ord).expect("one word")) });
         for (ord, person) in [(0, &abram), (9, &abram), (13, &sarai)] {
             g.mentions.push(Mentions { locus: at_word(ord), entity: MentionedEntity::Person(person.clone()), provenance: "test".into() });
         }

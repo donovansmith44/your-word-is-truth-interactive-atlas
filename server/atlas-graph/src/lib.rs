@@ -16,7 +16,6 @@ pub mod fidelity;
 pub mod fulfillment_adapter;
 pub mod heading;
 pub mod kjv_adapter;
-pub mod kjv_tokens;
 pub mod kretzmann_adapter;
 pub mod law_check;
 pub mod legacy;
@@ -36,6 +35,7 @@ pub mod scene_source;
 pub mod sections;
 pub mod service;
 pub mod sqlite;
+pub mod tokens;
 pub mod window;
 pub mod xref_adapter;
 

@@ -368,7 +368,7 @@ mod tests {
         normalize(&mut ctx);
         let at_word = |ord: u16| TextLocus::from(BibleLocus {
             unit: VerseRef { book: 0, chapter: 12, verse: 11 },
-            span: Some(crate::kjv_tokens::span(ord, ord).expect("one word")),
+            span: Some(crate::tokens::span(crate::kjv_adapter::KJV_TRANSLATION, ord, ord).expect("one word")),
         });
         for locus in [at_word(0), at_word(9), verse_locus("GEN.12.14").expect("a canonical ref")] {
             ctx.graph.mentions.push(Mentions { locus, entity: MentionedEntity::Person(PersonId::new("abraham_58")), provenance: ProvenanceId::from(PROVENANCE) });

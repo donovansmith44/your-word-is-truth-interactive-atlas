@@ -1,6 +1,6 @@
 mod common;
 
-use atlas_graph::kjv_tokens::{tokenize, Token};
+use atlas_graph::tokens::{tokenize, Token};
 
 const KJV_VERSES: usize = 31_102;
 const KJV_TOKENS: usize = 790_892;
