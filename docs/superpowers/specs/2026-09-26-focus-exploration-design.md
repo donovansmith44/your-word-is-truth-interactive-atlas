@@ -469,3 +469,33 @@ Recorded here so CONTRACT-2's spec starts from FOCUS's demand, not a guess:
   All graph-side parts are FOCUS-0 §7 item 6.
 
 Nothing open remains; the spec awaits the plans.
+
+## 11. Rulings (owner, 2026-09-29, ahead of the FOCUS-3 and FOCUS-6 plans)
+
+- **R11 — Book of Concord paragraph numbers (PARA-NUM-1):** readers see the
+  standard public-domain citation convention (Concordia Triglotta style:
+  `Ap IV 48`, `SA III 3`, `LC I 12`), small and muted in the margin like
+  verse numbers in the Bible reader. Internal codes (`BoC 7.2.1`) are never
+  shown. FOCUS-3.
+- **R12 — continuous scroll scope (with R8's remembered position):** one
+  continuous scroll runs a whole Bible book (chapter headings inline; the
+  arrows jump chapter to chapter); crossing into the next book is an
+  explicit click. FOCUS-3.
+- **R13 — one navigation principle for every corpus (NAV-UNIFORM-1):**
+  owner: "think about how you're doing the bible. you can click through
+  chapters or scroll through chapters, and you can scroll through a whole
+  book. you have to click to get to the next book. same principle in BoC.
+  article/topic you can click or scroll through, but you have to click to
+  get to the next part, if you've scrolled to the bottom." So in the BoC the
+  article/topic plays the chapter's role (arrows or scroll), and the part
+  (or the document where it has no parts) plays the book's (an explicit
+  click at the bottom). Also: "we will also need to come up with a nice
+  table of contents component abstraction that we can reuse wherever we
+  want; im thinking we'll just use for the boc though for now" — FOCUS-3
+  builds ONE reusable table-of-contents component (over the served
+  `contents` tree, stopping at article/topic per the 2026-09-15 queue) and
+  uses it for the BoC only for now.
+- **R14 — polity focus (FOCUS-6):** focusing a Polity keeps the World view
+  in the current era, highlights its territory at the slider's current
+  year, and shows its reign window on the slider so the reader can scrub
+  its rise and fall. No jump, no multi-era overlay.
