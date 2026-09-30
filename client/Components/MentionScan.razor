@@ -7,11 +7,11 @@
     {
         var placeId = NodeIds.LocalPart(place);
         <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
-              tabindex="0" role="button" aria-label="@($"Explore {place.Label}")"
+              tabindex="0" role="button" aria-label="@($"Explore {piece.Text}")"
               @onpointerenter="() => Blink(placeId, true)" @onpointerleave="() => Blink(placeId, false)"
               @onfocus="() => Blink(placeId, true)" @onblur="() => Blink(placeId, false)"
-              @onclick="@(e => Open(e, new PlaceNode(placeId, place.Label)))" @onclick:stopPropagation="true"
-              @onkeydown="@(e => OnKeyDown(e, new PlaceNode(placeId, place.Label)))" @onkeydown:stopPropagation="true">@piece.Text</span>
+              @onclick="@(e => Open(e, new PlaceNode(placeId, piece.Text)))" @onclick:stopPropagation="true"
+              @onkeydown="@(e => OnKeyDown(e, new PlaceNode(placeId, piece.Text)))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
     else if (piece.Anchor?.Node is { Kind: PositionKind.Person } person)
     {
