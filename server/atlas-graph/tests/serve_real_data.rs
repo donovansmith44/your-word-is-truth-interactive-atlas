@@ -1,9 +1,17 @@
 mod common;
 
-use common::{committed_sections, committed_service};
+use std::collections::BTreeMap;
+
+use common::{committed_graph, committed_sections, committed_service};
 
 use atlas_core::refs::ScriptureRef;
+use atlas_graph::kjv_adapter::KJV_TRANSLATION;
+use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::sqlite::serve::*;
+use atlas_graph::tokens::span;
+use atlas_graph_types::edge::MentionedEntity;
+use atlas_graph_types::id::{PersonId, PlaceId};
+use atlas_graph_types::text::{TextRef, VerseRef};
 
 #[test]
 fn the_chronology_loaded_from_event_date_is_the_artifacts() {
@@ -114,3 +122,47 @@ fn cross_refs_for_span_is_the_companions_slice() {
     assert_eq!(one.len(), 1);
 }
 
+
+const JOSHUA: u8 = 5;
+
+#[test]
+fn the_sections_serve_the_located_mentions_at_a_verse_in_row_order() {
+    // Arrange
+    let jos_11_1 = VerseRef { book: JOSHUA, chapter: 11, verse: 1 };
+    let named = |entity: MentionedEntity, word: u16| MentionSpan { entity, words: span(KJV_TRANSLATION, word, word).unwrap() };
+
+    // Act
+    let spans = committed_service().mention_spans_at(&jos_11_1).unwrap();
+
+    // Assert
+    assert_eq!(
+        spans,
+        vec![
+            named(MentionedEntity::Place(PlaceId::new("achshaph")), 33),
+            named(MentionedEntity::Place(PlaceId::new("hazor-1")), 9),
+            named(MentionedEntity::Place(PlaceId::new("madon")), 21),
+            named(MentionedEntity::Place(PlaceId::new("shimron")), 27),
+            named(MentionedEntity::Person(PersonId::new("jabin_676")), 6),
+            named(MentionedEntity::Person(PersonId::new("jobab_1642")), 18),
+        ]
+    );
+}
+
+#[test]
+fn the_sections_serve_every_located_mention_the_graph_holds_at_its_verse() {
+    // Arrange
+    let mut held: BTreeMap<VerseRef, Vec<MentionSpan>> = BTreeMap::new();
+    for row in &committed_graph().mentions {
+        let TextRef::Bible(verse) = &row.locus.at else { continue };
+        let spans = held.entry(verse.clone()).or_default();
+        if let Some(words) = &row.locus.span {
+            spans.push(MentionSpan { entity: row.entity.clone(), words: words.clone() });
+        }
+    }
+
+    // Act
+    let served: BTreeMap<VerseRef, Vec<MentionSpan>> = held.keys().map(|verse| (verse.clone(), committed_service().mention_spans_at(verse).unwrap())).collect();
+
+    // Assert
+    assert_eq!(served, held);
+}

@@ -1,5 +1,31 @@
 {
   "$defs": {
+    "Anchor": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeRef"
+        },
+        "start": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "kind",
+        "node"
+      ],
+      "type": "object"
+    },
     "BibleRef": {
       "allOf": [
         {
@@ -2341,6 +2367,12 @@
     "TextUnit": {
       "additionalProperties": false,
       "properties": {
+        "anchors": {
+          "items": {
+            "$ref": "#/$defs/Anchor"
+          },
+          "type": "array"
+        },
         "edge_summary": {
           "items": {
             "$ref": "#/$defs/EdgeSummaryEntry"
@@ -2378,6 +2410,7 @@
         "locus",
         "text",
         "words_of_christ",
+        "anchors",
         "edge_summary"
       ],
       "type": "object"

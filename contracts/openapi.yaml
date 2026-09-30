@@ -836,6 +836,30 @@ paths:
                 type: string
 components:
   schemas:
+    Anchor:
+      type: object
+      description: |-
+        A stretch of a unit's text that stands for something the graph holds,
+        half-open: the text from `start` up to but not including `end`.
+      required:
+      - start
+      - end
+      - kind
+      - node
+      properties:
+        end:
+          type: integer
+          description: A character offset (a Unicode scalar value, not a byte) into the owning unit's text.
+          minimum: 0
+        kind:
+          $ref: '#/components/schemas/EdgeKind'
+        node:
+          $ref: '#/components/schemas/NodeRef'
+        start:
+          type: integer
+          description: A character offset (a Unicode scalar value, not a byte) into the owning unit's text.
+          minimum: 0
+      additionalProperties: false
     BibleRef:
       allOf:
       - $ref: '#/components/schemas/TextRef'
@@ -2883,8 +2907,13 @@ components:
       - locus
       - text
       - words_of_christ
+      - anchors
       - edge_summary
       properties:
+        anchors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anchor'
         edge_summary:
           type: array
           items:
@@ -2971,9 +3000,7 @@ components:
       additionalProperties: false
     UnitHeading:
       type: object
-      description: |-
-        The pericope heading above a verse: the event or titled passage that covers it,
-        whose label is the heading's words.
+      description: 'The pericope heading above a verse: the event or titled passage that covers it, whose label is the heading''s words; `is_continuation` is true where this verse carries on coverage that began in an earlier chapter rather than opening it, so a reader can render it as a continued heading.'
       required:
       - event
       - kind
@@ -2983,9 +3010,6 @@ components:
           $ref: '#/components/schemas/NodeRef'
         is_continuation:
           type: boolean
-          description: |-
-            True when this verse carries on coverage that began in an earlier chapter
-            rather than opening it, so a reader can render it as a continued heading.
         kind:
           $ref: '#/components/schemas/EventKind'
       additionalProperties: false

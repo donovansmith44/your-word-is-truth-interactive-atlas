@@ -16,6 +16,7 @@ use atlas_graph::event_world::{event_node_id, ChronologyDerivation};
 use atlas_graph::heading::Heading;
 use atlas_graph::kjv_adapter::verse_node_id;
 use atlas_graph::runs;
+use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
@@ -23,7 +24,7 @@ use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
+use atlas_graph_types::text::{BibleLocusRange, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
@@ -375,6 +376,7 @@ pub async fn text_window(
                     text,
                     words_of_christ: Vec::new(),
                     heading: None,
+                    anchors: Vec::new(),
                     edge_summary: unit_edge_summary(&snap, id),
                 })
             })
@@ -422,11 +424,12 @@ pub async fn text_window(
             let text = window::render(&snap, id)?;
             let r#ref = atlas_graph::kjv_adapter::dot_ref(b, c, v);
             let words_of_christ = graph.red_letter_spans.get(&r#ref).map(|spans| spans.iter().map(|&(start, end)| crate::wire::WordsOfChristSpan { start, end }).collect()).unwrap_or_default();
-            let locus = wire::TextRef::of_verse(&VerseRef { book: b, chapter: c, verse: v });
+            let verse = VerseRef { book: b, chapter: c, verse: v };
+            let locus = wire::TextRef::of_verse(&verse);
             let heading = graph.heading_index.get(&r#ref).map(|heading| unit_heading(heading, &snap));
-            Some(wire::TextUnit { r#ref, locus, text, words_of_christ, heading, edge_summary: unit_edge_summary(&snap, id) })
+            Some(mention_anchors(&graph, &snap, &verse, &text).map(|anchors| wire::TextUnit { r#ref, locus, text, words_of_christ, heading, anchors, edge_summary: unit_edge_summary(&snap, id) }))
         })
-        .collect();
+        .collect::<Result<_, _>>()?;
 
     let unit_at = |pos: usize| {
         snap.reading_window(corpus.name(), pos, 1)
@@ -506,6 +509,25 @@ impl ContractParams for TextWindowQuery {
     }
 }
 
+const MENTIONS: EdgeKind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+
+fn mention_anchors(graph: &GraphService, snap: &impl GraphQuery, verse: &VerseRef, text: &str) -> Result<Vec<wire::Anchor>, ApiError> {
+    let spans = graph.mention_spans_at(verse).map_err(|e| ApiError::internal(&format!("the mentions of a verse could not be read: {e}")))?;
+    Ok(anchors_over(text, MENTIONS, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(span.entity.node_id()), snap)))))
+}
+
+fn anchors_over(text: &str, kind: EdgeKind, links: impl Iterator<Item = (TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {
+    let words = tokens::tokenize(text);
+    let mut anchors: Vec<wire::Anchor> = links
+        .map(|(span, node)| {
+            let chars = tokens::chars_of(&span, &words).unwrap_or_else(|| panic!("the words {}..={} of {} lie past the text of the unit they are stored on", span.start, span.end, node.id));
+            wire::Anchor { start: chars.start, end: chars.end, kind, node }
+        })
+        .collect();
+    anchors.sort_by_key(|anchor| anchor.start);
+    anchors
+}
+
 fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> wire::UnitHeading {
     wire::UnitHeading {
         event: describe_position(&Position::Node(event_node_id(&heading.event_id)), snap),
@@ -541,6 +563,17 @@ mod tests {
 
         // Act
         EventAccounts::read(&unread, &Graph::default(), &ChronologyDerivation::default());
+    }
+
+    #[test]
+    #[should_panic(expected = "the words 9..=10 of Place:hazor-1 lie past the text of the unit they are stored on")]
+    fn a_word_span_past_its_units_text_is_a_graph_defect_not_an_anchor() {
+        // Arrange
+        let past_the_end = tokens::span(atlas_graph::kjv_adapter::KJV_TRANSLATION, 9, 10).unwrap();
+        let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: wire::PositionKind::Node(NodeKind::Place), label: "Hazor 1".to_string() };
+
+        // Act
+        anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, std::iter::once((past_the_end, hazor)));
     }
 
     #[test]

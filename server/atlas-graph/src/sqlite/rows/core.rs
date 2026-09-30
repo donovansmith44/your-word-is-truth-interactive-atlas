@@ -9,18 +9,18 @@ use atlas_graph_types::edge::{
     MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Shown, Succession, TemporalAdjacency, Typology, ParentOf, Participates, Partners};
 use atlas_graph_types::id::{AnchorId, AnyNodeId, ContainerNodeId, EraId, EventId, NodeId};
 use atlas_graph_types::text::{
-    BibleTag, ConcordRef, Corpus, Locus, LocusSet, TokenSpan, VerseRef,
+    BibleTag, ConcordRef, Corpus, Locus, LocusSet, TextRef, TokenSpan, VerseRef,
 };
 use rusqlite::types::Value;
-use rusqlite::{Connection, Transaction};
+use rusqlite::{Connection, Row, Transaction};
 
 use super::super::columns::{
-    bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
-    read_text_locus, span_values, text_locus_values, JustificationWriter,
+    at_unit, bible_locus_values, bible_range_values, col, read_bible_locus, read_bible_range, read_span,
+    read_text_locus, span_values, text_locus_values, unit_values, JustificationWriter,
 };
 use super::super::partition::{node_kind_of_ordinal, node_kind_ordinal};
 use super::super::SqliteError;
-use super::{justification_row, id_col, insert, int, opt_text, read_all, read_justification_at, text, D};
+use super::{justification_row, id_col, insert, int, opt_text, read_all, read_justification_at, read_where, text, D};
 
 /// The three integer columns of a `contains_*_locus` row, per corpus ref.
 pub trait Abc: Sized {
@@ -409,18 +409,25 @@ pub fn insert_mentions(tx: &Transaction, ord: i64, row: &Mentions) -> Result<(),
 }
 
 pub fn read_mentions(conn: &Connection) -> Result<Vec<(i64, Mentions)>, SqliteError> {
-    read_all(conn, "mentions", COLS_MENTIONS, |row| {
-        let kind: i64 = col(row, D + 7, "entity_kind")?;
-        let raw: String = col(row, D + 8, "entity_id")?;
-        let entity = match kind {
-            0 => MentionedEntity::Place(NodeId::new(raw)),
-            1 => MentionedEntity::Person(NodeId::new(raw)),
-            2 => MentionedEntity::PeopleGroup(NodeId::new(raw)),
-            3 => MentionedEntity::Event(NodeId::new(raw)),
-            other => return Err(SqliteError(format!("mentions entity_kind {other} is not 0..3"))),
-        };
-        Ok(Mentions { locus: read_text_locus(row, D)?, entity, provenance: col(row, D + 9, "provenance")? })
-    })
+    read_all(conn, "mentions", COLS_MENTIONS, mention_row)
+}
+
+pub fn read_mentions_at(conn: &Connection, unit: &TextRef) -> Result<Vec<Mentions>, SqliteError> {
+    let rows = read_where(conn, "mentions", COLS_MENTIONS, &at_unit("locus"), unit_values(unit), mention_row)?;
+    Ok(rows.into_iter().map(|(_, row)| row).collect())
+}
+
+fn mention_row(row: &Row) -> Result<Mentions, SqliteError> {
+    let kind: i64 = col(row, D + 7, "entity_kind")?;
+    let raw: String = col(row, D + 8, "entity_id")?;
+    let entity = match kind {
+        0 => MentionedEntity::Place(NodeId::new(raw)),
+        1 => MentionedEntity::Person(NodeId::new(raw)),
+        2 => MentionedEntity::PeopleGroup(NodeId::new(raw)),
+        3 => MentionedEntity::Event(NodeId::new(raw)),
+        other => return Err(SqliteError(format!("mentions entity_kind {other} is not 0..3"))),
+    };
+    Ok(Mentions { locus: read_text_locus(row, D)?, entity, provenance: col(row, D + 9, "provenance")? })
 }
 
 const COLS_CORRESPONDS_BIBLE: &str = "a_corpus, a_a, a_b, a_c, a_layer, a_start, a_end, \

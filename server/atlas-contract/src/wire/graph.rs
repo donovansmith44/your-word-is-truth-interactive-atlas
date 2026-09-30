@@ -282,20 +282,18 @@ pub struct TextUnit {
     /// opens or carries on. Always absent outside Scripture.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub heading: Option<UnitHeading>,
+    pub anchors: Vec<super::Anchor>,
     /// How many neighbours this unit has of each kind, so a page can tell which
     /// units lead somewhere without asking after each one.
     pub edge_summary: Vec<EdgeSummaryEntry>,
 }
 
-/// The pericope heading above a verse: the event or titled passage that covers it,
-/// whose label is the heading's words.
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "The pericope heading above a verse: the event or titled passage that covers it, whose label is the heading's words; `is_continuation` is true where this verse carries on coverage that began in an earlier chapter rather than opening it, so a reader can render it as a continued heading.")]
 pub struct UnitHeading {
     pub event: NodeRef,
     pub kind: EventKind,
-    /// True when this verse carries on coverage that began in an earlier chapter
-    /// rather than opening it, so a reader can render it as a continued heading.
     pub is_continuation: bool,
 }
 

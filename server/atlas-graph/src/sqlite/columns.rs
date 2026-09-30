@@ -73,6 +73,15 @@ pub fn text_locus_values(l: &TextLocus) -> [Value; 7] {
     }
 }
 
+pub fn unit_values(at: &TextRef) -> [Value; 4] {
+    let [corpus, a, b, c, ..] = text_locus_values(&TextLocus { at: at.clone(), span: None });
+    [corpus, a, b, c]
+}
+
+pub fn at_unit(locus: &str) -> String {
+    format!("{locus}_corpus = ?1 AND {locus}_a = ?2 AND {locus}_b = ?3 AND {locus}_c = ?4")
+}
+
 /// All seven NULL when `None`.
 pub fn opt_text_locus_values(l: &Option<TextLocus>) -> [Value; 7] {
     match l {

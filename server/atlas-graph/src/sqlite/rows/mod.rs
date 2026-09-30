@@ -342,16 +342,35 @@ pub(super) fn insert(tx: &Transaction, table: &str, cols: &str, ord: i64, vals: 
     Ok(())
 }
 
-/// Asserts `id == ord` on every row; `f` reads the row's data columns starting at index `D`.
 pub(super) fn read_all<T>(
     conn: &Connection,
     table: &str,
     cols: &str,
+    f: impl FnMut(&Row) -> Result<T, SqliteError>,
+) -> Result<Vec<(i64, T)>, SqliteError> {
+    select_rows(conn, table, &format!("SELECT id, ord, {cols} FROM {table} ORDER BY id"), [], f)
+}
+
+pub(super) fn read_where<T>(
+    conn: &Connection,
+    table: &str,
+    cols: &str,
+    filter: &str,
+    params: impl rusqlite::Params,
+    f: impl FnMut(&Row) -> Result<T, SqliteError>,
+) -> Result<Vec<(i64, T)>, SqliteError> {
+    select_rows(conn, table, &format!("SELECT id, ord, {cols} FROM {table} WHERE {filter} ORDER BY id"), params, f)
+}
+
+fn select_rows<T>(
+    conn: &Connection,
+    table: &str,
+    sql: &str,
+    params: impl rusqlite::Params,
     mut f: impl FnMut(&Row) -> Result<T, SqliteError>,
 ) -> Result<Vec<(i64, T)>, SqliteError> {
-    let sql = format!("SELECT id, ord, {cols} FROM {table} ORDER BY id");
-    let mut stmt = conn.prepare(&sql)?;
-    let mut rows = stmt.query([])?;
+    let mut stmt = conn.prepare_cached(sql)?;
+    let mut rows = stmt.query(params)?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
         let id: i64 = row.get(0)?;

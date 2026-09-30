@@ -311,6 +311,17 @@ pub enum MentionedEntity {
     Event(EventId),
 }
 
+impl MentionedEntity {
+    pub fn node_id(&self) -> AnyNodeId {
+        match self {
+            MentionedEntity::Place(p) => p.erase(),
+            MentionedEntity::Person(p) => p.erase(),
+            MentionedEntity::PeopleGroup(g) => g.erase(),
+            MentionedEntity::Event(e) => e.erase(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Mentions {
     pub locus: TextLocus,

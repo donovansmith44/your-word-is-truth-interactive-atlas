@@ -7,7 +7,7 @@ use crate::edge::{
     at, Analogue, Attests, Authored, BiIndex, CanonSuccession, CatechismLink, CommentsOn, Confesses, ContainerContent, Contains, Corresponds, CrossRef,
     SpokenAt, SpokenBy,
     Fulfills,
-    LocatedAt, MapSuccession, MentionedEntity, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
+    LocatedAt, MapSuccession, Mentions, NamedAfter, Namesake, Occurs, ParentOf, Participates, Partners, Quotes, RelationId,
     Shown, Succession, TemporalAdjacency, Typology,
 };
 use crate::chrono::DatedBy;
@@ -230,13 +230,7 @@ impl Graph {
         }
         for (i, row) in self.mentions.iter().enumerate() {
             let s = at(&text_node(&row.locus));
-            let o = match &row.entity {
-                MentionedEntity::Place(p) => at(&p.erase()),
-                MentionedEntity::Person(p) => at(&p.erase()),
-                MentionedEntity::PeopleGroup(g) => at(&g.erase()),
-                MentionedEntity::Event(e) => at(&e.erase()),
-            };
-            push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, o, M::None));
+            push_edge(&mut out, RowFamily::Mentions, i, EdgeRel::Directed(R::Mentions), (s, at(&row.entity.node_id()), M::None));
         }
         for (i, row) in self.cross_refs.iter().enumerate() {
             push_edge(&mut out, RowFamily::CrossRefs, i, EdgeRel::Directed(R::Cites), (

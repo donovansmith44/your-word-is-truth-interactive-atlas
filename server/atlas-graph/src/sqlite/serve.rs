@@ -1,5 +1,3 @@
-//! The serving companions read out of the section tables once at startup. Only the cross-refs
-//! (344k rows) are large enough to stay a per-request seek instead of being read whole.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -8,11 +6,14 @@ use atlas_core::refs::ScriptureRef;
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::chrono::{PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::id::NodeKind;
+use atlas_graph_types::text::{TextRef, VerseRef};
 use rusqlite::Connection;
 
 use super::partition::node_kind_ordinal;
+use super::rows::core::read_mentions_at;
 use super::SqliteError;
 use crate::build::BuildStats;
+use crate::mention_spans::MentionSpan;
 use crate::event_world::{ChronologyDerivation, EventWorldStats, SourceEventMeta};
 use crate::heading::Heading;
 use crate::kjv_adapter::dot_ref;
@@ -182,6 +183,10 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
 }
 
 /// A seek on `xref_by_from`, never a scan.
+pub fn mention_spans_at(conn: &Connection, verse: &VerseRef) -> Result<Vec<MentionSpan>, SqliteError> {
+    Ok(read_mentions_at(conn, &TextRef::Bible(verse.clone()))?.iter().filter_map(MentionSpan::of).collect())
+}
+
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {
     let base = "SELECT from_a, from_b, from_c, target_display, votes FROM kjv.cross_refs";
     let (sql, params): (String, Vec<i64>) = match span {

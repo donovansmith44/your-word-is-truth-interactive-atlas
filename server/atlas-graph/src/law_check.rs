@@ -3,7 +3,6 @@
 //! one needs a private helper, and every adapter derives its loci from real, just-built node ids.
 use std::collections::BTreeSet;
 
-use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::AnyNodeId;
 
@@ -62,13 +61,7 @@ pub fn every_row_reference_resolves(graph: &Graph) -> Result<(), DanglingReferen
         }
     }
     for row in &graph.mentions {
-        let id = match &row.entity {
-            MentionedEntity::Place(p) => p.erase(),
-            MentionedEntity::Person(p) => p.erase(),
-            MentionedEntity::PeopleGroup(g) => g.erase(),
-            MentionedEntity::Event(e) => e.erase(),
-        };
-        check("mentions", "entity", id)?;
+        check("mentions", "entity", row.entity.node_id())?;
     }
     for row in &graph.catechism {
         check("catechism", "item", row.item.erase())?;
@@ -420,7 +413,7 @@ pub fn indexes_derive_exactly_from_rows(graph: &Graph) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use atlas_graph_types::edge::{Justification, LocatedAt};
+    use atlas_graph_types::edge::{Justification, LocatedAt, MentionedEntity};
     use atlas_graph_types::id::{EventId, PlaceId};
     use atlas_graph_types::node::{Node, NodePayload};
 

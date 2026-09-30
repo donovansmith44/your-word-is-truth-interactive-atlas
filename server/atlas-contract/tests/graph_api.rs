@@ -14,9 +14,6 @@ use atlas_graph_types::id::NodeKind;
 
 /// The real corpus and the graph built from it, both shared: the router only ever reads them, and
 /// building either one per test cost this file's 41 routers 41 compiles and 41 graph builds.
-/// The corpus is finished after the graph is built from it, as the server finishes what it
-/// reads: the compiler attaches the catechism after its own `finish()`, so without this one
-/// every catechism index the router reads is empty.
 fn real_atlas() -> (Arc<AtlasData>, Arc<GraphService>) {
     static CACHED: std::sync::OnceLock<(Arc<AtlasData>, Arc<GraphService>)> = std::sync::OnceLock::new();
     CACHED
@@ -1560,6 +1557,7 @@ async fn a_text_unit_carries_its_structured_locus_beside_its_ref() {
             "text": "In the beginning God created the heaven and the earth.",
             "words_of_christ": [],
             "heading": the_creation_heading(),
+            "anchors": [god_named_at(17)],
             "edge_summary": [
                 { "kind": "member-of", "count": 1 },
                 { "kind": "attests", "count": 1 },
@@ -1590,6 +1588,7 @@ async fn a_concord_paragraph_carries_its_structured_locus_beside_its_ref() {
             "locus": { "corpus": "concord", "part": 7, "article": 2, "paragraph": 1 },
             "text": "Thou shalt have no other gods. What does this mean? \u{2013}Answer: We should fear, love, and trust in God above all things.",
             "words_of_christ": [],
+            "anchors": [],
             "edge_summary": [{ "kind": "member-of", "count": 1 }, { "kind": "catechism-link", "count": 1 }],
         }])
     );
@@ -1763,6 +1762,10 @@ fn bible_unit(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
 
 fn whole_verse(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
     serde_json::json!({ "from": { "unit": bible_unit(book, chapter, verse) }, "to": { "unit": bible_unit(book, chapter, verse) } })
+}
+
+fn god_named_at(start: usize) -> serde_json::Value {
+    serde_json::json!({ "start": start, "end": start + "God".chars().count(), "kind": "mentions", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } })
 }
 
 fn the_creation_heading() -> serde_json::Value {
@@ -1959,6 +1962,7 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     "text": "In the beginning God created the heaven and the earth.",
                     "words_of_christ": [],
                     "heading": the_creation_heading(),
+                    "anchors": [god_named_at(17)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -1974,6 +1978,7 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                     "locus": bible_unit("GEN", 1, 2),
                     "text": "And the earth was without form and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
                     "words_of_christ": [],
+                    "anchors": [god_named_at(103)],
                     "edge_summary": [
                         { "kind": "member-of", "count": 1 },
                         { "kind": "attests", "count": 1 },
@@ -1984,6 +1989,30 @@ async fn a_verse_that_opens_a_pericope_carries_its_heading_and_the_verse_after_i
                         { "kind": "catechism-link", "count": 3 },
                     ],
                 },
+            ])
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_verse_that_names_hazor_serves_an_anchor_over_the_name() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=JOS.11.1").await;
+    // Assert
+    assert_eq!(
+        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("And it came to pass, when Jabin king of Hazor had heard those things, that he sent to Jobab king of Madon, and to the king of Shimron, and to the king of Achshaph,"),
+            serde_json::json!([
+                { "start": 26, "end": 31, "kind": "mentions", "node": { "id": "Person:jabin_676", "kind": "Person", "label": "Jabin" } },
+                { "start": 40, "end": 45, "kind": "mentions", "node": { "id": "Place:hazor-1", "kind": "Place", "label": "Hazor 1" } },
+                { "start": 86, "end": 91, "kind": "mentions", "node": { "id": "Person:jobab_1642", "kind": "Person", "label": "Jobab" } },
+                { "start": 100, "end": 105, "kind": "mentions", "node": { "id": "Place:madon", "kind": "Place", "label": "Madon" } },
+                { "start": 126, "end": 133, "kind": "mentions", "node": { "id": "Place:shimron", "kind": "Place", "label": "Shimron" } },
+                { "start": 154, "end": 162, "kind": "mentions", "node": { "id": "Place:achshaph", "kind": "Place", "label": "Achshaph" } },
             ])
         )
     );

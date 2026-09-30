@@ -33,6 +33,12 @@ pub fn words_covering(chars: &Range<usize>, tokens: &[Token], layer: &str) -> Op
     span(layer, first.ord, last.ord).ok()
 }
 
+pub fn chars_of(words: &TokenSpan, tokens: &[Token]) -> Option<Range<usize>> {
+    let first = tokens.get(usize::from(words.start))?;
+    let last = tokens.get(usize::from(words.end))?;
+    Some(first.char_start..last.char_end)
+}
+
 pub fn tokenize(text: &str) -> Vec<Token> {
     let chars: Vec<char> = text.chars().collect();
     let mut tokens = Vec::new();

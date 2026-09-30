@@ -1,6 +1,7 @@
 mod common;
 
-use atlas_graph::tokens::{tokenize, Token};
+use atlas_graph::kjv_adapter::KJV_TRANSLATION;
+use atlas_graph::tokens::{chars_of, span, tokenize, Token};
 
 const KJV_VERSES: usize = 31_102;
 const KJV_TOKENS: usize = 790_892;
@@ -76,6 +77,33 @@ fn joined_words_stay_one_word_and_offsets_count_characters_not_bytes() {
             vec![token(0, "his", 0, 3), token(1, "wife’s", 4, 10), token(2, "name", 11, 15)],
         ]
     );
+}
+
+#[test]
+fn a_run_of_words_occupies_the_text_from_its_first_words_start_to_its_last_words_end() {
+    // Arrange
+    let heaven_and_the_earth = span(KJV_TRANSLATION, 6, 9).unwrap();
+    let seek_for = span(KJV_TRANSLATION, 8, 9).unwrap();
+
+    // Act
+    let occupied = [chars_of(&heaven_and_the_earth, &tokenize(GEN_1_1)), chars_of(&seek_for, &tokenize(MAT_6_32_OPENING))];
+
+    // Assert
+    assert_eq!(occupied, [Some(33..53), Some(44..54)]);
+}
+
+#[test]
+fn a_run_of_words_past_the_texts_last_word_occupies_none_of_it() {
+    // Arrange
+    let tokens = tokenize(GEN_1_1);
+    let ending_past = span(KJV_TRANSLATION, 9, 10).unwrap();
+    let starting_past = span(KJV_TRANSLATION, 10, 10).unwrap();
+
+    // Act
+    let occupied = [chars_of(&ending_past, &tokens), chars_of(&starting_past, &tokens)];
+
+    // Assert
+    assert_eq!(occupied, [None, None]);
 }
 
 #[test]

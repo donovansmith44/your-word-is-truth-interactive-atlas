@@ -43,6 +43,18 @@ pub struct MentionSpanStats {
     pub unlocatable: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MentionSpan {
+    pub entity: MentionedEntity,
+    pub words: TokenSpan,
+}
+
+impl MentionSpan {
+    pub fn of(row: &Mentions) -> Option<MentionSpan> {
+        row.locus.span.clone().map(|words| MentionSpan { entity: row.entity.clone(), words })
+    }
+}
+
 /// Runs after every Place and Person `mentions` row is written; a located row keeps its place in the
 /// row order, so a verse's occurrences follow one another in text order where its one row stood.
 pub fn locate_mentions(ctx: &mut BuildCtx) -> MentionSpanStats {
