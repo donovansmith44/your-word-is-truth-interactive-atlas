@@ -146,3 +146,15 @@ wrong; fix the spec.
 23. **Pair unlike work.** Memory, not cores, is this machine's ceiling (the
     mutation gate died at N=8 and was reaped). Two Rust-heavy jobs contend; a
     Rust-heavy job beside a C#-heavy one does not.
+24. **A bug is a category, never an instance.** Owner, 2026-09-30: "NEVER fix a
+    regression in isolation as though things in the same category cannot occur
+    similarly. Consider the program design, and whether a fix ought to be client
+    or server side given our goals of separation of concern and D.R.Y. If a bug
+    occurred, by definition there is a category of behavior that is wrongly
+    captured by our type system, and it more than likely means that there needs
+    to be migration of code to live under the agreed upon abstractions rather
+    than writing new code. The latter is hacky and evil." So every fix first
+    names the category and the abstraction that failed to capture it, decides
+    the side by separation of concerns, lists every other site in the category,
+    and migrates them all under the one abstraction. The red test pins the
+    category. A site-local patch is a defect.
