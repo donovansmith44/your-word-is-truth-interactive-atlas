@@ -34,7 +34,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 17. **O-CHOOSER:** the map's place chooser (world-cluster-chooser:213) stays open after zooming dissolves the cluster it was opened on; it fails 2 of 3 on today's build too (not FOCUS-1's). Fix it (close the chooser when its cluster dissolves)?
 18. **O-LAND-F1:** Codex has been stalled all day, so FOCUS-1 has no reviewer. Land it on my own review, or wait for Codex?
 19. **O-F6 (five, from the FOCUS-6 plan `docs/superpowers/plans/2026-10-01-focus6-geography.md`; the plan builds the [default] if unanswered):** (a) add edge-end relations `from`/`source-of` and `to`/`target-of` (22 → 24), node cards not counting them? [yes] (b) with `PlaceCard` gone, does hovering a place still preview it, or is a click the only way in? [click only] (c) a place card's time-window content (period name/blurb, events in the window, narrative prev/next): a card that ignores the window, or one scoped to it? [ignores] (d) `/world` with nothing focused: today's free slider, or always open on a Map? [free slider] (e) crossing into the next era: follow `follows-in` when the slider is dragged past the bound, or only on an arrow click? [click]
-20. **O-EDGE-TYPES:** sign off FOCUS-6's A-EDGES types (the plan's "Types" section: `ElementKind`, `Link.Target: PositionRef`, the edge card). Task 1 waits on this.
+20. **O-EDGE-TYPES:** SIGNED OFF by the owner 2026-09-30 ("Good go"); includes O-F6 (a) yes (`from`/`source-of`, `to`/`target-of`).
 21. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
 ## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
@@ -85,7 +85,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
 
 ### A-EDGES: edges are explorable (R18)
-- **Status:** folded into FOCUS-6 as its Tasks 1–2 (plan `docs/superpowers/plans/2026-10-01-focus6-geography.md`); blocked:owner (O-EDGE-TYPES).
+- **Status:** folded into FOCUS-6 as its Tasks 1–2; types signed off 2026-09-30; Task 1 running.
 - **Ruling:** spec §12 R18 (owner, 2026-09-30). Server: an edge card and an edge's frontier in the generated document (AQC minor); wire `Link.Target: PositionRef`; client: `ElementKind = Node | Edge`, `Presentation.Of(ElementKind, Surface)` rows for every edge kind, `IExplorer.Resolve(PositionRef)`/`Follow` total. Closes F-21 and retires F1-12's filter. Types for owner sign-off at FOCUS-1's close.
 - **Done when:** `Follow` is total (a law over every served position), the edge card serves its justification, and a Playwright spec follows a verse → its attests edge → the event.
 
