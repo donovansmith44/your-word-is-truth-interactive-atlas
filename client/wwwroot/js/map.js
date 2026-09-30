@@ -411,13 +411,13 @@ function collectHoverCandidates(inst) {
         if (inst.clusteredIds.has(id)) {
             continue;
         }
-        list.push({ id, kind: 'place', lat: entry.lat, lon: entry.lon });
+        list.push({ id, kind: 'place', lat: entry.lat, lon: entry.lon, trueLat: entry.trueLat, trueLon: entry.trueLon });
     }
     for (const [id, entry] of inst.quietMarkers) {
-        list.push({ id, kind: 'quiet', lat: entry.lat, lon: entry.lon });
+        list.push({ id, kind: 'quiet', lat: entry.lat, lon: entry.lon, trueLat: entry.lat, trueLon: entry.lon });
     }
     for (const c of inst.clusterMarkers) {
-        list.push({ id: null, kind: 'cluster', lat: c.lat, lon: c.lon, memberIds: c.memberIds });
+        list.push({ id: null, kind: 'cluster', lat: c.lat, lon: c.lon, trueLat: c.lat, trueLon: c.lon, memberIds: c.memberIds });
     }
     return list;
 }
@@ -432,11 +432,13 @@ function resolveHoverTarget(inst, pt, fallbackId) {
     const candidates = collectHoverCandidates(inst)
         .map(c => {
             const p = map.latLngToContainerPoint([c.lat, c.lon]);
-            return Object.assign(c, { sx: p.x, sy: p.y, dist: Math.hypot(p.x - pt.x, p.y - pt.y) });
-        })
-        .filter(c => c.dist <= HIT_RADIUS_PX);
+            const t = map.latLngToContainerPoint([c.trueLat, c.trueLon]);
+            return Object.assign(c, { sx: p.x, sy: p.y, tx: t.x, ty: t.y, dist: Math.hypot(p.x - pt.x, p.y - pt.y) });
+        });
+    const routed = fallbackId ? candidates.find(c => c.id === fallbackId) : undefined;
+    const within = candidates.filter(c => c.dist <= HIT_RADIUS_PX);
 
-    if (candidates.length === 0) {
+    if (!routed && within.length === 0) {
         return fallbackId ? { type: 'single', id: fallbackId } : null;
     }
 
@@ -444,8 +446,8 @@ function resolveHoverTarget(inst, pt, fallbackId) {
     // wins over a quiet dot -- some quiet furniture shares an exact lat/lon with a lit
     // neighbor, and id-only sorting could otherwise hand the hover to the wrong one), then by id.
     const KIND_RANK = { place: 0, cluster: 0, quiet: 1 };
-    candidates.sort((a, b) => a.dist - b.dist || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-    const winner = candidates[0];
+    within.sort((a, b) => a.dist - b.dist || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const winner = routed ?? within[0];
 
     if (winner.kind === 'cluster') {
         return { type: 'chooser', ids: [...winner.memberIds].sort() };
@@ -455,7 +457,7 @@ function resolveHoverTarget(inst, pt, fallbackId) {
     // always wins outright over any quiet neighbor regardless of distance.
     const tied = candidates.filter(c =>
         c !== winner && c.kind === winner.kind &&
-        Math.hypot(c.sx - winner.sx, c.sy - winner.sy) <= AMBIGUITY_RADIUS_PX);
+        Math.hypot(c.tx - winner.tx, c.ty - winner.ty) <= AMBIGUITY_RADIUS_PX);
     if (tied.length > 0) {
         return { type: 'chooser', ids: [winner.id, ...tied.map(c => c.id)].sort() };
     }
