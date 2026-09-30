@@ -13,6 +13,11 @@ The owner (Donovan) makes the rulings. Agents propose.
 3. `.superpowers/QUEUE.md`: the only list of work.
 4. `.superpowers/LOCKS.md`: how to take a lock before touching a shared artifact.
 
+## The machine
+- **WSL2 (Ubuntu 22.04), 16 threads, 25 GB for WSL.** Repos: `~/src/bible-atlas`, `~/src/map-generator`.
+- **Toolchains are user-local.** Run `. ~/.bible-atlas-env` in the same shell before any `cargo`, `dotnet`, `node`/`npx`, `ghc` or `cabal` command; non-interactive shells load none of them otherwise. It provides Rust 1.97.1 (pinned by `rust-toolchain.toml`), .NET 10, Node 24, GHC 9.6.7 + cabal (ghcup). `restic`, `bats`, `jq` and `codex` are in `~/.local/bin`.
+- **Pushing:** both agents need a WSL git credential that can push to both repos (OWNER QUESTIONS: O-PUSH). Until it exists, only the controller can push, through `git relay-push` (a repo-local alias that pushes `worktree-bible-atlas-m1` via Windows git), and nobody can take a lock.
+
 ## "go"
 If the owner's whole message is "go" or "continue", read your GO file and follow it:
 - Claude: `.superpowers/GO-claude.md`
@@ -40,14 +45,19 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 - **`land`:** landing commits onto `worktree-bible-atlas-m1`.
 
 ## One machine, shared (PRINCIPLES 19, 20, 23)
-- **Working copies:** every item gets its own worktree (`git worktree add ../wt/<item-id>`) and its own target directory (`CARGO_TARGET_DIR=~/.cache/cargo-target/<agent>-<item-id>`). Use `cargo -j 4`.
+- **Working copies:** every item gets its own worktree, `git -c core.autocrlf=false worktree add -b lane/<agent>/<item-id> ~/w/<item-id> <base>` (map-generator items: `~/w/mg-<item-id>`), and its own target directory, `CARGO_TARGET_DIR=~/mut/<agent>-<item-id>`. Use `cargo -j 4`, prefixed `nice -n 10`. Delete the target directory when the item lands.
 - **Memory is the ceiling.** Pair unlike work: at most one Rust-heavy build per agent at a time, and prefer C# beside Rust.
-- **Data:** never link `data/raw` into a worktree; copy it. Before any `git worktree remove`, check for zero symlinks inside the worktree.
+- **Data:** never link `data/raw` or `data/cache` into a worktree; copy them (`cp -r ~/src/bible-atlas/data/raw/. <wt>/data/raw/`, same for `data/cache`). Before any `git worktree remove`, `find <wt> -type l | wc -l` must print 0.
 - **Ports:**
-  - Claude uses 8000 and 5000; Codex uses 8100 and 5100. The map-generator workbench uses 8090.
+  - Claude uses 8000 and 5000; Codex uses 8100 and 5100 for servers it starts by hand (`atlas-server --port 8100`). The map-generator workbench uses 8090.
+  - The Playwright suite always binds 8000 and 5000 (its config reuses a server already there). Whoever holds `heavy` runs it; stop your own servers on those ports first.
   - Never touch port 8080, the owner's demo.
   - Stop processes by the PID that owns the port, never by name, and only processes you started.
 - **Scripts:** never edit a script while an instance of it is running.
+
+## Code
+- **No comments in application code** (PRINCIPLES 9, owner 2026-09-30): not `//`, `///`, `//!` or `<!-- -->`, and no "why" exemption. Tests carry only `// Arrange`, `// Act`, `// Assert`. A description the published contract needs is a `#[schema(description = "…")]` attribute. Every review greps the diff for added comment lines.
+- **Licensing** (owner 2026-09-29): ingest nothing that isn't public domain, CC0, or attribution-only permissive (CC BY 4.0, MIT, BSD, Apache-2.0). ShareAlike/copyleft (CC BY-SA, ODbL, GPL), NonCommercial, NoDerivatives and unlicensed sources are out. Cite the license; record attribution in `LICENSES.md`.
 
 ## Commits and branches
 - **Commits:** small, one behaviour each, with a message that states what is now true.
@@ -56,7 +66,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 
 ## Never
 - Edit the KJV text.
-- Force-push or rewrite history.
+- Force-push or rewrite history. The one exception is taking a lock (`LOCKS.md`), whose `--force-with-lease=<ref>:` only ever creates a branch that doesn't exist.
 - Delete `data/raw` or `data/cache`.
 - Commit a secret. Backup keys live only in the owner's password manager.
 - Run the mutation gate outside the owner's window (`.superpowers/MUTATION-GATE-DEBT.md`).

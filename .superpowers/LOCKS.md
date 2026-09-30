@@ -11,7 +11,11 @@ tree=$(git hash-object -t tree /dev/null)
 c=$(git commit-tree "$tree" -m "LOCK $name held by $agent for $item since $(date -Is)")
 git push --force-with-lease="refs/heads/lock/$name:" origin "$c:refs/heads/lock/$name"
 ```
-The empty value after the `:` means "only if it doesn't exist yet". A rejected push means someone else holds the lock: do other work and try again later. Never retry in a tight loop.
+The empty value after the `:` means "only if it doesn't exist yet". A rejected push (`! [rejected] … (stale info)`) means someone else holds the lock: do other work and try again later. Never retry in a tight loop.
+
+The message must name the agent and the time, as above, so two takes never push the same commit: pushing the commit the lock already points at reports "Everything up-to-date" without checking the lease.
+
+Verified 2026-09-30 against origin: a first take created `lock/test`, a second agent's take was rejected with `stale info`, and the release deleted it. Taking a lock needs a push credential in WSL (AGENTS.md, "The machine").
 
 ## Show
 ```bash
