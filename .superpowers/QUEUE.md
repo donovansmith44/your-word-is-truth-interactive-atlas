@@ -29,7 +29,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 13. **O-CATECHISM:** Post the license request drafted at `.superpowers/sdd/queue-name-model/catechism-license-request.md` on github.com/brain-fuel/catechism. The fallback is our own mapping from the public-domain 1921 Triglot.
 14. **O-CACHE:** FOCUS-0 owes one proof (R44): clear `data/cache/sections/*` and run `cargo test -p atlas-cli` green first time. OK to clear the cache (regenerable) in `~/src/bible-atlas`?
 
-## FINDINGS (rule 24a: reported, owner decides; agents append)
+## FINDINGS (rules 24a/24b: open categories, each with its proposed CLOSURE; the owner decides; agents append)
 _None yet._
 
 ---
@@ -94,7 +94,7 @@ _None yet._
 
 ### A-REVIEW: review every Codex item in `review`
 - **Status:** standing
-- **Scope:** the PRINCIPLES 14b pass (D.R.Y., the Haskell bar) plus the rule 24a category pass: for every fix, was the category named, the failed abstraction named, the side chosen, every site migrated? Plus a grep of the diff for added comment lines. Land what passes, holding the `land` lock.
+- **Scope:** the PRINCIPLES 14b pass (D.R.Y., the Haskell bar) plus the rule 24a category pass: for every fix, was the category named, the failed abstraction named, the side chosen, every site migrated? Plus 24b: is the category CLOSED (the raw thing private, the abstraction the one door, an enum or an enumerating law), with the guarantee named? Plus a grep of the diff for added comment lines. Land what passes, holding the `land` lock.
 - **Findings, not fixes:** offenders found during any review or task (code outside the agreed abstractions, a same-category site left unmigrated) are written under **FINDINGS** below with the category and the sites; the owner decides how each is addressed. Nobody fixes one on the side.
 
 ### A-THEO: replace Theographic (CC BY-SA)

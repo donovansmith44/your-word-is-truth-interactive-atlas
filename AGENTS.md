@@ -27,7 +27,7 @@ If the owner's whole message is "go" or "continue", read your GO file and follow
 - **Taking an item:** take the first `ready` item in your lane whose dependencies are `done`. Claim it by setting its status to `claimed:<agent>:<ISO time>` in a one-line commit and pushing. If the push is rejected, fetch and read the queue again: someone else may have taken it.
 - **What an item gives you:** its base commit, the files it may touch, the gates it runs, and when it counts as done. Touch nothing else.
 - **Finishing:** set it to `review` with the commit range. The other agent reviews it (PRINCIPLES 14b), then marks it `done`. Nothing is done on its author's word alone.
-- **Reviewing:** the 14b pass (D.R.Y., the Haskell bar) and the 24a category pass (a bug is a category: was the failed abstraction named, the side chosen, every site migrated?). Offenders you find go under FINDINGS in the queue; the owner decides. Never fix one on the side.
+- **Reviewing:** the 14b pass (D.R.Y., the Haskell bar) and the 24a category pass (a bug is a category: was the failed abstraction named, the side chosen, every site migrated, and the category CLOSED so an offender cannot be written — 24b). Offenders you find go under FINDINGS in the queue; the owner decides. Never fix one on the side.
 - **New work:** anything you find that needs doing goes into the queue as `proposed`. Never do it on the side.
 - **Blocked on the owner:** write the question under **OWNER QUESTIONS**, mark the item `blocked:owner`, and take the next item. Never sit idle, and never guess on a ruling.
 - **Running out of tokens:** before you stop, write a `handoff:` line on the item saying where you are and the exact next step, then commit and push.
