@@ -28,7 +28,7 @@ else
                 {
                     <PericopeHeading Heading="@heading" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" />
                 }
-                <VerseLine Verse="@v" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
+                <VerseLine Verse="@v" Unit="@_text!.Verse(v.Number)" Book="@Book" Chapter="@Chapter" OnExplore="OnExplore"
                            Focal="@isFocal" Id="@(v.Number == FocalFromVerse ? _focalDomId : null)"
                            RowClass="popover-reader-verse explorable" RowTestIdPrefix="popover-reader-verse" TestIdSuffix="@TestIdSuffix"
                            VerseNumClass="popover-reader-verse-num" ShowVerseNumButton="false"
@@ -66,6 +66,7 @@ else
 
     private bool _expanded;
     private Chapter? _chapter;
+    private ChapterText? _text;
     private string? _error;
     private bool _scrolledThisExpand;
     private readonly AsyncMemo<IJSObjectReference> _readerJs = new();
@@ -80,7 +81,10 @@ else
             _error = null;
             try
             {
-                _chapter = await Atlas.Chapter(Book, Chapter);
+                var chapterTask = Atlas.Chapter(Book, Chapter);
+                var textTask = Atlas.ChapterText(Book, Chapter);
+                _text = await textTask;
+                _chapter = await chapterTask;
             }
             catch (Exception)
             {

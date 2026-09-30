@@ -199,15 +199,14 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
                 return null;
         }
 
-        IReadOnlyList<Verse> focalVerses;
+        IReadOnlyList<TextUnit> focalVerses;
         try
         {
-            var chapterText = await api.Chapter(book, chapter);
-            focalVerses = chapterText.Verses.Where(cv => cv.Number >= focalFrom && cv.Number <= focalTo).ToList();
+            focalVerses = (await api.ChapterText(book, chapter)).Between(focalFrom, focalTo);
         }
         catch (Exception)
         {
-            focalVerses = new List<Verse>();
+            focalVerses = [];
         }
 
         var registry = await FrontierProvenance.RegistryOrNull(api);
@@ -221,7 +220,7 @@ public sealed class VerseTextSectionProvider : IPopoverSectionProvider
             builder.AddAttribute(seq++, "FocalFromVerse", focalFrom);
             builder.AddAttribute(seq++, "FocalToVerse", focalTo);
             builder.AddAttribute(seq++, "CompactText", compactText);
-            builder.AddAttribute(seq++, "FocalVerses", (IReadOnlyList<Verse>)focalVerses);
+            builder.AddAttribute(seq++, "FocalVerses", focalVerses);
             builder.AddAttribute(seq++, "OnExplore", EventCallback.Factory.Create<IExplorable>(ctx, n => ctx.PushAsync(n)));
             builder.CloseComponent();
 
@@ -382,10 +381,10 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
     private static async Task<List<PassageSourceUnit>> ResolveUnits(AtlasClient api, List<(CrossRef Xref, (string Book, int Chapter, int FromVerse, int ToVerse)? Span)> targets)
     {
         var chapterKeys = targets.Where(t => t.Span is not null).Select(t => (t.Span!.Value.Book, t.Span.Value.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), Chapter>();
+        var chapters = new Dictionary<(string, int), ChapterText>();
         try
         {
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Item1, k.Item2)));
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Item1, k.Item2)));
             foreach (var (key, chapter) in chapterKeys.Zip(fetched))
             {
                 chapters[key] = chapter;
@@ -400,15 +399,7 @@ public sealed class CrossRefsSection : IPopoverSectionProvider
         {
             if (span is { } s && chapters.TryGetValue((s.Book, s.Chapter), out var chapter))
             {
-                var verses = new List<PassageListVerse>();
-                for (var v = s.FromVerse; v <= s.ToVerse; v++)
-                {
-                    var cv = chapter.Verses.FirstOrDefault(cv => cv.Number == v);
-                    if (cv is not null)
-                    {
-                        verses.Add(new PassageListVerse($"{s.Book}.{s.Chapter}.{v}", cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
-                    }
-                }
+                var verses = chapter.Between(s.FromVerse, s.ToVerse).Select(PassageListVerse.Of).ToList();
                 if (verses.Count > 0)
                 {
                     units.Add(new PassageSourceUnit(verses));
@@ -631,17 +622,14 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
             return null;
         }
 
-        var mentionData = new Dictionary<string, Verse>();
+        var servedText = new Dictionary<string, TextUnit>();
         try
         {
             var chapterKeys = detail.Verses.Select(v => CanonRef.ParseVerse(v.Vref)).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.Chapter(k.Book, k.Chapter)));
-            foreach (var (key, chapterText) in chapterKeys.Zip(fetched))
+            var fetched = await Task.WhenAll(chapterKeys.Select(k => api.ChapterText(k.Book, k.Chapter)));
+            foreach (var unit in fetched.SelectMany(chapterText => chapterText.Units))
             {
-                foreach (var cv in chapterText.Verses)
-                {
-                    mentionData[$"{key.Book}.{key.Chapter}.{cv.Number}"] = cv;
-                }
+                servedText[unit.Ref] = unit;
             }
         }
         catch (Exception)
@@ -662,8 +650,7 @@ public sealed class CatechismScripturesSection : IPopoverSectionProvider
                 currentGroup = new List<PassageListVerse>();
                 currentQuestion = v.Question;
             }
-            var mention = mentionData.GetValueOrDefault(v.Vref);
-            currentGroup.Add(new PassageListVerse(v.Vref, v.Text, Places: mention?.Places, Persons: mention?.Persons, WordsOfChrist: mention?.WordsOfChrist));
+            currentGroup.Add(servedText.TryGetValue(v.Vref, out var unit) ? PassageListVerse.Of(unit) : new PassageListVerse(v.Vref, v.Text));
         }
         if (currentGroup is not null)
         {
@@ -1145,7 +1132,7 @@ file static class WitnessUnitsResolver
             u.Verses.Select(v =>
             {
                 var resolved = resolvedByVref.GetValueOrDefault(v.Vref);
-                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Places, resolved?.Persons, resolved?.WordsOfChrist);
+                return new PassageListVerse(v.Vref, resolved?.Text ?? "", v.GroupCount, resolved?.Anchors, resolved?.WordsOfChrist);
             }).ToList(), CoalesceAcrossChapters: u.CoalesceAcrossChapters, Canon: u.Canon)).ToList();
     }
 }

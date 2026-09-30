@@ -30,8 +30,7 @@ public static class ContractGeneration
         },
     };
 
-    // The client never sends /api/text's optional `scope`, and nothing $refs TextScope.
-    public static readonly IReadOnlySet<string> Unread = new HashSet<string> { "Contract", "TextScope" };
+    public static readonly IReadOnlySet<string> Unread = new HashSet<string> { "Contract" };
 
     // A discriminator base is open in the document only so that JSON Schema lets its allOf
     // subtypes' own properties through, and each subtype is closed there by

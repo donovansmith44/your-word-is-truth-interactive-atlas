@@ -2,8 +2,10 @@ using BibleAtlas.Client.Contract;
 
 namespace BibleAtlas.Client.Explore;
 
-// Places/Persons/WordsOfChrist: null means no source data to check; empty means checked, none found.
-public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<PlaceRef>? Places = null, IReadOnlyList<PersonRef>? Persons = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null);
+public sealed record PassageListVerse(string Vref, string Text, int? GroupCount = null, IReadOnlyList<Anchor>? Anchors = null, IReadOnlyList<WordsOfChristSpan>? WordsOfChrist = null)
+{
+    public static PassageListVerse Of(TextUnit unit) => new(unit.Ref, unit.Text, Anchors: unit.Anchors, WordsOfChrist: unit.WordsOfChrist);
+}
 
 public sealed record PassageSourceUnit(IReadOnlyList<PassageListVerse> Verses, string? Caption = null, bool CoalesceAcrossChapters = false, Versification? Canon = null);
 
@@ -19,10 +21,10 @@ public static class VerseTextResolver
     public static async Task<List<PassageListVerse>> ResolveAsync(AtlasClient api, IReadOnlyList<string> vrefs)
     {
         var pairs = vrefs.Select(CanonRef.ParseVerse).Select(p => (p.Book, p.Chapter)).Distinct().ToList();
-        var chapters = new Dictionary<(string, int), Chapter>();
+        var chapters = new Dictionary<(string, int), ChapterText>();
         try
         {
-            var fetched = await Task.WhenAll(pairs.Select(p => api.Chapter(p.Book, p.Chapter)));
+            var fetched = await Task.WhenAll(pairs.Select(p => api.ChapterText(p.Book, p.Chapter)));
             foreach (var (pair, chapter) in pairs.Zip(fetched))
             {
                 chapters[pair] = chapter;
@@ -36,14 +38,9 @@ public static class VerseTextResolver
         foreach (var vref in vrefs)
         {
             var (book, chapter, verse) = CanonRef.ParseVerse(vref);
-            if (!chapters.TryGetValue((book, chapter), out var c))
+            if (chapters.TryGetValue((book, chapter), out var c))
             {
-                continue;
-            }
-            var cv = c.Verses.FirstOrDefault(v => v.Number == verse);
-            if (cv is not null)
-            {
-                result.Add(new PassageListVerse(vref, cv.Text, Places: cv.Places, Persons: cv.Persons, WordsOfChrist: cv.WordsOfChrist));
+                result.AddRange(c.Between(verse, verse).Select(PassageListVerse.Of));
             }
         }
         return result;

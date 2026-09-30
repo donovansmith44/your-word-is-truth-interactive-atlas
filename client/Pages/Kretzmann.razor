@@ -77,7 +77,7 @@
                         <PericopeHeading Heading="@heading" OnExplore="OnLineExplore" />
                     }
                     <section class="kretzmann-verse-block" data-testid="@($"kretzmann-verse-group-{row.Verse.Number}")">
-                        <VerseLine Verse="@row.Verse" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
+                        <VerseLine Verse="@row.Verse" Unit="@row.Unit" Book="@_book" Chapter="@_chapterNum" OnExplore="OnLineExplore"
                                    Id="@($"v{row.Verse.Number}{VerseTestIdSuffix}")"
                                    RowClass="verse-line explorable kretzmann-scripture-row" RowTestIdPrefix="verse-line" TestIdSuffix="@VerseTestIdSuffix"
                                    VerseNumClass="verse-num" ShowVerseNumButton="true" VerseNumTestIdPrefix="verse-num"
@@ -143,7 +143,7 @@
 @code {
     private sealed record CommentaryItemRow(string Id, string Heading, string? Text, IReadOnlyList<Anchor> Citations, bool IsSectionStart);
 
-    private sealed record MergedVerseRow(Verse Verse, List<CommentaryItemRow> CommentaryItems);
+    private sealed record MergedVerseRow(Verse Verse, TextUnit Unit, List<CommentaryItemRow> CommentaryItems);
 
     private static readonly List<CanonBook> EmptyToc = new();
 
@@ -424,8 +424,9 @@
         try
         {
             var chapterTask = Atlas.Chapter(book, chapterNum);
+            var textTask = Atlas.ChapterText(book, chapterNum);
             var commentaryTask = Atlas.KretzmannChapter(book, chapterNum);
-            await Task.WhenAll(chapterTask, commentaryTask);
+            await Task.WhenAll(chapterTask, textTask, commentaryTask);
 
             if (myRequest != _requestId)
             {
@@ -433,6 +434,7 @@
             }
 
             var chapter = chapterTask.Result;
+            var text = textTask.Result;
             var doc = commentaryTask.Result;
 
             string? lastHeading = null;
@@ -452,7 +454,7 @@
 
             _verses = chapter.Verses;
             _rows = chapter.Verses
-                .Select(v => new MergedVerseRow(v, commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
+                .Select(v => new MergedVerseRow(v, text.Verse(v.Number), commentaryByVerse.GetValueOrDefault(v.Number, new List<CommentaryItemRow>())))
                 .ToList();
             _loadedBook = book;
             _loadedChapterNum = chapterNum;

@@ -1,23 +1,22 @@
 @using BibleAtlas.Client.Explore
 
-@foreach (var run in ComputeRuns(Text, WordsOfChrist))
+@foreach (var run in AnchoredText.Runs(Text, WordsOfChrist, Anchors))
 {
-    @if (run.IsRed)
+    @if (run[0].IsWordsOfChrist)
     {
         <span class="words-of-christ">
-            <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
+            <MentionScan Pieces="@run" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
         </span>
     }
     else
     {
-        <MentionScan Text="@run.Text" Places="@Places" Persons="@Persons" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
+        <MentionScan Pieces="@run" Verse="@Verse" ClassPrefix="@ClassPrefix" TestIdSuffix="@TestIdSuffix" OnExplore="OnExplore" OnToggleSelect="OnToggleSelect" />
     }
 }
 
 @code {
     [Parameter, EditorRequired] public string Text { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PlaceRef> Places { get; set; } = default!;
-    [Parameter, EditorRequired] public IReadOnlyList<PersonRef> Persons { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Anchor> Anchors { get; set; } = default!;
 
     [Parameter] public IReadOnlyList<WordsOfChristSpan> WordsOfChrist { get; set; } = Array.Empty<WordsOfChristSpan>();
 
@@ -30,36 +29,4 @@
     [Parameter, EditorRequired] public EventCallback<IExplorable> OnExplore { get; set; }
 
     [Parameter] public EventCallback<IExplorable> OnToggleSelect { get; set; }
-
-    public readonly record struct TextRun(string Text, bool IsRed);
-
-    /// <summary>Pure. <paramref name="spans"/> is trusted sorted/non-overlapping (the server's alignment walk guarantees this), but this still clamps a malformed/out-of-range span rather than trusting the wire blindly.</summary>
-    public static List<TextRun> ComputeRuns(string text, IReadOnlyList<WordsOfChristSpan> spans)
-    {
-        if (spans.Count == 0)
-        {
-            return new List<TextRun> { new(text, false) };
-        }
-        var runs = new List<TextRun>();
-        var cursor = 0;
-        foreach (var s in spans)
-        {
-            var start = Math.Clamp(s.Start, 0, text.Length);
-            var end = Math.Clamp(s.End, start, text.Length);
-            if (start > cursor)
-            {
-                runs.Add(new TextRun(text[cursor..start], false));
-            }
-            if (end > start)
-            {
-                runs.Add(new TextRun(text[start..end], true));
-            }
-            cursor = Math.Max(cursor, end);
-        }
-        if (cursor < text.Length || runs.Count == 0)
-        {
-            runs.Add(new TextRun(text[cursor..], false));
-        }
-        return runs;
-    }
 }
