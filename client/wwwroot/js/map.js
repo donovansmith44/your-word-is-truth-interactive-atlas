@@ -223,10 +223,6 @@ const GOLDEN_ANGLE_RAD = 2.399963229728653;
 const NUDGE_TRIGGER_PX = 26;
 const NUDGE_STEP_PX = 16;
 
-// Every mouseover/click below resolves its target from the pointer's real containerPoint
-// (resolveHoverTarget), never from which DOM element the browser happened to route the native
-// event to: once two markers' hit boxes overlap, the browser picks by its own default z-index
-// (screen-Y position), which has nothing to do with which marker's true center is actually closer.
 const HIT_RADIUS_PX = NUDGE_TRIGGER_PX;
 
 // Radius within which the nearest candidate's tie is treated as a genuine ambiguity (a chooser)
@@ -415,7 +411,7 @@ function collectHoverCandidates(inst) {
         if (inst.clusteredIds.has(id)) {
             continue;
         }
-        list.push({ id, kind: 'place', lat: entry.trueLat, lon: entry.trueLon });
+        list.push({ id, kind: 'place', lat: entry.lat, lon: entry.lon });
     }
     for (const [id, entry] of inst.quietMarkers) {
         list.push({ id, kind: 'quiet', lat: entry.lat, lon: entry.lon });
