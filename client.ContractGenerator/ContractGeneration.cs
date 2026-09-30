@@ -32,4 +32,27 @@ public static class ContractGeneration
 
     // The client never sends /api/text's optional `scope`, and nothing $refs TextScope.
     public static readonly IReadOnlySet<string> Unread = new HashSet<string> { "TextScope" };
+
+    // A discriminator base is open in the document only so that JSON Schema lets its allOf
+    // subtypes' own properties through, and each subtype is closed there by
+    // `unevaluatedProperties`, which the generator does not read. In C# a subtype carries its
+    // properties as typed members, so a property bag on either would only ever catch the
+    // discriminator itself -- breaking record equality (a bag compares by reference) and
+    // writing the discriminator twice.
+    public static void CloseDiscriminatedUnions(OpenApiDocument document)
+    {
+        foreach (var union in document.Definitions.Values)
+        {
+            if (union.DiscriminatorObject is not { } discriminator)
+            {
+                continue;
+            }
+
+            union.AllowAdditionalProperties = false;
+            foreach (var part in discriminator.Mapping.Values.SelectMany(subtype => subtype.ActualSchema.AllOf))
+            {
+                part.AllowAdditionalProperties = false;
+            }
+        }
+    }
 }

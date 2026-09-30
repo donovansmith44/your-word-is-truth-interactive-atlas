@@ -1,4 +1,5 @@
 using BibleAtlas.Client.ContractGenerator;
+using NJsonSchema;
 using NJsonSchema.CodeGeneration.CSharp;
 using NSwag;
 
@@ -34,5 +35,28 @@ public sealed class ContractGenerationTests
         Assert.False(csharp.GenerateJsonMethods);
         Assert.IsType<PascalCasePropertyNames>(csharp.PropertyNameGenerator);
         Assert.Equal(ContractGeneration.Unread, csharp.ExcludedTypeNames);
+    }
+
+    [Fact]
+    public void A_discriminated_union_and_its_subtypes_own_parts_are_generated_closed_and_nothing_else_is_touched()
+    {
+        // Arrange
+        var union = new JsonSchema { Type = JsonObjectType.Object, AllowAdditionalProperties = true, DiscriminatorObject = new OpenApiDiscriminator { PropertyName = "corpus" } };
+        var subtypesOwnPart = new JsonSchema { Type = JsonObjectType.Object, AllowAdditionalProperties = true };
+        var subtype = new JsonSchema();
+        subtype.AllOf.Add(new JsonSchema { Reference = union });
+        subtype.AllOf.Add(subtypesOwnPart);
+        union.DiscriminatorObject.Mapping["bible"] = subtype;
+        var unrelated = new JsonSchema { Type = JsonObjectType.Object, AllowAdditionalProperties = true };
+        var document = new OpenApiDocument();
+        document.Definitions["TextRef"] = union;
+        document.Definitions["BibleRef"] = subtype;
+        document.Definitions["Unrelated"] = unrelated;
+
+        // Act
+        ContractGeneration.CloseDiscriminatedUnions(document);
+
+        // Assert
+        Assert.Equal([false, false, true], new[] { union, subtypesOwnPart, unrelated }.Select(schema => schema.AllowAdditionalProperties));
     }
 }

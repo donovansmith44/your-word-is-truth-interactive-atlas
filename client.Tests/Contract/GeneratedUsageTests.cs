@@ -85,6 +85,13 @@ public sealed class GeneratedUsageTests
                     {
                         yield return target[DefinitionRefPrefix.Length..];
                     }
+                    else if (property.Name == "discriminator")
+                    {
+                        foreach (var subtype in property.Value.GetProperty("mapping").EnumerateObject())
+                        {
+                            yield return subtype.Value.GetString()![DefinitionRefPrefix.Length..];
+                        }
+                    }
                     else
                     {
                         foreach (var nested in DirectRefs(property.Value))
