@@ -1580,7 +1580,7 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
             return null;
         }
 
-        var persons = page.Entries.Where(e => e.Node.Kind == PositionKind.Person).ToList();
+        var persons = page.Entries.Nodes().Where(n => n.Kind == NodeKind.Person).ToList();
         if (persons.Count == 0)
         {
             return null;
@@ -1596,10 +1596,10 @@ public sealed class VersePersonsSection : IPopoverSectionProvider
             builder.AddContent(seq++, "PERSONS");
             builder.CloseElement();
 
-            foreach (var entry in persons)
+            foreach (var person in persons)
             {
-                var id = entry.Node.Id;
-                var label = entry.Node.Label;
+                var id = person.Id;
+                var label = person.Label;
                 builder.OpenElement(seq++, "button");
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
@@ -1743,7 +1743,7 @@ public sealed class CatechismInConcordSection : IPopoverSectionProvider
             // mostly its proof verses (the First Commandment alone has 200+), and the
             // Concord paragraphs sit after them.
             units = (await CatechismLinks.AllTargetsAsync(ctx.Graph, NodeIds.Of(NodeKind.CatechismItem, item.Id)))
-                .Where(n => n.Kind == PositionKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
+                .Where(n => n.Kind == NodeKind.TextUnit && NodeIds.LocalPart(n).StartsWith("BoC ", StringComparison.Ordinal))
                 .ToList();
         }
         catch (Exception)
@@ -1789,7 +1789,7 @@ public sealed class ConcordSmallCatechismSection : IPopoverSectionProvider
         try
         {
             items = (await CatechismLinks.AllTargetsAsync(ctx.Graph, unit.NodeId))
-                .Where(n => n.Kind == PositionKind.CatechismItem)
+                .Where(n => n.Kind == NodeKind.CatechismItem)
                 .Select(n => new CatechismRef(id: NodeIds.LocalPart(n), name: n.Label, provenance: [], question: null))
                 .ToList();
         }
@@ -1873,7 +1873,7 @@ internal static class CatechismLinks
         do
         {
             var page = await graph.Edges(nodeId, EdgeKind.CatechismLink, cursor: cursor, limit: PageSize);
-            targets.AddRange(page.Entries.Select(e => e.Node));
+            targets.AddRange(page.Entries.Nodes());
             cursor = page.Next;
         }
         while (cursor is not null);
@@ -1995,7 +1995,7 @@ public sealed class PersonEventsSection : IPopoverSectionProvider
         List<NodeRef> events;
         try
         {
-            events = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParticipatesIn, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            events = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParticipatesIn, cursor: null, limit: 200)).Entries.Nodes().ToList();
         }
         catch (Exception)
         {
@@ -2033,12 +2033,12 @@ public sealed class PersonFamilySection : IPopoverSectionProvider
         try
         {
             parents = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ChildOf, cursor: null, limit: 200)).Entries.ToList();
-            spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
+            spouses = (await ctx.Graph.Edges(person.PersonId, EdgeKind.SpouseOf, cursor: null, limit: 200)).Entries.Nodes().ToList();
             children = (await ctx.Graph.Edges(person.PersonId, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.ToList();
-            brethren = (await ctx.Graph.Edges(person.PersonId, EdgeKind.BrethrenOf, cursor: null, limit: 200)).Entries.Select(e => e.Node).ToList();
-            foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))))
+            brethren = (await ctx.Graph.Edges(person.PersonId, EdgeKind.BrethrenOf, cursor: null, limit: 200)).Entries.Nodes().ToList();
+            foreach (var parent in parents.Where(p => Kinship.MakesSiblings(Kinship.Of(p))).Nodes())
             {
-                var theirs = (await ctx.Graph.Edges(parent.Node.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Select(e => e.Node);
+                var theirs = (await ctx.Graph.Edges(parent.Id, EdgeKind.ParentOf, cursor: null, limit: 200)).Entries.Where(e => Kinship.MakesSiblings(Kinship.Of(e))).Nodes();
                 foreach (var s in theirs)
                 {
                     if (s.Id != person.PersonId && siblings.All(x => x.Id != s.Id))

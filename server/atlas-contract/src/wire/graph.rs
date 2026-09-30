@@ -1,10 +1,12 @@
 use atlas_core::data::EventKind;
 use atlas_graph_types::id::NarrativeId;
 use atlas_graph_types::{EdgeKind, NodeKind};
+use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
-use utoipa::openapi::{RefOr, Schema};
+use utoipa::openapi::{Ref, RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
 
+use super::union::{case_of, tagged_by, Case};
 use super::TextSpan;
 
 /// One node of the graph at a glance: what it is, what to call it, where it
@@ -142,12 +144,12 @@ pub struct EdgePage {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.")]
+#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.")]
 pub struct EdgeEntry {
     /// The edge's own id. The neighbour's page for the opposite kind carries this
     /// same id for this same connection, and the edge itself can be explored.
     pub edge: String,
-    pub node: NodeRef,
+    pub neighbour: PositionRef,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub votes: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -160,53 +162,66 @@ pub struct EdgeEntry {
     pub parentage: Option<atlas_graph_types::edge::Parentage>,
 }
 
-/// A reference to something the graph holds: enough to show it, and the id to
-/// fetch it with. The `kind` is one of the graph's node kinds, or `Edge` when
-/// the reference is to an edge, which can be explored in its own right.
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
+#[schema(description = "A reference to a node: enough to show it, and the id to fetch it with.")]
 pub struct NodeRef {
     pub id: String,
-    pub kind: PositionKind,
+    pub kind: NodeKind,
     pub label: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PositionKind {
-    Node(NodeKind),
-    Edge,
+#[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "A reference to an edge: the id its own page carries as `edge`.")]
+pub struct EdgeRef {
+    pub id: String,
 }
 
-/// The description this vocabulary publishes. It is a constant rather than a doc
-/// comment because the schema below is hand-written, and a doc comment would be a
-/// second copy of the same sentence.
-const POSITION_KIND: &str = "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.";
-
-impl PositionKind {
-    pub fn name(self) -> &'static str {
-        match self {
-            PositionKind::Node(kind) => kind.name(),
-            PositionKind::Edge => "Edge",
-        }
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub enum PositionRef {
+    Node { node: NodeRef },
+    Edge { edge: EdgeRef },
 }
 
-// Written out rather than declared through `vocabulary!`: one member of this set
-// carries another whole vocabulary, which a flat member list cannot express.
-impl Serialize for PositionKind {
+const POSITION: &str = "position";
+const POSITION_REF: &str = "What an edge leads to: a node, or, where one relation grounds another, the edge it grounds. `position` says which shape follows.";
+const NODE: Case = Case { tag: "node", name: "NodePosition", description: "An edge's far end when it is a node." };
+const EDGE: Case = Case { tag: "edge", name: "EdgePosition", description: "An edge's far end when it is another edge: a `justifies` page names the edge the node grounds." };
+const CASES: [Case; 2] = [NODE, EDGE];
+
+impl Serialize for PositionRef {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(self.name())
+        let mut neighbour = s.serialize_map(None)?;
+        match self {
+            PositionRef::Node { node } => {
+                neighbour.serialize_entry(POSITION, NODE.tag)?;
+                neighbour.serialize_entry(NODE.tag, node)?;
+            }
+            PositionRef::Edge { edge } => {
+                neighbour.serialize_entry(POSITION, EDGE.tag)?;
+                neighbour.serialize_entry(EDGE.tag, edge)?;
+            }
+        }
+        neighbour.end()
     }
 }
 
-impl PartialSchema for PositionKind {
+impl PartialSchema for PositionRef {
     fn schema() -> RefOr<Schema> {
-        let names = NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(PositionKind::Edge.name()));
-        atlas_graph_types::vocabulary::string_enum(names, POSITION_KIND.to_string())
+        tagged_by(POSITION, &CASES, POSITION_REF)
     }
 }
 
-impl ToSchema for PositionKind {}
+impl ToSchema for PositionRef {
+    fn schemas(schemas: &mut Vec<(String, RefOr<Schema>)>) {
+        schemas.push((NODE.name.to_string(), case_of(&PositionRef::name(), &NODE, [(NODE.tag, Ref::from_schema_name(NodeRef::name()).into())])));
+        schemas.push((EDGE.name.to_string(), case_of(&PositionRef::name(), &EDGE, [(EDGE.tag, Ref::from_schema_name(EdgeRef::name()).into())])));
+        schemas.push((NodeRef::name().to_string(), NodeRef::schema()));
+        NodeRef::schemas(schemas);
+        schemas.push((EdgeRef::name().to_string(), EdgeRef::schema()));
+    }
+}
 
 atlas_graph_types::vocabulary! {
     /// How much text one window of `/api/text` covers: the units around the
@@ -260,6 +275,29 @@ pub struct UnitHeading {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const HAZOR: &str = "Place:hazor-1";
+    const HAZOR_LABEL: &str = "Hazor 1";
+    const A_DATING: &str = "DatedBy:00ff";
+
+    #[test]
+    fn a_neighbour_is_written_as_its_position_then_the_node_or_the_edge_it_leads_to() {
+        // Arrange
+        let neighbours = [
+            PositionRef::Node { node: NodeRef { id: HAZOR.to_string(), kind: NodeKind::Place, label: HAZOR_LABEL.to_string() } },
+            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+        ];
+        // Act
+        let written = serde_json::to_value(neighbours).unwrap();
+        // Assert
+        assert_eq!(
+            written,
+            serde_json::json!([
+                { "position": "node", "node": { "id": HAZOR, "kind": "Place", "label": HAZOR_LABEL } },
+                { "position": "edge", "edge": { "id": A_DATING } },
+            ])
+        );
+    }
 
     #[test]
     fn a_text_scope_round_trips_through_the_two_spans_a_window_can_cover() {

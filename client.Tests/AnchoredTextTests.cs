@@ -10,11 +10,11 @@ public sealed class AnchoredTextTests
     private const string Matthew28Verse10 = "Then said Jesus unto them, Be not afraid: go tell my brethren that they go into Galilee, and there shall they see me.";
     private const string WithAnAstralCharacter = "\U0001D4D6 Hazor";
 
-    private static readonly NodeRef Jabin = new(id: "Person:jabin_1", kind: PositionKind.Person, label: "Jabin");
-    private static readonly NodeRef Hazor = new(id: "Place:hazor-1", kind: PositionKind.Place, label: "Hazor");
-    private static readonly NodeRef FirstPeter3Verse6 = new(id: "text-unit:1PE.3.6", kind: PositionKind.TextUnit, label: "1PE.3.6");
+    private static readonly NodeRef Jabin = new(id: "Person:jabin_1", kind: NodeKind.Person, label: "Jabin");
+    private static readonly NodeRef Hazor = new(id: "Place:hazor-1", kind: NodeKind.Place, label: "Hazor");
+    private static readonly NodeRef FirstPeter3Verse6 = new(id: "text-unit:1PE.3.6", kind: NodeKind.TextUnit, label: "1PE.3.6");
 
-    private static readonly NodeRef Galilee = new(id: "Place:galilee", kind: PositionKind.Place, label: "Galilee");
+    private static readonly NodeRef Galilee = new(id: "Place:galilee", kind: NodeKind.Place, label: "Galilee");
 
     private static readonly Anchor JabinNamed = new(end: 31, kind: EdgeKind.Mentions, node: Jabin, start: 26);
     private static readonly Anchor HazorNamed = new(end: 45, kind: EdgeKind.Mentions, node: Hazor, start: 40);

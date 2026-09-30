@@ -14,7 +14,7 @@ public sealed class AuthorNodeTests
     private static readonly Year Year445Bc = new(label: "445 BC", value: -445);
     private static readonly Year Year432Bc = new(label: "432 BC", value: -432);
     private static readonly TimeRange NehemiahsYears = new(from: Year445Bc, label: "445 – 432 BC", to: Year432Bc);
-    private static readonly NodeRef Jerusalem = new(id: "Place:jerusalem", kind: PositionKind.Place, label: "Jerusalem");
+    private static readonly NodeRef Jerusalem = new(id: "Place:jerusalem", kind: NodeKind.Place, label: "Jerusalem");
 
     [Fact]
     public async Task A_book_shows_the_served_years_of_its_writing_on_the_map()

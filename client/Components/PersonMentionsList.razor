@@ -19,9 +19,9 @@
     }
     else
     {
-        @foreach (var e in _entries)
+        @foreach (var verse in _entries.Nodes())
         {
-            var vref = e.Node.Label;
+            var vref = verse.Label;
             <button type="button" class="popover-event-row popover-event-row-button explorable" data-testid="@($"person-mention-{vref}")"
                     @onclick="() => OnExplore.InvokeAsync(new VerseNode(vref))">
                 @vref

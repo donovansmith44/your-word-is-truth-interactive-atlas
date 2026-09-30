@@ -652,8 +652,8 @@
             }
           ]
         },
-        "node": {
-          "$ref": "#/$defs/NodeRef"
+        "neighbour": {
+          "$ref": "#/$defs/PositionRef"
         },
         "note": {
           "type": [
@@ -682,7 +682,7 @@
       },
       "required": [
         "edge",
-        "node"
+        "neighbour"
       ],
       "type": "object"
     },
@@ -769,6 +769,37 @@
         "kind",
         "entries",
         "version"
+      ],
+      "type": "object"
+    },
+    "EdgePosition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositionRef"
+        },
+        {
+          "properties": {
+            "edge": {
+              "$ref": "#/$defs/EdgeRef"
+            }
+          },
+          "required": [
+            "edge"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "EdgeRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
       ],
       "type": "object"
     },
@@ -1509,6 +1540,25 @@
       ],
       "type": "string"
     },
+    "NodePosition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/PositionRef"
+        },
+        {
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/NodeRef"
+            }
+          },
+          "required": [
+            "node"
+          ],
+          "type": "object"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "NodeRef": {
       "additionalProperties": false,
       "properties": {
@@ -1516,7 +1566,7 @@
           "type": "string"
         },
         "kind": {
-          "$ref": "#/$defs/PositionKind"
+          "$ref": "#/$defs/NodeKind"
         },
         "label": {
           "type": "string"
@@ -1896,27 +1946,28 @@
     "PolityId": {
       "type": "string"
     },
-    "PositionKind": {
-      "enum": [
-        "TextUnit",
-        "Container",
-        "Event",
-        "Narrative",
-        "Place",
-        "Person",
-        "Anchor",
-        "Era",
-        "Polity",
-        "CatechismItem",
-        "Source",
-        "Translation",
-        "PeopleGroup",
-        "CommentaryItem",
-        "LexiconEntry",
-        "Map",
-        "Edge"
+    "PositionRef": {
+      "additionalProperties": true,
+      "discriminator": {
+        "mapping": {
+          "edge": "#/$defs/EdgePosition",
+          "node": "#/$defs/NodePosition"
+        },
+        "propertyName": "position"
+      },
+      "properties": {
+        "position": {
+          "enum": [
+            "node",
+            "edge"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "position"
       ],
-      "type": "string"
+      "type": "object"
     },
     "ProvenanceEntry": {
       "additionalProperties": false,

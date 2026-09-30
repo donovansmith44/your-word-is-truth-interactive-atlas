@@ -31,7 +31,7 @@ use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_nodes, describe_position, encode_node_id};
+use crate::graph_wire::{describe_nodes, describe_position, encode_node_id, node_ref};
 use crate::query::{self, AsGiven, Contract, ContractParams};
 use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
 use crate::wire;
@@ -126,7 +126,7 @@ fn date_claim(claim: &PlaceDateClaim, snap: &impl GraphQuery) -> wire::DateClaim
             wire::TextSpan::whole(wire::TextRef::Bible { book: verse.book, chapter: verse.chapter, verse: verse.verse })
         })
         .collect();
-    let event = claim.event.as_ref().map(|event| describe_position(&Position::Node(event.erase()), snap));
+    let event = claim.event.as_ref().map(|event| node_ref(&event.erase(), snap));
     wire::DateClaim::of(wire::TimeRange::of(claim.when), verses, claim.note.clone(), event)
 }
 
@@ -154,7 +154,7 @@ fn book_detail(id: &AnyNodeId, data: &AtlasData, snap: &impl GraphQuery) -> Resu
     let written = meta.written().map_err(|refused| ApiError::internal(&format!("the writing date {code} records is refused: {refused}")))?;
     Ok(Some(wire::BookDetail {
         author: meta.author.clone(),
-        write_place: meta.write_place.as_ref().map(|place| describe_position(&Position::Node(atlas_graph::event_world::place_stub_node_id(place)), snap)),
+        write_place: meta.write_place.as_ref().map(|place| node_ref(&atlas_graph::event_world::place_stub_node_id(place), snap)),
         written: written.map(wire::TimeRange::of),
     }))
 }
@@ -218,7 +218,7 @@ pub async fn node_edges(
             (EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, &node_id)?, None),
             _ => (None, None),
         };
-        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
+        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
     }
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
@@ -564,7 +564,7 @@ fn citation_links<'a>(graph: &GraphService, snap: &impl GraphQuery, paragraphs: 
     let spans = graph.citation_spans_in(&window).map_err(|e| unreadable_rows("citations", &e))?;
     Ok(spans
         .into_iter()
-        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)), snap))).collect()))
+        .map(|(paragraph, spans)| (paragraph, spans.into_iter().map(|span| (span.words, node_ref(&verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse), snap))).collect()))
         .collect())
 }
 
@@ -591,7 +591,7 @@ fn anchors_over(text: &str, kind: EdgeKind, links: Vec<(TokenSpan, wire::NodeRef
 
 fn unit_heading(heading: &Heading, snap: &impl GraphQuery) -> wire::UnitHeading {
     wire::UnitHeading {
-        event: describe_position(&Position::Node(event_node_id(&heading.event_id)), snap),
+        event: node_ref(&event_node_id(&heading.event_id), snap),
         kind: heading.kind,
         is_continuation: heading.is_continuation,
     }
@@ -646,7 +646,7 @@ mod tests {
     fn a_word_span_past_its_units_text_is_a_graph_defect_not_an_anchor() {
         // Arrange
         let past_the_end = tokens::span(atlas_graph::kjv_adapter::KJV_TRANSLATION, 9, 10).unwrap();
-        let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: wire::PositionKind::Node(NodeKind::Place), label: "Hazor 1".to_string() };
+        let hazor = wire::NodeRef { id: "Place:hazor-1".to_string(), kind: NodeKind::Place, label: "Hazor 1".to_string() };
 
         // Act
         anchors_over("In the beginning God created the heaven and the earth.", MENTIONS, vec![(past_the_end, hazor)]);

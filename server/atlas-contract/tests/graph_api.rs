@@ -7,10 +7,8 @@ use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 use atlas_contract::error::ApiError;
-use atlas_contract::wire::PositionKind;
 use atlas_core::data::AtlasData;
 use atlas_graph::GraphService;
-use atlas_graph_types::id::NodeKind;
 
 /// The real corpus and the graph built from it, both shared: the router only ever reads them, and
 /// building either one per test cost this file's 41 routers 41 compiles and 41 graph builds.
@@ -376,14 +374,14 @@ async fn event_card_and_frontiers_are_served_by_the_generic_endpoints() {
     assert_eq!(st2, 200, "{edges}");
     let entries = edges["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0]["node"]["id"], "Place:ur-1");
-    assert_eq!(entries[0]["node"]["kind"], "Place");
+    assert_eq!(entries[0]["neighbour"]["node"]["id"], "Place:ur-1");
+    assert_eq!(entries[0]["neighbour"]["node"]["kind"], "Place");
 
     let (st3, followed, _) = get(&app, "/api/node/Event:ab_ur/edges?kind=follows-in").await;
     assert_eq!(st3, 200, "{followed}");
     let followed_entries = followed["entries"].as_array().unwrap();
     assert_eq!(followed_entries.len(), 1);
-    assert_eq!(followed_entries[0]["node"]["id"], "Event:ab_haran");
+    assert_eq!(followed_entries[0]["neighbour"]["node"]["id"], "Event:ab_haran");
 }
 
 #[tokio::test]
@@ -440,9 +438,9 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(st2, 200, "{page}");
     let entries = page["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 3);
-    assert_eq!(entries[0]["node"]["id"], "text-unit:EXO.4.14");
-    assert_eq!(entries[1]["node"]["id"], "text-unit:EXO.4.27");
-    assert_eq!(entries[2]["node"]["id"], "text-unit:EXO.4.28");
+    assert_eq!(entries[0]["neighbour"]["node"]["id"], "text-unit:EXO.4.14");
+    assert_eq!(entries[1]["neighbour"]["node"]["id"], "text-unit:EXO.4.27");
+    assert_eq!(entries[2]["neighbour"]["node"]["id"], "text-unit:EXO.4.28");
     assert_eq!(page["next"], 3, "a 331-entry frontier at limit=3 must page, not silently truncate");
 }
 
@@ -489,7 +487,7 @@ fn wire_id_of_verse(verse: &atlas_graph_types::text::VerseRef) -> String {
 }
 
 fn node_and_loci(entries: &serde_json::Value) -> Vec<serde_json::Value> {
-    entries.as_array().unwrap().iter().map(|e| serde_json::json!({ "node": e["node"]["id"], "loci": e["loci"] })).collect()
+    entries.as_array().unwrap().iter().map(|e| serde_json::json!({ "node": e["neighbour"]["node"]["id"], "loci": e["loci"] })).collect()
 }
 
 #[tokio::test]
@@ -653,7 +651,7 @@ async fn a_verses_mentions_frontier_carries_person_entities_alongside_place() {
     let (st, page, _) = get(&app, "/api/node/text-unit:EXO.4.14/edges?kind=mentions").await;
     assert_eq!(st, 200, "{page}");
     let entries = page["entries"].as_array().unwrap();
-    let person_labels: Vec<String> = entries.iter().filter(|e| e["node"]["kind"] == "Person").map(|e| e["node"]["label"].as_str().unwrap().to_string()).collect();
+    let person_labels: Vec<String> = entries.iter().filter(|e| e["neighbour"]["node"]["kind"] == "Person").map(|e| e["neighbour"]["node"]["label"].as_str().unwrap().to_string()).collect();
     assert!(person_labels.contains(&"Aaron".to_string()), "{person_labels:?}");
     assert!(person_labels.contains(&"Moses".to_string()), "{person_labels:?}");
 }
@@ -671,7 +669,7 @@ async fn peoplegroup_mentions_are_real_in_the_graph_but_filtered_from_the_generi
     let (st2, page, _) = get(&app, "/api/node/text-unit:GEN.10.16/edges?kind=mentions").await;
     assert_eq!(st2, 200, "{page}");
     let entries = page["entries"].as_array().unwrap();
-    assert!(entries.iter().all(|e| e["node"]["kind"] != "PeopleGroup"), "no edge-page entry may carry kind=PeopleGroup -- the current client cannot render or re-fetch it: {entries:?}");
+    assert!(entries.iter().all(|e| e["neighbour"]["node"]["kind"] != "PeopleGroup"), "no edge-page entry may carry kind=PeopleGroup -- the current client cannot render or re-fetch it: {entries:?}");
 }
 
 #[tokio::test]
@@ -712,8 +710,8 @@ async fn chapter_verse_persons_is_always_present_and_matches_the_generic_mention
         .as_array()
         .unwrap()
         .iter()
-        .filter(|e| e["node"]["kind"] == "Person")
-        .map(|e| e["node"]["label"].as_str().unwrap().to_string())
+        .filter(|e| e["neighbour"]["node"]["kind"] == "Person")
+        .map(|e| e["neighbour"]["node"]["label"].as_str().unwrap().to_string())
         .collect();
     assert_eq!(chapter_names, frontier_names, "the chapter view's own persons list must equal the generic mentions frontier's own Person entries for the SAME verse");
 
@@ -773,7 +771,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
     assert_eq!(st, 200);
     let entry = &forward_page["entries"][0];
     let edge_id = entry["edge"].as_str().unwrap().to_string();
-    let target_id = entry["node"]["id"].as_str().unwrap().to_string();
+    let target_id = entry["neighbour"]["node"]["id"].as_str().unwrap().to_string();
 
     let mut cursor: Option<u64> = None;
     let mut found: Option<String> = None;
@@ -785,7 +783,7 @@ async fn bijection_witness_over_http_cites_and_cited_by_share_the_same_edge_id()
         let (st2, inverse_page, _) = get(&app, &uri).await;
         assert_eq!(st2, 200);
         let inverse_entries = inverse_page["entries"].as_array().unwrap();
-        if let Some(back) = inverse_entries.iter().find(|e| e["node"]["id"] == "text-unit:JHN.3.16") {
+        if let Some(back) = inverse_entries.iter().find(|e| e["neighbour"]["node"]["id"] == "text-unit:JHN.3.16") {
             found = Some(back["edge"].as_str().unwrap().to_string());
             break;
         }
@@ -883,7 +881,7 @@ async fn generic_cites_edges_are_already_votes_descending_matching_the_bespoke_v
 
     let (st2, edges, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=200").await;
     assert_eq!(st2, 200);
-    let generic: Vec<String> = edges["entries"].as_array().unwrap().iter().map(|e| e["node"]["id"].as_str().unwrap().trim_start_matches("text-unit:").to_string()).collect();
+    let generic: Vec<String> = edges["entries"].as_array().unwrap().iter().map(|e| e["neighbour"]["node"]["id"].as_str().unwrap().trim_start_matches("text-unit:").to_string()).collect();
 
     assert_eq!(
         generic, bespoke,
@@ -903,7 +901,7 @@ async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22()
     let (st2, edges, _) = get(&app, "/api/node/text-unit:MAT.1.22/edges?kind=fulfills").await;
     assert_eq!(st2, 200, "{edges}");
     let entries = edges["entries"].as_array().unwrap();
-    assert!(entries.iter().any(|e| e["node"]["id"] == "text-unit:ISA.7.14"), "MAT.1.22 must fulfill ISA.7.14: {entries:?}");
+    assert!(entries.iter().any(|e| e["neighbour"]["node"]["id"] == "text-unit:ISA.7.14"), "MAT.1.22 must fulfill ISA.7.14: {entries:?}");
 
     let (st3, prophecy_body, _) = get(&app, "/api/node/text-unit:ISA.7.14").await;
     assert_eq!(st3, 200, "{prophecy_body}");
@@ -913,7 +911,7 @@ async fn a_fulfillment_edge_is_reachable_via_the_generic_frontier_for_mat_1_22()
     let (st4, prophecy_edges, _) = get(&app, "/api/node/text-unit:ISA.7.14/edges?kind=fulfilled-in").await;
     assert_eq!(st4, 200, "{prophecy_edges}");
     let prophecy_entries = prophecy_edges["entries"].as_array().unwrap();
-    assert!(prophecy_entries.iter().any(|e| e["node"]["id"] == "text-unit:MAT.1.22"), "ISA.7.14 must be fulfilled-in MAT.1.22: {prophecy_entries:?}");
+    assert!(prophecy_entries.iter().any(|e| e["neighbour"]["node"]["id"] == "text-unit:MAT.1.22"), "ISA.7.14 must be fulfilled-in MAT.1.22: {prophecy_entries:?}");
 }
 
 #[tokio::test]
@@ -928,7 +926,7 @@ async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchized
     let (st2, edges, _) = get(&app, "/api/node/text-unit:HEB.7.1/edges?kind=prefigured-by").await;
     assert_eq!(st2, 200, "{edges}");
     let entries = edges["entries"].as_array().unwrap();
-    assert!(entries.iter().any(|e| e["node"]["id"] == "text-unit:GEN.14.18"), "HEB.7.1 must be prefigured-by GEN.14.18: {entries:?}");
+    assert!(entries.iter().any(|e| e["neighbour"]["node"]["id"] == "text-unit:GEN.14.18"), "HEB.7.1 must be prefigured-by GEN.14.18: {entries:?}");
 
     let (st3, type_body, _) = get(&app, "/api/node/text-unit:GEN.14.18").await;
     assert_eq!(st3, 200, "{type_body}");
@@ -938,7 +936,7 @@ async fn a_typology_edge_is_reachable_via_the_generic_frontier_for_the_melchized
     let (st4, type_edges, _) = get(&app, "/api/node/text-unit:GEN.14.18/edges?kind=prefigures").await;
     assert_eq!(st4, 200, "{type_edges}");
     let type_entries = type_edges["entries"].as_array().unwrap();
-    assert!(type_entries.iter().any(|e| e["node"]["id"] == "text-unit:HEB.7.1"), "GEN.14.18 must prefigure HEB.7.1: {type_entries:?}");
+    assert!(type_entries.iter().any(|e| e["neighbour"]["node"]["id"] == "text-unit:HEB.7.1"), "GEN.14.18 must prefigure HEB.7.1: {type_entries:?}");
 }
 
 #[tokio::test]
@@ -986,14 +984,14 @@ async fn chapter_container_card_and_frontiers_are_served_by_the_generic_endpoint
     assert_eq!(st2, 200, "{page}");
     let entries = page["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0]["node"]["id"], "text-unit:JHN.3.1");
+    assert_eq!(entries[0]["neighbour"]["node"]["id"], "text-unit:JHN.3.1");
 
     let (st3, page3, _) = get(&app, "/api/node/Container:bible-chapter-GEN-50/edges?kind=follows-in").await;
     assert_eq!(st3, 200, "{page3}");
     let entries3 = page3["entries"].as_array().unwrap();
     assert_eq!(entries3.len(), 1);
-    assert_eq!(entries3[0]["node"]["id"], "Container:bible-chapter-EXO-1");
-    assert_eq!(entries3[0]["node"]["label"], "Exodus 1");
+    assert_eq!(entries3[0]["neighbour"]["node"]["id"], "Container:bible-chapter-EXO-1");
+    assert_eq!(entries3[0]["neighbour"]["node"]["label"], "Exodus 1");
 }
 
 #[tokio::test]
@@ -1012,7 +1010,7 @@ async fn book_container_card_is_served_and_a_verse_reaches_its_chapter_back() {
     assert_eq!(st2, 200, "{page}");
     let entries = page["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0]["node"]["id"], "Container:bible-chapter-JHN-3");
+    assert_eq!(entries[0]["neighbour"]["node"]["id"], "Container:bible-chapter-JHN-3");
 }
 
 #[tokio::test]
@@ -1372,18 +1370,18 @@ async fn person_card_carries_life_years_kin_and_events() {
 
     let (st2, parents, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=child-of").await;
     assert_eq!(st2, 200, "{parents}");
-    let mut ids: Vec<String> = parents["entries"].as_array().unwrap().iter().map(|e| e["node"]["id"].as_str().unwrap().to_string()).collect();
+    let mut ids: Vec<String> = parents["entries"].as_array().unwrap().iter().map(|e| e["neighbour"]["node"]["id"].as_str().unwrap().to_string()).collect();
     ids.sort();
     assert_eq!(ids, vec!["Person:amram_242", "Person:jochebed_1645"]);
 
     let (st3, children, _) = get(&app, "/api/node/Person:amram_242/edges?kind=parent-of").await;
     assert_eq!(st3, 200, "{children}");
-    assert!(children["entries"].as_array().unwrap().iter().any(|e| e["node"]["id"] == "Person:aaron_1"), "{children}");
+    assert!(children["entries"].as_array().unwrap().iter().any(|e| e["neighbour"]["node"]["id"] == "Person:aaron_1"), "{children}");
 
     let (st4, spouses, _) = get(&app, "/api/node/Person:elisheba_1162/edges?kind=spouse-of").await;
     assert_eq!(st4, 200, "{spouses}");
     assert_eq!(spouses["entries"].as_array().unwrap().len(), 1);
-    assert_eq!(spouses["entries"][0]["node"]["id"], "Person:aaron_1");
+    assert_eq!(spouses["entries"][0]["neighbour"]["node"]["id"], "Person:aaron_1");
 
     let (_, event, _) = get(&app, "/api/node/Event:ab_ur").await;
     assert!(event.get("person").is_none(), "{event}");
@@ -1433,49 +1431,93 @@ async fn the_card_for_genesis_1_names_its_kind_and_its_three_frontier_groups() {
     );
 }
 
-const POSITION_KIND_DESCRIPTION: &str = "What a reference in this atlas names: one kind of node, or an edge, which takes focus in its own right and so is a kind of its own here.";
-const THE_ONE_EDGE_POSITION: usize = 1;
-const EDGE_POSITION_NAME: &str = "Edge";
+const AN_ANCHOR_WITH_ONE_DATING: &str = "Anchor:solomon-crowned";
 
 #[test]
-fn every_position_kind_serialises_to_the_string_the_frontier_already_carried() {
-    // Arrange
-    let every_position_kind: Vec<PositionKind> = NodeKind::ALL.iter().copied().map(PositionKind::Node).chain(std::iter::once(PositionKind::Edge)).collect();
-
-    // Act
-    let json = serde_json::to_value(&every_position_kind).unwrap();
-
-    // Assert
-    assert_eq!(json, serde_json::json!(every_position_kind_name()));
-}
-
-#[test]
-fn the_published_position_kind_enum_is_every_node_kind_of_the_vocabulary_then_edge() {
+fn a_neighbour_is_published_as_a_node_position_or_an_edge_position_told_apart_by_its_position_tag() {
     // Arrange
     let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+    let shapes = &document["components"]["schemas"];
 
     // Act
-    let published = document["components"]["schemas"]["PositionKind"]["enum"].clone();
+    let published = serde_json::json!({
+        "PositionRef": shapes["PositionRef"],
+        "NodePosition": shapes["NodePosition"],
+        "EdgePosition": shapes["EdgePosition"],
+        "NodeRef": shapes["NodeRef"],
+        "EdgeRef": shapes["EdgeRef"],
+        "PositionKind": shapes.get("PositionKind"),
+        "neighbour": shapes["EdgeEntry"]["properties"]["neighbour"],
+    });
 
     // Assert
-    assert_eq!(published.as_array().unwrap().len(), NodeKind::ALL.len() + THE_ONE_EDGE_POSITION);
-    assert_eq!(published, serde_json::json!(every_position_kind_name()));
+    assert_eq!(
+        published,
+        serde_json::json!({
+            "PositionRef": {
+                "type": "object",
+                "description": "What an edge leads to: a node, or, where one relation grounds another, the edge it grounds. `position` says which shape follows.",
+                "required": ["position"],
+                "properties": { "position": { "type": "string", "enum": ["node", "edge"] } },
+                "additionalProperties": true,
+                "discriminator": { "propertyName": "position", "mapping": { "node": "#/components/schemas/NodePosition", "edge": "#/components/schemas/EdgePosition" } },
+            },
+            "NodePosition": {
+                "allOf": [
+                    { "$ref": "#/components/schemas/PositionRef" },
+                    { "type": "object", "required": ["node"], "properties": { "node": { "$ref": "#/components/schemas/NodeRef" } } },
+                ],
+                "description": "An edge's far end when it is a node.",
+                "unevaluatedProperties": false,
+            },
+            "EdgePosition": {
+                "allOf": [
+                    { "$ref": "#/components/schemas/PositionRef" },
+                    { "type": "object", "required": ["edge"], "properties": { "edge": { "$ref": "#/components/schemas/EdgeRef" } } },
+                ],
+                "description": "An edge's far end when it is another edge: a `justifies` page names the edge the node grounds.",
+                "unevaluatedProperties": false,
+            },
+            "NodeRef": {
+                "type": "object",
+                "description": "A reference to a node: enough to show it, and the id to fetch it with.",
+                "required": ["id", "kind", "label"],
+                "properties": { "id": { "type": "string" }, "kind": { "$ref": "#/components/schemas/NodeKind" }, "label": { "type": "string" } },
+                "additionalProperties": false,
+            },
+            "EdgeRef": {
+                "type": "object",
+                "description": "A reference to an edge: the id its own page carries as `edge`.",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } },
+                "additionalProperties": false,
+            },
+            "PositionKind": null,
+            "neighbour": { "$ref": "#/components/schemas/PositionRef" },
+        })
+    );
 }
 
-fn every_position_kind_name() -> Vec<&'static str> {
-    NodeKind::ALL.iter().map(|kind| kind.name()).chain(std::iter::once(EDGE_POSITION_NAME)).collect()
-}
-
-#[test]
-fn the_position_kind_schema_is_a_flat_string_enum_of_every_node_kind_then_edge() {
+#[tokio::test]
+async fn an_anchor_justifies_the_dating_it_grounds_and_that_neighbour_is_the_edge_itself() {
     // Arrange
-    let expected = every_position_kind_name();
+    let app = compiled_app();
+    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
 
     // Act
-    let schema = serde_json::to_value(<PositionKind as utoipa::PartialSchema>::schema()).unwrap();
+    let (status, page, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
 
     // Assert
-    assert_eq!(schema, serde_json::json!({ "type": "string", "description": POSITION_KIND_DESCRIPTION, "enum": expected }));
+    assert_eq!(status, StatusCode::OK, "{page}");
+    assert_eq!(
+        page,
+        serde_json::json!({
+            "kind": "justifies",
+            "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"] } } }],
+            "next": null,
+            "version": dates["version"],
+        })
+    );
 }
 
 const FIRST_ERA: &str = "primeval";
@@ -1515,7 +1557,7 @@ async fn the_map_for_the_first_era_shows_its_events_places_and_polities_and_is_f
     );
     let mut shown_by_kind: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
     for entry in &shown {
-        *shown_by_kind.entry(entry["node"]["kind"].as_str().unwrap()).or_default() += 1;
+        *shown_by_kind.entry(entry["neighbour"]["node"]["kind"].as_str().unwrap()).or_default() += 1;
     }
     assert_eq!(shown_by_kind, std::collections::BTreeMap::from(FIRST_ERA_SHOWN_BY_KIND));
 }
@@ -1594,7 +1636,7 @@ async fn genesis_is_a_member_of_the_bible_root() {
         page,
         serde_json::json!({
             "kind": "member-of",
-            "entries": [ { "edge": page["entries"][0]["edge"].clone(), "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } ],
+            "entries": [ { "edge": page["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } } ],
             "next": null,
             "version": version,
         })
@@ -1622,7 +1664,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         documents,
         serde_json::json!({
             "kind": "follows-in",
-            "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } ],
+            "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } } ],
             "next": null,
             "version": documents["version"].clone(),
         })
@@ -1631,7 +1673,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         articles,
         serde_json::json!({
             "kind": "follows-in",
-            "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } ],
+            "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } } ],
             "next": null,
             "version": articles["version"].clone(),
         })
@@ -1782,14 +1824,14 @@ async fn a_cites_entry_carries_the_votes_the_cross_reference_route_counts() {
     let app = compiled_app();
     let (_, first, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
     let (_, legacy, _) = get(&app, "/api/xrefs/JHN.3.16").await;
-    let cited = &first["entries"][0]["node"];
+    let cited = &first["entries"][0]["neighbour"]["node"];
     let votes = legacy.as_array().unwrap().iter().find(|x| format!("text-unit:{}", x["target"].as_str().unwrap()) == cited["id"]).expect("the route lists the same citation")["votes"].clone();
     // Act
     let (status, page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
     // Assert
     assert_eq!(
         (status, page["entries"].clone()),
-        (StatusCode::OK, serde_json::json!([{ "edge": page["entries"][0]["edge"], "node": cited, "votes": votes }]))
+        (StatusCode::OK, serde_json::json!([{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": cited }, "votes": votes }]))
     );
 }
 
@@ -1807,7 +1849,7 @@ async fn a_follows_in_entry_carries_the_narrative_its_leg_belongs_to() {
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "node": { "id": "Event:ab_haran", "kind": "Event", "label": legacy["narrative"][0]["following"]["label"] },
+                "neighbour": { "position": "node", "node": { "id": "Event:ab_haran", "kind": "Event", "label": legacy["narrative"][0]["following"]["label"] } },
                 "narrative": legacy["narrative"][0]["narrative_id"],
             }])
         )
@@ -1829,7 +1871,7 @@ async fn an_attested_in_entry_carries_its_accounts_runs_across_a_gap() {
             serde_json::json!([{ "book": "GEN", "chapter": 11, "verses": ["GEN.11.28", "GEN.11.31"], "count": 2 }]),
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "node": { "id": "text-unit:GEN.11.28", "kind": "TextUnit", "label": "GEN.11.28" },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:GEN.11.28", "kind": "TextUnit", "label": "GEN.11.28" } },
                 "loci": [whole_verse("GEN", 11, 28), whole_verse("GEN", 11, 31)],
             }])
         )
@@ -1851,7 +1893,7 @@ async fn an_attested_in_entry_carries_its_accounts_run_and_the_note_on_how_the_a
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "node": { "id": "text-unit:MAT.26.6", "kind": "TextUnit", "label": "MAT.26.6" },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.26.6", "kind": "TextUnit", "label": "MAT.26.6" } },
                 "loci": [{ "from": { "unit": bible_unit("MAT", 26, 6) }, "to": { "unit": bible_unit("MAT", 26, 13) } }],
                 "note": matthew["ref_note"],
             }])
@@ -1874,7 +1916,7 @@ async fn an_attests_entry_carries_the_verse_it_stands_on_and_the_note_on_its_acc
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "node": { "id": "Event:pw_bethany", "kind": "Event", "label": legacy["title"] },
+                "neighbour": { "position": "node", "node": { "id": "Event:pw_bethany", "kind": "Event", "label": legacy["title"] } },
                 "loci": [whole_verse("MAT", 26, 6)],
                 "note": matthew["ref_note"],
             }])
@@ -1913,7 +1955,7 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "node": { "id": "text-unit:MAT.5.1", "kind": "TextUnit", "label": "MAT.5.1" },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.5.1", "kind": "TextUnit", "label": "MAT.5.1" } },
                 "loci": [{ "from": { "unit": bible_unit("MAT", 5, 1) }, "to": { "unit": bible_unit("MAT", 7, 29) } }],
                 "note": matthew["ref_note"],
             }])
@@ -2176,9 +2218,9 @@ async fn jesus_is_the_eternal_son_of_god_born_of_the_virgin_mary_and_the_suppose
         (
             StatusCode::OK,
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "eternal" },
-                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" }, "parentage": "legal" },
-                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" }, "parentage": "virgin" },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "eternal" },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" } }, "parentage": "legal" },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" } }, "parentage": "virgin" },
             ])
         )
     );
@@ -2197,9 +2239,9 @@ async fn abrahams_spouses_are_hagar_keturah_and_sarah() {
             StatusCode::OK,
             serde_json::json!("spouse-of"),
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } },
-                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } },
-                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } } },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } } },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } } },
             ])
         )
     );
@@ -2218,13 +2260,13 @@ async fn adam_and_eve_were_created_by_god_and_seth_was_born_to_them() {
         (adam_status, adam["entries"].clone(), eve_status, eve["entries"].clone(), seth_status, seth["entries"].clone()),
         (
             StatusCode::OK,
-            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "created" }]),
             StatusCode::OK,
-            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" }, "parentage": "created" }]),
+            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "created" }]),
             StatusCode::OK,
             serde_json::json!([
-                { "edge": seth["entries"][0]["edge"], "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" }, "parentage": "natural" },
-                { "edge": seth["entries"][1]["edge"], "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" }, "parentage": "natural" },
+                { "edge": seth["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" } }, "parentage": "natural" },
+                { "edge": seth["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" } }, "parentage": "natural" },
             ]),
         )
     );
@@ -2242,10 +2284,10 @@ async fn the_brethren_of_jesus_are_james_joses_simon_and_jude() {
         (
             StatusCode::OK,
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } },
-                { "edge": page["entries"][1]["edge"], "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } },
-                { "edge": page["entries"][2]["edge"], "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } },
-                { "edge": page["entries"][3]["edge"], "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } } },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } } },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } } },
+                { "edge": page["entries"][3]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } } },
             ])
         )
     );
@@ -2264,9 +2306,9 @@ async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_
         (mary_status, mary["entries"].clone(), joseph_status, joseph["entries"].clone(), james_status, james["entries"].clone()),
         (
             StatusCode::OK,
-            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "virgin" }]),
+            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "parentage": "virgin" }]),
             StatusCode::OK,
-            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" }, "parentage": "legal" }]),
+            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "parentage": "legal" }]),
             StatusCode::OK,
             serde_json::json!([]),
         )

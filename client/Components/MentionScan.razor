@@ -3,7 +3,7 @@
 
 @foreach (var piece in Pieces)
 {
-    @if (piece.Anchor?.Node is { Kind: PositionKind.Place } place)
+    @if (piece.Anchor?.Node is { Kind: NodeKind.Place } place)
     {
         var placeId = NodeIds.LocalPart(place);
         <span class="@ClassPrefix" data-testid="@($"{ClassPrefix}-{Verse}-{placeId}{TestIdSuffix}")"
@@ -13,7 +13,7 @@
               @onclick="@(e => Open(e, new PlaceNode(placeId, piece.Text)))" @onclick:stopPropagation="true"
               @onkeydown="@(e => OnKeyDown(e, new PlaceNode(placeId, piece.Text)))" @onkeydown:stopPropagation="true">@piece.Text</span>
     }
-    else if (piece.Anchor?.Node is { Kind: PositionKind.Person } person)
+    else if (piece.Anchor?.Node is { Kind: NodeKind.Person } person)
     {
         <span class="@ClassPrefix @($"{ClassPrefix}-person")" data-testid="@($"{ClassPrefix}-person-{Verse}-{NodeIds.LocalPart(person)}{TestIdSuffix}")"
               tabindex="0" role="button" aria-label="@($"Explore {person.Label}")"
