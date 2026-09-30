@@ -31,7 +31,7 @@ public sealed class Explorable
         }
 
         var page = await _graph.Edges(Id, kind, cursor);
-        return new Page<Link>(page.Entries.Select(entry => new Link(kind, entry.Node)).ToList(), page.Next);
+        return new Page<Link>(page.Entries.Nodes().Select(node => new Link(kind, node)).ToList(), page.Next);
     }
 
     public override bool Equals(object? obj) => obj is Explorable other && Kind == other.Kind && Id == other.Id;

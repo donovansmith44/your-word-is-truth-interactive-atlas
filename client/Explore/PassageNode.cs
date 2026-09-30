@@ -18,7 +18,7 @@ public sealed class PassageNode : IExplorable
 
     public string Title => _sref;
     public string Kind => "Passage";
-    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(_sref)), kind: PositionKind.TextUnit, label: _sref);
+    public NodeRef Identity => new(id: NodeIds.Of(NodeKind.TextUnit, CanonRef.FirstVerseOf(_sref)), kind: NodeKind.TextUnit, label: _sref);
 
     public string Text => _text;
 

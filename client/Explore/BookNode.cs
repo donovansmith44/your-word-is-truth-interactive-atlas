@@ -11,7 +11,7 @@ public sealed class BookNode : IExplorable
 
     public string Title => _bookCode;
     public string Kind => "Book";
-    public NodeRef Identity => new(id: LegacyNodes.BookContainerId(_bookCode), kind: PositionKind.Container, label: _bookCode);
+    public NodeRef Identity => new(id: LegacyNodes.BookContainerId(_bookCode), kind: NodeKind.Container, label: _bookCode);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

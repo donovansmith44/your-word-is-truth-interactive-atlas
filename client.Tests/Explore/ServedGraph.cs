@@ -44,12 +44,11 @@ internal sealed class ServedGraph : IExplorableClient
             @event: null, id: id, kind: kind, label: label, person: null, place: null,
             provenance: Provenance, version: Version);
 
-    public static NodeRef Ref(NodeKind kind, string id, string label) =>
-        new(id: id, kind: WireNames.Parse<PositionKind>(kind.WireName()), label: label);
+    public static NodeRef Ref(NodeKind kind, string id, string label) => new(id: id, kind: kind, label: label);
 
-    public static EdgePage Page(EdgeKind kind, int? next, params NodeRef[] nodes) =>
+    public static EdgePage Page(EdgeKind kind, int? next, params PositionRef[] neighbours) =>
         new(
-            entries: nodes.Select(node => new EdgeEntry(edge: EdgeId, loci: null, narrative: null, node: node, note: null, parentage: null, votes: null)).ToList(),
+            entries: neighbours.Select(neighbour => new EdgeEntry(edge: EdgeId, loci: null, narrative: null, neighbour: neighbour, note: null, parentage: null, votes: null)).ToList(),
             kind: kind, next: next, version: Version);
 }
 
@@ -58,8 +57,7 @@ internal static class Resolved
     public static Explorable Node(NodeKind kind, string id, string label, params FrontierGroup[] groups) =>
         Node(new ServedGraph().Serving(ServedGraph.Card(kind, id, label, groups)), ServedGraph.Ref(kind, id, label));
 
-    public static Explorable Node(NodeRef identity) =>
-        Node(WireNames.Parse<NodeKind>(identity.Kind.WireName()), identity.Id, identity.Label);
+    public static Explorable Node(NodeRef identity) => Node(identity.Kind, identity.Id, identity.Label);
 
     public static Explorable Node(ServedGraph graph, NodeRef target) =>
         new GraphExplorer(graph).Resolve(target).GetAwaiter().GetResult();
