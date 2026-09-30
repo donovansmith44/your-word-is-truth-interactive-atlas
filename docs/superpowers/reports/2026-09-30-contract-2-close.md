@@ -11,7 +11,7 @@ of those sources or from a command run at the close and named where it is quoted
 Base (PRINCIPLES 22): **`7b6b2c3`** (the FOCUS-0 close). The first batch commit is `d38344b`
 (2026-09-29 16:45); the close's last code commit is `059790f` (2026-09-30), followed by this report.
 
-**Status: NOT CLOSED.** The standing block, the timing gates and the semver gate are green; the contract
+**Status: CLOSED by the fix wave (§6a, 2026-09-30 afternoon).** As of Task 11 it read: the standing block, the timing gates and the semver gate are green; the contract
 gate is red on one AGC law that the batch's own card shape breaks (§2), Playwright has seven new failures
 that are not the batch's declared changes (§2), and timing gate 1 regressed materially (§1). Each is named
 with its cause below and routed in §7. No ceiling was raised; no failing spec was re-pinned to pass.
@@ -201,6 +201,35 @@ Commits `7b6b2c3..HEAD` are listed in `task-11-report.md`. By area (`git diff --
   Playwright regressions (§2) — all hidden while fixtures and pacts stayed stale by ruling (R-C2-P1).
 
 ---
+
+## 6a. Fix wave (R-C2-R10 (1)–(6), 2026-09-30 afternoon)
+
+Full report: `.superpowers/sdd/2026-09-29-contract2-pushdown/fixwave-report.md`. Nine commits
+`4f90ad3` … `a149199` on top of `b0130e5` (with the owner's two principles commits between). Every
+item was fixed as a category with a closure law (PRINCIPLES 24/24b), on the side separation of
+concerns names; every number below is from a command run in the wave and named in that report.
+
+| item | category / mechanism (proved) | fix, side | closure law | result |
+|---|---|---|---|---|
+| (1) AGC `kind` law | a law over a JSON key name, blind to the owning shape | runner: graph kinds by the shapes' own fields; twin law over every enum `aqc.schema.json` publishes (`--schema`) | the twin law enumerates the schema | leg 4 green; a narrowed scratch schema fails it naming `kind='event'` |
+| (2) gate 1 | `raw_neighbors` CLONED the whole frontier per page; the sweep drains at limit 1 → O(n²); God 8,587 → 12,530 rows = ×2.13 | graph-types borrows the index | `Frontier` is the one door (3) | **37.10 s → 1.02 s** alone (load 0.00 → 0.63); micro-benchmark 7.83 s → 0.78 ms |
+| (3) frontier by edge | pages/summaries/CLI enumerated ROWS; core section 9,108 duplicate id groups (Mentions), lexicon 92,360 (43,899 non-consecutive) | `explore::Frontier` (rows private, `page`/`edge_count`/`edges`); SQLite first rows + `COUNT(DISTINCT)`; writer places rows from the row tables; mention `loci` | a law over `RowFamily::ALL` on the artifact; tests derive from the artifact (P26) | God 12,530 → 8,587, Aaron 347 → 331, Hazor 12 → 11; pacts/fixtures re-recorded once; root, logicals, 25 scene hashes unmoved |
+| (4) Jerusalem → Baal-perazim | hit-testing at TRUE positions while markers draw NUDGED (event log: the marker's own mouseover resolved to the quiet dot) — not a label lookup | map.js: the routed element wins, distance at rendered positions, coincidence judged in truth (two commits) | Playwright category spec (every lit marker of the window) + a source-scan law over `resolveHoverTarget` | NAME-1 ×2, DATE-1 ×2, HOVER-RESOLUTION-1 green |
+| (5) slider race | (a) a served label written into an input being edited; (b) a late response over newer state, four hand-rolled idioms | `RequestSeries`/`Request.Fetch` (superseded answers dropped inside), `Draft`; 22 sites migrated, 4 idioms deleted | two source-scan laws (every component fetch through `.Fetch(`, every typed input on a draft) | WORLD-5 green; client.Tests 476 → 489/489; client +186/−109 |
+| (6) specs | a spec pointing at a verse row whose centre is a mention link | `openVerse` (focus + Enter), 67 sites / 16 specs; PERSON-4 → LUK.3.22 | `spec-hygiene.spec.ts` refuses a row click | w2/w3/popover-sections/person-card green |
+
+Gates at the wave's end, all under `heavy`: workspace **1,421 passed / 0 failed / 10 ignored** after one re-pin
+(JHN.3.16's served `words` 26 rows → 21 entries), `aqc_cucumber` 47/194, graph-types 153 — **1,574 across 98
+sections**; timing gates **10/10** (gate 1 **1.02 s**, gate 10 sqlite p99 787 µs); `contract-gate.sh --base
+7b6b2c3` **PASSED** (coverage 28/28, semver ok); `client.Tests` 489/489, `client.ContractTests` 54/54; Playwright
+**453 / 2 / 4 of 459** (6.4 min; the known `world-quiet-places:211` and `split-view:382`, a load flake
+that passes alone) — the close's condition (the contract gate passes; Playwright's only failures are the known
+reds and a flake) is met. Every gate was run and read; the batch is closed by this wave subject to the
+owner's reading of the FINDINGS.
+
+Open categories reported under FINDINGS (F1–F9) in the fix-wave report: two fetch layers holding
+`HttpClient`; the Explore layer's 14 fetch sites outside the request series; saved explorations
+resolving a date/era by label; literal expectations in older real-data tests; O(position) node paging.
 
 ## 7. Owed and routed
 
