@@ -68,7 +68,8 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public IExplorable Root { get; set; } = default!;
+    [Parameter] public IExplorable? Root { get; set; }
+    [Parameter] public SavedExploration? Saved { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     [Parameter] public bool InSplit { get; set; }
@@ -94,7 +95,7 @@
 
     private Exploration? Exploration => (_frozenSnapshot as ExplorationState.Open)?.Exploration;
 
-    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root.Title;
+    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root?.Title ?? Saved?.Nodes[^1].Label ?? "";
 
     private bool IsText => Exploration?.Current.Kind is NodeKind.TextUnit or NodeKind.Container;
 
@@ -139,17 +140,12 @@
 
     private void SaveExploration()
     {
-        SavedExplorations.Save(Trail.Select(Descriptor).ToList());
-        _justSaved = true;
+        if (Exploration is { } exploration)
+        {
+            SavedExplorations.Save(exploration);
+            _justSaved = true;
+        }
     }
-
-    private IEnumerable<Explorable> Trail =>
-        Exploration is { } exploration ? exploration.Steps.Select(step => step.Target).Prepend(exploration.Start) : [];
-
-    private ExplorationDescriptor Descriptor(Explorable node) =>
-        _rendered.For(node) is { } legacy
-            ? ExplorationDescriptor.Capture(legacy)
-            : new ExplorationDescriptor(node.Kind.ToString(), node.Id, node.Label);
 
     public void Dispose()
     {
@@ -236,14 +232,27 @@
         ExplorationAtom.Changed += OnExplorationChanged;
 
         var request = _requests.Next();
-        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(Root.Identity))) is not { } start)
+        if (Saved is { } saved)
         {
-            return;
-        }
+            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Start), () => Task.WhenAll(saved.Steps.Select(step => Explorer.Follow(step))))) is not ({ } start, { } targets))
+            {
+                return;
+            }
 
-        _rendered.Remember(start, Root);
-        ApplyLocally(new ExplorationIntent.Open(start));
-        await LoadCurrent();
+            ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(targets, (step, target) => new Step(step.Kind, target)).ToList())));
+            await LoadCurrent();
+        }
+        else if (Root is { } root)
+        {
+            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(root.Identity))) is not { } start)
+            {
+                return;
+            }
+
+            _rendered.Remember(start, root);
+            ApplyLocally(new ExplorationIntent.Open(start));
+            await LoadCurrent();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -361,7 +370,7 @@
         return true;
     }
 
-    private async Task<Explorable?> Arriving(Request request, Task<Explorable?> resolution)
+    private async Task<T?> Arriving<T>(Request request, Task<T> resolution)
     {
         try
         {
@@ -374,7 +383,7 @@
                 ShowCouldNotLoad();
             }
 
-            return null;
+            return default;
         }
     }
 

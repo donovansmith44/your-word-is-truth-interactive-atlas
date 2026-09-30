@@ -64,15 +64,15 @@
     <ContentsPanel Corpus="Corpus.Bible" CurrentRef="@null" OnNavigate="OnContentsNavigate" OnClose="@(() => _contentsOpen = false)" />
 }
 
-@if (_hamburgerActiveNode is not null)
+@if (_hamburgerSaved is not null)
 {
-    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" OnClose="CloseHamburgerPopover" />
+    <ExplorerPopover @key="_hamburgerSaved" Saved="_hamburgerSaved" OnClose="CloseHamburgerPopover" />
 }
 
-@if (_hamburgerError is not null)
+@if (_hamburgerNotice is not null)
 {
     <div class="toast" data-testid="toast">
-        <p class="toast-message">@_hamburgerError</p>
+        <p class="toast-message">@_hamburgerNotice</p>
     </div>
 }
 
@@ -106,8 +106,8 @@
     private bool _focusHamburgerPending;
     private ElementReference _hamburgerPanelRef;
 
-    private IExplorable? _hamburgerActiveNode;
-    private string? _hamburgerError;
+    private SavedExploration? _hamburgerSaved;
+    private string? _hamburgerNotice;
 
     private void ToggleHamburger()
     {
@@ -115,6 +115,7 @@
         if (_showHamburger)
         {
             _focusHamburgerPending = true;
+            _hamburgerNotice = null;
         }
     }
 
@@ -132,24 +133,15 @@
 
     private void Delete(string id) => SavedExplorations.Delete(id);
 
-    private async Task Continue(List<ExplorationDescriptor> trailPrefix)
+    private void Continue(SavedExploration trail)
     {
         CloseHamburger();
-        _hamburgerError = null;
-        try
-        {
-            var nodes = await Task.WhenAll(trailPrefix.Select(d => ExplorationDescriptor.Reconstruct(d, Atlas, Graph)));
-            _hamburgerActiveNode = nodes[^1];
-        }
-        catch (Exception)
-        {
-            _hamburgerError = "Couldn't reopen this exploration — some of it may no longer be available.";
-        }
+        _hamburgerSaved = trail;
     }
 
     private void CloseHamburgerPopover()
     {
-        _hamburgerActiveNode = null;
+        _hamburgerSaved = null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -171,6 +163,11 @@
 
     protected override void OnInitialized()
     {
+        if (SavedExplorations.Dropped > 0)
+        {
+            _hamburgerNotice = $"{SavedExplorations.Dropped} step{(SavedExplorations.Dropped == 1 ? "" : "s")} from an older version could not be restored";
+        }
+
         Nav.LocationChanged += OnLocationChanged;
         // The save button lives under Reader/World's render tree, a sibling of MainLayout rather
         // than a descendant, so Blazor's automatic post-callback re-render never reaches an
@@ -183,7 +180,7 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         _showHamburger = false;
-        _hamburgerActiveNode = null;
+        _hamburgerSaved = null;
         StateHasChanged();
     }
 

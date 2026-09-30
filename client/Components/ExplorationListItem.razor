@@ -15,7 +15,7 @@
                 <span class="hamburger-exploration-name">@Item.Name</span>
             }
             <span class="hamburger-exploration-meta">
-                @Item.Nodes.Count node@(Item.Nodes.Count == 1 ? "" : "s") &middot; @Item.CreatedUtc.ToLocalTime().ToString("MMM d, yyyy")
+                @Nodes.Count node@(Nodes.Count == 1 ? "" : "s") &middot; @Item.CreatedUtc.ToLocalTime().ToString("MMM d, yyyy")
             </span>
         </button>
         <div class="hamburger-exploration-controls">
@@ -40,15 +40,13 @@
     @if (_expanded)
     {
         <ol class="hamburger-exploration-trail">
-            @for (var i = 0; i < Item.Nodes.Count; i++)
+            @for (var i = 0; i < Nodes.Count; i++)
             {
                 var idx = i;
-                var node = Item.Nodes[idx];
                 <li>
                     <button type="button" class="hamburger-exploration-trail-node explorable" data-testid="@($"exploration-node-{idx}")"
-                            @onclick="() => OnContinue.InvokeAsync(Item.Nodes.Take(idx + 1).ToList())">
-                        <span class="hamburger-node-kind">@(node.IsGeneralKind ? "Passage" : node.Kind)</span>
-                        <span class="hamburger-node-title">@node.Title</span>
+                            @onclick="() => OnContinue.InvokeAsync(Item.UpTo(idx))">
+                        <span class="hamburger-node-title">@Nodes[idx].Label</span>
                     </button>
                 </li>
             }
@@ -59,9 +57,11 @@
 @code {
     [Parameter, EditorRequired] public SavedExploration Item { get; set; } = default!;
 
-    [Parameter, EditorRequired] public EventCallback<List<ExplorationDescriptor>> OnContinue { get; set; }
+    [Parameter, EditorRequired] public EventCallback<SavedExploration> OnContinue { get; set; }
     [Parameter, EditorRequired] public EventCallback<(string Id, string Name)> OnRename { get; set; }
     [Parameter, EditorRequired] public EventCallback<string> OnDelete { get; set; }
+
+    private IReadOnlyList<NodeRef> Nodes => Item.Nodes;
 
     private bool _expanded;
     private bool _renaming;

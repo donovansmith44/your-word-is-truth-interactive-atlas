@@ -39,6 +39,19 @@ public sealed class ExplorableTests
     }
 
     [Fact]
+    public void A_resolved_node_s_identity_is_the_reference_that_names_it_as_served()
+    {
+        // Arrange
+        var genesis1 = Genesis1;
+
+        // Act
+        var identity = genesis1.Identity;
+
+        // Assert
+        Assert.Equal(ServedGraph.Ref(NodeKind.Container, Genesis1Id, Genesis1Label), identity);
+    }
+
+    [Fact]
     public void The_frontier_groups_are_the_cards_edge_summary_in_declaration_order()
     {
         // Arrange

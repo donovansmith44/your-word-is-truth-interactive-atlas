@@ -19,6 +19,8 @@ public sealed class Explorable
 
     public string Label => Card.Label;
 
+    public NodeRef Identity => new(id: Id, kind: Kind, label: Label);
+
     public IReadOnlyList<FrontierGroup> Groups { get; }
 
     internal NodeCard Card { get; }

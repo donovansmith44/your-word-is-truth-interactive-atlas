@@ -1,13 +1,29 @@
+using System.Text.Json.Serialization;
+using BibleAtlas.Client.Contract;
 using BibleAtlas.Client.Explore;
 using Microsoft.JSInterop;
 
 namespace BibleAtlas.Client;
 
-public sealed record SavedExploration(string Id, string Name, DateTimeOffset CreatedUtc, List<ExplorationDescriptor> Nodes);
+public sealed record SavedExploration(string Id, string Name, DateTimeOffset CreatedUtc, NodeRef Start, IReadOnlyList<Link> Steps)
+{
+    [JsonIgnore]
+    public IReadOnlyList<NodeRef> Nodes => [Start, .. Steps.Select(step => step.Target)];
+
+    public SavedExploration UpTo(int node) => this with { Steps = Steps.Take(node).ToList() };
+
+    public bool Equals(SavedExploration? other) =>
+        other is not null
+        && (Id, Name, CreatedUtc, Start) == (other.Id, other.Name, other.CreatedUtc, other.Start)
+        && Steps.SequenceEqual(other.Steps);
+
+    public override int GetHashCode() => Steps.Aggregate(HashCode.Combine(Id, Name, CreatedUtc, Start), HashCode.Combine);
+}
 
 public sealed class SavedExplorationsService
 {
-    private const string StorageKey = "explorations-v1";
+    public const string StorageKey = "explorations-v2";
+
     private readonly IJSInProcessRuntime _js;
     private List<SavedExploration> _items;
 
@@ -15,32 +31,45 @@ public sealed class SavedExplorationsService
     {
         _js = js;
         Available = LocalStore.Probe(_js);
-        _items = Available ? LocalStore.Read(_js, StorageKey, new List<SavedExploration>()) : new List<SavedExploration>();
+        if (!Available)
+        {
+            _items = [];
+            return;
+        }
+
+        if (LocalStore.Read<List<SavedExploration>?>(_js, StorageKey, null) is { } stored)
+        {
+            _items = stored;
+            return;
+        }
+
+        var translated = LegacySaves.Explorations(LocalStore.Read(_js, LegacySaves.ExplorationsKey, new List<V1Exploration>()));
+        _items = translated.Kept.ToList();
+        Dropped = translated.Dropped;
+        LocalStore.Write(_js, StorageKey, _items);
     }
 
     public IReadOnlyList<SavedExploration> Items => _items;
 
     public bool Available { get; }
 
+    public int Dropped { get; }
+
     public event Action? Changed;
 
-    public SavedExploration Save(IReadOnlyList<ExplorationDescriptor> trail)
+    public SavedExploration Save(Exploration exploration)
     {
-        var nodes = trail.ToList();
-        var name = nodes.Count switch
-        {
-            0 => "Empty exploration",
-            1 => nodes[0].Title,
-            _ => $"{nodes[0].Title} → {nodes[^1].Title}",
-        };
-        var item = new SavedExploration(Guid.NewGuid().ToString("n"), name, DateTimeOffset.UtcNow, nodes);
+        var name = exploration.Steps.Count == 0
+            ? exploration.Start.Label
+            : $"{exploration.Start.Label} → {exploration.Current.Label}";
+        var item = new SavedExploration(
+            Guid.NewGuid().ToString("n"), name, DateTimeOffset.UtcNow,
+            exploration.Start.Identity, exploration.Steps.Select(step => new Link(step.Kind, step.Target.Identity)).ToList());
         _items = _items.Append(item).ToList();
         Persist();
         return item;
     }
 
-    // A no-op if id no longer exists (e.g. deleted from another open tab's own copy of this
-    // service -- each tab has its own in-memory list) -- never an exception for it.
     public void Rename(string id, string name)
     {
         _items = _items.Select(i => i.Id == id ? i with { Name = name } : i).ToList();
