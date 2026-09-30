@@ -1,5 +1,7 @@
 mod common;
 
+use std::collections::BTreeSet;
+
 use atlas_graph_types::edge::MentionedEntity;
 
 fn real_graph() -> &'static atlas_graph_types::graph::Graph {
@@ -90,6 +92,33 @@ fn the_two_leprosy_events_are_distinct_and_joined_by_an_analogue() {
 }
 
 #[test]
+fn the_sermon_on_the_mount_is_attested_by_every_verse_of_its_account_past_the_twentieth_of_a_chapter() {
+    // Arrange
+    let sermon = common::real_atlas().event_by_id("rob_sermon_on_the_mount").expect("the Sermon on the Mount is a curated event");
+    let expected: BTreeSet<(u8, u16, u16)> = sermon
+        .witnesses
+        .iter()
+        .flat_map(|w| atlas_core::translation::resolve(&w.translations, atlas_core::translation::DEFAULT_TRANSLATION).expect("every witness has a KJV reading"))
+        .map(|v| {
+            let id = atlas_core::refs::VerseId::parse_canonical(v).expect("etl-validated verse id");
+            (id.book.0, id.chapter, id.verse)
+        })
+        .collect();
+    // Act
+    let attested: BTreeSet<(u8, u16, u16)> = real_graph()
+        .attests
+        .iter()
+        .filter(|r| r.event.0 == sermon.id)
+        .map(|r| {
+            let u = &r.attestation.from.unit;
+            (u.book, u.chapter, u.verse)
+        })
+        .collect();
+    // Assert
+    assert_eq!(attested, expected);
+}
+
+#[test]
 fn the_attestation_laws_hold_over_the_real_corpus() {
     let graph = real_graph();
     atlas_graph::law_check::attestation_is_exclusive(graph).expect("L2 must hold over the real corpus");
@@ -129,6 +158,6 @@ fn the_corpus_sweep_totals_are_pinned() {
     }
 }
 
-const SWEEP_PENDING_PAIRS: usize = 824;
-const SWEEP_CONTAINMENT_PAIRS: usize = 590;
-const SWEEP_OVERLAP_PAIRS: usize = 234;
+const SWEEP_PENDING_PAIRS: usize = 889;
+const SWEEP_CONTAINMENT_PAIRS: usize = 719;
+const SWEEP_OVERLAP_PAIRS: usize = 170;

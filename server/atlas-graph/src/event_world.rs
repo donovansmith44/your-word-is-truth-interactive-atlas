@@ -372,24 +372,22 @@ pub fn populate_nodes_and_direct_rows(graph: &mut Graph, atlas: &AtlasData) -> E
 
         let event_id = EventId::new(e.id.clone());
 
-        for w in atlas_core::scene::witnesses_for(e) {
-            let text = match (&w.ref_note, &w.robertson_section) {
+        for a in atlas_core::scene::accounts_of(e) {
+            let text = match (&a.ref_note, &a.robertson_section) {
                 (Some(r), Some(rs)) => Some(format!("{r}; {rs}")),
                 (Some(r), None) => Some(r.clone()),
                 (None, Some(rs)) => Some(rs.clone()),
                 (None, None) => None,
             };
-            for vg in &w.verse_groups {
-                for v in &vg.verses {
-                    let Some(range) = verse_to_range(v) else { continue };
-                    graph.attests.push(Attests {
-                        event: event_id.clone(),
-                        attestation: range,
-                        provenance: "event-witnesses".to_string(),
-                        justification: Justification { text: text.clone(), grounds: BTreeSet::new() },
-                    });
-                    stats.attests_rows += 1;
-                }
+            for v in &a.verses {
+                let Some(range) = verse_to_range(v) else { continue };
+                graph.attests.push(Attests {
+                    event: event_id.clone(),
+                    attestation: range,
+                    provenance: "event-witnesses".to_string(),
+                    justification: Justification { text: text.clone(), grounds: BTreeSet::new() },
+                });
+                stats.attests_rows += 1;
             }
         }
 
