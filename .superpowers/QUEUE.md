@@ -18,8 +18,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 1. **O-PUSH:** resolved 2026-09-30: `gh auth login` + `gh auth setup-git` in WSL; a push and a lock take/release from WSL both succeeded.
 2. **O-CODEX:** Codex CLI 0.159.2 is installed in WSL (`~/.local/bin/codex`, works from any shell). Run `codex login` once. It runs in `~/src` on this machine.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
-4. **O-NAMES:** Sign off the NAMES draft's types (`docs/superpowers/specs/2026-10-01-names-design.md`) and answer its §9 (5 one-line questions). It is drafted as ONE spec for the text and the maps' entity registry.
-5. **O-ORDER:** Can FOCUS-6 move up to right after FOCUS-1? Can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
+4. **O-NAMES:** 4 of 5 answered 2026-09-30 (spec §10: one Name per language; events denotable; map-generator's ids pending licensing; many names per entity as a `Naming` type). Open: which titles go on the review list (all held until you choose), and your sign-off of the amended types.
+5. **O-ORDER:** FOCUS-6 comes right after FOCUS-1 (owner, 2026-09-30). Open: can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
 6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
 8. **O-GPL:** Redraw the GPL `historical-basemaps` world borders as our own CC0 work (recommended), or accept GPL? Swap the OSM rivers (ODbL) for Natural Earth (recommended)? Your licensing rule (2026-09-29) disqualifies both as they stand.
@@ -117,7 +117,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 
 ### A-FPLANS: write each FOCUS-n plan from FOCUS-1's actual result
 - **Status:** blocked:A-F1
-- **Order:** FOCUS-6 first if O-ORDER allows, then 2, 3, 4+5, 7+8, 9.
+- **Order:** FOCUS-6 first (owner, 2026-09-30), then 2, 3, 4+5, 7+8, 9. A-EDGES (R18) runs before FOCUS-6's plan is final, or alongside it if the tables it adds are disjoint.
 - **Assignment:** each plan names its agent, its base commit and its files. Codex takes the ones that pair against Claude's (server-heavy beside client-heavy).
 
 ### A-F3, A-F6, A-F9: FOCUS-3, FOCUS-6 (with the map switch), FOCUS-9
