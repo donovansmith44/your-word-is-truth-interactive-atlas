@@ -64,4 +64,10 @@ additional_cargo_test_args = [
   "--test", "description_real_data",
   "--test", "the_compile_step",
   "--test", "version_root_regression",
+  "--test", "kjv_tokens",
+  "--test", "runs_vectors",
+  "--test", "mention_spans_vectors",
+  "--test", "mention_spans_real_data",
+  "--test", "citation_vectors",
+  "--test", "concord_citations_real_data",
 ]
