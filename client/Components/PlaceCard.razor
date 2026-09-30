@@ -90,36 +90,20 @@
         <p class="place-card-blurb" data-testid="place-card-blurb">@blurb</p>
     }
 
-    @{
-        var established = _history?.Established;
-        var destroyed = _history?.Destroyed;
-    }
-    @if (established is not null || destroyed is not null)
+    @if (_dates.Count > 0)
     {
         <div class="place-card-dates" data-testid="place-card-dates">
-            @if (established is { } est)
+            @foreach (var (date, index) in _dates.Select((date, index) => (date, index)))
             {
-                var estLabel = ExploreLabel("Established", est);
-                <button type="button" class="place-card-date explorable" data-testid="place-card-date-established"
-                        aria-label="@estLabel"
-                        @onclick="() => ExploreEstablished(est)">
-                    <span class="place-card-date-label">Established</span>
-                    <span class="place-card-date-value">@DateText(est)</span>
-                    <span class="place-card-date-explore" aria-hidden="true">Explore</span>
-                </button>
-            }
-            @if (established is not null && destroyed is not null)
-            {
-                <span class="place-card-dates-sep" aria-hidden="true">&middot;</span>
-            }
-            @if (destroyed is { } dest)
-            {
-                var destLabel = ExploreLabel("Destroyed", dest);
-                <button type="button" class="place-card-date explorable" data-testid="place-card-date-destroyed"
-                        aria-label="@destLabel"
-                        @onclick="() => ExploreDestroyed(dest)">
-                    <span class="place-card-date-label">Destroyed</span>
-                    <span class="place-card-date-value">@DateText(dest)</span>
+                @if (index > 0)
+                {
+                    <span class="place-card-dates-sep" aria-hidden="true">&middot;</span>
+                }
+                <button type="button" class="place-card-date explorable" data-testid="@($"place-card-date-{date.Label.ToLowerInvariant()}")"
+                        aria-label="@($"Explore {date.Label.ToLowerInvariant()} date: {date.Claim.Label}")"
+                        @onclick="() => ExploreDate(date)">
+                    <span class="place-card-date-label">@date.Label</span>
+                    <span class="place-card-date-value">@date.Claim.Label</span>
                     <span class="place-card-date-explore" aria-hidden="true">Explore</span>
                 </button>
             }
@@ -185,6 +169,7 @@
     private readonly Dictionary<string, string> _verseText = new();
 
     private History? _history;
+    private IReadOnlyList<PlaceDate> _dates = [];
 
     private List<NarrativePosition> _narrativePositions = new();
 
@@ -294,6 +279,7 @@
         _lastPlaceId = Place.Id;
         _verseText.Clear();
         _history = null;
+        _dates = [];
         // _contentReady must reset explicitly: leaving it true from a previous place would let
         // a measurement fire against this place's synchronous-prefix-only render, before its
         // own blurb/dates have had any chance to load.
@@ -347,6 +333,7 @@
         {
             var detail = await Atlas.PlaceHistory(Place.Id, WindowFrom, WindowTo);
             _history = detail.History;
+            _dates = PlaceDates.Of((await Atlas.NodeCard(NodeIds.Of(NodeKind.Place, Place.Id))).Place, detail.History);
         }
         catch (Exception)
         {
@@ -378,17 +365,7 @@
         }
     }
 
-    private static string DateText(PlaceDateClaim claim) => YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
-
-    private static string ExploreLabel(string label, PlaceDateClaim claim) => $"Explore {label.ToLowerInvariant()} date: {DateText(claim)}";
-
-    // Named wrappers, not an inline Explore(label, claim) call: Razor's @onclick attribute-value
-    // parser cannot handle an embedded double-quoted string literal inside the lambda.
-    private Task ExploreEstablished(PlaceDateClaim claim) =>
-        OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Established", claim.When, claim.Verses, claim.Note));
-
-    private Task ExploreDestroyed(PlaceDateClaim claim) =>
-        OnExploreNode.InvokeAsync(new YearNode(Place.Id, "Destroyed", claim.When, claim.Verses, claim.Note));
+    private Task ExploreDate(PlaceDate date) => OnExploreNode.InvokeAsync(new YearNode(Place.Id, date));
 
     private Task ExploreVerse(string vref) => OnExploreNode.InvokeAsync(new VerseNode(vref));
 

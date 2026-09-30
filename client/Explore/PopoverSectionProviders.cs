@@ -700,7 +700,7 @@ public sealed class PlaceDescriptionSection : IPopoverSectionProvider
             return null;
         }
 
-        PlaceDetail detail;
+        PlacePage detail;
         try
         {
             detail = await place.DetailAsync(api);
@@ -741,49 +741,40 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
             return null;
         }
 
-        PlaceDetail detail;
+        IReadOnlyList<PlaceDate> dates;
         try
         {
-            detail = await place.DetailAsync(api);
+            dates = await place.DatesAsync(api);
         }
         catch (Exception)
         {
             return null;
         }
 
-        var established = detail.History?.Established;
-        var destroyed = detail.History?.Destroyed;
-        if (established is null && destroyed is null)
+        if (dates.Count == 0)
         {
             return null;
         }
 
-        var establishedVersesTask = established is { } est ? VerseTextResolver.ResolveAsync(api, est.Verses) : Task.FromResult(new List<PassageListVerse>());
-        var destroyedVersesTask = destroyed is { } dest ? VerseTextResolver.ResolveAsync(api, dest.Verses) : Task.FromResult(new List<PassageListVerse>());
-        await Task.WhenAll(establishedVersesTask, destroyedVersesTask);
+        var versesOfEach = await Task.WhenAll(dates.Select(date => VerseTextResolver.ResolveAsync(api, date.Verses)));
 
         RenderFragment body = builder =>
         {
             var seq = 0;
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "popover-place-dates");
-            if (established is { } est)
+            foreach (var (date, verses) in dates.Zip(versesOfEach))
             {
-                RenderDateRow(builder, ref seq, "established", "Established", est, establishedVersesTask.Result, ctx);
-            }
-            if (destroyed is { } dest)
-            {
-                RenderDateRow(builder, ref seq, "destroyed", "Destroyed", dest, destroyedVersesTask.Result, ctx);
+                RenderDateRow(builder, ref seq, date, verses, ctx);
             }
             builder.CloseElement();
         };
         return new PopoverSection("place-dates", body);
     }
 
-    private static void RenderDateRow(
-        RenderTreeBuilder builder, ref int seq, string testidSuffix, string label, PlaceDateClaim claim, List<PassageListVerse> verses, IPopoverSectionContext ctx)
+    private static void RenderDateRow(RenderTreeBuilder builder, ref int seq, PlaceDate date, List<PassageListVerse> verses, IPopoverSectionContext ctx)
     {
-        var dateText = YearText.FormatClaim(claim.When.FromYear, claim.When.ToYear, claim.Note);
+        var testidSuffix = date.Label.ToLowerInvariant();
 
         builder.OpenElement(seq++, "div");
         builder.AddAttribute(seq++, "class", "popover-place-date");
@@ -791,12 +782,12 @@ public sealed class PlaceDatesSection : IPopoverSectionProvider
 
         builder.OpenElement(seq++, "span");
         builder.AddAttribute(seq++, "class", "popover-place-date-label");
-        builder.AddContent(seq++, label);
+        builder.AddContent(seq++, date.Label);
         builder.CloseElement();
 
         builder.OpenElement(seq++, "span");
         builder.AddAttribute(seq++, "class", "popover-place-date-value");
-        builder.AddContent(seq++, dateText);
+        builder.AddContent(seq++, date.Claim.Label);
         builder.CloseElement();
         builder.CloseElement();
 
@@ -827,7 +818,7 @@ public sealed class PlaceBlurbSection : IPopoverSectionProvider
             return null;
         }
 
-        PlaceDetail detail;
+        PlacePage detail;
         try
         {
             detail = await place.DetailAsync(api);
@@ -866,7 +857,7 @@ public sealed class PlaceEventsSection : IPopoverSectionProvider
             return null;
         }
 
-        PlaceDetail detail;
+        PlacePage detail;
         try
         {
             detail = await place.DetailAsync(api);
@@ -1010,7 +1001,7 @@ public sealed class EventProvenanceSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail detail;
+        EventPage detail;
         try
         {
             detail = await ev.DetailAsync(api);
@@ -1042,17 +1033,19 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail detail;
+        EventPage detail;
+        TimeRange? when;
         try
         {
             detail = await ev.DetailAsync(api);
+            when = (await ev.CardAsync(api)).Event?.When;
         }
         catch (Exception)
         {
             return null;
         }
 
-        if (detail.When is null && detail.Places.Count == 0)
+        if (when is null && detail.Places.Count == 0)
         {
             return null;
         }
@@ -1061,9 +1054,8 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
         {
             var seq = 0;
 
-            if (detail.When is { } when)
+            if (when is not null)
             {
-                var dateText = YearText.FormatRange(when.FromYear, when.ToYear);
                 builder.OpenComponent<Components.FrontierMetadataRow>(seq++);
                 builder.AddAttribute(seq++, "TestId", "event-time");
                 builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(valueBuilder =>
@@ -1078,7 +1070,7 @@ public sealed class EventDateAndPlacesSection : IPopoverSectionProvider
                         valueBuilder.AddAttribute(vseq++, "title", refNote);
                     }
                     valueBuilder.AddAttribute(vseq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new YearNode(when))));
-                    valueBuilder.AddContent(vseq++, dateText);
+                    valueBuilder.AddContent(vseq++, when.Label);
                     valueBuilder.CloseElement();
 
                     foreach (var p in detail.Places)
@@ -1169,7 +1161,7 @@ public sealed class EventWitnessesSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail detail;
+        EventPage detail;
         try
         {
             detail = await ev.DetailAsync(api);
@@ -1233,7 +1225,7 @@ public sealed class EventMentionsSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail detail;
+        EventPage detail;
         try
         {
             detail = await ev.DetailAsync(api);
@@ -1282,7 +1274,7 @@ public sealed class EventAnaloguesSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail detail;
+        EventPage detail;
         try
         {
             detail = await ev.DetailAsync(api);
@@ -1357,7 +1349,7 @@ public sealed class VerseParallelsSection : IPopoverSectionProvider
             return null;
         }
 
-        EventDetail?[] details;
+        EventPage?[] details;
         try
         {
             details = await Task.WhenAll(events.Select(async e =>

@@ -45,8 +45,4 @@ internal static class CanonRef
         var toOk = int.TryParse(versePart[(dash + 1)..], out var toVerse);
         return fromOk && toOk ? (book, chapter, fromVerse, toVerse) : null;
     }
-
-    public static string Humanize(string slug) =>
-        string.Join(' ', slug.Split('-', StringSplitOptions.RemoveEmptyEntries)
-            .Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 }

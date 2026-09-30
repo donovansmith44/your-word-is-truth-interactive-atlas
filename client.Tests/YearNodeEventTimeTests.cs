@@ -6,26 +6,35 @@ namespace BibleAtlas.Client.Tests;
 public class YearNodeEventTimeTests
 {
     [Fact]
-    public void EventTimeConstructor_TitleIsTheFormattedYearRange()
+    public void An_event_time_is_titled_with_the_served_label_of_its_years()
     {
-        var node = new YearNode(new YearSpan(fromYear: 31, toYear: 31));
-        Assert.Equal("AD 31", node.Title);
-        Assert.Equal("Year", node.Kind);
+        // Arrange
+        var times = new[]
+        {
+            Ad31Only,
+            new TimeRange(from: new Year(label: "1000 BC", value: -1000), label: "1000 – 960 BC", to: new Year(label: "960 BC", value: -960)),
+        };
+
+        // Act
+        var titles = times.Select(when => (new YearNode(when).Title, new YearNode(when).Kind)).ToArray();
+
+        // Assert
+        Assert.Equal([("AD 31", "Year"), ("1000 – 960 BC", "Year")], titles);
     }
 
     [Fact]
-    public void EventTimeConstructor_GenuineRangeFormatsBothEndpoints()
+    public void A_place_date_is_titled_with_what_it_dates_and_the_served_label_of_its_claim()
     {
-        var node = new YearNode(new YearSpan(fromYear: -1000, toYear: -960));
-        Assert.Equal("1000 BC – 960 BC", node.Title);
-    }
+        // Arrange
+        var established = new Year(label: "1003 BC", value: -1003);
+        var claim = new DateClaim(@event: null, label: "c. 1003 BC", note: "traditional", verses: [], when: new TimeRange(from: established, label: "1003 BC", to: established));
+        var node = new YearNode("jerusalem", new PlaceDate("Established", claim, ["2SA.5.6"]));
 
-    [Fact]
-    public void PlaceDateClaimConstructor_TitleFormatIsUnaffectedByTheNewConstructor()
-    {
-        var node = new YearNode("jerusalem_1", "Established", new YearSpan(fromYear: -1003, toYear: -1003), new List<string> { "2SA.5.6" }, "traditional");
-        Assert.Equal("Established c. 1003 BC", node.Title);
-        Assert.Equal("Year", node.Kind);
+        // Act
+        var title = (node.Title, node.Kind, node.PlaceId, node.Label);
+
+        // Assert
+        Assert.Equal(("Established c. 1003 BC", "Year", "jerusalem", "Established"), title);
     }
 
     private static readonly Year Ad30 = new(label: "AD 30", value: 30);

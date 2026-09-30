@@ -76,13 +76,9 @@ public sealed record ExplorationDescriptor(string Kind, string Key, string Title
                 var parts = descriptor.Key.Split('|', 2);
                 var placeId = parts[0];
                 var label = parts[1];
-                var detail = await api.PlaceHistory(placeId, null, null);
-                var claim = label == "Established" ? detail.History?.Established : detail.History?.Destroyed;
-                if (claim is null)
-                {
-                    throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: place '{placeId}' no longer has a curated '{label}' date.");
-                }
-                return new YearNode(placeId, label, claim.When, claim.Verses, claim.Note);
+                var date = (await new PlaceNode(placeId, placeId).DatesAsync(api)).FirstOrDefault(d => d.Label == label)
+                    ?? throw new NotSupportedException($"ExplorationDescriptor.Reconstruct: place '{placeId}' no longer has a curated '{label}' date.");
+                return new YearNode(placeId, date);
             }
 
             case "Catechism":

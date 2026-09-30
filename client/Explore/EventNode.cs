@@ -10,7 +10,8 @@ public interface INarrativeAware
 
 public sealed class EventNode : IExplorable, INarrativeAware
 {
-    private readonly AsyncMemo<EventDetail> _detail = new();
+    private readonly AsyncMemo<EventPage> _detail = new();
+    private readonly AsyncMemo<NodeCard> _card = new();
     private readonly AsyncMemo<NarrativeEventPositions> _positions = new();
 
     // Falls back to this caller-supplied kind when no fetch has resolved yet:
@@ -34,7 +35,7 @@ public sealed class EventNode : IExplorable, INarrativeAware
 
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
-        EventDetail detail;
+        EventPage detail;
         try
         {
             detail = await DetailAsync(api);
@@ -61,7 +62,9 @@ public sealed class EventNode : IExplorable, INarrativeAware
     // kept only as the interface's required fallback.
     public Task<RenderFragment> BodyAsync(AtlasClient api) => Task.FromResult<RenderFragment>(_ => { });
 
-    public Task<EventDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
+    public Task<EventPage> DetailAsync(AtlasClient api) => _detail.Get(() => api.Event(EventId));
+
+    public Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Event, EventId)));
 
     public Task<NarrativeEventPositions> NarrativePositionsAsync(AtlasClient api) =>
         _positions.Get(() => api.NarrativeEventPositions(EventId));

@@ -9,7 +9,8 @@ public sealed class PlaceNode : IExplorable
     private readonly string _placeName;
     private readonly int? _windowFrom;
     private readonly int? _windowTo;
-    private readonly AsyncMemo<PlaceDetail> _detail = new();
+    private readonly AsyncMemo<PlacePage> _detail = new();
+    private readonly AsyncMemo<NodeCard> _card = new();
 
     // A null window here only costs the blurb section; established/destroyed dates
     // are window-independent and are returned regardless.
@@ -92,7 +93,12 @@ public sealed class PlaceNode : IExplorable
 
     // AsyncMemo-backed: shared by every Place-kind section provider so opening a
     // popover fires one /api/place/{id} request, not up to four.
-    public Task<PlaceDetail> DetailAsync(AtlasClient api) => _detail.Get(() => api.PlaceHistory(_placeId, _windowFrom, _windowTo));
+    public Task<PlacePage> DetailAsync(AtlasClient api) => _detail.Get(() => api.PlaceHistory(_placeId, _windowFrom, _windowTo));
 
-    private Task<PlaceDetail> Load(AtlasClient api) => DetailAsync(api);
+    public async Task<IReadOnlyList<PlaceDate>> DatesAsync(AtlasClient api) =>
+        PlaceDates.Of((await CardAsync(api)).Place, (await DetailAsync(api)).History);
+
+    private Task<NodeCard> CardAsync(AtlasClient api) => _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Place, _placeId)));
+
+    private Task<PlacePage> Load(AtlasClient api) => DetailAsync(api);
 }

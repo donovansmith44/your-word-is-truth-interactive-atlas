@@ -106,7 +106,7 @@
 
     @if (_eras is not null)
     {
-        <TimeSlider Eras="_eras" From="_from" To="_to" Window="_scene?.Window"
+        <TimeSlider Eras="_eras" From="_from" To="_to" Window="_timeWindow"
                     Disabled="@(_scriptureRef is not null)" OnWindowChange="HandleWindowChange" OnWindowDrag="HandleWindowDrag" />
     }
 
@@ -196,6 +196,7 @@
 
     private List<Era>? _eras;
     private Scene? _scene;
+    private TimeRange? _timeWindow;
     private string? _errorMessage;
     private string? _scriptureRef;
 
@@ -804,6 +805,7 @@
             }
 
             _scene = scene;
+            _timeWindow = scene.Window;
             _errorMessage = null;
             _isolated = null;
 
@@ -922,6 +924,23 @@
         finally
         {
             StateHasChanged();
+        }
+
+        await LabelTheSlidersWindow();
+    }
+
+    // The slider stays on its time window while scripture is on show, and a first visit
+    // straight into scripture mode has served no label for it yet. A failure here only leaves
+    // the readout unlabelled; the scripture scene itself has already loaded or said why not.
+    private async Task LabelTheSlidersWindow()
+    {
+        try
+        {
+            _timeWindow = await SliderWindow.ServedFor(Atlas, _timeWindow, _from, _to);
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
         }
     }
 

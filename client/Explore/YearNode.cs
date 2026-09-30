@@ -5,25 +5,25 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class YearNode : IExplorable
 {
-    private readonly YearSpan _when;
+    private readonly TimeRange _when;
     private readonly IReadOnlyList<string> _verses;
     private readonly bool _isEventTime;
 
-    public YearNode(string placeId, string label, YearSpan when, IReadOnlyList<string> verses, string? note)
+    public YearNode(string placeId, PlaceDate date)
     {
         PlaceId = placeId;
-        Label = label;
-        Title = $"{label} {YearText.FormatClaim(when.FromYear, when.ToYear, note)}";
-        _when = when;
-        _verses = verses;
+        Label = date.Label;
+        Title = $"{date.Label} {date.Claim.Label}";
+        _when = date.Claim.When;
+        _verses = date.Verses;
         _isEventTime = false;
     }
 
-    public YearNode(YearSpan when)
+    public YearNode(TimeRange when)
     {
         PlaceId = "";
         Label = "";
-        Title = YearText.FormatRange(when.FromYear, when.ToYear);
+        Title = when.Label;
         _when = when;
         _verses = new List<string>();
         _isEventTime = true;
@@ -44,7 +44,7 @@ public sealed class YearNode : IExplorable
         }
 
         list.Add(new Exploration("Show this time on the map", "popover-chip-map",
-            new ExplorationTarget.NavigateWorld($"from={_when.FromYear}&to={_when.ToYear}")));
+            new ExplorationTarget.NavigateWorld($"from={_when.From.Value}&to={_when.To.Value}")));
 
         return Task.FromResult<IReadOnlyList<Exploration>>(list);
     }
@@ -88,7 +88,7 @@ public sealed class YearNode : IExplorable
         Scene scene;
         try
         {
-            scene = await api.SceneTime(_when.FromYear, _when.ToYear);
+            scene = await api.SceneTime(_when.From.Value, _when.To.Value);
         }
         catch (Exception)
         {

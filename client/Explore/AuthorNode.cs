@@ -5,8 +5,11 @@ namespace BibleAtlas.Client.Explore;
 
 public sealed class AuthorNode : IExplorable
 {
+    // The graph names a book of the Bible as the container `bible-book-{canon code}`.
+    private const string BookContainerPrefix = "bible-book-";
+
     private readonly string _bookCode;
-    private readonly AsyncMemo<VerseDetail> _detail = new();
+    private readonly AsyncMemo<NodeCard> _card = new();
 
     public AuthorNode(string bookCode) => _bookCode = bookCode;
 
@@ -15,8 +18,7 @@ public sealed class AuthorNode : IExplorable
 
     public async Task<IReadOnlyList<Exploration>> ExploreAsync(AtlasClient api)
     {
-        var meta = (await Load(api)).BookMeta;
-        if (meta.WritePlace is null || meta.WriteFrom is not int from || meta.WriteTo is not int to)
+        if ((await Load(api)).Book is not { WritePlace: not null, Written: { } written })
         {
             return Array.Empty<Exploration>();
         }
@@ -24,54 +26,45 @@ public sealed class AuthorNode : IExplorable
         return new[]
         {
             new Exploration("Show on /world", "popover-chip-map",
-                new ExplorationTarget.NavigateWorld($"from={from}&to={to}")),
+                new ExplorationTarget.NavigateWorld($"from={written.From.Value}&to={written.To.Value}")),
         };
     }
 
     public async Task<RenderFragment> BodyAsync(AtlasClient api)
     {
-        var meta = (await Load(api)).BookMeta;
-
-        string? placeName = null;
-        if (meta.WritePlace is string slug)
+        if ((await Load(api)).Book is not { } book)
         {
-            try
-            {
-                placeName = (await api.Place(slug)).Name;
-            }
-            catch (Exception)
-            {
-                placeName = CanonRef.Humanize(slug);
-            }
+            return _ => { };
         }
 
-        var years = meta.WriteFrom is int wf && meta.WriteTo is int wt ? YearText.FormatRange(wf, wt) : null;
-
+        var writing = WritingOf(book);
         RenderFragment fragment = builder =>
         {
             var seq = 0;
             builder.OpenElement(seq++, "p");
             builder.AddAttribute(seq++, "class", "popover-meta");
-            builder.AddContent(seq++, $"By {meta.Author}.");
+            builder.AddContent(seq++, $"By {book.Author}.");
             builder.CloseElement();
 
-            if (placeName is not null || years is not null)
+            if (writing is not null)
             {
                 builder.OpenElement(seq++, "p");
                 builder.AddAttribute(seq++, "class", "popover-meta");
-                var text = (placeName, years) switch
-                {
-                    (not null, not null) => $"Written from {placeName}, {years}.",
-                    (not null, null) => $"Written from {placeName}.",
-                    (null, not null) => $"Written {years}.",
-                    _ => "",
-                };
-                builder.AddContent(seq++, text);
+                builder.AddContent(seq++, writing);
                 builder.CloseElement();
             }
         };
         return fragment;
     }
 
-    private Task<VerseDetail> Load(AtlasClient api) => _detail.Get(() => api.Verse($"{_bookCode}.1.1"));
+    public static string? WritingOf(BookDetail book) => (book.WritePlace?.Label, book.Written?.Label) switch
+    {
+        ({ } place, { } years) => $"Written from {place}, {years}.",
+        ({ } place, null) => $"Written from {place}.",
+        (null, { } years) => $"Written {years}.",
+        (null, null) => null,
+    };
+
+    private Task<NodeCard> Load(AtlasClient api) =>
+        _card.Get(() => api.NodeCard(NodeIds.Of(NodeKind.Container, $"{BookContainerPrefix}{_bookCode}")));
 }

@@ -4,6 +4,6 @@ namespace BibleAtlas.Client.Explore;
 
 public static class MapFocusHatch
 {
-    public static string Query(string placeId, YearSpan window) =>
-        $"from={window.FromYear}&to={window.ToYear}&place={Uri.EscapeDataString(placeId)}";
+    public static string Query(string placeId, TimeRange window) =>
+        $"from={window.From.Value}&to={window.To.Value}&place={Uri.EscapeDataString(placeId)}";
 }

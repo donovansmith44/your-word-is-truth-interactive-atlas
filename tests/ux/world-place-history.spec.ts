@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { api } from './lib/api';
-import { formatClaim } from './lib/years';
 import { zoomInOnMarker } from './lib/zoom';
 
 // Batch E (batch-e-brief.md, "time-accurate places"): NAME-1 (period-true
@@ -116,6 +115,9 @@ test('BLURB-1: exactly one blurb shows, era inside one range, broad summary once
 });
 
 test('DATE-1: the established date affordance opens a popover that lists curated supporting verses first, then "Show this time on the map"', async ({ page }) => {
+  const jerusalem = (await api.node('Place:jerusalem')).place;
+  const establishedOn: string = jerusalem.established.label; // "c. 1003 BC"
+  const destroyedOn: string = jerusalem.destroyed.label; // "586 BC", no "c."
   await page.goto('/world?from=-590&to=-580');
   await page.waitForSelector('[data-testid="marker-jerusalem"]', { state: 'attached' });
   // Batch C3: see NAME-1's own comment above -- this window's own wide
@@ -129,13 +131,13 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   await expect(dates).toBeVisible();
   const established = card.getByTestId('place-card-date-established');
   await expect(established).toBeVisible();
-  await expect(established).toContainText(formatClaim(-1003, -1003, 'traditional')); // "c. 1003 BC"
-  await expect(card.getByTestId('place-card-date-destroyed')).toContainText(formatClaim(-586, -586, null)); // "586 BC", no "c."
+  await expect(established).toContainText(establishedOn);
+  await expect(card.getByTestId('place-card-date-destroyed')).toContainText(destroyedOn);
 
   await established.click();
   const popover = page.getByTestId('popover');
   await expect(popover).toBeVisible();
-  await expect(page.getByTestId('popover-title')).toHaveText(`Established ${formatClaim(-1003, -1003, 'traditional')}`);
+  await expect(page.getByTestId('popover-title')).toHaveText(`Established ${establishedOn}`);
 
   // Supporting verses lead, in curated order, all BEFORE the map chip.
   const chipTestIds = await popover.locator('.popover-head-actions [data-testid]').evaluateAll(
@@ -156,7 +158,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
 
   // Breadcrumb back returns to the YearNode.
   await page.getByTestId('popover-breadcrumb-back').click();
-  await expect(page.getByTestId('popover-title')).toHaveText(`Established ${formatClaim(-1003, -1003, 'traditional')}`);
+  await expect(page.getByTestId('popover-title')).toHaveText(`Established ${establishedOn}`);
 
   await page.getByTestId('popover-close').click();
   await expect(popover).toHaveCount(0);
@@ -172,7 +174,7 @@ test('DATE-1: the established date affordance opens a popover that lists curated
   // The destroyed date opens its OWN popover, with ITS OWN curated verses
   // (no "c." -- no note curated for this claim).
   await destroyed.click();
-  await expect(page.getByTestId('popover-title')).toHaveText(`Destroyed ${formatClaim(-586, -586, null)}`);
+  await expect(page.getByTestId('popover-title')).toHaveText(`Destroyed ${destroyedOn}`);
   const destroyedChips = await page.getByTestId('popover').locator('.popover-head-actions [data-testid]').evaluateAll(
     els => els.map(el => el.getAttribute('data-testid')));
   expect(destroyedChips).toEqual(['popover-chip-verse-2KI.25.9', 'popover-chip-verse-2KI.25.10', 'popover-chip-map']);
