@@ -97,7 +97,7 @@
             return;
         }
 
-        var pages = await Task.WhenAll(Node.Groups.Zip(firstPages, (group, first) => Filled(request, group.Kind, first, InitiallyShown(group))));
+        var pages = await Task.WhenAll(Node.Groups.Zip(firstPages, (group, first) => Filled(request, group.Kind, Offered(first), InitiallyShown(group))));
         if (request.Superseded)
         {
             return;
@@ -122,11 +122,14 @@
     {
         while (loaded.Items.Count < wanted && loaded.Next is int cursor && await request.Fetch(() => Node.Links(kind, cursor)) is { } page)
         {
-            loaded = new Page<Link>([.. loaded.Items, .. page.Items], page.Next);
+            loaded = new Page<Link>([.. loaded.Items, .. Offered(page).Items], page.Next);
         }
 
         return loaded;
     }
+
+    private Page<Link> Offered(Page<Link> page) =>
+        new(page.Items.Where(link => Presentation.Offers(link, Surface)).ToList(), page.Next);
 
     private IEnumerable<(FrontierGroup Group, T Affordance)> Offered<T>() where T : Affordance
     {

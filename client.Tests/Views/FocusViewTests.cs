@@ -22,6 +22,7 @@ public sealed class FocusViewTests : BunitContext
     private static readonly NodeRef Verse2 = ServedGraph.Ref(NodeKind.TextUnit, "text-unit:GEN.2.2", "GEN.2.2");
     private static readonly NodeRef Adam = ServedGraph.Ref(NodeKind.Person, "Person:adam", "Adam");
     private static readonly NodeRef Eden = ServedGraph.Ref(NodeKind.Place, "Place:eden", "Eden");
+    private static readonly NodeRef EdenMap = ServedGraph.Ref(NodeKind.Map, "Map:era-eden", "The world of Eden");
     private static readonly NodeRef[] Citations = Enumerable.Range(1, CitesServed)
         .Select(n => ServedGraph.Ref(NodeKind.TextUnit, $"text-unit:JHN.1.{n}", $"JHN.1.{n}"))
         .ToArray();
@@ -162,11 +163,40 @@ public sealed class FocusViewTests : BunitContext
         // Assert
         Assert.Equal(
             [
-                (Surface.World, "world-prev world-next"),
+                (Surface.World, ""),
                 (Surface.Reader, "reader-section-card reader-card-title reader-field-Provenance reader-prev reader-next"),
                 (Surface.Popover, "popover-section-card popover-card-title popover-field-Provenance popover-prev popover-next"),
             ],
             handles);
+    }
+
+    [Fact]
+    public void A_link_is_offered_only_where_its_target_kind_has_a_form_on_the_surface_it_opens_on()
+    {
+        // Arrange
+        var graph = Explored(new ServedGraph()
+            .Serving(ServedGraph.Card(NodeKind.Map, EdenMap.Id, EdenMap.Label, new FrontierGroup(EdgeKind.Shows, 2), new FrontierGroup(EdgeKind.MentionedIn, 1)))
+            .Serving(EdenMap.Id, EdgeKind.Shows, null, ServedGraph.Page(EdgeKind.Shows, null, Eden, Adam))
+            .Serving(EdenMap.Id, EdgeKind.MentionedIn, null, ServedGraph.Page(EdgeKind.MentionedIn, null, Verse1)));
+
+        // Act
+        var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.Node(graph, EdenMap)).Add(v => v.Surface, Surface.World));
+
+        // Assert
+        view.MarkupMatches("""
+            <div class="popover-section" data-testid="world-section-card">
+                <p class="focus-title" data-testid="world-card-title">The world of Eden</p>
+                <dl class="focus-fields">
+                    <div class="focus-field" data-testid="world-field-Provenance"><dt>Provenance</dt><dd>kjv</dd></div>
+                </dl>
+            </div>
+            <div class="popover-section" data-testid="world-children-shows">
+                <button type="button" class="focus-child explorable" data-testid="world-child-shows-Place:eden">Eden</button>
+            </div>
+            <div class="popover-section" data-testid="world-section-mentioned-in">
+                <p class="catechism-section-heading" data-testid="world-section-mentioned-in-heading">mentioned-in (1)</p>
+            </div>
+            """);
     }
 
     [Fact]

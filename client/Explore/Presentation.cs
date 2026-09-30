@@ -34,6 +34,8 @@ public abstract record Presentation
         },
     };
 
+    public static bool Offers(Link link, Surface surface) => Of(link.Target.Kind, surface) is not null;
+
     public enum Form
     {
         Card,

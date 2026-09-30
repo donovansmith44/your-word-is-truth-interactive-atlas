@@ -75,6 +75,27 @@ public sealed class PresentationTests
     }
 
     [Fact]
+    public void A_link_is_offered_on_a_surface_exactly_where_its_target_kind_has_a_form_there()
+    {
+        // Arrange
+        var everyLink = Enum.GetValues<NodeKind>().Select(kind => new Link(EdgeKind.Mentions, new NodeRef(id: kind.ToString(), kind: kind, label: kind.ToString()))).ToList();
+
+        // Act
+        var offered = Enum.GetValues<Surface>()
+            .Select(surface => (surface, string.Join(" ", everyLink.Where(link => Presentation.Offers(link, surface)).Select(link => link.Target.Kind))))
+            .ToList();
+
+        // Assert
+        Assert.Equal(
+            [
+                (Surface.World, "Place Era Polity Map"),
+                (Surface.Reader, "TextUnit Container"),
+                (Surface.Popover, "TextUnit Container Event Narrative Place Person Anchor Era Polity CatechismItem Source Translation PeopleGroup CommentaryItem LexiconEntry Map"),
+            ],
+            offered);
+    }
+
+    [Fact]
     public void Two_cards_with_the_same_title_and_fields_are_equal_whatever_lists_hold_them()
     {
         // Arrange
