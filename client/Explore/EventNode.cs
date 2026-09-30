@@ -14,25 +14,16 @@ public sealed class EventNode : IExplorable, INarrativeAware
     private readonly AsyncMemo<NodeCard> _card = new();
     private readonly AsyncMemo<NarrativeEventPositions> _positions = new();
 
-    // Falls back to this caller-supplied kind when no fetch has resolved yet:
-    // ExplorationDescriptor.Capture reads CachedKind synchronously, before
-    // PushAsync's own await ever gets a chance to resolve DetailAsync, so a
-    // freshly-clicked node would otherwise always report a null kind.
-    private readonly EventKind? _knownKind;
-
-    public EventNode(string eventId, string title, EventKind? knownKind = null)
+    public EventNode(string eventId, string title)
     {
         EventId = eventId;
         Title = title;
-        _knownKind = knownKind;
     }
 
     public string EventId { get; }
     public string Title { get; }
     public string Kind => "Event";
     public NodeRef Identity => new(id: NodeIds.Of(NodeKind.Event, EventId), kind: NodeKind.Event, label: Title);
-
-    public EventKind? CachedKind => _detail.CompletedValueOrDefault?.Kind ?? _knownKind;
 
     public async Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

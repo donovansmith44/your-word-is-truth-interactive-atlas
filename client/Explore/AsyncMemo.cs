@@ -19,8 +19,6 @@ public sealed class AsyncMemo<T>
         return task;
     }
 
-    public T? CompletedValueOrDefault => _task is { IsCompletedSuccessfully: true } ? _task.Result : default;
-
     // Clears the cache on fault so a transient failure self-heals on the next
     // call, instead of permanently poisoning this instance. ReferenceEquals
     // guards against clobbering a newer task a retried Get() may have installed.

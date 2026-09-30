@@ -139,10 +139,8 @@ else
         CancelDwell();
         CancelDismiss();
         HidePeekState();
-        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label, AnAdjacentIsAlwaysAnEvent));
+        return OnExplore.InvokeAsync(new EventNode(Adjacent.Id, Adjacent.Label));
     }
-
-    private const EventKind AnAdjacentIsAlwaysAnEvent = EventKind.Event;
 
     private const int LongLabelThreshold = 24;
     private bool LabelIsLong => Adjacent is not null && Adjacent.Label.Length > LongLabelThreshold;
