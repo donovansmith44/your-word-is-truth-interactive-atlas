@@ -499,3 +499,43 @@ Nothing open remains; the spec awaits the plans.
   in the current era, highlights its territory at the slider's current
   year, and shows its reign window on the slider so the reader can scrub
   its rise and fall. No jump, no multi-era overlay.
+
+## 12. Rulings (owner, 2026-09-30, amending §3.1–§3.3 and §3.5)
+
+- **R15 — an Explorable is explorable because it has a frontier.** "Explorable
+  essentially means that we can interactively get to another node by graph
+  traversal (i.e., get context): this is the explore monad." §3.1's
+  `Explorable(Kind, Id, Label)` plus a separate `IFrontier` is replaced by:
+  ```csharp
+  public sealed class Explorable                    // a node WITH its frontier; sealed, no presentation methods
+  {
+      public NodeKind Kind { get; }  public string Id { get; }  public string Label { get; }
+      public IReadOnlyList<FrontierGroup> Groups { get; }                   // the card's edge_summary
+      public Task<Page<Link>> Links(EdgeKind kind, int? cursor = null);     // pages this node's edges, server order
+      // equality and hash: (Kind, Id)
+  }
+  public sealed record Link(EdgeKind Kind, NodeRef Target);   // a reference, not yet explorable
+  public interface IExplorer
+  {
+      Task<Explorable> Resolve(NodeRef target);   // unit: one card fetch → the node with its frontier
+      Task<Explorable> Follow(Link link);          // bind: through one edge to the next node with its frontier
+      Task<Presentation> Present(Explorable node, Surface surface);
+  }
+  ```
+  `IFrontier` is folded in; `Explorable.From(NodeRef)` does not exist (a
+  reference is resolved, never promoted); `GraphExplorer` is the only
+  constructor of an `Explorable`. `FrontierGroup`, `Page<T>` and the three
+  frontier laws stand.
+- **R16 — presentation is a functor over the explorable, keyed by kind and
+  surface.** The same `Explorable` is presented differently on each surface
+  (a place is a region on the World view and a card in the popover) and
+  offers the same frontier on every surface. `Presentation.Of(NodeKind,
+  Surface)` with `Surface = World | Reader | Popover`, and
+  `Affordances.Of(EdgeKind)`, are the two exhaustive tables (a missing arm is
+  a build error, `client/BibleAtlas.Client.csproj`). There is no per-node
+  presentation method and no interface a node implements to present itself:
+  that is the legacy `IExplorable` design §9 retires. R9's home surfaces
+  become rows of the table.
+- **R17 — Back is the dual of the last un-returned hop** (`Breadcrumb[^1]`),
+  so Back at the bottom is a no-op and Back-after-Back never goes forward
+  (amends §3.5's literal `Links[^1]`).
