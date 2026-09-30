@@ -107,6 +107,7 @@ _None yet._
 
 ### A-BACKLOG: routed items waiting for their batch
 - **Status:** proposed; each moves into the batch named, or is planned on its own.
+- **Open category (25):** `client/CanonRef.cs` still parses references from legacy-route strings and client-built node titles (T10a/T10b left it). Closure: the legacy routes retire (FOCUS-2…7) and every ref arrives as a served `TextRef`; then `CanonRef` goes and a client law forbids reference parsing.
 - FOCUS-1 R36 (typed ids): `BookId(pub u8)` with a panicking `code()`, `TranslationId(String)`, `PlaceDateClaim.verses` as strings, `SectionReport` strings, `ConcordTitleOverride.document`.
 - A place date read from two served sources (card + place-page verse refs) → T10b / FOCUS.
 - The card details restate the legacy structs' fields until FOCUS retires the legacy routes.

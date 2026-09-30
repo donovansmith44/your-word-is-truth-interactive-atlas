@@ -34,6 +34,7 @@ If the owner's whole message is "go" or "continue", read your GO file and follow
 
 ## Lanes and the files each may touch
 - **Lane A (Claude):** `server/`, `client/`, `graph-types/`, `contracts/`, `data/`, `tests/`, `docs/superpowers/{specs,plans}`.
+- **The client** (PRINCIPLES 25): composes over the generated contract types and nothing else; no domain parsing, formatting, scanning or arithmetic on the client; less client code is the direction.
 - **Codex:**
   - all of the `map-generator` repo
   - in this repo, only `scripts/backup/`, `docs/superpowers/reports/`, `.superpowers/analysis/`, and whatever files a claimed item explicitly names
