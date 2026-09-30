@@ -1,4 +1,5 @@
 @using BibleAtlas.Client.Explore
+@using BibleAtlas.Client.Views
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager Nav
@@ -66,7 +67,7 @@
 
 @if (_hamburgerActiveNode is not null)
 {
-    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" SeedStack="_hamburgerSeedStack" OnClose="CloseHamburgerPopover" />
+    <ExplorerPopover @key="_hamburgerActiveNode" Root="_hamburgerActiveNode" SeedStack="_hamburgerSeedStack" HostView="@(IsWorld ? ViewNames.World : ViewNames.Reader)" OnClose="CloseHamburgerPopover" />
 }
 
 @if (_hamburgerError is not null)
