@@ -181,3 +181,16 @@ wrong; fix the spec.
     test that walks every member. A fix under rule 24 is finished when its
     category is closed and the report names the guarantee. A FINDING is an
     open category: its report proposes the closure, and the owner decides.
+25. **The client composes over the contract, and nothing else.** Owner,
+    2026-09-30: "we adhere to our swagger and write minimal client side code.
+    Its purpose is to compose over the api results." The client's only
+    knowledge of the domain is the generated contract types (`Wire.g.cs` from
+    `contracts/openapi.yaml`); it reads served labels, loci, anchors, runs and
+    details and composes them into views. Client code that derives a domain
+    fact (parses a reference, formats a year, scans text for a name or a
+    citation, computes a run, decides a kind from a string) is an offender
+    (24a) and its category is closed on the server (24b). Closure on the
+    client: every generated type is read (`GeneratedUsageTests`), no client
+    code holds domain parsing or arithmetic (a law over the client sources),
+    and a client change that adds domain logic fails review. Less client code
+    is the direction; a batch that grows it must say why.
