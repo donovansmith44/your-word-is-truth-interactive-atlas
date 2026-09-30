@@ -17,8 +17,9 @@ use atlas_graph_types::graph::Graph;
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Pid, Position};
 use atlas_graph_types::node::Node;
 use atlas_graph_types::store::{GraphPublisher, GraphQuery, GraphSnapshot, GraphStore, GraphVersion, MemSnapshot, MemStore, RowRef};
-use atlas_graph_types::text::{TextRef, VerseRef};
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 
+use crate::citations::CitationSpan;
 use crate::mention_spans::MentionSpan;
 use crate::sections::Section;
 use crate::sqlite::snapshot::SqliteSnapshot;
@@ -130,14 +131,20 @@ enum RowsAtLocus {
 struct MemRowsAtLocus {
     cross_refs: HashMap<String, Vec<CrossRef>>,
     mention_spans: BTreeMap<VerseRef, Vec<MentionSpan>>,
+    citation_spans: BTreeMap<ConcordRef, Vec<CitationSpan>>,
 }
 
 impl MemRowsAtLocus {
     fn of(graph: &Graph) -> MemRowsAtLocus {
-        let mut rows = MemRowsAtLocus { cross_refs: HashMap::new(), mention_spans: BTreeMap::new() };
+        let mut rows = MemRowsAtLocus { cross_refs: HashMap::new(), mention_spans: BTreeMap::new(), citation_spans: BTreeMap::new() };
         for row in &graph.cross_refs {
-            if let TextRef::Bible(verse) = &row.from.at {
-                rows.cross_refs.entry(crate::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse)).or_default().push(CrossRef { target: row.target_display.clone(), votes: row.votes as i32 });
+            match &row.from.at {
+                TextRef::Bible(verse) => rows
+                    .cross_refs
+                    .entry(crate::kjv_adapter::dot_ref(verse.book, verse.chapter, verse.verse))
+                    .or_default()
+                    .push(CrossRef { target: row.target_display.clone(), votes: row.votes as i32 }),
+                TextRef::Concord(paragraph) => rows.citation_spans.entry(paragraph.clone()).or_default().extend(CitationSpan::of(row)),
             }
         }
         for row in &graph.mentions {
@@ -375,6 +382,13 @@ impl GraphService {
         match &self.rows_at_locus {
             RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::mention_spans_at(c, verse)),
             RowsAtLocus::InMemory(rows) => Ok(rows.mention_spans.get(verse).cloned().unwrap_or_default()),
+        }
+    }
+
+    pub fn citation_spans_at(&self, paragraph: &ConcordRef) -> Result<Vec<CitationSpan>, SqliteError> {
+        match &self.rows_at_locus {
+            RowsAtLocus::Sections(s) => s.with_conn(|c| crate::sqlite::serve::citation_spans_at(c, paragraph)),
+            RowsAtLocus::InMemory(rows) => Ok(rows.citation_spans.get(paragraph).cloned().unwrap_or_default()),
         }
     }
 

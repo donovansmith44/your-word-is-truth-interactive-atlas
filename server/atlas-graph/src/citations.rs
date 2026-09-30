@@ -14,7 +14,7 @@ use atlas_core::canon::{position_of, BOOKS};
 use atlas_core::refs::{BookId, ScriptureRef, VerseId};
 use atlas_graph_types::edge::CrossRef;
 use atlas_graph_types::graph::Graph;
-use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, Locus, LocusRange, TextLocus, TextRef, VerseRef};
+use atlas_graph_types::text::{BibleLocus, BibleLocusRange, ConcordRef, Locus, LocusRange, TextLocus, TextRef, TokenSpan, VerseRef};
 use regex::{Captures, Regex};
 
 use crate::concord_adapter::{self, CONCORD_CORPUS, CONCORD_TRANSLATION};
@@ -28,6 +28,21 @@ pub const PROVENANCE: &str = "concord-citations";
 pub struct Citation {
     pub chars: Range<usize>,
     pub cites: BibleLocusRange,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CitationSpan {
+    pub cites: VerseRef,
+    pub words: TokenSpan,
+}
+
+impl CitationSpan {
+    pub fn of(row: &CrossRef) -> Option<CitationSpan> {
+        match (&row.from.span, &row.to.at) {
+            (Some(words), TextRef::Bible(cites)) => Some(CitationSpan { cites: cites.clone(), words: words.clone() }),
+            _ => None,
+        }
+    }
 }
 
 /// `cited` counts the rows written; `off_words` the citations refused because they do not start

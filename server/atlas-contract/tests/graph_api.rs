@@ -2017,3 +2017,23 @@ async fn a_verse_that_names_hazor_serves_an_anchor_over_the_name() {
         )
     );
 }
+
+#[tokio::test]
+async fn a_small_catechism_paragraph_that_cites_scripture_serves_cites_anchors() {
+    // Arrange
+    let app = compiled_app();
+    // Act
+    let (status, window, _) = get(&app, "/api/text?ref=BoC%207.9.6&corpus=concord").await;
+    // Assert
+    assert_eq!(
+        (status, window["units"][0]["text"].clone(), window["units"][0]["anchors"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!("For Wives. Wives, submit yourselves unto your own husbands, as unto the Lord, even as Sarah obeyed Abraham, calling him lord; whose daughters ye are, as long as ye do well, and are not afraid with any amazement. 1 Pet. 3:6; Eph. 5:22."),
+            serde_json::json!([
+                { "start": 212, "end": 222, "kind": "cites", "node": { "id": "text-unit:1PE.3.6", "kind": "TextUnit", "label": "1PE.3.6" } },
+                { "start": 224, "end": 233, "kind": "cites", "node": { "id": "text-unit:EPH.5.22", "kind": "TextUnit", "label": "EPH.5.22" } },
+            ])
+        )
+    );
+}

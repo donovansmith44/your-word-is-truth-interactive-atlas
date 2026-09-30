@@ -24,7 +24,7 @@ use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::{BibleLocusRange, Locus, TokenSpan, VerseRef};
+use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
@@ -370,17 +370,18 @@ pub async fn text_window(
             .filter_map(|id| {
                 let (p, a, para) = atlas_graph::concord_adapter::decode_text_unit(id)?;
                 let text = window::render_layer(&snap, id, atlas_graph::concord_adapter::CONCORD_TRANSLATION)?;
-                Some(wire::TextUnit {
+                let paragraph = ConcordRef { part: p, article: a, paragraph: para };
+                Some(citation_anchors(&graph, &snap, &paragraph, &text).map(|anchors| wire::TextUnit {
                     r#ref: format!("BoC {p}.{a}.{para}"),
                     locus: wire::TextRef::Concord { part: p, article: a, paragraph: para },
                     text,
                     words_of_christ: Vec::new(),
                     heading: None,
-                    anchors: Vec::new(),
+                    anchors,
                     edge_summary: unit_edge_summary(&snap, id),
-                })
+                }))
             })
-            .collect();
+            .collect::<Result<_, _>>()?;
 
         let unit_at = |pos: usize| {
             snap.reading_window(corpus.name(), pos, 1)
@@ -510,10 +511,16 @@ impl ContractParams for TextWindowQuery {
 }
 
 const MENTIONS: EdgeKind = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+const CITES: EdgeKind = EdgeKind::Directed(RelationId::Cites, Direction::Forward);
 
 fn mention_anchors(graph: &GraphService, snap: &impl GraphQuery, verse: &VerseRef, text: &str) -> Result<Vec<wire::Anchor>, ApiError> {
     let spans = graph.mention_spans_at(verse).map_err(|e| ApiError::internal(&format!("the mentions of a verse could not be read: {e}")))?;
     Ok(anchors_over(text, MENTIONS, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(span.entity.node_id()), snap)))))
+}
+
+fn citation_anchors(graph: &GraphService, snap: &impl GraphQuery, paragraph: &ConcordRef, text: &str) -> Result<Vec<wire::Anchor>, ApiError> {
+    let spans = graph.citation_spans_at(paragraph).map_err(|e| ApiError::internal(&format!("the citations of a paragraph could not be read: {e}")))?;
+    Ok(anchors_over(text, CITES, spans.into_iter().map(|span| (span.words, describe_position(&Position::Node(verse_node_id(span.cites.book, span.cites.chapter, span.cites.verse)), snap)))))
 }
 
 fn anchors_over(text: &str, kind: EdgeKind, links: impl Iterator<Item = (TokenSpan, wire::NodeRef)>) -> Vec<wire::Anchor> {

@@ -6,13 +6,15 @@ use atlas_core::refs::ScriptureRef;
 use atlas_graph_types::canon::RowFamily;
 use atlas_graph_types::chrono::{PlacementBasis, ResolvedDate, ResolvedPlacement, SeqKey, TimePoint, Year};
 use atlas_graph_types::id::NodeKind;
-use atlas_graph_types::text::{TextRef, VerseRef};
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 use rusqlite::Connection;
 
 use super::partition::node_kind_ordinal;
 use super::rows::core::read_mentions_at;
+use super::rows::kjv::read_cross_refs_from;
 use super::SqliteError;
 use crate::build::BuildStats;
+use crate::citations::CitationSpan;
 use crate::mention_spans::MentionSpan;
 use crate::event_world::{ChronologyDerivation, EventWorldStats, SourceEventMeta};
 use crate::heading::Heading;
@@ -185,6 +187,11 @@ pub fn load_counters(conn: &Connection, present: &[Section]) -> Result<(BuildSta
 /// A seek on `xref_by_from`, never a scan.
 pub fn mention_spans_at(conn: &Connection, verse: &VerseRef) -> Result<Vec<MentionSpan>, SqliteError> {
     Ok(read_mentions_at(conn, &TextRef::Bible(verse.clone()))?.iter().filter_map(MentionSpan::of).collect())
+}
+
+pub fn citation_spans_at(conn: &Connection, paragraph: &ConcordRef) -> Result<Vec<CitationSpan>, SqliteError> {
+    let table = format!("{}.cross_refs", Section::Concord.name());
+    Ok(read_cross_refs_from(conn, &table, &TextRef::Concord(paragraph.clone()))?.iter().filter_map(CitationSpan::of).collect())
 }
 
 pub fn cross_refs_for_span(conn: &Connection, span: &ScriptureRef) -> Result<HashMap<String, Vec<CrossRef>>, SqliteError> {

@@ -5,13 +5,15 @@ use std::collections::BTreeMap;
 use common::{committed_graph, committed_sections, committed_service};
 
 use atlas_core::refs::ScriptureRef;
+use atlas_graph::citations::CitationSpan;
+use atlas_graph::concord_adapter::CONCORD_TRANSLATION;
 use atlas_graph::kjv_adapter::KJV_TRANSLATION;
 use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::sqlite::serve::*;
 use atlas_graph::tokens::span;
 use atlas_graph_types::edge::MentionedEntity;
 use atlas_graph_types::id::{PersonId, PlaceId};
-use atlas_graph_types::text::{TextRef, VerseRef};
+use atlas_graph_types::text::{ConcordRef, TextRef, VerseRef};
 
 #[test]
 fn the_chronology_loaded_from_event_date_is_the_artifacts() {
@@ -124,6 +126,9 @@ fn cross_refs_for_span_is_the_companions_slice() {
 
 
 const JOSHUA: u8 = 5;
+const SMALL_CATECHISM: u8 = 7;
+const FIRST_PETER: u8 = 59;
+const EPHESIANS: u8 = 48;
 
 #[test]
 fn the_sections_serve_the_located_mentions_at_a_verse_in_row_order() {
@@ -165,4 +170,39 @@ fn the_sections_serve_every_located_mention_the_graph_holds_at_its_verse() {
 
     // Assert
     assert_eq!(served, held);
+}
+
+#[test]
+fn the_sections_serve_the_citations_a_paragraph_makes_in_row_order() {
+    // Arrange
+    let for_wives = ConcordRef { part: SMALL_CATECHISM, article: 9, paragraph: 6 };
+
+    // Act
+    let spans = committed_service().citation_spans_at(&for_wives).unwrap();
+
+    // Assert
+    assert_eq!(
+        spans,
+        vec![
+            CitationSpan { cites: VerseRef { book: FIRST_PETER, chapter: 3, verse: 6 }, words: span(CONCORD_TRANSLATION, 38, 41).unwrap() },
+            CitationSpan { cites: VerseRef { book: EPHESIANS, chapter: 5, verse: 22 }, words: span(CONCORD_TRANSLATION, 42, 44).unwrap() },
+        ]
+    );
+}
+
+#[test]
+fn the_sections_serve_every_citation_the_graph_holds_at_its_paragraph() {
+    // Arrange
+    let mut held: BTreeMap<ConcordRef, Vec<CitationSpan>> = BTreeMap::new();
+    for row in &committed_graph().cross_refs {
+        if let (TextRef::Concord(paragraph), Some(words), TextRef::Bible(cites)) = (&row.from.at, &row.from.span, &row.to.at) {
+            held.entry(paragraph.clone()).or_default().push(CitationSpan { cites: cites.clone(), words: words.clone() });
+        }
+    }
+
+    // Act
+    let served: BTreeMap<ConcordRef, Vec<CitationSpan>> = held.keys().map(|paragraph| (paragraph.clone(), committed_service().citation_spans_at(paragraph).unwrap())).collect();
+
+    // Assert
+    assert_eq!((served.values().map(Vec::len).sum::<usize>(), served), (common::CONCORD_CITATIONS, held));
 }
