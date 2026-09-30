@@ -33,16 +33,6 @@ fn verse_key(v: &VerseRef) -> (u8, u16, u16) {
     (v.book, v.chapter, v.verse)
 }
 
-/// `Canon.books` is not guaranteed to be densely indexed by book index -- a fixture may carry a
-/// subset -- so the chapter is resolved by book CODE rather than by position.
-fn chapter_verse_count(canon: &atlas_core::data::Canon, book_index: u8, chapter: u16) -> Option<u16> {
-    canon
-        .books
-        .iter()
-        .find(|b| atlas_core::canon::resolve_alias(&b.code).map(|id| id.0) == Some(book_index))
-        .and_then(|b| b.chapters.get((chapter.saturating_sub(1)) as usize).copied())
-}
-
 fn locus_range(from: (u8, u16, u16), to: (u8, u16, u16)) -> Option<BibleLocusRange> {
     let f = Locus::whole(VerseRef { book: from.0, chapter: from.1, verse: from.2 });
     let t = Locus::whole(VerseRef { book: to.0, chapter: to.1, verse: to.2 });
@@ -64,7 +54,7 @@ pub fn normalize(ctx: &mut BuildCtx) -> RedLetterAdapterStats {
     }
 
     let canon = ctx.kjv_canon;
-    let counts = |book: u8, chapter: u16| chapter_verse_count(canon, book, chapter);
+    let counts = |book: u8, chapter: u16| canon.verses_in(atlas_core::refs::BookId(book), chapter);
     let ranges = atlas_etl::red_letter::contiguous_ranges(&corpus.verses, &counts);
 
     // Built ONCE rather than per range; `located_at` is already fully populated earlier in this pass.

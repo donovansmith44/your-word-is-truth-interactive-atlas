@@ -110,7 +110,7 @@ fn bench_handlers(c: &mut Criterion) {
 const CITES: atlas_graph_types::edge::EdgeKind = atlas_graph_types::edge::EdgeKind::Directed(atlas_graph_types::edge::RelationId::Cites, atlas_graph_types::edge::Direction::Forward);
 
 fn bench_graph_handlers(c: &mut Criterion) {
-    let (_data, graph) = load_real();
+    let (data, graph) = load_real();
     let rt = rt();
     let mut group = c.benchmark_group("graph_handlers");
 
@@ -120,6 +120,7 @@ fn bench_graph_handlers(c: &mut Criterion) {
     group.bench_function("node_edges", |b| {
         b.iter(|| {
             rt.block_on(graph::node_edges(
+                State(data.clone()),
                 State(graph.clone()),
                 asked_for("text-unit:JHN.3.16"),
                 Contract(graph::EdgePageQuery { kind: CITES, cursor: Default::default(), limit: Default::default() }),

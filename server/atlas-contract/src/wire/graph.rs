@@ -1,7 +1,10 @@
+use atlas_graph_types::id::NarrativeId;
 use atlas_graph_types::{EdgeKind, NodeKind};
 use serde::{Serialize, Serializer};
 use utoipa::openapi::{RefOr, Schema};
 use utoipa::{PartialSchema, ToSchema};
+
+use super::TextSpan;
 
 /// One node of the graph at a glance: what it is, what to call it, where it
 /// came from, and what it connects to.
@@ -71,7 +74,7 @@ pub struct EdgePage {
     pub version: String,
 }
 
-/// One neighbour, with the edge that joins it.
+/// One neighbour, with the edge that joins it and what that edge records.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EdgeEntry {
@@ -79,6 +82,19 @@ pub struct EdgeEntry {
     /// same id for this same connection, and the edge itself can be explored.
     pub edge: String,
     pub node: NodeRef,
+    /// How many readers voted for this cross reference; only a citation carries it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub votes: Option<u32>,
+    /// The narrative this leg belongs to; only a narrative's succession carries it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub narrative: Option<NarrativeId>,
+    /// Where an attestation stands in Scripture: for `attested-in`, the runs of
+    /// verses its account reads on without a break; for `attests`, the verse itself.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub loci: Option<Vec<TextSpan>>,
+    /// How the account this attestation belongs to is cited, where it needed saying.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 /// A reference to something the graph holds: enough to show it, and the id to

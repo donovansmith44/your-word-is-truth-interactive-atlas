@@ -29,6 +29,7 @@ pub mod polity_adapter;
 pub mod provenance;
 pub mod red_letter_adapter;
 pub mod red_letter_spans;
+pub mod runs;
 pub mod scene_source;
 pub mod sections;
 pub mod service;

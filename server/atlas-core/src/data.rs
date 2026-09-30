@@ -25,6 +25,15 @@ pub struct Canon {
     pub books: Vec<CanonBook>,
 }
 
+impl Canon {
+    /// `None` for a book or chapter this canon does not carry; a canon may hold only
+    /// some of the books, so a book is found by its code rather than its position.
+    pub fn verses_in(&self, book: crate::refs::BookId, chapter: u16) -> Option<u16> {
+        let chapter_index = usize::from(chapter).checked_sub(1)?;
+        self.books.iter().find(|b| b.code == book.code())?.chapters.get(chapter_index).copied()
+    }
+}
+
 /// `verse_links` are attached by geocoding, not by event participation, and are what
 /// light a place for a scripture reference.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

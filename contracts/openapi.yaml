@@ -1302,7 +1302,7 @@ components:
       additionalProperties: false
     EdgeEntry:
       type: object
-      description: One neighbour, with the edge that joins it.
+      description: One neighbour, with the edge that joins it and what that edge records.
       required:
       - edge
       - node
@@ -1312,8 +1312,34 @@ components:
           description: |-
             The edge's own id. The neighbour's page for the opposite kind carries this
             same id for this same connection, and the edge itself can be explored.
+        loci:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/TextSpan'
+          description: |-
+            Where an attestation stands in Scripture: for `attested-in`, the runs of
+            verses its account reads on without a break; for `attests`, the verse itself.
+        narrative:
+          oneOf:
+          - $ref: '#/components/schemas/NarrativeId'
+            description: The narrative this leg belongs to; only a narrative's succession carries it.
+          - type: 'null'
         node:
           $ref: '#/components/schemas/NodeRef'
+        note:
+          type:
+          - string
+          - 'null'
+          description: How the account this attestation belongs to is cited, where it needed saying.
+        votes:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          description: How many readers voted for this cross reference; only a citation carries it.
+          minimum: 0
       additionalProperties: false
     EdgeKind:
       type: string
@@ -1862,6 +1888,9 @@ components:
             description: The event's place in the whole chronology; absent for an event with no date.
           - type: 'null'
       additionalProperties: false
+    NarrativeId:
+      type: string
+      description: The id of one Narrative node.
     NarrativePosition:
       type: object
       description: One event's place in one narrative, with the legs on either side of it.
@@ -2611,6 +2640,27 @@ components:
       enum:
       - OT
       - NT
+    TextPoint:
+      type: object
+      description: |-
+        A place in a corpus's text: a unit, and where one word of it is named, that
+        word.
+      required:
+      - unit
+      properties:
+        unit:
+          $ref: '#/components/schemas/TextRef'
+        word:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          description: |-
+            The word's position in the unit's base text, counting from zero; absent
+            where the point is the unit's own edge, so that the span it bounds takes
+            the unit whole.
+          minimum: 0
+      additionalProperties: false
     TextRef:
       type: object
       description: One unit of a corpus's text, named by the corpus it belongs to.
@@ -2636,6 +2686,18 @@ components:
       enum:
       - verse
       - chapter
+    TextSpan:
+      type: object
+      description: A stretch of text, from one point through another, both included.
+      required:
+      - from
+      - to
+      properties:
+        from:
+          $ref: '#/components/schemas/TextPoint'
+        to:
+          $ref: '#/components/schemas/TextPoint'
+      additionalProperties: false
     TextUnit:
       type: object
       description: |-

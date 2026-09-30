@@ -1,0 +1,993 @@
+{
+  "cases": [
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 48
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 34
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 29
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": [
+          {
+            "chapters": [
+              25,
+              23,
+              17,
+              25,
+              48,
+              34,
+              29,
+              34,
+              38,
+              42,
+              30,
+              50,
+              58,
+              36,
+              39,
+              28,
+              27,
+              35,
+              30,
+              34,
+              46,
+              46,
+              39,
+              51,
+              46,
+              75,
+              66,
+              20
+            ],
+            "code": "MAT",
+            "name": "Matthew"
+          }
+        ]
+      },
+      "name": "a chapter read to its last verse runs on into the next chapter's first",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 29
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 48
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 34
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 29
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": []
+      },
+      "name": "without the canon's chapter lengths no chapter runs on into the next",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 5,
+              "corpus": "bible",
+              "verse": 48
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 6,
+              "corpus": "bible",
+              "verse": 34
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 7,
+              "corpus": "bible",
+              "verse": 29
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 54
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 54
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 66
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 72
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": [
+          {
+            "chapters": [
+              45,
+              28,
+              35,
+              41,
+              43,
+              56,
+              37,
+              38,
+              50,
+              52,
+              33,
+              44,
+              37,
+              72,
+              47,
+              20
+            ],
+            "code": "MRK",
+            "name": "Mark"
+          }
+        ]
+      },
+      "name": "verses apart in one chapter stay apart",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 54
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 54
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 66
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 14,
+              "corpus": "bible",
+              "verse": 72
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 25
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 25
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 26
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 26
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 31
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 31
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": []
+      },
+      "name": "within a chapter a verse and the verse after it join",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 25
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 26
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 31
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2CH",
+              "chapter": 32,
+              "corpus": "bible",
+              "verse": 31
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 2,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 2,
+              "corpus": "bible",
+              "verse": 1
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": [
+          {
+            "chapters": [
+              18,
+              25,
+              27,
+              44,
+              27,
+              33,
+              20,
+              29,
+              37,
+              36,
+              21,
+              21,
+              25,
+              29,
+              38,
+              20,
+              41,
+              37,
+              37,
+              21,
+              26,
+              20,
+              37,
+              20,
+              30
+            ],
+            "code": "2KI",
+            "name": "2 Kings"
+          }
+        ]
+      },
+      "name": "a chapter left before its last verse does not run on",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 2,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 2,
+              "corpus": "bible",
+              "verse": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 8,
+              "corpus": "bible",
+              "verse": 16
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 8,
+              "corpus": "bible",
+              "verse": 24
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": [
+          {
+            "chapters": [
+              18,
+              25,
+              27,
+              44,
+              27,
+              33,
+              20,
+              29,
+              37,
+              36,
+              21,
+              21,
+              25,
+              29,
+              38,
+              20,
+              41,
+              37,
+              37,
+              21,
+              26,
+              20,
+              37,
+              20,
+              30
+            ],
+            "code": "2KI",
+            "name": "2 Kings"
+          }
+        ]
+      },
+      "name": "chapters apart stay apart",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 17
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 8,
+              "corpus": "bible",
+              "verse": 16
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "2KI",
+              "chapter": 8,
+              "corpus": "bible",
+              "verse": 24
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 28,
+              "corpus": "bible",
+              "verse": 20
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 28,
+              "corpus": "bible",
+              "verse": 20
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": [
+          {
+            "chapters": [
+              25,
+              23,
+              17,
+              25,
+              48,
+              34,
+              29,
+              34,
+              38,
+              42,
+              30,
+              50,
+              58,
+              36,
+              39,
+              28,
+              27,
+              35,
+              30,
+              34,
+              46,
+              46,
+              39,
+              51,
+              46,
+              75,
+              66,
+              20
+            ],
+            "code": "MAT",
+            "name": "Matthew"
+          },
+          {
+            "chapters": [
+              45,
+              28,
+              35,
+              41,
+              43,
+              56,
+              37,
+              38,
+              50,
+              52,
+              33,
+              44,
+              37,
+              72,
+              47,
+              20
+            ],
+            "code": "MRK",
+            "name": "Mark"
+          }
+        ]
+      },
+      "name": "a book's last verse does not run on into the next book",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 28,
+              "corpus": "bible",
+              "verse": 20
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MAT",
+              "chapter": 28,
+              "corpus": "bible",
+              "verse": 20
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "MRK",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 3
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 3
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 2
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 2
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 2
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 2
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": []
+      },
+      "name": "verses given out of order, or twice, make the one run they read as",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attested": [
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 3
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 2
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 5
+            }
+          }
+        },
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 4
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 4
+            }
+          }
+        }
+      ],
+      "canon": {
+        "books": []
+      },
+      "name": "overlapping and enclosed ranges make the one run they cover",
+      "runs": [
+        {
+          "from": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 1
+            }
+          },
+          "to": {
+            "unit": {
+              "book": "GEN",
+              "chapter": 1,
+              "corpus": "bible",
+              "verse": 5
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

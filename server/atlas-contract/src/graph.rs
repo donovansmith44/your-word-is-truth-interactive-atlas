@@ -7,14 +7,18 @@ use axum::Json;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
+use atlas_core::data::{AtlasData, Canon};
+use atlas_core::refs::VerseId;
+use atlas_core::scene::{accounts_of, Account};
+use atlas_graph::runs;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::GraphService;
-use atlas_graph_types::edge::EdgeKind;
-use atlas_graph_types::explore::EdgeQuery;
+use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
+use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
-use atlas_graph_types::text::VerseRef;
+use atlas_graph_types::text::{BibleLocusRange, Locus, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_position, encode_node_id};
@@ -91,6 +95,7 @@ pub(crate) fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<St
 /// default standing.
 #[utoipa::path(get, path = "/api/node/{id}/edges", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), FrontierRefusals), tag = "graph")]
 pub async fn node_edges(
+    State(data): State<Arc<AtlasData>>,
     State(graph): State<Arc<GraphService>>,
     Reference(NodeReference(node_id)): Reference<NodeReference>,
     Contract(asked): Contract<EdgePageQuery>,
@@ -100,7 +105,7 @@ pub async fn node_edges(
         return Err(ApiError::not_found("node"));
     }
 
-    let page = snap.edges(&Position::Node(node_id), &asked.page());
+    let page = snap.edges(&Position::Node(node_id.clone()), &asked.page());
 
     // A PeopleGroup wire id does not decode, so an entry naming one would hand the
     // caller a reference it cannot fetch a card for.
@@ -109,11 +114,65 @@ pub async fn node_edges(
         .iter()
         .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
         .map(|e| {
-            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap) }
+            let (votes, narrative) = match &e.meta {
+                EdgeMeta::Votes(votes) => (Some(*votes), None),
+                EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone())),
+                EdgeMeta::None => (None, None),
+            };
+            let attestation = match (asked.kind, &e.node) {
+                (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => Some(attestation(&node_id, verse, Reading::ItsAccount, &snap, &graph, &data.canon)?),
+                (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => Some(attestation(event, &node_id, Reading::ItsVerse, &snap, &graph, &data.canon)?),
+                _ => None,
+            };
+            let (loci, note) = match attestation {
+                Some(Attestation { loci, note }) => (Some(loci), note),
+                None => (None, None),
+            };
+            Ok(wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note })
         })
-        .collect();
+        .collect::<Result<_, ApiError>>()?;
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+}
+
+/// What an attestation entry says of the account it belongs to.
+struct Attestation {
+    loci: Vec<wire::TextSpan>,
+    note: Option<String>,
+}
+
+/// From the event, an attestation reads as the runs of its whole account; from the
+/// verse, as the verse it stands on.
+enum Reading {
+    ItsAccount,
+    ItsVerse,
+}
+
+/// Every attestation row is built from one of its event's accounts, so a verse no
+/// account holds is this atlas's own defect.
+fn attestation(event: &AnyNodeId, verse: &AnyNodeId, reading: Reading, snap: &impl GraphQuery, graph: &GraphService, canon: &Canon) -> Result<Attestation, ApiError> {
+    let untraced = || ApiError::internal(&format!("the attestation of {} at {} belongs to none of its accounts", event.raw, verse.raw));
+    let (book, chapter, verse_number) = atlas_graph::kjv_adapter::decode_text_unit(verse).ok_or_else(untraced)?;
+    let attested = VerseRef { book, chapter, verse: verse_number };
+    let event = atlas_graph::legacy::event_from_node(event, snap, &graph.chronology.chrono).ok_or_else(untraced)?;
+    let account = accounts_of(&event).into_iter().find(|account| account_verses(account).contains(&attested)).ok_or_else(untraced)?;
+    let loci = match reading {
+        Reading::ItsAccount => {
+            let verses: Vec<BibleLocusRange> = account_verses(&account).into_iter().map(|v| BibleLocusRange { from: Locus::whole(v.clone()), to: Locus::whole(v) }).collect();
+            runs::coalesce(&verses, canon).iter().map(|run| wire::TextSpan::of_bible_range(run).expect("runs of whole verses count no words")).collect()
+        }
+        Reading::ItsVerse => vec![wire::TextSpan::whole(wire::TextRef::of_verse(&attested))],
+    };
+    Ok(Attestation { loci, note: account.ref_note })
+}
+
+fn account_verses(account: &Account) -> Vec<VerseRef> {
+    account
+        .verses
+        .iter()
+        .filter_map(|v| VerseId::parse_canonical(v).ok())
+        .map(|v| VerseRef { book: v.book.0, chapter: v.chapter, verse: v.verse })
+        .collect()
 }
 
 /// Which of a node's frontiers to answer, and which page of it.

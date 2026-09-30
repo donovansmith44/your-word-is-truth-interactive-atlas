@@ -514,8 +514,41 @@
         "edge": {
           "type": "string"
         },
+        "loci": {
+          "items": {
+            "$ref": "#/$defs/TextSpan"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "narrative": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "node": {
           "$ref": "#/$defs/NodeRef"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "votes": {
+          "format": "int32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1134,6 +1167,9 @@
         "narrative"
       ],
       "type": "object"
+    },
+    "NarrativeId": {
+      "type": "string"
     },
     "NarrativePosition": {
       "additionalProperties": false,
@@ -2003,6 +2039,26 @@
       ],
       "type": "string"
     },
+    "TextPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "$ref": "#/$defs/TextRef"
+        },
+        "word": {
+          "format": "int32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "unit"
+      ],
+      "type": "object"
+    },
     "TextRef": {
       "additionalProperties": true,
       "discriminator": {
@@ -2032,6 +2088,22 @@
         "chapter"
       ],
       "type": "string"
+    },
+    "TextSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/TextPoint"
+        },
+        "to": {
+          "$ref": "#/$defs/TextPoint"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
     },
     "TextUnit": {
       "additionalProperties": false,

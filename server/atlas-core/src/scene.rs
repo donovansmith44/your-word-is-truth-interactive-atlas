@@ -226,22 +226,40 @@ pub struct EventWitness {
     pub robertson_section: Option<String>,
 }
 
-/// Synthesizes exactly one witness, grouped from the event's own verses, when none was
-/// curated. The single function the heading index and the event wire both call, so they
-/// cannot disagree about how many witnesses an event has.
+/// Each of the event's accounts, its verses grouped by chapter. The single function the
+/// heading index and the event wire both call, so they cannot disagree about how many
+/// witnesses an event has.
 pub fn witnesses_for(e: &Event) -> Vec<EventWitness> {
+    accounts_of(e)
+        .into_iter()
+        .map(|a| EventWitness { book: a.book, verse_groups: verse_groups_for(&a.verses, None), ref_note: a.ref_note, robertson_section: a.robertson_section })
+        .collect()
+}
+
+/// One book's account of an event with every verse of it, where a witness caps each
+/// chapter's verses for display.
+#[derive(Debug)]
+pub struct Account {
+    /// The book's three-letter code, such as `MAT`.
+    pub book: String,
+    /// Individually canonical verse ids, such as `MAT.26.6`.
+    pub verses: Vec<String>,
+    pub ref_note: Option<String>,
+    pub robertson_section: Option<String>,
+}
+
+/// The event's curated accounts; when none was curated, one per book, synthesized from
+/// the event's own verses.
+pub fn accounts_of(e: &Event) -> Vec<Account> {
     if !e.witnesses.is_empty() {
         return e
             .witnesses
             .iter()
-            .map(|w| {
-                let verses = crate::translation::resolve(&w.translations, crate::translation::DEFAULT_TRANSLATION).unwrap_or(&[]);
-                EventWitness {
-                    book: w.book.clone(),
-                    verse_groups: verse_groups_for(verses, None),
-                    ref_note: w.ref_note.clone(),
-                    robertson_section: w.robertson_section.clone(),
-                }
+            .map(|w| Account {
+                book: w.book.clone(),
+                verses: crate::translation::resolve(&w.translations, crate::translation::DEFAULT_TRANSLATION).unwrap_or(&[]).to_vec(),
+                ref_note: w.ref_note.clone(),
+                robertson_section: w.robertson_section.clone(),
             })
             .collect();
     }
@@ -256,15 +274,7 @@ pub fn witnesses_for(e: &Event) -> Vec<EventWitness> {
             None => by_book.push((book, vec![v.clone()])),
         }
     }
-    by_book
-        .into_iter()
-        .map(|(book, verses)| EventWitness {
-            book,
-            verse_groups: verse_groups_for(&verses, None),
-            ref_note: None,
-            robertson_section: None,
-        })
-        .collect()
+    by_book.into_iter().map(|(book, verses)| Account { book, verses, ref_note: None, robertson_section: None }).collect()
 }
 
 /// Ascending within a group, capped at 20 ids, with `count` the true total before the cap.

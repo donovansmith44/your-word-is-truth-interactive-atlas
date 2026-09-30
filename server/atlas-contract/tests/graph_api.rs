@@ -1646,3 +1646,140 @@ async fn a_contents_root_opens_at_the_locus_its_first_child_opens_at() {
         })
     );
 }
+
+#[tokio::test]
+async fn a_cites_entry_carries_the_votes_the_cross_reference_route_counts() {
+    // Arrange
+    let app = compiled_app();
+    let (_, first, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
+    let (_, legacy, _) = get(&app, "/api/xrefs/JHN.3.16").await;
+    let cited = &first["entries"][0]["node"];
+    let votes = legacy.as_array().unwrap().iter().find(|x| format!("text-unit:{}", x["target"].as_str().unwrap()) == cited["id"]).expect("the route lists the same citation")["votes"].clone();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/text-unit:JHN.3.16/edges?kind=cites&limit=1").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (StatusCode::OK, serde_json::json!([{ "edge": page["entries"][0]["edge"], "node": cited, "votes": votes }]))
+    );
+}
+
+#[tokio::test]
+async fn a_follows_in_entry_carries_the_narrative_its_leg_belongs_to() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/narrative/event/ab_ur").await;
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Event:ab_ur/edges?kind=follows-in").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{
+                "edge": page["entries"][0]["edge"],
+                "node": { "id": "Event:ab_haran", "kind": "Event", "label": legacy["narrative"][0]["following"]["label"] },
+                "narrative": legacy["narrative"][0]["narrative_id"],
+            }])
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_attested_in_entry_carries_its_accounts_runs_across_a_gap() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/event/ab_ur").await;
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Event:ab_ur/edges?kind=attested-in&limit=1").await;
+    // Assert
+    assert_eq!(
+        (status, legacy["witnesses"][0]["verse_groups"].clone(), page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{ "book": "GEN", "chapter": 11, "verses": ["GEN.11.28", "GEN.11.31"], "count": 2 }]),
+            serde_json::json!([{
+                "edge": page["entries"][0]["edge"],
+                "node": { "id": "text-unit:GEN.11.28", "kind": "TextUnit", "label": "GEN.11.28" },
+                "loci": [whole_verse("GEN", 11, 28), whole_verse("GEN", 11, 31)],
+            }])
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_attested_in_entry_carries_its_accounts_run_and_the_note_on_how_the_account_is_cited() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/event/pw_bethany").await;
+    let matthew = legacy["witnesses"].as_array().unwrap().iter().find(|w| w["book"] == "MAT").expect("Matthew recounts the anointing").clone();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Event:pw_bethany/edges?kind=attested-in&limit=1").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{
+                "edge": page["entries"][0]["edge"],
+                "node": { "id": "text-unit:MAT.26.6", "kind": "TextUnit", "label": "MAT.26.6" },
+                "loci": [{ "from": { "unit": bible_unit("MAT", 26, 6) }, "to": { "unit": bible_unit("MAT", 26, 13) } }],
+                "note": matthew["ref_note"],
+            }])
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_attests_entry_carries_the_verse_it_stands_on_and_the_note_on_its_account() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/event/pw_bethany").await;
+    let matthew = legacy["witnesses"].as_array().unwrap().iter().find(|w| w["book"] == "MAT").expect("Matthew recounts the anointing").clone();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/text-unit:MAT.26.6/edges?kind=attests").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{
+                "edge": page["entries"][0]["edge"],
+                "node": { "id": "Event:pw_bethany", "kind": "Event", "label": legacy["title"] },
+                "loci": [whole_verse("MAT", 26, 6)],
+                "note": matthew["ref_note"],
+            }])
+        )
+    );
+}
+
+fn bible_unit(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
+    serde_json::json!({ "corpus": "bible", "book": book, "chapter": chapter, "verse": verse })
+}
+
+fn whole_verse(book: &str, chapter: u16, verse: u16) -> serde_json::Value {
+    serde_json::json!({ "from": { "unit": bible_unit(book, chapter, verse) }, "to": { "unit": bible_unit(book, chapter, verse) } })
+}
+
+#[tokio::test]
+async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_its_end() {
+    // Arrange
+    let app = compiled_app();
+    let (_, legacy, _) = get(&app, "/api/event/rob_sermon_on_the_mount").await;
+    let matthew = legacy["witnesses"].as_array().unwrap().iter().find(|w| w["book"] == "MAT").expect("Matthew records the sermon").clone();
+    // Act
+    let (status, page, _) = get(&app, "/api/node/Event:rob_sermon_on_the_mount/edges?kind=attested-in&limit=1").await;
+    // Assert
+    assert_eq!(
+        (status, page["entries"].clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!([{
+                "edge": page["entries"][0]["edge"],
+                "node": { "id": "text-unit:MAT.5.1", "kind": "TextUnit", "label": "MAT.5.1" },
+                "loci": [{ "from": { "unit": bible_unit("MAT", 5, 1) }, "to": { "unit": bible_unit("MAT", 7, 29) } }],
+                "note": matthew["ref_note"],
+            }])
+        )
+    );
+}

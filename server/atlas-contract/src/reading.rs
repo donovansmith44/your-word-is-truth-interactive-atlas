@@ -39,14 +39,7 @@ pub async fn chapter(
 ) -> Result<Json<wire::Chapter>, ApiError> {
     let code = book.code();
 
-    let verse_count = data
-        .canon
-        .books
-        .iter()
-        .find(|b| b.code == code)
-        .and_then(|b| b.chapters.get((chapter - 1) as usize))
-        .copied()
-        .unwrap_or(0);
+    let verse_count = data.canon.verses_in(book, chapter).unwrap_or(0);
 
     let snap = graph.snapshot();
     let graph_texts: HashMap<u16, String> = graph
@@ -107,16 +100,7 @@ pub async fn kretzmann_chapter(
     State(graph): State<Arc<GraphService>>,
     Reference(ChapterReference { book, chapter }): Reference<ChapterReference>,
 ) -> Result<Json<wire::KretzmannChapter>, ApiError> {
-    let code = book.code();
-
-    let verse_count = data
-        .canon
-        .books
-        .iter()
-        .find(|b| b.code == code)
-        .and_then(|b| b.chapters.get((chapter - 1) as usize))
-        .copied()
-        .unwrap_or(0);
+    let verse_count = data.canon.verses_in(book, chapter).unwrap_or(0);
 
     let snap = graph.snapshot();
     let rows = atlas_graph::kretzmann_adapter::chapter_commentary(&snap, book.0, chapter, verse_count);
