@@ -360,7 +360,7 @@
         }
     }
 
-    public async Task PushAsync(IExplorable node)
+    public async Task PushAsync(IExplorable node, EdgeKind via)
     {
         ApplyLocally(new Visit(node));
         await LoadCurrent();

@@ -18,6 +18,7 @@ public sealed class PersonNode : IExplorable
     public string PersonId => _personId;
     public string Title => _label;
     public string Kind => "Person";
+    public Explorable Identity => new(NodeKind.Person, _personId, _label);
 
     public Task<NodeCard> CardAsync(Func<Task<NodeCard>> fetch) => _card.Get(fetch);
 

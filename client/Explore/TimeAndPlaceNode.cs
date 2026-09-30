@@ -23,6 +23,7 @@ public sealed class TimeAndPlaceNode : IExplorable
     public string EventId { get; }
     public string Title { get; }
     public string Kind => "TimeAndPlace";
+    public Explorable Identity => new(NodeKind.Event, NodeIds.Of(NodeKind.Event, EventId), _label);
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {

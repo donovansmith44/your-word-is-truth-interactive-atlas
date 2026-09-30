@@ -11,7 +11,7 @@ public sealed class KinshipTests
         new(edge: $"ParentOf:{node.Id}", loci: null, narrative: null, node: node, note: null, parentage: parentage, votes: null);
 
     private static List<string> Shape(IEnumerable<KinGroup> groups) =>
-        groups.Select(g => $"{g.Heading} | {g.TestId} | {string.Join(", ", g.People.Select(p => p.Id))}").ToList();
+        groups.Select(g => $"{g.Heading} | {g.TestId} | {string.Join(", ", g.People.Select(p => p.Id))} | {g.Via}").ToList();
 
     private static readonly NodeRef God = Person("god_1324", "God");
     private static readonly NodeRef Mary = Person("mary_1938", "Mary (Mother of Jesus)");
@@ -55,10 +55,10 @@ public sealed class KinshipTests
         // Assert
         Assert.Equal(
             [
-                "Father (eternal Son of God) | parents-eternal | Person:god_1324",
-                "Mother (born of the Virgin) | parents-virgin | Person:mary_1938",
-                "Legal father (as was supposed) | parents-legal | Person:joseph_1715",
-                "Brethren (1) | brethren | Person:james_719",
+                "Father (eternal Son of God) | parents-eternal | Person:god_1324 | ChildOf",
+                "Mother (born of the Virgin) | parents-virgin | Person:mary_1938 | ChildOf",
+                "Legal father (as was supposed) | parents-legal | Person:joseph_1715 | ChildOf",
+                "Brethren (1) | brethren | Person:james_719 | BrethrenOf",
             ],
             Shape(groups));
     }
@@ -71,8 +71,8 @@ public sealed class KinshipTests
         // Assert
         Assert.Equal(
             [
-                "Only begotten Son | children-eternal | Person:jesus_905",
-                "Created | children-created | Person:adam_78, Person:eve_1231",
+                "Only begotten Son | children-eternal | Person:jesus_905 | ParentOf",
+                "Created | children-created | Person:adam_78, Person:eve_1231 | ParentOf",
             ],
             Shape(groups));
     }
@@ -85,11 +85,11 @@ public sealed class KinshipTests
         // Assert
         Assert.Equal(
             [
-                "Parents (2) | parents | Person:joseph_1715, Person:mary_1938",
-                "Spouses (1) | spouses | Person:eve_1231",
-                "Children (1) | children | Person:adam_78",
-                "Siblings (1) | siblings | Person:jesus_905",
-                "Brethren (1) | brethren | Person:james_719",
+                "Parents (2) | parents | Person:joseph_1715, Person:mary_1938 | ChildOf",
+                "Spouses (1) | spouses | Person:eve_1231 | SpouseOf",
+                "Children (1) | children | Person:adam_78 | ParentOf",
+                "Siblings (1) | siblings | Person:jesus_905 | BrethrenOf",
+                "Brethren (1) | brethren | Person:james_719 | BrethrenOf",
             ],
             Shape(groups));
     }

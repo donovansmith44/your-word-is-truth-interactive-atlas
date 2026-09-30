@@ -9,21 +9,28 @@ public sealed class YearNode : IExplorable
     private readonly IReadOnlyList<TextSpan> _verses;
     private readonly bool _isEventTime;
 
-    public YearNode(string placeId, PlaceDate date)
+    public static YearNode? Of(string placeId, PlaceDate date) =>
+        date.Claim.Event is { } attested
+            ? new YearNode(placeId, date, new Explorable(NodeKind.Event, attested.Id, attested.Label))
+            : null;
+
+    private YearNode(string placeId, PlaceDate date, Explorable attested)
     {
         PlaceId = placeId;
         Label = date.Label;
         Title = $"{date.Label} {date.Claim.Label}";
+        Identity = attested;
         _when = date.Claim.When;
         _verses = date.Claim.Verses;
         _isEventTime = false;
     }
 
-    public YearNode(TimeRange when)
+    public YearNode(TimeRange when, Explorable @event)
     {
         PlaceId = "";
         Label = "";
         Title = when.Label;
+        Identity = @event;
         _when = when;
         _verses = [];
         _isEventTime = true;
@@ -33,6 +40,7 @@ public sealed class YearNode : IExplorable
     public string Label { get; }
     public string Title { get; }
     public string Kind => "Year";
+    public Explorable Identity { get; }
 
     public Task<IReadOnlyList<Chip>> ExploreAsync(AtlasClient api)
     {
@@ -40,7 +48,7 @@ public sealed class YearNode : IExplorable
         foreach (var span in _verses)
         {
             var reference = CanonRef.SpanOf(span);
-            list.Add(new Chip(reference, $"popover-chip-verse-{reference}", new ChipTarget.Push(new VerseNode(CanonRef.VerseOf(CanonRef.FirstVerseOf(span))))));
+            list.Add(new Chip(reference, $"popover-chip-verse-{reference}", new ChipTarget.Push(new VerseNode(CanonRef.VerseOf(CanonRef.FirstVerseOf(span))), EdgeKind.AttestedIn)));
         }
 
         list.Add(new Chip("Show this time on the map", "popover-chip-map",
@@ -116,7 +124,7 @@ public sealed class YearNode : IExplorable
                 builder.AddAttribute(seq++, "type", "button");
                 builder.AddAttribute(seq++, "class", "popover-event-row popover-event-row-button explorable");
                 builder.AddAttribute(seq++, "data-testid", $"year-chronology-event-{id}");
-                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, EventKind.Event))));
+                builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(ctx, () => ctx.PushAsync(new EventNode(id, label, EventKind.Event), EdgeKind.TemporalAdjacency)));
                 builder.AddContent(seq++, label);
                 builder.CloseElement();
             }

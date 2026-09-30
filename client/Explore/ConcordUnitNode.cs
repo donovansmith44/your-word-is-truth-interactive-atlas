@@ -16,6 +16,7 @@ public sealed class ConcordUnitNode : IExplorable
 
     public string Title { get; }
     public string Kind => "ConcordUnit";
+    public Explorable Identity => new(NodeKind.TextUnit, NodeId, Title);
 
     public string NodeId => NodeIds.Of(NodeKind.TextUnit, Title);
 
