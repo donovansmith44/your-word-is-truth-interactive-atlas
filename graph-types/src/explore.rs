@@ -74,50 +74,19 @@ pub trait Explorable {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PositionRef(pub Position);
 
-fn raw_neighbors(g: &Graph, p: &Position, kind: EdgeKind) -> Vec<EdgeEntry> {
-    match kind {
-        EdgeKind::Directed(rel, dir) => {
-            let ix = match g.indexes.get(&rel) {
-                Some(ix) => ix,
-                None => return Vec::new(),
-            };
-            let map = match dir {
-                Direction::Forward => &ix.fwd,
-                Direction::Inverse => &ix.inv,
-            };
-            map.get(p)
-                .map(|v| {
-                    v.iter()
-                        .map(|(eid, o, m)| EdgeEntry {
-                            edge: eid.clone(),
-                            node: o.clone(),
-                            meta: m.clone(),
-                        })
-                        .collect()
-                })
-                .unwrap_or_default()
-        }
-        // Both ends of a symmetric relation are interchangeable, so both populate the SAME
-        // forward map at build time and querying from either end reads that one map.
-        EdgeKind::Symmetric(rel) => {
-            let ix = match g.symmetric_indexes.get(&rel) {
-                Some(ix) => ix,
-                None => return Vec::new(),
-            };
-            ix.fwd
-                .get(p)
-                .map(|v| {
-                    v.iter()
-                        .map(|(eid, o, m)| EdgeEntry {
-                            edge: eid.clone(),
-                            node: o.clone(),
-                            meta: m.clone(),
-                        })
-                        .collect()
-                })
-                .unwrap_or_default()
-        }
-    }
+fn raw_neighbors<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> &'g [(EdgeId, Position, EdgeMeta)] {
+    let held = match kind {
+        EdgeKind::Directed(rel, dir) => g.indexes.get(&rel).and_then(|ix| match dir {
+            Direction::Forward => ix.fwd.get(p),
+            Direction::Inverse => ix.inv.get(p),
+        }),
+        EdgeKind::Symmetric(rel) => g.symmetric_indexes.get(&rel).and_then(|ix| ix.fwd.get(p)),
+    };
+    held.map(Vec::as_slice).unwrap_or(&[])
+}
+
+fn entry_of((edge, node, meta): &(EdgeId, Position, EdgeMeta)) -> EdgeEntry {
+    EdgeEntry { edge: edge.clone(), node: node.clone(), meta: meta.clone() }
 }
 
 impl Explorable for PositionRef {
@@ -146,8 +115,8 @@ impl Explorable for PositionRef {
 
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage {
         let all = raw_neighbors(g, &self.0, q.kind);
-        let start = q.cursor.unwrap_or(0);
-        let entries: Vec<_> = all.iter().skip(start).take(q.limit).cloned().collect();
+        let start = q.cursor.unwrap_or(0).min(all.len());
+        let entries: Vec<_> = all[start..].iter().take(q.limit).map(entry_of).collect();
         let next = if start + entries.len() < all.len() {
             Some(start + entries.len())
         } else {
@@ -183,8 +152,8 @@ impl Holdings {
         self.bind(|p| {
             Holdings(
                 raw_neighbors(g, p, k)
-                    .into_iter()
-                    .map(|e| e.node)
+                    .iter()
+                    .map(|(_, node, _)| node.clone())
                     .collect(),
             )
         })
@@ -197,14 +166,14 @@ impl Holdings {
 
 /// Traversing forward and then asking the target for its inverse entry finds the same edge id.
 pub fn inverse_entry_ids(g: &Graph, from: &Position, kind: EdgeKind) -> Vec<(EdgeId, EdgeId)> {
-    let fwd = raw_neighbors(g, from, kind);
     let dk = dual(kind);
-    fwd.into_iter()
-        .flat_map(|e| {
-            raw_neighbors(g, &e.node, dk)
-                .into_iter()
-                .filter(|back| back.node == *from)
-                .map(move |back| (e.edge.clone(), back.edge))
+    raw_neighbors(g, from, kind)
+        .iter()
+        .flat_map(|(edge, node, _)| {
+            raw_neighbors(g, node, dk)
+                .iter()
+                .filter(|(_, back, _)| back == from)
+                .map(move |(back_edge, _, _)| (edge.clone(), back_edge.clone()))
                 .collect::<Vec<_>>()
         })
         .collect()
