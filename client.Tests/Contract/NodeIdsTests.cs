@@ -19,6 +19,18 @@ public sealed class NodeIdsTests
         Assert.Equal(expected, id);
     }
 
+    [Fact]
+    public void Of_refuses_a_local_part_that_is_already_an_id_of_its_kind()
+    {
+        // Arrange
+        var id = "CommentaryItem:kretzmann/0.1.0";
+        // Act
+        Action act = () => NodeIds.Of(NodeKind.CommentaryItem, id);
+        // Assert
+        var thrown = Assert.Throws<FormatException>(act);
+        Assert.Equal("'CommentaryItem:kretzmann/0.1.0' is already a node id; Of wants its local part", thrown.Message);
+    }
+
     [Theory]
     [InlineData("CatechismItem:commandment-1", NodeKind.CatechismItem, "commandment-1")]
     [InlineData("text-unit:BoC 7.2.1", NodeKind.TextUnit, "BoC 7.2.1")]

@@ -7,8 +7,13 @@ public static class NodeIds
 
     private const char KindSeparator = ':';
 
-    public static string Of(NodeKind kind, string localPart) =>
-        $"{(kind == NodeKind.TextUnit ? TextUnitKind : kind.WireName())}{KindSeparator}{localPart}";
+    public static string Of(NodeKind kind, string localPart)
+    {
+        var prefix = $"{(kind == NodeKind.TextUnit ? TextUnitKind : kind.WireName())}{KindSeparator}";
+        return localPart.StartsWith(prefix, StringComparison.Ordinal)
+            ? throw new FormatException($"'{localPart}' is already a node id; Of wants its local part")
+            : prefix + localPart;
+    }
 
     public static string LocalPart(NodeRef node) => LocalPart(node.Id);
 

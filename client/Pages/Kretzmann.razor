@@ -533,7 +533,7 @@
     private CommentaryItemRow ProseOf(CommentaryItemRow item, string prose) =>
         item with { Text = prose, Citations = KretzmannCitationScan.Anchors(prose, _toc ?? EmptyToc) };
 
-    private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(item.Id, item.Heading);
+    private void OnExplore(CommentaryItemRow item) => _activeNode = new CommentaryItemNode(NodeIds.LocalPart(item.Id), item.Heading);
 
     private void OnItemKeyDown(KeyboardEventArgs e, CommentaryItemRow item)
     {

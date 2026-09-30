@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { API, CLIENT, portEnv } from './lib/ports';
 
 const start = (script: string) =>
   process.platform === 'win32'
@@ -46,7 +47,7 @@ export default defineConfig({
   // 120s even at FC_NUM_RUNS=60.
   timeout: 240_000,
   retries: 0,
-  use: { baseURL: 'http://localhost:5000', trace: 'retain-on-failure' },
+  use: { baseURL: CLIENT, trace: 'retain-on-failure' },
   webServer: [
     // 300s (was 120s): start-api.ps1 boots the API via `cargo run --release`,
     // kept for its ~5x per-request latency win across every suite run; a cold
@@ -54,8 +55,8 @@ export default defineConfig({
     // meaningfully longer than a cold debug build, so the boot budget is
     // raised to absorb that rather than risk a spurious webServer timeout.
     { command: start('start-api'),
-      url: 'http://localhost:8000/health', reuseExistingServer: true, timeout: 300_000 },
+      url: `${API}/health`, env: portEnv, reuseExistingServer: true, timeout: 300_000 },
     { command: start('start-client'),
-      url: 'http://localhost:5000', reuseExistingServer: true, timeout: 180_000 },
+      url: CLIENT, env: portEnv, reuseExistingServer: true, timeout: 180_000 },
   ],
 });
