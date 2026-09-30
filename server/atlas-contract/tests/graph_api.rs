@@ -434,7 +434,7 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(body["provenance"], "theographic-people");
     let summary: Vec<serde_json::Value> = body["edge_summary"].as_array().unwrap().clone();
     let mentioned_in = summary.iter().find(|e| e["kind"] == "mentioned-in").expect("aaron_1 must carry a real mentioned-in frontier");
-    assert_eq!(mentioned_in["count"], 347, "Aaron's 331 resolved verse links: an entry per occurrence of his name, or one for a verse where it is not found");
+    assert_eq!(mentioned_in["count"], 331, "Aaron's 331 resolved verse links: one edge per verse, however many times the verse names him");
 
     let (st2, page, _) = get(&app, "/api/node/Person:aaron_1/edges?kind=mentioned-in&limit=3").await;
     assert_eq!(st2, 200, "{page}");
@@ -444,6 +444,137 @@ async fn person_card_and_mentioned_in_frontier_are_served_by_the_generic_endpoin
     assert_eq!(entries[1]["node"]["id"], "text-unit:EXO.4.27");
     assert_eq!(entries[2]["node"]["id"], "text-unit:EXO.4.28");
     assert_eq!(page["next"], 3, "a 331-entry frontier at limit=3 must page, not silently truncate");
+}
+
+fn committed_rows() -> &'static atlas_graph_types::graph::Graph {
+    static ROWS: std::sync::OnceLock<atlas_graph_types::graph::Graph> = std::sync::OnceLock::new();
+    ROWS.get_or_init(|| atlas_graph::sqlite::reload::committed_graph(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/compiled")).expect("the committed sections read back").0)
+}
+
+fn bible_mention_rows() -> Vec<(atlas_graph_types::text::VerseRef, &'static atlas_graph_types::edge::Mentions)> {
+    committed_rows()
+        .mentions
+        .iter()
+        .filter_map(|row| match &row.locus.at {
+            atlas_graph_types::text::TextRef::Bible(verse) => Some((verse.clone(), row)),
+            atlas_graph_types::text::TextRef::Concord(_) => None,
+        })
+        .collect()
+}
+
+fn the_verse_naming_one_entity_most_often() -> (atlas_graph_types::text::VerseRef, atlas_graph_types::id::AnyNodeId) {
+    let mut rows_of_pair: std::collections::BTreeMap<(atlas_graph_types::text::VerseRef, atlas_graph_types::id::AnyNodeId), usize> = std::collections::BTreeMap::new();
+    for (verse, row) in bible_mention_rows() {
+        *rows_of_pair.entry((verse, row.entity.node_id())).or_default() += 1;
+    }
+    rows_of_pair.into_iter().max_by_key(|(_, rows)| *rows).map(|(pair, _)| pair).expect("the artifact carries mention rows")
+}
+
+fn word_span(verse: &atlas_graph_types::text::VerseRef, words: &atlas_graph_types::text::TokenSpan) -> serde_json::Value {
+    let unit = serde_json::json!({ "corpus": "bible", "book": atlas_core::refs::BookId(verse.book).code(), "chapter": verse.chapter, "verse": verse.verse });
+    serde_json::json!({ "from": { "unit": unit, "word": words.start }, "to": { "unit": unit, "word": words.end } })
+}
+
+fn loci_of(verse: &atlas_graph_types::text::VerseRef, rows: &[&atlas_graph_types::edge::Mentions]) -> serde_json::Value {
+    let spans: Vec<serde_json::Value> = rows.iter().filter_map(|row| row.locus.span.as_ref()).map(|words| word_span(verse, words)).collect();
+    if spans.is_empty() { serde_json::Value::Null } else { serde_json::Value::Array(spans) }
+}
+
+fn wire_id_of(entity: &atlas_graph_types::id::AnyNodeId) -> String {
+    atlas_contract::graph_wire::encode_node_id(entity)
+}
+
+fn wire_id_of_verse(verse: &atlas_graph_types::text::VerseRef) -> String {
+    atlas_contract::graph_wire::encode_node_id(&atlas_graph::kjv_adapter::verse_node_id(verse.book, verse.chapter, verse.verse))
+}
+
+fn node_and_loci(entries: &serde_json::Value) -> Vec<serde_json::Value> {
+    entries.as_array().unwrap().iter().map(|e| serde_json::json!({ "node": e["node"]["id"], "loci": e["loci"] })).collect()
+}
+
+#[tokio::test]
+async fn a_verses_mentions_page_lists_each_entity_once_with_every_occurrence_as_loci() {
+    // Arrange
+    let app = artifact_app();
+    let (verse, _) = the_verse_naming_one_entity_most_often();
+    let at_verse: Vec<&atlas_graph_types::edge::Mentions> = bible_mention_rows().into_iter().filter(|(v, _)| *v == verse).map(|(_, row)| row).collect();
+    let mut entities: Vec<atlas_graph_types::id::AnyNodeId> = Vec::new();
+    for row in &at_verse {
+        if !entities.contains(&row.entity.node_id()) && !matches!(row.entity, atlas_graph_types::edge::MentionedEntity::PeopleGroup(_)) {
+            entities.push(row.entity.node_id());
+        }
+    }
+    let composed: Vec<serde_json::Value> = entities
+        .iter()
+        .map(|entity| {
+            let rows: Vec<&atlas_graph_types::edge::Mentions> = at_verse.iter().copied().filter(|row| row.entity.node_id() == *entity).collect();
+            serde_json::json!({ "node": wire_id_of(entity), "loci": loci_of(&verse, &rows) })
+        })
+        .collect();
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/node/{}/edges?kind=mentions", wire_id_of_verse(&verse))).await;
+
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), node_and_loci(&page["entries"]), page["next"].clone(), at_verse.len() > entities.len()),
+        (StatusCode::OK, serde_json::json!("mentions"), composed, serde_json::Value::Null, true),
+        "at {}",
+        wire_id_of_verse(&verse)
+    );
+}
+
+#[tokio::test]
+async fn a_persons_mentioned_in_page_lists_a_verse_once_and_continues_from_the_next_verses_first_row() {
+    // Arrange
+    let app = artifact_app();
+    let (verse, entity) = the_verse_naming_one_entity_most_often();
+    let verses_of_entity: Vec<atlas_graph_types::text::VerseRef> = bible_mention_rows().into_iter().filter(|(_, row)| row.entity.node_id() == entity).map(|(v, _)| v).collect();
+    let first_row = verses_of_entity.iter().position(|v| *v == verse).expect("the entity's rows include the verse");
+    let rows_at_verse: Vec<&atlas_graph_types::edge::Mentions> = bible_mention_rows().into_iter().filter(|(v, row)| *v == verse && row.entity.node_id() == entity).map(|(_, row)| row).collect();
+    let next_edges_first_row = verses_of_entity.iter().enumerate().skip(first_row).find(|(_, v)| **v != verse).map(|(ord, _)| ord);
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/node/{}/edges?kind=mentioned-in&cursor={first_row}&limit=1", wire_id_of(&entity))).await;
+
+    // Assert
+    assert_eq!(
+        (status, page["kind"].clone(), node_and_loci(&page["entries"]), page["next"].clone(), rows_at_verse.len() > 1),
+        (
+            StatusCode::OK,
+            serde_json::json!("mentioned-in"),
+            vec![serde_json::json!({ "node": wire_id_of_verse(&verse), "loci": loci_of(&verse, &rows_at_verse) })],
+            serde_json::json!(next_edges_first_row),
+            true,
+        ),
+        "{} at {}",
+        wire_id_of(&entity),
+        wire_id_of_verse(&verse)
+    );
+}
+
+#[tokio::test]
+async fn a_persons_card_counts_the_verses_that_mention_him_not_the_times_they_name_him() {
+    // Arrange
+    let app = artifact_app();
+    let mut rows_of_entity: std::collections::BTreeMap<atlas_graph_types::id::AnyNodeId, Vec<atlas_graph_types::text::VerseRef>> = std::collections::BTreeMap::new();
+    for (verse, row) in bible_mention_rows() {
+        rows_of_entity.entry(row.entity.node_id()).or_default().push(verse);
+    }
+    let (entity, verses) = rows_of_entity.into_iter().max_by_key(|(_, verses)| verses.len()).expect("the artifact carries mention rows");
+    let distinct: std::collections::BTreeSet<&atlas_graph_types::text::VerseRef> = verses.iter().collect();
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/node/{}", wire_id_of(&entity))).await;
+    let mentioned_in = card["edge_summary"].as_array().unwrap().iter().find(|e| e["kind"] == "mentioned-in").cloned();
+
+    // Assert
+    assert_eq!(
+        (status, mentioned_in, verses.len() > distinct.len()),
+        (StatusCode::OK, Some(serde_json::json!({ "kind": "mentioned-in", "count": distinct.len() })), true),
+        "{}",
+        wire_id_of(&entity)
+    );
 }
 
 #[tokio::test]

@@ -208,31 +208,32 @@ impl SqliteSnapshot {
         }
     }
 
-    /// Paging is keyset, not OFFSET: `ord` IS the entry's position in the in-memory
-    /// `(subject, rel, dir)` list, and those positions are contiguous `0..n` across the attached
-    /// sections, so `ord >= cursor LIMIT limit + 1` reads one page plus the row that decides `next`.
     fn edges_inner(&self, p: &Position, q: &EdgeQuery) -> Result<EdgePage, SqliteError> {
         let (rel, dir, rel_name) = Self::code_of(q.kind);
         let subject = position_str(p);
         let start = q.cursor.unwrap_or(0);
         self.with_conn(|conn| {
             let mut stmt = conn.prepare_cached(
-                "SELECT object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index                  WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 ORDER BY ord LIMIT ?5",
+                "SELECT ord, object, edge_id, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index AS first \
+                 WHERE subject = ?1 AND rel = ?2 AND dir = ?3 AND ord >= ?4 \
+                 AND NOT EXISTS (SELECT 1 FROM all_edge_index AS earlier WHERE earlier.subject = first.subject AND earlier.rel = first.rel AND earlier.dir = first.dir AND earlier.edge_id = first.edge_id AND earlier.ord < first.ord) \
+                 ORDER BY ord LIMIT ?5",
             )?;
             let mut rows = stmt.query(rusqlite::params![subject, rel, dir, start as i64, q.limit as i64 + 1])?;
             let mut entries = Vec::new();
-            let mut more = false;
+            let mut next = None;
             while let Some(row) = rows.next()? {
+                let ord: i64 = row.get(0)?;
                 if entries.len() == q.limit {
-                    more = true;
+                    next = Some(ord as usize);
                     break;
                 }
-                let object: String = row.get(0)?;
-                let blob: Vec<u8> = row.get(1)?;
-                let meta_kind: i64 = row.get(2)?;
-                let narrative: Option<String> = row.get(3)?;
-                let votes: Option<i64> = row.get(4)?;
-                let parentage: Option<String> = row.get(5)?;
+                let object: String = row.get(1)?;
+                let blob: Vec<u8> = row.get(2)?;
+                let meta_kind: i64 = row.get(3)?;
+                let narrative: Option<String> = row.get(4)?;
+                let votes: Option<i64> = row.get(5)?;
+                let parentage: Option<String> = row.get(6)?;
                 let meta = match (meta_kind, narrative, votes, parentage.as_deref().map(Parentage::named)) {
                     (0, None, None, None) => EdgeMeta::None,
                     (1, Some(n), None, None) => EdgeMeta::Narrative(NarrativeId::new(n)),
@@ -248,7 +249,6 @@ impl SqliteSnapshot {
                     meta,
                 });
             }
-            let next = if more { Some(start + entries.len()) } else { None };
             Ok(EdgePage { kind: q.kind, entries, next })
         })
     }
@@ -311,7 +311,7 @@ impl GraphQuery for SqliteSnapshot {
         let subject = position_str(p);
         self.with_conn(|conn| {
             let mut stmt =
-                conn.prepare_cached("SELECT rel, dir, COUNT(*) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
+                conn.prepare_cached("SELECT rel, dir, COUNT(DISTINCT edge_id) FROM all_edge_index WHERE subject = ?1 GROUP BY rel, dir")?;
             let mut rows = stmt.query([subject.as_str()])?;
             let mut out = EdgeSummary::new();
             while let Some(row) = rows.next()? {

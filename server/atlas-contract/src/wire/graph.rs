@@ -142,7 +142,7 @@ pub struct EdgePage {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` and `note` only on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself), `parentage` only on a parent-of edge.")]
+#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.")]
 pub struct EdgeEntry {
     /// The edge's own id. The neighbour's page for the opposite kind carries this
     /// same id for this same connection, and the edge itself can be explored.

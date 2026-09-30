@@ -1,7 +1,7 @@
 //! Exploring means yielding frontiers and nothing else; `Holdings` is the act of doing it,
 //! with set semantics -- a position is arrived at once.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::edge::{dual, Direction, EdgeId, EdgeKind};
 use crate::graph::Graph;
@@ -74,19 +74,56 @@ pub trait Explorable {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PositionRef(pub Position);
 
-fn raw_neighbors<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> &'g [(EdgeId, Position, EdgeMeta)] {
-    let held = match kind {
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct Frontier {
+    rows: Vec<EdgeEntry>,
+    edges: Vec<u32>,
+}
+
+impl Frontier {
+    pub fn of_rows(rows: Vec<EdgeEntry>) -> Frontier {
+        let edges = first_row_of_each_edge(&rows);
+        Frontier { rows, edges }
+    }
+
+    pub fn append(&mut self, mut later: Frontier) {
+        self.rows.append(&mut later.rows);
+        self.edges = first_row_of_each_edge(&self.rows);
+    }
+
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
+    pub fn edges(&self) -> impl Iterator<Item = &EdgeEntry> + '_ {
+        self.edges.iter().map(move |&ord| &self.rows[ord as usize])
+    }
+
+    pub fn page(&self, q: &EdgeQuery) -> EdgePage {
+        let from = self.edges.partition_point(|&ord| (ord as usize) < q.cursor.unwrap_or(0));
+        let entries = self.edges[from..].iter().take(q.limit).map(|&ord| self.rows[ord as usize].clone()).collect();
+        let next = self.edges.get(from.saturating_add(q.limit)).map(|&ord| ord as usize);
+        EdgePage { kind: q.kind, entries, next }
+    }
+}
+
+fn first_row_of_each_edge(rows: &[EdgeEntry]) -> Vec<u32> {
+    let mut seen = HashSet::with_capacity(rows.len());
+    rows.iter().enumerate().filter(|(_, row)| seen.insert(&row.edge)).map(|(ord, _)| ord as u32).collect()
+}
+
+fn frontier_at<'g>(g: &'g Graph, p: &Position, kind: EdgeKind) -> Option<&'g Frontier> {
+    match kind {
         EdgeKind::Directed(rel, dir) => g.indexes.get(&rel).and_then(|ix| match dir {
             Direction::Forward => ix.fwd.get(p),
             Direction::Inverse => ix.inv.get(p),
         }),
         EdgeKind::Symmetric(rel) => g.symmetric_indexes.get(&rel).and_then(|ix| ix.fwd.get(p)),
-    };
-    held.map(Vec::as_slice).unwrap_or(&[])
+    }
 }
 
-fn entry_of((edge, node, meta): &(EdgeId, Position, EdgeMeta)) -> EdgeEntry {
-    EdgeEntry { edge: edge.clone(), node: node.clone(), meta: meta.clone() }
+fn edge_count_at(g: &Graph, p: &Position, kind: EdgeKind) -> usize {
+    frontier_at(g, p, kind).map_or(0, Frontier::edge_count)
 }
 
 impl Explorable for PositionRef {
@@ -95,7 +132,7 @@ impl Explorable for PositionRef {
         for rel in crate::edge::RelationId::ALL {
             for dir in [Direction::Forward, Direction::Inverse] {
                 let k = EdgeKind::Directed(*rel, dir);
-                let n = raw_neighbors(g, &self.0, k).len();
+                let n = edge_count_at(g, &self.0, k);
                 if n > 0 {
                     out.insert(k, n);
                 }
@@ -105,7 +142,7 @@ impl Explorable for PositionRef {
         // hide them from a frontier that renders a section only when its count is positive.
         for rel in crate::edge::SymRelationId::ALL {
             let k = EdgeKind::Symmetric(*rel);
-            let n = raw_neighbors(g, &self.0, k).len();
+            let n = edge_count_at(g, &self.0, k);
             if n > 0 {
                 out.insert(k, n);
             }
@@ -114,15 +151,7 @@ impl Explorable for PositionRef {
     }
 
     fn edges(&self, g: &Graph, q: &EdgeQuery) -> EdgePage {
-        let all = raw_neighbors(g, &self.0, q.kind);
-        let start = q.cursor.unwrap_or(0).min(all.len());
-        let entries: Vec<_> = all[start..].iter().take(q.limit).map(entry_of).collect();
-        let next = if start + entries.len() < all.len() {
-            Some(start + entries.len())
-        } else {
-            None
-        };
-        EdgePage { kind: q.kind, entries, next }
+        frontier_at(g, &self.0, q.kind).map_or_else(|| EdgePage { kind: q.kind, entries: Vec::new(), next: None }, |frontier| frontier.page(q))
     }
 }
 
@@ -151,9 +180,10 @@ impl Holdings {
     pub fn step(&self, g: &Graph, k: EdgeKind) -> Holdings {
         self.bind(|p| {
             Holdings(
-                raw_neighbors(g, p, k)
-                    .iter()
-                    .map(|(_, node, _)| node.clone())
+                frontier_at(g, p, k)
+                    .into_iter()
+                    .flat_map(Frontier::edges)
+                    .map(|e| e.node.clone())
                     .collect(),
             )
         })
@@ -167,13 +197,15 @@ impl Holdings {
 /// Traversing forward and then asking the target for its inverse entry finds the same edge id.
 pub fn inverse_entry_ids(g: &Graph, from: &Position, kind: EdgeKind) -> Vec<(EdgeId, EdgeId)> {
     let dk = dual(kind);
-    raw_neighbors(g, from, kind)
-        .iter()
-        .flat_map(|(edge, node, _)| {
-            raw_neighbors(g, node, dk)
-                .iter()
-                .filter(|(_, back, _)| back == from)
-                .map(move |(back_edge, _, _)| (edge.clone(), back_edge.clone()))
+    frontier_at(g, from, kind)
+        .into_iter()
+        .flat_map(Frontier::edges)
+        .flat_map(|e| {
+            frontier_at(g, &e.node, dk)
+                .into_iter()
+                .flat_map(Frontier::edges)
+                .filter(|back| back.node == *from)
+                .map(move |back| (e.edge.clone(), back.edge.clone()))
                 .collect::<Vec<_>>()
         })
         .collect()

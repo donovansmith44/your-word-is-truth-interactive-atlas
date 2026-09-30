@@ -5,6 +5,7 @@ use crate::id::{
     EventId, Interned, LexiconEntryId, MapId,
     NarrativeId, PeopleGroupId, PersonId, PlaceId, PolityId, Position, PositionKind, SourceId,
 };
+use crate::explore::{EdgeEntry, EdgeMeta, Frontier};
 use crate::ingest::ProvenanceId;
 use crate::text::{BibleLocusRange, ConcordLocus, Corpus, LocusSet, TextLocus};
 
@@ -466,48 +467,41 @@ pub struct EdgeRecord {
 
 #[derive(Debug, Default)]
 pub struct BiIndex {
-    pub fwd: BTreeMap<Position, Vec<(EdgeId, Position, crate::explore::EdgeMeta)>>,
-    pub inv: BTreeMap<Position, Vec<(EdgeId, Position, crate::explore::EdgeMeta)>>,
+    pub fwd: BTreeMap<Position, Frontier>,
+    pub inv: BTreeMap<Position, Frontier>,
 }
 
 impl BiIndex {
     pub fn build(
         rel: RelationId,
-        pairs: &[(Position, Position, crate::explore::EdgeMeta)],
+        pairs: &[(Position, Position, EdgeMeta)],
     ) -> BiIndex {
-        let mut ix = BiIndex::default();
+        let mut fwd: BTreeMap<Position, Vec<EdgeEntry>> = BTreeMap::new();
+        let mut inv: BTreeMap<Position, Vec<EdgeEntry>> = BTreeMap::new();
         for (s, o, m) in pairs {
             let eid = entry_id(rel, s, o);
-            ix.fwd
-                .entry(s.clone())
-                .or_default()
-                .push((eid.clone(), o.clone(), m.clone()));
-            ix.inv
-                .entry(o.clone())
-                .or_default()
-                .push((eid, s.clone(), m.clone()));
+            fwd.entry(s.clone()).or_default().push(EdgeEntry { edge: eid.clone(), node: o.clone(), meta: m.clone() });
+            inv.entry(o.clone()).or_default().push(EdgeEntry { edge: eid, node: s.clone(), meta: m.clone() });
         }
-        ix
+        BiIndex { fwd: frontiers(fwd), inv: frontiers(inv) }
     }
 
     pub fn build_symmetric(
         rel: SymRelationId,
-        pairs: &[(Position, Position, crate::explore::EdgeMeta)],
+        pairs: &[(Position, Position, EdgeMeta)],
     ) -> BiIndex {
-        let mut ix = BiIndex::default();
+        let mut fwd: BTreeMap<Position, Vec<EdgeEntry>> = BTreeMap::new();
         for (a, b, m) in pairs {
             let eid = entry_id_symmetric(rel, a, b);
-            ix.fwd
-                .entry(a.clone())
-                .or_default()
-                .push((eid.clone(), b.clone(), m.clone()));
-            ix.fwd
-                .entry(b.clone())
-                .or_default()
-                .push((eid, a.clone(), m.clone()));
+            fwd.entry(a.clone()).or_default().push(EdgeEntry { edge: eid.clone(), node: b.clone(), meta: m.clone() });
+            fwd.entry(b.clone()).or_default().push(EdgeEntry { edge: eid, node: a.clone(), meta: m.clone() });
         }
-        ix
+        BiIndex { fwd: frontiers(fwd), inv: BTreeMap::new() }
     }
+}
+
+fn frontiers(rows: BTreeMap<Position, Vec<EdgeEntry>>) -> BTreeMap<Position, Frontier> {
+    rows.into_iter().map(|(position, rows)| (position, Frontier::of_rows(rows))).collect()
 }
 
 pub fn entry_id(rel: RelationId, s: &Position, o: &Position) -> EdgeId {

@@ -843,21 +843,73 @@ mod laws {
         assert_eq!(snap.nodes_of_kind(NodeKind::TextUnit, None, 9).ids.len(), 2);
     }
 
+    fn located_at(place: &str, provenance: &str) -> LocatedAt {
+        LocatedAt { event: EventId::new("e1"), place: PlaceId::new(place), provenance: provenance.into(), justification: Justification::default() }
+    }
+
     #[test]
-    fn two_rows_minting_one_id_are_both_behind_it() {
+    fn a_frontier_lists_an_edge_once_however_many_rows_mint_it() {
+        // Arrange
         let mut g = graph_with(&[("bible/1.1.1", "a")]);
-        for prov in ["event-witnesses", "attestation-corrections"] {
-            g.located_at.push(LocatedAt { event: EventId::new("e1"), place: PlaceId::new("jordan"), provenance: prov.into(), justification: Justification::default() });
+        g.located_at.push(located_at("jordan", "event-witnesses"));
+        g.located_at.push(located_at("jordan", "attestation-corrections"));
+        g.build_indexes();
+        let e1 = Position::Node(EventId::new("e1").erase());
+        let jordan = Position::Node(PlaceId::new("jordan").erase());
+        let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
+        let edge = crate::edge::entry_id(crate::edge::RelationId::LocatedAt, &e1, &jordan);
+
+        // Act
+        let page = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
+        let summary = g.edge_summary(&e1);
+        let rows: Vec<(u64, String)> = g.rows_behind(&edge).into_iter().map(|r| (r.row_id, r.provenance)).collect();
+        let first = g.row_provenance(&edge).map(|r| r.row_id);
+
+        // Assert
+        assert_eq!(
+            (page, summary, rows, first),
+            (
+                EdgePage { kind, entries: vec![EdgeEntry { edge, node: jordan, meta: crate::explore::EdgeMeta::None }], next: None },
+                [(kind, 1)].into_iter().collect(),
+                vec![(0, "event-witnesses".to_string()), (1, "attestation-corrections".to_string())],
+                Some(0),
+            )
+        );
+    }
+
+    #[test]
+    fn a_page_walks_edges_and_its_cursor_is_the_first_row_of_the_edge_it_continues_from() {
+        // Arrange
+        let mut g = graph_with(&[("bible/1.1.1", "a")]);
+        for (place, provenance) in [("jordan", "a"), ("jordan", "b"), ("bethel", "a"), ("hebron", "a"), ("hebron", "b")] {
+            g.located_at.push(located_at(place, provenance));
         }
         g.build_indexes();
         let e1 = Position::Node(EventId::new("e1").erase());
         let kind = crate::edge::EdgeKind::Directed(crate::edge::RelationId::LocatedAt, crate::edge::Direction::Forward);
-        let page = g.edges(&e1, &EdgeQuery { kind, cursor: None, limit: 10 });
-        assert_eq!(page.entries.len(), 2, "the index keeps both entries");
-        assert_eq!(page.entries[0].edge, page.entries[1].edge, "one id");
-        let rows = g.rows_behind(&page.entries[0].edge);
-        assert_eq!(rows.iter().map(|r| (r.row_id, r.provenance.as_str())).collect::<Vec<_>>(), [(0, "event-witnesses"), (1, "attestation-corrections")]);
-        assert_eq!(g.row_provenance(&page.entries[0].edge).map(|r| r.row_id), Some(0), "the FIRST row");
+        let place_of = |page: &EdgePage| page.entries.iter().map(|e| e.node.clone()).collect::<Vec<_>>();
+        let place = |name: &str| Position::Node(PlaceId::new(name).erase());
+
+        // Act
+        let walked: Vec<(Vec<Position>, Option<usize>)> = [(None, 1), (Some(2), 1), (Some(3), 1), (None, 2), (Some(3), 5)]
+            .into_iter()
+            .map(|(cursor, limit)| {
+                let page = g.edges(&e1, &EdgeQuery { kind, cursor, limit });
+                (place_of(&page), page.next)
+            })
+            .collect();
+
+        // Assert
+        assert_eq!(
+            walked,
+            vec![
+                (vec![place("jordan")], Some(2)),
+                (vec![place("bethel")], Some(3)),
+                (vec![place("hebron")], None),
+                (vec![place("jordan"), place("bethel")], Some(3)),
+                (vec![place("hebron")], None),
+            ]
+        );
     }
 
     #[test]

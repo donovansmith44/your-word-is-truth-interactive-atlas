@@ -647,13 +647,12 @@ fn every_index_entry_of_the_specimen_lands_in_exactly_one_section_and_names_its_
     atlas_graph::event_world::add_justified_by(&mut g);
     let parts = partition(&g).unwrap();
     let total: usize = parts.iter().map(|p| p.edges.len()).sum();
-    let in_memory: usize = g
+    let justified = g
         .indexes
-        .values()
-        .map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>() + ix.inv.values().map(Vec::len).sum::<usize>())
-        .sum::<usize>()
-        + g.symmetric_indexes.values().map(|ix| ix.fwd.values().map(Vec::len).sum::<usize>()).sum::<usize>();
-    assert_eq!(total, in_memory, "no entry lost, none duplicated");
+        .get(&atlas_graph_types::edge::RelationId::JustifiedBy)
+        .map_or(0, |ix| ix.fwd.values().chain(ix.inv.values()).map(atlas_graph_types::explore::Frontier::edge_count).sum::<usize>());
+    let placed_rows = 2 * g.row_edges().len() + justified;
+    assert_eq!(total, placed_rows, "every row placed under both of its ends, every synthesised ground once; none lost, none duplicated");
     assert!(total > 0, "the specimen graph indexes something");
     let map = edge_row_map(&g);
     let justified_code = atlas_graph_types::edge::RelationId::ALL
@@ -827,15 +826,14 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
         let entry = at(&AnyNodeId { kind: NodeKind::LexiconEntry, raw: "G3056".into() });
         let verse = at(&AnyNodeId { kind: NodeKind::TextUnit, raw: "bible/1.1.1".into() });
         let page = snap.edges_with_nodes(&entry, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Forward), cursor: None, limit: 10 });
-        assert_eq!(page.entries.len(), 2, "two tokens of one entry in one verse: two index entries (one per row)...");
-        assert_eq!(page.entries[0].entry.edge, page.entries[1].entry.edge, "...under ONE edge id (the leper lesson)");
+        assert_eq!(page.entries.len(), 1, "two tokens of one entry in one verse: ONE edge (the leper lesson)...");
         assert_eq!(page.entries[0].entry.node, verse);
         let rows = snap.rows_behind(&page.entries[0].entry.edge);
         assert_eq!(rows.len(), 2, "...with BOTH rows behind it");
         assert_eq!(rows.iter().map(|r| (r.family, r.row_id)).collect::<Vec<_>>(), [(RowFamily::Occurs, 0), (RowFamily::Occurs, 1)]);
         assert!(rows.iter().all(|r| r.provenance == "stepbible-tagnt"));
         let summary = snap.edge_summary(&verse);
-        assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(2), "`words` at the verse: its two tagged tokens");
+        assert_eq!(summary.get(&EdgeKind::Directed(RelationId::Occurs, Direction::Inverse)).copied(), Some(1), "`words` at the verse: the one entry its two tagged tokens belong to");
         let back = snap.edges_with_nodes(&verse, &EdgeQuery { kind: EdgeKind::Directed(RelationId::Occurs, Direction::Inverse), cursor: None, limit: 10 });
         assert_eq!(back.entries[0].entry.node, entry);
         assert_eq!(snap.nodes_of_kind(NodeKind::LexiconEntry, None, 5).ids.len(), 2);
@@ -910,6 +908,40 @@ fn an_absent_optional_section_is_recorded_and_its_kinds_are_simply_uninhabited()
         "a missing REQUIRED section is refused by name and hash (spec 11): {}",
         err.0
     );
+}
+
+#[test]
+fn a_verse_naming_one_entity_twice_is_one_mention_edge_on_both_arms_with_two_rows_behind_it() {
+    // Arrange
+    use atlas_graph_types::edge::{at, Direction, EdgeKind, RelationId};
+    use atlas_graph_types::explore::EdgeQuery;
+    use atlas_graph_types::store::GraphQuery;
+    let mut g = specimen_graph();
+    g.mentions.push(Mentions {
+        locus: TextLocus { at: TextRef::Bible(vr(7, 1, 2)), span: Some(span(8, 9)) },
+        entity: MentionedEntity::PeopleGroup(PeopleGroupId::new("tribe-of-judah")),
+        provenance: "theographic".into(),
+    });
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("db2b-mention-edge-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let verse = at(&atlas_graph::kjv_adapter::verse_node_id(7, 1, 2));
+    let judah = at(&PeopleGroupId::new("tribe-of-judah").erase());
+    let mentions = EdgeKind::Directed(RelationId::Mentions, Direction::Forward);
+    let mentioned_in = EdgeKind::Directed(RelationId::Mentions, Direction::Inverse);
+    let walk = |q: &dyn GraphQuery, p: &atlas_graph_types::id::Position, kind: EdgeKind| {
+        let page = q.edges(p, &EdgeQuery { kind, cursor: None, limit: 10 });
+        (q.edge_summary(p)[&kind], page.entries.len(), page.next, q.rows_behind(&page.entries[0].edge).len())
+    };
+
+    // Act
+    let answers = [walk(&g, &verse, mentions), walk(&snap, &verse, mentions), walk(&g, &judah, mentioned_in), walk(&snap, &judah, mentioned_in)];
+
+    // Assert
+    assert_eq!(answers, [(1, 1, None, 2); 4]);
 }
 
 #[test]

@@ -507,11 +507,11 @@ impl Graph {
             for h in directed_handles {
                 let (rel, partial) = h.join().expect("index-build worker panicked");
                 let entry = indexes.entry(rel).or_default();
-                for (k, mut v) in partial.fwd {
-                    entry.fwd.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(v);
                 }
-                for (k, mut v) in partial.inv {
-                    entry.inv.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(v);
                 }
             }
 
@@ -519,12 +519,12 @@ impl Graph {
             for h in sym_handles {
                 let (rel, partial) = h.join().expect("symmetric index-build worker panicked");
                 let entry = symmetric_indexes.entry(rel).or_default();
-                for (k, mut v) in partial.fwd {
-                    entry.fwd.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.fwd {
+                    entry.fwd.entry(k).or_default().append(v);
                 }
                 // Always empty for a symmetric index -- merged anyway rather than assumed.
-                for (k, mut v) in partial.inv {
-                    entry.inv.entry(k).or_default().append(&mut v);
+                for (k, v) in partial.inv {
+                    entry.inv.entry(k).or_default().append(v);
                 }
             }
 
@@ -933,27 +933,33 @@ mod row_edge_laws {
     }
 
     #[test]
-    fn build_indexes_is_exactly_the_row_edges_placed() {
+    fn build_indexes_is_exactly_the_row_edges_placed_each_edge_once_in_first_row_order() {
         let mut g = g();
         g.build_indexes();
         let mut from_rows: BTreeMap<(EdgeRel, Position), Vec<EdgeId>> = BTreeMap::new();
+        let mut place = |rel: EdgeRel, subject: &Position, id: &EdgeId| {
+            let placed = from_rows.entry((rel, subject.clone())).or_default();
+            if !placed.contains(id) {
+                placed.push(id.clone());
+            }
+        };
         for e in g.row_edges() {
             let id = Graph::edge_id_of(&e);
-            from_rows.entry((e.rel, e.subject.clone())).or_default().push(id.clone());
+            place(e.rel, &e.subject, &id);
             match e.rel {
                 EdgeRel::Directed(_) => {}
-                EdgeRel::Symmetric(_) => from_rows.entry((e.rel, e.object.clone())).or_default().push(id),
+                EdgeRel::Symmetric(_) => place(e.rel, &e.object, &id),
             }
         }
         for (rel, ix) in &g.indexes {
-            for (subject, entries) in &ix.fwd {
-                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+            for (subject, frontier) in &ix.fwd {
+                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Directed(*rel), subject.clone())], "fwd order at {subject:?}");
             }
         }
         for (rel, ix) in &g.symmetric_indexes {
-            for (subject, entries) in &ix.fwd {
-                let ids: Vec<EdgeId> = entries.iter().map(|(id, _, _)| id.clone()).collect();
+            for (subject, frontier) in &ix.fwd {
+                let ids: Vec<EdgeId> = frontier.edges().map(|e| e.edge.clone()).collect();
                 assert_eq!(ids, from_rows[&(EdgeRel::Symmetric(*rel), subject.clone())], "sym order at {subject:?}");
             }
         }

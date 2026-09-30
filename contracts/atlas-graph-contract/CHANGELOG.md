@@ -52,7 +52,9 @@ hatch — and adding one to a previously-green scenario is classified
   publishes as an enum carries one of its values`, checks every enum
   `aqc.schema.json` publishes (the runner reads it through `--schema`). Two
   step lines changed in `identity.feature` and `edges.feature`; no scenario
-  added or removed.
+  added or removed. Re-blessed once more in the fix wave: `node-place-hazor-1`
+  (`mentioned-in` 12 -> 11 -- a frontier lists an edge once however many rows
+  record it, and `edge_summary` counts edges, not rows).
 
 - **0.14.0** (Batch FOCUS-0) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved; the vocabulary grew).**
   authored-by and shows; Map nodes per era; corpus roots; Concord succession;

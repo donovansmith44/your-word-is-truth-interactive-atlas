@@ -17,6 +17,7 @@ use atlas_core::scene::{accounts_of, Account};
 use atlas_graph::event_world::{event_node_id, ChronologyDerivation};
 use atlas_graph::heading::Heading;
 use atlas_graph::kjv_adapter::verse_node_id;
+use atlas_graph::mention_spans::MentionSpan;
 use atlas_graph::runs;
 use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
@@ -193,35 +194,60 @@ pub async fn node_edges(
     // A PeopleGroup wire id does not decode, so an entry naming one would hand the
     // caller a reference it cannot fetch a card for.
     let this_event = OnceCell::new();
-    let entries = page
-        .entries
-        .iter()
-        .filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup))
-        .map(|e| {
-            let (votes, narrative, parentage) = match &e.meta {
-                EdgeMeta::Votes(votes) => (Some(*votes), None, None),
-                EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
-                EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
-                EdgeMeta::None => (None, None, None),
-            };
-            let (loci, note) = match (asked.kind, &e.node) {
-                (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
-                    let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
-                    let (_, account) = accounts.holding(verse);
-                    (Some(account.runs(&data.canon).to_vec()), account.note.clone())
-                }
-                (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
-                    let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
-                    let (verse, account) = accounts.holding(&node_id);
-                    (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
-                }
-                _ => (None, None),
-            };
-            wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage }
-        })
-        .collect();
+    let mut mention_loci = MentionLoci::default();
+    let mut entries = Vec::with_capacity(page.entries.len());
+    for e in page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)) {
+        let (votes, narrative, parentage) = match &e.meta {
+            EdgeMeta::Votes(votes) => (Some(*votes), None, None),
+            EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
+            EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
+            EdgeMeta::None => (None, None, None),
+        };
+        let (loci, note) = match (asked.kind, &e.node) {
+            (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
+                let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
+                let (_, account) = accounts.holding(verse);
+                (Some(account.runs(&data.canon).to_vec()), account.note.clone())
+            }
+            (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
+                let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
+                let (verse, account) = accounts.holding(&node_id);
+                (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
+            }
+            (EdgeKind::Directed(RelationId::Mentions, Direction::Forward), Position::Node(entity)) => (mention_loci.of(&graph, &node_id, entity)?, None),
+            (EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, &node_id)?, None),
+            _ => (None, None),
+        };
+        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), node: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
+    }
 
     Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
+}
+
+#[derive(Default)]
+struct MentionLoci {
+    at: BTreeMap<VerseRef, Vec<MentionSpan>>,
+}
+
+impl MentionLoci {
+    fn of(&mut self, graph: &GraphService, verse: &AnyNodeId, entity: &AnyNodeId) -> Result<Option<Vec<wire::TextSpan>>, ApiError> {
+        let Some((book, chapter, number)) = atlas_graph::kjv_adapter::decode_text_unit(verse) else { return Ok(None) };
+        let at = VerseRef { book, chapter, verse: number };
+        if !self.at.contains_key(&at) {
+            let spans = graph.mention_spans_in(&(at.clone()..=at.clone())).map_err(|e| unreadable_rows("mentions", &e))?;
+            self.at.insert(at.clone(), spans.into_values().flatten().collect());
+        }
+        let loci = self.at[&at]
+            .iter()
+            .filter(|span| span.entity.node_id() == *entity)
+            .map(|span| {
+                let words = Locus { unit: at.clone(), span: Some(span.words.clone()) };
+                wire::TextSpan::of_bible_range(&BibleLocusRange { from: words.clone(), to: words })
+                    .map_err(|foreign| ApiError::internal(&format!("a mention of {} at {} lies in the {} layer, not the KJV's", entity.raw, verse.raw, foreign.layer.0)))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok((!loci.is_empty()).then_some(loci))
+    }
 }
 
 struct EventAccounts {
