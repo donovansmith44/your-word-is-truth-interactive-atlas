@@ -74,6 +74,11 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Note:** build no interaction that works only by hovering.
 - **Done when:** the plan's Task 9 gates pass and it's reviewed by Codex.
 
+### A-EDGES: edges are explorable (R18)
+- **Status:** ready after A-F1 closes; runs BEFORE A-FPLANS/FOCUS-2 so every later batch writes its rows against the final table.
+- **Ruling:** spec §12 R18 (owner, 2026-09-30). Server: an edge card and an edge's frontier in the generated document (AQC minor); wire `Link.Target: PositionRef`; client: `ElementKind = Node | Edge`, `Presentation.Of(ElementKind, Surface)` rows for every edge kind, `IExplorer.Resolve(PositionRef)`/`Follow` total. Closes F-21 and retires F1-12's filter. Types for owner sign-off at FOCUS-1's close.
+- **Done when:** `Follow` is total (a law over every served position), the edge card serves its justification, and a Playwright spec follows a verse → its attests edge → the event.
+
 ### A-NAMES: the NAMES spec (one registry of names and entities, for text and maps)
 - **Status:** blocked:owner (O-NAMES). A types-only draft is at `docs/superpowers/specs/2026-10-01-names-design.md`, with 5 open questions in its §9.
 - **Rulings to build on (owner, 2026-09-29):**
