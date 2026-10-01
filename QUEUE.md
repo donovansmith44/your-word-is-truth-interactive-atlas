@@ -20,7 +20,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 3. **O-PASTOR:** Pastor Hromowyck demo: Oct 21 or 22?
 4. **O-NAMES:** 4 of 5 answered 2026-09-30 (spec §10: one Name per language; events denotable; map-generator's ids pending licensing; many names per entity as a `Naming` type). Open: which titles go on the review list (all held until you choose), and your sign-off of the amended types.
 5. **O-ORDER:** FOCUS-6 comes right after FOCUS-1 (owner, 2026-09-30). Open: can FOCUS-4+5 and FOCUS-7+8 each close as a single batch?
-6. **O-ERRATA-SEED:** List the map errors you've already noticed (map, place or polity, what's wrong). They seed CX-M2.
+6. **O-ERRATA-SEED: ANSWERED** by owner: Bible-mode Edom looks too extensive at 1406 BC, and Davidic-kingdom material appears centuries early. Audit **1446 and 1406 BC first, then possibly 1200 BC**; keep the geographic scope local, not the whole world. CX-M2 records cited findings and does not fix them.
 7. **O-STYLE:** After CX-M1's gallery, which style (parchment / canaan / slate), and which eras get a finished map (all 10 atlas eras?)
 8. **O-GPL:** Redraw the GPL `historical-basemaps` world borders as our own CC0 work (recommended), or accept GPL? Swap the OSM rivers (ODbL) for Natural Earth (recommended)? Your licensing rule (2026-09-29) disqualifies both as they stand.
 9. **O-PDF:** `Saltwater (Notation and Tab).pdf` in map-generator: remove it from HEAD (recommended), and also purge it from history? Is the repo public?
@@ -220,7 +220,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane B: maps (Codex, repo `mapgen` unless noted)
 
 ### CX-M0: map-generator hygiene
-- **Status:** ready
+- **Status:** claimed:codex:2026-10-01T20:34:30+00:00
 - **Repo / base:** `mapgen`, `origin/master` = `6608db4`. (Your Windows copy's `master` also has 2 unpushed commits, O-MG-LOCAL; work from `6608db4`, not from them.)
 - **Worktree:** `git -C ~/src/map-generator worktree add -b lane/codex/CX-M0 ~/w/mg-CX-M0 6608db4`
 - **Files:** `crates/*/Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `crates/map-types/tests/toolchain_pin.rs`, `scripts/demo.sh`, the PDF.
@@ -298,12 +298,14 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 ## Lane C: analyses (Codex, read-only on `atlas`; outputs go to `.superpowers/analysis/`)
 
 ### CX-R3: prove the KJV → original-word alignment join
-- **Status:** ready
+- **Status:** review:285f706..d3f43e5 on `lane/codex/CX-R3` (restored from the pre-ops queue; branch head 30d3c5f includes old queue bookkeeping).
 - **Base:** the atlas at `678a0d2` (CONTRACT-2's close; `kjv_token` is in the tracked artifact's Kjv section: 790,892 words).
 - **Background:** `.superpowers/analysis/name-sources.md` already chose **BibleForgeDB** (public domain / CC0): it aligns 763,778 KJV words to specific Hebrew/Greek tokens. Its KJV edition differs from our `data/raw/kjv.json` in 452 verses; ~17.9k of its rows are flagged ERROR; its Greek needs STEPBible TAGNT's Textus Receptus.
 - **Question:** how much of OUR KJV word layer can reach a specific original token through BibleForgeDB + STEPBible TAHOT/TAGNT, and what's left?
 - **Steps:** a spike in `~/w/CX-R3` scratch space (nothing committed but the report): download BibleForgeDB and TAHOT/TAGNT into scratch; join our `kjv_token` rows (read with `sqlite3` or a small script from the unpacked Kjv section, `data/cache/sections/`) to BibleForge's words by an explicit per-verse diff, never by position; then BibleForge's original tokens to TAHOT/TAGNT tokens. Report: the percentage of our words aligned; the unaligned by kind (italic/supplied, ERROR rows, the 452 differing verses, Greek TR gaps); 20 worked examples including Gen 32:28 "Israel"; the licence text of every file used.
 - **Done when:** `.superpowers/analysis/kjv-alignment-join.md` is pushed on `lane/codex/CX-R3` and reviewed. It feeds A-NAMES.
+
+- **handoff (restored 2026-10-01):** report `.superpowers/analysis/kjv-alignment-join.md` pushed; conservative original-token bridge reaches **707,678 / 790,892 (89.4785%)** of our tokens. Pinned sources/licenses, unaligned categories and 20 examples included; no KJV edit. Claude independently reviews report commit d3f43e5, then consumes it for A-NAMES. Scratch evidence `/home/donovan/w/CX-R3-scratch`; no locks.
 
 ### CX-R1: the 65 overlapping-event cases
 - **Status:** ready (they surfaced when CONTRACT-2 removed the 20-verse cap on attesting verses; landed at `68fb00f`)
@@ -312,11 +314,13 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Output:** `.superpowers/analysis/overlapping-events.md` on `lane/codex/CX-R1`. Read-only on everything else.
 
 ### CX-R2: Easton doctrinal review list (for the Pastor)
-- **Status:** ready
+- **Status:** claimed:codex:2026-10-01T20:34:30+00:00 (resuming existing worktree/branch; pre-ops handoff restored).
 - **Base:** `678a0d2`. **Source:** `data/raw/theographic/theographic-bible-metadata-master/json/easton.json` (Easton's Bible Dictionary, 1897, Presbyterian; it supplies the `description` of places, people and people groups). Which entities use which entry: `server/atlas-etl` (grep `easton`).
 - **Deliverable:** flag every entry that touches doctrine: baptism, the Lord's Supper, election/predestination, conversion, the law and the gospel, the church and ministry, the end times, and the like. Quote the passage and say why it may conflict with Lutheran teaching. No judgment beyond flagging.
 - **Output:** `.superpowers/analysis/easton-doctrinal-review.md` on `lane/codex/CX-R2`, sorted by how prominent the entity is in the app (its node's edge count from `bibex`/the artifact).
 - **Note:** Easton is re-sourced from its public-domain original when A-THEO replaces Theographic; the review carries over (same text).
+
+- **handoff (restored 2026-10-01):** draft report at `lane/codex/CX-R2` **5180aa4** inventories 6,519 source rows / 3,964 term families, ranks served descriptions by artifact degree, and screens 2,047 nonempty candidates. Only 22 passages have contextual review notes so far: **not review-ready**. Continue contextual examination of 2,025 remaining candidates, then semantic audit of 4,313 nonempty unselected rows; scratch `/home/donovan/w/CX-R2-scratch`. No app/data edits, no locks.
 
 ---
 
