@@ -76,8 +76,7 @@
 </div>
 
 @code {
-    [Parameter] public IExplorable? Root { get; set; }
-    [Parameter] public SavedExploration? Saved { get; set; }
+    [Parameter, EditorRequired] public PopoverOpening Opening { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
 
     [Parameter] public bool InSplit { get; set; }
@@ -103,7 +102,7 @@
 
     private Exploration? Exploration => (_frozenSnapshot as ExplorationState.Open)?.Exploration;
 
-    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Root?.Title ?? (Saved is { } saved ? Positions.Of(saved.Trail[^1]).Label : null) ?? "";
+    private string Title => _legacy?.Title ?? Exploration?.Current.Label ?? Opening.Match(explore: target => Positions.Of(target).Label, resume: saved => Positions.Of(saved.Trail[^1]).Label, legacy: node => node.Title);
 
     private bool IsText => Exploration?.Current.Kind.Match(node: kind => kind is NodeKind.TextUnit or NodeKind.Container, edge: _ => false) == true;
 
@@ -247,27 +246,37 @@
         ExplorationAtom.Changed += OnExplorationChanged;
 
         var request = _requests.Next();
-        if (Saved is { } saved)
-        {
-            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Trail))) is not [var start, ..] trail)
-            {
-                return;
-            }
+        await Opening.Match(
+            explore: target => OpenAt(request, target, null),
+            resume: saved => Resume(request, saved),
+            legacy: node => OpenAt(request, new NodePosition(node.Identity), node));
+    }
 
-            ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(trail.Skip(1), (step, target) => new Step(step.Kind, target)).ToList())));
-            await LoadCurrent();
-        }
-        else if (Root is { } root)
+    private async Task Resume(Request request, SavedExploration saved)
+    {
+        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(saved.Trail))) is not [var start, ..] trail)
         {
-            if (await Arriving(request, request.Fetch(() => Explorer.Resolve(new NodePosition(root.Identity)))) is not { } start)
-            {
-                return;
-            }
-
-            _rendered.Remember(start, root);
-            ApplyLocally(new ExplorationIntent.Open(start));
-            await LoadCurrent();
+            return;
         }
+
+        ApplyLocally(new ExplorationIntent.Reseed(new Exploration(start, saved.Steps.Zip(trail.Skip(1), (step, target) => new Step(step.Kind, target)).ToList())));
+        await LoadCurrent();
+    }
+
+    private async Task OpenAt(Request request, PositionRef target, IExplorable? legacy)
+    {
+        if (await Arriving(request, request.Fetch(() => Explorer.Resolve(target))) is not { } start)
+        {
+            return;
+        }
+
+        if (legacy is not null)
+        {
+            _rendered.Remember(start, legacy);
+        }
+
+        ApplyLocally(new ExplorationIntent.Open(start));
+        await LoadCurrent();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

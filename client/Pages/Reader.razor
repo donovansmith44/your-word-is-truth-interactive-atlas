@@ -168,7 +168,7 @@
 
     @if (_activeNode is not null)
     {
-        <ExplorerPopover @key="_activeNode" Root="_activeNode" OnClose="ClosePopover"
+        <ExplorerPopover @key="_activeNode" Opening="new PopoverOpening.Legacy(_activeNode)" OnClose="ClosePopover"
                           InSplit="@(_compositionSplit?.IsSplitOpen == true && _compositionSplit?.IsHost == true)" OnNavigateWorldInSplit="NavigateWorldInSplit" PaneAnchor="@(_compositionSplit?.IsSplitOpen == true ? "reader" : null)"
                           VerseAnchorSelector="@(_xrefEntryVerse is int xv ? $"#v{xv}" : null)" ShowBackdrop="!_hoverOnlyOpen"
                           OnPanelPointerEnter="CancelHoverClose" OnPanelPointerLeave="OnPanelPointerLeaveHoverGuard" />
