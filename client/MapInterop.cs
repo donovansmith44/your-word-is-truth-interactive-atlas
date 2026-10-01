@@ -21,6 +21,8 @@ public interface IMapEvents
     void OnArrowLeave();
     void OnArrowClick(string key, double x, double y);
 
+    void OnPolityClick(string polityId);
+
     void OnMapClick();
 
     void OnEscapePressed();
@@ -106,6 +108,9 @@ public sealed class MapInterop : IAsyncDisposable
         await _module.InvokeVoidAsync("setLandMask", _id, json);
     }
 
+    public async Task Emphasize(string? siteId, string? polityId) =>
+        await _module.InvokeVoidAsync("setEmphasis", _id, new { site = siteId, polity = polityId });
+
     public async Task SetIsolate(string? narrativeId) => await _module.InvokeVoidAsync("setIsolate", _id, narrativeId);
 
     // Instant, not animated: an animated pan would make the returned point unreliable (read
@@ -172,6 +177,7 @@ public sealed class MapEventsSink
     [JSInvokable] public void OnArrowHover(string key, double x, double y) => _sink.OnArrowHover(key, x, y);
     [JSInvokable] public void OnArrowLeave() => _sink.OnArrowLeave();
     [JSInvokable] public void OnArrowClick(string key, double x, double y) => _sink.OnArrowClick(key, x, y);
+    [JSInvokable] public void OnPolityClick(string polityId) => _sink.OnPolityClick(polityId);
     [JSInvokable] public void OnMapClick() => _sink.OnMapClick();
     [JSInvokable] public void OnEscapePressed() => _sink.OnEscapePressed();
     [JSInvokable] public void OnCameraChanged(double lat, double lon, double zoom) => _sink.OnCameraChanged(lat, lon, zoom);

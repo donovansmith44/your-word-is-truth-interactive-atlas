@@ -90,7 +90,14 @@ export function init(el, dotnetRef, opts) {
     map.on('zoomend', () => applyMarkerNudges(instances.get(id)));
 
     if (!mini) {
-        map.on('click', () => dotnetRef.invokeMethodAsync('OnMapClick'));
+        map.on('click', e => {
+            const polityId = polities.polityAt(e.latlng);
+            if (polityId) {
+                dotnetRef.invokeMethodAsync('OnPolityClick', polityId);
+            } else {
+                dotnetRef.invokeMethodAsync('OnMapClick');
+            }
+        });
         instances.get(id).escapeCleanup = watchEscape(dotnetRef);
 
         map.on('moveend zoomend', () => {
@@ -210,6 +217,10 @@ export function setScene(id, sceneJson) {
 
     if (!inst.mini) {
         inst.arrows.setArrows(scene.arrows || [], inst.markers);
+    }
+
+    if (inst.emphasisSite) {
+        applySiteEmphasis(inst, false);
     }
 }
 
@@ -769,6 +780,75 @@ export function panToPlace(id, lat, lon) {
     inst.map.setView([lat, lon], inst.map.getZoom(), { animate: false });
     const pt = inst.map.latLngToContainerPoint([lat, lon]);
     return { x: pt.x, y: pt.y };
+}
+
+export function setEmphasis(id, emphasis) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return;
+    }
+
+    const next = emphasis || {};
+    const site = next.site ?? null;
+    const siteChanged = site !== inst.emphasisSite;
+    inst.emphasisSite = site;
+    applySiteEmphasis(inst, siteChanged);
+    if (inst.polities) {
+        inst.polities.setEmphasis(next.polity ?? null);
+    }
+}
+
+function applySiteEmphasis(inst, pan) {
+    for (const ring of inst.map.getContainer().querySelectorAll('.atlas-emphasis-ring')) {
+        ring.remove();
+    }
+    if (inst.emphasisSite === null) {
+        return;
+    }
+
+    const entry = inst.markers.get(inst.emphasisSite) || (inst.quietMarkers && inst.quietMarkers.get(inst.emphasisSite));
+    if (!entry) {
+        return;
+    }
+
+    if (pan) {
+        inst.map.setView([entry.lat, entry.lon], inst.map.getZoom(), { animate: false });
+    }
+    const el = entry.marker.getElement();
+    if (el) {
+        const ring = document.createElement('span');
+        ring.className = 'atlas-emphasis-ring';
+        ring.setAttribute('data-testid', 'world-emphasis-site');
+        el.firstElementChild.appendChild(ring);
+    }
+}
+
+export function debugClickMap(id, lat, lon) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return false;
+    }
+    inst.map.fire('click', { latlng: L.latLng(lat, lon) });
+    return true;
+}
+
+export function debugRecordSink(id) {
+    const inst = instances.get(id);
+    if (!inst) {
+        return false;
+    }
+    inst.sinkCalls = [];
+    const original = inst.dotnetRef.invokeMethodAsync.bind(inst.dotnetRef);
+    inst.dotnetRef.invokeMethodAsync = (method, ...args) => {
+        inst.sinkCalls.push([method, ...args]);
+        return original(method, ...args);
+    };
+    return true;
+}
+
+export function debugSinkCalls(id) {
+    const inst = instances.get(id);
+    return inst && inst.sinkCalls ? inst.sinkCalls : [];
 }
 
 export function getCamera(id) {
@@ -1408,6 +1488,18 @@ function snapYear(lines, atYear) {
     return (best.from + best.to) / 2;
 }
 
+function ringContains(ring, lat, lon) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [latI, lonI] = ring[i];
+        const [latJ, lonJ] = ring[j];
+        if ((lonI > lon) !== (lonJ > lon) && lat < ((latJ - latI) * (lon - lonI)) / (lonJ - lonI) + latI) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
 const BorderLayer = L.Layer.extend({
     initialize(dotnetRef) {
         this._dotnetRef = dotnetRef;
@@ -1415,6 +1507,7 @@ const BorderLayer = L.Layer.extend({
         this._ringGroups = [];
         this._labels = [];
         this._yearTags = [];
+        this._emphasis = null;
         // Defaulted to empty (not left undefined) so a redraw that happens to run before the
         // first setLitPlaces call degrades to "nothing to dedupe against" rather than a
         // null-reference.
@@ -1535,6 +1628,34 @@ const BorderLayer = L.Layer.extend({
         this._roster = roster || [];
     },
 
+    setEmphasis(polityId) {
+        if (polityId === this._emphasis) {
+            return;
+        }
+        this._emphasis = polityId;
+        if (!this._morphing && this._entries.length > 0) {
+            this._paintSettled(this._entries, this._windowFrom, this._windowTo);
+        }
+    },
+
+    _emphasisedEntries() {
+        const ofPolity = this._entries.filter(entry => entry.id === this._emphasis);
+        const drawn = ofPolity.filter(entry => this._windowTo === undefined || (entry.from <= this._windowTo && entry.to >= this._windowTo));
+        return new Set(drawn.length > 0 ? drawn : ofPolity);
+    },
+
+    polityAt(latlng) {
+        if (this._morphing || this._svg.style.display === 'none') {
+            return null;
+        }
+        for (let i = this._ringGroups.length - 1; i >= 0; i--) {
+            if (ringContains(this._ringGroups[i].ring, latlng.lat, latlng.lng)) {
+                return this._ringGroups[i].entry.id;
+            }
+        }
+        return null;
+    },
+
     // The settled (overlay-combinator) paint, shared by setPolities (network-fed) and
     // settleMorph (locally computed). Paint order alone (oldest-to-newest per polity) is
     // what makes growth/contraction legible with no geometry comparison.
@@ -1555,7 +1676,8 @@ const BorderLayer = L.Layer.extend({
         this._windowTo = to;
 
         this._ringGroups = [];
-        const washEls = [], bandEls = [], lineEls = [], hitEls = [];
+        const washEls = [], bandEls = [], lineEls = [], hitEls = [], outlineEls = [], raisedWashEls = [];
+        const emphasised = this._emphasisedEntries();
         for (const entry of this._entries) {
             const fillColor = POLITY_TINTS[((entry.color_key % POLITY_TINTS.length) + POLITY_TINTS.length) % POLITY_TINTS.length];
             const lineColor = POLITY_TINTS_DARK[((entry.color_key % POLITY_TINTS_DARK.length) + POLITY_TINTS_DARK.length) % POLITY_TINTS_DARK.length];
@@ -1571,10 +1693,18 @@ const BorderLayer = L.Layer.extend({
                     'data-testid': `polity-ring-${esc(entry.id)}-${entry.from}-${ringIndex}`,
                 });
                 line.style.stroke = lineColor;
-                washEls.push(wash);
+                (emphasised.has(entry) ? raisedWashEls : washEls).push(wash);
                 bandEls.push(band);
                 lineEls.push(line);
                 const g = { wash, band, line, ring, entry, ringIndex };
+                if (emphasised.has(entry)) {
+                    g.outline = svgEl('path', {
+                        class: 'atlas-border-emphasis',
+                        fill: 'none',
+                        'data-testid': 'world-emphasis-territory',
+                    });
+                    outlineEls.push(g.outline);
+                }
                 this._ringGroups.push(g);
 
                 if (from !== undefined && to !== undefined) {
@@ -1590,13 +1720,16 @@ const BorderLayer = L.Layer.extend({
         }
         // Bands then lines then hit-strokes -- hit-strokes paint last/topmost so their own
         // wide invisible stroke always wins hit-testing over a same-ring line/band.
-        for (const el of washEls) {
+        for (const el of [...washEls, ...raisedWashEls]) {
             this._washSettledGroup.appendChild(el);
         }
         for (const el of bandEls) {
             this._strokeSettledGroup.appendChild(el);
         }
         for (const el of lineEls) {
+            this._strokeSettledGroup.appendChild(el);
+        }
+        for (const el of outlineEls) {
             this._strokeSettledGroup.appendChild(el);
         }
         for (const el of hitEls) {
@@ -1868,6 +2001,9 @@ const BorderLayer = L.Layer.extend({
             g.wash.setAttribute('d', d);
             g.band.setAttribute('d', d);
             g.line.setAttribute('d', d);
+            if (g.outline) {
+                g.outline.setAttribute('d', d);
+            }
             if (g.hit) {
                 g.hit.setAttribute('d', d);
             }
