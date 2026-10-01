@@ -32,6 +32,16 @@
             </button>
         }
 
+        @if (Eras.Count > 0 && Bounds is { } bounds)
+        {
+            <div class="slider-bounds" data-testid="world-slider-bounds" style="@SpanStyle(bounds)"></div>
+        }
+
+        @if (Eras.Count > 0 && Band is { } band)
+        {
+            <div class="slider-band" data-testid="world-slider-band" style="@SpanStyle(band)"></div>
+        }
+
         @if (Eras.Count > 0)
         {
             <div class="slider-handle slider-handle-from"
@@ -58,6 +68,20 @@
                  @onkeydown="@(e => OnHandleKeyDown("to", e))"></div>
         }
     </div>
+
+    @if (Bounds is not null)
+    {
+        <div class="slider-crossings">
+            @if (EffectiveFrom <= Lowest)
+            {
+                <button type="button" class="slider-cross" data-testid="world-cross-previous" @onclick="() => Cross(ArrowDirection.Previous)">&#8249;</button>
+            }
+            @if (EffectiveTo >= Highest)
+            {
+                <button type="button" class="slider-cross" data-testid="world-cross-next" @onclick="() => Cross(ArrowDirection.Next)">&#8250;</button>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -76,6 +100,9 @@
     [Parameter] public int To { get; set; }
 
     [Parameter] public TimeRange? Window { get; set; }
+    [Parameter] public TimeRange? Bounds { get; set; }
+    [Parameter] public TimeRange? Band { get; set; }
+    [Parameter] public EventCallback<ArrowDirection> OnCross { get; set; }
     [Parameter] public EventCallback<(int From, int To)> OnWindowChange { get; set; }
 
     // Fires on every pointermove while dragging (unlike OnWindowChange, which only fires at
@@ -96,6 +123,26 @@
 
     private int EffectiveFrom => _dragTarget is not null ? _dragFrom : From;
     private int EffectiveTo => _dragTarget is not null ? _dragTo : To;
+
+    private int Lowest => Bounds is { } b ? b.From.Value : int.MinValue;
+    private int Highest => Bounds is { } b ? b.To.Value : int.MaxValue;
+
+    private int Bounded(int year) => Math.Clamp(year, Lowest, Highest);
+
+    private string SpanStyle(TimeRange span)
+    {
+        var left = HandleX(ClampToSpan(span.From.Value));
+        var width = HandleX(ClampToSpan(span.To.Value)) - left;
+        return $"left: {left.ToString(System.Globalization.CultureInfo.InvariantCulture)}px; width: {width.ToString(System.Globalization.CultureInfo.InvariantCulture)}px;";
+    }
+
+    private async Task Cross(ArrowDirection direction)
+    {
+        if (!Disabled)
+        {
+            await OnCross.InvokeAsync(direction);
+        }
+    }
 
     private double[] EraWidthsPx => SliderScale.EraWidths(Eras, TrackWidthPx);
 
@@ -127,7 +174,7 @@
         if (YearInput.Read(_readout.Text) is { } typed)
         {
             _readout = _readout.Committed();
-            await OnWindowChange.InvokeAsync((typed.FromYear, typed.ToYear));
+            await OnWindowChange.InvokeAsync((Bounded(typed.FromYear), Bounded(typed.ToYear)));
         }
     }
 
@@ -139,7 +186,7 @@
         }
 
         _readout = _readout.Discarded();
-        await OnWindowChange.InvokeAsync((era.FromYear, era.ToYear));
+        await OnWindowChange.InvokeAsync((Bounded(era.FromYear), Bounded(era.ToYear)));
     }
 
     private void OnHandlePointerDown(string which)
@@ -161,7 +208,7 @@
             return;
         }
 
-        var year = SliderScale.XToYear(e.OffsetX, Eras, TrackWidthPx);
+        var year = Bounded(SliderScale.XToYear(e.OffsetX, Eras, TrackWidthPx));
         if (_dragTarget == "from")
         {
             _dragFrom = Math.Min(year, _dragTo);
@@ -186,11 +233,11 @@
         var (from, to) = (_dragFrom, _dragTo);
         if (_dragTarget == "from")
         {
-            from = Math.Min(SnapToEraBoundary(from, e.OffsetX), to);
+            from = Math.Min(Bounded(SnapToEraBoundary(from, e.OffsetX)), to);
         }
         else
         {
-            to = Math.Max(SnapToEraBoundary(to, e.OffsetX), from);
+            to = Math.Max(Bounded(SnapToEraBoundary(to, e.OffsetX)), from);
         }
 
         _dragTarget = null;
@@ -238,7 +285,7 @@
         var to = To;
         if (which == "from")
         {
-            from = ClampToSpan(NudgeYear(From, delta));
+            from = Bounded(ClampToSpan(NudgeYear(From, delta)));
             if (from > to)
             {
                 from = to;
@@ -246,7 +293,7 @@
         }
         else
         {
-            to = ClampToSpan(NudgeYear(To, delta));
+            to = Bounded(ClampToSpan(NudgeYear(To, delta)));
             if (to < from)
             {
                 to = from;
@@ -268,6 +315,7 @@
     }
 
     private int ClampToSpan(int year) => Math.Clamp(year, Eras[0].FromYear, Eras[^1].ToYear);
+
 
     private static string? ServedLabelOf(int year, Year? served) => served?.Value == year ? served.Label : null;
 
