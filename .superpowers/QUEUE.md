@@ -151,7 +151,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **Scope:** Theographic supplies 450 of 552 events, part of places, and the Easton text bundle. Replace from BibleData (CC BY: persons, events, Ussher dates), STEPBible TIPNR (CC BY), Easton re-sourced from its 1897 public-domain text, and our own curation. Needs a spec (types, what each source supplies, the id mapping so no node id churns without a recorded reason).
 
 ### A-STRIP: remove every comment from application code
-- **Status:** proposed (owner, 2026-09-30: "no comments in my app code stop doing that"; PRINCIPLES 9)
+- **Status:** proposed (owner, 2026-09-30: "no comments in my app code stop doing that"; PRINCIPLES 9). Size: ~5,300 comment lines in `server/`, `graph-types/`, `client/` (2,466 `///` in Rust). Blocker to rule on: utoipa takes a FIELD's published description only from a `///` doc line (`#[schema(description)]` is type-level), so either field descriptions leave the contract (type-level descriptions only) or `///` on wire fields is the one exception.
 - **Scope:** everything already in `server/`, `client/` and `graph-types/` before CONTRACT-2 (the close strips CONTRACT-2's own 290 lines). Wire descriptions the OpenAPI document needs become `#[schema(description)]`. One crate per commit; `export_contract --check` shows what the document loses.
 
 ### A-TOOLS-SPLIT: the tools leave the system's repo
