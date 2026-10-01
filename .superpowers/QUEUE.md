@@ -92,6 +92,8 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-50 (data, reader-facing): anchor citations contain developer curation notes** (HOTFIX-7, `ANCHOR_DEFERRALS`, `ret_babylon`), now served as `NodeRecord.description`. Closure: split curation notes from the reader citation in `data/`.
 - **F-51 (labels): placeholder labels remain** — "text unit ({corpus})" (never hit in the real artifact), "Commentary" for headless commentary items, commentary headings joined with ".:".
 - **F-52 (D.R.Y.): geography is compiled twice** (the label pass and `GraphService::assemble`); the pipeline does not hand it on.
+- **F-53 (UX): clicking the same place mention twice keeps the popover's current trail** (hosts key on a value-equal `PopoverOpening`); the World behaves the same. Owner: reopen fresh, or keep?
+- **F-54 (F-31): `MapFocusHatch.Query(placeId, …)` builds world queries from a local place id** in the event-place buttons; the served `NodeRef` should be the only id.
 - **F-39 note:** R4b confirms it — labels sit outside the logical hash; only a manual schema bump moves the root. Proposed closure: labels in `logical_dump_section`.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
