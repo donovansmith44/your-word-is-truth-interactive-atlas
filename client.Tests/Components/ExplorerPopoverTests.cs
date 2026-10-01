@@ -300,6 +300,7 @@ public sealed class ExplorerPopoverTests : BunitContext
         Services.AddSingleton(new AtlasClient(new HttpClient { BaseAddress = new Uri("http://unserved.invalid") }));
         Services.AddSingleton<IExplorableClient>(graph);
         Services.AddSingleton<IExplorer>(new GraphExplorer(graph));
+        Services.AddSingleton<IPresenter>(new GraphPresenter());
         Services.AddSingleton(new SavedExplorationsService(new InMemoryLocalStorage()));
         Services.AddSingleton<OwnershipRegistry>();
         Services.AddSingleton(new StateAtom<IReadOnlyList<NodeRef>>(AtomNames.Selection, Selection.Empty, SequenceEqualityComparer<NodeRef>.Instance));

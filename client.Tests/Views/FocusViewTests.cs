@@ -103,11 +103,13 @@ public sealed class FocusViewTests : BunitContext
         <button type="button" class="popover-head-action" data-testid="popover-chip-map" aria-label="Show on the map" title="Show on the map">&#8982;</button>
         """;
 
+    public FocusViewTests() => Services.AddSingleton<IPresenter>(new GraphPresenter());
+
     [Fact]
     public void A_node_whose_home_is_the_world_offers_its_host_the_way_to_the_map()
     {
         // Arrange
-        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+        var eden = Resolved.Node(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label)), Eden);
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => { }));
@@ -121,7 +123,7 @@ public sealed class FocusViewTests : BunitContext
     {
         // Arrange
         var asked = 0;
-        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+        var eden = Resolved.Node(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label)), Eden);
         var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => asked++));
 
         // Act
@@ -135,7 +137,7 @@ public sealed class FocusViewTests : BunitContext
     public void A_node_whose_home_is_not_the_world_offers_no_way_to_the_map()
     {
         // Arrange
-        var adam = Resolved.Node(Explored(WithAdam(new ServedGraph())), Adam);
+        var adam = Resolved.Node(WithAdam(new ServedGraph()), Adam);
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, adam).Add(v => v.Surface, Surface.Popover).Add(v => v.OnShowOnWorld, () => { }));
@@ -148,7 +150,7 @@ public sealed class FocusViewTests : BunitContext
     public void A_host_that_offers_no_way_to_the_map_shows_none()
     {
         // Arrange
-        var eden = Resolved.Node(Explored(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label))), Eden);
+        var eden = Resolved.Node(new ServedGraph().Serving(ServedGraph.Card(NodeKind.Place, Eden.Id, Eden.Label)), Eden);
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, eden).Add(v => v.Surface, Surface.Popover));
@@ -161,7 +163,7 @@ public sealed class FocusViewTests : BunitContext
     public void A_focus_is_its_card_then_every_frontier_group_offered_by_its_kinds_affordance()
     {
         // Arrange
-        var genesis2 = Genesis2(Explored(Genesis2Graph()));
+        var genesis2 = Genesis2(Genesis2Graph());
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
@@ -174,7 +176,7 @@ public sealed class FocusViewTests : BunitContext
     public void Revealing_more_of_a_listed_group_pages_its_links_from_the_server()
     {
         // Arrange
-        var view = Render<FocusView>(p => p.Add(v => v.Node, Genesis2(Explored(Genesis2Graph()))).Add(v => v.Surface, Surface.Popover));
+        var view = Render<FocusView>(p => p.Add(v => v.Node, Genesis2(Genesis2Graph())).Add(v => v.Surface, Surface.Popover));
 
         // Act
         view.Find("[data-testid='popover-section-cites-more']").Click();
@@ -189,7 +191,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var followed = new List<Link>();
         var view = Render<FocusView>(p => p
-            .Add(v => v.Node, Genesis2(Explored(Genesis2Graph())))
+            .Add(v => v.Node, Genesis2(Genesis2Graph()))
             .Add(v => v.Surface, Surface.Popover)
             .Add(v => v.OnFollow, link => followed.Add(link)));
 
@@ -220,7 +222,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var followed = new List<Link>();
         var view = Render<FocusView>(p => p
-            .Add(v => v.Node, Genesis2(Explored(Genesis2Graph())))
+            .Add(v => v.Node, Genesis2(Genesis2Graph()))
             .Add(v => v.Surface, Surface.Popover)
             .Add(v => v.OnFollow, link => followed.Add(link)));
         var everyStep = view.FindAll("[data-testid^='popover-entry-edge-']").Select(step => step.GetAttribute("data-testid")).ToList();
@@ -246,7 +248,7 @@ public sealed class FocusViewTests : BunitContext
     {
         // Arrange
         var mention = ServedGraph.EdgeRef(EdgeKind.Mentions, "Mentions:00ee", "GEN.2.1 · Mentions · Eden");
-        var graph = Explored(new ServedGraph().Serving(ServedGraph.EdgeRecordOf(mention, Verse1, Eden)));
+        var graph = new ServedGraph().Serving(ServedGraph.EdgeRecordOf(mention, Verse1, Eden));
         var followed = new List<Link>();
         var view = Render<FocusView>(p => p
             .Add(v => v.Node, Resolved.At(graph, ServedGraph.AtEdge(mention)))
@@ -275,7 +277,7 @@ public sealed class FocusViewTests : BunitContext
     public void A_heading_reads_the_served_display_label()
     {
         // Arrange
-        var graph = Explored(WithAdam(new ServedGraph()));
+        var graph = WithAdam(new ServedGraph());
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.Node(graph, Adam)).Add(v => v.Surface, Surface.Popover));
@@ -288,7 +290,7 @@ public sealed class FocusViewTests : BunitContext
     public void A_heading_counts_only_on_the_popover()
     {
         // Arrange
-        var graph = Explored(WithAdam(new ServedGraph()));
+        var graph = WithAdam(new ServedGraph());
         var adam = Resolved.Node(graph, Adam);
 
         // Act
@@ -307,10 +309,10 @@ public sealed class FocusViewTests : BunitContext
     public void Every_surface_names_its_handles_and_draws_a_card_only_where_the_kind_has_a_form()
     {
         // Arrange
-        var graph = Explored(new ServedGraph()
+        var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Container, Genesis2Id, Genesis2Label, new FrontierGroup(EdgeKind.PrecedesIn, 1), new FrontierGroup(EdgeKind.FollowsIn, 1)))
             .Serving(Genesis2Id, EdgeKind.PrecedesIn, null, ServedGraph.Page(EdgeKind.PrecedesIn, null, Genesis1))
-            .Serving(Genesis2Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis3)));
+            .Serving(Genesis2Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Genesis3));
         var genesis2 = Genesis2(graph);
 
         // Act
@@ -333,10 +335,10 @@ public sealed class FocusViewTests : BunitContext
     public void A_link_is_offered_only_where_its_target_kind_has_a_form_on_the_surface_it_opens_on()
     {
         // Arrange
-        var graph = Explored(new ServedGraph()
+        var graph = new ServedGraph()
             .Serving(ServedGraph.Card(NodeKind.Map, EdenMap.Id, EdenMap.Label, new FrontierGroup(EdgeKind.Shows, 2), new FrontierGroup(EdgeKind.MentionedIn, 1)) with { Map = ServedGraph.MapWindow(EdenWindow) })
             .Serving(EdenMap.Id, EdgeKind.Shows, null, ServedGraph.Page(EdgeKind.Shows, null, Eden, Adam))
-            .Serving(EdenMap.Id, EdgeKind.MentionedIn, null, ServedGraph.Page(EdgeKind.MentionedIn, null, Verse1)));
+            .Serving(EdenMap.Id, EdgeKind.MentionedIn, null, ServedGraph.Page(EdgeKind.MentionedIn, null, Verse1));
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, Resolved.Node(graph, EdenMap)).Add(v => v.Surface, Surface.World));
@@ -356,7 +358,7 @@ public sealed class FocusViewTests : BunitContext
     public void Rendering_the_same_node_again_keeps_what_was_revealed()
     {
         // Arrange
-        var graph = Explored(Genesis2Graph());
+        var graph = Genesis2Graph();
         var view = Render<FocusView>(p => p.Add(v => v.Node, Genesis2(graph)).Add(v => v.Surface, Surface.Popover));
         view.Find("[data-testid='popover-section-cites-more']").Click();
 
@@ -371,7 +373,7 @@ public sealed class FocusViewTests : BunitContext
     public void Presenting_another_node_replaces_the_card_and_the_frontier()
     {
         // Arrange
-        var graph = Explored(WithAdam(Genesis2Graph()));
+        var graph = WithAdam(Genesis2Graph());
         var view = Render<FocusView>(p => p.Add(v => v.Node, Genesis2(graph)).Add(v => v.Surface, Surface.Popover));
 
         // Act
@@ -387,9 +389,8 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var held = new HeldGraph(WithAdam(Genesis2Graph()), EdgeKind.Mentions, null);
         var explorer = new GraphExplorer(held);
-        Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
-        var adam = await explorer.Resolve(ServedGraph.At(Adam));
+        var genesis2 = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
+        var adam = await explorer.BeginAt(ServedGraph.At(Adam));
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         view.Render(p => p.Add(v => v.Node, adam));
 
@@ -407,9 +408,8 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var held = new HeldGraph(WithAdam(Genesis2Graph()), EdgeKind.Mentions, SecondOfTwo);
         var explorer = new GraphExplorer(held);
-        Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
-        var adam = await explorer.Resolve(ServedGraph.At(Adam));
+        var genesis2 = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
+        var adam = await explorer.BeginAt(ServedGraph.At(Adam));
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         view.Render(p => p.Add(v => v.Node, adam));
 
@@ -434,8 +434,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new FailingGraph(Genesis2Graph(), failures: int.MaxValue);
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var genesis2 = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
@@ -450,8 +449,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new FailingGraph(Genesis2Graph(), failures: 1);
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
 
         // Act
@@ -467,9 +465,8 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var held = new HeldGraph(WithAdam(Genesis2Graph()), EdgeKind.Mentions, null);
         var explorer = new GraphExplorer(held);
-        Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
-        var adam = await explorer.Resolve(ServedGraph.At(Adam));
+        var genesis2 = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
+        var adam = await explorer.BeginAt(ServedGraph.At(Adam));
         var view = Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         view.Render(p => p.Add(v => v.Node, adam));
 
@@ -487,8 +484,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var held = new HeldGraph(Genesis2Graph(), EdgeKind.Mentions, null);
         var explorer = new GraphExplorer(held);
-        Services.AddSingleton<IExplorer>(explorer);
-        var genesis2 = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var genesis2 = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
         Render<FocusView>(p => p.Add(v => v.Node, genesis2).Add(v => v.Surface, Surface.Popover));
         await DisposeComponentsAsync();
 
@@ -506,8 +502,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var held = new HeldGraph(Genesis2Graph(), EdgeKind.Cites, CitesSecondPageCursor);
         var explorer = new GraphExplorer(held);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
         view.Find("[data-testid='popover-section-cites-more']").Click();
 
@@ -525,8 +520,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new MultitudeGraph(Enum.GetValues<EdgeKind>());
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
@@ -543,8 +537,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new MultitudeGraph([EdgeKind.Shows]);
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.World));
@@ -559,8 +552,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new MultitudeGraph(Enum.GetValues<EdgeKind>());
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
 
         // Act
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
@@ -575,8 +567,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = new MultitudeGraph([EdgeKind.Contains]);
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var node = await explorer.Resolve(ServedGraph.At(Genesis2Ref));
+        var node = await explorer.BeginAt(ServedGraph.At(Genesis2Ref));
         var view = Render<FocusView>(p => p.Add(v => v.Node, node).Add(v => v.Surface, Surface.Popover));
 
         // Act
@@ -592,8 +583,7 @@ public sealed class FocusViewTests : BunitContext
         // Arrange
         var graph = EdenMapGraph();
         var explorer = new GraphExplorer(graph);
-        Services.AddSingleton<IExplorer>(explorer);
-        var map = await explorer.Resolve(ServedGraph.At(EdenMap));
+        var map = await explorer.BeginAt(ServedGraph.At(EdenMap));
         var view = Render<FocusView>(p => p.Add(v => v.Node, map).Add(v => v.Surface, Surface.Popover));
 
         // Act
@@ -607,7 +597,7 @@ public sealed class FocusViewTests : BunitContext
     public void Every_surface_transition_presents_what_a_fresh_presentation_on_the_new_surface_does()
     {
         // Arrange
-        var graph = Explored(EdenMapGraph());
+        var graph = EdenMapGraph();
         var map = Resolved.Node(graph, EdenMap);
         var transitions = Enum.GetValues<Surface>().SelectMany(from => Enum.GetValues<Surface>(), (from, to) => (From: from, To: to)).ToList();
 
@@ -622,12 +612,6 @@ public sealed class FocusViewTests : BunitContext
 
         // Assert
         Assert.Empty(differing);
-    }
-
-    private ServedGraph Explored(ServedGraph graph)
-    {
-        Services.AddSingleton<IExplorer>(new GraphExplorer(graph));
-        return graph;
     }
 
     private static readonly NodeRef Genesis2Ref = ServedGraph.Ref(NodeKind.Container, Genesis2Id, Genesis2Label);

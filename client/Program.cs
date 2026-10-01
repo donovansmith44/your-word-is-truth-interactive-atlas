@@ -40,6 +40,7 @@ public static class Program
         });
 
         builder.Services.AddSingleton<IExplorer>(sp => new GraphExplorer(sp.GetRequiredService<IExplorableClient>()));
+        builder.Services.AddSingleton<IPresenter>(new GraphPresenter());
 
         builder.Services.AddSingleton<ViewStateService>();
 

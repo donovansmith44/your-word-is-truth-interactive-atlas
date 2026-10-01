@@ -401,11 +401,11 @@ public sealed class ExploreTests
 
     private static Outcome<(bool, Exploration)> Arrived(bool value, IExplorer explorer, Exploration from, Link link)
     {
-        var target = explorer.Follow(link).GetAwaiter().GetResult();
+        var target = explorer.BeginAt(link.Target).GetAwaiter().GetResult();
         return new Outcome<(bool, Exploration)>.Arrived((value, from.Follow(new Step(link.Kind, target)).Follow(new Step(link.Kind.Dual(), from.Start))));
     }
 
-    private static Explorable Genesis(IExplorer explorer, NodeRef node) => explorer.Follow(new Link(EdgeKind.Mentions, ServedGraph.At(node))).GetAwaiter().GetResult();
+    private static Explorable Genesis(IExplorer explorer, NodeRef node) => explorer.BeginAt(ServedGraph.At(node)).GetAwaiter().GetResult();
 
     private static (IExplorer Explorer, Exploration From) Graph()
     {

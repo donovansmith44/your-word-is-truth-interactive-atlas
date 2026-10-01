@@ -63,7 +63,7 @@ public sealed class CrossingTests
         var outcome = await Crossing.Walk(EdgeKind.FollowsIn).Run(explorer, from);
 
         // Assert
-        var judges = await explorer.Follow(new Link(EdgeKind.FollowsIn, ServedGraph.At(Judges)));
+        var judges = await explorer.BeginAt(ServedGraph.At(Judges));
         Assert.Equal(new Outcome<(Explorable, Exploration)>.Arrived((judges, from.Follow(new Step(EdgeKind.FollowsIn, judges)))), outcome);
     }
 
@@ -102,7 +102,7 @@ public sealed class CrossingTests
             .Serving(Conquest.Id, EdgeKind.FollowsIn, null, ServedGraph.Page(EdgeKind.FollowsIn, null, Judges));
         var explorer = new GraphExplorer(graph);
         var from = new Exploration(Resolved.Node(graph, Conquest), []);
-        await explorer.Present(new PresentationRequest(from.Current, Surface.World));
+        await new GraphPresenter().Present(new PresentationRequest(from.Current, Surface.World));
         var (elementsBefore, neighboursBefore) = (graph.ElementReads, graph.NeighbourReads);
 
         // Act
