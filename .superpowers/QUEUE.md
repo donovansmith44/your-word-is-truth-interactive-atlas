@@ -68,6 +68,7 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-29 (client): the popover's `Root`/`Saved` are two optionals, not one sum.** Closure: `PopoverOpening = Root | Saved`.
 - **F-30 (tests): `tsc` over tests/ux has 16 pre-existing errors,** so spec types aren't enforced. Closure: tsc clean and in the gate.
 - **F-31 (client): node constructors disagree on local vs wire ids** (`PersonNode` vs the rest). Closure: one typed id on the client (FOCUS-1 R36 / A-BACKLOG).
+- **F-32 (map-generator, Lane B): the workspace does not build in WSL.** Seven crates take `atlas-graph-types` by a path into the old Windows-era tree (`../../../../scratch/bible-atlas-sketch/.claude/worktrees/bible-atlas-m1/graph-types`), which no longer exists; `cargo` fails at manifest load. Closure: one dependency declaration (workspace `[workspace.dependencies]` or a git dep on bible-atlas at a pinned rev), so a machine move cannot break seven sites.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
