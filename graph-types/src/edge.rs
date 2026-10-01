@@ -88,7 +88,9 @@ relations! {
         ParentOf     => "parent-of" / "child-of",
         Participates => "participates-in" / "participants",
         AuthoredBy   => "authored-by" / "authored",
-        Shows        => "shows" / "shown-on"
+        Shows        => "shows" / "shown-on",
+        EdgeSource   => "from" / "source-of",
+        EdgeTarget   => "to" / "target-of"
     }
     symmetric {
         Analogue          => "analogous-to",
@@ -137,10 +139,49 @@ impl EdgeKind {
     pub fn from_label(label: &str) -> Option<EdgeKind> {
         Self::all().find(|k| k.label() == label)
     }
+
+    pub fn display_label(self) -> String {
+        let spoken = self.label().replace('-', " ");
+        let mut letters = spoken.chars();
+        letters.next().map(|first| first.to_uppercase().chain(letters).collect()).unwrap_or_default()
+    }
+
+    pub fn end_at(self, here: &Position, there: &Position) -> EdgeEnd {
+        let here_is_from = match self {
+            EdgeKind::Directed(_, Direction::Forward) => true,
+            EdgeKind::Directed(_, Direction::Inverse) => false,
+            EdgeKind::Symmetric(_) => here <= there,
+        };
+        if here_is_from { EdgeEnd::From } else { EdgeEnd::To }
+    }
 }
+
+crate::vocabulary! {
+    #[doc = "Which end of an edge a position is: an edge leads from its `from` end to its `to` end, and a symmetric edge's `from` end is the lesser of its two."]
+    #[derive(PartialOrd, Ord, Hash)]
+    EdgeEnd {
+        From => "from",
+        To => "to",
+    }
+}
+
+pub const EDGE_FROM: EdgeKind = EdgeKind::Directed(RelationId::EdgeSource, Direction::Forward);
+pub const EDGE_TO: EdgeKind = EdgeKind::Directed(RelationId::EdgeTarget, Direction::Forward);
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EdgeId(pub Interned);
+
+impl EdgeId {
+    pub fn kind(&self) -> Option<EdgeKind> {
+        let (relation, _) = self.0.split_once(':')?;
+        crate::graph::edge_hash(self)?;
+        RelationId::ALL
+            .iter()
+            .find(|r| r.name() == relation)
+            .map(|r| EdgeKind::Directed(*r, Direction::Forward))
+            .or_else(|| SymRelationId::ALL.iter().find(|s| s.name() == relation).map(|s| EdgeKind::Symmetric(*s)))
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Justification {
@@ -457,12 +498,23 @@ pub trait Relation {
     fn endpoints(row: &Self::Row) -> Vec<(Position, Position)>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeRecord {
     pub id: EdgeId,
     pub kind: EdgeKind,
     pub subject: Position,
     pub object: Position,
+    pub meta: EdgeMeta,
+}
+
+impl EdgeRecord {
+    pub fn ends(&self) -> BTreeMap<EdgeKind, Frontier> {
+        let here = Position::Edge(self.id.clone());
+        let end = |relation: RelationId, node: &Position| {
+            Frontier::of_rows(vec![EdgeEntry { edge: entry_id(relation, &here, node), node: node.clone(), meta: EdgeMeta::None }])
+        };
+        BTreeMap::from([(EDGE_FROM, end(RelationId::EdgeSource, &self.subject)), (EDGE_TO, end(RelationId::EdgeTarget, &self.object))])
+    }
 }
 
 #[derive(Debug, Default)]

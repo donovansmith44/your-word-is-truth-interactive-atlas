@@ -254,3 +254,154 @@ fn malformed_chains_fail_to_construct() {
     )
     .is_err());
 }
+
+fn first_entry(g: &Graph, at_position: &Position, kind: EdgeKind) -> crate::explore::EdgeEntry {
+    PositionRef(at_position.clone()).edges(g, &EdgeQuery { kind, cursor: None, limit: 1 }).entries.remove(0)
+}
+
+#[test]
+fn an_edge_is_read_by_its_id_as_its_kind_its_two_ends_and_its_meta() {
+    // Arrange
+    let g = toy();
+    let located = EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward);
+    let entry = first_entry(&g, &pos(&ev("baptism")), located);
+
+    // Act
+    let record = crate::store::GraphQuery::edge(&g, &entry.edge);
+
+    // Assert
+    assert_eq!(
+        record,
+        Some(crate::edge::EdgeRecord { id: entry.edge.clone(), kind: located, subject: pos(&ev("baptism")), object: at(&pl("jordan").erase()), meta: entry.meta })
+    );
+}
+
+#[test]
+fn an_edge_read_from_either_end_of_its_inverse_page_is_the_same_edge() {
+    // Arrange
+    let g = toy();
+    let site_of = EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse);
+    let entry = first_entry(&g, &at(&pl("jordan").erase()), site_of);
+
+    // Act
+    let record = crate::store::GraphQuery::edge(&g, &entry.edge).map(|r| (r.subject, r.object));
+
+    // Assert
+    assert_eq!(record, Some((pos(&ev("baptism")), at(&pl("jordan").erase()))));
+}
+
+#[test]
+fn a_symmetric_edge_leads_from_the_lesser_of_its_ends() {
+    // Arrange
+    let mut g = Graph::default();
+    g.analogue.push(crate::edge::Analogue { a: ev("temptation"), b: ev("baptism"), provenance: "curated".into() });
+    g.build_indexes();
+    let analogous = EdgeKind::Symmetric(SymRelationId::Analogue);
+    let entry = first_entry(&g, &pos(&ev("temptation")), analogous);
+
+    // Act
+    let record = crate::store::GraphQuery::edge(&g, &entry.edge).map(|r| (r.kind, r.subject, r.object));
+
+    // Assert
+    assert_eq!(record, Some((analogous, pos(&ev("baptism")), pos(&ev("temptation")))));
+}
+
+#[test]
+fn an_id_naming_no_edge_or_no_relation_reads_as_no_edge() {
+    // Arrange
+    let g = toy();
+    let entry = first_entry(&g, &pos(&ev("baptism")), EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward));
+    let (_, hash) = entry.edge.0.split_once(':').unwrap();
+    let asked = [
+        crate::edge::EdgeId(format!("{}:{hash}", RelationId::Attests.name())),
+        crate::edge::EdgeId(format!("Nothing:{hash}")),
+        crate::edge::EdgeId(RelationId::LocatedAt.name().to_string()),
+    ];
+
+    // Act
+    let read: Vec<bool> = asked.iter().map(|id| crate::store::GraphQuery::edge(&g, id).is_some()).collect();
+
+    // Assert
+    assert_eq!(read, vec![false, false, false]);
+}
+
+#[test]
+fn an_edge_id_names_its_relation_read_forward() {
+    // Arrange
+    let g = toy();
+    let entry = first_entry(&g, &at(&pl("jordan").erase()), EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse));
+    let (_, hash) = entry.edge.0.split_once(':').unwrap();
+    let asked = [
+        entry.edge.clone(),
+        crate::edge::EdgeId(format!("{}:{hash}", SymRelationId::Analogue.name())),
+        crate::edge::EdgeId(format!("{}:not-hex", RelationId::LocatedAt.name())),
+        crate::edge::EdgeId(format!("Nothing:{hash}")),
+    ];
+
+    // Act
+    let kinds: Vec<Option<EdgeKind>> = asked.iter().map(crate::edge::EdgeId::kind).collect();
+
+    // Assert
+    assert_eq!(
+        kinds,
+        vec![Some(EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward)), Some(EdgeKind::Symmetric(SymRelationId::Analogue)), None, None]
+    );
+}
+
+#[test]
+fn an_edges_ends_are_its_from_and_to_frontiers_of_one_each() {
+    // Arrange
+    let g = toy();
+    let entry = first_entry(&g, &pos(&ev("baptism")), EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward));
+    let record = crate::store::GraphQuery::edge(&g, &entry.edge).unwrap();
+    let here = Position::Edge(entry.edge.clone());
+
+    // Act
+    let ends: Vec<(EdgeKind, Vec<crate::explore::EdgeEntry>)> = record.ends().into_iter().map(|(kind, frontier)| (kind, frontier.edges().cloned().collect())).collect();
+
+    // Assert
+    assert_eq!(
+        ends,
+        vec![
+            (crate::edge::EDGE_FROM, vec![crate::explore::EdgeEntry { edge: crate::edge::entry_id(RelationId::EdgeSource, &here, &record.subject), node: record.subject.clone(), meta: crate::explore::EdgeMeta::None }]),
+            (crate::edge::EDGE_TO, vec![crate::explore::EdgeEntry { edge: crate::edge::entry_id(RelationId::EdgeTarget, &here, &record.object), node: record.object.clone(), meta: crate::explore::EdgeMeta::None }]),
+        ]
+    );
+}
+
+#[test]
+fn a_position_is_the_from_end_of_a_forward_edge_the_to_end_of_an_inverse_one_and_the_lesser_end_of_a_symmetric_one() {
+    // Arrange
+    let (lesser, greater) = (pos(&ev("baptism")), pos(&ev("temptation")));
+    let asked = [
+        (EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward), &greater, &lesser),
+        (EdgeKind::Directed(RelationId::LocatedAt, Direction::Inverse), &lesser, &greater),
+        (EdgeKind::Symmetric(SymRelationId::Analogue), &lesser, &greater),
+        (EdgeKind::Symmetric(SymRelationId::Analogue), &greater, &lesser),
+        (EdgeKind::Symmetric(SymRelationId::Analogue), &lesser, &lesser),
+    ];
+
+    // Act
+    let ends: Vec<crate::edge::EdgeEnd> = asked.iter().map(|(kind, here, there)| kind.end_at(here, there)).collect();
+
+    // Assert
+    use crate::edge::EdgeEnd::{From, To};
+    assert_eq!(ends, vec![From, To, From, To, From]);
+}
+
+#[test]
+fn every_edge_kind_is_displayed_as_its_label_spoken_with_a_capital() {
+    // Arrange
+    let asked = [
+        EdgeKind::Directed(RelationId::Attests, Direction::Forward),
+        EdgeKind::Directed(RelationId::SpokenAt, Direction::Inverse),
+        crate::edge::EDGE_FROM,
+        EdgeKind::Symmetric(SymRelationId::Parallel),
+    ];
+
+    // Act
+    let shown: Vec<String> = asked.iter().map(|kind| kind.display_label()).collect();
+
+    // Assert
+    assert_eq!(shown, vec!["Attested in", "Site of speech", "From", "Parallel"]);
+}

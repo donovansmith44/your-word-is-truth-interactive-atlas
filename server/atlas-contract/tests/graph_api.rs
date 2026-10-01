@@ -1487,35 +1487,13 @@ fn a_neighbour_is_published_as_a_node_position_or_an_edge_position_told_apart_by
             },
             "EdgeRef": {
                 "type": "object",
-                "description": "A reference to an edge: the id its own page carries as `edge`.",
-                "required": ["id"],
-                "properties": { "id": { "type": "string" } },
+                "description": "A reference to an edge: the id its own page carries as `edge` and `/api/edge/{id}` reads, its kind read from its `from` end, and a label naming its kind and both its ends.",
+                "required": ["id", "kind", "label"],
+                "properties": { "id": { "type": "string" }, "kind": { "$ref": "#/components/schemas/EdgeKind" }, "label": { "type": "string" } },
                 "additionalProperties": false,
             },
             "PositionKind": null,
             "neighbour": { "$ref": "#/components/schemas/PositionRef" },
-        })
-    );
-}
-
-#[tokio::test]
-async fn an_anchor_justifies_the_dating_it_grounds_and_that_neighbour_is_the_edge_itself() {
-    // Arrange
-    let app = compiled_app();
-    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
-
-    // Act
-    let (status, page, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
-
-    // Assert
-    assert_eq!(status, StatusCode::OK, "{page}");
-    assert_eq!(
-        page,
-        serde_json::json!({
-            "kind": "justifies",
-            "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"] } } }],
-            "next": null,
-            "version": dates["version"],
         })
     );
 }
@@ -1636,7 +1614,7 @@ async fn genesis_is_a_member_of_the_bible_root() {
         page,
         serde_json::json!({
             "kind": "member-of",
-            "entries": [ { "edge": page["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } } } ],
+            "entries": [ { "edge": page["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": BIBLE_ROOT, "kind": "Container", "label": "The Holy Bible" } }, "end": "to" } ],
             "next": null,
             "version": version,
         })
@@ -1664,7 +1642,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         documents,
         serde_json::json!({
             "kind": "follows-in",
-            "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } } } ],
+            "entries": [ { "edge": documents["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": LARGE_CATECHISM, "kind": "Container", "label": "The Large Catechism" } }, "end": "from" } ],
             "next": null,
             "version": documents["version"].clone(),
         })
@@ -1673,7 +1651,7 @@ async fn the_small_catechism_is_followed_by_the_large_and_the_commandments_by_th
         articles,
         serde_json::json!({
             "kind": "follows-in",
-            "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } } } ],
+            "entries": [ { "edge": articles["entries"][0]["edge"].clone(), "neighbour": { "position": "node", "node": { "id": THE_CREED, "kind": "Container", "label": "II. The Creed" } }, "end": "from" } ],
             "next": null,
             "version": articles["version"].clone(),
         })
@@ -1831,7 +1809,7 @@ async fn a_cites_entry_carries_the_votes_the_cross_reference_route_counts() {
     // Assert
     assert_eq!(
         (status, page["entries"].clone()),
-        (StatusCode::OK, serde_json::json!([{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": cited }, "votes": votes }]))
+        (StatusCode::OK, serde_json::json!([{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": cited }, "end": "from", "votes": votes }]))
     );
 }
 
@@ -1849,7 +1827,7 @@ async fn a_follows_in_entry_carries_the_narrative_its_leg_belongs_to() {
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "neighbour": { "position": "node", "node": { "id": "Event:ab_haran", "kind": "Event", "label": legacy["narrative"][0]["following"]["label"] } },
+                "neighbour": { "position": "node", "node": { "id": "Event:ab_haran", "kind": "Event", "label": legacy["narrative"][0]["following"]["label"] } }, "end": "from",
                 "narrative": legacy["narrative"][0]["narrative_id"],
             }])
         )
@@ -1871,7 +1849,7 @@ async fn an_attested_in_entry_carries_its_accounts_runs_across_a_gap() {
             serde_json::json!([{ "book": "GEN", "chapter": 11, "verses": ["GEN.11.28", "GEN.11.31"], "count": 2 }]),
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "neighbour": { "position": "node", "node": { "id": "text-unit:GEN.11.28", "kind": "TextUnit", "label": "GEN.11.28" } },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:GEN.11.28", "kind": "TextUnit", "label": "GEN.11.28" } }, "end": "from",
                 "loci": [whole_verse("GEN", 11, 28), whole_verse("GEN", 11, 31)],
             }])
         )
@@ -1893,7 +1871,7 @@ async fn an_attested_in_entry_carries_its_accounts_run_and_the_note_on_how_the_a
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.26.6", "kind": "TextUnit", "label": "MAT.26.6" } },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.26.6", "kind": "TextUnit", "label": "MAT.26.6" } }, "end": "from",
                 "loci": [{ "from": { "unit": bible_unit("MAT", 26, 6) }, "to": { "unit": bible_unit("MAT", 26, 13) } }],
                 "note": matthew["ref_note"],
             }])
@@ -1916,7 +1894,7 @@ async fn an_attests_entry_carries_the_verse_it_stands_on_and_the_note_on_its_acc
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "neighbour": { "position": "node", "node": { "id": "Event:pw_bethany", "kind": "Event", "label": legacy["title"] } },
+                "neighbour": { "position": "node", "node": { "id": "Event:pw_bethany", "kind": "Event", "label": legacy["title"] } }, "end": "to",
                 "loci": [whole_verse("MAT", 26, 6)],
                 "note": matthew["ref_note"],
             }])
@@ -1955,7 +1933,7 @@ async fn an_attested_in_entry_runs_its_account_on_across_every_chapter_read_to_i
             StatusCode::OK,
             serde_json::json!([{
                 "edge": page["entries"][0]["edge"],
-                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.5.1", "kind": "TextUnit", "label": "MAT.5.1" } },
+                "neighbour": { "position": "node", "node": { "id": "text-unit:MAT.5.1", "kind": "TextUnit", "label": "MAT.5.1" } }, "end": "from",
                 "loci": [{ "from": { "unit": bible_unit("MAT", 5, 1) }, "to": { "unit": bible_unit("MAT", 7, 29) } }],
                 "note": matthew["ref_note"],
             }])
@@ -2218,9 +2196,9 @@ async fn jesus_is_the_eternal_son_of_god_born_of_the_virgin_mary_and_the_suppose
         (
             StatusCode::OK,
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "eternal" },
-                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" } }, "parentage": "legal" },
-                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" } }, "parentage": "virgin" },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "end": "to", "parentage": "eternal" },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joseph_1715", "kind": "Person", "label": "Joseph (Mary's Husband)" } }, "end": "to", "parentage": "legal" },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:mary_1938", "kind": "Person", "label": "Mary (Mother of Jesus)" } }, "end": "to", "parentage": "virgin" },
             ])
         )
     );
@@ -2239,9 +2217,9 @@ async fn abrahams_spouses_are_hagar_keturah_and_sarah() {
             StatusCode::OK,
             serde_json::json!("spouse-of"),
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } } },
-                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } } },
-                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } } },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:hagar_1348", "kind": "Person", "label": "Hagar" } }, "end": "from" },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:keturah_1782", "kind": "Person", "label": "Keturah" } }, "end": "from" },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:sarah_2473", "kind": "Person", "label": "Sarah" } }, "end": "from" },
             ])
         )
     );
@@ -2260,13 +2238,13 @@ async fn adam_and_eve_were_created_by_god_and_seth_was_born_to_them() {
         (adam_status, adam["entries"].clone(), eve_status, eve["entries"].clone(), seth_status, seth["entries"].clone()),
         (
             StatusCode::OK,
-            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "created" }]),
+            serde_json::json!([{ "edge": adam["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "end": "to", "parentage": "created" }]),
             StatusCode::OK,
-            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "parentage": "created" }]),
+            serde_json::json!([{ "edge": eve["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:god_1324", "kind": "Person", "label": "God" } }, "end": "to", "parentage": "created" }]),
             StatusCode::OK,
             serde_json::json!([
-                { "edge": seth["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" } }, "parentage": "natural" },
-                { "edge": seth["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" } }, "parentage": "natural" },
+                { "edge": seth["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:adam_78", "kind": "Person", "label": "Adam" } }, "end": "to", "parentage": "natural" },
+                { "edge": seth["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:eve_1231", "kind": "Person", "label": "Eve" } }, "end": "to", "parentage": "natural" },
             ]),
         )
     );
@@ -2284,10 +2262,10 @@ async fn the_brethren_of_jesus_are_james_joses_simon_and_jude() {
         (
             StatusCode::OK,
             serde_json::json!([
-                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } } },
-                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } } },
-                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } } },
-                { "edge": page["entries"][3]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } } },
+                { "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:james_719", "kind": "Person", "label": "James (Brother of Jesus)" } }, "end": "to" },
+                { "edge": page["entries"][1]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:joses_1721", "kind": "Person", "label": "Joses" } }, "end": "from" },
+                { "edge": page["entries"][2]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jude_1756", "kind": "Person", "label": "Jude" } }, "end": "from" },
+                { "edge": page["entries"][3]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:simon_2747", "kind": "Person", "label": "Simon" } }, "end": "from" },
             ])
         )
     );
@@ -2306,11 +2284,273 @@ async fn the_virgin_mary_is_the_mother_of_jesus_only_and_joseph_his_father_only_
         (mary_status, mary["entries"].clone(), joseph_status, joseph["entries"].clone(), james_status, james["entries"].clone()),
         (
             StatusCode::OK,
-            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "parentage": "virgin" }]),
+            serde_json::json!([{ "edge": mary["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "end": "from", "parentage": "virgin" }]),
             StatusCode::OK,
-            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "parentage": "legal" }]),
+            serde_json::json!([{ "edge": joseph["entries"][0]["edge"], "neighbour": { "position": "node", "node": { "id": "Person:jesus_905", "kind": "Person", "label": "Jesus Christ" } }, "end": "from", "parentage": "legal" }]),
             StatusCode::OK,
             serde_json::json!([]),
+        )
+    );
+}
+
+const A_VERSE_ATTESTING_ONE_EVENT: &str = "text-unit:MAT.26.6";
+const A_VERSE_MENTIONING_NAMES: &str = "text-unit:EXO.4.14";
+
+fn served_display_label(kind: &str) -> String {
+    let document = serde_json::to_value(atlas_contract::document::openapi()).unwrap();
+    let kinds = document["x-atlas-relations"]["kinds"].as_array().expect("the vocabulary lists every edge kind").clone();
+    kinds.iter().find(|k| k["kind"] == kind).and_then(|k| k["label"].as_str()).unwrap_or_else(|| panic!("the vocabulary labels no {kind}")).to_string()
+}
+
+fn edge_label(kind: &str, from: &serde_json::Value, to: &serde_json::Value) -> String {
+    format!("{}: {} \u{2192} {}", served_display_label(kind), from["label"].as_str().unwrap(), to["label"].as_str().unwrap())
+}
+
+fn node_ref_of(card: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!({ "id": card["id"], "kind": card["kind"], "label": card["label"] })
+}
+
+fn row_provenance(edge: &serde_json::Value) -> String {
+    use atlas_graph_types::store::GraphQuery;
+    let (_, graph) = real_atlas();
+    graph.snapshot().row_provenance(&atlas_graph_types::edge::EdgeId(edge.as_str().unwrap().to_string())).expect("a served edge has a row").provenance
+}
+
+async fn the_attestation_of_a_verse(app: &axum::Router) -> (serde_json::Value, serde_json::Value) {
+    let (_, attests, _) = get(app, &format!("/api/node/{A_VERSE_ATTESTING_ONE_EVENT}/edges?kind=attests")).await;
+    let entry = attests["entries"][0].clone();
+    (entry["edge"].clone(), entry["neighbour"].clone())
+}
+
+#[tokio::test]
+async fn an_edge_card_names_its_kind_its_ends_its_provenance_and_its_frontier() {
+    // Arrange
+    let app = compiled_app();
+    let (edge, event) = the_attestation_of_a_verse(&app).await;
+    let (_, verse, _) = get(&app, &format!("/api/node/{A_VERSE_ATTESTING_ONE_EVENT}")).await;
+    let (_, accounts, _) = get(&app, &format!("/api/node/{}/edges?kind=attested-in&limit=200", event["node"]["id"].as_str().unwrap())).await;
+    let account = accounts["entries"].as_array().unwrap().iter().find(|e| e["edge"] == edge).expect("the event's own page carries the same edge").clone();
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/edge/{}", edge.as_str().unwrap())).await;
+
+    // Assert
+    assert_eq!(
+        (status, card.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "id": edge,
+                "kind": "attested-in",
+                "label": edge_label("attested-in", &event["node"], &verse),
+                "from": event,
+                "to": { "position": "node", "node": node_ref_of(&verse) },
+                "provenance": row_provenance(&edge),
+                "loci": account["loci"],
+                "note": account["note"],
+                "edge_summary": [{ "kind": "from", "count": 1 }, { "kind": "to", "count": 1 }],
+                "version": verse["version"],
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_edge_card_reads_the_same_from_the_artifact_as_from_the_raw_build() {
+    // Arrange
+    let (raw, artifact) = (compiled_app(), artifact_app());
+    let (edge, _) = the_attestation_of_a_verse(&raw).await;
+    let uri = format!("/api/edge/{}", edge.as_str().unwrap());
+
+    // Act
+    let (built, served) = (get(&raw, &uri).await, get(&artifact, &uri).await);
+
+    // Assert
+    let unstamped = |(status, mut card, _): (StatusCode, serde_json::Value, axum::http::HeaderMap)| {
+        card.as_object_mut().unwrap().remove("version");
+        (status, card)
+    };
+    assert_eq!(unstamped(served), unstamped(built));
+}
+
+#[tokio::test]
+async fn an_edges_from_page_leads_to_its_source_node() {
+    // Arrange
+    let app = compiled_app();
+    let (edge, event) = the_attestation_of_a_verse(&app).await;
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=from", edge.as_str().unwrap())).await;
+
+    // Assert
+    assert_eq!(
+        (status, page.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({ "kind": "from", "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": event, "end": "from" }], "next": null, "version": page["version"] })
+        )
+    );
+}
+
+#[tokio::test]
+async fn an_edges_to_page_leads_to_its_target_node() {
+    // Arrange
+    let app = compiled_app();
+    let (edge, _) = the_attestation_of_a_verse(&app).await;
+    let (_, verse, _) = get(&app, &format!("/api/node/{A_VERSE_ATTESTING_ONE_EVENT}")).await;
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/edge/{}/edges?kind=to", edge.as_str().unwrap())).await;
+
+    // Assert
+    assert_eq!(
+        (status, page.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "kind": "to",
+                "entries": [{ "edge": page["entries"][0]["edge"], "neighbour": { "position": "node", "node": node_ref_of(&verse) }, "end": "from" }],
+                "next": null,
+                "version": verse["version"],
+            })
+        )
+    );
+}
+
+#[tokio::test]
+async fn a_justified_edge_lists_what_justifies_it() {
+    // Arrange
+    let app = compiled_app();
+    let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
+    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
+    let (_, justifies, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
+    let dating = dates["entries"][0]["edge"].as_str().unwrap();
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/edge/{dating}/edges?kind=justified-by")).await;
+
+    // Assert
+    let grounded_by_the_anchor: Vec<&serde_json::Value> = page["entries"].as_array().unwrap().iter().filter(|e| e["neighbour"]["node"]["id"] == anchor["id"]).collect();
+    assert_eq!(
+        (status, grounded_by_the_anchor),
+        (StatusCode::OK, vec![&serde_json::json!({ "edge": justifies["entries"][0]["edge"], "neighbour": { "position": "node", "node": node_ref_of(&anchor) }, "end": "from" })])
+    );
+}
+
+#[tokio::test]
+async fn every_edge_entry_says_which_end_the_page_node_is() {
+    // Arrange
+    let app = compiled_app();
+    let (_, mentions, _) = get(&app, &format!("/api/node/{A_VERSE_MENTIONING_NAMES}/edges?kind=mentions")).await;
+    let named = mentions["entries"][0]["neighbour"]["node"]["id"].as_str().unwrap().to_string();
+
+    // Act
+    let (_, mentioned_in, _) = get(&app, &format!("/api/node/{named}/edges?kind=mentioned-in")).await;
+
+    // Assert
+    let ends = |page: &serde_json::Value| page["entries"].as_array().unwrap().iter().map(|e| e["end"].clone()).collect::<Vec<_>>();
+    assert_eq!(
+        (ends(&mentions), ends(&mentioned_in)),
+        (vec![serde_json::json!("from"); mentions["entries"].as_array().unwrap().len()], vec![serde_json::json!("to"); mentioned_in["entries"].as_array().unwrap().len()])
+    );
+}
+
+#[tokio::test]
+async fn an_unknown_edge_id_is_not_found() {
+    // Arrange
+    let app = compiled_app();
+    let (edge, _) = the_attestation_of_a_verse(&app).await;
+    let (_, hash) = edge.as_str().unwrap().split_once(':').unwrap();
+    let unknown = format!("{}:{hash}", atlas_graph_types::edge::RelationId::Cites.name());
+
+    // Act
+    let (status, body, _) = get(&app, &format!("/api/edge/{unknown}")).await;
+
+    // Assert
+    assert_eq!((status, body), (StatusCode::NOT_FOUND, serde_json::json!({ "error": { "code": "not_found", "message": "edge not found" } })));
+}
+
+#[tokio::test]
+async fn a_malformed_edge_id_is_bad_ref() {
+    // Arrange
+    let app = compiled_app();
+
+    // Act
+    let (status, body, _) = get(&app, "/api/edge/not-an-edge").await;
+
+    // Assert
+    assert_eq!((status, body["error"]["code"].clone()), (StatusCode::BAD_REQUEST, serde_json::json!("bad_ref")));
+}
+
+#[tokio::test]
+async fn every_edge_ref_carries_its_kind_and_served_label() {
+    // Arrange
+    let app = compiled_app();
+    let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
+    let (_, dates, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=dates")).await;
+    let dated = &dates["entries"][0]["neighbour"]["node"];
+
+    // Act
+    let (status, page, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
+
+    // Assert
+    assert_eq!(
+        (status, page.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "kind": "justifies",
+                "entries": [{
+                    "edge": page["entries"][0]["edge"],
+                    "neighbour": { "position": "edge", "edge": { "id": dates["entries"][0]["edge"], "kind": "dated-by", "label": edge_label("dated-by", dated, &anchor) } },
+                    "end": "to",
+                }],
+                "next": null,
+                "version": dates["version"],
+            })
+        )
+    );
+}
+
+#[test]
+fn every_edge_kind_has_a_served_display_label() {
+    // Arrange
+    let every_kind: Vec<&str> = atlas_graph_types::EdgeKind::labels().collect();
+
+    // Act
+    let labelled: Vec<(&str, bool)> = every_kind.iter().map(|kind| (*kind, !served_display_label(kind).is_empty())).collect();
+
+    // Assert
+    assert_eq!(labelled, every_kind.iter().map(|kind| (*kind, true)).collect::<Vec<_>>());
+}
+
+#[tokio::test]
+async fn a_justification_has_a_card_drawn_from_the_row_it_justifies() {
+    // Arrange
+    let app = compiled_app();
+    let (_, anchor, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}")).await;
+    let (_, justifies, _) = get(&app, &format!("/api/node/{AN_ANCHOR_WITH_ONE_DATING}/edges?kind=justifies")).await;
+    let justification = justifies["entries"][0]["edge"].clone();
+    let dating = justifies["entries"][0]["neighbour"].clone();
+
+    // Act
+    let (status, card, _) = get(&app, &format!("/api/edge/{}", justification.as_str().unwrap())).await;
+
+    // Assert
+    assert_eq!(
+        (status, card.clone()),
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "id": justification,
+                "kind": "justified-by",
+                "label": edge_label("justified-by", &dating["edge"], &anchor),
+                "from": dating,
+                "to": { "position": "node", "node": node_ref_of(&anchor) },
+                "provenance": row_provenance(&dating["edge"]["id"]),
+                "edge_summary": [{ "kind": "from", "count": 1 }, { "kind": "to", "count": 1 }],
+                "version": anchor["version"],
+            })
         )
     );
 }

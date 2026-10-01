@@ -627,11 +627,97 @@
       ],
       "type": "object"
     },
+    "EdgeCard": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_summary": {
+          "items": {
+            "$ref": "#/$defs/EdgeSummaryEntry"
+          },
+          "type": "array"
+        },
+        "from": {
+          "$ref": "#/$defs/PositionRef"
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "label": {
+          "type": "string"
+        },
+        "loci": {
+          "items": {
+            "$ref": "#/$defs/TextSpan"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "narrative": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NarrativeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provenance": {
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/PositionRef"
+        },
+        "version": {
+          "type": "string"
+        },
+        "votes": {
+          "format": "int32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "from",
+        "to",
+        "provenance",
+        "edge_summary",
+        "version"
+      ],
+      "type": "object"
+    },
+    "EdgeEnd": {
+      "enum": [
+        "from",
+        "to"
+      ],
+      "type": "string"
+    },
     "EdgeEntry": {
       "additionalProperties": false,
       "properties": {
         "edge": {
           "type": "string"
+        },
+        "end": {
+          "$ref": "#/$defs/EdgeEnd"
         },
         "loci": {
           "items": {
@@ -682,7 +768,8 @@
       },
       "required": [
         "edge",
-        "neighbour"
+        "neighbour",
+        "end"
       ],
       "type": "object"
     },
@@ -732,6 +819,10 @@
         "authored",
         "shows",
         "shown-on",
+        "from",
+        "source-of",
+        "to",
+        "target-of",
         "analogous-to",
         "catechism-link",
         "corresponds-to",
@@ -796,10 +887,18 @@
       "properties": {
         "id": {
           "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EdgeKind"
+        },
+        "label": {
+          "type": "string"
         }
       },
       "required": [
-        "id"
+        "id",
+        "kind",
+        "label"
       ],
       "type": "object"
     },

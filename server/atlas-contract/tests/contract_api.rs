@@ -34,7 +34,7 @@ fn every_served_route_is_documented() {
         "/api/chapter/{cref}", "/api/kretzmann/chapter/{cref}", "/api/verse/{vref}", "/api/xrefs/{sref}",
         "/api/catechism/item/{id}", "/api/catechism/{sref}", "/api/place/{id}", "/api/narratives",
         "/api/narrative/event/{id}", "/api/event/{id}", "/api/eras", "/api/polities", "/api/landmarks",
-        "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/text",
+        "/api/land-mask", "/api/sources", "/api/node/{id}", "/api/node/{id}/edges", "/api/edge/{id}", "/api/edge/{id}/edges", "/api/text",
         "/api/contents/{corpus}", "/api/openapi.yaml",
     ];
     // Act

@@ -23,17 +23,17 @@ use atlas_graph::tokens;
 use atlas_graph::window::{self, WindowDir};
 use atlas_graph::sqlite::SqliteError;
 use atlas_graph::GraphService;
-use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::explore::{EdgeMeta, EdgeQuery};
+use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, EdgeRecord, RelationId};
+use atlas_graph_types::explore::{EdgeMeta, EdgePage, EdgeQuery, EdgeSummary};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
 use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, VerseRef};
 
 use crate::error::{ApiError, FrontierRefusals, ReadingWindowRefusals, ReferenceRefusals};
-use crate::graph_wire::{describe_nodes, describe_position, encode_node_id, node_ref};
+use crate::graph_wire::{describe_nodes, describe_position, edge_ref, encode_node_id, node_ref};
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{ConcordParagraphReference, NodeReference, ReadingReference, Reference};
+use crate::reference::{ConcordParagraphReference, EdgeReference, NodeReference, ReadingReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -189,39 +189,121 @@ pub async fn node_edges(
         return Err(ApiError::not_found("node"));
     }
 
-    let page = snap.edges(&Position::Node(node_id.clone()), &asked.page());
+    let here = Position::Node(node_id);
+    let page = snap.edges(&here, &asked.page());
+    Ok(Json(served_page(&data, &graph, &snap, &here, page)?))
+}
 
-    // A PeopleGroup wire id does not decode, so an entry naming one would hand the
-    // caller a reference it cannot fetch a card for.
-    let this_event = OnceCell::new();
-    let mut mention_loci = MentionLoci::default();
+#[utoipa::path(get, path = "/api/edge/{id}", summary = "One edge of the graph at a glance: its kind, a label naming it and its two ends, the ends themselves, the source that asserts it, what its row records, and how many neighbours it has of each kind.", description = "`{id}` is the `edge` an edge page carries, `Relation:hash`. An id of no recognised relation is `bad_ref`; one that names no edge is `not_found`.", params(("id" = String, Path)), responses((status = 200, body = wire::EdgeCard), ReferenceRefusals), tag = "graph")]
+pub async fn edge_card(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Reference(EdgeReference(edge_id)): Reference<EdgeReference>,
+) -> Result<Json<wire::EdgeCard>, ApiError> {
+    let snap = graph.snapshot();
+    let record = snap.edge(&edge_id).ok_or_else(|| ApiError::not_found("edge"))?;
+    let (loci, note) = EntryFacts::default().of(&data, &graph, &snap, record.kind, &record.subject, &record.object)?;
+    let (votes, narrative, _) = meta_fields(&record.meta);
+    let wire::EdgeRef { id, kind, label } = edge_ref(&record, &snap);
+    Ok(Json(wire::EdgeCard {
+        id,
+        kind,
+        label,
+        from: describe_position(&record.subject, &snap),
+        to: describe_position(&record.object, &snap),
+        provenance: provenance_of(&edge_id, &snap)?,
+        loci,
+        votes,
+        narrative,
+        note,
+        edge_summary: edge_frontier_summary(&record, &snap).into_iter().map(|(kind, count)| wire::EdgeSummaryEntry { kind, count }).collect(),
+        version: atlas_graph::version_hex(graph.version()),
+    }))
+}
+
+fn provenance_of(edge: &EdgeId, snap: &impl GraphQuery) -> Result<String, ApiError> {
+    if let Some(row) = snap.row_provenance(edge) {
+        return Ok(row.provenance);
+    }
+    match snap.edge(edge).map(|record| record.subject) {
+        Some(Position::Edge(grounded)) => provenance_of(&grounded, snap),
+        _ => Err(ApiError::internal(&format!("{} is served, but no row records it", edge.0))),
+    }
+}
+
+fn edge_frontier_summary(record: &EdgeRecord, snap: &impl GraphQuery) -> EdgeSummary {
+    let mut summary = snap.edge_summary(&Position::Edge(record.id.clone()));
+    summary.extend(record.ends().into_iter().map(|(kind, frontier)| (kind, frontier.edge_count())));
+    summary
+}
+
+#[utoipa::path(get, path = "/api/edge/{id}/edges", summary = "One page of an edge's neighbours of a single kind: its `from` and `to` ends, and whatever grounds it.", description = "`{id}` takes the same form `/api/edge/{id}` does, and `kind`, `cursor` and `limit` read as they do on `/api/node/{id}/edges`.", params(("id" = String, Path), EdgePageQuery), responses((status = 200, body = wire::EdgePage), FrontierRefusals), tag = "graph")]
+pub async fn edge_edges(
+    State(data): State<Arc<AtlasData>>,
+    State(graph): State<Arc<GraphService>>,
+    Reference(EdgeReference(edge_id)): Reference<EdgeReference>,
+    Contract(asked): Contract<EdgePageQuery>,
+) -> Result<Json<wire::EdgePage>, ApiError> {
+    let snap = graph.snapshot();
+    let record = snap.edge(&edge_id).ok_or_else(|| ApiError::not_found("edge"))?;
+    let here = Position::Edge(edge_id);
+    let query = asked.page();
+    let page = match record.ends().remove(&query.kind) {
+        Some(end) => end.page(&query),
+        None => snap.edges(&here, &query),
+    };
+    Ok(Json(served_page(&data, &graph, &snap, &here, page)?))
+}
+
+fn meta_fields(meta: &EdgeMeta) -> (Option<u32>, Option<atlas_graph_types::id::NarrativeId>, Option<atlas_graph_types::edge::Parentage>) {
+    match meta {
+        EdgeMeta::Votes(votes) => (Some(*votes), None, None),
+        EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
+        EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
+        EdgeMeta::None => (None, None, None),
+    }
+}
+
+fn served_page(data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, here: &Position, page: EdgePage) -> Result<wire::EdgePage, ApiError> {
+    let mut facts = EntryFacts::default();
     let mut entries = Vec::with_capacity(page.entries.len());
-    for e in page.entries.iter().filter(|e| !matches!(&e.node, Position::Node(id) if id.kind == NodeKind::PeopleGroup)) {
-        let (votes, narrative, parentage) = match &e.meta {
-            EdgeMeta::Votes(votes) => (Some(*votes), None, None),
-            EdgeMeta::Narrative(narrative) => (None, Some(narrative.clone()), None),
-            EdgeMeta::Parentage(parentage) => (None, None, Some(*parentage)),
-            EdgeMeta::None => (None, None, None),
-        };
-        let (loci, note) = match (asked.kind, &e.node) {
-            (EdgeKind::Directed(RelationId::Attests, Direction::Forward), Position::Node(verse)) => {
-                let accounts = this_event.get_or_init(|| EventAccounts::read(&node_id, &snap, &graph.chronology.chrono));
-                let (_, account) = accounts.holding(verse);
+    for e in page.entries.iter().filter(|e| names_a_fetchable_card(&e.node)) {
+        let (votes, narrative, parentage) = meta_fields(&e.meta);
+        let (loci, note) = facts.of(data, graph, snap, page.kind, here, &e.node)?;
+        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, snap), end: page.kind.end_at(here, &e.node), votes, narrative, loci, note, parentage });
+    }
+    Ok(wire::EdgePage { kind: page.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) })
+}
+
+fn names_a_fetchable_card(neighbour: &Position) -> bool {
+    !matches!(neighbour, Position::Node(id) if id.kind == NodeKind::PeopleGroup)
+}
+
+#[derive(Default)]
+struct EntryFacts {
+    this_event: OnceCell<EventAccounts>,
+    mention_loci: MentionLoci,
+}
+
+impl EntryFacts {
+    fn of(&mut self, data: &AtlasData, graph: &GraphService, snap: &impl GraphQuery, kind: EdgeKind, here: &Position, there: &Position) -> Result<(Option<Vec<wire::TextSpan>>, Option<String>), ApiError> {
+        let (Position::Node(here), Position::Node(there)) = (here, there) else { return Ok((None, None)) };
+        Ok(match kind {
+            EdgeKind::Directed(RelationId::Attests, Direction::Forward) => {
+                let accounts = self.this_event.get_or_init(|| EventAccounts::read(here, snap, &graph.chronology.chrono));
+                let (_, account) = accounts.holding(there);
                 (Some(account.runs(&data.canon).to_vec()), account.note.clone())
             }
-            (EdgeKind::Directed(RelationId::Attests, Direction::Inverse), Position::Node(event)) => {
-                let accounts = EventAccounts::read(event, &snap, &graph.chronology.chrono);
-                let (verse, account) = accounts.holding(&node_id);
+            EdgeKind::Directed(RelationId::Attests, Direction::Inverse) => {
+                let accounts = EventAccounts::read(there, snap, &graph.chronology.chrono);
+                let (verse, account) = accounts.holding(here);
                 (Some(vec![wire::TextSpan::whole(wire::TextRef::of_verse(verse))]), account.note.clone())
             }
-            (EdgeKind::Directed(RelationId::Mentions, Direction::Forward), Position::Node(entity)) => (mention_loci.of(&graph, &node_id, entity)?, None),
-            (EdgeKind::Directed(RelationId::Mentions, Direction::Inverse), Position::Node(verse)) => (mention_loci.of(&graph, verse, &node_id)?, None),
+            EdgeKind::Directed(RelationId::Mentions, Direction::Forward) => (self.mention_loci.of(graph, here, there)?, None),
+            EdgeKind::Directed(RelationId::Mentions, Direction::Inverse) => (self.mention_loci.of(graph, there, here)?, None),
             _ => (None, None),
-        };
-        entries.push(wire::EdgeEntry { edge: e.edge.0.clone(), neighbour: describe_position(&e.node, &snap), votes, narrative, loci, note, parentage });
+        })
     }
-
-    Ok(Json(wire::EdgePage { kind: asked.kind, entries, next: page.next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 #[derive(Default)]
@@ -606,6 +688,8 @@ pub fn routes() -> utoipa_axum::router::OpenApiRouter<crate::app::AppState> {
     utoipa_axum::router::OpenApiRouter::new()
         .routes(routes!(node_card))
         .routes(routes!(node_edges))
+        .routes(routes!(edge_card))
+        .routes(routes!(edge_edges))
         .routes(routes!(text_window))
 }
 
@@ -628,6 +712,21 @@ mod tests {
         assert_eq!(
             (refused.status, refused.code, refused.message),
             (StatusCode::INTERNAL_SERVER_ERROR, crate::error::ErrorCode::Internal, "the mentions of a reading window could not be read: mentions entity_kind 9 is not 0..3".to_string())
+        );
+    }
+
+    #[test]
+    fn an_edge_no_row_records_is_refused_as_an_internal_error() {
+        // Arrange
+        let unrecorded = EdgeId("DatedBy:00ff".to_string());
+
+        // Act
+        let refused = provenance_of(&unrecorded, &Graph::default()).unwrap_err();
+
+        // Assert
+        assert_eq!(
+            (refused.status, refused.code, refused.message),
+            (StatusCode::INTERNAL_SERVER_ERROR, crate::error::ErrorCode::Internal, "DatedBy:00ff is served, but no row records it".to_string())
         );
     }
 

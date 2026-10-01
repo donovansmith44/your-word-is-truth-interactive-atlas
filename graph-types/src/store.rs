@@ -90,6 +90,8 @@ pub trait GraphQuery {
 
     /// `None` off-spine, and for an unknown corpus.
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize>;
+
+    fn edge(&self, e: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord>;
 }
 
 /// The canonical instance: the graph answers its own questions, so conformance is typed
@@ -147,6 +149,19 @@ impl GraphQuery for Graph {
     }
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.spine_index.get(corpus).and_then(|m| m.get(id)).copied()
+    }
+    fn edge(&self, e: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+        let kind = e.kind()?;
+        let frontiers = match kind {
+            crate::edge::EdgeKind::Directed(relation, _) => &self.indexes.get(&relation)?.fwd,
+            crate::edge::EdgeKind::Symmetric(relation) => &self.symmetric_indexes.get(&relation)?.fwd,
+        };
+        frontiers.iter().find_map(|(subject, frontier)| {
+            frontier
+                .edges()
+                .find(|entry| entry.edge == *e && kind.end_at(subject, &entry.node) == crate::edge::EdgeEnd::From)
+                .map(|entry| crate::edge::EdgeRecord { id: e.clone(), kind, subject: subject.clone(), object: entry.node.clone(), meta: entry.meta.clone() })
+        })
     }
 }
 
@@ -238,6 +253,9 @@ impl GraphQuery for MemSnapshot {
     }
     fn position_of(&self, corpus: &'static str, id: &AnyNodeId) -> Option<usize> {
         self.graph.position_of(corpus, id)
+    }
+    fn edge(&self, e: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+        self.graph.edge(e)
     }
 }
 
@@ -708,6 +726,9 @@ mod laws {
             fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
                 self.0.position_of(c, id)
             }
+            fn edge(&self, e: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+                self.0.edge(e)
+            }
         }
 
         let g = with_edges(graph_with(&[("bible/1.1.1", "a")]));
@@ -942,6 +963,9 @@ mod laws {
             }
             fn position_of(&self, c: &'static str, id: &AnyNodeId) -> Option<usize> {
                 self.0.position_of(c, id)
+            }
+            fn edge(&self, e: &crate::edge::EdgeId) -> Option<crate::edge::EdgeRecord> {
+                self.0.edge(e)
             }
         }
         let g = with_edges(graph_with(&[("bible/1.1.1", "a"), ("bible/1.1.2", "b")]));

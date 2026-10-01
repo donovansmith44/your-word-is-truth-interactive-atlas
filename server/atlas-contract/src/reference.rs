@@ -7,6 +7,7 @@ use axum::extract::{FromRequestParts, Path};
 use axum::http::request::Parts;
 
 use atlas_core::refs::{BookId, ScriptureRef, VerseId};
+use atlas_graph_types::edge::EdgeId;
 use atlas_graph_types::id::AnyNodeId;
 
 use crate::error::ApiError;
@@ -141,6 +142,18 @@ impl FromStr for NodeReference {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EdgeReference(pub EdgeId);
+
+impl FromStr for EdgeReference {
+    type Err = NamesNoReference;
+
+    fn from_str(raw: &str) -> Result<Self, NamesNoReference> {
+        let id = EdgeId(raw.to_string());
+        id.kind().map(|_| EdgeReference(id)).ok_or(NamesNoReference)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -231,5 +244,18 @@ mod tests {
         let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<NodeReference>().is_ok()).collect();
         // Assert
         assert_eq!(read, vec![true, true, false, false]);
+    }
+
+    #[test]
+    fn an_edge_reference_names_a_relation_and_a_content_hash() {
+        // Arrange
+        let ends = (atlas_graph_types::id::Position::Edge(EdgeId("a".to_string())), atlas_graph_types::id::Position::Edge(EdgeId("b".to_string())));
+        let minted = atlas_graph_types::edge::entry_id(atlas_graph_types::edge::RelationId::Attests, &ends.0, &ends.1);
+        let (_, hash) = minted.0.split_once(':').unwrap();
+        let asked = [format!("Attests:{hash}"), format!("Analogue:{hash}"), format!("Nothing:{hash}"), "Attests:not-hex".to_string(), "Attests".to_string()];
+        // Act
+        let read: Vec<bool> = asked.iter().map(|raw| raw.parse::<EdgeReference>().is_ok()).collect();
+        // Assert
+        assert_eq!(read, vec![true, true, false, false, false]);
     }
 }

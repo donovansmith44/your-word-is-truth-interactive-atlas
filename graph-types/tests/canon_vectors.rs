@@ -703,7 +703,7 @@ fn the_lexicon_entry_vocabulary_is_present_and_pinned() {
     assert_eq!(node_kind_str(NodeKind::LexiconEntry), "LexiconEntry");
     assert_eq!(parse_node_kind("LexiconEntry", "$.kind").unwrap(), NodeKind::LexiconEntry);
     assert_eq!(RelationId::ALL.iter().position(|r| *r == RelationId::Occurs), Some(17));
-    assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::Shows));
+    assert_eq!(RelationId::ALL.last().copied(), Some(RelationId::EdgeTarget));
     assert_eq!(RelationId::Occurs.forward_label(), "occurs-in");
     assert_eq!(RelationId::Occurs.inverse_label(), "words");
     assert_eq!(NodeKind::ALL.last().copied(), Some(NodeKind::Map));

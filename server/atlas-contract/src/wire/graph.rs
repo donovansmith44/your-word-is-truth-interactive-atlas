@@ -144,12 +144,13 @@ pub struct EdgePage {
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.")]
+#[schema(description = "One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative's succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse's words), `note` only on an attestation, `parentage` only on a parent-of edge. `end` says which end of the edge the page's own node or edge is, so `/api/edge/{edge}` reads the same connection from its other side. A page lists an edge once however many rows record it.")]
 pub struct EdgeEntry {
     /// The edge's own id. The neighbour's page for the opposite kind carries this
     /// same id for this same connection, and the edge itself can be explored.
     pub edge: String,
     pub neighbour: PositionRef,
+    pub end: EdgeEnd,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub votes: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -173,9 +174,35 @@ pub struct NodeRef {
 
 #[derive(Debug, Clone, PartialEq, Serialize, utoipa::ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A reference to an edge: the id its own page carries as `edge`.")]
+#[schema(description = "A reference to an edge: the id its own page carries as `edge` and `/api/edge/{id}` reads, its kind read from its `from` end, and a label naming its kind and both its ends.")]
 pub struct EdgeRef {
     pub id: String,
+    pub kind: EdgeKind,
+    pub label: String,
+}
+
+pub use atlas_graph_types::edge::EdgeEnd;
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "One edge of the graph at a glance: its kind read from its `from` end, a label naming that kind and both ends, the two ends, the source that asserts it, what its row records (`loci` and `note` on an attestation or a mention, `votes` on a cross reference, `narrative` on a narrative's succession), and how many neighbours it has of each kind, its `from` and `to` ends among them.")]
+pub struct EdgeCard {
+    pub id: String,
+    pub kind: EdgeKind,
+    pub label: String,
+    pub from: PositionRef,
+    pub to: PositionRef,
+    pub provenance: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub loci: Option<Vec<TextSpan>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub votes: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub narrative: Option<NarrativeId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    pub edge_summary: Vec<EdgeSummaryEntry>,
+    pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -279,13 +306,15 @@ mod tests {
     const HAZOR: &str = "Place:hazor-1";
     const HAZOR_LABEL: &str = "Hazor 1";
     const A_DATING: &str = "DatedBy:00ff";
+    const A_DATING_LABEL: &str = "Dated by: Solomon crowned \u{2192} 970 BC";
+    const DATED_BY: EdgeKind = EdgeKind::Directed(atlas_graph_types::edge::RelationId::DatedBy, atlas_graph_types::edge::Direction::Forward);
 
     #[test]
     fn a_neighbour_is_written_as_its_position_then_the_node_or_the_edge_it_leads_to() {
         // Arrange
         let neighbours = [
             PositionRef::Node { node: NodeRef { id: HAZOR.to_string(), kind: NodeKind::Place, label: HAZOR_LABEL.to_string() } },
-            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+            PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string(), kind: DATED_BY, label: A_DATING_LABEL.to_string() } },
         ];
         // Act
         let written = serde_json::to_value(neighbours).unwrap();
@@ -294,7 +323,7 @@ mod tests {
             written,
             serde_json::json!([
                 { "position": "node", "node": { "id": HAZOR, "kind": "Place", "label": HAZOR_LABEL } },
-                { "position": "edge", "edge": { "id": A_DATING } },
+                { "position": "edge", "edge": { "id": A_DATING, "kind": "dated-by", "label": A_DATING_LABEL } },
             ])
         );
     }

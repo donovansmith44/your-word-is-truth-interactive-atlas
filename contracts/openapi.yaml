@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: Bible Atlas API
-  description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.
+  description: The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, and every edge kind with the label it is shown by, so a consumer builds its own frontier vocabulary from that list rather than writing one out.
   version: 0.12.0
 paths:
   /api/books:
@@ -181,6 +181,97 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Contract'
+  /api/edge/{id}:
+    get:
+      tags:
+      - graph
+      summary: 'One edge of the graph at a glance: its kind, a label naming it and its two ends, the ends themselves, the source that asserts it, what its row records, and how many neighbours it has of each kind.'
+      description: '`{id}` is the `edge` an edge page carries, `Relation:hash`. An id of no recognised relation is `bad_ref`; one that names no edge is `not_found`.'
+      operationId: edge_card
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgeCard'
+        '400':
+          description: The reference, window or query could not be read; the body's `code` is `bad_ref`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '404':
+          description: Nothing in this atlas answers to that reference.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '500':
+          description: The request was well formed but this atlas's own data for it is incomplete.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+  /api/edge/{id}/edges:
+    get:
+      tags:
+      - graph
+      summary: 'One page of an edge''s neighbours of a single kind: its `from` and `to` ends, and whatever grounds it.'
+      description: '`{id}` takes the same form `/api/edge/{id}` does, and `kind`, `cursor` and `limit` read as they do on `/api/node/{id}/edges`.'
+      operationId: edge_edges
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: kind
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/EdgeKind'
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EdgePage'
+        '400':
+          description: The reference, window or query could not be read; the body's `code` says which (`bad_ref`, `bad_kind`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '404':
+          description: Nothing in this atlas answers to that reference.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '500':
+          description: The request was well formed but this atlas's own data for it is incomplete.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
   /api/eras:
     get:
       tags:
@@ -1366,18 +1457,79 @@ components:
         when:
           $ref: '#/components/schemas/TimeRange'
       additionalProperties: false
+    EdgeCard:
+      type: object
+      description: 'One edge of the graph at a glance: its kind read from its `from` end, a label naming that kind and both ends, the two ends, the source that asserts it, what its row records (`loci` and `note` on an attestation or a mention, `votes` on a cross reference, `narrative` on a narrative''s succession), and how many neighbours it has of each kind, its `from` and `to` ends among them.'
+      required:
+      - id
+      - kind
+      - label
+      - from
+      - to
+      - provenance
+      - edge_summary
+      - version
+      properties:
+        edge_summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/EdgeSummaryEntry'
+        from:
+          $ref: '#/components/schemas/PositionRef'
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/EdgeKind'
+        label:
+          type: string
+        loci:
+          type:
+          - array
+          - 'null'
+          items:
+            $ref: '#/components/schemas/TextSpan'
+        narrative:
+          oneOf:
+          - $ref: '#/components/schemas/NarrativeId'
+          - type: 'null'
+        note:
+          type:
+          - string
+          - 'null'
+        provenance:
+          type: string
+        to:
+          $ref: '#/components/schemas/PositionRef'
+        version:
+          type: string
+        votes:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+      additionalProperties: false
+    EdgeEnd:
+      type: string
+      description: 'Which end of an edge a position is: an edge leads from its `from` end to its `to` end, and a symmetric edge''s `from` end is the lesser of its two.'
+      enum:
+      - from
+      - to
     EdgeEntry:
       type: object
-      description: 'One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative''s succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse''s words), `note` only on an attestation, `parentage` only on a parent-of edge. A page lists an edge once however many rows record it.'
+      description: 'One neighbour, with the edge that joins it and what that edge records: `neighbour` is what the edge leads to, a node or, on a `justifies` page, the edge the node grounds; `votes` only on a cross reference, `narrative` only on a narrative''s succession, `loci` on an attestation (for `attested-in`, the runs of verses its account reads on without a break; for `attests`, the verse itself) and on a mention (each occurrence of the name in the verse as a span of its words, absent where the name is not found among the verse''s words), `note` only on an attestation, `parentage` only on a parent-of edge. `end` says which end of the edge the page''s own node or edge is, so `/api/edge/{edge}` reads the same connection from its other side. A page lists an edge once however many rows record it.'
       required:
       - edge
       - neighbour
+      - end
       properties:
         edge:
           type: string
           description: |-
             The edge's own id. The neighbour's page for the opposite kind carries this
             same id for this same connection, and the edge itself can be explored.
+        end:
+          $ref: '#/components/schemas/EdgeEnd'
         loci:
           type:
           - array
@@ -1453,6 +1605,10 @@ components:
       - authored
       - shows
       - shown-on
+      - from
+      - source-of
+      - to
+      - target-of
       - analogous-to
       - catechism-link
       - corresponds-to
@@ -1497,11 +1653,17 @@ components:
       unevaluatedProperties: false
     EdgeRef:
       type: object
-      description: 'A reference to an edge: the id its own page carries as `edge`.'
+      description: 'A reference to an edge: the id its own page carries as `edge` and `/api/edge/{id}` reads, its kind read from its `from` end, and a label naming its kind and both its ends.'
       required:
       - id
+      - kind
+      - label
       properties:
         id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/EdgeKind'
+        label:
           type: string
       additionalProperties: false
     EdgeSummaryEntry:
@@ -3282,6 +3444,123 @@ x-atlas-relations:
   - forward: shows
     inverse: shown-on
     name: Shows
+  - forward: from
+    inverse: source-of
+    name: EdgeSource
+  - forward: to
+    inverse: target-of
+    name: EdgeTarget
+  kinds:
+  - kind: contains
+    label: Contains
+  - kind: member-of
+    label: Member of
+  - kind: attested-in
+    label: Attested in
+  - kind: attests
+    label: Attests
+  - kind: follows-in
+    label: Follows in
+  - kind: precedes-in
+    label: Precedes in
+  - kind: dated-by
+    label: Dated by
+  - kind: dates
+    label: Dates
+  - kind: located-at
+    label: Located at
+  - kind: site-of
+    label: Site of
+  - kind: mentions
+    label: Mentions
+  - kind: mentioned-in
+    label: Mentioned in
+  - kind: cites
+    label: Cites
+  - kind: cited-by
+    label: Cited by
+  - kind: quotes
+    label: Quotes
+  - kind: quoted-by
+    label: Quoted by
+  - kind: confesses
+    label: Confesses
+  - kind: confessed-in
+    label: Confessed in
+  - kind: fulfilled-in
+    label: Fulfilled in
+  - kind: fulfills
+    label: Fulfills
+  - kind: prefigures
+    label: Prefigures
+  - kind: prefigured-by
+    label: Prefigured by
+  - kind: named-after
+    label: Named after
+  - kind: namesake-of
+    label: Namesake of
+  - kind: justified-by
+    label: Justified by
+  - kind: justifies
+    label: Justifies
+  - kind: comments-on
+    label: Comments on
+  - kind: commented-on-by
+    label: Commented on by
+  - kind: spoken-by
+    label: Spoken by
+  - kind: speech-of
+    label: Speech of
+  - kind: spoken-at
+    label: Spoken at
+  - kind: site-of-speech
+    label: Site of speech
+  - kind: derived-from
+    label: Derived from
+  - kind: derives
+    label: Derives
+  - kind: occurs-in
+    label: Occurs in
+  - kind: words
+    label: Words
+  - kind: parent-of
+    label: Parent of
+  - kind: child-of
+    label: Child of
+  - kind: participates-in
+    label: Participates in
+  - kind: participants
+    label: Participants
+  - kind: authored-by
+    label: Authored by
+  - kind: authored
+    label: Authored
+  - kind: shows
+    label: Shows
+  - kind: shown-on
+    label: Shown on
+  - kind: from
+    label: From
+  - kind: source-of
+    label: Source of
+  - kind: to
+    label: To
+  - kind: target-of
+    label: Target of
+  - kind: analogous-to
+    label: Analogous to
+  - kind: catechism-link
+    label: Catechism link
+  - kind: corresponds-to
+    label: Corresponds to
+  - kind: parallel
+    label: Parallel
+  - kind: temporal-adjacency
+    label: Temporal adjacency
+  - kind: spouse-of
+    label: Spouse of
+  - kind: brethren-of
+    label: Brethren of
   symmetric:
   - label: analogous-to
     name: Analogue

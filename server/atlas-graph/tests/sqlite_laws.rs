@@ -842,6 +842,32 @@ fn the_sqlite_snapshot_answers_every_port_question_exactly_as_the_specimen_graph
 }
 
 #[test]
+fn the_sqlite_snapshot_reads_every_edge_by_its_id_exactly_as_the_specimen_graph() {
+    // Arrange
+    let mut g = specimen_graph();
+    g.build_indexes();
+    atlas_graph::event_world::add_justified_by(&mut g);
+    let dir = std::env::temp_dir().join(format!("f6-edges-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    write_sections(&g, &Extras::default(), "test", &layout_under(&dir)).unwrap();
+    let snap = open_written(&dir).unwrap();
+    let ids: std::collections::BTreeSet<atlas_graph_types::edge::EdgeId> = g
+        .indexes
+        .values()
+        .chain(g.symmetric_indexes.values())
+        .flat_map(|index| index.fwd.values().chain(index.inv.values()))
+        .flat_map(|frontier| frontier.edges().map(|entry| entry.edge.clone()))
+        .collect();
+
+    // Act
+    let read: Vec<Option<atlas_graph_types::edge::EdgeRecord>> = ids.iter().map(|id| snap.edge(id)).collect();
+
+    // Assert
+    assert_eq!(read, ids.iter().map(|id| g.edge(id)).collect::<Vec<_>>());
+    assert!(read.iter().all(Option::is_some));
+}
+
+#[test]
 fn the_sqlite_snapshot_reads_many_nodes_at_once_exactly_as_it_reads_each_one() {
     // Arrange
     let mut g = specimen_graph();

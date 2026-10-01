@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 use atlas_graph_types::canon::ids::{any_node_id_str, parse_any_node_id, position_str};
 use atlas_graph_types::canon::Canon;
-use atlas_graph_types::edge::{Direction, EdgeId, EdgeKind, Parentage};
+use atlas_graph_types::edge::{Direction, EdgeEnd, EdgeId, EdgeKind, EdgeRecord, Parentage};
 use atlas_graph_types::explore::{EdgeEntry, EdgeMeta, EdgePage, EdgeQuery, EdgeSummary, NodePage};
 use atlas_graph_types::graph::EdgeRel;
 use atlas_graph_types::id::{AnyNodeId, ContentAddressed, ContentHash, NarrativeId, NodeKind, Pid, Position};
@@ -230,19 +230,7 @@ impl SqliteSnapshot {
                 }
                 let object: String = row.get(1)?;
                 let blob: Vec<u8> = row.get(2)?;
-                let meta_kind: i64 = row.get(3)?;
-                let narrative: Option<String> = row.get(4)?;
-                let votes: Option<i64> = row.get(5)?;
-                let parentage: Option<String> = row.get(6)?;
-                let meta = match (meta_kind, narrative, votes, parentage.as_deref().map(Parentage::named)) {
-                    (0, None, None, None) => EdgeMeta::None,
-                    (1, Some(n), None, None) => EdgeMeta::Narrative(NarrativeId::new(n)),
-                    (2, None, Some(v), None) => EdgeMeta::Votes(
-                        u32::try_from(v).map_err(|_| SqliteError(format!("meta_votes {v} out of range")))?,
-                    ),
-                    (3, None, None, Some(Some(p))) => EdgeMeta::Parentage(p),
-                    (k, n, v, _) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}, {parentage:?}) is malformed"))),
-                };
+                let meta = Self::meta_of(row, 3)?;
                 entries.push(EdgeEntry {
                     edge: EdgeId(format!("{rel_name}:{}", hash_from_bytes(&blob)?.hex())),
                     node: atlas_graph_types::canon::ids::parse_position(&object, "edge_index.object")?,
@@ -254,7 +242,50 @@ impl SqliteSnapshot {
     }
 }
 
+impl SqliteSnapshot {
+    fn meta_of(row: &rusqlite::Row<'_>, first: usize) -> Result<EdgeMeta, SqliteError> {
+        let meta_kind: i64 = row.get(first)?;
+        let narrative: Option<String> = row.get(first + 1)?;
+        let votes: Option<i64> = row.get(first + 2)?;
+        let parentage: Option<String> = row.get(first + 3)?;
+        Ok(match (meta_kind, narrative, votes, parentage.as_deref().map(Parentage::named)) {
+            (0, None, None, None) => EdgeMeta::None,
+            (1, Some(n), None, None) => EdgeMeta::Narrative(NarrativeId::new(n)),
+            (2, None, Some(v), None) => EdgeMeta::Votes(u32::try_from(v).map_err(|_| SqliteError(format!("meta_votes {v} out of range")))?),
+            (3, None, None, Some(Some(p))) => EdgeMeta::Parentage(p),
+            (k, n, v, _) => return Err(SqliteError(format!("edge meta ({k}, {n:?}, {v:?}, {parentage:?}) is malformed"))),
+        })
+    }
+
+    fn edge_inner(&self, e: &EdgeId) -> Result<Option<EdgeRecord>, SqliteError> {
+        let Some(kind) = e.kind() else { return Ok(None) };
+        let (rel, dir, _) = Self::code_of(kind);
+        let blob = super::writer::edge_id_blob(e)?;
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare_cached(
+                "SELECT subject, object, meta_kind, meta_narrative, meta_votes, meta_parentage FROM all_edge_index \
+                 WHERE edge_id = ?1 AND dir = ?2 AND rel = ?3 ORDER BY ord",
+            )?;
+            let mut rows = stmt.query(rusqlite::params![blob, dir, rel])?;
+            let mut found: Option<EdgeRecord> = None;
+            while let Some(row) = rows.next()? {
+                let subject = atlas_graph_types::canon::ids::parse_position(&row.get::<_, String>(0)?, "edge_index.subject")?;
+                let object = atlas_graph_types::canon::ids::parse_position(&row.get::<_, String>(1)?, "edge_index.object")?;
+                let earlier = found.as_ref().is_some_and(|held| held.subject <= subject);
+                if kind.end_at(&subject, &object) == EdgeEnd::From && !earlier {
+                    found = Some(EdgeRecord { id: e.clone(), kind, subject, object, meta: Self::meta_of(row, 2)? });
+                }
+            }
+            Ok(found)
+        })
+    }
+}
+
 impl GraphQuery for SqliteSnapshot {
+    fn edge(&self, e: &EdgeId) -> Option<EdgeRecord> {
+        self.edge_inner(e).unwrap_or(None)
+    }
+
     fn node(&self, id: &AnyNodeId) -> Option<Node> {
         let key = any_node_id_str(id);
         self.with_conn(|conn| {

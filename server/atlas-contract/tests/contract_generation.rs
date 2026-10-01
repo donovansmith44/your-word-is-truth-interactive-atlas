@@ -162,6 +162,8 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
             { "name": "Participates", "forward": "participates-in", "inverse": "participants" },
             { "name": "AuthoredBy",   "forward": "authored-by",     "inverse": "authored" },
             { "name": "Shows",        "forward": "shows",           "inverse": "shown-on" },
+            { "name": "EdgeSource",   "forward": "from",            "inverse": "source-of" },
+            { "name": "EdgeTarget",   "forward": "to",              "inverse": "target-of" },
         ],
         "symmetric": [
             { "name": "Analogue",          "label": "analogous-to" },
@@ -172,6 +174,7 @@ fn x_atlas_relations_is_the_relations_manifest_in_declaration_order() {
             { "name": "Spouses",           "label": "spouse-of" },
             { "name": "Brethren",          "label": "brethren-of" },
         ],
+        "kinds": atlas_graph_types::EdgeKind::all().map(|kind| serde_json::json!({ "kind": kind.label(), "label": kind.display_label() })).collect::<Vec<_>>(),
     });
     // Act
     let actual = atlas_contract::document::relations_json();
@@ -185,7 +188,7 @@ fn the_published_document_names_this_api_and_the_contract_version_it_serves() {
     let version = std::fs::read_to_string(atlas_contract::document::contracts_root().join("atlas-query-contract/VERSION")).expect("the AQC VERSION file exists");
     let expected = serde_json::json!({
         "title": "Bible Atlas API",
-        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, so a consumer builds its own frontier vocabulary from that list rather than writing one out.",
+        "description": "The Bible Atlas HTTP API, generated from the Rust that serves it. The `x-atlas-relations` extension lists every relation this atlas joins two nodes by, each with the label its forward and its inverse frontier is asked for, and every edge kind with the label it is shown by, so a consumer builds its own frontier vocabulary from that list rather than writing one out.",
         "version": version.trim(),
     });
     // Act

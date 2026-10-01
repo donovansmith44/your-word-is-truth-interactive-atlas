@@ -2,6 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use atlas_graph_types::edge::{EdgeId, EdgeRecord};
 use atlas_graph_types::id::{AnyNodeId, NodeKind, Position};
 use atlas_graph_types::node::Node;
 use atlas_graph_types::store::GraphQuery;
@@ -98,7 +99,24 @@ fn node_label(id: &AnyNodeId, node: Option<Node>) -> String {
 pub fn describe_position(pos: &Position, query: &dyn GraphQuery) -> PositionRef {
     match pos {
         Position::Node(id) => PositionRef::Node { node: node_ref(id, query) },
-        Position::Edge(eid) => PositionRef::Edge { edge: EdgeRef { id: eid.0.clone() } },
+        Position::Edge(eid) => PositionRef::Edge { edge: describe_edge(eid, query) },
+    }
+}
+
+pub fn describe_edge(id: &EdgeId, query: &dyn GraphQuery) -> EdgeRef {
+    let record = query.edge(id).unwrap_or_else(|| panic!("{} is named as a neighbour, but the graph reads no such edge", id.0));
+    edge_ref(&record, query)
+}
+
+pub fn edge_ref(record: &EdgeRecord, query: &dyn GraphQuery) -> EdgeRef {
+    let label = format!("{}: {} \u{2192} {}", record.kind.display_label(), position_label(&record.subject, query), position_label(&record.object, query));
+    EdgeRef { id: record.id.0.clone(), kind: record.kind, label }
+}
+
+fn position_label(pos: &Position, query: &dyn GraphQuery) -> String {
+    match describe_position(pos, query) {
+        PositionRef::Node { node } => node.label,
+        PositionRef::Edge { edge } => edge.label,
     }
 }
 
@@ -114,24 +132,36 @@ fn labelled(id: &AnyNodeId, label: String) -> NodeRef {
 mod tests {
     use super::*;
 
-    const A_DATING: &str = "DatedBy:00ff";
-
     #[test]
     fn a_position_is_described_as_the_node_or_the_edge_it_names() {
         // Arrange
-        let graph = atlas_graph_types::graph::Graph::default();
+        use atlas_graph_types::edge::{entry_id, Direction, EdgeKind, Justification, LocatedAt, RelationId};
+        use atlas_graph_types::id::{EventId, PlaceId};
+        let mut graph = atlas_graph_types::graph::Graph::default();
+        graph.located_at.push(LocatedAt { event: EventId::new("ab_ur"), place: PlaceId::new("ur"), provenance: "curated".into(), justification: Justification::default() });
+        graph.build_indexes();
+        let (event, place) = (Position::Node(EventId::new("ab_ur").erase()), Position::Node(PlaceId::new("ur").erase()));
+        let located = entry_id(RelationId::LocatedAt, &event, &place);
         let verse = decode_node_id("text-unit:JHN.3.16").unwrap();
-        let dating = atlas_graph_types::edge::EdgeId(A_DATING.to_string());
         // Act
-        let described = [describe_position(&Position::Node(verse), &graph), describe_position(&Position::Edge(dating), &graph)];
+        let described = [describe_position(&Position::Node(verse), &graph), describe_position(&Position::Edge(located.clone()), &graph)];
         // Assert
         assert_eq!(
             described,
             [
                 PositionRef::Node { node: NodeRef { id: "text-unit:JHN.3.16".to_string(), kind: NodeKind::TextUnit, label: "JHN.3.16".to_string() } },
-                PositionRef::Edge { edge: EdgeRef { id: A_DATING.to_string() } },
+                PositionRef::Edge { edge: EdgeRef { id: located.0, kind: EdgeKind::Directed(RelationId::LocatedAt, Direction::Forward), label: "Located at: Event \u{2192} Place".to_string() } },
             ]
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "DatedBy:00ff is named as a neighbour, but the graph reads no such edge")]
+    fn an_edge_the_graph_cannot_read_is_a_graph_defect_not_a_neighbour() {
+        // Arrange
+        let graph = atlas_graph_types::graph::Graph::default();
+        // Act
+        describe_edge(&EdgeId("DatedBy:00ff".to_string()), &graph);
     }
 
     #[test]
