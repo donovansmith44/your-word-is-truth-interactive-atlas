@@ -2,6 +2,12 @@
 
 @if (_presented is { } presented)
 {
+    @if (OnShowOnWorld.HasDelegate && HomeSurfaces.Of(Node.Kind) == Surface.World)
+    {
+        <button type="button" class="popover-head-action" data-testid="@($"{Handle}-chip-map")" aria-label="Show on the map" title="Show on the map"
+                @onclick="() => OnShowOnWorld.InvokeAsync()">&#8982;</button>
+    }
+
     @foreach (var end in Node.Ends.Where(end => Presentation.Offers(end, Surface)))
     {
         <button type="button" class="focus-up explorable" data-testid="@($"{Handle}-end-{Id(end)}")"
@@ -77,6 +83,8 @@
     [Parameter, EditorRequired] public Surface Surface { get; set; }
 
     [Parameter, EditorRequired] public EventCallback<Link> OnFollow { get; set; }
+
+    [Parameter] public EventCallback OnShowOnWorld { get; set; }
 
     private readonly RequestSeries _series = new();
     private Explorable? _node;

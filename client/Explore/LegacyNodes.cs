@@ -21,12 +21,11 @@ public static class LegacyNodes
     {
         NodeKind.TextUnit => TextUnit(NodeIds.LocalPart(node.Id)),
         NodeKind.Container => Container(NodeIds.LocalPart(node.Id)),
-        NodeKind.Place => new PlaceNode(NodeIds.LocalPart(node.Id), node.Label),
         NodeKind.Person => new PersonNode(node.Id, node.Label),
         NodeKind.Event => new EventNode(NodeIds.LocalPart(node.Id), node.Label),
         NodeKind.CatechismItem => new CatechismNode(NodeIds.LocalPart(node.Id), node.Label),
         NodeKind.CommentaryItem => new CommentaryItemNode(NodeIds.LocalPart(node.Id), node.Label),
-        NodeKind.Narrative or NodeKind.Anchor or NodeKind.Era or NodeKind.Polity or NodeKind.Source
+        NodeKind.Place or NodeKind.Narrative or NodeKind.Anchor or NodeKind.Era or NodeKind.Polity or NodeKind.Source
             or NodeKind.Translation or NodeKind.PeopleGroup or NodeKind.LexiconEntry or NodeKind.Map => null,
     };
 

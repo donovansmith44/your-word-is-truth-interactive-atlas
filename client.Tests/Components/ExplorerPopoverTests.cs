@@ -4,6 +4,7 @@ using BibleAtlas.Client.Contracts;
 using BibleAtlas.Client.Explore;
 using BibleAtlas.Client.State;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BibleAtlas.Client.Tests;
@@ -12,6 +13,8 @@ public sealed class ExplorerPopoverTests : BunitContext
 {
     private static readonly NodeRef Exodus = ServedGraph.Ref(NodeKind.Narrative, "Narrative:exodus", "The Exodus");
     private static readonly NodeRef Wilderness = ServedGraph.Ref(NodeKind.Narrative, "Narrative:wilderness", "The Wilderness");
+    private static readonly NodeRef Bethel = ServedGraph.Ref(NodeKind.Place, "Place:bethel-1", "Bethel");
+    private const string TheWorld = "http://localhost/world";
     private static readonly SavedExploration AtExodus = new("seed", "Seed", DateTimeOffset.UnixEpoch, ServedGraph.At(Exodus), []);
 
     private const string ExodusPresented = """
@@ -126,6 +129,38 @@ public sealed class ExplorerPopoverTests : BunitContext
         // Assert
         popover.WaitForAssertion(() => Assert.Equal(legacy.Title, popover.Find("[data-testid='popover-title']").TextContent));
         Assert.Equal(legacy.Identity.Id, ((ExplorationState.Open)atom.Value).Exploration.Current.Id);
+    }
+
+    [Fact]
+    public void Showing_a_place_on_the_map_hands_its_exploration_to_the_world_open_and_unheld()
+    {
+        // Arrange
+        var graph = Narratives().Serving(ServedGraph.Card(NodeKind.Place, Bethel.Id, Bethel.Label));
+        var atom = Hosting(graph);
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Explore(ServedGraph.At(Bethel))));
+
+        // Act
+        popover.WaitForElement("[data-testid='popover-chip-map']").Click();
+
+        // Assert
+        Assert.Equal(
+            (new ExplorationState.Open(new Exploration(Resolved.Node(graph, Bethel), [])), false, TheWorld),
+            (atom.Value, Services.GetRequiredService<OwnershipRegistry>().IsHeld(AtomNames.Exploration), Services.GetRequiredService<NavigationManager>().Uri));
+    }
+
+    [Fact]
+    public void A_popover_the_world_hosts_offers_no_way_to_the_map()
+    {
+        // Arrange
+        var graph = Narratives().Serving(ServedGraph.Card(NodeKind.Place, Bethel.Id, Bethel.Label));
+        Hosting(graph);
+
+        // Act
+        var popover = Render<ExplorerPopover>(p => p.Add(v => v.Opening, new PopoverOpening.Explore(ServedGraph.At(Bethel))).Add(v => v.HostedByWorld, true));
+
+        // Assert
+        popover.WaitForElement("[data-testid='popover-card-title']");
+        Assert.Empty(popover.FindAll("[data-testid='popover-chip-map']"));
     }
 
     private static ServedGraph Narratives() =>

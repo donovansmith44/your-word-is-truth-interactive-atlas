@@ -1,4 +1,5 @@
 using BibleAtlas.Client.Contract;
+using BibleAtlas.Client.Explore;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -108,8 +109,11 @@ public sealed class MapInterop : IAsyncDisposable
         await _module.InvokeVoidAsync("setLandMask", _id, json);
     }
 
-    public async Task Emphasize(string? siteId, string? polityId) =>
-        await _module.InvokeVoidAsync("setEmphasis", _id, new { site = siteId, polity = polityId });
+    public async Task Emphasize(Emphasis emphasis) =>
+        await _module.InvokeVoidAsync("setEmphasis", _id, emphasis.Match<object>(
+            none: () => new { },
+            site: (place, lat, lon) => new { site = place.Id, lat, lon },
+            territory: (polity, _) => new { polity = polity.Id }));
 
     public async Task SetIsolate(string? narrativeId) => await _module.InvokeVoidAsync("setIsolate", _id, narrativeId);
 

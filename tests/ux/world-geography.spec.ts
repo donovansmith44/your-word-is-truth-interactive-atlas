@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
+import { independentlyHoverableIds } from './lib/hoverSafety';
 
 type Ring = [number, number][];
 
@@ -70,7 +71,7 @@ test('world-emphasis-site: emphasising a site rings its marker and clearing remo
   await page.goto('/world?from=30&to=90');
   await expect(page.getByTestId(`marker-${place.id}`)).toBeAttached();
 
-  await mapCall(page, 'setEmphasis', { site: place.id });
+  await mapCall(page, 'setEmphasis', { site: place.node.id, lat: place.lat, lon: place.lon });
   await expect(page.getByTestId('world-emphasis-site')).toHaveCount(1);
   await expect(page.getByTestId(`marker-${place.id}`).getByTestId('world-emphasis-site')).toBeVisible();
 
@@ -79,10 +80,12 @@ test('world-emphasis-site: emphasising a site rings its marker and clearing remo
 });
 
 test('world-emphasis-territory: emphasising a polity outlines its territory at the drawn year and clearing removes it', async ({ page }) => {
+  const served = await api.polities(30, 90);
+  const rome = served.polities.find((p: { id: string }) => p.id === 'roman-empire');
   await page.goto('/world?from=30&to=90');
   await expect(page.getByTestId(/^polity-ring-roman-empire-/).first()).toBeAttached();
 
-  await mapCall(page, 'setEmphasis', { polity: 'roman-empire' });
+  await mapCall(page, 'setEmphasis', { polity: rome.node.id });
   await expect(page.getByTestId('world-emphasis-territory').first()).toBeAttached();
   const rings = await page.getByTestId(/^polity-ring-roman-empire-/).count();
   await expect(page.getByTestId('world-emphasis-territory')).toHaveCount(rings);
@@ -96,4 +99,141 @@ test('the world slider is unbounded until a focus bounds it', async ({ page }) =
   await expect(page.getByTestId('slider')).toBeVisible();
   await expect(page.getByTestId('world-slider-bounds')).toHaveCount(0);
   await expect(page.getByTestId('world-cross-next')).toHaveCount(0);
+});
+
+const NT = { from: 30, to: 90 };
+const CENTRED_DEGREES = 0.05;
+
+async function served(path: string): Promise<any> {
+  return api.raw(path);
+}
+
+async function windowOf(page: Page): Promise<{ from: number; to: number }> {
+  const url = new URL(page.url());
+  return { from: Number(url.searchParams.get('from')), to: Number(url.searchParams.get('to')) };
+}
+
+async function aLitPlace(page: Page): Promise<any> {
+  const scene = await api.sceneTime(NT.from, NT.to);
+  const safe = await independentlyHoverableIds(page, scene.places.map((p: { id: string }) => p.id));
+  return scene.places.find((p: { id: string }) => safe.has(p.id));
+}
+
+async function aMapWithANextMap(placeNodeId: string): Promise<{ map: any; next: any }> {
+  const shownOn = await served(`/api/node/${encodeURIComponent(placeNodeId)}/edges?kind=shown-on`);
+  for (const entry of shownOn.entries) {
+    const map = entry.neighbour.node;
+    const following = await served(`/api/node/${encodeURIComponent(map.id)}/edges?kind=follows-in`);
+    if (following.entries.length > 0) {
+      return { map: await served(`/api/node/${encodeURIComponent(map.id)}`), next: await served(`/api/node/${encodeURIComponent(following.entries[0].neighbour.node.id)}`) };
+    }
+  }
+  throw new Error(`${placeNodeId} is shown on no map that another follows`);
+}
+
+test('clicking a place focuses it: the popover shows its record and neighbours, the map marks its site, the slider keeps its window', async ({ page }) => {
+  await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
+  const place = await aLitPlace(page);
+  const record = await served(`/api/node/${encodeURIComponent(place.node.id)}`);
+
+  await page.getByTestId(`marker-${place.id}`).dispatchEvent('click');
+
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-card-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-section-site-of')).toBeVisible();
+  await expect(page.getByTestId(`marker-${place.id}`).getByTestId('world-emphasis-site')).toBeAttached();
+  await expect(page.getByTestId('world-slider-bounds')).toHaveCount(0);
+  expect(await windowOf(page)).toEqual(NT);
+});
+
+test('clicking a polity keeps the era, outlines its territory at the slider year, and bands its reign on the slider', async ({ page }) => {
+  const polities: { id: string; rings: Ring[]; node: { id: string; label: string } }[] = (await api.polities(NT.from, NT.to)).polities;
+  const target = polities.find(p => p.id === 'roman-empire')!;
+  const [lat, lon] = pointOnlyIn(target, polities.filter(p => p.id !== target.id));
+  await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
+  await expect(page.getByTestId(/^polity-ring-roman-empire-/).first()).toBeAttached();
+
+  await mapCall(page, 'debugClickMap', lat, lon);
+
+  await expect(page.getByTestId('popover-title')).toHaveText(target.node.label);
+  await expect(page.getByTestId('world-emphasis-territory').first()).toBeAttached();
+  await expect(page.getByTestId('world-slider-band')).toBeVisible();
+  await expect(page.getByTestId('world-slider-bounds')).toHaveCount(0);
+  expect(await windowOf(page)).toEqual(NT);
+});
+
+test('focusing a Map bounds the slider to its window; the next arrow at the bound follows follows-in to the next Map and re-bounds', async ({ page }) => {
+  await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
+  const place = await aLitPlace(page);
+  const { map, next } = await aMapWithANextMap(place.node.id);
+  await page.getByTestId(`marker-${place.id}`).dispatchEvent('click');
+
+  await page.getByTestId(`popover-up-shown-on-${map.id}`).click();
+
+  await expect(page.getByTestId('popover-title')).toHaveText(map.label);
+  await expect(page.getByTestId('world-slider-bounds')).toBeVisible();
+  await expect.poll(() => windowOf(page)).toEqual({ from: map.map.window.from.value, to: map.map.window.to.value });
+
+  await page.getByTestId('world-cross-next').click();
+
+  await expect(page.getByTestId('popover-title')).toHaveText(next.label);
+  await expect.poll(() => windowOf(page)).toEqual({ from: next.map.window.from.value, to: next.map.window.to.value });
+});
+
+test('Back from the next Map returns to the previous one and its bounds', async ({ page }) => {
+  await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
+  const place = await aLitPlace(page);
+  const { map, next } = await aMapWithANextMap(place.node.id);
+  await page.getByTestId(`marker-${place.id}`).dispatchEvent('click');
+  await page.getByTestId(`popover-up-shown-on-${map.id}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(map.label);
+  await page.getByTestId('world-cross-next').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(next.label);
+
+  await page.getByTestId('popover-breadcrumb-back').click();
+
+  await expect(page.getByTestId('popover-title')).toHaveText(map.label);
+  await expect(page.getByTestId('world-slider-bounds')).toBeVisible();
+  await expect.poll(() => windowOf(page)).toEqual({ from: map.map.window.from.value, to: map.map.window.to.value });
+});
+
+test('following a Place link in the reader\'s popover offers popover-chip-map, which opens /world with the exploration carried and the place focused', async ({ page }) => {
+  const scene = await api.sceneTime(NT.from, NT.to);
+  const { map } = await aMapWithANextMap(scene.places[0].node.id);
+  const shown = await served(`/api/node/${encodeURIComponent(map.id)}/edges?kind=shows`);
+  const firstPlace = shown.entries.find((e: any) => e.neighbour.node?.kind === 'Place');
+  const place = await served(`/api/node/${encodeURIComponent(firstPlace.neighbour.node.id)}`);
+  await page.goto('/read/GEN/1');
+  await page.evaluate(save => localStorage.setItem('explorations-v3', JSON.stringify([save])), {
+    id: 'map', name: map.label, createdUtc: '2026-10-01T00:00:00+00:00',
+    start: { position: 'node', node: { id: map.id, kind: map.kind, label: map.label } },
+    steps: [],
+  });
+  await page.reload();
+  await page.getByTestId('hamburger-menu').click();
+  await page.locator('[data-testid^="exploration-item-"] .hamburger-exploration-summary').click();
+  await page.getByTestId('exploration-node-0').click();
+  await page.getByTestId(`popover-child-shows-${place.id}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(place.label);
+
+  await page.getByTestId('popover-chip-map').click();
+
+  await expect(page).toHaveURL(/\/world/);
+  await expect(page.getByTestId('popover-title')).toHaveText(place.label);
+  await expect.poll(async () => {
+    const camera = await mapCall<{ lat: number; lng: number }>(page, 'getCamera');
+    return Math.hypot(camera.lat - place.place.lat, camera.lng - place.place.lon);
+  }).toBeLessThan(CENTRED_DEGREES);
+  await page.getByTestId('popover-breadcrumb-back').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(map.label);
+});
+
+test('selecting a place with its toggle adds its served node to the tray', async ({ page }) => {
+  await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
+  const place = await aLitPlace(page);
+
+  await page.getByTestId(`marker-${place.id}`).dispatchEvent('click', { ctrlKey: true });
+
+  await expect(page.getByTestId('selection-tray')).toContainText(place.node.label);
+  await expect(page.getByTestId('popover')).toHaveCount(0);
 });

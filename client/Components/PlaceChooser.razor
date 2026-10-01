@@ -1,24 +1,27 @@
 @using System.Globalization
 <div class="place-chooser" data-testid="place-chooser"
-     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;"
-     @onpointerenter="OnPointerEnter" @onpointerleave="OnPointerLeave">
+     style="left: @X.ToString(CultureInfo.InvariantCulture)px; top: @Y.ToString(CultureInfo.InvariantCulture)px;">
     @foreach (var p in Places)
     {
-        var isQuiet = p.Events.Count == 0;
         <button type="button" class="place-chooser-row" data-testid="place-chooser-@p.Id"
-                @onclick="() => OnPick.InvokeAsync(p.Id)">
-            <span class="place-chooser-dot @(isQuiet ? "place-chooser-dot-quiet" : "place-chooser-dot-lit")"></span>
+                @onclick="() => OnPick.InvokeAsync(p.Node)">
+            <span class="place-chooser-dot @(p.Lit ? "place-chooser-dot-lit" : "place-chooser-dot-quiet")"></span>
             <span class="place-chooser-name">@p.DisplayName</span>
         </button>
     }
 </div>
 
 @code {
-    [Parameter, EditorRequired] public List<ScenePlace> Places { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Choice> Places { get; set; } = default!;
     [Parameter] public double X { get; set; }
     [Parameter] public double Y { get; set; }
-    [Parameter] public EventCallback OnPointerEnter { get; set; }
-    [Parameter] public EventCallback OnPointerLeave { get; set; }
 
-    [Parameter] public EventCallback<string> OnPick { get; set; }
+    [Parameter] public EventCallback<NodeRef> OnPick { get; set; }
+
+    public sealed record Choice(string Id, string DisplayName, NodeRef Node, bool Lit)
+    {
+        public static Choice Of(ScenePlace place) => new(place.Id, place.DisplayName, place.Node, Lit: true);
+
+        public static Choice Of(QuietPlace place) => new(place.Id, place.DisplayName, place.Node, Lit: false);
+    }
 }

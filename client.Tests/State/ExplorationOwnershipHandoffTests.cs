@@ -84,6 +84,33 @@ public sealed class ExplorationOwnershipHandoffTests
     }
 
     [Fact]
+    public void An_exploration_a_popover_has_claimed_is_held()
+    {
+        // Arrange
+        var ownership = new OwnershipRegistry();
+
+        // Act
+        ownership.Claim(AtomNames.Exploration);
+
+        // Assert
+        Assert.True(ownership.IsHeld(AtomNames.Exploration));
+    }
+
+    [Fact]
+    public void An_exploration_whose_claim_was_released_is_held_by_nobody()
+    {
+        // Arrange
+        var ownership = new OwnershipRegistry();
+        var claim = ownership.Claim(AtomNames.Exploration);
+
+        // Act
+        claim.Dispose();
+
+        // Assert
+        Assert.False(ownership.IsHeld(AtomNames.Exploration));
+    }
+
+    [Fact]
     public void The_owning_popover_renders_the_atom_itself_not_a_copy_taken_when_it_opened()
     {
         // Arrange
