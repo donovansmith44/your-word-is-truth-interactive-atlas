@@ -5,13 +5,13 @@
         "edge": {
           "id": "LocatedAt:dafbb7c28eb80653a693de9906dc0669",
           "kind": "located-at",
-          "label": "Terah's family leaves Ur · Located at · Ur 1"
+          "label": "Terah's family leaves Ur · Located at · Ur"
         },
         "neighbour": {
           "node": {
             "id": "Place:ur-1",
             "kind": "Place",
-            "label": "Ur 1"
+            "label": "Ur"
           },
           "position": "node"
         }
@@ -19,7 +19,7 @@
     ],
     "kind": "located-at",
     "next": null,
-    "version": "f73d7cdc34fbeadd347429fad073d0b3"
+    "version": "2534bc8fa4b367d6e0745829cd015711"
   },
   "status": 200
 }

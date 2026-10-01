@@ -30,4 +30,4 @@ fn raw_provenance_of_the_committed_artifact(compiled: &Path) -> RawProvenance {
     raw_provenance(compiled_from, recorded)
 }
 
-const EXPECTED_VERSION_HEX: &str = "55542c4756799200bc06343efd50d08c";
+const EXPECTED_VERSION_HEX: &str = "1831b181adb630bdbe0dd911749959ce";

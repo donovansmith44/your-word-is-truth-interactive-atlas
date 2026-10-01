@@ -34,6 +34,13 @@ hatch — and adding one to a previously-green scenario is classified
 
 ---
 
+- **0.19.0** (FOCUS-6 Task R4b, every compiled label is the reader-facing name) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
+  A place's compiled label is its default display name (`Hazor`, never `Hazor 1`) and an
+  anchor's is its curated label; every edge label recomposes from its corrected ends.
+  Re-blessed: `contract` and `graph-vocabulary` (`section_schema_version` 20 -> 21),
+  `kretzmann-chapter-gen-1` (the version root moved with it), `node-place-hazor-1` and
+  `edges-hazor-1-site-of` (the corrected labels); the http and cli pacts carry them too. No scenario added, removed or reworded.
+
 - **0.18.0** (FOCUS-6 Task 4, geography on the wire) — **MINOR under the 0.x policy (MAJOR class: blessed fixtures moved).**
   The artifact compiles a polity's reign and a place's default name and blurb (core's new
   `polity_reign` and `place_default` tables). Re-blessed: `contract`
