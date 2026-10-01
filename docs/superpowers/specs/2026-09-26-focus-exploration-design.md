@@ -554,8 +554,12 @@ Nothing open remains; the spec awaits the plans.
   IExplorer.Resolve(PositionRef) ; Follow(Link)                              // total
   Presentation.Of(ElementKind, Surface)                                      // rows for edge kinds too
   ```
-  Server: an edge card (`/api/edge/{id}`: kind, ends, provenance,
-  justification, loci, votes/narrative) and an edge's frontier (`from`,
-  `to`, `justified-by`, edge-position neighbours), in the generated document;
-  AQC minor. The edge's label is served (its kind's display label plus its
-  ends), never composed on the client.
+  **Amended by owner, 2026-09-30 (PRINCIPLES 27):** the "Server" paragraph
+  that stood here put the frontier into the backend (an edge card endpoint,
+  `EdgeSource`/`EdgeTarget` relations, labels composed per request) and is
+  withdrawn; that work (`lane/claude/F6-t1`, `F6-t2`) never lands. An edge's
+  frontier is derived on the client from what the graph already holds: its
+  ends are fields of the edge, read by the generic element read (nodes and
+  edges alike, many ids per call); its justification and anything positioned
+  on it are the generic neighbour read at its position. Its label is compiled
+  into the artifact and read, never composed per request or on the client.
