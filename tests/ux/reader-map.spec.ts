@@ -4,6 +4,7 @@ import { api } from './lib/api';
 import { loadToc, arbChapterRef } from './lib/canon';
 import { fcAssert, RUNS_UI } from './lib/fc';
 import { independentlyHoverableIds } from './lib/hoverSafety';
+import { neighbourNode } from './lib/edges';
 
 // READ-4 ("mini-map equals scripture scene; open-in-world carries the ref")
 // retired O1 (owner live-preview correction, 2026-08-23): the popover's own
@@ -18,36 +19,24 @@ import { independentlyHoverableIds } from './lib/hoverSafety';
 // untouched, see ExplorerPopover.razor's own header comment) -- a disclosed
 // consequence of the owner's own instruction, not an oversight.
 
-// Batch C2 (requirement 0b/0c): `scene.places[0]` used to be a safe,
-// arbitrary pick regardless of which place it happened to be -- the OLD
-// 4x4px marker never risked a forced hover landing on a NEIGHBORING
-// marker instead. The ember marker's own bigger hit target (see
-// lib/hoverSafety.ts's own header comment, and map.js's NUDGE_STEP_DEG
-// comment, for the confirmed root cause and a real example) means that's
-// no longer true for an UNCHECKED index-0 pick in a dense scene -- this
-// window's own place[0] ("Ai") happens to sit within the exodus scene's
-// documented Jericho/Ai/Gilgal/"plains of Moab" cluster. Picking the
-// first REAL, independently-hoverable place instead keeps the test's own
-// original intent ("some place in this scene, doesn't matter which")
-// honest against the live rendered page rather than an arbitrary array
-// index.
-test('WORLD-8: place card title opens place history popover', async ({ page }) => {
+test('WORLD-8: clicking a place marker opens its window-free record with its site-of neighbours', async ({ page }) => {
+  // Arrange
   await page.goto('/world?from=-1446&to=-1406');
   const scene = await api.sceneTime(-1446, -1406);
   const safeIds = await independentlyHoverableIds(page, scene.places.map((sp: any) => sp.id));
   const p = scene.places.find((sp: any) => safeIds.has(sp.id));
-  expect(p, 'expected at least one independently-hoverable place in the exodus scene').toBeTruthy();
-  await page.getByTestId(`marker-${p.id}`).hover({ force: true });
-  await page.getByTestId('place-card-title').click();
-  // World.razor's OpenPlaceFromCard builds the PlaceNode from
-  // hoverPlace.DisplayName, not .Name -- CONTRACT.md: popover-title (like
-  // place-card-title/marker labels) shows the scene's own display_name.
-  // The two only coincide when this place has no curated period name AND
-  // (Batch E2) no raw ETL slug-disambiguation suffix in its default name.
-  await expect(page.getByTestId('popover-title')).toHaveText(p.display_name);
-  const detail = await api.place(p.id);
-  await expect(page.getByTestId('popover'))
-    .toContainText(detail.events[0].when.label);
+  expect(p, 'expected at least one independently-clickable place in the exodus scene').toBeTruthy();
+  const record = await api.node(p.node.id);
+  const siteOf = await api.nodeEdges(p.node.id, 'site-of');
+
+  // Act
+  await page.getByTestId(`marker-${p.id}`).dispatchEvent('click');
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-card-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-section-site-of')).toBeVisible();
+  await expect(page.getByTestId(`popover-link-site-of-${neighbourNode(siteOf.entries[0]).id}`)).toHaveText(neighbourNode(siteOf.entries[0]).label);
 });
 
 test('READ-5: shift-click passage selection', async ({ page }) => {

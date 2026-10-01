@@ -65,35 +65,30 @@ test('SELECTION-2: plain click on a verse line still opens its popover, exactly 
   await expect(page.getByTestId('selection-tray')).toHaveCount(0);
 });
 
-test('SELECTION-1: Ctrl-click on a map marker adds it to the tray without pinning it; a plain click on the same marker still pins (SELECTION-2)', async ({ page }) => {
-  const w = { from: -1446, to: -1406 }; // exodus window: rich scene, same pick every other world spec uses
+test('SELECTION-1: Ctrl-click on a map marker adds it to the tray without opening its popover; a plain click on the same marker still opens it (SELECTION-2)', async ({ page }) => {
+  // Arrange
+  const w = { from: -1446, to: -1406 };
   await page.goto(`/world?from=${w.from}&to=${w.to}`);
   const scene = await api.sceneTime(w.from, w.to);
   const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
   const p = scene.places.find((pl: any) => safeIds.has(pl.id));
-  expect(p, 'expected at least one independently-hoverable lit place').toBeTruthy();
-
+  expect(p, 'expected at least one independently-clickable lit place').toBeTruthy();
   const marker = page.getByTestId(`marker-${p.id}`);
-  // Real hit-testing on a dense scene is a documented risk this suite
-  // already works around (world-pin.spec.ts's own clickMarker) --
-  // dispatchEvent fires the exact production Leaflet click listener
-  // directly on the target element, with a real MouseEvent carrying
-  // ctrlKey:true (Playwright's own dispatchEvent(type, eventInit) support),
-  // the same technique, extended with the one property map.js's own new
-  // isToggleSelectClick actually reads.
-  await marker.dispatchEvent('click', { ctrlKey: true });
-  await expect(page.getByTestId('place-card')).toHaveCount(0);
-  await expect(page.getByTestId('selection-tray')).toBeVisible();
-  await expect(page.getByTestId('selection-tray')).toContainText(p.display_name);
 
-  // The SAME marker's own PLAIN click still pins, unchanged (SELECTION-2).
+  // Act
+  await marker.dispatchEvent('click', { ctrlKey: true });
+
+  // Assert
+  await expect(page.getByTestId('popover')).toHaveCount(0);
+  await expect(page.getByTestId('selection-tray')).toBeVisible();
+  await expect(page.getByTestId('selection-tray')).toContainText(p.node.label);
+
+  // Act
   await marker.dispatchEvent('click');
-  const card = page.getByTestId('place-card');
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name);
-  // The tray's own earlier Ctrl-click selection is untouched by the plain
-  // click that followed it -- the two gestures act on independent state.
-  await expect(page.getByTestId('selection-tray')).toContainText(p.display_name);
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(p.node.label);
+  await expect(page.getByTestId('selection-tray')).toContainText(p.node.label);
 });
 
 test('SELECTION-1: a selection persists across reader<->world navigation (one shared, app-lifetime tray)', async ({ page }) => {

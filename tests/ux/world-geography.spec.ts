@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { api } from './lib/api';
+import { neighbourNode } from './lib/edges';
 import { independentlyHoverableIds } from './lib/hoverSafety';
 
 type Ring = [number, number][];
@@ -104,10 +105,6 @@ test('the world slider is unbounded until a focus bounds it', async ({ page }) =
 const NT = { from: 30, to: 90 };
 const CENTRED_DEGREES = 0.05;
 
-async function served(path: string): Promise<any> {
-  return api.raw(path);
-}
-
 async function windowOf(page: Page): Promise<{ from: number; to: number }> {
   const url = new URL(page.url());
   return { from: Number(url.searchParams.get('from')), to: Number(url.searchParams.get('to')) };
@@ -120,12 +117,11 @@ async function aLitPlace(page: Page): Promise<any> {
 }
 
 async function aMapWithANextMap(placeNodeId: string): Promise<{ map: any; next: any }> {
-  const shownOn = await served(`/api/node/${encodeURIComponent(placeNodeId)}/edges?kind=shown-on`);
-  for (const entry of shownOn.entries) {
-    const map = entry.neighbour.node;
-    const following = await served(`/api/node/${encodeURIComponent(map.id)}/edges?kind=follows-in`);
-    if (following.entries.length > 0) {
-      return { map: await served(`/api/node/${encodeURIComponent(map.id)}`), next: await served(`/api/node/${encodeURIComponent(following.entries[0].neighbour.node.id)}`) };
+  const shownOn = await api.nodeEdges(placeNodeId, 'shown-on');
+  for (const map of shownOn.entries.map(neighbourNode)) {
+    const following = (await api.nodeEdges(map.id, 'follows-in')).entries.map(neighbourNode);
+    if (following.length > 0) {
+      return { map: await api.node(map.id), next: await api.node(following[0].id) };
     }
   }
   throw new Error(`${placeNodeId} is shown on no map that another follows`);
@@ -134,7 +130,7 @@ async function aMapWithANextMap(placeNodeId: string): Promise<{ map: any; next: 
 test('clicking a place focuses it: the popover shows its record and neighbours, the map marks its site, the slider keeps its window', async ({ page }) => {
   await page.goto(`/world?from=${NT.from}&to=${NT.to}`);
   const place = await aLitPlace(page);
-  const record = await served(`/api/node/${encodeURIComponent(place.node.id)}`);
+  const record = await api.node(place.node.id);
 
   await page.getByTestId(`marker-${place.id}`).dispatchEvent('click');
 
@@ -200,9 +196,8 @@ test('Back from the next Map returns to the previous one and its bounds', async 
 test('following a Place link in the reader\'s popover offers popover-chip-map, which opens /world with the exploration carried and the place focused', async ({ page }) => {
   const scene = await api.sceneTime(NT.from, NT.to);
   const { map } = await aMapWithANextMap(scene.places[0].node.id);
-  const shown = await served(`/api/node/${encodeURIComponent(map.id)}/edges?kind=shows`);
-  const firstPlace = shown.entries.find((e: any) => e.neighbour.node?.kind === 'Place');
-  const place = await served(`/api/node/${encodeURIComponent(firstPlace.neighbour.node.id)}`);
+  const shown = (await api.nodeEdges(map.id, 'shows')).entries.map(neighbourNode);
+  const place = await api.node(shown.find(n => n.kind === 'Place')!.id);
   await page.goto('/read/GEN/1');
   await page.evaluate(save => localStorage.setItem('explorations-v3', JSON.stringify([save])), {
     id: 'map', name: map.label, createdUtc: '2026-10-01T00:00:00+00:00',

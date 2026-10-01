@@ -1,133 +1,100 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { api } from './lib/api';
 import { independentlyHoverableIds } from './lib/hoverSafety';
 
-// Batch R requirement 2 (regression + enhancement, user 2026-08-19: "i can
-// no longer click on a location's (like Beersheba) name, where i used to be
-// able to and i would get the est/dest dates. we need that functionality
-// back"): a place's own label (.atlas-label / .quiet-label) is a full
-// hover/click target equivalent to its dot -- see CONTRACT.md's own LABEL-1
-// note. independentlyHoverableIds (lib/hoverSafety.ts) filters out any place
-// whose real rendered marker sits too close to a neighbor for a forced hover
-// to be trusted -- the SAME safety net WORLD-2/world-hover-text.spec.ts
-// already rely on, needed here too since the label sits right next to the
-// exact same dot.
+const EXODUS = { from: -1446, to: -1406 };
 
-test('LABEL-1: hovering a LIT place\'s label opens the same place-card a hover on its dot would', async ({ page }) => {
-  const w = { from: -1446, to: -1406 }; // exodus window: rich scene
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
-  const scene = await api.sceneTime(w.from, w.to);
-  const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
-  const p = scene.places.find((pl: any) => safeIds.has(pl.id));
-  expect(p, 'expected at least one independently-hoverable lit place').toBeTruthy();
+async function aLabelledPlace(page: Page): Promise<{ id: string; node: { id: string; label: string } }> {
+  await page.goto(`/world?from=${EXODUS.from}&to=${EXODUS.to}`);
+  const scene = await api.sceneTime(EXODUS.from, EXODUS.to);
+  await expect(page.getByTestId(`marker-${scene.places[0].id}`)).toBeAttached();
+  const safeIds = await independentlyHoverableIds(page, scene.places.map((p: { id: string }) => p.id));
+  const place = scene.places.find((p: { id: string }) => safeIds.has(p.id));
+  expect(place, 'expected at least one independently-hoverable lit place').toBeTruthy();
+  return place;
+}
 
-  const label = page.getByTestId(`marker-${p.id}`).locator('.atlas-label');
+test('LABEL-1: hovering a LIT place\'s label opens no popover, exactly as hovering its dot does not', async ({ page }) => {
+  // Arrange
+  const place = await aLabelledPlace(page);
+  const label = page.getByTestId(`marker-${place.id}`).locator('.atlas-label');
   await expect(label).toBeVisible();
-  await label.hover({ force: true });
 
-  const card = page.getByTestId('place-card');
-  await expect(card).toBeVisible();
-  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name);
+  // Act
+  await label.hover({ force: true });
+  await page.waitForTimeout(800);
+
+  // Assert
+  await expect(page.getByTestId('popover')).toHaveCount(0);
 });
 
-test('LABEL-1: clicking a LIT place\'s label pins the card exactly like clicking its dot (PIN-1)', async ({ page }) => {
-  const w = { from: -1446, to: -1406 };
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
-  const scene = await api.sceneTime(w.from, w.to);
-  const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
-  const p = scene.places.find((pl: any) => safeIds.has(pl.id));
-  expect(p).toBeTruthy();
+test('LABEL-1: clicking a LIT place\'s label opens its popover exactly like clicking its dot (PIN-1)', async ({ page }) => {
+  // Arrange
+  const place = await aLabelledPlace(page);
+  const label = page.getByTestId(`marker-${place.id}`).locator('.atlas-label');
 
-  const label = page.getByTestId(`marker-${p.id}`).locator('.atlas-label');
+  // Act
   await label.click({ force: true });
-
-  const card = page.getByTestId('place-card');
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-close')).toBeVisible();
-
-  // Moving away must NOT close a pinned card (PIN-1) -- proves the pin
-  // really landed via the label click, not a transient hover artifact.
   await page.mouse.move(5, 5);
   await page.waitForTimeout(600);
-  await expect(card).toBeVisible();
-  await expect(card).toHaveAttribute('data-pinned', 'true');
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(place.node.label);
+  await expect(page.getByTestId('popover-close')).toBeVisible();
 });
 
-// A pinned label's own card title still promotes into a real PlaceNode
-// popover -- est/dest dates (now rendered via REGISTRY-1's own
-// popover-place-date-established/-destroyed) are reachable in exactly 2
-// clicks from the label: label pins the card, title opens the popover.
-// Jerusalem is heavily curated (established/destroyed both present) and
-// event-bearing at essentially every historical window, so it is present
-// (lit or quiet) here regardless of exact scene composition.
-test('LABEL-1: est/dest dates are reachable in <=2 clicks from a label (regression: "i used to be able to")', async ({ page }) => {
+test('LABEL-1: est/dest dates are reachable in one click from a label (regression: "i used to be able to")', async ({ page }) => {
+  // Arrange
+  const record = await api.node('Place:jerusalem');
   await page.goto('/world?from=-1000&to=-900');
-  const jerusalemMarker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
-  await expect(jerusalemMarker).toBeAttached();
+  const marker = page.getByTestId('marker-jerusalem').or(page.getByTestId('quiet-marker-jerusalem'));
+  await expect(marker).toBeAttached();
 
-  const label = jerusalemMarker.locator('.atlas-label, .quiet-label');
-  await label.click({ force: true }); // click 1: pins the card
-  await expect(page.getByTestId('place-card')).toHaveAttribute('data-pinned', 'true');
+  // Act
+  await marker.locator('.atlas-label, .quiet-label').click({ force: true });
 
-  await page.getByTestId('place-card-title').click(); // click 2: promotes into the popover
-  await expect(page.getByTestId('popover')).toBeVisible();
-  await expect(page.getByTestId('popover-place-date-established')).toBeVisible();
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-field-Established')).toContainText(record.place.established.label);
+  await expect(page.getByTestId('popover-field-Destroyed')).toContainText(record.place.destroyed.label);
 });
 
-// Batch R review fix round 1, Important-1 (review 2026-08-20): .atlas-label
-// is a DOM CHILD of .atlas-marker, absolutely positioned just past the
-// dot's own hit halo -- a REAL pointer transit from the dot into the label
-// (unlike every test above, which jumps straight there via { force: true })
-// crosses a genuine element boundary and fires a native mouseout+mouseover
-// pair on the SAME marker along the way. The review found this benign
-// today (World.razor's own 350ms close-grace comfortably absorbs it) but
-// untested -- this proves that stays true: across a real, granular,
-// stepped move from the dot's own center to the label's own center, the
-// hover card must never actually disappear, and must still name the SAME
-// place once the transit completes. A future change that shortened or
-// removed the grace window would show up here as a dropped card mid-loop,
-// not just at the two endpoints.
-test('LABEL-1: a real pointer transit from a marker\'s dot into its own label never drops the hover card or swaps its target', async ({ page }) => {
-  const w = { from: -1446, to: -1406 };
-  await page.goto(`/world?from=${w.from}&to=${w.to}`);
-  const scene = await api.sceneTime(w.from, w.to);
-  const safeIds = await independentlyHoverableIds(page, scene.places.map((p: any) => p.id));
-  const p = scene.places.find((pl: any) => safeIds.has(pl.id));
-  expect(p, 'expected at least one independently-hoverable lit place').toBeTruthy();
-
-  const marker = page.getByTestId(`marker-${p.id}`);
-  const label = marker.locator('.atlas-label');
-  const dotBox = await marker.boundingBox();
-  const labelBox = await label.boundingBox();
-  expect(dotBox && labelBox).toBeTruthy();
-
-  const from = { x: dotBox!.x + dotBox!.width / 2, y: dotBox!.y + dotBox!.height / 2 };
-  const to = { x: labelBox!.x + labelBox!.width / 2, y: labelBox!.y + labelBox!.height / 2 };
+test('LABEL-1: a real pointer transit from a marker\'s dot into its own label, then a click, opens that same place', async ({ page }) => {
+  // Arrange
+  const place = await aLabelledPlace(page);
+  const marker = page.getByTestId(`marker-${place.id}`);
+  const dotBox = (await marker.boundingBox())!;
+  const labelBox = (await marker.locator('.atlas-label').boundingBox())!;
+  const from = { x: dotBox.x + dotBox.width / 2, y: dotBox.y + dotBox.height / 2 };
+  const to = { x: labelBox.x + labelBox.width / 2, y: labelBox.y + labelBox.height / 2 };
   await page.mouse.move(from.x, from.y);
 
-  const card = page.getByTestId('place-card');
-  await expect(card).toBeVisible();
-  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name);
-
+  // Act
   const steps = 8;
   for (let i = 1; i <= steps; i++) {
     await page.mouse.move(from.x + (to.x - from.x) * i / steps, from.y + (to.y - from.y) * i / steps);
-    await expect(card).toBeVisible(); // never drops anywhere along the real transit
+    await expect(page.getByTestId('popover')).toHaveCount(0);
   }
-  await expect(page.getByTestId('place-card-title')).toHaveText(p.display_name); // still the same place, not swapped mid-transit
+  await page.mouse.down();
+  await page.mouse.up();
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(place.node.label);
 });
 
-// Polity/landmark labels stay entirely non-interactive -- LABEL-1's own
-// explicit scope boundary.
 test('LABEL-1: polity and landmark labels stay non-interactive', async ({ page }) => {
+  // Arrange
   await page.goto('/world?from=-1446&to=-1400');
   const polityLabel = page.getByTestId(/^polity-label-/).first();
-  await expect(polityLabel).toBeAttached();
-  const polityPointerEvents = await polityLabel.evaluate(el => getComputedStyle(el).pointerEvents);
-  expect(polityPointerEvents).toBe('none');
-
   const landmarkLabel = page.getByTestId(/^landmark-/).first();
+  await expect(polityLabel).toBeAttached();
   await expect(landmarkLabel).toBeAttached();
+
+  // Act
+  const polityPointerEvents = await polityLabel.evaluate(el => getComputedStyle(el).pointerEvents);
   const landmarkPointerEvents = await landmarkLabel.evaluate(el => getComputedStyle(el).pointerEvents);
+
+  // Assert
+  expect(polityPointerEvents).toBe('none');
   expect(landmarkPointerEvents).toBe('none');
 });

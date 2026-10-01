@@ -537,16 +537,10 @@ test('PANE-ANCHOR-1: a place popover opened from the atlas pane stays fully with
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto('/read/GEN/12?split=world');
   await expect(page.getByTestId('split-pane-atlas')).toBeVisible();
-  // Batch C3: VISIBLE_LIT_MARKER_SELECTOR, not a bare LIT_MARKER_TESTID
-  // `.first()` -- the DOM-first `marker-{placeId}` could itself be hidden
-  // inside a cluster this pass (still attached, never removed), which
-  // would never satisfy `.toBeVisible()`; this selector's own `:visible`
-  // filters that out (see lib/markers.ts's own comment).
   const anyVisibleMarker = page.locator(VISIBLE_LIT_MARKER_SELECTOR).first();
   await expect(anyVisibleMarker).toBeVisible({ timeout: 10000 });
 
-  await anyVisibleMarker.click({ force: true });
-  await page.getByTestId('place-card-title').click();
+  await anyVisibleMarker.dispatchEvent('click');
   await expect(page.getByTestId('popover')).toBeVisible();
 
   const atlasBox = await page.getByTestId('split-pane-atlas').boundingBox();
@@ -556,12 +550,9 @@ test('PANE-ANCHOR-1: a place popover opened from the atlas pane stays fully with
   if (atlasBox && popoverBox) {
     expect(popoverBox.x).toBeGreaterThanOrEqual(atlasBox.x - 1);
     expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(atlasBox.x + atlasBox.width + 1);
-    // Genuinely on the RIGHT side of the viewport (the atlas pane's own
-    // side).
     expect(popoverBox.x).toBeGreaterThan(700);
   }
 
-  // The OTHER pane (reader) stays fully visible.
   await expect(page.getByTestId('verse-line-1')).toBeVisible();
 });
 

@@ -1,70 +1,40 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { openVerse } from './lib/verse';
 import { api } from './lib/api';
 import { setZoomExact } from './lib/zoom';
 
-// Batch G1 requirement 3 (click-to-pin/narrative traversal). PIN-1/TRAVERSAL-1
-// in CONTRACT.md. The exodus window (-1446..-1406) is this suite's own
-// long-standing "rich scene" pick (world-map.spec.ts's WORLD-2, world-hover-
-// text.spec.ts's WINDOWS) -- here it doubles as the brief's own suggested
-// "known narrative chain": the curated `exodus` narrative's legs (rameses ->
-// succoth -> red sea -> marah -> elim -> rephidim -> sinai -> kadesh-barnea ->
-// plains of moab -> jericho) all fall inside this exact window, so every one
-// of its places is lit (not quiet) here.
 const EXODUS_WINDOW = { from: -1446, to: -1406 };
 
-// Real, confirmed risk in THIS exodus scene specifically (app.css's own
-// .atlas-marker comment, lib/hoverSafety.ts's header comment: "the exodus
-// scene alone measures a majority of its own places mutually within [14px] --
-// 75%, 12 of 16"): a pixel-coordinate click/hover (even with Playwright's own
-// force:true, which only skips PLAYWRIGHT's actionability pre-check, not the
-// BROWSER's real hit-test at that pixel) can land on a DIFFERENT, overlapping
-// marker than the one asked for. dispatchEvent bypasses hit-testing entirely
-// -- it fires the DOM event directly ON the target element, still exercising
-// the real production Leaflet click listener (nothing about the app is
-// mocked), the exact technique world-quiet-places.spec.ts's own Jerusalem/
-// Beautiful-gate coincidence test already established for this same class of
-// problem (there for an exact coincidence; here for the exodus cluster's own
-// documented near-coincidences).
-async function clickMarker(page: import('@playwright/test').Page, placeId: string): Promise<void> {
+async function clickMarker(page: Page, placeId: string): Promise<void> {
   await page.getByTestId(`marker-${placeId}`).dispatchEvent('click');
 }
 
-test('PIN-1: clicking a marker pins its card open, ignores hover elsewhere, and closes via its own X', async ({ page }) => {
-  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
-  const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
+async function exodusLegs(window: { from: number; to: number }): Promise<{ scene: any; legs: any[] }> {
+  const scene = await api.sceneTime(window.from, window.to);
   const legs = scene.arrows.filter((a: any) => a.narrative === 'exodus').sort((a: any, b: any) => a.order - b.order);
+  return { scene, legs };
+}
+
+function placeOf(scene: any, id: string): any {
+  return scene.places.find((p: any) => p.id === id) ?? scene.quiet_places.find((p: any) => p.id === id);
+}
+
+test('PIN-1: clicking a marker opens its place\'s record in the popover, ignores hover elsewhere, and closes via popover-close', async ({ page }) => {
+  // Arrange
+  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
+  const { scene, legs } = await exodusLegs(EXODUS_WINDOW);
   test.skip(legs.length === 0, 'exodus narrative not present in this window');
-  const start = legs[0].from_place;
-  const startPlace = scene.places.find((p: any) => p.id === start);
+  const start = placeOf(scene, legs[0].from_place);
+  const record = await api.node(start.node.id);
+  const popover = page.getByTestId('popover');
 
-  const card = page.getByTestId('place-card');
-  await clickMarker(page, start);
-  await expect(card).toBeVisible();
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(startPlace.display_name);
-  await expect(page.getByTestId('place-card-close')).toBeVisible();
+  // Act
+  await clickMarker(page, start.id);
 
-  // Hovering elsewhere on the map does nothing while pinned -- the card
-  // keeps showing the PINNED place, never swaps to whatever else the
-  // pointer passes over. (A forced hover here MAY, by the same hit-testing
-  // ambiguity, land on a marker other than `other` -- harmless either way:
-  // the assertion holds regardless of WHICH marker's hover actually fired,
-  // since hover-while-pinned is a no-op for every marker uniformly.)
-  // Batch C3: picks any CURRENTLY VISIBLE lit marker that isn't `start` --
-  // decision 3's own far/mid-tier clustering can now hide the DOM-first
-  // "other" place entirely (still attached, never removed, but a
-  // display:none ancestor per applyMarkerClusters' own comment means
-  // Playwright's own `.hover()` -- even `force:true`, which only skips the
-  // interactability pre-checks, never the underlying visibility
-  // requirement -- can't act on it at all). This test's own comment
-  // already tolerates landing on WHICHEVER other marker actually receives
-  // the hover ("harmless either way"), so any visible one satisfies it.
-  // Native `document.querySelectorAll` (unlike Playwright's own locator
-  // engine) has no `:visible` pseudo-class, so visibility is checked here
-  // via `offsetParent !== null` instead -- null exactly when an element (or
-  // an ancestor) is display:none, the same check this file's own
-  // c3-shot-style diagnostics already established live.
+  // Assert
+  await expect(popover).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await expect(page.getByTestId('popover-card-title')).toHaveText(record.label);
   const otherId: string | null = await page.evaluate((startId) => {
     for (const el of document.querySelectorAll('[data-testid^="marker-"]:not([data-testid^="marker-cluster-"])')) {
       const testid = (el as HTMLElement).dataset.testid!;
@@ -73,335 +43,140 @@ test('PIN-1: clicking a marker pins its card open, ignores hover elsewhere, and 
       }
     }
     return null;
-  }, start);
+  }, start.id);
   if (otherId) {
     await page.getByTestId(otherId).hover({ force: true });
-    await expect(page.getByTestId('place-card-title')).toHaveText(startPlace.display_name);
+    await expect(page.getByTestId('popover-title')).toHaveText(record.label);
   }
-
-  // The card also survives the pointer leaving both the marker and the
-  // card entirely (batch-c2-brief.md requirement 0c's own ~1s close is
-  // suppressed while pinned) -- move away and wait past that window.
   await page.mouse.move(5, 5);
   await page.waitForTimeout(1200);
-  await expect(card).toBeVisible();
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-
-  await page.getByTestId('place-card-close').click();
-  await expect(card).toHaveCount(0);
+  await expect(popover).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  await page.getByTestId('popover-close').click();
+  await expect(popover).toHaveCount(0);
 });
 
-test('PIN-2: Escape closes a pinned card (and only the topmost layer, popover first)', async ({ page }) => {
+test('PIN-2: Escape closes the place popover', async ({ page }) => {
+  // Arrange
   await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
   const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
   const p = scene.places[0];
-
-  const card = page.getByTestId('place-card');
   await clickMarker(page, p.id);
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-
-  // With a popover open (opened FROM the pinned card's own title), Escape
-  // closes the popover first, leaving the pin intact underneath it.
-  await page.getByTestId('place-card-title').click();
   await expect(page.getByTestId('popover')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByTestId('popover')).toHaveCount(0);
 
-  // NOTE: promoting the title into a popover already supersedes (fully
-  // closes, including the pin) the card, per PIN-1 -- re-pin fresh here to
-  // test Escape's OWN direct close path in isolation.
-  await clickMarker(page, p.id);
-  await expect(card).toHaveAttribute('data-pinned', 'true');
+  // Act
   await page.keyboard.press('Escape');
-  await expect(card).toHaveCount(0);
+
+  // Assert
+  await expect(page.getByTestId('popover')).toHaveCount(0);
 });
 
-test('PIN-3: clicking elsewhere on the map background closes a pinned card', async ({ page }) => {
+test('PIN-3: clicking the map background closes the place chooser and leaves the focused place\'s popover open', async ({ page }) => {
+  // Arrange
   await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
   const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
   const p = scene.places[0];
-
-  const card = page.getByTestId('place-card');
+  const record = await api.node(p.node.id);
   await clickMarker(page, p.id);
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-
-  // "Elsewhere on the map" via dispatchEvent on the map container itself
-  // (the exact element map.js's own map.on('click', ...) is bound to,
-  // per its own comment) -- NOT a pixel-coordinate click, which the ever-
-  // present graph's own quiet dots (QUIET-1: every one of ~200+ event-
-  // bearing places renders a marker somewhere on the plate, in EVERY
-  // time-mode window, well beyond just the exodus narrative's own places)
-  // make genuinely risky to land cleanly: there is no large corner of this
-  // scene's own screen guaranteed marker-free the way there might be in an
-  // app with only a handful of markers. Dispatching directly on the
-  // container exercises the exact same production listener a real
-  // background click would, without gambling on a "probably empty" pixel.
-  await page.getByTestId('world-map').dispatchEvent('click');
-  await expect(card).toHaveCount(0);
-});
-
-// The money shot: pin a place on the exodus route, walk it forward with
-// next-event, then back with prev-event. Derives every expectation from the
-// LIVE scene's own arrows/places (never hardcoded ids/names) so this stays
-// correct if the curated route or its display names ever change.
-test('TRAVERSAL-1: pinning a place on the exodus route and walking next/prev traverses the narrative chain', async ({ page }) => {
-  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
-  const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
-  const legs = scene.arrows.filter((a: any) => a.narrative === 'exodus').sort((a: any, b: any) => a.order - b.order);
-  test.skip(legs.length < 2, 'need at least 2 exodus legs to walk next then prev');
-
-  const nameOf = (id: string) => scene.places.find((p: any) => p.id === id).display_name;
-  const start = legs[0].from_place;
-  const afterNext = legs[0].to_place;
-
-  const card = page.getByTestId('place-card');
-  await clickMarker(page, start);
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
-
-  const nextBtn = page.getByTestId('card-next-event-exodus');
-  await expect(nextBtn).toBeVisible();
-  await nextBtn.click();
-
-  // Traversal re-pins the ADJACENT place -- same card, new place, still pinned.
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(afterNext));
-
-  const prevBtn = page.getByTestId('card-prev-event-exodus');
-  await expect(prevBtn).toBeVisible();
-  await prevBtn.click();
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
-
-  // The FIRST place in the chain has no previous leg -- its own
-  // card-prev-event-exodus must be absent (conditional presence).
-  await expect(page.getByTestId('card-prev-event-exodus')).toHaveCount(0);
-});
-
-// Fix round 1 regression (batch-g1-review.md M1): place-card-narratives (and
-// its card-prev/next-event-N controls) rendered on a plain, UNPINNED hover --
-// NarrativeRows() is a pure function of Arrows/Narratives/Place alone, and
-// World.razor passes both into PlaceCard unconditionally, so nothing gated
-// the section on Pinned. Reviewer verified live: hovering (never clicking)
-// marker-rameses in this exact exodus window left data-pinned="false" but
-// card-next-event-exodus present and clickable -- silently collapsing this
-// batch's own two-gesture design (hover to preview, click to commit) into
-// one. Against the pre-fix `@if (narrativeRows.Count > 0)` (no Pinned check),
-// this test's first block (asserting place-card-narratives/-next-event/
-// -prev-event all ABSENT while merely hovering) fails outright, since
-// `start` is guaranteed >=1 outgoing exodus leg (same `legs[0].from_place`
-// derivation TRAVERSAL-1 above already relies on) and NarrativeRows() would
-// unconditionally render its row.
-//
-// Uses a REAL, hit-tested pointer gesture rather than clickMarker's own
-// dispatchEvent bypass -- this test is specifically about what a genuine,
-// un-pinned MOUSE hover renders, so a scripted DOM event dispatch (which
-// never touches the browser's real hit-testing) would prove nothing about
-// the actual defect. Zooms to this app's own max zoom first (fix round 1,
-// see the test body's own comment) so a merely-crowded-at-default-fit false
-// positive never masks the real property; `page.mouse.move(..., { steps:
-// 10 })` then glides the pointer there in many small steps, never a single
-// teleporting jump, the same "at least as realistic as a real pointer"
-// technique moveAndClick established (world-hover-text.spec.ts's own header
-// comment). The pin-click that follows (whichever branch -- see the test
-// body) reuses that exact same pointer position/element rather than
-// re-resolving the marker locator, so there is no second hit-test to risk
-// landing on a different, overlapping marker.
-test('TRAVERSAL-2: an unpinned hover shows no narrative section; pinning the same marker reveals it and traversal still works', async ({ page }) => {
-  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
-  const scene = await api.sceneTime(EXODUS_WINDOW.from, EXODUS_WINDOW.to);
-  const legs = scene.arrows.filter((a: any) => a.narrative === 'exodus').sort((a: any, b: any) => a.order - b.order);
-  test.skip(legs.length === 0, 'exodus narrative not present in this window');
-
-  const nameOf = (id: string) => scene.places.find((p: any) => p.id === id).display_name;
-  const start = legs[0].from_place;
-  const afterNext = legs[0].to_place;
-  const startPlace = scene.places.find((p: any) => p.id === start);
-
-  // Fix round 1 (review finding, HIGH): `start` is the semantic SUBJECT of
-  // this test (the exodus narrative's own first stop) -- not swappable for
-  // "any independently-hoverable place" the way world-hover-text.spec.ts's
-  // search helpers can substitute candidates. What IS free to choose is the
-  // ZOOM this exact scene renders at: this batch's own hoverSafety.ts
-  // extension (quiet-marker/cluster-glyph proximity, on top of the
-  // pre-existing lit-lit check) can trip at the exodus window's own default
-  // far/mid-tier fitScene zoom even when `start` has real breathing room
-  // once actually rendered close up -- exactly the same "checked only at
-  // default fit" root cause world-hover-text.spec.ts's own bestHoverablePlace
-  // fix round 1 diagnoses (batch-c3-review.md's own Lens 4). Jumping to this
-  // app's own max zoom (map.js's TILE_MAX_NATIVE_ZOOM, 13 -- world-hover-
-  // text.spec.ts's own MAX_APP_ZOOM comment has the full reasoning),
-  // centered on `start`'s own true position, is also always past
-  // ZOOM_TIER_NEAR (map.js, 9) -- decision 3's own "NEAR tier never
-  // clusters" guarantee -- so no `marker-cluster-{n}` glyph can be sitting
-  // on `start` at this zoom regardless of how the same scene renders at its
-  // own default fit.
-  await setZoomExact(page, 13, { lat: startPlace.lat, lon: startPlace.lon });
-
-  const marker = page.getByTestId(`marker-${start}`);
-  const box = await marker.boundingBox();
-  if (!box) {
-    throw new Error('exodus route start marker has no bounding box');
-  }
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-
-  const card = page.getByTestId('place-card');
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+  const cluster = page.locator('[data-testid^="marker-cluster-"]').first();
+  await expect(cluster).toBeAttached();
+  await cluster.dispatchEvent('mouseover');
   const chooser = page.getByTestId('place-chooser');
+  await expect(chooser).toBeVisible();
 
-  // Phase 1: hover only -- real, multi-step pointer arrival, never a click.
-  await page.mouse.move(cx, cy, { steps: 10 });
+  // Act
+  await page.getByTestId('world-map').dispatchEvent('click');
 
-  // Fix round 1 (review finding, HIGH, replaces the independentlyHoverableIds
-  // pre-check this test used to skip on): `start` (rameses, this window's
-  // own exodus route start) sits at the EXACT same true lat/lon as a real,
-  // independently curated QUIET neighbor -- "goshen-1" (Rameses was built
-  // IN Goshen; confirmed live, GET /api/place/rameses and /goshen-1 both
-  // report 30.79937/31.834217, byte-identical). This is a genuine,
-  // PERMANENT coincidence under decision 2's own AMBIGUITY_RADIUS_PX law --
-  // two candidates at the identical true point are 0px apart at EVERY zoom,
-  // forever, so no candidate/zoom search (unlike the "merely crowded at
-  // THIS zoom" cases world-hover-text.spec.ts's own fix round 1 resolves)
-  // can ever avoid it. Under the CURRENT, correct arbitration law, a real
-  // hover here legitimately opens `place-chooser` instead of a direct
-  // `place-card`. Rather than skip (this genuinely can't be dodged, but it
-  // CAN still be exercised), this test now proves the exact SAME "hover
-  // never reveals the narrative, only a pin does" guarantee via WHICHEVER
-  // surface the pointer actually resolves to -- neither branch is a weaker
-  // claim than the original single-card assumption: the chooser branch is
-  // in fact the MORE common real case for this specific narrative-critical
-  // place today, and clicking `start`'s own row goes through the identical
-  // PickChooserPlace -> OnPlaceClick pin path a direct marker click already
-  // takes (PIN-1), landing in the exact same pinned state Phase 2 always
-  // asserted. If curated data ever separates rameses/goshen-1, the `else`
-  // branch below (the ORIGINAL, unmodified assertion) is what would exercise
-  // instead -- this test degrades gracefully either way, never silently
-  // asserting the wrong thing.
-  if (await chooser.isVisible().catch(() => false)) {
-    await expect(page.getByTestId(`place-chooser-${start}`)).toBeVisible();
-    // The chooser itself never renders narrative content at all -- confirms
-    // "merely hovering never reveals the narrative section," the SAME
-    // guarantee the card branch below asserts directly for the
-    // not-currently-coincident case.
-    await expect(page.locator(
-      '[data-testid^="card-next-event-"], [data-testid^="card-prev-event-"], [data-testid="place-card-narratives"]'
-    )).toHaveCount(0);
-    // Phase 2 (chooser path): a row click IS the "click to commit" gesture
-    // here -- PIN-1's own law, same as a direct marker click.
-    await page.getByTestId(`place-chooser-${start}`).click();
+  // Assert
+  await expect(chooser).toHaveCount(0);
+  await expect(page.getByTestId('popover-title')).toHaveText(record.label);
+});
+
+test('TRAVERSAL-1: from a place on the exodus route, its site-of event steps along the narrative to the next event, and Back retraces to the place', async ({ page }) => {
+  // Arrange
+  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
+  const { scene, legs } = await exodusLegs(EXODUS_WINDOW);
+  test.skip(legs.length < 2, 'need at least 2 exodus legs');
+  const start = placeOf(scene, legs[0].from_place);
+  const startEvent = await api.node(`Event:${legs[0].from_event}`);
+  const nextEvent = await api.node(`Event:${legs[0].to_event}`);
+  const startRecord = await api.node(start.node.id);
+  await clickMarker(page, start.id);
+  await expect(page.getByTestId('popover-title')).toHaveText(startRecord.label);
+
+  // Act
+  await page.getByTestId(`popover-link-site-of-${startEvent.id}`).click();
+  await expect(page.getByTestId('popover-title')).toHaveText(startEvent.label);
+  await page.getByTestId('event-chrono-following-event-global').click();
+
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(nextEvent.label);
+  await page.getByTestId('popover-breadcrumb-back').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(startEvent.label);
+  await page.getByTestId('popover-breadcrumb-back').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(startRecord.label);
+});
+
+test('TRAVERSAL-2: a real hover opens no popover; clicking the same marker opens the place, whose site-of event carries the narrative onward', async ({ page }) => {
+  // Arrange
+  await page.goto(`/world?from=${EXODUS_WINDOW.from}&to=${EXODUS_WINDOW.to}`);
+  const { scene, legs } = await exodusLegs(EXODUS_WINDOW);
+  test.skip(legs.length === 0, 'exodus narrative not present in this window');
+  const start = placeOf(scene, legs[0].from_place);
+  const startRecord = await api.node(start.node.id);
+  const startEvent = await api.node(`Event:${legs[0].from_event}`);
+  const nextEvent = await api.node(`Event:${legs[0].to_event}`);
+  await setZoomExact(page, 13, { lat: start.lat, lon: start.lon });
+  const box = (await page.getByTestId(`marker-${start.id}`).boundingBox())!;
+
+  // Act
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+
+  // Assert
+  await page.waitForTimeout(600);
+  await expect(page.getByTestId('popover')).toHaveCount(0);
+  const chooserRow = page.getByTestId(`place-chooser-${start.id}`);
+  if (await chooserRow.isVisible().catch(() => false)) {
+    await chooserRow.click();
   } else {
-    await expect(card).toBeVisible();
-    await expect(card).toHaveAttribute('data-pinned', 'false');
-    await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
-
-    // The MAJOR finding itself: none of these may appear while merely hovering.
-    await expect(card.getByTestId('place-card-narratives')).toHaveCount(0);
-    await expect(card.getByTestId('card-next-event-exodus')).toHaveCount(0);
-    await expect(card.getByTestId('card-prev-event-exodus')).toHaveCount(0);
-
-    // Phase 2 (direct path): click the SAME marker, from the SAME pointer
-    // position (already there -- no jump) -- the deliberate, real "click to
-    // commit" half of the batch's own two-gesture design.
     await page.mouse.down();
     await page.mouse.up();
   }
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(start));
-
-  // Now pinned: the narrative section (and this route's own first-stop
-  // conditional presence -- next only, no previous leg yet) appears.
-  await expect(card.getByTestId('place-card-narratives')).toBeVisible();
-  const nextBtn = card.getByTestId('card-next-event-exodus');
-  await expect(nextBtn).toBeVisible();
-  await expect(card.getByTestId('card-prev-event-exodus')).toHaveCount(0);
-
-  // Traversal still walks correctly once actually pinned: next re-pins the
-  // adjacent place, which now shows its own previous-event control back.
-  await nextBtn.click();
-  await expect(card).toHaveAttribute('data-pinned', 'true');
-  await expect(page.getByTestId('place-card-title')).toHaveText(nameOf(afterNext));
-  await expect(card.getByTestId('card-prev-event-exodus')).toBeVisible();
+  await expect(page.getByTestId('popover-title')).toHaveText(startRecord.label);
+  await page.getByTestId(`popover-link-site-of-${startEvent.id}`).click();
+  await page.getByTestId('event-chrono-following-event-global').click();
+  await expect(page.getByTestId('popover-title')).toHaveText(nextEvent.label);
 });
 
-// TRAVERSAL-3 (fix-round-1, batch-n-review.md Critical-1): the place card's
-// own next/prev traversal must agree with the verse popover's own PRIOR/
-// FOLLOWING traversal EVEN WHEN THE ACTIVE TIME WINDOW SPLITS THE NARRATIVE
-// CHAIN -- the review's own repro: the curated exodus narrative has a real
-// 37-year gap between ex_kadesh (-1445..-1444) and ex_moab (-1407..-1406)
-// (data/curated/events-extra.toml). An entirely ordinary window ending
-// inside that gap makes scene.rs's build_arrows drop the ex_kadesh ->
-// ex_moab leg from its own windowed `kept` list (both legs still individually
-// intersect nothing past -1444, so the PAIR never survives `kept.windows(2)`)
-// -- pre-fix-round-1, PlaceCard's NarrativeRows/PickAdjacent read ONLY that
-// windowed Arrows array, so pinning kadesh-barnea in this window showed NO
-// "next event" button, while the SAME window's verse popover (server-side
-// positions_for_events, batch-n-brief.md, deliberately unwindowed -- see its
-// own doc comment) showed a live, clickable "FOLLOWING EVENT -- Camp on the
-// plains of Moab" for the identical event. Both surfaces must agree, per the
-// brief's own "if the place card and popover both show traversal, they agree
-// on order and verses."
-const KADESH_WINDOW = { from: -1446, to: -1444 }; // ends exactly at ex_kadesh's own to_year -- before ex_moab's own -1407 from_year
+const KADESH_WINDOW = { from: -1446, to: -1444 };
 
-test('TRAVERSAL-3: the place card\'s next-event traversal agrees with the popover\'s FOLLOWING EVENT under a window that splits the narrative chain', async ({ page }) => {
-  // Confirm the fixture premise directly against the live data, so this
-  // test fails loudly (not silently vacuous) if the curated chain ever
-  // changes: ex_kadesh must have a real "following" leg to walk to.
+test('TRAVERSAL-3: under a window that splits the narrative chain, the place\'s window-free site-of event still reaches the popover\'s FOLLOWING leg', async ({ page }) => {
+  // Arrange
   const kadeshPositions = (await api.narrativeEventPositions('ex_kadesh')).narrative;
   const exodusPosition = kadeshPositions.find((p: any) => p.narrative_id === 'exodus');
   test.skip(!exodusPosition?.following, 'ex_kadesh has no following leg in the curated data');
   const followingLabel = exodusPosition.following.label;
-  const followingPlaceId = exodusPosition.following.places[0];
-
-  // Confirm the window genuinely SPLITS the chain server-side: the windowed
-  // scene must carry no outgoing ex_kadesh arrow (otherwise this window no
-  // longer exercises the gap and the test would prove nothing).
   const scene = await api.sceneTime(KADESH_WINDOW.from, KADESH_WINDOW.to);
   const windowedArrow = scene.arrows.find((a: any) => a.narrative === 'exodus' && a.from_event === 'ex_kadesh');
-  expect(windowedArrow, 'KADESH_WINDOW must not keep an outgoing ex_kadesh arrow, or this window no longer splits the chain').toBeFalsy();
+  expect(windowedArrow, 'KADESH_WINDOW must not keep an outgoing ex_kadesh arrow').toBeFalsy();
   const kadeshPlace = scene.places.find((p: any) => p.events.some((e: any) => e.id === 'ex_kadesh'));
   expect(kadeshPlace, 'ex_kadesh\'s own place must still be lit in this window').toBeTruthy();
-
-  // --- Surface 1: the map-side place card, pinned in the splitting window ---
+  const kadesh = await api.node('Event:ex_kadesh');
   await page.goto(`/world?from=${KADESH_WINDOW.from}&to=${KADESH_WINDOW.to}`);
-  await page.getByTestId(`marker-${kadeshPlace.id}`).dispatchEvent('click');
-  const card = page.getByTestId('place-card');
-  await expect(card).toHaveAttribute('data-pinned', 'true');
 
-  const nextBtn = page.getByTestId('card-next-event-exodus');
-  await expect(nextBtn, 'the card must find the full-chain next leg even though its own arrow was filtered out of this window').toBeVisible();
-  await nextBtn.click();
-  await expect(card).toHaveAttribute('data-pinned', 'true');
+  // Act
+  await clickMarker(page, kadeshPlace.id);
+  await page.getByTestId(`popover-link-site-of-${kadesh.id}`).click();
 
-  // The traversal landed on the SAME place the popover's own FOLLOWING EVENT
-  // points to (below) -- off-window (ex_moab's own dates sit well outside
-  // KADESH_WINDOW), so the graceful quiet-place fallback this codebase
-  // already documents (World.razor's GoToAdjacent comment: "off-window...
-  // no-op gracefully") renders instead of verse content -- itself proof the
-  // traversal actually crossed the window boundary, not a same-window
-  // coincidence.
-  const quietTarget = scene.quiet_places.find((p: any) => p.id === followingPlaceId);
-  expect(quietTarget, 'ex_moab\'s own place must be a QUIET (off-window) place in this scene').toBeTruthy();
-  await expect(page.getByTestId('place-card-title')).toHaveText(quietTarget.display_name);
-  await expect(page.getByTestId('place-card-quiet')).toBeVisible();
-
-  // --- Surface 2: the EVENT node popover, independently, reached from an
-  // ex_kadesh verse (Batch T requirement 3: verse-level PRIOR/FOLLOWING is
-  // retired -- the verse popover itself now shows EVENT membership only;
-  // traversal lives on the EVENT node reached from its own "EVENT" row) ---
+  // Assert
+  await expect(page.getByTestId('popover-title')).toHaveText(kadesh.label);
+  await expect(page.getByTestId('event-story-thread-following-event-exodus')).toHaveText(`next → ${followingLabel}`);
   await page.goto('/read/NUM/13');
-  await openVerse(page, 26); // NUM.13.26, one of ex_kadesh's own curated verses
+  await openVerse(page, 26);
   await expect(page.getByTestId('popover-title')).toHaveText('NUM.13.26');
   await page.getByTestId('verse-event-ex_kadesh').click();
-  await expect(page.getByTestId('popover-title')).toHaveText('Spies return to Kadesh-barnea');
-  // CHRONO-MERGE-1: ex_kadesh's own narrative-following genuinely
-  // DIVERGES from its global-timeline following (confirmed live: the
-  // narrative's own next leg is ex_moab, but the next event chronologically
-  // is a completely different thread's own jos_calebs_inheritance) -- the
-  // per-narrative nav this test used to click (`event-following-event-exodus`)
-  // is retired whole; the SAME "next -> Camp on the plains of Moab" fact
-  // this test's own header comment names now surfaces via the story-thread
-  // line instead (CONTRACT.md's own CHRONO-MERGE-1 note).
-  const chronoSection = page.getByTestId('popover-section-event-chronology');
-  await expect(chronoSection).toBeVisible();
-  const followingLeg = page.getByTestId('event-story-thread-following-event-exodus');
-  await expect(followingLeg).toHaveText(`next → ${followingLabel}`);
+  await expect(page.getByTestId('popover-title')).toHaveText(kadesh.label);
+  await expect(page.getByTestId('popover-section-event-chronology')).toBeVisible();
+  await expect(page.getByTestId('event-story-thread-following-event-exodus')).toHaveText(`next → ${followingLabel}`);
 });
