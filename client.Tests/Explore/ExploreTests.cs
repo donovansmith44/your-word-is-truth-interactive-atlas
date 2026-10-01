@@ -352,6 +352,50 @@ public sealed class ExploreTests
         Assert.Equal(new Outcome<(Unit, Exploration)>.Failed(), outcome);
     }
 
+    [Fact]
+    public async Task Resuming_resolves_the_start_and_every_trail_target_in_one_element_read()
+    {
+        // Arrange
+        var (graph, explorer, _) = Served();
+        var readsBefore = graph.ElementReads;
+
+        // Act
+        var outcome = await Explore.Resume(explorer, ServedGraph.At(Genesis1Ref), [ToGenesis2, ToGenesis3, UpToGenesis]);
+        var reads = graph.ElementReads - readsBefore;
+
+        // Assert
+        var trail = new Exploration(Genesis(explorer, Genesis1Ref), [new Step(EdgeKind.FollowsIn, Genesis(explorer, Genesis2Ref)), new Step(EdgeKind.FollowsIn, Genesis(explorer, Genesis3Ref)), new Step(EdgeKind.MemberOf, Genesis(explorer, GenesisRef))]);
+        Assert.Equal(((Outcome<Exploration>)new Outcome<Exploration>.Arrived(trail), 1), (outcome, reads));
+    }
+
+    [Fact]
+    public async Task Resuming_with_no_trail_is_one_element_read()
+    {
+        // Arrange
+        var (graph, explorer, _) = Served();
+        var readsBefore = graph.ElementReads;
+
+        // Act
+        var outcome = await Explore.Resume(explorer, ServedGraph.At(Genesis1Ref), []);
+        var reads = graph.ElementReads - readsBefore;
+
+        // Assert
+        Assert.Equal(((Outcome<Exploration>)new Outcome<Exploration>.Arrived(new Exploration(Genesis(explorer, Genesis1Ref), [])), 1), (outcome, reads));
+    }
+
+    [Fact]
+    public async Task Resuming_through_a_link_the_graph_cannot_resolve_fails()
+    {
+        // Arrange
+        var (explorer, _) = Graph();
+
+        // Act
+        var outcome = await Explore.Resume(explorer, ServedGraph.At(Genesis1Ref), [ToGenesis2, ToTheAbsent]);
+
+        // Assert
+        Assert.Equal(new Outcome<Exploration>.Failed(), outcome);
+    }
+
     private static Outcome<(T Value, Exploration Trail)> Run<T>(Explore<T> walk, IExplorer explorer, Exploration from) =>
         walk.Run(explorer, from).GetAwaiter().GetResult();
 

@@ -38,6 +38,10 @@ public static class Explore
     public static async Task<Outcome<Exploration>> Begin(IExplorer explorer, PositionRef start) =>
         (await Unsuperseded.Fetch(() => explorer.Resolve(start))).Select(node => new Exploration(node, []));
 
+    public static async Task<Outcome<Exploration>> Resume(IExplorer explorer, PositionRef start, IReadOnlyList<Link> trail) =>
+        (await Unsuperseded.Fetch(() => explorer.Resolve(trail.Select(link => link.Target).Prepend(start).ToList())))
+        .Select(nodes => trail.Zip(nodes.Skip(1), (link, target) => new Step(link.Kind, target)).Aggregate(new Exploration(nodes[0], []), (walked, step) => walked.Follow(step)));
+
     public static Explore<U> Select<T, U>(this Explore<T> m, Func<T, U> f) => m.SelectMany(value => Return(f(value)));
 
     public static Explore<U> SelectMany<T, U>(this Explore<T> m, Func<T, Explore<U>> f) =>

@@ -256,10 +256,13 @@
 
     private async Task Resume(Request request, SavedExploration saved)
     {
-        if (Arriving(await request.Walk(() => Explore.Begin(Explorer, saved.Start)), () => Resume(_requests.Next(), saved)) is { } begun)
+        if (Arriving(await request.Walk(() => Explore.Resume(Explorer, saved.Start, saved.Steps)), () => Resume(_requests.Next(), saved)) is { } resumed)
         {
-            await Walk(request, Explore.Replay(saved.Steps), begun, trail => new ExplorationIntent.Reseed(trail), null, () => Resume(_requests.Next(), saved));
+            PresentArrival(new ExplorationIntent.Reseed(resumed), null);
+            await LoadCurrent();
         }
+
+        StateHasChanged();
     }
 
     private async Task OpenAt(Request request, PositionRef target, IExplorable? legacy)
