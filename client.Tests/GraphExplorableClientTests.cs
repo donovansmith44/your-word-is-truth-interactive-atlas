@@ -13,11 +13,14 @@ public class GraphExplorableClientTests
     {
         public Uri? LastRequestUri;
         public string ResponseBody = "{}";
+        public List<Uri> Requests = [];
+        public Func<Uri, string>? Respond;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             LastRequestUri = request.RequestUri;
-            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json") };
+            Requests.Add(request.RequestUri!);
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Respond?.Invoke(request.RequestUri!) ?? ResponseBody, Encoding.UTF8, "application/json") };
             return Task.FromResult(response);
         }
     }
@@ -134,6 +137,24 @@ public class GraphExplorableClientTests
                 new MissingElement("Event:nowhere"),
             })),
             (handler.LastRequestUri!.AbsolutePath, Uri.UnescapeDataString(handler.LastRequestUri.Query), WholeValue.Of(elements.ToArray())));
+    }
+
+    [Fact]
+    public async Task Elements_follows_next_as_the_cursor_until_the_server_has_no_more()
+    {
+        // Arrange
+        var (client, handler) = MakeClient();
+        handler.Respond = uri => uri.Query.Contains("cursor=2")
+            ? """{"elements":[{"element":"missing","id":"c"}],"version":"abc123"}"""
+            : """{"elements":[{"element":"missing","id":"a"},{"element":"missing","id":"b"}],"next":2,"version":"abc123"}""";
+
+        // Act
+        var elements = await client.Elements(["a", "b", "c"]);
+
+        // Assert
+        Assert.Equal(
+            WholeValue.Of((new[] { "?ids=a,b,c", "?ids=a,b,c&cursor=2" }, new[] { "a", "b", "c" })),
+            WholeValue.Of((handler.Requests.Select(uri => Uri.UnescapeDataString(uri.Query)).ToArray(), elements.Cast<MissingElement>().Select(missing => missing.Id).ToArray())));
     }
 
     [Fact]

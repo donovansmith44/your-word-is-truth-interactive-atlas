@@ -22,7 +22,6 @@ atlas_graph_types::vocabulary! {
         BadWindow => "bad_window",
         BadCorpus => "bad_corpus",
         BadDir => "bad_dir",
-        TooMany => "too_many",
         NotFound => "not_found",
         Internal => "internal",
     }
@@ -50,10 +49,6 @@ impl ApiError {
 
     pub fn not_found(what: &str) -> Self {
         Self { status: StatusCode::NOT_FOUND, code: ErrorCode::NotFound, message: format!("{what} not found") }
-    }
-
-    pub fn too_many(asked: usize, most: usize) -> Self {
-        Self { status: StatusCode::BAD_REQUEST, code: ErrorCode::TooMany, message: format!("{asked} ids asked for at once; at most {most} are read in one request") }
     }
 
     pub fn bad_kind(raw: &str) -> Self {
@@ -163,7 +158,7 @@ refusals! {
     /// A route that reads a span of years.
     WindowRefusals { BadWindow }
     NeighbourRefusals { BadRef, BadKind }
-    ElementRefusals { BadRef, TooMany }
+    ElementRefusals { BadRef }
     /// A route that reads a reference and every word a reading window is asked with.
     ReadingWindowRefusals { BadRef, BadDir, BadScope, BadCorpus }
 }

@@ -169,7 +169,7 @@ fn held_in<U: Ord + Clone, S: Clone>(held: &BTreeMap<U, Vec<S>>, units: &RangeIn
 }
 
 /// The longest KJV chapter has 176 verses, so this probe width is a comfortable margin.
-const MAX_CHAPTER_SPAN_PROBE: usize = 200;
+const LONGEST_CHAPTER_PROBE: usize = 200;
 
 impl GraphService {
     pub fn from_sources(kjv_json: &str, xrefs_tsv: &str, atlas: &AtlasData) -> anyhow::Result<Self> {
@@ -556,7 +556,7 @@ impl GraphService {
     /// (book, chapter).
     pub fn chapter_span(&self, book: u8, chapter: u16) -> Option<(usize, usize)> {
         let start = self.position_of(book, chapter, 1)?;
-        let probe = self.snapshot.reading_window(crate::kjv_adapter::BIBLE_CORPUS, start, MAX_CHAPTER_SPAN_PROBE);
+        let probe = self.snapshot.reading_window(crate::kjv_adapter::BIBLE_CORPUS, start, LONGEST_CHAPTER_PROBE);
         let n = probe.iter().take_while(|id| matches!(crate::kjv_adapter::decode_text_unit(id), Some((b, c, _)) if b == book && c == chapter)).count();
         if n == 0 {
             None

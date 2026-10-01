@@ -12,7 +12,6 @@ use crate::error::CliError;
 
 const DEFAULT_LIMIT: usize = 20;
 const AN_EDGE: &str = "Edge";
-const MAX_LIMIT: usize = 200;
 
 pub struct EdgesArgs<'a> {
     pub id_raw: &'a str,
@@ -77,7 +76,7 @@ fn resolve(graph: &GraphService, args: &EdgesArgs) -> Result<ResolvedPage, CliEr
         )
     })?;
 
-    let limit = args.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
+    let limit = args.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, atlas_contract::graph::LARGEST_PAGE);
     let page = snap.edges(&Position::Node(node_id), &EdgeQuery { kind, cursor: args.cursor, limit });
 
     // A PeopleGroup neighbour is filtered out because its id cannot be decoded back by

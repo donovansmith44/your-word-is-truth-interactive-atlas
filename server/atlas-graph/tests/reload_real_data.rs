@@ -33,7 +33,6 @@ fn every_row_familys_adjacency_is_read_by_the_edge_with_its_rows_behind_it() {
     use atlas_graph_types::graph::EdgeRel;
     use atlas_graph_types::id::Position;
     use atlas_graph_types::store::GraphQuery;
-    const PAGE: usize = 200;
     let (g, snap) = committed_graph(&common::compiled_dir()).unwrap();
     let drain = |q: &dyn GraphQuery, p: &Position, kind: EdgeKind, limit: usize| {
         let mut cursor = None;
@@ -64,8 +63,8 @@ fn every_row_familys_adjacency_is_read_by_the_edge_with_its_rows_behind_it() {
             };
             let Some((_, kind, position)) = widest_of_family else { return (*family, None) };
             let one_at_a_time = drain(&g, &position, kind, 1);
-            let paged = drain(&g, &position, kind, PAGE);
-            let served = drain(&snap, &position, kind, PAGE);
+            let paged = drain(&g, &position, kind, usize::MAX);
+            let served = drain(&snap, &position, kind, usize::MAX);
             let distinct: std::collections::BTreeSet<_> = paged.iter().collect();
             let rows_behind: usize = paged.iter().map(|edge| g.rows_behind(edge).len()).sum();
             (

@@ -42,6 +42,7 @@
         "id": "Person:nonexistent-xyz"
       }
     ],
+    "next": null,
     "version": "2534bc8fa4b367d6e0745829cd015711"
   },
   "status": 200

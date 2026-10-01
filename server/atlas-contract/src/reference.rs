@@ -179,7 +179,6 @@ pub struct ElementIds(pub Vec<ElementId>);
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ElementIdsRefused {
     NoId,
-    TooMany(usize),
     Malformed(String),
 }
 
@@ -190,12 +189,7 @@ impl FromStr for ElementIds {
         if raw.is_empty() {
             return Err(ElementIdsRefused::NoId);
         }
-        let asked: Vec<&str> = raw.split(ELEMENT_ID_SEPARATOR).collect();
-        if asked.len() > crate::graph::MAX_ELEMENTS {
-            return Err(ElementIdsRefused::TooMany(asked.len()));
-        }
-        asked
-            .into_iter()
+        raw.split(ELEMENT_ID_SEPARATOR)
             .map(|id| decode_element_id(id).ok_or_else(|| ElementIdsRefused::Malformed(id.to_string())))
             .collect::<Result<Vec<_>, _>>()
             .map(ElementIds)
@@ -348,8 +342,7 @@ mod tests {
     #[test]
     fn a_list_of_element_ids_is_read_between_separators_and_refused_whole() {
         // Arrange
-        let beyond_the_cap = vec!["Event:ab_ur"; crate::graph::MAX_ELEMENTS + 1].join(",");
-        let asked = [format!("Event:ab_ur,{AN_EDGE}"), String::new(), beyond_the_cap, "Event:ab_ur,nope".to_string(), "Event:ab_ur,".to_string()];
+        let asked = [format!("Event:ab_ur,{AN_EDGE}"), String::new(), "Event:ab_ur,nope".to_string(), "Event:ab_ur,".to_string()];
 
         // Act
         let read: Vec<Result<ElementIds, ElementIdsRefused>> = asked.iter().map(|raw| raw.parse()).collect();
@@ -360,7 +353,6 @@ mod tests {
             vec![
                 Ok(ElementIds(vec![ElementId::Node(decode_node_id("Event:ab_ur").unwrap()), ElementId::Edge(EdgeId(AN_EDGE.to_string()))])),
                 Err(ElementIdsRefused::NoId),
-                Err(ElementIdsRefused::TooMany(crate::graph::MAX_ELEMENTS + 1)),
                 Err(ElementIdsRefused::Malformed("nope".to_string())),
                 Err(ElementIdsRefused::Malformed(String::new())),
             ]

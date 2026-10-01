@@ -3,7 +3,6 @@ use std::sync::Arc;
 use atlas_graph::corpus_root::corpus_root_id;
 use atlas_graph::GraphService;
 use atlas_graph_types::edge::{Direction, EdgeKind, RelationId};
-use atlas_graph_types::adjacency::EdgeQuery;
 use atlas_graph_types::id::{AnyNodeId, Position};
 use atlas_graph_types::node::NodePayload;
 use atlas_graph_types::store::GraphQuery;
@@ -34,20 +33,13 @@ pub async fn contents(State(graph): State<Arc<GraphService>>, Path(corpus): Path
 }
 
 fn members<S: GraphQuery>(snap: &S, container: &AnyNodeId) -> Vec<AnyNodeId> {
-    let mut out = Vec::new();
-    let mut cursor = None;
-    loop {
-        let page = snap.edges(&Position::Node(container.clone()), &EdgeQuery { kind: CONTAINS, cursor, limit: 200 });
-        out.extend(page.entries.iter().filter_map(|e| match &e.node {
+    crate::reading::drain_edges(snap, &Position::Node(container.clone()), CONTAINS)
+        .iter()
+        .filter_map(|e| match &e.node {
             Position::Node(id) => Some(id.clone()),
             Position::Edge(_) => None,
-        }));
-        match page.next {
-            Some(next) => cursor = Some(next),
-            None => break,
-        }
-    }
-    out
+        })
+        .collect()
 }
 
 /// A member of the Bible's root that is not a book is a defect in the graph, never a book to leave out.

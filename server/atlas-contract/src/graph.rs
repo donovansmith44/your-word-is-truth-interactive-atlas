@@ -32,7 +32,7 @@ use atlas_graph_types::text::{BibleLocusRange, ConcordRef, Locus, TokenSpan, Ver
 use crate::error::{ApiError, ElementRefusals, NeighbourRefusals, ReadingWindowRefusals, ReferenceRefusals};
 use crate::graph_wire::{describe_nodes, describe_positions, edge_ref, encode_node_id, labelled_positions, node_ref};
 use crate::query::{self, AsGiven, Contract, ContractParams};
-use crate::reference::{ConcordParagraphReference, ElementId, ElementIds, ElementIdsRefused, NodeReference, PositionReference, ReadingReference, Reference};
+use crate::reference::{ConcordParagraphReference, ElementId, ElementIds, NodeReference, PositionReference, ReadingReference, Reference};
 use crate::wire;
 
 /// One node of the graph at a glance: what it is, what to call it, where it came from, and how many neighbours it has of each kind.
@@ -166,7 +166,7 @@ fn element_wire_id(id: &ElementId) -> String {
     get,
     path = "/api/elements",
     summary = "Nodes and edges of the graph by id, many in one request, each answered in the order asked.",
-    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none; more than 200 at once is `too_many`.",
+    description = "`ids` lists node ids (the form `/api/node/{id}` takes) and edge ids (the id an edge page carries for its edge), separated by commas: `ids=Event:ab_ur,LocatedAt:…`. Each id is answered by its own record, or by `missing` where it reads as an id but names nothing. One id that does not read as a node's or an edge's refuses the whole read as `bad_ref`, as does asking for none. At most the server's largest page of ids is answered at once: `next`, when present, is the `cursor` that reads the ids that follow, and its absence is the last page.",
     params(ElementsQuery),
     responses((status = 200, body = wire::ElementPage), ElementRefusals),
     tag = "graph"
@@ -177,28 +177,28 @@ pub async fn elements(
     Contract(asked): Contract<ElementsQuery>,
 ) -> Result<Json<wire::ElementPage>, ApiError> {
     let snap = graph.snapshot();
-    let elements = read_elements(&data, &graph, &snap, &asked.ids.0)?;
-    Ok(Json(wire::ElementPage { elements, version: atlas_graph::version_hex(graph.version()) }))
+    let from = asked.cursor.given().unwrap_or(0).min(asked.ids.0.len());
+    let to = from.saturating_add(LARGEST_PAGE).min(asked.ids.0.len());
+    let elements = read_elements(&data, &graph, &snap, &asked.ids.0[from..to])?;
+    let next = (to < asked.ids.0.len()).then_some(to);
+    Ok(Json(wire::ElementPage { elements, next, version: atlas_graph::version_hex(graph.version()) }))
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ElementsQuery {
-    #[param(value_type = Vec<String>, style = Form, explode = false, min_items = 1, max_items = 200)]
+    #[param(value_type = Vec<String>, style = Form, explode = false, min_items = 1)]
     pub ids: ElementIds,
+    #[serde(default)]
+    #[param(value_type = Option<usize>)]
+    pub cursor: AsGiven<usize>,
 }
 
 impl ContractParams for ElementsQuery {
     fn unreadable(_parameter: &str, asked_with: Option<&str>) -> ApiError {
-        let asked_with = asked_with.unwrap_or_default();
-        match asked_with.parse::<ElementIds>() {
-            Err(ElementIdsRefused::TooMany(asked)) => ApiError::too_many(asked, MAX_ELEMENTS),
-            _ => ApiError::bad_ref(asked_with),
-        }
+        ApiError::bad_ref(asked_with.unwrap_or_default())
     }
 }
-
-pub const MAX_ELEMENTS: usize = MAX_EDGE_LIMIT;
 
 fn recorded_year(year: Option<i32>, person: &AnyNodeId) -> Result<Option<wire::Year>, ApiError> {
     year.map(wire::Year::of).transpose().map_err(|_| ApiError::internal(&format!("{} records a year zero", person.raw)))
@@ -286,7 +286,7 @@ fn node_description(id: &AnyNodeId, q: &impl GraphQuery) -> Option<String> {
     get,
     path = "/api/node/{id}/edges",
     summary = "One page of the neighbours of a node or of an edge, of a single kind, each with the edge that joins them.",
-    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and caps at 200; pass the response's `next` back as `cursor` for the following page, and its absence is the last page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
+    description = "`{id}` takes the same form `/api/node/{id}` does, or an edge's id as an edge page carries it. The required `kind` is an edge label such as `cites` or `cited-by`; anything else is `bad_kind`, an unrecognised id is `bad_ref`, and an id naming nothing is `not_found`. `limit` defaults to 20 and is clamped to the server's largest page; pass the response's `next` back as `cursor` for the following page, and its absence is the last page. A `limit` or `cursor` that does not read as a whole number is not refused: it leaves its default standing.",
     params(("id" = String, Path), EdgePageQuery),
     responses((status = 200, body = wire::EdgePage), NeighbourRefusals),
     tag = "graph"
@@ -419,14 +419,14 @@ pub struct EdgePageQuery {
 
 const DEFAULT_EDGE_LIMIT: usize = 20;
 const SMALLEST_EDGE_LIMIT: usize = 1;
-pub const MAX_EDGE_LIMIT: usize = 200;
+pub const LARGEST_PAGE: usize = 200;
 
 impl EdgePageQuery {
     fn page(&self) -> EdgeQuery {
         EdgeQuery {
             kind: self.kind,
             cursor: self.cursor.given(),
-            limit: self.limit.given().unwrap_or(DEFAULT_EDGE_LIMIT).clamp(SMALLEST_EDGE_LIMIT, MAX_EDGE_LIMIT),
+            limit: self.limit.given().unwrap_or(DEFAULT_EDGE_LIMIT).clamp(SMALLEST_EDGE_LIMIT, LARGEST_PAGE),
         }
     }
 }
