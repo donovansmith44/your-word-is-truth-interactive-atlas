@@ -1,6 +1,6 @@
 # Easton doctrinal review — CX-R2 working inventory
 
-**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. Twenty-two passages below have specific review notes. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
+**Status: in progress.** The artifact mapping and broad source screening are complete; this is not yet the finished “every doctrinal entry” review required by the brief. Forty passages below have specific review notes; 61 complete source fragments also have explicit contextual dispositions in the coverage ledger. The remaining candidate inventory is mechanically selected and still needs contextual review; unselected entries are not certified doctrinally neutral. No entry has been approved, suppressed or rewritten. Donovan and the Pastor make the rulings.
 
 ## Scope and provenance
 
@@ -68,6 +68,16 @@ At length he came forth into public life, and great multitudes from “every qua
 
 Review whether this account’s summary of John as a practical moral preacher adequately distinguishes repentance and the promise of forgiveness; AC XII and FC SD V are the comparison points. This is a scope/emphasis flag, not a finding that John did not preach repentance. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-repentance/).
 
+### Adoption 3 — degree 0
+
+Source `recYf9ObqyqrNpAfy` · family `a-p177.7` · served text: no matching description in this artifact.
+
+```text
+Spiritual. An act of God’s grace by which he brings men into the number of his redeemed family, and makes them partakers of all the blessings he has provided for them. Adoption represents the new relations into which the believer is introduced by justification, and the privileges connected therewith, viz., an interest in God’s peculiar love ([John 17:23](/john#John.17.23); [Rom. 5:5-8](/rom#Rom.5.5)), a spiritual nature (2 Pet. 1:4; [John 1:13](/john#John.1.13)), the possession of a spirit becoming children of God ([1 Pet. 1:14](/1pet#1Pet.1.14); [2 John 4](/2john#2John.1.4); [Rom. 8:15-21](/rom#Rom.8.15); [Gal. 5:1](/gal#Gal.5.1); [Heb. 2:15](/heb#Heb.2.15)), present protection, consolation, supplies ([Luke 12:27-32](/luke#Luke.12.27); [John 14:18](/john#John.14.18); [1 Cor. 3:21-23](/1cor#1Cor.3.21); [2 Cor. 1:4](/2cor#2Cor.1.4)), fatherly chastisements ([Heb. 12:5-11](/heb#Heb.12.5)), and a future glorious inheritance ([Rom. 8:17](/rom#Rom.8.17), [23](/rom#Rom.8.23); [James 2:5](/jas#Jas.2.5); [Phil. 3:21](/phil#Phil.3.21)).
+```
+
+This is a doctrinal definition linking adoption with justification and its gifts. Compare AC IV; no specific conflict is identified in this passage. Keep it distinct from the family’s natural and national senses. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-justification/).
+
 ### Assurance — degree 0
 
 Source `recKHJy9mvyKelVDO` · family `a-p609.3` · served text: no matching description in this artifact.
@@ -77,6 +87,36 @@ This infallible assurance, which believers may attain unto as to their own perso
 ```
 
 Review whether inward evidence and the final claim that its underlying principle can never be lost displace the external promise or entail guaranteed perseverance. Compare AC IV/XII and FC SD XI. Do not classify ordinary consolation or certainty of the promise as the problem. [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
+
+### Atonement — degree 0
+
+Source `recNetpk6zoj3yfeC` · family `a-p632.3` · served text: no matching description in this artifact.
+
+```text
+By the atonement of Christ we generally mean his work by which he expiated our sins. But in Scripture usage the word denotes the reconciliation itself, and not the means by which it is effected. When speaking of Christ’s saving work, the word “satisfaction,” the word used by the theologians of the Reformation, is to be preferred to the word “atonement.” Christ’s satisfaction is all he did in the room and in behalf of sinners to satisfy the demands of the law and justice of God. Christ’s work consisted of suffering and obedience, and these were vicarious, i.e., were not merely for our benefit, but were in our stead, as the suffering and obedience of our vicar, or substitute. Our guilt is expiated by the punishment which our vicar bore, and thus God is rendered propitious, i.e., it is now consistent with his justice to manifest his love to transgressors. Expiation has been made for sin, i.e., it is covered. The means by which it is covered is vicarious satisfaction, and the result of its being covered is atonement or reconciliation. To make atonement is to do that by virtue of which alienation ceases and reconciliation is brought about. Christ’s mediatorial work and sufferings are the ground or efficient cause of reconciliation with God. They rectify the disturbed relations between God and man, taking away the obstacles interposed by sin to their fellowship and concord. The reconciliation is mutual, i.e., it is not only that of sinners toward God, but also and pre-eminently that of God toward sinners, effected by the sin-offering he himself provided, so that consistently with the other attributes of his character his love might flow forth in all its fulness of blessing to men. The primary idea presented to us in different forms throughout the Scripture is that the death of Christ is a satisfaction of infinite worth rendered to the law and justice of God (q.v.), and accepted by him in room of the very penalty man had incurred. It must also be constantly kept in mind that the atonement is not the cause but the consequence of God’s love to guilty men ([John 3:16](/john#John.3.16); [Rom. 3:24](/rom#Rom.3.24), [25](/rom#Rom.3.25); [Eph. 1:7](/eph#Eph.1.7); [1 John 1:9](/1john#1John.1.9); [4:9](/1john#1John.4.9)). The atonement may also be regarded as necessary, not in an absolute but in a relative sense, i.e., if man is to be saved, there is no other way than this which God has devised and carried out ([Ex. 34:7](/exod#Exod.34.7); [Josh. 24:19](/josh#Josh.24.19); [Ps. 5:4](/ps#Ps.5.4); [7:11](/ps#Ps.7.11); [Nahum 1:2](/nah#Nah.1.2), [6](/nah#Nah.1.6); [Rom. 3:5](/rom#Rom.3.5)). This is God’s plan, clearly revealed; and that is enough for us to know.
+```
+
+Review the account of satisfaction and reconciliation with AC III. Substitution and Christ’s active/passive obedience do not themselves establish a disagreement; the final statement explicitly makes atonement the consequence of God’s love, not its cause. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
+
+### Baptism for the dead — degree 0
+
+Source `recuddAt24giKhBJj` · family `b-p101.1` · served text: no matching description in this artifact.
+
+```text
+Only mentioned in [1 Cor. 15:29](/1cor#1Cor.15.29). This expression as used by the apostle may be equivalent to saying, “He who goes through a baptism of blood in order to join a glorified church which has no existence [i.e., if the dead rise not] is a fool.” Some also regard the statement here as an allusion to the strange practice which began, it is said, to prevail at Corinth, in which a person was baptized in the stead of others who had died before being baptized, to whom it was hoped some of the benefits of that rite would be extended. This they think may have been one of the erroneous customs which Paul went to Corinth to “set in order.”
+```
+
+The entry offers alternative readings of 1 Corinthians 15:29 and describes proxy baptism as possibly erroneous; it does not endorse it. Retain as a sacramental/exegetical review item, without attributing the reported practice to Easton’s own teaching. Compare AC IX. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-baptism/).
+
+### Baptism of Christ — degree 0
+
+Source `recd4jkCMKpeHouiB` · family `b-p103.3` · served text: no matching description in this artifact.
+
+```text
+The official duty of Christ and the sinless person of Christ are to be distinguished. It was in his official capacity that he submitted to baptism. In coming to John our Lord virtually said, “Though sinless, and without any personal taint, yet in my public or official capacity as the Sent of God, I stand in the room of many, and bring with me the sin of the world, for which I am the propitiation.” Christ was not made under the law on his own account. It was as surety of his people, a position which he spontaneously assumed. The administration of the rite of baptism was also a symbol of the baptism of suffering before him in this official capacity ([Luke 12:50](/luke#Luke.12.50)). In thus presenting himself he in effect dedicated or consecrated himself to the work of fulfilling all righteousness.
+```
+
+Review the explanation of Christ’s baptism as office, substitution and consecration against AC III. The entry expressly affirms his sinlessness; no claim that Christ needed personal forgiveness should be inferred. [Confessional comparison](https://bookofconcord.org/augsburg-confession/son-of-god/).
 
 ### Baptism, Christian — degree 0
 
@@ -88,6 +128,46 @@ Baptism and the Lord’s Supper are the two symbolical ordinances of the New Tes
 
 The description of the sacraments as symbols may obscure their gift-bearing character. Compare AC IX and XIII (grace offered through Baptism; sacraments as testimonies of God’s gracious will), as well as AC X. The Pastor should assess the entire infant-baptism argument separately from the mode argument. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-baptism/).
 
+### Baptism, John’s — degree 0
+
+Source `recoet7kzsK8KZ6q7` · family `b-p102.2` · served text: no matching description in this artifact.
+
+```text
+Was not Christian baptism, nor was that which was practised by the disciples previous to our Lord’s crucifixion. Till then the New Testament economy did not exist. John’s baptism bound its subjects to repentance, and not to the faith of Christ. It was not administered in the name of the Trinity, and those whom John baptized were rebaptized by Paul ([Acts 18:24](/acts#Acts.18.24); [19:7](/acts#Acts.19.7)).
+```
+
+Flag the categorical separation of John’s baptism from faith in Christ and the inference that everyone baptized by John was rebaptized by Paul. Ask the Pastor to read Luke 3:3 and Acts 19:4–5 with AC IX; neither a chronology distinction nor these selected cases establish the universal claim. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-baptism/).
+
+### Bishop — degree 0
+
+Source `recG0BvuVUyiHBdge` · family `b-p333.4` · served text: no matching description in this artifact.
+
+```text
+An overseer. In apostolic times, it is quite manifest that there was no difference as to order between bishops and elders or presbyters ([Acts 20:17-28](/acts#Acts.20.17); [1 Pet. 5:1](/1pet#1Pet.5.1), [2](/1pet#1Pet.5.2); [Phil. 1:1](/phil#Phil.1.1); [1 Tim. 3](/1tim#1Tim.3)). The term bishop is never once used to denote a different office from that of elder or presbyter. These different names are simply titles of the same office, “bishop” designating the function, namely, that of oversight, and “presbyter” the dignity appertaining to the office. Christ is figuratively called “the bishop [episcopos] of souls” ([1 Pet. 2:25](/1pet#1Pet.2.25)).
+```
+
+Do not flag the equality of bishop and presbyter as inherently anti-Lutheran. Compare AC XXVIII on church authority; the separate Elder entry’s claim about the only permanent essential office is the more specific issue. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-ecclesiastical-power/).
+
+### Call 2 — degree 0
+
+Source `recZNJjnKaw2pGCdq` · family `c-p27.3` · served text: no matching description in this artifact.
+
+```text
+An effectual call is something more than the outward message of the Word of God to men. It is internal, and is the result of the enlightening and sanctifying influence of the Holy Spirit ([John 16:14](/john#John.16.14); [Acts 26](/acts#Acts.26): 18; [John 6:44](/john#John.6.44)), effectually drawing men to Christ, and disposing and enabling them to receive the truth ([John 6:45](/john#John.6.45); [Acts 16:14](/acts#Acts.16.14); [Eph. 1:17](/eph#Eph.1.17)).
+```
+
+Review the internal effectual-call/outward-message distinction against AC V. The question is whether the Spirit’s saving work is separated from the external Word; the earlier universal invitation must remain in view. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-ministry/).
+
+### Church 2 — degree 0
+
+Source `recSf2NAK6TAOsRZ4` · family `c-p260.4` · served text: no matching description in this artifact.
+
+```text
+It denotes the whole body of the redeemed, all those whom the Father has given to Christ, the invisible catholic church ([Eph. 5:23](/eph#Eph.5.23), [25](/eph#Eph.5.25), [27](/eph#Eph.5.27), [29](/eph#Eph.5.29); [Heb. 12:23](/heb#Heb.12.23)).
+```
+
+Review this standalone definition with Church 5 and AC VII–VIII: it describes the redeemed but does not state the church’s Word-and-Sacrament marks. Omission in one numbered fragment is not proof of a denial. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-church/).
+
 ### Church 5 — degree 0
 
 Source `rechLTslRNFxScH3y` · family `c-p260.4` · served text: no matching description in this artifact.
@@ -97,6 +177,36 @@ The church visible “consists of all those throughout the world that profess th
 ```
 
 Review the profession-plus-children definition and visible/invisible distinction against AC VII/VIII’s Word-and-Sacrament account of the church. Shared membership language alone is not a contradiction. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-church/).
+
+### Church 6 — degree 0
+
+Source `recBKKR24VuzAmiZW` · family `c-p260.4` · served text: no matching description in this artifact.
+
+```text
+Its unity. God has ever had only one church on earth. We sometimes speak of the Old Testament Church and of the New Testament church, but they are one and the same. The Old Testament church was not to be changed but enlarged ([Isa. 49:13-23](/isa#Isa.49.13); [60:1-14](/isa#Isa.60.1)). When the Jews are at length restored, they will not enter a new church, but will be grafted again into “their own olive tree” ([Rom. 11:18-24](/rom#Rom.11.18); comp. [Eph. 2:11-22](/eph#Eph.2.11)). The apostles did not set up a new organization. Under their ministry disciples were “added” to the “church” already existing ([Acts 2:47](/acts#Acts.2.47)).
+```
+
+Flag the future-restoration assertion and the account of institutional continuity for pastoral review. AC VII gives the church’s marks; no particular modern national or political fulfilment is stated here and none should be supplied by the app. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-church/).
+
+### Confession 1 — degree 0
+
+Source `recewjlxkNCH22KnY` · family `c-p363.2` · served text: no matching description in this artifact.
+
+```text
+An acknowledment of sins to God ([Lev. 16:21](/lev#Lev.16.21); [Ezra 9:5-15](/ezra#Ezra.9.5); [Dan. 9:3-12](/dan#Dan.9.3)), and to a neighbour whom we have wronged ([James 5:16](/jas#Jas.5.16); [Matt. 18:15](/matt#Matt.18.15)).
+```
+
+This definition lists confession to God and an injured neighbour but omits private absolution. Compare AC XI; flag completeness for pastoral use, not an explicit denial absent from the text. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-confession/).
+
+### Conversion — degree 0
+
+Source `recoVyvNuq0asPLsw` · family `c-p375.6` · served text: no matching description in this artifact.
+
+```text
+The turning of a sinner to God ([Acts 15:3](/acts#Acts.15.3)). In a general sense the heathen are said to be “converted” when they abandon heathenism and embrace the Christian faith; and in a more special sense men are converted when, by the influence of divine grace in their souls, their whole life is changed, old things pass away, and all things become new ([Acts 26:18](/acts#Acts.26.18)). Thus we speak of the conversion of the Philippian jailer (16:19-34), of Paul (9:1-22), of the Ethiopian treasurer (8:26-40), of Cornelius (10), of Lydia (16:13-15), and others.
+```
+
+Conversion is attributed to divine grace and illustrated historically. Review the meaning of inward influence alongside AC V’s external means; the short definition’s omission is not an explicit denial of them. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-ministry/).
 
 ### Covenant 5 — degree 0
 
@@ -148,6 +258,26 @@ Saving faith is a moral act, as it proceeds from a renewed will, and a renewed w
 
 Review the ordering of renewed will and faith, keeping the earlier denial of merit in view. Compare AC IV/V/XVIII and FC SD II on faith as God’s work through the means of grace. [Confessional comparison](https://bookofconcord.org/solid-declaration/free-will/).
 
+### Grace, means of — degree 0
+
+Source `recg0CBYukCLBhKXi` · family `g-p297.18` · served text: no matching description in this artifact.
+
+```text
+An expression not used in Scripture, but employed (1) to denote those institutions ordained by God to be the ordinary channels of grace to the souls of men. These are the Word, Sacraments, and Prayer.
+```
+
+Prayer is classified alongside Word and Sacraments as a channel of grace. Compare AC V’s instruments through which the Spirit gives faith; ask whether the entry distinguishes God’s giving from the believer’s response. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-ministry/).
+
+### Grace, means of 1 — degree 0
+
+Source `recIdEtc1nCEEsgoL` · family `g-p297.18` · served text: no matching description in this artifact.
+
+```text
+But in popular language the expression is used in a wider sense to denote those exercises in which we engage for the purpose of obtaining spiritual blessing; as hearing the gospel, reading the Word, meditation, self-examination, Christian conversation, etc.
+```
+
+The fragment explicitly shifts to a popular, wider usage including self-examination. Review with its parent so personal exercises are not mistaken for the instituted means of grace in AC V. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-ministry/).
+
 ### Justification — degree 0
 
 Source `recEyTAdgltFmScJh` · family `j-p543.6` · served text: no matching description in this artifact.
@@ -167,6 +297,16 @@ To signify, seal, and apply to believers all the benefits of the new covenant. I
 ```
 
 Review the reciprocity language (Christ ratifies; recipients consecrate themselves) and how the entry states the sacrament’s gift. Read with the other five numbered fragments, especially the explicit reception claim in fragment 5. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-the-lords-supper/).
+
+### Lord’s Supper 3 — degree 0
+
+Source `rec1ecDV7A68TG80o` · family `l-p167.4` · served text: no matching description in this artifact.
+
+```text
+To be a badge of the Christian profession.
+```
+
+Alone this fragment presents the Supper as a badge of profession. AC XIII includes a sign of profession but emphasizes God’s promise; flag the risk of displaying this fragment without the rest of the family, especially fragment 5’s reception claim. [Confessional comparison](https://bookofconcord.org/augsburg-confession/use-of-the-sacraments/).
 
 ### Lord’s Supper 5 — degree 0
 
@@ -208,6 +348,36 @@ This word is properly used only with reference to God’s plan or purpose of sal
 
 Flag the extension from election to salvation to an unconditional decree governing all events, together with the appeal to secret things. Compare FC SD XI’s distinction between foreknowledge and election and its direction to the revealed promise in Christ. [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
 
+### Predestination 1 — degree 0
+
+Source `rec1f1omMkyFZO4bX` · family `p-p385.1` · served text: no matching description in this artifact.
+
+```text
+It enforces upon us the essential truth that salvation is entirely of grace. That no one can either complain if passed over, or boast himself if saved.
+```
+
+Read the passed-over language with the parent’s all-events decree. FC SD XI distinguishes election to salvation from the cause of damnation; ask whether the formulation obscures that distinction. [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
+
+### Predestination 2 — degree 0
+
+Source `recJxGmYP6pzj7xVW` · family `p-p385.1` · served text: no matching description in this artifact.
+
+```text
+It brings the inquirer to absolute self-despair and the cordial embrace of the free offer of Christ.
+```
+
+Review what self-despair means in context: despair of one’s merit differs from despair of God’s promise. This fragment also affirms a free offer of Christ; do not suppress that qualification when comparing FC SD XI. [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
+
+### Predestination 3 — degree 0
+
+Source `recK2KPAkQ4shxjO1` · family `p-p385.1` · served text: no matching description in this artifact.
+
+```text
+In the case of the believer who has the witness in himself, this doctrine at once deepens his humility and elevates his confidence to the full assurance of hope” (Outlines).
+```
+
+Review whether inward witness rather than the revealed promise becomes the practical ground of assurance. Read with Assurance and the complete Predestination family; FC SD XI is the comparison, not an automatic objection to Christian consolation. [Confessional comparison](https://bookofconcord.org/solid-declaration/election/).
+
 ### Regeneration — degree 0
 
 Source `recUL2RaZqJDA5aAw` · family `r-p77.2` · served text: no matching description in this artifact.
@@ -247,6 +417,86 @@ The Sabbath, originally instituted for man at his creation, is of permanent and 
 ```
 
 Flag the claimed permanent universal obligation and the later assertion that the institution cannot be abrogated. Compare AC XXVIII’s discussion of the Sabbath and Sunday observance; distinguish time for worship/rest from imposing a Mosaic day-law on consciences. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-ecclesiastical-power/).
+
+### Sanctification — degree 0
+
+Source `recUo8Q9gX8NkWytZ` · family `s-p89.3` · served text: no matching description in this artifact.
+
+```text
+Perfect sanctification is not attainable in this life ([1 Kings 8:46](/1kgs#1Kgs.8.46); [Prov. 20:9](/prov#Prov.20.9); [Eccl. 7:20](/eccl#Eccl.7.20); [James 3:2](/jas#Jas.3.2); [1 John 1:8](/1john#1John.1.8)). See Paul’s account of himself in [Rom. 7:14-25](/rom#Rom.7.14); [Phil. 3:12-14](/phil#Phil.3.12); and [1 Tim. 1:15](/1tim#1Tim.1.15); also the confessions of David ([Ps. 19:12](/ps#Ps.19.12), [13](/ps#Ps.19.13); 51), of Moses (90:8), of Job (42:5, 6), and of Daniel (9:3-20). “The more holy a man is, the more humble, self-renouncing, self-abhorring, and the more sensitive to every sin he becomes, and the more closely he clings to Christ. The moral imperfections which cling to him he feels to be sins, which he laments and strives to overcome. Believers find that their life is a constant warfare, and they need to take the kingdom of heaven by storm, and watch while they pray. They are always subject to the constant chastisement of their Father’s loving hand, which can only be designed to correct their imperfections and to confirm their graces. And it has been notoriously the fact that the best Christians have been those who have been the least prone to claim the attainment of perfection for themselves.”, Hodge’s Outlines.
+```
+
+The entry explicitly rejects perfection in this life. Preserve that qualification when reviewing its opening language about carrying regeneration to perfection; compare AC XII. No perfectionist contradiction is identified in this paragraph. [Confessional comparison](https://bookofconcord.org/augsburg-confession/of-repentance/).
+
+## Contextual coverage ledger — 2026-10-01
+
+These 61 complete fragments were read in context, including numbered siblings and the Effectual call cross-reference. A disposition of no specific conflict is a review observation, not pastoral approval. The remaining rows still require examination. Confessional comparison links were checked against the published texts on 2026-10-01.
+
+| Source | Heading | Contextual disposition |
+|---|---|---|
+| `recWR53AYL0ujtLo0` | Adoption | General lexical definition, not yet spiritual adoption. |
+| `recWNh1YAMoCt2AoM` | Adoption 1 | Historical family adoption examples; no doctrinal conflict identified. |
+| `rec9c52uOcndVtnwO` | Adoption 2 | National adoption citations; do not equate this with individual election to salvation. |
+| `recYf9ObqyqrNpAfy` | Adoption 3 | Doctrinal; added qualified justification/adoption note. |
+| `recKHJy9mvyKelVDO` | Assurance | Full entry reread; final never-lost principle supports existing perseverance flag. |
+| `recNetpk6zoj3yfeC` | Atonement | Doctrinal; added qualified satisfaction/reconciliation note. |
+| `recOmO7oy69H0LcfJ` | Atonement, Day of | Historical observance, dates and citations; no adverse doctrinal claim identified in this fragment. |
+| `recuddAt24giKhBJj` | Baptism for the dead | Doctrinal/exegetical alternatives; added note distinguishing report from endorsement. |
+| `recd4jkCMKpeHouiB` | Baptism of Christ | Christological; added qualified substitution/office note. |
+| `rectZZHERX5H3EIto` | Baptism, Christian | Complete entry reread, including mode and infant-membership argument; existing sacramental-symbolism note retained. |
+| `recoet7kzsK8KZ6q7` | Baptism, John’s | Doctrinal/exegetical; added faith/rebaptism question. |
+| `recG0BvuVUyiHBdge` | Bishop | Added note avoiding an unwarranted Presbyterian-versus-Lutheran inference. |
+| `recZ2WiMrsL0tCKo2` | Call 1 | Calling on the Lord/prayer sense; no specific conflict identified. |
+| `recZNJjnKaw2pGCdq` | Call 2 | Added internal effectual-call/outward-Word question. |
+| `recj4Zsbw5poVU8H2` | Calling | Vocation and kingdom-call senses; no independent effectual-call theory here. |
+| `recRzLsu1gWfSkCHB` | Church | Etymology and usage introduction; doctrinal senses are in numbered fragments. |
+| `recKIzlc72CPWT09S` | Church 1 | Secular assembly sense; no church doctrine asserted. |
+| `recSf2NAK6TAOsRZ4` | Church 2 | Added church-marks/context question. |
+| `reclIH3je1UkIHaQw` | Church 3 | Local gathering/ordinances definition; review with family, no separate conflict identified. |
+| `recY30jTe3kewjsFi` | Church 4 | City congregations and citations; no separate conflict identified. |
+| `rechLTslRNFxScH3y` | Church 5 | Complete visible/invisible and children-membership account reread; existing AC VII/VIII question retained. |
+| `recBKKR24VuzAmiZW` | Church 6 | Added future-restoration/institutional-continuity question. |
+| `recGPgbMbylnCc4Yg` | Church 7 | Universal body of believers; no exclusive institutional claim made. |
+| `recu7vrxO8lpvbbL7` | Church 8 | Perpetuity of the church; no specific conflict identified. |
+| `recx17NtOmuvNJHjG` | Confession | Profession-of-faith definition; no specific conflict identified. |
+| `recewjlxkNCH22KnY` | Confession 1 | Doctrinal; added private-absolution completeness question. |
+| `recoVyvNuq0asPLsw` | Conversion | Added qualified means-of-grace question. |
+| `recAGqbU5IjTcDc6J` | Decrees of God | Both efficacious and permissive distinctions read; existing all-events decree question retained. |
+| `rec9BjJ4ElCVhG2Kt` | Effectual call | Cross-reference only; target Call 2 now read and flagged. |
+| `recnDgY2nXn1vl9h2` | Effectual prayer | Prayer efficacy gloss, not an independent conversion theory. |
+| `recDyhhcfSdfrx20R` | Elder | Complete entry reread; existing sole-essential-office question retained. |
+| `recMi4LwuD2vkYNjc` | Election of Grace | All office/national/salvation senses read; existing qualified election note retained. |
+| `recRjKTwmy52Z8ZFF` | Grace 1 | Lexical form/person sense; no soteriological claim. |
+| `recY2Mx5ig0hiL4HN` | Grace 2 | Lexical favour/kindness sense; no specific conflict identified. |
+| `recGBkH1wCATvpGD2` | Grace 3 | Doctrinal forgiving-mercy definition; no specific conflict identified. |
+| `recxCI9VfZi1RecYL` | Grace 4 | Doctrinal law/gospel distinction; no specific conflict identified. |
+| `recBAtPwsWG2MD043` | Grace 5 | Gifts and examples; does not itself assert a cessation or continuation theory. |
+| `recFWgCdM41ytsYU5` | Grace 6 | Lexical Christian-virtue sense; no claim that virtues earn justification. |
+| `recyfs4VfwvE1gACx` | Grace 7 | Future-glory sense; no specific conflict identified. |
+| `recg0CBYukCLBhKXi` | Grace, means of | Doctrinal; added prayer/means distinction question. |
+| `recIdEtc1nCEEsgoL` | Grace, means of 1 | Doctrinal usage; added parent-context note. |
+| `recEyTAdgltFmScJh` | Justification | Complete forensic/imputed/instrumental account read; existing note preserves its express denial of faith’s merit. |
+| `recnhRxODiGy5JEWs` | Lord’s day | Historical Sunday usage; does not by itself impose a permanent day-law. |
+| `rec1IHbeuH4UJSiEU` | Lord’s Supper | Names, institution citations and introduction to numbered purposes; no separate conflict beyond family notes. |
+| `recOeN8tCaQrW82vC` | Lord’s Supper 1 | Commemoration is one listed purpose; does not say merely memorial. |
+| `rec2Mmrz6dGkknhCN` | Lord’s Supper 2 | Existing gift/reciprocity note retained with full family context. |
+| `rec1ecDV7A68TG80o` | Lord’s Supper 3 | Added badge-only fragment display question. |
+| `recVuTGCWMPd6uJCL` | Lord’s Supper 4 | Communion with Christ; meaning clarified by fragment 5, not independently condemned. |
+| `recIvnnGcxMxDbHol` | Lord’s Supper 5 | Explicit oral-reception denial; existing principal review flag retained. |
+| `recKxWMEHyqlawkx1` | Perseverance of the saints | Complete unconditional-perseverance argument read; existing AC XII flag retained. |
+| `recHp6zgqDNhg8K2H` | Predestination | Entire all-events decree discussion read; existing FC XI flag retained. |
+| `rec1f1omMkyFZO4bX` | Predestination 1 | Added passed-over language question in parent context. |
+| `recJxGmYP6pzj7xVW` | Predestination 2 | Added distinction between self-despair and despair of promise. |
+| `recK2KPAkQ4shxjO1` | Predestination 3 | Added inward-witness question in parent context. |
+| `recUL2RaZqJDA5aAw` | Regeneration | Entire entry reread; attributes new birth to the Spirit, existing means-of-grace note retained. |
+| `recp1A8vePnhMajXe` | Repentance | Introduces three Greek words; no independent doctrinal assertion. |
+| `recHZZdvXFYiP0pEG` | Repentance 1 | Regret/remorse distinguished from change of heart; no specific conflict identified. |
+| `recbAZjejwKsLtQpe` | Repentance 2 | Full fragment reread; existing distinction between repentance and its fruits retained. |
+| `recuLsHUGpXx3nc4z` | Sabbath | Complete entry reread; universal permanent obligation and cannot-be-abrogated claims support existing flag. |
+| `recA066oodY2jUv2A` | Sabbath day’s journey | Reports Jewish travel-distance tradition; does not impose it on Christians. |
+| `recUo8Q9gX8NkWytZ` | Sanctification | Added no-perfection-in-this-life qualification. |
+
+Coverage: 69 distinct source rows have a specific note or contextual disposition; 1,980 screened candidates remain without either. The 4,313 nonempty unselected rows still require the separate semantic sweep.
 
 ## Broad screening inventory — contextual review pending
 
@@ -2321,11 +2571,11 @@ The following table is a worklist, not 2,047 findings of doctrinal error. Every 
 
 ## Continuation and validation
 
-Next: review the 2,025 candidates without a specific note in context, classify historical-only hits, and sweep the 4,313 nonempty unselected rows for doctrinal claims that the screen misses. Preserve numbered-family context. Then add passage-specific questions where warranted and set CX-R2 to review. No owner input is needed to continue this analysis.
+Next: continue from the contextual coverage ledger; review the remaining screened candidates without a note or disposition, classify historical-only hits, and sweep the 4,313 nonempty unselected rows for doctrinal claims that the screen misses. Preserve numbered-family context. Then add passage-specific questions where warranted and set CX-R2 to review. No owner input is needed to continue this analysis.
 
 Checks: all five compressed artifact hashes match the base manifest; 4,454 entity nodes inventoried; 3,170 carry descriptions; 3,169 have a source-text equivalent. Candidate IDs are unique, all excerpts are literal substrings, and prominence order is descending. No Rust build, lock, application-code change, data refresh or artifact rebuild was needed.
 
-Reproduction scratch: `~/w/CX-R2-scratch/{inventory.py,screen.py,report.py,entries.json,nodes.json,selected.json,artifact-manifest.json,unflagged.txt}`. Read-only SQLite copies are there; the Kjv copy is the pinned CX-R3 scratch artifact. The report is the only analysis deliverable tracked. The source screen used these expressions, case-insensitively against heading plus text:
+Reproduction scratch: `~/w/CX-R2-scratch/{inventory.py,screen.py,report.py,entries.json,nodes.json,selected.json,additional-notes.json,context-reviewed.json,artifact-manifest.json,unflagged.txt}`. Read-only SQLite copies are there; the Kjv copy is the pinned CX-R3 scratch artifact. The report is the only analysis deliverable tracked. The source screen used these expressions, case-insensitively against heading plus text:
 
 ```json
 {
