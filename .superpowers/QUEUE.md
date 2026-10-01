@@ -80,6 +80,9 @@ Protocol: `AGENTS.md`. Plan: `docs/superpowers/plans/2026-09-30-v1-roadmap.md`.
 - **F-40 (rule 27f): compiled labels grow the artifact with every position** (R2: +25 MB, kjv 48→58, lexicon 42→52); at 10× the 100 MB blob ceiling breaks. Owner to weigh: labels for every position vs only for positions a reader can land on; dedup/compression.
 - **F-41 (gates): a test referenced by name in a script can vanish silently** (`timing-gates.sh` still names `frontier_page_latency_…`, renamed in R1; a filter matching nothing passes). Closure: the gate fails when a named test matches zero tests. FOCUS-6 close.
 - **F-42 (rule 27): reference strings are composed in served code** (`dot_ref`: `TextUnit.ref`, `next`, `encode_node_id`). Closure: compiled, with F-36.
+- **F-43 (wire): `/api/elements` percent-decodes before splitting `ids` on `,`** (`ids=X%2CX` reads two ids). Low: the law `no_served_id_carries_the_separator…` keeps `,` out of ids. Closure: split, then decode each.
+- **F-44 (rule 4): `HomeSurfaces.Of` has no production reader** (pre-existing).
+- **F-45 (FOCUS): no live popover offers an edge step** until a node kind moves to FocusView (the migrated-kind list is empty); A-EDGES is proven by bUnit + a seeded-save Playwright spec.
 - **F-3 (rule 25, client derivation): `client/CanonRef.cs`** — see A-BACKLOG; closes when the legacy routes retire.
 
 ---
