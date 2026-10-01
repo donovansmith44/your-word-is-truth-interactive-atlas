@@ -4,7 +4,7 @@ You run until your tokens run out. Repeat this loop:
 
 1. **Sync.**
    - `git fetch origin '+refs/heads/*:refs/remotes/origin/*'` in both repos.
-   - Read `.superpowers/QUEUE.md` and the held locks (`.superpowers/LOCKS.md`).
+   - Pull `~/src/bible-atlas-ops` and read its `QUEUE.md` and the held locks (`.superpowers/LOCKS.md`).
 2. **Owner answers first.**
    - For every answered OWNER QUESTION, record the ruling where it belongs: the spec's rulings section, the errata entry, or the queue item.
    - Unblock the items it frees and remove the question.

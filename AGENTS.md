@@ -10,7 +10,7 @@ The owner (Donovan) makes the rulings. Agents propose.
 ## Read first, every session
 1. `docs/PRINCIPLES.md`. It binds every change. A plan or brief that conflicts with it is wrong.
 2. `docs/superpowers/plans/2026-09-30-v1-roadmap.md`: the goal, the dates and the lanes.
-3. `.superpowers/QUEUE.md`: the only list of work.
+3. The queue: `QUEUE.md` on the `ops` branch (worktree `~/src/bible-atlas-ops`; `git -C ~/src/bible-atlas-ops pull` first). It is the only list of work. It lives off the code branch so `worktree-bible-atlas-m1`'s history holds code changes only (owner, 2026-10-01).
 4. `.superpowers/LOCKS.md`: how to take a lock before touching a shared artifact.
 
 ## The machine
@@ -24,7 +24,7 @@ If the owner's whole message is "go" or "continue", read your GO file and follow
 - Codex: `.superpowers/GO-codex.md`
 
 ## The queue
-- **Taking an item:** take the first `ready` item in your lane whose dependencies are `done`. Claim it by setting its status to `claimed:<agent>:<ISO time>` in a one-line commit and pushing. If the push is rejected, fetch and read the queue again: someone else may have taken it.
+- **Taking an item:** take the first `ready` item in your lane whose dependencies are `done`. Claim it by setting its status to `claimed:<agent>:<ISO time>` in a one-line commit on `ops` and pushing `ops` (both agents push `ops`; never force). If the push is rejected, fetch and read the queue again: someone else may have taken it.
 - **What an item gives you:** its base commit, the files it may touch, the gates it runs, and when it counts as done. Touch nothing else.
 - **Finishing:** set it to `review` with the commit range. The other agent reviews it (PRINCIPLES 14b), then marks it `done`. Nothing is done on its author's word alone.
 - **Reviewing:** the 14b pass (D.R.Y., the Haskell bar) and the 24a category pass (a bug is a category: was the failed abstraction named, the side chosen, every site migrated, and the category CLOSED so an offender cannot be written — 24b). Offenders you find go under FINDINGS in the queue; the owner decides. Never fix one on the side.
@@ -65,7 +65,7 @@ Take the lock first, following `.superpowers/LOCKS.md`. The locks are:
 - **Licensing** (owner 2026-09-29): ingest nothing that isn't public domain, CC0, or attribution-only permissive (CC BY 4.0, MIT, BSD, Apache-2.0). ShareAlike/copyleft (CC BY-SA, ODbL, GPL), NonCommercial, NoDerivatives and unlicensed sources are out. Cite the license; record attribution in `LICENSES.md`.
 
 ## Commits and branches
-- **Commits (owner, 2026-09-30: "start squashing"):** one commit per task on the main branch, squashed at landing (`git merge --squash` or `cherry-pick -n` of the lane range), with a message that states what is now true. Lane branches may hold work-in-progress commits; they are never rewritten, only squashed when landed. Red-before-green evidence lives in the task report and the ledger, not in separate commits. Queue and ledger edits ride along with the task's commit or go in one batched commit; the only stand-alone queue commit is a claim, because its push is the mutual exclusion.
+- **Commits (owner, 2026-09-30: "start squashing"):** one commit per task on the main branch, squashed at landing (`git merge --squash` or `cherry-pick -n` of the lane range), with a message that states what is now true. Lane branches may hold work-in-progress commits; they are never rewritten, only squashed when landed. Red-before-green evidence lives in the task report and the ledger, not in separate commits. Queue edits go to the `ops` branch, never to `worktree-bible-atlas-m1`; the code branch carries no queue or ledger commits.
 - **Codex:** pushes to `lane/codex/<item-id>` and never pushes to `worktree-bible-atlas-m1`.
 - **Landing:** Claude lands reviewed work by cherry-picking it, holding the `land` lock. Claude's own work lands the same way, after Codex has reviewed it.
 

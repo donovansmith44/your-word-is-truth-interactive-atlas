@@ -6,7 +6,7 @@ Repeat this loop:
 
 1. **Sync.**
    - Fetch both repos.
-   - Read `.superpowers/QUEUE.md` in the atlas and the held locks (`.superpowers/LOCKS.md`).
+   - Pull `~/src/bible-atlas-ops` (the atlas's `ops` branch) and read its `QUEUE.md` and the held locks (`.superpowers/LOCKS.md`).
 2. **Your own reviews first.**
    - Review every Claude item in `review`: correctness, `docs/PRINCIPLES.md`, and the 14b D.R.Y. and "would a Haskell programmer scoff" pass.
    - Write your findings on the item. Claude lands its work only after your review.
